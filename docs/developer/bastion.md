@@ -244,6 +244,7 @@ internal/bastionmain/ the main installation's seams (a domain package)
 | [engine/quiet.go](../../internal/bastion/engine/quiet.go) | `WithQuietSlot`, `Quiet`: how a quiet verdict reaches the server's request log |
 | [engine/lru.go](../../internal/bastion/engine/lru.go), [engine/flight.go](../../internal/bastion/engine/flight.go) | the bounded LRU, the single-flight and the `handle` of a flight that a fill takes over |
 | [server/server.go](../../internal/bastion/server/server.go) | `Run`, `New`, `Start`, `Shutdown`; `buildDeps` and `wireLink` build and connect the components, `runLink` runs their loops |
+| [legal/legal.go](../../internal/bastion/legal/legal.go) | `New`: the Bastion's imprint and privacy notice of its own `ui.legal`, rendered in `server.New` with the README renderer (no image origins, its `server.base_url` as its own origin) and held for its web interface; `Pages(locale)`, `ETag`; served by no route yet (R-BAS-100) |
 | [maintest/maintest.go](../../internal/bastion/maintest/maintest.go), [maintest/store.go](../../internal/bastion/maintest/store.go) | `Main`, the in-process main installation; `Faulty`, `MemSpool`; `Store`, the TLS object store of the handover's tests |
 | [roletest/roletest.go](../../internal/bastion/roletest/roletest.go) | `Run`: the scenario of the whole role for one cache backend |
 | [bastionmain/recognition.go](../../internal/bastionmain/recognition.go) | `Recognition`, `WithRecognition`, `RecognitionFrom` |

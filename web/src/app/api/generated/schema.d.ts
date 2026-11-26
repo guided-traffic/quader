@@ -2018,6 +2018,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/legal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read the imprint and the privacy notice
+         * @description The installation's imprint and privacy notice as one locale shows them (R-UI-225): the operator's Markdown of
+         *     `ui.legal`, rendered at start under the sanitizer of the README renderer (R-UI-008) and held in memory. A page whose
+         *     locale has no text of its own carries the other language's, and `lang` names that language; a page that no language
+         *     has a text for is `null`, and the UI shows no link to it. Always reachable without a credential, like the login options
+         *     (R-AUTH-037): the sign-in screen links to both pages; a session cookie is ignored, so an ended session does not stand
+         *     between a visitor and the pages. The strong ETag changes only with the texts, which change with a rollout; a matching
+         *     `If-None-Match` answers `304`.
+         */
+        get: operations["getLegal"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/whoami": {
         parameters: {
             query?: never;
@@ -11437,6 +11463,31 @@ export interface components {
             publicContent: boolean;
             /** @description The provider ID to redirect to at once; `null` shows the buttons. `?auto_sign_in=false` on the sign-in page waives the redirect. */
             autoRedirect: string | null;
+        };
+        /** @description The imprint and the privacy notice as one locale shows them (R-UI-225); a page without a text in any language is `null`. */
+        LegalPages: {
+            imprint: components["schemas"]["LegalPage"] | null;
+            privacy: components["schemas"]["LegalPage"] | null;
+        };
+        /**
+         * @description One legal page.
+         * @example {
+         *       "html": "<h1 id=\"user-content-imprint\">Imprint</h1>",
+         *       "lang": "en"
+         *     }
+         */
+        LegalPage: {
+            /**
+             * @description The operator's Markdown rendered and sanitized on the server under the policy of R-UI-008, without external image origins:
+             *     no script, style, SVG or frame; an image becomes a link, an image of the installation's own origin is dropped; links are
+             *     `http`, `https` or `mailto` with `rel="nofollow noopener noreferrer"`.
+             */
+            html: string;
+            /**
+             * @description The language the text is written in; another than the asked locale where that locale has no text of its own.
+             * @enum {string}
+             */
+            lang: "en" | "de";
         };
         WhoamiPrincipal: {
             /** @enum {string} */
@@ -23112,6 +23163,56 @@ export interface operations {
                     "application/json": components["schemas"]["LoginOptions"];
                 };
             };
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getLegal: {
+        parameters: {
+            query: {
+                /** @description The locale of the interface that shows the pages. */
+                locale: "en" | "de";
+            };
+            header?: {
+                /** @description An ETag the client holds; a match answers `304` (R-API-012). */
+                "If-None-Match"?: components["parameters"]["IfNoneMatch"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The two pages of the locale. */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "imprint": {
+                     *         "html": "<h1 id=\"user-content-imprint\">Imprint</h1>\n<p>Example Operations GmbH<br/>\nMusterstraße 1</p>",
+                     *         "lang": "en"
+                     *       },
+                     *       "privacy": {
+                     *         "html": "<h1 id=\"user-content-datenschutzhinweise\">Datenschutzhinweise</h1>\n<p>…</p>",
+                     *         "lang": "de"
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["LegalPages"];
+                };
+            };
+            /** @description The pages have not changed since the ETag of If-None-Match. */
+            304: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
             429: components["responses"]["TooManyRequests"];
             500: components["responses"]["Internal"];
             503: components["responses"]["Unavailable"];

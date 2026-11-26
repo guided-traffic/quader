@@ -5163,6 +5163,52 @@
           },
           "type": "object"
         },
+        "legal": {
+          "additionalProperties": false,
+          "properties": {
+            "imprint": {
+              "additionalProperties": false,
+              "properties": {
+                "de": {
+                  "default": "",
+                  "description": "Markdown, at most 64 KiB; empty: the English text stands in, or the page does not exist.",
+                  "maxLength": 65536,
+                  "type": "string",
+                  "x-quader-env": "QUADER_UI_LEGAL_IMPRINT_DE"
+                },
+                "en": {
+                  "default": "",
+                  "description": "Markdown, at most 64 KiB; empty: the German text stands in, or the page does not exist.",
+                  "maxLength": 65536,
+                  "type": "string",
+                  "x-quader-env": "QUADER_UI_LEGAL_IMPRINT_EN"
+                }
+              },
+              "type": "object"
+            },
+            "privacy": {
+              "additionalProperties": false,
+              "properties": {
+                "de": {
+                  "default": "",
+                  "description": "Markdown, at most 64 KiB; empty: the English text stands in, or the page does not exist.",
+                  "maxLength": 65536,
+                  "type": "string",
+                  "x-quader-env": "QUADER_UI_LEGAL_PRIVACY_DE"
+                },
+                "en": {
+                  "default": "",
+                  "description": "Markdown, at most 64 KiB; empty: the German text stands in, or the page does not exist.",
+                  "maxLength": 65536,
+                  "type": "string",
+                  "x-quader-env": "QUADER_UI_LEGAL_PRIVACY_EN"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "type": "object"
+        },
         "readme": {
           "additionalProperties": false,
           "properties": {

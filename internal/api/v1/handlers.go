@@ -17,6 +17,7 @@ import (
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/files"
 	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/legaltext"
 	"github.com/guided-traffic/quader/internal/manual"
 	"github.com/guided-traffic/quader/internal/sysstate"
 )
@@ -250,6 +251,10 @@ type Options struct {
 	// error answers the operations with 503.
 	LoadManual func() (*manual.Manual, error)
 	// <<< M2 manual
+
+	// Legal are the imprint and the privacy notice of ui.legal, rendered at start (legal_api.go, R-UI-225); nil answers both pages
+	// null, as an installation without texts does.
+	Legal *legaltext.Pages
 
 	// >>> M13 bastion
 	// Bastions is the registration service behind /api/v1/bastions (R-BAS-004); nil answers its operations

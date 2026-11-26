@@ -588,11 +588,26 @@ quader-root {
     overflow: auto;
   }
 
+  // The panel's content is a column, so the line of the legal pages (R-UI-226) stands at the panel's end on a short screen and after
+  // the screen's content on a long one, inside the one scrolling panel (R-UI-215); nothing in the column shrinks.
   .content {
     container-type: inline-size;
     container-name: content;
+    display: flex;
+    flex-direction: column;
     padding: var(--quader-space-6) var(--quader-space-8);
     outline: none;
+
+    > * {
+      flex-shrink: 0;
+    }
+  }
+
+  // The legal line keeps the space of a section from what stands above it.
+  .content > quader-legal-footer,
+  .bare > quader-legal-footer {
+    margin-block-start: auto;
+    padding-block-start: var(--quader-space-8);
   }
 
   @media (max-width: 1023.98px) {
@@ -603,12 +618,13 @@ quader-root {
 
   // A screen without the shell (sign-in, signed out; Q-UI-125): one column in the middle of the page,
   // a little above the centre, as the sign-in pages of comparable tools place it.
+  // The column ends with the line of the legal pages, at the window's end (R-UI-226).
   .bare {
     box-sizing: border-box;
     min-block-size: 100%;
     display: flex;
-    justify-content: center;
-    align-items: flex-start;
+    flex-direction: column;
+    align-items: center;
     padding: max(var(--quader-space-8), 12vh) var(--quader-space-4) var(--quader-space-8);
     outline: none;
 
@@ -616,6 +632,11 @@ quader-root {
     > :not(router-outlet) {
       inline-size: 100%;
       max-inline-size: 25rem;
+    }
+
+    // A legal page is running text: the line length of a page, not the sign-in column's.
+    > quader-legal-page {
+      max-inline-size: 48rem;
     }
   }
 

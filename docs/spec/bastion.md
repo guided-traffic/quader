@@ -184,8 +184,9 @@ Priority: **MVP** · Covers: DIST-024
   releases of that chart, each with a registration of its own (R-BAS-004).
 - The configuration schema of the role is its own: `server.listen`, `server.ops_listen`, `server.base_url`,
   `server.trusted_proxies`, `server.forwarded_header`, `server.max_in_flight`, `server.tls`, the section `bastion` of this page,
-  `valkey`, `log`, `tracing` and `runtime`. A key of another section (`database`, `storage`, `auth`, `authz`, `ci`, `backup`,
-  `audit`, `server.endpoints`, `server.additional_base_urls`, …) stops startup with an error that names the key and the role.
+  `valkey`, `log`, `tracing`, `runtime` and `ui` with `ui.legal` alone (R-BAS-100). A key of another section (`database`, `storage`,
+  `auth`, `authz`, `ci`, `backup`, `audit`, `server.endpoints`, `server.additional_base_urls`, the main installation's `ui.readme`, …)
+  stops startup with an error that names the key and the role.
   The role has `server.ops_tls` as well (R-BAS-044), is chosen by `--role bastion` and by nothing else, and takes `--log-level` as
   its one flag ([Q-BAS-50](#q-bas-50--the-role-has-a-configuration-tree-of-its-own-chosen-by---role-alone)).
 - Horizontal replicas: every Bastion replica is identical and interchangeable (INV-2); a request may reach any replica, and
@@ -2616,6 +2617,17 @@ config:
     sample_ratio: 0.1
   runtime:
     memory_limit_ratio: 0.85
+  ui:                                   # bastion.md R-BAS-100
+    # This Bastion's own imprint and privacy notice, for its web interface: Markdown, at most 64 KiB per page and language, rendered
+    # at start under the README sanitizer. The Bastion's administrator answers for what they say; they name the operator of this
+    # Bastion and are never taken from the main installation. A change is a rollout.
+    legal:
+      imprint:
+        en: ""                          # example: "Example Operations GmbH\\\nMusterstraße 1\\\n12345 Berlin"
+        de: ""
+      privacy:
+        en: ""
+        de: ""
 
 # ── Existing Secrets (the chart never creates one) ──────────────────────────
 secrets:
@@ -5306,6 +5318,50 @@ Acceptance criteria:
 
 - `TestR_BAS_009_TheInterfaceChangesOnlyWithItsVersion` with the regenerated surface at version 8; unit tests of every new member's
   `Validate` and round trip, and of the catalogue's path grammar; under 0.5 s in all.
+
+## The Bastion's imprint and privacy notice
+
+### R-BAS-100 · A Bastion's own imprint and privacy notice from its chart
+Priority: **P1** · Covers: quader-only
+
+The owner, 2026-11-26, 11:51, of a company that runs a public web interface: "Wird von der Instanz selbst ausgeliefert. Der Text beider
+Links kann über ein Markdown frei bestimmt werden. Eingestellt wird es bei der Installation über Helm, der Administrator des Bastion ist
+verantwortlich für die Einhaltung dieser Werte." With his rule that "Der Bastion verrät keine internen Informationen über die
+Hauptinstanz" and "Je kleiner der Footprint, desto besser".
+
+- **Values.** `config.ui.legal.imprint.en`, `.de`, `config.ui.legal.privacy.en`, `.de` of the chart `quader-bastion` (R-BAS-046):
+  Markdown, empty by default, at most 64 KiB each, rendered into the configuration file like every key of `config`; a change is a
+  rollout (R-BAS-002). They are the configuration of this Bastion, set by its administrator, who answers for what they say; they are
+  never read from the main installation, never a Secret, and nothing in them is derived from the main installation's configuration.
+- **Rendering.** At start, by the README renderer of the main installation's packages ([api-and-ui.md](api-and-ui.md) R-UI-008) in an
+  instance of its own (`internal/bastion/legal`): no external image origin, so an image becomes a link and an image of the Bastion's own
+  origin (`server.base_url`) is dropped; no script, style, SVG or frame; links `http`, `https` and `mailto` with
+  `rel="nofollow noopener noreferrer"`. The pages are held in memory; the rule of the languages is the main installation's
+  ([api-and-ui.md](api-and-ui.md) R-UI-225): a locale without its own text shows the other language's, marked with its `lang`; a page
+  that no language has a text for is none.
+- **Serving.** Not yet: the Bastion has no web interface, and this requirement adds no listener and no route
+  ([Q-BAS-342](#q-bas-342--the-pages-are-rendered-at-start-and-served-by-no-route-until-the-bastions-web-interface)). `/ui/…` and
+  `/api/v1/…` still answer `404 bastion_not_served` (R-BAS-003). The web interface serves the pages from `Pages(locale)` of
+  `internal/bastion/legal`, which the replica holds from its start (`Server.Legal`), and links them in its footer
+  ([H-2304](#h-2304--a-bastion-serves-its-imprint-and-privacy-notice-only-with-its-web-interface)).
+- **Imports.** `internal/bastion/legal` imports `internal/packages/readme` and `internal/legaltext` by a scoped allowance of the
+  architecture test ([Q-BAS-341](#q-bas-341--the-bastion-renders-with-the-readme-renderer-through-a-scoped-allowance)); neither
+  imports a package of this module, so they bring nothing of the main installation into the role (R-BAS-001).
+
+Acceptance criteria:
+
+- Unit ([legal_test.go](../../internal/bastion/legal/legal_test.go), milliseconds, an imprint of a kilobyte): a script, a style, an
+  SVG, a frame, an event handler and a `javascript:` link are dropped; an image of another site is a link, one of the Bastion's origin
+  is gone; the address block, the table and the three kinds of link stay; the German locale shows the English text marked `en`.
+- Unit ([server_test.go](../../internal/bastion/server/server_test.go), a second): a replica started with a German imprint holds it
+  for both locales, and `/ui/de/legal/imprint`, `/ui/data/v1/legal` and `/api/v1/legal` answer `404 bastion_not_served`.
+- Configuration ([ui_test.go](../../internal/config/ui_test.go)): the role takes `ui.legal`, refuses a text above 64 KiB naming the
+  key, and refuses `ui.readme` as a key of another section
+  ([bastion_role_test.go](../../internal/config/bastion_role_test.go)).
+- Chart ([legal_test.go](../../test/chart/legal_test.go)): the texts reach the configuration file as given, a new text rolls the pods,
+  and the values schema refuses a text above 64 KiB.
+- Architecture ([bastion_test.go](../../internal/archtest/bastion_test.go)): the renderer and the language rule are allowed in
+  `internal/bastion/legal` only, and an import of a module package by the renderer would be named.
 
 ## Deferred
 
@@ -10782,7 +10838,58 @@ underlying token's ID, type and hash, and the key ID reach every caller through 
 **Choice:** (a). The key ID of a version-2 token is opaque (a hash of the ring's key ID), so it names no key of the ring either.
 **Applied in the spec:** R-BAS-052, R-BAS-099, [formats/oci.md](formats/oci.md) R-OCI-005.
 
+### Q-BAS-340 · The Bastion's ui section holds the legal texts alone
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-BAS-100. The owner's words put the texts into the Bastion's chart; R-BAS-001 lists the sections of the role's own tree.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A section `ui` with `legal` alone, the same keys as the main installation's `ui.legal` (chosen) | `config.BastionUI` | One name for the same thing in both charts; the later web interface's keys join it | A section of the main installation's name whose other keys the role refuses |
+| (b) A section `legal` of the role's own | | No `ui` with keys missing | Two names for the same texts in the two charts |
+| (c) The main installation's texts, sent over the interface | | Set once | Against the owner's rule: the Bastion would show what the main installation's operator wrote, and its administrator could not answer for it |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-001, R-BAS-046, R-BAS-100.
+
+### Q-BAS-341 · The Bastion renders with the README renderer through a scoped allowance
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-BAS-100. An operator's Markdown is not trusted more than a package author's; the README renderer
+(`internal/packages/readme`) is the one sanitizer of R-UI-008 and imports goldmark, bluemonday and `golang.org/x/net/html`, no package
+of this module (verified by its imports and by the archtest's closure).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `internal/bastion/legal` imports the renderer and `internal/legaltext` (the rule of the languages, standard library only), both allowed for that package alone (chosen) | Two scoped entries of `bastionScoped` | One policy for both installations; the closure stays the list | Two entries |
+| (b) A sanitizer of the Bastion's own | | Nothing shared | A second policy that drifts from R-UI-008 |
+| (c) The main installation renders and sends the HTML | | No renderer in the role | Names the main installation as the texts' source; against R-BAS-100 |
+
+**Choice:** (a). Code: [legal.go](../../internal/bastion/legal/legal.go), [bastion.go](../../internal/archtest/bastion.go).
+
+### Q-BAS-342 · The pages are rendered at start and served by no route until the Bastion's web interface
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-BAS-100. The Bastion has no web interface yet; the owner: "Je kleiner der Footprint, desto besser".
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The replica renders the pages when it starts and holds them (`Server.Legal`); no route (chosen) | | Nothing new is reachable; a text the renderer cannot take shows at start, not with the web interface | A Bastion that serves visitors today shows no imprint (H-2304) |
+| (b) A route of its own now (`/legal/…` as HTML) | | The pages are reachable at once | A listener's family and a page design the web interface would replace |
+
+**Choice:** (a).
+
 ## What this does not cover
+
+### H-2304 · A Bastion serves its imprint and privacy notice only with its web interface
+
+Stage: the Bastion's client listener (R-BAS-003). Subject: an operator who has to name himself to the visitors of a public Bastion.
+
+Live from R-BAS-100 until the Bastion's web interface lands: the texts are configured and rendered, but no address serves them, because the
+Bastion serves package clients only and no person reads its answers in a browser. What makes it real: an operator who must show an
+imprint for a public service before the web interface exists; the web interface's package links and serves them from `Server.Legal`.
 
 ### H-382 · A volumetric attack on bandwidth is not absorbed by the Bastion
 

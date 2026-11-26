@@ -222,7 +222,7 @@
     </unit>
     <unit id="nav.context.admin">
       <notes>
-        <note category="location">src/app/app.routes.ts:11</note>
+        <note category="location">src/app/app.routes.ts:12</note>
         <note category="location">src/app/core/navigation.ts:128</note>
       </notes>
       <segment>
@@ -231,7 +231,7 @@
     </unit>
     <unit id="nav.section.security-audit">
       <notes>
-        <note category="location">src/app/app.routes.ts:12</note>
+        <note category="location">src/app/app.routes.ts:13</note>
         <note category="location">src/app/core/navigation.ts:96</note>
       </notes>
       <segment>
@@ -240,7 +240,7 @@
     </unit>
     <unit id="route.login.title">
       <notes>
-        <note category="location">src/app/app.routes.ts:23</note>
+        <note category="location">src/app/app.routes.ts:24</note>
       </notes>
       <segment>
         <source>Sign in</source>
@@ -248,15 +248,35 @@
     </unit>
     <unit id="route.logged-out.title">
       <notes>
-        <note category="location">src/app/app.routes.ts:33</note>
+        <note category="location">src/app/app.routes.ts:34</note>
       </notes>
       <segment>
         <source>Signed out</source>
       </segment>
     </unit>
+    <unit id="legal.imprint">
+      <notes>
+        <note category="location">src/app/app.routes.ts:44</note>
+        <note category="location">src/app/features/legal/legal-page.ts:96</note>
+        <note category="location">src/app/shared/legal-footer.ts:21,23</note>
+      </notes>
+      <segment>
+        <source>Imprint</source>
+      </segment>
+    </unit>
+    <unit id="legal.privacy">
+      <notes>
+        <note category="location">src/app/app.routes.ts:52</note>
+        <note category="location">src/app/features/legal/legal-page.ts:97</note>
+        <note category="location">src/app/shared/legal-footer.ts:26,28</note>
+      </notes>
+      <segment>
+        <source>Privacy notice</source>
+      </segment>
+    </unit>
     <unit id="route.projects.title">
       <notes>
-        <note category="location">src/app/app.routes.ts:47</note>
+        <note category="location">src/app/app.routes.ts:66</note>
         <note category="location">src/app/features/projects/project-context.routes.ts:20</note>
       </notes>
       <segment>
@@ -265,7 +285,7 @@
     </unit>
     <unit id="route.repositories.title">
       <notes>
-        <note category="location">src/app/app.routes.ts:55</note>
+        <note category="location">src/app/app.routes.ts:74</note>
         <note category="location">src/app/features/projects/project-context.routes.ts:35</note>
         <note category="location">src/app/features/repositories/repositories.routes.ts:48</note>
         <note category="location">src/app/features/repositories/repositories.routes.ts:61</note>
@@ -276,8 +296,8 @@
     </unit>
     <unit id="search.results.heading">
       <notes>
-        <note category="location">src/app/app.routes.ts:67</note>
-        <note category="location">src/app/app.routes.ts:68</note>
+        <note category="location">src/app/app.routes.ts:86</note>
+        <note category="location">src/app/app.routes.ts:87</note>
         <note category="location">src/app/features/search/search-results.ts:314</note>
       </notes>
       <segment>
@@ -286,7 +306,7 @@
     </unit>
     <unit id="nav.guides">
       <notes>
-        <note category="location">src/app/app.routes.ts:74</note>
+        <note category="location">src/app/app.routes.ts:93</note>
         <note category="location">src/app/core/navigation.ts:88</note>
         <note category="location">src/app/features/search/search-model.ts:105</note>
       </notes>
@@ -296,7 +316,7 @@
     </unit>
     <unit id="route.help.title">
       <notes>
-        <note category="location">src/app/app.routes.ts:81</note>
+        <note category="location">src/app/app.routes.ts:100</note>
         <note category="location">src/app/features/help/help.routes.ts:5</note>
       </notes>
       <segment>
@@ -305,7 +325,7 @@
     </unit>
     <unit id="route.profile.title">
       <notes>
-        <note category="location">src/app/app.routes.ts:96</note>
+        <note category="location">src/app/app.routes.ts:115</note>
         <note category="location">src/app/features/profile/profile.routes.ts:7</note>
       </notes>
       <segment>
@@ -314,7 +334,7 @@
     </unit>
     <unit id="route.dashboard.title">
       <notes>
-        <note category="location">src/app/app.routes.ts:107</note>
+        <note category="location">src/app/app.routes.ts:126</note>
       </notes>
       <segment>
         <source>Dashboard</source>
@@ -322,7 +342,7 @@
     </unit>
     <unit id="wellknown.heading">
       <notes>
-        <note category="location">src/app/app.routes.ts:113</note>
+        <note category="location">src/app/app.routes.ts:132</note>
         <note category="location">src/app/features/upstream/upstream-registries.ts:233</note>
         <note category="location">src/app/features/upstream/upstream.routes.ts:7</note>
       </notes>
@@ -332,7 +352,7 @@
     </unit>
     <unit id="route.users.title">
       <notes>
-        <note category="location">src/app/app.routes.ts:118</note>
+        <note category="location">src/app/app.routes.ts:137</note>
         <note category="location">src/app/features/users/users.routes.ts:7</note>
       </notes>
       <segment>
@@ -341,7 +361,7 @@
     </unit>
     <unit id="route.groups.title">
       <notes>
-        <note category="location">src/app/app.routes.ts:123</note>
+        <note category="location">src/app/app.routes.ts:142</note>
         <note category="location">src/app/features/groups/groups.routes.ts:7</note>
       </notes>
       <segment>
@@ -350,7 +370,7 @@
     </unit>
     <unit id="route.service-accounts.title">
       <notes>
-        <note category="location">src/app/app.routes.ts:128</note>
+        <note category="location">src/app/app.routes.ts:147</note>
         <note category="location">src/app/features/projects/project-context.routes.ts:59</note>
         <note category="location">src/app/features/projects/project-list-pages.ts:41</note>
         <note category="location">src/app/features/service-accounts/service-accounts.routes.ts:7</note>
@@ -362,7 +382,7 @@
     </unit>
     <unit id="route.permissions.title">
       <notes>
-        <note category="location">src/app/app.routes.ts:136</note>
+        <note category="location">src/app/app.routes.ts:155</note>
         <note category="location">src/app/features/permissions/permissions.routes.ts:7</note>
         <note category="location">src/app/features/permissions/permissions.routes.ts:29</note>
         <note category="location">src/app/features/projects/project-context.routes.ts:54</note>
@@ -374,7 +394,7 @@
     </unit>
     <unit id="route.roles.title">
       <notes>
-        <note category="location">src/app/app.routes.ts:142</note>
+        <note category="location">src/app/app.routes.ts:161</note>
         <note category="location">src/app/features/roles/roles.routes.ts:7</note>
       </notes>
       <segment>
@@ -383,7 +403,7 @@
     </unit>
     <unit id="route.tokens.title">
       <notes>
-        <note category="location">src/app/app.routes.ts:147</note>
+        <note category="location">src/app/app.routes.ts:166</note>
         <note category="location">src/app/features/tokens/tokens.routes.ts:7</note>
       </notes>
       <segment>
@@ -392,7 +412,7 @@
     </unit>
     <unit id="usage.heading">
       <notes>
-        <note category="location">src/app/app.routes.ts:155</note>
+        <note category="location">src/app/app.routes.ts:174</note>
         <note category="location">src/app/features/projects/project-context.routes.ts:66</note>
         <note category="location">src/app/features/usage/usage-overview.ts:139</note>
         <note category="location">src/app/features/usage/usage.routes.ts:43</note>
@@ -404,7 +424,7 @@
     </unit>
     <unit id="limits.heading">
       <notes>
-        <note category="location">src/app/app.routes.ts:161</note>
+        <note category="location">src/app/app.routes.ts:180</note>
         <note category="location">src/app/features/limits/limits-frame.ts:23,24</note>
         <note category="location">src/app/features/limits/limits.routes.ts:25</note>
       </notes>
@@ -414,7 +434,7 @@
     </unit>
     <unit id="route.ci.title">
       <notes>
-        <note category="location">src/app/app.routes.ts:168</note>
+        <note category="location">src/app/app.routes.ts:187</note>
         <note category="location">src/app/features/ci/ci.routes.ts:13</note>
         <note category="location">src/app/features/projects/project-context.routes.ts:73</note>
       </notes>
@@ -424,7 +444,7 @@
     </unit>
     <unit id="route.bastions.title">
       <notes>
-        <note category="location">src/app/app.routes.ts:175</note>
+        <note category="location">src/app/app.routes.ts:194</note>
         <note category="location">src/app/features/bastions/bastions.routes.ts:7</note>
       </notes>
       <segment>
@@ -433,7 +453,7 @@
     </unit>
     <unit id="route.endpoints.title">
       <notes>
-        <note category="location">src/app/app.routes.ts:181</note>
+        <note category="location">src/app/app.routes.ts:200</note>
         <note category="location">src/app/features/endpoints/endpoints.routes.ts:8</note>
       </notes>
       <segment>
@@ -442,7 +462,7 @@
     </unit>
     <unit id="route.audit.title">
       <notes>
-        <note category="location">src/app/app.routes.ts:187</note>
+        <note category="location">src/app/app.routes.ts:206</note>
         <note category="location">src/app/features/audit/audit.routes.ts:7</note>
       </notes>
       <segment>
@@ -451,7 +471,7 @@
     </unit>
     <unit id="route.vulnerabilities.sources.title">
       <notes>
-        <note category="location">src/app/app.routes.ts:193</note>
+        <note category="location">src/app/app.routes.ts:212</note>
       </notes>
       <segment>
         <source>Advisory sources</source>
@@ -459,7 +479,7 @@
     </unit>
     <unit id="route.system.title">
       <notes>
-        <note category="location">src/app/app.routes.ts:199</note>
+        <note category="location">src/app/app.routes.ts:218</note>
         <note category="location">src/app/features/system/system.routes.ts:14</note>
       </notes>
       <segment>
@@ -468,7 +488,7 @@
     </unit>
     <unit id="nav.settings">
       <notes>
-        <note category="location">src/app/app.routes.ts:204</note>
+        <note category="location">src/app/app.routes.ts:223</note>
       </notes>
       <segment>
         <source>Settings</source>
@@ -476,7 +496,7 @@
     </unit>
     <unit id="route.notfound.title">
       <notes>
-        <note category="location">src/app/app.routes.ts:214</note>
+        <note category="location">src/app/app.routes.ts:233</note>
       </notes>
       <segment>
         <source>Page not found</source>
@@ -484,7 +504,7 @@
     </unit>
     <unit id="shell.theme.system">
       <notes>
-        <note category="location">src/app/app.ts:170</note>
+        <note category="location">src/app/app.ts:172</note>
       </notes>
       <segment>
         <source>Follow the system</source>
@@ -492,7 +512,7 @@
     </unit>
     <unit id="shell.theme.light">
       <notes>
-        <note category="location">src/app/app.ts:171</note>
+        <note category="location">src/app/app.ts:173</note>
       </notes>
       <segment>
         <source>Light</source>
@@ -500,7 +520,7 @@
     </unit>
     <unit id="shell.theme.dark">
       <notes>
-        <note category="location">src/app/app.ts:172</note>
+        <note category="location">src/app/app.ts:174</note>
       </notes>
       <segment>
         <source>Dark</source>
@@ -11678,6 +11698,38 @@
       </notes>
       <segment>
         <source>Next page</source>
+      </segment>
+    </unit>
+    <unit id="legal.home">
+      <notes>
+        <note category="location">src/app/features/legal/legal-page.ts:25,26</note>
+      </notes>
+      <segment>
+        <source>Start page</source>
+      </segment>
+    </unit>
+    <unit id="legal.only-german">
+      <notes>
+        <note category="location">src/app/features/legal/legal-page.ts:40,41</note>
+      </notes>
+      <segment>
+        <source>This page is available in German only.</source>
+      </segment>
+    </unit>
+    <unit id="legal.only-english">
+      <notes>
+        <note category="location">src/app/features/legal/legal-page.ts:42,44</note>
+      </notes>
+      <segment>
+        <source>This page is available in English only.</source>
+      </segment>
+    </unit>
+    <unit id="legal.loading">
+      <notes>
+        <note category="location">src/app/features/legal/legal-page.ts:48,50</note>
+      </notes>
+      <segment>
+        <source>Loading the page.</source>
       </segment>
     </unit>
     <unit id="limits.every.user">
@@ -52090,6 +52142,14 @@
       </notes>
       <segment>
         <source><ph id="0" equiv="label" disp="this.label()"/> <ph id="1" equiv="state" disp="state"/></source>
+      </segment>
+    </unit>
+    <unit id="legal.footer">
+      <notes>
+        <note category="location">src/app/shared/legal-footer.ts:17,19</note>
+      </notes>
+      <segment>
+        <source>Legal information</source>
       </segment>
     </unit>
     <unit id="links.check.byte">

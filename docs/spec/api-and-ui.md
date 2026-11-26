@@ -1305,6 +1305,7 @@ Priority: **MVP** · Covers: quader-only
 | Method | Path | Purpose | Permission | Owner |
 |---|---|---|---|---|
 | GET | `/api/v1/auth/whoami` | Principal and credential of the caller | authenticated | R-AUTH in [identity-and-authentication.md](identity-and-authentication.md) |
+| GET | `/api/v1/legal?locale=` | The imprint and the privacy notice as the locale shows them, `{html, lang}` or `null` per page (R-UI-225) | anonymous, always (R-AUTH-037) | R-UI-225 |
 | GET | `/api/v1/auth/login-options` | Providers, auto-redirect, break-glass visibility, `publicContent`; the sign-in screen renders only from it | anonymous | [identity-and-authentication.md](identity-and-authentication.md) |
 | GET | `/api/v1/users/me` | Own user record | authenticated user | [identity-and-authentication.md](identity-and-authentication.md) |
 | GET | `/api/v1/users/me/sessions`, DELETE `/api/v1/users/me/sessions…` | Own sessions; end one or all | `self`, `x-quader-owner-rights` | R-AUTH-010 in [identity-and-authentication.md](identity-and-authentication.md) |
@@ -3861,6 +3862,8 @@ Priority: **MVP** · Covers: UI-001, UI-004
 - The banner of `GET /api/v1/system/banner` above the content, and a notice when maintenance mode
   is active; banner text has URLs linked and nothing else interpreted; `role="region"` with an
   accessible name.
+- The line of the imprint and the privacy notice at the end of the content panel, after the screen, and at the end of every screen
+  that stands alone (R-UI-226); none while the installation has neither text.
 - A "Skip to main content" link is the first focusable element.
 - Before the session expires, a non-modal dialog warns and offers to sign in again (WCAG 2.2.1);
   timeouts are those of R-AUTH-011.
@@ -3958,6 +3961,7 @@ selected tab live in query parameters; a version of a package is an object with 
 | `/admin/settings/malware` | The group Settings: Malware scanning, the switch **Only checked artifacts can be downloaded**, the backlog, the scanners and the signature database ([malware-scanning.md](malware-scanning.md) R-MAL-023) | R-MAL-023 |
 | `/admin/settings/signatures` | The group Settings: Signatures, the trust anchors of the installation and of the projects, the blocked signers and the public Sigstore root ([signatures.md](signatures.md) R-SIG-036) | R-SIG-036 |
 | `/login` (`?auto_sign_in=false`), `/logged-out` | Sign-in, signed out | R-UI-004 |
+| `/legal/imprint`, `/legal/privacy` | The imprint and the privacy notice: no session needed; in the shell for a caller who runs the application, alone otherwise; Page not found while no language has a text | R-UI-225 |
 | `/cli-login/{publicId}` | Command-line login approval of `npm login` (P1, specified, not built; R-AUTH-034) | R-UI-004 |
 | `/device` (`?code=`) | Device-code login approval for other command-line tools (P1, specified, not built; R-AUTH-036) | R-UI-004 |
 | anything else | Not found, with a search field | — |
@@ -10382,6 +10386,84 @@ Acceptance criteria:
 
 - Vitest (about 1 s): the empty list's warning; a contact from an unlisted address offers to add it, and **Add** sends one `PATCH` with the
   list.
+
+### R-UI-225 · The installation serves its own imprint and privacy notice from the chart's Markdown
+Priority: **P1** · Covers: quader-only
+
+The owner, 2026-11-26, 11:51, asked whether a company that runs a public web interface needs links to an imprint (Impressum) and a privacy
+notice (Datenschutzerklärung): "Wird von der Instanz selbst ausgeliefert. Der Text beider Links kann über ein Markdown frei bestimmt werden.
+Eingestellt wird es bei der Installation über Helm, der Administrator des Bastion ist verantwortlich für die Einhaltung dieser Werte. Auch
+die Hauptinstanz braucht diese Felder im Helm Chart falls jemand die Hauptinstanz öffentlich betreiben möchte."
+([Q-UI-1420](#q-ui-1420--imprint-and-privacy-notice-are-pages-of-the-installation-from-the-charts-markdown)). The Bastion's side is
+[bastion.md](bastion.md) R-BAS-100.
+
+- **Values.** `ui.legal.imprint.en`, `ui.legal.imprint.de`, `ui.legal.privacy.en`, `ui.legal.privacy.de` (the chart's
+  `config.ui.legal.*`, [ha-and-helm.md](ha-and-helm.md) values reference): Markdown, empty by default, at most 64 KiB each (counted in
+  bytes; a longer text stops the start naming the key, and the chart's schema refuses it). Configuration, never a Secret; a change is a
+  rollout. The operator answers for what the texts say; Quader neither checks nor completes them.
+- **Rendering.** Once at start, by the README renderer of R-UI-008 in an instance of its own: no external image origin, whatever
+  `ui.readme.external_image_origins` admits, so an image becomes a link "External image: …" and an image of one of the installation's own
+  origins is dropped; no script, style, SVG, frame or event handler; links `http`, `https` and `mailto` with
+  `rel="nofollow noopener noreferrer"`; a relative link is dropped. The pages are held in memory; no request leaves the process for them.
+- **Languages.** A text per language. A locale without its own text shows the other language's, marked with its `lang`; the page says
+  "This page is available in German only." (or English) above it. A page that no language has a text for has no link, and its address is
+  **Page not found**. With neither page there is no footer line at all.
+- **The operation.** `GET /api/v1/legal?locale=en|de` answers `{imprint, privacy}`, each `{html, lang}` or `null`, with an ETag that
+  changes only with the texts and `Cache-Control: no-cache`, so a poll of unchanged texts is a `304`. It is always reachable without a
+  credential, also on a replica of role `api` while no level is `public`, and ignores the session cookie, as the login options do
+  (R-AUTH-037, [Q-UI-1423](#q-ui-1423--the-legal-operation-is-always-open-and-ignores-the-session-cookie)); a write to its address stays
+  under the hard limit of `/api/v1` (`401`). An unknown locale is `400 invalid`.
+- **The pages.** `/legal/imprint` and `/legal/privacy` (R-UI-003) need no session. They stand in the shell for a caller who runs the
+  application (signed in, or a visitor while there is public content, R-UI-057) and alone, with the wordmark that leads to the start page,
+  for everyone else ([Q-UI-1421](#q-ui-1421--a-legal-page-stands-in-the-shell-for-whoever-runs-the-application-alone-for-everyone-else)).
+  The title of the page is the heading ("Imprint", "Impressum"; "Privacy notice", "Datenschutzhinweise"); the operator's text follows it
+  under the README view's second and third layers of R-UI-008, at a line length of 48 rem
+  ([Q-UI-1425](#q-ui-1425--the-page-has-its-own-heading-and-the-operators-text-follows)).
+
+Acceptance criteria:
+
+- Unit ([legal_api_test.go](../../internal/api/v1/legal_api_test.go), milliseconds): an anonymous caller reads the pages without public
+  content; the locale's own text, the other one's marked with its `lang`, `null` without any text; the ETag and its `304`; `400` for an
+  unknown or a missing locale.
+- Unit ([legaltext_test.go](../../internal/legaltext/legaltext_test.go), [wire_legal_test.go](../../internal/app/wire_legal_test.go),
+  milliseconds): the choice of the language, a blank text is none, each text rendered once; the main installation's instance turns an image
+  into a link whatever `ui.readme` admits, drops one of its own origins and a script. The full policy is tested once, at
+  [bastion.md](bastion.md) R-BAS-100.
+- Unit ([stage_test.go](../../internal/auth/stage_test.go)): the operation is always open for `GET` and `HEAD`, not for `POST`, ignores an
+  ended session's cookie, and is an unknown path on a process that does not serve the management API.
+- Integration (`roles`, [legal_test.go](../../test/integration/roles/legal_test.go), about 2 s on the stack's replica of role `api`): with
+  no level public (the format list answers `401`), a caller without a credential and one with an ended session read the German imprint
+  for English marked `de`, sanitized, the privacy notice `null`, the ETag answered `304`; a `POST` is `401`. On a replica of role
+  `packages` the address is an unknown path (R-ARCH-001).
+- Chart ([legal_test.go](../../test/chart/legal_test.go)): the texts reach the configuration file as given, a new text rolls the pods, and
+  a text above 64 KiB is refused.
+- Unit ([app.legal.spec.ts](../../web/src/app/app.legal.spec.ts), a second): a page in the shell for a signed-in caller and for a visitor of
+  public content, alone for a visitor without; the note and the `lang` of a text in the other language; a page without a text is
+  **Page not found**.
+
+### R-UI-226 · Every screen ends with the line of the imprint and the privacy notice
+Priority: **P1** · Covers: quader-only
+
+The links of R-UI-225, "Imprint" and "Privacy notice" ("Impressum", "Datenschutzhinweise"), in a navigation named "Legal information",
+centred in the muted small text.
+
+- **Where.** At the end of the content panel of every screen, after the screen's content, and at the end of every screen that stands
+  alone (`/login`, `/logged-out`, a legal page for a visitor). Part of the page, never fixed: the panel's content is a column whose last
+  member it is, so it stands at the panel's end on a short screen and after the content on a long one, inside the one scrolling panel
+  (R-UI-215, [Q-UI-1422](#q-ui-1422--the-legal-line-ends-the-scrolling-column-of-every-screen)).
+- **What.** A link only for a page that has a text in some language; no line at all while neither has one, and nothing before the
+  first answer, so no line appears and goes. The link of the page that is open is marked (`aria-current="page"`).
+- **Reads.** With the banner store (R-UI-033): at once and every 30 s while a screen is seen, at once when the window is seen again
+  (R-UI-213); no timer of its own; an unchanged answer is a `304` by its ETag
+  ([Q-UI-1424](#q-ui-1424--the-legal-texts-are-read-with-the-banner-at-its-cadence)). A failed read keeps what is shown.
+
+Acceptance criteria:
+
+- Unit ([app.legal.spec.ts](../../web/src/app/app.legal.spec.ts), a second): no line without texts, in the shell and on the sign-in
+  screen; both links at the end of the content panel, after the screen; only the link of a page with a text; the line at the end of
+  `/login` and `/logged-out`; no serious accessibility violation.
+- Rendered (rule 11): the sign-in screen and a signed-in screen with the line, a short and a long page, a legal page in each language
+  and with one text only, light and dark, 1,440, 1,024 and 390 px, in English and German.
 
 ## Deferred
 
@@ -28583,6 +28665,103 @@ report (R-BAS-010), and a cloud NAT can change it.
 | (c) A field only | | Simplest | The fault stays silent |
 
 **Choice:** (a). **Applied in the spec:** R-UI-243.
+
+### Q-UI-1420 · Imprint and privacy notice are pages of the installation from the chart's Markdown
+
+Status: **Decided by the owner on 2026-11-26, 11:51** (the working paper of W-35); the development agent's reading of his words was told
+to him the same day.
+
+Its entry in the decision log: [ADR-302](../decisions.md#adr-302--imprint-and-privacy-notice-are-the-installations-own-pages-from-the-charts-markdown).
+
+Context: a company that runs a web interface on the internet names itself (an Impressum) and says what it records of its visitors (a
+Datenschutzerklärung). The owner: "Wird von der Instanz selbst ausgeliefert. Der Text beider Links kann über ein Markdown frei bestimmt
+werden. Eingestellt wird es bei der Installation über Helm … Auch die Hauptinstanz braucht diese Felder im Helm Chart falls jemand die
+Hauptinstanz öffentlich betreiben möchte."
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Two pages the installation serves, their text Markdown of the chart's values, linked at the end of every screen (chosen) | R-UI-225, R-UI-226 | The owner's words; the text is where the deployment is decided; no request to another site | A change is a rollout |
+| (b) Two addresses of the company's own site, linked | | The company keeps its text where it has it | Not what the owner said; a visitor leaves for another host |
+| (c) Two fields on an administrator's screen | | Changed without a rollout | Not what the owner said; the Bastion has no screen and no database |
+
+**Choice:** (a), the owner's. **Applied in the spec:** R-UI-225, R-UI-226, [bastion.md](bastion.md) R-BAS-100, R-AUTH-037's list, the
+values references of [ha-and-helm.md](ha-and-helm.md) and [bastion.md](bastion.md) R-BAS-046.
+
+### Q-UI-1421 · A legal page stands in the shell for whoever runs the application, alone for everyone else
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below and by the renders; the owner reviews it at
+the walkthrough.
+
+Context: R-UI-225. The pages need no session; the sign-in screen stands alone (Q-UI-125), the anonymous application has the shell
+(R-UI-057).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) In the shell for a signed-in caller and for a visitor while there is public content; alone, with the wordmark that leads to the start page, for everyone else (chosen) | A resolver `legalBare` of the two routes gives `data.bare` | A visitor who browses public packages keeps the navigation; whoever has no shell gets none of its dead controls | One more question to the login options for a visitor |
+| (b) In the shell when signed in, alone otherwise | The plan's wording | Simpler | A visitor of the public content loses the top bar and the side bar for a page |
+| (c) Always alone | | One form | A signed-in user leaves the application for a page |
+
+**Choice:** (a). Code: [legal-guard.ts](../../web/src/app/core/legal-guard.ts), [legal-page.ts](../../web/src/app/features/legal/legal-page.ts).
+
+### Q-UI-1422 · The legal line ends the scrolling column of every screen
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below and by the renders at 390, 1,024 and
+1,440 px; the owner reviews it at the walkthrough.
+
+Context: R-UI-226. The shell had no footer; the content panel scrolls and the window does not (R-UI-215).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The last member of the content panel's column, after the screen; pushed to the panel's end on a short screen; the same on a screen that stands alone (chosen) | `main.content` and `main.bare` are columns; the line's top margin is `auto` | One scrollbar; at the end where a reader looks for it; nothing taken from the screen's height | The panel's content is a flex column: margins between its members no longer collapse |
+| (b) A bar fixed at the window's foot | | Always visible | Takes height on every screen at 390 px; the owner's "never fixed" |
+| (c) The foot of the side bar | | No change of the content's layout | Not on a screen without the shell, not visible while the drawer is closed |
+| (d) An entry of the user menu | | Quiet | Not for a visitor, whom the pages are for |
+
+**Choice:** (a). Code: `.content`, `.bare` of [_shell.scss](../../web/src/styles/_shell.scss),
+[legal-footer.ts](../../web/src/app/shared/legal-footer.ts).
+
+### Q-UI-1423 · The legal operation is always open and ignores the session cookie
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-UI-225, R-AUTH-037. The sign-in screen links to the pages, also while no level is `public`.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) On R-AUTH-037's always-open list for `GET` and `HEAD`, the session cookie ignored like the login options' (chosen) | `alwaysOpen` and `sessionAllowed` of the stage | Reachable from the sign-in screen and after a session ended | One more always-open route |
+| (b) `public: true` behind the gate of public content, like the manual | | Nothing new in the stage | `401` on the sign-in screen of an installation without public content |
+| (c) The texts inside the UI's page as served | | No operation | The UI's page is the same for every installation's build; a second rendering path |
+
+**Choice:** (a).
+
+### Q-UI-1424 · The legal texts are read with the banner, at its cadence
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-UI-226, R-UI-213. The texts change with a rollout, which an open window does not see.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The banner store's read also reads the legal pages; the footer watches the banner; the answer's ETag and `no-cache` make a read of unchanged texts a `304` (chosen) | `refresh` of [banner-store.ts](../../web/src/app/core/banner-store.ts) | No timer of its own; a rollout's new text shows within 30 s | Two reads per tick on a screen that shows the banner |
+| (b) Once per page load | | One read | A rollout's change waits for a reload (R-UI-213) |
+| (c) A timer of its own | | Independent | A second cadence for the same kind of state |
+
+**Choice:** (a).
+
+### Q-UI-1425 · The page has its own heading, and the operator's text follows
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below and by the renders; the owner reviews it at
+the walkthrough.
+
+Context: R-UI-225. The operator's Markdown may or may not start with a heading; a screen's `<h1>` is where the focus goes after a
+navigation (R-UI-002).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) "Imprint" or "Privacy notice" as the page's heading in the interface's language, the text below; the values' examples start without a heading; a text in the other language gets the note "This page is available in German only." and its `lang` (chosen) | | Every page has its `<h1>` and a title in the reader's language | An operator's own `# Impressum` stands as a second heading |
+| (b) No heading of the page; the text's own | | The operator decides | A text without a heading gives a page without `<h1>` |
+
+**Choice:** (a).
 
 ## What this does not cover
 

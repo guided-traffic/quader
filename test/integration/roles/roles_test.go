@@ -261,6 +261,7 @@ func TestR_ARCH_001_AFamilyOfTheOtherRoleIsAnUnknownPath(t *testing.T) {
 			{"POST", "/api/v1/projects/it/repositories"},
 			{"POST", "/api/v1/auth/oidc/token"},
 			{"GET", "/api/v1/auth/login-options"},
+			{"GET", "/api/v1/legal?locale=en"},
 			{"GET", "/api/v1/projects/it/repositories/gen-local/content/x"},
 			{"PUT", "/api/v1/projects/it/repositories/gen-local/content/x"},
 			{"OPTIONS", "/api/v1/system/ping"},

@@ -1,4 +1,5 @@
 import { Provider } from '@angular/core';
+import { LegalApi, LegalPages } from '../legal-api';
 import { LoginApi, LoginOptions } from '../login-api';
 import { ApiError } from '../problem';
 import { LoadedPreferences, PreferencesApi, Preferences, PreferencesPatch } from '../preferences-api';
@@ -166,6 +167,20 @@ export class FakeLoginApi extends LoginApi {
 
   override async localLogin(username: string, password: string): Promise<void> {
     this.localLogins.push({ username, password });
+  }
+}
+
+/** The imprint and the privacy notice (R-UI-225): none by default, as an installation whose chart sets no text. */
+export class FakeLegalApi extends LegalApi {
+  /** What every locale reads; `byLocale` overrides it per locale. */
+  pagesResult: LegalPages | ApiError = { imprint: null, privacy: null };
+  byLocale: Partial<Record<'en' | 'de', LegalPages>> = {};
+  reads: ('en' | 'de')[] = [];
+
+  override async pages(locale: 'en' | 'de'): Promise<LegalPages> {
+    this.reads.push(locale);
+    if (this.pagesResult instanceof ApiError) throw this.pagesResult;
+    return structuredClone(this.byLocale[locale] ?? this.pagesResult);
   }
 }
 
@@ -501,6 +516,7 @@ export function provideFakeApis(): Provider[] {
   return [
     { provide: SessionApi, useClass: FakeSessionApi },
     { provide: LoginApi, useClass: FakeLoginApi },
+    { provide: LegalApi, useClass: FakeLegalApi },
     { provide: PreferencesApi, useClass: FakePreferencesApi },
     { provide: EncryptionApi, useClass: FakeEncryptionApi },
     { provide: SystemApi, useClass: FakeSystemApi },

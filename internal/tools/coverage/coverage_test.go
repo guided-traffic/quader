@@ -161,8 +161,10 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 		// R-UI-240, R-UI-241, R-UI-243: fourteen MVP requirements; R-UI-242: one P1 requirement; W-34, E6).
 		// 1340 since a visitor without a session reads the open findings of a public repository (R-UI-224, one P1 requirement
 		// of W-35, P3).
-		if len(m.Reqs) != 1340 || count[prioMVP] != 742 || count[prioP1] != 559 || count[prioP2] != 39 {
-			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1340 (742, 559, 39)",
+		// 1343 since an installation serves its imprint and privacy notice from the chart's values and every screen links them
+		// (R-UI-225, R-UI-226, R-BAS-100, three P1 requirements of W-35, P4).
+		if len(m.Reqs) != 1343 || count[prioMVP] != 742 || count[prioP1] != 562 || count[prioP2] != 39 {
+			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1343 (742, 562, 39)",
 				len(m.Reqs), count[prioMVP], count[prioP1], count[prioP2])
 		}
 	})

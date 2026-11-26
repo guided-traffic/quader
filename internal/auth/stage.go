@@ -776,13 +776,15 @@ func isManagementAPI(p string) bool { return p == "/api/v1" || strings.HasPrefix
 // accepted on /api/v1 for every method, on /files for GET, HEAD, PUT and DELETE,
 // on /api/<format> for GET and HEAD, and ignored everywhere else. The login
 // options ignore it too: an ended session's cookie would make the sign-in screen
-// unreachable, and the browser cannot drop an HttpOnly cookie (Q-AUTH-177). p is
+// unreachable, and the browser cannot drop an HttpOnly cookie (Q-AUTH-177); the
+// legal pages ignore it for the same reason, as the sign-in screen links to them
+// (R-UI-225, Q-UI-1423). p is
 // the unescaped path of [rulePaths], so a route of a family the process does not
 // serve ignores the cookie as an unknown path does, an ended session's included
 // (Q-ARCH-306), and an escape does not move a request out of its family's rule.
 func sessionAllowed(method, p string) bool {
 	switch {
-	case p == "/api/v1/auth/login-options":
+	case p == "/api/v1/auth/login-options", p == "/api/v1/legal":
 		return false
 	case isRegistryPath(p):
 		// Never below /v2/, whatever the method: registry clients hold no session, and a
@@ -800,7 +802,7 @@ func sessionAllowed(method, p string) bool {
 
 // alwaysOpen lists the routes reachable without a credential whatever the
 // anonymous switches say (R-AUTH-037 "Always unauthenticated"): the login
-// options, the login tree, the device and CI exchange endpoints, revocation by
+// options, the legal pages (R-UI-225), the login tree, the device and CI exchange endpoints, revocation by
 // value, the npm login start, and reads of / (the redirect to the UI) and of the
 // UI shell under /ui/, whose data
 // comes from the management API (Q-AUTH-19). A credential sent to one of them is
@@ -809,6 +811,8 @@ func sessionAllowed(method, p string) bool {
 func alwaysOpen(method, p string) bool {
 	switch {
 	case p == "/" || p == "/ui" || strings.HasPrefix(p, "/ui/"):
+		return !unsafeMethod(method)
+	case p == "/api/v1/legal":
 		return !unsafeMethod(method)
 	case p == "/api/v1/auth/login-options", p == "/api/v1/auth/oidc/token",
 		strings.HasPrefix(p, "/api/v1/auth/device/"), strings.HasPrefix(p, "/auth/"),

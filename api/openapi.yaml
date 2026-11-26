@@ -5478,6 +5478,54 @@ paths:
         "503":
           $ref: "#/components/responses/Unavailable"
 
+  /api/v1/legal:
+    get:
+      operationId: getLegal
+      tags: [system]
+      summary: Read the imprint and the privacy notice
+      description: |
+        The installation's imprint and privacy notice as one locale shows them (R-UI-225): the operator's Markdown of
+        `ui.legal`, rendered at start under the sanitizer of the README renderer (R-UI-008) and held in memory. A page whose
+        locale has no text of its own carries the other language's, and `lang` names that language; a page that no language
+        has a text for is `null`, and the UI shows no link to it. Always reachable without a credential, like the login options
+        (R-AUTH-037): the sign-in screen links to both pages; a session cookie is ignored, so an ended session does not stand
+        between a visitor and the pages. The strong ETag changes only with the texts, which change with a rollout; a matching
+        `If-None-Match` answers `304`.
+      x-quader-permission:
+        public: true
+      parameters:
+        - name: locale
+          in: query
+          required: true
+          description: The locale of the interface that shows the pages.
+          schema:
+            type: string
+            enum: [en, de]
+        - $ref: "#/components/parameters/IfNoneMatch"
+      responses:
+        "200":
+          description: The two pages of the locale.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LegalPages"
+              example:
+                imprint: {html: "<h1 id=\"user-content-imprint\">Imprint</h1>\n<p>Example Operations GmbH<br/>\nMusterstraße 1</p>", lang: en}
+                privacy: {html: "<h1 id=\"user-content-datenschutzhinweise\">Datenschutzhinweise</h1>\n<p>…</p>", lang: de}
+        "304":
+          description: The pages have not changed since the ETag of If-None-Match.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+
   /api/v1/auth/whoami:
     get:
       operationId: getWhoami
@@ -26497,6 +26545,37 @@ components:
         localLogin: false
         publicContent: false
         autoRedirect: corp
+    LegalPages:
+      type: object
+      description: The imprint and the privacy notice as one locale shows them (R-UI-225); a page without a text in any language is `null`.
+      required: [imprint, privacy]
+      properties:
+        imprint:
+          oneOf:
+            - $ref: "#/components/schemas/LegalPage"
+            - type: "null"
+        privacy:
+          oneOf:
+            - $ref: "#/components/schemas/LegalPage"
+            - type: "null"
+    LegalPage:
+      type: object
+      description: One legal page.
+      required: [html, lang]
+      properties:
+        html:
+          type: string
+          description: |
+            The operator's Markdown rendered and sanitized on the server under the policy of R-UI-008, without external image origins:
+            no script, style, SVG or frame; an image becomes a link, an image of the installation's own origin is dropped; links are
+            `http`, `https` or `mailto` with `rel="nofollow noopener noreferrer"`.
+        lang:
+          type: string
+          enum: [en, de]
+          description: The language the text is written in; another than the asked locale where that locale has no text of its own.
+      example:
+        html: "<h1 id=\"user-content-imprint\">Imprint</h1>"
+        lang: en
     WhoamiPrincipal:
       type: object
       required: [kind, name, id]

@@ -256,8 +256,48 @@ The keys of the scanning of stored packages against public advisory data are rea
 | `ui.deploy.max_upload_bytes` | `100MiB` | Largest file the UI uploads; a larger upload through the UI is answered `413` before its body is read, `0` is unlimited. Package clients and `curl` with a token upload through `/files/` and are bound by `storage.upload.max_size` only |
 | `ui.client_setup.token_env_var` | `QUADER_TOKEN` | The environment variable the client setup snippets read a token from |
 | `ui.client_setup.token_ttl` | `720h` | Lifetime of a token the setup dialog creates; at most the personal-token maximum |
+| `ui.legal.imprint.en`, `.de`, `ui.legal.privacy.en`, `.de` | empty | The imprint and the privacy notice as Markdown, at most 64 KiB each; see [Imprint and privacy notice](#imprint-and-privacy-notice) |
 
 </details>
+
+### Imprint and privacy notice
+
+If you run Quader where people outside your company reach it, you probably have to name yourself (an imprint, in German an Impressum)
+and say what the installation records about its visitors (a privacy notice, Datenschutzhinweise). Quader serves both pages itself, from
+Markdown you put into the chart's values; you answer for what they say, and Quader neither checks nor completes them.
+
+```yaml
+config:
+  ui:
+    legal:
+      imprint:
+        en: |
+          Example Operations GmbH\
+          Musterstraße 1\
+          12345 Berlin
+
+          Contact: <legal@example.com>
+        de: |
+          Example Operations GmbH\
+          Musterstraße 1\
+          12345 Berlin
+
+          Kontakt: <legal@example.com>
+      privacy:
+        de: |
+          ## Verantwortlicher
+          …
+```
+
+- Every screen then ends with the links **Imprint** and **Privacy notice**, the sign-in screen included, and the pages are at
+  `/ui/en/legal/imprint` and `/ui/en/legal/privacy` (`/ui/de/…` in German). Anyone can read them, signed in or not.
+- The page shows its own heading ("Imprint", "Privacy notice"); start your text below it, without a heading of your own.
+- A language without a text of its own shows the other language's text, with a line that says so. A page with no text in any language
+  has no link, and its address says **Page not found**. With neither page there is no line at all.
+- The text is rendered like a README: tables, lists, links (`https`, `http` and `mailto`) and line breaks (a backslash at a line's
+  end) stay; scripts, styles and SVG are removed; an image is shown as a link, never loaded. A relative link is removed.
+- The values are configuration, not a Secret: a change rolls the pods. Open windows show the new text within half a minute.
+
 
 <details>
 <summary>Rate limits</summary>

@@ -301,6 +301,10 @@
         <quader-loading class="quader-boot" size="page" [style.animation-delay.ms]="bootDelay" i18n="@@shell.loading">Loading Quader.</quader-loading>
       }
       <router-outlet />
+      @if (!firstLoad()) {
+        <!-- The imprint and the privacy notice (R-UI-226): the end of every screen, in the shell and alone, part of the page. -->
+        <quader-legal-footer />
+      }
     </main>
   </div>
 </div>

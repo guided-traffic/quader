@@ -1,4 +1,5 @@
 import { Provider } from '@angular/core';
+import { HttpLegalApi, LegalApi } from './legal-api';
 import { HttpLoginApi, LoginApi } from './login-api';
 import { HttpPreferencesApi, PreferencesApi } from './preferences-api';
 import { HttpSessionApi, SessionApi } from './session-api';
@@ -87,6 +88,7 @@ export function provideApiServices(): Provider[] {
   return [
     { provide: SessionApi, useClass: HttpSessionApi },
     { provide: LoginApi, useClass: HttpLoginApi },
+    { provide: LegalApi, useClass: HttpLegalApi },
     { provide: PreferencesApi, useClass: HttpPreferencesApi },
     { provide: SystemApi, useClass: HttpSystemApi },
     { provide: EncryptionApi, useClass: HttpEncryptionApi },

@@ -38,6 +38,7 @@ import (
 	"github.com/guided-traffic/quader/internal/bastion/engine"
 	"github.com/guided-traffic/quader/internal/bastion/handover"
 	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/bastion/legal"
 	"github.com/guided-traffic/quader/internal/bastion/link"
 	"github.com/guided-traffic/quader/internal/bastion/mainclient"
 	bmetrics "github.com/guided-traffic/quader/internal/bastion/metrics"
@@ -80,6 +81,9 @@ type Server struct {
 	health   *health.Health
 	engine   engine.Engine
 	deps     engine.Deps
+	// legal are the imprint and the privacy notice of the role's ui.legal, rendered in New (R-BAS-100); the Bastion's web
+	// interface serves them, and until it exists no route does.
+	legal *legal.Pages
 
 	clientTLS, opsTLS *httpserver.ListenerTLS
 	client, ops       *httpserver.Server
@@ -153,6 +157,9 @@ func New(o Options) (*Server, error) {
 	}
 	s.health = health.New(cfg.HealthSection(), health.WithLogger(s.log.With("component", "health")),
 		health.WithIdentity(s.instance, config.BastionRole), health.WithObserver(s.checkObserver()))
+	if s.legal, err = legal.New(cfg.UI.Legal, cfg.Server.BaseURL); err != nil {
+		return nil, err
+	}
 	if s.deps, err = s.buildDeps(); err != nil {
 		s.closeAll()
 		return nil, err
@@ -330,6 +337,9 @@ func (s *Server) Health() *health.Health { return s.health }
 
 // Engine returns the request flow; tests use it.
 func (s *Server) Engine() engine.Engine { return s.engine }
+
+// Legal returns the imprint and the privacy notice rendered at start (R-BAS-100), for the Bastion's web interface.
+func (s *Server) Legal() *legal.Pages { return s.legal }
 
 // ClientAddr returns the bound address of the client listener; nil before Start.
 func (s *Server) ClientAddr() net.Addr {

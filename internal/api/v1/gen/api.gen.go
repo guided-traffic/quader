@@ -2014,6 +2014,24 @@ func (e JobState) Valid() bool {
 	}
 }
 
+// Defines values for LegalPageLang.
+const (
+	LegalPageLangDe LegalPageLang = "de"
+	LegalPageLangEn LegalPageLang = "en"
+)
+
+// Valid indicates whether the value is a known member of the LegalPageLang enum.
+func (e LegalPageLang) Valid() bool {
+	switch e {
+	case LegalPageLangDe:
+		return true
+	case LegalPageLangEn:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for LimitExplainCeilingClass.
 const (
 	LimitExplainCeilingClassAnonymous LimitExplainCeilingClass = "anonymous"
@@ -7612,6 +7630,24 @@ func (e ListGroupsParamsSort) Valid() bool {
 	}
 }
 
+// Defines values for GetLegalParamsLocale.
+const (
+	GetLegalParamsLocaleDe GetLegalParamsLocale = "de"
+	GetLegalParamsLocaleEn GetLegalParamsLocale = "en"
+)
+
+// Valid indicates whether the value is a known member of the GetLegalParamsLocale enum.
+func (e GetLegalParamsLocale) Valid() bool {
+	switch e {
+	case GetLegalParamsLocaleDe:
+		return true
+	case GetLegalParamsLocaleEn:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ListInstanceLimitAssignmentsParamsWhoKind.
 const (
 	ListInstanceLimitAssignmentsParamsWhoKindAddress        ListInstanceLimitAssignmentsParamsWhoKind = "address"
@@ -12156,6 +12192,26 @@ type LastReencryption struct {
 	FinishedAt *time.Time         `json:"finishedAt"`
 	JobId      openapi_types.UUID `json:"jobId"`
 	State      JobState           `json:"state"`
+}
+
+// LegalPage One legal page.
+type LegalPage struct {
+	// Html The operator's Markdown rendered and sanitized on the server under the policy of R-UI-008, without external image origins:
+	// no script, style, SVG or frame; an image becomes a link, an image of the installation's own origin is dropped; links are
+	// `http`, `https` or `mailto` with `rel="nofollow noopener noreferrer"`.
+	Html string `json:"html"`
+
+	// Lang The language the text is written in; another than the asked locale where that locale has no text of its own.
+	Lang LegalPageLang `json:"lang"`
+}
+
+// LegalPageLang The language the text is written in; another than the asked locale where that locale has no text of its own.
+type LegalPageLang string
+
+// LegalPages The imprint and the privacy notice as one locale shows them (R-UI-225); a page without a text in any language is `null`.
+type LegalPages struct {
+	Imprint *LegalPage `json:"imprint"`
+	Privacy *LegalPage `json:"privacy"`
 }
 
 // LimitAssignment defines model for LimitAssignment.
@@ -20679,6 +20735,18 @@ type ListGroupMembersParams struct {
 	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
 }
 
+// GetLegalParams defines parameters for GetLegal.
+type GetLegalParams struct {
+	// Locale The locale of the interface that shows the pages.
+	Locale GetLegalParamsLocale `form:"locale" json:"locale"`
+
+	// IfNoneMatch An ETag the client holds; a match answers `304` (R-API-012).
+	IfNoneMatch *IfNoneMatch `json:"If-None-Match,omitempty"`
+}
+
+// GetLegalParamsLocale defines parameters for GetLegal.
+type GetLegalParamsLocale string
+
 // ListInstanceLimitAssignmentsParams defines parameters for ListInstanceLimitAssignments.
 type ListInstanceLimitAssignmentsParams struct {
 	// WhoKind Only rules of this kind of caller.
@@ -24128,6 +24196,9 @@ type ServerInterface interface {
 	// PatchGroupMembers Add and remove members of a group
 	// (PATCH /api/v1/groups/{name}/members)
 	PatchGroupMembers(w http.ResponseWriter, r *http.Request, name string)
+	// GetLegal Read the imprint and the privacy notice
+	// (GET /api/v1/legal)
+	GetLegal(w http.ResponseWriter, r *http.Request, params GetLegalParams)
 	// ListInstanceLimitAssignments List the rules of the instance
 	// (GET /api/v1/limits/assignments)
 	ListInstanceLimitAssignments(w http.ResponseWriter, r *http.Request, params ListInstanceLimitAssignmentsParams)
@@ -28096,6 +28167,60 @@ func (siw *ServerInterfaceWrapper) PatchGroupMembers(w http.ResponseWriter, r *h
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.PatchGroupMembers(w, r, name)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetLegal operation middleware
+func (siw *ServerInterfaceWrapper) GetLegal(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetLegalParams
+
+	// ------------- Required query parameter "locale" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "locale", r.URL.Query(), &params.Locale, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "locale"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "locale", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "If-None-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-None-Match")]; found {
+		var IfNoneMatch IfNoneMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-None-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-None-Match", valueList[0], &IfNoneMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-None-Match", Err: err})
+			return
+		}
+
+		params.IfNoneMatch = &IfNoneMatch
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLegal(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -45699,6 +45824,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/api/v1/settings/visibility", wrapper.UpdateVisibilitySettings)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/visibility-choices", wrapper.GetVisibilityChoices)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/auth/login-options", wrapper.GetLoginOptions)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/legal", wrapper.GetLegal)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/auth/whoami", wrapper.GetWhoami)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/users/me/sessions", wrapper.EndOwnSessions)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/users/me/sessions", wrapper.ListOwnSessions)

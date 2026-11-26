@@ -115,6 +115,8 @@ func TestR_BAS_001_AKeyOfAnotherSectionStopsStartupNamingKeyAndRole(t *testing.T
 		{"server.additional_base_urls", "server:\n  base_url: https://packages.example.com\n  additional_base_urls: [https://a.example]\n", "server.additional_base_urls"},
 		{"process.role", "process:\n  role: bastion\n", "process.role"},
 		{"a flat unknown key", "audit: {}\nci:\n  token:\n    max_ttl: 1h\n", "ci.token.max_ttl"},
+		// R-BAS-100: the role's ui section holds the legal texts only, none of the main installation's ui keys.
+		{"ui.readme", "ui:\n  readme:\n    max_source_bytes: 1KiB\n", "ui.readme.max_source_bytes"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -230,10 +232,10 @@ func TestR_BAS_046_TheGeneratedSchemaHoldsExactlyTheKeysOfTheRole(t *testing.T) 
 		t.Fatal(err)
 	}
 	props := doc["properties"].(map[string]any)
-	if len(props) != 6 {
-		t.Errorf("sections = %v, want server, bastion, valkey, log, tracing, runtime", props)
+	if len(props) != 7 {
+		t.Errorf("sections = %v, want server, bastion, valkey, log, tracing, runtime, ui", props)
 	}
-	for _, s := range []string{"server", "bastion", "valkey", "log", "tracing", "runtime"} {
+	for _, s := range []string{"server", "bastion", "valkey", "log", "tracing", "runtime", "ui"} {
 		if _, ok := props[s]; !ok {
 			t.Errorf("section %s is missing", s)
 		}

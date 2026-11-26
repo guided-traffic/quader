@@ -56,3 +56,37 @@ func TestUIValidation(t *testing.T) {
 		}
 	})
 }
+
+// TestR_UI_225_LegalTexts: ui.legal is empty by default, takes Markdown up to 64 KiB per page and language and refuses a longer
+// text naming the key, in the main installation's tree and in the Bastion's alike (R-BAS-100).
+func TestR_UI_225_LegalTexts(t *testing.T) {
+	long := strings.Repeat("x", LegalMaxBytes+1)
+	fit := strings.Repeat("x", LegalMaxBytes)
+	t.Run("R-UI-225 the texts are empty by default", func(t *testing.T) {
+		u := mustLoad(t, Options{Environ: servableEnv(), Command: CommandServe}).Config.UI
+		if u.Legal != (UILegal{}) {
+			t.Errorf("ui.legal = %+v", u.Legal)
+		}
+		if b := mustLoadBastion(t, bastionMinimal); b.UI.Legal != (UILegal{}) {
+			t.Errorf("the Bastion's ui.legal = %+v", b.UI.Legal)
+		}
+	})
+	t.Run("R-UI-225 64 KiB are taken, one byte more is refused", func(t *testing.T) {
+		l, err := loadM2(t, "ui:\n  legal:\n    imprint:\n      de: "+fit+"\n")
+		if err != nil || l.Config.UI.Legal.Imprint.De != fit {
+			t.Fatalf("a text of 64 KiB: %v", err)
+		}
+		if _, err := loadM2(t, "ui:\n  legal:\n    privacy:\n      en: "+long+"\n"); err == nil || !strings.Contains(err.Error(), "ui.legal.privacy.en") {
+			t.Fatalf("a text above 64 KiB: %v, want an error naming ui.legal.privacy.en", err)
+		}
+	})
+	t.Run("R-BAS-100 the Bastion takes its own texts and refuses a longer one", func(t *testing.T) {
+		b := mustLoadBastion(t, bastionMinimal+"ui:\n  legal:\n    imprint:\n      en: \"# Imprint\"\n")
+		if b.UI.Legal.Imprint.En != "# Imprint" {
+			t.Fatalf("ui.legal.imprint.en = %q", b.UI.Legal.Imprint.En)
+		}
+		if msg := bastionIssues(t, bastionMinimal+"ui:\n  legal:\n    imprint:\n      de: "+long+"\n"); !strings.Contains(msg, "ui.legal.imprint.de") {
+			t.Fatalf("a text above 64 KiB: %s", msg)
+		}
+	})
+}

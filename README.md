@@ -2093,6 +2093,13 @@ ui:
   client_setup:
     token_env_var: QUADER_TOKEN          # default; the variable the credentials=env setup snippets read the token from
     token_ttl: 720h                     # default; the lifetime the setup dialog asks for; at most auth.tokens.pat.max_ttl
+  legal:                                # the imprint and the privacy notice the installation serves itself (R-UI-225); the operator answers for them
+    imprint:
+      en: ""                            # default: no page and no link; Markdown, at most 64 KiB, rendered like a README without images; a language without a text shows the other's
+      de: ""                            # default
+    privacy:
+      en: ""                            # default
+      de: ""                            # default
 oci:                                    # the OCI registry (R-OCI-005, R-OCI-019); the per-repository settings are the repository member oci.mirror, the upload sessions storage.uploads
   token_lifetime: 300s                  # default; 60s to 3600s; the lifetime of a registry token, never beyond the expiry of the Quader token it was issued for
   unreferenced_blob_grace: 24h          # default; at least 1m and above storage.uploads.session_max_age; the age a blob of an image name needs before the sweep removes it for being referenced by no manifest

@@ -14,6 +14,25 @@ type UI struct {
 	Readme      UIReadme      `yaml:"readme"`
 	ClientSetup UIClientSetup `yaml:"client_setup"`
 	Deploy      UIDeploy      `yaml:"deploy"`
+	Legal       UILegal       `yaml:"legal"`
+}
+
+// LegalMaxBytes is the largest Markdown source of one legal page in one language (R-UI-225): 64 KiB.
+const LegalMaxBytes = 64 << 10
+
+// UILegal is the imprint and the privacy notice the installation serves itself (R-UI-225, ADR-302): Markdown of the operator's,
+// rendered at start under the sanitizer of the README renderer. The same section is the Bastion's ui.legal (R-BAS-100). The operator
+// answers for what the texts say; the values are configuration, never a Secret, and a change is a rollout.
+type UILegal struct {
+	Imprint UILegalText `yaml:"imprint" doc:"The imprint (Impressum): who operates this installation and how to reach them."`
+	Privacy UILegalText `yaml:"privacy" doc:"The privacy notice (Datenschutzhinweise): what this installation records about its visitors and why."`
+}
+
+// UILegalText is one legal page in the two languages of the interface. A language without its own text shows the other one's,
+// marked with its language; a page with neither has no link and no address (R-UI-225).
+type UILegalText struct {
+	En string `yaml:"en" default:"" validate:"max=65536" doc:"Markdown, at most 64 KiB; empty: the German text stands in, or the page does not exist."`
+	De string `yaml:"de" default:"" validate:"max=65536" doc:"Markdown, at most 64 KiB; empty: the English text stands in, or the page does not exist."`
 }
 
 // UIDeploy bounds the UI's uploads (R-UI-012, R-API-025).

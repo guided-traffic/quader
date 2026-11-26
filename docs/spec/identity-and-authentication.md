@@ -3408,6 +3408,9 @@ The operator's ceiling is the endpoint's `auth.anonymous` ([endpoints.md](endpoi
 **Always unauthenticated.** These endpoints are always reachable without a credential:
 
 - `GET /api/v1/auth/login-options`;
+- `GET` and `HEAD` of `/api/v1/legal`, the imprint and the privacy notice the sign-in screen links to
+  ([api-and-ui.md](api-and-ui.md) R-UI-225); like the login options it ignores the session cookie, so an ended session does not stand
+  before them;
 - `/auth/oidc/…`, `/auth/local/login`, `/auth/cli/…`;
 - the device endpoints and `POST /api/v1/tokens/revoke`;
 - the CI exchange (INV-10) and, from P1, the two npm trusted-publishing exchange routes

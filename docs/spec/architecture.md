@@ -801,6 +801,7 @@ quader/
 │   ├── observability/
 │   ├── webui/                   # go:embed all:dist; dist/ is filled by the web build
 │   ├── manual/                  # the manual of the help area: contents, rendering, link check (R-API-054)
+│   ├── legaltext/               # the imprint and the privacy notice: the choice of a locale's text, standard library only (R-UI-225)
 │   ├── tools/coverage/          # requirement coverage generator (docs/coverage, Q-ROAD-4)
 │   └── archtest/
 ├── docs/manual/                 # the manual's Markdown and embed.go, which embeds it (R-API-054, Q-UI-89)

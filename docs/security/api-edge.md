@@ -60,7 +60,8 @@ does not use up budget; the other requests of that origin are authenticated as a
 
 Every `/api/v1/` answer carries `Cache-Control: no-store`, `Content-Security-Policy: default-src 'none'; frame-ancestors 'none'`,
 `Referrer-Policy: no-referrer` (stage 7) and `X-Content-Type-Options: nosniff` (the chain, for every answer). A handler that
-returns something cacheable replaces `Cache-Control` (the problem catalog does).
+returns something cacheable replaces `Cache-Control` (the problem catalog does, and the legal pages answer `no-cache` with their ETag,
+[legal-pages.md](legal-pages.md#who-can-read-them)).
 
 ## Request bodies
 

@@ -183,6 +183,12 @@ metrics:
 | `autoscaling.enabled: true` | The Bastion's request budget towards the main installation is divided by `autoscaling.maxReplicas` instead of `replicaCount` |
 | `config.bastion.answers.max_entries` | The main installation's answers a replica keeps in memory, least recently used first (default `200000`): per caller its credential, its read on each repository it reads and, for an image client's registry token or a token narrowed to some packages, its read on each package it reads, about three answers per image pull. Size it to the callers of one `bastion.answers.period` (default `5m`) times the repositories and packages each reads; an answer pushed out costs its caller one request to the main installation at its next read, never a wrong answer |
 
+A Bastion has an imprint and a privacy notice of its own: `config.ui.legal.imprint.en`, `.de` and `config.ui.legal.privacy.en`, `.de`
+of the chart `quader-bastion`, Markdown, at most 64 KiB each, as for the main installation
+([Imprint and privacy notice](configuration.md#imprint-and-privacy-notice)). The Bastion's administrator answers for them; they name
+whoever operates this Bastion and are never taken from the main installation. The Bastion renders them when it starts; it shows them
+once it has a web interface for visitors, which it does not have yet.
+
 The chart's `ingress` values carry annotations of HAProxy Ingress (a request limit per client address and a limit of connections). Another ingress controller ignores them: the Bastion's own limits and blocking still hold, the coarse limit in front of them does not. HAProxy Ingress counts per TCP peer address, so behind a load balancer that hides the client address, every client shares one budget until you switch on its proxy protocol or turn `edgeLimit.enabled` off.
 
 ## Limits and blocking

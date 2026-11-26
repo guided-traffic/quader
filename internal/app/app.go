@@ -597,6 +597,10 @@ func (a *App) startClient() error {
 		return m, err
 	})
 	avatars := a.avatarService()
+	legal, err := legalPages(cfg.UI.Legal, a.ownOrigins())
+	if err != nil {
+		return err
+	}
 	for _, rt := range a.eps {
 		router := httpserver.NewEndpointRouter(rt.ep)
 		api := v1.New(v1.Options{
@@ -619,6 +623,8 @@ func (a *App) startClient() error {
 			Deb:           a.debAPI(),
 			Resolution:    a.resolutionExplainer(),
 			LoadManual:    help,
+			// The imprint and the privacy notice of ui.legal, rendered once above (R-UI-225).
+			Legal: legal,
 			// The operations of the Bastion work answer 501 until their packages are built (wire_bastion.go).
 			Bastions: a.bastionRegistrations(),
 			Bastion:  a.bastionServices(rt),

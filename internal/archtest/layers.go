@@ -169,6 +169,9 @@ func layerTable() []layerRule {
 		{"internal/bastion/iface", layerLeaf},
 		{"internal/bastion/answers", layerLeaf},
 		{"internal/bastion/metrics", layerLeaf},
+		// The imprint and the privacy notice of an installation (R-UI-225, R-BAS-100): the choice of the text a locale shows, over a
+		// renderer the caller hands in; the standard library only, so the main installation and the Bastion share it.
+		{"internal/legaltext", layerLeaf},
 
 		{"internal/meta/postgres", layerInfra},
 		{"internal/blob", layerInfra},
@@ -190,7 +193,9 @@ func layerTable() []layerRule {
 		{"internal/packages", layerDomain},
 		{"internal/uploads", layerDomain}, // the multi-request upload sessions (R-STOR-011)
 		{"internal/manual", layerDomain},  // the embedded manual of the help area (R-API-054)
-		{"internal/avatar", layerDomain},  // the user avatar: processing of the upload and the store (R-API-055)
+		// The Bastion's legal pages, rendered at start from its own configuration (R-BAS-100).
+		{"internal/bastion/legal", layerDomain},
+		{"internal/avatar", layerDomain}, // the user avatar: processing of the upload and the store (R-API-055)
 		{"internal/proxy", layerDomain},
 		{"internal/virtual", layerDomain},
 		{"internal/formatdata", layerDomain},

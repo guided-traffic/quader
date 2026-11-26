@@ -29,6 +29,10 @@ const bastionRoot = "internal/bastion"
 //     role.
 //   - internal/syncwrite: the write of a large local file flushed every 32 MiB (storage.md Q-STOR-486), which the cache's
 //     fills use as the main installation's spool does; a leaf of the standard library.
+//   - internal/packages/readme and internal/legaltext: the README renderer's sanitizer and the choice of a legal page's
+//     language, which render the Bastion's own imprint and privacy notice at start (R-BAS-100, Q-BAS-341), for
+//     internal/bastion/legal only (scoped). Neither imports a package of this module (the renderer is goldmark, bluemonday and
+//     x/net/html; legaltext the standard library), so they bring nothing of the main installation into the role.
 //
 // The match is the exact package, so a package that did not exist when the rule was written is refused by
 // default. A new entry names the requirement that justifies it.
@@ -48,9 +52,11 @@ func bastionAllowed() []string {
 // bastionScoped are the allowances that hold for a subtree of the Bastion only.
 func bastionScoped() map[string][]string {
 	return map[string][]string{
-		"internal/cluster":        {"internal/bastion/shared"},
-		"internal/blob/s3":        {"internal/bastion/cache"},
-		"internal/blob/blobcrypt": {"internal/bastion/cache", "internal/bastion/handover"},
+		"internal/cluster":         {"internal/bastion/shared"},
+		"internal/blob/s3":         {"internal/bastion/cache"},
+		"internal/blob/blobcrypt":  {"internal/bastion/cache", "internal/bastion/handover"},
+		"internal/packages/readme": {"internal/bastion/legal"},
+		"internal/legaltext":       {"internal/bastion/legal"},
 	}
 }
 

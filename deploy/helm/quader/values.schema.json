@@ -2758,6 +2758,34 @@
             }
           }
         },
+        "ui": {
+          "type": "object",
+          "properties": {
+            "legal": {
+              "type": "object",
+              "description": "The imprint and the privacy notice the installation serves itself (R-UI-225): Markdown per page and language, at most 64 KiB each; the operator answers for what they say.",
+              "additionalProperties": false,
+              "properties": {
+                "imprint": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "en": {"type": "string", "maxLength": 65536},
+                    "de": {"type": "string", "maxLength": 65536}
+                  }
+                },
+                "privacy": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "en": {"type": "string", "maxLength": 65536},
+                    "de": {"type": "string", "maxLength": 65536}
+                  }
+                }
+              }
+            }
+          }
+        },
         "vulnerabilities": {
           "type": "object",
           "properties": {

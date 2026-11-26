@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { adminHomeGuard, authGuard, capabilityGuard, homeGuard } from './core/auth-guard';
+import { legalBare, legalPageGuard } from './core/legal-guard';
 import { SECURITY_DASHBOARD_CAPABILITY } from './core/navigation';
 import { CrumbSpec } from './core/breadcrumbs';
 
@@ -35,6 +36,24 @@ export const routes: Routes = [
     // >>> M1 ui-b
     loadComponent: () => import('./features/login/logged-out').then((m) => m.LoggedOut),
     // <<< M1 ui-b
+  },
+  // The imprint and the privacy notice (R-UI-225): reachable without a session, so outside authGuard; in the shell for a caller who runs
+  // the application and alone for everyone else (the resolved `bare`, Q-UI-1421); Page not found while no language has a text.
+  {
+    path: 'legal/imprint',
+    title: $localize`:@@legal.imprint:Imprint`,
+    canActivate: [legalPageGuard('imprint')],
+    resolve: { bare: legalBare },
+    data: { legal: 'imprint' },
+    loadComponent: () => import('./features/legal/legal-page').then((m) => m.LegalPage),
+  },
+  {
+    path: 'legal/privacy',
+    title: $localize`:@@legal.privacy:Privacy notice`,
+    canActivate: [legalPageGuard('privacy')],
+    resolve: { bare: legalBare },
+    data: { legal: 'privacy' },
+    loadComponent: () => import('./features/legal/legal-page').then((m) => m.LegalPage),
   },
   {
     path: '',

@@ -44,6 +44,7 @@ import { ProjectSwitcher } from './features/projects/project-switcher';
 import { SearchField } from './features/search/search-field';
 import { UpstreamDownloadsButton } from './shared/upstream-downloads/upstream-downloads-button';
 import { Loading } from './shared/ui/loading';
+import { LegalFooter } from './shared/legal-footer';
 
 /** Whether a key typed at `target` is text: a text field, a text area, a select or an editable element. */
 function isTextTarget(target: EventTarget | null): boolean {
@@ -88,6 +89,7 @@ function isBare(route: ActivatedRouteSnapshot | null): boolean {
     Banner,
     ErrorNotice,
     Notices,
+    LegalFooter,
   ],
   // Escape closes the drawer (the key bubbles up from the focus trapped in it); the pinned sidebar stays. `/`, Ctrl+K and ⌘K
   // focus the search (R-UI-095).

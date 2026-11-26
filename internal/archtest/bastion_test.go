@@ -56,6 +56,26 @@ func TestBastionImportAllowlist(t *testing.T) {
 		wantEdge(t, vs, "R-BAS-001", "internal/bastion/engine", "internal/blob/blobcrypt")
 		wantEdge(t, vs, "R-BAS-001", "internal/bastion/mainclient", "internal/blob/blobcrypt")
 	})
+	t.Run("R-BAS-100 the README renderer and the legal texts are allowed for the Bastion's legal pages only", func(t *testing.T) {
+		wantClean(t, CheckBastionImports(mod, []Package{
+			pkg("internal/bastion/legal", "internal/config", "internal/packages/readme", "internal/legaltext"),
+			pkg("internal/packages/readme", "github.com/yuin/goldmark", "github.com/microcosm-cc/bluemonday"),
+			pkg("internal/legaltext", "crypto/sha256", "strings"),
+		}))
+		vs := CheckBastionImports(mod, []Package{
+			pkg("internal/bastion/engine", "internal/packages/readme", "internal/legaltext"),
+			pkg("internal/bastion/legal", "internal/packages/view"),
+		})
+		wantEdge(t, vs, "R-BAS-001", "internal/bastion/engine", "internal/packages/readme")
+		wantEdge(t, vs, "R-BAS-001", "internal/bastion/engine", "internal/legaltext")
+		wantEdge(t, vs, "R-BAS-001", "internal/bastion/legal", "internal/packages/view")
+		// The renderer stays a leaf: an import of a module package from it would enter the role's closure and be named.
+		vs = CheckBastionImports(mod, []Package{
+			pkg("internal/bastion/legal", "internal/packages/readme"),
+			pkg("internal/packages/readme", "internal/formats"),
+		})
+		wantEdge(t, vs, "R-BAS-001", "internal/packages/readme", "internal/formats")
+	})
 	t.Run("R-BAS-001 a platform package that pulls a subsystem in names the chain from the Bastion's package", func(t *testing.T) {
 		vs := CheckBastionImports(mod, []Package{
 			pkg("internal/bastion/server", "internal/httpserver"),

@@ -4986,6 +4986,18 @@ config:
   #   identity:
   #     reload_interval: 1m             # how often a worker reads the identity's files again, 1s to 1h
   #     announce_period: 10m            # how long a new identity is listed before it signs; 0s: current at once
+  ui:                                   # api-and-ui.md R-UI-225
+    # The imprint and the privacy notice the installation serves itself (/ui/<locale>/legal/imprint and …/privacy), linked at the end
+    # of every screen and of the sign-in screen. Markdown, at most 64 KiB per page and language, rendered at start under the README
+    # sanitizer: no script, style or SVG, an image becomes a link. The operator answers for what the texts say. A language without a
+    # text of its own shows the other one's; a page with neither has no link. Configuration, never a Secret: a change is a rollout.
+    legal:
+      imprint:
+        en: ""                          # example: "Example Operations GmbH\\\nMusterstraße 1\\\n12345 Berlin\n\nMail: <legal@example.com>"
+        de: ""                          # example: "Example Operations GmbH\\\nMusterstraße 1\\\n12345 Berlin"
+      privacy:
+        en: ""                          # example: "This installation records the address of every request for 30 days …"
+        de: ""                          # example: "Diese Installation speichert die Adresse jeder Anfrage 30 Tage …"
 
 # ── TLS on Quader's own listeners ────────────────────
 # Every kind of pod (api, packages, worker, vuln-scanner-trivy, malware-scanner-clamav, malware-updater-freshclam) has a pair and a name of its own:

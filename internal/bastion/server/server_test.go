@@ -143,6 +143,26 @@ func waitReady(t *testing.T, h *harness) {
 	}
 }
 
+// TestR_BAS_100_TheLegalPagesAreRenderedAtStartAndServedByNoRouteYet: the role renders its own chart's imprint and privacy
+// notice when it starts and holds them for its web interface; until that interface exists no address serves them (Q-BAS-342).
+func TestR_BAS_100_TheLegalPagesAreRenderedAtStartAndServedByNoRouteYet(t *testing.T) {
+	h := start(t, minimal(writeTokenFile(t, t.TempDir()), "ui:\n  legal:\n    imprint:\n      de: \"# Impressum\\n\\nBeispiel GmbH\"\n"))
+	waitReady(t, h)
+	de, en := h.srv.Legal().Pages("de"), h.srv.Legal().Pages("en")
+	if de.Imprint == nil || !strings.Contains(de.Imprint.HTML, "Beispiel GmbH") || de.Imprint.Lang != "de" || de.Privacy != nil {
+		t.Fatalf("de = %+v", de)
+	}
+	if en.Imprint == nil || en.Imprint.Lang != "de" {
+		t.Fatalf("en = %+v, want the German text marked de", en)
+	}
+	client := "http://" + h.srv.ClientAddr().String()
+	for _, path := range []string{"/ui/de/legal/imprint", "/ui/data/v1/legal", "/api/v1/legal?locale=de"} {
+		if code, _, body := get(t, client+path); code != 404 || !strings.Contains(body, iface.CodeNotServed) {
+			t.Errorf("GET %s = %d %s", path, code, body)
+		}
+	}
+}
+
 // TestR_BAS_001_TheRoleServesItsTwoListenersAndAnswersWithItsOwnProblems: with the keys of the acceptance the
 // role starts, becomes ready, and the client listener answers as the engine does: 404 bastion_not_served as
 // problem details to the paths the spec names, 421 to another host, and 503 main_unreachable to a read that

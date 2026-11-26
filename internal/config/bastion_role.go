@@ -32,6 +32,13 @@ type BastionConfig struct {
 	Log     Log             `yaml:"log"`
 	Tracing BastionTracing  `yaml:"tracing"`
 	Runtime Runtime         `yaml:"runtime"`
+	UI      BastionUI       `yaml:"ui"`
+}
+
+// BastionUI is the ui section of the role: the imprint and the privacy notice and nothing else (R-BAS-100). They are the
+// Bastion's own texts, set in its own chart by its operator, never read from the main installation.
+type BastionUI struct {
+	Legal UILegal `yaml:"legal"`
 }
 
 // BastionServer is the server section of the role: the two listeners, the base URL the Bastion answers for,

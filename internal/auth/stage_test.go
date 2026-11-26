@@ -289,6 +289,12 @@ func TestR_AUTH_001_SessionRules(t *testing.T) {
 			t.Fatalf("%+v %v", res, err)
 		}
 	})
+	t.Run("R-UI-225 the legal pages ignore the cookie too: an ended session does not stand before the imprint", func(t *testing.T) {
+		res, err := do(fakeSessions{err: session.ErrInvalid}, "GET", "/api/v1/legal", defaultRules())
+		if err != nil || !res.Anonymous {
+			t.Fatalf("%+v %v", res, err)
+		}
+	})
 	t.Run("R-AUTH-012 a failed CSRF check is 403", func(t *testing.T) {
 		_, err := do(fakeSessions{info: sess, csrfErr: session.ErrCSRF}, "POST", "/api/v1/tokens", defaultRules())
 		wantErr(t, err, 403, "csrf_failed")
@@ -418,12 +424,17 @@ func TestR_AUTH_037_AnonymousAccess(t *testing.T) {
 			{"POST", "/api/v1/tokens/revoke"},
 			{"POST", "/api/v1/auth/device/authorize"},
 			{"GET", "/-/v1/login"},
+			{"GET", "/api/v1/legal"},
+			{"HEAD", "/api/v1/legal"},
 		} {
 			res, err := on.Authenticate(req(c.m, c.p), defaultRules())
 			if err != nil || !res.Anonymous {
 				t.Errorf("%s %s: %+v %v", c.m, c.p, res, err)
 			}
 		}
+		// The legal pages are open for reading only: an unsafe method stays under the hard limit of /api/v1 (R-UI-225).
+		_, err := on.Authenticate(req("POST", "/api/v1/legal"), defaultRules())
+		wantErr(t, err, 401, errs.CodeCredentialsRequired)
 	})
 	t.Run("R-ARCH-001 a route of a family the process does not serve is not always open: it is decided like an unknown path", func(t *testing.T) {
 		packagesOnly := defaultRules()
@@ -438,6 +449,7 @@ func TestR_AUTH_037_AnonymousAccess(t *testing.T) {
 			{"GET", "/auth/oidc/corp/start"},
 			{"POST", "/auth/local/login"},
 			{"GET", "/api/v1/auth/login-options"},
+			{"GET", "/api/v1/legal"},
 			{"GET", "/api/v1/system/ping"},
 			{"POST", "/api/v1/auth/oidc/token"},
 			{"POST", "/api/v1/tokens/revoke"},
@@ -564,6 +576,7 @@ func TestR_ARCH_001_EveryPathRuleOfTheStageAsksWhetherTheFamilyIsServed(t *testi
 			{"PATCH", "/api/v1/settings/auth"},
 			{"POST", "/api/v1/auth/oidc/token"},
 			{"GET", "/api/v1/auth/login-options"},
+			{"GET", "/api/v1/legal"},
 		},
 	}
 	for role, probes := range unserved {

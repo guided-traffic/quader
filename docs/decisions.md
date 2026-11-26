@@ -3109,6 +3109,32 @@ coming read-only interface of a Bastion; dismissed findings are not shown, again
 **Consequences.** `VulnerabilityCheckState` gains `pending` and `not_checked`, `VulnerabilityFinding` its `ecosystem`. The perspective and
 its gaps (H-2300 to H-2302) are on [security/vulnerability-scanning.md](security/vulnerability-scanning.md#what-an-anonymous-caller-reads).
 
+### ADR-302 · Imprint and privacy notice are the installation's own pages from the chart's Markdown
+
+**Status:** Decided by the owner on 2026-11-26, 11:51 (the working paper of W-35); the design by the development agent
+([Q-UI-1420](spec/api-and-ui.md#q-ui-1420--imprint-and-privacy-notice-are-pages-of-the-installation-from-the-charts-markdown) to
+[Q-UI-1425](spec/api-and-ui.md#q-ui-1425--the-page-has-its-own-heading-and-the-operators-text-follows),
+[Q-BAS-340](spec/bastion.md#q-bas-340--the-bastions-ui-section-holds-the-legal-texts-alone) to
+[Q-BAS-342](spec/bastion.md#q-bas-342--the-pages-are-rendered-at-start-and-served-by-no-route-until-the-bastions-web-interface)).
+
+**Context.** A company that runs Quader's web interface on the internet names itself and says what it records of its visitors. The owner:
+"Wird von der Instanz selbst ausgeliefert. Der Text beider Links kann über ein Markdown frei bestimmt werden. Eingestellt wird es bei der
+Installation über Helm, der Administrator des Bastion ist verantwortlich für die Einhaltung dieser Werte. Auch die Hauptinstanz braucht
+diese Felder im Helm Chart falls jemand die Hauptinstanz öffentlich betreiben möchte."
+
+**Decision.**
+- Both charts carry `config.ui.legal.{imprint,privacy}.{en,de}`: Markdown, empty by default, at most 64 KiB each, in the configuration file;
+  the Bastion's tree gains a section `ui` with `legal` alone (R-BAS-001).
+- Each installation renders its texts once at start with an instance of the README renderer of its own, without external image origins
+  (R-UI-225, R-BAS-100); `internal/legaltext` (standard library only) holds the rule of the languages for both.
+- The main installation serves `GET /api/v1/legal`, always open and blind to the session cookie (R-AUTH-037), the routes `/legal/imprint`
+  and `/legal/privacy` outside the guard, and the line of both at the end of every screen (R-UI-226). The Bastion holds its pages for
+  its web interface and serves them by no route yet.
+
+**Consequences.** A text changes with a rollout, never at runtime. The architecture test allows the renderer and `internal/legaltext` in
+`internal/bastion/legal` alone. The shell's content panel is a flex column, so the line stands at its end. An operator's text is not
+checked for what it says (H-2303), and a Bastion shows its pages only once its web interface exists (H-2304).
+
 
 ## Design invariants
 
@@ -10375,10 +10401,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-BAS
 
-265 questions on [spec/bastion.md](spec/bastion.md).
+268 questions on [spec/bastion.md](spec/bastion.md).
 
 <details>
-<summary>Q-BAS: 265 questions</summary>
+<summary>Q-BAS: 268 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10647,6 +10673,9 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-BAS-337](spec/bastion.md#q-bas-337--a-bastions-own-refusals-take-one-of-four-error-shapes-a-format-declares) | A Bastion's own refusals take one of four error shapes a format declares | Decided by the development agent on 2026-11-26 | (a); kit check 19 holds `WriteError` to the declared shape. | — |
 | [Q-BAS-338](spec/bastion.md#q-bas-338--a-bastion-reveals-nothing-of-the-main-installation) | A Bastion reveals nothing of the main installation | Decided by the owner on 2026-11-26 | the rule of R-BAS-099, for every body, header and page a Bastion answers. | [ADR-300](#adr-300--a-bastion-is-a-place-of-the-download-limits-configured-from-the-main-installation-and-names-nothing-of-it) |
 | [Q-BAS-339](spec/bastion.md#q-bas-339--a-registry-token-reads-only-its-anonymity-its-expiry-and-its-grant) | A registry token reads only its anonymity, its expiry and its grant | Decided by the development agent on 2026-11-26 | (a) Payload version 2: `a`, `exp` and `g` readable, every other claim sealed under a key of the main installation's ring | [ADR-300](#adr-300--a-bastion-is-a-place-of-the-download-limits-configured-from-the-main-installation-and-names-nothing-of-it) |
+| [Q-BAS-340](spec/bastion.md#q-bas-340--the-bastions-ui-section-holds-the-legal-texts-alone) | The Bastion's ui section holds the legal texts alone | Decided by the development agent on 2026-11-26 | (a) A section `ui` with `legal` alone, the same keys as the main installation's `ui.legal` | [ADR-302](#adr-302--imprint-and-privacy-notice-are-the-installations-own-pages-from-the-charts-markdown) |
+| [Q-BAS-341](spec/bastion.md#q-bas-341--the-bastion-renders-with-the-readme-renderer-through-a-scoped-allowance) | The Bastion renders with the README renderer through a scoped allowance | Decided by the development agent on 2026-11-26 | (a) `internal/bastion/legal` imports the renderer and `internal/legaltext` (the rule of the languages, standard library only), both allowed for that package alone | — |
+| [Q-BAS-342](spec/bastion.md#q-bas-342--the-pages-are-rendered-at-start-and-served-by-no-route-until-the-bastions-web-interface) | The pages are rendered at start and served by no route until the Bastion's web interface | Decided by the development agent on 2026-11-26 | (a) The replica renders the pages when it starts and holds them (`Server.Legal`); no route | [ADR-302](#adr-302--imprint-and-privacy-notice-are-the-installations-own-pages-from-the-charts-markdown) |
 
 </details>
 
@@ -12845,10 +12874,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-689 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+695 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 689 questions</summary>
+<summary>Q-UI: 695 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -13538,6 +13567,12 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1411](spec/api-and-ui.md#q-ui-1411--a-visitor-without-a-session-reads-a-finding-without-its-status-and-reaches-its-advisory-not-its-detail) | A visitor without a session reads a finding without its status, and reaches its advisory, not its detail | Decided by the development agent on 2026-11-26 | (a) No status column; the identifier links to the advisory's page; the row names the aliases, the markers and an image's components | — |
 | [Q-UI-1412](spec/api-and-ui.md#q-ui-1412--what-needs-a-session-is-left-out-for-a-visitor-without-one-and-the-views-are-told-not-asked) | What needs a session is left out for a visitor without one, and the views are told, not asked | Decided by the development agent on 2026-11-26 | (a) The page that holds the session tells its views (`signedIn` of `<quader-package-vulnerabilities>`, `withReport` of the card, `rows` of the findings); the advisory page, the side bar and the trail ask the session (`CrumbSpec.session`) | — |
 | [Q-UI-1413](spec/api-and-ui.md#q-ui-1413--the-public-states-are-neutral-words-without-a-time-and-a-page-reads-them-at-its-idle-interval) | The public states are neutral words without a time, and a page reads them at its idle interval | Decided by the development agent on 2026-11-26 | (a) **Not checked yet** and **Not checked**, sentences without a cause, a time or an administrator; neutral, never a warning; a view reads them again at its idle interval | — |
+| [Q-UI-1420](spec/api-and-ui.md#q-ui-1420--imprint-and-privacy-notice-are-pages-of-the-installation-from-the-charts-markdown) | Imprint and privacy notice are pages of the installation from the chart's Markdown | Decided by the owner on 2026-11-26, 11:51 | (a), the owner's. | [ADR-302](#adr-302--imprint-and-privacy-notice-are-the-installations-own-pages-from-the-charts-markdown) |
+| [Q-UI-1421](spec/api-and-ui.md#q-ui-1421--a-legal-page-stands-in-the-shell-for-whoever-runs-the-application-alone-for-everyone-else) | A legal page stands in the shell for whoever runs the application, alone for everyone else | Decided by the development agent on 2026-11-26 | (a) In the shell for a signed-in caller and for a visitor while there is public content; alone, with the wordmark that leads to the start page, for everyone else | — |
+| [Q-UI-1422](spec/api-and-ui.md#q-ui-1422--the-legal-line-ends-the-scrolling-column-of-every-screen) | The legal line ends the scrolling column of every screen | Decided by the development agent on 2026-11-26 | (a) The last member of the content panel's column, after the screen; pushed to the panel's end on a short screen; the same on a screen that stands alone | — |
+| [Q-UI-1423](spec/api-and-ui.md#q-ui-1423--the-legal-operation-is-always-open-and-ignores-the-session-cookie) | The legal operation is always open and ignores the session cookie | Decided by the development agent on 2026-11-26 | (a) On R-AUTH-037's always-open list for `GET` and `HEAD`, the session cookie ignored like the login options' | — |
+| [Q-UI-1424](spec/api-and-ui.md#q-ui-1424--the-legal-texts-are-read-with-the-banner-at-its-cadence) | The legal texts are read with the banner, at its cadence | Decided by the development agent on 2026-11-26 | (a) The banner store's read also reads the legal pages; the footer watches the banner; the answer's ETag and `no-cache` make a read of unchanged texts a `304` | — |
+| [Q-UI-1425](spec/api-and-ui.md#q-ui-1425--the-page-has-its-own-heading-and-the-operators-text-follows) | The page has its own heading, and the operator's text follows | Decided by the development agent on 2026-11-26 | (a) "Imprint" or "Privacy notice" as the page's heading in the interface's language, the text below; the values' examples start without a heading; a text in the other language gets the note "This page is available in German only." and its `lang` | [ADR-302](#adr-302--imprint-and-privacy-notice-are-the-installations-own-pages-from-the-charts-markdown) |
 | [Q-UI-1480](spec/api-and-ui.md#q-ui-1480--a-bastions-card-shows-the-preset-the-mode-and-the-throughput-everything-else-is-behind-details) | A Bastion's card shows the preset, the mode and the throughput; everything else is behind Details | Decided by the development agent on 2026-11-26 | (a) The preset, the mode and the maximum throughput on the card; the figures, slots, ceiling, shares, egress addresses and switches of W-35 behind **Details**; the rules on a page of their own | [ADR-300](#adr-300--a-bastion-is-a-place-of-the-download-limits-configured-from-the-main-installation-and-names-nothing-of-it) |
 | [Q-UI-1481](spec/api-and-ui.md#q-ui-1481--a-preset-is-applied-after-a-dialog-that-names-what-it-replaces) | A preset is applied after a dialog that names what it replaces | Decided by the development agent on 2026-11-26 | (a); the dialog says nothing where the preset changes nothing. | — |
 | [Q-UI-1482](spec/api-and-ui.md#q-ui-1482--the-egress-addresses-warn-with-the-address-of-the-last-contact-and-offer-to-add-it) | The egress addresses warn with the address of the last contact and offer to add it | Decided by the development agent on 2026-11-26 | (a) A warning for an empty list and for a contact from an unlisted address, with **Add** for that address | [ADR-300](#adr-300--a-bastion-is-a-place-of-the-download-limits-configured-from-the-main-installation-and-names-nothing-of-it) |
