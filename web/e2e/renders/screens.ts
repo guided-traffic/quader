@@ -94,6 +94,7 @@ import {
   everySection,
   findingAndAdvisory,
   issuerStates,
+  legalAlone,
   loginNotice,
   mappingStates,
   mirrorRunMenu,
@@ -3080,6 +3081,13 @@ export const screens: readonly Screen[] = [
   // and Continue without signing in while the seed makes a project public.
   { id: 'login-session-ended', path: '/ui/login?returnTo=%2Fprojects&ended=1', kinds: ['anonymous'] },
   { id: 'logged-out', path: '/ui/logged-out', kinds: ['anonymous'] },
+  // The imprint and the privacy notice (R-UI-225, R-UI-226) of the profile's configuration (deploy/ui-dev/config.sh): the imprint in
+  // both languages with an address block, a table, links and an image shown as a link; the privacy notice in German only, so the English
+  // pass shows the note and the German text. In the shell for a signed-in user and a visitor of the public content, alone for a visitor
+  // without it (Q-UI-1421).
+  { id: 'legal-imprint', path: '/ui/legal/imprint', kinds: ['anonymous', 'plain'], expected: noSession, de: true },
+  { id: 'legal-privacy', path: '/ui/legal/privacy', kinds: ['anonymous', 'plain'], expected: noSession, de: true },
+  { id: 'legal-alone', path: '/ui/legal/imprint', kinds: ['anonymous'], expected: noSession, walk: legalAlone, de: true },
 
   // The start and the project's content (Q-UI-129): the plain user's main path.
   { id: 'home', path: '/ui/', kinds: all },

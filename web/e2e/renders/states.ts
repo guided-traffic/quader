@@ -147,6 +147,21 @@ export async function* loginNotice(page: Page): AsyncGenerator<string> {
   await page.unrouteAll({ behavior: 'ignoreErrors' });
 }
 
+/**
+ * A legal page for a visitor who has no shell to return to (R-UI-225, Q-UI-1421): the seed makes a project public, so the login options
+ * are answered here without public content, and the page stands alone with the wordmark and the legal line at the window's end.
+ */
+export async function* legalAlone(page: Page): AsyncGenerator<string> {
+  await page.route('**/api/v1/auth/login-options', async (route) => {
+    const res = await route.fetch();
+    await route.fulfill({ response: res, json: { ...(await res.json()), publicContent: false } });
+  });
+  await page.reload();
+  await expect(page.locator('quader-legal-page .bare-panel')).toHaveCount(1);
+  yield 'alone';
+  await page.unrouteAll({ behavior: 'ignoreErrors' });
+}
+
 // ---- The menus of the pages ----
 
 /**

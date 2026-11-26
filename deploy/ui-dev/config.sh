@@ -196,6 +196,61 @@ maintenance:
     # the tag's document every sixth hour (R-VULN-044); scanners.sh starts it once at every start. Off with UI_SCANNERS=0, where
     # "Fetch the image database now" on Admin area > Advisory sources runs it once.
     $trivy_db
+ui:
+  # The imprint and the privacy notice of the profile (R-UI-225), for the renders and the walks: an operator's texts with an address
+  # block (a backslash at a line's end is Markdown's line break, written twice here for the shell), a table, links of the three kinds and an
+  # image the renderer shows as a link; the privacy notice in German only, so the English screens show the note and the German text.
+  # The chart's default is no text at all.
+  legal:
+    imprint:
+      en: |
+        Example Operations GmbH\\
+        Musterstraße 1\\
+        12345 Berlin, Germany
+
+        | Item | Details |
+        |---|---|
+        | Managing director | Erika Mustermann |
+        | Commercial register | Amtsgericht Berlin-Charlottenburg, HRB 123456 |
+        | VAT ID | DE123456789 |
+
+        Contact: <legal@example.com>, +49 30 1234567, [www.example.com](https://www.example.com)
+
+        Responsible for the content of this installation: the platform team of Example Operations GmbH, address as above.
+
+        ![Example Operations logo](https://www.example.com/logo.png)
+      de: |
+        Example Operations GmbH\\
+        Musterstraße 1\\
+        12345 Berlin
+
+        | Angabe | Wert |
+        |---|---|
+        | Geschäftsführerin | Erika Mustermann |
+        | Handelsregister | Amtsgericht Berlin-Charlottenburg, HRB 123456 |
+        | Umsatzsteuer-ID | DE123456789 |
+
+        Kontakt: <legal@example.com>, +49 30 1234567, [www.example.com](https://www.example.com)
+
+        Verantwortlich für den Inhalt dieser Installation: das Plattform-Team der Example Operations GmbH, Anschrift wie oben.
+
+        ![Logo der Example Operations GmbH](https://www.example.com/logo.png)
+    privacy:
+      de: |
+        ## Verantwortlicher
+
+        Example Operations GmbH, Musterstraße 1, 12345 Berlin, <datenschutz@example.com>
+
+        ## Welche Daten diese Installation verarbeitet
+
+        - die Adresse jeder Anfrage und ihre Zeit, 30 Tage lang, um Missbrauch abzuwehren;
+        - bei angemeldeten Personen den Namen und die E-Mail-Adresse aus dem Identitätsanbieter;
+        - die Downloads je Paket, ohne die Adresse der Person, als Zahl.
+
+        ## Ihre Rechte
+
+        Sie haben das Recht auf Auskunft, Berichtigung, Löschung und Einschränkung der Verarbeitung sowie auf Beschwerde bei einer
+        Aufsichtsbehörde. Schreiben Sie an <datenschutz@example.com>.
 api:
   rate_limits:
     # make ui-renders opens three pages of one user at a time (UI_RENDERS_WORKERS): a full run reached 197 reads of one
