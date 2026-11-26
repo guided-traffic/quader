@@ -185,8 +185,10 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 		// three P1 requirements of UI-1126).
 		// 1379 since every malware verdict names its scanner and rescans are ranked by scan pressure (R-MAL-036, R-MAL-037, two
 		// P1 requirements of W-36, P1).
-		if len(m.Reqs) != 1379 || count[prioMVP] != 743 || count[prioP1] != 597 || count[prioP2] != 39 {
-			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1379 (743, 597, 39)",
+		// 1383 since a Bastion's web interface shows a public package's documentation while docs is on (R-BAS-124 to R-BAS-126,
+		// R-UI-232, four P1 requirements of W-35, P11).
+		if len(m.Reqs) != 1383 || count[prioMVP] != 743 || count[prioP1] != 601 || count[prioP2] != 39 {
+			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1383 (743, 601, 39)",
 				len(m.Reqs), count[prioMVP], count[prioP1], count[prioP2])
 		}
 	})

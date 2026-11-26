@@ -17,6 +17,11 @@ import (
 // the two together one of another entry; an option of a role's entry point is "#parameter-<entry point>--<path>" (R-ANS-052). [PageLink]
 // is the grammar of exactly these addresses; the sanitizer of the operations keeps a relative link only when it matches.
 
+// MarkupVersion is the version of what the converter makes of a text. It is raised with every change of its output: the documentation
+// is converted on every read, so nothing stored changes with it, and the public catalogue of a Bastion, which keeps the converted pages,
+// renders them again when it changes (bastion.md R-BAS-124).
+const MarkupVersion = 1
+
 // MaxMarkupInput is the longest text one conversion reads; more is cut (R-ANS-039).
 const MaxMarkupInput = 64 << 10
 

@@ -38,6 +38,9 @@ type Memory struct {
 	// database.
 	Packages     map[catalogue.PackageKey]string
 	Repositories map[string]string
+	// SearchWords are the words of the search vectors of a version's documentation entries by "<repository>\x00<name>\x00<version>",
+	// each by "<type>/<name>" (DocSearchWords).
+	SearchWords map[string]map[string][]string
 	// Writes counts the calls of Write.
 	Writes int
 }
@@ -46,7 +49,7 @@ type Memory struct {
 func New(regs ...catalogue.Registered) *Memory {
 	return &Memory{
 		regs: regs, by: map[string]*registration{}, docs: map[string][]byte{},
-		Packages: map[catalogue.PackageKey]string{}, Repositories: map[string]string{},
+		Packages: map[catalogue.PackageKey]string{}, Repositories: map[string]string{}, SearchWords: map[string]map[string][]string{},
 	}
 }
 
@@ -230,6 +233,17 @@ func (m *Memory) RepositoryFacts(context.Context, []string) (map[string]string, 
 	defer m.mu.Unlock()
 	out := map[string]string{}
 	for k, v := range m.Repositories {
+		out[k] = v
+	}
+	return out, nil
+}
+
+// DocSearchWords implements catalogue.Store.
+func (m *Memory) DocSearchWords(_ context.Context, repository, name, version string) (map[string][]string, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	out := map[string][]string{}
+	for k, v := range m.SearchWords[repository+"\x00"+name+"\x00"+version] {
 		out[k] = v
 	}
 	return out, nil

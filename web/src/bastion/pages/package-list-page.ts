@@ -11,6 +11,7 @@ import { ListHead } from '../../app/shared/ui/list-head';
 import { PageHeader } from '../../app/shared/ui/page-header';
 import { PackageTable } from '../../app/views/packages/package-table';
 import { BastionData } from '../data/http';
+import { DocumentationHits } from './documentation-hits';
 
 const KNOWN_SORTS: readonly string[] = ['name', '-name', 'createdAt', '-createdAt', 'updatedAt', '-updatedAt'];
 
@@ -18,11 +19,12 @@ const KNOWN_SORTS: readonly string[] = ['name', '-name', 'createdAt', '-createdA
  * A project's packages at the Bastion (R-UI-229, W-35's B.8): the search by name, description and keyword over the catalogue, the
  * sorts of the column headers, "Load more" in pages of 50; the rows are the main installation's view (views/packages/package-table.ts).
  * The search and the sort live in the address, so a link to a result is a link to the same list. Above the list, the project's public
- * repositories whose folders and files the catalogue holds lead to their files, which no search of packages finds (Q-BAS-400).
+ * repositories whose folders and files the catalogue holds lead to their files, which no search of packages finds (Q-BAS-400). While the
+ * Bastion shows documentation, the same text finds the entries of the project's documentation below the packages (R-UI-232).
  */
 @Component({
   selector: 'quader-bastion-package-list',
-  imports: [ErrorNotice, ListHead, PackageTable, PageHeader, RouterLink],
+  imports: [DocumentationHits, ErrorNotice, ListHead, PackageTable, PageHeader, RouterLink],
   template: `
     <quader-page-header heading="Packages" i18n-heading="@@pkg.list.heading" />
     @if (filesFailure(); as f) {
@@ -58,6 +60,7 @@ const KNOWN_SORTS: readonly string[] = ['name', '-name', 'createdAt', '-createdA
       (sortChange)="sortBy($event)"
       (retry)="retry()"
     />
+    <quader-bastion-documentation-hits [project]="project()" [text]="text()" />
   `,
   styles: `
     .file-repositories {

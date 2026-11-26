@@ -1929,12 +1929,45 @@ function of its options.
 The application itself (`web/src/bastion`) is [web-ui.md](web-ui.md#the-bastions-application)'s. **What the web stage of CI gains:**
 `make web-embed` builds the second application (measured 2026-11-26 on the development machine: 4.5 s for both locales of the
 Bastion beside 10.8 s of the main installation's, the metafile check under a second), `make web-i18n-check` extracts it too (3.2 s),
-and `make web-test` runs its cases (nine, and two of `refs.spec.ts`, about 1 s); `make ui-states` (the job ui-layout-fixtures) measures seven states of its pages at two widths in about 3.5 s.
+and `make web-test` runs its cases (nine, and two of `refs.spec.ts`, about 1 s); `make ui-states` (the job ui-layout-fixtures) measures seven states of its pages at two widths in about 3.5 s (eight since P11: a collection with its documentation switched off, 5.4 s for the file, measured 2026-11-26).
 **What the renders gain (W-35's P9b, measured 2026-11-26 on the development machine under a load of 30 to 45):** every part of the job ui-layout starts
 the profile's Bastion (`bastion.sh`: the Bastion's application alone in 6.5 s, a second binary from the build cache, the registration, the
 handshake), and the setup waits for one run of the builder after the seed and the Bastion's next round; the fourteen screens `bastion-*`
 (234 pictures in each language) rendered in 1.3 to 1.5 min with three workers, spread over the five parts by their places. Not measured: the
 same on the runner, and the seconds of the setup's wait alone.
+
+## The documentation of the web interface (package P11)
+
+W-35's P11, built on 2026-11-26 ([spec](../spec/bastion.md#the-documentation-of-the-bastions-web-interface), R-BAS-124 to R-BAS-126,
+[api-and-ui.md](../spec/api-and-ui.md) R-UI-232; the security perspective is
+[security/bastion.md](../security/bastion.md#the-web-interface)). The README, an Ansible collection's documentation and a Debian
+package's changelog reach a Bastion's pages while its switch `docs` is on and the repository's wiki is public.
+
+| File | Responsibility |
+|---|---|
+| [bastionmain/catalogue/builder.go](../../internal/bastionmain/catalogue/builder.go) | `publicWiki` (a holder of the public set with a public wiki), `withoutWiki` (`hasReadme` false, no `metadata.docs`), `searchWords` and `TreeWithSearchWords` (each entry's `searchWords`), `SearchWords` (lower case, sorted, without a word another begins); the salt with `Options.DocsPolicy`; revision `catalogue/2` |
+| [bastionmain/catalogue/store.go](../../internal/bastionmain/catalogue/store.go) | `DocSearchWords`: the statement `BastionCatalogueDocSearchWords` (`tsvector_to_array` of the vector, one per version) |
+| [app/wire_bastion_catalogue.go](../../internal/app/wire_bastion_catalogue.go) | `docsPolicy`: `readme.Version` and `docgen.MarkupVersion` |
+| [bastion/catalogue/docs.go](../../internal/bastion/catalogue/docs.go) | the index of the documentation (`docsOf`, built in `sync` and `take` from the trees of the index's `latestVersion`, a tree parsed once by its SHA-256), `SearchDocs` (R-ANS-058's rule and order), `DocEntries` (the sitemap's source for P10), `DocHit` |
+| [bastion/gui/data.go](../../internal/bastion/gui/data.go) | `search/documentation`; a Debian package's contents without its changelog and copyright while `docs` is off (`withoutDocumentation`) |
+| [web/src/app/views/packages/docs-model.ts](../../web/src/app/views/packages/docs-model.ts) | `narrowDocTree`, `docEntryMatches`, `docTerms`: the main installation's search of a version, in the browser |
+| [web/src/bastion/](../../web/src/bastion) | `docs` of `data/reads.ts` (narrows with `q`), `pages/documentation-hits.ts` (the section below a project's packages), the version page's `documentation` from the state |
+
+**The fixture.** [docs-search-fixture.ts](../../web/src/app/api/testing/docs-search-fixture.ts) holds a collection's tree with its
+search words and the main installation's answers to fourteen texts; `TestR_BAS_124_TheBrowsersSearchOfAVersionIsTheMainInstallations`
+(`test/integration/ansiblelocal`) writes it with `QUADER_IT_WRITE_DOCS_FIXTURE=1` and compares it otherwise, and `docs-model.spec.ts`
+narrows the same tree in the browser. A change of the search's rule on either side fails one of the two.
+
+**Tests** (tier, time, data):
+
+| Test | Tier | Time | Data |
+|---|---|---|---|
+| `TestR_BAS_124_TheDocumentationTravelsOnlyWithDocsOnAndAPublicWiki`, `…_TheTreeCarriesTheSearchWordsOfTheMainInstallation`, `…_SearchWordsKeepTheWordsThatNoOtherBegins` ([docs_test.go](../../internal/bastionmain/catalogue/docs_test.go)) | unit, a fake management API of one collection | milliseconds | bytes |
+| `TestR_BAS_125_TheDocumentationIsSearchedAcrossThePackagesNewestVersions` ([docs_test.go](../../internal/bastion/catalogue/docs_test.go)) | unit against `maintest` | 0.1 s | two packages, three trees of a few entries |
+| `TestR_BAS_125_TheDocumentationIsSearchedInTheMainInstallationsShape`, `TestR_BAS_126_DocsOffTakesTheChangelogOutOfTheContentsAtOnce` ([gui_test.go](../../internal/bastion/gui/gui_test.go)) | unit, a reader in memory | microseconds | tens of bytes |
+| `documentationFollowsTheWikiAndTheSwitch` in `TestR_BAS_104_TheCatalogueFollowsPublishesLevelsAndTheSwitch` ([catalogue_test.go](../../test/integration/bastion/catalogue_test.go)) | integration, no world of its own | a few seconds inside the case: three runs of the builder | the case's npm packages |
+| `TestR_BAS_124_TheBrowsersSearchOfAVersionIsTheMainInstallations` ([catalogue_docs_test.go](../../test/integration/ansiblelocal/catalogue_docs_test.go)) | integration on PostgreSQL | about 2 s | one collection of five entries |
+| `docs-model.spec.ts` (`R-BAS-124 …`), [bastion.docs.spec.ts](../../web/src/bastion/bastion.docs.spec.ts) (`R-UI-232 …`, `R-BAS-126 …`) | Vitest | about a second | the fixture, answers of bytes |
 
 ## Tests
 

@@ -98,18 +98,65 @@ func (w *world) documents(list iface.CatalogueChanges) map[string][]byte {
 	return out
 }
 
+// readmes counts the README documents of the catalogue's live list and the versions that announce one (R-BAS-124).
+func (w *world) readmes() (docs, announced int) {
+	w.t.Helper()
+	list := w.changes(0)
+	held := w.documents(list)
+	for p, raw := range held {
+		switch {
+		case strings.HasSuffix(p, "/readme"):
+			docs++
+		case strings.HasPrefix(p, "packages/") && strings.Count(p, "/") == 3 && bytes.Contains(raw, []byte(`"hasReadme":true`)):
+			announced++
+		}
+	}
+	return docs, announced
+}
+
+// documentationFollowsTheWikiAndTheSwitch (R-BAS-124): with docs on and a public wiki the npm READMEs are in the catalogue and their
+// versions announce them; a wiki lowered to internal takes them out and the versions announce none, and so does docs off for every
+// format, at the next run.
+func (w *world) documentationFollowsTheWikiAndTheSwitch(docs *atomic.Bool) {
+	w.t.Helper()
+	start := time.Now()
+	before, announced := w.readmes()
+	if before < 2 || announced < 2 {
+		w.t.Fatalf("docs on: %d READMEs, %d versions announce one", before, announced)
+	}
+	wiki := func(level string) {
+		for _, repo := range []string{npmAll, npmLocal, npmRemote} {
+			w.mustAPI("PATCH", "/api/v1/projects/"+testenv.DefaultProject+"/repositories/"+repo[len(testenv.DefaultProject)+1:], 200,
+				map[string]any{"visibility": map[string]any{"wiki": level}}, "If-Match", "*", "Content-Type", "application/merge-patch+json")
+		}
+	}
+	wiki("internal")
+	testenv.WaitFor(w.t, "the npm READMEs gone with an internal wiki", 30*time.Second, func() bool {
+		n, a := w.readmes()
+		return n < before && a < announced
+	})
+	wiki("public")
+	testenv.WaitFor(w.t, "the npm READMEs back", 30*time.Second, func() bool { n, _ := w.readmes(); return n == before })
+	docs.Store(false)
+	w.mustAPI("POST", "/api/v1/system/tasks/bastion-catalogue/run", 202, nil)
+	testenv.WaitFor(w.t, "no README with docs off", 30*time.Second, func() bool { n, a := w.readmes(); return n == 0 && a == 0 })
+	docs.Store(true)
+	w.t.Logf("the documentation followed the wiki and the switch in %s", time.Since(start).Round(100*time.Millisecond))
+}
+
 // TestR_BAS_104_TheCatalogueFollowsPublishesLevelsAndTheSwitch: the catalogue of a registration whose web interface is on holds
 // the public packages within the debounce of their publish, every document is free of the main installation's base URL, of
 // another Bastion's and of the management API's path, a level lowered to private deletes what fell out, and the web interface
 // switched off answers 404 at once and deletes the catalogue at the next run.
 func TestR_BAS_104_TheCatalogueFollowsPublishesLevelsAndTheSwitch(t *testing.T) {
-	var gui atomic.Bool
+	var gui, docsOn atomic.Bool
 	gui.Store(true)
+	docsOn.Store(true)
 	w := newWorld(t, worldOptions{
 		Role: "all", Egress: []string{"127.0.0.1/32"},
 		Env: []string{`QUADER_SERVER_ADDITIONAL_BASE_URLS=["` + baseURL + `","` + mirrorURL + `"]`},
 		Switches: func(string) iface.Switches {
-			return iface.Switches{GUI: gui.Load(), Docs: true}
+			return iface.Switches{GUI: gui.Load(), Docs: docsOn.Load()}
 		},
 	})
 	// The handshake of the Bastion, from its egress address with its host forwarded, reports its base URL, which the documents are
@@ -163,6 +210,7 @@ func TestR_BAS_104_TheCatalogueFollowsPublishesLevelsAndTheSwitch(t *testing.T) 
 	if !bytes.Contains(setup, []byte(baseHost)) {
 		t.Errorf("the set-up of a version does not name the Bastion: %s", setup)
 	}
+	w.documentationFollowsTheWikiAndTheSwitch(&docsOn)
 
 	// A level lowered to private: what fell out is deleted.
 	cursor := list.Cursor

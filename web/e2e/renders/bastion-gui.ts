@@ -40,6 +40,24 @@ async function* search(page: Page): AsyncGenerator<string> {
   yield 'search';
 }
 
+/**
+ * A project's search that finds documentation (R-UI-232, bastion.md R-BAS-125): a word of a module of the project's collection, the
+ * section Documentation below the packages, one entry opening its page.
+ */
+async function* searchDocumentation(page: Page): AsyncGenerator<string> {
+  await expect(page.locator('main quader-package-table')).toBeVisible();
+  await page.locator('main quader-list-head input[type=search]').fill('mount');
+  await expect(page).toHaveURL(/[?&]q=mount/);
+  await expect(page.locator('main [data-testid="documentation-hits"] tbody tr').first()).toBeVisible();
+  yield '';
+}
+
+/** The search inside a version's documentation (R-ANS-036 at the Bastion, R-BAS-124): the narrowed tree with its count of matches. */
+async function* searchVersion(page: Page): AsyncGenerator<string> {
+  await expect(page.locator('main quader-ansible-docs .pane-tree a').first()).toBeVisible();
+  yield '';
+}
+
 /** The state answered as the Bastion answers it, with the fields a walk sets: a band above an old page. */
 async function* stale(page: Page): AsyncGenerator<string> {
   const at = new Date(Date.now() - 3 * 3_600_000).toISOString();
@@ -94,13 +112,35 @@ export const bastionScreens: readonly Screen[] = [
   // An image of the public remote: its tags, then a tag with its platforms and layers.
   { id: 'bastion-image', path: pkg(image), kinds: ['anonymous'], de: true },
   { id: 'bastion-image-version', path: ver(image, remoteImage.single), kinds: ['anonymous'], de: true },
-  // An Ansible collection opens on its documentation (docs on).
+  // An Ansible collection opens on its documentation (docs on), its package's own address on its newest version (R-UI-218); a module's
+  // page with its tables; the search inside the version with a hit; a project's search that finds a module (R-UI-232).
   { id: 'bastion-collection', path: ver(collection, ansiblePackage.versions[1]), kinds: ['anonymous'], expected: lookups, de: true },
   // A public generic repository's folders and files (R-UI-229): its root with a folder and a file, a nested folder of files, and a file
   // with the panel of its Download, each client's set-up command.
   { id: 'bastion-files', path: downloads, kinds: ['anonymous'], tables: 'quader-folder-view quader-data-table', de: true },
   { id: 'bastion-files-folder', path: `${downloads}/files/${publicDownloads.nested}`, kinds: ['anonymous'], tables: 'quader-folder-view quader-data-table', de: true },
   { id: 'bastion-files-file', path: `${downloads}/files/${publicDownloads.file}`, kinds: ['anonymous'], walk: fileCommands, de: true },
+  { id: 'bastion-collection-latest', path: pkg(collection), kinds: ['anonymous'], expected: lookups },
+  {
+    id: 'bastion-collection-entry',
+    path: `${ver(collection, ansiblePackage.versions[1])}?doc=module/mount_volume`,
+    kinds: ['anonymous'],
+    expected: lookups,
+    tables: 'quader-ansible-doc-entry quader-data-table',
+    de: true,
+  },
+  {
+    id: 'bastion-collection-search',
+    path: `${ver(collection, ansiblePackage.versions[1])}?q=mount`,
+    kinds: ['anonymous'],
+    expected: lookups,
+    walk: searchVersion,
+    de: true,
+  },
+  { id: 'bastion-packages-docs', path: `${P}/packages`, kinds: ['anonymous'], walk: searchDocumentation, de: true },
+  // The README of an npm and of a NuGet version, which their pages open on (R-UI-218), and a Debian package's changelog and copyright.
+  { id: 'bastion-version-npm', path: ver(publicGradedPackage, publicGradedPackage.version), kinds: ['anonymous'], expected: lookups, de: true },
+  { id: 'bastion-version-deb-changelog', path: `${ver(debian, debian.version)}?tab=changelog`, kinds: ['anonymous'], expected: lookups, de: true },
   { id: 'bastion-imprint', path: `${B}/legal/imprint`, kinds: ['anonymous'], de: true },
   { id: 'bastion-privacy', path: `${B}/legal/privacy`, kinds: ['anonymous'], de: true },
   { id: 'bastion-stale', path: `${P}/packages`, kinds: ['anonymous'], walk: stale, de: true },

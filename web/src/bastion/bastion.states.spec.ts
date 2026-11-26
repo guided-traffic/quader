@@ -25,10 +25,10 @@ import { PackagePage, VersionPage } from './pages/package-pages';
  * `/ui/data/v1/` are R-UI-228's spec; here the views read the fakes, as the main installation's states do.
  */
 
-/** The state store as a page reads it, held at one answer. */
+/** The state store as a page reads it, held at one answer: a fresh state with the documentation on (R-BAS-126) unless a state sets another. */
 @Injectable()
 class HeldState {
-  readonly answer = signal<BastionState | null>(null);
+  readonly answer = signal<BastionState | null>({ confirmedAt: '2026-11-26T09:00:00Z', staleAfterSeconds: 3600, stale: false, docs: true });
   readonly failureValue = signal<ApiError | null>(null);
   readonly state = this.answer.asReadonly();
   readonly failure = this.failureValue.asReadonly();
@@ -109,6 +109,26 @@ describe("the Bastion's pages in a browser (R-UI-227, R-UI-229)", () => {
   it('an image', async () => {
     await expectState('bastion-version-image', () =>
       openInPage(VersionPage, { project: 'web', format: 'oci', name: 'team/app', version: '1.2.0' }, { providers, setup: oci }),
+    );
+  });
+
+  // The switch docs off (R-BAS-126): the collection opens on its facts, no tab of its documentation.
+  it("an Ansible collection with the documentation switched off", async () => {
+    await expectState('bastion-version-ansible-docs-off', () =>
+      openInPage(VersionPage, { project: 'web', format: 'ansible', name: 'acme.tools' }, {
+        providers,
+        setup: (get) => {
+          (get(BastionStateStore) as unknown as HeldState).answer.set({
+            confirmedAt: '2026-11-26T09:00:00Z',
+            staleAfterSeconds: 3600,
+            stale: false,
+            docs: false,
+          });
+          const fake = get(PackagesApi) as FakePackagesApi;
+          ansibleFixture(fake);
+          ansibleDocsFixture(fake);
+        },
+      }),
     );
   });
 

@@ -530,6 +530,7 @@ Anonymous visitors from the internet read the public catalogue in a browser at t
 | One origin with the package API | A browser that answered a `401` of the package API holds Basic credentials for the origin ([H-2325](#h-2325--the-web-interface-shares-its-origin-with-the-package-api)) | — |
 | A rolling upgrade | A replica answers a file of another release's bundle `404`; the page loads itself again ([H-2324](#h-2324--a-page-of-one-release-asks-a-replica-of-another-for-a-file-its-bundle-lacks)) | R-BAS-116 |
 | A generic repository's files | A public generic repository's folders and files are the main installation's views without an act (W-35's P9d): a file downloads through the Bastion's own package route, its commands are the catalogue's set-up of its path, and no upload, delete or statistic is in the bundle. The file's signatures are a badge without their report ([H-2328](#h-2328--a-generic-files-signatures-are-a-badge-alone-at-the-bastion)), and its malware verdict shows no database date ([H-2329](#h-2329--a-generic-files-malware-verdict-at-the-bastion-shows-no-date-of-its-database)) | R-UI-229, R-BAS-118 |
+| The documentation (W-35's P11) | A version's README and documentation travel only while the registration's `docs` is on and a public repository that holds the version has a public wiki; without them the version announces none (`hasReadme` false). With `docs` off the data path answers no documentation, no hit of the documentation's search and no Debian changelog or copyright at once, before the builder's next run. The search inside a version runs in the browser over the tree; the search across packages scans the replica's index ([H-2338](#h-2338--a-search-of-the-documentation-across-packages-scans-every-entry-of-the-newest-versions), [H-2339](#h-2339--a-replica-holds-every-public-packages-newest-documentation-entries-in-memory)) | R-BAS-124 to R-BAS-126 |
 
 ## Search engines
 
@@ -556,7 +557,8 @@ H-2348 to H-2351, H-2354, H-2355 (H-2291, H-2348 and H-2349 are E13's, built; H-
 H-2305 to H-2307, of its builder (W-35's P6), H-2308 to H-2314, and of the web interface (W-35's P9), H-2324 to H-2327, with its generic files (W-35's P9d), H-2328 and H-2329; so are the gaps of the packages built since: H-2356 and H-2357
 (E9a), H-2358 and H-2359 (E15), H-2360 and H-2361 (E10), H-2362 (E11), H-2322 and H-2323 (W-35's P8 with E17), H-2374 and H-2375 (E18;
 H-2375 closed by E19), H-2370 (E19);
-and of a registration the configuration declares (R-BAS-127), H-2366 and H-2367;
+and of a registration the configuration declares (R-BAS-127), H-2366 and H-2367; and of the documentation of the web interface (W-35's
+P11), H-2338 and H-2339;
 those of a Bastion's budgets are on [usage-and-limits.md](usage-and-limits.md#what-this-does-not-cover) (H-2284, H-2286 to H-2288, H-2368, H-2369). Numbers
 marked [derived] are calculated from the defaults, not measured.
 
@@ -1257,9 +1259,29 @@ Stage: the pages of a version (R-UI-229, W-35's D1). Subject: a publisher of a p
 remote, whose README, documentation or changelog the Bastion's pages show. The HTML is the main installation's sanitized output
 (R-UI-008's allowlist on the server), stored in the catalogue as it was rendered; the page binds it through Angular's sanitizer and under
 the page's Trusted Types policy (R-BAS-117), so a script, a handler or a frame does not run. Dormant: it takes a flaw in all three layers.
-A tightened server allowlist reaches the catalogue only when the builder renders the document again (the policy's hash in the
-fingerprint is W-35's P11). What makes it real: the same origin serves the package API (H-2325), so a script that ran would act with what
-the browser holds for the origin.
+A tightened server allowlist reaches the catalogue only when the builder renders the document again: the policy's hash, the README
+renderer's version and the Ansible markup converter's version are in the salt of every unit, so a change of any of them renders every
+document at the builder's next run (R-BAS-124, Q-BAS-419); the converter's version is raised by hand with its output. What makes it real:
+the same origin serves the package API (H-2325), so a script that ran would act with what the browser holds for the origin.
+
+### H-2338 · A search of the documentation across packages scans every entry of the newest versions
+
+Stage: `/ui/data/v1/search/documentation` (R-BAS-125, Q-BAS-421, W-35's D9). Subject: the CPU of a Bastion's replica. Every request scans
+the index of the entries of every public package's newest version in memory, matching each word of the text against each entry's search
+words, and sorts the hits. Measured once on 2026-11-26 (Apple M-series, in process): 100,000 entries of 2,000 collections, a word every
+entry holds takes 59 ms, one that few hold 8 to 17 ms. Live against the Bastion alone, as H-2326: the class `gui` bounds each address
+(20 requests a second), so one address can keep about one core busy with the broadest word; many addresses are bounded only by
+`server.max_in_flight` and the network in front. The main installation pays nothing. What would bound it: an index by word prefix, as the
+main installation's statement reads through `ansible_doc_entries_search`.
+
+### H-2339 · A replica holds every public package's newest documentation entries in memory
+
+Stage: the documentation index of the catalogue (R-BAS-125, Q-BAS-421). Subject: the memory of a Bastion's replica. Each round keeps, beside
+the index of packages (H-2315), every entry of the documentation tree of each public package's newest version with its search words (at
+most 4 KiB of words per entry at the main installation, `rows.MaxDocSearchText`, fewer after the reduction of Q-BAS-418). Measured once on
+2026-11-26: 100,000 entries of twenty short words take about 57 MiB. Live with docs on: no bound of its own caps it; the catalogue's share
+(`bastion.gui.max_bytes`) bounds the documents kept, not the index built from them. What makes it real: a public remote of a large
+Galaxy mirror, whose every collection's newest documentation enters the index.
 
 ### H-2334 · A search engine keeps a page after its content became private, until it visits again
 

@@ -15,8 +15,8 @@ rendered from it ([checklist.md there](https://github.com/guided-traffic/quader/
 requirement lists the feature in its `Covers:` line. *open*: no requirement does. For entries with priority
 *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,379 spec requirements:
-808 cover catalog features, 571 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,383 spec requirements:
+808 cover catalog features, 575 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>571 requirements</summary>
+<summary>575 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3117,6 +3117,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-UI-229 | The Bastion's pages are the main installation's views | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-230 | The Bastion's pages are rendered and their layout checked | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-231 | The Bastion's application for search engines | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-UI-232 | The Bastion's pages show the documentation as the main installation's, while its switch docs is on | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-250 | Every time stands in the form the reader chose, `26.11.2026 21:39:22 (Thu.)` by default | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-251 | The installation's default form of a time | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-252 | The spinner sits in the middle of what loads, and a page that loads does not scroll | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
@@ -3240,6 +3241,9 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-BAS-121 | A page's head and text for a reader that runs no script | P1 | [bastion.md](../spec/bastion.md) |
 | R-BAS-122 | `robots.txt` and the sitemap at the host's root | P1 | [bastion.md](../spec/bastion.md) |
 | R-BAS-123 | A page's address over the limit of the class gui is a page in the Bastion's shape | P1 | [bastion.md](../spec/bastion.md) |
+| R-BAS-124 | The documentation travels in the catalogue only with docs on and a public wiki, with the words of the main installation's search | P1 | [bastion.md](../spec/bastion.md) |
+| R-BAS-125 | The documentation is searched at the Bastion: a version in the browser, across packages at the Bastion | P1 | [bastion.md](../spec/bastion.md) |
+| R-BAS-126 | The pages show the documentation while docs is on, and lead with it | P1 | [bastion.md](../spec/bastion.md) |
 | R-EP-002 | Endpoint identity comes from the listener | MVP | [endpoints.md](../spec/endpoints.md) |
 | R-EP-004 | TLS on endpoint listeners: certificates by SNI, wildcard certificates, reload | MVP | [endpoints.md](../spec/endpoints.md) |
 | R-EP-006 | Host-root binding: the reserved mechanism | MVP | [endpoints.md](../spec/endpoints.md) |

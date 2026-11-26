@@ -115,7 +115,8 @@ SELECT c.path, c.sha256, d.size, d.gzip
 -- The fingerprint of every package by its format and name, over every repository that holds it (R-BAS-105): what changes a document
 -- of the package and is not a time. The versions and their trash, the package's revision (a change of its metadata), the findings
 -- with their status and what the page shows of them, the files' verdicts and releases, the Debian contents' state, the signatures with
--- their trust, the Ansible documentation built for the versions and the state of a role's documentation, the image scans' outcome.
+-- their trust, the Ansible documentation built for the versions (its generator, its entries and its bytes, so a rebuild that changes
+-- the search words changes it too) and the state of a role's documentation, the image scans' outcome.
 -- No time of a check (scanned_at, checked_at, synced_at, computed_at) enters it: a rescan that finds the same changes no document.
 SELECT r.format, p.name,
        md5(string_agg(
@@ -139,8 +140,9 @@ SELECT r.format, p.name,
                      JOIN signatures s ON s.subject_sha256 = i.blob_sha256
                      LEFT JOIN signature_trust st ON st.signature_id = s.id
                     WHERE pv.package_id = p.id), '') || '/' ||
-         COALESCE((SELECT count(*)::text || ' ' || COALESCE(max(e.version), '')
-                     FROM ansible_doc_entries e WHERE e.repo_id = p.repo_id AND e.name = p.name), '') || '/' ||
+         COALESCE((SELECT string_agg(vd.version || ' ' || vd.generator::text || ' ' || vd.entry_count::text || ' ' || vd.total_bytes::text,
+                                     ',' ORDER BY vd.version)
+                     FROM ansible_version_docs vd WHERE vd.repo_id = p.repo_id AND vd.name = p.name), '') || '/' ||
          COALESCE((SELECT string_agg(af.version || ' ' || af.state, ',' ORDER BY af.version)
                      FROM ansible_doc_fetches af WHERE af.repo_id = p.repo_id AND af.name = p.name), '') || '/' ||
          COALESCE((SELECT string_agg(encode(vs.digest, 'hex') || ' ' || vs.state || ' ' || vs.os_eosl::text || ' ' || vs.packages::text, ','
@@ -163,3 +165,15 @@ SELECT (pr.key || '/' || r.key)::text AS repository,
   LEFT JOIN malware_release mr ON mr.sha256 = i.blob_sha256
  WHERE r.format = ANY(sqlc.arg(formats)::text[])
  GROUP BY pr.key, r.key;
+
+-- name: BastionCatalogueDocSearchWords :many
+-- The words of the search vector of every entry of an Ansible collection version's documentation in a repository (formats/ansible.md
+-- R-ANS-036): the lexemes the main installation's search matches a term's prefix against, which the builder hands to the Bastion's
+-- catalogue as the tree's searchWords, so that a version's documentation is searched in the browser by the main installation's rule
+-- (bastion.md R-BAS-124). One statement per version over its rows (at most 5,000), by the primary key.
+SELECT e.content_type, e.content_name, tsvector_to_array(e.search)::text[] AS words
+  FROM ansible_doc_entries e
+  JOIN repositories r ON r.id = e.repo_id
+  JOIN project pr ON pr.id = r.project_id
+ WHERE pr.key = sqlc.arg(project)::text AND r.key = sqlc.arg(repository)::text
+   AND e.name = sqlc.arg(name)::text AND e.version = sqlc.arg(version)::text;

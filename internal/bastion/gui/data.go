@@ -29,6 +29,8 @@ const (
 	pathLookup   = "packages/lookup"
 	pathProjects = "projects"
 	pathFiles    = "files"
+	// pathDocs is the documentation searched across packages (R-BAS-125): the main installation's GET /api/v1/search/documentation.
+	pathDocs = "search/documentation"
 )
 
 // projectsBody is the answer of /ui/data/v1/projects: the keys of the projects the catalogue shows, in their order, so that the
@@ -112,6 +114,9 @@ func (h *Handler) data(w http.ResponseWriter, r *http.Request, ready bool) {
 		return
 	case pathLookup:
 		h.lookup(w, r)
+		return
+	case pathDocs:
+		h.searchDocs(w, r)
 		return
 	}
 	path, ok := canonical(rest)
@@ -289,6 +294,34 @@ func limitOf(s string) (int, bool) {
 	return n, true
 }
 
+// searchDocs lists the entries of the documentation of the public packages' newest versions (R-BAS-125) in the main installation's
+// shape of GET /api/v1/search/documentation: a list of R-API-010 by q, project, cursor and limit. While docs is off it finds
+// nothing, as a reader who may read no wiki finds nothing there.
+func (h *Handler) searchDocs(w http.ResponseWriter, r *http.Request) {
+	qs := r.URL.Query()
+	for k := range qs {
+		if k != "q" && k != "project" && k != "cursor" && k != "limit" {
+			h.problem(w, r, errs.E(errs.Invalid, errs.CodeInvalid, "The parameter "+strconv.Quote(k)+" is not one this address answers."))
+			return
+		}
+	}
+	limit, ok := limitOf(qs.Get("limit"))
+	if !ok {
+		h.problem(w, r, errs.E(errs.Invalid, errs.CodeInvalid, "The limit is a number from 1 to 100."))
+		return
+	}
+	res, err := h.o.Catalogue.SearchDocs(catalogue.DocQuery{Q: qs.Get("q"), Project: qs.Get("project"), After: qs.Get("cursor"), Limit: limit})
+	if err != nil {
+		h.readerError(w, r, err)
+		return
+	}
+	type docsPage struct {
+		Items      []catalogue.DocHit `json:"items"`
+		NextCursor *string            `json:"nextCursor"`
+	}
+	h.json(w, r, docsPage{Items: res.Items, NextCursor: next(res.Next)})
+}
+
 // lookup finds a public package by its format and its name or key (R-API-029's lookup).
 func (h *Handler) lookup(w http.ResponseWriter, r *http.Request) {
 	qs := r.URL.Query()
@@ -349,6 +382,14 @@ func (h *Handler) document(w http.ResponseWriter, r *http.Request, path string, 
 		h.problem(w, r, errNotFound())
 		return
 	}
+	if kind == iface.CatalogueContents && !h.o.Catalogue.State().Docs {
+		// A Debian package's changelog and copyright are documentation (R-BAS-126): with docs off they leave the contents at once,
+		// before the builder's next run takes them out of the document.
+		if body, ok := withoutDocumentation(d.Raw); ok {
+			h.raw(w, r, body)
+			return
+		}
+	}
 	hd := w.Header()
 	hd.Set("Content-Type", contentType(kind))
 	hd.Set("Cache-Control", "no-cache")
@@ -364,6 +405,33 @@ func (h *Handler) document(w http.ResponseWriter, r *http.Request, path string, 
 		hd.Set("Content-Encoding", "gzip")
 	}
 	h.write(w, r, tag, body)
+}
+
+// documentationMembers are the members of a Debian package's contents that are its documentation (R-BAS-124): the changelog and the
+// copyright with their marks.
+func documentationMembers() []string {
+	return []string{"changelog", "changelogFile", "changelogTruncated", "copyright", "copyrightTruncated"}
+}
+
+// withoutDocumentation is a contents document without its documentation's members; ok is false when it holds none (or is no object),
+// and the stored document is answered as it is.
+func withoutDocumentation(raw []byte) ([]byte, bool) {
+	var m map[string]json.RawMessage
+	if json.Unmarshal(raw, &m) != nil {
+		return nil, false
+	}
+	found := false
+	for _, k := range documentationMembers() {
+		if _, ok := m[k]; ok {
+			delete(m, k)
+			found = true
+		}
+	}
+	if !found {
+		return nil, false
+	}
+	b, err := json.Marshal(m)
+	return b, err == nil
 }
 
 // contentType is the media type of a document by its kind: the main installation's JSON answers, the signing material as it is.

@@ -36,6 +36,7 @@ type reader struct {
 	state catalogue.State
 	pkgs  []catalogue.Entry
 	docs  map[string][]byte
+	hits  []catalogue.DocHit
 	// reads counts every read, which a request that must not read counts against.
 	reads int
 	// revision is what Packages answers as the revision of the packages.
@@ -171,6 +172,28 @@ func (r *reader) Document(_ context.Context, path string) (catalogue.Document, b
 	return catalogue.Document{Path: path, SHA256: hex.EncodeToString(sum[:]), Size: int64(len(raw)), Raw: raw, Gzip: b.Bytes()}, true, nil
 }
 
+// SearchDocs answers the hits whose name holds the text, as the reader's own tests hold its rule.
+func (r *reader) SearchDocs(q catalogue.DocQuery) (catalogue.DocPage, error) {
+	if err := r.served(); err != nil {
+		return catalogue.DocPage{}, err
+	}
+	if len(q.Q) < 2 {
+		return catalogue.DocPage{}, catalogue.ErrQuery
+	}
+	p := catalogue.DocPage{Items: []catalogue.DocHit{}}
+	if !r.state.Docs {
+		return p, nil
+	}
+	for _, d := range r.hits {
+		if strings.Contains(d.Name, q.Q) && (q.Project == "" || d.Project == q.Project) {
+			p.Items = append(p.Items, d)
+		}
+	}
+	return p, nil
+}
+
+func (r *reader) DocEntries() ([]catalogue.DocHit, error) { return r.hits, r.served() }
+
 var confirmed = time.Date(2026, 11, 26, 9, 30, 0, 0, time.UTC)
 
 func onState() catalogue.State {
@@ -186,6 +209,10 @@ func newReader() *reader {
 			{ID: pkgID, Format: "npm", Name: "@acme/ui", Key: "@acme/ui", Repositories: []string{"acme/npm"}, Summary: json.RawMessage(`{"id":"` + pkgID + `","name":"@acme/ui"}`)},
 			{ID: "r1", Format: "ansible", Name: "acme.web", Key: "web", Repositories: []string{"web/galaxy"}, Summary: json.RawMessage(`{"id":"r1","name":"acme.web"}`)},
 		},
+		hits: []catalogue.DocHit{{
+			Format: "ansible", PackageID: "r1", Package: "acme.web", Version: "1.0.0", Project: "web", Repository: "galaxy",
+			Type: "module", Name: "web_server", ShortDescription: "Serves the web",
+		}},
 		docs: map[string][]byte{
 			"packages/" + pkgID + "/versions/1.0.0%2Bbuild.1":       []byte(`{"version":"1.0.0+build.1"}`),
 			"packages/" + pkgID + "/versions/1.0.0/vulnerabilities": []byte(`{"repositories":[]}`),
@@ -263,7 +290,8 @@ func problemCode(t *testing.T, rec *httptest.ResponseRecorder) string {
 var addresses = []string{
 	"/", "/ui", "/ui/", "/ui/en/", "/ui/de/projects/acme/packages/npm/@acme/ui", "/ui/en/main-ABCD1234.js",
 	"/ui/data/v1/state", "/ui/data/v1/legal?locale=en", "/ui/data/v1/packages", "/ui/data/v1/packages/lookup?format=npm&name=x",
-	"/ui/data/v1/packages/" + pkgID + "/versions", "/ui/data/v1/signing/chain.pem", "/ui/data/v2/x",
+	"/ui/data/v1/packages/" + pkgID + "/versions", "/ui/data/v1/signing/chain.pem", "/ui/data/v1/search/documentation?q=web",
+	"/ui/data/v2/x",
 }
 
 // TestR_BAS_116_EveryAddressReadsOnlyAndAnswersAnUnsafeMethod405: GET and HEAD only; every other method is 405 with Allow, its body
@@ -563,6 +591,49 @@ func TestR_BAS_118_TheDataAreTheMainInstallationsShapesFromTheCatalogue(t *testi
 
 // TestR_BAS_116_TheBundleIsTheBastionsOwnAndBuildsWithoutTheWebBuild: the embedded tree holds the committed placeholder, which
 // starts the handler without a web build, and names nothing of the main installation.
+// TestR_BAS_125_TheDocumentationIsSearchedInTheMainInstallationsShape: /ui/data/v1/search/documentation answers the reader's hits in
+// the main installation's shape of a hit (DocumentationHit) in a list of R-API-010, takes q, project, cursor and limit and refuses
+// any other parameter, a text the reader refuses and a limit outside 1 to 100; with docs off it finds nothing.
+func TestR_BAS_125_TheDocumentationIsSearchedInTheMainInstallationsShape(t *testing.T) {
+	r := newReader()
+	h := newGUI(t, r, nil)
+	rec := do(h, http.MethodGet, "/ui/data/v1/search/documentation?q=web&project=web&limit=10")
+	want := `{"items":[{"format":"ansible","packageId":"r1","package":"acme.web","version":"1.0.0","project":"web","repository":"galaxy",` +
+		`"type":"module","name":"web_server","shortDescription":"Serves the web"}],"nextCursor":null}`
+	if rec.Code != 200 || rec.Body.String() != want || rec.Header().Get("ETag") == "" {
+		t.Errorf("search = %d %s", rec.Code, rec.Body.String())
+	}
+	if rec := do(h, http.MethodGet, "/ui/data/v1/search/documentation?q=web&project=acme"); rec.Code != 200 || rec.Body.String() != `{"items":[],"nextCursor":null}` {
+		t.Errorf("another project = %d %s", rec.Code, rec.Body.String())
+	}
+	for _, q := range []string{"q=w", "q=web&kind=x", "q=web&limit=0", "q=web&limit=101"} {
+		if rec := do(h, http.MethodGet, "/ui/data/v1/search/documentation?"+q); rec.Code != 400 || problemCode(t, rec) != "malformed_request" {
+			t.Errorf("%s = %d %s", q, rec.Code, rec.Body.String())
+		}
+	}
+	r.state.Docs = false
+	if rec := do(h, http.MethodGet, "/ui/data/v1/search/documentation?q=web"); rec.Code != 200 || rec.Body.String() != `{"items":[],"nextCursor":null}` {
+		t.Errorf("docs off = %d %s", rec.Code, rec.Body.String())
+	}
+}
+
+// TestR_BAS_126_DocsOffTakesTheChangelogOutOfTheContentsAtOnce: a Debian package's contents carry its changelog and copyright while
+// docs is on, as stored; with docs off they are answered without them at once, before the builder's next run.
+func TestR_BAS_126_DocsOffTakesTheChangelogOutOfTheContentsAtOnce(t *testing.T) {
+	r := newReader()
+	contents := "packages/" + pkgID + "/versions/1.0.0/contents"
+	r.docs[contents] = []byte(`{"changelog":"acme (1.0) stable","changelogTruncated":false,"copyright":"MIT","files":[{"path":"/usr/bin/acme"}]}`)
+	h := newGUI(t, r, nil)
+	if rec := do(h, http.MethodGet, dataRoot+contents); rec.Code != 200 || !strings.Contains(rec.Body.String(), "acme (1.0) stable") {
+		t.Errorf("docs on = %d %s", rec.Code, rec.Body.String())
+	}
+	r.state.Docs = false
+	rec := do(h, http.MethodGet, dataRoot+contents)
+	if rec.Code != 200 || rec.Body.String() != `{"files":[{"path":"/usr/bin/acme"}]}` || rec.Header().Get("ETag") == "" {
+		t.Errorf("docs off = %d %v %s", rec.Code, rec.Header(), rec.Body.String())
+	}
+}
+
 func TestR_BAS_116_TheBundleIsTheBastionsOwnAndBuildsWithoutTheWebBuild(t *testing.T) {
 	h, err := New(Options{Catalogue: newReader(), Legal: legalPages(t), BaseURL: "https://bastion.example.com"})
 	if err != nil {

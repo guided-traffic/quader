@@ -1,10 +1,13 @@
 import {
   PackageDocEntry,
+  PackageDocEntryHead,
   PackageDocEntryPoint,
+  PackageDocGroup,
   PackageDocOption,
   PackageDocOptionConfiguration,
   PackageDocReturnValue,
   PackageDocTree,
+  PackageDocType,
 } from '../../api/packages-api';
 
 /*
@@ -176,6 +179,82 @@ function groupLabel(category: string, fallback: string): string {
     default:
       return fallback;
   }
+}
+
+/** At most this many terms of a search, each at most this many characters (R-ANS-036): the server's bounds, which the browser keeps. */
+export const DOC_SEARCH_MAX_TERMS = 8;
+export const DOC_SEARCH_MAX_TERM_LENGTH = 64;
+
+/**
+ * The terms of a search inside a version's documentation as the main installation reads them (R-ANS-036, `parseDocQuery`): control
+ * characters taken out, split on white space, at most 8 terms of at most 64 characters each.
+ */
+export function docTerms(q: string): string[] {
+  // eslint-disable-next-line no-control-regex -- the control characters are what is taken out
+  const text = q.replace(/[\u0000-\u001f\u007f-\u009f]/g, (c) => (/\s/.test(c) ? ' ' : ''));
+  return text
+    .split(/\s+/)
+    .filter((t) => t !== '')
+    .slice(0, DOC_SEARCH_MAX_TERMS)
+    .map((t) => [...t].slice(0, DOC_SEARCH_MAX_TERM_LENGTH).join(''));
+}
+
+/** A term reduced as the search vector's query reduces it: its letters and digits, in lower case. */
+function reduced(term: string): string {
+  return term.replace(/[^\p{L}\p{N}]/gu, '').toLowerCase();
+}
+
+/**
+ * Whether an entry of the tree matches a search (R-ANS-036, the rule of the main installation's statement `AnsibleDocsTree`): every
+ * term is a part of the entry's name, whatever the case, or its letters and digits begin a word of the entry's search vector.
+ * `searchWords` are those words as a Bastion's catalogue carries them (bastion.md R-BAS-124), separated by spaces.
+ */
+export function docEntryMatches(name: string, searchWords: string | undefined, terms: readonly string[]): boolean {
+  const lower = name.toLowerCase();
+  const words = (searchWords ?? '').split(' ').filter((w) => w !== '');
+  return terms.every((t) => {
+    if (lower.includes(t.toLowerCase())) return true;
+    const r = reduced(t);
+    return r !== '' && words.some((w) => w.startsWith(r));
+  });
+}
+
+/** An entry of a tree as a Bastion's catalogue holds it: the main installation's, with the words of its search vector (R-BAS-124). */
+export type CatalogueEntryHead = PackageDocEntryHead & { readonly searchWords?: string };
+
+/** A documentation tree as a Bastion's catalogue holds it: the main installation's, each entry with its search words (R-BAS-124). */
+export type CatalogueDocTree = Omit<PackageDocTree, 'groups'> & {
+  groups?: (Omit<PackageDocGroup, 'types'> & { types: (Omit<PackageDocType, 'entries'> & { entries: CatalogueEntryHead[] })[] })[];
+};
+
+/**
+ * The tree narrowed by a search, as the main installation answers `getPackageVersionDocs` with `q` (R-ANS-036), computed in the browser
+ * from the whole tree (a Bastion's catalogue, bastion.md R-BAS-124): the entries that match, the groups, types and counts as before the
+ * search, `matchCount` the entries left; a file matches when every term is a part of its title, the changelog when every term is a
+ * part of "changelog". Null for a text of fewer than 2 characters, which the server refuses.
+ */
+export function narrowDocTree(tree: CatalogueDocTree, q: string): PackageDocTree | null {
+  const terms = docTerms(q);
+  if (terms.join(' ').length < 2) return null;
+  if (tree.state !== 'available') return tree;
+  let matches = 0;
+  const groups = (tree.groups ?? []).map((g) => ({
+    ...g,
+    types: g.types.map((t) => {
+      const entries = t.entries.filter((e) => docEntryMatches(e.name, e.searchWords, terms));
+      matches += entries.length;
+      return { ...t, entries };
+    }),
+  }));
+  const inTitle = (title: string): boolean => terms.every((t) => title.toLowerCase().includes(t.toLowerCase()));
+  const { changelog, ...rest } = tree;
+  return {
+    ...rest,
+    groups,
+    files: (tree.files ?? []).filter((f) => inTitle(f.title)),
+    matchCount: matches,
+    ...(changelog && inTitle(CHANGELOG_FILE) ? { changelog } : {}),
+  };
 }
 
 /** The ids of the branches that hold the node with this id, from the top. */

@@ -4,6 +4,7 @@ import { ClientSetupReads, PackageReads } from '../../app/api/package-reads';
 import {
   ClientSetup,
   ClientSetupQuery,
+  DocsQuery,
   PackageDependents,
   PackageDocEntry,
   PackageDocFile,
@@ -34,6 +35,7 @@ import { FormatCatalog } from '../../app/core/format-names';
 import { SIGNED_IN } from '../../app/core/signed-in';
 import { SETUP_PAGES } from '../../app/views/setup-pages';
 import { SystemClients } from '../../app/core/system-clients';
+import { narrowDocTree } from '../../app/views/packages/docs-model';
 import { BastionData, DATA_ROOT, seg } from './http';
 import { BASTION_FORMATS } from './formats';
 import { VersionTimes } from './times';
@@ -112,13 +114,23 @@ export class BastionPackageReads extends PackageReads {
     }
   }
 
-  override async docs(packageId: string, version: string): Promise<PackageDocTree | null> {
+  /**
+   * A version's documentation tree; with `q`, narrowed in the browser by the main installation's rule (docs-model.ts `narrowDocTree`,
+   * bastion.md R-BAS-124): the catalogue holds the whole tree with each entry's search words, and the Bastion runs no search of its own
+   * for a version. A text the main installation refuses (fewer than 2 characters) is refused the same way.
+   */
+  override async docs(packageId: string, version: string, query: DocsQuery = {}): Promise<PackageDocTree | null> {
+    let tree: PackageDocTree;
     try {
-      return await this.times.with(packageId, version, 'docs', this.data.get<PackageDocTree>(`${versionPath(packageId, version)}/docs`));
+      tree = await this.times.with(packageId, version, 'docs', this.data.get<PackageDocTree>(`${versionPath(packageId, version)}/docs`));
     } catch (e) {
       if (missing(e)) return null;
       throw e;
     }
+    if (query.q === undefined) return tree;
+    const narrowed = narrowDocTree(tree, query.q);
+    if (narrowed === null) throw new ApiError(422, null, null, null);
+    return narrowed;
   }
 
   override docEntry(packageId: string, version: string, type: string, name: string): Promise<PackageDocEntry> {

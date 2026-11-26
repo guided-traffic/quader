@@ -136,8 +136,9 @@ type Catalogue struct {
 	heldMu    sync.Mutex
 	held      map[string]int64
 	heldKnown bool
-	// pages are the parsed pages of the index by the SHA-256 of their document.
+	// pages are the parsed pages of the index by the SHA-256 of their document, trees the parsed documentation trees (R-BAS-125).
 	pages map[string][]*Entry
+	trees map[string]*docTree
 	// lastWrite is when the state record was written last, lastSweep when the tree was swept last, cleared whether the tree was
 	// deleted since the switch went off.
 	lastWrite time.Time
@@ -172,7 +173,7 @@ func New(o Options) *Catalogue {
 		o.PollInterval = 10 * time.Second
 	}
 	c := &Catalogue{
-		o: o, log: o.Log.With("component", "catalogue"), held: map[string]int64{}, pages: map[string][]*Entry{},
+		o: o, log: o.Log.With("component", "catalogue"), held: map[string]int64{}, pages: map[string][]*Entry{}, trees: map[string]*docTree{},
 		wake: make(chan struct{}, 1),
 	}
 	o.Metrics.CatalogueStaleAfter.Set(o.StaleAfter.Seconds())

@@ -40,6 +40,7 @@ type snapshot struct {
 	repos       map[string]iface.CatalogueRepository
 	shards      [shardCount]*shard
 	index       *index
+	docIndex    *docIndex
 }
 
 // count is the number of documents the snapshot names.

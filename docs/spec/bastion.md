@@ -33,7 +33,9 @@ R-BAS-025, R-BAS-029, R-BAS-031, R-BAS-035 to R-BAS-038, R-BAS-046, R-BAS-051, R
 R-BAS-074, Q-BAS-15, Q-BAS-21, Q-BAS-38, Q-BAS-43, Q-BAS-74, Q-BAS-88, Q-BAS-116, Q-BAS-118, Q-BAS-123, Q-BAS-315, H-388, H-1244, H-2272,
 H-2273 and H-2277, each with a marked sentence of what the code does until its package lands. The owner's wish of 2026-11-26 that a Bastion stays connected
 after a fresh database is specified and built in [A registration the configuration declares](#a-registration-the-configuration-declares)
-(R-BAS-127, Q-BAS-465 to Q-BAS-469, H-2366 and H-2367).
+(R-BAS-127, Q-BAS-465 to Q-BAS-469, H-2366 and H-2367). The documentation of a Bastion's web interface (the owner's B.5 of W-35) is
+specified and built in [The documentation of the Bastion's web interface](#the-documentation-of-the-bastions-web-interface) (R-BAS-124
+to R-BAS-126, Q-BAS-415 to Q-BAS-422, H-2338 and H-2339).
 
 This page specifies the Quader Bastion: a second, smaller deployment of Quader that is exposed to the internet, gives external
 parties read access to the content of a main installation with the main installation's own tokens, keeps a cache of what it
@@ -6259,7 +6261,7 @@ Priority: **P1** · Covers: quader-only
   unreadable and lets the sweep delete it; the main installation deletes the registration's catalogue (P6, P7, P9).
 - **docs** switches the documentation of the web interface, and is effective only with `gui`: while it is off, a documentation path of the
   grammar (`CataloguePath.Documentation`: the README, the docs tree, its entries and files) answers `404 not_found` on the single read and
-  is a missing frame of a batch, and the builder builds none (P11).
+  is a missing frame of a batch, and the builder builds none (R-BAS-124).
 - The token reads only its own registration's catalogue: the routes take the registration from the recognition of the token, never from
   the request ([Q-BAS-350](#q-bas-350--the-catalogue-routes-answer-the-bastion-token-alone-by-the-registrations-switches)).
 
@@ -6270,7 +6272,8 @@ stored switches: `gui` on builds the registration's catalogue, off drops it at t
 builds no documentation and deletes what was built (R-BAS-104, R-BAS-108; `TestR_BAS_102_TheSwitchesDecideWhatIsBuilt`). *Built by E12
 (2026-11-26):* the switches on the card, each with its sentence (R-UI-240). *Not built:* the pages the switches start and stop (P9).
 *Built on 2026-11-26 (W-35's P7):* at the Bastion: `gui` on starts the sync, off makes the catalogue unreadable at once and deletes its
-tree; `docs` off hides the documentation at once (R-BAS-112).
+tree; `docs` off hides the documentation at once (R-BAS-112). *Built on 2026-11-26 (W-35's P11):* the documentation by `docs` and the
+wiki at the builder, at the data path and on the pages (R-BAS-124 to R-BAS-126).
 
 Acceptance criteria:
 
@@ -6344,7 +6347,7 @@ The priority is the one of R-BAS-101 to R-BAS-103.
   reported none, or one the installation does not list, is not built: the builder records `bastion_base_url_unknown` in its state for the
   registration's card and keeps what it built before. A disabled registration builds nothing.
 - **What it builds, per format** (W-35's section C): the index of public packages (`index/<n>`, pages of 100 in the list's order, name),
-  per package its summary and its versions, per version the version, its README (`docs` on), its open findings, its signatures, the
+  per package its summary and its versions, per version the version, its README (`docs` on and a public wiki, R-BAS-124), its open findings, its signatures, the
   Debian contents (the changelog and the copyright only with `docs` on), the Ansible documentation tree with every entry that has
   documentation and every file (`docs` on), the set-up of every client of the format for the version in its first public repository, and
   its state; per public repository the set-up of every client; per generic repository (a format whose items are paths) every folder's
@@ -6668,6 +6671,7 @@ Priority: **P1** · Covers: quader-only
 | `Versions(id, after, limit)` | a page of the package's versions list, as the main installation answered it |
 | `Document(path)` | a document of the grammar (R-BAS-103) that the state shows (R-BAS-112), raw and compressed, verified against its SHA-256 on every read |
 | `Packages()` | every public package of the index by name, each with its public repositories only, and a revision that stays exactly while the index's pages, the public set and the switch `docs` do: the sitemap's source (R-BAS-122, [Q-BAS-414](#q-bas-414--the-reader-lists-the-public-packages-under-a-revision-for-the-sitemap); added by W-35's P10) |
+| `SearchDocs(DocQuery)`, `DocEntries()` | the documentation of the public packages' newest versions searched across packages, and every entry of it for the sitemap (R-BAS-125; added by W-35's P11) |
 
 - While the switch `gui` is off every method answers `ErrOff`, while no state is served `ErrNotReady` (R-BAS-111).
 - **Integrity on read** (W-35's D6, [Q-BAS-372](#q-bas-372--a-document-that-does-not-verify-fails-the-round-a-missing-frame-takes-its-path-out)).
@@ -6789,6 +6793,7 @@ to (R-BAS-107), in the main installation's JSON shapes, so that the shared views
 | `packages?q&format&project&repository&deprecated&sort&cursor&limit` | the search of the reader (R-BAS-113, W-35's B.8) in the envelope of R-API-010 (`items`, `nextCursor`), each item the package summary as the main installation answered it; `include` is accepted and changes nothing (the summaries carry the counts of open findings); any other parameter is `400 malformed_request` |
 | `packages/lookup?format&name` | the public package of the format by its name, else by its key ([Q-BAS-395](#q-bas-395--the-lookup-finds-a-package-by-its-name-then-by-its-key)), or `404` |
 | `packages/<id>/versions?cursor&limit` | a page of the package's versions in the main installation's order; the application sorts, searches and groups them in the browser, as the main installation's view does ([Q-BAS-396](#q-bas-396--the-versions-are-paged-in-the-main-installations-order-and-sorted-in-the-browser)) |
+| `search/documentation?q&project&cursor&limit` | the documentation of the public packages' newest versions searched across packages, in the shape of `GET /api/v1/search/documentation` (R-BAS-125; added by W-35's P11) |
 | every other path of the grammar (R-BAS-103) | the document as the builder stored it, by `Reader.Document`: a package, a version, its README, findings, signatures, contents, documentation, a set-up, a generic folder or file, a signature object, `signing/trusted-root.json` and `signing/chain.pem` (the last three as attachments); an index page and the catalogue's own `state` are not answered |
 
 - **One spelling.** A path is read segment by segment and written in the grammar's one spelling before it is looked up, so a browser that
@@ -6996,6 +7001,141 @@ Acceptance criteria:
   (four page addresses in their languages with the headers, the policy's nonce on the styles, the refresh, noindex, no script and no
   link; `HEAD`; the data, a file of the bundle, `robots.txt` and the sitemap keep the problem; the block list's sentence and the footer).
 - Rendered (both schemes, 390 and 1,440 px, English and German) and looked at; the renders are not committed.
+
+## The documentation of the Bastion's web interface
+
+W-35's package P11, the owner's B.5 (2026-11-26): "Eine weitere, separat zuschaltbare Option ist das Ausliefern von Docs pro Repo", and of
+Ansible (2026-11-25): Quader replaces Galaxy completely and as an equal, so the documentation a format regularly carries is stored, shown,
+and shown first. A Bastion whose switch `docs` is on (R-BAS-102) shows a public package's documentation as the main installation shows
+it to an anonymous visitor: the README of an npm, a NuGet and a Helm package and of an Ansible collection or role, an Ansible collection's
+documentation tree with its entries, files and changelog, and a Debian package's changelog and copyright. The repository's wiki level
+decides per repository (R-AUTHZ-034); there is no setting of its own. The builder's part is R-BAS-124, the Bastion's R-BAS-125, the pages'
+R-BAS-126 and [api-and-ui.md](api-and-ui.md) R-UI-232.
+
+### R-BAS-124 · The documentation travels in the catalogue only with docs on and a public wiki, with the words of the main installation's search
+Priority: **P1** · Covers: quader-only
+
+The priority is the one of R-BAS-101 to R-BAS-120.
+
+- **What travels.** A version's README, its documentation tree, the tree's entries and files (R-BAS-104) are built while the
+  registration's switch `docs` is on **and** a repository of the public set that holds the version has a public wiki
+  ([Q-BAS-415](#q-bas-415--the-builder-asks-the-public-set-for-the-wiki-besides-the-anonymous-answer)): the anonymous answer of the main
+  installation already holds none for a wiki that is not public (R-AUTHZ-034), and the builder asks its public set again, so a level the
+  answers have not caught up with builds none either. A Debian package's changelog and copyright follow the switch `docs` alone: they are
+  no wiki of R-AUTHZ-034, and an anonymous reader reads them at the main installation
+  ([Q-BAS-416](#q-bas-416--a-debian-packages-changelog-and-copyright-follow-the-switch-docs-alone)).
+- **No wiki member without it** ([Q-BAS-417](#q-bas-417--a-version-without-its-documentation-carries-no-wiki-member)). A version whose
+  documentation does not travel carries `hasReadme: false` and no `metadata.docs`, R-AUTHZ-034's answer to a caller who may not read the
+  wiki; a Debian package's contents carry no `changelog`, `changelogFile`, `changelogTruncated`, `copyright` or `copyrightTruncated`.
+- **The search words** ([Q-BAS-418](#q-bas-418--the-tree-carries-the-lexemes-of-the-search-vector-less-those-another-begins)). Every
+  entry of a tree the catalogue keeps carries `searchWords`: the lexemes of its search vector at the main installation
+  (`tsvector_to_array` of `ansible_doc_entries.search`, the statement `BastionCatalogueDocSearchWords`, one per version), lower case,
+  sorted, each once, without a word that begins another (a prefix of it is a prefix of the longer one), joined by a space. The member is
+  the catalogue's alone; the main installation's answer has none. A tree that the words would take above `cataloguebounds.DocumentMaxBytes`
+  is kept without them, and its search finds by the names alone.
+- **What renders it again** ([Q-BAS-419](#q-bas-419--what-else-decides-the-documentations-html-is-in-the-salt-and-the-fingerprint-reads-the-documentation-built)).
+  The salt of every unit (R-BAS-105) holds, besides the README renderer's policy hash, the renderer's version and the Ansible markup
+  converter's (`docgen.MarkupVersion`): the main installation converts on every read, so no stored fact changes with them, and a change
+  renders every document again (W-35's D1). A package's fingerprint reads the documentation built for each version (its generator, its
+  entries and its bytes), so a rebuild that changes the search words renders the package again. The builder's revision is
+  `catalogue/2`.
+
+*Built on 2026-11-26 (W-35's P11):* `publicWiki`, `withoutWiki`, `TreeWithSearchWords` and `SearchWords` of
+[builder.go](../../internal/bastionmain/catalogue/builder.go), `DocSearchWords` of [store.go](../../internal/bastionmain/catalogue/store.go),
+the statements `BastionCatalogueDocSearchWords` and `BastionCataloguePackageFacts` of
+[bastion_catalogue.sql](../../internal/meta/postgres/queries/bastion_catalogue.sql), `docsPolicy` of
+[wire_bastion_catalogue.go](../../internal/app/wire_bastion_catalogue.go), `MarkupVersion` of
+[markup.go](../../internal/formats/ansible/docgen/markup.go).
+
+Acceptance criteria:
+
+- Unit ([docs_test.go](../../internal/bastionmain/catalogue/docs_test.go), a fake management API of one collection, milliseconds, bytes):
+  `TestR_BAS_124_TheDocumentationTravelsOnlyWithDocsOnAndAPublicWiki` (docs on and a public wiki: the README, the tree, an entry and a file,
+  the version announcing them; docs off and an internal wiki: none of them, the version announcing none, its other members kept),
+  `TestR_BAS_124_TheTreeCarriesTheSearchWordsOfTheMainInstallation`, `TestR_BAS_124_SearchWordsKeepTheWordsThatNoOtherBegins`.
+- Integration (area `bastion`, inside `TestR_BAS_104_TheCatalogueFollowsPublishesLevelsAndTheSwitch`, no world of its own): the npm
+  READMEs are in the catalogue and their versions announce them; the wiki of the npm repositories lowered to internal takes them out,
+  public again brings them back; docs off leaves no README and no version that announces one.
+- Integration (area `ansiblelocal`, [catalogue_docs_test.go](../../test/integration/ansiblelocal/catalogue_docs_test.go), one collection
+  of five entries, about 2 s): `TestR_BAS_124_TheBrowsersSearchOfAVersionIsTheMainInstallations`: the tree built as the builder builds it
+  (the management API's answer with the words of `BastionCatalogueDocSearchWords` on PostgreSQL) and the main installation's answers to
+  fourteen texts are those of the fixture [docs-search-fixture.ts](../../web/src/app/api/testing/docs-search-fixture.ts), which the web
+  unit test of R-BAS-125 narrows with the browser's rule.
+
+### R-BAS-125 · The documentation is searched at the Bastion: a version in the browser, across packages at the Bastion
+Priority: **P1** · Covers: quader-only
+
+- **Inside a version** (R-ANS-036 at the Bastion, [Q-BAS-420](#q-bas-420--a-versions-search-runs-in-the-browser-over-the-whole-tree)).
+  The Bastion has no search route per version: the application reads the version's whole tree once and narrows it in the browser by the
+  rule of the main installation's statement `AnsibleDocsTree`, the function `narrowDocTree` of
+  [docs-model.ts](../../web/src/app/views/packages/docs-model.ts): the text without control characters, split on white space into at
+  most 8 terms of at most 64 characters; an entry matches when every term is a part of its name, whatever the case, or its letters and
+  digits in lower case begin a word of the entry's `searchWords`; a file matches when every term is a part of its title, the changelog
+  when every term is a part of "changelog"; the groups, types and counts stay those before the search and `matchCount` is the entries
+  left; a text of fewer than 2 characters is refused (`422`), as the main installation refuses it.
+- **Across packages** (R-ANS-058 at the Bastion, [Q-BAS-421](#q-bas-421--the-search-across-packages-is-a-data-address-over-the-newest-versions-trees)).
+  `GET /ui/data/v1/search/documentation?q&project&cursor&limit` answers the entries of the documentation tree of every public package's
+  newest version (the index's `latestVersion`, the version the package's page opens on, R-UI-218) in the main installation's shape of
+  `GET /api/v1/search/documentation` (`DocumentationHit`: format, package ID, the package's name, version, project, repository, type, name,
+  short description, the package's deprecation) in a list of R-API-010, pages of 50, at most 100. A hit is an entry each of whose words of
+  the text (the runs of `a` to `z` and `0` to `9`, `rows.ViewQuery`'s) begins a word of its `searchWords`; the best first: a name equal to
+  the text, then one that starts with it, then one that holds it, then a match of the words elsewhere, within that by the entry's name,
+  the package, the repository and the type. A text of 2 to 100 characters after its control characters are taken out; any other parameter,
+  text or limit is `400 malformed_request`. A hit is found only while `docs` is on and the repository its tree was read from is public
+  with a public wiki; otherwise the list is empty, as for a reader who may read no wiki. The replica builds the index of the trees with
+  each round, reading only a tree it has not parsed before; a tree it cannot read is left out and fetched again by the next round.
+- **For the sitemap.** `Reader.DocEntries` lists every entry the search could find, nothing while `docs` is off: the source of the
+  sitemap's documentation entries (W-35's B.11; the sitemap is the package P10's, which takes them as each entry's page, the
+  package's address with `?doc=<type>/<name>`, `DocHit.Doc`).
+
+*Built on 2026-11-26 (W-35's P11):* [docs.go](../../internal/bastion/catalogue/docs.go) (`SearchDocs`, `DocEntries`, the index built in
+`sync` and `take`), `searchDocs` of [data.go](../../internal/bastion/gui/data.go), `narrowDocTree` and `docEntryMatches` of
+[docs-model.ts](../../web/src/app/views/packages/docs-model.ts), `docs` of [reads.ts](../../web/src/bastion/data/reads.ts). *Not built:*
+the sitemap's entries, which P10 adds from `DocEntries`.
+
+Acceptance criteria:
+
+- Unit ([docs_test.go](../../internal/bastion/catalogue/docs_test.go), against maintest's catalogue, milliseconds):
+  `TestR_BAS_125_TheDocumentationIsSearchedAcrossThePackagesNewestVersions` (the newest version's entries by every word's prefix, the name
+  first, the pages by the cursor, a word inside a word and an older version's entry no hit, a project filter, a text it refuses, the
+  entries for the sitemap; a wiki that is not public and docs off find nothing).
+- Unit ([gui_test.go](../../internal/bastion/gui/gui_test.go), microseconds): `TestR_BAS_125_TheDocumentationIsSearchedInTheMainInstallationsShape`
+  (the shape, the project, the parameters and limits refused, docs off empty).
+- Unit (web, [docs-model.spec.ts](../../web/src/app/views/packages/docs-model.spec.ts), milliseconds): `R-BAS-124 the browser narrows the
+  tree as the main installation searches it, on the fixture of a real installation` (fourteen texts of R-BAS-124's fixture: the same
+  entries, files, changelog and count, the counts before the search kept); ([bastion.docs.spec.ts](../../web/src/bastion/bastion.docs.spec.ts))
+  `R-UI-232 a version's search reads the whole tree once and narrows it in the browser …`.
+
+### R-BAS-126 · The pages show the documentation while docs is on, and lead with it
+Priority: **P1** · Covers: quader-only
+
+- **Docs on.** The Bastion's pages show the documentation as the main installation's views show it (R-UI-218, R-UI-060, R-UI-008): an
+  npm and a NuGet package's address opens its newest version on its README, an Ansible collection's on its documentation; the tab
+  Documentation has its tree, its entries with their anchors and its files; a deep link (`?doc=<type>/<name>#parameter-<path>`, R-ANS-048)
+  opens that page at that anchor; a Debian version has its tab Changelog with the changelog and the copyright.
+- **Docs off** ([Q-BAS-422](#q-bas-422--with-docs-off-a-packages-address-stays-its-newest-versions-page-and-opens-on-its-first-other-tab)).
+  The application reads the switch from the state (`/ui/data/v1/state`, `docs`) at the live idle cadence (R-UI-213): the tabs README,
+  Documentation, Contents and Changelog are gone at its next read, and a version opens on its first other tab; a package's address stays
+  its newest version's page, so a link, a canonical address and a sitemap entry stay valid whatever the switch. The data path answers at
+  once: the README, the tree, its entries and files `404` (R-BAS-112), the search across packages nothing (R-BAS-125), and a Debian
+  package's contents without its changelog and copyright, before the builder's next run takes them out of the document.
+- **Nothing of the main installation.** The documentation is the builder's documents (R-BAS-106, R-BAS-107): its links are the Bastion's
+  and the README renderer's, its in-page links page-relative (R-ANS-048), and the application adds nothing of its own to them (R-BAS-120).
+
+*Built on 2026-11-26 (W-35's P11):* `documentation` of [package-version-view.ts](../../web/src/app/views/packages/package-version-view.ts),
+`VersionPage` of [package-pages.ts](../../web/src/bastion/pages/package-pages.ts), `withoutDocumentation` of
+[data.go](../../internal/bastion/gui/data.go).
+
+Acceptance criteria:
+
+- Unit ([gui_test.go](../../internal/bastion/gui/gui_test.go)): `TestR_BAS_126_DocsOffTakesTheChangelogOutOfTheContentsAtOnce`;
+  `TestR_BAS_112_DocsOffHidesTheDocumentationAtOnce` ([catalogue_test.go](../../internal/bastion/catalogue/catalogue_test.go)).
+- Unit (web, [bastion.docs.spec.ts](../../web/src/bastion/bastion.docs.spec.ts), about a second): `R-BAS-126 an npm version opens on its
+  README while docs is on, and has no README tab while it is off`, `R-BAS-126 an Ansible collection's address opens on its documentation
+  while docs is on, and on its facts while it is off`.
+- Rendered (rule 11, R-UI-230): an Ansible collection on its documentation and on its newest version's address, a module's page, the
+  search inside the version with a hit, a project's search that finds a module, an npm and a NuGet version on their README, and a Debian
+  version's changelog and copyright, in both schemes, at 390, 1,024 and 1,440 px, in English and German.
 
 ## A registration the configuration declares
 
@@ -13631,6 +13771,128 @@ left out a project whose public repositories held files alone (Q-BAS-399). The B
 | (c) No entry; the files pages by their address alone | — | No change of the Bastion | The files are published and nobody finds them; the start hides a project with files only |
 
 **Choice:** (a). **Applied in the spec:** R-BAS-118, R-UI-229.
+
+### Q-BAS-415 · The builder asks the public set for the wiki besides the anonymous answer
+
+Status: **Decided by the development agent on 2026-11-26** (W-35's P11) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-BAS-124, W-35's B.5 ("Per repository. The repository's wiki level decides"). The builder renders the main installation's
+anonymous answers, which already answer a README `404` and leave `metadata.docs` out for a wiki that is not public (R-AUTHZ-034).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The builder builds a version's documentation only when a repository of its public set that holds the version has a public wiki, besides the answer (chosen) | One look into the set the run read | The rule is the builder's own and holds with a fake of the API as with the API; a level whose change the answers have not caught up with builds none | A second statement of the same rule |
+| (b) The anonymous answer alone | — | One place | A test of the builder cannot show the rule; a cache of the answers that lags would build what the level hides |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-124.
+
+### Q-BAS-416 · A Debian package's changelog and copyright follow the switch docs alone
+
+Status: **Decided by the development agent on 2026-11-26** (W-35's P11) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-BAS-124, W-35's B.5 (the switch covers "the Debian changelog and copyright"), R-AUTHZ-034 (Debian has no wiki content: an
+anonymous reader reads both at the main installation as part of the package's contents).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The switch docs alone; the wiki level does not gate them (chosen) | As P6 built | The Bastion shows what an anonymous reader reads at the main installation, and the owner's switch still takes them away | A repository whose wiki is internal still shows its Debian changelog at the Bastion |
+| (b) Also the wiki level | — | One rule for every documentation | The Bastion would hide what the main installation shows the same visitor, against R-AUTHZ-034's table |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-124, R-AUTHZ-034 (the amendment of 2026-11-26).
+
+### Q-BAS-417 · A version without its documentation carries no wiki member
+
+Status: **Decided by the development agent on 2026-11-26** (W-35's P11) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-BAS-124, the brief of P11 ("with `docs` off no wiki member in any document"). With docs off, the version's answer still holds
+`hasReadme: true` and an Ansible collection's `metadata.docs`, the announcements the views choose their tabs by.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The builder writes R-AUTHZ-034's answer to a caller who may not read the wiki: `hasReadme` false, no `metadata.docs` (chosen) | One rewrite of the version document | No document says documentation exists that the catalogue does not hold; the views need no rule of their own once the builder ran | A version document changes with the switch |
+| (b) The documents as answered; the application hides the tabs | — | No rewrite | The data still announce documentation; the gap stays until the application reads the state |
+
+**Choice:** (a), and the application hides the tabs as well, at once (R-BAS-126, Q-BAS-422). **Applied in the spec:** R-BAS-124.
+
+### Q-BAS-418 · The tree carries the lexemes of the search vector, less those another begins
+
+Status: **Decided by the development agent on 2026-11-26** (W-35's P11) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-BAS-124, R-BAS-125, W-35's B.5 ("The search within a version uses the main installation's rule in the browser") and the plan's
+P11 ("the per-entry `searchWords` that the main installation's search vector uses"). The main installation matches a term's prefix against
+the lexemes of `to_tsvector('simple', search_text)`, which are not the runs of letters and digits: `v1.2.3` is one lexeme, so `1.2` finds
+nothing and `v1` finds it (measured on PostgreSQL by R-BAS-124's fixture).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The lexemes of the stored vector (`tsvector_to_array`), lower case, sorted, without a word another begins (chosen) | One statement per version | The browser matches exactly what PostgreSQL matches; the reduction drops what a prefix match cannot tell apart | A statement of its own beside the management API's answer |
+| (b) The search text, split in the browser into runs of letters and digits | The text as stored | No new statement | A different rule: `1.2` would find `v1.2.3` here and not at the main installation |
+| (c) A search route per version at the Bastion | — | No words in the tree | A route of the Bastion's own with the same rule written in Go; B.5 asks for the browser |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-124, R-BAS-125.
+
+### Q-BAS-419 · What else decides the documentation's HTML is in the salt, and the fingerprint reads the documentation built
+
+Status: **Decided by the development agent on 2026-11-26** (W-35's P11) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-BAS-124, R-BAS-105, W-35's D1 (`PolicyHash()` and the Ansible markup policy are part of every wiki document's fingerprint). The
+main installation renders a README and converts the Ansible markup on every read; the catalogue keeps what was rendered. The package's
+fingerprint counted the version's documentation entries, which a rebuild with other words keeps.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The README renderer's version and a version of the markup converter (`docgen.MarkupVersion`, raised with its output) in the salt; the fingerprint reads each version's generator, entries and bytes (chosen) | Two constants and one statement changed | A changed converter or renderer renders every document again; a rebuild of the documentation renders its package again | The converter's version is raised by hand |
+| (b) A hash of the converter's output over a fixed text | — | No constant to raise | A text that misses the change misses it; costs a conversion at every start |
+
+**Choice:** (a). The README policy's hash, which decides what HTML may hold, was in the salt already (P6). **Applied in the spec:** R-BAS-124.
+
+### Q-BAS-420 · A version's search runs in the browser over the whole tree
+
+Status: **Decided by the development agent on 2026-11-26** (W-35's P11) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-BAS-125, W-35's B.5. The tab Documentation asks the tree again with `q` (R-ANS-036); the catalogue holds the whole tree.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The Bastion's read of the tree with `q` reads the whole tree and narrows it with the shared function `narrowDocTree` (chosen) | The view unchanged | No route, no work at the Bastion per keystroke; one function in the views, held to the main installation's statement by a fixture | The browser holds the whole tree with its words (about a megabyte at most, R-ANS-036's bound) |
+| (b) A route `…/docs?q=` at the Bastion | — | The browser holds less | The rule twice, in Go and in SQL, and a request per search |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-125.
+
+### Q-BAS-421 · The search across packages is a data address over the newest versions' trees
+
+Status: **Decided by the development agent on 2026-11-26** (W-35's P11) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-BAS-125, W-35's B.5 ("The cross-collection search runs over the catalogue at the Bastion"), R-ANS-058.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `/ui/data/v1/search/documentation` in the main installation's shape, over an index the replica builds with each round from the trees of the packages' newest versions, by every format that has a tree (chosen) | One index in memory, rebuilt only when a tree changed | The application reads the main installation's shape; no format is named; the search is a scan in memory | The replica holds every newest version's entries with their words (H-2339) |
+| (b) The builder writes an index document of the documentation | — | The Bastion parses nothing | A new kind of path, a change of the interface; a document rewritten with every collection's change |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-125.
+
+### Q-BAS-422 · With docs off, a package's address stays its newest version's page and opens on its first other tab
+
+Status: **Decided by the development agent on 2026-11-26** (W-35's P11) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-BAS-126, W-35's B.5 ("With docs off. npm, NuGet and Ansible open on their facts"), R-UI-218 (a format that leads with its
+documentation opens on its newest version's page).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The address stays the newest version's page; the documentation's tabs are gone and the page opens on its first other tab (chosen) | One input of the version's view | A link, a canonical address and a sitemap entry stay valid whatever the switch; the version's facts are one tab away as for an image | — |
+| (b) The address becomes the table of versions while docs is off | The route asks the state | The table as the other formats open | An address that means two pages by a switch; search engines' entries change their page |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-126, R-UI-232.
 
 ### Q-BAS-425 · The headers of a forwarded answer pass an allowlist, and a format's need is a replay header
 

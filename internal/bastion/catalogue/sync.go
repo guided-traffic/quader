@@ -52,6 +52,7 @@ func (c *Catalogue) sync(ctx context.Context) error {
 	}
 	gui, docs := c.effective()
 	next.public, next.repos, next.index, next.gui, next.docs = pub, reposOf(pub), idx, gui, docs
+	next.docIndex = c.docsOf(ctx, next, cur, idx)
 	next.confirmedAt = c.o.Now()
 	if !gui {
 		return nil // switched off while the round ran
@@ -367,6 +368,7 @@ func (c *Catalogue) take(ctx context.Context, mode takeMode) bool {
 		return false
 	}
 	next.index = idx
+	next.docIndex = c.docsOf(ctx, next, cur, idx)
 	if gui, _ := c.effective(); c.decided() && !gui {
 		return false
 	}
@@ -412,6 +414,7 @@ func (c *Catalogue) clear(ctx context.Context) {
 	c.held, c.heldKnown = map[string]int64{}, true
 	c.heldMu.Unlock()
 	c.pages = map[string][]*Entry{}
+	c.trees = map[string]*docTree{}
 	c.cleared = true
 	c.o.Metrics.CatalogueBytes.Set(0)
 	c.log.Info("the web interface is off: the public catalogue's tree is deleted")

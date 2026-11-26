@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/guided-traffic/quader/internal/bastion/cataloguebounds"
@@ -99,6 +100,9 @@ type Store interface {
 	PackageFacts(ctx context.Context) (map[PackageKey]string, error)
 	// RepositoryFacts answers the fingerprint of every repository of the formats by its qualified name.
 	RepositoryFacts(ctx context.Context, formats []string) (map[string]string, error)
+	// DocSearchWords answers the words of the search vector of every entry of a version's documentation in the repository
+	// "<project>/<repo>" by "<type>/<name>" (formats/ansible.md R-ANS-036): what the tree's searchWords are made of (R-BAS-124).
+	DocSearchWords(ctx context.Context, repository, name, version string) (map[string][]string, error)
 }
 
 // Reader is what the catalogue routes of the Bastion interface read (R-BAS-101).
@@ -314,6 +318,25 @@ func (s *DB) RepositoryFacts(ctx context.Context, formats []string) (map[string]
 		rows, err := qs.BastionCatalogueRepositoryFacts(ctx, formats)
 		for _, r := range rows {
 			out[r.Repository] = r.Fingerprint
+		}
+		return err
+	})
+	return out, err
+}
+
+// DocSearchWords implements [Store].
+func (s *DB) DocSearchWords(ctx context.Context, repository, name, version string) (map[string][]string, error) {
+	out := map[string][]string{}
+	project, repo, ok := strings.Cut(repository, "/")
+	if !ok {
+		return out, nil
+	}
+	err := s.read(ctx, func(qs *q.Queries) error {
+		rows, err := qs.BastionCatalogueDocSearchWords(ctx, q.BastionCatalogueDocSearchWordsParams{
+			Project: project, Repository: repo, Name: name, Version: version,
+		})
+		for _, r := range rows {
+			out[r.ContentType+"/"+r.ContentName] = r.Words
 		}
 		return err
 	})

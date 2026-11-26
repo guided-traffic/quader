@@ -466,6 +466,11 @@ This requirement is the one place that says what is wiki; a format page marks it
   | The UI | The README tab and the documentation tabs are not shown (R-UI-057) |
   | A search over wiki text (T-19's documentation search) | Hits only from packages whose wiki the caller may read; a search over names and descriptions is an artifacts read |
 
+- **A Bastion's public catalogue is a wiki surface** (*amended on 2026-11-26 by W-35's P11*, [bastion.md](bastion.md) R-BAS-124): the
+  catalogue a Bastion's web interface shows holds a version's README and documentation only while the registration's switch `docs` is on
+  and a repository of its public set that holds the version has a public wiki, and a version without them carries the answer of the
+  table below (`hasReadme` false, no `metadata.docs`). A Debian package's changelog and copyright, which are no wiki, follow the switch
+  `docs` alone ([bastion.md](bastion.md) Q-BAS-416).
 - **The format kit holds every format to it** ([architecture.md](architecture.md) R-ARCH-010): a route with `Wiki: true` is a read
   (`Metadata` or `Computed`, action `read`); for each format with wiki content a kit test fetches every surface of this table
   as a caller who reads the artifacts and not the wiki and finds no wiki byte in any answer.

@@ -10168,6 +10168,9 @@ regelmäßig vorhanden ist, soll auch bei uns umgesetzt werden. Schau zum Beispi
 - **Deep links** keep their query and fragment on every address: the package's own address with `?tab=documentation&doc=module/<name>#parameter-<path>`
   shows that page of the newest version at that anchor; `…@{version}` with the same opens that version; `…/-/versions` keeps `q`, `sort`
   and a fragment.
+- **At a Bastion** (*amended on 2026-11-26 by W-35's P11*, R-UI-232, [bastion.md](bastion.md) R-BAS-126): the same addresses and the
+  documentation first while the Bastion's switch `docs` is on; while it is off the package's address stays the newest version's page,
+  which opens on its first tab that is no documentation.
 
 Acceptance criteria:
 
@@ -10770,14 +10773,17 @@ version with its open findings, a NuGet version with its signatures, a Debian ve
 documentation, a public generic repository's root, a nested folder of files and a file with the panel of its commands (W-35's P9d; the
 seed's `platform/downloads`, five files of bytes), the imprint, the privacy notice, the band of an old state, not ready and not found; in
 both schemes, at 1,440, 1,024 and 390 px, in English and, with `UI_RENDERS_LOCALE=de`, in German. The setup waits until the Bastion has
-mirrored a run of the builder after the seed, and holds the generic repository's files. The states of `make ui-states` (seven, Q-UI-1442) stay beside them as the
-check in seconds.
+mirrored a run of the builder after the seed, and holds the generic repository's files. The states of `make ui-states` (eight since W-35's P11 added a collection with docs off, Q-UI-1442) stay
+beside them as the check in seconds. *Added by W-35's P11 (R-UI-232):* the documentation: an Ansible collection on its newest version's
+address, a module's page, the search inside the version with a hit, a project's search that finds a module, an npm and a NuGet
+package on their README (the seed's `yaml-lines` and `Acme.Platform.Json`, each with a README) and a Debian version's changelog and
+copyright.
 
 Acceptance criteria:
 
 - States ([bastion.states.spec.ts](../../web/src/bastion/bastion.states.spec.ts), 3.4 s, measured 2026-11-26): the render set's
   `layoutFindings` and `innerScroll` find nothing in any of the states at either width.
-- Renders: `make ui-renders GREP=bastion-` renders the seventeen screens `bastion-*` against the profile's Bastion, and the render set's
+- Renders: `make ui-renders GREP=bastion-` renders the twenty-four screens `bastion-*` against the profile's Bastion, and the render set's
   layout checks find nothing in any picture; `make ui-renders-parts-check` holds every Bastion screen exactly once in the parts of the job
   ui-layout.
 
@@ -10808,6 +10814,46 @@ Acceptance criteria:
 - Vitest ([search-engines.spec.ts](../../web/src/bastion/search-engines.spec.ts), milliseconds): the five routes' titles; the grade and
   the findings inside `data-nosnippet`, every download of the signatures' report `nofollow`, a rendered `quaderDownload` link
   `rel="nofollow"`; the slots of `index.html`.
+
+### R-UI-232 · The Bastion's pages show the documentation as the main installation's, while its switch docs is on
+Priority: **P1** · Covers: quader-only
+
+W-35's package P11 ([bastion.md](bastion.md) R-BAS-124 to R-BAS-126, the owner's B.5).
+
+- **The views.** A version's page at the Bastion is the main installation's view (R-UI-229) with its documentation: the tab README of an
+  npm, a NuGet and a Helm package and of an Ansible role (R-UI-008), an Ansible collection's tabs Documentation and Contents with the
+  tree, its entries and files, the anchors and deep links of R-ANS-048 (R-UI-060 to R-UI-062), and a Debian package's tab Changelog. A
+  format that leads with its documentation leads with it at the Bastion as well (R-UI-218): the package's address opens its newest
+  version on it.
+- **The switch.** The view takes `documentation` (true by default; the Bastion's version page binds it to the state's `docs`,
+  [Q-UI-1465](#q-ui-1465--the-version-view-takes-whether-the-application-shows-documentation)): false takes the tabs README,
+  Documentation, Contents and Changelog away, reads no README and no tree, and opens the version on its first other tab (R-BAS-126,
+  bastion.md Q-BAS-422).
+- **The search inside a version** is the tab Documentation's own field (R-UI-060); the Bastion's read narrows the catalogue's tree in the
+  browser by the main installation's rule (R-BAS-125), so the field, its count of matches and its address (`q`) behave as at the main
+  installation.
+- **The search across packages** ([Q-UI-1466](#q-ui-1466--a-projects-search-at-the-bastion-finds-the-documentation-below-its-packages)).
+  A project's list at the Bastion searches the documentation with the same field: below the packages, a section **Documentation** lists
+  the entries the text finds in the project (R-BAS-125's address), in the columns of the main installation's tab Documentation of the
+  results (R-UI-098): the entry with its type and short description, the package it documents with its newest version and its
+  deprecation, the repository; an entry opens its page, the package's address with `?doc=<type>/<name>`. The section stands only while
+  `docs` is on and the text found an entry or its read failed (then with the notice of R-UI-216), with **Load more** in pages of 25.
+
+*Built on 2026-11-26 (W-35's P11):* `documentation` of [package-version-view.ts](../../web/src/app/views/packages/package-version-view.ts),
+[package-pages.ts](../../web/src/bastion/pages/package-pages.ts), [documentation-hits.ts](../../web/src/bastion/pages/documentation-hits.ts),
+[package-list-page.ts](../../web/src/bastion/pages/package-list-page.ts), `docs` of [reads.ts](../../web/src/bastion/data/reads.ts),
+`narrowDocTree` of [docs-model.ts](../../web/src/app/views/packages/docs-model.ts).
+
+Acceptance criteria:
+
+- Unit ([bastion.docs.spec.ts](../../web/src/bastion/bastion.docs.spec.ts), about a second, answers of bytes to a few kilobytes):
+  `R-UI-232 a version's search reads the whole tree once and narrows it in the browser …`, `R-UI-232 a project's search finds the
+  documentation's entries below its packages, each opening its page, and only while docs is on`, and the two cases of R-BAS-126.
+- Unit ([docs-model.spec.ts](../../web/src/app/views/packages/docs-model.spec.ts)): the fixture of R-BAS-124 narrowed as the main
+  installation answered it.
+- Rendered (rule 11): the screens `bastion-collection`, `bastion-collection-latest`, `bastion-collection-entry`,
+  `bastion-collection-search`, `bastion-packages-docs`, `bastion-version-npm`, `bastion-version-nuget-readme` and
+  `bastion-version-deb-changelog` of [bastion-gui.ts](../../web/e2e/renders/bastion-gui.ts) (R-UI-230).
 
 ### R-UI-250 · Every time stands in the form the reader chose, `26.11.2026 21:39:22 (Thu.)` by default
 Priority: **P1** · Covers: quader-only
@@ -29790,6 +29836,38 @@ Context: R-UI-231, R-BAS-121. The build keeps HTML comments of `index.html` (ver
 | (b) A static title beside the slot | — | A title without the server | Two titles in one head |
 
 **Choice:** (a). **Applied in the spec:** R-UI-231.
+
+### Q-UI-1465 · The version view takes whether the application shows documentation
+
+Status: **Decided by the development agent on 2026-11-26** (W-35's P11) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-UI-232, [bastion.md](bastion.md) R-BAS-126. The Bastion's switch `docs` reaches the catalogue's documents at the builder's next
+run, the state's `docs` at the application's next read (60 s at most).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) An input `documentation` of the shared version view, which the Bastion binds to the state (chosen) | One input, as `downloads` and `dependents` are | The tabs go at the state's next read, whatever the documents still say; the main installation's view unchanged | One more input |
+| (b) The view reads the documents alone | — | No input | The tabs stay until the builder ran and the page read the version again |
+
+**Choice:** (a). **Applied in the spec:** R-UI-232.
+
+### Q-UI-1466 · A project's search at the Bastion finds the documentation below its packages
+
+Status: **Decided by the development agent on 2026-11-26** (W-35's P11) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-UI-232, [bastion.md](bastion.md) R-BAS-125 (the search across collections at the Bastion). The Bastion's application has no
+search of its own beside a project's list (R-UI-229), and the main installation's results page with its tab Documentation (R-UI-098) is
+no page of it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The list's own field searches the documentation too; a section Documentation below the packages, shown only when the text found an entry (chosen) | One component on the list | One field for a visitor, simple by default; a project without documentation shows no empty section under every search | Hits of another project are not offered |
+| (b) A results page with tabs as the main installation's | A route and a field in the top bar | The main installation's form | A second search for a reader who came for one project's packages; a route more in B.3's list |
+| (c) The section always, with its empty sentence | — | The reader sees that documentation was searched | An empty section under every search of an npm project |
+
+**Choice:** (a). **Applied in the spec:** R-UI-232.
 
 ### Q-UI-1490 · The audit log holds its German actions by the act's word and a shorter word where it reads right
 

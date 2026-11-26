@@ -26,7 +26,7 @@ const CodeBaseURLUnknown = "bastion_base_url_unknown"
 
 // revision is the builder's own part of every fingerprint: a change of what the builder makes of an answer (the strip, the paths)
 // raises it, and every registration's catalogue is rendered again at its next run.
-const revision = "catalogue/1"
+const revision = "catalogue/2"
 
 // indexPage is the number of packages of one page of the index (index/<n>).
 const indexPage = 100
@@ -67,6 +67,9 @@ type Options struct {
 	Main []string
 	// PolicyHash is the README renderer's policy (readme.PolicyHash): a tightened sanitizer renders every document again.
 	PolicyHash string
+	// DocsPolicy names what else decides the HTML of the documentation the catalogue keeps: the README renderer's version and the
+	// version of the Ansible markup's converter (R-BAS-124). A change renders every document again, as PolicyHash does (D1).
+	DocsPolicy string
 	// Workers render packages in parallel (R-BAS-105); at least one.
 	Workers int
 	Now     func() time.Time
@@ -213,7 +216,7 @@ func (b *Builder) build(ctx context.Context, reg Registration, rep *Report) erro
 	if err != nil {
 		return err
 	}
-	r.salt = digest(revision, string(pub), boolText(reg.Docs), reg.BaseURL, b.o.PolicyHash, string(formatsDoc))
+	r.salt = digest(revision, string(pub), boolText(reg.Docs), reg.BaseURL, b.o.PolicyHash, b.o.DocsPolicy, string(formatsDoc))
 	if !bytes.Equal(st.Salt, r.salt) {
 		b.o.Log.Info("the public catalogue of a Bastion is rendered whole", "bastion", reg.Name)
 	}
@@ -550,7 +553,15 @@ func (r *run) version(ctx context.Context, e entry, f format, version string, re
 	if err != nil || vd == nil {
 		return nil, err
 	}
-	if r.reg.Docs {
+	// The documentation of a version travels only while docs is on and a repository that holds it has a public wiki (R-BAS-124):
+	// the main installation's anonymous answer already holds none for a wiki that is not public, and the builder asks the public set
+	// again, so a level the answers have not caught up with yet builds none either.
+	wiki := r.reg.Docs && r.publicWiki(vd.body, repos)
+	if !wiki {
+		vd.body = withoutWiki(vd.body)
+		out[0].body = vd.body
+	}
+	if wiki {
 		if _, err := add(at(iface.CatalogueReadme), vt+"/readme"); err != nil {
 			return nil, err
 		}
@@ -566,7 +577,7 @@ func (r *run) version(ctx context.Context, e entry, f format, version string, re
 			return nil, err
 		}
 	}
-	if r.reg.Docs && f.Wiki {
+	if wiki && f.Wiki {
 		if err := r.docs(ctx, e, version, vt, times, &omitted, &out); err != nil {
 			return nil, err
 		}
@@ -616,6 +627,9 @@ func (r *run) docs(ctx context.Context, e entry, version, vt string, times map[s
 	tp := iface.CataloguePath{Kind: iface.CatalogueDocs, Package: e.ID, Version: version}
 	d, err := r.doc(ctx, tp, vt+"/docs", times, omitted)
 	if err != nil || d == nil {
+		return err
+	}
+	if err := r.searchWords(ctx, e, version, d); err != nil {
 		return err
 	}
 	*out = append(*out, *d)
@@ -678,6 +692,134 @@ func (r *run) docs(ctx context.Context, e entry, version, vt string, times map[s
 		}
 	}
 	return nil
+}
+
+// publicWiki reports whether a repository of the public set that holds the version (the version's repositories) has a public wiki
+// (R-BAS-124, R-AUTHZ-034).
+func (r *run) publicWiki(versionDoc []byte, repos []repo) bool {
+	var vd struct {
+		Repositories []struct {
+			Key string `json:"key"`
+		} `json:"repositories"`
+	}
+	if json.Unmarshal(versionDoc, &vd) != nil {
+		return false
+	}
+	for _, h := range vd.Repositories {
+		for _, rp := range repos {
+			if rp.wiki && (rp.name() == h.Key || rp.key == h.Key) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// withoutWiki takes the wiki members out of a version's document (R-AUTHZ-034's answer to a caller who may not read the wiki):
+// hasReadme is false and metadata.docs, the announcement of an Ansible collection's documentation, is absent. A document of
+// another shape is kept as it is.
+func withoutWiki(body []byte) []byte {
+	var m map[string]any
+	dec := json.NewDecoder(bytes.NewReader(body))
+	dec.UseNumber()
+	if dec.Decode(&m) != nil {
+		return body
+	}
+	if _, ok := m["hasReadme"]; ok {
+		m["hasReadme"] = false
+	}
+	if md, ok := m["metadata"].(map[string]any); ok {
+		delete(md, "docs")
+	}
+	b, err := json.Marshal(m)
+	if err != nil {
+		return body
+	}
+	return b
+}
+
+// searchWords gives every entry of a documentation tree the words of its search vector at the main installation (R-BAS-124,
+// TreeWithSearchWords). A tree the words would take above the bound of a document is kept without them, and its search finds by the
+// names alone.
+func (r *run) searchWords(ctx context.Context, e entry, version string, d *rendered) error {
+	var head struct {
+		Repository string `json:"repository"`
+	}
+	if err := json.Unmarshal(d.body, &head); err != nil || head.Repository == "" {
+		return nil //nolint:nilerr // a tree of another shape names no repository: it is kept without words
+	}
+	words, err := r.b.o.Store.DocSearchWords(ctx, head.Repository, e.Name, version)
+	if err != nil || len(words) == 0 {
+		return err
+	}
+	b, err := TreeWithSearchWords(d.body, words)
+	if err != nil {
+		return err
+	}
+	if len(b) > cataloguebounds.DocumentMaxBytes {
+		r.b.o.Log.Warn("a documentation tree is above the bound of a document with its search words; it is kept without them",
+			"bastion", r.reg.Name, "package", e.ID, "version", version)
+		return nil
+	}
+	d.body = b
+	return nil
+}
+
+// TreeWithSearchWords gives every entry of a documentation tree (formats/ansible.md R-ANS-036's answer) the member searchWords: the
+// lexemes of its search vector at the main installation, by "<type>/<name>", which the main installation's search matches the prefix
+// of a term against, as SearchWords writes them (R-BAS-124). The member is the catalogue's alone: the main installation's answer has
+// none. A tree of another shape is answered as it is.
+func TreeWithSearchWords(tree []byte, words map[string][]string) ([]byte, error) {
+	var m map[string]any
+	dec := json.NewDecoder(bytes.NewReader(tree))
+	dec.UseNumber()
+	if err := dec.Decode(&m); err != nil {
+		return tree, nil //nolint:nilerr // a tree of another shape is kept as it is
+	}
+	groups, _ := m["groups"].([]any)
+	for _, g := range groups {
+		gm, _ := g.(map[string]any)
+		types, _ := gm["types"].([]any)
+		for _, t := range types {
+			tm, _ := t.(map[string]any)
+			entries, _ := tm["entries"].([]any)
+			for _, x := range entries {
+				en, ok := x.(map[string]any)
+				if !ok {
+					continue
+				}
+				typ, _ := en["type"].(string)
+				name, _ := en["name"].(string)
+				en["searchWords"] = SearchWords(words[typ+"/"+name])
+			}
+		}
+	}
+	return json.Marshal(m)
+}
+
+// SearchWords are the words of an entry's search vector as the catalogue keeps them (R-BAS-124): lower case, each once, without a
+// word that begins another, sorted, joined by a space.
+func SearchWords(lexemes []string) string {
+	seen := map[string]bool{}
+	var list []string
+	for _, w := range lexemes {
+		w = strings.ToLower(strings.TrimSpace(w))
+		if w == "" || seen[w] {
+			continue
+		}
+		seen[w] = true
+		list = append(list, w)
+	}
+	sort.Strings(list)
+	out := list[:0]
+	for i, w := range list {
+		// Sorted, a word that begins another stands right before the first of the words it begins.
+		if i+1 < len(list) && strings.HasPrefix(list[i+1], w) {
+			continue
+		}
+		out = append(out, w)
+	}
+	return strings.Join(out, " ")
 }
 
 // versionSetup renders the set-up of every client of the format for the version, in the version's first repository the public set

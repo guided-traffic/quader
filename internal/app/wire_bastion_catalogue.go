@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -18,9 +19,11 @@ import (
 	"github.com/guided-traffic/quader/internal/cache"
 	"github.com/guided-traffic/quader/internal/cluster"
 	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/formats/ansible/docgen"
 	"github.com/guided-traffic/quader/internal/httpserver"
 	"github.com/guided-traffic/quader/internal/jobs"
 	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/packages/readme"
 )
 
 // The builder of the Bastions' public catalogues (bastion.md R-BAS-104 to R-BAS-108; W-35's package P6): the worker's job
@@ -67,7 +70,7 @@ func (a *App) wireBastionCatalogue(_ context.Context, in infra, co coordArea, _ 
 	store := catalogue.NewDB(in.db)
 	render := sync.OnceValues(a.catalogueRenderer)
 	b := catalogue.New(catalogue.Options{
-		Store: store, Renderer: lateRenderer{render}, Main: a.mainOrigins(), PolicyHash: a.readmePolicy(),
+		Store: store, Renderer: lateRenderer{render}, Main: a.mainOrigins(), PolicyHash: a.readmePolicy(), DocsPolicy: docsPolicy(),
 		Workers: catalogueWorkers, Log: a.log.With("component", "bastion-catalogue"),
 	})
 	a.catalogue.set(catalogueRuntime{builder: b, regs: a.catalogueRegistrations})
@@ -172,6 +175,13 @@ func (a *App) readmePolicy() string {
 		return rd.PolicyHash()
 	}
 	return ""
+}
+
+// docsPolicy is what besides the README policy decides the documentation's HTML the catalogue keeps (R-BAS-124): the README
+// renderer's version and the Ansible markup converter's. Both convert on every read of the main installation, so no stored fact
+// changes with them.
+func docsPolicy() string {
+	return "readme/" + strconv.Itoa(readme.Version) + " ansible-markup/" + strconv.Itoa(docgen.MarkupVersion)
 }
 
 // catalogueRenderer builds the renderer: the management API's handlers on a router of the default endpoint's snapshot, behind a

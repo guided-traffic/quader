@@ -1,4 +1,5 @@
 import { PackageDocEntry } from '../../api/packages-api';
+import { DOCS_SEARCH_FIXTURE } from '../../api/testing/docs-search-fixture';
 import { commonFixture, docTree } from '../../api/testing/fakes-ansible-docs';
 import {
   README_DOC,
@@ -6,10 +7,13 @@ import {
   allBranches,
   configLines,
   branchesOf,
+  docEntryMatches,
   docNodes,
+  docTerms,
   entrySections,
   firstDoc,
   holdsDoc,
+  narrowDocTree,
   optionRows,
   parameterGroups,
   parseDoc,
@@ -204,6 +208,37 @@ describe('The model of the documentation screens', () => {
     // A list default marks each of its elements among the choices, as the site marks them.
     expect(optionRows([{ name: 'protocols', choices: ['TLSv1.2', 'TLSv1.3'], default: ['TLSv1.3'] }])[0]?.defaults).toEqual(['TLSv1.3']);
     expect(optionRows([{ name: 'port', default: 22 }])[0]?.defaults).toEqual(['22']);
+  });
+});
+
+describe('The search of a version at a Bastion (bastion.md R-BAS-124)', () => {
+  // The fixture is the main installation's own answers, written by an integration test against PostgreSQL
+  // (test/integration/ansiblelocal/catalogue_docs_test.go): the browser's narrowing must answer every text the same.
+  it('R-BAS-124 the browser narrows the tree as the main installation searches it, on the fixture of a real installation', () => {
+    expect(DOCS_SEARCH_FIXTURE.cases.length).toBeGreaterThan(10);
+    for (const c of DOCS_SEARCH_FIXTURE.cases) {
+      const narrowed = narrowDocTree(DOCS_SEARCH_FIXTURE.tree, c.q);
+      expect(narrowed, c.q).not.toBeNull();
+      const entries = (narrowed?.groups ?? []).flatMap((g) => g.types.flatMap((t) => t.entries.map((e) => `${e.type}/${e.name}`)));
+      const files = (narrowed?.files ?? []).map((f) => f.name);
+      expect({ q: c.q, entries, files, changelog: !!narrowed?.changelog, matchCount: narrowed?.matchCount }).toEqual({ ...c });
+      // The counts are those before the search (R-ANS-036).
+      expect(narrowed?.groups?.map((g) => g.count)).toEqual(DOCS_SEARCH_FIXTURE.tree.groups?.map((g) => g.count));
+    }
+  });
+
+  it('R-BAS-124 a text shorter than two characters is refused, the terms are bounded, and the changelog stays for its own name', () => {
+    expect(narrowDocTree(DOCS_SEARCH_FIXTURE.tree, ' a ')).toBeNull();
+    expect(docTerms('a\u0000b  c\td')).toEqual(['ab', 'c', 'd']);
+    expect(docTerms('1 2 3 4 5 6 7 8 9 10')).toHaveLength(8);
+    expect(docTerms('x'.repeat(70))[0]).toHaveLength(64);
+    const changelog = { name: 'changelog' as const, source: 'CHANGELOG.md', format: 'markdown' as const, truncated: false };
+    const withChangelog = { ...DOCS_SEARCH_FIXTURE.tree, changelog };
+    expect(narrowDocTree(withChangelog, 'CHANGE')?.changelog).toEqual(changelog);
+    expect(narrowDocTree(withChangelog, 'host')?.changelog).toBeUndefined();
+    // An entry the catalogue gives no words is found by its name alone.
+    expect(docEntryMatches('host_check', undefined, ['CHECK'])).toBe(true);
+    expect(docEntryMatches('host_check', undefined, ['answers'])).toBe(false);
   });
 });
 

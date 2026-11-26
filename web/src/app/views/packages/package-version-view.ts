@@ -220,6 +220,12 @@ export class PackageVersionView {
   readonly downloads = input(true);
   /** Whether a finding's identifier links to its advisory's page; false where the application has none (the Bastion's, Q-UI-1450). */
   readonly advisoryLinks = input(true);
+  /**
+   * Whether the application shows the documentation a version carries: its README, an Ansible collection's documentation and contents,
+   * a Debian package's changelog and copyright. False at a Bastion whose documentation is switched off (bastion.md R-BAS-126, R-UI-232):
+   * those tabs are gone at once, before the catalogue drops their documents, and the version opens on its first other tab.
+   */
+  readonly documentation = input(true);
   /** The format's name in the header, never its key (R-UI-006): **OCI (Docker)**, not `oci`. */
   protected readonly formatName = formatName(() => this.format());
   readonly name = input.required<string>();
@@ -249,6 +255,8 @@ export class PackageVersionView {
   protected readonly shown = computed(() => this.version() ?? this.pkg()?.latestVersion ?? null);
   /** The format's packages lead with their documentation (R-UI-218): it comes first, and the head switches between the versions. */
   protected readonly leads = computed(() => leadsWithDocumentation(this.format()));
+  /** The documentation comes first (R-UI-218): where the format leads with it and the application shows it. */
+  private readonly docsFirst = computed(() => this.leads() && this.documentation());
   protected readonly details = resource({
     params: () => {
       const id = valueOf(this.summary)?.id;
@@ -267,7 +275,9 @@ export class PackageVersionView {
       const d = this.detail();
       // The README of an Ansible collection is the first page of its Documentation tab (R-UI-060), not a tab of its own; a role's is
       // its own tab, the first of its page (R-ANS-056).
-      return d?.hasReadme && (d.format !== 'ansible' || roleFacts(d) !== null) ? { id: d.packageId, version: d.version } : undefined;
+      return d?.hasReadme && this.documentation() && (d.format !== 'ansible' || roleFacts(d) !== null)
+        ? { id: d.packageId, version: d.version }
+        : undefined;
     },
     { equal: sameVersion },
   );
@@ -305,6 +315,7 @@ export class PackageVersionView {
     return d?.format === 'ansible' ? (d.metadata.docs ?? null) : null;
   });
   private readonly docsAnnounced = computed(() => {
+    if (!this.documentation()) return false;
     const a = this.docsAnnouncement();
     return a !== null && (a.state !== 'none' || this.detail()?.hasReadme === true);
   });
@@ -329,11 +340,11 @@ export class PackageVersionView {
     const gradedFirst = this.grade() !== null && this.grade()?.grade !== 'N/A';
     // A role's README tab is there before its README is: it says why there is none yet (R-ANS-056).
     const readme: TabEntry[] =
-      d && ((d.format !== 'ansible' && (d.hasReadme || this.leads())) || roleFacts(d) !== null)
+      d && this.documentation() && ((d.format !== 'ansible' && (d.hasReadme || this.leads())) || roleFacts(d) !== null)
         ? [{ id: 'readme', label: $localize`:@@pkg.tab.readme:README` }]
         : [];
     return [
-      ...(this.leads() ? readme : []),
+      ...(this.docsFirst() ? readme : []),
       ...(gradedFirst ? vulnerabilities : []),
       ...(this.docsAnnounced() ? [{ id: 'documentation' as const, label: $localize`:@@pkg.tab.documentation:Documentation` }] : []),
       ...(this.docsAnnounced() && announcement?.state !== 'none'
@@ -345,7 +356,7 @@ export class PackageVersionView {
             },
           ]
         : []),
-      ...(this.leads() ? [] : readme),
+      ...(this.docsFirst() ? [] : readme),
       // A Helm chart's values.yaml, its documentation beside the README (R-OCI-042).
       ...(this.chartValues() ? [{ id: 'values' as const, label: $localize`:@@pkg.tab.values:Values` }] : []),
       { id: 'files', label: $localize`:@@pkg.tab.files:Files` },
@@ -353,7 +364,7 @@ export class PackageVersionView {
       ...(d?.signatures !== undefined ? [{ id: 'signatures' as const, label: $localize`:@@pkg.tab.signatures:Signatures` }] : []),
       { id: 'details', label: $localize`:@@pkg.tab.details:Details` },
       // The changelog of a Debian package file (R-DEB-039, Q-UI-1272): a detail, after the facts.
-      ...(d?.format === 'deb' ? [{ id: 'changelog' as const, label: $localize`:@@pkg.tab.changelog:Changelog` }] : []),
+      ...(d?.format === 'deb' && this.documentation() ? [{ id: 'changelog' as const, label: $localize`:@@pkg.tab.changelog:Changelog` }] : []),
       ...(gradedFirst ? [] : vulnerabilities),
       ...(this.localRepository() !== null ? [{ id: 'import-log' as const, label: $localize`:@@pkg.tab.import-log:Import log` }] : []),
     ];

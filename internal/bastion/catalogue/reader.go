@@ -46,6 +46,11 @@ type Reader interface {
 	// that is the same exactly while the index's pages, the public set and the switch docs are: what the sitemap is built from and
 	// kept by (R-BAS-122).
 	Packages() ([]Entry, string, error)
+	// SearchDocs searches the documentation of every public package's newest version, as the main installation searches across
+	// collections (R-BAS-125, formats/ansible.md R-ANS-058), a page at a time.
+	SearchDocs(q DocQuery) (DocPage, error)
+	// DocEntries lists every entry SearchDocs could find: the newest versions' documentation pages, for the sitemap (W-35's B.11).
+	DocEntries() ([]DocHit, error)
 }
 
 var _ Reader = (*Catalogue)(nil)

@@ -1450,7 +1450,10 @@ plan of R-ANS-022. The answer names the repository it was read from.
   `search` vector (prefix match of a term over the words of short description, description, option names and return names; the terms are
   reduced to letters and digits for the vector, never put into a query text). Matching entries keep the order above; a `files` item
   matches by its title. `q` is evaluated in SQL over the rows of one version (at most 5,000), no index is needed beyond the primary key and the
-  vector's own. The search is **inside the documentation of one version**; Quader has no search across collections here.
+  vector's own. The search is **inside the documentation of one version**; Quader has no search across collections here. *At a Bastion*
+  (amended on 2026-11-26 by W-35's P11, [bastion.md](../bastion.md) R-BAS-124, R-BAS-125): the catalogue's tree carries each entry's
+  lexemes as `searchWords`, and the browser narrows the tree by this rule (`narrowDocTree`); a fixture written against PostgreSQL holds
+  the two equal.
 - **The entry** (`getPackageVersionDocEntry`): `{type, name, fullName, shortDescription, hasDocs, source, builtAt, versionAdded,
   versionAddedCollection, positional[], deprecated, description[], notes[], requirements[], author[], options[], returnValues[], examples,
   seealso[], attributes[], extendsFragments[], readmeHtml}` where `description`, `notes`, `requirements` and the `description` of an option or return value are **arrays of sanitized HTML
@@ -2235,6 +2238,9 @@ The owner's decision d3 = b of W-30 (2026-11-25, [Q-ANS-125](#q-ans-125--the-doc
 - **The wiki gate** holds per repository and version (R-ANS-037, R-AUTHZ-034): a collection whose documentation the reader may not read is
   left out before any entry is read, so its entries are no hit and are counted nowhere
   ([Q-ANS-126](#q-ans-126--the-wiki-gate-is-decided-per-version-before-an-entry-is-read)).
+- **At a Bastion** (amended on 2026-11-26 by W-35's P11, [bastion.md](../bastion.md) R-BAS-125): the same rule over the trees of the
+  public packages' newest versions in the Bastion's catalogue, at `/ui/data/v1/search/documentation` in this operation's shape, while the
+  Bastion's switch `docs` is on; links and anchors (R-ANS-048) are those of the catalogue's documents.
 - **Where.** `GET /api/v1/search/documentation?q=` (a list of R-API-010), the kind `documentation` of the suggestions (R-API-060), the group
   **Documentation** of the top bar's list and the tab **Documentation** of the results page (R-UI-097, R-UI-098). The search never leads into
   the admin area (R-UI-099).
