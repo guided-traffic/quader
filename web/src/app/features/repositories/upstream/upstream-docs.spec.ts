@@ -13,7 +13,7 @@ import {
 import { expectAccessible, renderScreen, settle, text } from '../../../testing/screen';
 import { contentShapeOf } from '../content/content-shape';
 import { RemoteUpstream } from './remote-upstream';
-import { dependencyBlocks } from './upstream-docs';
+import { aboutDependencies, aboutLinks, licenseHref } from './upstream-docs';
 
 /** The tab of `web/npmjs` at the address `url`, with the catalogue's answers set by `fake`. */
 async function open(url: string, fake: (c: FakeUpstreamCatalogueApi) => void, format = 'npm') {
@@ -37,6 +37,7 @@ describe('An upstream package before a version is stored (R-CUR-028)', () => {
   it('R-CUR-028 the lookup shows the facts of the newest version, its README read through and its dependencies folded', async () => {
     const { root, catalogue } = await open(LOOKUP, (c) => {
       c.packages['lodash'] = upstreamPackage({
+        keywords: ['util', 'functional'],
         readme: true,
         about: upstreamAbout({
           links: [
@@ -54,9 +55,10 @@ describe('An upstream package before a version is stored (R-CUR-028)', () => {
     const docs = root.querySelector<HTMLElement>('[data-testid="upstream-lookup"] quader-upstream-docs')!;
     expect(text(docs.querySelector('[data-testid="upstream-about"]')!)).toContain('Version 4.17.21');
     expect(text(docs.querySelector('[data-testid="upstream-about"]')!)).toContain('License MIT');
+    expect([...docs.querySelectorAll('quader-package-tags a.tag')].map((a) => a.getAttribute('href'))[0]).toContain('/projects/web/packages?format=npm&keyword=');
     // An address that is no http or https address is no link (R-UI-007).
-    const links = [...docs.querySelectorAll<HTMLAnchorElement>('[data-testid="upstream-about"] a')];
-    expect(links.map((a) => [text(a), a.getAttribute('href'), a.getAttribute('rel')])).toEqual([['Homepage', 'https://lodash.com/', 'nofollow noopener noreferrer']]);
+    const links = [...docs.querySelectorAll<HTMLAnchorElement>('quader-version-links a')];
+    expect(links.map((a) => [a.firstChild?.textContent, a.getAttribute('href'), a.getAttribute('rel')])).toEqual([['Homepage', 'https://lodash.com/', 'nofollow noopener noreferrer']]);
     expect(catalogue.calls).toContain('readme lodash 4.17.21');
     const readme = docs.querySelector<HTMLElement>('[data-testid="upstream-readme"]')!;
     expect(text(readme.querySelector('h3')!)).toBe('README of 4.17.21');
@@ -136,20 +138,33 @@ describe('An upstream package before a version is stored (R-CUR-028)', () => {
     expect(text(deb.root.querySelector('[data-testid="upstream-no-readme"]')!)).toContain('long description');
   });
 
-  it('R-CUR-028 the dependencies stand in the blocks of a stored version: plain, peer, optional, per target framework', () => {
-    const blocks = dependencyBlocks(
-      upstreamAbout({
-        dependencies: [
-          { name: 'a', range: '^1', group: null },
-          { name: 'b', range: '^2', group: 'optional' },
-          { name: 'System.Memory', range: '[4.6.3, )', group: '.NETStandard2.0' },
-        ],
-      }),
-    );
-    expect(blocks.map((b) => [b.label, b.entries.length])).toEqual([
-      ['Dependencies', 1],
-      ['Optional dependencies', 1],
-      ['Dependencies for .NETStandard2.0', 1],
+  it('R-CUR-028 R-UI-221 the dependencies stand in the groups of a stored version, in the format\'s words; the links in its row and order', () => {
+    const deps = [
+      { name: 'a', range: '^1', group: null },
+      { name: 'b', range: '^2', group: 'optional' },
+      { name: 'c', range: '>=2', group: 'peer' },
+    ];
+    expect(aboutDependencies(upstreamAbout({ dependencies: deps }), 'npm').map((g) => [g.label, g.entries[0]!.alternatives[0]!.qualifiers])).toEqual([
+      ['dependencies', '^1'],
+      ['optionalDependencies', '^2'],
+      ['peerDependencies', '>=2'],
     ]);
+    const nuget = aboutDependencies(
+      upstreamAbout({ dependencies: [{ name: 'System.Memory', range: '[4.6.3, )', group: '.NETStandard2.0' }, { name: 'X', range: null, group: null }] }),
+      'nuget',
+    );
+    expect(nuget.map((g) => g.label)).toEqual(['.NETStandard2.0', 'All frameworks']);
+    expect(aboutDependencies(upstreamAbout({ dependencies: [{ name: 'acme.base', range: '>=1.0.0', group: null }] }), 'ansible')[0]!.label).toBeNull();
+    const about = upstreamAbout({
+      license: null,
+      links: [
+        { kind: 'issues', url: 'https://x.example/issues' },
+        { kind: 'license', url: 'https://x.example/license' },
+        { kind: 'documentation', url: 'https://docs.example/' },
+        { kind: 'homepage', url: 'https://x.example/' },
+      ],
+    });
+    expect(aboutLinks(about, 'ansible').map((l) => l.label)).toEqual(['Homepage', 'Docs site', 'Issue tracker']);
+    expect(licenseHref(about)).toBe('https://x.example/license');
   });
 });

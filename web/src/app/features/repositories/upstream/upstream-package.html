@@ -14,12 +14,9 @@
       <p class="package-description" translate="no">{{ p.description }}</p>
     }
     <!-- What the upstream tells of the opened package (R-ANS-047): opened in a row, whose line shows the hit's tags and signed state,
-         the downloads at the upstream alone, which a hit of a search does not carry. -->
-    <quader-upstream-popularity
-      [keywords]="inRow() ? undefined : p.keywords"
-      [downloads]="p.downloads"
-      [signed]="inRow() ? undefined : p.signed"
-    />
+         the downloads at the upstream alone, which a hit of a search does not carry. Its keywords are the chips of the facts below
+         (quader-upstream-docs, R-CUR-028), as on a stored version's page. -->
+    <quader-upstream-popularity [downloads]="p.downloads" [signed]="inRow() ? undefined : p.signed" />
     <!-- The package's acts at the left and its switch at the right, apart (R-CUR-024, Q-CUR-201): a holder of manage downloads every
          version after a preview and turns the package level (every version that has no setting of its own, future ones included); a
          reader asks for the package (R-CUR-015). Opened in a row, the row's column State shows the badge already: the head says only the
@@ -95,7 +92,7 @@
   </div>
 
   <!-- What the package tells before a version is stored (R-CUR-028): the newest version's facts, its README, its dependencies. -->
-  <quader-upstream-docs [name]="name()" [about]="p.about" [readme]="p.readme === true" [inRow]="inRow()" />
+  <quader-upstream-docs [name]="name()" [project]="project()" [about]="p.about" [keywords]="p.keywords" [readme]="p.readme === true" [inRow]="inRow()" />
 
   <div class="versions-head">
     <div class="filter-field">

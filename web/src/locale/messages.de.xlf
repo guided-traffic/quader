@@ -16110,6 +16110,7 @@
         <note category="location">src/app/features/packages/ansible-doc-entry.html:389,391</note>
         <note category="location">src/app/features/packages/package-version.html:138,140</note>
         <note category="location">src/app/features/packages/version-facts.ts:124,126</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-docs.html:41,43</note>
       </notes>
       <segment>
         <source>(opens another site)</source>
@@ -18300,6 +18301,7 @@
       <notes>
         <note category="location">src/app/features/packages/image-facts.ts:295</note>
         <note category="location">src/app/features/packages/version-metadata.ts:352</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-docs.ts:28</note>
       </notes>
       <segment>
         <source>Homepage</source>
@@ -18310,6 +18312,7 @@
       <notes>
         <note category="location">src/app/features/packages/image-facts.ts:296</note>
         <note category="location">src/app/features/packages/version-metadata.ts:354</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-docs.ts:30</note>
       </notes>
       <segment>
         <source>Documentation</source>
@@ -18320,6 +18323,7 @@
       <notes>
         <note category="location">src/app/features/packages/image-facts.ts:297</note>
         <note category="location">src/app/features/packages/version-metadata.ts:355</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-docs.ts:32</note>
       </notes>
       <segment>
         <source>Source repository</source>
@@ -19577,6 +19581,7 @@
     <unit id="pkg.meta.license-url">
       <notes>
         <note category="location">src/app/features/packages/package-version.html:134,135</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-docs.html:37,38</note>
       </notes>
       <segment>
         <source>License</source>
@@ -19705,6 +19710,7 @@
     <unit id="pkg.deprecated">
       <notes>
         <note category="location">src/app/features/packages/package-version.html:260,261</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-docs.html:7,8</note>
       </notes>
       <segment>
         <source>Deprecated.</source>
@@ -19723,6 +19729,7 @@
     <unit id="pkg.deprecated-reasons">
       <notes>
         <note category="location">src/app/features/packages/package-version.html:268</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-docs.html:12,13</note>
       </notes>
       <segment>
         <source>Reason:</source>
@@ -19732,6 +19739,7 @@
     <unit id="pkg.deprecated-alternate">
       <notes>
         <note category="location">src/app/features/packages/package-version.html:272</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-docs.html:16</note>
       </notes>
       <segment>
         <source>Use instead:</source>
@@ -19750,6 +19758,8 @@
     <unit id="pkg.readme.none">
       <notes>
         <note category="location">src/app/features/packages/package-version.html:332,334</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-docs.html:77,78</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-docs.html:125,129</note>
       </notes>
       <segment>
         <source>This version has no README to show.</source>
@@ -19889,6 +19899,7 @@
     <unit id="pkg.meta.dependencies">
       <notes>
         <note category="location">src/app/features/packages/package-version.html:540,541</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-docs.ts:138</note>
       </notes>
       <segment>
         <source>Dependencies</source>
@@ -20639,6 +20650,7 @@
     <unit id="pkg.meta.all-frameworks">
       <notes>
         <note category="location">src/app/features/packages/version-metadata.ts:161</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-docs.ts:73</note>
       </notes>
       <segment>
         <source>All frameworks</source>
@@ -20981,6 +20993,7 @@
     <unit id="pkg.meta.docs-site">
       <notes>
         <note category="location">src/app/features/packages/version-metadata.ts:354</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-docs.ts:30</note>
       </notes>
       <segment>
         <source>Docs site</source>
@@ -20990,6 +21003,7 @@
     <unit id="pkg.meta.bugs">
       <notes>
         <note category="location">src/app/features/packages/version-metadata.ts:356</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-docs.ts:34</note>
       </notes>
       <segment>
         <source>Issue tracker</source>
@@ -36385,9 +36399,118 @@
         <target><ph id="0" equiv="count" disp="own"/> Versionen haben eigene Einstellungen: <ph id="1" equiv="allowed" disp="allow"/> erlaubt, <ph id="2" equiv="blocked" disp="block"/> gesperrt. Sie bleiben, wenn Sie sie nicht zurücksetzen.</target>
       </segment>
     </unit>
+    <unit id="upstream.docs.version">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-docs.html:32</note>
+      </notes>
+      <segment>
+        <source>Version</source>
+        <target>Version</target>
+      </segment>
+    </unit>
+    <unit id="upstream.docs.license">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-docs.html:46</note>
+      </notes>
+      <segment>
+        <source>License</source>
+        <target>Lizenz</target>
+      </segment>
+    </unit>
+    <unit id="upstream.docs.readme">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-docs.html:67,68</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-docs.ts:142</note>
+      </notes>
+      <segment>
+        <source>README</source>
+        <target>README</target>
+      </segment>
+    </unit>
+    <unit id="upstream.docs.readme-of">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-docs.html:69</note>
+      </notes>
+      <segment>
+        <source>of</source>
+        <target>von</target>
+      </segment>
+    </unit>
+    <unit id="upstream.docs.oci-none">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-docs.html:80,82</note>
+      </notes>
+      <segment>
+        <source> An image carries no README. Its description, licence and links are read from its manifest once a version is stored. </source>
+        <target> Ein Image enthält kein README. Seine Beschreibung, Lizenz und Links werden aus seinem Manifest gelesen, sobald eine Version gespeichert ist. </target>
+      </segment>
+    </unit>
+    <unit id="upstream.docs.deb-later">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-docs.html:84,89</note>
+      </notes>
+      <segment>
+        <source> A package&apos;s long description, homepage and relations are shown once a version of it is stored. </source>
+        <target> Die ausführliche Beschreibung, die Homepage und die Beziehungen eines Pakets werden angezeigt, sobald eine seiner Versionen gespeichert ist. </target>
+      </segment>
+    </unit>
+    <unit id="upstream.docs.loading">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-docs.html:90,91</note>
+      </notes>
+      <segment>
+        <source>Reading the README from the upstream.</source>
+        <target>Das README wird vom Upstream gelesen.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.docs.show-less">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-docs.html:106,108</note>
+      </notes>
+      <segment>
+        <source>Show less of the README</source>
+        <target>Weniger vom README anzeigen</target>
+      </segment>
+    </unit>
+    <unit id="upstream.docs.show-all">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-docs.html:108,110</note>
+      </notes>
+      <segment>
+        <source>Show the whole README</source>
+        <target>Das ganze README anzeigen</target>
+      </segment>
+    </unit>
+    <unit id="upstream.docs.dependencies-of">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-docs.ts:138</note>
+      </notes>
+      <segment>
+        <source>Dependencies of <ph id="0" equiv="version" disp="v"/></source>
+        <target>Abhängigkeiten von <ph id="0" equiv="version" disp="v"/></target>
+      </segment>
+    </unit>
+    <unit id="upstream.docs.unreachable">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-docs.ts:145</note>
+      </notes>
+      <segment>
+        <source>The upstream keeps this README on <ph id="0" equiv="host" disp="host"/>, a host this repository does not reach; Quader did not ask there.</source>
+        <target>Der Upstream hält dieses README auf <ph id="0" equiv="host" disp="host"/> bereit, einem Host, den dieses Repository nicht erreicht; Quader hat dort nicht angefragt.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.docs.limited">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-docs.ts:156</note>
+      </notes>
+      <segment>
+        <source>The upstream rate-limits this repository until <ph id="0" equiv="time" disp="clockAfter(seconds)"/>; the README is read after that.</source>
+        <target>Der Upstream begrenzt, wie oft Quader ihn fragen darf, bis <ph id="0" equiv="time" disp="clockAfter(seconds)"/>; das README wird danach gelesen.</target>
+      </segment>
+    </unit>
     <unit id="upstream.package.download-every">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.html:31,33</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.html:28,30</note>
       </notes>
       <segment>
         <source>Download every version…</source>
@@ -36396,7 +36519,7 @@
     </unit>
     <unit id="upstream.package.request">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.html:49,52</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.html:46,49</note>
       </notes>
       <segment>
         <source>Request every version</source>
@@ -36405,7 +36528,7 @@
     </unit>
     <unit id="upstream.rule.label">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.html:64</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.html:61</note>
         <note category="location">src/app/features/repositories/upstream/upstream-package.html:180</note>
       </notes>
       <segment>
@@ -36415,7 +36538,7 @@
     </unit>
     <unit id="upstream.range.limit">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.html:80</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.html:77</note>
       </notes>
       <segment>
         <source>Limit versions…</source>
@@ -36424,7 +36547,7 @@
     </unit>
     <unit id="upstream.range.oci-latest">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.html:87,90</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.html:84,87</note>
       </notes>
       <segment>
         <source>docker pull without a tag asks for latest, which lies outside the range: switch latest on in its row.</source>
@@ -36514,7 +36637,7 @@
     </unit>
     <unit id="upstream.rule.own-line">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:107</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:108</note>
       </notes>
       <segment>
         <source>Rule: this version</source>
@@ -36523,7 +36646,7 @@
     </unit>
     <unit id="upstream.rule.package-range-line">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:112</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:113</note>
       </notes>
       <segment>
         <source>Rule: the package&apos;s range</source>
@@ -36532,7 +36655,7 @@
     </unit>
     <unit id="upstream.rule.package-line">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:113</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:114</note>
       </notes>
       <segment>
         <source>Rule: the package</source>
@@ -36541,7 +36664,7 @@
     </unit>
     <unit id="upstream.versions.empty">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:130</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:131</note>
       </notes>
       <segment>
         <source>The upstream lists no version of this package.</source>
@@ -36550,7 +36673,7 @@
     </unit>
     <unit id="upstream.versions.empty-filtered">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:131</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:132</note>
       </notes>
       <segment>
         <source>No version matches.</source>
@@ -36559,7 +36682,7 @@
     </unit>
     <unit id="upstream.col.delivery">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:139</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:140</note>
       </notes>
       <segment>
         <source>Delivery</source>
@@ -36568,7 +36691,7 @@
     </unit>
     <unit id="upstream.col.cache">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:140</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:141</note>
       </notes>
       <segment>
         <source>Cache</source>
@@ -36577,7 +36700,7 @@
     </unit>
     <unit id="upstream.versions.showing">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:270</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:271</note>
       </notes>
       <segment>
         <source>Showing <ph id="0" equiv="shown" disp="groupedCount(n)"/> of <ph id="1" equiv="total" disp="groupedCount(p.total)"/></source>
@@ -36586,7 +36709,7 @@
     </unit>
     <unit id="upstream.act.download">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:305</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:306</note>
       </notes>
       <segment>
         <source>Download</source>
@@ -36595,7 +36718,7 @@
     </unit>
     <unit id="upstream.act.examine">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:307</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:308</note>
       </notes>
       <segment>
         <source>Download for examination</source>
@@ -36604,7 +36727,7 @@
     </unit>
     <unit id="upstream.act.discard">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:309</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:310</note>
       </notes>
       <segment>
         <source>Discard</source>
@@ -36613,7 +36736,7 @@
     </unit>
     <unit id="upstream.rule.this-package">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:359</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:360</note>
       </notes>
       <segment>
         <source>Rule: this package</source>
@@ -36622,7 +36745,7 @@
     </unit>
     <unit id="upstream.preview.title-package">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:371</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:372</note>
       </notes>
       <segment>
         <source>Every version of <ph id="0" equiv="name" disp="name"/></source>

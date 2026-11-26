@@ -27769,10 +27769,13 @@ out of reach, with one scrollbar per page (R-UI-215).
 | (c) A README in a box that scrolls | — | — | A second scrollbar (R-UI-215) |
 | (d) The README after the versions | — | The switches stay first | The documentation behind a table of up to 100 rows |
 
-**Choice:** (a). The facts line names the version they are of, the licence and the links out (the words of a stored version's
-**Links**: Homepage, Source repository, Issue tracker, Documentation, License); the dependencies take the blocks of a stored version
-(Dependencies, Peer dependencies, Optional dependencies, and NuGet's per target framework), folded under "Dependencies of <version>"
-with their count. A reader who may not read the wiki reads "This version has no README to show." as for a stored version; OCI and Debian
+**Choice:** (a). The opened package reads like a stored version's page where it shows the same thing (R-UI-221): the facts line names
+the version they are of and the licence, which links to its address where the upstream names one (NuGet's `licenseUrl`); the links stand
+in the row a stored version has under its facts (`VersionLinks`: Homepage, Documentation or an Ansible collection's Docs site, Source
+repository, Issue tracker); the keywords are the chips of every list (`PackageTags` with the format and no limit, a chip opening the
+project's packages filtered by the format and the keyword); the dependencies are the block `DependencyList` in the format's own words
+(npm's manifest fields, NuGet's target frameworks, an Ansible collection's one list), folded under "Dependencies of <version>" with their
+count. The deprecation's banner has the words and the order of a stored version's. A reader who may not read the wiki reads "This version has no README to show." as for a stored version; OCI and Debian
 say in one line what comes with a stored version. **Applied in the spec:** R-CUR-028. Code:
 [upstream-docs.ts](../../web/src/app/features/repositories/upstream/upstream-docs.ts).
 

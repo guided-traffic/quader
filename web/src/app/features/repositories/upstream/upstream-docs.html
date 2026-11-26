@@ -23,30 +23,37 @@
   </p>
 }
 
-<!-- The facts of the newest version on one line: the version they are of, the licence, the links out (R-CUR-028, Q-UI-1341). -->
+<!-- The facts of the newest version on one line, its links in the row a stored version's page has under its facts, and its keywords as
+     the chips of every list (R-CUR-028, R-UI-221, Q-UI-1341). -->
 @if (about(); as a) {
   <p class="about-line" data-testid="upstream-about">
     <span class="dot-separated">
       <span
         ><ng-container i18n="@@upstream.docs.version">Version</ng-container>&ngsp;<span class="value" translate="no">{{ a.version }}</span></span
       >
-      @if (a.license) {
+      @if (licenseHref(); as href) {
+        <span
+          ><a class="external-link" [href]="href" [attr.rel]="externalRel" target="_blank"
+            >@if (a.license) {<span translate="no">{{ a.license }}</span>} @else {<span i18n="@@pkg.meta.license-url">License</span>}<span
+              class="material-icons"
+              aria-hidden="true"
+              >open_in_new</span
+            ><span class="visually-hidden" i18n="@@pkg.meta.external">(opens another site)</span></a
+          ></span
+        >
+      } @else if (a.license) {
         <span
           ><ng-container i18n="@@upstream.docs.license">License</ng-container>&ngsp;<span class="value" translate="no">{{ a.license }}</span></span
         >
       }
-      @for (l of links(); track l.label) {
-        <!-- The part of the line carries the dot; the link and its mark stay one unit inside it (.external-link is a flex box). -->
-        <span
-          ><span class="external-link"
-            ><a [href]="l.href" [attr.rel]="externalRel" target="_blank">{{ l.label }}</a
-            ><span class="material-icons" aria-hidden="true">open_in_new</span
-            ><span class="visually-hidden" i18n="@@pkg.meta.external">(opens another site)</span></span
-          ></span
-        >
-      }
     </span>
   </p>
+  @if (links().length > 0) {
+    <quader-version-links [links]="links()" />
+  }
+}
+@if (!inRow() && (keywords() ?? []).length > 0) {
+  <quader-package-tags class="upstream-keywords" [tags]="keywords() ?? []" [project]="project()" [format]="format()" [limit]="null" />
 }
 
 @if (readme()) {
@@ -123,14 +130,6 @@
 
 @if (dependencyCount() > 0) {
   <quader-disclosure class="dependencies-fold" [heading]="dependenciesHeading()" [count]="dependencyCount()" [level]="3" data-testid="upstream-dependencies">
-    @for (g of dependencies(); track g.label) {
-      <h4 class="dependency-group">{{ g.label }}</h4>
-      <dl class="facts" translate="no">
-        @for (e of g.entries; track e[0]) {
-          <dt>{{ e[0] }}</dt>
-          <dd>{{ e[1] }}</dd>
-        }
-      </dl>
-    }
+    <quader-dependency-list [groups]="dependencies()" [project]="project()" [format]="format()" />
   </quader-disclosure>
 }

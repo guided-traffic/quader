@@ -8,65 +8,74 @@ import { Disclosure } from '../../../shared/ui/disclosure';
 import { Loading } from '../../../shared/ui/loading';
 import { reasonText } from '../../packages/deprecation-dialog';
 import { EXTERNAL_REL, safeHttpUrl } from '../../packages/package-links';
+import { PackageTags } from '../../packages/package-tags';
+import { DependencyList, VersionLinks } from '../../packages/version-facts';
+import { DependencyEntry, DependencyGroup, MetadataLink } from '../../packages/version-metadata';
 import { PackageReadmeView } from '../../packages/package-readme';
 import { aroundValue } from '../../../shared/value-list';
 import { UpstreamActions } from './upstream-actions';
 import { catalogueState, clockAfter } from './upstream-words';
 
-/** A link of the facts line: its words and its address (an http or https address only, R-UI-007). */
-interface AboutLink {
-  readonly label: string;
-  readonly href: string;
+/**
+ * The links of the newest version in the words and the row of a stored version's page (R-UI-221, Q-UI-1313): homepage, documentation
+ * (an Ansible collection's "Docs site"), source repository and issue tracker; the licence's address is not a link of the row but the
+ * licence's own ({@link licenseHref}).
+ */
+export function aboutLinks(about: UpstreamAbout | null | undefined, format: string): MetadataLink[] {
+  const label = (kind: string): string | null => {
+    switch (kind) {
+      case 'homepage':
+        return $localize`:@@pkg.meta.homepage:Homepage`;
+      case 'documentation':
+        return format === 'ansible' ? $localize`:@@pkg.meta.docs-site:Docs site` : $localize`:@@pkg.meta.documentation:Documentation`;
+      case 'repository':
+        return $localize`:@@pkg.meta.source:Source repository`;
+      case 'issues':
+        return $localize`:@@pkg.meta.bugs:Issue tracker`;
+      default:
+        return null;
+    }
+  };
+  // The row's order is a stored version's: homepage, documentation, source, issue tracker.
+  const order = ['homepage', 'documentation', 'repository', 'issues'];
+  return [...(about?.links ?? [])]
+    .sort((x, y) => order.indexOf(x.kind) - order.indexOf(y.kind))
+    .flatMap((l): MetadataLink[] => {
+      const words = label(l.kind);
+      return words === null ? [] : [{ label: words, text: l.url, href: safeHttpUrl(l.url) }];
+    });
 }
 
-/** A block of dependencies: its heading and its names with their ranges. */
-interface DependencyBlock {
-  readonly label: string;
-  readonly entries: readonly (readonly [string, string])[];
-}
-
-/** The words of a link's kind, as a stored version's page names them (R-UI-007). */
-export function linkLabel(kind: string): string {
-  switch (kind) {
-    case 'homepage':
-      return $localize`:@@pkg.meta.homepage:Homepage`;
-    case 'repository':
-      return $localize`:@@pkg.meta.source:Source repository`;
-    case 'issues':
-      return $localize`:@@pkg.meta.bugs:Issue tracker`;
-    case 'documentation':
-      return $localize`:@@pkg.meta.documentation:Documentation`;
-    default:
-      return $localize`:@@pkg.meta.license-url:License`;
-  }
+/** The address of the licence (NuGet's licenseUrl), which the licence on the facts line links to, as on a stored version's page. */
+export function licenseHref(about: UpstreamAbout | null | undefined): string | null {
+  const l = about?.links.find((x) => x.kind === 'license');
+  return l ? safeHttpUrl(l.url) : null;
 }
 
 /**
- * The dependencies of the newest version in the blocks of a stored version's page (R-UI-007): the plain ones, npm's peer and optional
- * ones, and NuGet's per target framework.
+ * The dependencies of the newest version in the groups of a stored version's page, named in the format's own words (R-UI-221, Q-UI-1311):
+ * npm's manifest fields (`dependencies`, `peerDependencies`, `optionalDependencies`), NuGet's target frameworks (a group without one is
+ * "All frameworks"), an Ansible collection's one list without a heading.
  */
-export function dependencyBlocks(about: UpstreamAbout | null | undefined): DependencyBlock[] {
-  const blocks = new Map<string, [string, string][]>();
+export function aboutDependencies(about: UpstreamAbout | null | undefined, format: string): DependencyGroup[] {
+  const groups = new Map<string, DependencyEntry[]>();
   for (const d of about?.dependencies ?? []) {
     const key = d.group ?? '';
-    const list = blocks.get(key) ?? [];
-    list.push([d.name, d.range ?? '']);
-    blocks.set(key, list);
+    const list = groups.get(key) ?? [];
+    list.push({ alternatives: [{ name: d.name, written: d.name, qualifiers: d.range ?? '' }], mark: null });
+    groups.set(key, list);
   }
-  return [...blocks.entries()].map(([group, entries]) => ({ label: groupLabel(group), entries }));
-}
-
-function groupLabel(group: string): string {
-  switch (group) {
-    case '':
-      return $localize`:@@pkg.meta.dependencies:Dependencies`;
-    case 'peer':
-      return $localize`:@@pkg.meta.peer-dependencies:Peer dependencies`;
-    case 'optional':
-      return $localize`:@@pkg.meta.optional-dependencies:Optional dependencies`;
-    default:
-      return $localize`:@@upstream.docs.framework-dependencies:Dependencies for ${group}:framework:`;
-  }
+  const label = (group: string): string | null => {
+    switch (format) {
+      case 'npm':
+        return group === 'peer' ? 'peerDependencies' : group === 'optional' ? 'optionalDependencies' : 'dependencies';
+      case 'nuget':
+        return group !== '' ? group : $localize`:@@pkg.meta.all-frameworks:All frameworks`;
+      default:
+        return null;
+    }
+  };
+  return [...groups.entries()].map(([group, entries]) => ({ label: label(group), entries, text: null }));
 }
 
 /** The formats whose upstream serves a README the tab reads (R-CUR-028): npm, NuGet, Ansible Galaxy. */
@@ -86,7 +95,7 @@ export const README_CLIP_REM = 24;
  */
 @Component({
   selector: 'quader-upstream-docs',
-  imports: [Disclosure, ErrorNotice, Loading, NgTemplateOutlet, PackageReadmeView],
+  imports: [DependencyList, Disclosure, ErrorNotice, Loading, NgTemplateOutlet, PackageReadmeView, PackageTags, VersionLinks],
   templateUrl: './upstream-docs.html',
   styleUrl: './upstream-docs.scss',
 })
@@ -101,6 +110,10 @@ export class UpstreamDocs {
   /** The package's answer says the README may be asked for: the format serves one and the reader may read the wiki. */
   readonly readme = input(false);
   readonly inRow = input(false);
+  /** The project of the tab: a keyword's chip opens its package list filtered by the keyword and the format (R-UI-221). */
+  readonly project = input.required<string>();
+  /** The upstream's keywords of the package (R-ANS-047); shown here on the package's own view, in a row by the row's line. */
+  readonly keywords = input<readonly string[] | undefined>(undefined);
 
   protected readonly externalRel = EXTERNAL_REL;
   protected readonly answer = signal<UpstreamReadme | null>(null);
@@ -116,13 +129,9 @@ export class UpstreamDocs {
   protected readonly format = computed(() => this.actions.format());
   /** The format's upstream serves a README, so a package without one, or a reader without the wiki, is told there is none. */
   protected readonly readmeFormat = computed(() => README_FORMATS.has(this.format()));
-  protected readonly links = computed<AboutLink[]>(() =>
-    (this.about()?.links ?? []).flatMap((l) => {
-      const href = safeHttpUrl(l.url);
-      return href ? [{ label: linkLabel(l.kind), href }] : [];
-    }),
-  );
-  protected readonly dependencies = computed(() => dependencyBlocks(this.about()));
+  protected readonly links = computed(() => aboutLinks(this.about(), this.format()));
+  protected readonly licenseHref = computed(() => licenseHref(this.about()));
+  protected readonly dependencies = computed(() => aboutDependencies(this.about(), this.format()));
   protected readonly dependencyCount = computed(() => this.about()?.dependencies.length ?? 0);
   protected readonly dependenciesHeading = computed(() => {
     const v = this.about()?.version;
