@@ -15,8 +15,8 @@ rendered from it ([checklist.md there](https://github.com/guided-traffic/quader/
 requirement lists the feature in its `Covers:` line. *open*: no requirement does. For entries with priority
 *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,307 spec requirements:
-796 cover catalog features, 511 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,308 spec requirements:
+797 cover catalog features, 511 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -1749,7 +1749,7 @@ Catalog page: [formats/README.md](../features/formats/README.md) · specified by
 | FMT-003 | Client version floors and validated client versions | MVP | specified | [R-ARCH-010](../spec/architecture.md), [R-NPM-045](../spec/formats/npm.md) |
 | FMT-004 | Format eligibility for federation | Later | open | – |
 | FMT-005 | Container-only deployment profile | Out of scope | open | – |
-| FMT-006 | Client setup instructions across formats | MVP | specified | [R-ARCH-008](../spec/architecture.md), [R-GENERIC-016](../spec/formats/generic.md), [R-NPM-041](../spec/formats/npm.md) |
+| FMT-006 | Client setup instructions across formats | MVP | specified | [R-ARCH-008](../spec/architecture.md), [R-GENERIC-016](../spec/formats/generic.md), [R-GENERIC-017](../spec/formats/generic.md), [R-NPM-041](../spec/formats/npm.md) |
 | FMT-007 | Package view and file view | MVP | specified | [R-ARCH-009](../spec/architecture.md) |
 | FMT-008 | Format property namespaces | MVP | specified | [R-ARCH-008](../spec/architecture.md), [R-NPM-006](../spec/formats/npm.md) |
 | FMT-009 | Format-aware deploy coordinates | P2 | open | – |
@@ -2164,7 +2164,7 @@ Catalog page: [formats/generic.md](../features/formats/generic.md) · specified 
 | PKG-GENERIC-002 | Non-conformant content belongs in a generic repository | P1 | specified | [R-GENERIC-011](../spec/formats/generic.md) |
 | PKG-GENERIC-003 | Free-form paths and the repository layout reference | P1 | specified | [R-GENERIC-012](../spec/formats/generic.md) |
 | PKG-GENERIC-004 | Deploy any file | P1 | specified | [R-GENERIC-004](../spec/formats/generic.md), [R-GENERIC-007](../spec/formats/generic.md) |
-| PKG-GENERIC-005 | Download any file | P1 | specified | [R-GENERIC-003](../spec/formats/generic.md), [R-GENERIC-005](../spec/formats/generic.md) |
+| PKG-GENERIC-005 | Download any file | P1 | specified | [R-GENERIC-003](../spec/formats/generic.md), [R-GENERIC-005](../spec/formats/generic.md), [R-GENERIC-017](../spec/formats/generic.md) |
 | PKG-GENERIC-006 | Generic remote repository for any HTTP source | P1 | specified | [R-GENERIC-009](../spec/formats/generic.md) |
 | PKG-GENERIC-007 | SHA-256 lookup for uncached items | P2 | specified | [R-GENERIC-013](../spec/formats/generic.md) |
 | PKG-GENERIC-008 | Generic virtual repository | P1 | specified | [R-GENERIC-010](../spec/formats/generic.md) |

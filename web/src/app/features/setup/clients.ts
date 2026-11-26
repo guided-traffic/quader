@@ -18,10 +18,15 @@ export interface ClientChoice {
  * and Visual Studio (R-UI-018, Q-UI-93). OCI offers the Docker CLI and Podman (R-OCI-030), and Helm for the Helm charts it holds
  * (R-OCI-042; a chart's commands offer Helm alone, an image's never: `clientsOfKind`); a Kubernetes cluster signs in with the image pull
  * secret of the Docker CLI's configure section. Debian offers APT: apt and apt-get read
- * one source format, so they are one client (R-DEB-029). Ansible Galaxy offers ansible-galaxy (R-ANS-025).
+ * one source format, so they are one client (R-DEB-029). Ansible Galaxy offers ansible-galaxy (R-ANS-025). A generic repository
+ * offers curl, wget and PowerShell's Invoke-WebRequest, the clients a file is downloaded and uploaded with (R-GENERIC-017).
  */
 export const FORMAT_CLIENTS: Readonly<Record<string, readonly ClientChoice[]>> = {
-  generic: [{ id: 'curl', label: 'curl', tab: 'curl' }],
+  generic: [
+    { id: 'curl', label: 'curl', tab: 'curl' },
+    { id: 'wget', label: 'wget', tab: 'wget' },
+    { id: 'powershell', label: 'PowerShell (Invoke-WebRequest)', tab: 'PowerShell' },
+  ],
   npm: [
     { id: 'npm', label: 'npm', tab: 'npm' },
     { id: 'pnpm', label: 'pnpm', tab: 'pnpm' },
@@ -150,7 +155,20 @@ export function snippetText(id: string, reader: SnippetReader = { anonymous: fal
       return text($localize`:@@setup.caption.vs-packagereference:Add to the project file inside an \`ItemGroup\`, then restore.`);
     case 'curl.configure.function':
       return text($localize`:@@setup.caption.curl-function:Paste into the shell or the CI script that runs curl. The token stays off curl's command line.`);
+    case 'wget.configure.function':
+      return text($localize`:@@setup.caption.wget-function:Paste into the shell or the CI script that runs wget. The token stays off wget's command line.`);
+    case 'powershell.configure.headers':
+      return text($localize`:@@setup.caption.powershell-headers:Run in the PowerShell session or script that downloads. The token stays in the session, off every command line.`);
+    case 'curl.install.checksum':
+    case 'wget.install.checksum':
+    case 'powershell.install.checksum':
+      return text($localize`:@@setup.caption.file-checksum:Checks the download against the SHA-256 on the file's page.`);
+    case 'wget.install':
+    case 'powershell.install':
+      return text(null);
     case 'curl.publish':
+    case 'wget.publish':
+    case 'powershell.publish':
       return text($localize`:@@setup.caption.curl-publish:Replacing a file also needs the overwrite permission.`);
     case 'docker.configure.shell':
     case 'podman.configure.shell':

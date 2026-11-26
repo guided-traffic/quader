@@ -98,6 +98,24 @@ const SetupVersionRef = "<version>"
 // and leaves it in place otherwise.
 const SetupPackageRef = "<package>"
 
+// SetupPathRef is how an install or publish template of a format whose items are paths (the generic format,
+// [SubjectPath]) spells the path of a file below RegistryURL, inside a double-quoted address. When the request names a
+// path (formats/generic.md R-GENERIC-017), the API replaces it by the path with every byte outside RFC 3986's unreserved
+// characters percent-encoded, segment by segment, so that nothing of a file's name is read by the shell; for a folder by
+// the folder's path, a slash and [SetupFileRef]. Without a path it stays in place for the reader.
+const SetupPathRef = "<path>"
+
+// SetupFileNameRef is how an install template spells the local name a download is saved under. With a path it becomes the
+// path's last segment, quoted as one argument of the template's language, and with "./" before it when it starts with "-".
+const SetupFileNameRef = "<name>"
+
+// SetupFileRef is how a publish template spells the local file to upload; it always stays the reader's.
+const SetupFileRef = "<file>"
+
+// SetupSHA256Ref is how an install template spells the hexadecimal SHA-256 a download is checked against; the API
+// replaces it by the SHA-256 a request names with its path.
+const SetupSHA256Ref = "<sha256>"
+
 // SetupData is the only data a setup template sees. It has no credential field,
 // so a template that names one fails to execute (kit check 8).
 type SetupData struct {

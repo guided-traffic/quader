@@ -1,6 +1,6 @@
 # Generic format
 
-Status: the local class is built (milestone M1: R-GENERIC-001 to R-GENERIC-008 and R-GENERIC-016; the format registers the class
+Status: the local class is built (milestone M1: R-GENERIC-001 to R-GENERIC-008, R-GENERIC-016 and R-GENERIC-017; the format registers the class
 `local` alone, [generic.go](../../../internal/formats/generic/generic.go)). Not built: the remote class (R-GENERIC-009) and the virtual
 class (R-GENERIC-010); of R-GENERIC-011, the copy and move of items (the management API has no item copy or move operation), while its
 first rule, that a generic repository refuses nothing on format grounds, is R-GENERIC-004's and built; R-GENERIC-012, which waits for a
@@ -197,8 +197,10 @@ address, `Repr-Digest`, a single byte range, `If-Range`, conditional requests) a
 - The response carries the content headers of R-ARCH-007 whatever the media type of the file: a
   generic repository is where `evil.svg` and `evil.html` are stored, and the core sets
   `Content-Disposition: attachment` and the sandbox policy before the handler runs.
-- The media type is the one recorded at deploy time from `Content-Type`, or
-  `application/octet-stream`; the generic format never derives a type from the content or the name.
+- The media type is the one recorded at deploy time from `Content-Type`; a deploy without one, or with the type of a form's body,
+  records the type the file's name says for a closed list of text types (R-GENERIC-017), and any other file is served as
+  `application/octet-stream`. The generic format never derives a type from the content, and never guesses a type a browser renders
+  or runs.
 - `GET` on a folder returns the directory index (R-STOR-017, P1) and, before it exists, 404; a
   folder is never served as an archive in the MVP.
 - Download of a single entry from inside an archive, and of a folder as an archive, are not part of
@@ -296,14 +298,15 @@ Acceptance criteria:
 Priority: **MVP** · Covers: FMT-006
 
 The client setup page and the guides (api-and-ui.md R-API-030, R-API-053, R-UI-016, R-UI-049) serve the generic
-format with one client, `curl` (Q-GENERIC-8). The format contributes its templates (`SetupTemplates()`,
+format with curl, and with wget and PowerShell since R-GENERIC-017 (Q-GENERIC-10). The format contributes its templates (`SetupTemplates()`,
 [setup.go](../../../internal/formats/generic/setup.go)) and its guide (`Guide()`,
 [guide/](../../../internal/formats/generic/guide/)); the API renders them like npm's.
 
 | Snippet `id` | Tab | Content (`<registry URL>` is `<public base URL>/files/<projectKey>/<repoKey>/`) |
 |---|---|---|
 | `curl.configure.function` | Configure | The shell function `quader_curl` below |
-| `curl.install` | Install | `quader_curl --fail --remote-name "<registry URL><path>"` |
+| `curl.install` | Install | `quader_curl --fail --location --output <name> "<registry URL><path>"` |
+| `curl.install.checksum` | Install | `printf '%s  %s\n' <sha256> <name> \| sha256sum -c` (R-GENERIC-017) |
 | `curl.publish` | Publish | `quader_curl --fail --upload-file <file> "<registry URL><path>"`, only for a caller with `deploy` |
 
 ```shell
@@ -343,6 +346,76 @@ Acceptance criteria:
   (`TestR_GENERIC_016_TheGuideStatesTheLimits`).
 - With the configure snippet defined in a POSIX shell and `QUADER_TOKEN` set, the install and publish snippets
   download and upload a file of `generic-local`, and the token is in no argument of curl.
+
+### R-GENERIC-017 · A file's commands behind Download, and a content type that says what it is
+Priority: **P1** · Covers: FMT-006, PKG-GENERIC-005
+
+The owner decided on 2026-11-25 that a client's command stands behind the button of a thing with a panel, never in a box of its own,
+in every format (R-UI-218, Q-UI-1240). A generic repository's file is downloaded with curl, wget or PowerShell, so its commands are
+theirs, and the server writes each of them (R-API-030).
+
+- **Three clients, one way to sign in** (Q-GENERIC-10). The format's clients are `curl`, `wget` and `powershell`
+  (`Invoke-WebRequest`). Each has a configure snippet that keeps the token off every command line: curl's function `quader_curl`
+  (Q-GENERIC-9), wget's function `quader_wget`, which hands wget its configuration on standard input
+  (`wget --no-verbose --config=/dev/stdin "$@"` with the header `Authorization: Bearer ${QUADER_TOKEN}` as the here-document), and
+  PowerShell's variable `$QuaderHeaders`, filled in the session from `$env:QUADER_TOKEN`. The line that holds the token's reference is the
+  one `credentials=none` drops.
+
+  | Snippet `id` | Tab | Content |
+  |---|---|---|
+  | `wget.configure.function` | Configure | The function `quader_wget` |
+  | `wget.install` | Install | `quader_wget --output-document <name> "<registry URL><path>"` |
+  | `wget.install.checksum` | Install | `printf '%s  %s\n' <sha256> <name> \| sha256sum -c` |
+  | `wget.publish` | Publish | `quader_wget --method PUT --body-file <file> --output-document - "<registry URL><path>"` |
+  | `powershell.configure.headers` | Configure | `$QuaderHeaders = @{}` and `$QuaderHeaders.Authorization = "Bearer $env:QUADER_TOKEN"` |
+  | `powershell.install` | Install | `Invoke-WebRequest -Uri "<registry URL><path>" -OutFile <name> -Headers $QuaderHeaders` |
+  | `powershell.install.checksum` | Install | `(Get-FileHash -Algorithm SHA256 -LiteralPath <name>).Hash -eq '<sha256>'` |
+  | `powershell.publish` | Publish | `Invoke-WebRequest -Method Put -InFile <file> -Uri "<registry URL><path>" -Headers $QuaderHeaders` |
+
+- **A file's commands with its path.** The client setup takes `path` and `sha256` (R-API-030, ADR-290). The path is held to the rules of
+  `/files/` (R-GENERIC-002; `400 invalid_path`); a path that ends in `/` is a folder and `/` the root. The server puts the path into
+  the address percent-encoded segment by segment with nothing but RFC 3986's unreserved characters, so a `$`, a backtick, a quote, a
+  `!` or a space of a name stays inert inside the template's double quotes; the name a download is saved under is the path's last
+  segment, quoted as one argument of the snippet's language (a POSIX shell's single quotes where needed, PowerShell's single quotes
+  always, since a bare word there can be a number or a splatted variable), with `./` before a name that starts with `-`, which a client
+  would read as an option or, alone, as standard output; the SHA-256 is hexadecimal. For a folder only the publish snippets are
+  answered, uploading the reader's `<file>` into the folder. `path` is refused for a format whose items are named by packages and
+  beside `package`.
+- **Behind Download** (Q-UI-1330 to Q-UI-1332). The file's page keeps **Download** in the browser as its main act and joins a chevron
+  to it, **Download with a client**, that opens the panel of R-UI-218: the file's **Download address** with its copy button, then a
+  tab per client with **Set up client** at the row's end, the chosen client's download, and under it **Check the download**, the line
+  that checks the copy against the file's SHA-256. A file's row in the files list has the verb's button **Download** in its
+  actions, with the same panel, where a package's row has its verb (Q-UI-1335). The download address field and the "Download with
+  curl" block of the page's Details are gone for a generic file: both are in the panel. A file the malware scan or the signature gate
+  refuses has no **Download** and no panel on its page, whose commands would answer `403`, and keeps its address as a fact (Q-UI-882).
+- **Upload** (Q-UI-1334). A folder's **Upload files** keeps its dialog as the main act; its chevron, **Upload with a client**, opens
+  the panel of the folder's upload command in each client.
+- **The content type** (Q-GENERIC-11, Q-GENERIC-12). A file deployed through `/files/` or the UI's content route without a
+  `Content-Type`, or with the type of a form's body (`application/x-www-form-urlencoded`, which wget and PowerShell send for a body
+  they were not given a type for), records the type its name says, compared without case: `.md` and `.markdown` as `text/markdown`,
+  `.txt` and `.log` as `text/plain`, `.json` as `application/json`, `.yaml` and `.yml` as `application/yaml`, `.toml` as
+  `application/toml`, `.csv` as `text/csv`. Any other name records none and is served as `application/octet-stream`. A deployed type
+  wins. The list is closed and holds no type a browser renders as a document or runs (HTML, SVG, XML, JavaScript, CSS, PDF, images);
+  it lives in one place, `guessMediaType` of [guess.go](../../../internal/api/rawfiles/guess.go). Whatever the type, a file is served
+  as an attachment with `nosniff` and the sandboxing policy (R-ARCH-007), so the guess adds no way to get a script to run on
+  Quader's origin ([file-transfer.md](../../security/file-transfer.md#content-isolation-r-arch-007)).
+- The file's page names the type in a word a person knows where the product has one, with the media type beside it ("Markdown
+  `text/markdown`", Q-UI-1333).
+
+Acceptance criteria:
+
+- For a file named with spaces, quotes, `$(…)`, a backtick, a separator, a leading dash, `-` alone, a glob, non-ASCII characters or a
+  literal `%`, the download and the check of curl and wget, run by a POSIX shell, receive the address and the name each as one
+  argument, and PowerShell's carry the name as one single-quoted literal; the address decodes to the path
+  (`TestR_GENERIC_017_AHostileNameIsOneArgumentOfEveryClient`).
+- A folder's path answers the upload of every client into the folder and no download; a path the `/files/` rules refuse, a path of
+  another format, and a SHA-256 of a folder answer 400 (`TestR_GENERIC_017_AFoldersUploadCommands`,
+  `TestR_GENERIC_017_AFilesPathIsHeldToThePathRules`).
+- The configure snippets of wget and PowerShell hold the token's reference in the one line `credentials=none` drops
+  (`TestR_GENERIC_017_WgetAndPowerShellKeepTheTokenOffTheCommandLine`).
+- `README.md` deployed without a type is served as `text/markdown`, `values.YAML` with the form's type as `application/yaml`, a
+  deployed `text/plain` wins over the name, and `index.html` without a type is served as `application/octet-stream`, every one as an
+  attachment with the sandboxing policy (`TestE1_4_RawTransfer`, R-GENERIC-017; the list: `TestR_GENERIC_017_TheGuessIsAClosedListOfText`).
 
 ## Non-conformant content and other formats
 
@@ -609,7 +682,9 @@ R-GENERIC-009 gives the generic format a remote class with its own routes.
 
 ### Q-GENERIC-8 · curl is the one client of the generic format
 
-Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+Status: **Superseded by [Q-GENERIC-10](#q-generic-10--curl-wget-and-powershell-are-the-clients-of-a-file-each-keeping-the-token-off-the-command-line)**
+on 2026-11-26: the owner's rule of 2026-11-25 puts a file's commands behind its button, and a person downloads a file with wget or
+PowerShell as often as with curl. The decision as it stood follows.
 
 Context: R-UI-019 and Q-UI-83 require every format with clients to ship its setup snippets and its guide, and the
 guides list a format only once it names clients. The protocol of generic is plain HTTP on `/files/`, which every HTTP
@@ -658,6 +733,74 @@ would make the function unnecessary.
 
 **Applied in the spec:** R-GENERIC-016.
 
+
+### Q-GENERIC-10 · curl, wget and PowerShell are the clients of a file, each keeping the token off the command line
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+It supersedes Q-GENERIC-8.
+
+Context: R-GENERIC-017 puts a file's commands behind **Download**, a tab per client. The client model still cannot say that a client
+only downloads (Q-GENERIC-8, option b), so every client must also upload. GNU wget sends `PUT` with `--method` and `--body-file`, and
+`Invoke-WebRequest` with `-Method Put -InFile`, so both do. The owner ruled out a token in a file (`.netrc`) for curl (Q-GENERIC-9).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) curl, wget and PowerShell, each with a configure snippet that keeps the token off every command line: curl's and wget's shell function hand the client the header as configuration on standard input, PowerShell keeps it in a variable of the session (chosen) | Three tabs, one pattern | A minimal image with wget alone and a Windows machine get a command that works; the token is in no process list and no shell trace for any of them; `credentials=none` drops the one line in each | The function or the variable must be defined in the session that runs the command; wget needs `--config` and `/dev/stdin` |
+| (b) wget and PowerShell with the header as an argument (`--header`, `-Headers @{…}` inline) | One line per command | Nothing to define first | wget's argument is in the process list; inconsistent with Q-GENERIC-9 |
+| (c) wget with a `.netrc` entry | wget reads it itself | Standard | A file with the token in plain text, which the owner ruled out |
+| (d) curl only, as before | No change | One set of facts | The owner's rule asks for a file's commands; a Windows user and a wget-only image have none |
+
+**Choice:** (a).
+
+**Rationale:** one way to sign in for the three clients, the way the setup page already teaches for curl. The development agent would
+revisit this when the client model learns which tabs a client has, or when a client is asked for that reads no configuration from
+standard input.
+
+**Applied in the spec:** R-GENERIC-016, R-GENERIC-017; api-and-ui.md R-API-030 (`path`, `sha256`), R-UI-010.
+
+### Q-GENERIC-11 · A file deployed without a type gets one from its name, from a closed list of text, at the deploy
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: curl's `--upload-file` sends no type, and a browser knows none for a `.md` file; such a `README.md` read as
+`application/octet-stream` on its page (W-30, B.3). The type decides what a browser does with the file when it is opened from Quader's
+origin.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) At the deploy, from a closed list of text types by the extension; a deployed type wins (chosen) | Stored with the item like a deployed type | The type is decided once, the same in every answer (the item's description, the download, a signed link); no type a browser renders or runs is ever guessed | A file uploaded before the list existed keeps its type |
+| (b) At every read, from the same list | Nothing stored | Covers files stored before | Every reader of an item's type would have to apply it (the download, the description, the signed links of the object store); one stored value is simpler |
+| (c) A full extension table (Go's `mime.TypeByExtension`) | Every known extension | More files typed | It holds `text/html`, `image/svg+xml` and JavaScript: a guess would type a file as active content its uploader never declared |
+| (d) Sniff the content | `http.DetectContentType` | Works without a name | It answers `text/html` for HTML-looking bytes; R-GENERIC-005 forbids deriving a type from the content |
+
+**Choice:** (a).
+
+**Rationale:** what a person reads on the file's page is what the server serves, and the list cannot produce a type that runs. The
+development agent would revisit this when the owner names a text type that is regularly uploaded and missing.
+
+**Applied in the spec:** R-GENERIC-005, R-GENERIC-017; [file-transfer.md](../../security/file-transfer.md).
+
+### Q-GENERIC-12 · The type of a form's body is no file's type
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: GNU wget sends `Content-Type: application/x-www-form-urlencoded` with `--body-file` unless told otherwise, and PowerShell's
+`Invoke-WebRequest` may send it for a body without `-ContentType`. Stored, every file uploaded with the snippets of R-GENERIC-017 would
+be served as a form.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A deploy that carries the form's type records none, and the guess of Q-GENERIC-11 applies (chosen) | The server ignores the one type that is never a file's | The snippets stay short; the stored type is the file's | A client that means to store a form's body as such cannot |
+| (b) The snippets send `Content-Type: application/octet-stream` | The client says it | No rule on the server | The guess of Q-GENERIC-11 never applies to wget's and PowerShell's uploads, and the commands grow |
+| (c) Store what is sent | As before | Nothing to decide | A `.md` uploaded with wget reads as a form |
+
+**Choice:** (a).
+
+**Rationale:** a file in a repository is never an HTML form's body. The development agent would revisit this when a client stores
+form bodies on purpose.
+
+**Applied in the spec:** R-GENERIC-017; `mediaType` of [handler.go](../../../internal/api/rawfiles/handler.go).
+
 ## What this does not cover
 
 ### H-131 · Generic content is served as stored, to whoever can read it
@@ -669,3 +812,17 @@ content as part of Quader's origin, but a downloaded installer or archive is exa
 as its uploader. Grant `deploy` and `overwrite` only to the accounts that publish, and use the
 digests of the item information to verify downloads out of band. What makes it real: a write grant
 on a repository that other builds consume.
+
+### H-2192 · PowerShell's download may read brackets of a name as a wildcard
+
+Component: the snippet `powershell.install` (R-GENERIC-017). Subject: a file whose name holds `[` or `]`. `-OutFile` of
+`Invoke-WebRequest` takes a path that Windows PowerShell 5.1 resolves as a wildcard pattern, so such a name may be refused or saved
+elsewhere; the check uses `-LiteralPath` and is not affected. Live for such names on Windows PowerShell 5.1; whether PowerShell 7 reads
+`-OutFile` literally was not verified. No name is run as code: the value is a single-quoted literal.
+
+### H-2193 · The wget and PowerShell snippets are proven by their quoting, not by the clients
+
+Component: the snippets of wget and PowerShell (R-GENERIC-017). The unit tests run curl's and wget's lines through a POSIX shell with
+the clients replaced by functions that print their arguments, and check PowerShell's quoting as text; no test runs GNU wget or
+PowerShell against Quader (`--config=/dev/stdin`, `--method PUT`, the form type of a `PUT`, `Invoke-WebRequest -InFile`). No e2e leg
+is added for them (CLAUDE.md, "a format adds a constant"); what they would show is listed here until a measurement runs them once.

@@ -97,6 +97,13 @@ export interface ClientSetupQuery {
   readonly scope?: string;
   /** The name of a Bastion registration: the snippets are for that Bastion (R-BAS-007). */
   readonly bastion?: string;
+  /**
+   * A file's path, or a folder's with a trailing slash, of a generic repository (R-GENERIC-017): the install snippets download and
+   * check the file, the publish snippets upload into the folder or replace the file.
+   */
+  readonly path?: string;
+  /** The file's SHA-256, which the check of a download names. */
+  readonly sha256?: string;
 }
 
 export function packageUrl(id: string): string {

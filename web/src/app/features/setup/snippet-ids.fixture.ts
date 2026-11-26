@@ -29,7 +29,20 @@ export const RENDERED_SNIPPET_IDS: Readonly<Record<string, readonly string[]>> =
   'generic:curl': [
     'curl.configure.function',
     'curl.install',
+    'curl.install.checksum',
     'curl.publish',
+  ],
+  'generic:powershell': [
+    'powershell.configure.headers',
+    'powershell.install',
+    'powershell.install.checksum',
+    'powershell.publish',
+  ],
+  'generic:wget': [
+    'wget.configure.function',
+    'wget.install',
+    'wget.install.checksum',
+    'wget.publish',
   ],
   'npm:npm': [
     'npm.configure.npmrc',

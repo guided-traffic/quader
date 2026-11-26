@@ -1,8 +1,10 @@
 import { CdkTrapFocus } from '@angular/cdk/a11y';
+import { NgTemplateOutlet } from '@angular/common';
 import { CdkConnectedOverlay, CdkOverlayOrigin, ConnectedPosition } from '@angular/cdk/overlay';
 import { Component, DestroyRef, ElementRef, computed, inject, input, linkedSignal, signal, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { setupCommands } from '../../core/project-links';
+import { AddressField } from '../../shared/address-field';
 import { TabGroup, TabPage } from '../../shared/ui/tabs';
 import { ClientChoice, clientsOfKind } from '../setup/clients';
 import { ClientCommand } from './client-command';
@@ -31,7 +33,11 @@ const POSITIONS: ConnectedPosition[] = [
  * artifact's `kind` picks its kind's clients (`clientsOfKind`, R-OCI-042: a Helm chart Helm alone, an image Docker and Podman), and an
  * image's `digest` adds the pull by digest as the second line of each tab (R-OCI-041). Where the
  * version is held by more than one repository a client can use (the version's page), a select **Repository** stands above the row, and
- * the command and the setup follow it.
+ * the command and the setup follow it. A generic repository's file (`path`, formats/generic.md R-GENERIC-017) has curl, wget and
+ * PowerShell, its download address above the row (`address`, Q-UI-1331) and, with its `sha256`, the check of the download as the second
+ * line of each tab (Q-UI-1332); a folder's path with a trailing slash and `section="publish"` gives the upload into it. Where the page
+ * has a main act of its own (a file's download in the browser, a folder's upload dialog), it is projected as `[mainAct]` and the button
+ * is the chevron joined after it (`split`, Q-UI-1330, Q-UI-1334).
  *
  * The panel is a non-modal dialog named by the verb, the package and the version: it takes the focus when it opens and keeps Tab
  * inside; Escape, a click outside it and the button close it, and the focus goes back to the button (a click outside on another control
@@ -50,24 +56,30 @@ const MARGIN = { start: 16, end: 0, top: 16, bottom: 16 };
 
 @Component({
   selector: 'quader-client-command-menu',
-  imports: [CdkOverlayOrigin, CdkConnectedOverlay, CdkTrapFocus, ClientCommand, RouterLink, TabGroup, TabPage],
+  imports: [AddressField, CdkOverlayOrigin, CdkConnectedOverlay, CdkTrapFocus, ClientCommand, NgTemplateOutlet, RouterLink, TabGroup, TabPage],
   template: `
-    <button
-      #trigger
-      type="button"
-      class="btn btn-default command-trigger"
-      [class.btn-sm]="size() === 'row'"
-      [class.on-line]="size() === 'row'"
-      cdkOverlayOrigin
-      #origin="cdkOverlayOrigin"
-      aria-haspopup="dialog"
-      [attr.aria-expanded]="open()"
-      [attr.aria-controls]="open() ? panelId : null"
-      (click)="toggle()"
-    >
-      <span class="visually-hidden">{{ version() }}: </span>{{ verb()
-      }}<span class="material-icons" aria-hidden="true">keyboard_arrow_down</span>
-    </button>
+    <!-- A split button where the page has a main act of its own (a file's download in the browser, a folder's upload dialog): the act,
+         then the chevron that opens the commands, joined as GitLab's download button with its menu (Q-UI-1330). -->
+    <span class="split" [class.is-split]="split()" cdkOverlayOrigin #origin="cdkOverlayOrigin">
+      <ng-content select="[mainAct]" />
+      <button
+        #trigger
+        type="button"
+        class="btn btn-default command-trigger"
+        [class.btn-sm]="size() === 'row'"
+        [class.on-line]="size() === 'row'"
+        [class.chevron-only]="split()"
+        aria-haspopup="dialog"
+        [attr.aria-expanded]="open()"
+        [attr.aria-controls]="open() ? panelId : null"
+        [attr.aria-label]="split() ? splitLabel() : null"
+        (click)="toggle()"
+      >
+        @if (!split()) {
+          <span class="visually-hidden">{{ rowLabel() }}: </span>{{ verb() }}
+        }<span class="material-icons" aria-hidden="true">keyboard_arrow_down</span>
+      </button>
+    </span>
     <ng-template
       cdkConnectedOverlay
       [cdkConnectedOverlayOrigin]="origin"
@@ -102,6 +114,13 @@ const MARGIN = { start: 16, end: 0, top: 16, bottom: 16 };
             </select>
           </label>
         }
+        @if (address(); as a) {
+          <!-- A file's address for any other tool, above its clients, as GitLab's menu has its clone addresses (Q-UI-1331). -->
+          <div class="command-address">
+            <span class="field-label" i18n="@@files.download-address">Download address</span>
+            <quader-address-field [value]="a" [label]="addressLabel" [copyLabel]="copyAddressLabel" />
+          </div>
+        }
         @if (clients().length > 1) {
           <quader-tab-group [(selectedIndex)]="chosenTab" [keepAll]="true" [compact]="true">
             @if (setupLink(); as setup) {
@@ -112,33 +131,7 @@ const MARGIN = { start: 16, end: 0, top: 16, bottom: 16 };
             }
             @for (c of clients(); track c.id) {
               <quader-tab [label]="c.tab">
-                <div class="command-body">
-                  <quader-client-command
-                    class="in-menu"
-                    [format]="format()"
-                    [name]="name()"
-                    [version]="version()"
-                    [repository]="chosenRepository()"
-                    [client]="c.id"
-                    [commandLabel]="fieldLabel(c)"
-                    [copyLabel]="copyLabel(c)"
-                  />
-                  <!-- An image pulled by its digest, the second line of Docker's and Podman's tab (R-OCI-041). -->
-                  @if (digest(); as d) {
-                    <p class="by-digest" i18n="@@pkg.command-menu.by-digest">By digest</p>
-                    <quader-client-command
-                      class="in-menu"
-                      [format]="format()"
-                      [name]="name()"
-                      [version]="version()"
-                      [digest]="d"
-                      [repository]="chosenRepository()"
-                      [client]="c.id"
-                      [commandLabel]="digestFieldLabel(c)"
-                      [copyLabel]="digestCopyLabel(c)"
-                    />
-                  }
-                </div>
+                <ng-container *ngTemplateOutlet="body; context: { $implicit: c }" />
               </quader-tab>
             }
           </quader-tab-group>
@@ -153,18 +146,56 @@ const MARGIN = { start: 16, end: 0, top: 16, bottom: 16 };
               >
             }
           </div>
-          <div class="command-body">
-            <quader-client-command
-              class="in-menu"
-              [format]="format()"
-              [name]="name()"
-              [version]="version()"
-              [repository]="chosenRepository()"
-              [client]="c.id"
-              [commandLabel]="fieldLabel(c)"
-              [copyLabel]="copyLabel(c)"
-            />
-          </div>
+          <ng-container *ngTemplateOutlet="body; context: { $implicit: c }" />
+        }
+      </div>
+    </ng-template>
+    <!-- One client's commands: the command, and its second line where the thing has one. -->
+    <ng-template #body let-c>
+      <div class="command-body">
+        <quader-client-command
+          class="in-menu"
+          [format]="format()"
+          [name]="name()"
+          [version]="version()"
+          [repository]="chosenRepository()"
+          [client]="c.id"
+          [path]="path()"
+          [tab]="section()"
+          [commandLabel]="fieldLabel(c)"
+          [copyLabel]="copyLabel(c)"
+        />
+        <!-- An image pulled by its digest, the second line of Docker's and Podman's tab (R-OCI-041). -->
+        @if (digest(); as d) {
+          <p class="by-digest" i18n="@@pkg.command-menu.by-digest">By digest</p>
+          <quader-client-command
+            class="in-menu"
+            [format]="format()"
+            [name]="name()"
+            [version]="version()"
+            [digest]="d"
+            [repository]="chosenRepository()"
+            [client]="c.id"
+            [commandLabel]="digestFieldLabel(c)"
+            [copyLabel]="digestCopyLabel(c)"
+          />
+        }
+        <!-- A file's download checked against its SHA-256, the second line of each client's tab (R-GENERIC-017, Q-UI-1332). -->
+        @if (sha256() && path() !== null && section() === 'install') {
+          <p class="by-digest" i18n="@@pkg.command-menu.checksum">Check the download</p>
+          <quader-client-command
+            class="in-menu"
+            [format]="format()"
+            [name]="name()"
+            [version]="version()"
+            [repository]="chosenRepository()"
+            [client]="c.id"
+            [path]="path()"
+            [sha256]="sha256()"
+            [snippetId]="c.id + '.install.checksum'"
+            [commandLabel]="checkFieldLabel(c)"
+            [copyLabel]="checkCopyLabel(c)"
+          />
         }
       </div>
     </ng-template>
@@ -172,6 +203,23 @@ const MARGIN = { start: 16, end: 0, top: 16, bottom: 16 };
   styles: `
     :host {
       display: inline-block;
+    }
+    .split {
+      display: inline-flex;
+      align-items: stretch;
+    }
+    /* The main act and the chevron as one control: the act's end and the chevron's start square, their borders one hairline. */
+    .is-split ::ng-deep > [mainAct] {
+      border-start-end-radius: 0;
+      border-end-end-radius: 0;
+    }
+    .is-split .command-trigger {
+      margin-inline-start: -1px;
+      border-start-start-radius: 0;
+      border-end-start-radius: 0;
+    }
+    .command-trigger.chevron-only {
+      padding-inline: var(--quader-space-1);
     }
     .command-trigger {
       gap: var(--quader-space-1);
@@ -248,6 +296,13 @@ const MARGIN = { start: 16, end: 0, top: 16, bottom: 16 };
       color: var(--quader-text-muted);
       font-size: 0.8125rem;
     }
+    /* A file's address above its clients, its label over its field (Q-UI-320). */
+    .command-address {
+      display: flex;
+      flex-direction: column;
+      gap: var(--quader-space-1);
+      padding-block: var(--quader-space-2) var(--quader-space-1);
+    }
   `,
 })
 export class ClientCommandMenu {
@@ -267,6 +322,22 @@ export class ClientCommandMenu {
   readonly size = input<'row' | 'page'>('row');
   /** An image's digest: each client has a second command that pulls by it (formats/oci.md R-OCI-041). */
   readonly digest = input<string | null>(null);
+  /**
+   * A generic repository's file, or folder with a trailing slash (formats/generic.md R-GENERIC-017): the commands are the server's for
+   * that path, a file's download or a folder's upload (`section`); `name` is the file's or folder's name, `version` empty.
+   */
+  readonly path = input<string | null>(null);
+  /** The tab of the client setup the commands come from: `install`, or `publish` for the upload into a folder. */
+  readonly section = input<'install' | 'publish'>('install');
+  /** A file's SHA-256: each client has a second command that checks the download against it (Q-UI-1332). */
+  readonly sha256 = input<string | null>(null);
+  /** A file's download address, above the clients with its copy button (Q-UI-1331). */
+  readonly address = input<string | null>(null);
+  /**
+   * The page has a main act of its own, projected as `[mainAct]` (a file's download in the browser, a folder's upload dialog): the
+   * button is the chevron after it, named by `splitLabel` (Q-UI-1330).
+   */
+  readonly split = input(false);
 
   protected readonly positions = POSITIONS;
   protected readonly margin = MARGIN;
@@ -282,9 +353,17 @@ export class ClientCommandMenu {
   protected readonly chosenRepository = linkedSignal(() => this.repository());
   /** Set up client of the chosen repository (R-UI-126); none for a system repository of upstream, which answers no client (Q-UI-896). */
   protected readonly setupLink = computed(() => setupCommands(this.chosenRepository()));
-  protected readonly panelLabel = computed(
-    () => $localize`:@@pkg.command-menu.label:${this.verb()}:verb: ${this.name()}:name: ${this.version()}:version:`,
+  protected readonly panelLabel = computed(() =>
+    this.version() === ''
+      ? $localize`:@@pkg.command-menu.label-file:${this.verb()}:verb: ${this.name()}:name:`
+      : $localize`:@@pkg.command-menu.label:${this.verb()}:verb: ${this.name()}:name: ${this.version()}:version:`,
   );
+  /** What a row's button names before its verb, for a screen reader: the version, or a file's name. */
+  protected readonly rowLabel = computed(() => this.version() || this.name());
+  /** The name of the chevron of a split button. */
+  protected readonly splitLabel = computed(() => $localize`:@@pkg.command-menu.split:${this.verb()}:verb: with a client`);
+  protected readonly addressLabel = $localize`:@@files.download-address:Download address`;
+  protected readonly copyAddressLabel = $localize`:@@files.copy-download-address:Copy download address`;
 
   private readonly trigger = viewChild.required<ElementRef<HTMLButtonElement>>('trigger');
   private readonly panel = viewChild<ElementRef<HTMLElement>>('panel');
@@ -309,6 +388,14 @@ export class ClientCommandMenu {
 
   protected digestCopyLabel(c: ClientChoice): string {
     return $localize`:@@pkg.command-menu.digest-copy:Copy the command for ${c.label}:client: by digest`;
+  }
+
+  protected checkFieldLabel(c: ClientChoice): string {
+    return $localize`:@@pkg.command-menu.check-field:Check of the download for ${c.label}:client:`;
+  }
+
+  protected checkCopyLabel(c: ClientChoice): string {
+    return $localize`:@@pkg.command-menu.check-copy:Copy the check of the download for ${c.label}:client:`;
   }
 
   protected pickRepository(event: Event): void {

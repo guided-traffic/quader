@@ -1,6 +1,6 @@
 # Connecting a package client
 
-How to point npm, pnpm, Yarn, the .NET CLI, nuget.exe, Visual Studio, the Docker CLI, Podman, APT, ansible-galaxy and curl at a Quader repository, sign them in with a token from an environment variable, and install, publish and maintain packages and files through it. The page explains the concepts and the place in the UI that gives you the exact configuration of your installation: the page Set up client of a repository.
+How to point npm, pnpm, Yarn, the .NET CLI, nuget.exe, Visual Studio, the Docker CLI, Podman, APT, ansible-galaxy, curl, wget and PowerShell at a Quader repository, sign them in with a token from an environment variable, and install, publish and maintain packages and files through it. The page explains the concepts and the place in the UI that gives you the exact configuration of your installation: the page Set up client of a repository.
 
 ## Where the instructions are
 
@@ -39,7 +39,7 @@ The trailing slash belongs to the address of npm, Debian, Ansible Galaxy and gen
 
 The page belongs to one repository: its address is `…/projects/<project>/repositories/<repository>/setup`, and its header names the repository, the package type and the class, with the address your client uses and its copy button. It asks for nothing the repository already decides. From top to bottom:
 
-1. **Client**, only where the package type has several: **npm**, **pnpm**, **Yarn Berry (2 and later)** or **Yarn Classic (1.x)** for npm, **.NET CLI (dotnet)**, **nuget.exe** or **Visual Studio 2022** for NuGet, **Docker CLI (with Buildx)** or **Podman** for OCI (Docker). Debian (APT), Ansible Galaxy and generic repositories have one client each, and the page does not ask.
+1. **Client**, only where the package type has several: **npm**, **pnpm**, **Yarn Berry (2 and later)** or **Yarn Classic (1.x)** for npm, **.NET CLI (dotnet)**, **nuget.exe** or **Visual Studio 2022** for NuGet, **Docker CLI (with Buildx)** or **Podman** for OCI (Docker). Generic repositories offer **curl**, **wget** and **PowerShell (Invoke-WebRequest)**. Debian (APT) and Ansible Galaxy have one client each, and the page does not ask.
 2. **Token**, one framed row: the snippets read your token from the variable `QUADER_TOKEN`. **Create a token** beside it creates one without leaving the page (next section). **More options**, closed, inside the row: a token written into the snippets, and, where a Bastion can be chosen, **Install from**. Signed out, one line says that the snippets hold no credentials, which works for a repository whose artifacts are public.
 3. The steps **1 Configure**, **2 Install**, if you may publish **3 Publish**, and while the installation signs its receipts **Verify** last (see [Signatures](signatures.md#quaders-receipt-attestation)), each with its snippets. A configuration file is shown as an editor window: its name on the tab, its lines numbered, **Download** and **Copy snippet** in its bar. A command is shown as a terminal window with its prompt and **Copy snippet**. What you replace with your own value (`<package>`, an example such as `myapp:1.0`) is tinted and underlined with a dashed line; where your token goes is an orange chip. A line too long for the page continues on the next line, indented, so a long repository key never hides the end of an address; the copy button copies the snippet unchanged, without prompts or line numbers. A sentence above a window says only what the window does not, such as where to save the file. A second way of the same step, such as the image pull secret for a Kubernetes cluster or the same command in PowerShell, is a closed fold after the step's own snippets.
 4. **Guide** below the steps (see [What the guide on the page adds](#what-the-guide-on-the-page-adds)).
@@ -214,9 +214,9 @@ For an OCI (Docker) repository the **Configure** step holds the login of the Doc
 
 For a Debian (APT) repository the **Configure** step installs the repository's public key from `signing-key.asc` as `/etc/apt/keyrings/quader-<project>-<repository>.asc`, writes the source as `/etc/apt/sources.list.d/quader-<project>-<repository>.sources` with that key in `Signed-By`, and writes the token into `/etc/apt/auth.conf.d/quader-<project>-<repository>.conf`, a file only root can read, never into the source line. A one-line `.list` form, and for a remote repository without upstream keys a source that names the archive's own keyring instead of a key of Quader's, are closed folds of the step. **Install** runs `apt-get update` and `apt-get install`, **Publish** uploads a package with `curl`. [Debian packages with APT](apt-packages.md) explains the suites, the upload, the index wait, key rotation and the client's error messages.
 
-## Download and upload files with curl
+## Download and upload files with curl, wget or PowerShell
 
-The configure snippet for a generic repository defines a shell function, `quader_curl`, that hands curl the token on standard input, so the token appears neither on curl's command line nor in a shell trace:
+The configure snippet for a generic repository keeps the token off every command line. For curl it defines a shell function, `quader_curl`, that hands curl the token on standard input, so the token appears neither on curl's command line nor in a shell trace:
 
 ```shell
 quader_curl() {
@@ -224,9 +224,11 @@ quader_curl() {
 header = "Authorization: Bearer ${QUADER_TOKEN}"
 EOF
 }
-quader_curl --fail --remote-name "https://quader.example.com/files/web/generic-local/tools/app-1.2.0.tar.gz"
+quader_curl --fail --location --output app-1.2.0.tar.gz "https://quader.example.com/files/web/generic-local/tools/app-1.2.0.tar.gz"
 quader_curl --fail --upload-file app-1.2.0.tar.gz "https://quader.example.com/files/web/generic-local/tools/app-1.2.0.tar.gz"
 ```
+
+wget gets the same from a function `quader_wget`, which hands wget its configuration on standard input (`--config=/dev/stdin`), and PowerShell from a variable of the session, `$QuaderHeaders`, filled from `$env:QUADER_TOKEN` and passed as `-Headers`. Each client's **Install** step has a second snippet that checks a download against its SHA-256. The page of a file offers these commands with the file's address and name filled in, behind **Download** ([Browsing and transferring files](files.md#download-with-a-client)).
 
 Downloading needs read, uploading to a free path deploy, replacing a file with other bytes overwrite as well, deleting delete. Add `--header "If-None-Match: *"` to an upload that must never replace a file: it then answers `412` when the path exists. [Browsing and transferring files](files.md) describes paths, digests and folders; the curl guide shows resuming, conditional downloads and uploads with a digest.
 

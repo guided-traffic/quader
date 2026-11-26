@@ -215,10 +215,34 @@
                  scan or Signature says why (Q-UI-882, R-SIG-074). Nor does a file of a system repository, whose downloads by path answer
                  404 to every caller, nor a file of a disabled repository; the file's view says why (Q-UI-898, Q-UI-899, Q-UI-965). -->
             @if (it.contentUrl && it.malware?.refused !== true && it.signatures?.refused !== true && !system() && !disabled()) {
-              <a class="btn btn-default on-line" [href]="it.contentUrl" download quaderDownload>
-                <span class="material-icons" aria-hidden="true">download</span>
-                <ng-container i18n="@@files.download">Download</ng-container>
-              </a>
+              @if (isGeneric()) {
+                <!-- Download in the browser is the main act; the chevron opens the address and the clients' commands, each with the
+                     check of the download as its second line (R-GENERIC-017, Q-UI-1330). A refused file has neither: the commands
+                     would answer 403, and its address stays a fact of the file's view (Q-UI-882). -->
+                <quader-client-command-menu
+                  class="on-line"
+                  size="page"
+                  format="generic"
+                  [name]="here()?.name ?? ''"
+                  version=""
+                  [repository]="ref()"
+                  [path]="it.path"
+                  [sha256]="it.digests?.sha256 ?? null"
+                  [address]="it.downloadUrl ?? null"
+                  [verb]="shape().commandVerb"
+                  [split]="true"
+                >
+                  <a mainAct class="btn btn-default" [href]="it.contentUrl" download quaderDownload>
+                    <span class="material-icons" aria-hidden="true">download</span>
+                    <ng-container i18n="@@files.download">Download</ng-container>
+                  </a>
+                </quader-client-command-menu>
+              } @else {
+                <a class="btn btn-default on-line" [href]="it.contentUrl" download quaderDownload>
+                  <span class="material-icons" aria-hidden="true">download</span>
+                  <ng-container i18n="@@files.download">Download</ng-container>
+                </a>
+              }
             }
             @if (permissions().delete) {
               <button quaderBusy class="btn btn-default on-line" type="button" (click)="remove()">
@@ -249,6 +273,7 @@
           [fill]="fill()"
           [shape]="shape()"
           [revision]="revision()"
+          [generic]="isGeneric()"
           [disabled]="disabled()"
           (remove)="remove()"
         />

@@ -878,6 +878,8 @@ export interface FakeNode {
   readonly size?: number;
   /** The malware scan's member of a file (R-MAL-024); absent as for a file the scanning has no member for. */
   readonly malware?: Item['malware'];
+  /** The media type of a file; absent is `application/octet-stream`. */
+  readonly mediaType?: string;
 }
 
 export class FakeFilesApi extends FilesApi {
@@ -888,9 +890,9 @@ export class FakeFilesApi extends FilesApi {
       [
         { path: 'releases', kind: 'folder' },
         { path: 'releases/1.0', kind: 'folder' },
-        { path: 'releases/1.0/app.zip', kind: 'file', size: 2048 },
+        { path: 'releases/1.0/app.zip', kind: 'file', size: 2048, mediaType: 'application/zip' },
         { path: 'releases/1.0/app.zip.sha256', kind: 'file', size: 64 },
-        { path: 'readme.txt', kind: 'file', size: 120 },
+        { path: 'readme.txt', kind: 'file', size: 120, mediaType: 'text/plain' },
       ],
     ],
   ]);
@@ -919,7 +921,7 @@ export class FakeFilesApi extends FilesApi {
       ...(node.kind === 'file'
         ? {
             size: node.size,
-            mediaType: 'application/octet-stream',
+            mediaType: node.mediaType ?? 'application/octet-stream',
             digests: { sha256: 'a'.repeat(64), sha1: 'b'.repeat(40) },
             contentStatus: 'ok' as const,
             downloadUrl: `https://quader.example.net/files/${repository}/${node.path}`,

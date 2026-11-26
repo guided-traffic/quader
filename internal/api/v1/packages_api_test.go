@@ -187,8 +187,9 @@ func TestR_GENERIC_016_TheClientSetupOfCurl(t *testing.T) {
 		return "quader_curl() {\n  curl --silent --show-error --config - \"$@\" <<EOF\n" + header + "EOF\n}\n"
 	}
 	const (
-		install = "quader_curl --fail --remote-name \"https://quader.example.com/files/it/files/<path>\"\n"
-		publish = "quader_curl --fail --upload-file <file> \"https://quader.example.com/files/it/files/<path>\"\n"
+		install  = "quader_curl --fail --location --output <name> \"https://quader.example.com/files/it/files/<path>\"\n"
+		checksum = "printf '%s  %s\\n' <sha256> <name> | sha256sum -c\n"
+		publish  = "quader_curl --fail --upload-file <file> \"https://quader.example.com/files/it/files/<path>\"\n"
 	)
 	for _, c := range []struct {
 		credentials string
@@ -196,13 +197,20 @@ func TestR_GENERIC_016_TheClientSetupOfCurl(t *testing.T) {
 		want        map[string]string
 	}{
 		{"env", true, map[string]string{
-			"curl.configure.function": function("header = \"Authorization: Bearer ${MY_TOKEN}\"\n"), "curl.install": install, "curl.publish": publish,
+			"curl.configure.function": function("header = \"Authorization: Bearer ${MY_TOKEN}\"\n"), "curl.install": install,
+			"curl.install.checksum": checksum, "curl.publish": publish,
 		}},
 		{"placeholder", true, map[string]string{
-			"curl.configure.function": function("header = \"Authorization: Bearer {{token}}\"\n"), "curl.install": install, "curl.publish": publish,
+			"curl.configure.function": function("header = \"Authorization: Bearer {{token}}\"\n"), "curl.install": install,
+			"curl.install.checksum": checksum, "curl.publish": publish,
 		}},
-		{"none", true, map[string]string{"curl.configure.function": function(""), "curl.install": install, "curl.publish": publish}},
-		{"env", false, map[string]string{"curl.configure.function": function("header = \"Authorization: Bearer ${MY_TOKEN}\"\n"), "curl.install": install}},
+		{"none", true, map[string]string{
+			"curl.configure.function": function(""), "curl.install": install, "curl.install.checksum": checksum, "curl.publish": publish,
+		}},
+		{"env", false, map[string]string{
+			"curl.configure.function": function("header = \"Authorization: Bearer ${MY_TOKEN}\"\n"), "curl.install": install,
+			"curl.install.checksum": checksum,
+		}},
 	} {
 		w := get(setupServer(t, "https://quader.example.com", c.deploy), "/api/v1/projects/it/repositories/files/client-setup?client=curl&credentials="+c.credentials)
 		var out gen.ClientSetup

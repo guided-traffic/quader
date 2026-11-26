@@ -262,6 +262,27 @@ func TestE1_4_RawTransfer(t *testing.T) {
 		}
 	})
 
+	t.Run("R-GENERIC-017 a file deployed without a type gets the text type of its name, a deployed type wins, and HTML is never guessed", func(t *testing.T) {
+		for _, c := range []struct{ path, sent, want string }{
+			{"guess/README.md", "", "text/markdown"},
+			{"guess/values.YAML", "application/x-www-form-urlencoded", "application/yaml"}, // wget's and PowerShell's default is no type
+			{"guess/notes.md", "text/plain; charset=utf-8", "text/plain; charset=utf-8"},
+			{"guess/index.html", "", "application/octet-stream"},
+		} {
+			hdr := []string{}
+			if c.sent != "" {
+				hdr = []string{"Content-Type", c.sent}
+			}
+			if res := a.put("ci", "/files/it/generic-local/"+c.path, "# x", hdr...); res.status != 201 {
+				t.Fatalf("%s: %d %s", c.path, res.status, res.body)
+			}
+			res := b.get("reader", "/files/it/generic-local/"+c.path)
+			if res.status != 200 || res.hdr("Content-Type") != c.want || res.hdr("Content-Disposition") == "" || res.hdr("Content-Security-Policy") != "sandbox; default-src 'none'" {
+				t.Errorf("%s: %d %s %v", c.path, res.status, res.hdr("Content-Type"), res.header)
+			}
+		}
+	})
+
 	t.Run("R-GENERIC-004 any file is accepted: package.json, x.tgz and an empty file are not special (500 MiB: TestR_STOR_004_LargeUploadIsStreamedThroughTheSpool)", func(t *testing.T) {
 		for _, name := range []string{"package.json", "x.tgz", "empty.bin"} {
 			body := "{}"

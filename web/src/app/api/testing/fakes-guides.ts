@@ -125,7 +125,7 @@ export class FakeGuidesApi extends GuidesApi {
   }
 
   private async buildGeneric(key: string | null, client: string): Promise<Guide> {
-    if (client !== 'curl') {
+    if (client !== 'curl' && client !== 'wget' && client !== 'powershell') {
       throw new ApiError(400, { code: 'malformed_request', detail: 'unknown client' }, null);
     }
     const credentials = this.anonymous ? 'none' : 'env';
@@ -134,14 +134,17 @@ export class FakeGuidesApi extends GuidesApi {
     const snippets = setup.snippets
       .filter((s) => s.tab !== 'publish' || mayPublish)
       .map((s) => ({ ...s, content: key ? s.content : s.content.replaceAll(`/${refOf(GENERIC_REPOSITORY)}/`, '/<project>/<repository>/') }));
+    // curl's sections keep their ids; wget's and PowerShell's are their own (R-GENERIC-017).
+    const id = (topic: string) => (client === 'curl' ? `generic.${topic}` : `generic.${client}.${topic}`);
+    const name = client === 'powershell' ? 'PowerShell' : client;
     const sections: GuideSection[] = [
       section('generic.local.what', 'what', 'What a generic local repository is', '<p>Files at paths you choose.</p>'),
-      section('generic.configure', 'configure', 'Point curl at the repository', '<p>Paste the function.</p>'),
-      section('generic.authenticate', 'authenticate', 'Sign curl in', this.anonymous ? '<p>No credential is needed.</p>' : '<p>Keep the token in <code>QUADER_TOKEN</code>.</p>'),
-      section('generic.install', 'install', 'Download files', '<p>Download a file.</p>'),
+      section(id('configure'), 'configure', `Point ${name} at the repository`, '<p>Paste the snippet.</p>'),
+      section(id('authenticate'), 'authenticate', `Sign ${name} in`, this.anonymous ? '<p>No credential is needed.</p>' : '<p>Keep the token in <code>QUADER_TOKEN</code>.</p>'),
+      section(id('install'), 'install', 'Download files', '<p>Download a file.</p>'),
     ];
     if (mayPublish) {
-      sections.push(section('generic.publish', 'publish', 'Upload files', '<p>Upload a file.</p>'));
+      sections.push(section(id('publish'), 'publish', 'Upload files', '<p>Upload a file.</p>'));
     }
     if (this.exposureRules) {
       sections.push(section('generic.endpoint', 'endpoint', 'On this endpoint', '<p><code>endpoint_read_only</code></p>'));

@@ -1,4 +1,4 @@
-Every error answer below `/files/` is a JSON problem (`application/problem+json`) with `status`, `title`, `detail` and `code`. With `--fail` curl prints only the status, for example `curl: (22) The requested URL returned error: 404`, and leaves the body out: send the request again without `--fail`, or with `--fail-with-body` instead (curl 7.76 and later), to read the code. The table lists what each code means in Quader, by status.
+Every error answer below `/files/` is a JSON problem (`application/problem+json`) with `status`, `title`, `detail` and `code`. {{if eq .Client "wget"}}wget prints the status, for example `ERROR 404: Not Found.`, exits with status 8 and leaves the body out: add `--content-on-error --output-document -` to read the code.{{else if eq .Client "powershell"}}`Invoke-WebRequest` stops with an error that names the status, and in PowerShell 7 the body is in `$Error[0].ErrorDetails.Message`: the code is there.{{else}}With `--fail` curl prints only the status, for example `curl: (22) The requested URL returned error: 404`, and leaves the body out: send the request again without `--fail`, or with `--fail-with-body` instead (curl 7.76 and later), to read the code.{{end}} The table lists what each code means in Quader, by status.
 
 | Status | Code | What it means in Quader | What to do |
 |---|---|---|---|
@@ -6,7 +6,7 @@ Every error answer below `/files/` is a JSON problem (`application/problem+json`
 | 400 | `invalid_header` | `Content-Type` is not a media type or is longer than 255 bytes, or `Repr-Digest` is not of the form `sha-256=:<base64>:` | Correct the header |
 | 400 | `malformed_request` | The body is shorter or longer than its `Content-Length`, a folder is created with a body, or the `limit` of a listing is not a number of 1 or more | Upload the file again; create a folder without a body |
 | 400 | `invalid_cursor` | The `cursor` of a listing is not one Quader issued | Start the listing again |
-| 401 | `credentials_required` | The request carries no credential, and anonymous access is off or this endpoint takes no anonymous requests | Set `{{.TokenEnvVar}}` in the environment curl runs in, and define `quader_curl` there while it is set |
+| 401 | `credentials_required` | The request carries no credential, and anonymous access is off or this endpoint takes no anonymous requests | Set `{{.TokenEnvVar}}` in the environment the client runs in, and run the configure snippet there while it is set |
 | 401 | `unauthenticated` | The request carries no credential, and the repository is not open to anonymous readers | As above |
 | 401 | `invalid_token` | The token is unknown, malformed, expired or revoked, or `{{.TokenEnvVar}}` is empty; Quader does not say which | Check the variable; create a new token |
 | 401 | `principal_disabled` | The owner of the token is disabled | Ask an administrator |
@@ -21,7 +21,7 @@ Every error answer below `/files/` is a JSON problem (`application/problem+json`
 | 409 | `conflict` | The uploaded bytes differ from the `Repr-Digest` sent with them; nothing was stored | Upload again; when it persists, the file changed between computing the digest and the upload |
 | 412 | `precondition_failed` | An upload with `If-None-Match: *` to a path that exists, or a download whose `If-Match` or `If-Unmodified-Since` does not hold | Nothing, for an upload that must not replace; else send the request without the condition |
 | 413 | `payload_too_large` | The upload is larger than the limit of the installation or of the repository, 10 GiB by default | Ask an administrator about the limits |
-| 416 | `range_not_satisfiable` | The `Range` starts at or beyond the end of the file; `Content-Range` names the size | Ask for a range within the file; for `--continue-at -` on a complete copy, nothing |
+| 416 | `range_not_satisfiable` | The `Range` starts at or beyond the end of the file; `Content-Range` names the size | Ask for a range within the file; for a resumed download of a complete copy, nothing |
 | 429 | `rate_limited` | Too many requests on this endpoint, or too many rejected credentials from your address | Wait for the period of `Retry-After`; fix the token if a script keeps sending a wrong one |
 | 503 | `unavailable` | The replica has no room to take the upload now, or concurrent requests are changing the same path | Retry after the period of `Retry-After` |
 | 503 | `content_unavailable` | The stored object of the file is missing; when it failed Quader's verification instead, the status is `500` | Retry later; tell an administrator when it persists |

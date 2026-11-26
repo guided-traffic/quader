@@ -135,8 +135,10 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 		// (R-ANS-057, R-ANS-058, R-UI-220, three P1 requirements of W-30, A3).
 		// 1307 since a version's general properties read the same in every format and every table of versions says each version's
 		// downloads and an image's digest (R-UI-221, R-UI-222, two MVP requirements of W-30, G3).
-		if len(m.Reqs) != 1307 || count[prioMVP] != 723 || count[prioP1] != 545 || count[prioP2] != 39 {
-			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1307 (723, 545, 39)",
+		// 1308 since a generic file's commands stand behind Download and a file without a type gets the text type of its name
+		// (R-GENERIC-017, one P1 requirement of W-30, G9).
+		if len(m.Reqs) != 1308 || count[prioMVP] != 723 || count[prioP1] != 546 || count[prioP2] != 39 {
+			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1308 (723, 546, 39)",
 				len(m.Reqs), count[prioMVP], count[prioP1], count[prioP2])
 		}
 	})

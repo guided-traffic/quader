@@ -279,8 +279,11 @@ Rules for the text: describe only what the format does as built and name what a 
 only as `${QUADER_TOKEN}` in a fenced code block; keep sub-headings (`###`) unique across the sections, because each section's HTML gets its heading
 anchors from the README component; pin each fact a test can hold (codes, quoted texts, defaults) in the format's tests (npm:
 [guide_test.go](../../internal/formats/npm/guide_test.go)). npm and generic embed one Markdown file per section ([npm guide/](../../internal/formats/npm/guide/),
-[generic guide/](../../internal/formats/generic/guide/)); generic's guide is for its one client, curl, and its local class (R-GENERIC-016,
-[guide_test.go](../../internal/formats/generic/guide_test.go)).
+[generic guide/](../../internal/formats/generic/guide/)); generic's guide is for its local class and its clients curl, wget and PowerShell, with a section of its own per client for the
+topics they do differently (configure, authenticate, install, publish, maintain) and shared ones for the rest (R-GENERIC-016,
+R-GENERIC-017, [guide_test.go](../../internal/formats/generic/guide_test.go)). A format whose items are paths writes a file's path, the
+name a download is saved under, the local file and the SHA-256 as `SetupPathRef`, `SetupFileNameRef`, `SetupFileRef` and
+`SetupSHA256Ref`; the API fills them for a client setup that names `path` (ADR-290).
 
 ## Content headers and error shapes
 

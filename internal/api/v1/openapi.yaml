@@ -11698,6 +11698,25 @@ paths:
           description: A version of `package`; ignored without `package`.
           schema:
             type: string
+        - name: path
+          in: query
+          description: |
+            A path of a repository of a format whose items are paths (generic, R-GENERIC-017), under the path rules of `/files/`
+            (`400 invalid_path`); a path that ends in `/` is a folder, `/` alone the root. For a file the install snippets download
+            it under its name and check it, and the publish snippets replace it; for a folder only the publish snippets are
+            answered, uploading the reader's `<file>` into it. The path goes into the address percent-encoded, every byte outside
+            RFC 3986's unreserved characters, and the name a download is saved under is quoted as one argument of the snippet's
+            language (single quotes for PowerShell always), with `./` before a name that starts with `-`. Any other format, or
+            `path` with `package`, answers `400 malformed_request` naming `path`.
+          schema:
+            type: string
+            maxLength: 4097
+        - name: sha256
+          in: query
+          description: The SHA-256 of the file `path` names, in hexadecimal; the check of a download names it. Only with the path of a file.
+          schema:
+            type: string
+            pattern: "^[0-9a-fA-F]{64}$"
         - name: scope
           in: query
           description: |

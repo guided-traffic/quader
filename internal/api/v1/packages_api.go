@@ -926,6 +926,49 @@ func setupValues(p gen.GetClientSetupParams) (map[string]string, error) {
 	return values, nil
 }
 
+// setupFile reads the path and the SHA-256 of a client setup for a format whose items are paths (formats/generic.md
+// R-GENERIC-017): the path is held to the path rules of /files/ (repository.CleanPath: no empty, "." or ".." segment, no control
+// character or backslash, the lengths of Q-GENERIC-2), a trailing slash makes it a folder, and "/" is the root. It is refused for
+// a format whose items are named by packages, beside a package, and in the shape of a token. The SHA-256 is hexadecimal and names
+// a file. Without a path it answers nil.
+func setupFile(p gen.GetClientSetupParams, f formats.Format, pkg string) (*fileTarget, error) {
+	if p.Path == nil {
+		if p.Sha256 != nil {
+			return nil, badParam("sha256", "needs the path of a file")
+		}
+		return nil, nil
+	}
+	raw := *p.Path
+	switch {
+	case f.Descriptor().PatternSubject != formats.SubjectPath:
+		return nil, badParam("path", "is offered for a format whose items are paths only, such as generic")
+	case pkg != "":
+		return nil, badParam("path", "and package exclude each other")
+	case raw == "":
+		return nil, badParam("path", "is empty: / is the root")
+	case len(raw) > repository.MaxPathBytes+1 || holdsTokenShape(raw):
+		return nil, badParam("path", "is too long or holds a token")
+	}
+	// CleanPath decodes once; each segment is encoded first, so the value is read as written, a "%" included.
+	segs := strings.Split(raw, "/")
+	for i, seg := range segs {
+		segs[i] = url.PathEscape(seg)
+	}
+	clean, err := repository.CleanPath(strings.Join(segs, "/"))
+	if err != nil {
+		return nil, err
+	}
+	t := &fileTarget{Path: clean.Path, Folder: clean.Folder}
+	if p.Sha256 != nil {
+		sum := strings.ToLower(*p.Sha256)
+		if t.Folder || len(sum) != 64 || strings.Trim(sum, "0123456789abcdef") != "" {
+			return nil, badParam("sha256", "must be the hexadecimal SHA-256 of a file the path names")
+		}
+		t.SHA256 = sum
+	}
+	return t, nil
+}
+
 func (s *Server) clientSetup(r *http.Request, ps PackageServices, repoKey qname.Repo, p gen.GetClientSetupParams) (gen.ClientSetup, error) {
 	ctx := r.Context()
 	creds := credPlaceholder
@@ -981,6 +1024,10 @@ func (s *Server) clientSetup(r *http.Request, ps PackageServices, repoKey qname.
 			values["displayName"] = s.setupDisplayName(r, ps, repo.Format, norm)
 		}
 	}
+	file, err := setupFile(p, f, values["package"])
+	if err != nil {
+		return gen.ClientSetup{}, err
+	}
 
 	var registry, registryKey string
 	bastion := p.Bastion != nil
@@ -1021,6 +1068,7 @@ func (s *Server) clientSetup(r *http.Request, ps PackageServices, repoKey qname.
 			RequiresAuth: requiresAuth, Bastion: bastion,
 		},
 		Package: values["package"], Version: values["version"], DisplayName: values["displayName"], Scope: scopeName, MayPublish: mayPublish,
+		File: file,
 	})
 	if err != nil {
 		return gen.ClientSetup{}, errs.Wrap(err, "api.clientSetup")

@@ -7,6 +7,7 @@ import { FakeSessionApi } from '../../../api/testing/fakes';
 import { FakeFilesApi, FakeNode, FakeRepositoriesApi, GENERIC_FORMAT, PACKAGE_FORMAT } from '../../../api/testing/fakes-catalog';
 import { PermissionCheck } from '../../../api/session-api';
 import { malwareStatus } from '../../../api/testing/fakes-malware';
+import { spokenText } from '../../../testing/axe';
 import { button, expectAccessible, renderScreen, settle, sleep, text, type } from '../../../testing/screen';
 import { RepositoryContent } from './repository-content';
 
@@ -50,8 +51,8 @@ const confirmButton = (body: HTMLElement) =>
   [...body.querySelectorAll<HTMLButtonElement>('.dialog-actions button')].find((b) => b.textContent?.trim() === 'Delete')!;
 
 describe('The files of a repository', () => {
-  it('R-UI-010 R-UI-052 the root of a generic repository lists folders and files; each name links to its own address and a file copies its download address', async () => {
-    const { root } = await open('generic-local', undefined);
+  it('R-UI-010 R-UI-052 R-GENERIC-017 the root of a generic repository lists folders and files; each name links to its own address and a file\'s row has Download with its address and every client\'s command', async () => {
+    const { root, fixture } = await open('generic-local', undefined);
     // In the order of the server's answer.
     expect(names(root)).toEqual(['releases', 'readme.txt']);
     const links = rows(root).map((r) => r.querySelector('th a')?.getAttribute('href'));
@@ -59,12 +60,52 @@ describe('The files of a repository', () => {
       '/projects/web/repositories/generic-local/files/releases',
       '/projects/web/repositories/generic-local/files/readme.txt',
     ]);
-    expect(rows(root)[0]!.querySelector('quader-copy-button')).toBeNull();
-    const copy = rows(root)[1]!.querySelector('quader-copy-button button');
-    expect(copy?.getAttribute('aria-label')).toBe('Copy the download address of readme.txt');
+    expect(rows(root)[0]!.querySelector('quader-client-command-menu')).toBeNull();
+    // The row's act, where a package's row has its verb (R-GENERIC-017): the panel of the file's address and commands.
+    const trigger = rows(root)[1]!.querySelector<HTMLButtonElement>('quader-client-command-menu button')!;
+    expect(spokenText(trigger)).toBe('readme.txt: Download');
     // The root of a generic repository is the repository's page: no trail repeats its name.
     expect(root.querySelector('nav[aria-label="Folder path"]')).toBeNull();
     await expectAccessible(root);
+    document.body.appendChild(root);
+    trigger.click();
+    await settle(fixture);
+    const panel = document.getElementById(trigger.getAttribute('aria-controls')!)!;
+    expect(panel.getAttribute('aria-label')).toBe('Download readme.txt');
+    expect(panel.querySelector<HTMLInputElement>('.command-address input')?.value).toBe('https://quader.example.net/files/web/generic-local/readme.txt');
+    expect([...panel.querySelectorAll('[role="tab"]')].map((t) => text(t))).toEqual(['curl', 'wget', 'PowerShell']);
+    const shown = [...panel.querySelectorAll<HTMLInputElement>('[role="tabpanel"]:not([inert]) quader-address-field input')].map((i) => i.value);
+    expect(shown).toEqual([
+      'quader_curl --fail --location --output readme.txt "https://quader.example.net/files/web/generic-local/readme.txt"',
+      `printf '%s  %s\\n' ${'a'.repeat(64)} readme.txt | sha256sum -c`,
+    ]);
+    expect(panel.querySelector('a.setup-link')?.getAttribute('href')).toBe('/projects/web/repositories/generic-local/setup?client=curl');
+    await expectAccessible(panel);
+    trigger.click();
+    await settle(fixture);
+    root.remove();
+  });
+
+  it('R-GENERIC-017 R-UI-011 Upload files keeps its dialog as the main act, and its chevron offers the upload into the folder with each client', async () => {
+    const { root, fixture } = await open('generic-local', 'releases', undefined, () => true);
+    document.body.appendChild(root);
+    const chevron = root.querySelector<HTMLButtonElement>('.files-actions quader-client-command-menu button[aria-haspopup="dialog"]')!;
+    expect(chevron.getAttribute('aria-label')).toBe('Upload with a client');
+    expect(text(root.querySelector('.files-actions quader-client-command-menu')!)).toContain('Upload files');
+    chevron.click();
+    await settle(fixture);
+    const panel = document.getElementById(chevron.getAttribute('aria-controls')!)!;
+    expect(panel.getAttribute('aria-label')).toBe('Upload releases');
+    const tabs = [...panel.querySelectorAll<HTMLElement>('[role="tab"]')];
+    tabs[2]!.click();
+    await settle(fixture);
+    const shown = panel.querySelector<HTMLInputElement>('[role="tabpanel"]:not([inert]) quader-address-field input')!;
+    expect(shown.value).toBe('Invoke-WebRequest -Method Put -InFile <file> -Uri "https://quader.example.net/files/web/generic-local/releases/<file>" -Headers $QuaderHeaders');
+    // An upload has no check line: there is nothing downloaded to check.
+    expect(panel.querySelectorAll('[role="tabpanel"]:not([inert]) quader-client-command')).toHaveLength(1);
+    chevron.click();
+    await settle(fixture);
+    root.remove();
   });
 
   it('R-UI-010 a folder deep in the path shows its path once: Files, each folder a link, the last one the page with the copy button after it', async () => {
@@ -232,9 +273,21 @@ describe('The files of a repository', () => {
     expect(root.querySelector('#file-name')?.classList.contains('visually-hidden')).toBe(true);
     const download = [...root.querySelectorAll('a')].find((a) => a.textContent?.includes('Download'))!;
     expect(download.getAttribute('href')).toBe('/api/v1/projects/web/repositories/generic-local/content/releases/1.0/app.zip');
-    expect(root.querySelector<HTMLInputElement>('.file-address quader-address-field input')?.value).toBe(
+    // Download in the browser is the main act; its chevron holds the address and the commands (R-GENERIC-017, Q-UI-1330, Q-UI-1331).
+    expect(download.closest('quader-client-command-menu')).not.toBeNull();
+    expect(root.querySelector('.file-address')).toBeNull();
+    document.body.appendChild(root);
+    const chevron = root.querySelector<HTMLButtonElement>('.file-actions button[aria-haspopup="dialog"]')!;
+    expect(chevron.getAttribute('aria-label')).toBe('Download with a client');
+    chevron.click();
+    await settle(fixture);
+    const panel = document.getElementById(chevron.getAttribute('aria-controls')!)!;
+    expect(panel.querySelector<HTMLInputElement>('.command-address input')?.value).toBe(
       'https://quader.example.net/files/web/generic-local/releases/1.0/app.zip',
     );
+    expect(text(panel)).toContain('Check the download');
+    chevron.click();
+    await settle(fixture);
     const facts = text(root.querySelector('.file-facts')!);
     expect(facts).toContain('2.0 KiB');
     expect(facts).toContain('SHA-256');
@@ -246,10 +299,14 @@ describe('The files of a repository', () => {
     await settle(fixture);
     expect(text(details)).toContain('SHA-1');
     expect(text(details)).toContain('CI job of acme/web');
+    // The request of the item's description stays; the download's commands are the panel's.
     const commands = [...details.querySelectorAll('pre.code-block')].map((e) => e.textContent ?? '').filter((b) => b.startsWith('curl'));
-    expect(commands).toHaveLength(2);
+    expect(commands).toHaveLength(1);
     for (const c of commands) expect(c).toContain('-H "Authorization: Bearer $QUADER_TOKEN"');
+    // The media type in a word a person knows, the type beside it (Q-UI-1333).
+    expect(text(root.querySelector('.file-facts .media-type')!)).toBe('ZIP archive application/zip');
     await expectAccessible(root);
+    root.remove();
   });
 
   it('R-UI-010 R-UI-193 a file of a disabled repository offers no Download, no download address and no download with curl, and says why once; so does a reader\'s view', async () => {

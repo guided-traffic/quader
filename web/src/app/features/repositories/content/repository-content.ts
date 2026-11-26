@@ -1,4 +1,5 @@
 import { DownloadLink } from '../../../shared/download-link';
+import { ClientCommandMenu } from '../../packages/client-command-menu';
 import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
 import { VisibilityIcon, levelName } from '../../../shared/ui/visibility-level';
 import { Component, computed, effect, inject, input, resource, signal, untracked } from '@angular/core';
@@ -85,6 +86,7 @@ export const TYPE_TO_CONFIRM_ABOVE = 100;
     RepositoryItems,
     ClamavDatabases,
     DownloadLink,
+    ClientCommandMenu,
     RepositoryTabs,
     RemoteDownloads,
     RemoteUpstream,

@@ -21080,6 +21080,18 @@ type GetClientSetupParams struct {
 	// Version A version of `package`; ignored without `package`.
 	Version *string `form:"version,omitempty" json:"version,omitempty"`
 
+	// Path A path of a repository of a format whose items are paths (generic, R-GENERIC-017), under the path rules of `/files/`
+	// (`400 invalid_path`); a path that ends in `/` is a folder, `/` alone the root. For a file the install snippets download
+	// it under its name and check it, and the publish snippets replace it; for a folder only the publish snippets are
+	// answered, uploading the reader's `<file>` into it. The path goes into the address percent-encoded, every byte outside
+	// RFC 3986's unreserved characters, and the name a download is saved under is quoted as one argument of the snippet's
+	// language (single quotes for PowerShell always), with `./` before a name that starts with `-`. Any other format, or
+	// `path` with `package`, answers `400 malformed_request` naming `path`.
+	Path *string `form:"path,omitempty" json:"path,omitempty"`
+
+	// Sha256 The SHA-256 of the file `path` names, in hexadecimal; the check of a download names it. Only with the path of a file.
+	Sha256 *string `form:"sha256,omitempty" json:"sha256,omitempty"`
+
 	// Scope An npm scope (`@team-a`); adds the scoped variant of the registry configuration. Only a client that has a scoped
 	// variant accepts it (the npm clients); for any other client or format it answers `400 malformed_request` whose detail names `scope`
 	// instead of returning the unscoped snippets under a scoped id.
@@ -32941,6 +32953,32 @@ func (siw *ServerInterfaceWrapper) GetClientSetup(w http.ResponseWriter, r *http
 			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "version"})
 		} else {
 			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "version", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "path" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "path", r.URL.Query(), &params.Path, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "path"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "path", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "sha256" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "sha256", r.URL.Query(), &params.Sha256, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "sha256"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "sha256", Err: err})
 		}
 		return
 	}

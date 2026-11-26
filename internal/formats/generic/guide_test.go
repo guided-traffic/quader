@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
+	"maps"
 	"net/http"
 	"reflect"
 	"regexp"
@@ -67,10 +68,11 @@ func everyRendering(t *testing.T) map[string]string {
 	return all
 }
 
+// template is curl's first template of a section.
 func template(t *testing.T, section string) formats.SetupTemplate {
 	t.Helper()
 	for _, tp := range (Format{}).SetupTemplates() {
-		if tp.Section == section {
+		if tp.Client == ClientCurl && tp.Section == section {
 			return tp
 		}
 	}
@@ -78,21 +80,58 @@ func template(t *testing.T, section string) formats.SetupTemplate {
 	return formats.SetupTemplate{}
 }
 
-// TestR_GENERIC_016_TheClientIsCurl: the descriptor lists curl, and curl has a
-// configure, an install and a publish template in a shell.
-func TestR_GENERIC_016_TheClientIsCurl(t *testing.T) {
-	if c := (Format{}).Descriptor().Clients; !reflect.DeepEqual(c, []formats.Client{{ID: "curl", DisplayName: "curl"}}) {
+// TestR_GENERIC_017_TheClientsAreCurlWgetAndPowerShell (Q-GENERIC-10): the descriptor lists curl, wget and PowerShell, and each has
+// a configure, a download, a check and an upload template, curl's and wget's in a POSIX shell, PowerShell's in PowerShell.
+func TestR_GENERIC_017_TheClientsAreCurlWgetAndPowerShell(t *testing.T) {
+	want := []formats.Client{{ID: "curl", DisplayName: "curl"}, {ID: "wget", DisplayName: "wget"}, {ID: "powershell", DisplayName: "PowerShell (Invoke-WebRequest)"}}
+	if c := (Format{}).Descriptor().Clients; !reflect.DeepEqual(c, want) {
 		t.Fatalf("clients = %+v", c)
 	}
-	var sections []string
+	sections := map[string][]string{}
 	for _, tp := range (Format{}).SetupTemplates() {
-		if tp.Client != ClientCurl || tp.Lang != "shell" || tp.File != "" {
+		lang := "shell"
+		if tp.Client == ClientPowerShell {
+			lang = "powershell"
+		}
+		if tp.Lang != lang || tp.File != "" {
 			t.Errorf("%+v", tp)
 		}
-		sections = append(sections, tp.Section)
+		sections[tp.Client] = append(sections[tp.Client], tp.Section)
 	}
-	if !slices.Equal(sections, []string{"configure", "install", "publish"}) {
-		t.Errorf("sections = %v", sections)
+	for _, c := range want {
+		if !slices.Equal(sections[c.ID], []string{"configure", "install", "install", "publish"}) {
+			t.Errorf("%s: sections = %v", c.ID, sections[c.ID])
+		}
+	}
+}
+
+// TestR_GENERIC_017_EveryClientsGuideIsItsOwn: the guide of wget and of PowerShell calls the client's own configuration, never
+// another client's function, names no credential, and says nothing of uploads to an anonymous reader.
+func TestR_GENERIC_017_EveryClientsGuideIsItsOwn(t *testing.T) {
+	for client, own := range map[string]string{ClientWget: WgetFunction, ClientPowerShell: PowerShellHeaders} {
+		d := guideData(false, false, "generic-local")
+		d.Client = client
+		got := renderGuide(t, d)
+		calls := 0
+		for id, text := range got {
+			if strings.Contains(text, formats.SetupTokenRef) || strings.Contains(text, CurlFunction) {
+				t.Errorf("%s %s names the credential or curl's function", client, id)
+			}
+			calls += strings.Count(text, own)
+		}
+		if calls == 0 || got["generic."+client+".publish"] == "" || got["generic.troubleshooting"] == "" {
+			t.Errorf("%s: %d calls, sections %v", client, calls, slices.Sorted(maps.Keys(got)))
+		}
+		d.Anonymous, d.PublishTarget = true, ""
+		got = renderGuide(t, d)
+		for _, id := range []string{"generic." + client + ".publish", "generic." + client + ".maintain"} {
+			if strings.TrimSpace(got[id]) != "" {
+				t.Errorf("%s says %q to an anonymous reader", id, got[id])
+			}
+		}
+		if c := got["generic."+client+".configure"]; strings.Contains(c, "Authorization") {
+			t.Errorf("%s: %q", client, c)
+		}
 	}
 }
 

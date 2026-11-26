@@ -329,6 +329,9 @@ func (h *Handler) put(w http.ResponseWriter, r *http.Request, caller files.Calle
 		httpserver.Problem(w, r, err)
 		return
 	}
+	if mt == "" && !p.Folder {
+		mt = guessMediaType(p.Path) // a deployed type wins (R-GENERIC-017)
+	}
 	ctx := r.Context()
 	var body io.Reader = r.Body
 	if maxUpload > 0 {
@@ -356,7 +359,8 @@ func (h *Handler) put(w http.ResponseWriter, r *http.Request, caller files.Calle
 }
 
 // mediaType reads the Content-Type to store with the item: a well-formed media
-// type, kept as sent, at most 255 bytes. An absent header stores none.
+// type, kept as sent, at most 255 bytes. An absent header, and the type of a form's
+// body, store none; the caller then guesses one from the name (guessMediaType).
 func mediaType(r *http.Request) (string, error) {
 	v := strings.TrimSpace(r.Header.Get("Content-Type"))
 	if v == "" {
@@ -372,6 +376,10 @@ func mediaType(r *http.Request) (string, error) {
 	mt, params, err := mime.ParseMediaType(v)
 	if err != nil {
 		return "", bad
+	}
+	if mt == formEncoded {
+		// wget and PowerShell send it for a body they were not told the type of; a file is never a form (R-GENERIC-017).
+		return "", nil
 	}
 	out := mime.FormatMediaType(mt, params)
 	if out == "" || len(out) > 255 {

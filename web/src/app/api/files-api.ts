@@ -206,9 +206,9 @@ export class HttpFilesApi extends FilesApi {
   }
 
   upload(request: UploadRequest): Promise<Item> {
-    const headers: Record<string, string> = {
-      'Content-Type': request.file.type || 'application/octet-stream',
-    };
+    // A file the browser knows no type of is sent without one, so the server gives it the text type its name says, if any
+    // (R-GENERIC-017), as for a client's upload; otherwise it is served as application/octet-stream.
+    const headers: Record<string, string> = request.file.type ? { 'Content-Type': request.file.type } : {};
     if (request.reprDigest) headers['Repr-Digest'] = request.reprDigest;
     if (!request.overwrite) headers['If-None-Match'] = '*';
     return this.put(request, contentPath(request.repository, request.path), request.file, headers);

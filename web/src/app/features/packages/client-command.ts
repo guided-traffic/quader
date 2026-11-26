@@ -17,7 +17,8 @@ export const COLLAPSE_AFTER_LINES = 3;
  * command of the image without its tag, and `@<digest>` after the reference, which ends the command's line (the digest is `sha256:` and
  * hex digits, nothing a shell reads). The panel of a version's commands (`<quader-client-command-menu>`, Q-UI-1066, Q-UI-1240), in a
  * repository's list and in the head of a version's page, shows it once per client of the format, a tab each, and an image's pull by
- * digest as the second line of the tab.
+ * digest as the second line of the tab. With a `path` (a generic repository's file or folder, formats/generic.md R-GENERIC-017) it asks
+ * for that path instead of a package: the file's download, the check of it by `snippetId`, or the upload into a folder by `tab`.
  */
 @Component({
   selector: 'quader-client-command',
@@ -83,6 +84,17 @@ export class ClientCommand {
   readonly client = input.required<string | null>();
   /** An image's digest: the command pulls the image by it instead of by the tag. */
   readonly digest = input<string | null>(null);
+  /**
+   * A file's path, or a folder's with a trailing slash, of a generic repository (formats/generic.md R-GENERIC-017): the command is the
+   * server's for that path instead of a package's, the address and the name filled in and quoted by it.
+   */
+  readonly path = input<string | null>(null);
+  /** The file's SHA-256, which the server writes into the check of a download. */
+  readonly sha256 = input<string | null>(null);
+  /** The tab of the client setup whose first snippet is the command: `install`, or `publish` for an upload into a folder. */
+  readonly tab = input<'install' | 'publish'>('install');
+  /** A snippet by its id instead of the tab's first: the check of a download (`curl.install.checksum`). */
+  readonly snippetId = input<string | null>(null);
   /** The accessible name of the one-line field; the menu names the client in it. */
   readonly commandLabel = input($localize`:@@pkg.install.command:Install command`);
   /** The accessible name and title of the copy button. */
@@ -94,20 +106,32 @@ export class ClientCommand {
     params: () => {
       const repository = this.repository();
       const client = this.client();
+      if (!repository || !client) return undefined;
+      const path = this.path();
+      if (path !== null) return { repository, client, name: '', version: '', path, sha256: this.sha256() };
       // A pull by digest asks for the image without a version: the digest follows the reference.
       const version = this.digest() ? '' : this.version();
-      return repository && client && version !== null ? { repository, client, name: this.name(), version } : undefined;
+      return version !== null ? { repository, client, name: this.name(), version, path: null, sha256: null } : undefined;
     },
     loader: ({ params }) =>
-      this.setup.get(params.repository, {
-        client: params.client,
-        credentials: 'none',
-        package: params.name,
-        ...(params.version !== '' ? { version: params.version } : {}),
-      }),
+      this.setup.get(
+        params.repository,
+        params.path !== null
+          ? { client: params.client, credentials: 'none', path: params.path, ...(params.sha256 ? { sha256: params.sha256 } : {}) }
+          : {
+              client: params.client,
+              credentials: 'none',
+              package: params.name,
+              ...(params.version !== '' ? { version: params.version } : {}),
+            },
+      ),
   });
 
-  protected readonly snippet = computed(() => valueOf(this.answer)?.snippets.find((s) => s.tab === 'install') ?? null);
+  protected readonly snippet = computed(() => {
+    const snippets = valueOf(this.answer)?.snippets ?? [];
+    const id = this.snippetId();
+    return (id ? snippets.find((s) => s.id === id) : snippets.find((s) => s.tab === this.tab())) ?? null;
+  });
   protected readonly command = computed(() => {
     const text = this.snippet()?.content.trimEnd() ?? '';
     const digest = this.digest();

@@ -2151,6 +2151,11 @@ type SetupTemplate struct {
 // every other, Q-OCI-4), Username and RequiresAuth (the repository is not anonymously readable).
 // A template that needs the registry URL without its scheme, the key of a keyed credential line, derives it with the
 // template function schemeless (Q-ARCH-257).
+// A template of a format whose items are paths (the generic format) spells a file's path as SetupPathRef ("<path>"), the name a
+// download is saved under as SetupFileNameRef ("<name>"), the local file to upload as SetupFileRef ("<file>") and the SHA-256 a
+// download is checked against as SetupSHA256Ref ("<sha256>"): the API fills the path, the name and the SHA-256 of a request that
+// names a path, percent-encoding the path and quoting the name for the template's language (formats/generic.md R-GENERIC-017,
+// ADR-290).
 
 type GuideSection struct {
 	ID       string  // stable, e.g. "npm.remote.what"

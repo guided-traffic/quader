@@ -27703,6 +27703,18 @@ export interface operations {
                 /** @description A version of `package`; ignored without `package`. */
                 version?: string;
                 /**
+                 * @description A path of a repository of a format whose items are paths (generic, R-GENERIC-017), under the path rules of `/files/`
+                 *     (`400 invalid_path`); a path that ends in `/` is a folder, `/` alone the root. For a file the install snippets download
+                 *     it under its name and check it, and the publish snippets replace it; for a folder only the publish snippets are
+                 *     answered, uploading the reader's `<file>` into it. The path goes into the address percent-encoded, every byte outside
+                 *     RFC 3986's unreserved characters, and the name a download is saved under is quoted as one argument of the snippet's
+                 *     language (single quotes for PowerShell always), with `./` before a name that starts with `-`. Any other format, or
+                 *     `path` with `package`, answers `400 malformed_request` naming `path`.
+                 */
+                path?: string;
+                /** @description The SHA-256 of the file `path` names, in hexadecimal; the check of a download names it. Only with the path of a file. */
+                sha256?: string;
+                /**
                  * @description An npm scope (`@team-a`); adds the scoped variant of the registry configuration. Only a client that has a scoped
                  *     variant accepts it (the npm clients); for any other client or format it answers `400 malformed_request` whose detail names `scope`
                  *     instead of returning the unscoped snippets under a scoped id.

@@ -21,9 +21,8 @@ What a repository holds depends on its class: a local repository shows what was 
 
 Select a file's name to open its page. It shows:
 
-- the file's path, its name last, with **Download** and, if you may delete it, **Delete** at the end of the row;
-- **Download address**, the file's address below the files path, with a copy button: the address for curl and other tools (see [Transfer files with curl](#transfer-files-with-curl));
-- **Size**, **Media type**, **Created** and **Last changed** (each with who did it, where known), and **SHA-256** with a copy button. If the stored content is missing or damaged, **Content** says so; tell an administrator.
+- the file's path, its name last, with **Download** and, if you may delete it, **Delete** at the end of the row. In a generic repository the arrow joined to **Download**, **Download with a client**, opens the file's commands (see [Download with a client](#download-with-a-client)); a package format's raw file shows **Download address** below instead, the file's address with a copy button;
+- **Size**, **Media type** (in a word such as **Markdown** or **ZIP archive** where Quader has one, the media type beside it), **Created** and **Last changed** (each with who did it, where known), and **SHA-256** with a copy button. If the stored content is missing or damaged, **Content** says so; tell an administrator.
 - **Malware scan**, while the installation scans for malware: what the scan said of the file's bytes (see [the malware scan's states](#the-malware-scans-states)).
 
 ### The malware scan's states
@@ -59,7 +58,8 @@ The page offers only what you may do where you are. Someone who may only read se
 | Action | Where | Permission |
 |---|---|---|
 | Download a file | The file's page | Read |
-| Copy a file's download address | The copy button in the file's row, or the file's page | Read |
+| Copy a file's download address, or a client's command for it | **Download** in the file's row, or the arrow beside **Download** on the file's page; in a package format's raw files the copy button of the row | Read |
+| Copy the command that uploads into a folder | The arrow beside **Upload files**, in a generic local repository | Deploy on the folder |
 | Upload files, create a folder | **Upload files** and **New folder** above the list of a folder, in a generic local repository | Deploy on the folder |
 | Delete a folder | **More actions for this folder** › **Delete folder** above the list of the folder (not the root) | Delete on every file in it |
 | Delete a file | **Delete** on the file's page | Delete on the file |
@@ -71,11 +71,25 @@ Copying and moving files and a trash can are not available yet; see [Known limit
 1. Open the file's page.
 2. Select **Download**. The browser saves the file under its name.
 
-The button downloads through the web application, with your sign-in: it needs no token and counts like any other download. The address under **Download address** is the one for tools, and it needs a token unless the repository is open to anonymous readers.
+The button downloads through the web application, with your sign-in: it needs no token and counts like any other download. The file's address is the one for tools, and it needs a token unless the repository is open to anonymous readers.
+
+### Download with a client
+
+In a generic repository, **Download with a client** (the arrow joined to **Download** on the file's page) and **Download** in a file's row open one panel:
+
+- **Download address**, the file's address below the files path, with a copy button;
+- a tab each for **curl**, **wget** and **PowerShell**, and **Set up client**, which leads to the client's setup with the snippet that signs it in;
+- the chosen client's command, which downloads the file under its name, and under **Check the download** the line that checks the copy against the file's SHA-256: `sha256sum -c` prints `OK`, PowerShell's `Get-FileHash` comparison prints `True`.
+
+The commands use the function `quader_curl` or `quader_wget`, or PowerShell's variable `$QuaderHeaders`, which the client's setup snippet defines; run that once in the shell or the session first. Quader writes the address and the name into each command quoted for its shell, so a name with spaces, quotes or a leading dash is one argument.
+
+A file the malware scan or the signature gate refuses offers neither **Download** nor the panel on its page; its address stands there as a fact.
 
 ## Upload files
 
 You need the deploy permission on the target folder, and the repository must be a generic local repository. npm packages, NuGet packages, container images, Debian packages and Ansible collections are published with their clients, not uploaded here: their repositories offer no upload, and remote and virtual repositories take no uploads at all. **Set up client** shows how to publish with a client.
+
+**Upload with a client**, the arrow joined to **Upload files**, opens the command that uploads into the folder you are in, for curl, wget and PowerShell; replace `<file>` with your file's name.
 
 1. Open the folder to upload into (the repository's page is its root).
 2. Select **Upload files** above the list. It appears only in a generic local repository, and only where you hold the deploy permission.
@@ -147,7 +161,7 @@ The examples keep the address of one file in a shell variable:
 
 ```shell
 FILE="https://quader.example.com/files/web/generic-local/releases/app-1.2.0.tar.gz"
-quader_curl --fail --remote-name "$FILE"
+quader_curl --fail --location --output app-1.2.0.tar.gz "$FILE"
 quader_curl --fail --head "$FILE"
 quader_curl --fail --continue-at - --output app-1.2.0.tar.gz "$FILE"
 ```
@@ -169,7 +183,7 @@ quader_curl --fail --upload-file app-1.2.0.tar.gz \
 
 The first command uploads the file; the folders on the way are created. The second uploads only if the path is free and never replaces a file. The third has Quader check the SHA-256 you computed, refusing the upload with `409` if the bytes differ, and stores a media type.
 
-Quader answers `201` for a new or replaced file and `200` when the path already holds these bytes. Replacing a file with other bytes needs the overwrite permission besides deploy. Without `Content-Type`, the file is served as `application/octet-stream`.
+Quader answers `201` for a new or replaced file and `200` when the path already holds these bytes. Replacing a file with other bytes needs the overwrite permission besides deploy. Without `Content-Type`, a file whose name ends in `.md` or `.markdown` is stored as `text/markdown`, `.txt` or `.log` as `text/plain`, `.json` as `application/json`, `.yaml` or `.yml` as `application/yaml`, `.toml` as `application/toml` and `.csv` as `text/csv`; any other file is served as `application/octet-stream`. The type of a form's body, which wget and PowerShell send unless told otherwise, counts as no type. Quader never gives a file a type a browser would show as a page or run, and serves every file as a download.
 
 ### List and delete
 

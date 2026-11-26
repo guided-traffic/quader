@@ -922,14 +922,23 @@ const SNIPPET_EXAMPLES: Readonly<Record<string, readonly string[]>> = {
   'nuget.publish.cmd': ['Acme.Widgets.1.2.3.nupkg'],
   'nuget.publish.powershell': ['Acme.Widgets.1.2.3.nupkg'],
   'ansible-galaxy.publish.collection': ['./acme-tools-1.0.0.tar.gz'],
-  'curl.install': ['<path>'],
-  'curl.publish': ['<file>', '<path>'],
+  ...Object.fromEntries(
+    ['curl', 'wget', 'powershell'].flatMap((c) => [
+      [`${c}.install`, ['<name>', '<path>']],
+      [`${c}.install.checksum`, ['<sha256>', '<name>']],
+      [`${c}.publish`, ['<file>', '<path>']],
+    ]),
+  ),
 };
 
 /** The languages of the templates that are no POSIX shell (Q-UI-801), by snippet id. */
 const SNIPPET_LANGUAGES: Readonly<Record<string, ClientSnippet['language']>> = {
   'dotnet.configure.powershell': 'powershell',
   'dotnet.publish.powershell': 'powershell',
+  'powershell.configure.headers': 'powershell',
+  'powershell.install': 'powershell',
+  'powershell.install.checksum': 'powershell',
+  'powershell.publish': 'powershell',
   'nuget.configure.cmd': 'cmd',
   'nuget.configure.powershell': 'powershell',
   'nuget.install': 'cmd',
@@ -1404,43 +1413,75 @@ function verifySnippet(repository: string, query: ClientSetupQuery, identity: st
   return { id: `${query.client}.verify.attestation`, tab: 'verify', fileName: null, language: 'shell', content: lines.join('\n') + '\n' };
 }
 
+/** A path's segments percent-encoded with unreserved characters only, as the server writes them (R-GENERIC-017). */
+function escapeFilePath(path: string): string {
+  return path
+    .split('/')
+    .map((s) => [...new TextEncoder().encode(s)].map((b) => (/[A-Za-z0-9._~-]/.test(String.fromCharCode(b)) ? String.fromCharCode(b) : `%${b.toString(16).toUpperCase().padStart(2, '0')}`)).join(''))
+    .join('/');
+}
+
+/** A PowerShell literal: single quotes, an embedded one doubled. */
+function powershellLiteral(value: string): string {
+  return `'${value.replace(/'/g, "''")}'`;
+}
+
+/**
+ * The snippets of curl, wget and PowerShell of a generic repository (R-GENERIC-016, R-GENERIC-017): the configuration that keeps the
+ * token off the command line, a file's download and its check, and the upload; with a `path` the address, the name and the SHA-256
+ * filled in as the server does, a folder's (trailing slash) with its upload only.
+ */
 function curlSetup(repository: string, query: ClientSetupQuery, mayPublish: boolean, ttl: number): RawSetup {
-  if (query.client !== 'curl') {
+  const client = query.client;
+  if (client !== 'curl' && client !== 'wget' && client !== 'powershell') {
     throw new ApiError(400, { code: 'malformed_request', detail: 'unknown client' }, null);
   }
   const credentials = query.credentials ?? 'placeholder';
   const registryUrl = `${BASE}/files/${repository}/`;
-  const token = credentials === 'placeholder' ? '{{token}}' : credentials === 'env' ? '${QUADER_TOKEN}' : null;
-  const header = token === null ? '' : `header = "Authorization: Bearer ${token}"\n`;
-  const snippets: RawSnippet[] = [
-    {
-      id: 'curl.configure.function',
-      tab: 'configure',
-      fileName: null,
-      language: 'shell',
-      content: `quader_curl() {\n  curl --silent --show-error --config - "$@" <<EOF\n${header}EOF\n}\n`,
-    },
-    {
-      id: 'curl.install',
-      tab: 'install',
-      fileName: null,
-      language: 'shell',
-      content: `quader_curl --fail --remote-name "${registryUrl}<path>"\n`,
-    },
-  ];
-  if (mayPublish) {
-    snippets.push({
-      id: 'curl.publish',
-      tab: 'publish',
-      fileName: null,
-      language: 'shell',
-      content: `quader_curl --fail --upload-file <file> "${registryUrl}<path>"\n`,
-    });
-  }
+  const token =
+    credentials === 'placeholder' ? '{{token}}' : credentials === 'env' ? (client === 'powershell' ? '$env:QUADER_TOKEN' : '${QUADER_TOKEN}') : null;
+  const folder = query.path !== undefined && query.path.endsWith('/');
+  const clean = query.path?.replace(/^\/+|\/+$/g, '') ?? '';
+  const target =
+    query.path === undefined ? '<path>' : folder ? `${clean === '' ? '' : `${escapeFilePath(clean)}/`}<file>` : escapeFilePath(clean);
+  const rawName = clean.split('/').at(-1) ?? '';
+  const saved = rawName.startsWith('-') ? `./${rawName}` : rawName;
+  const name = query.path === undefined || folder ? '<name>' : client === 'powershell' ? powershellLiteral(saved) : shellQuote(saved);
+  const sha = query.sha256 ?? '<sha256>';
+  const address = `"${registryUrl}${target}"`;
+  const shell = (id: string, tab: 'configure' | 'install' | 'publish', content: string): RawSnippet => ({
+    id,
+    tab,
+    fileName: null,
+    language: client === 'powershell' ? 'powershell' : 'shell',
+    content,
+  });
+  const check = `printf '%s  %s\\n' ${sha} ${name} | sha256sum -c\n`;
+  const sets: Record<string, RawSnippet[]> = {
+    curl: [
+      shell('curl.configure.function', 'configure', `quader_curl() {\n  curl --silent --show-error --config - "$@" <<EOF\n${token === null ? '' : `header = "Authorization: Bearer ${token}"\n`}EOF\n}\n`),
+      shell('curl.install', 'install', `quader_curl --fail --location --output ${name} ${address}\n`),
+      shell('curl.install.checksum', 'install', check),
+      shell('curl.publish', 'publish', `quader_curl --fail --upload-file <file> ${address}\n`),
+    ],
+    wget: [
+      shell('wget.configure.function', 'configure', `quader_wget() {\n  wget --no-verbose --config=/dev/stdin "$@" <<EOF\n${token === null ? '' : `header = Authorization: Bearer ${token}\n`}EOF\n}\n`),
+      shell('wget.install', 'install', `quader_wget --output-document ${name} ${address}\n`),
+      shell('wget.install.checksum', 'install', check),
+      shell('wget.publish', 'publish', `quader_wget --method PUT --body-file <file> --output-document - ${address}\n`),
+    ],
+    powershell: [
+      shell('powershell.configure.headers', 'configure', `$QuaderHeaders = @{}\n${token === null ? '' : `$QuaderHeaders.Authorization = "Bearer ${token}"\n`}`),
+      shell('powershell.install', 'install', `Invoke-WebRequest -Uri ${address} -OutFile ${name} -Headers $QuaderHeaders\n`),
+      shell('powershell.install.checksum', 'install', `(Get-FileHash -Algorithm SHA256 -LiteralPath ${name}).Hash -eq '${sha}'\n`),
+      shell('powershell.publish', 'publish', `Invoke-WebRequest -Method Put -InFile <file> -Uri ${address} -Headers $QuaderHeaders\n`),
+    ],
+  };
+  const snippets = sets[client]!.filter((s) => (s.tab !== 'publish' || mayPublish) && !(folder && s.tab === 'install'));
   return {
     repository,
     format: 'generic',
-    client: 'curl',
+    client,
     credentials,
     registryUrl,
     endpointPath: registryUrl.replace(/^https?:/, ''),

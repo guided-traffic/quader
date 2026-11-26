@@ -244,7 +244,7 @@ func TestR_GENERIC_016_TheGuideShowsTheSnippetsOfTheClientSetup(t *testing.T) {
 	if err := json.Unmarshal(w.Body.Bytes(), &setup); err != nil || w.Code != 200 {
 		t.Fatalf("%d %s", w.Code, w.Body.String())
 	}
-	if len(setup.Snippets) != 3 || !slices.EqualFunc(g.Snippets, setup.Snippets, snippetsEqual) {
+	if len(setup.Snippets) != 4 || !slices.EqualFunc(g.Snippets, setup.Snippets, snippetsEqual) {
 		t.Errorf("guide %+v, setup %+v", g.Snippets, setup.Snippets)
 	}
 	if g.RegistryUrl != "https://quader.example.com/files/it/files/" || g.Format != "generic" || g.Class != gen.GuideClassLocal || g.Credentials != gen.GuideCredentialsEnv {
@@ -324,7 +324,7 @@ func TestR_API_053_TheEndpointNoteIsForEndpointsWithRules(t *testing.T) {
 }
 
 // TestR_API_053_TheFormatsNameTheirClients: the catalog lists npm's four clients in the
-// format's order and curl for generic.
+// format's order and curl, wget and PowerShell for generic.
 func TestR_API_053_TheFormatsNameTheirClients(t *testing.T) {
 	w := get(setupServer(t, "https://quader.example.com", true), "/api/v1/formats")
 	var out gen.FormatList
@@ -338,7 +338,7 @@ func TestR_API_053_TheFormatsNameTheirClients(t *testing.T) {
 			got[f.Name] = append(got[f.Name], c.Id+"="+c.DisplayName)
 		}
 	}
-	if !slices.Equal(got["npm"], []string{"npm=npm", "pnpm=pnpm", "yarn=Yarn Berry (2 and later)", "yarn-classic=Yarn Classic (1.x)"}) || !slices.Equal(got["generic"], []string{"curl=curl"}) {
+	if !slices.Equal(got["npm"], []string{"npm=npm", "pnpm=pnpm", "yarn=Yarn Berry (2 and later)", "yarn-classic=Yarn Classic (1.x)"}) || !slices.Equal(got["generic"], []string{"curl=curl", "wget=wget", "powershell=PowerShell (Invoke-WebRequest)"}) {
 		t.Fatalf("%v", got)
 	}
 }

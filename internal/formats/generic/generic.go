@@ -9,8 +9,8 @@
 // every repository, so the format dispatcher registers no /api/generic/ prefix
 // (Q-GENERIC-7). What the contract still asks of it is the classification of a
 // path, which gives a /files/ request its coordinate (R-EP-014), its exposure
-// facts, and the setup snippets and the guide of its one client, curl
-// (R-GENERIC-016).
+// facts, and the setup snippets and the guide of its clients, curl, wget and
+// PowerShell (R-GENERIC-016, R-GENERIC-017).
 package generic
 
 import (
@@ -44,7 +44,11 @@ func (Format) Descriptor() formats.Descriptor {
 			DefaultNotFoundTTLSeconds: &notFound,
 			PatternSubject:            formats.SubjectPath,
 		},
-		Clients:         []formats.Client{{ID: ClientCurl, DisplayName: "curl"}},
+		Clients: []formats.Client{
+			{ID: ClientCurl, DisplayName: "curl"},
+			{ID: ClientWget, DisplayName: "wget"},
+			{ID: ClientPowerShell, DisplayName: "PowerShell (Invoke-WebRequest)"},
+		},
 		ContractVersion: formats.ContractVersion,
 	}
 }

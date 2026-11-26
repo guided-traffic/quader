@@ -1,6 +1,6 @@
 {{if not .Anonymous}}{{if or .PublishTarget (not .Repository)}}`quader_curl --fail --upload-file <file> "{{.RegistryURL}}<path>"` uploads a file to the path with `PUT`. Quader answers `201` with the description of the stored file, its digests among them, and `200` when the path holds these bytes already; then nothing changes. The folders on the way arise with the file. A `PUT` of an address that ends in `/`, without a body, creates an empty folder.
 
-curl sends no media type with `--upload-file`, so Quader serves the file as `application/octet-stream`. To store one, add `--header "Content-Type: <type>"`: Quader keeps a well-formed media type of at most 255 bytes and serves the file with it, and refuses any other value with `400` `invalid_header`.
+curl sends no media type with `--upload-file`, so Quader stores the type the name of the file says for Markdown (`.md`, `.markdown`), plain text and logs (`.txt`, `.log`), JSON, YAML, TOML and CSV, and serves any other file as `application/octet-stream`. To store one, add `--header "Content-Type: <type>"`: Quader keeps a well-formed media type of at most 255 bytes and serves the file with it, and refuses any other value with `400` `invalid_header`.
 
 ### Uploading with a digest
 

@@ -11,6 +11,7 @@ import { TimeAgo } from '../../../shared/ui/time-ago';
 import { MalwareStatusView } from '../../../shared/malware/malware-status';
 import { formatSize } from '../../packages/format-size';
 import { nameOf } from './file-paths';
+import { mediaTypeWord } from './media-type-words';
 import { systemClientSentence, upstreamKeyOf } from '../../../core/upstream-project';
 import { systemClosed } from '../../../core/system-clients';
 import { RouterLink } from '@angular/router';
@@ -32,8 +33,9 @@ const shellQuote = (value: string): string => `'${value.replaceAll("'", "'\\''")
 
 /**
  * The page of one file of a repository (R-UI-010, Q-UI-514), below its path, which names it and holds **Download** and, for a
- * holder of `delete`, **Delete** (the page's): the download address to copy (for a file of a system repository the sentence why
- * there is none, Q-UI-899); the facts a reader needs (size, media type, created, last
+ * holder of `delete`, **Delete** (the page's): the download address to copy, which for a generic repository's file is in the panel of
+ * **Download** with every client's command (R-GENERIC-017, Q-UI-1331), and for a file of a system repository the sentence why there is
+ * none (Q-UI-899); the facts a reader needs (size, the media type in a word with the type beside it, Q-UI-1333, created, last
  * changed, the malware scan's verdict of R-MAL-024, SHA-256). The other checksums, the
  * download statistics and the item as the API describes it are the closed section **Details**: they are for who checks a file,
  * not for who fetches it.
@@ -55,7 +57,10 @@ const shellQuote = (value: string): string => `'${value.replaceAll("'", "'\\''")
       } @else if (disabled()) {
         <!-- A disabled repository answers every download 404 (R-REPO-005): no address, no Download, one sentence (Q-UI-965). -->
         <p class="content-note system-note" data-testid="file-disabled" i18n="@@files.disabled-note">The repository is disabled: nobody can download this file until it is enabled again.</p>
-      } @else if (it.downloadUrl; as url) {
+      } @else if ((format() !== 'generic' || refused()) && it.downloadUrl; as url) {
+        <!-- A generic file's address stands in the panel of Download, beside its clients' commands (R-GENERIC-017, Q-UI-1331); a
+             package format's raw file has no clients of its own for a path, and a refused file no Download, so its address stays
+             here as a fact (Q-UI-882). -->
         <div class="file-address">
           <span class="field-label" i18n="@@files.download-address">Download address</span>
           <quader-address-field [value]="url" [label]="addressLabel" [copyLabel]="copyAddressLabel" />
@@ -66,7 +71,13 @@ const shellQuote = (value: string): string => `'${value.replaceAll("'", "'\\''")
         <dt i18n="@@files.fact.size">Size</dt>
         <dd>{{ size() }}</dd>
         <dt i18n="@@files.fact.media">Media type</dt>
-        <dd translate="no">{{ it.mediaType }}</dd>
+        <!-- A word a person knows where the product has one, the media type beside it (R-GENERIC-017, Q-UI-1333). -->
+        <dd class="media-type">
+          @if (mediaWord(); as w) {
+            <span>{{ w }}</span>&ngsp;
+          }
+          <code translate="no">{{ it.mediaType }}</code>
+        </dd>
         <dt i18n="@@files.fact.created">Created</dt>
         <dd>
           <quader-time-ago [at]="it.created.at" />
@@ -291,8 +302,14 @@ export class RepositoryFile {
   /** The download with curl; none for a file of a system repository, which answers it 404 (Q-UI-898). */
   protected readonly downloadCurl = computed(() => {
     const url = this.item().downloadUrl;
+    // A generic file's download commands are the panel of Download, the server's for every client (R-GENERIC-017).
+    if (this.format() === 'generic') return '';
     return url && !this.system() && !this.disabled() ? `curl -L -O -H "Authorization: Bearer $QUADER_TOKEN" ${shellQuote(url)}` : '';
   });
+  /** The malware scan's or the signature gate refuses the file here: the page offers no Download, and its address stays a fact. */
+  protected readonly refused = computed(() => this.item().malware?.refused === true || this.item().signatures?.refused === true);
+  /** The media type in a word a person knows, or '' for a type the product has no word for. */
+  protected readonly mediaWord = computed(() => mediaTypeWord(this.item().mediaType ?? ''));
   /**
    * A file of a system repository of the project `upstream` (R-UI-193): Quader's own work reads it, and every download, by its
    * address for downloads by path and through the content route of the UI alike, answers 404 (R-REPO-070, R-REPO-075). The item's

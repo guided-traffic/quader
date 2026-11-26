@@ -1815,7 +1815,11 @@ on:
 
 - The server fills the public base URL, the project key and the repository key, the package-manager endpoint URL of
   INV-6 (`/api/<format>/<projectKey>/<repoKey>/`), the scheme-less endpoint path (npm's per-registry credential key) and the caller's name.
-  With `package` and `version` the install snippets are specific to that version.
+  With `package` and `version` the install snippets are specific to that version. For a format whose items are paths (generic),
+  `path` and `sha256` make the install snippets a file's download and its check, and a folder's path (a trailing slash) the publish
+  snippets its upload, the path percent-encoded with unreserved characters only and the name quoted for the snippet's language
+  ([formats/generic.md](formats/generic.md) R-GENERIC-017, ADR-290); `path` for another format, or beside `package`, answers
+  `400 malformed_request`.
 - The server never fills a token. With `credentials=placeholder` snippets contain the placeholder
   `{{token}}`, replaced in the browser (R-UI-016); with `credentials=env` they hold the
   environment-variable reference of the client's syntax (`${QUADER_TOKEN}` for npm and Yarn,
@@ -1852,8 +1856,8 @@ on:
   deployment target of a virtual one, none for a remote one. Whether the snippets send the credential before
   being challenged (`RequiresAuth`) follows whether an anonymous caller on the same endpoint may read the
   repository; it is off for `credentials=none`. The npm templates contribute the configure, install and publish snippets
-  (R-NPM-041, Q-API-180); the CI snippets of R-UI-017 are not templates yet. The generic templates contribute curl's
-  configure, install and publish snippets ([formats/generic.md](formats/generic.md) R-GENERIC-016).
+  (R-NPM-041, Q-API-180); the CI snippets of R-UI-017 are not templates yet. The generic templates contribute curl's, wget's and PowerShell's
+  configure, install and publish snippets ([formats/generic.md](formats/generic.md) R-GENERIC-016, R-GENERIC-017).
 - A virtual repository without a default deployment target has no publish snippets and `publishTarget: null`;
   a caller without `deploy` on the target gets no publish snippets either.
   A publish snippet names the registry URL of the repository the caller chose (Q-API-180); `publishTarget`
@@ -4172,8 +4176,8 @@ Priority: **MVP** · Covers: UI-010
 panel of the verb's button (R-UI-052, [client-command-menu.ts](../../web/src/app/features/packages/client-command-menu.ts)), in a
 repository's list and in the head of the version's page; no box of a command stands on any page.
 
-- A tab per client of the format (Docker | Podman; npm | pnpm | Yarn Berry | Yarn Classic; .NET CLI | NuGet CLI | Visual Studio),
-  in the order of the setup's clients, each named by the client's short name; a format of one client (APT, ansible-galaxy, curl)
+- A tab per client of the format (Docker | Podman; npm | pnpm | Yarn Berry | Yarn Classic; .NET CLI | NuGet CLI | Visual Studio; curl | wget |
+  PowerShell), in the order of the setup's clients, each named by the client's short name; a format of one client (APT, ansible-galaxy)
   shows the client's name as the row's label instead of a strip of one tab. At the end of the row **Set up client**, which opens the
   client setup of the repository with the chosen client (R-UI-126). A repository picker (a select **Repository** above the row) when
   the version exists in more than one repository a client can use (default: a virtual repository containing it, else the first local
@@ -4340,15 +4344,21 @@ own and no tree across the repositories of a project.
   data table: **Name** (the icon of a folder or of a file, one each, an archive included, on the name's first line; a long name
   wrapping beside it), **Size** (files),
   **Last change** as the shared relative time with the absolute time as its title (Q-UI-518), and for a file a quiet copy button for
-  its download address (the repository's address for downloads by path and the file's path). A name is a link to the folder's or the
+  its download address (the repository's address for downloads by path and the file's path); in a generic repository a file's row has
+  instead the verb's button **Download** with the panel of its address and every client's command (R-UI-218,
+  [Q-UI-1335](#q-ui-1335--a-generic-files-row-has-download-with-its-panel-where-a-packages-row-has-its-verb)). A name is a link to the folder's or the
   file's page. Entries load in pages of `ui.browser.page_size` with **Load more**
   ([Q-UI-513](#q-ui-513--a-folder-loads-in-pages-of-200-and-its-filter-says-when-it-has-not-seen-every-entry)); the field **Filter
   files** narrows the loaded entries and says so while more are to load.
 - A file's page ([Q-UI-514](#q-ui-514--a-files-page-is-its-name-download-its-address-and-its-facts-the-rest-is-details)): the file's
   name with its icon is the last segment of its path, and **Download** (through the content route, R-API-025) and, for a holder of
   `delete`, **Delete** stand at the end of that row; the name is not repeated as a heading (the section's `h2` is for assistive
-  technology only). Below: the download address as an address field, and
-  the facts **Size**, **Media type**, **Created**, **Last changed** (each with who, where known) and **SHA-256** (its short form, the
+  technology only). In a generic repository **Download** is the main act of a split button whose chevron opens the panel of the
+  file's address and its clients' commands, each with the check of the download
+  ([formats/generic.md](formats/generic.md) R-GENERIC-017, [Q-UI-1330](#q-ui-1330--a-generic-files-download-is-a-split-button-the-browser-download-first-the-clients-commands-behind-the-chevron));
+  for a package format's raw file, below: the download address as an address field. Then
+  the facts **Size**, **Media type** (a word a person knows where the product has one, the media type beside it,
+  [Q-UI-1333](#q-ui-1333--a-files-media-type-reads-as-a-word-with-the-type-beside-it)), **Created**, **Last changed** (each with who, where known) and **SHA-256** (its short form, the
   full value as the title, a copy button); a missing or damaged content says so under **Content**. **Details**, closed: every checksum
   (SHA-256, SHA-512, SHA-1, MD5) with a copy button, the download statistics (**Downloads**, **Last download**, **Last downloader**,
   read when Details opens), the item as the API describes it and the equivalent `curl` requests (INV-17). A file of a disabled
@@ -4508,7 +4518,7 @@ Priority: **MVP** · Covers: UI-021, UI-022, UI-023
   2026-11-18 merged the setup page and the guide into one page that opens from the repository
   ([ADR-202](../decisions.md#adr-202--the-client-setup-and-the-guide-are-one-page-of-a-repository)). It asks only for the client,
   where the format has several.
-- The clients are those of `GET /api/v1/formats`, in its order: curl; npm, pnpm, Yarn Berry, Yarn Classic; .NET CLI, NuGet CLI,
+- The clients are those of `GET /api/v1/formats`, in its order: curl, wget, PowerShell; npm, pnpm, Yarn Berry, Yarn Classic; .NET CLI, NuGet CLI,
   Visual Studio; Docker CLI with Buildx, Podman; APT; ansible-galaxy.
 - The credential and the token (R-UI-122): by default the snippets read the token from the variable `QUADER_TOKEN` (R-API-030
   `credentials=env`) and no secret appears on the page; **Create a token** creates one in place; a token can be written into the
@@ -27576,6 +27586,27 @@ spec:** R-UI-110, R-UI-111, R-UI-221, R-UI-222, R-API-029.
 
 ### Q-UI-1311 · Every format's dependencies are one block, a group per kind in the format's words
 
+### Q-UI-1330 · A generic file's Download is a split button: the browser download first, the clients' commands behind the chevron
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+[formats/generic.md](formats/generic.md) R-GENERIC-017.
+
+Context: the owner's rule of 2026-11-25 puts a client's command behind the verb's button with a panel (R-UI-218, Q-UI-1240). A file's
+page had a **Download** link that saves the file through the browser, with the person's sign-in and the download limits' notice
+(R-UI-186); the panel's button opens a panel and downloads nothing.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) **Download** stays the main act and saves the file; a chevron joined to it, **Download with a client**, opens the panel (chosen) | GitLab's download button with its menu | The plain path, saving the file, stays one click; the commands are one click away, in the panel every format has | Two controls where a package has one |
+| (b) **Download** opens the panel, whose first entry saves the file | One button as every format | One shape | Saving a file takes two clicks, and the most common act hides behind a panel |
+| (c) **Download** saves, and a second button **Commands** beside it | Two buttons | Explicit | Two words for one thing; another button no other format has |
+
+**Choice:** (a). **Applied in the spec:** R-UI-010, R-GENERIC-017. Code: `split` and the projected `[mainAct]` of
+[client-command-menu.ts](../../web/src/app/features/packages/client-command-menu.ts), the file's head in
+[repository-content.html](../../web/src/app/features/repositories/content/repository-content.html). Renders `repository-generic-file-commands-*`.
+
+### Q-UI-1331 · A file's download address stands in the panel, above its clients
+
 Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
 
 | Option | What it means | For | Against |
@@ -27591,6 +27622,15 @@ most 60 per version. **Applied in the spec:** R-UI-221. Code: `DependencyList` o
 [version-facts.ts](../../web/src/app/features/packages/version-facts.ts).
 
 ### Q-UI-1312 · Keywords and tags are one block of chips that open the package list
+
+| (a) The panel's first line: **Download address** with its copy button, then the clients (chosen) | GitLab's menu has its clone addresses first | The address for any other tool is where the commands are; the page has no address field of its own (the owner's rule: no address in a box of its own) | One more line in the panel |
+| (b) The address field stays on the page | As before | Visible without a click | An address to fetch in a field of its own, which the rule removes |
+| (c) The address only inside the commands | Fewer lines | — | A person who wants the address alone copies it out of a command |
+
+**Choice:** (a). **Applied in the spec:** R-UI-010, R-GENERIC-017. Code: `address` of
+[client-command-menu.ts](../../web/src/app/features/packages/client-command-menu.ts).
+
+### Q-UI-1332 · The check of a download is the second line of each client's tab
 
 Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
 
@@ -27608,6 +27648,16 @@ by them. **Applied in the spec:** R-UI-221, R-API-029.
 
 ### Q-UI-1313 · A version's links are one row under its facts in every format
 
+| (a) Under the download, **Check the download**: `printf '%s  %s\n' <sha256> <name> \| sha256sum -c` for curl and wget, `(Get-FileHash …).Hash -eq '<sha256>'` for PowerShell, as an image's tab has **By digest** (chosen) | Two lines per tab | The digest is used where it is needed, by the client's own shell; one field each fits a panel at 390 px, scrolling inside its field like every long command | A third request per client |
+| (b) The SHA-256 to copy, as before | The fact only | Short | The reader writes the check |
+| (c) Download and check in one command (`&&`) | One line | One copy | A line that differs per shell grows past the panel; a failed download and a failed check read alike |
+
+**Choice:** (a). **Applied in the spec:** R-GENERIC-017. Code: the checksum templates of
+[setup.go](../../internal/formats/generic/setup.go), `sha256` and `snippetId` of the panel and of
+[client-command.ts](../../web/src/app/features/packages/client-command.ts).
+
+### Q-UI-1333 · A file's media type reads as a word with the type beside it
+
 Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
 
 | Option | What it means | For | Against |
@@ -27619,6 +27669,15 @@ Status: **Decided by the development agent** on 2026-11-26 — selected from the
 R-UI-221. Code: `VersionLinks` of [version-facts.ts](../../web/src/app/features/packages/version-facts.ts).
 
 ### Q-UI-1314 · An image's date is Pushed or Fetched on every screen
+
+| (a) A word where the product has one ("Markdown", "ZIP archive"), the media type in code beside it; the type alone for any other, and for `application/octet-stream` (chosen) | As an image's kind is a word | A person reads what the file is; the exact type stays visible for who needs it | A list of words to keep |
+| (b) The media type alone | As before | Exact | `text/markdown` and `application/x-tar` are not words most people know |
+| (c) The word alone, the type as its title | As an image's kind | Short | The type is hidden from a touch screen |
+
+**Choice:** (a). The files list has no column of the type and gains none (simple by default). **Applied in the spec:** R-UI-010,
+R-GENERIC-017. Code: [media-type-words.ts](../../web/src/app/features/repositories/content/media-type-words.ts).
+
+### Q-UI-1334 · A folder's upload command is the chevron of Upload files
 
 Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
 
@@ -27632,6 +27691,15 @@ same word. Gap: [H-2172](#h-2172--an-images-date-word-follows-the-versions-holde
 R-UI-111, R-UI-222. Code: `arrivedLabel` of [content-shape.ts](../../web/src/app/features/repositories/content/content-shape.ts).
 
 ### Q-UI-1315 · An install script is said under the facts, where a person decides
+
+| (a) **Upload files** keeps its dialog as the main act; a chevron joined to it, **Upload with a client**, opens the panel of the upload into this folder in each client, `<file>` the reader's (chosen) | The shape of Q-UI-1330 | One place for the screen's upload and the client's | Two controls |
+| (b) Only Set up client's Publish tab | As before | Nothing new | The folder's address must be typed into the command by hand |
+
+**Choice:** (a). The panel is offered only where **Upload files** is, for a holder of `deploy`; it has no check line. **Applied in the
+spec:** R-UI-011, R-GENERIC-017. Code: the toolbar of
+[repository-files.ts](../../web/src/app/features/repositories/content/repository-files.ts) (`section="publish"`).
+
+### Q-UI-1335 · A generic file's row has Download with its panel where a package's row has its verb
 
 Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
 
@@ -27702,6 +27770,33 @@ Stage: `arrivedLabel` (Q-UI-1314). Subject: an image a local and a remote reposi
 different classes. The word is one per screen: Pushed where any holder is local, Fetched where all are remote, read from the version (its
 page) or from the package's newest version (its table). A row of an image only a remote holds, in a table whose newest version a local
 repository holds, reads Pushed. Dormant: no installation holds one image name in a local and a remote repository of one project today.
+
+| (a) The row's act is the small button **Download** with the panel (address, clients, check), in place of the copy button of the address (chosen) | Every format's row has its verb | One look for every format's rows; the address is one click further | Copying the address takes two clicks |
+| (b) The copy button stays, the panel beside it | Two controls per row | Nothing lost | A row of a file has two acts where a package's has one |
+| (c) A split button per row | As the file's page | Saves the file from the list | A row of two joined buttons; the row has no content route to save from today |
+
+**Choice:** (a). A package format's raw files keep the copy button: their clients fetch packages, not paths (H-2190). A row carries no
+verdict of the malware scan or the signature gate (`Child`), so a refused file's row offers its panel as it offered its address, and a
+client's command gets the refusal with its reason (Q-UI-882); the file's page offers no **Download** and no panel for it, and keeps its
+address as a fact. **Applied in the
+spec:** R-UI-010. Code: the row of [repository-files.ts](../../web/src/app/features/repositories/content/repository-files.ts).
+
+## What this does not cover
+
+### H-2190 · A package format's raw file shows its address and curl lines of its own, not the panel
+
+Component: the page of a raw file of npm, NuGet, OCI, Debian, Ansible Galaxy and ClamAV (R-UI-010). Subject: the download address as an
+address field, a quiet copy button of it in the folder's rows, and in **Details** "The same request with curl" and "Download with curl",
+each with `-H "Authorization: Bearer $QUADER_TOKEN"`, which the shell expands into an argument of curl, visible in the process list
+(Q-GENERIC-9). Live on every such page; a generic file has the panel of R-GENERIC-017 instead, and its **Details** keep "The same request
+with curl" of the management API. The client setup answers a path for a format whose items are paths only, so these pages would need the
+generic clients for every repository's `/files/` and a setup to lead to.
+
+### H-2191 · The ClamAV endpoint's addresses stand in fields of their own
+
+Component: the page of the system repository `upstream/clamav` in the admin area (R-UI-194). Subject: **Address of the endpoint** and the
+addresses with a client certificate are address fields with copy buttons, not freshclam's command in the panel of R-UI-218. Live while
+ClamAV definition updates is on; the repository's **Set up client** shows freshclam's line.
 
 ### H-2143 · A remote whose documentation is not available shows no changelog on its tab
 

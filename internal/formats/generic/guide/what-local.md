@@ -1,4 +1,4 @@
-A generic local repository{{if .Repository}}, `{{.Repository}}`,{{end}} stores files of any kind at paths you choose: installers, archives, documents, build outputs, content of formats Quader has no repository type for. Quader does not look into a file. It keeps the bytes and the media type they were uploaded with, computes their digests, and serves them back as stored. There are no package names, versions or metadata documents, and no file is refused for what it contains.
+A generic local repository{{if .Repository}}, `{{.Repository}}`,{{end}} stores files of any kind at paths you choose: installers, archives, documents, build outputs, content of formats Quader has no repository type for. Quader does not look into a file. It keeps the bytes and the media type they were uploaded with (or, uploaded without one, the type its name says for a few kinds of text, such as Markdown, JSON or YAML), computes their digests, and serves them back as stored. There are no package names, versions or metadata documents, and no file is refused for what it contains.
 
 Every address below `{{.RegistryURL}}` names a file or a folder:
 

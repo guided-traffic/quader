@@ -50,7 +50,20 @@ policy from inside such a handler and reads it back at the status line. Before t
 core guarantees the headers and the kit still fails a `Volatile` route that serves a stored item, or an `Upload`, `Delete` or `Admin` route that returns
 package bytes.
 The media type is the one the uploader sent, parsed as a media type and stored in its normalised form (a value that does not
-parse is `400 invalid_header`); it is never derived from the content or the name.
+parse is `400 invalid_header`). It is never derived from the content. An upload without one, or with the type of a form's body
+(`application/x-www-form-urlencoded`, which wget and PowerShell send by default), stores the type its name says for a closed list of
+text types: Markdown, plain text and logs, JSON, YAML, TOML and CSV (`guessMediaType` of
+[guess.go](../../internal/api/rawfiles/guess.go), R-GENERIC-017, Q-GENERIC-11); any other upload stores none and is served as
+`application/octet-stream`.
+
+**What a stored `text/html` does today, and what the guess can cause.** An uploader who sends `Content-Type: text/html` stores it, and
+the file is served with it, but as an attachment (`Content-Disposition: attachment`), with `nosniff` and the policy `sandbox;
+default-src 'none'`: a browser that opens the address saves the file, and one that renders it anyway runs it without an origin and
+without scripts. The same holds for `image/svg+xml` (the `evil.svg` of the integration test `TestE1_4_RawTransfer`). The guess adds no
+type a browser renders as a document or runs: the list holds no HTML, SVG, XML, JavaScript, CSS, PDF or image type, a unit test
+(`TestR_GENERIC_017_TheGuessIsAClosedListOfText`) fails for one, and a name like `index.html` stays `application/octet-stream`. So the
+guess gives no uploader a way to get a script to run on Quader's origin that sending the type itself did not give, and that one is
+closed by the headers above, not by the type.
 
 ## Paths and patterns
 

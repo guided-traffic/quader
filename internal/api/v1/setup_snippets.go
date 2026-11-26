@@ -54,6 +54,20 @@ type setupInput struct {
 	// MayPublish says that the caller may deploy to the target; publish templates are
 	// rendered only then.
 	MayPublish bool
+	// File is the file or the folder of a format whose items are paths that the install and publish snippets are for
+	// (formats/generic.md R-GENERIC-017); nil keeps the placeholders.
+	File *fileTarget
+}
+
+// fileTarget is the path a client setup names for a format whose items are paths (R-GENERIC-017): a file, whose install
+// snippets download it under its name and check it against its SHA-256, or a folder, whose publish snippets upload into it.
+type fileTarget struct {
+	// Path is the canonical path (repository.CleanPath), "" for the root.
+	Path string
+	// Folder marks a folder: it has publish snippets only.
+	Folder bool
+	// SHA256 is the file's SHA-256 in lower-case hexadecimal; "" keeps the placeholder.
+	SHA256 string
 }
 
 // snippet is one rendered snippet.
@@ -150,6 +164,12 @@ func renderSnippets(in setupInput) ([]snippet, error) {
 				return nil, fmt.Errorf("setup template %s: %w", t.ID, err)
 			}
 			content = applyCredentials(content, in)
+			if in.File != nil {
+				if t.Section == "install" && in.File.Folder {
+					continue // a folder is uploaded into; nothing downloads it
+				}
+				content = substituteFile(content, t, *in.File)
+			}
 			if t.Section == "install" {
 				name := in.Package
 				if t.Packages != "" {
@@ -357,6 +377,74 @@ func substitutePackage(content string, t formats.SetupTemplate, pkg, version str
 	return strings.ReplaceAll(content, formats.SetupPackageRef, spec)
 }
 
+// substituteFile puts a file's or a folder's path in place of the placeholders of a template of a format whose items are paths
+// (R-GENERIC-017). The address gets the path percent-encoded with nothing but unreserved characters (escapeFilePath), so it
+// needs no quoting of its own inside the template's double quotes; a folder's address ends in the folder's path, a slash and the
+// reader's <file>. The name a download is saved under is the path's last segment, quoted as one argument of the template's
+// language, and "./" before a name that starts with "-", which a client would read as an option or as standard output. The
+// SHA-256 is hexadecimal, which no shell reads.
+func substituteFile(content string, t formats.SetupTemplate, f fileTarget) string {
+	target := escapeFilePath(f.Path)
+	if f.Folder {
+		if target != "" {
+			target += "/"
+		}
+		target += formats.SetupFileRef
+	}
+	pairs := []string{formats.SetupPathRef, target}
+	if !f.Folder {
+		pairs = append(pairs, formats.SetupFileNameRef, quoteArgument(t.Lang, savedName(f.Path)))
+	}
+	if f.SHA256 != "" {
+		pairs = append(pairs, formats.SetupSHA256Ref, f.SHA256)
+	}
+	// One pass: the <file> a folder's address ends in is not replaced again.
+	return strings.NewReplacer(pairs...).Replace(content)
+}
+
+// escapeFilePath percent-encodes every segment of a canonical path, every byte outside RFC 3986's unreserved characters
+// (letters, digits, "-", ".", "_", "~") included, so that "$", "`", "!", a quote or a space of a name stays inert inside the
+// double quotes of a shell's or PowerShell's string. The server decodes a request path once (R-ARCH-005), so this names the
+// same file as the address the API answers.
+func escapeFilePath(p string) string {
+	if p == "" {
+		return ""
+	}
+	segs := strings.Split(p, "/")
+	for i, s := range segs {
+		var b strings.Builder
+		for j := range len(s) {
+			c := s[j]
+			if 'a' <= c && c <= 'z' || 'A' <= c && c <= 'Z' || '0' <= c && c <= '9' || c == '-' || c == '.' || c == '_' || c == '~' {
+				b.WriteByte(c)
+				continue
+			}
+			fmt.Fprintf(&b, "%%%02X", c)
+		}
+		segs[i] = b.String()
+	}
+	return strings.Join(segs, "/")
+}
+
+// savedName is the local name a download is saved under: the last segment of the path, with "./" before it when it starts with
+// "-", so that no client reads it as an option, and "-" alone does not mean standard output.
+func savedName(p string) string {
+	name := p[strings.LastIndex(p, "/")+1:]
+	if strings.HasPrefix(name, "-") {
+		return "./" + name
+	}
+	return name
+}
+
+// quoteArgument quotes a value as one argument of the language: a POSIX shell's single quotes where it needs them, and
+// PowerShell's always, since a bare word there can be a number ("1kb" is 1024) or a splatted variable ("@name").
+func quoteArgument(lang, v string) string {
+	if lang == "powershell" {
+		return powershellLiteral(v)
+	}
+	return quoterFor(lang)(v)
+}
+
 // snippetMarks names the parts of a rendered snippet that are the reader's, in the
 // order they first stand in it: the reference to the token in the spelling the
 // credential mode wrote, the placeholders of the core (the package, the version, and
@@ -413,6 +501,12 @@ func powershellQuote(s string) string {
 	if shellSafe.MatchString(s) {
 		return s
 	}
+	return powershellLiteral(s)
+}
+
+// powershellLiteral single-quotes a value for PowerShell whatever it holds: nothing is expanded inside, an embedded single quote
+// is doubled, and so are the typographic quotes PowerShell also reads as single quotes.
+func powershellLiteral(s string) string {
 	var b strings.Builder
 	b.WriteByte('\'')
 	for _, r := range s {

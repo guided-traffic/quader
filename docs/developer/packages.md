@@ -255,6 +255,13 @@ snippets carry); `bastionBase` answers `404` for a name that is no registration,
 without the reader. The operation then needs no base URL of the endpoint. The publish templates are not rendered and `publishTarget` is `null`; `SetupData.Bastion` is true,
 which npm's `npm.npmrc.configure` template turns into `replace-registry-host=always`.
 
+With `path` (R-GENERIC-017, ADR-290), for a format whose `PatternSubject` is a path, `setupFile` encodes each segment, holds the path to
+`repository.CleanPath` (the rules and lengths of `/files/`) and reads a trailing slash as a folder and `/` as the root; `sha256` must be
+64 hexadecimal digits and name a file. `substituteFile` then fills the install and publish templates: `<path>` with `escapeFilePath`
+(every byte outside RFC 3986's unreserved characters percent-encoded, so nothing in the template's double quotes is read by a shell),
+`<name>` with the last segment quoted by `quoteArgument` (a POSIX shell's `shellQuote`; PowerShell's `powershellLiteral` always) and `./`
+before a leading `-` (`savedName`), `<sha256>` with the digest. A folder drops the install snippets and ends its address in `/<file>`.
+
 ## Tests
 
 | Tier | Where | What |
@@ -263,6 +270,7 @@ which npm's `npm.npmrc.configure` template turns into `replace-registry-host=alw
 | Unit | [view_test.go](../../internal/packages/view/view_test.go), [visible_test.go](../../internal/authz/visible_test.go) | Ids, topology, latest version, cursors; the classification and its agreement with `DecideOn` over a matrix |
 | Unit | [setup_scope_test.go](../../internal/api/v1/setup_scope_test.go) | `TestR_API_030_OnlyAConfigureTemplate…`, `…TheScopedVariantIsDetected…`: the scoped copy only where `.Variant` is read |
 | Unit | [setup_snippets_test.go](../../internal/api/v1/setup_snippets_test.go), [packages_api_test.go](../../internal/api/v1/packages_api_test.go) | Modes, quoting, ids, publish gate, token refusal, `503` without the read model or a base URL, tags |
+| Unit | [setup_files_test.go](../../internal/api/v1/setup_files_test.go) | A file's commands for hostile names, run by `sh` with the clients replaced by functions that print their arguments (curl, wget) and checked as quoted text (PowerShell); a folder's upload; the path rules; wget's and PowerShell's credential lines |
 | Unit | [view_test.go](../../internal/formats/npm/view_test.go), [view_test.go](../../internal/formathost/view_test.go), [ui_test.go](../../internal/config/ui_test.go) | npm's metadata members, the bridge, the configuration |
 | Unit | [bastion_setup_test.go](../../internal/api/v1/bastion_setup_test.go), [setup_test.go](../../internal/formats/npm/setup_test.go) | `TestR_BAS_007_…`: the Bastion's address and no publish snippet, the switch for npm only, the `404`, `409` and `503` answers, a lookup that fails |
 | Integration | [test/integration/bastionsetup](../../test/integration/bastionsetup) | `TestR_BAS_007_ClientSetupForABastionThroughTheStack`: registrations and contacts in PostgreSQL, a replica with `server.additional_base_urls`, the four answers |

@@ -14,7 +14,8 @@ import { QuaderDialog } from '../../../shared/ui/dialog';
 import { formatSize } from '../../packages/format-size';
 import { TimeAgo } from '../../../shared/ui/time-ago';
 import { ContentShape, contentShapeOf, emptyContentText } from './content-shape';
-import { FilePermissions, NO_FILE_PERMISSIONS, iconOf } from './file-paths';
+import { FilePermissions, NO_FILE_PERMISSIONS, iconOf, nameOf } from './file-paths';
+import { ClientCommandMenu } from '../../packages/client-command-menu';
 import { FolderDialog, FolderDialogData } from './folder-dialog';
 import { UploadDialog, UploadDialogData } from './upload-dialog';
 
@@ -24,13 +25,16 @@ export const FILES_PAGE = 200;
 /**
  * A folder of a repository's files (R-UI-010, R-UI-052): its entries as the shared data table, folders and files by name in the
  * order of their paths, in pages of 200 with **Load more** (R-API-025). A folder's name leads to the folder, a file's name to its
- * page; a file's row copies its download address, except in a system repository, which answers no client (Q-UI-898). The filter
+ * page; a file's row has **Download** with the panel of its address and every client's command in a generic repository
+ * (R-GENERIC-017) and copies its download address in a package format's raw files, except in a system repository, which answers no
+ * client (Q-UI-898). The filter
  * narrows the entries loaded so far, because the server has no name filter on children (Q-UI-513). Above the list, the operations the caller may use here (R-UI-011, Q-UI-512): **Upload files** and
- * **New folder** for a holder of `deploy` in a local repository that takes raw uploads, and **Delete folder**, which the page runs.
+ * **New folder** for a holder of `deploy` in a local repository that takes raw uploads, **Upload files** of a generic repository with
+ * the chevron of the upload's commands for the folder (Q-UI-1334), and **Delete folder**, which the page runs.
  */
 @Component({
   selector: 'quader-repository-files',
-  imports: [CdkMenu, CdkMenuItem, CdkMenuTrigger, TimeAgo, RouterLink, CopyButton, DataTable],
+  imports: [CdkMenu, CdkMenuItem, CdkMenuTrigger, ClientCommandMenu, TimeAgo, RouterLink, CopyButton, DataTable],
   template: `
     <div class="toolbar files-toolbar">
       <div class="filter">
@@ -50,11 +54,32 @@ export const FILES_PAGE = 200;
       </div>
       @if (permissions().deploy || (permissions().delete && path() !== '')) {
         <div class="files-actions">
-          @if (permissions().deploy) {
+          @if (permissions().deploy && generic()) {
+            <!-- The dialog is the main act; the chevron opens the upload's command for this folder in each client (R-GENERIC-017,
+                 Q-UI-1334). -->
+            <quader-client-command-menu
+              size="page"
+              format="generic"
+              [name]="folderName()"
+              version=""
+              [repository]="repository()"
+              [path]="path() + '/'"
+              section="publish"
+              [verb]="uploadVerb"
+              [split]="true"
+            >
+              <button mainAct class="btn btn-default" type="button" (click)="upload()">
+                <span class="material-icons" aria-hidden="true">upload</span>
+                <ng-container i18n="@@files.upload">Upload files</ng-container>
+              </button>
+            </quader-client-command-menu>
+          } @else if (permissions().deploy) {
             <button class="btn btn-default" type="button" (click)="upload()">
               <span class="material-icons" aria-hidden="true">upload</span>
               <ng-container i18n="@@files.upload">Upload files</ng-container>
             </button>
+          }
+          @if (permissions().deploy) {
             <button class="btn btn-default" type="button" (click)="newFolder()">
               <span class="material-icons" aria-hidden="true">create_new_folder</span>
               <ng-container i18n="@@files.new-folder">New folder</ng-container>
@@ -124,7 +149,21 @@ export const FILES_PAGE = 200;
           @if (!closed()) {
             <td class="actions">
               @if (c.kind === 'file' && fileUrl(c); as url) {
-                <quader-copy-button [value]="url" [label]="copyUrlLabel(c)" [quiet]="true" />
+                @if (generic()) {
+                  <!-- The row's act, where a package's row has its verb: the address and every client's command (R-GENERIC-017). -->
+                  <quader-client-command-menu
+                    format="generic"
+                    [name]="c.path"
+                    version=""
+                    [repository]="repository()"
+                    [path]="fullPath(c)"
+                    [sha256]="c.sha256 ?? null"
+                    [address]="url"
+                    [verb]="shape().commandVerb"
+                  />
+                } @else {
+                  <quader-copy-button [value]="url" [label]="copyUrlLabel(c)" [quiet]="true" />
+                }
               }
             </td>
           }
@@ -215,7 +254,14 @@ export class RepositoryFiles {
     live({ reload: () => this.list.refresh(), every: () => LIVE_SLOW_MS });
   }
 
-  private fullPath(c: Child): string {
+  /** A generic repository: a file's row and the folder's upload offer the clients' commands (R-GENERIC-017). */
+  readonly generic = input(false);
+  /** The verb of the upload's commands. */
+  protected readonly uploadVerb = $localize`:@@files.upload-verb:Upload`;
+  /** The folder's name for the panel of its upload: its last segment, or the repository at its root. */
+  protected readonly folderName = computed(() => (this.path() === '' ? this.repository() : nameOf(this.path())));
+
+  protected fullPath(c: Child): string {
     const dir = this.path();
     return dir ? `${dir}/${c.path}` : c.path;
   }
