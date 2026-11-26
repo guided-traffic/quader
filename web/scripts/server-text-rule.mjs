@@ -49,6 +49,11 @@ export const allowed = [
     expression: 's.detail',
     why: "a download's subject beside its name (subjectOf: the version, or the file's path), no sentence",
   },
+  {
+    file: 'src/app/features/packages/package-version.html',
+    expression: 'dep.message',
+    why: "a deprecation's message as its publisher wrote it (R-API-085), the package's own text, marked translate=no as a description is",
+  },
 ];
 
 /**

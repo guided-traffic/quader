@@ -11,7 +11,7 @@ class Host {
   readonly unlisted = signal(false);
 }
 
-describe('The mark of a deprecated or unlisted version (R-API-085, Q-UI-1300)', () => {
+describe('The mark of a deprecated or unlisted version (R-API-085)', () => {
   function render(deprecation: DeprecationLike | boolean | null, unlisted = false): HTMLElement {
     const fixture = TestBed.createComponent(Host);
     fixture.componentInstance.deprecation.set(deprecation);

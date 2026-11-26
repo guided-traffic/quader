@@ -329,7 +329,7 @@ describe('The page of a version (R-UI-111)', () => {
     await expectAccessible(r.root);
   });
 
-  describe('Deprecating (R-API-085, Q-UI-1301)', () => {
+  describe('Deprecating (R-API-085)', () => {
     const acts = (r: Opened) => r.root.querySelector<HTMLButtonElement>('[data-testid="version-acts"]');
     const menuItems = () => [...document.querySelectorAll<HTMLButtonElement>('.cdk-overlay-container .menu-item')];
     const dialog = () => document.querySelector<HTMLElement>('.quader-dialog');
