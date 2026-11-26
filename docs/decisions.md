@@ -3025,6 +3025,63 @@ failed-authentication timeout) are rendered without the format's code and told t
 **Consequences.** Main installation and Bastions are upgraded together, as for every raise of the interface. A format to come answers the
 question by what its `WriteError` tells. The main installation's RateLimit field `t` on these formats is not capped (H-2275).
 
+### ADR-300 · A Bastion is a place of the download limits, configured from the main installation, and names nothing of it
+
+**Status:** Decided by the owner on 2026-11-26 (his working paper of W-34 and W-35, stored at 11:51: k1 to k12, each his choice of an
+option, and his note to k3), with the development agent's decisions inside them — specified, **not built**
+([bastion.md](spec/bastion.md#limits-configuration-and-throughput-from-the-main-installation) R-BAS-093 to R-BAS-099, Q-BAS-320 to
+Q-BAS-339; [usage-and-limits.md](spec/usage-and-limits.md#a-bastion-as-a-place) R-LIM-043 to R-LIM-046, Q-LIM-300 to Q-LIM-309;
+[api-and-ui.md](spec/api-and-ui.md#r-ui-240--a-bastions-card-its-limits-its-throughput-and-its-state) R-UI-240 to R-UI-243, Q-UI-1480 to
+Q-UI-1482; the build plan [developer/bastion-limits.md](developer/bastion-limits.md)). It amends
+[ADR-142](#adr-142--the-quader-bastion-an-internet-facing-read-only-cache-instance-in-the-beta) (a Bastion configured only through its chart,
+writes refused by the main installation) and the model of the download limits
+([ADR-298](#adr-298--a-bastions-cache-is-bounded-at-every-commit-and-the-bytes-between-a-bastion-and-the-main-installation-are-counted)'s
+open remedies included).
+
+**Context.** The owner's task of 2026-11-26, about 10:40: "Die Download-Limits müssen sich durch den Administrator detailiert konfigurieren
+lassen. Ich denke es ist auch Sinnvoll, eine angepasste Konfiguration pro Bastion zuzulassen. … Auch finde ich gut, wenn man zusätzlich den
+maximalen Throughput zwischen Hauptinstanz und Bastion konfigurieren könnte". His framing of 10:55: the Bastion faces the internet, bears
+its traffic and attacks alone, offers only a reading API, and the smaller its footprint the better. Read in the code: a Bastion's limits were
+chart values counted per address only, a hit was counted nowhere, five kinds of anonymous request reached the main installation one for one,
+every write was probed at the main installation, nothing bounded the bytes between the two, and eight places of a Bastion's answers named
+the main installation.
+
+**Decision.**
+- A Bastion's switches, limits, throughput, anonymous ceiling and egress addresses are members of its registration, set on its card and
+  delivered in the handshake as one configuration with the registration's revision; a change reaches every replica in about 3 s through a
+  `settings` entry of the feed; a replica keeps its last configuration, stores it in its cache backend and falls back to a built-in one that
+  fails closed (k1 a; R-BAS-093).
+- A ceiling for all anonymous callers of a Bastion together bounds what they cause at the main installation, and the one-for-one paths go:
+  the Bastion answers anonymous token requests, keeps anonymous documents, refuses writes, and takes the catalog from W-35's catalogue
+  (k2 c; R-BAS-094).
+- The Bastion refuses a write itself, `403 read_only`, in one of four error shapes the format declares, with a detail that names nothing of
+  the main installation (k3 b with his note; R-BAS-095).
+- Each Bastion is a place of the download limits with its own rules, profiles, presets (Internet, Partner network, Internal) and mode; the
+  flood protection stays per address; the budgets apply per subject on everything the Bastion serves, hits included; a forward counts in
+  both budgets; usage and state travel on the reporting channel that exists (k4 c, k5 a, k6 a, k7 a, k10 b, k11 a; R-BAS-096, R-LIM-043 to
+  R-LIM-046).
+- The throughput between the main installation and a Bastion is capped at the Bastion on every byte it reads, with an anonymous share (k8 a;
+  R-BAS-097); the cache protects what was served twice (k9 b; R-BAS-098); a Bastion's egress addresses belong to its registration (k12 a).
+- Nothing a Bastion answers names, links to or identifies the main installation (his rule; R-BAS-099). The wire of W-34 and W-35 raises the
+  interface version once, to 8.
+
+**Consequences.** Seventeen packages (E1 to E17, of which E1 to E3 and E5 are built) in four waves, with a measurement (E4) that sets the
+defaults; no end-to-end leg; about 30 s more on the integration shards. A taken-over Bastion ignores its own throughput and budgets; the
+callers' budgets at the main installation still hold (two budgets). The usage a Bastion reports is its own word. The gaps are H-2280 to
+H-2297 on [security/bastion.md](security/bastion.md#what-this-does-not-cover) and
+[security/usage-and-limits.md](security/usage-and-limits.md#what-this-does-not-cover).
+
+**Alternatives considered.** The options of each of k1 to k12 as his paper put them, recorded with each decision (Q-BAS-323, Q-BAS-324,
+Q-BAS-326, Q-BAS-331, Q-BAS-333, Q-BAS-334, Q-BAS-336, Q-LIM-300, Q-LIM-301, Q-LIM-303, Q-LIM-305, Q-LIM-306).
+
+**Revisit condition:** the first stable release, when a lockstep upgrade of the interface costs installations; or a measurement that shows a
+taken-over Bastion's throughput must be bounded at the main installation as well.
+
+**Spec:** [bastion.md](spec/bastion.md) R-BAS-093 to R-BAS-099 and the revised R-BAS-002, R-BAS-010, R-BAS-014, R-BAS-016, R-BAS-017,
+R-BAS-023, R-BAS-025, R-BAS-029, R-BAS-031, R-BAS-035 to R-BAS-038, R-BAS-046, R-BAS-051, R-BAS-052, R-BAS-054, R-BAS-058, R-BAS-059,
+R-BAS-071, R-BAS-074; [usage-and-limits.md](spec/usage-and-limits.md) R-LIM-043 to R-LIM-046; [api-and-ui.md](spec/api-and-ui.md) R-UI-240
+to R-UI-243; [formats/oci.md](spec/formats/oci.md) R-OCI-005.
+
 ## Design invariants
 
 The invariants of [spec/README.md](spec/README.md#design-invariants) are the baseline every spec
@@ -10290,10 +10347,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-BAS
 
-245 questions on [spec/bastion.md](spec/bastion.md).
+265 questions on [spec/bastion.md](spec/bastion.md).
 
 <details>
-<summary>Q-BAS: 245 questions</summary>
+<summary>Q-BAS: 265 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10542,6 +10599,26 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-BAS-313](spec/bastion.md#q-bas-313--the-miss-figures-hold-in-a-minute-what-the-request-burst-holds-at-once) | The miss figures hold in a minute what the request burst holds at once | Decided by the development agent on 2026-11-26 | (a) The burst of the class per minute: 1,000 anonymously, 4,000 with a credential | — |
 | [Q-BAS-314](spec/bastion.md#q-bas-314--the-block-threshold-is-the-anonymous-classs-minute-3000-refusals) | The block threshold is the anonymous class's minute: 3,000 refusals | Decided by the development agent on 2026-11-26 | (a) 3,000 a minute, what the anonymous class admits in a minute | — |
 | [Q-BAS-315](spec/bastion.md#q-bas-315--the-edge-defaults-hold-the-fastest-normal-command-1000-requests-a-second-and-256-in-flight) | The edge defaults hold the fastest normal command: 1,000 requests a second and 256 in flight | Decided by the development agent on 2026-11-26 | (a) 1,000 a second and 256 in flight | — |
+| [Q-BAS-320](spec/bastion.md#q-bas-320--the-configuration-travels-as-one-member-with-each-rules-effective-figures-and-its-revision-is-the-registrations) | The configuration travels as one member with each rule's effective figures, and its revision is the registration's | Decided by the development agent on 2026-11-26 | (a) One member with the effective figures of each rule, the revision the registration's, raised also by a change of a rule of the place or of a profile such a rule names | [ADR-300](#adr-300--a-bastion-is-a-place-of-the-download-limits-configured-from-the-main-installation-and-names-nothing-of-it) |
+| [Q-BAS-321](spec/bastion.md#q-bas-321--the-bastions-own-codes-are-named-by-their-status-its-texts-name-no-party-and-its-problem-type-is-aboutblank) | The Bastion's own codes are named by their status, its texts name no party, and its problem type is about:blank | Decided by the development agent on 2026-11-26 | (a), with these texts: `unavailable` "This service is not available right now; try again later.", `bad_gateway` "This service could not answer; try again later.", `gateway_timeout` "This service did not answer in time; try again later.", `busy` "Too many requests are waiting; try again in a moment.", `not_found` "Nothing is served at this address.", `read_only` "This address is read-only: it serves downloads and accepts no uploads." (the text told to the owner on 2026-11-26), `method_not_allowed` "This address serves GET and HEAD.", `misdirected_request` "This address does not answer for the host of the request.", `payload_too_large` "The body is too large.". | — |
+| [Q-BAS-322](spec/bastion.md#q-bas-322--both-topics-raise-the-interface-version-once-to-8) | Both topics raise the interface version once, to 8 | Decided by the development agent on 2026-11-26 | (a) One package lands the whole wire of both topics at version 8; the packages behind it change no wire | — |
+| [Q-BAS-323](spec/bastion.md#q-bas-323--a-bastion-is-configured-on-its-card-at-the-main-installation) | A Bastion is configured on its card at the main installation | Decided by the owner on 2026-11-26 | (a), the owner's decision. | [ADR-300](#adr-300--a-bastion-is-a-place-of-the-download-limits-configured-from-the-main-installation-and-names-nothing-of-it) |
+| [Q-BAS-324](spec/bastion.md#q-bas-324--a-bastion-reports-usage-and-status-on-the-channel-of-its-download-events) | A Bastion reports usage and status on the channel of its download events | Decided by the owner on 2026-11-26 | (b), the owner's decision. | [ADR-300](#adr-300--a-bastion-is-a-place-of-the-download-limits-configured-from-the-main-installation-and-names-nothing-of-it) |
+| [Q-BAS-325](spec/bastion.md#q-bas-325--the-limit-members-of-a-registration-need-limitswrite-the-others-endpointswrite) | The limit members of a registration need limits:write, the others endpoints:write | Decided by the development agent on 2026-11-26 | (a) `limits` with `limits:write`, the rest with `endpoints:write`; reading `limits` with either read capability | — |
+| [Q-BAS-326](spec/bastion.md#q-bas-326--an-anonymous-ceiling-per-bastion-and-the-one-for-one-paths-removed) | An anonymous ceiling per Bastion, and the one-for-one paths removed | Decided by the owner on 2026-11-26 | (c), the owner's decision. | [ADR-300](#adr-300--a-bastion-is-a-place-of-the-download-limits-configured-from-the-main-installation-and-names-nothing-of-it) |
+| [Q-BAS-327](spec/bastion.md#q-bas-327--a-replica-without-its-configuration-serves-with-the-stored-one-else-with-a-built-in-one-that-fails-closed) | A replica without its configuration serves with the stored one, else with a built-in one that fails closed | Decided by the development agent on 2026-11-26 | (a) The last configuration stored in the cache backend, signed where its entries are; without one, a built-in configuration: every switch off, the Internet preset, Enforce | — |
+| [Q-BAS-328](spec/bastion.md#q-bas-328--the-subject-a-bastion-charges-is-the-one-the-main-installation-names) | The subject a Bastion charges is the one the main installation names | Decided by the development agent on 2026-11-26 | (a) The main installation names the subject key (`limits_subject` of R-LIM-030) in the check answer and the marking | — |
+| [Q-BAS-329](spec/bastion.md#q-bas-329--a-transfer-at-a-bastion-takes-a-lease-that-waits-at-most-10-s-and-the-waiting-leases-hold-at-most-a-quarter-of-a-replicas-request-slots) | A transfer at a Bastion takes a lease that waits at most 10 s, and the waiting leases hold at most a quarter of a replica's request slots | Decided by the development agent on 2026-11-26 | (a) The main installation's rule: a wait of at most 10 s, waiting leases at most a quarter of `server.max_in_flight` | — |
+| [Q-BAS-330](spec/bastion.md#q-bas-330--a-hit-is-paced-by-the-callers-cached-bytes-per-second-never-below-64-kib-a-second) | A hit is paced by the caller's cached bytes per second, never below 64 KiB a second | Decided by the development agent on 2026-11-26 | (a) The same pacing at the Bastion, with the same floor of 64 KiB a second | — |
+| [Q-BAS-331](spec/bastion.md#q-bas-331--the-maximum-throughput-is-enforced-at-the-bastion-on-every-byte-it-reads) | The maximum throughput is enforced at the Bastion, on every byte it reads | Decided by the owner on 2026-11-26 | (a), the owner's decision. | [ADR-300](#adr-300--a-bastion-is-a-place-of-the-download-limits-configured-from-the-main-installation-and-names-nothing-of-it) |
+| [Q-BAS-332](spec/bastion.md#q-bas-332--the-throughput-has-two-buckets-the-total-and-the-anonymous-share) | The throughput has two buckets: the total and the anonymous share | Decided by the development agent on 2026-11-26 | (a), with the catalogue below the callers' misses in priority (W-35's rule). | — |
+| [Q-BAS-333](spec/bastion.md#q-bas-333--what-was-served-twice-is-protected-in-the-cache) | What was served twice is protected in the cache | Decided by the owner on 2026-11-26 | (b), the owner's decision. | [ADR-300](#adr-300--a-bastion-is-a-place-of-the-download-limits-configured-from-the-main-installation-and-names-nothing-of-it) |
+| [Q-BAS-334](spec/bastion.md#q-bas-334--a-bastions-egress-addresses-belong-to-its-registration) | A Bastion's egress addresses belong to its registration | Decided by the owner on 2026-11-26 | (a), the owner's decision. | [ADR-300](#adr-300--a-bastion-is-a-place-of-the-download-limits-configured-from-the-main-installation-and-names-nothing-of-it) |
+| [Q-BAS-335](spec/bastion.md#q-bas-335--the-bastion-answers-an-anonymous-token-request-itself) | The Bastion answers an anonymous token request itself | Decided by the development agent on 2026-11-26 | (a) The Bastion issues a token of the registry token's form, payload version 1 with only the claims `a: true` and `exp`, key ID `bastion`, a MAC of random bytes that nobody verifies | — |
+| [Q-BAS-336](spec/bastion.md#q-bas-336--the-bastion-refuses-a-write-itself) | The Bastion refuses a write itself | Decided by the owner on 2026-11-26 | (b), the owner's decision, without the sentence where to publish. | [ADR-300](#adr-300--a-bastion-is-a-place-of-the-download-limits-configured-from-the-main-installation-and-names-nothing-of-it) |
+| [Q-BAS-337](spec/bastion.md#q-bas-337--a-bastions-own-refusals-take-one-of-four-error-shapes-a-format-declares) | A Bastion's own refusals take one of four error shapes a format declares | Decided by the development agent on 2026-11-26 | (a); kit check 19 holds `WriteError` to the declared shape. | — |
+| [Q-BAS-338](spec/bastion.md#q-bas-338--a-bastion-reveals-nothing-of-the-main-installation) | A Bastion reveals nothing of the main installation | Decided by the owner on 2026-11-26 | the rule of R-BAS-099, for every body, header and page a Bastion answers. | [ADR-300](#adr-300--a-bastion-is-a-place-of-the-download-limits-configured-from-the-main-installation-and-names-nothing-of-it) |
+| [Q-BAS-339](spec/bastion.md#q-bas-339--a-registry-token-reads-only-its-anonymity-its-expiry-and-its-grant) | A registry token reads only its anonymity, its expiry and its grant | Decided by the development agent on 2026-11-26 | (a) Payload version 2: `a`, `exp` and `g` readable, every other claim sealed under a key of the main installation's ring | [ADR-300](#adr-300--a-bastion-is-a-place-of-the-download-limits-configured-from-the-main-installation-and-names-nothing-of-it) |
 
 </details>
 
@@ -11299,10 +11376,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-LIM
 
-70 questions on [spec/usage-and-limits.md](spec/usage-and-limits.md).
+80 questions on [spec/usage-and-limits.md](spec/usage-and-limits.md).
 
 <details>
-<summary>Q-LIM: 70 questions</summary>
+<summary>Q-LIM: 80 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -11376,6 +11453,16 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-LIM-296](spec/usage-and-limits.md#q-lim-296--the-built-in-byte-upstream-and-refused-figures-hold-the-uses-each-profile-promises) | The built-in byte, upstream and refused figures hold the uses each profile promises | Decided by the development agent on the owner's words of 2026-11-26, 10 | (a) Each profile holds the uses R-LIM-010 promises it, priced by R-LIM-042, with a third or more of room; the profiles keep their order per figure | — |
 | [Q-LIM-297](spec/usage-and-limits.md#q-lim-297--the-migration-replaces-a-built-in-byte-upstream-or-refused-figure-only-where-it-still-holds-the-first-migrations-value) | The migration replaces a built-in byte, upstream or refused figure only where it still holds the first migration's value | Decided by the development agent | (a), as Q-LIM-295. | — |
 | [Q-LIM-298](spec/usage-and-limits.md#q-lim-298--the-built-in-figures-grant-nothing-a-public-registry-refuses-and-a-remotes-ceilings-stay-the-administrators) | The built-in figures grant nothing a public registry refuses, and a remote's ceilings stay the administrator's | Decided by the development agent | (a) The profiles stay generous; a remote's ceilings stay unset by default (Q-LIM-16), and the manual says how a company keeps a public registry's limit: credentials of a paid account on the remote, or the remote's ceilings set at the account's limit | — |
+| [Q-LIM-300](spec/usage-and-limits.md#q-lim-300--a-preset-per-bastion-rules-on-demand-two-profiles-of-the-bastion) | A preset per Bastion, rules on demand, two profiles of the Bastion | Decided by the owner on 2026-11-26 | (a), the owner's decision. | [ADR-300](#adr-300--a-bastion-is-a-place-of-the-download-limits-configured-from-the-main-installation-and-names-nothing-of-it) |
+| [Q-LIM-301](spec/usage-and-limits.md#q-lim-301--audit-or-enforce-per-bastion) | Audit or Enforce per Bastion | Decided by the owner on 2026-11-26 | (a), the owner's decision; it adds to decision 17. | [ADR-300](#adr-300--a-bastion-is-a-place-of-the-download-limits-configured-from-the-main-installation-and-names-nothing-of-it) |
+| [Q-LIM-302](spec/usage-and-limits.md#q-lim-302--the-main-installation-resolves-a-signed-in-callers-rule-the-bastion-the-address-and-kind-rules) | The main installation resolves a signed-in caller's rule, the Bastion the address and kind rules | Decided by the development agent on 2026-11-26 | (a) The main installation names the applying rule's ID in the check answer and the marking; the Bastion resolves the address and kind rules from the place's table | — |
+| [Q-LIM-303](spec/usage-and-limits.md#q-lim-303--the-defaults-of-a-bastion-come-from-measurements) | The defaults of a Bastion come from measurements | Decided by the owner on 2026-11-26 | (a), the owner's decision. | [ADR-300](#adr-300--a-bastion-is-a-place-of-the-download-limits-configured-from-the-main-installation-and-names-nothing-of-it) |
+| [Q-LIM-304](spec/usage-and-limits.md#q-lim-304--a-bastion-is-a-place-of-the-rules-beside-the-instance) | A Bastion is a place of the rules, beside the instance | Decided by the development agent on 2026-11-26 | (a) A fourth place kind `bastion`, one per registration, resolved alone | — |
+| [Q-LIM-305](spec/usage-and-limits.md#q-lim-305--a-bastion-protects-per-address-and-budgets-per-subject-on-everything-it-serves) | A Bastion protects per address and budgets per subject, on everything it serves | Decided by the owner on 2026-11-26 | (c), the owner's decision. | [ADR-300](#adr-300--a-bastion-is-a-place-of-the-download-limits-configured-from-the-main-installation-and-names-nothing-of-it) |
+| [Q-LIM-306](spec/usage-and-limits.md#q-lim-306--two-budgets-one-at-the-bastion-one-at-the-main-installation) | Two budgets: one at the Bastion, one at the main installation | Decided by the owner on 2026-11-26 | (a), the owner's decision. | [ADR-300](#adr-300--a-bastion-is-a-place-of-the-download-limits-configured-from-the-main-installation-and-names-nothing-of-it) |
+| [Q-LIM-307](spec/usage-and-limits.md#q-lim-307--pages-of-the-web-interface-are-a-request-class-of-their-own-per-address) | Pages of the web interface are a request class of their own per address | Decided by the development agent on 2026-11-26 | (a) A class `gui` of the flood protection per address, beside `anonymous` and `authenticated`, never a miss; its bytes counted as documents of the anonymous subject | — |
+| [Q-LIM-308](spec/usage-and-limits.md#q-lim-308--a-bastions-usage-report-is-bounded-per-batch-and-folds-the-rest-into-an-overflow-row) | A Bastion's usage report is bounded per batch and folds the rest into an overflow row | Decided by the development agent on 2026-11-26 | (a) The same bound in the Bastion's buffer: 100,000 keys per batch window, the rest in an overflow row per repository and subject kind, with the number of subjects it folded | — |
+| [Q-LIM-309](spec/usage-and-limits.md#q-lim-309--in-audit-a-bastion-still-holds-its-flood-protection-ceiling-slots-and-throughput) | In Audit a Bastion still holds its flood protection, ceiling, slots and throughput | Decided by the development agent on 2026-11-26 | (a) Audit at a Bastion concerns the budgets of its place; the flood protection per address, the anonymous ceiling, the slots and the throughput hold in both modes | [ADR-300](#adr-300--a-bastion-is-a-place-of-the-download-limits-configured-from-the-main-installation-and-names-nothing-of-it) |
 
 </details>
 
@@ -12730,10 +12817,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-682 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+685 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 682 questions</summary>
+<summary>Q-UI: 685 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -13419,6 +13506,9 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1395](spec/api-and-ui.md#q-ui-1395--a-downloads-row-names-its-unit-in-the-target-and-opens-in-place) | A download's row names its unit in the target and opens in place | Decided by the development agent on 2026-11-26 on the owner's decision of that day (W33, Q-OPS-437) | (a) The five columns as for an event; the target holds the repository, the unit with its version, its items and bytes, and the chevron before them; the time holds how long it went on | [ADR-297](#adr-297--the-audit-log-shows-a-download-as-one-row-and-keeps-one-event-per-item) |
 | [Q-UI-1396](spec/api-and-ui.md#q-ui-1396--an-opened-download-lists-its-first-ten-items-and-links-all-of-them) | An opened download lists its first ten items and links all of them | Decided by the development agent on 2026-11-26 | (a) The row's first ten items in a list of its own under it (time, path, SHA-256, size), each time opening the item's event in the panel, and **All N items** to the log of the download | — |
 | [Q-UI-1397](spec/api-and-ui.md#q-ui-1397--the-log-of-one-download-lists-its-events-oldest-first-and-offers-no-export) | The log of one download lists its events oldest first and offers no export | Decided by the development agent on 2026-11-26 | (a) The audit log with `?download=`: the download's events, oldest first, one row each, the chip **Download** with the unit's name, no export | [ADR-297](#adr-297--the-audit-log-shows-a-download-as-one-row-and-keeps-one-event-per-item) |
+| [Q-UI-1480](spec/api-and-ui.md#q-ui-1480--a-bastions-card-shows-the-preset-the-mode-and-the-throughput-everything-else-is-behind-details) | A Bastion's card shows the preset, the mode and the throughput; everything else is behind Details | Decided by the development agent on 2026-11-26 | (a) The preset, the mode and the maximum throughput on the card; the figures, slots, ceiling, shares, egress addresses and switches of W-35 behind **Details**; the rules on a page of their own | [ADR-300](#adr-300--a-bastion-is-a-place-of-the-download-limits-configured-from-the-main-installation-and-names-nothing-of-it) |
+| [Q-UI-1481](spec/api-and-ui.md#q-ui-1481--a-preset-is-applied-after-a-dialog-that-names-what-it-replaces) | A preset is applied after a dialog that names what it replaces | Decided by the development agent on 2026-11-26 | (a); the dialog says nothing where the preset changes nothing. | — |
+| [Q-UI-1482](spec/api-and-ui.md#q-ui-1482--the-egress-addresses-warn-with-the-address-of-the-last-contact-and-offer-to-add-it) | The egress addresses warn with the address of the last contact and offer to add it | Decided by the development agent on 2026-11-26 | (a) A warning for an empty list and for a contact from an unlisted address, with **Add** for that address | [ADR-300](#adr-300--a-bastion-is-a-place-of-the-download-limits-configured-from-the-main-installation-and-names-nothing-of-it) |
 
 </details>
 

@@ -1,6 +1,9 @@
 # Usage and limits
 
-Status: specification of walk item W-26 (the owner's decisions of 2026-11-19); built. The code is described in
+Status: specification of walk item W-26 (the owner's decisions of 2026-11-19); built. A Bastion as a place of the rules (W-34, the owner's
+decisions 24 to 28 of 2026-11-26, R-LIM-043 to R-LIM-046, Q-LIM-300 to Q-LIM-309) is specified in [A Bastion as a place](#a-bastion-as-a-place) and **not built**; it
+revises in place R-LIM-001, R-LIM-011, R-LIM-013, R-LIM-018, R-LIM-026, R-LIM-027, R-LIM-029, R-LIM-030 and the list Later, each with a
+marked sentence of what the code does until its package lands. The code is described in
 [docs/developer/usage-and-limits.md](../developer/usage-and-limits.md); what it does not do yet is named on
 [security/usage-and-limits.md](../security/usage-and-limits.md) and below.
 
@@ -91,6 +94,17 @@ unit a person asked for (an image with all its parts, an install), never a singl
 |---|---|---|
 | 23 | "Option A, default darf aber großzügiger sein als 2, wir bauen hier enterprise software für große firmen": the limit of parallel downloads counts every transfer in progress, as before, and is named what it is, `parallelTransfers`, "parallel transfers", wherever a person or a client reads it, with what one pull or install costs; the built-in values are generous, sized for large companies | R-LIM-004, R-LIM-007, R-LIM-010, R-LIM-024, R-LIM-041, [Q-LIM-293](#q-lim-293--the-limit-counts-transfers-and-is-named-parallel-transfers), [Q-LIM-294](#q-lim-294--the-built-in-parallel-transfers-are-set-from-a-measurement-of-the-clients) |
 
+The owner decided five more on 2026-11-26 in his working paper of W-34 and W-35 (stored at 11:51), for a Bastion; the paper's ids are in
+brackets. They are specified and not built ([A Bastion as a place](#a-bastion-as-a-place)):
+
+| # | Decision of the owner, 2026-11-26 | Where |
+|---|---|---|
+| 24 | (k4 c) A Bastion keeps its flood protection per address and adds the download budgets per caller on everything it serves, hits included, in the eleven figures; an anonymous caller is its address | R-LIM-043, [Q-LIM-305](#q-lim-305--a-bastion-protects-per-address-and-budgets-per-subject-on-everything-it-serves) |
+| 25 | (k5 a) A preset per Bastion (Internet, Partner network, Internal), its rule table on demand, two profiles of the Bastion | R-LIM-046, [Q-LIM-300](#q-lim-300--a-preset-per-bastion-rules-on-demand-two-profiles-of-the-bastion) |
+| 26 | (k6 a) Two budgets: what is fetched through a Bastion counts at the Bastion, a forward at the main installation as before; the overview shows both and the sum | R-LIM-045, [Q-LIM-306](#q-lim-306--two-budgets-one-at-the-bastion-one-at-the-main-installation) |
+| 27 | (k7 a) Audit or Enforce per Bastion, beside the instance's switch (adds to decision 17) | R-LIM-044, [Q-LIM-301](#q-lim-301--audit-or-enforce-per-bastion) |
+| 28 | (k11 a) A Bastion's defaults come from measurements of real clients; a new Bastion starts with the preset Internet in Enforce | R-LIM-046, [Q-LIM-303](#q-lim-303--the-defaults-of-a-bastion-come-from-measurements) |
+
 The request figures of the built-in profiles are set from a measurement (Q-LIM-59), their parallel transfers from a measurement
 (Q-LIM-294), and their byte, upstream and refused figures from what the uses each profile promises cost, measured or documented per
 format (R-LIM-042, [Q-LIM-296](#q-lim-296--the-built-in-byte-upstream-and-refused-figures-hold-the-uses-each-profile-promises)): the development agent applied the owner's words of decision 23, said of the parallel figure, to
@@ -106,7 +120,7 @@ every built-in figure that bounds normal use, and tells him so. No built-in figu
 | Window | The time a figure counts over: one second (with a burst, so the window of the request figure is `burst ÷ rate` seconds), one hour, one day. Windows are rolling (R-LIM-018). |
 | Profile | A named set of every figure (R-LIM-010); an empty figure is unlimited. Built-in profiles: Unlimited, Standard, Technical, Restricted, Anonymous; an instance administrator adds own ones. |
 | Assignment (rule) | A place, a "who" (a single user, a single technical token, a CI project, an address or address range, a group, or every caller of a kind), a profile and optional overrides of single figures (R-LIM-011). |
-| Place | Where a rule is set and where its budget counts: the instance, a project, or a repository. |
+| Place | Where a rule is set and where its budget counts: the instance, a project, or a repository; and a Bastion (R-LIM-043, specified on 2026-11-26, not built). |
 | Budget key | A subject together with the place whose rule applied to a request (R-LIM-014). Every counter of a subject is a counter of one budget key. |
 | Ceiling | A remote repository's limit for a class of callers taken together: all anonymous callers, or all signed-in callers (R-LIM-015). |
 | Mode | `audit` or `enforce`, one setting of the instance (R-LIM-026). In Audit every decision is computed and recorded, none applied. |
@@ -169,6 +183,10 @@ place that counts.
 | A scan token of the image scanning's pull on the scan listener (principal kind `system`, name `vuln-scanner-trivy`, the unit that reads, [ha-and-helm.md](ha-and-helm.md#q-ha-373--every-name-an-operator-or-an-auditor-reads-of-a-scanner-unit-carries-its-tool) Q-HA-373; [formats/oci.md](formats/oci.md) R-OCI-037) | `system` | `system` | Recorded under the repository with the credential `vuln-scanner-trivy`; checked against no figure, no ceiling and no block, and it takes no parallel lease ([Q-LIM-66](#q-lim-66--a-scan-tokens-request-is-system-work-recorded-under-its-repository-and-limited-by-nothing)). |
 | A blob token of the malware scanning's read on the scan listener (principal kind `system`, name `malware-scanner-clamav`, the unit that reads; [malware-scanning.md](malware-scanning.md) R-MAL-006) | `system` | `system` | Recorded under the repository the token names, with the credential `malware-scanner-clamav`; checked against nothing ([Q-LIM-80](#q-lim-80--the-malware-scanners-reads-are-recorded-under-the-repository-its-token-names)) |
 
+- *Revised on 2026-11-26 by the owner's decisions 24 and 26 (R-LIM-043, [Q-LIM-305](#q-lim-305--a-bastion-protects-per-address-and-budgets-per-subject-on-everything-it-serves)):*
+  what a Bastion serves from its own cache is charged at the Bastion's place to the same subject the table names (the main installation
+  names its key to the Bastion, `limits_subject`), and reported to the usage store (R-LIM-045); the Bastion row's "not counted here
+  (Later)" goes. *Today, until E8 and E9b land:* what a Bastion serves from its cache is counted nowhere.
 - A subject identifier never contains a token secret or a hash of one.
 - A request on a protocol path whose principal kind is none of the above (a future kind) is charged to the client address until
   this table names it; a test lists the principal kinds of [internal/httpserver/principal.go](../../internal/httpserver/principal.go)
@@ -600,7 +618,8 @@ Priority: **MVP** · Covers: BEYOND-030
 
 An assignment (a rule) gives a profile to a "who" at a place, with optional overrides of single figures.
 
-- **Place**: the instance, a project, or a repository of any class.
+- **Place**: the instance, a project, or a repository of any class. *Revised on 2026-11-26 (R-LIM-043):* and a Bastion, whose rules count
+  what that Bastion serves; the data model below gains `bastion` and `bastion_id`. *Today, until E8 lands:* the three places only.
 - **Who**, exactly one of:
 
 | `who.kind` | Names | Matches |
@@ -698,6 +717,11 @@ For a request with subject S on repository R of project P (owner, decision 16):
    3. **The kind**: the `every` rule of the place for `administrator` if S is one, else for S's kind. If one exists, it applies;
       stop.
 4. The instance place always holds the built-in `every` rules (R-LIM-012), so resolution ends at the latest there.
+
+*Revised on 2026-11-26 (R-LIM-043, [Q-LIM-302](#q-lim-302--the-main-installation-resolves-a-signed-in-callers-rule-the-bastion-the-address-and-kind-rules)):*
+what a Bastion serves is resolved at the Bastion's place alone, its administrators included, and ends at the kind rules its preset wrote;
+the main installation resolves a signed-in caller's rule there and names it to the Bastion, which resolves address and kind rules itself.
+*Today, until E8 and E9b land:* the steps above, at the main installation's places only.
 
 The place at which resolution stopped is the request's **place**; the budget key is S at that place (R-LIM-014). Rules of a further
 place are not looked at: a repository rule replaces the instance's for that repository, also with higher figures (owner,
@@ -937,7 +961,9 @@ Priority: **MVP** · Covers: BEYOND-030
     and after the drop of the same lease, which keeps its place as long ([Q-LIM-95](#q-lim-95--a-lease-is-given-up-in-both-places-it-may-be-held-and-a-drop-valkey-did-not-take-is-sent-again-until-the-leases-end)).
   - Bytes per second: R-LIM-023.
 - **What is not promised**: exact accounting of a window in which Valkey failed over or was unreachable (R-LIM-019), and
-  any figure of a request that Quader never saw (a Bastion's cache hit).
+  any figure of a request that Quader never saw (a Bastion's cache hit). *Revised on 2026-11-26 (R-LIM-043):* a Bastion's hit is counted at
+  the Bastion's place with the same windows, in the Bastion's memory or, with its Valkey, across its replicas; the main installation's
+  counters never see it. *Today, until E9b lands:* nothing counts it.
 
 ### R-LIM-019 · Valkey or PostgreSQL unreachable
 Priority: **MVP** · Covers: BEYOND-030
@@ -1343,6 +1369,9 @@ Priority: **MVP** · Covers: BEYOND-030
   management API (R-API-016's `read`, `write`, `anonymous`), of the sign-in and of the token endpoints are not modes of this page
   and hold. Switching to `audit` is therefore the step that removes protection, and its dialog says so (R-UI-182).
 - A new instance starts in `enforce` (decision 17).
+- *Revised on 2026-11-26 by the owner's decision 27 ([Q-LIM-301](#q-lim-301--audit-or-enforce-per-bastion)):* each Bastion has a mode of its
+  own (R-LIM-044), which decides its place; this setting decides the main installation's places, a forward of a Bastion included. *Today,
+  until E8 and E9b land:* this one setting, which no Bastion reads.
 - Switching from `audit` to `enforce` does not reset a counter: a subject over a limit is refused at its next request.
 
 Data model: `limit_settings` (one row): `mode text NOT NULL DEFAULT 'enforce' CHECK (mode IN ('audit','enforce'))`,
@@ -1440,6 +1469,9 @@ CREATE UNIQUE INDEX usage_daily_summary_key ON usage_daily_summary (day, reposit
 A deleted repository takes its rows with it; a moved repository keeps them, and the overview of a project reads them through the
 repository's current project.
 
+*Revised on 2026-11-26 (R-LIM-045):* the rows a Bastion reports are written with the place `bastion:<bastion ID>`, the five-minute row and
+its hour, and fold into the daily sums like every row. *Today, until E8 lands:* no row has a Bastion's place.
+
 `via_repository_id` is the virtual repository the client addressed when the repository that served is a well-known repository of the
 project `upstream` and the virtual repository belongs to another project; null otherwise
 ([Q-LIM-63](#q-lim-63--the-usage-of-a-well-known-member-through-a-teams-virtual-repository-is-recorded-with-that-virtual-repository)).
@@ -1505,6 +1537,10 @@ Priority: **MVP** · Covers: BEYOND-030
 
 A member who is not Owner sees nothing of the project's usage but its own.
 
+*Revised on 2026-11-26 (R-LIM-045):* a Bastion's rows are rows of the repository they name, so each reader above sees them as rows of that
+repository, with their place; a Bastion's status is not usage and is shown to the holders of `endpoints:read`. *Today, until E8 lands:* no
+row comes from a Bastion.
+
 ### R-LIM-030 · Metrics, logs and audit events
 Priority: **MVP** · Covers: BEYOND-030
 
@@ -1527,7 +1563,9 @@ Priority: **MVP** · Covers: BEYOND-030
   `limit_mode` (until now filled by the Bastion only) and gains `limits_subject` (`user:<id>`, `technical_token:<id>`,
   `ci:<issuer>:<project ID>`, `certificate:<subject>`, `anonymous:<prefix>`), `limits_place` (`instance`, `project:<key>`, `repository:<projectKey>/<repoKey>`),
   `limits_rule` (the assignment's ID or `builtin:<kind>`), `limits_outcome` (`admitted`, `limited:<figure>`, `would_limit:<figure>`,
-  `paced`, `blocked`), `bytes_cached` and `bytes_uncached`.
+  `paced`, `blocked`), `bytes_cached` and `bytes_uncached`. *Revised on 2026-11-26 (R-LIM-043):* `limits_subject` is also named to a Bastion,
+  in the check answer and the marking (`Quader-Bastion-Limits`), so that it charges the same subject; `limits.assignment.*` of a Bastion's
+  rule names `place: bastion:<name>`. *Today, until E7 and E8 land:* the key stays in the request log.
 - **Audit events** (R-OPS-016, all transactional unless marked):
 
 | Event | Recorded when | Key fields in `details` |
@@ -1543,6 +1581,152 @@ Priority: **MVP** · Covers: BEYOND-030
 
 Events of technical tokens and repository service accounts are on [identity-and-authentication.md](identity-and-authentication.md)
 R-AUTH-045 and R-AUTH-046.
+
+## A Bastion as a place
+
+Specified on 2026-11-26 from the owner's decisions 24 to 28 (W-34; [bastion.md](bastion.md#limits-configuration-and-throughput-from-the-main-installation)
+holds the Bastion's side, R-BAS-093 to R-BAS-099). **Not built**: each requirement names its package of the build plan
+[developer/bastion-limits.md](../developer/bastion-limits.md). His task of 10:40: "Intern könnten die Limits deaktiviert sein und auf dem
+Bastion könnten sie deutlich eingeschränkt sein um Missbrauch der Registry über das offene Internet zu vermeiden oder zumindest
+abzuschwächen."
+
+### R-LIM-043 · The Bastion place
+Priority: **MVP** · Covers: BEYOND-030
+
+A Bastion is a place of the rules of its own ([Q-LIM-304](#q-lim-304--a-bastion-is-a-place-of-the-rules-beside-the-instance)), one per
+registration: its rules decide and its counters count what that Bastion serves, hits and misses, and nothing else. The main installation's
+places keep deciding what the main installation serves, a forward of a Bastion included (two budgets,
+[Q-LIM-306](#q-lim-306--two-budgets-one-at-the-bastion-one-at-the-main-installation)).
+
+- **Who**: the six kinds of R-LIM-011 (a single user, technical token or CI project, an address or a range, a group, every caller of a
+  kind). `every` `administrator` exists at a Bastion place as at the instance, since a preset decides administrators there (R-LIM-046).
+- **Resolution** at a Bastion place: step 3 of R-LIM-013 at the Bastion place alone; an administrator is decided there too, not at the
+  instance (step 1 applies to the main installation's places). The place always holds the five kind rules a preset wrote (R-LIM-046), so
+  resolution ends there and never falls through to the instance. The main installation resolves a signed-in caller's rule, the Bastion the
+  address and kind rules ([Q-LIM-302](#q-lim-302--the-main-installation-resolves-a-signed-in-callers-rule-the-bastion-the-address-and-kind-rules)).
+- **The budget key** is `<subject>@bastion:<bastion ID>`; the request log's `limits_place` of a forward stays the main installation's
+  place, and a Bastion's report names `bastion:<bastion ID>` (R-LIM-045).
+- **API**: `GET` and `POST /api/v1/bastions/{name}/limits/assignments`, `GET`, `PATCH` and `DELETE …/assignments/{id}`, with the bodies of
+  R-LIM-032 and `limits:read` or `limits:write`; a project Owner has no right here, since a Bastion belongs to no project, and R-LIM-016's
+  caps do not apply. A kind rule a preset wrote is `builtin` at its place: changed, never deleted (`409 assignment_builtin`).
+- **A change** of a rule of the place, or of a profile one of its rules names, writes `limits.assignment.*` with `place: bastion:<name>` and
+  raises the registration's revision, which reaches the Bastion within about 3 s ([bastion.md](bastion.md) R-BAS-093).
+
+Data model (migration 00148 of package E8):
+
+```sql
+ALTER TABLE limit_assignment
+  ADD COLUMN bastion_id uuid NULL REFERENCES bastion (principal_id) ON DELETE CASCADE,
+  DROP CONSTRAINT limit_assignment_place_kind_check,
+  ADD CHECK (place_kind IN ('instance', 'project', 'repository', 'bastion'));
+-- the place check gains: OR (place_kind = 'bastion' AND bastion_id IS NOT NULL AND project_id IS NULL AND repository_id IS NULL),
+-- and the other three rows require bastion_id IS NULL; the unique index limit_assignment_who gains bastion_id.
+```
+
+*Not built* (package E8, the place, its API and the resolution of signed-in callers; E9b, the resolution of address and kind rules at the
+Bastion). Today `place_kind` is `instance`, `project` or `repository`, and nothing counts what a Bastion serves from its cache.
+
+Acceptance criteria:
+
+- Unit (`internal/limits`, milliseconds): a rule for a technical token at the Bastion place `partners` applies to that token through
+  `partners` and not at the main installation; an administrator through `partners` under the preset Internet gets "Bastion: signed-in";
+  an anonymous `/24` rule at the place wins over the kind rule for an address inside it.
+- Integration (area `limits`, about 4 s): the assignments API at a Bastion place with `limits:write`, `403` without it, `404` for a name
+  that is no registration; deleting the registration deletes its rules.
+
+### R-LIM-044 · The mode per Bastion
+Priority: **MVP** · Covers: BEYOND-030
+
+The owner's choice (a) of [Q-LIM-301](#q-lim-301--audit-or-enforce-per-bastion): each Bastion has its own Audit or Enforce, independent of
+the instance's (R-LIM-026). "Off internally, strict at the Bastion" is the instance in Audit and the Bastion in Enforce with the preset
+Internet.
+
+- `limits.mode` of the registration ([bastion.md](bastion.md) R-BAS-093), `enforce` for a new one, changed with `limits:write`, `If-Match`
+  and recent authentication (R-API-007), as the instance's mode; recorded in `bastion.configuration.changed` with the part `mode` and its
+  before and after.
+- **In Audit at a Bastion** every figure of the Bastion place is counted and every decision computed and reported as `would_limit`
+  (R-LIM-045); none refuses or slows. The flood protection per address, the anonymous ceiling, the slots and the throughput are not modes
+  of this page and hold ([Q-LIM-309](#q-lim-309--in-audit-a-bastion-still-holds-its-flood-protection-ceiling-slots-and-throughput)).
+- The instance's mode decides the main installation's places, also for a forward of a Bastion; the Bastion's mode decides its own place.
+- Further endpoints get no place and no mode of their own: their bound technical tokens are named by rules already, and an installation
+  that runs a partner endpoint expresses "off internally" with Unlimited kind rules rather than with Audit.
+- The Bastion exports `quader_bastion_limits_mode` (1 Enforce, 0 Audit).
+
+*Not built* (packages E8 and E9b). Today a Bastion has no mode: its per-address figures always refuse (R-BAS-035), and the instance's mode
+does not reach it.
+
+Acceptance criteria:
+
+- Unit (`internal/bastion/engine`, part of R-BAS-096's 2 s): a Bastion in Audit serves a subject past its `cachedBytesPerHour` and reports
+  one `would_limit`, while an address past the flood figure is refused; the same in Enforce refuses.
+- Unit (`internal/api/v1`): the mode changes with `limits:write` and recent authentication, `403` with `endpoints:write` alone.
+
+### R-LIM-045 · The usage a Bastion reports
+Priority: **MVP** · Covers: BEYOND-030
+
+The owner's choice (b) of [bastion.md](bastion.md) [Q-BAS-324](bastion.md#q-bas-324--a-bastion-reports-usage-and-status-on-the-channel-of-its-download-events):
+a Bastion reports its usage and its state on the channel of its download events.
+
+- **What a Bastion sends**: the batch of [bastion.md](bastion.md) R-BAS-016 gains `usage` (rows per subject key, credential, repository and
+  rule in buckets of five minutes: requests, refused requests, cached bytes, uncached bytes, upstream requests, and the limit events per
+  figure as `limited` or `wouldLimit`) and `status` (per replica: the cache's fill and capacity, hits, misses, evictions, the protected
+  share, the throughput's state and rate per class, the counts of limited and blocked callers, and at most 100 active blocks). The bounds
+  are [Q-LIM-308](#q-lim-308--a-bastions-usage-report-is-bounded-per-batch-and-folds-the-rest-into-an-overflow-row).
+- **What the main installation writes**: the usage rows into `usage_bucket` and `usage_limit_event` (R-LIM-027) at the place
+  `bastion:<bastion ID>`, the five-minute row as reported and the hourly row it falls in, through the replica's usage buffer (R-LIM-028);
+  the subject from the key, the repository by its qualified name (a name that no longer exists is recorded without a repository), the
+  credential as R-LIM-027 says. The status replaces the replica's row of the transient table `bastion_status` (`bastion_id`, `replica`,
+  `reported_at`, `status jsonb`; export class transient, not in a backup), deleted with the replica's contact (R-BAS-010).
+- **What a reader sees**: the overview's rows and a subject's detail list the consumption per place, a Bastion's place among them, and the
+  sum (decision 15's pattern, Q-LIM-306); the place filter of the overview ([api-and-ui.md](api-and-ui.md) R-UI-242); the card's live state
+  ([api-and-ui.md](api-and-ui.md) R-UI-240), read from `GET /api/v1/bastions/{name}` as `status` per replica.
+- **Who sees it** is R-LIM-029's rule: a Bastion's rows are rows of the repository they name, so a project Owner reads its repositories'
+  consumption through a Bastion; the status is shown to the holders of `endpoints:read`.
+- No new route and no new background task at the Bastion.
+
+*Not built* (package E8, the intake, the store and the status table; E9b, the Bastion's usage buffer). Today a batch carries download
+events only, and the usage store holds nothing a Bastion served from its cache.
+
+Acceptance criteria:
+
+- Unit (`internal/bastionmain`, part of E8's 1.5 s): a batch with three usage rows and one overflow row is written at the place
+  `bastion:<id>` and the status replaces the replica's row; a key above the bound lands in the overflow row.
+- Integration (area `bastionreg`, part of its 3 s): a batch through the operation reaches `usage_bucket` and `bastion_status`.
+
+### R-LIM-046 · The Bastion's profiles and presets
+Priority: **MVP** · Covers: BEYOND-030
+
+The owner's choices (a) of [Q-LIM-300](#q-lim-300--a-preset-per-bastion-rules-on-demand-two-profiles-of-the-bastion) and (a) of
+[Q-LIM-303](#q-lim-303--the-defaults-of-a-bastion-come-from-measurements).
+
+- **Two built-in profiles**: "Bastion: anonymous" (`bastion-anonymous`) and "Bastion: signed-in" (`bastion-signed-in`), built-ins of
+  R-LIM-010 (not deleted, not renamed, their figures changeable). Their figures are set from the measurement E4: the bytes, transfers and
+  misses of one normal command of every client through a cold and through a warm Bastion (`npm ci` of 475 packages, `dotnet restore`,
+  `docker` and `podman` pulls of a small image, of 1 GB and of 40 layers, `apt-get`, `ansible-galaxy`, `freshclam`, `curl`), with a third
+  or more of room as Q-LIM-296 sizes the main installation's profiles. The request figures of "Bastion: anonymous" also hold a polite crawl
+  of W-35's web interface; that package measures how many requests a page view and a catalogue page take.
+- **Three presets**, each writing the five kind rules of the place, the flood figures and the mode:
+
+| Preset | `every` `anonymous` | `every` `user` | `every` `technicalToken`, `every` `ci` | `every` `administrator` | Flood figures per address | Mode |
+|---|---|---|---|---|---|---|
+| Internet (`internet`) | Bastion: anonymous | Bastion: signed-in | Bastion: signed-in | Bastion: signed-in | anonymous 50/s, burst 1,000, 1,000 misses a minute; signed-in 200/s, burst 4,000, 4,000 misses a minute; `gui` 20/s, burst 100; R-BAS-036's and R-BAS-037's figures | Enforce |
+| Partner network (`partnerNetwork`) | Anonymous | Standard | Technical | Unlimited | as Internet | Enforce |
+| Internal (`internal`) | Unlimited | Unlimited | Unlimited | Unlimited | as Internet | Enforce |
+
+  Unlimited still counts (R-LIM-010); Standard and Technical are W36's figures (Q-LIM-296).
+- **Applying a preset** replaces the five kind rules' profiles and overrides, the flood figures and the mode; rules of single callers,
+  groups and addresses stay. The registration's `preset` reads `custom` once a kind rule or a flood figure differs from its preset's.
+- **A new registration** starts with Internet in Enforce, the slots of R-BAS-025, the anonymous ceiling E4 sets, and an unlimited
+  throughput.
+
+*Not built* (the measurement E4 first; package E8, the profiles and the kind rules in migration 00148). Today the main installation's five
+built-in profiles exist and a Bastion has none.
+
+Acceptance criteria:
+
+- Unit (`internal/limits`, milliseconds, no data): at the figures of "Bastion: anonymous" and "Bastion: signed-in", every command of E4's
+  table passes a cold Bastion from one address, with the room named; each preset writes the table's kind rules and flood figures.
+- Integration (area `limits`, part of E8's 4 s): migration 00148 writes the two profiles and, for each registration, the Internet kind rules.
 
 ## API
 
@@ -1999,7 +2183,8 @@ Not part of this step, named by the owner on 2026-11-19 or by this page:
 - **Uploads** as figures (bytes and requests of writes); until then `package_write` of R-API-016 bounds writes on protocol paths.
 - **The storage quota** of a repository and of a project ([storage.md](storage.md) R-STOR-029, R-STOR-049).
 - **The Bastion's own limits**: what a Bastion serves from its cache is not counted on the main installation; the Bastion keeps its
-  blocking stages ([bastion.md](bastion.md)).
+  blocking stages ([bastion.md](bastion.md)). *Taken up by the owner on 2026-11-26 (decisions 24 to 28) and specified in [A Bastion as a place](#a-bastion-as-a-place),
+  not built.*
 - **A monthly window.**
 
 ## Security notes
@@ -3569,10 +3754,163 @@ figure that counts the upstream's pulls is decided.
 
 **Applied in the spec:** R-LIM-010; the manual's [built-in profiles](../manual/admin/download-limits.md#the-built-in-profiles).
 
+### Q-LIM-300 · A preset per Bastion, rules on demand, two profiles of the Bastion
+
+Status: **Decided by the owner on 2026-11-26** — option (a) of his working paper (k5), stored at 11:51 (decision 25).
+
+Context: simple first, details on demand (CLAUDE.md); a Bastion faces the internet, the main installation's callers sit in the company.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A preset per Bastion, rules on demand (chosen) | Internet, Partner network or Internal fills everything; "Details" opens this Bastion's rule table as at every other place: a single user, a group, a technical token, an address; two new profiles "Bastion: anonymous" and "Bastion: signed-in" | One click in the normal case; a partner's token can get a rule of its own | The Bastion's rule table travels with the handshake |
+| (b) Two profiles per Bastion | Anonymous and signed-in, with overrides | Less to build | No rule for a single partner |
+| (c) A factor on the main installation's figures | "×0.1" | One number | Unlimited times a factor stays unlimited |
+
+**Choice:** (a), the owner's decision. The paper's reasoning, which he took with it: under the preset Internet an administrator's token gets
+"Bastion: signed-in", not Unlimited, since a leaked administrator token on the internet is the worst case; Partner network and Internal give
+administrators Unlimited. **Applied in the spec:** R-LIM-011, R-LIM-013, R-LIM-043, R-LIM-046, [bastion.md](bastion.md) R-BAS-093, R-BAS-096,
+[api-and-ui.md](api-and-ui.md) R-UI-240, R-UI-241.
+
+### Q-LIM-301 · Audit or Enforce per Bastion
+
+Status: **Decided by the owner on 2026-11-26** — option (a) of his working paper (k7), stored at 11:51 (decision 27).
+
+Context: his sentence of 10:40, "Intern könnten die Limits deaktiviert sein und auf dem Bastion könnten sie deutlich eingeschränkt sein";
+the instance has one switch Audit/Enforce (decision 17).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A switch Audit/Enforce per Bastion (chosen) | The instance in Audit (everything counted, nothing limited), Bastion B in Enforce with the preset Internet | His sentence in two clicks; internally it stays visible who would have been limited | Adds a switch per Bastion to his decision "one switch for the instance" |
+| (b) Rules only | The instance's rules on Unlimited | Nothing new | "Off" is then a rule, not a switch |
+| (c) Presets also for the main installation's own endpoints | | Symmetric | Larger than the task |
+
+**Choice:** (a), the owner's decision; it adds to decision 17. **Applied in the spec:** R-LIM-026, R-LIM-044, [bastion.md](bastion.md)
+R-BAS-093.
+
+### Q-LIM-302 · The main installation resolves a signed-in caller's rule, the Bastion the address and kind rules
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-LIM-013 resolves by the single caller, then the caller's groups, then the kind. The Bastion holds no group and no principal
+(R-BAS-001); the main installation answers every signed-in caller's check and marks every forward.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The main installation names the applying rule's ID in the check answer and the marking; the Bastion resolves the address and kind rules from the place's table (chosen) | One member and one header; the table in the handshake | The groups never leave the main installation; an anonymous caller costs no request | A changed membership reaches the Bastion's charge with the caller's next answer, within the answer period (H-2284) |
+| (b) The handshake carries every rule with its "who", the groups' members included | The Bastion resolves everything | No member in the check | Membership lists of the main installation in a DMZ |
+| (c) The Bastion asks per request | | Always current | A request to the main installation per hit, against Q-BAS-326 |
+
+**Choice:** (a). **Applied in the spec:** R-LIM-043, [bastion.md](bastion.md) R-BAS-096, the wire of interface version 8.
+
+### Q-LIM-303 · The defaults of a Bastion come from measurements
+
+Status: **Decided by the owner on 2026-11-26** — option (a) of his working paper (k11), stored at 11:51 (decision 28).
+
+Context: his rule of the same morning (decision 23): enterprise software, generous defaults, and at the internet clearly restricted.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) From measurements of real clients (chosen) | Flood protection per address: anonymous 50/s with a burst of 1,000, signed-in 200/s with a burst of 4,000 (a normal command passes); the Bastion profiles from the measured bytes and misses of one normal command per format; Partner network: the main installation's profiles; Internal: unlimited, counted; throughput unlimited until he sets a figure; a new Bastion starts with Internet and Enforce | As the main installation's request figures; nothing guessed | A measurement first |
+| (b) Reuse the existing profiles | Anonymous and Restricted, unchanged | Nothing to measure | Twenty misses an hour (then) refused a cold `docker pull` already |
+| (c) Partner network as the default | | Generous | Not "clearly restricted" at the internet |
+
+**Choice:** (a), the owner's decision. The anonymous ceiling holds N cold anonymous commands at once, N from the same measurement.
+**Applied in the spec:** R-LIM-046, [bastion.md](bastion.md) R-BAS-092 (its flood figures, unchanged), R-BAS-093, R-BAS-094.
+
+### Q-LIM-304 · A Bastion is a place of the rules, beside the instance
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the owner's Q-LIM-300 wants "this Bastion's rule table as at every other place", and Q-LIM-306 two budgets.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A fourth place kind `bastion`, one per registration, resolved alone (chosen) | `limit_assignment.place_kind = 'bastion'` with `bastion_id` | The rule table, the API and the screens of the other places serve it; the budget key names it; nothing of the instance leaks into it by fall-through | Resolution at a Bastion has no project or repository step |
+| (b) A condition "through Bastion B" on rules of the main installation's places | | One rule table | Every rule gains a dimension; the Bastion would need the whole table |
+| (c) The Bastion as an endpoint | | Endpoints exist | An endpoint is a listener of the main installation, and owner's D7 gives further endpoints no place |
+
+**Choice:** (a). A rule for a repository through a Bastion is not offered: a Bastion's budget is the caller's at that door. **Applied in the
+spec:** R-LIM-011, R-LIM-013, R-LIM-043.
+
+### Q-LIM-305 · A Bastion protects per address and budgets per subject, on everything it serves
+
+Status: **Decided by the owner on 2026-11-26** — option (c) of his working paper (k4), stored at 11:51 (decision 24).
+
+Context: a Bastion counted requests and misses per address only; no bytes, no parallel transfers, and a hit was counted nowhere.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Per address only, plus bytes | GB per hour, MB/s and parallel per address | Small | Partners behind one NAT share a budget; a token from many addresses is unlimited |
+| (b) Per caller only | Everything hangs on the token | One key | Loses the protection that works before a credential is checked |
+| (c) Both (chosen) | Flood protection per address as today; the download budgets per caller on everything the Bastion delivers, hits included, in the same eleven figures as at the main installation; an anonymous caller is its address | One model in the whole product; stops mass download from the cache and bounds the cache attack per caller | The Bastion must learn from the main installation who the caller is |
+
+**Choice:** (c), the owner's decision. **Applied in the spec:** R-LIM-001, R-LIM-018, R-LIM-043, [bastion.md](bastion.md) R-BAS-035, R-BAS-059,
+R-BAS-096.
+
+### Q-LIM-306 · Two budgets: one at the Bastion, one at the main installation
+
+Status: **Decided by the owner on 2026-11-26** — option (a) of his working paper (k6), stored at 11:51 (decision 26).
+
+Context: does what a caller fetches through a Bastion count against the same budget as internally?
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Two (chosen) | What is fetched through Bastion B counts at B; the main installation charges a forward to the caller as today; the overview shows both and the sum | His pattern of the repository rules (consumption counts where the rule holds, decision 15); no question back per hit | A forward counts in both budgets |
+| (b) One | The Bastion reads the main installation's counters per hit | Exact | A question back per hit makes the Bastion pointless |
+| (c) Two, but the main installation exempts forwards | Only the Bastion's budget holds | No double refusal | A faulty or taken-over Bastion evades the main installation's figures |
+
+**Choice:** (a), the owner's decision. **Applied in the spec:** R-LIM-014's pattern, R-LIM-027, R-LIM-043, R-LIM-045, [bastion.md](bastion.md)
+R-BAS-059, R-BAS-096.
+
+### Q-LIM-307 · Pages of the web interface are a request class of their own per address
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough. It
+was listed for his objection on the working paper ("Seitenaufrufe der GUI bekommen eine eigene Anfrage-Klasse je Adresse … und zählen nie
+als Miss").
+
+Context: W-35 adds pages at the Bastion; a first page view takes 8 to 12 requests (that plan's estimate), behind a corporate NAT many people
+share an address, and a page never reaches the main installation.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A class `gui` of the flood protection per address, beside `anonymous` and `authenticated`, never a miss; its bytes counted as documents of the anonymous subject (chosen) | 20 requests a second with a burst of 100 per address until W-35 measures a page | A crawler and the package API do not share a budget; a page view never takes from the ceiling, the slots or the throughput | One more figure pair |
+| (b) The anonymous class | | Nothing new | A burst of package clients and a reader of pages behind one NAT take from one budget |
+
+**Choice:** (a). **Applied in the spec:** R-LIM-046, [bastion.md](bastion.md) R-BAS-035, R-BAS-093, R-BAS-096.
+
+### Q-LIM-308 · A Bastion's usage report is bounded per batch and folds the rest into an overflow row
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: an anonymous flood from many addresses makes as many subjects; the main installation's own buffer holds at most 100,000 keys and
+folds the rest (R-LIM-028).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The same bound in the Bastion's buffer: 100,000 keys per batch window, the rest in an overflow row per repository and subject kind, with the number of subjects it folded (chosen) | One rule at both doors | Memory and the batch stay bounded whatever the flood | The overview cannot name the callers of the overflow |
+| (b) No bound | | Every subject named | A flood of addresses grows the Bastion's memory and the main installation's store without bound |
+
+**Choice:** (a). **Applied in the spec:** R-LIM-045, [bastion.md](bastion.md) the wire of interface version 8.
+
+### Q-LIM-309 · In Audit a Bastion still holds its flood protection, ceiling, slots and throughput
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: in Audit at the main installation nothing on a protocol path is refused (Q-LIM-4), which the owner accepted for an installation
+inside the company. A Bastion faces the internet and bears its attacks alone (his words of 10:55).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Audit at a Bastion concerns the budgets of its place; the flood protection per address, the anonymous ceiling, the slots and the throughput hold in both modes (chosen) | | A Bastion in Audit is still protected against a flood and still protects the main installation | Audit is not "nothing refused" at a Bastion, as it is at the instance |
+| (b) Audit at a Bastion refuses nothing at all | Q-LIM-4's rule | One meaning of Audit | A Bastion in Audit is open to any flood and passes it on to the main installation |
+
+**Choice:** (a). **Applied in the spec:** R-LIM-044, [bastion.md](bastion.md) R-BAS-037, R-BAS-096.
+
 ## What this does not cover
 
 - The protocol gaps for the owner: [Gaps of the protocols](#gaps-of-the-protocols).
-- The perspective and its own gaps (H-1010 to H-1012, H-1014, H-1015): [security/usage-and-limits.md](../security/usage-and-limits.md).
+- The perspective and its own gaps (H-1010 to H-1012, H-1014, H-1015; for a Bastion's budgets, specified and not built, H-2284 and H-2286
+  to H-2288): [security/usage-and-limits.md](../security/usage-and-limits.md).
 
 ### H-1005 · Counters lost in a Valkey outage or failover give a subject up to one more window of every budget
 

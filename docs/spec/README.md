@@ -73,6 +73,10 @@ Given by the project owner; not up for redesign in these pages:
   short, bounded time; it holds no copy of users, tokens or policies (owner, 2026-10-31). It has no web interface, is
   configured only through its chart, and talks to the main installation only when both speak the same interface version
   (owner, 2026-11-02; [ADR-142](../decisions.md#adr-142--the-quader-bastion-an-internet-facing-read-only-cache-instance-in-the-beta)).
+  *Revised by the owner on 2026-11-26 (specified, not built):* its limits, its throughput and its switches are set on its card at the main
+  installation and reach it with the handshake, it refuses writes itself, and it names nothing of the main installation
+  ([ADR-300](../decisions.md#adr-300--a-bastion-is-a-place-of-the-download-limits-configured-from-the-main-installation-and-names-nothing-of-it),
+  [bastion.md](bastion.md#limits-configuration-and-throughput-from-the-main-installation)); the chart keeps what the installation sizes.
 
 ## Design invariants
 

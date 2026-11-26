@@ -15,8 +15,8 @@ rendered from it ([checklist.md there](https://github.com/guided-traffic/quader/
 requirement lists the feature in its `Covers:` line. *open*: no requirement does. For entries with priority
 *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,324 spec requirements:
-800 cover catalog features, 524 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,339 spec requirements:
+806 cover catalog features, 533 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -1201,7 +1201,7 @@ Catalog page: [distribution-and-lifecycle.md](../features/distribution-and-lifec
 | DIST-021 | Promotion rollback | Later | open | – |
 | DIST-022 | Promotion records and queries | Later | open | – |
 | DIST-023 | Security scan gate for release sets | Later | open | – |
-| DIST-024 | Distribution topology and edge instances | MVP | specified | [R-BAS-001](../spec/bastion.md), [R-BAS-002](../spec/bastion.md), [R-BAS-003](../spec/bastion.md), [R-BAS-045](../spec/bastion.md), [R-BAS-046](../spec/bastion.md), [R-BAS-050](../spec/bastion.md), [R-BAS-051](../spec/bastion.md), [R-BAS-053](../spec/bastion.md), [R-BAS-055](../spec/bastion.md) |
+| DIST-024 | Distribution topology and edge instances | MVP | specified | [R-BAS-001](../spec/bastion.md), [R-BAS-002](../spec/bastion.md), [R-BAS-003](../spec/bastion.md), [R-BAS-045](../spec/bastion.md), [R-BAS-046](../spec/bastion.md), [R-BAS-050](../spec/bastion.md), [R-BAS-051](../spec/bastion.md), [R-BAS-053](../spec/bastion.md), [R-BAS-055](../spec/bastion.md), [R-BAS-093](../spec/bastion.md) |
 | DIST-025 | Trust between source and edge instances | MVP | specified | [R-BAS-004](../spec/bastion.md), [R-BAS-005](../spec/bastion.md), [R-BAS-006](../spec/bastion.md), [R-BAS-052](../spec/bastion.md) |
 | DIST-026 | Signing key propagation to targets | Later | open | – |
 | DIST-027 | Distribute a release set version | Later | open | – |
@@ -2956,7 +2956,7 @@ Catalog page: [beyond-baseline.md](../features/beyond-baseline.md) · specified 
 | BEYOND-027 | Minimum release age for remote repositories | P1 | open | – |
 | BEYOND-028 | Namespace claims against dependency confusion | P1 | specified | [R-REPO-023](../spec/repositories-and-proxy.md), [R-REPO-048](../spec/repositories-and-proxy.md) |
 | BEYOND-029 | Cache pre-warming from lockfiles and SBOMs | P2 | open | – |
-| BEYOND-030 | Per-tenant quotas and rate limits | MVP | specified | [R-API-016](../spec/api-and-ui.md), [R-API-082](../spec/api-and-ui.md), [R-UI-177](../spec/api-and-ui.md), [R-UI-178](../spec/api-and-ui.md), [R-UI-179](../spec/api-and-ui.md), [R-UI-180](../spec/api-and-ui.md), [R-UI-181](../spec/api-and-ui.md), [R-UI-182](../spec/api-and-ui.md), [R-UI-183](../spec/api-and-ui.md), [R-UI-184](../spec/api-and-ui.md), [R-UI-185](../spec/api-and-ui.md), [R-UI-186](../spec/api-and-ui.md), [R-AUTHZ-039](../spec/authorization.md), [R-AUTHZ-040](../spec/authorization.md), [R-EP-015](../spec/endpoints.md), [R-AUTH-046](../spec/identity-and-authentication.md), [R-AUTH-045](../spec/identity-and-authentication.md), [R-LIM-001](../spec/usage-and-limits.md), [R-LIM-002](../spec/usage-and-limits.md), [R-LIM-003](../spec/usage-and-limits.md), [R-LIM-004](../spec/usage-and-limits.md), [R-LIM-005](../spec/usage-and-limits.md), [R-LIM-006](../spec/usage-and-limits.md), [R-LIM-007](../spec/usage-and-limits.md), [R-LIM-008](../spec/usage-and-limits.md), [R-LIM-009](../spec/usage-and-limits.md), [R-LIM-010](../spec/usage-and-limits.md), [R-LIM-011](../spec/usage-and-limits.md), [R-LIM-012](../spec/usage-and-limits.md), [R-LIM-013](../spec/usage-and-limits.md), [R-LIM-014](../spec/usage-and-limits.md), [R-LIM-015](../spec/usage-and-limits.md), [R-LIM-016](../spec/usage-and-limits.md), [R-LIM-017](../spec/usage-and-limits.md), [R-LIM-018](../spec/usage-and-limits.md), [R-LIM-019](../spec/usage-and-limits.md), [R-LIM-020](../spec/usage-and-limits.md), [R-LIM-021](../spec/usage-and-limits.md), [R-LIM-022](../spec/usage-and-limits.md), [R-LIM-023](../spec/usage-and-limits.md), [R-LIM-024](../spec/usage-and-limits.md), [R-LIM-040](../spec/usage-and-limits.md), [R-LIM-041](../spec/usage-and-limits.md), [R-LIM-042](../spec/usage-and-limits.md), [R-LIM-025](../spec/usage-and-limits.md), [R-LIM-026](../spec/usage-and-limits.md), [R-LIM-027](../spec/usage-and-limits.md), [R-LIM-028](../spec/usage-and-limits.md), [R-LIM-029](../spec/usage-and-limits.md), [R-LIM-030](../spec/usage-and-limits.md), [R-LIM-031](../spec/usage-and-limits.md), [R-LIM-032](../spec/usage-and-limits.md), [R-LIM-033](../spec/usage-and-limits.md), [R-LIM-034](../spec/usage-and-limits.md), [R-LIM-035](../spec/usage-and-limits.md), [R-LIM-036](../spec/usage-and-limits.md), [R-LIM-037](../spec/usage-and-limits.md), [R-LIM-038](../spec/usage-and-limits.md), [R-LIM-039](../spec/usage-and-limits.md) |
+| BEYOND-030 | Per-tenant quotas and rate limits | MVP | specified | [R-API-016](../spec/api-and-ui.md), [R-API-082](../spec/api-and-ui.md), [R-UI-177](../spec/api-and-ui.md), [R-UI-178](../spec/api-and-ui.md), [R-UI-179](../spec/api-and-ui.md), [R-UI-180](../spec/api-and-ui.md), [R-UI-181](../spec/api-and-ui.md), [R-UI-182](../spec/api-and-ui.md), [R-UI-183](../spec/api-and-ui.md), [R-UI-184](../spec/api-and-ui.md), [R-UI-185](../spec/api-and-ui.md), [R-UI-186](../spec/api-and-ui.md), [R-AUTHZ-039](../spec/authorization.md), [R-AUTHZ-040](../spec/authorization.md), [R-BAS-096](../spec/bastion.md), [R-EP-015](../spec/endpoints.md), [R-AUTH-046](../spec/identity-and-authentication.md), [R-AUTH-045](../spec/identity-and-authentication.md), [R-LIM-001](../spec/usage-and-limits.md), [R-LIM-002](../spec/usage-and-limits.md), [R-LIM-003](../spec/usage-and-limits.md), [R-LIM-004](../spec/usage-and-limits.md), [R-LIM-005](../spec/usage-and-limits.md), [R-LIM-006](../spec/usage-and-limits.md), [R-LIM-007](../spec/usage-and-limits.md), [R-LIM-008](../spec/usage-and-limits.md), [R-LIM-009](../spec/usage-and-limits.md), [R-LIM-010](../spec/usage-and-limits.md), [R-LIM-011](../spec/usage-and-limits.md), [R-LIM-012](../spec/usage-and-limits.md), [R-LIM-013](../spec/usage-and-limits.md), [R-LIM-014](../spec/usage-and-limits.md), [R-LIM-015](../spec/usage-and-limits.md), [R-LIM-016](../spec/usage-and-limits.md), [R-LIM-017](../spec/usage-and-limits.md), [R-LIM-018](../spec/usage-and-limits.md), [R-LIM-019](../spec/usage-and-limits.md), [R-LIM-020](../spec/usage-and-limits.md), [R-LIM-021](../spec/usage-and-limits.md), [R-LIM-022](../spec/usage-and-limits.md), [R-LIM-023](../spec/usage-and-limits.md), [R-LIM-024](../spec/usage-and-limits.md), [R-LIM-040](../spec/usage-and-limits.md), [R-LIM-041](../spec/usage-and-limits.md), [R-LIM-042](../spec/usage-and-limits.md), [R-LIM-025](../spec/usage-and-limits.md), [R-LIM-026](../spec/usage-and-limits.md), [R-LIM-027](../spec/usage-and-limits.md), [R-LIM-028](../spec/usage-and-limits.md), [R-LIM-029](../spec/usage-and-limits.md), [R-LIM-030](../spec/usage-and-limits.md), [R-LIM-043](../spec/usage-and-limits.md), [R-LIM-044](../spec/usage-and-limits.md), [R-LIM-045](../spec/usage-and-limits.md), [R-LIM-046](../spec/usage-and-limits.md), [R-LIM-031](../spec/usage-and-limits.md), [R-LIM-032](../spec/usage-and-limits.md), [R-LIM-033](../spec/usage-and-limits.md), [R-LIM-034](../spec/usage-and-limits.md), [R-LIM-035](../spec/usage-and-limits.md), [R-LIM-036](../spec/usage-and-limits.md), [R-LIM-037](../spec/usage-and-limits.md), [R-LIM-038](../spec/usage-and-limits.md), [R-LIM-039](../spec/usage-and-limits.md) |
 | BEYOND-031 | Provider presets for further CI systems | P1 | open | – |
 | BEYOND-032 | Kubernetes service-account token trust | P2 | open | – |
 | BEYOND-033 | SPIFFE JWT-SVID trust | P2 | open | – |
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>524 requirements</summary>
+<summary>533 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3104,6 +3104,10 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-UI-218 | A package leads with the documentation its format carries | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-221 | A version's general properties read the same in every format | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-222 | Every table of versions says each version's downloads, and an image's digest | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-UI-240 | A Bastion's card: its limits, its throughput and its state | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-UI-241 | A Bastion's limits page | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-UI-242 | Usage through a Bastion | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-UI-243 | The addresses a Bastion connects from | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-220 | The page of a name: a namespace, a scope or a path prefix, in every format that has one | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-ARCH-037 | The scan listener of `packages` | P1 | [architecture.md](../spec/architecture.md) |
 | R-ARCH-003 | Go module and package layout | MVP | [architecture.md](../spec/architecture.md) |
@@ -3195,6 +3199,11 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-BAS-086 | What a format owes: kit check 21 | P1 | [bastion.md](../spec/bastion.md) |
 | R-BAS-087 | The interface version | P1 | [bastion.md](../spec/bastion.md) |
 | R-BAS-088 | Tests and what they cost | P1 | [bastion.md](../spec/bastion.md) |
+| R-BAS-094 | What an anonymous request may cause at the main installation | MVP | [bastion.md](../spec/bastion.md) |
+| R-BAS-095 | Writes are refused by the Bastion itself | MVP | [bastion.md](../spec/bastion.md) |
+| R-BAS-097 | The throughput between the main installation and a Bastion | MVP | [bastion.md](../spec/bastion.md) |
+| R-BAS-098 | The cache protects what was served twice | MVP | [bastion.md](../spec/bastion.md) |
+| R-BAS-099 | A Bastion names nothing of the main installation | MVP | [bastion.md](../spec/bastion.md) |
 | R-EP-002 | Endpoint identity comes from the listener | MVP | [endpoints.md](../spec/endpoints.md) |
 | R-EP-004 | TLS on endpoint listeners: certificates by SNI, wildcard certificates, reload | MVP | [endpoints.md](../spec/endpoints.md) |
 | R-EP-006 | Host-root binding: the reserved mechanism | MVP | [endpoints.md](../spec/endpoints.md) |

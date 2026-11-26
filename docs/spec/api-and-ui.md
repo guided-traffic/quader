@@ -10232,6 +10232,110 @@ Acceptance criteria:
   downloads under its last download; an image's digest under its tags, and Pushed.
 - Rendered (rule 11): the tables of an npm, a NuGet and an Ansible package, an image and a Debian package (`package-*-facts*`).
 
+### R-UI-240 · A Bastion's card: its limits, its throughput and its state
+Priority: **MVP** · Covers: quader-only
+
+The screen of the owner's decisions of 2026-11-26 on a Bastion (W-34; [bastion.md](bastion.md) R-BAS-093, R-BAS-097,
+[usage-and-limits.md](usage-and-limits.md) R-LIM-044, R-LIM-046): a Bastion is configured on its card at the main installation
+([bastion.md](bastion.md#q-bas-323--a-bastion-is-configured-on-its-card-at-the-main-installation) Q-BAS-323). Simple by default, details on
+demand ([Q-UI-1480](#q-ui-1480--a-bastions-card-shows-the-preset-the-mode-and-the-throughput-everything-else-is-behind-details)).
+
+- **The plain path**, a section **Limits** on every card (R-BAS-007), after the card's actions and the handover's section:
+  - **Preset**: a segmented control **Internet**, **Partner network**, **Internal**, with one sentence under it for the chosen one
+    ("Strict limits for callers from the internet; administrators too." / "The installation's own profiles for known partners." / "No
+    limits, everything counted."), and **Custom** shown, not offered, once a kind rule or a flood figure differs. A change opens the dialog
+    of [Q-UI-1481](#q-ui-1481--a-preset-is-applied-after-a-dialog-that-names-what-it-replaces).
+  - **Mode**: the line "Mode: Enforce" or "Mode: Audit. Limits are counted, not applied at this Bastion." with **Switch to Audit…** or
+    **Switch to Enforce…**, the dialogs of R-UI-182 for this Bastion, after recent authentication.
+  - **Maximum throughput to this Bastion**: a number field in MB/s, as wide as five digits, holding "Unlimited" as its value until a number
+    is set (a default is a value in the field), with **Save changes**.
+- **Details** (a closed disclosure): the flood figures per address (anonymous, signed-in and pages: requests per second, burst, misses a
+  minute; the failed-authentication timeout; the blocks; the exempt networks), the slots to the main installation, the anonymous ceiling,
+  the throughput's anonymous share and GB per hour per class, the egress addresses (R-UI-243), and the link **Rules of this Bastion** to
+  R-UI-241. W-35's switches **Web interface** and **Documentation** stand in the same section with that package's sentences.
+- **The state, live** (R-UI-213's `live()`, from the replicas' reported status, R-LIM-045): per card one line "Cache 14.0 of 20.0 GB ·
+  97 % hits · 9.0 GB protected · 41 MB/s from the main installation", the throughput against its cap where one is set as a meter (warning
+  and danger colours, never green), and "4 callers limited now · 1 address blocked" linking to R-UI-241's **Blocks**. "No report in the
+  last 5 minutes" where no replica reported.
+- **The edge warning**: where a configured per-address request figure lies above the edge figure a replica reported (R-BAS-093), the line
+  "The ingress of this Bastion refuses more than 1,000 requests a second per address before these figures apply." stands under the flood
+  figures, in the warning colour.
+- **Who sees what** (R-UI-067): a holder of `limits:write` changes the limits, the mode and the throughput; a holder of `endpoints:write` the
+  switches and the egress addresses (Q-BAS-325); a reader sees the values as text, as Q-UI-960 says of a card's switch.
+- Every change sends `PATCH /api/v1/bastions/{name}` with the card's `ETag`; a `412` or a refusal stands under the field with every fact of
+  its answer (R-UI-216), and the field keeps the server's value.
+
+*Not built* (package E12, after E8, E10 and E13). Today a card shows the registration's facts, its contacts, its tokens and the handover's
+switch only (R-BAS-007, R-BAS-071).
+
+Acceptance criteria:
+
+- Vitest (`bastions.spec.ts`, about 1 s): a new registration shows Internet, "Mode: Enforce" and "Unlimited"; **Details** is closed; a
+  holder of `endpoints:write` alone sees the limits as text; the edge warning for a reported figure below the configured one; the state
+  line from a status fixture and "No report in the last 5 minutes" without one.
+- Rendered (rule 11): the card in both schemes, wide and narrow, with Internet, Custom and an Audit mode, the details open and closed.
+
+### R-UI-241 · A Bastion's limits page
+Priority: **MVP** · Covers: quader-only
+
+`/admin/bastions/{name}/limits` ([usage-and-limits.md](usage-and-limits.md) R-LIM-043), titled "Download limits of <name>", for the holders
+of `limits:read`; reached from the card's **Rules of this Bastion**.
+
+- **Rules**: the rule table of R-UI-179 for the Bastion place (`limit-rules.ts`, `rule-dialog.ts`), the five kind rules of the preset
+  first, marked **From the preset**, then the rules of single callers, groups and addresses with **Add rule**; the "who" field searches people
+  as every person field does (R-UI-150).
+- **Blocks**: the active blocks the replicas reported (at most 100 each, R-LIM-045), address, until, reason, replica; read-only, since a
+  Bastion's blocks are its own.
+- A sentence over the table: "These rules count what this Bastion serves. The installation's own rules count what it serves, including
+  what this Bastion fetches."
+
+*Not built* (package E12, after E8). Today no page holds a Bastion's rules.
+
+Acceptance criteria:
+
+- Vitest (about 1 s): the kind rules come first and cannot be deleted; a rule for a technical token is added with one `POST` to
+  `…/bastions/partners/limits/assignments`; the blocks of two replicas are listed.
+- Rendered: both tabs, both schemes, wide and narrow.
+
+### R-UI-242 · Usage through a Bastion
+Priority: **P1** · Covers: quader-only
+
+The owner's two budgets ([usage-and-limits.md](usage-and-limits.md) Q-LIM-306): the usage overview (R-UI-183) gains the filter **Place**
+(**All**, **This installation**, and one entry per Bastion, "Through <name>"), kept in the page's address; a caller's page (R-UI-184) lists
+its consumption per place, each Bastion's beside the installation's, and the sum.
+
+*Not built* (package E12, after E8). Today the overview has no place filter and no Bastion's consumption.
+
+Acceptance criteria:
+
+- Vitest (about 1 s): **Place** "Through partners" sends the filter and shows the Bastion's rows; a caller's page shows two places and the
+  sum.
+
+The priority is P1: the Bastion's limits hold and the card shows its state without it (R-UI-240); this view adds who took what through
+which door.
+
+### R-UI-243 · The addresses a Bastion connects from
+Priority: **MVP** · Covers: quader-only
+
+The owner's choice (a) of [bastion.md](bastion.md#q-bas-334--a-bastions-egress-addresses-belong-to-its-registration) Q-BAS-334, in the card's
+**Details** (R-UI-240): **Addresses this Bastion connects from**, a list of addresses and ranges, each a field as wide as an IPv6 prefix, with
+the help "The main installation believes the caller's address a Bastion forwards only from these addresses."
+
+- **Empty**: a line in the warning colour, "No address is listed: every caller through this Bastion counts as the Bastion's own address at
+  the main installation, with one budget and one block for all."
+- **The last contact from elsewhere**
+  ([Q-UI-1482](#q-ui-1482--the-egress-addresses-warn-with-the-address-of-the-last-contact-and-offer-to-add-it)): where a replica's last
+  contact came from an address the list does not hold, "The last contact came from 198.51.100.21, which is not listed." with **Add
+  198.51.100.21**.
+
+*Not built* (package E12, after E13). Today the egress addresses are `bastions.trusted_proxies` of the configuration file, the same for every
+registration.
+
+Acceptance criteria:
+
+- Vitest (about 1 s): the empty list's warning; a contact from an unlisted address offers to add it, and **Add** sends one `PATCH` with the
+  list.
+
 ## Deferred
 
 P2, Later and Out-of-scope entries of the three catalog pages this page draws on, plus P1 entries
@@ -28326,6 +28430,51 @@ Status: **Decided by the development agent on 2026-11-26** — selected from the
 (Q-OPS-443). An export would take the log's filters, not the download, so it is not offered here.
 
 **Applied in the spec:** R-UI-037.
+
+### Q-UI-1480 · A Bastion's card shows the preset, the mode and the throughput; everything else is behind Details
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the owner's Q-BAS-323 puts a Bastion's configuration on its card; his rule "simple by default, details on demand" (CLAUDE.md), and
+his option (a) of k8, "Auf der Karte ein Feld „Maximaler Durchsatz zu diesem Bastion“ … unter Details GB je Stunde und der Anteil für anonyme
+Aufrufer".
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The preset, the mode and the maximum throughput on the card; the figures, slots, ceiling, shares, egress addresses and switches of W-35 behind **Details**; the rules on a page of their own (chosen) | Three controls in plain view | The decision a plain administrator makes in one look; the paper's wording | Experts open two levels |
+| (b) Everything on the card | | One place | A card of thirty fields per Bastion |
+| (c) Everything on a page of its own | The card links | A clean card | The one figure the owner named on the card is a click away |
+
+**Choice:** (a). **Applied in the spec:** R-UI-240, R-UI-241, R-UI-243.
+
+### Q-UI-1481 · A preset is applied after a dialog that names what it replaces
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: a preset replaces the five kind rules, the flood figures and the mode of a Bastion (R-LIM-046); an administrator's changes to them
+are lost by it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A dialog "Apply the preset Partner network?" that lists what changes (each kind rule's profile, the flood figures, the mode) and keeps the rules of single callers, groups and addresses (chosen) | One confirmation | Nothing an administrator changed is lost unseen | One step more |
+| (b) Applied at the click | | Quick | A click on the wrong segment undoes an hour's tuning |
+
+**Choice:** (a); the dialog says nothing where the preset changes nothing. **Applied in the spec:** R-UI-240.
+
+### Q-UI-1482 · The egress addresses warn with the address of the last contact and offer to add it
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the owner's Q-BAS-334 ends the silent default fault of an empty list; a Bastion's egress address is what its replicas' contacts
+report (R-BAS-010), and a cloud NAT can change it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A warning for an empty list and for a contact from an unlisted address, with **Add** for that address (chosen) | | The administrator sees the fault and fixes it in one click | An address an attacker made the Bastion connect from would be offered too (it needs the Bastion's token, H-386) |
+| (b) Fill the list from the contacts by itself | | Nothing to set | A stolen Bastion token chooses its own trusted address |
+| (c) A field only | | Simplest | The fault stays silent |
+
+**Choice:** (a). **Applied in the spec:** R-UI-243.
 
 ## What this does not cover
 

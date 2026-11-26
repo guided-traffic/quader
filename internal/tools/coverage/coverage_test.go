@@ -156,8 +156,11 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 		// 1323 since the Bastion's built-in figures hold one normal command of every client (R-BAS-092, one MVP requirement of
 		// W-34, E3).
 		// 1324 since the built-in profiles hold the uses the page promises (R-LIM-042, one MVP requirement of W36).
-		if len(m.Reqs) != 1324 || count[prioMVP] != 728 || count[prioP1] != 557 || count[prioP2] != 39 {
-			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1324 (728, 557, 39)",
+		// 1339 since a Bastion's limits, its configuration from the main installation, the throughput between the two and a
+		// Bastion that names nothing of the main installation are specified (R-BAS-093 to R-BAS-099, R-LIM-043 to R-LIM-046,
+		// R-UI-240, R-UI-241, R-UI-243: fourteen MVP requirements; R-UI-242: one P1 requirement; W-34, E6).
+		if len(m.Reqs) != 1339 || count[prioMVP] != 742 || count[prioP1] != 558 || count[prioP2] != 39 {
+			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1339 (742, 558, 39)",
 				len(m.Reqs), count[prioMVP], count[prioP1], count[prioP2])
 		}
 	})

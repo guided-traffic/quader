@@ -20,14 +20,21 @@ per package for a registry token and for every reader narrowed by package, is sp
 [Read shapes per package](#read-shapes-per-package) (R-BAS-080 to R-BAS-088, Q-BAS-240 to Q-BAS-254, Q-BAS-260 and Q-BAS-261, H-1380
 to H-1384 and H-1390) and built, all four packages; it amends in place R-BAS-011, R-BAS-012, R-BAS-013, R-BAS-020, R-BAS-022,
 R-BAS-023, R-BAS-034, R-BAS-040, R-BAS-052, R-BAS-054, R-BAS-058, R-BAS-073, R-BAS-074, the deferred table, Q-BAS-198, Q-BAS-200 and
-H-1242, and takes the interface's version 5, so that the handover takes 6.
+H-1242, and takes the interface's version 5, so that the handover takes 6. The owner's decisions of 2026-11-26 on a Bastion's limits, its
+configuration from the main installation, the throughput between the two and a Bastion that names nothing of the main installation (W-34)
+are specified in [Limits, configuration and throughput from the main installation](#limits-configuration-and-throughput-from-the-main-installation) (R-BAS-093 to R-BAS-099,
+Q-BAS-320 to Q-BAS-339) and **not built**; they revise in place R-BAS-002, R-BAS-009, R-BAS-010, R-BAS-014 to R-BAS-017, R-BAS-023,
+R-BAS-025, R-BAS-029, R-BAS-031, R-BAS-035 to R-BAS-038, R-BAS-046, R-BAS-051, R-BAS-052, R-BAS-054, R-BAS-058, R-BAS-059, R-BAS-071,
+R-BAS-074, Q-BAS-15, Q-BAS-21, Q-BAS-38, Q-BAS-43, Q-BAS-74, Q-BAS-88, Q-BAS-116, Q-BAS-118, Q-BAS-123, Q-BAS-315, H-388, H-1244, H-2272,
+H-2273 and H-2277, each with a marked sentence of what the code does until its package lands.
 
 This page specifies the Quader Bastion: a second, smaller deployment of Quader that is exposed to the internet, gives external
 parties read access to the content of a main installation with the main installation's own tokens, keeps a cache of what it
 served, and takes as much load as possible off the main installation. It covers:
 
 - the deployment profile: a role of the Quader image, its own Helm chart `quader-bastion`, no PostgreSQL, no web interface, no
-  settings outside the chart;
+  settings outside the chart (*revised on 2026-11-26:* a Bastion's limits, throughput and switches come from its registration, R-BAS-093;
+  not built);
 - the trust between the Bastion and the main installation: the Bastion token an administrator of the main installation issues,
   what it can and cannot do, and its renewal by hand;
 - the Bastion interface of the main installation: its routes and headers, its own version, the handshake, the check of a
@@ -212,6 +219,13 @@ Acceptance criteria:
 
 ### R-BAS-002 · Configuration only through the chart
 Priority: **MVP** · Covers: DIST-024
+
+*Revised on 2026-11-26 by the owner's [Q-BAS-323](#q-bas-323--a-bastion-is-configured-on-its-card-at-the-main-installation):* what an administrator of the main installation decides
+about a Bastion comes from its registration and reaches it with the handshake (R-BAS-093): the switches, the limits' mode and preset, the
+rules of its place, the flood figures, the slots, the throughput, the anonymous ceiling and the egress addresses. The bullets below hold
+for what stays in the chart; the second bullet's "state of the main installation" gains the configuration, which is the Bastion's own and
+held at the main installation. *Today, until E8 and E9a land:* every setting of a Bastion, its limits included, is a value of its chart,
+and the Bastion reads none from the main installation.
 
 - Every setting of a Bastion is a value of its chart: the main installation and the Bastion token, the cache, the periods, the
   limits, the blocking, the trusted proxies, Valkey, TLS and monitoring (owner,
@@ -550,7 +564,9 @@ The Bastion interface has a version of its own, separate from the release number
 - **The raises so far**, each with the requirement that describes it: 4, the format table and the bound repository (R-BAS-057); 5, the
   read shapes per package (R-BAS-087); 6, the handover per blob (R-BAS-073); 7, the longest wait a format's client is told,
   `retryAfterMaxSeconds` of the format table (R-BAS-091). The version is `iface.InterfaceVersion`; the comment beside it names the
-  same list.
+  same list. *Specified on 2026-11-26, not built (package E7):* 8, the configuration, the subject's limits, the usage and status reports,
+  the format table's `errorShape` and `readWithBody`, the renamed codes and W-35's catalogue ([the wire of interface version 8](#the-interface-version-8-the-shared-wire),
+  [Q-BAS-322](#q-bas-322--both-topics-raise-the-interface-version-once-to-8)).
 
 Acceptance criteria:
 
@@ -582,6 +598,12 @@ after every reconnect, and after a feed entry of the kind `settings` (R-BAS-015)
 ```
 
 *(example answer; the members `formats` and `boundRepository` are R-BAS-057's, `handover` R-BAS-071's)*
+
+*Revised on 2026-11-26 (R-BAS-093, [the wire of interface version 8](#the-interface-version-8-the-shared-wire)):* the answer gains `configuration` and loses the top-level
+`handover`, which moves into `configuration.switches`; the forwarded host counts only when the Bastion connected from an address of its own
+registration's `egress` (R-BAS-017); the contact also records the edge figure the Bastion reports in `Quader-Bastion-Edge-Limit` and
+W-35's `Quader-Bastion-Catalogue-Kept`. *Today, until E7, E8 and E13 land:* the answer is the one above with `handover` at its top level,
+and the forwarded host counts from an address of `bastions.trusted_proxies`.
 
 - `responseBaseUrl` is the response base URL the main installation derived for this request (R-OPS-005, R-EP-003), with the
   Bastion's forwarded host counted only when the Bastion connected from an address of `bastions.trusted_proxies` (R-BAS-017). The Bastion
@@ -772,6 +794,14 @@ Acceptance criteria:
 ### R-BAS-014 · Writes through a Bastion are refused by the main installation
 Priority: **MVP** · Covers: quader-only
 
+*Superseded on 2026-11-26 by the owner's [Q-BAS-336](#q-bas-336--the-bastion-refuses-a-write-itself):* a Bastion refuses a write itself, before it reads the
+body and without a request to the main installation, with `403 read_only` and a detail that names nothing of the main installation
+([R-BAS-095](#r-bas-095--writes-are-refused-by-the-bastion-itself), R-BAS-099). The probe below, the main installation's admission of a
+probe as the anonymous caller for routing (Q-BAS-118), the headers `Quader-Bastion-Probe` and `Quader-Bastion-Route` and the detail that
+names the main installation's URL go; the main installation's refusal of a forwarded write stays as R-BAS-095's backstop with the neutral
+detail, and the forward of a path outside the package families keeps answering `404`. *Today, until E15 and E16 land:* the probe below is
+what runs, and its refusal names the main installation's URL.
+
 The Bastion is read-only for package content (owner, [Q-BAS-2](#q-bas-2--the-bastion-is-read-only-for-package-content)). It
 answers a write in the client's protocol shape and points at the main installation, without format knowledge of its own
 ([Q-BAS-38](#q-bas-38--writes-are-refused-by-the-main-installation-from-a-bodiless-probe)):
@@ -835,6 +865,7 @@ the content events below ([Q-BAS-29](#q-bas-29--the-feed-reads-the-journals-even
 | `authz.role.unbound` of a user or service account | `principal` with that principal |
 | `group.deleted`, `authz.role.unbound` of a group, `authz.policy.deleted`, `authz.policy.updated`, `authz.settings.changed`, the `ci.issuer.*` and `ci.mapping.*` disables, deletions and updates, `endpoint.exposure.deleted` and `.updated` of the default endpoint | `{"kind": "grants"}`: every permission answer of every caller; `authz.settings.changed` that changed `visibility.artifacts` yields `settings` as well; one whose changed members are levels only (`visibility.artifacts`, `visibility.wiki`) and none of them lower than before yields no `grants`: a raise opens reads and makes no kept answer wrong |
 | `settings.auth.changed` | `{"kind": "settings"}` |
+| `bastion.configuration.changed` (R-BAS-093; *specified, not built*: package E8) | `{"kind": "settings"}`: every Bastion handshakes again and applies its registration's configuration; a change of one registration costs every replica of every Bastion one handshake |
 | `authz.project.visibility_changed` | `{"kind": "settings"}`, so the Bastion asks the handshake for `anonymousReads` again, and `grants` when the level was lowered ([authorization.md](authorization.md) R-AUTHZ-036) |
 | `user.external_changed` | `principal` with the user when the flag was set: the user read by `internal` through a Bastion as at the main installation (Q-BAS-148), and the flag ends that, so every answer the Bastion keeps for the user's credentials goes; clearing the flag only widens and yields none |
 | `npm.unpublish`, `package.deleted` | `{"kind": "content", "repositories": [<projectKey>/<repoKey>, …]}`: the repository and every virtual repository that includes it, recursively, at the time the feed is read, by their qualified names |
@@ -951,6 +982,11 @@ most `bastions.downloads.max_batch` (owner, [Q-BAS-13](#q-bas-13--downloads-serv
   (`bastion.download_events`, bucket the registration). A batch the budget does not hold answers `429 rate_limited` with `Retry-After`
   and records nothing; the Bastion keeps it and sends it again (Q-BAS-78), and what its bounded buffer cannot hold meanwhile is counted
   as lost (R-BAS-039). `events_burst` holds `max_batch`, so every batch can fit; the budget is per registration (H-468).
+- *Revised on 2026-11-26 by the owner's [Q-BAS-324](#q-bas-324--a-bastion-reports-usage-and-status-on-the-channel-of-its-download-events) ([usage-and-limits.md](usage-and-limits.md) R-LIM-045):* a batch
+  gains `usage` and `status` ([the wire of interface version 8](#the-interface-version-8-the-shared-wire)); the main installation writes the usage rows into its usage store at the place of
+  the Bastion and the status into a transient table per replica, and the Bastion sends a batch every flush also while `recordDownloads` is
+  false, then without events; a batch is charged to the registration's budget by its events and its usage rows. *Today, until E8 and E9b
+  land:* a batch carries download events only, and while `recordDownloads` is false the Bastion sends none.
 
 ```yaml
 bastions:                              # the main installation's section (the Bastion's own is bastion)
@@ -972,6 +1008,13 @@ Acceptance criteria:
 
 ### R-BAS-017 · The real client and the Bastion's host at the main installation
 Priority: **MVP** · Covers: quader-only
+
+*Revised on 2026-11-26 by the owner's [Q-BAS-334](#q-bas-334--a-bastions-egress-addresses-belong-to-its-registration):* the egress addresses belong to each registration
+(`egress`, R-BAS-093, [api-and-ui.md](api-and-ui.md) R-UI-243): a recognized forward's client address and host count only when the request
+comes from an address of its own registration's list, and the configuration key `bastions.trusted_proxies` goes; the second acceptance
+criterion loses its exception, since a refusal of a write names nothing of the main installation (R-BAS-099). *Today, until E13 and E16
+land:* one list `bastions.trusted_proxies` in the main installation's configuration file serves every registration, as below, and the
+exception holds.
 
 The main installation counts the real client and renders documents for the Bastion's host (owner,
 [Q-BAS-17](#q-bas-17--the-bastion-mirrors-the-main-installations-url-space), [Q-BAS-21](#q-bas-21--internet-exposure-limits-blocking-failed-sign-in-timeouts-and-a-configurable-cache)):
@@ -1234,6 +1277,12 @@ Acceptance criteria:
 ### R-BAS-023 · Documents: shared for confirmed full readers, per caller otherwise
 Priority: **MVP** · Covers: RMT-040
 
+*Revised on 2026-11-26 by the owner's [Q-BAS-326](#q-bas-326--an-anonymous-ceiling-per-bastion-and-the-one-for-one-paths-removed) (R-BAS-094):* a document the main installation marks
+`private` for the anonymous subject is the same for every anonymous caller, so it is kept once per replica in memory and reused for
+`metadata_revalidate_after` without a conditional request, under the feed's `content` entries like a shared document; it is never written
+to the cache backend. *Today, until E14a lands:* an anonymous caller's private document goes to the main installation with a conditional
+request on every use, as every caller's does.
+
 The main installation marks a document that is the same for every caller who reads the whole repository; the Bastion shares it
 for the metadata period with each caller for whom the main installation confirmed a full read (owner,
 [Q-BAS-18](#q-bas-18--metadata-shared-for-confirmed-full-readers-filtered-documents-per-caller)):
@@ -1308,6 +1357,13 @@ Acceptance criteria:
 
 ### R-BAS-025 · Concurrency budget towards the main installation and collapsed misses
 Priority: **MVP** · Covers: quader-only
+
+*Revised on 2026-11-26 (R-BAS-093, R-BAS-094, R-BAS-097; the owner's [Q-BAS-323](#q-bas-323--a-bastion-is-configured-on-its-card-at-the-main-installation), [Q-BAS-326](#q-bas-326--an-anonymous-ceiling-per-bastion-and-the-one-for-one-paths-removed) and [Q-BAS-331](#q-bas-331--the-maximum-throughput-is-enforced-at-the-bastion-on-every-byte-it-reads)):*
+`max_concurrent`, `anonymous_share` and `queue_timeout` are the registration's `limits.slots`, resized on a new configuration without a
+restart; a request on behalf of an anonymous caller is bounded by the anonymous ceiling as well; a fill is paced by the registration's
+throughput, so at the cap it holds its slot longer, and a miss that waits `queueTimeout` answers `503 busy`; the write probe and the sentence
+on its slot go (R-BAS-095). *Today, until E9a and E10 land:* the three values are chart values, nothing paces a fill, and the answer is
+`503 bastion_busy`.
 
 - **Budget** ([Q-BAS-35](#q-bas-35--the-concurrency-budget-is-per-replica-with-a-share-for-anonymous-misses)). Every request to
   the main installation except the handshake and the feed takes a slot: forwards, conditional requests, checks, probes,
@@ -1456,6 +1512,13 @@ Acceptance criteria:
 ### R-BAS-029 · Responses of the Bastion's own
 Priority: **MVP** · Covers: quader-only
 
+*Revised on 2026-11-26 ([Q-BAS-321](#q-bas-321--the-bastions-own-codes-are-named-by-their-status-its-texts-name-no-party-and-its-problem-type-is-aboutblank), R-BAS-095, R-BAS-099):* the codes are `not_found` for
+`bastion_not_served`, and `unavailable`, `bad_gateway`, `gateway_timeout` and `busy` for `main_unreachable`, `main_failed`, `main_timeout`
+and `bastion_busy`; `403 read_only` joins the table for a write; the texts are Q-BAS-321's and name no party; every answer of the
+Bastion's own takes the error shape the format declares (`errorShape`), and where that is `problem`, problem details whose `type` is
+`about:blank`; the package families answer a write `403`, and `405` stays for a path that serves `GET` and `HEAD` only. *Today, until E7,
+E15 and E16 land:* the codes and texts below, problem details on every family but `/v2/`, and the type `/api/v1/problems/<code>`.
+
 The Bastion produces only these answers itself; every other body comes from the main installation
 ([Q-BAS-39](#q-bas-39--the-bastions-own-refusals-are-problem-details)). They are problem details (RFC 9457,
 `application/problem+json`, R-ARCH-023's members) with the challenge of R-AUTH-002 for the path family on a `401`, and
@@ -1558,6 +1621,11 @@ Acceptance criteria:
 
 ### R-BAS-031 · Size, eviction by last access and sweeps
 Priority: **MVP** · Covers: quader-only
+
+*Revised on 2026-11-26 by the owner's [Q-BAS-333](#q-bas-333--what-was-served-twice-is-protected-in-the-cache)
+([R-BAS-098](#r-bas-098--the-cache-protects-what-was-served-twice)):* a later serve writes a protected marker beside the access marker,
+and the sweep evicts unprotected entries first, then protected ones, with at most 80 % of an area protected. *Today, until E11 lands:* the
+sweep evicts by last access alone, and a fill is an access.
 
 - **Size.** Bytes plus documents stay below `bastion.cache.max_bytes`; documents below `documents_max_bytes`, which is their reserved
   share: artifacts are limited to `max_bytes − documents_max_bytes` ([Q-BAS-88](#q-bas-88--documents-have-a-reserved-share-and-entries-are-removed-when-read)). A sweep runs every
@@ -1812,6 +1880,11 @@ Acceptance criteria:
 ### R-BAS-035 · Per-address rate limits
 Priority: **MVP** · Covers: quader-only
 
+*Revised on 2026-11-26 (R-BAS-093, R-BAS-096; the owner's [Q-BAS-323](#q-bas-323--a-bastion-is-configured-on-its-card-at-the-main-installation)):* the figures are the
+registration's `limits.flood`, not chart values, applied without a restart; a third class `gui` holds the web interface's pages per address
+([usage-and-limits.md](usage-and-limits.md) Q-LIM-307); `exempt_cidrs` is the configuration's `exemptNetworks`; the subject's budgets
+of R-BAS-096 apply on top. *Today, until E9a lands:* the figures are the chart values below, in two classes.
+
 Blocking runs in two stages (owner, [Q-BAS-16](#q-bas-16--blocking-in-two-stages)); this is the Bastion's own stage, with
 Quader's knowledge of credentials and misses:
 
@@ -1856,6 +1929,9 @@ with a credential 50 and 200, misses 300 and 30 a minute, the defaults before R-
 ### R-BAS-036 · Failed-authentication timeout
 Priority: **MVP** · Covers: quader-only
 
+*Revised on 2026-11-26 (R-BAS-093):* the three figures are the registration's `limits.flood.failedAuth`.
+*Today, until E9a lands:* they are the chart values below.
+
 - More than `bastion.failed_auth.max_failures` failed authentications from one address within `bastion.failed_auth.window` put
   the address into a timeout of `bastion.failed_auth.timeout`. A failure is a credential the Bastion refuses itself (R-BAS-019)
   or one the main installation answered `invalid`.
@@ -1885,6 +1961,10 @@ Acceptance criteria:
 
 ### R-BAS-037 · Blocking of flooding addresses and the shared block list
 Priority: **MVP** · Covers: quader-only
+
+*Revised on 2026-11-26 (R-BAS-093):* the figures and the exempt networks are the registration's
+`limits.flood.blocking` and `exemptNetworks`; in Audit at the Bastion the blocks still hold
+([usage-and-limits.md](usage-and-limits.md) Q-LIM-309). *Today, until E9a lands:* they are the chart values below.
 
 - An address that collects more than `bastion.blocking.threshold` refusals of R-BAS-035 and R-BAS-036 within
   `bastion.blocking.window` is blocked for `bastion.blocking.duration`; each further block within 24 h doubles the duration, up
@@ -1925,6 +2005,12 @@ Acceptance criteria:
 
 ### R-BAS-038 · The coarse per-address limit at HAProxy Ingress
 Priority: **MVP** · Covers: quader-only
+
+*Revised on 2026-11-26 (R-BAS-093):* the Bastion's own figures leave the chart, so the chart's refusal of an
+edge figure at or below the authenticated figure (the second bullet, `_validate.tpl`) goes; the Bastion reports its edge figure with every
+handshake, and the card warns where a configured per-address figure lies above it ([api-and-ui.md](api-and-ui.md) R-UI-240);
+`limit-whitelist` is rendered from the new `edgeLimit.exemptCIDRs` instead of `config.bastion.blocking.exempt_cidrs`. *Today, until E9a
+lands:* the chart refuses as the second bullet says, and renders `limit-whitelist` from `config.bastion.blocking.exempt_cidrs`.
 
 - The chart can put a coarser per-address limit in front, at the Bastion's HAProxy Ingress: `edgeLimit.enabled` (default on)
   renders HAProxy Ingress's per-address request-rate and connection limits for `edgeLimit.requestsPerSecond` and
@@ -2333,6 +2419,11 @@ Acceptance criteria:
 
 ### R-BAS-046 · Values reference
 Priority: **MVP** · Covers: DIST-024
+
+*Revised on 2026-11-26 (R-BAS-093):* `config.bastion.main.max_concurrent`, `anonymous_share` and `queue_timeout`,
+`config.bastion.limits`, `config.bastion.failed_auth` and `config.bastion.blocking` leave the block below for the registration;
+`edgeLimit.exemptCIDRs` (default `[]`) joins the edge's values; the chart renders the edge figure into the configuration file as the
+chart-managed `bastion.edge_limit`. *Today, until E9a lands:* the values are the block below.
 
 Every value of `quader-bastion` with its default. The block below is the chart's `values.yaml`: every value is its default, and
 a value is commented only where its name does not say its meaning, unit, range or consequence, with an `example:` where the
@@ -2943,7 +3034,11 @@ repository ([Q-BAS-165](#q-bas-165--the-registry-root-is-a-path-family-of-the-ba
   token service `Volatile` with the action `read` (a read route that takes a body for `POST`), the catalog `Volatile` with `read`. The
   repository routes below `/v2/` are marked by the dispatcher as every format route is. The refusal of a write names the main
   installation's image prefix of the repository (`quader.example.com/web/docker-local`) for the format that declares the registry root,
-  and the protocol base path for every other format. *Built on 2026-11-22 (package B):* `forwardablePath` admits `/v2` and `/v2/…`
+  and the protocol base path for every other format. *Revised on 2026-11-26 (R-BAS-094, R-BAS-095, R-BAS-099):* an anonymous `GET` or
+  `POST /v2/_token` is answered by the Bastion itself ([Q-BAS-335](#q-bas-335--the-bastion-answers-an-anonymous-token-request-itself)); a
+  `POST` with a credential is a read route with a body of the format table's `readWithBody` and is forwarded without a probe; a write
+  below `/v2/` is the Bastion's own `403 read_only` in the distribution's shape and names no image prefix. *Today, until E14a, E15 and E16
+  land:* every token request is forwarded, a `POST` is probed first, and the refusal names the image prefix as this bullet says. *Built on 2026-11-22 (package B):* `forwardablePath` admits `/v2` and `/v2/…`
   ([recognize.go](../../internal/bastionmain/recognize.go)); the token service and the catalog call the marking's observer through
   `tellRoute` ([bastion.go](../../internal/api/registry/bastion.go)) only for the methods they answer, so a probe of any other method gets the
   route's own `405` ([Q-BAS-189](#q-bas-189--the-core-routes-below-v2-tell-the-marking-their-kind-only-for-the-methods-they-answer)); the
@@ -3014,6 +3109,10 @@ Priority: **MVP** · Covers: DIST-025
   step 1). Trusting the unverified bit can only lower what is read, because a client can always send no credential. A payload that does
   not decode is a registry token like any other. The reading is `iface.RegistryTokenAnonymous`: the member `a` true in the claims of
   payload version 1 (Q-BAS-185).
+- *Revised on 2026-11-26 ([Q-BAS-339](#q-bas-339--a-registry-token-reads-only-its-anonymity-its-expiry-and-its-grant)):* the three readers (`RegistryTokenAnonymous`, `RegistryTokenExpiry`,
+  `RegistryTokenGrant`) read payload versions 1 and 2, and the main installation issues version 2, whose only readable claims are `a`, `exp`
+  and `g`; an anonymous caller of a Bastion receives the Bastion's own token (R-BAS-094). *Today, until E7, E14a and E17 land:* version 1,
+  every claim readable, and the anonymous token comes from the main installation's token service.
 - **Its expiry is its own.** The subject the marking and the check report for a registry token carries the registry token's expiry
   (`auth.Credential.ExpiresAt` already is that), so no answer outlives it (R-BAS-020 rule 2). A request with a registry token past its
   expiry is answered `401` with the registry's challenge and `error="invalid_token"` by the Bastion, and is not counted as a failed
@@ -3127,7 +3226,9 @@ address, committed, the last 64 KiB of every transfer withheld until then. Three
   keeps extending the lock, up to `bastion.cache.fill_wait_max`, sending nothing, then decides again, which is a hit once the other fill
   committed, or fetches itself ([H-1245](#h-1245--a-caller-on-another-replica-waits-for-a-running-fill-without-a-byte-up-to-fill_wait_max)).
 - A fill holds its budget slot until the main installation's body ends ([H-1244](#h-1244--cold-fills-of-large-blobs-hold-budget-slots-and-spool-for-the-length-of-their-transfer));
-  a fill read by a handover holds it for the handover's answer only (R-BAS-074).
+  a fill read by a handover holds it for the handover's answer only (R-BAS-074). *Revised on 2026-11-26 (R-BAS-097):* a fill is paced
+  by the registration's throughput, so at the cap it holds its slot and its spool longer. *Today, until E10 lands:* a fill reads at the
+  main installation's speed.
   The defaults of `max_object_bytes` and `spool_max_bytes` (2 GiB each) stay; a layer above them is passed through on every request, and
   the manual's sizing of the cache names images.
 
@@ -3313,6 +3414,7 @@ The contract a format keeps so that every Bastion serves it without a decision o
 | A rate limit of the format answers the status `catalog.Facts.Bastion.RateLimitedStatus` (429 unless declared) | the Bastion's own rate-limit refusals of the format's family take that status | kit check 19 (through `WriteError`) |
 | A rate limit of the format tells the client the wait capped by `catalog.Facts.Bastion.RetryAfterMax` (the whole wait unless declared): a wait of a second as one second, a wait of a day as the cap or as a day | the Bastion's own refusals of the format's family tell the declared wait (R-BAS-091); a cap `WriteError` applies and the facts do not declare would reach the format's clients from a Bastion uncapped | kit check 19 (through `WriteError`) |
 | A write has a writing kind or an action other than `read`; a read route that takes a body is `Volatile` with `read` | the probe of R-BAS-014 | built (R-BAS-014) |
+| *Specified on 2026-11-26, not built (E15):* a route with a writing method whose kind is a read is listed in `catalog.Facts.Bastion.ReadWithBody`; `WriteError` renders `catalog.Facts.Bastion.ErrorShape` (`problem`, `npm`, `text`, `distribution`) | the Bastion's own refusal of a write and every answer of its own in the format's shape (R-BAS-095, [Q-BAS-337](#q-bas-337--a-bastions-own-refusals-take-one-of-four-error-shapes-a-format-declares)); they replace the row above once the probe goes | kit check 19 |
 | `absent` comes from the core's lookups | the negative cache (R-BAS-024) | built (Q-BAS-70) |
 | Every rights decision of a content route is made through the host before its status line; a response that draws on packages other than the one it was decided for also decides a package-less read; a reader of only the response's package receives the same status, body and validators as a reader of the whole repository | a document marked `shared` for a reader of one package is served to every reader of that package in full (R-BAS-081, R-BAS-082) | kit check 21 (R-BAS-086) |
 
@@ -3420,7 +3522,10 @@ The existing rules hold for every format: a hit at the Bastion is not counted at
   installation's own audit trail would hold for the same requests.
 - **Usage and limits.** What a Bastion forwards is charged at the main installation to the caller's subject (R-LIM-003), the token
   requests by the token service's own rule and the conditional requests of a registry token as requests of the token's subject; what the
-  Bastion serves from its cache is charged nowhere. Since the read shapes per package are built (2026-11-23), a warm pull with a registry
+  Bastion serves from its cache is charged nowhere. *Revised on 2026-11-26 (R-BAS-096, [usage-and-limits.md](usage-and-limits.md)
+  R-LIM-045):* what the Bastion serves from its cache is charged at the Bastion's place to the caller's subject and reported to the main
+  installation's usage store; a forward stays charged at the main installation as well (two budgets, Q-LIM-306). *Today, until E8 and E9b
+  land:* charged nowhere. Since the read shapes per package are built (2026-11-23), a warm pull with a registry
   token is charged its token request and one check instead of a conditional request per manifest and blob (R-BAS-085, Q-BAS-253).
 - **Audit.** `artifact.downloaded` with `details.origin: bastion`, the request path as `path` (`/v2/web/docker/library/nginx/blobs/sha256:…`)
   and the qualified repository, as for every format (R-BAS-016). The interface version is 4 (R-BAS-057).
@@ -3625,6 +3730,12 @@ link.
 
 ### R-BAS-071 · The switch: per registration at the main installation, off by default
 Priority: **P1** · Covers: quader-only
+
+*Revised on 2026-11-26 by the owner's [Q-BAS-323](#q-bas-323--a-bastion-is-configured-on-its-card-at-the-main-installation) (R-BAS-093):* the switch is `switches.handover` of the
+registration's configuration, set on the card beside `gui` and `docs`; a change of it writes `bastion.configuration.changed` beside
+`bastion.handover.enabled` or `.disabled` (the journal and its replay of a switch-off stay), and the feed's `settings` entry brings it to every
+Bastion within about 3 s; the handshake carries it in `configuration.switches`, no longer at its top level. *Today, until E7 and E8 land:*
+`handover` is a top-level member of the registration and of the handshake, and a Bastion learns a change at its next handshake.
 
 - **Where** ([Q-BAS-232](#q-bas-232--the-switch-is-per-registration-at-the-main-installation-and-the-bastions-chart-has-none)): a member of
   the registration, `handover`, kept at the main installation (`bastion.handover boolean NOT NULL DEFAULT false`), read by every replica
@@ -3859,6 +3970,9 @@ value as an `iface.HandoverKey` copied from the format's key (destroyed at once)
 
 ### R-BAS-074 · The direct read and its verification
 Priority: **P1** · Covers: quader-only
+
+*Revised on 2026-11-26 (R-BAS-097):* a direct read is paced by the registration's throughput like a fill from the
+main installation, so the cap covers both sources. *Today, until E10 lands:* a direct read is not paced.
 
 - **The fill's source.** A `handover` answer starts the fill of R-BAS-021 with the object store as its source instead of the answer's body.
   The answer's body is empty, so its budget slot is free at once, and the direct read holds no slot of the budget towards the main
@@ -4678,6 +4792,521 @@ Bastion of the commit before package 4 for "before" and of package 4 for "after"
 [developer/bastion.md](../developer/bastion.md#the-real-clients-through-a-bastion) and in the section's head. The end-to-end assertion is
 Q-BAS-271's.
 
+## Limits, configuration and throughput from the main installation
+
+Specified on 2026-11-26 (W-34 of the project plan), from the owner's working paper of the same day, answered at 11:51: every decision is
+the option he chose, recorded below as Q-BAS-323, Q-BAS-324, Q-BAS-326, Q-BAS-331, Q-BAS-333, Q-BAS-334, Q-BAS-336 and Q-BAS-338 and on
+[usage-and-limits.md](usage-and-limits.md) as Q-LIM-300, Q-LIM-301, Q-LIM-303, Q-LIM-305 and Q-LIM-306; the development agent's decisions
+inside them are Q-BAS-320 to Q-BAS-322, Q-BAS-325, Q-BAS-327 to Q-BAS-330, Q-BAS-332, Q-BAS-335, Q-BAS-337, Q-BAS-339 and Q-LIM-302,
+Q-LIM-304, Q-LIM-307 to Q-LIM-309; the record is
+[ADR-300](../decisions.md#adr-300--a-bastion-is-a-place-of-the-download-limits-configured-from-the-main-installation-and-names-nothing-of-it).
+**Nothing of this section is built.** Each requirement names the package of the build plan
+[developer/bastion-limits.md](../developer/bastion-limits.md) that builds it; the requirements it revises say in a marked sentence what
+the code does until then. The gaps are on [security/bastion.md](../security/bastion.md#what-this-does-not-cover) (H-2280 to H-2283,
+H-2285, H-2289 to H-2297) and [security/usage-and-limits.md](../security/usage-and-limits.md#what-this-does-not-cover) (H-2284, H-2286
+to H-2288).
+
+The owner's words this section rests on. His task of about 10:40: "Die Download-Limits müssen sich durch den Administrator detailiert
+konfigurieren lassen. Ich denke es ist auch Sinnvoll, eine angepasste Konfiguration pro Bastion zuzulassen. Intern könnten die Limits
+deaktiviert sein und auf dem Bastion könnten sie deutlich eingeschränkt sein um Missbrauch der Registry über das offene Internet zu
+vermeiden oder zumindest abzuschwächen. Auch finde ich gut, wenn man zusätzlich den maximalen Throughput zwischen Hauptinstanz und Bastion
+konfigurieren könnte, so könnte man vermeisten, dass ein Anfreifer von außen den Bastion mit vielen unterschiedlichen Artefakten so
+auslastet, dass der Cache überläuft und quasi jede Anfrage über die Hauptinstanz läuft und ggf. das Transfernetz sättigt." His framing of
+10:55: "Der kerngedanke, des Bastions ist ja, dass er dem Internet ausgesetzt wird und dafür ggf. auf einer Edge-Node läuft. Traffic und
+Angriffe auf dem Bastion, muss nur er aushalten und wir etablieren maßnahmen unsere interne Hauptinstanz über den Bastion vor überflutig
+zu schützen. Der Bastion bietet nach außen nur eine lesende API an. Es ist so gebaut, dass es keine Schreib-API gibt die angegriffen
+werden kann. … Nutzer können sich außschließlich über ein Token, PAT oder Zertifikat gegenüber dem Bastion identifizieren, OIDC oder
+username/password ist ausgeschlossen und es exsistiert nicht mal eine API dafür. Je kleiner der Footprint, desto besser!" And his rule
+of 11:51, written as a note to the refusal of a write and read as a rule for every answer: "Der Bastion verrät keine internen
+Informationen über die Hauptinstanz. Es ist davon auszugehen, das es einen Grund gibt wieso ein User auf dem Bastion landet und nicht
+direkt auf der Hauptinstanz."
+
+The neighbouring topic W-35 (a read-only web interface at the Bastion, its public catalogue and the documentation per repository) is
+specified by its own packages; it shares this section's configuration member (the switches `gui` and `docs`) and the one raise of the
+interface version ([The interface version 8: the shared wire](#the-interface-version-8-the-shared-wire)).
+
+### R-BAS-093 · A Bastion's configuration comes from its registration
+Priority: **MVP** · Covers: DIST-024
+
+The owner's choice (a) of [Q-BAS-323](#q-bas-323--a-bastion-is-configured-on-its-card-at-the-main-installation): a Bastion is configured
+on its card at the main installation. It replaces "configuration only through the chart" (R-BAS-002, Q-BAS-15) for what an administrator
+of the main installation decides; the chart keeps what the installation of the pods sizes.
+
+- **What the registration holds**, beside its name, description, `enabled` and tokens (R-BAS-004):
+
+| Member | What it sets | Default of a new registration | Changed with |
+|---|---|---|---|
+| `switches.handover` | the handover per blob (R-BAS-071, moved here from the registration's top level) | off | `endpoints:write` |
+| `switches.gui`, `switches.docs` | the web interface and its documentation (W-35's packages define what they switch) | off | `endpoints:write` |
+| `limits.mode` | Audit or Enforce at this Bastion ([usage-and-limits.md](usage-and-limits.md) R-LIM-044) | `enforce` | `limits:write` |
+| `limits.preset` | `internet`, `partnerNetwork` or `internal` (R-LIM-046); `custom` once a kind rule or a flood figure differs from the preset's | `internet` | `limits:write` |
+| the rules of the Bastion place | through `/api/v1/bastions/{name}/limits/assignments` ([usage-and-limits.md](usage-and-limits.md) R-LIM-043) | the preset's kind rules | `limits:write` |
+| `limits.flood` | per address: the request and miss figures of the classes `anonymous`, `authenticated` and `gui`, the failed-authentication timeout, the blocks, the exempt networks (R-BAS-035 to R-BAS-037) | the preset's | `limits:write` |
+| `limits.slots` | `maxConcurrent`, `anonymousShare`, `queueTimeout` (R-BAS-025) | 64, 0.25, 2 s | `limits:write` |
+| `limits.throughput` | R-BAS-097 | unlimited | `limits:write` |
+| `limits.anonymousCeiling` | R-BAS-094 | E4's measurement (R-LIM-046) | `limits:write` |
+| `egress` | the addresses the Bastion connects from (R-BAS-017, R-UI-243) | empty | `endpoints:write` |
+
+- **What stays in the chart**: the cache (backend, sizes, periods), the answers' periods, the timeouts, the replicas, TLS, Valkey, the
+  edge limit `edgeLimit.*` with the new `edgeLimit.exemptCIDRs` (the addresses HAProxy Ingress does not limit, `limit-whitelist`), and
+  what W-35 adds to it (the imprint and the privacy notice). `config.bastion.limits`, `config.bastion.failed_auth`, `config.bastion.blocking`
+  and `config.bastion.main.max_concurrent`, `anonymous_share` and `queue_timeout` leave the chart and the role's schema; a file that still
+  sets one stops startup with an error naming the key (R-BAS-001's rule). The chart's cross-check of `edgeLimit.requestsPerSecond`
+  against the authenticated figure (`_validate.tpl`) goes: the figure is no chart value any more.
+- **Delivery.** The handshake answer carries one member `configuration` (its wire below): `revision`, `switches` and `limits`. `revision`
+  is the registration's revision (`principal.revision`, its `ETag`), which every change of a member above raises, and a change of a rule
+  of the Bastion place or of a profile such a rule names raises as well
+  ([Q-BAS-320](#q-bas-320--the-configuration-travels-as-one-member-with-each-rules-effective-figures-and-its-revision-is-the-registrations)).
+  A change writes the transactional audit event `bastion.configuration.changed` (`details`: the registration, the parts changed, before
+  and after), which the feed maps to a `settings` entry (R-BAS-015), so every replica handshakes again within one poll and one round trip
+  (about 3 s with the defaults); without the feed the next regular handshake (`bastion.main.handshake_interval`) brings it.
+- **Applying.** A replica swaps the whole configuration at once, never a part of it: the guard's figures, the slots, the throughput, the
+  ceiling, the switches and the place's table change together. A configuration the Bastion's rules refuse fails the handshake, as a format
+  table does (Q-BAS-199). The replica exports `quader_bastion_configuration_revision` (the revision it applies) and
+  `quader_bastion_configuration_source{source="main|stored|builtin"}`.
+- **While the main installation cannot be reached**
+  ([Q-BAS-327](#q-bas-327--a-replica-without-its-configuration-serves-with-the-stored-one-else-with-a-built-in-one-that-fails-closed)):
+  a running replica keeps applying its last configuration. Each replica that applied a configuration writes it as one object of its cache
+  backend, `configuration/current.json`, signed with `bastion.signing_key_file` where the backend's entries are signed (R-BAS-032) and in
+  R-BAS-061's stored format with a cache key; a replica that starts while the main installation is unreachable applies that object when
+  its signature holds, and otherwise a built-in configuration that fails closed: every switch off, the Internet preset's flood figures,
+  slots and ceiling, Enforce, throughput unlimited. It leaves the built-in or the stored configuration at its first handshake.
+- **The edge figure.** The Bastion reports its edge figure, which the chart renders into its configuration file as the chart-managed
+  `bastion.edge_limit` (`requests_per_second`, `connections`, or off), with every handshake in the header `Quader-Bastion-Edge-Limit`, and
+  the main installation records it with the contact (R-BAS-010). The card warns where a per-address request figure of the configuration lies
+  above it (R-UI-240): the ingress would refuse what the Bastion admits.
+- **Permissions** ([Q-BAS-325](#q-bas-325--the-limit-members-of-a-registration-need-limitswrite-the-others-endpointswrite)):
+  `PATCH /api/v1/bastions/{name}` takes `limits` with `limits:write` and the other members with `endpoints:write`; `GET` shows `limits` to
+  a holder of `endpoints:read` or `limits:read`.
+
+*Not built* (packages E7, the wire; E8, the main installation's side with migration 00148; E9a, the Bastion's side and the chart; E12, the
+card). Today the flood figures and the slots are chart values and a change is a rollout (R-BAS-002); there is no mode, preset, place,
+throughput or ceiling at a Bastion; `handover` is a top-level member of the registration and the handshake (R-BAS-071); `gui` and `docs`
+do not exist; the egress addresses are the main installation's `bastions.trusted_proxies`, one list for every registration.
+
+Acceptance criteria:
+
+- Unit (`internal/bastion/iface`, under 0.1 s): the member's round trip and its rules (a share outside 0 to 1, a negative figure, an unknown
+  preset fail `Validate`); the interface file at version 8.
+- Unit (`internal/bastionmain`, `internal/api/v1`, about 1.5 s): a `PATCH` of `limits` with `endpoints:write` alone answers `403`, with
+  `limits:write` `200` and raises the revision; a change of a profile a Bastion rule names raises the revision of that registration and of
+  no other; the handshake carries the configuration of the calling registration.
+- Unit (`internal/bastion/link`, `internal/bastion/guard`, about 1 s): a new revision is applied whole; a replica started without the main
+  installation applies the stored object, and with none or a forged one the built-in configuration.
+- Integration (area `bastion`, one case, about 3 s): a change made through the API is applied by the in-process Bastion within the feed's
+  time. Integration (area `bastionreg`, about 3 s): the event, the revision and the feed entry.
+- Chart test: the keys that moved are refused, `edgeLimit.exemptCIDRs` renders `limit-whitelist`, the edge figure is rendered into the
+  configuration file.
+
+### R-BAS-094 · What an anonymous request may cause at the main installation
+Priority: **MVP** · Covers: quader-only
+
+The owner's choice (c) of [Q-BAS-326](#q-bas-326--an-anonymous-ceiling-per-bastion-and-the-one-for-one-paths-removed): a ceiling for all
+anonymous callers of a Bastion together, and the paths on which an anonymous request reached the main installation one for one removed.
+
+- **The anonymous ceiling.** Per registration, `limits.anonymousCeiling`: requests to the main installation per second with a burst, and
+  per hour, for all anonymous callers of that Bastion together. It counts every request a replica sends to the main installation on behalf
+  of an anonymous caller: forwards, conditional requests, checks, and the background refresh of an anonymous answer or document (R-BAS-020,
+  which today no guard counts). Above it the Bastion answers `503 busy` with `Retry-After` (capped by the format, R-BAS-091) in the format's
+  error shape (R-BAS-095); hits are served; a refused request consumes nothing (Q-BAS-127's rule). It is one limiter key, in memory or,
+  with Valkey, in Valkey (each replica holds its share without Valkey, R-ARCH-034).
+- **Anonymous registry tokens come from the Bastion**
+  ([Q-BAS-335](#q-bas-335--the-bastion-answers-an-anonymous-token-request-itself)). A `GET` or `POST /v2/_token` without a credential is
+  answered by the Bastion while `anonymousReads` is true (R-BAS-019 otherwise): `200` with the body of the token service of R-OCI-005
+  (`token`, `access_token`, `expires_in` 300, `issued_at`), the token in the registry token's form with the payload
+  `1:bastion:{"a":true,"exp":<issued + 300 s>}` (version 1, which every reader of the interface reads, so the package needs no raise; no
+  grant and no other claim), and a MAC of 32 random bytes that nobody verifies. Wherever such a token is presented, the Bastion drops it
+  (Q-BAS-168), so the main installation is neither asked for it nor ever sees it.
+- **Anonymous documents are kept like shared ones.** A document the main installation marks `private` for the anonymous subject is the
+  same for every anonymous caller (the anonymous subject is one principal, R-BAS-019): it is kept once per replica, in memory, under the
+  anonymous key and the cache key, and reused for `bastion.cache.metadata_revalidate_after` without a conditional request, under the
+  feed's `content` entries like a shared document (R-BAS-023). It is never written to the cache backend.
+- **Writes** are refused by the Bastion itself (R-BAS-095); no probe reaches the main installation.
+- **The anonymous `/v2/_catalog`** is answered from W-35's public catalogue once that exists; until then it is forwarded under the ceiling.
+- **Anonymous protocol searches** (npm, NuGet, Ansible Galaxy) stay forwarded per request and `pass`, under the ceiling: rendering them
+  needs format knowledge, which the Bastion does not hold (R-BAS-001).
+
+Every way a request at the Bastion reaches the main installation, after the packages of this section:
+
+| # | Path | Today | After |
+|---|---|---|---|
+| 1 | The forward of a `GET` or `HEAD` miss | the per-address miss figures of R-BAS-035 and the slots of R-BAS-025 | plus the subject's upstream budget at the Bastion (R-BAS-096), the anonymous ceiling and the throughput (R-BAS-097) |
+| 2 | A `404` the main installation did not mark `absent` | one for one | under the ceiling |
+| 3 | `pass` routes: search, npm's `-/whoami`, `/v2/_catalog`, `/v2/_token` | one for one | the anonymous token answered at the Bastion; the anonymous catalogue from W-35's catalogue; the rest under the ceiling |
+| 4 | The check of a credential | once per answer period; anonymous answers are shared | unchanged |
+| 5 | The background refresh of an answer | counted by no guard | counted against the ceiling |
+| 6 | A conditional request for a private document | one per use | an anonymous document kept for the metadata period |
+| 7 | The probe of a write | once per distinct method and path | none (R-BAS-095) |
+| 8 | A read route that takes a body | a probe, then the forward | the forward only |
+| 9 to 12 | The download batches, the handshake, the feed, the handover | as today | the batches carry usage and status as well (R-BAS-016) |
+
+The planner derived for today (not measured): rows 1 to 8 are bounded by the 16 anonymous slots of a Bastion of two replicas alone, which
+at 10 ms an answer is about 1,600 requests a second at the main installation from callers spread over many addresses.
+
+*Not built* (package E9a, the ceiling and the background refresh it counts; E14a, the anonymous token and the anonymous documents; E15, the
+writes; W-35's catalogue, `/v2/_catalog`). The ceiling's default is set by the measurement E4 (R-LIM-046).
+
+Acceptance criteria:
+
+- Unit (`internal/bastion/guard`, `internal/bastion/engine`, under 1 s): at a ceiling of 10 a second with a burst of 20, the 21st anonymous
+  miss within the burst answers `503 busy` with `Retry-After` in the format's shape while a hit and a signed-in miss are served; a refused
+  miss consumes nothing; a background refresh of an anonymous answer takes from the ceiling.
+- Integration (area `bastion`, one case, about 3 s): an anonymous `docker pull` replay through the in-process Bastion makes no token request
+  at the counting double of the main installation, and an anonymous npm document read ten times within the period sends one request.
+
+### R-BAS-095 · Writes are refused by the Bastion itself
+Priority: **MVP** · Covers: quader-only
+
+The owner's choice (b) of [Q-BAS-336](#q-bas-336--the-bastion-refuses-a-write-itself), as his note changed it: the Bastion refuses a write
+itself and names nothing of the main installation in the refusal (R-BAS-099). It replaces the probe of R-BAS-014.
+
+- **The refusal.** A request on a package family (`/api/<format>/…`, `/files/…`, `/v2/…`, a bound-host prefix) whose method is not `GET`
+  or `HEAD` answers `403 read_only` with the detail "This address is read-only: it serves downloads and accepts no uploads.", before the
+  Bastion reads a byte of its body and without a request to the main installation. It names no host, no base URL, no image prefix and no
+  "publish to". A write on a path that no route serves answers `403` as well, not `404`.
+- **Read routes that take a body** are the format's declaration: the handshake's format table lists them per format as `readWithBody`
+  (method and path pattern, below the wire). Today they are npm's `POST …/-/npm/v1/security/advisories/bulk` and the registry root's
+  `POST /v2/_token`. A request that matches an entry is forwarded as today, with its body (at most `bastion.main.max_forwarded_body`, a
+  larger body `413 payload_too_large`) and the caller's credential, and its answer is `pass`; an anonymous `POST /v2/_token` is answered by
+  the Bastion (R-BAS-094).
+- **The shape** ([Q-BAS-337](#q-bas-337--a-bastions-own-refusals-take-one-of-four-error-shapes-a-format-declares)). The format table
+  gains `errorShape`, one of four the Bastion renders, and the Bastion uses it for every answer of its own on the format's family (this
+  refusal, the limits of R-BAS-096, the table of R-BAS-029), so a client receives a body it parses:
+
+| `errorShape` | Formats | Body |
+|---|---|---|
+| `problem` | Debian, Ansible Galaxy, generic (`/files/`), the ClamAV definitions; the default for a format the table does not name | problem details (RFC 9457) |
+| `npm` | npm | `{"error": "<detail>"}`, `application/json` |
+| `text` | NuGet | one line `read_only: <detail>`, `text/plain; charset=utf-8` |
+| `distribution` | the registry root | `{"errors": [{"code": "DENIED", "message": "<detail>", "detail": {"code": "read_only"}}]}` (R-BAS-029's mapping of the other codes) |
+
+- **The main installation's backstop** stays: a forwarded write that reaches it anyway (a defect) is refused `403 read_only` in the format's
+  error shape with the same neutral detail. Its admission of probes as the anonymous caller for routing (Q-BAS-118) goes, and so do the
+  headers `Quader-Bastion-Probe` and `Quader-Bastion-Route`.
+- **Kit check 19** gains two duties for every format (R-BAS-058): each route with a writing method whose kind is a read is listed in
+  `readWithBody`, and the format's `WriteError` renders the declared `errorShape`.
+- **What is given up:** the format's own refusal body beyond the four shapes; the `404` of a write to a path without a route; a read route
+  with a body that a format forgets to declare, which is refused and so fails closed (H-2293).
+
+*Not built* (package E7, the members of the format table and the code `read_only`; E15, the refusal at the Bastion, the removal of the probe
+and the kit's duties; E16, the neutral text of the main installation's backstop).
+
+Acceptance criteria:
+
+- Unit (`internal/bastion/engine`, under 1 s): `PUT`, `POST`, `DELETE` and `PATCH` on npm, NuGet, OCI and `/files/` paths answer `403
+  read_only` in the four shapes, the counting double of the main installation records nothing, and less than 64 KiB of a 1 MiB body is
+  read; npm's bulk audit and `POST /v2/_token` with a credential are forwarded.
+- Kit (every format, about 20 ms each): the two duties; a `testformat` defect each.
+- Integration (area `bastion`): `write_test` asserts the Bastion's refusal and no request at the main installation; the probe's cases go, so
+  the area's time falls.
+
+### R-BAS-096 · Limits at a Bastion
+Priority: **MVP** · Covers: BEYOND-030
+
+The owner's choices (c) of [Q-LIM-305](usage-and-limits.md#q-lim-305--a-bastion-protects-per-address-and-budgets-per-subject-on-everything-it-serves),
+(a) of [Q-LIM-300](usage-and-limits.md#q-lim-300--a-preset-per-bastion-rules-on-demand-two-profiles-of-the-bastion),
+(a) of [Q-LIM-306](usage-and-limits.md#q-lim-306--two-budgets-one-at-the-bastion-one-at-the-main-installation) and
+(a) of [Q-LIM-301](usage-and-limits.md#q-lim-301--audit-or-enforce-per-bastion). The model is the main installation's
+([usage-and-limits.md](usage-and-limits.md)), counted at a place of its own (R-LIM-043).
+
+- **Flood protection stays per address**, an IPv6 address counted per `/64` (R-LIM-002's rule): the request and miss figures, the
+  failed-authentication timeout and the blocks of R-BAS-035 to R-BAS-037, with their figures from the configuration (R-BAS-093). A third
+  request class, `gui`, holds the web interface's pages per address
+  ([Q-LIM-307](usage-and-limits.md#q-lim-307--pages-of-the-web-interface-are-a-request-class-of-their-own-per-address)).
+- **Download budgets apply per subject**, to everything the Bastion serves: hits, misses, the web interface's pages and the documentation.
+  The eleven figures of R-LIM-004, read at a Bastion place:
+
+| Figure | At a Bastion |
+|---|---|
+| `requestsPerSecond`, `requestsBurst`, `requestsPerHour` | every request of the subject at the Bastion, after step 4 of R-BAS-018 (the credential decided) |
+| `cachedBytesPerSecond`, `cachedBytesPerHour` | bytes the Bastion serves from its own cache; the per-second figure paces a hit |
+| `uncachedBytesPerSecond`, `uncachedBytesPerHour` | bytes the Bastion reads from the main installation (or by a handover from the object store) for a fill the caller leads; the per-second figure paces that fill |
+| `upstreamRequestsPerHour` | the caller's misses: requests the Bastion sends to the main installation for it |
+| `parallelTransfers` | the subject's transfers in progress at the Bastion (a lease, [Q-BAS-329](#q-bas-329--a-transfer-at-a-bastion-takes-a-lease-that-waits-at-most-10-s-and-the-waiting-leases-hold-at-most-a-quarter-of-a-replicas-request-slots)) |
+| `bytesPerDay` | cached and uncached bytes |
+| `refusedPerHour` | refusals of the subject at the Bastion, then a block (R-LIM-025) |
+
+- **A download is a marking class.** An answer of the class `artifact`, and a file under `/files/`, is a transfer (R-LIM-007): it is
+  checked before it starts against the hour and day figures, paced
+  ([Q-BAS-330](#q-bas-330--a-hit-is-paced-by-the-callers-cached-bytes-per-second-never-below-64-kib-a-second)) and counted as a parallel
+  transfer. A `shared` or `private` document, a page of the web interface and documentation are counted only, as R-LIM-007 says of a
+  document.
+- **Subjects** ([Q-BAS-328](#q-bas-328--the-subject-a-bastion-charges-is-the-one-the-main-installation-names)):
+
+| Caller | Subject key | Where the key comes from |
+|---|---|---|
+| a user | `user:<id>` | the main installation's check answer and marking (`limits.key`) |
+| a technical token | `technical_token:<id>` | as above |
+| a CI project | `ci:<issuer>:<project>` | as above |
+| a certificate | `certificate:<subject>`, decided by the place's kind rule for technical tokens (Q-LIM-96) | as above; whether a Bastion accepts a certificate at all is the owner's open paper (his f5 = a) |
+| an anonymous caller, a page view, a crawler | `anonymous:<address prefix>` | the Bastion |
+
+  The key is the main installation's `limits_subject` of R-LIM-030, never the token ID of the marking: a technical token's subject is
+  `technical_token.id`, not the ID of the secret presented.
+- **Two budgets.** What a caller takes through Bastion B counts against its budget at B's place, and those counters live at the Bastion
+  (memory, or Valkey with cluster scope; without Valkey each replica holds its share). The main installation keeps charging each forward to
+  the caller's own budget there, as today (R-BAS-017, R-LIM-003). The usage overview shows both and their sum (R-LIM-045).
+- **The mode** is the registration's (R-LIM-044): in Audit the budgets count and refuse nothing; the flood protection, the ceiling, the
+  slots and the throughput still hold
+  ([Q-LIM-309](usage-and-limits.md#q-lim-309--in-audit-a-bastion-still-holds-its-flood-protection-ceiling-slots-and-throughput)).
+- **A refusal** carries R-LIM-020's code and members (`rate_limited`, `download_limit_reached`, `upstream_limit_reached`,
+  `too_many_parallel_transfers`, `caller_blocked`), the policy names of R-LIM-020 in the RateLimit fields, a `Retry-After` capped by the format
+  (R-BAS-091), in the format's error shape (R-BAS-095), and no member that names a place of the main installation (R-BAS-099).
+- **Who resolves which rule** ([Q-LIM-302](usage-and-limits.md#q-lim-302--the-main-installation-resolves-a-signed-in-callers-rule-the-bastion-the-address-and-kind-rules)):
+  the main installation resolves a signed-in caller's rule at the Bastion place, because it knows the groups, and names the rule's ID in the
+  check answer and the marking; the handshake carries the place's table, each rule's ID with its effective figures, the address rules and the
+  kind rules; the Bastion resolves the address rules (the longest prefix wins) and the kind rules itself.
+
+*Not built* (package E8, the place, the subject key in the check answer and the marking; E9b, the budgets at the Bastion; E9a, the figures
+from the configuration). Today a Bastion counts requests and misses per client address only, with the chart's figures (R-BAS-035), and what
+it serves from its cache is counted against no budget.
+
+Acceptance criteria:
+
+- Unit (`internal/bastion/engine`, `internal/bastion/shared`, about 2 s): a subject over `cachedBytesPerHour` is refused a hit before it
+  starts and served a document; a hit is paced to the subject's per-second figure; the 65th transfer of a subject at 64 waits and is refused
+  after 10 s; a technical token's two secrets share one budget; an anonymous `/64` is one subject; Audit refuses nothing of the budgets and
+  keeps the blocks.
+- Integration (area `bastionshared`, about 2 s): two replicas share the budgets through Valkey. Integration (area `bastion`, about 5 s): a
+  signed-in caller with a rule of its own at the Bastion place is limited by that rule's figures, and the same caller at the main installation
+  by its rule there.
+
+### R-BAS-097 · The throughput between the main installation and a Bastion
+Priority: **MVP** · Covers: quader-only
+
+The owner's choice (a) of [Q-BAS-331](#q-bas-331--the-maximum-throughput-is-enforced-at-the-bastion-on-every-byte-it-reads): the maximum
+throughput is enforced at the Bastion, on every byte it reads.
+
+- **What is paced.** One pacing reader wraps every body the Bastion reads: a fill from the main installation, an answer passed through, a
+  handover's read from the object store (R-BAS-074), a forwarded document, and W-35's catalogue pull, which counts as the registration's own
+  traffic.
+- **Two buckets per registration**
+  ([Q-BAS-332](#q-bas-332--the-throughput-has-two-buckets-the-total-and-the-anonymous-share)): the total, and the anonymous share of it
+  (`limits.throughput.anonymousShare`, default 25 %). A read an anonymous caller started takes from both; a signed-in caller's read and the
+  catalogue pull take from the total only, the catalogue below the callers' misses in priority.
+- **The figures**: `limits.throughput.bytesPerSecond`, the card's "Maximum throughput to this Bastion" in MB/s, unlimited by default; on
+  demand `bytesPerHour` per class (`anonymous`, `signedIn`, `catalogue`), unlimited by default.
+- **Across replicas**: one bucket in Valkey when the Bastion has one; without, each replica takes `bytesPerSecond ÷ bastion.replicas`.
+- **At the cap**: fills slow down, so their slots stay taken longer; a new miss waits `limits.slots.queueTimeout` and then answers `503 busy`
+  with `Retry-After`; when a class's hourly volume is used up, its next miss answers `429 upstream_limit_reached` (or the format's status,
+  R-BAS-057) with the time to wait; hits are always served.
+- **Metrics**: `quader_bastion_throughput_limit_bytes_per_second`, `quader_bastion_throughput_wait_seconds_total{class}` and
+  `quader_bastion_throughput_refused_total{class,reason="busy|hour"}` beside R-BAS-090's byte counters.
+
+*Not built* (package E10). Today the Bastion has no byte rate towards the main installation: R-BAS-025's slots bound the requests in flight,
+and a handover's read from the object store is not paced (H-2273).
+
+Acceptance criteria:
+
+- Unit (`internal/bastion/shared`, `internal/bastion/engine`, with an injected clock, under 1 s): at 1 MB/s with an anonymous share of 25 %,
+  an anonymous fill reads at most 250 KB in a second while a signed-in fill takes the rest; a new miss at the cap answers `503 busy` after the
+  queue's time; the hourly volume of a class used up answers `429`; a hit is served at once.
+- Integration (area `bastionshared`, about 3 s): two replicas share one cap through Valkey.
+
+### R-BAS-098 · The cache protects what was served twice
+Priority: **MVP** · Covers: quader-only
+
+The owner's choice (b) of [Q-BAS-333](#q-bas-333--what-was-served-twice-is-protected-in-the-cache).
+
+- A fill counts as the first access. Any later serve of the entry from the cache writes a "protected" marker beside the access marker
+  (`protected/<64 hex>`, at most once per `access_resolution` per replica, R-BAS-031's rule).
+- The sweep evicts unprotected entries first, oldest access first, then protected ones. At most 80 % of an area is protected; beyond that
+  the oldest protected entries lose their marker first, so a new working set can take the place of an old one.
+- The encrypted layout (R-BAS-061) keeps the same marker under its tree; R-BAS-089's admission at a commit is unchanged.
+- `quader_bastion_cache_protected_bytes{area}` shows the protected share.
+
+*Not built* (package E11). Today the sweep evicts by last access alone, and a fill is an access (R-BAS-031), so a churn of distinct
+artifacts evicts the working set (H-2272).
+
+Acceptance criteria:
+
+- Unit (`internal/bastion/cache`, under 0.5 s): with an area of 100 entries, 20 read twice and 200 distinct fills after them, the 20 stay;
+  with 90 read twice, at most 80 keep their marker after a sweep; the volume and the bucket layout and the encrypted layout alike.
+
+### R-BAS-099 · A Bastion names nothing of the main installation
+Priority: **MVP** · Covers: quader-only
+
+The owner's rule ([Q-BAS-338](#q-bas-338--a-bastion-reveals-nothing-of-the-main-installation)): "Der Bastion verrät keine internen
+Informationen über die Hauptinstanz." Nothing a Bastion answers, in a body, a header or a page, names, links to or identifies the main
+installation: not its host, base URL or address; not a repository name the caller did not address; not a request ID of the main
+installation; not its policy or rule structure (a place, a rule, a profile); not a version string. What a caller addressed (its repository,
+its package) and content that authors put into a package are not the main installation's and stay.
+
+The places, read in the code on 2026-11-26, and what each shows once its package has landed:
+
+| # | Place | What a client sees today | What it sees then | Package |
+|---|---|---|---|---|
+| 1 | The refusal of a write (`Marker.readOnly` in [mark.go](../../internal/api/bastionmark/mark.go), reached through the probe) | `403 bastion_read_only` "This is a read-only Bastion of https://quader.example.com; publish to https://quader.example.com/api/npm/web/npm-all/", for OCI the image prefix `quader.example.com/web/docker-local`; "This is a read-only Bastion; publish to the main installation." where the base is unknown | `403 read_only` "This address is read-only: it serves downloads and accepts no uploads." | E16 the text at the main installation's backstop; E15 the refusal at the Bastion; E7 the code |
+| 2 | The Bastion's own texts and codes ([respond.go](../../internal/bastion/engine/respond.go), `request.go`, `probe.go`) | `main_unreachable` "The main installation is not reachable; retry later."; `bastion_busy` "The Bastion is at its limit of requests to the main installation; retry."; `main_timeout` "The main installation did not answer in time."; `main_failed` "The main installation did not answer."; `bastion_not_served`; texts of `405`, `413` and `421` that say "Bastion" | the codes and texts of [Q-BAS-321](#q-bas-321--the-bastions-own-codes-are-named-by-their-status-its-texts-name-no-party-and-its-problem-type-is-aboutblank) | E16 the texts; E7 the codes (they are the interface's, `iface/problems.go`) |
+| 3 | The member `type` of problem details (`errs.ProblemTypePrefix`) | `/api/v1/problems/<code>`, a path of the management API, which the Bastion does not serve | `about:blank` on every problem the Bastion renders and on every problem the main installation renders for a recognized forward (Q-BAS-321) | E16 |
+| 4 | The RateLimit policy names of the Bastion's guard (`policyOf` in `request.go`) | `bastion:requests`, `bastion:misses`, `bastion:failed_auth`, `bastion:blocking` | `requests`, `misses`, `failed-auth`, `blocking`; the budgets' policy names of R-LIM-020 once E9b has landed | E16 |
+| 5 | Headers of a forwarded answer (`replayHeader` and `neverReplayed` in `respond.go`; the Bastion's client strips only `Quader-Bastion-*`) | on a miss `Quader-Resolved-From` (the member repository of a virtual repository that served it), OCI's `Quader-Annotations-Cut`, and the main installation's `RateLimit` and `RateLimit-Policy` | an allowlist: the core's representation headers, the format's declared replay headers, `Content-Length`, `Content-Range`, `Accept-Ranges`, `Retry-After`, `WWW-Authenticate`, `Allow`, `Link`, `Docker-Distribution-Api-Version`, and `Location` under row 6; no `Quader-*` header and no RateLimit field of the main installation | E16 |
+| 6 | `Location` of a `3xx` from the main installation (passed by `replayHeader`) | whatever the main installation set; whether a route answers a forward with an absolute URL on its own host is not verified | passed only when relative or on the Bastion's own host; otherwise `502 bad_gateway`, counted | E16 |
+| 7 | Problem bodies of the main installation's refusals passed through (`errs.Write`; the limits' refusal in [errors.go](../../internal/limits/errors.go)) | the main installation's `requestId`; for a signed-in caller "Your limits: <response base URL>/ui/profile/usage", which for a forward is a path of the Bastion's host that the Bastion does not serve; the member `place` | for a recognized forward: no `requestId`, no "Your limits" sentence, no `place`; `figure`, `limit` and `retryAfterSeconds` stay | E16, the main installation's side |
+| 8 | The registry token's payload ([token.go](../../internal/auth/registrytoken/token.go); its claims are readable base64url JSON) | the endpoint's name `e`, the principal kind and ID `pk`, `p`, the underlying token's ID, type and hash `t`, `tt`, `th`, and the key ID; every anonymous caller of a Bastion receives such a token today | an anonymous caller gets the Bastion's own token (R-BAS-094); a signed-in caller payload version 2: `a`, `exp` and `g` readable, the rest sealed (Q-BAS-339) | E14a; E7 the readers; E17 |
+| 9 | Challenges: the Bastion's own (`registryChallenge` in `family.go`; `Basic realm="quader"`) and the main installation's on a forwarded `401` | the Bastion's own host; the main installation's realm is its response base URL, which for a forward is the Bastion's host (R-BAS-017) | unchanged, held by a test | E16 |
+| 10 | URLs in documents: npm's `dist.tarball`, NuGet's service index and `@id`, Galaxy's `href`, OCI's `Link` | rendered on the response base URL, which the handshake holds equal to the Bastion's (R-BAS-010); only the npm and NuGet e2e runs check it | unchanged; every format's integration replay asserts that no byte and no header names the main installation's host, another of its base URLs or `/api/v1/` | E16 |
+| 11 | Debian's `Release` fields ([settings.go](../../internal/formats/deb/settings.go)) | `Origin` from the repository's settings (default `quader`); a remote passes on its upstream's; no host | unchanged: an administrator's or an upstream's content (H-2296) | — |
+| 12 | Client set-up for a Bastion (`client-setup?bastion=`, R-BAS-007) | served by the main installation to its own users, on the Bastion's host, without publish snippets | unchanged; W-35's web interface renders its own on its host | — |
+| 13 | Version strings | no `Server` or version header in the Bastion's answers; `User-Agent` only on its outbound requests; `/metrics` only on the ops listener | unchanged | — |
+| 14 | The anonymous `/v2/_catalog` | the main installation's answer, forwarded | from W-35's public catalogue | W-35 |
+| 15 | Problem texts of a remote's fill that a forward relays (`classify.go` of `internal/proxy`; found while writing this table, not in the planner's list) | "The upstream of web/npm-remote answered 503." and "… cannot be reached." / "… did not answer in time.", which name the member repository of a virtual repository the caller addressed as `web/npm-all` | for a recognized forward, a text without a repository the caller did not address ("The package could not be fetched right now."); the codes stay | E16, with the inventory of W-35's P8 (H-2295) |
+
+Where the code differs from what the planner read: `Quader-Error-Code` is not a header of a package route (only the image scanning's pull
+sets it, `internal/vuln/scanner/pull.go`), so row 5 does not list it; the allowlist covers it either way.
+
+*Not built* (packages E7, E14a, E15, E16, E17, and W-35's catalogue, as the table says). Today rows 1 to 8 and 15 name the main installation as
+the table's third column says, and R-BAS-017's end-to-end criterion holds an exception for the refusal of a write.
+
+Acceptance criteria:
+
+- Unit (`internal/bastion/engine`, `internal/api/bastionmark`, `internal/limits`, about 1 s): every code and text of Q-BAS-321; the
+  allowlist drops `Quader-Resolved-From` and the main installation's RateLimit fields; a `Location` on another host answers `502`; a limits
+  refusal of a recognized forward carries no `requestId`, no `place` and no "Your limits".
+- Integration (every format's replay in `test/integration/bastion`, about 0 s more): the recorder scans every body and header the Bastion
+  answers for the main installation's base URL and host, every `server.additional_base_urls` entry but the Bastion's, and `/api/v1/`;
+  none is found.
+
+## The interface version 8: the shared wire
+
+The wire of this section and of W-35's web interface, built by one package (E7 of [developer/bastion-limits.md](../developer/bastion-limits.md)
+together with W-35's package P5), which raises `iface.InterfaceVersion` once, from 7 to 8
+([Q-BAS-322](#q-bas-322--both-topics-raise-the-interface-version-once-to-8)). Until E8 lands the main installation sends the built-in
+configuration of Q-BAS-327 for every registration, and the Bastion ignores what no package of its side uses yet. *Not built* (package E7);
+the interface is at version 7 today (R-BAS-091).
+
+**The handshake's member `configuration`** (R-BAS-093), beside the members of R-BAS-010 and R-BAS-057; the top-level `handover` goes into
+it:
+
+```json
+{
+  "configuration": {
+    "revision": 17,
+    "switches": {"handover": false, "gui": false, "docs": false},
+    "limits": {
+      "mode": "enforce",
+      "preset": "internet",
+      "place": {
+        "rules": {
+          "0193a0c4-…": {"requestsPerSecond": 50, "requestsBurst": 1000, "requestsPerHour": 20000, "cachedBytesPerSecond": 100000000,
+                          "cachedBytesPerHour": 30000000000, "uncachedBytesPerSecond": 50000000, "uncachedBytesPerHour": 20000000000,
+                          "upstreamRequestsPerHour": 3000, "parallelTransfers": 64, "bytesPerDay": 200000000000, "refusedPerHour": 300}
+        },
+        "addressRules": [{"prefix": "198.51.100.0/24", "rule": "0193a0c5-…"}],
+        "kindRules": {"anonymous": "0193a0c4-…", "user": "0193a0c6-…", "technicalToken": "0193a0c6-…", "ci": "0193a0c6-…",
+                      "administrator": "0193a0c6-…"}
+      },
+      "flood": {
+        "anonymous": {"requestsPerSecond": 50, "burst": 1000, "missesPerMinute": 1000},
+        "authenticated": {"requestsPerSecond": 200, "burst": 4000, "missesPerMinute": 4000},
+        "gui": {"requestsPerSecond": 20, "burst": 100},
+        "failedAuth": {"maxFailures": 20, "windowSeconds": 600, "timeoutSeconds": 900},
+        "blocking": {"threshold": 3000, "windowSeconds": 60, "durationSeconds": 900, "maxDurationSeconds": 86400},
+        "exemptNetworks": []
+      },
+      "slots": {"maxConcurrent": 64, "anonymousShare": 0.25, "queueTimeoutMillis": 2000},
+      "throughput": {"bytesPerSecond": null, "anonymousShare": 0.25,
+                     "bytesPerHour": {"anonymous": null, "signedIn": null, "catalogue": null}},
+      "anonymousCeiling": {"requestsPerSecond": 100, "burst": 1000, "requestsPerHour": 100000}
+    }
+  }
+}
+```
+
+*(example member; the figures of `rules` are the profile Anonymous of R-LIM-010 standing in for "Bastion: anonymous", whose figures E4's
+measurement sets, and the ceiling's figures are examples for the same reason)*
+
+- Every member is always present; a figure is a positive integer or `null` (unlimited); a share lies in 0 to 1; `preset` is `internet`,
+  `partnerNetwork`, `internal` or `custom`; `mode` is `audit` or `enforce`; `kindRules` names a rule for each of the five kinds of R-LIM-011 (a certificate takes the kind rule of the technical tokens, Q-LIM-96);
+  `addressRules` holds canonical prefixes (R-LIM-002) and names rules of `rules`. `Validate` refuses anything else, and a refused member
+  fails the handshake.
+- The types are `iface.Configuration`, `iface.Switches`, `iface.Limits`, `iface.PlaceTable`, `iface.Figures`, `iface.Flood`, `iface.Slots`,
+  `iface.Throughput` and `iface.Ceiling` in [wire.go](../../internal/bastion/iface/wire.go).
+
+**The subject's limits** (R-BAS-096). The check answer's `subject` gains `limits: {"key": "<limits_subject>", "rule": "<rule ID>"}` for a
+usable subject (`token`; for `anonymous` the member is absent, since the Bastion decides an anonymous caller's key and rule itself), and the
+marking gains the header `Quader-Bastion-Limits: key=<limits_subject>; rule=<rule ID>` on every answer that carries
+`Quader-Bastion-Subject: token=…`. The key is percent-encoded as `Quader-Bastion-Package` is (R-BAS-013); the rule is the rule of the
+Bastion place the main installation resolved for the caller, or the kind rule's ID where no single-caller or group rule matched.
+
+**The reporting batch** (R-BAS-016, R-LIM-045). `POST /api/v1/bastion/downloads` gains two members, always present:
+
+```json
+{
+  "events": [],
+  "dropped": 0,
+  "usage": {
+    "bucketSeconds": 300,
+    "rows": [
+      {"bucketStart": "2026-11-26T12:05:00Z", "subject": "user:0191…", "credential": "0192…", "repository": "web/npm-all",
+       "rule": "0193a0c6-…", "requests": 812, "refused": 0, "cachedBytes": 431000000, "uncachedBytes": 2100000,
+       "upstreamRequests": 14, "limited": {"cachedBytesPerHour": 0}, "wouldLimit": {}}
+    ],
+    "overflow": [{"bucketStart": "2026-11-26T12:05:00Z", "subjectKind": "anonymous", "repository": "web/npm-all", "subjects": 3112,
+                  "requests": 41000, "refused": 120, "cachedBytes": 9000000000, "uncachedBytes": 0, "upstreamRequests": 0}]
+  },
+  "status": {
+    "replica": "quader-bastion-7d9c-x2k4q", "at": "2026-11-26T12:05:10Z",
+    "cache": {"bytes": 15032385536, "capacityBytes": 21474836480, "hits": 120400, "misses": 3100, "evictions": 12,
+              "protectedBytes": 9663676416},
+    "throughput": {"limited": false, "bytesPerSecondByClass": {"anonymous": 1200000, "signedIn": 41000000, "catalogue": 0}},
+    "limited": 4, "blocked": 1,
+    "blocks": [{"address": "203.0.113.0/24", "until": "2026-11-26T12:20:00Z", "reason": "refusals"}]
+  }
+}
+```
+
+*(example request)*
+
+- `usage.rows` holds at most 100,000 keys per batch window and the rest in `overflow`, per repository and subject kind (Q-LIM-308);
+  `status.blocks` at most 100, the newest. `events` and `dropped` keep their meaning; the Bastion sends a batch every flush whether or not
+  `recordDownloads` is true, and with it false `events` is empty.
+- The types are `iface.UsageReport`, `iface.UsageRow`, `iface.UsageOverflow` and `iface.ReplicaStatus`.
+
+**The format table** (R-BAS-057) gains, per format:
+
+- `errorShape`: `problem`, `npm`, `text` or `distribution` (R-BAS-095), always present; `catalog.Facts.Bastion.ErrorShape` of the format.
+- `readWithBody`: a list of `{"method": "POST", "path": "<pattern>"}`, the format's routes with a writing method whose kind is a read, as
+  the route table's patterns (`{name}` segments matched as the router matches them); `[]` where there are none. npm's
+  `{"method": "POST", "path": "/api/npm/{project}/{repo}/-/npm/v1/security/advisories/bulk"}` and the registry root's
+  `{"method": "POST", "path": "/v2/_token"}`.
+
+**The problem codes** (R-BAS-029, Q-BAS-321): `bastion_read_only` becomes `read_only`, `bastion_not_served` `not_found`,
+`main_unreachable` `unavailable`, `main_failed` `bad_gateway`, `main_timeout` `gateway_timeout`, `bastion_busy` `busy`. The constants of
+`iface/problems.go` and the code registry of `internal/errs` change with them; `bastion_token_invalid`, `bastion_interface_mismatch`,
+`bastion_base_url_unknown` and `bastion_not_implemented` stay, since they concern the Bastion and never reach a caller. The headers
+`Quader-Bastion-Probe` and `Quader-Bastion-Route` and the value `read-with-body` leave the interface (R-BAS-095).
+
+**The contact** (R-BAS-010) gains two request headers of the handshake, recorded with the replica's contact:
+`Quader-Bastion-Edge-Limit: rps=<n>; connections=<n>` or `off` (R-BAS-093) and W-35's `Quader-Bastion-Catalogue-Kept: true|false`.
+
+**The registry token's readers** (Q-BAS-339): `iface.RegistryTokenAnonymous`, `RegistryTokenExpiry` and `RegistryTokenGrant` read payload
+versions 1 and 2; E17 then issues version 2.
+
+**W-35's catalogue** (that plan's package P5, named here so that the version rises once; its requirements and decisions are that package's):
+
+- Routes, with the Bastion token: `GET /api/v1/bastion/catalogue?after=<seq>&limit=<n>` (`PathCatalogue`), `GET
+  /api/v1/bastion/catalogue/document?path=<path>` (`PathCatalogueDocument`) and `GET /api/v1/bastion/catalogue/public`
+  (`PathCataloguePublic`); `404 not_found` while the registration's `gui` is off, documentation paths only while `docs` is on.
+- Types: `CatalogueChanges{Entries []CatalogueChange{Path, SHA256, Size, Deleted, Seq}, Cursor, More, Reset}` and
+  `CataloguePublic{Projects []string, Repositories []{Name, Format, Class, Wiki bool}}`.
+- The document path grammar as pure functions with a round-trip parser that refuses dot segments and encoded slashes: `index/<n>`,
+  `packages/<id>`, `packages/<id>/versions`, `…/versions/<v>`, `…/readme`, `…/vulnerabilities`, `…/signatures`, `…/contents`, `…/docs`,
+  `…/docs/entries/<type>/<name>`, `…/docs/files/<file>`, `setup/<project>/<repo>/<client>[/<package>/<version>]`,
+  `signatures/objects/<sha256>`, `signing/trusted-root.json`, `signing/chain.pem`.
+- The feed kind the catalogue needs is that package's to name; a `settings` entry already carries a change of `gui` and `docs`.
+
+**What a Bastion of version 7 and a main installation of version 8 do with each other** (R-BAS-009's rule, unchanged): they do not talk.
+The Bastion's handshake answers `400 bastion_interface_mismatch` with `"interfaceVersion": 8`; the Bastion treats the main installation as
+unreachable, serves cached content to callers with live answers for the grace period and `503` afterwards (R-BAS-027), and fires
+`QuaderBastionInterfaceMismatch` (R-BAS-028). A Bastion of version 8 and a main installation of version 7 do the same the other way round.
+Main installation and Bastions are upgraded together, and the release notes say so.
+
+Acceptance criteria:
+
+- `TestR_BAS_009_TheInterfaceChangesOnlyWithItsVersion` with the regenerated surface at version 8; unit tests of every new member's
+  `Validate` and round trip, and of the catalogue's path grammar; under 0.5 s in all.
+
 ## Deferred
 
 | Item | Note |
@@ -4706,14 +5335,17 @@ Q-BAS-271's.
   [H-522](../security/bastion.md#h-522--the-chart-restricts-no-egress-of-the-bastion-pods)).
 - **Where abuse stops.** At the network provider for bandwidth (H-382), at HAProxy Ingress for coarse rates (R-BAS-038), at the
   Bastion for credentials, misses and blocks (R-BAS-035 to R-BAS-037), and at the concurrency budget for what reaches the main
-  installation (R-BAS-025); the main installation's own limits still apply to the real client (R-BAS-017).
+  installation (R-BAS-025); the main installation's own limits still apply to the real client (R-BAS-017). *Specified on 2026-11-26, not
+  built:* at the Bastion also the subject's budgets (R-BAS-096), the anonymous ceiling (R-BAS-094), the throughput (R-BAS-097) and the
+  refusal of writes (R-BAS-095).
 - The perspective page is [../security/bastion.md](../security/bastion.md).
 
 ## Decisions
 
 Each question below was decided by the development agent from the listed options, and the owner reviews the choices at the
-walkthrough, except Q-BAS-1 and Q-BAS-2, which the owner decided on 2026-10-31, and Q-BAS-3 to Q-BAS-21, which the owner
-decided on 2026-11-02.
+walkthrough, except Q-BAS-1 and Q-BAS-2, which the owner decided on 2026-10-31, Q-BAS-3 to Q-BAS-21, which the owner
+decided on 2026-11-02, and Q-BAS-323, Q-BAS-324, Q-BAS-326, Q-BAS-331, Q-BAS-333, Q-BAS-334, Q-BAS-336 and Q-BAS-338, which the owner
+decided on 2026-11-26.
 
 ### Q-BAS-1 · The Bastion asks the main installation and keeps no copy of users, tokens or policies
 
@@ -4999,7 +5631,8 @@ session, no UI." The development agent records no revisit condition.
 
 ### Q-BAS-15 · The Bastion is configured only through its chart
 
-Status: **Decided by the owner on 2026-11-02** — option (a).
+Status: **Decided by the owner on 2026-11-02** — option (a). *Superseded by the owner on 2026-11-26 ([Q-BAS-323](#q-bas-323--a-bastion-is-configured-on-its-card-at-the-main-installation)) for every value the table of R-BAS-093 names: a Bastion's switches, limits, throughput and egress
+addresses come from its registration; the chart keeps the rest. Today, until E8 and E9a land, this decision is what the code does.*
 
 Its entry in the decision log: [ADR-142](../decisions.md#adr-142--the-quader-bastion-an-internet-facing-read-only-cache-instance-in-the-beta).
 
@@ -5141,6 +5774,11 @@ addresses in `server.trusted_proxies`, so its per-address limits apply to the cl
 agent records no revisit condition.
 
 **Applied in the spec:** R-BAS-017, R-BAS-030, R-BAS-031, R-BAS-035 to R-BAS-037.
+
+*Revised on 2026-11-26 by the owner's [Q-BAS-323](#q-bas-323--a-bastion-is-configured-on-its-card-at-the-main-installation) and [Q-BAS-334](#q-bas-334--a-bastions-egress-addresses-belong-to-its-registration):* the limits, the blocks and the failed-authentication
+timeout are set per Bastion on its registration (R-BAS-093), and the main installation believes a Bastion's forwarded address from its
+registration's own egress addresses, no longer from a list in `server.trusted_proxies` or `bastions.trusted_proxies`. *Today, until E9a and
+E13 land:* chart values and `bastions.trusted_proxies`.
 
 ### Q-BAS-22 · The Bastion is a role of the Quader image
 
@@ -5457,6 +6095,10 @@ body; npm and NuGet have none.
 
 **Applied in the spec:** R-BAS-014.
 
+*Superseded on 2026-11-26 by the owner's [Q-BAS-336](#q-bas-336--the-bastion-refuses-a-write-itself):* the Bastion refuses a write itself in one of four error
+shapes ([Q-BAS-337](#q-bas-337--a-bastions-own-refusals-take-one-of-four-error-shapes-a-format-declares)), and the format declares its read
+routes with a body. *Today, until E15 lands:* the probe of option (a) runs.
+
 ### Q-BAS-39 · The Bastion's own refusals are problem details
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
@@ -5542,6 +6184,9 @@ conditional writes. The development agent would revisit this above about a milli
 then be used when Valkey is present.
 
 **Applied in the spec:** R-BAS-030, R-BAS-031, R-BAS-032.
+
+*Revised on 2026-11-26 by the owner's [Q-BAS-333](#q-bas-333--what-was-served-twice-is-protected-in-the-cache):* the sweep lists the protected markers beside the access
+markers and evicts unprotected entries first (R-BAS-098). *Today, until E11 lands:* access markers only.
 
 ### Q-BAS-44 · Unreachable means a failed handshake or a stale feed
 
@@ -6308,6 +6953,10 @@ adds a route of that shape that a Bastion must forward.
 
 **Applied in the spec:** R-BAS-014; code: `internal/api/bastionmark`, `internal/api/rawfiles/handler.go`.
 
+*Revised on 2026-11-26 by the owner's [Q-BAS-336](#q-bas-336--the-bastion-refuses-a-write-itself):* at a Bastion a write is every method but `GET` and `HEAD`
+that the format table's `readWithBody` does not list, refused by the Bastion itself; the route's kind and action stay the test of the main
+installation's backstop. *Today, until E15 lands:* the probe asks the main installation's route as above.
+
 ### Q-BAS-75 · The anonymous cap of the budget is the share rounded down, at least one slot
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
@@ -6583,6 +7232,9 @@ entries of evicted bytes stay in the bucket until read and are not counted in th
 (c) when entries become a measurable share of a bucket (about a million).
 
 **Applied in the spec:** R-BAS-031.
+
+*Revised on 2026-11-26 by the owner's [Q-BAS-333](#q-bas-333--what-was-served-twice-is-protected-in-the-cache):* the documents' reserved share stays; within each area the
+sweep evicts unprotected entries before protected ones (R-BAS-098). *Today, until E11 lands:* by last access alone.
 
 ### Q-BAS-89 · The bucket backend reaches S3 through a plain adapter and fails fast
 
@@ -7182,6 +7834,10 @@ would have to carry it, H-386's deferred address binding).
 `TestR_BAS_017_TheBastionsForwardedHeadersCountOnlyForARecognizedBastionRequest`,
 `TestR_BAS_017_AnUnrecognizedRequestFromTheBastionsEgressForwardsNothing`; open: H-467.
 
+*Superseded on 2026-11-26 by the owner's [Q-BAS-334](#q-bas-334--a-bastions-egress-addresses-belong-to-its-registration):* the egress addresses are a member of each registration,
+and a recognized forward's addresses count only from its own registration's list; `bastions.trusted_proxies` goes. *Today, until E13
+lands:* option (a) as built.
+
 ### Q-BAS-117 · Download events are charged to their registration by their count
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
@@ -7237,6 +7893,9 @@ observer (H-469).
 **Applied in the spec:** R-BAS-014; code: [bastion_services.go](../../internal/api/v1/bastion_services.go) (`BastionRouteAuth`),
 `TestR_BAS_014_AProbeIsAnsweredThroughTheRealAuthenticationStage` (the real stage of `internal/auth`, the real dispatcher and raw file
 handler).
+
+*Superseded on 2026-11-26 by the owner's [Q-BAS-336](#q-bas-336--the-bastion-refuses-a-write-itself):* there is no probe, so nothing is admitted for routing
+alone. *Today, until E15 lands:* as built above.
 
 ### Q-BAS-119 · The check runs the credential through a stage that records nothing in the request log
 
@@ -7375,6 +8034,10 @@ the gap H-459 of the first build.
 `TestR_BAS_025_ClientsThatReadSlowlyDoNotHoldTheBudgetSlots`, `TestR_BAS_025_AWaiterOfACollapsedFetchIsNotHeldByTheLeadersClient`, `TestR_BAS_021_R_BAS_025_TheFillOutlivesTheClientThatStartedIt`,
 `TestR_BAS_025_AWaiterThatWaitsTooLongForTheLeaderAnswers503WithRetryAfter`, `TestR_BAS_025_APassThroughBodyDoesNotHoldItsSlotForAClientThatDoesNotTakeIt`,
 `TestR_BAS_025_TheFloorOfAPassThroughStartsAfterTheGracePeriodAndIsAnAverage`.
+
+*Revised on 2026-11-26 by the owner's [Q-BAS-331](#q-bas-331--the-maximum-throughput-is-enforced-at-the-bastion-on-every-byte-it-reads):* a fill reads the main installation at its own speed up to
+the registration's throughput (R-BAS-097), so at the cap a fill holds its slot longer and new misses wait. *Today, until E10 lands:* at the
+main installation's speed.
 
 ### Q-BAS-124 · A `404` that is not marked `absent` is never kept as a URL answer
 
@@ -9789,6 +10452,336 @@ rate with a credential (now 200).
 with no burst and no `Retry-After`. The development agent would revisit it with a measurement of the busiest second of `npm ci` and of the
 requests in flight of a large `dotnet restore` (H-2276).
 
+*Revised on 2026-11-26 by the owner's [Q-BAS-323](#q-bas-323--a-bastion-is-configured-on-its-card-at-the-main-installation):* the
+Bastion's own figures move to its registration, so the chart's check of the edge figure against them goes (R-BAS-093); the edge's defaults
+of this decision stay, and the card warns where a configured figure lies above the edge figure the Bastion reports. *Today, until E9a
+lands:* the check in `_validate.tpl` holds.
+
+### Q-BAS-320 · The configuration travels as one member with each rule's effective figures, and its revision is the registration's
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the owner's [Q-BAS-323](#q-bas-323--a-bastion-is-configured-on-its-card-at-the-main-installation) puts a Bastion's
+configuration on its registration and delivers it with the handshake. The Bastion holds no profile model and no group (R-BAS-001); the
+rules of its place name profiles, and an administrator changes a profile at the instance without touching a registration.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One member with the effective figures of each rule, the revision the registration's, raised also by a change of a rule of the place or of a profile such a rule names (chosen) | The Bastion compares one integer and applies one value | The Bastion needs no profile model and no resolution of overrides; one revision for the card's `ETag` and the metric | A change of a profile used by many Bastion places raises every such registration's revision and makes every Bastion handshake |
+| (b) Profiles and rules as the main installation holds them, resolved at the Bastion | A second copy of the model at the Bastion | Smaller when many rules share a profile | A second implementation of R-LIM-010's overrides and R-LIM-016's caps in a DMZ |
+| (c) A content hash as the revision | The revision follows the member's bytes | No trigger on profiles | Two revisions of one registration (the `ETag` and the hash); a gauge cannot carry a hash |
+
+**Choice:** (a). **Rationale:** the configuration is the main installation's word and should arrive decided; the handshakes a profile change
+causes are bounded by `bastions.max_registrations` times the replicas. The development agent would revisit it if a profile change ever made
+the handshakes a load. **Applied in the spec:** R-BAS-093, the wire of [The interface version 8](#the-interface-version-8-the-shared-wire).
+
+### Q-BAS-321 · The Bastion's own codes are named by their status, its texts name no party, and its problem type is about:blank
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the owner's rule of [Q-BAS-338](#q-bas-338--a-bastion-reveals-nothing-of-the-main-installation). The two plans of W-34 and W-35
+named the Bastion's own codes and texts differently (W-34: `unavailable`, `busy`, `timeout`, `not_found`, with `main_failed` and
+`main_timeout` both under `timeout`; W-35: `unavailable`, `bad_gateway`, `gateway_timeout`, `busy`, `not_found`), and one kept the
+problem type `/api/v1/problems/<code>` while the other set `about:blank`. One set is built.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Codes by their status (`unavailable` 503, `bad_gateway` 502, `gateway_timeout` 504, `busy` 503, `not_found` 404, `read_only` 403), texts that say "this service" or "this address", the type `about:blank` (chosen) | A client reads the status's meaning and nothing behind it | Names no party and no structure; keeps 502 and 504 apart; `not_found` and `unavailable` are the core's codes already; `about:blank` is RFC 9457's type for "no more than the status" | Three new codes in the registry (`bad_gateway`, `gateway_timeout`, `busy`) beside `read_only` |
+| (b) W-34's four codes | `timeout` for 502 and 504 | Fewer codes | A `502` called a timeout |
+| (c) The core's codes of an upstream (`upstream_failed`, `upstream_timeout`, `server_busy`) | No new code | Reuse | "Upstream" tells a caller there is an installation behind the address |
+| (d) Keep the type `/api/v1/problems/<code>` | Unchanged | No change | A path of the management API on the Bastion's host, which answers `404` there |
+
+**Choice:** (a), with these texts: `unavailable` "This service is not available right now; try again later.", `bad_gateway` "This service
+could not answer; try again later.", `gateway_timeout` "This service did not answer in time; try again later.", `busy` "Too many requests
+are waiting; try again in a moment.", `not_found` "Nothing is served at this address.", `read_only` "This address is read-only: it serves
+downloads and accepts no uploads." (the text told to the owner on 2026-11-26), `method_not_allowed` "This address serves GET and HEAD.",
+`misdirected_request` "This address does not answer for the host of the request.", `payload_too_large` "The body is too large.". The type
+is `about:blank` on every problem the Bastion renders and on every problem the main installation renders for a recognized forward.
+**Rationale:** a code is a contract with clients and an operator; one named by its status carries no more than the status line does. The
+development agent would revisit it if a client is found that reads a code. **Applied in the spec:** R-BAS-029, R-BAS-099, the wire.
+
+### Q-BAS-322 · Both topics raise the interface version once, to 8
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: W-34 (limits, throughput, writes, names) and W-35 (the web interface's catalogue and switches) both change the interface; equality
+of versions is the owner's rule (Q-BAS-20), so every raise is a lockstep upgrade of the main installation and every Bastion.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One package lands the whole wire of both topics at version 8; the packages behind it change no wire (chosen) | E7 with W-35's P5 | One lockstep upgrade; the sides are built against a fixed contract | The wire lands before the behaviour; members are carried that nobody reads yet |
+| (b) A raise per package | 8, 9, 10, … | Each raise carries what is built | Up to six lockstep upgrades in a week; each side's packages wait on each other's raises |
+
+**Choice:** (a). The registry token's version 2 is read from 8 on and issued later by E17, which changes no wire. **Rationale:** the
+upgrade, not the code, is what a raise costs an operator. **Applied in the spec:** R-BAS-009, the wire.
+
+### Q-BAS-323 · A Bastion is configured on its card at the main installation
+
+Status: **Decided by the owner on 2026-11-26** — option (a) of his working paper (k1), stored at 11:51.
+
+Context: a Bastion's limits are chart values and a change is a rollout (R-BAS-002, the owner's Q-BAS-15); at the main installation only the
+handover can be switched per Bastion. His task of 10:40 asks that "die Download-Limits … sich durch den Administrator detailiert
+konfigurieren lassen" and that a configuration per Bastion be possible.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) On its card at the main installation (chosen) | Limits, flood protection, throughput, mode and the switches (handover, GUI, docs) belong to the registration and reach the Bastion with the handshake; the chart keeps what the installation sizes: the cache's size, the periods, TLS | One place for every Bastion, audited, in force in about 3 s without a rollout; before the first contact the strict preset holds with every switch off | Changes the owner's earlier "chart values only" (Q-BAS-15); the interface version rises |
+| (b) In the chart values, as today | Nothing changes | GitOps | Against his task; a rollout per change; the administrator sees nothing |
+| (c) Both, the stricter value wins | The chart as a floor | The operator of the DMZ keeps a lever | Two truths; the card shows values that do not hold |
+
+**Choice:** (a), the owner's decision. It supersedes his Q-BAS-15 for every value the table of R-BAS-093 names. **Applied in the spec:**
+R-BAS-002, R-BAS-010, R-BAS-035 to R-BAS-038, R-BAS-046, R-BAS-071, R-BAS-093;
+[ADR-300](../decisions.md#adr-300--a-bastion-is-a-place-of-the-download-limits-configured-from-the-main-installation-and-names-nothing-of-it).
+
+### Q-BAS-324 · A Bastion reports usage and status on the channel of its download events
+
+Status: **Decided by the owner on 2026-11-26** — option (b) of his working paper (k10), stored at 11:51.
+
+Context: the connection runs from the Bastion to the main installation only; the main installation cannot ask a Bastion anything.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Metrics only | Prometheus | Nothing new | Nothing on the screens |
+| (b) The Bastion reports usage and state (chosen) | Over the reporting channel that exists; the card shows live the preset, the mode, the throughput against its cap, the cache (fill, hit rate, evictions) and who is limited now; the usage overview gains the filter "through Bastion …" | No new route and no new background task at the Bastion | A budget for the reports per Bastion |
+
+**Choice:** (b), the owner's decision. **Applied in the spec:** R-BAS-016, the wire, [usage-and-limits.md](usage-and-limits.md) R-LIM-027,
+R-LIM-029, R-LIM-045, [api-and-ui.md](api-and-ui.md) R-UI-240, R-UI-242.
+
+### Q-BAS-325 · The limit members of a registration need limits:write, the others endpoints:write
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: a registration is changed with `endpoints:write` (R-BAS-004); limits are changed with `limits:write` everywhere else
+([authorization.md](authorization.md) R-AUTHZ-040). The card now holds both.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `limits` with `limits:write`, the rest with `endpoints:write`; reading `limits` with either read capability (chosen) | One operation, the member decides | The limits are held by the same capability at every place; an administrator of endpoints cannot lift a Bastion's limits | A change of both kinds needs both capabilities |
+| (b) Everything with `endpoints:write` | As today | One capability | A holder of `endpoints:write` lifts the limits that `limits:write` guards elsewhere |
+| (c) A capability of its own | `bastions:write` | Precise | A new capability for one screen |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-093, [usage-and-limits.md](usage-and-limits.md) R-LIM-043.
+
+### Q-BAS-326 · An anonymous ceiling per Bastion, and the one-for-one paths removed
+
+Status: **Decided by the owner on 2026-11-26** — option (c) of his working paper (k2), stored at 11:51.
+
+Context: five kinds of anonymous request reached the main installation one for one: unknown names, search, the catalog and the token
+service, the documents of a partial reader, writes, and read routes with a body; bounded per address (then 30 misses a minute) and by the
+16 anonymous slots, which the planner derived as about 1,600 calls a second from many addresses.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) As today | The miss figure per address and the 16 slots | Nothing to build | Grows with the number of addresses; against the owner's core idea |
+| (b) A ceiling per Bastion for all anonymous callers together | Per second and per hour; above it the Bastion answers "later" itself; hits keep being served | One figure that does not grow with the addresses | Up to the ceiling everything still goes through one for one |
+| (c) The ceiling, and the one-for-one paths removed (chosen) | The Bastion answers anonymous token requests itself, keeps anonymous documents for every anonymous reader, refuses writes itself (Q-BAS-336), and the catalog and search come from the web interface's public catalogue | The least load on the main installation per internet request; the ceiling catches the rest | Two rules of the Bastion change |
+
+**Choice:** (c), the owner's decision. Anonymous protocol searches stay forwarded under the ceiling: they need a format's rendering, which
+the Bastion does not hold (R-BAS-094). **Applied in the spec:** R-BAS-023, R-BAS-025, R-BAS-051, R-BAS-094.
+
+### Q-BAS-327 · A replica without its configuration serves with the stored one, else with a built-in one that fails closed
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the owner's Q-BAS-323 holds a configuration only as long as the replica runs; his W-35 decision that the web interface serves on
+while the main installation is unreachable means something is served during an outage, also by a replica that restarted in it. The option he
+chose said "before the first contact the strict preset holds with every switch off".
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The last configuration stored in the cache backend, signed where its entries are; without one, a built-in configuration: every switch off, the Internet preset, Enforce (chosen) | One object, one value in memory | A restarted replica keeps the administrator's figures and switches; a replica without them is as strict as a new registration | A replica with an ephemeral volume, restarted in an outage, loses an administrator's stricter figures (H-2285) |
+| (b) The built-in configuration only | Nothing stored | Smaller | A restart in an outage turns the web interface off and an administrator's stricter figures into the preset's |
+| (c) Refuse to serve without a configuration | | Never a figure the administrator did not set | A restart in an outage ends what the grace period of R-BAS-027 promises |
+| (d) Chart values as the fallback | The old keys stay | The operator decides | Two places for one value (the owner's option (c) of k1, not chosen) |
+
+**Choice:** (a). **Rationale:** it follows from the owner's two answers together and adds no option of its own; the stored object costs one
+write per revision. **Applied in the spec:** R-BAS-093.
+
+### Q-BAS-328 · The subject a Bastion charges is the one the main installation names
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the owner's Q-LIM-305 charges a subject at the Bastion. The marking names the presented token's ID (R-BAS-013), which for a
+technical token is a secret's, not the token's subject (R-LIM-001), and for a user is one of several credentials.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The main installation names the subject key (`limits_subject` of R-LIM-030) in the check answer and the marking (chosen) | One member and one header | The Bastion charges what the main installation would; a user's tokens share a budget, a technical token's secrets too | The key travels to the Bastion (H-2281) |
+| (b) The Bastion keys on the token ID of the marking | Nothing new on the wire | Smaller | Each secret and each personal token is a budget of its own: rotating a secret resets the budget |
+| (c) The principal ID | Already in the marking | Nothing new | A technical token is no principal; every CI job of a project would be a principal of its own |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-096, the wire.
+
+### Q-BAS-329 · A transfer at a Bastion takes a lease that waits at most 10 s, and the waiting leases hold at most a quarter of a replica's request slots
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: `parallelTransfers` at a Bastion (R-BAS-096). The main installation's rule is R-LIM-024 with the owner's decision 21 (waiting
+downloads hold at most a fixed share of a replica's request slots, Q-LIM-60).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The main installation's rule: a wait of at most 10 s, waiting leases at most a quarter of `server.max_in_flight` (chosen) | The same numbers at both doors | One rule; the owner's decision 21 holds at the Bastion too | A slow link makes a waiting transfer fail after 10 s, as at the main installation (H-2261) |
+| (b) No wait | A transfer beyond the figure is refused at once | No held slot | `dotnet restore` and `ctr` open one transfer per package or layer and fail at once |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-096.
+
+### Q-BAS-330 · A hit is paced by the caller's cached bytes per second, never below 64 KiB a second
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: `cachedBytesPerSecond` paces a download at the main installation (R-LIM-023) with a floor of `limits.pacing.min_bytes_per_second`.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The same pacing at the Bastion, with the same floor of 64 KiB a second (chosen) | A hit is slowed, never refused for its rate | One rule; a slow caller still finishes | A paced hit holds a request slot of the replica longer (H-2288) |
+| (b) No pacing of hits | Only the hour and day figures | Nothing held | The per-second figure means nothing at a Bastion, where most bytes are hits |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-096.
+
+### Q-BAS-331 · The maximum throughput is enforced at the Bastion, on every byte it reads
+
+Status: **Decided by the owner on 2026-11-26** — option (a) of his working paper (k8), stored at 11:51.
+
+Context: towards the main installation a Bastion has 64 slots and no byte rate; by a handover it reads a blob from the object store
+unthrottled. His task of 10:40: "Auch finde ich gut, wenn man zusätzlich den maximalen Throughput zwischen Hauptinstanz und Bastion
+konfigurieren könnte".
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) At the Bastion, on every byte it reads (chosen) | From the main installation and from the object store, per Bastion across its replicas; a field "Maximum throughput to this Bastion" (MB/s) on the card, Unlimited by default; under Details GB per hour and the anonymous callers' share (25 %); at the cap fills slow down, new misses wait and get "later"; hits keep being served | One place covers both sources; only who reads a link of the object store can slow it; the anonymous class's hourly figure is the ceiling of all anonymous callers together | A taken-over Bastion ignores it; then the callers' budgets at the main installation still hold |
+| (b) At the main installation | It slows what it writes to a Bastion | Cannot be manipulated | Cannot slow a read from the object store |
+| (c) Both | | The strongest | Twice the code for one figure |
+
+**Choice:** (a), the owner's decision. **Applied in the spec:** R-BAS-025, R-BAS-054, R-BAS-074, R-BAS-097; H-1244, H-2273.
+
+### Q-BAS-332 · The throughput has two buckets: the total and the anonymous share
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the owner's Q-BAS-331 names the anonymous callers' share (25 %); W-35's catalogue pull is traffic of the registration itself.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Two buckets, the total and the anonymous share; an anonymous read takes from both, a signed-in read and the catalogue from the total (chosen) | Two keys | Anonymous floods cannot take more than their share, signed-in callers can use what anonymous ones leave | A signed-in flood can still take the whole total |
+| (b) Three fixed shares (anonymous, signed-in, catalogue) | | Nobody starves | Bandwidth left unused when a class is idle |
+| (c) One bucket | | Simplest | An anonymous flood takes the whole cap from signed-in callers |
+
+**Choice:** (a), with the catalogue below the callers' misses in priority (W-35's rule). **Applied in the spec:** R-BAS-097.
+
+### Q-BAS-333 · What was served twice is protected in the cache
+
+Status: **Decided by the owner on 2026-11-26** — option (b) of his working paper (k9), stored at 11:51.
+
+Context: the sweep evicts what was touched longest ago, and a fill counts as a touch; the planner derived that four addresses exchange a
+cache of 18 GiB in about five minutes. That the cache overflowed between sweeps is fixed (R-BAS-089).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) As today | The overflow fix only | Nothing new | An attacker keeps evicting what is really used |
+| (b) What was served twice is protected (chosen) | The sweep first evicts what was fetched once; at most 80 % of the cache is protected | Single fetches of many artifacts cannot evict the working set; a new artifact is still kept at its first fetch; no setting | One more marker per entry |
+| (c) Keep only at the second miss | | Churn never enters the cache | Every new artifact crosses the transfer network twice |
+| (d) A fixed share of the cache for anonymous fills | | Bounds anonymous churn | Public content is read by signed-in callers too |
+
+**Choice:** (b), the owner's decision. **Applied in the spec:** R-BAS-031, R-BAS-098; H-2272.
+
+### Q-BAS-334 · A Bastion's egress addresses belong to its registration
+
+Status: **Decided by the owner on 2026-11-26** — option (a) of his working paper (k12), stored at 11:51.
+
+Context: the main installation believes a forwarded client address only from addresses of a list in its configuration file
+(`bastions.trusted_proxies`, Q-BAS-116), empty by default: then every anonymous caller of a Bastion shares one budget, and a block hits all.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) On the card of the Bastion (chosen) | Each registration names its own egress addresses; only from there its forwarded address counts | A Bastion speaks only for itself; on the screen; ends the silent default fault | A migration |
+| (b) In the file, as today | | | Empty by default |
+| (c) No list | Every recognized Bastion token is believed | Nothing to set | A stolen Bastion token chooses client addresses and evades every per-address budget |
+
+**Choice:** (a), the owner's decision. The configuration key `bastions.trusted_proxies` goes. **Applied in the spec:** R-BAS-017, R-BAS-093,
+[api-and-ui.md](api-and-ui.md) R-UI-243; Q-BAS-116.
+
+### Q-BAS-335 · The Bastion answers an anonymous token request itself
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the owner's Q-BAS-326 (c) removes the token service from the one-for-one paths. A registry token whose claims say anonymous is the
+anonymous caller at the Bastion already, wherever it is presented (Q-BAS-168), and the Bastion holds no key of the main installation.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The Bastion issues a token of the registry token's form, payload version 1 with only the claims `a: true` and `exp`, key ID `bastion`, a MAC of random bytes that nobody verifies (chosen) | The client's flow is unchanged; the token is dropped where presented | No request to the main installation; no key at the Bastion; a forged anonymous token gains nothing, since it is the anonymous caller | A token that looks signed and is not |
+| (b) Answer `401` and let the client go on without a token | | Nothing issued | docker and containerd do not pull without a token once challenged |
+| (c) Keep one token from the main installation per replica and hand it to every anonymous caller | One request per lifetime | A genuine token | A token of the main installation, with its key ID and endpoint, in every anonymous caller's hand (R-BAS-099 row 8) |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-051, R-BAS-052, R-BAS-094.
+
+### Q-BAS-336 · The Bastion refuses a write itself
+
+Status: **Decided by the owner on 2026-11-26** — option (b) of his working paper (k3), stored at 11:51, changed by his note.
+
+Context: the Bastion has no write API, but sends every write as a bodiless probe to the main installation, so that the refusal has the
+client protocol's shape and names the address to publish to (the development agent's Q-BAS-38).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The main installation, by a probe, as today | | The refusal exactly in every format's shape | Every write from the internet reaches the main installation |
+| (b) The Bastion itself (chosen) | 403 "read-only" for everything but GET and HEAD, ~~with the sentence where to publish~~; the few read routes with a body (npm's audit, docker login) are a list per format in the format facts and go through as today | No write reaches the main installation; the probe and its cache go | The refusal no longer has each format's own error shape; a write to an unknown path gets 403 instead of 404 |
+| (c) The Bastion itself, with 405 and no address | | The simplest | The client does not learn where to publish |
+
+**Choice:** (b), the owner's decision, without the sentence where to publish. His note: "Der Bastion verrät keine internen Informationen
+über die Hauptinstanz. Es ist davon auszugehen, das es einen Grund gibt wieso ein User auf dem Bastion landet und nicht direkt auf der
+Hauptinstanz." It supersedes Q-BAS-38, Q-BAS-74's consequence for a Bastion, and Q-BAS-118. **Applied in the spec:** R-BAS-014, R-BAS-051,
+R-BAS-058, R-BAS-095.
+
+### Q-BAS-337 · A Bastion's own refusals take one of four error shapes a format declares
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the owner's Q-BAS-336 gives up the format's own refusal shape. A client that cannot parse a body prints nothing useful: npm reads
+`error` of a JSON body, NuGet prints the reason phrase and a text body, docker reads the distribution's `errors`.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Four shapes the Bastion renders, chosen per format by a fact in the format table (chosen) | `problem`, `npm`, `text`, `distribution`; used for every answer of the Bastion's own | Each client gets a body it reads; no format code at the Bastion; a fifth shape is a raise of the interface | The four are a fixed list |
+| (b) Problem details everywhere, `distribution` below `/v2/` | Today's R-BAS-029 | Nothing new | npm and NuGet print a status without a reason |
+| (c) The format ships a template | | Every shape | Format knowledge as data the Bastion interprets |
+
+**Choice:** (a); kit check 19 holds `WriteError` to the declared shape. **Applied in the spec:** R-BAS-029, R-BAS-058, R-BAS-095.
+
+### Q-BAS-338 · A Bastion reveals nothing of the main installation
+
+Status: **Decided by the owner on 2026-11-26** — his note to k3 of his working paper, stored at 11:51; read by the development agent as a
+rule for every answer, and told to him.
+
+Context: a Bastion's refusal of a write named the main installation's URL (R-BAS-014); the planner of W-34 found fourteen places of a
+Bastion's answers to read, eight of which name the main installation today (R-BAS-099).
+
+The owner's words: "Der Bastion verrät keine internen Informationen über die Hauptinstanz. Es ist davon auszugehen, das es einen Grund
+gibt wieso ein User auf dem Bastion landet und nicht direkt auf der Hauptinstanz."
+
+**Choice:** the rule of R-BAS-099, for every body, header and page a Bastion answers. There were no options: it is his rule. The codes and
+texts are [Q-BAS-321](#q-bas-321--the-bastions-own-codes-are-named-by-their-status-its-texts-name-no-party-and-its-problem-type-is-aboutblank).
+**Applied in the spec:** R-BAS-017, R-BAS-029, R-BAS-099;
+[ADR-300](../decisions.md#adr-300--a-bastion-is-a-place-of-the-download-limits-configured-from-the-main-installation-and-names-nothing-of-it).
+
+### Q-BAS-339 · A registry token reads only its anonymity, its expiry and its grant
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the registry token's payload is readable base64url JSON (R-OCI-005): the endpoint's name, the principal's kind and ID, the
+underlying token's ID, type and hash, and the key ID reach every caller through a Bastion (R-BAS-099 row 8). The Bastion reads `a`, `exp` and
+`g` without verifying them (Q-BAS-168, Q-BAS-252, Q-BAS-246).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Payload version 2: `a`, `exp` and `g` readable, every other claim sealed under a key of the main installation's ring (chosen) | `2:<key id>:<readable JSON>:<sealed>` | The Bastion keeps its three readers; nothing else of the main installation is legible | A second payload version to read |
+| (b) Everything sealed, the Bastion asks the main installation | | Nothing legible | A request per token at the Bastion, against Q-BAS-326 |
+| (c) As today | | Nothing to build | The main installation's internals in every caller's hand |
+
+**Choice:** (a). The key ID of a version-2 token is opaque (a hash of the ring's key ID), so it names no key of the ring either.
+**Applied in the spec:** R-BAS-052, R-BAS-099, [formats/oci.md](formats/oci.md) R-OCI-005.
+
 ## What this does not cover
 
 ### H-382 · A volumetric attack on bandwidth is not absorbed by the Bastion
@@ -9870,6 +10863,10 @@ Dormant until phase 5b; then live on a Bastion whose main installation has `publ
 not bound a flood spread over many addresses. The anonymous share of `max_concurrent` bounds what reaches the main installation,
 and authenticated callers keep their share, but legitimate anonymous callers wait or get `503 bastion_busy` while it lasts. What
 makes it real: a botnet against a public repository; the edge limit (R-BAS-038) and the network provider are the next lines.
+
+*Revised on 2026-11-26:* the owner's [Q-BAS-326](#q-bas-326--an-anonymous-ceiling-per-bastion-and-the-one-for-one-paths-removed) adds a ceiling for all anonymous callers of a Bastion together
+(R-BAS-094), which bounds what such a flood sends to the main installation independently of the slots; legitimate anonymous callers still
+wait or get `503 busy` while it lasts. *Today, until E9a lands:* the slots alone bound it.
 
 ### H-389 · Without Valkey a block and a counter hold on one replica only
 
@@ -10384,6 +11381,10 @@ abandoned. What makes it real: an attacker below the limits, from several addres
 says that it need not wait for them. Narrowed by the handover (R-BAS-074): a fill read from the object store frees its budget slot with the
 handover's answer, so where a registration's handover is on, such fills hold the spool and no slot; the spool's part stays.
 
+*Revised on 2026-11-26 by the owner's [Q-BAS-331](#q-bas-331--the-maximum-throughput-is-enforced-at-the-bastion-on-every-byte-it-reads):* the throughput paces fills (R-BAS-097), so at the cap a cold fill
+holds its slot and its spool longer than the figures above; the cap bounds the bytes, the slots still bound the fills in flight. *Today,
+until E10 lands:* as above.
+
 ### H-1245 · A caller on another replica waits for a running fill without a byte up to fill_wait_max
 
 Stage: R-BAS-054, the fetch lock across replicas (the bucket backend with Valkey). Subject: the time to the first byte of a large
@@ -10688,6 +11689,11 @@ today: the main installation's per-caller budgets, the Bastion's per-address mis
 an answer of the owner in W-34: an eviction that protects what was served twice, a maximum throughput per Bastion, and download budgets per
 caller at the Bastion; none of them is built here.
 
+*Decided on 2026-11-26:* the owner chose all three remedies: the cache protects what was served twice
+([Q-BAS-333](#q-bas-333--what-was-served-twice-is-protected-in-the-cache), R-BAS-098, package E11), the throughput is capped per Bastion ([Q-BAS-331](#q-bas-331--the-maximum-throughput-is-enforced-at-the-bastion-on-every-byte-it-reads), R-BAS-097, E10), and budgets
+per subject apply at the Bastion ([usage-and-limits.md](usage-and-limits.md) Q-LIM-305, R-BAS-096, E9b). *Today, until those land:* live as
+described.
+
 ### H-2273 · The bytes between a Bastion and the main installation are counted and not bounded
 
 Stage: R-BAS-090, the forwards of R-BAS-021 and the direct reads of R-BAS-074. Subject: the network between the main installation and a
@@ -10698,6 +11704,11 @@ Bastion. What bounds it today is per caller and per slot: a forward is the calle
 paced against the caller's budget (with `bastions.trusted_proxies` listing the Bastion's egress), and a Bastion holds at most
 `bastion.main.max_concurrent` requests to the main installation. Many callers within their budgets, from many addresses, together fill the
 network. What would close it: a maximum throughput per Bastion, which waits for the owner's decision in W-34.
+
+*Decided on 2026-11-26:* the owner chose a maximum throughput per Bastion, enforced at the Bastion on every byte it
+reads ([Q-BAS-331](#q-bas-331--the-maximum-throughput-is-enforced-at-the-bastion-on-every-byte-it-reads), R-BAS-097, package E10); a taken-over Bastion ignores it
+([H-2289](../security/bastion.md#h-2289--a-bastion-that-was-taken-over-ignores-its-throughput-cap)). *Today, until E10 lands:* live as
+described.
 
 ### H-2274 · The main installation counts no handover, and the Bastion counts only its fills by class
 
@@ -10745,3 +11756,8 @@ refused beyond the burst, and docker exits at the first `429`; the main installa
 the profile Technical. What makes it real: a company that reaches a Bastion from one egress address for its build fleet. The address can be
 listed in `bastion.blocking.exempt_cidrs`, which exempts it from every limit, timeout and block; what would close it is limits by subject
 at the Bastion, which wait for the owner's decisions of W-34.
+
+*Decided on 2026-11-26:* the owner chose budgets per subject at the Bastion beside the flood protection per address
+([usage-and-limits.md](usage-and-limits.md) Q-LIM-305, R-BAS-096, package E9b), and the flood figures per Bastion on its card (R-BAS-093); a
+Bastion for a build fleet takes the preset Partner network or a higher `authenticated` figure. The per-address flood figures stay one
+person's under the preset Internet. *Today, until E9a and E9b land:* live as described.

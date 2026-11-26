@@ -258,7 +258,12 @@ claims and rules of its own (R-OCI-037); every rule of this requirement holds fo
   registry token v1` (R-ARCH-021): the active key signs, every key of the ring verifies, so a rotation of the ring needs no new
   secret and old tokens end with their lifetime or with the removal of their key from the ring. A grant that does not fit in
   4 KiB is refused with 400 `invalid_request`, never cut. The token is not a reference token (R-AUTH-022): it is never stored,
-  and the scanner pattern of R-AUTH-022 does not match it.
+  and the scanner pattern of R-AUTH-022 does not match it. *Revised on 2026-11-26 ([bastion.md](../bastion.md) R-BAS-099,
+  [Q-BAS-339](../bastion.md#q-bas-339--a-registry-token-reads-only-its-anonymity-its-expiry-and-its-grant)):* payload version 2,
+  `2:<opaque key id>:<readable claims>:<sealed claims>`, keeps `a`, `exp` and `g` readable and seals every other claim (the endpoint, the
+  principal, the underlying token's ID, type and hash) under a key derived from the same ring, so a caller, and a Bastion it passes
+  through, reads nothing of the main installation beyond its own grant and expiry; the verifier reads versions 1 and 2. *Today, until
+  E17 of [developer/bastion-limits.md](../../developer/bastion-limits.md) lands:* version 1, every claim readable.
 - **Lifetime.** `oci.token_lifetime` (# default (proposed) `300s`, range 60 s to 3600 s), never beyond the expiry of the token
   that authenticated the request. `expires_in` says it.
 - **Verification** happens in the authentication stage (R-AUTH-001) and never touches PostgreSQL on its own: the MAC with the

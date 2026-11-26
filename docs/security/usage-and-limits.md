@@ -4,7 +4,7 @@ Perspective: how much one caller can take from Quader and from the upstreams beh
 what the usage overview records about people and addresses, and where the bounds stop. The mechanisms are specified on
 [spec/usage-and-limits.md](../spec/usage-and-limits.md) (walk item W-26, the owner's decisions of 2026-11-19) and
 [identity-and-authentication.md](../spec/identity-and-authentication.md) R-AUTH-045 and R-AUTH-046 (technical tokens, a
-repository's service accounts). All of it is built: the technical tokens and a repository's service accounts (the code is described
+repository's service accounts). All of it is built but [a Bastion as a place](#a-bastion-as-a-place), specified on 2026-11-26: the technical tokens and a repository's service accounts (the code is described
 on [tokens-and-credentials.md](tokens-and-credentials.md) and [permissions.md](permissions.md#account-grants)), the accounting, the
 enforcement, the usage store and the screens ([developer/usage-and-limits.md](../developer/usage-and-limits.md)). Where the code
 differs from what the specification promises, the gap is named below. What was built before on the same paths is on
@@ -133,7 +133,28 @@ downloads admitted before a byte budget was reached and one second of unflushed 
 ([R-LIM-018](../spec/usage-and-limits.md#r-lim-018--windows-and-their-precision-across-replicas)). While it is not, each replica
 counts its share from zero (H-1005).
 
+## A Bastion as a place
+
+The owner's decisions of 2026-11-26 (W-34; [spec/usage-and-limits.md](../spec/usage-and-limits.md#a-bastion-as-a-place) R-LIM-043 to
+R-LIM-046, [spec/bastion.md](../spec/bastion.md) R-BAS-096), **specified and not built**
+([developer/bastion-limits.md](../developer/bastion-limits.md)): each Bastion is a place of the rules, and what it serves, its hits
+included, is counted against the caller's budget at that place, in the Bastion's memory or its Valkey. What changes for this page's
+perspective once the packages have landed:
+
+- **Two budgets.** A forward of a Bastion is charged at the main installation as before and at the Bastion as well; neither replaces the
+  other, so a taken-over Bastion that ignores its own budgets still meets the main installation's for everything it forwards.
+- **The Bastion decides a budget with the main installation's words.** The subject key and the applying rule of a signed-in caller come
+  with the check answer and the marking (Q-LIM-302); a change of a group reaches the Bastion's charge with the caller's next answer
+  ([H-2284](#h-2284--a-changed-membership-reaches-a-bastions-charge-only-with-the-callers-next-answer)).
+- **Audit at a Bastion is not "nothing refused".** The budgets of its place stop refusing; its flood protection, the anonymous ceiling, the
+  slots and the throughput hold (Q-LIM-309), unlike the instance's Audit (H-1015).
+- **Personal data.** A Bastion's usage rows hold addresses and subjects like the main installation's (R-LIM-028) and are deleted with them;
+  its blocks' addresses are kept with the replica's contact ([security/bastion.md](bastion.md#h-2283--the-main-installation-keeps-the-addresses-of-a-bastions-blocks)).
+
 ## What this does not cover
+
+The gaps of a Bastion's budgets (W-34, specified and not built) are recorded on this page, each with the package whose mechanism has it:
+H-2284 and H-2286 to H-2288; those of a Bastion's other mechanisms are on [bastion.md](bastion.md#what-this-does-not-cover).
 
 The gaps of the spec page whose mechanisms this page describes:
 
@@ -188,3 +209,35 @@ key blocked in `enforce` shortly before an administrator switched to `audit`. Do
 `would_limit` and refuses nothing (R-LIM-026), and the overview shows the block as active until its end. What makes it real: a switch
 back to `enforce` within the block time refuses the key again for the rest of it, without a new refused request.
 
+### H-2284 · A changed membership reaches a Bastion's charge only with the caller's next answer
+
+Stage: R-LIM-043, Q-LIM-302 (packages E8 and E9b). Subject: a signed-in caller whose group carries a rule at a Bastion's place. Live once
+E9b lands. The main installation resolves the caller's rule and names its ID with the answer; the Bastion charges by it until the caller's
+answer ends (`bastion.answers.period`, 5 minutes by default) or a feed entry drops it. A `principal` entry drops it at once for a removed
+member; a group whose rule changes, or a membership that only widens, takes effect at the next answer. What makes it real: an administrator
+who tightens a group's rule at a Bastion and expects it in seconds; a new revision of the configuration carries the rule's new figures at
+once, only the choice of the rule waits.
+
+### H-2286 · Without Valkey a Bastion's budgets hold per replica, and a restart forgets them
+
+Stage: R-BAS-096 (package E9b). Subject: every budget key at a Bastion's place. Live once E9b lands, on a Bastion without Valkey. Each
+replica counts its share of every figure (the rule of R-ARCH-034), so a caller spread over the replicas by the Service gets its whole budget,
+and a caller pinned to one replica its share only; a replica's restart starts its counters empty (the counterpart of H-1005). With Valkey the
+counters are shared and survive a replica, not Valkey's loss.
+
+### H-2287 · Many addresses are many anonymous budgets at a Bastion too
+
+Stage: R-BAS-096 (package E9b), the anonymous subject by address. Subject: everything an anonymous caller can read through a Bastion. Live
+once E9b lands, as [H-1007](../spec/usage-and-limits.md#h-1007--many-addresses-are-many-anonymous-budgets) is at the main installation: a
+caller with many IPv4 addresses or IPv6 `/64` prefixes gets a budget per prefix. What bounds them together: the anonymous ceiling for what
+reaches the main installation (R-BAS-094), the throughput's anonymous share for what crosses the link (R-BAS-097), and for hits nothing but
+the replicas' `max_in_flight` and the network (the Bastion's own H-382).
+
+### H-2288 · A paced hit holds a replica's request slot for longer
+
+Stage: R-BAS-096, Q-BAS-330 (package E9b). Subject: the other callers of a Bastion replica. Live once E9b lands, in Enforce. A hit paced to a
+subject's `cachedBytesPerSecond`, never below 64 KiB a second, holds its request slot until its last byte: a layer of 1 GB at the floor
+holds one for about 4.2 hours [derived], and a subject's parallel transfers multiply it up to its `parallelTransfers`. The waiting leases hold
+at most a quarter of `max_in_flight` (Q-BAS-329), the transfers in progress are bounded by the subject's figure only; many slow subjects can
+hold most of a replica's 1,024 slots, and the replica then sheds with `503`. What bounds it: the figures of "Bastion: anonymous" set by E4,
+the flood protection per address, and the replicas.

@@ -381,11 +381,31 @@ most the token's life; its downloads are still reported. It gains no read of ano
 main installation its token request and one request for the new token (a check, or the forward whose marking gives the answer) instead of a
 request per manifest and blob; measured on 2026-11-23, a warm pull of ten layers fell from 13 to 19 requests to 2 to 6 by client.
 
+## Limits, configuration and throughput from the main installation
+
+The owner's decisions of 2026-11-26 (W-34; [spec/bastion.md](../spec/bastion.md#limits-configuration-and-throughput-from-the-main-installation)
+R-BAS-093 to R-BAS-099, [ADR-300](../decisions.md#adr-300--a-bastion-is-a-place-of-the-download-limits-configured-from-the-main-installation-and-names-nothing-of-it)),
+**specified and not built**; the build plan is [developer/bastion-limits.md](../developer/bastion-limits.md). What they change in the trust
+boundary once their packages have landed:
+
+| Change | What it means for trust | Held by |
+|---|---|---|
+| The configuration comes from the main installation | The Bastion applies what its link delivers: its figures, its switches and its place's rules are the main installation's word, as every answer already is. Whoever can answer as the main installation sets them ([H-2280](#h-2280--whoever-answers-as-the-main-installation-sets-a-bastions-limits-and-switches)); a replica that cannot reach it keeps its last configuration, stored and signed in its cache backend, or fails closed ([H-2285](#h-2285--a-replica-restarted-during-an-outage-without-its-stored-configuration-applies-the-built-in-one)) | R-BAS-093, Q-BAS-327 |
+| Less of the internet reaches the main installation | Writes are refused at the Bastion, anonymous token requests are answered there, anonymous documents are kept for the metadata period, and a ceiling bounds what all anonymous callers of a Bastion cause together; a write never reaches the main installation's routing, so Q-BAS-118's admission of probes goes | R-BAS-094, R-BAS-095 |
+| Budgets per subject at the Bastion | A hit is counted against the caller's budget at the Bastion's place, which narrows [H-1381](../spec/bastion.md#h-1381--the-main-installations-limits-and-blocks-do-not-reach-hits-from-per-package-answers); the subject key and the applying rule come from the main installation, which names more of each caller to the Bastion than the marking did ([H-2281](#h-2281--the-check-answer-names-each-callers-subject-key-and-rule-to-the-bastion)) | R-BAS-096, Q-BAS-328 |
+| A cap on the bytes between the two | The Bastion paces every body it reads; a Bastion that was taken over ignores its own cap ([H-2289](#h-2289--a-bastion-that-was-taken-over-ignores-its-throughput-cap)) | R-BAS-097 |
+| The Bastion reports usage and state | The main installation stores what a Bastion says it served; it is the Bastion's word ([H-2282](#h-2282--the-usage-and-the-state-a-bastion-reports-are-its-word)) | R-BAS-016, R-LIM-045 |
+| Egress addresses per registration | A Bastion token makes its forwarded client address count only from its own registration's addresses, no longer from any address of one list for all registrations | R-BAS-017, Q-BAS-334 |
+| Nothing names the main installation | No host, base URL, request ID, rule, place, internal repository name or version in a Bastion's answers; what remains tells that an installation stands behind it, not which ([H-2294](#h-2294--a-bastions-answers-still-tell-that-an-installation-stands-behind-it)) | R-BAS-099 |
+
 ## What this does not cover
 
 The gaps of the Bastion's mechanisms are recorded on the spec page, where the mechanisms are, and only linked here. The one gap
 that no mechanism of the Bastion holds, because the chart leaves it to the cluster operator, is recorded on this page:
-[H-522](#h-522--the-chart-restricts-no-egress-of-the-bastion-pods).
+[H-522](#h-522--the-chart-restricts-no-egress-of-the-bastion-pods). The gaps of the owner's decisions of 2026-11-26 (W-34), specified and
+not built, are recorded on this page as well, each with the package whose mechanism has it: H-2280 to H-2283, H-2285 and H-2289 to H-2297;
+those of a Bastion's budgets are on [usage-and-limits.md](usage-and-limits.md#what-this-does-not-cover) (H-2284, H-2286 to H-2288). Numbers
+marked [derived] are calculated from the defaults, not measured.
 
 - [H-382](../spec/bastion.md#h-382--a-volumetric-attack-on-bandwidth-is-not-absorbed-by-the-bastion): volumetric attacks on
   bandwidth;
@@ -580,3 +600,120 @@ Valkey and its Sentinels while Valkey is configured; the cache bucket with the b
 for the registration, the public address of every connection of the main installation a handover may name
 ([bastion-handover.md](bastion-handover.md)). The chart's counterpart for the main installation's pods is
 [H-516](egress.md#h-516--the-chart-restricts-no-egress-of-its-pods).
+
+### H-2280 · Whoever answers as the main installation sets a Bastion's limits and switches
+
+Stage: the handshake's member `configuration` (R-BAS-093; packages E7 and E9a). Subject: every figure, switch and rule a Bastion applies.
+Dormant until E9a lands; then live wherever an attacker can answer a Bastion's handshake: a certificate for the main installation's host
+from a CA the Bastion trusts (the system roots or `bastion.main.ca_file`) together with a position on the path, or a main installation
+taken over. What it gains beyond today's forged answers: the web interface switched on, Unlimited figures, no ceiling and no throughput cap
+at that Bastion. What still holds: every forward is decided and charged at the real main installation, which a forged handshake does not
+reach (two budgets, Q-LIM-306). Without a signing key the stored configuration on a volume is not authenticated either (as
+[H-460](../spec/bastion.md#h-460--without-a-signing-key-the-entries-on-the-volume-are-not-authenticated)), so a writer of the volume sets the
+figures a restarted replica applies during an outage. No package closes it; TLS verification of the link and a signing key are the
+mechanisms.
+
+### H-2281 · The check answer names each caller's subject key and rule to the Bastion
+
+Stage: the check answer's `subject.limits` and the marking's `Quader-Bastion-Limits` (R-BAS-096, Q-BAS-328; packages E7 and E8). Subject:
+the users, technical tokens and CI projects whose credentials pass through a Bastion, and the rules that name them. Live once E8 lands.
+Today the marking names a presented token's ID and its principal's ID ([H-386](../spec/bastion.md#h-386--whoever-holds-the-bastion-token-can-test-credentials-name-client-addresses-and-add-download-events));
+the key adds a technical token's ID and a CI project's issuer and project ID, and the rule's ID tells which callers have a rule of their own
+at the Bastion place. What makes it real: the holder of the Bastion token, or a process that took over a Bastion pod, collecting the keys of
+the credentials it checks. Accepted with Q-LIM-302: the alternative sends the groups' members instead.
+
+### H-2282 · The usage and the state a Bastion reports are its word
+
+Stage: the reporting batch's `usage` and `status` (R-BAS-016, R-LIM-045; package E8). Subject: the usage overview's rows at a Bastion's
+place and the card's live state. Live once E8 lands. The holder of the Bastion token, or a taken-over pod, writes rows for any subject key at
+its own place (a user who downloaded nothing appears to), leaves its real consumption out, and reports any cache and throughput state. What
+it does not reach: the main installation's counters, which never read these rows, so no caller is refused because of them; and another
+Bastion's place, since the place is the registration of the token. Bounded by the batch's budget (R-BAS-016) and 100,000 keys a batch
+(Q-LIM-308). No package closes it: the place names the Bastion, so a reader can tell whose word a row is.
+
+### H-2283 · The main installation keeps the addresses of a Bastion's blocks
+
+Stage: the transient table `bastion_status` (R-LIM-045; package E8). Subject: the client addresses a Bastion blocked, which are personal
+data. Live once E8 lands. Each replica's report replaces its row, which holds at most 100 blocks with their addresses, and the row goes with
+the replica's contact, kept 30 days ([contact.go](../../internal/bastionmain/contact.go) `contactRetention`), not with the block's end.
+Readers are the holders of `endpoints:read`. What would narrow it: deleting a replica's row with its last block, or at the next report.
+
+### H-2285 · A replica restarted during an outage without its stored configuration applies the built-in one
+
+Stage: R-BAS-093, Q-BAS-327 (package E9a). Subject: the figures and switches of a Bastion whose replica restarts while the main installation
+cannot be reached. Live with the volume backend on an ephemeral volume (the chart's default) and wherever the stored object's signature does
+not hold, during an outage of the link at the restart. The built-in configuration is the preset Internet with every switch off and Enforce:
+an administrator's figures stricter than the preset are loosened until the link returns, looser ones tightened, and the web interface is
+off. What closes it for an installation: the bucket backend or persistent volumes, which keep the stored object across a restart.
+
+### H-2289 · A Bastion that was taken over ignores its throughput cap
+
+Stage: R-BAS-097 (package E10), the owner's option (a) of k8, which enforces the cap at the Bastion. Subject: the network between a Bastion
+and the main installation, and the object store's egress through handovers. Today nothing caps these bytes per Bastion
+([H-2273](../spec/bastion.md#h-2273--the-bytes-between-a-bastion-and-the-main-installation-are-counted-and-not-bounded)); once E10 lands the
+cap holds for a Bastion that runs its own code. A process that took over a Bastion pod reads at the speed the main installation and the
+object store give it, bounded by the callers' budgets at the main installation (each forward is its caller's request there) and by the main
+installation's own limits; a handover's direct read still needs a forward per blob. What would close it: the owner's option (c) of k8, a cap
+at the main installation as well, not chosen.
+
+### H-2290 · The protected markers are neither signed nor hard to earn
+
+Stage: R-BAS-098 (package E11). Subject: what a churn of distinct artifacts evicts. Live once E11 lands. A writer of the bucket or the volume
+sets or removes markers and steers the sweep, as it steers it with access markers today
+([H-453](../spec/bastion.md#h-453--objects-and-markers-are-not-signed-a-replaced-object-is-found-only-when-it-is-read-and-markers-steer-eviction)).
+An attacker who requests each distinct artifact twice protects it: the churn costs twice the requests and twice the bytes from the cache
+[derived], within the 80 % bound, which then lets the oldest protected entries go. What bounds it beyond: the subject's budgets and the
+anonymous ceiling (R-BAS-094, R-BAS-096) and the throughput (R-BAS-097).
+
+### H-2291 · An egress list that no longer names a Bastion's address pools its callers silently
+
+Stage: R-BAS-017, R-UI-243 (package E13). Subject: the callers of one Bastion at the main installation. Live once E13 lands, and today with
+the one list `bastions.trusted_proxies`. When a Bastion's egress address changes (a cloud NAT, a new node) or the list is empty, every caller
+through it counts at the main installation as the egress address: one anonymous budget, one failed-credential throttle, one block for all of
+them. The card warns with the address of the last contact (Q-UI-1482). A wide prefix in one registration's list lets that registration's
+token forward any client address from any address in the prefix, which is H-386's power within the prefix.
+
+### H-2292 · Anonymous documents are kept for the metadata period
+
+Stage: R-BAS-094, R-BAS-023 (package E14a). Subject: anonymous callers of a repository whose metadata changes. Live once E14a lands. A
+narrowing the feed does not carry reaches anonymous callers within `metadata_revalidate_after` (1 minute by default), as it reaches full
+readers of a shared document today
+([H-384](../spec/bastion.md#h-384--a-version-newly-published-appears-at-the-bastion-only-after-the-metadata-period),
+[H-385](../spec/bastion.md#h-385--a-withdrawal-the-feed-does-not-carry-reaches-the-bastion-within-the-artifact-revalidation-period)); until
+E14a an anonymous private document is revalidated on every use.
+
+### H-2293 · A read route with a body that a format does not declare is refused
+
+Stage: R-BAS-095, kit check 19 (package E15). Subject: a client feature through a Bastion, availability only. Live once E15 lands. The
+refusal fails closed: a route with a writing method whose kind is a read and that the format does not list in `readWithBody` answers `403
+read_only` at the Bastion. Kit check 19 holds the routes a format declares; a client that uses a route the format does not have reaches
+nothing either way.
+
+### H-2294 · A Bastion's answers still tell that an installation stands behind it
+
+Stage: R-BAS-099 (package E16). Subject: what an internet caller learns of the main installation's existence, not of its identity. Live,
+inherent: a miss takes longer than a hit, a `503 unavailable` follows an outage of the link, the address of a repository carries its
+project's key (INV-5), and the registry token's grant names the repositories a caller asked for. The owner's rule hides the main
+installation's name, address and structure; that a Bastion is a cache in front of something is its purpose.
+
+### H-2295 · Problem texts the main installation relays are inventoried only in part
+
+Stage: R-BAS-099 rows 7 and 15 (package E16, W-35's P8). Subject: the texts of the main installation's problems a forward relays. Live today:
+a remote's fill names the member repository behind a virtual repository ("The upstream of web/npm-remote answered 503.",
+[classify.go](../../internal/proxy/classify.go)), read on 2026-11-26 and added to the table; whether other texts of the formats' handlers name
+an upstream's address or another internal repository is not verified text by text. What closes it: P8's inventory, and the integration scan
+of R-BAS-099 for the texts its replays meet.
+
+### H-2296 · An administrator's or an author's words in content are passed on
+
+Stage: R-BAS-099 rows 10 and 11. Subject: names an administrator or a package's author wrote into content. Live: a repository's Debian
+`Origin` (default `quader`), a package's homepage and repository links, an image's labels and a README are content the main
+installation serves as written; an internal host written there reaches every caller of a Bastion. Content is not filtered by design (W-35
+keeps the authors' links); what an installation keeps out of its public content is its own decision.
+
+### H-2297 · A registry token's readable grant tells its holder which of the names it asked for it may pull
+
+Stage: R-OCI-005's payload version 2, Q-BAS-339 (package E17). Subject: a caller with a registry token, about its own grant. Live today and
+after E17: the grant `g` stays readable, so a caller learns which of the repositories and images it asked for the token service granted,
+which a pull with the token tells as well. Every other claim is sealed by E17; until then the payload names the endpoint, the principal and
+the underlying token (R-BAS-099 row 8).
