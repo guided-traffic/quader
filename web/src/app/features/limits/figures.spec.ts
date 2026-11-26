@@ -22,7 +22,7 @@ describe('Download limits: figures and callers (R-UI-178, R-UI-179)', () => {
 
   it('R-UI-178 says a profile in one compact line and leaves an unlimited figure out', () => {
     expect(compactFigures(PROFILE_FIGURES['standard']!, 'en-US').replaceAll(' ', ' ')).toBe(
-      '200/s · 1,000 burst · 50,000/h · cache 200 MB/s, 300 GB/h · upstream 50 MB/s, 30 GB/h, 2,000 req/h · 250 parallel transfers · 1,000 GB/day · 500 refused/h',
+      '200/s · 4,000 burst · 100,000/h · cache 250 MB/s, 300 GB/h · upstream 125 MB/s, 100 GB/h, 20,000 req/h · 250 parallel transfers · 1,000 GB/day · 1,000 refused/h',
     );
     expect(compactFigures(PROFILE_FIGURES['unlimited']!, 'en-US')).toBe('Unlimited');
     expect(compactFigures({ ...PROFILE_FIGURES['standard']!, requestsBurst: null, refusedPerHour: null }, 'en-US')).not.toContain('burst');
@@ -55,8 +55,8 @@ describe('Download limits: figures and callers (R-UI-178, R-UI-179)', () => {
 
   it('R-UI-179 writes only the figures the person changed against the profile', () => {
     const base = PROFILE_FIGURES['restricted']!;
-    const figures = { ...base, uncachedBytesPerHour: 20_000_000_000, parallelTransfers: 64 };
-    expect(overridesOf(figures, new Set(['uncachedBytesPerHour', 'parallelTransfers']), base)).toEqual({ uncachedBytesPerHour: 20_000_000_000 });
+    const figures = { ...base, uncachedBytesPerHour: 40_000_000_000, parallelTransfers: 64 };
+    expect(overridesOf(figures, new Set(['uncachedBytesPerHour', 'parallelTransfers']), base)).toEqual({ uncachedBytesPerHour: 40_000_000_000 });
     expect(overridesOf({ ...base, bytesPerDay: null }, new Set(['bytesPerDay']), base)).toEqual({ bytesPerDay: null });
   });
 

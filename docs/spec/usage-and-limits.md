@@ -91,8 +91,10 @@ unit a person asked for (an image with all its parts, an install), never a singl
 |---|---|---|
 | 23 | "Option A, default darf aber großzügiger sein als 2, wir bauen hier enterprise software für große firmen": the limit of parallel downloads counts every transfer in progress, as before, and is named what it is, `parallelTransfers`, "parallel transfers", wherever a person or a client reads it, with what one pull or install costs; the built-in values are generous, sized for large companies | R-LIM-004, R-LIM-007, R-LIM-010, R-LIM-024, R-LIM-041, [Q-LIM-293](#q-lim-293--the-limit-counts-transfers-and-is-named-parallel-transfers), [Q-LIM-294](#q-lim-294--the-built-in-parallel-transfers-are-set-from-a-measurement-of-the-clients) |
 
-The request figures of the built-in profiles are set from a measurement (Q-LIM-59), and so are their parallel transfers (Q-LIM-294);
-every other number of them is the development agent's estimate, which the owner did not change.
+The request figures of the built-in profiles are set from a measurement (Q-LIM-59), their parallel transfers from a measurement
+(Q-LIM-294), and their byte, upstream and refused figures from what the uses each profile promises cost, measured or documented per
+format (R-LIM-042, [Q-LIM-296](#q-lim-296--the-built-in-byte-upstream-and-refused-figures-hold-the-uses-each-profile-promises)): the development agent applied the owner's words of decision 23, said of the parallel figure, to
+every built-in figure that bounds normal use, and tells him so. No built-in figure is an estimate any more.
 
 ## Terms
 
@@ -511,17 +513,18 @@ A profile is a named set of every figure of R-LIM-004. An empty figure is unlimi
   [Q-LIM-59](#q-lim-59--the-built-in-profiles-request-figures-are-set-from-a-measurement-of-real-clients), migration 00085); the
   parallel transfers from a measurement of how many transfers each client holds at once, generous for large companies (decision
   23; [Q-LIM-294](#q-lim-294--the-built-in-parallel-transfers-are-set-from-a-measurement-of-the-clients), migration 00141); the
-  others are the development agent's estimates, which the owner did not change. Built-ins cannot be deleted or renamed; their
+  byte, upstream and refused figures from what the uses below cost, per format (R-LIM-042), generous for large companies in the same
+  way ([Q-LIM-296](#q-lim-296--the-built-in-byte-upstream-and-refused-figures-hold-the-uses-each-profile-promises), migration 00143). Built-ins cannot be deleted or renamed; their
   figures and description can be changed by an instance administrator, except Unlimited, whose figures stay empty (409
   `profile_immutable`).
 
 | Profile (key) | Req/s | Burst | Req/h | Cached MB/s | Cached GB/h | Uncached MB/s | Uncached GB/h | Upstream req/h | Parallel | GB/day | Refused/h |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | Unlimited (`unlimited`) | – | – | – | – | – | – | – | – | – | – | – |
-| Standard (`standard`) | 200 | 4000 | 100000 | 200 | 300 | 50 | 30 | 2000 | 250 | 1000 | 500 |
-| Technical (`technical`) | 1000 | 20000 | 1000000 | 500 | 1000 | 100 | 100 | 10000 | 1000 | 5000 | 2000 |
-| Restricted (`restricted`) | 100 | 1000 | 25000 | 50 | 50 | 10 | 5 | 200 | 64 | 100 | 100 |
-| Anonymous (`anonymous`) | 50 | 1000 | 20000 | 20 | 10 | 5 | 2 | 20 | 64 | 30 | 60 |
+| Standard (`standard`) | 200 | 4000 | 100000 | 250 | 300 | 125 | 100 | 20000 | 250 | 1000 | 1000 |
+| Technical (`technical`) | 1000 | 20000 | 1000000 | 1250 | 3000 | 250 | 500 | 100000 | 1000 | 30000 | 5000 |
+| Restricted (`restricted`) | 100 | 1000 | 25000 | 100 | 50 | 50 | 20 | 3000 | 64 | 200 | 300 |
+| Anonymous (`anonymous`) | 50 | 1000 | 20000 | 100 | 30 | 50 | 20 | 3000 | 64 | 200 | 300 |
 
 - The window of the burst is `burst ÷ rate`: 20 s for Anonymous, Standard and Technical, 10 s for Restricted. What the figures hold,
   measured (Q-LIM-59): one `docker pull` of an image of 40 layers is 48 requests within 0.3 s, an `npm ci` of 475 packages 475
@@ -533,6 +536,29 @@ A profile is a named set of every figure of R-LIM-004. An empty figure is unlimi
   or a pnpm install, five podman pulls and an npm install together; Technical (1,000) twenty CI jobs of one token running pnpm 10 or 11 (50 each), 66
   such jobs running npm (15 each), or five restores of 200 packages; Restricted (64) one install of any of the JavaScript clients
   whole. A transfer beyond the figure waits up to 10 s (R-LIM-024).
+- The byte, upstream and refused figures, priced by R-LIM-042 (an image of 1 GB pulled first through a remote is 1 GB and 46 upstream
+  requests, a CUDA image 5.9 GB, a first npm install of 475 packages 0.43 GB and 950 upstream requests, a NuGet version list kept fresh
+  twelve revalidations an hour, an install refused on a token without read 15 refused requests), each within an hour and with room:
+  - **Anonymous** (one address, often a company's people or CI jobs behind one NAT before they sign in): ten first pulls of 1 GB images
+    at once and twenty more from the cache (10 of 20 GB from the upstream, 20 of 30 GB from the cache); two first installs of 475
+    packages at once beside the first pull of a CUDA image (1,940 of 3,000 upstream requests); a dozen people whose expired token fails
+    an install (180 of 300 refused); twenty pulls of 1 GB an hour for eight hours (160 of 200 GB a day). A 1 GB image takes 10 s from
+    the cache at 100 MB/s, 20 s on its first pull at 50 MB/s.
+  - **Restricted** (a caller an administrator narrows): one first install of 475 packages and the first pull of a CUDA image (6.3 of
+    20 GB, 990 of 3,000 upstream requests), or forty pulls of 1 GB from the cache (40 of 50 GB). Never less than Anonymous on a figure,
+    so that a caller never gets more by not signing in.
+  - **Standard** (a developer's machine): an install of 4,000 packages on a cold cache, twice in the hour after a branch switch (16,000
+    of 20,000 upstream requests, 7.2 of 100 GB); the first pulls of a dozen 1 GB images with a CUDA and a PyTorch image (22 GB); a
+    compose file of a dozen 1 GB images pulled ten times an hour from the cache (120 of 300 GB), eight hours a day (960 of 1,000 GB); a
+    solution of 300 packages over two NuGet feeds kept fresh (7,200 upstream requests); forty installs refused on a token without read
+    (600 of 1,000). A 1 GB image takes 4 s from the cache at 250 MB/s, 8 s on its first pull at 125 MB/s.
+  - **Technical** (a system or a CI project with one token): twenty parallel CI jobs installing 475 other packages each on a cold cache
+    (19,000 of 100,000 upstream requests); 2,000 NuGet packages over two feeds kept fresh (48,000); a fleet's first pulls after its base
+    images changed, a hundred 1 GB images and eight CUDA images (147 of 500 GB); 2,000 jobs an hour on fresh runners, each pulling a 1 GB
+    image and running `npm ci` (2,180 of 3,000 GB), ten hours a day (21,800 of 30,000 GB); a token that lost read on one repository
+    while twenty jobs fail on it every five minutes (3,600 of 5,000 refused, so the token is not blocked everywhere else).
+  What each figure still bounds, what a thousand anonymous addresses can do, and why no figure is unlimited by default, is [Q-LIM-296](#q-lim-296--the-built-in-byte-upstream-and-refused-figures-hold-the-uses-each-profile-promises);
+  how the figures relate to the public registries' own limits, [Q-LIM-298](#q-lim-298--the-built-in-figures-grant-nothing-a-public-registry-refuses-and-a-remotes-ceilings-stay-the-administrators).
 
 - An instance administrator creates own profiles (key `^[a-z][a-z0-9-]{1,31}$`, unique and immutable; name 1 to 64 characters,
   unique; description at most 1024) and deletes one that no assignment and no project maximum names (409 `profile_in_use`
@@ -1190,6 +1216,58 @@ Acceptance criteria:
   (`TestR_LIM_020_TheDetailAndRetryAfterNameOneWait`).
 - Unit (web): the figure's name, its limit's text and the help of its group (`figures.spec.ts`), and the notice of a refused download
   (`usage.spec.ts`, R-UI-186).
+
+### R-LIM-042 · What one act of a client costs in the byte, upstream and refused figures
+Priority: **MVP** · Covers: BEYOND-030
+
+The byte, upstream and refused figures of the built-in profiles (R-LIM-010) are set from what one act of each format's client costs in
+them ([Q-LIM-296](#q-lim-296--the-built-in-byte-upstream-and-refused-figures-hold-the-uses-each-profile-promises)). Per act, on 2026-11-26: the bytes from the cache, and the bytes and upstream requests of its first time through a
+remote, on a cold cache; *measured* is a number read on that day from a real client, cache or registry, *documented* one a registry
+publishes, *derived* one that follows from a measured count and the protocol or Quader's code.
+
+| Format | Act | From the cache | First time through a remote | Source |
+|---|---|---|---|---|
+| OCI | `docker pull` of an application image of 1 GB in 40 layers | 1 GB | 1 GB; 46 upstream requests: the tag, an index, the platform's and the attestation's manifest, the config, 40 layers, the attestation's blob | size documented: an application adds to a base that alone is 0.3 to 0.44 GB (Docker Hub's tag API, amd64, compressed: `node:22` 408 MB, `python:3.13` 414 MB, `gradle:jdk21` 438 MB, `golang:1.25` 305 MB, `eclipse-temurin:21-jdk` 231 MB, `postgres:17` 167 MB); requests derived from Q-LIM-59's measured 48 less the token and the second `HEAD` |
+| OCI | first pull of `nvidia/cuda:12.8.1-cudnn-devel-ubuntu24.04` | 5.9 GB | 5.9 GB; a few tens of upstream requests | documented, Docker Hub's tag API; `pytorch/pytorch:latest` 3.7 GB |
+| OCI | `docker pull` of a tag the machine holds | none | a `HEAD` of the tag once its metadata period ran out (R-REPO-027) | measured, Q-LIM-59 |
+| npm | `npm ci` of 475 packages | 88 MB, 186 kB a tarball | 0.43 GB; 950 upstream requests: a tarball's miss fetches or revalidates its package document first (R-NPM-025) | measured: of the 559 packages of the web client's lockfile, the 437 tarballs a local npm cache held (81 MB) and the 524 package documents (373 MB in the abbreviated form npm keeps, 711 kB each); a remote fetches the full document, which is larger |
+| npm | `npm install` of 475 packages without a lockfile | 0.43 GB: a document and a tarball each | as `npm ci` | as above |
+| npm | an install of 4,000 packages | 0.75 GB from a lockfile | 3.6 GB; 8,000 upstream requests | derived from the 475 |
+| NuGet | `dotnet restore` of 200 packages from one feed | 0.3 GB | 0.3 GB; about 400 upstream requests, a version list and a package each; then a revalidation of each version list per metadata period (300 s, R-REPO-027): twelve an hour per package and feed while restores go on | measured: the newest versions of nuget.org's 200 most-downloaded packages, 292 MB for the 194 that answered (median 338 kB, largest 39 MB); requests derived from Q-LIM-59 |
+| Debian | `apt-get update` of one suite | 10.2 MB | 10.2 MB; about 12 upstream requests | measured with `debian:trixie`; requests from Q-LIM-59 |
+| Debian | `apt-get install build-essential curl python3 ca-certificates` | 95 MB in 106 packages | 95 MB; 106 upstream requests | measured (`--print-uris`, `debian:trixie`); `openjdk-21-jdk-headless` 139 MB in 56 |
+| Ansible Galaxy | `ansible-galaxy collection install` of twelve widely used collections | 11 MB | 11 MB; about 48 upstream requests, a version list, a version and an archive each | measured: Galaxy's v3 API, the newest versions of `community.general` (2.7 MB), `amazon.aws`, `kubernetes.core`, `ansible.posix`, `community.docker`, `community.crypto`, `azure.azcollection`, `cisco.ios`, `community.vmware`, `ansible.windows`, `community.postgresql`, `google.cloud`; requests from Q-LIM-59 |
+| Generic | a download of a JDK, of a Go toolchain | 208 MB, 71 MB | none: no remote class | documented, the download lists of Adoptium and go.dev |
+| every format | an act refused because the token may not read, or has expired | none | none | derived: at most the requests the client holds open, 15 for npm (R-LIM-041); docker and a NuGet restore stop at their first refused request (the tag, the feed's service index) |
+
+What one act met in the built-in profiles before Q-LIM-296, and how many of it each holds within an hour now:
+
+| Format and act | Met before | Now |
+|---|---|---|
+| OCI, the first pull of a 1 GB image through a remote | Anonymous at once (20 upstream requests: a pull of more than about 17 layers answers 429, which docker does not retry); Anonymous' 2 GB from the upstream at the third such image; Restricted's 200 upstream requests at the fifth, its 5 GB at the sixth; Standard's 2,000 at the 44th | Anonymous and Restricted hold about 65 an hour by upstream requests, 20 by bytes; Standard 100 |
+| OCI, the first pull of a CUDA image | Anonymous (2 GB) and Restricted (5 GB): a layer is refused once the hour's estimate passed the figure, so the pull fails partway (R-LIM-021); Standard's 30 GB at the sixth | Anonymous and Restricted three an hour, Standard sixteen |
+| OCI, pulls of a 1 GB image from the cache | Anonymous' 10 GB at the eleventh an hour, its 30 GB a day at the 31st | Anonymous thirty an hour, 200 a day |
+| npm, a first install of 475 packages | Anonymous after 10 packages; Restricted after 100; Standard at the third install an hour, Technical at the eleventh | Anonymous and Restricted three an hour, Standard 21, Technical 105 |
+| npm, a first install of 4,000 packages | Standard after 1,000 packages | Standard two an hour |
+| NuGet, a first restore of 200 packages | Anonymous after 10 packages, Restricted after 100 | Anonymous and Restricted seven an hour |
+| NuGet, version lists kept fresh | Standard by 167 packages over one feed, Technical by 833 | Standard 1,666 package-feeds, Technical 8,333 |
+| Debian, an update and an install of 106 packages | Anonymous after the update and eight packages | Anonymous 25 an hour |
+| Ansible Galaxy, twelve collections | Anonymous after five | Anonymous 62 an hour |
+| Generic, a JDK from the cache | Anonymous' 10 GB at the 49th an hour | Anonymous 144 an hour |
+| every format, refused acts | Anonymous' 60 at the fifth npm install refused from one address, which blocks every anonymous caller behind it for the block's time (H-1010) | Anonymous twenty |
+
+- Each number is a cost within an hour; the day's figure is the hour's cost over a working day (R-LIM-010).
+- A measurement is run once and written down here; it is not a test (CLAUDE.md). What is tested is the arithmetic: each profile holds
+  the uses R-LIM-010 promises it at these prices.
+
+Acceptance criteria:
+
+- Unit (`internal/limits`): each built-in profile holds, below every byte, upstream and refused figure, the uses R-LIM-010 names for it
+  at the prices of this table (`TestR_LIM_042_TheBuiltInProfilesHoldTheUsesThePagePromises`), and the profiles keep their order per
+  figure, Anonymous at most Restricted at most Standard at most Technical (`TestR_LIM_042_TheBuiltInProfilesKeepTheirOrder`).
+- Integration (area `postgres`): the step of migration 00143 sets the new values where the first migration's stand and keeps an
+  administrator's (`TestR_HA_020_TheBuiltInFiguresStepKeepsAnAdministratorsValue`); the built-in profiles of a new installation hold the
+  figures of `limits.BuiltinProfiles` (`TestR_LIM_010_TheBuiltInProfilesHoldTheFiguresOfTheMigrations`, area `limits`).
 
 ### R-LIM-025 · The block after refused requests
 Priority: **MVP** · Covers: BEYOND-030
@@ -2791,7 +2869,8 @@ From the protocol, not run (a run of each would cost minutes for a number the pr
 Restricted 25 bursts, Standard 25, Technical 50 (a system runs all day); each is far below what the rate would allow in an hour, so a
 caller that stays at its rate meets the hour figure, not the burst. Only the request figures change: the byte, upstream, parallel and
 refused figures keep the estimates of the first migration (the parallel transfers were set from a measurement of their own on
-2026-11-26, [Q-LIM-294](#q-lim-294--the-built-in-parallel-transfers-are-set-from-a-measurement-of-the-clients)).
+2026-11-26, [Q-LIM-294](#q-lim-294--the-built-in-parallel-transfers-are-set-from-a-measurement-of-the-clients), and the byte, upstream
+and refused figures from the uses they hold on the same day, [Q-LIM-296](#q-lim-296--the-built-in-byte-upstream-and-refused-figures-hold-the-uses-each-profile-promises)).
 
 **`package_write`** (Q-LIM-56, a burst of 400 at 10 a second, 1,600 since Q-LIM-292): a pull spends one unit (the `POST` of the
 token); it holds every single-platform push and the measured multi-platform push (95 unsafe requests). The burst of 400 did not hold a
@@ -3339,11 +3418,12 @@ less than a quarter of the default endpoint's slots: one token whose transfers a
 with every other caller's waiting transfers, 1,024 waiting, so at least half of the replica's slots serve others; across n replicas
 behind the ingress its transfers spread to about 1,000 ÷ n each. A further endpoint's 1,024 slots are not held that way (H-2260). The
 bandwidth stays the byte figures': `cachedBytesPerSecond` is the subject's, whatever its number of transfers, and the floor of 64 KiB/s
-per transfer (R-LIM-023) passes no built-in profile's rate (Technical: 500 MB/s over 1,000 transfers is 500 kB/s each). Valkey holds a
+per transfer (R-LIM-023) passes no built-in profile's rate (Technical: 1,250 MB/s since [Q-LIM-296](#q-lim-296--the-built-in-byte-upstream-and-refused-figures-hold-the-uses-each-profile-promises) over 1,000 transfers is
+1.25 MB/s each). Valkey holds a
 lease per transfer in the key's sorted set; 1,000 members are one `ZCARD` as 50 were.
 
-**Not changed here: the other estimated figures**, which a pull of an image or a large install meets in normal enterprise use; they
-are the owner's to decide (H-2262):
+**Not changed here: the other estimated figures**, which a pull of an image or a large install meets in normal enterprise use; the
+development agent set them the same day from what the uses cost ([Q-LIM-296](#q-lim-296--the-built-in-byte-upstream-and-refused-figures-hold-the-uses-each-profile-promises)):
 
 | Profile | Figure | What reaches it |
 |---|---|---|
@@ -3392,6 +3472,102 @@ estimate the owner asked to replace.
 [00141_limits_parallel_transfers.sql](../../internal/meta/postgres/migrations/00141_limits_parallel_transfers.sql). Test:
 `TestR_HA_020_TheParallelTransfersStepKeepsAnAdministratorsValue` in
 [parallel_transfers_test.go](../../test/integration/postgres/parallel_transfers_test.go) (integration area `postgres`, about 3 s).
+
+### Q-LIM-296 · The built-in byte, upstream and refused figures hold the uses each profile promises
+
+Status: **Decided by the development agent** on the owner's words of 2026-11-26, 10:27 ("… default darf aber großzügiger sein …, wir
+bauen hier enterprise software für große firmen", decision 23), which he said of the parallel figure and the development agent applied
+to every built-in figure that bounds normal use — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the request figures (Q-LIM-59) and the parallel transfers (Q-LIM-294) were set from measurements; the byte figures,
+`upstreamRequestsPerHour` and `refusedPerHour` were the first migration's estimates, and normal use in a company met them (the table
+*Not changed here* of Q-LIM-294): an anonymous first pull of an image of more than about 17 layers through a remote answered 429, which
+docker does not retry, and two first installs of 475 packages an hour exhausted Standard. R-LIM-042 prices each format's normal act.
+
+| Option | Anonymous, Restricted, Standard, Technical | For | Against |
+|---|---|---|---|
+| (a) Each profile holds the uses R-LIM-010 promises it, priced by R-LIM-042, with a third or more of room; the profiles keep their order per figure (chosen) | cached 100, 100, 250, 1,250 MB/s and 30, 50, 300, 3,000 GB/h; uncached 50, 50, 125, 250 MB/s and 20, 20, 100, 500 GB/h; upstream requests 3,000, 3,000, 20,000, 100,000 an hour; 200, 200, 1,000, 30,000 GB a day; refused 300, 300, 1,000, 5,000 an hour | Every promised use passes; each figure is a number a reader can check against a use; a caller never gets more by not signing in | A single anonymous address may make Quader send 3,000 requests an hour to a public registry (Q-LIM-298, H-2263) |
+| (b) The byte and upstream figures of signed-in callers unlimited; only Anonymous bounded | | Nothing a person or a system does meets them | No bound on a token that loops or a person's token in a runaway script; the installation's bandwidth and a registry's quota unguarded per caller |
+| (c) Ten times every old value | | Simple | Tied to no use: Anonymous' 200 upstream requests still fail a first install of 475 packages, Technical's 50 TB a day guards nothing |
+| (d) Anonymous kept small, the others raised | | An installation open to the internet stays a small proxy for strangers | A company's people behind one address meet it at once (decision 23); an installation that serves the internet narrows Anonymous with one rule (the manual says how) |
+
+**Choice:** (a). Standard keeps 300 GB of cached bytes an hour and 1,000 GB a day and Restricted 50 GB an hour: those held their uses
+already. No figure is unlimited by default: each one bounds a caller that loops, a misconfigured job or a script, which is what a
+built-in figure is for; Unlimited stays the administrators' profile (decision 9).
+
+**What each figure protects, and what it still bounds:**
+
+| Figure | Protects | One caller at the figure, an hour (Anonymous, Restricted, Standard, Technical) | A thousand anonymous addresses, an hour | A ceiling for all anonymous callers together |
+|---|---|---|---|---|
+| `cachedBytesPerSecond` | a replica's bandwidth for its other callers (R-LIM-023); a link is not paced (R-LIM-040) | 360, 360, 900, 4,500 GB at most | 100 GB/s, beyond any replica: the replicas' links and `max_in_flight` bound them | none; it would be a bandwidth limit of the installation, not of a caller |
+| `cachedBytesPerHour`, `bytesPerDay` | the installation's egress and the object store's reads per caller | 30, 50, 300, 3,000 GB; a day 200, 200, 1,000, 30,000 GB | 30 TB an hour, 200 TB a day | none exists, and none is built here (H-1007) |
+| `uncachedBytesPerSecond` | the installation's link to the internet; every follower of a fill waits at the leader's pace (R-LIM-023) | 180, 180, 450, 900 GB at most | 50 GB/s, beyond any link | none |
+| `uncachedBytesPerHour` | the link to the upstream and the object store's growth: what is fetched is kept | 20, 20, 100, 500 GB | 20 TB, unless the remote's anonymous ceiling holds them | it belongs here: the remote's ceiling for all anonymous callers (R-LIM-015, decision 7), set per remote by an administrator, none by default (the owner's Q-LIM-16) |
+| `upstreamRequestsPerHour` | the upstream's rate limit and the company's standing with a public registry | 3,000, 3,000, 20,000, 100,000 | 3 million, unless the ceiling holds them | as `uncachedBytesPerHour` |
+| `refusedPerHour` | the brake on a caller that probes names or tokens (R-LIM-025), and how many refusals the audit records | 300, 300, 1,000, 5,000 refusals, then a block of the block time | 300,000; failed credentials are throttled first per address (R-AUTH-038) | none: a block holds one budget key |
+
+**Rationale:** the owner's rule is that normal use of a large company never meets a built-in figure; the uses are the ones R-LIM-010
+promised already, and with their cost measured or documented per format each figure can hold them with room instead of a guess, while
+the order of the profiles and a finite value keep every figure a bound. The development agent would revisit a figure when
+`quader_limits_decisions_total{outcome="limited"}` shows normal use meeting it, when a format's act costs more than R-LIM-042 says
+(H-2264), or when an installation's egress costs make a day's figure too generous for one caller.
+
+**Applied in the spec:** R-LIM-010, R-LIM-042, the introduction to the decisions; Q-LIM-59 and Q-LIM-294 point here; H-2262 is closed by
+this decision. Code: `BuiltinProfiles` in [model.go](../../internal/limits/model.go), migration
+[00143_limits_builtin_byte_figures.sql](../../internal/meta/postgres/migrations/00143_limits_builtin_byte_figures.sql). Tests:
+`TestR_LIM_042_TheBuiltInProfilesHoldTheUsesThePagePromises` and `TestR_LIM_042_TheBuiltInProfilesKeepTheirOrder` in
+[builtin_uses_test.go](../../internal/limits/builtin_uses_test.go) (unit, milliseconds, no data).
+
+### Q-LIM-297 · The migration replaces a built-in byte, upstream or refused figure only where it still holds the first migration's value
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: as for the parallel figure (Q-LIM-295): the owner's installation follows every release, and an administrator may have changed
+a built-in profile's figure (R-LIM-010).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Per figure: the new value where the figure still holds the first migration's (chosen) | An administrator's value, a number or unlimited, stays; the profile's other figures move; the profile's version moves once | An administrator's choice stands figure by figure | An administrator who had set exactly the old value is taken for untouched |
+| (b) Per profile: only a profile none of whose seven figures was changed | | A profile an administrator tuned stays as a whole | One changed figure keeps six estimates the owner asked to replace |
+| (c) Every built-in figure | | One state everywhere | Overwrites an administrator's choice |
+
+**Choice:** (a), as Q-LIM-295. **Rationale:** a value that differs from the first migration's is an administrator's decision, and the
+old value itself is the estimate being replaced.
+
+**Applied in the spec:** R-LIM-010, R-LIM-042. Code: migration
+[00143_limits_builtin_byte_figures.sql](../../internal/meta/postgres/migrations/00143_limits_builtin_byte_figures.sql). Test:
+`TestR_HA_020_TheBuiltInFiguresStepKeepsAnAdministratorsValue` in
+[builtin_figures_test.go](../../test/integration/postgres/builtin_figures_test.go) (integration area `postgres`, about 3 s, five rows).
+
+### Q-LIM-298 · The built-in figures grant nothing a public registry refuses, and a remote's ceilings stay the administrator's
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: a profile's upstream figures bound what one caller makes Quader ask of an upstream; the upstream counts on its own. Docker Hub
+(its page *Docker Hub usage and limits*, read 2026-11-26): 100 pulls per six hours for an unauthenticated address (an IPv4 address or an
+IPv6 `/64`), 200 for a Personal account, unlimited under fair use for Pro, Team and Business; a pull is a `GET` of a manifest, one per
+architecture of a multi-platform image, and a `HEAD` is none; at the limit it answers 429 "You have reached your pull rate limit". A first
+pull through a remote is therefore one Docker Hub pull per platform; a revalidation of a tag is a `HEAD` and costs none. An anonymous
+caller at the new 3,000 upstream requests an hour can cause about 60 first pulls of distinct images of 40 layers, more than half of what an
+unauthenticated remote's address may pull in six hours; at the old 20 it could cause none whole. When the upstream refuses, R-REPO-029
+holds for every caller of the remote: the circuit opens for the upstream's `Retry-After` (at most the remote's `circuitOpenSeconds`), what
+is cached is served, a stale document within `maxStaleSeconds`, and anything else answers 503 `upstream_rate_limited` with `Retry-After`,
+not a limit of this page; docker does not retry it. The other public registries publish no read limit the development agent found for the
+protocols Quader speaks to them (npm's registry, nuget.org's v3 API, Galaxy, Debian's mirrors); nuget.org documents limits for its v1 and
+v2 search and its writes only.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The profiles stay generous; a remote's ceilings stay unset by default (Q-LIM-16), and the manual says how a company keeps a public registry's limit: credentials of a paid account on the remote, or the remote's ceilings set at the account's limit (chosen) | | The owner's Q-LIM-16 stands; the figures keep one meaning, the caller's share of the installation | A remote of Docker Hub without credentials can be spent by a few anonymous addresses (H-2263) |
+| (b) A default ceiling for all anonymous callers on every remote | e.g. 100 upstream requests an hour | The upstream's quota is guarded on a new installation | Reopens the owner's Q-LIM-16; a company's people behind one address meet it on their first pulls |
+| (c) A ceiling per well-known upstream, at its published limit | Docker Hub's 100 pulls per six hours | Matches the upstream | The figures count exchanges, the upstream pulls (Gap 2); a ceiling in exchanges cannot say 100 pulls |
+
+**Choice:** (a). **Rationale:** no figure of a profile can grant what the upstream refuses, and a figure sized to an anonymous upstream's
+quota (about 16 pulls an hour for a whole installation) would fail every company; the installation's standing with a registry is the
+remote's matter, where the credentials and the ceilings are. The development agent would revisit this with the owner's Gap 2, if a
+figure that counts the upstream's pulls is decided.
+
+**Applied in the spec:** R-LIM-010; the manual's [built-in profiles](../manual/admin/download-limits.md#the-built-in-profiles).
 
 ## What this does not cover
 
@@ -3465,10 +3641,23 @@ packages the places free within milliseconds and the restore completes, but over
 transfer waits 10 s and gets 429, and NuGet retries about once a second without reading `Retry-After`. The numbers of R-LIM-041 were
 measured once against a stub, not against Quader; ansible-galaxy, helm and a Kubernetes node were not measured.
 
-### H-2262 · The byte and upstream figures of the built-in profiles are estimates that normal enterprise use meets
+### H-2263 · An anonymous caller can spend the pulls of a remote of Docker Hub for every caller of the remote
 
-Component: the built-in profiles (R-LIM-010): their byte figures and `upstreamRequestsPerHour`, the development agent's estimates of the
-first migration, which neither Q-LIM-59 nor Q-LIM-294 changed. Subject: every caller under a built-in profile, most of all anonymous
-callers of a public remote and CI tokens on a cold cache. Live in `enforce`. What makes it real: the uses listed in Q-LIM-294's table
-*Not changed here*; an anonymous first pull of an image of more than about 17 layers through a remote meets `upstreamRequestsPerHour`
-20 and answers 429 `upstream_limit_reached`, and docker does not retry it. The owner decides those values.
+Component: the built-in Anonymous profile's `upstreamRequestsPerHour` (3,000 since Q-LIM-296) and a remote repository of Docker Hub
+without credentials or with a Personal account, whose ceilings are unset by default (R-LIM-015, Q-LIM-16). Subject: every caller of that
+remote, signed in or not, for what is not cached. Live in `enforce` and `audit` where anonymous callers may read the remote's artifacts.
+What makes it real: one or a few anonymous addresses pull distinct images for the first time; each first pull is one Docker Hub pull per
+platform, so about 60 an hour from one address spend an unauthenticated address's 100 pulls per six hours (Q-LIM-298); Docker Hub then
+answers 429, the remote's circuit opens, and every caller gets 503 `upstream_rate_limited` for what is not cached until the circuit
+closes. What closes it for an installation: credentials of a paid Docker Hub account on the remote, or the remote's anonymous ceiling
+set to what the account allows; the default does neither.
+
+### H-2264 · The upstream requests of an act are derived, not counted at an upstream behind a remote
+
+Component: the column *First time through a remote* of R-LIM-042, from which the upstream figures of Q-LIM-296 are set. Subject: every
+built-in profile's `upstreamRequestsPerHour`. Live. What makes it real: the counts follow from Q-LIM-59's measurement of the clients'
+requests and from the remotes' code (an npm tarball's miss fetches its document first, R-NPM-025); no client ran through a remote whose
+stub upstream counted the exchanges. An OCI index with more attestations, Galaxy's paging of a long version list or a NuGet restore over
+several feeds costs more than the table says. The figures hold a third or more of room above every promised use, which covers the known
+differences; a format whose act costs more than that is met first. What would close it: one run per format of its client through a remote
+against a counting stub, written into R-LIM-042.

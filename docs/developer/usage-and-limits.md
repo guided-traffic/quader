@@ -84,7 +84,12 @@ figures from the measurement of Q-LIM-59; `BuiltinProfiles` in `model.go` holds 
 Q-LIM-63) and [00141_limits_parallel_transfers.sql](../../internal/meta/postgres/migrations/00141_limits_parallel_transfers.sql) (the
 figure `parallelDownloads` renamed `parallelTransfers` in the column, the overrides and the limit events, Q-LIM-293; the built-ins'
 parallel transfers from the measurement of Q-LIM-294, set only where an administrator left the old value, Q-LIM-295; its test
-`TestR_HA_020_TheParallelTransfersStepKeepsAnAdministratorsValue` in the integration area `postgres`); queries in
+`TestR_HA_020_TheParallelTransfersStepKeepsAnAdministratorsValue` in the integration area `postgres`) and
+[00143_limits_builtin_byte_figures.sql](../../internal/meta/postgres/migrations/00143_limits_builtin_byte_figures.sql) (the built-ins'
+byte, upstream and refused figures from what the uses of R-LIM-010 cost, R-LIM-042 and Q-LIM-296, set only where an administrator left
+the first migration's value, Q-LIM-297; its test `TestR_HA_020_TheBuiltInFiguresStepKeepsAnAdministratorsValue` in the integration
+area `postgres`, and `TestR_LIM_042_TheBuiltInProfilesHoldTheUsesThePagePromises` in `internal/limits`, which fails when a figure drops
+a promised use); queries in
 [limits.sql](../../internal/meta/postgres/queries/limits.sql) and [limits_usage.sql](../../internal/meta/postgres/queries/limits_usage.sql).
 
 ## The usage of a well-known member through a team's virtual repository

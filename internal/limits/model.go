@@ -145,15 +145,16 @@ const (
 
 // BuiltinProfiles are the five built-in profiles with their values (R-LIM-010): the request figures set from a measurement
 // (Q-LIM-59, migration 00085), the parallel transfers from a measurement of how many transfers each client holds at once
-// (Q-LIM-293, migration 00141), the others the development agent's estimates of the first migration. The migrations write the
-// same numbers; a test compares them.
+// (Q-LIM-294, migration 00141), the byte, upstream and refused figures from what the uses R-LIM-010 promises each profile cost
+// (R-LIM-042, Q-LIM-296, migration 00143). The migrations write the same numbers; a test compares them, and another that each
+// profile holds its promised uses.
 func BuiltinProfiles() map[string]Figures {
 	return map[string]Figures{
 		ProfileUnlimited:  {},
-		ProfileStandard:   {200, 4000, 100000, 200 * mb, 300 * gb, 50 * mb, 30 * gb, 2000, 250, 1000 * gb, 500},
-		ProfileTechnical:  {1000, 20000, 1000000, 500 * mb, 1000 * gb, 100 * mb, 100 * gb, 10000, 1000, 5000 * gb, 2000},
-		ProfileRestricted: {100, 1000, 25000, 50 * mb, 50 * gb, 10 * mb, 5 * gb, 200, 64, 100 * gb, 100},
-		ProfileAnonymous:  {50, 1000, 20000, 20 * mb, 10 * gb, 5 * mb, 2 * gb, 20, 64, 30 * gb, 60},
+		ProfileStandard:   {200, 4000, 100000, 250 * mb, 300 * gb, 125 * mb, 100 * gb, 20000, 250, 1000 * gb, 1000},
+		ProfileTechnical:  {1000, 20000, 1000000, 1250 * mb, 3000 * gb, 250 * mb, 500 * gb, 100000, 1000, 30000 * gb, 5000},
+		ProfileRestricted: {100, 1000, 25000, 100 * mb, 50 * gb, 50 * mb, 20 * gb, 3000, 64, 200 * gb, 300},
+		ProfileAnonymous:  {50, 1000, 20000, 100 * mb, 30 * gb, 50 * mb, 20 * gb, 3000, 64, 200 * gb, 300},
 	}
 }
 

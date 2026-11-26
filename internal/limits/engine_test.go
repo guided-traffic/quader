@@ -713,7 +713,8 @@ func TestR_LIM_022_ARefusedUpstreamRequestIsCountedNowhere(t *testing.T) {
 }
 
 func TestR_LIM_025_TheBlock(t *testing.T) {
-	f := BuiltinProfiles()[ProfileAnonymous] // refusedPerHour 60
+	f := BuiltinProfiles()[ProfileAnonymous]
+	f[RefusedPerHour] = 60
 	r := newRig(t, ModeEnforce, f)
 	ctx := context.Background()
 	for range 61 {

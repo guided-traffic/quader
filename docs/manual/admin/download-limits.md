@@ -19,6 +19,36 @@ Every request on a repository's address is charged to a caller: a user (all sess
 
 A **profile** is a named set of these figures; an empty figure is unlimited. A **rule** gives a profile to a caller at a place (the instance, a project, a repository), optionally with single figures changed. Which rule applies: the repository's rules first, then the project's, then the instance's; at each place a rule for the single caller or address, else the caller's groups (per figure the most generous), else the rule of its kind. Without other rules a signed-in user gets **Standard**, a technical token and a CI job **Technical**, an anonymous caller **Anonymous**, and an administrator **Unlimited**. A remote repository also has **ceilings**: what all anonymous callers, and all signed-in callers, may fetch from its upstream together.
 
+## The built-in profiles
+
+The built-in profiles are sized so that normal use in a large company never meets them, and each still bounds a caller that loops:
+
+| Profile | Requests | From the cache | From the upstream | Upstream requests | Parallel transfers | A day | Refused |
+|---|---|---|---|---|---|---|---|
+| Anonymous | 50/s, burst 1,000, 20,000/h | 100 MB/s, 30 GB/h | 50 MB/s, 20 GB/h | 3,000/h | 64 | 200 GB | 300/h |
+| Restricted | 100/s, burst 1,000, 25,000/h | 100 MB/s, 50 GB/h | 50 MB/s, 20 GB/h | 3,000/h | 64 | 200 GB | 300/h |
+| Standard | 200/s, burst 4,000, 100,000/h | 250 MB/s, 300 GB/h | 125 MB/s, 100 GB/h | 20,000/h | 250 | 1,000 GB | 1,000/h |
+| Technical | 1,000/s, burst 20,000, 1,000,000/h | 1,250 MB/s, 3,000 GB/h | 250 MB/s, 500 GB/h | 100,000/h | 1,000 | 30,000 GB | 5,000/h |
+
+What they hold within an hour, at the sizes of real images and packages (a 1 GB application image, a 5.9 GB CUDA image, an npm
+install of 475 packages: 0.43 GB and 950 upstream requests the first time through a remote):
+
+- **Anonymous**, one address, often a team behind one NAT before it signs in: ten first pulls of 1 GB images at once and twenty more
+  from the cache, or two first npm installs of 475 packages beside the first pull of a CUDA image.
+- **Restricted**: one first install of 475 packages and a CUDA image, or forty pulls of 1 GB from the cache.
+- **Standard**, a developer's machine: an install of 4,000 packages on a cold cache twice, the first pulls of a dozen images with a CUDA
+  and a PyTorch image, a compose file of a dozen 1 GB images pulled ten times.
+- **Technical**, a system or CI project with one token: twenty parallel CI jobs installing 475 packages each on a cold cache, the first
+  pulls of a hundred images after the base images changed, 2,000 jobs an hour on fresh runners each pulling a 1 GB image.
+
+The profiles cannot give what a public registry refuses. Docker Hub allows an address without an account 100 pulls in six hours and a
+Personal account 200; each first pull of an image through a remote is one of them (a check of a tag that did not move is not). When the
+registry refuses, every caller of the remote gets what is stored and `503` for the rest until the registry allows pulls again, whatever
+its own limits ([When Docker Hub refuses](container-repositories.md#a-remote-repository-for-docker-hub)). For a remote of Docker Hub
+that many people use, set its **Authentication** to a paid Docker Hub account, or set its ceilings for all anonymous and all signed-in
+callers to what the account allows. An installation that serves anonymous callers from the internet lowers the figures of
+**Anonymous**, so that strangers cannot spend its bandwidth and its standing with a registry.
+
 ## Audit and Enforce
 
 The instance is in one of two modes, shown under the heading of **Download limits**:

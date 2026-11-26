@@ -146,7 +146,7 @@ The gaps of the spec page whose mechanisms this page describes:
 
 Component: the block of [R-LIM-025](../spec/usage-and-limits.md#r-lim-025--the-block-after-refused-requests). Subject: readers of
 `public` repositories without a credential behind a shared address (a NAT, a CI fleet, a proxy). Dormant in `audit`; live in
-`enforce`. What makes it real: anyone behind the same address sends `refusedPerHour` wrong tokens (60 an hour with the profile
+`enforce`. What makes it real: anyone behind the same address sends `refusedPerHour` wrong tokens (300 an hour with the profile
 Anonymous), or as many anonymous requests for names the address may not read; every anonymous request from the address is then
 refused for the block time, again after each block. Requests past the address's request figure do not block it: a `429` is no
 refused request ([Q-LIM-58](../spec/usage-and-limits.md#q-lim-58--a-429-of-a-request-figure-is-not-a-refused-request)), so they

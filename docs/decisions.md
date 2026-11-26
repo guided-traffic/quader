@@ -11299,10 +11299,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-LIM
 
-67 questions on [spec/usage-and-limits.md](spec/usage-and-limits.md).
+70 questions on [spec/usage-and-limits.md](spec/usage-and-limits.md).
 
 <details>
-<summary>Q-LIM: 67 questions</summary>
+<summary>Q-LIM: 70 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -11373,6 +11373,9 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-LIM-293](spec/usage-and-limits.md#q-lim-293--the-limit-counts-transfers-and-is-named-parallel-transfers) | The limit counts transfers and is named parallel transfers | Decided by the owner on 2026-11-26, 10:27 | (a), with these names, used everywhere without an alias (pre-alpha, rule 9): the API member, the overrides' member and the figure of a refusal `parallelTransfers`; the problem code `too_many_parallel_transfers`; the column `parallel_transfers` (migration 00141, which renames the overrides' member and the recorded limit events too); the metric label `quader_limits_decisions_total{figure="parallelTransfers"}` and the request log's `limiter: limits.parallelTransfers` (both carry the figure's name); on the screens **Parallel transfers** (German "Gleichzeitige Übertragungen"), the editor's group **Transfers** ("Übertragungen"), the field **In parallel**, a limit "250 transfers in parallel", a compact line "250 parallel transfers", an override "+ parallel transfers 100". | — |
 | [Q-LIM-294](spec/usage-and-limits.md#q-lim-294--the-built-in-parallel-transfers-are-set-from-a-measurement-of-the-clients) | The built-in parallel transfers are set from a measurement of the clients | Decided by the owner on 2026-11-26 that the built-in values are generous, sized for large companies | (a): Anonymous 64, Standard 250, Technical 1,000, Restricted 64. | — |
 | [Q-LIM-295](spec/usage-and-limits.md#q-lim-295--the-migration-replaces-a-built-in-parallel-figure-only-where-it-still-holds-the-first-migrations-value) | The migration replaces a built-in parallel figure only where it still holds the first migration's value | Decided by the development agent | (a) Set the new value where the figure still holds the first migration's (20, 50, 6, 4) | — |
+| [Q-LIM-296](spec/usage-and-limits.md#q-lim-296--the-built-in-byte-upstream-and-refused-figures-hold-the-uses-each-profile-promises) | The built-in byte, upstream and refused figures hold the uses each profile promises | Decided by the development agent on the owner's words of 2026-11-26, 10 | (a) Each profile holds the uses R-LIM-010 promises it, priced by R-LIM-042, with a third or more of room; the profiles keep their order per figure | — |
+| [Q-LIM-297](spec/usage-and-limits.md#q-lim-297--the-migration-replaces-a-built-in-byte-upstream-or-refused-figure-only-where-it-still-holds-the-first-migrations-value) | The migration replaces a built-in byte, upstream or refused figure only where it still holds the first migration's value | Decided by the development agent | (a), as Q-LIM-295. | — |
+| [Q-LIM-298](spec/usage-and-limits.md#q-lim-298--the-built-in-figures-grant-nothing-a-public-registry-refuses-and-a-remotes-ceilings-stay-the-administrators) | The built-in figures grant nothing a public registry refuses, and a remote's ceilings stay the administrator's | Decided by the development agent | (a) The profiles stay generous; a remote's ceilings stay unset by default (Q-LIM-16), and the manual says how a company keeps a public registry's limit: credentials of a paid account on the remote, or the remote's ceilings set at the account's limit | — |
 
 </details>
 

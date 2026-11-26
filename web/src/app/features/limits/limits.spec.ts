@@ -125,17 +125,17 @@ describe('Download limits in the admin area (R-UI-177 to R-UI-182)', () => {
     await choosePrincipal(fixture, dialog, 'Group', 'web');
     typeInto(dialog, 'Profile', 'restricted');
     await settle(fixture);
-    expect(text(dialog)).toContain('50/s · 200 burst');
+    expect(text(dialog)).toContain('100/s · 1,000 burst');
     buttonByText(dialog, 'Change single figures').click();
     await settle(fixture);
-    type(dialog.querySelectorAll<HTMLInputElement>('input[name="uncachedBytesPerHour"]')[0]!, '20');
+    type(dialog.querySelectorAll<HTMLInputElement>('input[name="uncachedBytesPerHour"]')[0]!, '40');
     await settle(fixture);
     expect(buttonByText(dialog, "Use the profile's value")).toBeTruthy();
     buttonByText(dialog.querySelector('.dialog-actions')!, 'Add rule').click();
     await settle(fixture);
     const api = get(LimitsApi) as FakeLimitsApi;
     expect(api.calls.filter((c) => c.startsWith('createRule'))).toEqual(['createRule instance']);
-    expect(api.bodies[0]).toEqual({ profile: 'restricted', overrides: { uncachedBytesPerHour: 20_000_000_000 }, note: '', who: expect.objectContaining({ kind: 'group' }) });
+    expect(api.bodies[0]).toEqual({ profile: 'restricted', overrides: { uncachedBytesPerHour: 40_000_000_000 }, note: '', who: expect.objectContaining({ kind: 'group' }) });
   });
 
   it('R-UI-179 a technical token is chosen by name in the principal field, from the limits subjects of the project', async () => {
