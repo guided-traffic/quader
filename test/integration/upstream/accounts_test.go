@@ -88,9 +88,11 @@ func TestR_REPO_077_AnAccountTheConfigurationDeclares(t *testing.T) {
 	f.start()
 
 	t.Run("R-REPO-073 a registry whose recent downloads all completed answers its last download and no failure", func(t *testing.T) {
+		// A row is one download, its unit's key the one the tracker writes for an image (R-OPS-049, migration 00140).
 		f.e.Exec(`INSERT INTO upstream_download_finished (id, repo_id, name, version, path, bytes, started_at, finished_at, duration_ms, outcome,
-		          origin, replica_name) VALUES (gen_random_uuid(), $1, 'library/alpine', '3.19', 'library/alpine/_manifests/latest', 512,
-		          now() - interval '2 seconds', now() - interval '1 second', 1000, 'completed', 'client', 'quader-packages-0')`, f.id("docker-hub"))
+		          origin, replica_name, unit, parts) VALUES (gen_random_uuid(), $1, 'library/alpine', '3.19', 'library/alpine/_manifests/latest', 512,
+		          now() - interval '2 seconds', now() - interval '1 second', 1000, 'completed', 'client', 'quader-packages-0',
+		          'p|library/alpine/_manifests/latest', 1)`, f.id("docker-hub"))
 		defer f.e.Exec(`DELETE FROM upstream_download_finished WHERE repo_id = $1`, f.id("docker-hub"))
 		got := f.do(f.admin, "GET", items+"/docker-hub", nil)
 		wantStatus(t, got, 200, "")
