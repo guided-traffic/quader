@@ -712,6 +712,256 @@ What the two questions the planner left open came to:
 - **The largest ClamAV container**: `main.cvd` of version 63 is 89,072,577 bytes (84.9 MiB), above the memory bound of 64 MiB; the
   spool path of Q-BAS-173 serves it from the cache.
 
+## What a client's command costs through a Bastion (measured 2026-11-26)
+
+The measurement W34-E4 of [bastion-limits.md](bastion-limits.md#e4--the-measurement-run-once), run once; it is not a test. Its numbers set
+the figures of the two Bastion profiles (package E8, [R-LIM-046](../spec/usage-and-limits.md#r-lim-046--the-bastions-profiles-and-presets)),
+the anonymous ceiling's default (E9a, [R-BAS-094](../spec/bastion.md#r-bas-094--what-an-anonymous-request-may-cause-at-the-main-installation))
+and the throughput cap's (E10, [R-BAS-097](../spec/bastion.md#r-bas-097--the-throughput-between-the-main-installation-and-a-bastion)). The
+scripts that produced them, and how to run them again, are [hack/bastion-measure](../../hack/bastion-measure/README.md). *Measured* is a number
+read on that day from a request record, a counter or a client's output; *derived* one that follows from a measured number and the sizes of
+[R-LIM-042](../spec/usage-and-limits.md#r-lim-042--what-one-act-of-a-client-costs-in-the-byte-upstream-and-refused-figures) or the protocol.
+
+**The set-up.** One arm64 workstation (Apple M1 Ultra, 20 cores, 128 GiB; Docker Desktop's VM with 20 CPUs and 16 GiB), shared with other
+builders: the load average was 26 to 46 throughout, so every wall time below is an upper bound, never a target. The main installation was the
+working tree's `quader serve --role all` (commit `352000203`) on the stores of the worktree's own instance of the UI development profile
+(PostgreSQL 18.6, Valkey 9.1.3, SeaweedFS 4.51), with TLS. The Bastion was the same binary's `--role bastion`: one replica, the volume
+backend, no Valkey, every figure at its default (`bastion.main.max_concurrent` 64, so 16 slots for anonymous callers;
+`queue_timeout` 2 s; `limits.anonymous` 50/s, burst 1,000; `limits.authenticated` 200/s, burst 4,000), restarted with an empty cache
+before each cold run, and the cold run started 20 s after it was ready (a younger feed entry makes every filled entry stale,
+[Q-BAS-271](../spec/bastion.md#q-bas-271--the-end-to-end-warm-assertion-counts-what-a-warm-pull-asks-about-artifacts)). The warm run
+followed a few seconds later through the same Bastion. The clients ran in the format journeys' images, in containers that reached the
+Bastion through the host gateway, so the Bastion saw every one of them from one address. Counted: the request records (`log=request`) of
+both processes whose start lies in the run's window, and the growth of the Bastion's counters; "to the main installation" leaves out the
+feed and the handshake. The content was generated into local repositories of the main installation: an npm tarball is about 245 bytes, a
+`.nupkg` with its version list about 475 bytes, so the bytes of npm, NuGet, APT and Galaxy below are the generated ones and the real ones are derived from
+R-LIM-042; the images are real in size.
+
+| Client | Version | Image |
+|---|---|---|
+| npm | 11.21.1 | `quader-e2e-clients` (`npm11`) |
+| dotnet (NuGet) | .NET SDK 10.0.403 | `quader-e2e-nugetclients` |
+| Docker Engine | 29.9.3 | `quader-e2e-ociclients-docker` |
+| Podman | 5.8.9 | `quader-e2e-ociclients-podman` |
+| APT | 3.0.4 (Debian 13) | `quader-e2e-aptclients-debian13` |
+| ansible-galaxy | ansible-core 2.17.14 | `quader-e2e-ansibleclients-core217` |
+| curl | 8.14.1 | `quader-e2e-aptclients-debian13` |
+
+### One command through a cold and a warm Bastion
+
+The commands: `curl` of a file of 1 MiB; `npm ci` of a lockfile of 475 packages; `dotnet restore` of a project of 200 packages from one
+feed; `docker pull` and `podman pull` of an image of one layer of 4 KiB ("small"), of 40 layers of 1 to 2 KiB ("40 layers") and of eight
+layers of 128 MiB of random bytes (1 GiB); `apt-get update` and `apt-get install` of five packages that share a sixth; `ansible-galaxy
+collection install` of a collection with three dependencies. The image clients with a credential ran `docker login` or `podman login` in
+the same container first, so their runs hold the login's token and version check. Each cell is measured.
+
+**Anonymous** (the repositories readable by anyone):
+
+| Command | Run | Requests at the Bastion | To the main installation, by kind | Bytes from the main installation | Bytes to the client | At once: Bastion / main | Misses, first minute | Wall s |
+|---|---|---|---|---|---|---|---|---|
+| curl | cold | 1 | 1 forward | 1,048,576 | 1,048,576 | 1 / 1 | 1 | 0.03 |
+| curl | warm | 1 hit | 0 | 0 | 1,048,576 | 1 / 0 | 0 | 0.00 |
+| npm ci | cold | 475 | 475 forwards | 116,241 | 116,241 | 15 / 15 | 475 | 7.6 |
+| npm ci | warm | 475 hits | 0 | 0 | 116,241 | 13 / 0 | 0 | 1.0 |
+| dotnet restore | cold | 441: 401 misses, 40 refused `503` busy | 401 forwards (the service index, 200 version lists, 200 packages) | 95,603 | 108,523 | 200 / 16 | 401 | 3.5 |
+| dotnet restore | warm | 401 hits | 0 | 0 | 95,603 | 32 / 0 | 0 | 0.2 |
+| docker, small | cold | 4 | 4 forwards (`HEAD` of the tag, manifest, config, layer) | 4,892 | 4,892 | 1 / 1 | 4 | 0.09 |
+| docker, small | warm | 4: 3 hits, the tag's `HEAD` a miss | 1 forward (the `HEAD` of the tag) | 0 | 4,892 | 1 / 1 | 1 | 0.27 |
+| docker, 40 layers | cold | 43 | 43 forwards | 77,415 | 77,415 | 3 / 3 | 43 | 2.6 |
+| docker, 40 layers | warm | 43: 42 hits | 1 forward | 0 | 77,415 | 1 / 1 | 1 | 1.0 |
+| docker, 1 GiB | cold | 11 | 11 forwards | 1,073,830,737 | 1,073,830,737 | 3 / 3 | 11 | 32.4 |
+| docker, 1 GiB | warm | 11: 10 hits | 1 forward | 0 | 1,073,830,737 | 3 / 1 | 1 | 3.6 |
+| podman, small | cold | 5: the challenge `401` the Bastion's own | 4: 1 token, 3 forwards | 5,378 | 5,535 | 1 / 1 | 4 | 0.10 |
+| podman, small | warm | 5: 3 hits | 1 token | 486 | 5,535 | 1 / 1 | 1 | 0.03 |
+| podman, 40 layers | cold | 44 | 43: 1 token, 42 forwards | 77,901 | 78,058 | 6 / 6 | 43 | 1.5 |
+| podman, 40 layers | warm | 44: 42 hits | 1 token | 486 | 78,058 | 4 / 1 | 1 | 0.8 |
+| podman, 1 GiB | cold | 12 | 11: 1 token, 10 forwards | 1,073,831,217 | 1,073,831,374 | 6 / 6 | 11 | 27.3 |
+| podman, 1 GiB | warm | 12: 10 hits | 1 token | 480 | 1,073,831,374 | 6 / 1 | 1 | 2.7 |
+| apt-get update, install | cold | 8 (`InRelease`, one by-hash `Packages`, six packages) | 8 forwards | 6,484 | 6,484 | 2 / 1 | 8 | 0.3 |
+| apt-get update, install | warm | 8 hits | 0 | 0 | 6,484 | 4 / 0 | 0 | 0.1 |
+| ansible-galaxy install | cold | 17 (13 documents, 4 archives) | 17 forwards | 10,684 | 10,684 | 1 / 1 | 17 | 0.4 |
+| ansible-galaxy install | warm | 17 hits | 0 | 0 | 10,684 | 1 / 0 | 0 | 0.1 |
+
+**With a credential** (the reader's technical token, which reads the project; the repositories private):
+
+| Command | Run | Requests at the Bastion | To the main installation, by kind | Bytes from the main installation | At once: Bastion / main | Misses, first minute | Wall s |
+|---|---|---|---|---|---|---|---|
+| curl | cold / warm | 1 / 1 hit | 1 forward / 0 | 1,048,576 / 0 | 1 / 1 | 1 / 0 | 0.03 / 0.00 |
+| npm ci | cold / warm | 475 / 475 hits | 475 forwards / 0 | 116,241 / 0 | 15 / 15 | 475 / 0 | 1.1 / 1.0 |
+| dotnet restore | cold | 802: each request first without the credential, answered `401` by the Bastion itself, then again with it | 401 forwards | 95,603 | 200 / 65 | 401 | 4.3 |
+| dotnet restore | warm | 802: 401 hits, 401 challenges | 0 | 0 | 34 / 0 | 0 | 1.0 |
+| docker, small | cold | 9 | 8: 3 tokens, 5 forwards | 6,602 | 1 / 1 | 7 | 0.15 |
+| docker, small | warm | 9: 3 hits | 5: the login's token and version check, the pull's probe and token, the tag's `HEAD` | 1,710 | 1 / 1 | 4 | 0.14 |
+| docker, 40 layers | cold / warm | 48 / 48 | 47 (3 tokens, 44 forwards) / 5 | 79,125 / 1,710 | 3 / 3 | 46 / 4 | 1.7 / 0.3 |
+| docker, 1 GiB | cold / warm | 16 / 16 | 15 / 5 | 1,073,832,441 / 1,704 | 3 / 3 | 14 / 4 | 26.7 / 5.2 |
+| podman, small | cold / warm | 8 / 8 | 6 (2 tokens, 4 forwards) / 4 (2 tokens, the version check, 1 credential check) | 6,602 / 2,008 | 1 / 1 | 6 / 3 | 0.8 / 0.09 |
+| podman, 40 layers | cold / warm | 47 / 47 | 45 / 4 | 79,125 / 2,008 | 6 / 6 | 45 / 3 | 0.6 / 0.5 |
+| podman, 1 GiB | cold / warm | 15 / 15 | 13 / 4 | 1,073,832,441 / 2,000 | 6 / 6 | 13 / 3 | 46.8 / 8.5 |
+| apt-get update, install | cold / warm | 8 / 8 hits | 8 forwards / 0 | 6,484 / 0 | 1 / 1 | 8 / 0 | 0.7 / 0.1 |
+| ansible-galaxy install | cold / warm | 17 / 17 hits | 17 forwards / 0 | 10,684 / 0 | 1 / 1 | 17 / 0 | 2.7 / 0.9 |
+
+What the two tables show, beside the counts:
+
+- **No command needed a credential check of its own** on a cold Bastion: a forward carries the caller's credential and the marking answers
+  its shape. The one check is podman's warm pull, whose registry token is new at every pull.
+- **A credential that is configured is not always sent.** `dotnet` sends the feed's credential only after a `401`: against a public
+  repository the restore with the reader's credential ran anonymous (432 requests at the Bastion, 31 of them `503` busy, the fills charged to
+  the anonymous class), and against a private one every one of its 401 requests came twice. npm, ansible-galaxy and curl send theirs
+  with every request; docker and podman take a registry token.
+- **One anonymous `dotnet restore` of 200 packages meets the 16 anonymous slots of a Bastion of one replica**: 200 requests at once, 31 to 40
+  of them answered `503` busy after the queue's 2 s. NuGet retried each and the restore succeeded (exit 0), 3.5 s cold.
+- **A warm docker pull still sends the tag's `HEAD` to the main installation** (Q-BAS-271, Docker never `GET`s the tag, so it has no entry),
+  and every warm pull with a credential costs its token requests; podman's anonymous token is forwarded too, which
+  [Q-BAS-335](../spec/bastion.md#q-bas-335--the-bastion-answers-an-anonymous-token-request-itself) will answer at the Bastion.
+- **The 1 GiB image** crossed from the main installation at 23 to 51 MB/s here (21 to 47 s cold), and from the Bastion's cache in 2.6 to
+  8.5 s (126 to 400 MB/s), on loopback and under the load above.
+
+**Derived for real content** (the counts above, the sizes of R-LIM-042): a cold anonymous `npm ci` of 475 packages through a Bastion
+in front of a main installation that holds them costs 475 misses and 88 MB from the main installation (186 kB a tarball); a cold
+`dotnet restore` of 200 packages 401 misses and 0.3 GB; `apt-get update` of a real suite about 12 requests (here 2: one component, one
+architecture, a small suite) and an install of 106 packages 106 more, 105 MB; `ansible-galaxy` installs 4 requests per collection and one
+for the server, 51 and 11 MB for R-LIM-042's twelve collections.
+
+**`freshclam` was not measured** on this day: the measurement's main installation runs no `malware-updater-freshclam`, so its
+`upstream/clamav` holds no container, and the containers are not fetched from ClamAV's network for a measurement. The run of 2026-11-22
+above stands: a first run 112.8 MB from the cache, `main.cvd` from the main installation once, three `404` for `.cld` per run.
+
+### The overflow attack, scaled down
+
+A Bastion with `bastion.cache.max_bytes` 2 GiB and `documents_max_bytes` 256 MiB, `server.trusted_proxies` this machine; a caller without a
+credential asked through 32 connections for the 768 distinct files of 4 MiB of a public generic repository (3 GiB, so each file was evicted
+before it was asked for again), in order and from the start again, from 256 addresses (`X-Forwarded-For`) for 120 s and from one address for
+90 s. A warm `npm ci` with the reader's credential ran before, in the attack's 60th second and after it. Measured, per second from the
+Bastion's counters:
+
+| | 256 addresses, 120 s | One address, 90 s |
+|---|---|---|
+| The attacker got | 1,022 files (4.27 GB), 309 `503` busy | 1,120 files (4.68 GB), 18 `503` busy |
+| Requests from the Bastion to the main installation | 1,451 forwards, 12.2 a second on average, at most 95 in one second (the npm install's 475 among them) | 1,579 forwards, 17.7 a second, at most 136 |
+| Bytes from the main installation to the Bastion | 4.09 GB, 34 MB/s on average, at most 67 MB/s | 4.62 GB, 52 MB/s, at most 80 MB/s |
+| Requests in flight for anonymous callers | 16 of 16, every second | 16 of 16 |
+| The cache | artifacts at most 1.80 GB of the 1.88 GB (1.75 GiB) left beside the documents; 2,367 entries evicted; 30 hits | 1.86 GB; 2,233 evicted; no hit |
+| The warm `npm ci`, before / during / after | 475 hits, 0 to the main installation, 1.3 s / 475 misses, 475 forwards, 6.2 s / 475 misses, 1.5 s | the same: 447 of the tarballs during, 458 after were misses forwarded, within windows cut at whole seconds |
+
+- **What it evicts: everything, the working set first.** A fill counts as an access and the sweep evicts by last access (H-2272): the 475
+  tarballs that had been served twice were gone within the first minute, and stayed gone after the attack.
+- **What bounds the attack today is the 16 anonymous slots and the main installation's speed**, not a request figure: from 256 addresses or
+  from one, no address met its rate or miss figure (1,000 misses a minute), and each slot held a fill of 4 MiB for 1.2 to 2.8 s. With
+  artifacts of a few kilobytes the same slots carry hundreds of forwards a second: a cold anonymous `npm ci` alone made 475 in 1.1 s.
+- **The signed-in install was not refused during the attack**: its fills take the other 48 slots. It became a cold install (6.2 s instead of
+  1.3 s).
+- **With the defaults a cache of 2 GiB keeps no artifact at all.** `documents_max_bytes` (2 GiB) is a share of `max_bytes`; at
+  `max_bytes` 2 GiB the first run of the attack had every one of 1,531 fills refused "no room", and every request went to the main
+  installation. The scaled-down runs above give documents 256 MiB.
+
+### The main installation's latency per check and per conditional request
+
+Each series is 600 credential checks, sent one after the other straight to `POST /api/v1/bastion/check` with the Bastion's token and headers,
+half with the reader's credential and half anonymous, and 600 reads of npm tarballs with the reader's credential through a second replica
+whose `artifact_revalidate_after` was 1 s, each of which became a conditional request answered `304`. The times are the main
+installation's own (`duration_ms` of its request records), measured, in milliseconds:
+
+| Series | Load average | Check p50 / p95 / p99 (n) | Conditional request p50 / p95 / p99 (n) |
+|---|---|---|---|
+| Idle, first | 26 to 32 | 0.9 / 2.2 / 4.5 (600) | 6.0 / 43.1 / 101.5 (600) |
+| Idle, again | 31 to 34 | 1.6 / 5.0 / 11.3 (600) | 7.4 / 54.3 / 96.8 (600) |
+| During the attack, 256 addresses | 46 | 5.5 / 15.0 / 23.9 (600) | 33.0 / 77.2 / 115.6 (600) |
+| During the attack, one address | 35 | 5.2 / 13.7 / 19.9 (600) | 14.8 / 28.8 / 42.4 (600) |
+
+The machine was never quiet (load 26 to 46 on 20 cores), so the idle series was repeated once rather than at a quiet moment. Under the attack
+a check's median rose from about 1 ms to about 5 ms and a conditional request's from about 7 ms to 15 to 33 ms; the tails moved less than
+the machine's own noise. The attack's own forwards of 4 MiB took 1.2 to 2.8 s at the median.
+
+### What each client prints for a refusal
+
+Every client against `e4 stub`, which answers the four error shapes of
+[Q-BAS-337](../spec/bastion.md#q-bas-337--a-bastions-own-refusals-take-one-of-four-error-shapes-a-format-declares) exactly as R-BAS-095
+specifies them (**specified, not built**): the reads with `503 busy` and `Retry-After: 2`, and with `429 rate_limited` and `Retry-After: 2`;
+the writes with `403 read_only`. The stub answers what a client needs before its first content request (the registry's `/v2/`, NuGet's service
+index, Galaxy's API root) and refuses the rest. Measured: the output, the exit code, the requests the stub received.
+
+| Client, shape | `503 busy`, `Retry-After: 2` | `429 rate_limited`, `Retry-After: 2` | `403 read_only` (a write) |
+|---|---|---|---|
+| npm, `npm` | `npm error 503 Service Unavailable - GET …/e4pkg-001 - Too many requests are waiting; try again in a moment.` exit 1; 3 requests, retried after 10 s and 60 s (its own back-off, not `Retry-After`) | the same with `E429` and the detail; 3 requests | `npm publish`: `npm error 403 403 Forbidden - PUT …/e4-shape - This address is read-only: …` and npm's own hint about security policies; exit 1 |
+| dotnet, `text` | `Retrying 'FindPackagesByIdAsync' …` five times about 1 s apart, then `error NU1301: … 503 (Service Unavailable).` exit 1; 6 requests. The body is never printed | the same with `429 (Too Many Requests)`; 6 requests | `dotnet nuget push`: `error: Response status code does not indicate success: 403 (Forbidden).` exit 1; the body is not printed |
+| docker, `distribution` | `failed to resolve reference …: unexpected status from HEAD request to …/manifests/1: 503 Service Unavailable` exit 1; 2 `HEAD`s, no retry. A `HEAD` has no body, so no shape reaches docker here | `… 429 Too Many Requests` exit 1; 5 `HEAD`s within 13 ms | `docker push`: `error from registry: This address is read-only: …` exit 1 |
+| podman, `distribution` | `reading manifest 1 …: received unexpected HTTP status: 503 Service Unavailable` exit 125; 4 requests, 1 s apart | `… toomanyrequests: The limit of 50 requests a second is reached. …` exit 125; 20 requests over 36 s (it waits the 2 s) | `podman push`: `denied: This address is read-only: …` exit 125 |
+| APT, `problem` | `Err:1 … InRelease  TooManyRequests 503  Service Unavailable` and `W: Failed to fetch …`; **exit 0**; 4 requests over 19 s | the same with `429  Too Many Requests`; exit 0; 4 requests | no write |
+| ansible-galaxy, `problem` | `ERROR! … (HTTP Code: 503, Message: Service Unavailable Code: Unknown)` exit 1; 1 request | `… (HTTP Code: 429, Message: Too Many Requests Code: Unknown)` exit 1; 7 requests over 66 s | `collection publish`: `… (HTTP Code: 403, Message: Forbidden Code: Unknown)` exit 1 |
+| curl, `problem` | the problem body (with `--fail-with-body`), `curl: (22) The requested URL returned error: 503`, exit 22; 1 request, no retry | the same with 429, exit 22; 1 request | `curl -T`: the body, exit 22 |
+
+And against the Bastion as built today (measured), the reads anonymous through a Bastion with `limits.anonymous` 1 a second and a burst of 1,
+the writes with the reader's credential:
+
+| Client | A read over the limit | A write |
+|---|---|---|
+| npm | retried the `429` and installed (exit 0, 11 s) | `403 … This is a read-only Bastion of https://localhost:19280; publish to https://localhost:19280/api/npm/e4/npm-local/` exit 1 |
+| dotnet | retried the `429`s and restored (exit 0) | `403 (Forbidden)` exit 1 |
+| docker | `error from registry: Too many requests from this address. Try again in 1 second.` exit 1 | `error from registry: This is a read-only Bastion of https://localhost:19280; publish to localhost:19280/e4/docker-local` exit 1 |
+| podman | `too many requests to registry` exit 125 | `denied: This is a read-only Bastion of …` exit 125 |
+| APT | retried and updated (exit 0) | no write |
+| ansible-galaxy | `ERROR! Unexpected Exception, this is probably a bug: 'results'` **exit 250**, after a `429` on the version list | `(HTTP Code: 403, Message: This is a read-only Bastion of …; publish to … Code: bastion_read_only)` exit 1 |
+| curl | the one request passed | the problem body naming the main installation's URL, exit 22 |
+
+What follows for the error shapes: npm, podman's `429` and `403`, docker's blob and upload refusals and curl print the specified detail;
+**dotnet never prints a body** (the `text` shape changes nothing it shows), **APT prints the reason phrase only and its `apt-get update` exits
+0**, a refusal of a `HEAD` reaches docker without a body, and **ansible-galaxy does not read problem details** ("Code: Unknown") but does read
+the Galaxy error list the main installation's Ansible format answers with (`Message: <detail> Code: bastion_read_only`); today's Bastion
+answer to a `429` on Galaxy's version list crashes ansible-galaxy 2.17.14 (exit 250). Today's write refusals name the main installation,
+which R-BAS-099 removes (E16).
+
+### The proposal for the figures (derived; not a change of code or specification)
+
+The two profiles, in the form of R-LIM-042: each figure holds the uses named within an hour from one address (anonymous) or for one subject
+(signed in), at the measured counts and R-LIM-042's sizes, with a third of room.
+
+| Figure | Bastion: anonymous | Holds, with a third of room | Bastion: signed-in | Holds, with a third of room |
+|---|---|---|---|---|
+| Req/s, burst | 50, 1,250 | one cold `npm ci` of 475 and one anonymous `dotnet restore` of 200 at once (475 + 441 = 916) | 200, 5,400 | an install of 4,000 packages at once (4,000) |
+| Req/h | 20,000 | thirty `npm ci` of 475 (14,250) | 100,000 | twenty installs of 3,000 packages (60,000), or fifty restores of 300 with their challenges (1,202 each, 60,100) |
+| Upstream req/h (misses) | 5,200 | four cold `npm ci` (1,900), two cold restores of 200 (802), five first pulls of 1 GB (55), five `apt-get` of 106 packages (590), ten Galaxy installs of twelve collections (510): 3,857 | 12,000 | two cold installs of 4,000 (8,000), a cold restore of 300 (601), the first pulls of twelve 1 GB images (180): 8,781 |
+| Uncached MB/s, GB/h | 50, 9 | the same uses: 5 GB of images, 0.35 GB of npm, 0.6 GB of NuGet, 0.53 GB of Debian, 0.11 GB of Galaxy (6.6 GB); a first pull of 1 GB in 20 s | 125, 20 | 1.5 GB of npm, 0.45 GB of NuGet, 12 GB of images (13.9 GB); a first pull of 1 GB in 8 s |
+| Cached MB/s, GB/h | 100, 30 | twenty pulls of 1 GB from the Bastion's cache (20 GB); one in 10 s | 250, 160 | a compose file of twelve 1 GB images pulled ten times from the cache (120 GB); one in 4 s |
+| Parallel transfers | 80 | four `npm ci` at once (60), or ten podman pulls (60) | 340 | a restore of 200, an `npm ci` (15), five podman pulls (30) and a docker pull (3) at once (248) |
+| GB/day | 220 | twenty cached pulls of 1 GB an hour for eight hours (160) | 1,300 | the compose file's 120 GB an hour for eight hours (960) |
+| Refused/h | 300 | fifteen `npm ci` on an expired token, at most 15 refusals each (225, R-LIM-042) | 1,000 | as the main installation's Standard |
+
+- **The anonymous ceiling per Bastion** (R-BAS-094): 100 requests a second to the main installation with a burst of 2,000, and 36,000 an
+  hour, for all anonymous callers together. The burst holds three cold anonymous `npm ci` of 475 at once (1,425, with a third 1,900); the
+  hour holds 75 such cold installs, about the anonymous traffic of a busy public mirror whose content changes; and a flood of distinct
+  artifacts is held to 100 misses a second, about eight times what the attack above reached with files of 4 MiB.
+- **The throughput cap** (R-BAS-097): 200 MB/s for the registration, its anonymous share at the default 25 %, 50 MB/s. The anonymous share
+  equals the anonymous profile's uncached rate, so one anonymous first pull of 1 GB takes 20 s, no slower than measured here (21 to 47 s),
+  while a flood of distinct artifacts from any number of addresses is held to 50 MB/s, about what the attack reached on this machine and
+  180 GB an hour; the hourly volumes stay unlimited by default. The specification's default today is unlimited; this is a proposal to E10.
+- **What "served twice" must protect** (R-BAS-098): the working set the attack evicted was 475 entries served twice before it; R-BAS-098's
+  80 % for protected entries keeps such a set as long as it is below 1.4 GiB of a 1.75 GiB artifact area, and the churn then cycles
+  through the remaining fifth.
+
+Where the specification's derived numbers stand after this measurement:
+
+- [R-BAS-092](../spec/bastion.md#r-bas-092--the-built-in-figures-hold-one-normal-command-of-every-client)'s table: `docker pull` of 40
+  layers 48 requests, confirmed (48 with a credential and its login, 43 anonymous); `podman pull` of 40 layers 44, confirmed (44 anonymous,
+  47 with a credential), and its "at once" `[not verified]` is 6, measured; `dotnet restore` "about F + N × (F + 1)", confirmed
+  (401 for one feed and 200 packages) for an anonymous restore, **refuted for one with a credential**: the Bastion sees twice that, every
+  request first without it; `ansible-galaxy` "about 4 C", confirmed (17 for four collections); `apt-get` "10 to 15, then N" not reproduced
+  with a suite of one index (2, then 6).
+- R-BAS-092's "the 17th waits 2 s and is answered `503 bastion_busy`": **confirmed, and met by one normal command**: a single anonymous
+  restore of 200 packages got 31 to 40 such answers.
+- [R-BAS-094](../spec/bastion.md#r-bas-094--what-an-anonymous-request-may-cause-at-the-main-installation)'s planner derivation (16 slots,
+  about 1,600 requests a second at 10 ms an answer): plausible for answers of a few kilobytes (an anonymous `npm ci` made 475 forwards in
+  1.1 s through 15 connections), **refuted as a bound for artifacts**: with files of 4 MiB the 16 slots carried 8.5 to 12.4 a second, and
+  the bytes, 34 to 52 MB/s, are the bound.
+- [R-LIM-041](../spec/usage-and-limits.md#r-lim-041--what-one-act-of-a-client-costs-in-transfers-and-how-a-person-reads-the-figure)'s
+  transfers at once, through a Bastion: npm 15, docker 3, podman 6, a restore 200, confirmed.
+- [H-2272](../spec/bastion.md#h-2272--a-churn-of-distinct-artifacts-still-evicts-the-working-set-and-crosses-the-transfer-network):
+  confirmed as stated.
+
+What was not measured: `freshclam` (above); a Bastion of two replicas or with Valkey; the bucket backend; the handover's direct read from the
+object store (every fill here came from the main installation); a real suite of Debian and real npm, NuGet and Galaxy content in size (the
+bytes of those are derived); clients behind distinct addresses (every container reached the Bastion from one); the kubelet and containerd
+(`crictl`); pnpm and Yarn; latency at a quiet moment (the machine had none that afternoon).
+
 ## How the role is wired (package 4c)
 
 [server.go](../../internal/bastion/server/server.go) builds every component from the role's configuration when `server.New` runs, so that a defect

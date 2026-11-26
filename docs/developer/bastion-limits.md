@@ -2,9 +2,10 @@
 
 Status: specified on 2026-11-26 (W-34; the owner's answers to the working paper of W-34 and W-35, stored at 11:51). Packages E1, E2, E3
 and E5 are **built** (the cache bounded at every commit and the bytes counted, R-BAS-089, R-BAS-090; the format's cap of the wait and the
-figures that let one normal command through, R-BAS-091, R-BAS-092, interface version 7), and so is E14a (the anonymous token and the
-anonymous documents of R-BAS-094); E6 is this page and the specification. Every other
-package is **not built**. The requirements are [bastion.md](../spec/bastion.md#limits-configuration-and-throughput-from-the-main-installation)
+figures that let one normal command through, R-BAS-091, R-BAS-092, interface version 7), and so are E16 and E14a (the anonymous token and
+the anonymous documents of R-BAS-094); E4 is measured
+([bastion.md](bastion.md#what-a-clients-command-costs-through-a-bastion-measured-2026-11-26)); E6 is this page and the specification. Every
+other package is **not built**. The requirements are [bastion.md](../spec/bastion.md#limits-configuration-and-throughput-from-the-main-installation)
 R-BAS-093 to R-BAS-099 and [its wire](../spec/bastion.md#the-interface-version-8-the-shared-wire),
 [usage-and-limits.md](../spec/usage-and-limits.md#a-bastion-as-a-place) R-LIM-043 to R-LIM-046 and
 [api-and-ui.md](../spec/api-and-ui.md#r-ui-240--a-bastions-card-its-limits-its-throughput-and-its-state) R-UI-240 to R-UI-243; the record is
@@ -42,7 +43,7 @@ At most four builders at once (rule 10 of the project plan). The waves are the o
 |---|---|---|---|---|
 | 1 | E1 + E5 | the cache below its size, the bytes counted (R-BAS-089, R-BAS-090) | — | built |
 | 1 | E2 + E3 | the format's cap of the wait, interface version 7; the figures of one normal command (R-BAS-091, R-BAS-092) | — | built |
-| 1 | E4 | the measurement, run once, not a test | — | not built |
+| 1 | E4 | the measurement, run once, not a test | — | measured ([bastion.md](bastion.md#what-a-clients-command-costs-through-a-bastion-measured-2026-11-26)) |
 | 1 | E6 | this specification | — | written |
 | 2 | E7 | the shared wire, interface version 8, with W-35's P5 | E6, E2, W-35's wire | not built |
 | 2 | E16 | nothing of the main installation in a Bastion's answers | E2 + E3 | built |
@@ -63,8 +64,10 @@ At most four builders at once (rule 10 of the project plan). The waves are the o
   `dotnet restore`, `docker` and `podman` pulls (a small image, an image of 1 GB, an image of 40 layers), `apt-get`, `ansible-galaxy`,
   `freshclam`, `curl`. The overflow attack, scaled to a cache of 2 GiB. The main installation's latency per check and per conditional
   request. What each client prints for a refusal in each of the four error shapes and for `503 busy`.
-- The numbers go to [bastion.md](bastion.md); they set the figures of "Bastion: anonymous" and "Bastion: signed-in" (E8, R-LIM-046) and the
-  anonymous ceiling's default (E9a, R-BAS-094). Scripts under `hack/`, never in the product. Minutes, once.
+- The numbers are in [bastion.md](bastion.md#what-a-clients-command-costs-through-a-bastion-measured-2026-11-26), with the proposal for the
+  figures of "Bastion: anonymous" and "Bastion: signed-in" (E8, R-LIM-046), the anonymous ceiling's default (E9a, R-BAS-094) and the
+  throughput cap's (E10, R-BAS-097). The scripts are [hack/bastion-measure](../../hack/bastion-measure/README.md), never in the product.
+  Measured on 2026-11-26.
 
 ### E7 · The shared wire, interface version 8
 
