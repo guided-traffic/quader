@@ -4210,6 +4210,30 @@ detached signature of `MANIFEST.json` is posted with the operation of R-SIG-031.
 
 **Choice:** (a). **Revisit** with a screen for posting a signature to a version (H-2180). **Applied in the spec:** R-ANS-061.
 
+### Q-ANS-130 · A collection's deprecation carries a message for Quader's screens only
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: Galaxy's collection document carries the flag alone; npm's and NuGet's deprecations carry a message that says what to use instead.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) An optional message, kept with the row and shown on Quader's pages; the document carries the flag (chosen) | The same dialog as the other formats | A reader on the screen learns why and what to use; the protocol stays Galaxy's | A client never sees the message |
+| (b) No message | Exactly Galaxy | — | A deprecation without a word of why on the one place that can show it |
+
+**Choice:** (a). The dialog says that `ansible-galaxy` shows nothing. **Applied in the spec:** R-ANS-060.
+
+### Q-ANS-131 · A remote takes its upstream's flag from the collection document it fills, a virtual its first member's
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The fill of a collection document records the flag in the same table, without a principal; a virtual repository's merged document takes the flag of the first member that holds the collection, the member whose versions come first (R-ANS-022) (chosen) | The upstream's word, kept as the document is | The screens read one table for both classes; a restore without the remote caches drops the remote's rows with them | Known only once the document was fetched (H-2162) |
+| (b) Any member that marks it deprecated | — | — | A local collection someone keeps current reads deprecated because a remote's upstream gave up its own |
+
+**Choice:** (a). **Applied in the spec:** R-ANS-060, R-ANS-022.
+
 ## What this does not cover
 
 ### H-2182 · The screen's upload needs the packages family on the UI's own endpoint
@@ -4290,32 +4314,6 @@ Live for every Galaxy upstream.
 The documentation of a remote's version is fetched when someone opens it (R-ANS-033); the search across collections reads the newest version
 of each collection and finds nothing in one whose documentation was never fetched (R-ANS-058). Live for every remote collection nobody has
 opened; a version's page fills it.
-
-### Q-ANS-130 · A collection's deprecation carries a message for Quader's screens only
-
-Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
-
-Context: Galaxy's collection document carries the flag alone; npm's and NuGet's deprecations carry a message that says what to use instead.
-
-| Option | What it means | For | Against |
-|---|---|---|---|
-| (a) An optional message, kept with the row and shown on Quader's pages; the document carries the flag (chosen) | The same dialog as the other formats | A reader on the screen learns why and what to use; the protocol stays Galaxy's | A client never sees the message |
-| (b) No message | Exactly Galaxy | — | A deprecation without a word of why on the one place that can show it |
-
-**Choice:** (a). The dialog says that `ansible-galaxy` shows nothing. **Applied in the spec:** R-ANS-060.
-
-### Q-ANS-131 · A remote takes its upstream's flag from the collection document it fills, a virtual its first member's
-
-Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
-
-| Option | What it means | For | Against |
-|---|---|---|---|
-| (a) The fill of a collection document records the flag in the same table, without a principal; a virtual repository's merged document takes the flag of the first member that holds the collection, the member whose versions come first (R-ANS-022) (chosen) | The upstream's word, kept as the document is | The screens read one table for both classes; a restore without the remote caches drops the remote's rows with them | Known only once the document was fetched (H-2162) |
-| (b) Any member that marks it deprecated | — | — | A local collection someone keeps current reads deprecated because a remote's upstream gave up its own |
-
-**Choice:** (a). **Applied in the spec:** R-ANS-060, R-ANS-022.
-
-## What this does not cover
 
 ### H-2162 · A remote knows its upstream's deprecation only from a collection document it fetched
 
