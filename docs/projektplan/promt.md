@@ -311,11 +311,12 @@ wrapped line was seen (2026-11-19), so its condition to build a check is met.
 | W30-A4 · A role read through a remote reads like a role (W-30, the owner's d1 = b) | R-ANS-056 of the plan `.dev/w30-plan.md`: owner and name, description, README, `role search`; no local publish of a role; Q-ANS-110 to Q-ANS-119, Q-UI-1260 to Q-UI-1269, H-2120 to H-2129, migration 00134 | landed and pushed on 2026-11-26 at 03:14, with the migrations 00134 and 00135 |
 | W30-G8 · A Debian package shows its relations, long description, changelog, copyright and file list (W-30) | R-DEB-038, R-DEB-039 of the plan `.dev/w30-plan.md`; the data archive read under bounds, which revises R-DEB-007; Q-DEB-140 to Q-DEB-149, Q-UI-1270 to Q-UI-1279, H-2130 to H-2139, migration 00134 | landed and pushed on 2026-11-26 at 01:25, with the migration 00132 (the OCI package takes 00133, the roles 00134) |
 | W30-A2 · The documentation generator reads fragments, a role's argument specs and the changelog (W-30) | R-ANS-051 to R-ANS-053 of the plan `.dev/w30-plan.md`; Q-ANS-96 to Q-ANS-105, Q-UI-1280 to Q-UI-1289, H-2140 to H-2149, migration 00136 | landed and pushed on 2026-11-26 at 03:54, with the migration 00136 |
-| W30-A3 · Finding collections, the page of a name in every format, the documentation searched across collections (W-30, the owner's d2 = b and d3 = b) | the plan's package A3 with R-ANS-057, R-ANS-058 and R-UI-220; Q-ANS-120 to Q-ANS-129, Q-UI-1290 to Q-UI-1299, H-2150 to H-2159 | built on 2026-11-26 at about 02:50; the search's index built (8 ms for a usual word at 50,000 collections, 447 ms before; the migration 00137, ADR-287); its builder rebases it for landing since 03:56 |
+| W30-A3 · Finding collections, the page of a name in every format, the documentation searched across collections (W-30, the owner's d2 = b and d3 = b) | the plan's package A3 with R-ANS-057, R-ANS-058 and R-UI-220; Q-ANS-120 to Q-ANS-129, Q-UI-1290 to Q-UI-1299, H-2150 to H-2159 | landed and pushed on 2026-11-26 at 05:49, with the migration 00138 |
 | W30-G4 · "Deprecated" is a property of every format that has it (W-30) | R-API-085, R-NUGET-036, R-ANS-060 of the plan `.dev/w30-plan.md`; Q-API-440 to Q-API-449, Q-NUGET-140 to Q-NUGET-149, Q-ANS-130 to Q-ANS-139, Q-NPM-95 to Q-NPM-99, Q-UI-1300 to Q-UI-1309, ADR-286, H-2160 to H-2169 | landed and pushed on 2026-11-26 at 04:59, with the migration 00137 (W30-A3 takes 00138) |
 | W30-G3 · One way to show a version's facts in every format (W-30) | the plan's package G3 with R-UI-221 and R-UI-222: an inventory of the six formats' Details and tables as they are now, then the differences closed; Q-UI-1310 to Q-UI-1319, ADR-288, H-2170 to H-2179 | built on 2026-11-26 at about 04:40 (two commits); lands after W30-G4 and W30-A3, rebased by its builder |
 | W30-A5 · A collection is published from the screen, with its import's log (W-30; the owner's d5 = a, no approval) | the plan's package A5 with R-ANS-061 and R-ANS-062: the upload's operation and dialog, the import's warning for a missing changelog, a per-format table of publishing from the screen; Q-ANS-140 to Q-ANS-149, Q-UI-1320 to Q-UI-1329, ADR-289, H-2180 to H-2189 | built on 2026-11-26 at about 04:45 (two commits); sent back to prove the session's path (cookie and CSRF token) through the hand-off; lands after W30-G4, W30-A3 and W30-G3 |
 | W30-G9 · A generic file's commands behind the button, and a content type that says what it is (W-30) | R-GENERIC-017 of the plan `.dev/w30-plan.md`: curl, wget and PowerShell in the panel at every place a file has an act, the upload's commands, a closed list of guessed text types; Q-UI-1330 to Q-UI-1339, ADR-290, H-2190 to H-2199 | in work since 2026-11-26, 04:43 |
+| W30-G2 · An upstream's package shows its documentation before a version of it is stored (W-30) | R-CUR-028 of the plan `.dev/w30-plan.md`: read through, not stored, per format; the facts the same answers carry; Q-CUR-260 to Q-CUR-269, Q-UI-1340 to Q-UI-1349, ADR-291, H-2200 to H-2209 | in work since 2026-11-26, about 05:25 |
 | W-30 planner · Ansible as an equal of Galaxy; general and specific properties per format | the owner's task of 20:39: a comparison screen by screen and answer by answer, and the table of properties per format | plan written at 21:05 (`.dev/w30-plan.md`) |
 | W30-G1 · A remote's cached version of npm and Debian carries its facts (W-30) | R-NPM-050, R-NPM-051, R-DEB-037 of the plan `.dev/w30-plan.md`; the README of an npm version from the stored tarball | landed and pushed at 23:27 |
 | G1 · The checks see overlays and clipping as a person does | an overlay is measured in the window a person has and a modal state is not pictured in a grown window; `sideways` inside dialogs and drawers; the new checks `overlay-out` (the person search's list wider than its drawer, W-12), `cut` (a text cut at the start of a wrapped line) and `separator-start` (a separator dot that starts a line); a state's own widths and schemes; the correction of Q-UI-1060 | about 5 s of fixtures, at most 60 s of the render step | landed and pushed at 14:55 (two commits; Q-UI-1170 to Q-UI-1173, H-1912 closed; its builder worked from 11:13 to 13:17; with S11 on one landing: thirteen gates, `make ui-states`, the whole English set (532 screens, 43.1 minutes) and the German pass (98 screens, 9.2 minutes) each without a failure or a finding, the new checks over every screen that landed today) |
@@ -1089,7 +1090,10 @@ order is what a user or an operator meets first. The state is kept here.
   own sessions; below the budget the rows stack. In the same run `web (Angular)` failed at "Set up Node.js", which
   timed out after 5 minutes: the runner, not the change; not re-run, the next push runs it. Open, a finding of three
   builders: `TestR_REPO_051_NpmPublicRegistryFeed` compares a job's database time with the test host's clock
-  (`rig_test.go:425`) and misses a pass a few milliseconds apart.
+  (`rig_test.go:425`) and misses a pass a few milliseconds apart. Read again at 05:01: the run of the push that carried
+  both corrections (03:14) is green in every job, `e2e (vuln)` and `UI layout checks` included; the run of the push
+  between (02:15, the image's facts) had failed `e2e (vuln)` for the same journey. The owner's installation: chart
+  0.141.0, every pod ready.
 
 - **Open since 2026-11-26, 01:25, two findings of the night's builders, for the next batch of tools.** (1) Builders share one
   temporary directory: a builder's helper scripts there were overwritten by another builder's of the same names; it
@@ -1289,6 +1293,38 @@ records the recorder that tells such a stall apart).
   that failed between 07:39 and 09:00 is no finding of the code.
 
 ### Product
+
+- **Closed on 2026-11-26, 05:49, by W30-A3 (W-30, the owner's d2 = b and d3 = b; R-ANS-057, R-ANS-058, R-UI-220; Q-ANS-120 to
+  Q-ANS-129; Q-UI-1290 to Q-UI-1294; ADR-287; gaps H-2151 to H-2153, H-2155 to H-2157; migration 00138): collections are
+  found as on Galaxy, a name has a page in every format that has one, and the documentation is searched across
+  collections.** (1) The search of collections: a collection is found when every word of the text starts a word of
+  its namespace and name, its tags or its description, and the best match stands first (a name equal to the text,
+  then one that starts with it, then one that holds it); filters by namespace and "only with a verified signature",
+  beside Deprecated under State; a hit shows its tags as links and the badge of a verified latest version. "Signed"
+  is a verified signature of the latest version, stricter than Galaxy's `is_signed`, which counts any signature
+  (Q-ANS-122). A role read through a remote is found by the same rule. (2) The page of a name (`…/packages/-/namespaces
+  /<format>/<name…>`, and across projects): for Ansible the namespace, for npm the scope, for OCI every level of the
+  path; NuGet, Debian and generic have no such notion; it lists the packages the reader may read and, only to a reader
+  of a repository's configuration, who may publish into the name, in sentences (the project's roles and policies, the
+  claims that cover the name, whether a first publish claims it); no principal is named, a repository whose
+  configuration the reader may not read is neither named nor counted; no description, logo or entity. Every level of
+  a name is a link wherever a package is named. (3) The documentation across collections: from the top bar's
+  suggestions and a tab Documentation of the results, modules, plugins and roles of the newest version of every
+  collection the reader may read; a hit is the entry and opens its page; the wiki's check is decided per repository
+  and version before an entry is read, so a hidden collection gives no hit and is counted nowhere; a role of a
+  collection is one hit, the changelog none; an entry is found when a word of the text starts one of its words
+  ("wall" no longer finds "firewall"). (4) The tab Upstream of a Galaxy remote: tags, "downloads at the upstream"
+  apart from Quader's own, "Signed at the upstream" as a neutral badge. The cost, which I sent back for before the
+  landing (the first build made each row's text index at every query): an index over the words a collection is
+  found by (00138, built concurrently, no row written); measured once: a usual word at 50,000 collections 8 ms
+  (447 ms before), the documentation search over 200,000 entries 22 ms (770 ms before), a statement count that does
+  not grow with the size. The landing: the landing's tree is the builder's rebased tip; the 13 gates, the dialog states, the renders on a fresh instance (116 in English, 12 in German, no layout finding) and the whole areas `packages`, `search`, `querybudget`, `ansiblelocal`, `authz` and `postgres` green, the count of requirements 1,305; looked at: the page of the namespace `acme` with 40 collections in light at 1,440 px (tags, the badges Verified and Deprecated, and below the list who may publish into the name, per repository, in sentences). Open: a word nearly every collection holds costs in proportion to its
+  matches (391 ms the find, 717 ms the list at 50,000; H-2157); the name's page names no principal, the view of
+  effective permissions is not built (H-2151); a global claim from another project's repository is not shown on this
+  project's page (H-2152); a Galaxy search hit has no download count, Galaxy's search answer has none (H-2155); a
+  remote collection whose documentation was never opened gives no hits (H-2156); the search of roles has no index
+  (few rows: only roles a client looked up). Not verified: the kind journeys; the search on a real mirror of Galaxy;
+  the signed filter with a real signature (rows written into the database).
 
 - **Closed on 2026-11-26, 04:59, by W30-G4 (W-30; R-API-085, R-NUGET-036, R-ANS-060; ADR-286; Q-API-444 among its decisions;
   gaps H-2160 to H-2166; migration 00137): "deprecated" is a property of every format that has it, with one look in
