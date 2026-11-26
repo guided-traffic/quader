@@ -132,3 +132,103 @@ SELECT retention_days FROM audit_policy WHERE id = 1;
 UPDATE audit_policy
    SET retention_days = sqlc.arg(retention_days)::int, updated_at = now()
  WHERE id = 1 AND retention_days IS DISTINCT FROM sqlc.arg(retention_days)::int;
+
+-- name: ListAuditRowsNewest :many
+-- The rows of the audit log's screen (R-OPS-055): the events of ListAuditEventsNewest, newest first, leaving out every event of a
+-- transfer (artifact.downloaded, bastion.data_key.handed) that names a unit and follows an event of its key (audit_download_key:
+-- action, repository, unit, caller) by at most gap_seconds within the range and the trace filter. What stays is a single event, or the first event of a download, whose items ListAuditDownloadMembers
+-- walks. The test of a predecessor is an index probe of audit_event_download_idx; it reads nothing of an event of another kind.
+SELECT e.id::text AS id, e.occurred_at, e.action, e.category, e.outcome, e.actor_type,
+       COALESCE(e.actor_id::text, '')::text AS actor_id, COALESCE(e.actor_name, '')::text AS actor_name,
+       COALESCE(e.token_id::text, '')::text AS token_id, COALESCE(e.auth_method, '')::text AS auth_method,
+       COALESCE(host(e.source_ip), '')::text AS source_ip, COALESCE(e.user_agent, '')::text AS user_agent,
+       COALESCE(e.trace_id, '')::text AS trace_id, COALESCE(e.replica, '')::text AS replica,
+       COALESCE(e.endpoint, '')::text AS endpoint, COALESCE(e.resource_type, '')::text AS resource_type,
+       COALESCE(e.resource_id, '')::text AS resource_id, COALESCE(e.repository, '')::text AS repository, COALESCE(e.project, '')::text AS project,
+       COALESCE(e.path, '')::text AS path, COALESCE(e.reason, '')::text AS reason, e.details
+  FROM audit_event e
+ WHERE e.occurred_at >= sqlc.arg(from_at)::text::timestamptz
+   AND e.occurred_at < sqlc.arg(to_at)::text::timestamptz
+   AND (sqlc.arg(action)::text = '' OR e.action = sqlc.arg(action)::text)
+   AND (sqlc.arg(action_prefix)::text = '' OR starts_with(e.action, sqlc.arg(action_prefix)::text))
+   AND (sqlc.arg(category)::text = '' OR e.category = sqlc.arg(category)::text)
+   AND (sqlc.arg(outcome)::text = '' OR e.outcome = sqlc.arg(outcome)::text)
+   AND (sqlc.arg(actor)::text = '' OR e.actor_id = sqlc.arg(actor_id)::text::uuid OR e.actor_name = sqlc.arg(actor)::text)
+   AND (sqlc.arg(repository)::text = '' OR e.repository = sqlc.arg(repository)::text)
+   AND (sqlc.arg(project)::text = '' OR e.project = sqlc.arg(project)::text)
+   AND (sqlc.arg(resource_type)::text = '' OR e.resource_type = sqlc.arg(resource_type)::text)
+   AND (sqlc.arg(resource_id)::text = '' OR e.resource_id = sqlc.arg(resource_id)::text)
+   AND (sqlc.arg(trace_id)::text = '' OR e.trace_id = sqlc.arg(trace_id)::text)
+   AND (NOT sqlc.arg(has_cursor)::bool
+        OR (e.occurred_at, e.id) < (sqlc.arg(cursor_at)::text::timestamptz, sqlc.arg(cursor_id)::text::uuid))
+   AND (e.action NOT IN ('artifact.downloaded', 'bastion.data_key.handed') OR (e.details ->> 'unit') IS NULL OR NOT EXISTS (
+         SELECT 1
+           FROM audit_event p
+          WHERE p.action IN ('artifact.downloaded', 'bastion.data_key.handed') AND (p.details ->> 'unit') IS NOT NULL
+            AND audit_download_key(p.action, p.repository, p.details ->> 'unit', p.actor_type, p.actor_id, p.token_id, p.source_ip)
+              = audit_download_key(e.action, e.repository, e.details ->> 'unit', e.actor_type, e.actor_id, e.token_id, e.source_ip)
+            AND p.occurred_at >= e.occurred_at - make_interval(secs => sqlc.arg(gap_seconds)::int)
+            AND p.occurred_at >= sqlc.arg(from_at)::text::timestamptz
+            AND (p.occurred_at, p.id) < (e.occurred_at, e.id)
+            AND (sqlc.arg(trace_id)::text = '' OR p.trace_id = sqlc.arg(trace_id)::text)))
+ ORDER BY e.occurred_at DESC, e.id DESC
+ LIMIT sqlc.arg(row_limit)::int;
+
+-- name: ListAuditDownloadMembers :many
+-- The items of downloads (R-OPS-055): from each start event of starts (a JSON array of {"ord", "id", "at"}, at as RFC 3339 text)
+-- the events of its key in time order, each the next one after the one before within gap_seconds, before to_at and within the trace
+-- filter, at most member_limit + 1 per start, so that the caller learns that a download goes on beyond what it reads. Each step is
+-- one probe of audit_event_download_idx; the walk stops at the first pause longer than the gap. n is the position from the start
+-- event (1); the events come back whole, read by their primary key.
+WITH RECURSIVE chain AS (
+    SELECT (s ->> 'ord')::int AS ord, e.occurred_at, e.id, 1 AS n,
+           audit_download_key(e.action, e.repository, e.details ->> 'unit', e.actor_type, e.actor_id, e.token_id, e.source_ip) AS k
+      FROM jsonb_array_elements(sqlc.arg(starts)::text::jsonb) AS s
+      JOIN audit_event e ON e.occurred_at = (s ->> 'at')::timestamptz AND e.id = (s ->> 'id')::uuid
+     WHERE e.action IN ('artifact.downloaded', 'bastion.data_key.handed') AND (e.details ->> 'unit') IS NOT NULL
+    UNION ALL
+    SELECT c.ord, nx.occurred_at, nx.id, c.n + 1, c.k
+      FROM chain c
+      CROSS JOIN LATERAL (
+          SELECT m.occurred_at, m.id
+            FROM audit_event m
+           WHERE m.action IN ('artifact.downloaded', 'bastion.data_key.handed') AND (m.details ->> 'unit') IS NOT NULL
+             AND audit_download_key(m.action, m.repository, m.details ->> 'unit', m.actor_type, m.actor_id, m.token_id, m.source_ip) = c.k
+             AND (m.occurred_at, m.id) > (c.occurred_at, c.id)
+             AND m.occurred_at <= c.occurred_at + make_interval(secs => sqlc.arg(gap_seconds)::int)
+             AND m.occurred_at < sqlc.arg(to_at)::text::timestamptz
+             AND (sqlc.arg(trace_id)::text = '' OR m.trace_id = sqlc.arg(trace_id)::text)
+           ORDER BY m.occurred_at, m.id
+           LIMIT 1) nx
+     WHERE c.n <= sqlc.arg(member_limit)::int
+)
+SELECT c.ord::int AS ord, c.n::int AS n, c.k::text AS key,
+       a.id::text AS id, a.occurred_at, a.action, a.category, a.outcome, a.actor_type,
+       COALESCE(a.actor_id::text, '')::text AS actor_id, COALESCE(a.actor_name, '')::text AS actor_name,
+       COALESCE(a.token_id::text, '')::text AS token_id, COALESCE(a.auth_method, '')::text AS auth_method,
+       COALESCE(host(a.source_ip), '')::text AS source_ip, COALESCE(a.user_agent, '')::text AS user_agent,
+       COALESCE(a.trace_id, '')::text AS trace_id, COALESCE(a.replica, '')::text AS replica,
+       COALESCE(a.endpoint, '')::text AS endpoint, COALESCE(a.resource_type, '')::text AS resource_type,
+       COALESCE(a.resource_id, '')::text AS resource_id, COALESCE(a.repository, '')::text AS repository, COALESCE(a.project, '')::text AS project,
+       COALESCE(a.path, '')::text AS path, COALESCE(a.reason, '')::text AS reason, a.details
+  FROM chain c
+  JOIN audit_event a ON a.occurred_at = c.occurred_at AND a.id = c.id
+ ORDER BY c.ord, c.n;
+
+-- name: AuditDownloadStartKey :one
+-- The key of the download whose first event is id at at (R-OPS-055), as text: a download event that names a unit and has no event of
+-- its key before it within gap_seconds; '' for any other event or none. The items of a download are read from its first event only.
+SELECT COALESCE((
+    SELECT audit_download_key(e.action, e.repository, e.details ->> 'unit', e.actor_type, e.actor_id, e.token_id, e.source_ip)::text
+      FROM audit_event e
+     WHERE e.occurred_at = sqlc.arg(at)::text::timestamptz AND e.id = sqlc.arg(id)::text::uuid
+       AND e.action IN ('artifact.downloaded', 'bastion.data_key.handed') AND (e.details ->> 'unit') IS NOT NULL
+       AND NOT EXISTS (
+           SELECT 1
+             FROM audit_event p
+            WHERE p.action IN ('artifact.downloaded', 'bastion.data_key.handed') AND (p.details ->> 'unit') IS NOT NULL
+              AND audit_download_key(p.action, p.repository, p.details ->> 'unit', p.actor_type, p.actor_id, p.token_id, p.source_ip)
+                = audit_download_key(e.action, e.repository, e.details ->> 'unit', e.actor_type, e.actor_id, e.token_id, e.source_ip)
+              AND p.occurred_at >= e.occurred_at - make_interval(secs => sqlc.arg(gap_seconds)::int)
+              AND (p.occurred_at, p.id) < (e.occurred_at, e.id))
+), '')::text AS key;

@@ -11,7 +11,8 @@ package audit
 // resource the registration (bastion, its principal ID), the repository, project and path the item's. The details name the
 // registration (bastion), the Bastion replica that forwarded (replica, Quader-Bastion-Replica, empty when it sent none), the blob's
 // digest, the connection, the storage key that wrapped the data key (storageKeyId) and the link's expiry; never the key, the wrap
-// or the link.
+// or the link. From 2026-11-26 on they name the item's package, version and unit as artifact.downloaded does
+// (operations-and-observability.md R-OPS-054), so that the audit log shows the keys handed for one pull as one row (R-OPS-055).
 
 // EventBastionDataKeyHanded is the trace of one data key handed to a Bastion.
 const EventBastionDataKeyHanded = "bastion.data_key.handed"
@@ -21,7 +22,8 @@ func init() {
 		Name: EventBastionDataKeyHanded, Category: CategoryContent, Mode: Transactional,
 		Schema: `{"type":"object","properties":{"bastion":{"type":"string","maxLength":128},"replica":{"type":"string","maxLength":253},` +
 			`"sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},"connection":{"type":"string","maxLength":32},` +
-			`"storageKeyId":{"type":"string","maxLength":64},"linkExpiresAt":{"type":"string"}},` +
+			`"storageKeyId":{"type":"string","maxLength":64},"linkExpiresAt":{"type":"string"},` +
+			`"package":{"type":"string"},"version":{"type":"string"},"unit":{"type":"string"}},` +
 			`"required":["bastion","replica","sha256","connection","storageKeyId","linkExpiresAt"],"additionalProperties":false}`,
 	})
 }

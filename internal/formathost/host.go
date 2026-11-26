@@ -298,9 +298,11 @@ func (h *Host) Authorize(ctx context.Context, rq *formats.Request, t formats.Tar
 			return authz.NotFound()
 		}
 	}
-	if writes(t.Actions) {
-		if st := stateOf(rq); st != nil {
+	if st := stateOf(rq); st != nil {
+		if writes(t.Actions) {
 			st.allow(c, d)
+		} else if t.Version != "" {
+			st.noteRead(t.Package, t.Version)
 		}
 	}
 	return nil

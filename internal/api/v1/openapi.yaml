@@ -1063,6 +1063,195 @@ paths:
           $ref: "#/components/responses/Internal"
         "503":
           $ref: "#/components/responses/Unavailable"
+  /api/v1/audit/rows:
+    get:
+      operationId: listAuditRows
+      tags: [audit]
+      summary: Read the audit log's rows
+      description: |
+        The rows of the audit log's screen (R-OPS-055), newest first by each row's first event: every event of the
+        filter, except that the `artifact.downloaded` events of one download are one row. A download is the events that
+        name one unit (`details.unit`: an image's name, a version's `name@version`) and were written for one caller (its
+        kind, its principal, its token and its address), each within a minute of the one before. Such a row carries its
+        first event as `event` and the download in `download`: its unit, its package and version, how many items it holds
+        and their size, its last item's time and its first ten items. The events themselves are unchanged: the events
+        list, the read of one event and the export hold one event per item (R-OPS-054). The filters, the range and the
+        paging are those of `GET /api/v1/audit/events`; `limit` counts rows, and a page never cuts a download. An event
+        written before the events named their unit is a row of its own. The same events always form the same rows.
+      x-quader-permission:
+        permission: audit:read
+      parameters:
+        - name: from
+          in: query
+          description: Start of the range, inclusive (RFC 3339); default the last 24 hours.
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          description: End of the range, exclusive (RFC 3339); default open.
+          schema:
+            type: string
+            format: date-time
+        - name: action
+          in: query
+          description: An event name, or a prefix ending in `.*` such as `authz.*`.
+          schema:
+            type: string
+        - name: category
+          in: query
+          description: "One of auth, token, identity, authz, repository, content, system, config, webhook."
+          schema:
+            type: string
+        - name: outcome
+          in: query
+          description: "success, failure, denied or warning (Q-AUTH-402)."
+          schema:
+            type: string
+        - name: actor
+          in: query
+          description: A principal ID or a name.
+          schema:
+            type: string
+        - name: repository
+          in: query
+          schema:
+            type: string
+        - name: resourceType
+          in: query
+          schema:
+            type: string
+        - name: resourceId
+          in: query
+          schema:
+            type: string
+        - name: traceId
+          in: query
+          description: The trace ID the client received as `X-Request-Id`.
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Page size in rows, 1 to 1000 (default 100).
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 100
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: One page of rows.
+          headers:
+            Link:
+              $ref: "#/components/headers/Link"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditRowList"
+              example:
+                items:
+                  - event:
+                      id: 01933b1e-7c2a-7f4e-9d1b-6a2f0c9e8b11
+                      occurredAt: "2026-11-26T11:58:02.417Z"
+                      action: artifact.downloaded
+                      category: content
+                      outcome: success
+                      actor: {type: user, id: 5f0e6c3a-6b1d-4c1e-8f43-0d7c3d1c9a10, name: priya, tokenId: c41d7a3e-2b8f-4c1a-9e0d-7f6b5a4c3d21, authMethod: bearer}
+                      source: {ip: 10.12.4.7, userAgent: "docker/27.3.1 go/go1.22.7 os/linux arch/amd64"}
+                      traceId: 4bf92f3577b34da6a3ce929d0e0e4736
+                      replica: quader-packages-6f9c7d8b5-x2v4q
+                      endpoint: default
+                      resource: {type: repository, id: null}
+                      repository: platform/images
+                      path: acme/app/_tags/1.4.0
+                      reason: null
+                      details: {path: acme/app/_tags/1.4.0, sha256: 3f1c0d8e2a7b9c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5, size: 1574, package: acme/app, version: 1.4.0, unit: acme/app}
+                    download:
+                      unit: acme/app
+                      package: acme/app
+                      version: 1.4.0
+                      items: 7
+                      more: false
+                      size: 48213377
+                      lastAt: "2026-11-26T11:58:09.902Z"
+                      first:
+                        - id: 01933b1e-7c2a-7f4e-9d1b-6a2f0c9e8b11
+                          occurredAt: "2026-11-26T11:58:02.417Z"
+                          path: acme/app/_tags/1.4.0
+                          sha256: 3f1c0d8e2a7b9c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5
+                          size: 1574
+                          replica: quader-packages-6f9c7d8b5-x2v4q
+                          delivery: null
+                nextCursor: null
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "412":
+          $ref: "#/components/responses/PreconditionFailed"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/audit/downloads/{id}/events:
+    get:
+      operationId: listAuditDownloadEvents
+      tags: [audit]
+      summary: List the events of one download
+      description: |
+        The `artifact.downloaded` events of the download whose first event is `id` (R-OPS-055), in the order they were
+        written, oldest first: one event per item, whole, as `GET /api/v1/audit/events` shows them. The download is read
+        from its first event on, without the range and the filters of the rows it was shown in. An ID that is no first
+        event of a download answers `404`.
+      x-quader-permission:
+        permission: audit:read
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the download's first event, `event.id` of its row.
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Page size, 1 to 1000 (default 100).
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 100
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: One page of the download's events.
+          headers:
+            Link:
+              $ref: "#/components/headers/Link"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditEventList"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "412":
+          $ref: "#/components/responses/PreconditionFailed"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
   # <<< M1 audit
   #
   # >>> M1 api
@@ -23628,6 +23817,87 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/AuditEvent"
+        nextCursor:
+          type: [string, "null"]
+    AuditRow:
+      type: object
+      description: |
+        One row of the audit log's screen (R-OPS-055): an event, and where the event is the first of a download, the
+        download it begins.
+      additionalProperties: false
+      required: [event, download]
+      properties:
+        event:
+          $ref: "#/components/schemas/AuditEvent"
+        download:
+          oneOf:
+            - $ref: "#/components/schemas/AuditDownload"
+            - type: "null"
+    AuditDownload:
+      type: object
+      description: |
+        A download of one unit by one caller (R-OPS-055): the `artifact.downloaded` events of its items, read from its
+        first event. `items` counts at most 1,000 items; `more` says that the download goes on beyond them.
+      additionalProperties: false
+      required: [unit, package, version, items, more, size, lastAt, first]
+      properties:
+        unit:
+          type: string
+          description: The unit the events name, `details.unit`.
+        package:
+          type: [string, "null"]
+        version:
+          type: [string, "null"]
+          description: The first version or tag any item names; null where none does (an image pulled by its digest).
+        items:
+          type: integer
+          minimum: 1
+        more:
+          type: boolean
+        size:
+          type: [integer, "null"]
+          description: The sum of the items' sizes in bytes; null when an item carries none.
+        lastAt:
+          type: string
+          format: date-time
+          description: The time of its last item.
+        first:
+          type: array
+          maxItems: 10
+          items:
+            $ref: "#/components/schemas/AuditDownloadItem"
+    AuditDownloadItem:
+      type: object
+      description: One item of a download, from its event.
+      additionalProperties: false
+      required: [id, occurredAt, path, sha256, size, replica, delivery]
+      properties:
+        id:
+          type: string
+          description: The ID of the item's event.
+        occurredAt:
+          type: string
+          format: date-time
+        path:
+          type: string
+        sha256:
+          type: string
+        size:
+          type: [integer, "null"]
+        replica:
+          type: [string, "null"]
+        delivery:
+          type: [string, "null"]
+          description: "`link` or `handover` for an item not delivered by Quader's own bytes."
+    AuditRowList:
+      type: object
+      additionalProperties: false
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AuditRow"
         nextCursor:
           type: [string, "null"]
     # <<< M1 audit

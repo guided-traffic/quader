@@ -82,7 +82,7 @@ func (s itemStore) linkOptions(ctx context.Context, rq *formats.Request, it form
 		}
 		s.h.o.Items.Served(ctx, items.ServedEvent{
 			Item: row, Actor: edge.ActorFrom(httpserver.PrincipalFrom(ctx)), Source: httpserver.SourceFrom(ctx),
-			Endpoint: rq.Subject.Endpoint, CountStats: true, Delivery: "link", LinkExpiresAt: link.ExpiresAt,
+			Endpoint: rq.Subject.Endpoint, CountStats: true, Delivery: "link", LinkExpiresAt: link.ExpiresAt, Unit: s.h.downloadUnit(rq, row.Path),
 		})
 	}
 }
@@ -100,7 +100,8 @@ func (s itemStore) handoverOptions(ctx context.Context, rq *formats.Request, row
 	o.Handover, o.HandedOver = links.HandoverOptions(ctx, downloadlinks.HandoverDownload{
 		Item: row, Artifact: rq.Route != nil && rq.Route.Kind == formats.Download && !systemRead(rq), Decided: decided,
 		Actor: edge.ActorFrom(httpserver.PrincipalFrom(ctx)), Source: httpserver.SourceFrom(ctx), Endpoint: rq.Subject.Endpoint,
-		Record: func(e items.ServedEvent) { s.h.o.Items.Served(ctx, e) },
+		Record: func(e items.ServedEvent) { e.Unit = s.h.downloadUnit(rq, e.Item.Path); s.h.o.Items.Served(ctx, e) },
+		Unit:   s.h.downloadUnit(rq, row.Path),
 	})
 }
 

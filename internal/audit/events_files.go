@@ -47,9 +47,13 @@ func init() {
 		// through the interface (R-BAS-016); a download the main installation served has none of them. delivery and linkExpiresAt
 		// are set for a download handed to a signed link of the object store (storage.md R-STOR-073, Q-STOR-292); a download handed
 		// over to a Bastion has delivery handover, bastion (the registration's name), connection and encrypted besides
-		// (storage.md R-STOR-095), and no origin.
+		// (storage.md R-STOR-095), and no origin. size, package, version and unit are written from 2026-11-26 on
+		// (operations-and-observability.md R-OPS-054): the item's size, the package and the version the format classifies it in (or
+		// the tag its manifest was fetched by), and the unit whose events the audit log shows as one row (R-OPS-055); an item of no
+		// package names none of the three, and a format whose unit is a file names no unit.
 		Schema: `{"type":"object","properties":{` +
 			`"path":{"type":"string"},"sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},` +
+			`"size":{"type":"integer","minimum":0},"package":{"type":"string"},"version":{"type":"string"},"unit":{"type":"string"},` +
 			`"origin":{"type":"string","enum":["bastion"]},"bastion":{"type":"string"},"replica":{"type":"string"},` +
 			`"delivery":{"type":"string","enum":["link","handover"]},"linkExpiresAt":{"type":"string"},` +
 			`"connection":{"type":"string"},"encrypted":{"type":"boolean"}},` +

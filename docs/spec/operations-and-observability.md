@@ -2232,7 +2232,8 @@ Audit events are stored in PostgreSQL and copied to the log stream (INV-16).
   yields at most n first events and n summaries per window, and the sum of `details.count` stays
   exact ([authorization.md](authorization.md) R-AUTHZ-029).
 - **Successful downloads** are recorded only with `audit.record_downloads: true`, as asynchronous
-  `artifact.downloaded` events. The request log holds them in every case.
+  `artifact.downloaded` events, one per item served, each naming the unit it belongs to (R-OPS-054); the audit log's screen shows
+  the items of one download as one row (R-OPS-055). The request log holds them in every case.
 - **Allow decisions.** Every authorization decision can be traced (INV-9). With the `authz`
   component at `debug` level, allow decisions are logged, though never stored as audit events.
 - **Order of the events of one operation.** The events a transaction records carry the same `occurred_at`
@@ -2465,7 +2466,7 @@ asynchronous. "Hook" marks events that webhooks may select (R-OPS-037).
 | `technicaltoken.created`, `technicaltoken.updated`, `technicaltoken.deleted` | T | — | A technical token of a service account ([identity-and-authentication.md](identity-and-authentication.md) R-AUTH-045); its secrets are `token.*` | `changes` |
 | `bastion.created`, `bastion.updated`, `bastion.disabled`, `bastion.enabled`, `bastion.deleted` | T | — | A Bastion registration was created, given a new description, disabled, enabled or deleted ([bastion.md](bastion.md) R-BAS-004, Q-BAS-61, Q-BAS-145); `resource_type` is `bastion`; `bastion.disabled` and `bastion.deleted` carry the journal flag; a Bastion token's `token.created` and `token.revoked` carry the same resource type | `source`, `description`, `fields`, `tokensRevoked` |
 | `bastion.handover.enabled`, `bastion.handover.disabled` | T | `bastion.handover.disabled` | A Bastion registration's handover per blob was switched on or off ([bastion.md](bastion.md) R-BAS-071); `resource_type` is `bastion`; the switch-off's entry `{principalId, name}` switches the member off again after a restore ([ha-and-helm.md](ha-and-helm.md) R-HA-054) | none |
-| `bastion.data_key.handed` | T | — | The main installation handed a Bastion the data key of one copy on an encrypted connection with a handover ([storage.md](storage.md) R-STOR-095, R-STOR-096): written in a transaction of its own before the answer leaves, whatever `audit.record_downloads` says, and a failed insert streams the download; category `content`, not journaled; the actor is the forward's caller (`anonymous` without a credential), the source the caller's address, `resource_type` `bastion` with the registration's principal ID, `repository`, `project` and `path` the item's; never the key, the wrap or the link | `bastion`, `replica`, `sha256`, `connection`, `storageKeyId`, `linkExpiresAt` |
+| `bastion.data_key.handed` | T | — | The main installation handed a Bastion the data key of one copy on an encrypted connection with a handover ([storage.md](storage.md) R-STOR-095, R-STOR-096): written in a transaction of its own before the answer leaves, whatever `audit.record_downloads` says, and a failed insert streams the download; category `content`, not journaled; the actor is the forward's caller (`anonymous` without a credential), the source the caller's address, `resource_type` `bastion` with the registration's principal ID, `repository`, `project` and `path` the item's; never the key, the wrap or the link | `bastion`, `replica`, `sha256`, `connection`, `storageKeyId`, `linkExpiresAt`; from 2026-11-26 `package`, `version` and `unit` where the format names them (R-OPS-054) |
 | `admin_role.granted`, `admin_role.revoked` | T | — | System administration role or delegated system permission changed | `permission` |
 | `authz.policy.created`, `authz.policy.updated`, `authz.policy.deleted` | T | — | Permission policy change (INV-9); names as [authorization.md](authorization.md) registers them | `changes` |
 | `endpoint.exposure.created`, `endpoint.exposure.updated`, `endpoint.exposure.deleted` | T | — | Exposure rule change of an endpoint ([endpoints.md](endpoints.md) R-EP-016); updates and deletions carry the journal flag (R-EP-020) | `changes`, `endpoint`, `before`, `after` |
@@ -2497,7 +2498,7 @@ asynchronous. "Hook" marks events that webhooks may select (R-OPS-037).
 | `artifact.deployed` | T | yes | A file was stored in a local repository by any upload path | `path`, `sha256`, `size`, `overwritten` |
 | `artifact.deleted` | T | yes | A file was removed | `path`, `sha256`, `size` |
 | `artifact.delete_stopped` | A | — | The job of a large delete stopped because a batch was refused or the subject that asked was withdrawn ([storage.md](storage.md) R-STOR-018, Q-STOR-193); the subject as actor, the reason code as `reason`, outcome `denied`; what earlier batches removed stays removed | `path` (the root the request named), `reason`, `job`, `removed` |
-| `artifact.downloaded` | A | — | Only with `audit.record_downloads` | `path`, `sha256`; `delivery` (`link`) and `linkExpiresAt` for a download handed to a signed link of the object store ([storage.md](storage.md) R-STOR-073); `delivery` (`handover`), `linkExpiresAt`, `bastion`, `connection` and `encrypted` for one handed over to a Bastion (R-STOR-095) |
+| `artifact.downloaded` | A | — | Only with `audit.record_downloads`, one per item served (R-OPS-054) | `path`, `sha256`; from 2026-11-26 `size`, and `package`, `version` and `unit` where the format names them (R-OPS-054); `delivery` (`link`) and `linkExpiresAt` for a download handed to a signed link of the object store ([storage.md](storage.md) R-STOR-073); `delivery` (`handover`), `linkExpiresAt`, `bastion`, `connection` and `encrypted` for one handed over to a Bastion (R-STOR-095) |
 | `system.config_applied` | T | — | Configuration document applied (R-OPS-030, R-OPS-031) | `document`, `digest`, `summary`, `source` |
 | `system.config_exported` | A | — | R-OPS-032 | `kinds` |
 | `system.maintenance_mode_changed` | T | — | R-OPS-024 | `from`, `to`, `message` |
@@ -2583,7 +2584,9 @@ API (requires `audit:read`, the capability of R-AUTHZ-010; a system administrato
 |---|---|---|
 | `GET /api/v1/audit/events` | `from`, `to` (default: the last 24 h), `action` (exact, or a prefix ending in `.*`), `category`, `outcome` (`success`, `failure`, `denied`, `warning`), `actor` (ID or name), `project`, `repository` (qualified name `<projectKey>/<repoKey>`), `resourceType`, `resourceId`, `traceId`, `limit` (≤ 1000, default 100), `cursor` | `200 {"items":[…],"nextCursor":"…"}`, newest first |
 | `GET /api/v1/audit/events/{id}` | — | `200` one event; `404` |
-| `GET /api/v1/audit/events/export` | `from`, `to` (both required, range ≤ 400 days), the same filters, `format=jsonl` (default) or `csv` | `200` streamed as [JSON Lines](https://jsonlines.org/) (`application/x-ndjson`) or CSV, oldest first; `400` for a missing or oversized range |
+| `GET /api/v1/audit/events/export` | `from`, `to` (both required, range ≤ 400 days), the same filters, `format=jsonl` (default) or `csv` | `200` streamed as [JSON Lines](https://jsonlines.org/) (`application/x-ndjson`) or CSV, oldest first, one line per event (a download one line per item, R-OPS-054); `400` for a missing or oversized range |
+| `GET /api/v1/audit/rows` | the filters, `limit` and `cursor` of the query | `200 {"items":[{"event":…,"download":…}],"nextCursor":"…"}`, the rows of the screen: a download of several items is one row (R-OPS-055) |
+| `GET /api/v1/audit/downloads/{id}/events` | `limit`, `cursor` | `200` the events of the download whose first event is `id`, oldest first (R-OPS-055); `404` |
 
 ```json
 {
@@ -2647,6 +2650,106 @@ audit:
 - With `retention_days: 30` and a test clock advanced by 62 days, the oldest month's partition is
   gone after the task runs.
 - A token without `audit:read` gets `403`.
+
+### R-OPS-054 · A download is audited per item, and its events name their unit
+Priority: **P1** · Covers: quader-only
+
+The owner, 2026-11-26, about 10:33 (W33), asked whether the audit log should keep one event per item served or one per download, after
+his rule of the morning (W31, R-OPS-049: "Alle Downloads sind überall in Quader zu logischen Einheiten zusammen zu fassen"): "Option A,
+klarer Fall". Option (a) was: store per item as before, show a download as one row on the audit log's screen with its items folded under
+it. Record: [Q-OPS-437](#q-ops-437--the-audit-keeps-one-event-per-item-served-and-shows-a-download-as-one-row),
+[ADR-297](../decisions.md#adr-297--the-audit-log-shows-a-download-as-one-row-and-keeps-one-event-per-item).
+
+- **What is stored does not change.** With `audit.record_downloads: true` an `artifact.downloaded` is written for every item served
+  (R-OPS-015): a pull of an image writes one per manifest and one per blob, as before. Its columns, its export (one line per item), the
+  read of one event, its retention and its webhook-free registry entry are those of R-OPS-014 to R-OPS-017. An audit record is evidence,
+  and it stays as fine as the act was: every item a caller received is an event of its own with its path and its SHA-256, which an
+  auditor can still prove one by one. The owner's rule is about what a person reads; R-OPS-055 is that.
+- **The event names its unit**, from 2026-11-26 on, in four new members of `details` that the host sets for every format
+  ([Q-OPS-440](#q-ops-440--an-event-of-a-transfer-names-its-unit-and-its-size-from-now-on)):
+  - `size`: the item's size in bytes;
+  - `package`, `version`: the package and the version the repository's format classifies the item's path in; where the path names no
+    version, the version the request was allowed to read (the tag of a remote's manifest, whose fetch is counted on the manifest's
+    digest, R-API-079); none of the two for an item of no package;
+  - `unit`: the unit of R-OPS-049 the item belongs to, by the format's declaration (R-OPS-053): an image's name for `DownloadUnitImage`
+    (OCI), `<name>@<version>` for `DownloadUnitVersion` (npm, NuGet, Debian, Ansible Galaxy), none for a format whose unit is a file
+    (generic), for an item of no package and for a download by path through the files API (`/api/v1/files/…`).
+- The same four are written on `bastion.data_key.handed` (the trace of a data key handed to a Bastion, R-STOR-096), and `package`,
+  `version` and `unit` on a download a Bastion reports (R-BAS-016), classified by the repository's format on the main installation.
+- **An event written before** names none of them. It is shown as a row of its own, as before.
+
+Acceptance criteria:
+
+- Unit (`internal/items`, `TestR_OPS_054_ADownloadEventNamesItsUnitAndSize`, milliseconds): `artifact.downloaded` carries `path`, `sha256`,
+  `size`, `package`, `version` and `unit` as the host named them, and no `package`, `version` or `unit` for an item of no package.
+- Unit (`internal/formathost`, `TestR_OPS_054_TheUnitOfADownloadIsTheFormats`, milliseconds): an OCI blob and a manifest name the image as
+  their unit and no version, a tag's item names its tag, a manifest fetched by a tag names the tag the request was allowed to read; an npm
+  tarball names `<name>@<version>`; a generic file names no unit.
+- Integration (area `audit`, `TestR_OPS_055_ADownloadIsOneRowAndItsEventsStayOnePerItem`, about 2 s): the events list holds every item of
+  every download that was written.
+
+### R-OPS-055 · The audit log shows a download as one row
+Priority: **P1** · Covers: quader-only
+
+- **A row is an event, or a download.** The audit log's screen (R-UI-037) reads `GET /api/v1/audit/rows`: every event of the filter is a
+  row of its own, except that the events of one download are one row
+  ([Q-OPS-438](#q-ops-438--the-rows-are-a-read-of-the-server-over-the-stored-events)).
+- **A download** is the events of one action of a transfer (`artifact.downloaded`, and `bastion.data_key.handed`, whose keys of one pull are
+  a row of their own beside its download, [Q-OPS-445](#q-ops-445--the-data-keys-handed-for-a-pull-are-a-row-of-their-own)) that name
+  one unit and were written for one caller, each within a minute of the one before
+  ([Q-OPS-439](#q-ops-439--a-download-is-one-unit-one-caller-and-items-at-most-a-minute-apart)):
+  - its key is the action, the repository, `details.unit` and the caller: the actor's kind, its principal, the token it used and the address
+    it came from (`audit_download_key`, migration 00142);
+  - its items are the events of its key from its first one on, each at most `audit.DownloadGap` (60 s) after the one before; a pause of
+    more ends it, and the next event of the key begins another;
+  - an event of a refusal (`malware.download_blocked`, `signature.download_refused`, `vulnerability.download_blocked`,
+    `remote.delivery.refused`, `authz.denied`) and every event that is not a transfer stay rows of their own
+    ([Q-OPS-442](#q-ops-442--a-refusal-and-every-event-of-another-kind-stays-a-row-of-its-own));
+  - an event that names no unit (written before R-OPS-054, or of a format whose unit is a file) is a row of its own.
+- **Stable.** The rows are a function of the stored events alone: the same events form the same rows, read now or a year later, on any
+  replica, whichever replicas served the items (the items of one pull are served by several). No window of the read's time and no
+  state of a process is part of it ([Q-OPS-439](#q-ops-439--a-download-is-one-unit-one-caller-and-items-at-most-a-minute-apart)).
+- **Order and paging** ([Q-OPS-441](#q-ops-441--a-row-stands-at-its-first-event-and-no-page-cuts-it)). Rows are newest first by
+  their first event's `(occurredAt, id)`; the cursor is that of the last row's first event. A page holds `limit` rows, however many
+  events its downloads hold, and **Load more** counts rows. A page never cuts a download: its items are read from its first event on,
+  whichever page holds the row. A download that goes on grows in its row, which stays where it began.
+- **Filters** are those of `GET /api/v1/audit/events`; they choose the events, and the rows join what they chose. The filters that are
+  the same for every item of a download (action, category, outcome, actor, repository, resource) keep its row whole; a filter by trace ID
+  leaves the one item of that request. A range whose start lies inside a download shows its items from its first one in the range; a
+  range's end ends a download's items.
+- **What a download's row carries** (`AuditDownload`): its first event; `unit`, `package` and `version` (the first version or tag any of
+  its items names); `items`, the number of its items, at most 1,000 (`more` when the download goes on beyond them); `size`, the sum of
+  its items' sizes (null when one carries none); `lastAt`, its last item's time; `first`, its first ten items with their event's ID and
+  time, path, SHA-256, size, replica and delivery.
+- **One download's events**: `GET /api/v1/audit/downloads/{id}/events`, `id` the first event's, lists every event of the download,
+  whole, oldest first, paged; an ID that begins no download answers `404`
+  ([Q-OPS-443](#q-ops-443--a-downloads-events-are-read-from-its-first-event-oldest-first)).
+- **What stays single.** `GET /api/v1/audit/events`, `GET /api/v1/audit/events/{id}` and `GET /api/v1/audit/events/export` are
+  unchanged: one event per item, the export one line per item. The rows are an addition for the screen.
+- **Access.** Both operations take `audit:read`, the capability of the events (R-OPS-017), enforced before the handler: a reader of a row
+  may read every event in it, and nobody reads an item through a row whom the events list would refuse.
+- **The statements** read the index `audit_event_download_idx` (the key, `occurred_at`, `id`, only the events of a transfer that name a
+  unit): the page's rows are the events of the filter newest first that have no predecessor of their key within the gap (one index probe
+  each), and each download's items one probe per item. A page costs its events and its downloads' items, never the table.
+
+Acceptance criteria:
+
+- Integration (area `audit`, `TestR_OPS_055_ADownloadIsOneRowAndItsEventsStayOnePerItem`, two writers of two replicas, 33 events of a few
+  hundred bytes, about 2 s): a pull of 13 items served alternately by two replicas is one row named by its tag, with 13 items, their summed
+  size, its first ten and its last time; an anonymous pull of the same image beside it, each package of an npm install and a pull of the
+  same image by the same caller 90 s later are rows of their own; a refusal, an event before the unit and any other event are single
+  rows; page sizes of 1, 2, 3, 5 and 100 give the same rows; the filters by actor, outcome and trace and a range that starts inside the
+  pull; the same rows after newer events, and a download that grows grows in its row; a download's events, paged by five, are its
+  13 events oldest first, any other ID is not found, and a cursor of another download is refused; the data keys handed for a pull are a
+  row of their own beside its download.
+- Integration (area `audit`, `TestR_OPS_017_PermissionAndFilters`): a caller without `audit:read` is refused on both operations (403, 401
+  without credentials), the auditor and the administrator read them; an event that begins no download is a row without a download, and
+  its ID is no download.
+- Integration (area `ociremote`, in `TestR_OPS_049_AnImageIsOneDownload`, the stub's image `acme/b:1.0`, a few kilobytes): a client's pull
+  served by a replica of the role `all` writes one `artifact.downloaded` per item, its tag's manifest among them; read on a replica of the
+  role `api`, the rows hold one row of the pull named `1.0` with every item, and the download's events are all of them.
+- Unit (`web`, [audit-log.spec.ts](../../web/src/app/features/audit/audit-log.spec.ts), the describe "R-OPS-055 a download is one row",
+  milliseconds): see R-UI-037.
 
 ## Tracing
 
@@ -7487,6 +7590,183 @@ R-UI-212). The development agent would revisit it if the owner wants a run that 
 
 **Applied in the spec:** R-OPS-049. Code: [tracker.go](../../internal/fills/tracker.go) (`outcome`), [merge.go](../../internal/fills/merge.go).
 
+### Q-OPS-437 · The audit keeps one event per item served, and shows a download as one row
+
+Status: **Decided by the owner on 2026-11-26**, about 10:33 (W33): "Option A, klarer Fall", on the options and the recommendation the
+development agent put to him.
+
+Context: the owner's rule of the morning (W31, R-OPS-049) makes every download in Quader the unit a person asked for. W31 left the audit
+log to him: with `audit.record_downloads: true`, `artifact.downloaded` is written once per item served, so a pull of an image of ten layers
+is twelve events and twelve rows of the screen.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Store per item as before; the screen shows a download as one row, its items with their digests folded under it (chosen) | The events unchanged, a read for the screen | An audit record is evidence and stays as fine as the act was: every item received is provable by its path and digest; the export and SIEM rules keep their lines | The screen needs a grouping that holds under paging, filters, the live refresh and several replicas |
+| (b) One event per download | Fewer rows stored | The trail is smaller | What one row says about which items left is weaker; a pull spans requests on several replicas and has no end the server sees, so the event would be written late or guessed |
+| (c) Leave it | Nothing to build | — | The screen keeps showing parts where a person expects the unit, against the rule |
+
+**Choice:** (a). **Rationale:** the rule is about what a person reads; an auditor proves what left item by item, and nothing an auditor can
+prove today may get weaker.
+
+**Applied in the spec:** R-OPS-054, R-OPS-055; [api-and-ui.md](api-and-ui.md) R-UI-037;
+[ADR-297](../decisions.md#adr-297--the-audit-log-shows-a-download-as-one-row-and-keeps-one-event-per-item).
+
+### Q-OPS-438 · The rows are a read of the server over the stored events
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the screen pages the events newest first, filters them, reads the pages shown again every half minute (R-UI-213), and the items
+of one pull are written by several replicas, each in its own batches.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A read of the server, `GET /api/v1/audit/rows`, groups the stored events by a key they carry; the events list stays as it was (chosen) | Two statements a page | A page is a page of rows; no row is cut; every client sees the same rows | A statement over the events beside the list's |
+| (b) The browser groups the pages of events it reads | No server work | Nothing new on the server | A page boundary cuts a download; "Load more" counts events, not rows; a filter's page of 100 events may be one row |
+| (c) A download ID written into each event | A key that is a column | Exact grouping | The items of a pull reach several replicas with no shared state of the audit (INV-3); the ID would need coordination on the path of every download |
+| (d) A table of rows that a task derives from the events | A cheap read | The read is a plain list | A second store of the audit that lags, needs its own retention and backup, and is wrong until the task ran |
+
+**Choice:** (a). **Rationale:** the stored events already say who fetched what and when; a deterministic rule over them needs no second
+store and no coordination, and the server is the one place where a page of rows can be cut correctly.
+
+**Applied in the spec:** R-OPS-055. Code: [rows.go](../../internal/audit/rows.go), [audit.sql](../../internal/meta/postgres/queries/audit.sql)
+(`ListAuditRowsNewest`, `ListAuditDownloadMembers`), [audit_rows_api.go](../../internal/api/v1/audit_rows_api.go).
+
+### Q-OPS-439 · A download is one unit, one caller and items at most a minute apart
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: an event carries the repository, the actor (kind, principal, token), the client's address, the path and, from R-OPS-054 on, the
+unit; it carries no ID of the pull, and a blob names no tag. An event is written when its item's body was sent, so two items of one pull
+are as far apart as one transfer took while nothing else ended. W31's drawer joins a pull's files with a linger of 5 s and merges replicas'
+records 10 s apart: that is a live view, read within seconds. The audit log is read hours or months later and must show the same rows
+every time.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The key is action, repository, unit and caller (kind, principal, token, address); a row's items each follow the one before by at most 60 s (chosen) | A chain whose every link is checked against the event before it | Stable: a function of the stored events; a link is one index probe; two callers, two tokens or two addresses are two rows | Two pulls of one image by one caller within a minute are one row (H-2265); a pull that pauses longer is two (H-2266) |
+| (b) The same key with W31's 10 s | Fewer pulls joined | — | A layer of a few hundred megabytes that alone takes longer than 10 s splits its pull; the events are written at the end of each transfer |
+| (c) The same key with 5 minutes | Fewer splits | Slow pulls stay whole | Repeated pulls of a CI runner or a node join |
+| (d) Fixed buckets of time (one row per key and quarter of an hour) | No chain | Trivially stable and bounded | A pull across a bucket's border is two rows, whatever its pauses |
+| (e) The token of the pull as its ID | Docker and containerd ask a registry token per pull | Exact for a pull with a registry token | Quader's registry token binds the caller's long-lived token (its `token_id`), not the pull; a basic credential is the same for every pull |
+
+**Choice:** (a). **Rationale:** a chain over the stored events is stable and local: whether an event begins a row depends only on the
+events of its key in the minute before it, so newer events never change an older row, and a page needs no history. A minute holds the
+transfer of a large layer at ordinary speeds and still separates repeated pulls of a pipeline. The constant is `audit.DownloadGap`; it is
+no setting, so the same events form the same rows in every installation.
+
+**Applied in the spec:** R-OPS-055. Code: [rows.go](../../internal/audit/rows.go) (`DownloadGap`),
+[00142_audit_download_rows.sql](../../internal/meta/postgres/migrations/00142_audit_download_rows.sql) (`audit_download_key`).
+
+### Q-OPS-440 · An event of a transfer names its unit and its size from now on
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the key needs the unit of an item; the row's name needs the tag of a pull; the row's figures need the bytes. The events before
+named the path and the digest only, and a remote's tag fetch is counted on the manifest's digest item (R-API-079), so no event named a
+remote image's tag.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The host writes `size`, `package`, `version` and `unit` into the event from the format's classification and declaration, and the version the request was allowed to read where the path names none (chosen) | Four members more, set for every format in one place | Format-neutral; costs nothing on the path (the format's code, the request's state); the tag of a remote's pull is named | Events written before stay single rows |
+| (b) The read derives the unit from the path | Nothing new stored | Old events would group | The read would need every format's path rules; the tag of a pull is in no path |
+| (c) The read resolves a pull's tag through the OCI data port, as W31's drawer does | Names a pull of a client that resolved the tag with HEAD | A tag for containerd's pulls | A tag moves; a row a year later would name a tag that then pointed elsewhere |
+
+**Choice:** (a). **Rationale:** what a row names must be what was true when the item left; the host knows the format and the request.
+What is stored gains facts and loses none. An image pulled by a client that resolves the tag with `HEAD` (containerd, Docker with the
+containerd image store) names no tag in any recorded request; its row names its first item's digest (Q-OPS-444, H-2267).
+
+**Applied in the spec:** R-OPS-054, R-OPS-016. Code: [download_unit.go](../../internal/formathost/download_unit.go) (`UnitOf`),
+[state.go](../../internal/formathost/state.go) (`noteRead`), [stats.go](../../internal/items/stats.go) (`Served`),
+[handover.go](../../internal/downloadlinks/handover.go) (`trace`), [downloads.go](../../internal/bastionmain/downloads.go) (`details`).
+
+### Q-OPS-441 · A row stands at its first event, and no page cuts it
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A row's place is its first event; a page is the newest rows whose first event lies before the cursor; a row's items are read from its first event, whatever page it is on (chosen) | The cursor is an event's, as before | A download that goes on grows where it stands and stays open (R-UI-213); a page never cuts a row | A late event of another replica that is older than the row's first one (written within the batch's second) moves the row's start to it once, and an opened row closes |
+| (b) A row's place is its last event | A download that goes on moves to the top | The newest activity first | The row jumps while it grows; the cursor of a page moves with every new item |
+
+**Choice:** (a). **Rationale:** a reader who opened a download sees it grow in place. A row reads at most 1,000 items for its figures
+(`more` beyond them, `audit.DownloadReadLimit`) and carries its first ten (`audit.DownloadPreview`), so a page costs its events and its
+downloads' items, bounded however long a caller goes on.
+
+**Applied in the spec:** R-OPS-055.
+
+### Q-OPS-442 · A refusal, and every event of another kind, stays a row of its own
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the sweep of every event that is written per part of an act a person sees as one (W33). It found these, per format:
+
+| Event | A person's act | Events per act (OCI, npm, NuGet, Debian, Ansible Galaxy, generic) | On the screen now |
+|---|---|---|---|
+| `artifact.downloaded` | a pull, an install, a download | one per item served: OCI one per manifest and blob (a pull of 10 layers: 12); npm one per version; NuGet one per `.nupkg`, one more per `.snupkg`; Debian one per package file, a source package's `.dsc` and tarballs; Ansible Galaxy one per archive; generic one per file; also with a signed link (`delivery: link`), a handover (`handover`) and as a Bastion reports it | one row per download (R-OPS-055) |
+| `bastion.data_key.handed` | a pull through a Bastion with a handover per blob of an encrypted copy | one per item handed, whatever `audit.record_downloads` says | one row per pull, beside its download's row (Q-OPS-445) |
+| `artifact.deployed`, `authz.write.allowed`, `package.published` | a push, a publish, an upload | per stored file one `artifact.deployed` and the write's decision; one `package.published` per version or tag: a `docker push` of 10 layers about 12 of each and one `package.published`; NuGet two (`.nupkg`, `.nuspec`); npm, Debian, Ansible Galaxy one; generic one per file | one row per event (unchanged) |
+| `artifact.deleted`, `oci.manifest.deleted`, `deb.package.deleted`, `npm.unpublish`, `package.deleted` | a delete of a version, an image, a folder | one per file removed and one per version or manifest; a folder's delete one per file | one row per event (unchanged) |
+| `malware.download_blocked`, `signature.download_refused` | a refused pull or download | one per path and client address a minute on each replica: a pull refused at an infected layer is one, at most one per layer it asked for | one row per event (unchanged) |
+| `vulnerability.download_blocked`, `remote.delivery.refused` | a refused version | one per repository, version and client address a minute | one row per event (unchanged) |
+| `authz.denied`, `authz.read.allowed` | a refused request; with `authz.audit.reads: all` every allowed read | folded per principal, action, repository and path a window; an allowed read one per request (a pull of 10 layers: 12) | one row per event (unchanged) |
+| `mirror.pass_*`, the queue's runs | a mirror's pass, a download ahead | one per pass; a fill writes no event (Q-STOR-146) | nothing to join |
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Join only the successful transfers of the items of one unit: downloads and the data keys handed for them; every refusal and every other event stays a row (chosen) | What is the same kind as the download | A refusal is about one request, with its own reason and path (W31's builder judged it so, and it holds: a pull stops at the first refused layer); a deploy, a delete and a decision are evidence of a change, one per change | A `docker push` and a folder's delete still show their parts (H-2269) |
+| (b) Join every per-item event of an act | One rule | Fewer rows | Joins changes of state, whose single events the owner has not been asked about, and refusals whose reasons differ |
+
+**Choice:** (a). **Rationale:** the owner decided the downloads; joining uploads and deletes changes what a person reads about changes of
+state, which is his to decide. What it would take is recorded in H-2269.
+
+**Applied in the spec:** R-OPS-055.
+
+### Q-OPS-443 · A download's events are read from its first event, oldest first
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `GET /api/v1/audit/downloads/{id}/events`, `id` the first event's: the walk of the row, paged, oldest first, whole events (chosen) | A sub-resource | Exactly the row's items, every one; a page costs its items | Its order is the opposite of the events list's |
+| (b) A filter `download=` on `GET /api/v1/audit/events`, newest first | One operation | One order | Newest first needs the download's end before its first page: the whole walk for every page |
+| (c) The log filtered by the row's range, repository and actor | No new operation | — | Another download of the same caller in the same minutes, of another unit, would stand among the items; an anonymous caller has no actor to filter by |
+
+**Choice:** (a). **Rationale:** a download reads in the order its items were served. The export takes the log's filters, not a download:
+the list of a download's events offers no export (H-2268).
+
+**Applied in the spec:** R-OPS-055; [api-and-ui.md](api-and-ui.md) R-UI-037.
+
+### Q-OPS-444 · An image without a tag is named by its first item's digest
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The row names the first version or tag any item names; without one, the digest of its first item (chosen) | The manifest a client fetches first | A pull by digest names the digest it asked for; containerd's pulls, which resolve the tag with `HEAD`, name the index they fetched | A row that begins with a blob (its start cut by the range or the minute, the manifest's event lost in a full buffer) names that blob's digest (H-2267) |
+| (b) The image's name alone | Nothing guessed | — | Two pulls of two digests of one image read the same |
+
+**Choice:** (a). **Rationale:** every client fetches the manifest before its blobs, so the first item of a pull is the manifest the
+client asked for; the row names it and its digest is copyable in the opened row.
+
+**Applied in the spec:** R-OPS-055; [api-and-ui.md](api-and-ui.md) R-UI-037.
+
+### Q-OPS-445 · The data keys handed for a pull are a row of their own
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: a pull through a Bastion with a handover per blob of an encrypted copy writes one `bastion.data_key.handed` per blob whatever
+`audit.record_downloads` says, and with it one `artifact.downloaded` per blob: two events per item of one act.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Join the keys of one unit and caller as the downloads are, one row per action (chosen) | The key holds the action | The keys of a pull read as one fact ("data keys of acme/app 1.4.0, 7 items") beside its download | Two rows for one pull |
+| (b) One row for both actions | One row per pull | Fewest rows | A key handed is a security trace of its own (R-STOR-096), which a reader must find by its action |
+| (c) Leave the keys single | — | — | A pull of ten layers is ten rows of keys |
+
+**Choice:** (a). **Rationale:** the trace of a key stays findable by its action and joins as a download does.
+
+**Applied in the spec:** R-OPS-055; [storage.md](storage.md) R-STOR-096.
+
 ## What this does not cover
 
 ### H-1995 · A scanner that ends in order while no scan listener can take its sign-off is listed as lost for a day
@@ -7589,3 +7869,44 @@ Component: the version of a client's pull (Q-OPS-430). Subject: the administrato
 point at one manifest (`latest` and `1.20.14`): the row names the one whose cache entry was validated more recently, which is the one the
 client asked for when it asked by tag, and may be the other when the tag was answered from the cache without a revalidation. What would
 close it: the tag of the client's request carried to the publication (Q-OPS-430 (b)).
+
+### H-2265 · Two downloads of one unit by one caller within a minute are one row
+
+Component: the key and the pause of a download's row (Q-OPS-439, `audit_download_key`). Subject: whoever reads the audit log. Live when
+one caller (one principal, one token, one address) fetches one unit again less than a minute after the last item of the first download: a
+CI runner that pulls one image for two jobs, a node that starts two pods of one image, an `npm install` run twice. The row shows the items
+of both, its count the sum, and an item fetched twice stands twice in its list. Nothing is lost: the events list, the download's events and
+the export hold every item with its time and trace ID. What would close it: an ID of the act on every request, which no client of these
+protocols sends.
+
+### H-2266 · A download whose items pause for more than a minute is two rows
+
+Component: the pause of a download's row (Q-OPS-439, `audit.DownloadGap`). Subject: whoever reads the audit log. Live when one item of a
+pull takes more than a minute to send while no other item ends: a layer of several gigabytes on a slow link. The pull reads as two rows,
+the second beginning with a blob and named by its digest (H-2267). What would close it: the time an item's transfer began on its event,
+which the events do not carry.
+
+### H-2267 · A pull whose client resolves the tag with HEAD is named by its digest, and a row that begins with a blob by the blob's
+
+Component: the name of a download's row (Q-OPS-440, Q-OPS-444). Subject: whoever reads the audit log. Live for every pull of containerd
+(Kubernetes nodes, nerdctl) and of Docker with the containerd image store: they ask the tag with `HEAD`, which is no download, and fetch the
+index by its digest; the row names the image and the index's digest, not the tag. A row whose first item is a blob (a range that starts
+inside a pull, a pull split by H-2266, a manifest's event lost because the audit buffer was full) names that blob's digest as if it had
+been asked for. The items and their paths say which is which. What would close it: an event of the `HEAD` of a tag, which R-OPS-015 does
+not record as a download.
+
+### H-2268 · The export has no filter for one download
+
+Component: the export (R-OPS-017) and the list of one download's events (Q-OPS-443). Subject: an auditor who wants one download's events
+as a file. Live: the list of a download's events offers no export, and the export takes the log's filters only; the events of one download
+are exported with a range and the actor's filter, among the caller's other events of that range. What would close it: a `download` filter
+on the export, walking the download as its list does.
+
+### H-2269 · A push, a publish and a delete of several files still show one row per file
+
+Component: the events of changes of state (Q-OPS-442). Subject: whoever reads the audit log. Live for a `docker push` (about one
+`artifact.deployed` and one `authz.write.allowed` per blob and manifest, and one `package.published`), a NuGet push (two
+`artifact.deployed`), the delete of an image (one `oci.manifest.deleted` and one `artifact.deleted` per item) or of a folder (one
+`artifact.deleted` per file), and with `authz.audit.reads: all` for every pull (one `authz.read.allowed` per request). What would close
+it: the owner's decision to join them; the mechanism of R-OPS-055 joins any event type that names a unit, so it needs the unit on those
+events and their action in `audit.TransferEvents` and in the index of migration 00142.

@@ -99,6 +99,9 @@ type HandoverDownload struct {
 	// Record counts the download (items.Store.Served) with its statistics flag; the event it is given carries the item, the caller
 	// and the handover's delivery.
 	Record func(items.ServedEvent)
+	// Unit is the unit the item belongs to as the format names it (operations-and-observability.md R-OPS-054): the trace of a data
+	// key names it, so that the audit log shows the keys handed for one pull as one row (R-OPS-055).
+	Unit items.DownloadUnit
 }
 
 // HandoverOptions are ServeOptions.Handover and ServeOptions.HandedOver for a download (R-STOR-095), or two nils when the request
@@ -323,14 +326,25 @@ func (l *Links) trace(ctx context.Context, d HandoverDownload, rec bastionmain.R
 	if actor.Kind == "" {
 		actor = audit.Actor{Kind: "anonymous"}
 	}
+	details := map[string]string{
+		"bastion": rec.Bastion, "replica": rec.Replica, "sha256": h.SHA256, "connection": h.Connection, "storageKeyId": keyID,
+		"linkExpiresAt": h.ExpiresAt.UTC().Format(time.RFC3339),
+	}
+	// The unit of the item, from 2026-11-26 on (R-OPS-054): the audit log shows the keys of one pull as one row (R-OPS-055).
+	if u := d.Unit; u.Package != "" {
+		details["package"] = u.Package
+		if u.Version != "" {
+			details["version"] = u.Version
+		}
+		if u.Key != "" {
+			details["unit"] = u.Key
+		}
+	}
 	ev := audit.Event{
 		Type: audit.EventBastionDataKeyHanded, Actor: actor, Outcome: audit.Success, Source: d.Source, Endpoint: d.Endpoint,
 		Subject:    audit.Subject{Kind: "bastion", ID: rec.BastionID, Name: rec.Bastion},
 		Repository: d.Item.Repository.String(), Project: d.Item.Repository.Project, Path: d.Item.Path,
-		Details: marshal(map[string]string{
-			"bastion": rec.Bastion, "replica": rec.Replica, "sha256": h.SHA256, "connection": h.Connection, "storageKeyId": keyID,
-			"linkExpiresAt": h.ExpiresAt.UTC().Format(time.RFC3339),
-		}),
+		Details: marshal(details),
 	}
 	return l.o.Runner.InTx(ctx, func(tx meta.Tx) error { return l.o.Audit.RecordTx(ctx, tx, ev) })
 }

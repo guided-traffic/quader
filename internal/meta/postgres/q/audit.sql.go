@@ -11,6 +11,38 @@ import (
 	"time"
 )
 
+const auditDownloadStartKey = `-- name: AuditDownloadStartKey :one
+SELECT COALESCE((
+    SELECT audit_download_key(e.action, e.repository, e.details ->> 'unit', e.actor_type, e.actor_id, e.token_id, e.source_ip)::text
+      FROM audit_event e
+     WHERE e.occurred_at = $1::text::timestamptz AND e.id = $2::text::uuid
+       AND e.action IN ('artifact.downloaded', 'bastion.data_key.handed') AND (e.details ->> 'unit') IS NOT NULL
+       AND NOT EXISTS (
+           SELECT 1
+             FROM audit_event p
+            WHERE p.action IN ('artifact.downloaded', 'bastion.data_key.handed') AND (p.details ->> 'unit') IS NOT NULL
+              AND audit_download_key(p.action, p.repository, p.details ->> 'unit', p.actor_type, p.actor_id, p.token_id, p.source_ip)
+                = audit_download_key(e.action, e.repository, e.details ->> 'unit', e.actor_type, e.actor_id, e.token_id, e.source_ip)
+              AND p.occurred_at >= e.occurred_at - make_interval(secs => $3::int)
+              AND (p.occurred_at, p.id) < (e.occurred_at, e.id))
+), '')::text AS key
+`
+
+type AuditDownloadStartKeyParams struct {
+	At         string
+	ID         string
+	GapSeconds int32
+}
+
+// The key of the download whose first event is id at at (R-OPS-055), as text: a download event that names a unit and has no event of
+// its key before it within gap_seconds; ” for any other event or none. The items of a download are read from its first event only.
+func (q *Queries) AuditDownloadStartKey(ctx context.Context, arg AuditDownloadStartKeyParams) (string, error) {
+	row := q.db.QueryRow(ctx, auditDownloadStartKey, arg.At, arg.ID, arg.GapSeconds)
+	var key string
+	err := row.Scan(&key)
+	return key, err
+}
+
 const countReadyAuditPartitions = `-- name: CountReadyAuditPartitions :one
 SELECT ((to_regclass('audit_event_' || to_char(date_trunc('month', now() AT TIME ZONE 'UTC'), 'YYYYMM')) IS NOT NULL)::int
       + (to_regclass('audit_event_' || to_char(date_trunc('month', now() AT TIME ZONE 'UTC') + interval '1 month', 'YYYYMM')) IS NOT NULL)::int)::int AS ready
@@ -198,6 +230,136 @@ func (q *Queries) InsertRevocationOutbox(ctx context.Context, entries string) (i
 		return 0, err
 	}
 	return result.RowsAffected(), nil
+}
+
+const listAuditDownloadMembers = `-- name: ListAuditDownloadMembers :many
+WITH RECURSIVE chain AS (
+    SELECT (s ->> 'ord')::int AS ord, e.occurred_at, e.id, 1 AS n,
+           audit_download_key(e.action, e.repository, e.details ->> 'unit', e.actor_type, e.actor_id, e.token_id, e.source_ip) AS k
+      FROM jsonb_array_elements($1::text::jsonb) AS s
+      JOIN audit_event e ON e.occurred_at = (s ->> 'at')::timestamptz AND e.id = (s ->> 'id')::uuid
+     WHERE e.action IN ('artifact.downloaded', 'bastion.data_key.handed') AND (e.details ->> 'unit') IS NOT NULL
+    UNION ALL
+    SELECT c.ord, nx.occurred_at, nx.id, c.n + 1, c.k
+      FROM chain c
+      CROSS JOIN LATERAL (
+          SELECT m.occurred_at, m.id
+            FROM audit_event m
+           WHERE m.action IN ('artifact.downloaded', 'bastion.data_key.handed') AND (m.details ->> 'unit') IS NOT NULL
+             AND audit_download_key(m.action, m.repository, m.details ->> 'unit', m.actor_type, m.actor_id, m.token_id, m.source_ip) = c.k
+             AND (m.occurred_at, m.id) > (c.occurred_at, c.id)
+             AND m.occurred_at <= c.occurred_at + make_interval(secs => $2::int)
+             AND m.occurred_at < $3::text::timestamptz
+             AND ($4::text = '' OR m.trace_id = $4::text)
+           ORDER BY m.occurred_at, m.id
+           LIMIT 1) nx
+     WHERE c.n <= $5::int
+)
+SELECT c.ord::int AS ord, c.n::int AS n, c.k::text AS key,
+       a.id::text AS id, a.occurred_at, a.action, a.category, a.outcome, a.actor_type,
+       COALESCE(a.actor_id::text, '')::text AS actor_id, COALESCE(a.actor_name, '')::text AS actor_name,
+       COALESCE(a.token_id::text, '')::text AS token_id, COALESCE(a.auth_method, '')::text AS auth_method,
+       COALESCE(host(a.source_ip), '')::text AS source_ip, COALESCE(a.user_agent, '')::text AS user_agent,
+       COALESCE(a.trace_id, '')::text AS trace_id, COALESCE(a.replica, '')::text AS replica,
+       COALESCE(a.endpoint, '')::text AS endpoint, COALESCE(a.resource_type, '')::text AS resource_type,
+       COALESCE(a.resource_id, '')::text AS resource_id, COALESCE(a.repository, '')::text AS repository, COALESCE(a.project, '')::text AS project,
+       COALESCE(a.path, '')::text AS path, COALESCE(a.reason, '')::text AS reason, a.details
+  FROM chain c
+  JOIN audit_event a ON a.occurred_at = c.occurred_at AND a.id = c.id
+ ORDER BY c.ord, c.n
+`
+
+type ListAuditDownloadMembersParams struct {
+	Starts      string
+	GapSeconds  int32
+	ToAt        string
+	TraceID     string
+	MemberLimit int32
+}
+
+type ListAuditDownloadMembersRow struct {
+	Ord          int32
+	N            int32
+	Key          string
+	ID           string
+	OccurredAt   time.Time
+	Action       string
+	Category     string
+	Outcome      string
+	ActorType    string
+	ActorID      string
+	ActorName    string
+	TokenID      string
+	AuthMethod   string
+	SourceIp     string
+	UserAgent    string
+	TraceID      string
+	Replica      string
+	Endpoint     string
+	ResourceType string
+	ResourceID   string
+	Repository   string
+	Project      string
+	Path         string
+	Reason       string
+	Details      json.RawMessage
+}
+
+// The items of downloads (R-OPS-055): from each start event of starts (a JSON array of {"ord", "id", "at"}, at as RFC 3339 text)
+// the events of its key in time order, each the next one after the one before within gap_seconds, before to_at and within the trace
+// filter, at most member_limit + 1 per start, so that the caller learns that a download goes on beyond what it reads. Each step is
+// one probe of audit_event_download_idx; the walk stops at the first pause longer than the gap. n is the position from the start
+// event (1); the events come back whole, read by their primary key.
+func (q *Queries) ListAuditDownloadMembers(ctx context.Context, arg ListAuditDownloadMembersParams) ([]ListAuditDownloadMembersRow, error) {
+	rows, err := q.db.Query(ctx, listAuditDownloadMembers,
+		arg.Starts,
+		arg.GapSeconds,
+		arg.ToAt,
+		arg.TraceID,
+		arg.MemberLimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListAuditDownloadMembersRow{}
+	for rows.Next() {
+		var i ListAuditDownloadMembersRow
+		if err := rows.Scan(
+			&i.Ord,
+			&i.N,
+			&i.Key,
+			&i.ID,
+			&i.OccurredAt,
+			&i.Action,
+			&i.Category,
+			&i.Outcome,
+			&i.ActorType,
+			&i.ActorID,
+			&i.ActorName,
+			&i.TokenID,
+			&i.AuthMethod,
+			&i.SourceIp,
+			&i.UserAgent,
+			&i.TraceID,
+			&i.Replica,
+			&i.Endpoint,
+			&i.ResourceType,
+			&i.ResourceID,
+			&i.Repository,
+			&i.Project,
+			&i.Path,
+			&i.Reason,
+			&i.Details,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listAuditEventsNewest = `-- name: ListAuditEventsNewest :many
@@ -439,6 +601,156 @@ func (q *Queries) ListAuditEventsOldest(ctx context.Context, arg ListAuditEvents
 	items := []ListAuditEventsOldestRow{}
 	for rows.Next() {
 		var i ListAuditEventsOldestRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.OccurredAt,
+			&i.Action,
+			&i.Category,
+			&i.Outcome,
+			&i.ActorType,
+			&i.ActorID,
+			&i.ActorName,
+			&i.TokenID,
+			&i.AuthMethod,
+			&i.SourceIp,
+			&i.UserAgent,
+			&i.TraceID,
+			&i.Replica,
+			&i.Endpoint,
+			&i.ResourceType,
+			&i.ResourceID,
+			&i.Repository,
+			&i.Project,
+			&i.Path,
+			&i.Reason,
+			&i.Details,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAuditRowsNewest = `-- name: ListAuditRowsNewest :many
+SELECT e.id::text AS id, e.occurred_at, e.action, e.category, e.outcome, e.actor_type,
+       COALESCE(e.actor_id::text, '')::text AS actor_id, COALESCE(e.actor_name, '')::text AS actor_name,
+       COALESCE(e.token_id::text, '')::text AS token_id, COALESCE(e.auth_method, '')::text AS auth_method,
+       COALESCE(host(e.source_ip), '')::text AS source_ip, COALESCE(e.user_agent, '')::text AS user_agent,
+       COALESCE(e.trace_id, '')::text AS trace_id, COALESCE(e.replica, '')::text AS replica,
+       COALESCE(e.endpoint, '')::text AS endpoint, COALESCE(e.resource_type, '')::text AS resource_type,
+       COALESCE(e.resource_id, '')::text AS resource_id, COALESCE(e.repository, '')::text AS repository, COALESCE(e.project, '')::text AS project,
+       COALESCE(e.path, '')::text AS path, COALESCE(e.reason, '')::text AS reason, e.details
+  FROM audit_event e
+ WHERE e.occurred_at >= $1::text::timestamptz
+   AND e.occurred_at < $2::text::timestamptz
+   AND ($3::text = '' OR e.action = $3::text)
+   AND ($4::text = '' OR starts_with(e.action, $4::text))
+   AND ($5::text = '' OR e.category = $5::text)
+   AND ($6::text = '' OR e.outcome = $6::text)
+   AND ($7::text = '' OR e.actor_id = $8::text::uuid OR e.actor_name = $7::text)
+   AND ($9::text = '' OR e.repository = $9::text)
+   AND ($10::text = '' OR e.project = $10::text)
+   AND ($11::text = '' OR e.resource_type = $11::text)
+   AND ($12::text = '' OR e.resource_id = $12::text)
+   AND ($13::text = '' OR e.trace_id = $13::text)
+   AND (NOT $14::bool
+        OR (e.occurred_at, e.id) < ($15::text::timestamptz, $16::text::uuid))
+   AND (e.action NOT IN ('artifact.downloaded', 'bastion.data_key.handed') OR (e.details ->> 'unit') IS NULL OR NOT EXISTS (
+         SELECT 1
+           FROM audit_event p
+          WHERE p.action IN ('artifact.downloaded', 'bastion.data_key.handed') AND (p.details ->> 'unit') IS NOT NULL
+            AND audit_download_key(p.action, p.repository, p.details ->> 'unit', p.actor_type, p.actor_id, p.token_id, p.source_ip)
+              = audit_download_key(e.action, e.repository, e.details ->> 'unit', e.actor_type, e.actor_id, e.token_id, e.source_ip)
+            AND p.occurred_at >= e.occurred_at - make_interval(secs => $17::int)
+            AND p.occurred_at >= $1::text::timestamptz
+            AND (p.occurred_at, p.id) < (e.occurred_at, e.id)
+            AND ($13::text = '' OR p.trace_id = $13::text)))
+ ORDER BY e.occurred_at DESC, e.id DESC
+ LIMIT $18::int
+`
+
+type ListAuditRowsNewestParams struct {
+	FromAt       string
+	ToAt         string
+	Action       string
+	ActionPrefix string
+	Category     string
+	Outcome      string
+	Actor        string
+	ActorID      string
+	Repository   string
+	Project      string
+	ResourceType string
+	ResourceID   string
+	TraceID      string
+	HasCursor    bool
+	CursorAt     string
+	CursorID     string
+	GapSeconds   int32
+	RowLimit     int32
+}
+
+type ListAuditRowsNewestRow struct {
+	ID           string
+	OccurredAt   time.Time
+	Action       string
+	Category     string
+	Outcome      string
+	ActorType    string
+	ActorID      string
+	ActorName    string
+	TokenID      string
+	AuthMethod   string
+	SourceIp     string
+	UserAgent    string
+	TraceID      string
+	Replica      string
+	Endpoint     string
+	ResourceType string
+	ResourceID   string
+	Repository   string
+	Project      string
+	Path         string
+	Reason       string
+	Details      json.RawMessage
+}
+
+// The rows of the audit log's screen (R-OPS-055): the events of ListAuditEventsNewest, newest first, leaving out every event of a
+// transfer (artifact.downloaded, bastion.data_key.handed) that names a unit and follows an event of its key (audit_download_key:
+// action, repository, unit, caller) by at most gap_seconds within the range and the trace filter. What stays is a single event, or the first event of a download, whose items ListAuditDownloadMembers
+// walks. The test of a predecessor is an index probe of audit_event_download_idx; it reads nothing of an event of another kind.
+func (q *Queries) ListAuditRowsNewest(ctx context.Context, arg ListAuditRowsNewestParams) ([]ListAuditRowsNewestRow, error) {
+	rows, err := q.db.Query(ctx, listAuditRowsNewest,
+		arg.FromAt,
+		arg.ToAt,
+		arg.Action,
+		arg.ActionPrefix,
+		arg.Category,
+		arg.Outcome,
+		arg.Actor,
+		arg.ActorID,
+		arg.Repository,
+		arg.Project,
+		arg.ResourceType,
+		arg.ResourceID,
+		arg.TraceID,
+		arg.HasCursor,
+		arg.CursorAt,
+		arg.CursorID,
+		arg.GapSeconds,
+		arg.RowLimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListAuditRowsNewestRow{}
+	for rows.Next() {
+		var i ListAuditRowsNewestRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.OccurredAt,

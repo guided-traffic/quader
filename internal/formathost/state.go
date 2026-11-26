@@ -23,6 +23,25 @@ type requestState struct {
 	mu      sync.Mutex
 	allowed []allowedWrite
 	spools  []*spooled
+	// read is the first read the request was allowed that names a version: the version a download names where its item's path names
+	// none (the tag a remote's manifest was fetched by, which is counted on the manifest's digest; R-OPS-054).
+	read struct{ pkg, version string }
+}
+
+// noteRead remembers the first allowed read of a version.
+func (st *requestState) noteRead(pkg, version string) {
+	st.mu.Lock()
+	defer st.mu.Unlock()
+	if st.read.version == "" {
+		st.read.pkg, st.read.version = pkg, version
+	}
+}
+
+// readVersion is the version the request was allowed to read, "" for none.
+func (st *requestState) readVersion() string {
+	st.mu.Lock()
+	defer st.mu.Unlock()
+	return st.read.version
 }
 
 type allowedWrite struct {

@@ -409,6 +409,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/audit/rows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read the audit log's rows
+         * @description The rows of the audit log's screen (R-OPS-055), newest first by each row's first event: every event of the
+         *     filter, except that the `artifact.downloaded` events of one download are one row. A download is the events that
+         *     name one unit (`details.unit`: an image's name, a version's `name@version`) and were written for one caller (its
+         *     kind, its principal, its token and its address), each within a minute of the one before. Such a row carries its
+         *     first event as `event` and the download in `download`: its unit, its package and version, how many items it holds
+         *     and their size, its last item's time and its first ten items. The events themselves are unchanged: the events
+         *     list, the read of one event and the export hold one event per item (R-OPS-054). The filters, the range and the
+         *     paging are those of `GET /api/v1/audit/events`; `limit` counts rows, and a page never cuts a download. An event
+         *     written before the events named their unit is a row of its own. The same events always form the same rows.
+         */
+        get: operations["listAuditRows"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/audit/downloads/{id}/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the events of one download
+         * @description The `artifact.downloaded` events of the download whose first event is `id` (R-OPS-055), in the order they were
+         *     written, oldest first: one event per item, whole, as `GET /api/v1/audit/events` shows them. The download is read
+         *     from its first event on, without the range and the filters of the rows it was shown in. An ID that is no first
+         *     event of a download answers `404`.
+         */
+        get: operations["listAuditDownloadEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/system/jobs": {
         parameters: {
             query?: never;
@@ -9321,6 +9372,52 @@ export interface components {
         };
         AuditEventList: {
             items: components["schemas"]["AuditEvent"][];
+            nextCursor: string | null;
+        };
+        /**
+         * @description One row of the audit log's screen (R-OPS-055): an event, and where the event is the first of a download, the
+         *     download it begins.
+         */
+        AuditRow: {
+            event: components["schemas"]["AuditEvent"];
+            download: components["schemas"]["AuditDownload"] | null;
+        };
+        /**
+         * @description A download of one unit by one caller (R-OPS-055): the `artifact.downloaded` events of its items, read from its
+         *     first event. `items` counts at most 1,000 items; `more` says that the download goes on beyond them.
+         */
+        AuditDownload: {
+            /** @description The unit the events name, `details.unit`. */
+            unit: string;
+            package: string | null;
+            /** @description The first version or tag any item names; null where none does (an image pulled by its digest). */
+            version: string | null;
+            items: number;
+            more: boolean;
+            /** @description The sum of the items' sizes in bytes; null when an item carries none. */
+            size: number | null;
+            /**
+             * Format: date-time
+             * @description The time of its last item.
+             */
+            lastAt: string;
+            first: components["schemas"]["AuditDownloadItem"][];
+        };
+        /** @description One item of a download, from its event. */
+        AuditDownloadItem: {
+            /** @description The ID of the item's event. */
+            id: string;
+            /** Format: date-time */
+            occurredAt: string;
+            path: string;
+            sha256: string;
+            size: number | null;
+            replica: string | null;
+            /** @description `link` or `handover` for an item not delivered by Quader's own bytes. */
+            delivery: string | null;
+        };
+        AuditRowList: {
+            items: components["schemas"]["AuditRow"][];
             nextCursor: string | null;
         };
         /** @enum {string} */
@@ -19603,6 +19700,158 @@ export interface operations {
                     "application/json": components["schemas"]["AuditEvent"];
                 };
             };
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            412: components["responses"]["PreconditionFailed"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    listAuditRows: {
+        parameters: {
+            query?: {
+                /** @description Start of the range, inclusive (RFC 3339); default the last 24 hours. */
+                from?: string;
+                /** @description End of the range, exclusive (RFC 3339); default open. */
+                to?: string;
+                /** @description An event name, or a prefix ending in `.*` such as `authz.*`. */
+                action?: string;
+                /** @description One of auth, token, identity, authz, repository, content, system, config, webhook. */
+                category?: string;
+                /** @description success, failure, denied or warning (Q-AUTH-402). */
+                outcome?: string;
+                /** @description A principal ID or a name. */
+                actor?: string;
+                repository?: string;
+                resourceType?: string;
+                resourceId?: string;
+                /** @description The trace ID the client received as `X-Request-Id`. */
+                traceId?: string;
+                /** @description Page size in rows, 1 to 1000 (default 100). */
+                limit?: number;
+                /** @description The `nextCursor` of the previous page. Opaque; valid only with the filters and sort it was issued for. */
+                cursor?: components["parameters"]["Cursor"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of rows. */
+            200: {
+                headers: {
+                    Link: components["headers"]["Link"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "items": [
+                     *         {
+                     *           "event": {
+                     *             "id": "01933b1e-7c2a-7f4e-9d1b-6a2f0c9e8b11",
+                     *             "occurredAt": "2026-11-26T11:58:02.417Z",
+                     *             "action": "artifact.downloaded",
+                     *             "category": "content",
+                     *             "outcome": "success",
+                     *             "actor": {
+                     *               "type": "user",
+                     *               "id": "5f0e6c3a-6b1d-4c1e-8f43-0d7c3d1c9a10",
+                     *               "name": "priya",
+                     *               "tokenId": "c41d7a3e-2b8f-4c1a-9e0d-7f6b5a4c3d21",
+                     *               "authMethod": "bearer"
+                     *             },
+                     *             "source": {
+                     *               "ip": "10.12.4.7",
+                     *               "userAgent": "docker/27.3.1 go/go1.22.7 os/linux arch/amd64"
+                     *             },
+                     *             "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",
+                     *             "replica": "quader-packages-6f9c7d8b5-x2v4q",
+                     *             "endpoint": "default",
+                     *             "resource": {
+                     *               "type": "repository",
+                     *               "id": null
+                     *             },
+                     *             "repository": "platform/images",
+                     *             "path": "acme/app/_tags/1.4.0",
+                     *             "reason": null,
+                     *             "details": {
+                     *               "path": "acme/app/_tags/1.4.0",
+                     *               "sha256": "3f1c0d8e2a7b9c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5",
+                     *               "size": 1574,
+                     *               "package": "acme/app",
+                     *               "version": "1.4.0",
+                     *               "unit": "acme/app"
+                     *             }
+                     *           },
+                     *           "download": {
+                     *             "unit": "acme/app",
+                     *             "package": "acme/app",
+                     *             "version": "1.4.0",
+                     *             "items": 7,
+                     *             "more": false,
+                     *             "size": 48213377,
+                     *             "lastAt": "2026-11-26T11:58:09.902Z",
+                     *             "first": [
+                     *               {
+                     *                 "id": "01933b1e-7c2a-7f4e-9d1b-6a2f0c9e8b11",
+                     *                 "occurredAt": "2026-11-26T11:58:02.417Z",
+                     *                 "path": "acme/app/_tags/1.4.0",
+                     *                 "sha256": "3f1c0d8e2a7b9c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5",
+                     *                 "size": 1574,
+                     *                 "replica": "quader-packages-6f9c7d8b5-x2v4q",
+                     *                 "delivery": null
+                     *               }
+                     *             ]
+                     *           }
+                     *         }
+                     *       ],
+                     *       "nextCursor": null
+                     *     }
+                     */
+                    "application/json": components["schemas"]["AuditRowList"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            412: components["responses"]["PreconditionFailed"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    listAuditDownloadEvents: {
+        parameters: {
+            query?: {
+                /** @description Page size, 1 to 1000 (default 100). */
+                limit?: number;
+                /** @description The `nextCursor` of the previous page. Opaque; valid only with the filters and sort it was issued for. */
+                cursor?: components["parameters"]["Cursor"];
+            };
+            header?: never;
+            path: {
+                /** @description The ID of the download's first event, `event.id` of its row. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of the download's events. */
+            200: {
+                headers: {
+                    Link: components["headers"]["Link"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditEventList"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthenticated"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];

@@ -2,7 +2,8 @@
 
 Package [internal/audit](../../internal/audit): the event registry, the recorder, the revocation journal row, the store-side query
 and the partition and retention maintenance. Requirements: R-OPS-014 (registry), R-OPS-015 (recording), R-OPS-016 (catalog),
-R-OPS-017 (query) in [operations-and-observability.md](../spec/operations-and-observability.md); the journal in R-HA-054
+R-OPS-017 (query), R-OPS-054 and R-OPS-055 (a download per item, the rows of the screen) in
+[operations-and-observability.md](../spec/operations-and-observability.md); the journal in R-HA-054
 ([ha-and-helm.md](../spec/ha-and-helm.md)). Decisions: Q-OPS-38 to Q-OPS-44. The security view is
 [security/audit.md](../security/audit.md).
 
@@ -23,8 +24,9 @@ its event types here.
 | [row.go](../../internal/audit/row.go) | `Event` to table row: validation, truncation, UUID and address handling, the error sentinels |
 | [logcopy.go](../../internal/audit/logcopy.go) | the `log: audit` record |
 | [store.go](../../internal/audit/store.go) | `Store`: `Query`, `Get`, `Maintain`, `PartitionsReady`, `Prepare`, `SyncRetention`, `CheckExportRange` |
+| [rows.go](../../internal/audit/rows.go) | `Store.Rows` and `Store.DownloadItems`: the rows of the screen, a download of several items as one row (R-OPS-055); `TransferEvents`, `DownloadGap`, `DownloadPreview`, `DownloadReadLimit` |
 | [uuid.go](../../internal/audit/uuid.go) | UUIDv7 for event IDs and the time they carry; the 12 bits after the millisecond are a per-process counter, so the events of one transaction (same `occurred_at`) sort in creation order (Q-OPS-62) |
-| [../api/v1/audit_api.go](../../internal/api/v1/audit_api.go), [../api/v1/audit_source.go](../../internal/api/v1/audit_source.go) | The three management operations; the recorder wrapper that adds the request's source |
+| [../api/v1/audit_api.go](../../internal/api/v1/audit_api.go), [../api/v1/audit_rows_api.go](../../internal/api/v1/audit_rows_api.go), [../api/v1/audit_source.go](../../internal/api/v1/audit_source.go) | The three management operations of the events and the two of the rows; the recorder wrapper that adds the request's source |
 | [../meta/postgres/queries/audit.sql](../../internal/meta/postgres/queries/audit.sql) | every statement; generated code in `q/audit.sql.go` |
 | [../meta/postgres/audit.go](../../internal/meta/postgres/audit.go) | `IsDataError`, `IsPrivilegeError`, and the migrate runner's retention write |
 | [../app/wire_audit.go](../../internal/app/wire_audit.go) | start-up step 4 and the shutdown flush |
@@ -154,6 +156,8 @@ no check of its own ([H-123](../security/audit.md) is closed by that, and by `Te
 | `listAuditEvents` | `GET /api/v1/audit/events` | `audit:read` | newest first; filters `from`, `to`, `action` (exact or `prefix.*`), `category`, `outcome`, `actor`, `repository`, `resourceType`, `resourceId`, `traceId`; `limit` 1 to 1,000, default 100; cursor over `(occurredAt, id)` with the fingerprint of the filters |
 | `getAuditEvent` | `GET /api/v1/audit/events/{id}` | `audit:read` | `404` for an unknown ID and for a string that is not an event ID |
 | `exportAuditEvents` | `GET /api/v1/audit/events/export` | `audit:read` | `from` and `to` required (`400 invalid_audit_range`), at most 400 days; `format=jsonl` (default) or `csv`; oldest first |
+| `listAuditRows` | `GET /api/v1/audit/rows` | `audit:read` | the filters, limit and cursor of `listAuditEvents`; a page of rows, each `{event, download}` ([below](#the-rows-of-the-screen)) |
+| `listAuditDownloadEvents` | `GET /api/v1/audit/downloads/{id}/events` | `audit:read` | the events of the download whose first event is `id`, oldest first; the cursor carries the ID and is refused for another download; `404` for an ID that begins no download |
 
 How the pieces fit:
 
@@ -175,6 +179,44 @@ How the pieces fit:
 (`wireAudit` in [wire_audit.go](../../internal/app/wire_audit.go) returns the wrapper as `auditArea.rec`). An event recorded with a request context gets the client address, the trace
 ID, user agent and the endpoint when its producer left them empty, so a domain package never passes the request down (Q-OPS-49). The source comes from `httpserver.SourceFrom(ctx)` (the chain keeps the User-Agent in `RequestInfo`); the actor of a request comes from `v1.ActorFrom(httpserver.Principal)`, which fills the token ID and the authentication method, and a principal ID in an actor passes `principal.IDOrEmpty` (Q-OPS-152). The deduplication
 of an anonymous refusal keys on that address, and the filter `traceId` finds an event by the `X-Request-Id` the client received.
+
+## The rows of the screen
+
+The audit log's screen reads rows, not events (R-OPS-055, ADR-297): the stored events stay one `artifact.downloaded` per item served
+(R-OPS-054), and the read joins the events of one download into one row. Nothing of it is written: the rows are a function of the
+stored events, so the same events form the same rows on every replica, at any time.
+
+- **What an event names.** `items.Store.Served` writes `size`, and `package`, `version` and `unit` from `ServedEvent.Unit`, which the
+  host fills for every serve, link, handover and remote stream through `Host.downloadUnit`
+  ([download_unit.go](../../internal/formathost/download_unit.go)): `UnitOf` classifies the item's path with the request's format, takes
+  the version the request was allowed to read where the path names none (`requestState.noteRead`, set by `Host.Authorize` for a read
+  with a version: the tag of a remote's manifest, whose fetch `recordTagFetch` counts on the digest's item), and keys the unit by
+  `formats.Descriptor.DownloadUnit` (an image's name, `<name>@<version>`, none for a file). The trace of a data key handed to a Bastion
+  carries the same (`HandoverDownload.Unit`), and so does a download a Bastion reports (`IntakeOptions.Unit`, `App.downloadUnitOf`).
+- **The key.** `audit_download_key(action, repository, unit, actor_type, actor_id, token_id, source_ip)` of migration 00142, an MD5
+  as `uuid`, indexed with `occurred_at` and `id` for the actions of `audit.TransferEvents` that name a unit
+  (`audit_event_download_idx`). A statement that walks it states both predicates of the index (`action IN (…)` and
+  `details ->> 'unit' IS NOT NULL`) literally, so the planner can use it.
+- **A page** (`Store.Rows`): `ListAuditRowsNewest` is the events list's statement with one condition more: an event of a transfer that
+  names a unit is left out when an event of its key lies at most `DownloadGap` (60 s) before it within the range (an index probe).
+  What stays is a page of rows, each a single event or a download's first event. `ListAuditDownloadMembers` then walks every download
+  of the page in one statement: a recursive CTE that takes, from each start, the next event of its key within the gap (one probe each),
+  up to `DownloadReadLimit + 1` items, and returns the events whole. `downloadOf` sums the items and keeps the first `DownloadPreview`.
+  Two statements a page, one where the page holds no download.
+- **One download** (`Store.DownloadItems`): `Get` reads the first event, `AuditDownloadStartKey` checks that it begins a download and
+  returns its key, and the walk from the cursor's event reads a page; a cursor whose event has another key is refused.
+- **Measured once** (2026-11-26, the integration stack's PostgreSQL on the development machine, 3.0 million events in the last 24 hours:
+  1.8 million downloads, 120,000 pulls of 15 items by 2,000 callers of 300 images in 50 repositories, and 1.2 million other events;
+  the index 129 MB): the first page of 100 rows 6.6 ms, the next pages 2.6 to 4.5 ms, 1,000 rows 18 ms (the events list's page of 100:
+  2.9 ms); with `action=artifact.downloaded` 100 rows of 1,500 items 31 ms; with `repository=` 82 ms (the events list 2.6 ms); with
+  `actor=` 1.2 s (the events list 95 ms): the actor's filter is no index condition of either statement (it is `actor_id = … OR
+  actor_name = …`), so both scan the range until the page is full, and a page of rows needs as many events as its downloads hold. The
+  test of a predecessor is one probe of `audit_event_download_idx` per download event scanned (0.2 ms for the plan of the first page).
+- **Why a chain and not a window:** whether an event begins a row depends only on the events of its key in the minute before it, so a
+  newer event never changes an older row, and no page needs the history before it (Q-OPS-439).
+
+The screen ([audit-log.ts](../../web/src/app/features/audit/audit-log.ts)) keeps the opened rows by their first event's ID, so they stay
+open while `live()` reads the rows shown again; `?download=<id>` lists one download's events through the same table.
 
 ## Partitions and retention
 
@@ -215,10 +257,11 @@ is wired.
 |---|---|
 | [internal/audit](../../internal/audit) `*_test.go` | `journal_list_test.go` reads the table of R-HA-054 from the specification and checks that every event it names is registered with the journal flag, transactional and with a required entry (the events of areas that do not exist yet are on an explicit pending list, and a registered one must leave it); registry rules, row mapping, the writer against a fake sink (batching, backoff, drop on a full buffer, a refused row, flush at a deadline), deduplication, the switches |
 | [test/integration/bastioniface](../../test/integration/bastioniface) | the feed over real events and over events inserted at chosen instants: the lookback, paging, event boundaries, the four resets (`feed_test.go`), the intake and the dropped count (`downloads_test.go`) |
-| [test/integration/audit](../../test/integration/audit) | `tx_test.go` rollback, journal row, fault injection, ties; `async_test.go` batching, the locked table, the lost connection, a refused row, dedup over replicas; `partitions_test.go` start-up, retention, migrate; `query_test.go` ordering, keyset, filters, `Get`; `privileges_test.go` the runtime role |
+| [test/integration/audit](../../test/integration/audit) | `tx_test.go` rollback, journal row, fault injection, ties; `async_test.go` batching, the locked table, the lost connection, a refused row, dedup over replicas; `partitions_test.go` start-up, retention, migrate; `query_test.go` ordering, keyset, filters, `Get`; `privileges_test.go` the runtime role; `rows_test.go` the rows of R-OPS-055 written by two replicas: a pull as one row, the rows of other callers and packages, single rows, every page size, the filters, stability under newer events, a download's events and the data keys' row |
 | [test/integration/login/e1_5_test.go](../../test/integration/login/e1_5_test.go) | E1.5 across all the producers it names (login, failed login, token creation and revocation, policy change, denied deploy) through the real routes, found by the query and in the log stream ([login.md](login.md)) |
 | [test/integration/audit/api_test.go](../../test/integration/audit/api_test.go) on [test/integration/stack](../../test/integration/stack) | E1.5 through HTTP on three replicas (policy changes and a denied deploy found by the query and present in the log stream), the permission on all three operations, the filter validation, a limit=1 walk across replicas with a write between pages, the correct count and `repeat_of` of denial summaries and the anonymous key by address, the export (2,300 events over three batches in both formats, `audit.exported` first, a slow reader holding no transaction, bad ranges, an export that cannot be recorded), and `authz.settings.changed` from a real repository update |
 | [internal/api/v1/audit_api_test.go](../../internal/api/v1/audit_api_test.go) | the filter and cursor parsing, the representation, the CSV encoder, `WithRequestSource` |
+| [internal/items/served_unit_test.go](../../internal/items/served_unit_test.go), [internal/formathost/download_unit_test.go](../../internal/formathost/download_unit_test.go) | what a download's event names of its unit (R-OPS-054) |
 
 Run: `set -a; . .dev/integration/env; set +a; go test -count=1 -tags integration ./test/integration/audit/...` (see [build-and-test.md](build-and-test.md)).
 

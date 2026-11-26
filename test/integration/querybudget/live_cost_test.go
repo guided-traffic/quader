@@ -78,7 +78,7 @@ func TestMeasureTheServerCostOfALiveRefresh(t *testing.T) {
 		{"admin", "System status, Storage: tasks", "/api/v1/system/tasks?limit=500"},
 		{"admin", "Storage: damaged blobs", "/api/v1/storage/damaged-blobs?scope=blobs&limit=20"},
 		{"admin", "Security: sources", "/api/v1/vulnerabilities/sources"},
-		{"admin", "Audit log: a page", "/api/v1/audit/events?limit=100"},
+		{"admin", "Audit log: a page", "/api/v1/audit/rows?limit=100"},
 		{"reader", "Downloads: the queue", "/api/v1/projects/it/repositories/" + rNPMRem + "/downloads?limit=50"},
 		{"reader", "Downloads: the bulks", "/api/v1/projects/it/repositories/" + rNPMRem + "/download-bulks?limit=5"},
 	}

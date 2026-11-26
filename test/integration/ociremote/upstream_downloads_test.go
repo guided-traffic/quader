@@ -19,7 +19,7 @@ import (
 // client's pull then waits for. Integration tier, about 10 s (the linger of a pull, 5 s, and a publication interval of 1 s), the stub's
 // image of a few kilobytes.
 func TestR_OPS_049_AnImageIsOneDownload(t *testing.T) {
-	e := newEnv(t, options{env: []string{"QUADER_JOBS_POLL_INTERVAL=200ms", "QUADER_PROXY_UPSTREAM_DOWNLOADS_PUBLISH_INTERVAL=1s"}})
+	e := newEnv(t, options{env: []string{"QUADER_JOBS_POLL_INTERVAL=200ms", "QUADER_PROXY_UPSTREAM_DOWNLOADS_PUBLISH_INTERVAL=1s", "QUADER_AUDIT_RECORD_DOWNLOADS=true"}})
 	const rUnits = "oci-units"
 	e.probeRepo(rUnits, map[string]any{"downloadOnProbe": false})
 	e.probeRepo(rProbe, map[string]any{"downloadOnProbe": false})
@@ -82,6 +82,42 @@ func TestR_OPS_049_AnImageIsOneDownload(t *testing.T) {
 		if d["version"] != "1.0" || d["origin"] != "client" || d["outcome"] != "completed" || d["total"] != nil ||
 			d["parts"] != float64(len(files)) || d["bytes"].(float64) <= 0 {
 			t.Errorf("the pull of %d files: %v", len(files), d)
+		}
+	})
+
+	t.Run("R-OPS-055 the audit log keeps one event per item of the pull and shows the pull as one row named by its tag", func(t *testing.T) {
+		repo := testenv.DefaultProject + "/" + rUnits
+		var events []any
+		var row map[string]any
+		// The events reach the table with the next batch of the replica that served them (R-OPS-015).
+		testenv.WaitFor(t, "the pull's events and its row", 30*time.Second, func() bool {
+			a := e.st.Do(api, http.MethodGet, "/api/v1/audit/events?action=artifact.downloaded&repository="+repo, e.admin, nil)
+			r := e.st.Do(api, http.MethodGet, "/api/v1/audit/rows?action=artifact.downloaded&repository="+repo, e.admin, nil)
+			if a.Status != http.StatusOK || r.Status != http.StatusOK {
+				t.Fatalf("the audit reads on the role api: %d %s / %d %s", a.Status, a.Body, r.Status, r.Body)
+			}
+			events = a.JSON(t)["items"].([]any)
+			rows := r.JSON(t)["items"].([]any)
+			if len(rows) != 1 || len(events) < len(files)+1 {
+				return false
+			}
+			row = rows[0].(map[string]any)
+			d, _ := row["download"].(map[string]any)
+			return d != nil && d["items"] == float64(len(events))
+		})
+		// The tag's manifest, counted on its digest, and every file of the pull: one event each.
+		if len(events) != len(files)+1 {
+			t.Errorf("%d events for a pull of %d files and its tag", len(events), len(files))
+		}
+		d := row["download"].(map[string]any)
+		if d["unit"] != "acme/b" || d["package"] != "acme/b" || d["version"] != "1.0" || d["size"] == nil || d["more"] != false ||
+			len(d["first"].([]any)) != min(len(events), 10) {
+			t.Errorf("the pull's row: %v", d)
+		}
+		id := row["event"].(map[string]any)["id"].(string)
+		a := e.st.Do(api, http.MethodGet, "/api/v1/audit/downloads/"+id+"/events?limit=1000", e.admin, nil)
+		if a.Status != http.StatusOK || len(a.JSON(t)["items"].([]any)) != len(events) {
+			t.Errorf("the download's events: %d %s", a.Status, a.Body)
 		}
 	})
 

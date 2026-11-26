@@ -900,6 +900,19 @@ which the read walks for the repositories the caller may read alone (Q-API-458).
 R-ANS-057, Q-ANS-120). One statement, `CREATE INDEX CONCURRENTLY` in a step run outside a transaction; no row is written. `AnsibleViewFind`
 repeats the expression word for word; a change of the one changes the other. Expand phase only.
 
+## The rows of downloads in the audit log (00142)
+
+[00142_audit_download_rows](../../internal/meta/postgres/migrations/00142_audit_download_rows.sql) adds the function
+`audit_download_key(action, repository, unit, actor_type, actor_id, token_id, source_ip)` (immutable SQL, the MD5 of the seven as a
+`uuid`) and the partial index `audit_event_download_idx` on `audit_event` (the key, `occurred_at`, `id`) for the events of
+`artifact.downloaded` and `bastion.data_key.handed` that name a unit (`details ->> 'unit'`), which the read of the audit log's rows walks
+([operations-and-observability.md](../spec/operations-and-observability.md) R-OPS-054, R-OPS-055, ADR-297). No row is written and no
+column added: the events written before name no unit and are not in the index. The index is on the partitioned table, so every
+partition has it and `audit_attach_partition()` builds it on each new one when it attaches it; PostgreSQL builds an index of a
+partitioned table without `CONCURRENTLY`, so the migration holds a `SHARE` lock on each partition while it reads it (seconds for a
+million events, measured in [developer/audit.md](audit.md#the-rows-of-the-screen)). The statements are `ListAuditRowsNewest`,
+`ListAuditDownloadMembers` and `AuditDownloadStartKey` in [audit.sql](../../internal/meta/postgres/queries/audit.sql). Expand phase only.
+
 ## A download from an upstream is a unit (00140)
 
 [00140_upstream_download_units](../../internal/meta/postgres/migrations/00140_upstream_download_units.sql) makes a row of

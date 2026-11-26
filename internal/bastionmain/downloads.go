@@ -2,6 +2,7 @@ package bastionmain
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"regexp"
 	"slices"
@@ -34,7 +35,29 @@ type IntakeOptions struct {
 	Record bool
 	// Events charges a batch to its registration by its events (Q-BAS-117); nil charges nothing.
 	Events EventBudget
-	Now    func() time.Time
+	// Unit names the unit of a reported item as the main installation's own download event names it (operations-and-observability.md
+	// R-OPS-054): the package, the version and the key of the audit log's rows (R-OPS-055), "" each where the repository or its
+	// format is not known here; nil names none.
+	Unit func(ctx context.Context, repository, path string) (pkg, version, key string)
+	Now  func() time.Time
+}
+
+// details is the data of the event of one reported download: the item, the Bastion, the replica that served it, and the unit
+// its item belongs to where the repository's format names one.
+func (in *Intake) details(ctx context.Context, e iface.DownloadEvent, rec Recognition) json.RawMessage {
+	d := map[string]any{"path": e.Path, "sha256": e.SHA256, "origin": "bastion", "bastion": rec.Bastion, "replica": e.Replica}
+	if in.o.Unit != nil {
+		if pkg, version, key := in.o.Unit(ctx, e.Repository, e.Path); pkg != "" {
+			d["package"] = pkg
+			if version != "" {
+				d["version"] = version
+			}
+			if key != "" {
+				d["unit"] = key
+			}
+		}
+	}
+	return mustJSON(d)
 }
 
 // EventBudget charges events download events of the registration bastionID and reports whether the budget
@@ -123,7 +146,7 @@ func (in *Intake) Accept(ctx context.Context, rec Recognition, req iface.Downloa
 			Actor:      downloadActor(e, kinds),
 			Source:     audit.Source{ClientAddr: e.ClientAddress, UserAgent: e.UserAgent},
 			Repository: e.Repository, Path: e.Path,
-			Details: mustJSON(map[string]any{"path": e.Path, "sha256": e.SHA256, "origin": "bastion", "bastion": rec.Bastion, "replica": e.Replica}),
+			Details: in.details(ctx, e, rec),
 		}
 		in.o.Audit.Record(ctx, ev)
 		out.Recorded++

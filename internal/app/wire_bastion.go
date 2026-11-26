@@ -15,6 +15,7 @@ import (
 	"github.com/guided-traffic/quader/internal/bastionmain"
 	"github.com/guided-traffic/quader/internal/config"
 	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formathost"
 	"github.com/guided-traffic/quader/internal/formats"
 	"github.com/guided-traffic/quader/internal/httpserver"
 	"github.com/guided-traffic/quader/internal/qname"
@@ -232,6 +233,27 @@ func (a *App) bastionEventBudget() bastionmain.EventBudget {
 	}
 }
 
+// downloadUnitOf names the unit of an item a Bastion reports it served (operations-and-observability.md R-OPS-054), as the
+// main installation's own download event of the item names it: the repository's format classifies the path and declares the unit.
+// A repository this replica does not know, or one of a format it has not, names none.
+func (a *App) downloadUnitOf(ctx context.Context, repo, path string) (pkg, version, key string) {
+	repos := part[repositoryArea](a.parts).reader
+	name, err := qname.ParseRepo(repo)
+	if repos == nil || err != nil {
+		return "", "", ""
+	}
+	r, err := repos.ByName(ctx, name)
+	if err != nil {
+		return "", "", ""
+	}
+	f, ok := formats.Lookup(r.Format)
+	if !ok {
+		return "", "", ""
+	}
+	u := formathost.UnitOf(f, path, "")
+	return u.Package, u.Version, u.Key
+}
+
 // bastionThrottle builds the failed-credential throttle of the request's client address for the recognition of
 // a Bastion token: the limiter and the exempt addresses of the authentication stage (R-AUTH-038). A replica
 // without the limiter (the shell profile) has none.
@@ -269,7 +291,7 @@ func (a *App) bastionServices(rt *endpointRuntime) v1.BastionServices {
 		Contacts: bastionmain.NewContacts(bastionmain.ContactOptions{DB: in.db, Audit: rec}),
 		Downloads: bastionmain.NewIntake(bastionmain.IntakeOptions{
 			DB: in.db, Audit: rec, MaxBatch: cfg.Bastions.Downloads.MaxBatch, MaxAge: cfg.Bastions.Downloads.MaxAge, Record: cfg.Audit.RecordDownloads,
-			Events: a.bastionEventBudget(),
+			Events: a.bastionEventBudget(), Unit: a.downloadUnitOf,
 		}),
 		// The handshake's format table (R-BAS-057) and the binding of the Bastion's host as the match of /v2/ reads it.
 		Formats:         v1.BastionFormatTable(formats.List()),

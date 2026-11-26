@@ -15,7 +15,8 @@ import {
 } from '@angular/core';
 import { LIVE_SLOW_MS, live } from '../../core/live-refresh';
 import { Router, RouterLink } from '@angular/router';
-import { AUDIT_CATEGORIES, AuditApi, AuditEvent, AuditFilters } from '../../api/audit-api';
+import { AUDIT_CATEGORIES, AuditApi, AuditDownload, AuditEvent, AuditFilters, AuditRow } from '../../api/audit-api';
+import { PageFetcher } from '../../api/pagination';
 import { filesCommands } from '../../core/project-links';
 import { CopyButton } from '../../shared/copy-button';
 import { ErrorNotice } from '../../shared/error-notice';
@@ -29,9 +30,10 @@ import { PagedResource, failureOf, valueOf } from '../../shared/paged-resource';
 import { actionSuggestions, auditActionLabel, categoryLabel, outcomeLabel } from './audit-labels';
 import { PageHeader } from '../../shared/ui/page-header';
 import { StickyWhenFits } from '../../shared/ui/sticky-when-fits';
-import { ADDRESS_MARKS, KEY_MARKS, PartsText, breakParts } from '../../shared/break-parts';
+import { ADDRESS_MARKS, IDENTITY_MARKS, KEY_MARKS, PartsText, breakParts } from '../../shared/break-parts';
 import { PrincipalField, choiceFromRef, refOf } from '../../shared/ui/principal-field';
 import { Loading } from '../../shared/ui/loading';
+import { downloadSize, downloadSubject, downloadTook } from './audit-download';
 
 /**
  * The kinds of resource the events name most (the `resource.type` of an event), offered by the filter's field; any other kind can be
@@ -74,11 +76,14 @@ const PRESETS: Readonly<Record<string, number>> = {
 };
 
 /**
- * The audit log (R-UI-037): the events of a time range, newest first, with the filters the API
- * offers and "Load more" over the keyset cursor. Times follow the user's locale, with a switch to
- * UTC. A row opens the full event in a panel with links to the actor and the target; the export
- * links download the current filter as CSV or JSON Lines. Filters, the open event and the time
- * zone live in the query parameters (R-UI-003).
+ * The audit log (R-UI-037): the rows of a time range, newest first, with the filters the API
+ * offers and "Load more" over the keyset cursor. A row is an event, or a download of several items as
+ * one row (`GET /api/v1/audit/rows`, R-OPS-055): it names the unit, its items and their bytes, and opens
+ * in place to its first ten items with a link to all of them, the log of that download's events
+ * (`?download=`). Times follow the user's locale, with a switch to UTC. An event opens in a panel with
+ * links to the actor and the target; the export links download the current filter as CSV or JSON Lines,
+ * one line per event. Filters, the open event, the download and the time zone live in the query
+ * parameters (R-UI-003).
  */
 @Component({
   selector: 'quader-audit-log',
@@ -120,8 +125,12 @@ export class AuditLog {
   readonly outcome = input<string | undefined>();
   readonly event = input<string | undefined>();
   readonly utc = input<string | undefined>();
+  /** The first event of a download whose events the log lists instead of its rows (R-OPS-055). */
+  readonly download = input<string | undefined>();
 
-  protected readonly list = new PagedResource<AuditEvent>();
+  protected readonly list = new PagedResource<AuditRow>();
+  /** The rows of downloads opened in place, by their first event's ID: they stay open while the log reads itself again (R-UI-213). */
+  protected readonly opened = signal<ReadonlySet<string>>(new Set());
   protected readonly now = signal(Date.now());
   protected readonly categories = AUDIT_CATEGORIES;
   protected readonly knownActions = actionSuggestions();
@@ -131,6 +140,7 @@ export class AuditLog {
   protected readonly presetDraft = signal('24h');
   protected readonly panelOpen = signal(false);
   protected readonly caption = $localize`:@@audit.caption:Audit events, newest first`;
+  protected readonly downloadCaption = $localize`:@@audit.download.caption:The events of one download, in the order they were written`;
   /** The log of the default 24 hours without a filter says there is none; a filtered one that nothing matches (Q-UI-565). */
   protected readonly noEvent = $localize`:@@audit.empty-none:There is no event in the last 24 hours.`;
   protected readonly noMatch = $localize`:@@audit.empty:No event matches.`;
@@ -219,7 +229,17 @@ export class AuditLog {
     if (resourceId) out.push({ key: 'resourceId', label: $localize`:@@audit.filter.resource-id:Resource ID`, value: resourceId });
     const outcome = this.outcome();
     if (outcome) out.push({ key: 'outcome', label: $localize`:@@audit.col.outcome:Outcome`, value: this.outcomeText(outcome) });
+    if (this.download()) out.push({ key: 'download', label: $localize`:@@audit.filter.download:Download`, value: this.downloadName() });
     return out;
+  });
+
+  /** The name of the download whose events are listed: its unit as its first event names it, its ID until that is read. */
+  protected readonly downloadName = computed(() => {
+    const first = this.list.items()[0]?.event;
+    const d = (first?.details ?? {}) as Record<string, unknown>;
+    const name = typeof d['package'] === 'string' ? d['package'] : typeof d['unit'] === 'string' ? d['unit'] : null;
+    if (!name) return this.download() ?? '';
+    return typeof d['version'] === 'string' ? `${name} ${d['version']}` : name;
   });
   protected readonly csvUrl = computed(() => this.api.exportUrl(this.filters(), 'csv'));
   protected readonly jsonlUrl = computed(() => this.api.exportUrl(this.filters(), 'jsonl'));
@@ -228,7 +248,7 @@ export class AuditLog {
     params: () => this.event() ?? null,
     loader: async ({ params }) => {
       if (params === null) return null;
-      return this.list.items().find((e) => e.id === params) ?? (await this.api.event(params));
+      return this.list.items().find((r) => r.event.id === params)?.event ?? (await this.api.event(params));
     },
   });
   protected readonly selectedFailure = failureOf(this.selected);
@@ -237,13 +257,15 @@ export class AuditLog {
   constructor() {
     effect(() => {
       const filters = this.filters();
+      const download = this.download();
       // A preset moves with the clock; the explicit refresh and a filter change reload.
-      untracked(() => void this.list.start(this.api.events(filters), AUDIT_PAGE_SIZE));
+      untracked(() => void this.list.start(this.fetcher(filters, download), AUDIT_PAGE_SIZE));
     });
     // New events arrive all the time: the rows shown are read again every half minute with the range moved to now, in place, so an
-    // open event, the scroll and the filters stay (R-UI-213). A custom range with an end stays where it is.
+    // open event, an opened download, the scroll and the filters stay, and a download that goes on grows in its row (R-UI-213). A
+    // custom range with an end stays where it is.
     live({
-      reload: () => this.list.refresh(this.api.events(untracked(() => this.filtersAt(Date.now())))),
+      reload: () => this.list.refresh(this.fetcher(untracked(() => this.filtersAt(Date.now())), untracked(() => this.download()))),
       every: () => LIVE_SLOW_MS,
     });
     effect(() => this.restage());
@@ -257,6 +279,58 @@ export class AuditLog {
         heading.nativeElement.focus();
       }
     });
+  }
+
+  /**
+   * The rows of the filter (R-OPS-055); with a download, that download's events, oldest first, each a row of its own: the whole of
+   * what its opened row lists ten of (R-UI-215).
+   */
+  private fetcher(filters: AuditFilters, download: string | undefined): PageFetcher<AuditRow> {
+    if (!download) return this.api.rows(filters);
+    const events = this.api.downloadEvents(download);
+    return async (cursor, limit) => {
+      const page = await events(cursor, limit);
+      return { items: page.items.map((event) => ({ event, download: null })), nextCursor: page.nextCursor };
+    };
+  }
+
+  protected isOpen(id: string): boolean {
+    return this.opened().has(id);
+  }
+
+  protected toggle(id: string): void {
+    this.opened.update((s) => {
+      const next = new Set(s);
+      if (!next.delete(id)) next.add(id);
+      return next;
+    });
+  }
+
+  protected openLabel(r: AuditRow & { download: AuditDownload }): string {
+    const s = downloadSubject(r.download);
+    return $localize`:@@audit.download.open:Items of the download of ${s.title}:subject:`;
+  }
+
+  protected readonly subject = downloadSubject;
+  protected readonly took = downloadTook;
+  protected readonly size = downloadSize;
+  protected readonly copySha = $localize`:@@audit.copy-sha:Copy the SHA-256 digest`;
+  protected readonly itemsCaption = $localize`:@@audit.download.items-caption:The first items of the download, in the order they were written`;
+  protected readonly itemColumns: readonly TableColumn[] = [
+    { id: 'time', label: $localize`:@@audit.col.time:Time` },
+    { id: 'item', label: $localize`:@@audit.download.col.item:Item` },
+    { id: 'sha256', label: $localize`:@@audit.download.col.sha256:SHA-256` },
+    { id: 'size', label: $localize`:@@audit.download.col.size:Size`, numeric: true },
+  ];
+
+  /** The rows of the log that begin a download, with their download (a type guard for the template). */
+  protected downloadOf(r: AuditRow): (AuditRow & { download: AuditDownload }) | null {
+    return r.download ? (r as AuditRow & { download: AuditDownload }) : null;
+  }
+
+  /** A digest in its short form, `sha256:` and 12 hex digits (Q-UI-570). */
+  protected shortSha(sha: string): string {
+    return sha ? `${sha.slice(0, 12)}` : '';
   }
 
   private readonly eventHeading = viewChild<ElementRef<HTMLElement>>('eventHeading');
@@ -318,6 +392,7 @@ export class AuditLog {
         resourceId: d['resourceId']?.trim() || null,
         outcome: d['outcome'] || null,
         event: null,
+        download: null,
       },
       queryParamsHandling: 'merge',
     });
@@ -361,6 +436,7 @@ export class AuditLog {
         resourceId: null,
         outcome: null,
         event: null,
+        download: null,
       },
       queryParamsHandling: 'merge',
     });
@@ -467,6 +543,10 @@ export class AuditLog {
   protected readonly copyId = $localize`:@@audit.copy-id:Copy the event ID`;
   protected readonly copyTrace = $localize`:@@audit.copy-trace:Copy the trace ID`;
   protected readonly addressMarks = ADDRESS_MARKS;
+  /** A package's or a repository's name breaks after a slash, a dot or an at sign, never inside a word (R-UI-171). */
+  protected readonly nameMarks = IDENTITY_MARKS;
+  /** An item's path breaks after its slashes and after the algorithm of a digest. */
+  protected readonly pathMarks = '/:';
   protected readonly copyDetails = $localize`:@@audit.copy-details:Copy the details`;
   protected readonly copyResource = $localize`:@@audit.copy-resource:Copy the resource ID`;
   /** The known kinds of a resource, the suggestions of the filter's field. */

@@ -5551,7 +5551,7 @@ Acceptance criteria:
 ### R-UI-037 · Audit log
 Priority: **MVP** · Covers: OPS-023
 
-- Table from `GET /api/v1/audit/events` in five columns, one form at 1,440 and 1,024 px whatever the events hold and blocks only at
+- Table from `GET /api/v1/audit/rows` in five columns, one form at 1,440 and 1,024 px whatever the events hold and blocks only at
   390 px ([Q-UI-997](#q-ui-997--the-audit-log-keeps-five-columns-and-an-opened-event-stands-beside-it-only-where-both-keep-their-form)):
   time (relative, the moment in full as its title), actor (with the address the event came from under it), action (a short plain
   name of its own for every event type of the audit
@@ -5575,8 +5575,23 @@ Priority: **MVP** · Covers: OPS-023
   resource is its kind and its identifier, which a copy button copies (Q-UI-998). The details wrap their long lines in the panel, every
   string longer than 200 characters shortened to its start and its length, and a copy button copies them whole
   ([Q-UI-995](#q-ui-995--a-document-shortens-a-long-string-to-its-start-and-its-length-and-copies-whole-a-code-block-scrolls-a-few-screens-at-most)).
+- **A download is one row** ([operations-and-observability.md](operations-and-observability.md) R-OPS-055, the owner's decision of
+  2026-11-26, [Q-UI-1395](#q-ui-1395--a-downloads-row-names-its-unit-in-the-target-and-opens-in-place)): a row of a download stands at
+  its first item's time, how long it went on under it ("for 12 s"); its action is the action's name ("File downloaded"); its target the
+  repository, the unit in bold with its version or tag muted beside it (an image pulled by its digest: the first item's digest cut to 12
+  digits), and the number of its items and their bytes under them; a chevron before them opens it in place. A package's and a
+  repository's name break after a slash, a dot or an at sign, never inside a word.
+- **An opened download** ([Q-UI-1396](#q-ui-1396--an-opened-download-lists-its-first-ten-items-and-links-all-of-them)) lists its first
+  ten items under its row, each with its clock time to the second (the moment its title), which opens the item's event in the
+  panel, its path, a link to the file, its SHA-256 cut to 12 digits with the whole as its title and a copy button, and its size; where it holds more, **All N items** opens the log of that
+  download's events. It grows the page by at most ten rows and never scrolls (R-UI-215), and it stays open while the log reads itself
+  again (R-UI-213); a download that goes on grows in its row.
+- **The log of one download** (`?download=<first event's ID>`,
+  [Q-UI-1397](#q-ui-1397--the-log-of-one-download-lists-its-events-oldest-first-and-offers-no-export)) lists every event of it from
+  `GET /api/v1/audit/downloads/{id}/events`, oldest first, one row each, with **Load more**; the head names it as the chip **Download**,
+  whose removal returns to the log; it offers no export, which takes the log's filters.
 - Times in the user's locale with a UTC toggle (in the list the title of each relative time, in the panel the moment); export of the
-  current filter as CSV or JSON Lines (`/api/v1/audit/events/export`).
+  current filter as CSV or JSON Lines (`/api/v1/audit/events/export`), one line per event, a download's items each a line.
 
 Acceptance criteria:
 
@@ -5587,6 +5602,17 @@ Acceptance criteria:
 - An event with the outcome `warning` ([identity-and-authentication.md](identity-and-authentication.md) Q-AUTH-402) shows
   **warning** with the warning icon in the warning colour, never the red of a failure; the outcome filter offers it. The list
   decides by the outcome, not by the event type.
+- Unit ([audit-log.spec.ts](../../web/src/app/features/audit/audit-log.spec.ts), the describe "R-OPS-055 a download is one row", the
+  fake API's rows formed as the server forms them, milliseconds): a pull of 13 items is one row named by its image and tag with "13
+  items", their bytes and "for 12 s"; an anonymous pull of the same image is a row of its own named by its first item's digest; an event
+  before the unit has no chevron; the opened row lists ten items, its first item's path links the file and its digest's title is the
+  whole digest, an item's time opens its event, **All 13 items** links the download's log; a fourteenth item read every 30 s grows the
+  row, which stays open; the log of one download lists its 13 events with the chip and no export.
+- Rendered (rule 11, the screen `admin-audit-downloads` of [screens.ts](../../web/e2e/renders/screens.ts), English and German, 1,440,
+  1,024 and 390 px, light and dark): the rows of an image of 32 items closed and opened, a pull by digest, an npm install of three
+  packages, a pull still going on, a refusal and events of before, and the log of one download. The German pass was rendered and looked
+  at once (2026-11-26) and is not part of the screen's run: its log of one download's events finds "Datei heruntergeladen" cramped in
+  the action's 7.5 rem at 1,440 px, which Q-UI-997's budget has no room to widen (8.5 rem made the log stand as blocks at 1,024 px).
 
 ### R-UI-038 · System status
 Priority: **MVP** · Covers: OPS-008
@@ -28250,6 +28276,56 @@ that failed, and the title carries it without a word on the row. The development
 image's layers in the drawer.
 
 **Applied in the spec:** R-UI-211, R-UI-212. Code: [download-words.ts](../../web/src/app/shared/upstream-downloads/download-words.ts).
+
+### Q-UI-1395 · A download's row names its unit in the target and opens in place
+
+Status: **Decided by the development agent on 2026-11-26** on the owner's decision of that day (W33, Q-OPS-437) — selected from the
+options below; the owner reviews it at the walkthrough.
+
+Context: the log keeps five columns at 1,440 and 1,024 px whatever the events hold (Q-UI-997); a download's row must name the unit, its
+items and their bytes, its caller, its time and how long it went on, and open to its items.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The five columns as for an event; the target holds the repository, the unit with its version, its items and bytes, and the chevron before them; the time holds how long it went on (chosen) | The log's form unchanged | A download reads like any event, with the unit where the target stands; the action column stays narrow | The target is three lines |
+| (b) A sixth column Items | A figure of its own | Sortable at a glance | The log falls to blocks at 1,024 px beside an opened event (Q-UI-997) |
+| (c) The chevron in the action column | Opens where the action is | — | The action's column of 7.5 rem holds the name and the key only |
+
+**Choice:** (a). **Rationale:** the target is what the row is about; the unit is that, and the chevron stands before it as in the
+repository's content (Q-UI-1111). The unit's name breaks at its slashes (`IDENTITY_MARKS`): "library/redis" broke as "library/redi" / "s"
+in the 148 px of the target at 1,024 px.
+
+**Applied in the spec:** R-UI-037. Code: [audit-log.html](../../web/src/app/features/audit/audit-log.html),
+[audit-download.ts](../../web/src/app/features/audit/audit-download.ts).
+
+### Q-UI-1396 · An opened download lists its first ten items and links all of them
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The row's first ten items in a list of its own under it (time, path, SHA-256, size), each time opening the item's event in the panel, and **All N items** to the log of the download (chosen) | The rule of R-UI-215 for a row's list | Every item a single event shows is one click away; the page grows by ten rows at most | An image of 30 layers is read on another page |
+| (b) Every item in the row | All at once | — | A pull of hundreds of layers fills the screen inside a row |
+| (c) A scrolled box of every item | All in place | — | A second scrollbar (R-UI-215) |
+
+**Choice:** (a). **Rationale:** what an auditor needs of an item is its path and digest, which the list shows and copies, and its event,
+which the panel shows as for any event; the whole download is its own log.
+
+**Applied in the spec:** R-UI-037, R-UI-215.
+
+### Q-UI-1397 · The log of one download lists its events oldest first and offers no export
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The audit log with `?download=`: the download's events, oldest first, one row each, the chip **Download** with the unit's name, no export (chosen) | The log's own frame | Filters, panel, UTC and **Load more** as everywhere in the log; the URL can be shared | The export of the head is gone in this view (H-2268 of operations-and-observability.md) |
+| (b) A page of its own | A screen for a download | — | A second frame for the same events |
+
+**Choice:** (a). **Rationale:** the download's events are audit events; they read in the log's frame, in the order they were served
+(Q-OPS-443). An export would take the log's filters, not the download, so it is not offered here.
+
+**Applied in the spec:** R-UI-037.
 
 ## What this does not cover
 

@@ -176,6 +176,17 @@ type ServedEvent struct {
 	// encrypted (R-STOR-095); they are written only with the delivery handover.
 	Bastion, Connection string
 	Encrypted           bool
+	// Unit names the download the item is part of (operations-and-observability.md R-OPS-054), as the host learned it from the
+	// format; zero where the server knows none (a download by path through the files API).
+	Unit DownloadUnit
+}
+
+// DownloadUnit is what a download event names of the unit its item belongs to (R-OPS-054, R-OPS-049): the package and the version
+// the format classifies the item's path in, else the version the request was allowed to read (the tag an image's manifest was
+// fetched by), and Key, the unit's name for the audit log's rows (R-OPS-055): an image's name for a format whose unit is an image,
+// "<name>@<version>" for a format whose unit is a version, "" for one whose unit is a file or for an item of no package.
+type DownloadUnit struct {
+	Package, Version, Key string
 }
 
 // DeliveryHandover is the delivery of a download handed over to a Bastion (storage.md R-STOR-095).
@@ -192,7 +203,18 @@ func (s *Store) Served(ctx context.Context, e ServedEvent) {
 		s.stats.Add(e.Item.ID, actorID(e.Actor))
 	}
 	if s.download {
-		details := map[string]any{"path": e.Item.Path, "sha256": e.Item.Digest.Hex()}
+		// The unit and the size are written from 2026-11-26 on (R-OPS-054): the audit log reads a download of several items as one row
+		// by the unit (R-OPS-055) and shows the bytes its items held. An event written before names neither.
+		details := map[string]any{"path": e.Item.Path, "sha256": e.Item.Digest.Hex(), "size": e.Item.Size}
+		if u := e.Unit; u.Package != "" {
+			details["package"] = u.Package
+			if u.Version != "" {
+				details["version"] = u.Version
+			}
+			if u.Key != "" {
+				details["unit"] = u.Key
+			}
+		}
 		if e.Delivery != "" {
 			details["delivery"], details["linkExpiresAt"] = e.Delivery, e.LinkExpiresAt.UTC().Format(time.RFC3339)
 		}

@@ -13,8 +13,14 @@
     />
     <span i18n="@@audit.utc">Show times in UTC</span>
   </label>
-  <a headEnd class="btn btn-default" [href]="csvUrl()" download i18n="@@audit.export.csv">Export CSV</a>
-  <a headEnd class="btn btn-default" [href]="jsonlUrl()" download i18n="@@audit.export.jsonl">Export JSON Lines</a>
+  <!-- The export holds one line per event, a download's items each a line of its own (R-OPS-054); it takes the log's filters, so the
+       list of one download's events has none (R-OPS-055). -->
+  @if (!download()) {
+    <a headEnd class="btn btn-default" [href]="csvUrl()" download i18n="@@audit.export.csv">Export CSV</a>
+  }
+  @if (!download()) {
+    <a headEnd class="btn btn-default" [href]="jsonlUrl()" download i18n="@@audit.export.jsonl">Export JSON Lines</a>
+  }
 </quader-list-head>
 
 @if (list.error(); as f) {
@@ -125,7 +131,7 @@
 <div class="layout" [class.with-detail]="event()">
   <div class="table-pane">
     <quader-data-table
-      [caption]="caption"
+      [caption]="download() ? downloadCaption : caption"
       [columns]="columns"
       [loaded]="list.loaded()"
       [loading]="list.loading() && !list.error()"
@@ -136,13 +142,19 @@
       [hasMore]="list.hasMore()"
       (more)="list.more()"
     >
-      @for (e of list.items(); track e.id) {
+      @for (r of list.items(); track r.event.id) {
+        @let e = r.event;
+        @let dr = downloadOf(r);
         <!-- One form at 1,440 and 1,024 px whatever the events hold (Q-UI-997, the rule of Q-UI-969): the time relative with the moment
              as its title, the actor with the address it came from under it, the action with its key, the target with its project
              under it, the outcome; blocks only where even these columns do not fit (390 px). -->
         <tr [class.current]="e.id === event()">
           <td class="nowrap">
             <quader-time-ago [at]="e.occurredAt" absolute="title" [zone]="timeZone()" />
+            <!-- A download's row stands at its first item; how long it went on to its last stands under it (R-OPS-055). -->
+            @if (dr && took(e, dr.download); as t) {
+              <span class="secondary" i18n="@@audit.download.took">for {{ t }}</span>
+            }
           </td>
           <td class="read-text actor">
             <!-- An actor without a name (a system job's account) is its identifier, a UUID: one line, cut where the column ends, its full
@@ -178,7 +190,41 @@
                stays on one line and is cut, its full value the title (Q-UI-568). The project of a repository stands under it by its
                mark and its name (Q-UI-424). -->
           <td class="target">
-            @if (e.repository) {
+            @if (dr) {
+              <!-- A download's row names the repository, the unit a person asked for with its version or tag, and its items and their
+                   bytes; the chevron opens its first ten items in place (R-OPS-055, R-UI-215). -->
+              @let s = subject(dr.download);
+              <div class="name-cell">
+                <button
+                  type="button"
+                  class="btn btn-tertiary btn-icon on-line"
+                  [attr.aria-expanded]="isOpen(e.id)"
+                  [attr.aria-controls]="'dl-' + e.id"
+                  [attr.aria-label]="openLabel(dr)"
+                  (click)="toggle(e.id)"
+                >
+                  <span class="material-icons expand-chevron" aria-hidden="true">expand_more</span>
+                </button>
+                <span>
+                  <span class="read-text" translate="no"><quader-parts-text [value]="e.repository ?? ''" [marks]="nameMarks" /></span>
+                  <span class="download-subject" [attr.title]="s.title"
+                    ><span class="subject-name" translate="no"><quader-parts-text [value]="s.name" [marks]="nameMarks" /></span
+                    >@if (s.reference) {&ngsp;<span class="subject-version" translate="no">{{ s.reference }}</span>}</span
+                  >
+                  <!-- The figures carry their dot in front, so a wrapped line never starts with one (`.dot-separated`). -->
+                  <span class="secondary"><span class="dot-separated">
+                    @if (dr.download.more) {
+                      <span class="figure" i18n="@@audit.download.items-more">more than {{ dr.download.items }} items</span>
+                    } @else {
+                      <span class="figure" i18n="@@audit.download.items">{dr.download.items, plural, =1 {1 item} other {{{ dr.download.items }} items}}</span>
+                    }
+                    @if (size(dr.download); as bytes) {
+                      <span class="figure">{{ bytes }}</span>
+                    }
+                  </span></span>
+                </span>
+              </div>
+            } @else if (e.repository) {
               <span class="read-text" translate="no">{{ targetText(e) }}</span>
             } @else if (e.resource.type; as kind) {
               @if (targetName(e); as name) {
@@ -216,6 +262,68 @@
             }
           </td>
         </tr>
+        @if (dr) {
+          <!-- The opened download: its first ten items with the facts a single event shows of them, each opening its event, and a link to
+               all of them, the log of the download's events; it grows the page by at most ten rows and never scrolls (R-UI-215). -->
+          <tr class="expansion">
+            <td [attr.colspan]="columns.length">
+              <div [id]="'dl-' + e.id" class="collapse-region" [class.open]="isOpen(e.id)">
+                <div>
+                  @if (isOpen(e.id)) {
+                    <div class="download-items">
+                      <quader-data-table
+                        [caption]="itemsCaption"
+                        [columns]="itemColumns"
+                        [loaded]="true"
+                        [loading]="false"
+                        loadingText="Loading the items."
+                        i18n-loadingText="@@audit.download.items-loading"
+                        [empty]="dr.download.first.length === 0"
+                      >
+                        @for (it of dr.download.first; track it.id) {
+                          <tr [class.current]="it.id === event()">
+                            <td class="nowrap">
+                              <button
+                                type="button"
+                                class="link"
+                                [attr.aria-current]="it.id === event() ? 'true' : null"
+                                (click)="open(it.id)"
+                              >
+                                <!-- The clock time to the second: the items of one download lie seconds apart, which a relative time does not tell. -->
+                                <time [attr.datetime]="it.occurredAt" [attr.title]="it.occurredAt | date: 'long' : timeZone()">{{ it.occurredAt | date: 'mediumTime' : timeZone() }}</time>
+                              </button>
+                            </td>
+                            <th scope="row" class="wrap-name item-path">
+                              @if (e.repository) {
+                                <a [routerLink]="fileLink(e.repository, it.path)" translate="no"><quader-parts-text [value]="it.path" [marks]="pathMarks" /></a>
+                              } @else {
+                                <span translate="no"><quader-parts-text [value]="it.path" [marks]="pathMarks" /></span>
+                              }
+                            </th>
+                            <td class="item-sha">
+                              <code translate="no" [attr.title]="it.sha256">{{ shortSha(it.sha256) }}</code>
+                              <quader-copy-button class="on-line" [value]="it.sha256" [label]="copySha" />
+                            </td>
+                            <td class="num">{{ size({ size: it.size }) ?? '–' }}</td>
+                          </tr>
+                        }
+                      </quader-data-table>
+                      @if (dr.download.more || dr.download.items > dr.download.first.length) {
+                        <a class="all-items" [routerLink]="[]" [queryParams]="{ download: e.id, event: null }" queryParamsHandling="merge">
+                          @if (dr.download.more) {
+                            <ng-container i18n="@@audit.download.all-more">All items of the download</ng-container>
+                          } @else {
+                            <ng-container i18n="@@audit.download.all">All {{ dr.download.items }} items</ng-container>
+                          }
+                        </a>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+            </td>
+          </tr>
+        }
       }
     </quader-data-table>
   </div>

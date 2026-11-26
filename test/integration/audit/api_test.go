@@ -31,7 +31,11 @@ import (
 // token events are produced by the identity and login areas, whose producers are
 // not part of this stack; their event types are covered by their own areas' tests.
 
-const events = "/api/v1/audit/events"
+const (
+	events        = "/api/v1/audit/events"
+	rowsPath      = "/api/v1/audit/rows"
+	downloadsPath = "/api/v1/audit/downloads"
+)
 
 type apiFx struct {
 	e              *itstack.Env
@@ -204,14 +208,24 @@ func TestR_OPS_017_PermissionAndFilters(t *testing.T) {
 	from, to := time.Now().Add(-time.Hour).UTC().Format(time.RFC3339), time.Now().Add(time.Hour).UTC().Format(time.RFC3339)
 
 	t.Run("R-OPS-017 H-123 a caller without audit:read is refused on every audit operation", func(t *testing.T) {
-		for _, p := range []string{events, events + "/" + id, events + "/export?from=" + from + "&to=" + to} {
+		// The rows of the screen and a download's events are read under the same permission as the events (R-OPS-055).
+		for _, p := range []string{events, events + "/" + id, events + "/export?from=" + from + "&to=" + to, rowsPath, downloadsPath + "/" + id + "/events"} {
 			want(t, f.cl.Do(f.bob.Name, "GET", p, nil), 403, "forbidden")
 			want(t, f.cl.Do("", "GET", p, nil), 401, "")
 		}
 		// The auditor and the administrator hold it.
 		for _, who := range []string{f.auditor.Name, f.admin.Name} {
 			want(t, f.cl.Do(who, "GET", events, nil), 200, "")
+			want(t, f.cl.Do(who, "GET", rowsPath, nil), 200, "")
 		}
+	})
+	t.Run("R-OPS-055 an event that begins no download is a row of its own and no download", func(t *testing.T) {
+		rows := f.cl.Do(f.auditor.Name, "GET", rowsPath+"?action=authz.policy.created", nil).Items(t)
+		if len(rows) != 1 || rows[0]["download"] != nil || rows[0]["event"].(map[string]any)["id"] != id {
+			t.Fatalf("rows %v", rows)
+		}
+		want(t, f.cl.Do(f.auditor.Name, "GET", downloadsPath+"/"+id+"/events", nil), 404, "not_found")
+		want(t, f.cl.Do(f.auditor.Name, "GET", rowsPath+"?limit=1&cursor=bm90LWEtY3Vyc29y", nil), 400, "invalid_cursor")
 	})
 	t.Run("R-OPS-017 a refusal is itself an event of the refused caller", func(t *testing.T) {
 		items := f.find(t, "action=authz.denied&actor=bob", 1)

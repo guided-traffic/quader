@@ -47,6 +47,7 @@ import { formsHead, headLoading, longReadmeHead, manyVersionsHead, rowCommand, t
 import { deprecatedCollection, deprecationActs } from './deprecations';
 import { damagedBlobs, noDamagedBlob, oneConnection, secondUnreachable, severalConnections, twoConnectionFacts } from './storage';
 import { auditDataKeys, bastionsHandover, bastionsRead, forbiddenLink, seededBastion } from './bastions';
+import { auditDownloads } from './audit-downloads';
 import { downloadsWalk } from './downloads';
 import { cachedDeb, cachedNpm } from './cached';
 import { brokenDeb, debRelationLookups, docsDeb, manyFilesDeb } from './debdocs';
@@ -2988,11 +2989,13 @@ async function* auditEvent(page: Page): AsyncGenerator<string> {
   await expect(page.locator('main section.detail dl.facts')).toBeVisible();
   yield 'event';
   // The list carries the events the panel shows: its first event becomes the long one.
-  const list = (url: URL): boolean => url.pathname === '/api/v1/audit/events';
+  // The log reads its rows (R-OPS-055); the two rows replaced are single events.
+  const list = (url: URL): boolean => url.pathname === '/api/v1/audit/rows';
   await page.route(list, async (route) => {
     const res = await route.fetch();
-    const body = (await res.json()) as { items: (Record<string, unknown> & { actor: Record<string, unknown> })[] };
-    const [first, second, ...rest] = body.items;
+    type Event = Record<string, unknown> & { actor: Record<string, unknown> };
+    const body = (await res.json()) as { items: { event: Event; download: unknown }[] };
+    const [first, second] = body.items.map((r) => r.event);
     // The import of advisory data as the job ui-layout met it among the seed's events: an actor without a name, only its identifier,
     // and a target that is a kind and an identifier (vulnerability_source, osv:npm); the log fell to blocks at 1,440 and 1,024 px.
     const nameless = second && {
@@ -3011,7 +3014,8 @@ async function* auditEvent(page: Page): AsyncGenerator<string> {
       path: 'releases/2026/11/customer-portal-installer-with-a-long-name-for-the-windows-build-agents.exe',
       actor: { ...first.actor, type: 'user', authMethod: 'bearer' },
     };
-    await route.fulfill({ response: res, json: { ...body, items: long && nameless ? [long, nameless, ...rest] : body.items } });
+    const rows = long && nameless ? [{ event: long, download: null }, { event: nameless, download: null }, ...body.items.slice(2)] : body.items;
+    await route.fulfill({ response: res, json: { ...body, items: rows } });
   });
   // The log anew, without the event of the address: the first row opens the long one.
   await page.goto('/ui/admin/audit');
@@ -3810,6 +3814,11 @@ export const screens: readonly Screen[] = [
   { id: 'admin-audit-event', path: '/ui/admin/audit', kinds: admins, walk: auditEvent, widths: [1280], tables: 'quader-audit-log quader-data-table' },
   // The traces of data keys handed to a Bastion (storage.md R-STOR-096), answered in the browser: the list and one opened.
   { id: 'admin-audit-data-keys', path: '/ui/admin/audit', kinds: admins, walk: auditDataKeys, tables: 'quader-audit-log quader-data-table' },
+  // A download as one row (R-OPS-055), answered in the browser: an image of 32 items closed and opened in place, a pull by digest, an
+  // npm install of three packages, a pull still going on, a refusal and events of before; then the log of one download's events. Not in
+  // the German pass yet: there the log of one download's events finds "Datei heruntergeladen" cramped in the action's 7.5 rem at
+  // 1,440 px beside an actor's column with 15 px to spare, which the log's column budget (Q-UI-997) has no room to widen.
+  { id: 'admin-audit-downloads', path: '/ui/admin/audit', kinds: admins, walk: auditDownloads, tables: 'quader-audit-log quader-data-table' },
   { id: 'admin-advisory-sources', path: '/ui/admin/advisory-sources', kinds: admins, walk: databaseCommandsOpen },
   // The auditor reads the sources and the image scanners (settings:read, R-OPS-048).
   { id: 'admin-advisory-sources-read', path: '/ui/admin/advisory-sources', kinds: ['auditor'] },

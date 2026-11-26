@@ -2920,6 +2920,39 @@ gain `parts` and `failure.path`; `runningCount`, the badge and the metrics count
 counts is unchanged and stays per request or per file: those are the owner's decisions to take one by one (W31 report). The developer
 view is [developer/upstream-downloads.md](developer/upstream-downloads.md).
 
+### ADR-297 · The audit log shows a download as one row, and keeps one event per item
+
+**Status:** Decided by the owner on 2026-11-26 (W33, about 10:33: "Option A, klarer Fall",
+[Q-OPS-437](spec/operations-and-observability.md#q-ops-437--the-audit-keeps-one-event-per-item-served-and-shows-a-download-as-one-row));
+the design decided by the development agent
+([Q-OPS-438](spec/operations-and-observability.md#q-ops-438--the-rows-are-a-read-of-the-server-over-the-stored-events) to
+[Q-OPS-445](spec/operations-and-observability.md#q-ops-445--the-data-keys-handed-for-a-pull-are-a-row-of-their-own),
+[Q-UI-1395](spec/api-and-ui.md#q-ui-1395--a-downloads-row-names-its-unit-in-the-target-and-opens-in-place) to
+[Q-UI-1397](spec/api-and-ui.md#q-ui-1397--the-log-of-one-download-lists-its-events-oldest-first-and-offers-no-export)). It applies the
+rule of [ADR-295](#adr-295--a-download-is-the-unit-a-person-asked-for-not-one-of-its-files) to the audit log, which W31 had left to the
+owner.
+
+**Context.** With `audit.record_downloads: true`, `artifact.downloaded` is written once per item served, so a pull of an image is one event
+per manifest and per blob, and the audit log's screen showed a pull as a dozen rows. Three options were put to the owner: store per item
+and show a download as one row with its items folded under it; one event per download; leave it. The development agent recommended the
+first: an audit record is evidence and stays as fine as the act was; the owner's rule is about what a person reads.
+
+**Decision.**
+- The stored events stay one per item, with the same fields, the same export (one line per item), the same read of one event and the same
+  retention. From 2026-11-26 an event of a transfer names its unit and its item's size (`size`, `package`, `version`, `unit`), set by the
+  host for every format from the format's classification and declaration; a remote's tag fetch names the tag the request was allowed to
+  read (R-OPS-054).
+- The screen reads `GET /api/v1/audit/rows`: every event is a row, except that the events of one transfer action that name one unit and
+  were written for one caller (kind, principal, token, address), each within a minute of the one before, are one row. The rows are a
+  function of the stored events alone, ordered by their first event, never cut by a page; a download's events are listed by
+  `GET /api/v1/audit/downloads/{id}/events`. Both take `audit:read` (R-OPS-055).
+- Refusals, uploads, deletes and decisions stay one row per event; the data keys handed to a Bastion for a pull are a row of their own.
+
+**Consequences.** Migration 00142 adds `audit_download_key()` and the partial index `audit_event_download_idx`; the screen's list reads
+rows, opens a download in place to its first ten items and links the log of its events (R-UI-037). Events written before name no unit and
+stay single rows. A push, a publish and a delete of several files still show their parts: joining them is the owner's to decide
+(H-2269). The developer view is [developer/audit.md](developer/audit.md#the-rows-of-the-screen).
+
 ## Design invariants
 
 The invariants of [spec/README.md](spec/README.md#design-invariants) are the baseline every spec
@@ -11741,10 +11774,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-OPS
 
-111 questions on [spec/operations-and-observability.md](spec/operations-and-observability.md).
+120 questions on [spec/operations-and-observability.md](spec/operations-and-observability.md).
 
 <details>
-<summary>Q-OPS: 111 questions</summary>
+<summary>Q-OPS: 120 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -11859,6 +11892,15 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-OPS-430](spec/operations-and-observability.md#q-ops-430--a-pulls-version-is-the-newest-tag-whose-manifest-names-its-first-file-resolved-by-the-publication) | A pull's version is the newest tag whose manifest names its first file, resolved by the publication | Decided by the development agent on 2026-11-26 | (a) The publication asks the OCI data port, once per interval for the units it has not resolved: the tag of the remote whose manifest is the unit's first file, names it, or names a manifest that names it (two levels: index, platform manifest, blob), the most recently validated first; else the digest of the topmost stored manifest | — |
 | [Q-OPS-431](spec/operations-and-observability.md#q-ops-431--a-downloads-total-is-what-its-run-named-or-its-one-files-length-a-pull-of-an-image-has-none) | A download's total is what its run named, or its one file's length; a pull of an image has none | Decided by the development agent on 2026-11-26 | (a) A run that names its files: the named sizes, a file that began with its announced length, one found stored or refused leaving the total; a unit whose files nobody names (a client's pull of an image, a mirror pass's image): none; otherwise the sum of its files' lengths | — |
 | [Q-OPS-432](spec/operations-and-observability.md#q-ops-432--the-outcome-of-a-download-is-its-files-the-runs-failure-decides-before-them-and-cached-files-are-no-files) | The outcome of a download is its files'; the run's failure decides before them, and cached files are no files | Decided by the development agent on 2026-11-26 | (a) From the newest attempt of each file: failed when one failed (its class, code and path on the row), else cancelled when one was cancelled, else completed; the run's own failure decides before its files; a file answered from the cache is no file of it, and its bytes are the fetched ones; a unit that fetched nothing is no download | [ADR-295](#adr-295--a-download-is-the-unit-a-person-asked-for-not-one-of-its-files) |
+| [Q-OPS-437](spec/operations-and-observability.md#q-ops-437--the-audit-keeps-one-event-per-item-served-and-shows-a-download-as-one-row) | The audit keeps one event per item served, and shows a download as one row | Decided by the owner on 2026-11-26 | (a) Store per item as before; the screen shows a download as one row, its items with their digests folded under it | [ADR-297](#adr-297--the-audit-log-shows-a-download-as-one-row-and-keeps-one-event-per-item) |
+| [Q-OPS-438](spec/operations-and-observability.md#q-ops-438--the-rows-are-a-read-of-the-server-over-the-stored-events) | The rows are a read of the server over the stored events | Decided by the development agent on 2026-11-26 | (a) A read of the server, `GET /api/v1/audit/rows`, groups the stored events by a key they carry; the events list stays as it was | [ADR-297](#adr-297--the-audit-log-shows-a-download-as-one-row-and-keeps-one-event-per-item) |
+| [Q-OPS-439](spec/operations-and-observability.md#q-ops-439--a-download-is-one-unit-one-caller-and-items-at-most-a-minute-apart) | A download is one unit, one caller and items at most a minute apart | Decided by the development agent on 2026-11-26 | (a) The key is action, repository, unit and caller (kind, principal, token, address); a row's items each follow the one before by at most 60 s | — |
+| [Q-OPS-440](spec/operations-and-observability.md#q-ops-440--an-event-of-a-transfer-names-its-unit-and-its-size-from-now-on) | An event of a transfer names its unit and its size from now on | Decided by the development agent on 2026-11-26 | (a) The host writes `size`, `package`, `version` and `unit` into the event from the format's classification and declaration, and the version the request was allowed to read where the path names none | — |
+| [Q-OPS-441](spec/operations-and-observability.md#q-ops-441--a-row-stands-at-its-first-event-and-no-page-cuts-it) | A row stands at its first event, and no page cuts it | Decided by the development agent on 2026-11-26 | (a) A row's place is its first event; a page is the newest rows whose first event lies before the cursor; a row's items are read from its first event, whatever page it is on | — |
+| [Q-OPS-442](spec/operations-and-observability.md#q-ops-442--a-refusal-and-every-event-of-another-kind-stays-a-row-of-its-own) | A refusal, and every event of another kind, stays a row of its own | Decided by the development agent on 2026-11-26 | (a) Join only the successful transfers of the items of one unit: downloads and the data keys handed for them; every refusal and every other event stays a row | — |
+| [Q-OPS-443](spec/operations-and-observability.md#q-ops-443--a-downloads-events-are-read-from-its-first-event-oldest-first) | A download's events are read from its first event, oldest first | Decided by the development agent on 2026-11-26 | (a) `GET /api/v1/audit/downloads/{id}/events`, `id` the first event's: the walk of the row, paged, oldest first, whole events | — |
+| [Q-OPS-444](spec/operations-and-observability.md#q-ops-444--an-image-without-a-tag-is-named-by-its-first-items-digest) | An image without a tag is named by its first item's digest | Decided by the development agent on 2026-11-26 | (a) The row names the first version or tag any item names; without one, the digest of its first item | — |
+| [Q-OPS-445](spec/operations-and-observability.md#q-ops-445--the-data-keys-handed-for-a-pull-are-a-row-of-their-own) | The data keys handed for a pull are a row of their own | Decided by the development agent on 2026-11-26 | (a) Join the keys of one unit and caller as the downloads are, one row per action | [ADR-297](#adr-297--the-audit-log-shows-a-download-as-one-row-and-keeps-one-event-per-item) |
 
 </details>
 
@@ -12600,10 +12642,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-679 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+682 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 679 questions</summary>
+<summary>Q-UI: 682 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -13286,6 +13328,9 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1364](spec/api-and-ui.md#q-ui-1364--upload-package-is-the-collection-uploads-frame-with-nugets-two-files-and-its-pushs-answer) | Upload package is the collection upload's frame with NuGet's two files and its push's answer | Decided by the development agent on 2026-11-26 | (a) **Upload package** where **Upload collection** stands; the same field, drop area, bar and acts; one choice of up to two files, the `.snupkg` known by its name; the bar runs again for the symbols ("The package is stored. Its symbol package follows."); the result is the version with **Open version**, and the symbols stored or refused with the error notice | — |
 | [Q-UI-1370](spec/api-and-ui.md#q-ui-1370--a-link-to-a-screen-whose-script-is-gone-loads-its-address-from-the-server-and-a-failed-navigation-is-said) | A link to a screen whose script is gone loads its address from the server, and a failed navigation is said | Decided by the development agent on 2026-11-26 | (a) The router's handler of a failed navigation: a script that could not be loaded loads the link's address from the server; every other failure is a notice with what was said | — |
 | [Q-UI-1380](spec/api-and-ui.md#q-ui-1380--a-row-is-one-download-and-never-lists-its-files-the-file-that-failed-stands-in-the-badges-title) | A row is one download and never lists its files; the file that failed stands in the badge's title | Decided by the development agent on 2026-11-26 on the owner's rule of that day (W31) | (a) The row as before, one per download; no list and no count of its files; the file a failure names in the badge's title beside the code | [ADR-295](#adr-295--a-download-is-the-unit-a-person-asked-for-not-one-of-its-files) |
+| [Q-UI-1395](spec/api-and-ui.md#q-ui-1395--a-downloads-row-names-its-unit-in-the-target-and-opens-in-place) | A download's row names its unit in the target and opens in place | Decided by the development agent on 2026-11-26 on the owner's decision of that day (W33, Q-OPS-437) | (a) The five columns as for an event; the target holds the repository, the unit with its version, its items and bytes, and the chevron before them; the time holds how long it went on | [ADR-297](#adr-297--the-audit-log-shows-a-download-as-one-row-and-keeps-one-event-per-item) |
+| [Q-UI-1396](spec/api-and-ui.md#q-ui-1396--an-opened-download-lists-its-first-ten-items-and-links-all-of-them) | An opened download lists its first ten items and links all of them | Decided by the development agent on 2026-11-26 | (a) The row's first ten items in a list of its own under it (time, path, SHA-256, size), each time opening the item's event in the panel, and **All N items** to the log of the download | — |
+| [Q-UI-1397](spec/api-and-ui.md#q-ui-1397--the-log-of-one-download-lists-its-events-oldest-first-and-offers-no-export) | The log of one download lists its events oldest first and offers no export | Decided by the development agent on 2026-11-26 | (a) The audit log with `?download=`: the download's events, oldest first, one row each, the chip **Download** with the unit's name, no export | [ADR-297](#adr-297--the-audit-log-shows-a-download-as-one-row-and-keeps-one-event-per-item) |
 
 </details>
 

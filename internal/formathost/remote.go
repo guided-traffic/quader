@@ -143,7 +143,7 @@ func (r *remote) Artifact(ctx context.Context, rq *formats.Request, p formats.Pa
 	preq.Streamed = func(ctx context.Context, it items.Item) {
 		r.h.o.Items.Served(ctx, items.ServedEvent{
 			Item: it, Actor: edge.ActorFrom(httpserver.PrincipalFrom(ctx)), Source: httpserver.SourceFrom(ctx),
-			Endpoint: rq.Subject.Endpoint, CountStats: true,
+			Endpoint: rq.Subject.Endpoint, CountStats: true, Unit: r.h.downloadUnit(rq, it.Path),
 		})
 	}
 	// The first answer of a miss is a download counted once its body is complete (Streamed above), and a hit is the item

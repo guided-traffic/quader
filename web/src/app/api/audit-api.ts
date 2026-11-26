@@ -4,6 +4,10 @@ import { PageFetcher } from './pagination';
 import { Schema } from './types';
 
 export type AuditEvent = Schema<'AuditEvent'>;
+/** A row of the audit log (R-OPS-055): an event, and where it begins a download, the download. */
+export type AuditRow = Schema<'AuditRow'>;
+export type AuditDownload = Schema<'AuditDownload'>;
+export type AuditDownloadItem = Schema<'AuditDownloadItem'>;
 
 /** The filters of `GET /api/v1/audit/events` that the screen offers (R-UI-037). */
 export interface AuditFilters {
@@ -45,6 +49,10 @@ function filterParams(filters: AuditFilters): Record<string, string | undefined>
 /** The audit trail: R-UI-037, R-OPS-017. */
 export abstract class AuditApi {
   abstract events(filters: AuditFilters): PageFetcher<AuditEvent>;
+  /** The rows of the screen (`GET /api/v1/audit/rows`, R-OPS-055): the events of the filter, a download of several items as one row. */
+  abstract rows(filters: AuditFilters): PageFetcher<AuditRow>;
+  /** The events of the download whose first event is `id`, oldest first (`GET /api/v1/audit/downloads/{id}/events`). */
+  abstract downloadEvents(id: string): PageFetcher<AuditEvent>;
   abstract event(id: string): Promise<AuditEvent>;
   /** The URL of the export of the filter; `from` and `to` are required there (at most 400 days). */
   abstract exportUrl(
@@ -62,6 +70,14 @@ export class HttpAuditApi extends AuditApi {
       '/api/v1/audit/events',
       filterParams(filters) as QueryParams,
     );
+  }
+
+  rows(filters: AuditFilters): PageFetcher<AuditRow> {
+    return this.client.page<AuditRow>('/api/v1/audit/rows', filterParams(filters) as QueryParams);
+  }
+
+  downloadEvents(id: string): PageFetcher<AuditEvent> {
+    return this.client.page<AuditEvent>(`/api/v1/audit/downloads/${encodeURIComponent(id)}/events`);
   }
 
   async event(id: string): Promise<AuditEvent> {

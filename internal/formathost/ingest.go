@@ -452,7 +452,7 @@ func (s itemStore) Serve(ctx context.Context, rq *formats.Request, w http.Respon
 		Served: func() {
 			s.h.o.Items.Served(ctx, items.ServedEvent{
 				Item: row, Actor: edge.ActorFrom(httpserver.PrincipalFrom(ctx)), Source: httpserver.SourceFrom(ctx),
-				Endpoint: rq.Subject.Endpoint, CountStats: true,
+				Endpoint: rq.Subject.Endpoint, CountStats: true, Unit: s.h.downloadUnit(rq, row.Path),
 			})
 		},
 	}
@@ -479,7 +479,7 @@ func (s itemStore) RecordDownload(ctx context.Context, rq *formats.Request, it f
 	bastionmain.NoteCounted(ctx)
 	s.h.o.Items.Served(ctx, items.ServedEvent{
 		Item: row, Actor: edge.ActorFrom(httpserver.PrincipalFrom(ctx)), Source: httpserver.SourceFrom(ctx),
-		Endpoint: rq.Subject.Endpoint, CountStats: true,
+		Endpoint: rq.Subject.Endpoint, CountStats: true, Unit: s.h.downloadUnit(rq, row.Path),
 	})
 }
 

@@ -193,3 +193,67 @@ th[scope='row'] .link {
   display: block;
   overflow-wrap: normal;
 }
+
+// A download's row (R-OPS-055): the chevron on the first line of the target, the repository, the unit in bold with its version or
+// tag muted beside it, and its items and their bytes under them. Every part wraps in the column; a digest breaks where it must.
+td.target .name-cell {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--quader-space-1);
+
+  > .btn {
+    flex: none;
+  }
+
+  > span {
+    min-inline-size: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .read-text,
+  .download-subject {
+    display: block;
+  }
+}
+
+.subject-name {
+  font-weight: 600;
+}
+
+.subject-version {
+  color: var(--quader-text-muted);
+}
+
+// The opened download stands under its row, indented by the chevron's width, and grows the page by its at most ten items (R-UI-215).
+tr.expansion > td {
+  padding: 0;
+  border-block-end: 0;
+}
+
+.download-items {
+  padding-block: var(--quader-space-2) var(--quader-space-3);
+  padding-inline: var(--quader-space-6) var(--quader-space-3);
+
+  .item-path {
+    font-weight: 400;
+    overflow-wrap: anywhere;
+  }
+
+  .item-sha {
+    white-space: nowrap;
+
+    code {
+      overflow-wrap: normal;
+    }
+  }
+
+  .all-items {
+    display: inline-block;
+    margin-block-start: var(--quader-space-2);
+  }
+}
+
+// A download's figures never break inside themselves ("8" / "4,0 KiB" in the German pass at 1,024 px); the line breaks between them.
+.figure {
+  white-space: nowrap;
+}

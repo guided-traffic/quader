@@ -303,7 +303,7 @@ describe('Audit log', () => {
     expect(text(none.root)).toContain('No event matches.');
 
     const failing = await open({}, (audit) => {
-      audit.events = () => () =>
+      audit.rows = () => () =>
         Promise.reject(new ApiError(400, { code: 'invalid_audit_range', detail: 'x' }, null));
     });
     expect(text(failing.root)).toContain('at most 400 days');
@@ -335,5 +335,101 @@ describe('Audit log', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  describe('R-OPS-055 a download is one row', () => {
+    const alice = { type: 'user', id: 'u-1', name: 'alice', tokenId: 't-1', authMethod: 'bearer' } as const;
+    /** An item's event as the server writes it from R-OPS-054 on: its unit, its package, its version where its path names one. */
+    function item(i: number, at: number, over: { unit?: string; version?: string; actor?: typeof alice | null; ip?: string } = {}) {
+      const unit = over.unit ?? 'acme/app';
+      const path = i === 0 ? `${unit}/_tags/1.4.0` : `${unit}/_blobs/sha256:${String(i).padStart(64, '0')}`;
+      return sampleEvent({
+        id: `0193b4a0-0000-7000-8000-${String(at).padStart(6, '0')}${String(i).padStart(6, '0')}`,
+        occurredAt: new Date(Date.UTC(2026, 10, 26, 10, 0, 0) + at).toISOString(),
+        action: 'artifact.downloaded',
+        category: 'content',
+        actor: over.actor === null ? { type: 'anonymous', id: null, name: null, tokenId: null, authMethod: null } : (over.actor ?? alice),
+        source: { ip: over.ip ?? '10.0.0.5', userAgent: 'docker/27.3.1' },
+        resource: { type: 'repository', id: null },
+        repository: 'platform/images',
+        path,
+        details: {
+          path,
+          sha256: i.toString(16).padStart(4, '0').repeat(16),
+          size: 1000 + i,
+          package: unit,
+          unit,
+          ...(over.version ? { version: over.version } : {}),
+        },
+      });
+    }
+    /** A pull of 13 items by alice, an anonymous pull of the same image beside it, and an event before the events named their unit. */
+    function world(audit: FakeAuditApi): void {
+      const pull = Array.from({ length: 13 }, (_, i) => item(i, i * 1000, i === 0 ? { version: '1.4.0' } : {}));
+      const anon = [item(50, 2500, { actor: null, ip: '10.0.0.9' }), item(51, 3500, { actor: null, ip: '10.0.0.9' })];
+      const old = sampleEvent({ id: 'evt-old', occurredAt: '2026-11-26T09:59:00.000Z', action: 'artifact.downloaded', category: 'content', repository: 'platform/images', path: 'acme/old/_blobs/sha256:1', details: { path: 'acme/old/_blobs/sha256:1', sha256: '1'.padStart(64, '0') } });
+      audit.eventList = [...pull, ...anon, old];
+    }
+
+    it('R-OPS-055 R-UI-037 a pull is one row naming its image, its tag, its items and their bytes; another caller and an older event are rows of their own', async () => {
+      const { root } = await open({}, world);
+      const rows = [...root.querySelectorAll<HTMLTableRowElement>('table.data > tbody > tr:not(.expansion)')];
+      expect(rows).toHaveLength(3);
+      const pull = rows.find((r) => r.textContent?.includes('1.4.0'))!;
+      const target = pull.querySelector('td.target')!;
+      expect(target.querySelector('.subject-name')?.textContent).toBe('acme/app');
+      expect(target.querySelector('.subject-version')?.textContent).toBe('1.4.0');
+      expect(target.textContent).toContain('13 items');
+      expect(target.textContent).toContain('12.8 KiB');
+      expect(pull.querySelector('td.nowrap .secondary')?.textContent?.trim()).toBe('for 12 s');
+      // The anonymous pull names no tag: its first item's digest, cut to 12 hex digits.
+      const anon = rows.find((r) => r.textContent?.includes('2 items'))!;
+      expect(anon.querySelector('.subject-version')?.textContent).toBe('sha256:003200320032');
+      // The event before the unit is the event's row as before, without a chevron.
+      expect(rows.at(-1)!.querySelector('[aria-expanded]')).toBeNull();
+      await expectAccessible(root);
+    });
+
+    it('R-OPS-055 R-UI-215 an opened download lists its first ten items, each opening its event, and links to all of them; it stays open when the log is read again', async () => {
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+      try {
+        const { root, fixture, audit, router } = await open({}, world);
+        const toggle = root.querySelector<HTMLButtonElement>('td.target button[aria-label="Items of the download of acme/app 1.4.0"]')!;
+        expect(toggle.getAttribute('aria-label')).toBe('Items of the download of acme/app 1.4.0');
+        toggle.click();
+        await settle(fixture);
+        expect(toggle.getAttribute('aria-expanded')).toBe('true');
+        const items = () => [...root.querySelectorAll('.download-items tbody tr')];
+        expect(items()).toHaveLength(10);
+        expect(items()[0]!.querySelector('th a')?.textContent).toBe('acme/app/_tags/1.4.0');
+        expect(items()[0]!.querySelector('code')?.getAttribute('title')).toBe('0'.repeat(64));
+        const all = root.querySelector<HTMLAnchorElement>('.download-items a.all-items')!;
+        expect(all.textContent?.trim()).toBe('All 13 items');
+        (items()[1]!.querySelector('button.link') as HTMLButtonElement).click();
+        const [, extras] = (router.navigate as ReturnType<typeof vi.fn>).mock.calls.at(-1)!;
+        expect(extras.queryParams).toEqual({ event: audit.eventList[1]!.id });
+        // A fourteenth item arrives: the row grows in place and stays open (R-UI-213).
+        audit.eventList = [...audit.eventList, item(13, 13_000)];
+        vi.advanceTimersByTime(30_000);
+        await settle(fixture);
+        expect(root.querySelectorAll('td.target button[aria-expanded="true"]')).toHaveLength(1);
+        expect(toggle.getAttribute('aria-expanded')).toBe('true');
+        expect(toggle.closest('td.target')?.textContent).toContain('14 items');
+        expect(items()).toHaveLength(10);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('R-OPS-055 the log of one download lists every item as an event, oldest first, names the download as a filter and offers no export', async () => {
+      const { root } = await open({ download: '0193b4a0-0000-7000-8000-000000000000' }, world);
+      const rows = [...root.querySelectorAll('table.data > tbody > tr:not(.expansion)')];
+      expect(rows).toHaveLength(13);
+      expect(rows[0]!.querySelector('td.target')?.textContent).toContain('acme/app/_tags/1.4.0');
+      expect(chipTexts(root)).toEqual(['Download: acme/app 1.4.0']);
+      expect(root.querySelectorAll('a[download]')).toHaveLength(0);
+      expect(root.querySelector('caption')?.textContent).toContain('The events of one download');
+      await expectAccessible(root);
+    });
   });
 });

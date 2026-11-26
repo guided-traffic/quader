@@ -1,6 +1,6 @@
 import { Provider } from '@angular/core';
 import { applyMergePatch, JsonObject } from '../../shared/merge-patch';
-import { AuditApi, AuditEvent, AuditFilters, ExportFormat } from '../audit-api';
+import { AuditApi, AuditEvent, AuditFilters, AuditRow, ExportFormat } from '../audit-api';
 import {
   Endpoint,
   EndpointsApi,
@@ -1225,6 +1225,83 @@ export function sampleEvent(over: Partial<AuditEvent> = {}): AuditEvent {
   };
 }
 
+/** The longest pause between two items of one download (R-OPS-055, `audit.DownloadGap`). */
+const DOWNLOAD_GAP_MS = 60_000;
+
+/** The unit an event names (`details.unit`), or null for an event that begins no download. */
+function unitOf(e: AuditEvent): string | null {
+  const unit = (e.details as Record<string, unknown>)['unit'];
+  return ['artifact.downloaded', 'bastion.data_key.handed'].includes(e.action) && typeof unit === 'string' && unit !== '' ? unit : null;
+}
+
+/** The key of a download: the action, the repository, the unit and the caller (`audit_download_key`). */
+function downloadKey(e: AuditEvent): string {
+  return [e.action, e.repository, unitOf(e), e.actor.type, e.actor.id, e.actor.tokenId, e.source.ip].join('\u001f');
+}
+
+/** The events of the download that `head` begins: those of its key from it on, each within the pause of the one before. */
+function auditDownloadMembers(events: readonly AuditEvent[], head: AuditEvent): AuditEvent[] {
+  const key = downloadKey(head);
+  const same = events
+    .filter((e) => unitOf(e) !== null && downloadKey(e) === key && e.occurredAt >= head.occurredAt)
+    .sort((a, b) => a.occurredAt.localeCompare(b.occurredAt) || a.id.localeCompare(b.id));
+  const out: AuditEvent[] = [];
+  for (const e of same) {
+    const last = out.at(-1);
+    if (last && Date.parse(e.occurredAt) - Date.parse(last.occurredAt) > DOWNLOAD_GAP_MS) break;
+    out.push(e);
+  }
+  return out;
+}
+
+/** The rows of the events as the server forms them (R-OPS-055), newest first by each row's first event. */
+export function auditRowsOf(events: readonly AuditEvent[]): AuditRow[] {
+  const newest = [...events].sort((a, b) => b.occurredAt.localeCompare(a.occurredAt) || b.id.localeCompare(a.id));
+  const rows: AuditRow[] = [];
+  for (const e of newest) {
+    if (unitOf(e) === null) {
+      rows.push({ event: e, download: null });
+      continue;
+    }
+    const key = downloadKey(e);
+    const before = events.find(
+      (p) =>
+        p !== e &&
+        unitOf(p) !== null &&
+        downloadKey(p) === key &&
+        p.occurredAt <= e.occurredAt &&
+        Date.parse(e.occurredAt) - Date.parse(p.occurredAt) <= DOWNLOAD_GAP_MS &&
+        (p.occurredAt < e.occurredAt || p.id < e.id),
+    );
+    if (before) continue;
+    const members = auditDownloadMembers(events, e);
+    const details = (m: AuditEvent): Record<string, unknown> => m.details as Record<string, unknown>;
+    const sizes = members.map((m) => details(m)['size']);
+    rows.push({
+      event: e,
+      download: {
+        unit: unitOf(e)!,
+        package: (details(e)['package'] as string | undefined) ?? null,
+        version: (members.map((m) => details(m)['version']).find((v) => typeof v === 'string' && v !== '') as string | undefined) ?? null,
+        items: members.length,
+        more: false,
+        size: sizes.every((s) => typeof s === 'number') ? (sizes as number[]).reduce((a, b) => a + b, 0) : null,
+        lastAt: members.at(-1)!.occurredAt,
+        first: members.slice(0, 10).map((m) => ({
+          id: m.id,
+          occurredAt: m.occurredAt,
+          path: m.path ?? '',
+          sha256: String(details(m)['sha256'] ?? ''),
+          size: typeof details(m)['size'] === 'number' ? (details(m)['size'] as number) : null,
+          replica: m.replica,
+          delivery: (details(m)['delivery'] as string | undefined) ?? null,
+        })),
+      },
+    });
+  }
+  return rows;
+}
+
 export class FakeAuditApi extends AuditApi {
   eventList: AuditEvent[] = [
     sampleEvent(),
@@ -1250,6 +1327,27 @@ export class FakeAuditApi extends AuditApi {
         .filter((e) => !filters.actor || e.actor.name === filters.actor)
         .filter((e) => !filters.repository || e.repository === filters.repository),
     );
+  }
+
+  override rows(filters: AuditFilters): PageFetcher<AuditRow> {
+    this.filterCalls.push(filters);
+    const events = this.eventList
+      .filter((e) => !filters.category || e.category === filters.category)
+      .filter((e) => !filters.outcome || e.outcome === filters.outcome)
+      .filter((e) => !filters.action || e.action === filters.action)
+      .filter((e) => !filters.actor || e.actor.name === filters.actor)
+      .filter((e) => !filters.repository || e.repository === filters.repository);
+    return paged(auditRowsOf(events));
+  }
+
+  override downloadEvents(id: string): PageFetcher<AuditEvent> {
+    const row = auditRowsOf(this.eventList).find((r) => r.event.id === id && r.download);
+    if (!row) {
+      return async () => {
+        throw notFound();
+      };
+    }
+    return paged(auditDownloadMembers(this.eventList, row.event));
   }
 
   override async event(id: string): Promise<AuditEvent> {

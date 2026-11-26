@@ -4858,7 +4858,7 @@
     </unit>
     <unit id="audit.export.csv">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:16,17</note>
+        <note category="location">src/app/features/audit/audit-log.html:19,22</note>
       </notes>
       <segment>
         <source>Export CSV</source>
@@ -4866,7 +4866,7 @@
     </unit>
     <unit id="audit.export.jsonl">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:17,20</note>
+        <note category="location">src/app/features/audit/audit-log.html:22,26</note>
       </notes>
       <segment>
         <source>Export JSON Lines</source>
@@ -4874,8 +4874,8 @@
     </unit>
     <unit id="audit.filter.range">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:33,34</note>
-        <note category="location">src/app/features/audit/audit-log.ts:207</note>
+        <note category="location">src/app/features/audit/audit-log.html:39,40</note>
+        <note category="location">src/app/features/audit/audit-log.ts:217</note>
       </notes>
       <segment>
         <source>Time range</source>
@@ -4883,8 +4883,8 @@
     </unit>
     <unit id="audit.range.1h">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:35,36</note>
-        <note category="location">src/app/features/audit/audit-log.ts:337</note>
+        <note category="location">src/app/features/audit/audit-log.html:41,42</note>
+        <note category="location">src/app/features/audit/audit-log.ts:412</note>
       </notes>
       <segment>
         <source>Last hour</source>
@@ -4892,7 +4892,7 @@
     </unit>
     <unit id="audit.range.24h">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:36,37</note>
+        <note category="location">src/app/features/audit/audit-log.html:42,43</note>
       </notes>
       <segment>
         <source>Last 24 hours</source>
@@ -4900,8 +4900,8 @@
     </unit>
     <unit id="audit.range.7d">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:37,38</note>
-        <note category="location">src/app/features/audit/audit-log.ts:339</note>
+        <note category="location">src/app/features/audit/audit-log.html:43,44</note>
+        <note category="location">src/app/features/audit/audit-log.ts:414</note>
       </notes>
       <segment>
         <source>Last 7 days</source>
@@ -4909,8 +4909,8 @@
     </unit>
     <unit id="audit.range.30d">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:38,39</note>
-        <note category="location">src/app/features/audit/audit-log.ts:341</note>
+        <note category="location">src/app/features/audit/audit-log.html:44,45</note>
+        <note category="location">src/app/features/audit/audit-log.ts:416</note>
       </notes>
       <segment>
         <source>Last 30 days</source>
@@ -4918,7 +4918,7 @@
     </unit>
     <unit id="audit.range.custom">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:39,42</note>
+        <note category="location">src/app/features/audit/audit-log.html:45,48</note>
       </notes>
       <segment>
         <source>Custom</source>
@@ -4926,7 +4926,7 @@
     </unit>
     <unit id="audit.filter.from">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:44,45</note>
+        <note category="location">src/app/features/audit/audit-log.html:50,51</note>
       </notes>
       <segment>
         <source>From (your time zone)</source>
@@ -4934,7 +4934,7 @@
     </unit>
     <unit id="audit.filter.to">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:48,49</note>
+        <note category="location">src/app/features/audit/audit-log.html:54,55</note>
       </notes>
       <segment>
         <source>To (your time zone)</source>
@@ -4942,7 +4942,7 @@
     </unit>
     <unit id="audit.filter.actor">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:55,56</note>
+        <note category="location">src/app/features/audit/audit-log.html:61,62</note>
       </notes>
       <segment>
         <source>Actor</source>
@@ -4950,7 +4950,7 @@
     </unit>
     <unit id="audit.filter.action">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:62,64</note>
+        <note category="location">src/app/features/audit/audit-log.html:68,70</note>
       </notes>
       <segment>
         <source>Action</source>
@@ -4958,9 +4958,9 @@
     </unit>
     <unit id="audit.filter.category">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:79,80</note>
-        <note category="location">src/app/features/audit/audit-log.html:252,253</note>
-        <note category="location">src/app/features/audit/audit-log.ts:213</note>
+        <note category="location">src/app/features/audit/audit-log.html:85,86</note>
+        <note category="location">src/app/features/audit/audit-log.html:360,361</note>
+        <note category="location">src/app/features/audit/audit-log.ts:223</note>
       </notes>
       <segment>
         <source>Category</source>
@@ -4968,8 +4968,8 @@
     </unit>
     <unit id="repo.filter.any">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:81,82</note>
-        <note category="location">src/app/features/audit/audit-log.html:117,118</note>
+        <note category="location">src/app/features/audit/audit-log.html:87,88</note>
+        <note category="location">src/app/features/audit/audit-log.html:123,124</note>
         <note category="location">src/app/features/repositories/repository-list.html:44,45</note>
         <note category="location">src/app/features/repositories/repository-list.html:58,59</note>
         <note category="location">src/app/features/repositories/repository-list.html:71,72</note>
@@ -4980,9 +4980,9 @@
     </unit>
     <unit id="audit.filter.repository">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:88,89</note>
-        <note category="location">src/app/features/audit/audit-log.html:280,281</note>
-        <note category="location">src/app/features/audit/audit-log.ts:215</note>
+        <note category="location">src/app/features/audit/audit-log.html:94,95</note>
+        <note category="location">src/app/features/audit/audit-log.html:388,389</note>
+        <note category="location">src/app/features/audit/audit-log.ts:225</note>
       </notes>
       <segment>
         <source>Repository</source>
@@ -4990,8 +4990,8 @@
     </unit>
     <unit id="audit.filter.resource-type">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:94,96</note>
-        <note category="location">src/app/features/audit/audit-log.ts:217</note>
+        <note category="location">src/app/features/audit/audit-log.html:100,102</note>
+        <note category="location">src/app/features/audit/audit-log.ts:227</note>
       </notes>
       <segment>
         <source>Resource kind</source>
@@ -4999,8 +4999,8 @@
     </unit>
     <unit id="audit.filter.resource-id">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:111,112</note>
-        <note category="location">src/app/features/audit/audit-log.ts:219</note>
+        <note category="location">src/app/features/audit/audit-log.html:117,118</note>
+        <note category="location">src/app/features/audit/audit-log.ts:229</note>
       </notes>
       <segment>
         <source>Resource ID</source>
@@ -5008,7 +5008,7 @@
     </unit>
     <unit id="audit.filter.outcome">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:115,116</note>
+        <note category="location">src/app/features/audit/audit-log.html:121,122</note>
       </notes>
       <segment>
         <source>Outcome</source>
@@ -5016,15 +5016,63 @@
     </unit>
     <unit id="audit.loading">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:132,133</note>
+        <note category="location">src/app/features/audit/audit-log.html:138,139</note>
       </notes>
       <segment>
         <source>Loading the events.</source>
       </segment>
     </unit>
+    <unit id="audit.download.took">
+      <notes>
+        <note category="location">src/app/features/audit/audit-log.html:156,157</note>
+      </notes>
+      <segment>
+        <source>for <ph id="0" equiv="INTERPOLATION" disp="{{ t }}"/></source>
+      </segment>
+    </unit>
+    <unit id="audit.download.items-more">
+      <notes>
+        <note category="location">src/app/features/audit/audit-log.html:217,218</note>
+      </notes>
+      <segment>
+        <source>more than <ph id="0" equiv="INTERPOLATION" disp="{{ dr.download.items }}"/> items</source>
+      </segment>
+    </unit>
+    <unit id="audit.download.items">
+      <notes>
+        <note category="location">src/app/features/audit/audit-log.html:219,220</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {1 item} other {<ph id="0" equiv="INTERPOLATION"/> items}}</source>
+      </segment>
+    </unit>
+    <unit id="audit.download.items-loading">
+      <notes>
+        <note category="location">src/app/features/audit/audit-log.html:279,280</note>
+      </notes>
+      <segment>
+        <source>Loading the items.</source>
+      </segment>
+    </unit>
+    <unit id="audit.download.all-more">
+      <notes>
+        <note category="location">src/app/features/audit/audit-log.html:314,315</note>
+      </notes>
+      <segment>
+        <source>All items of the download</source>
+      </segment>
+    </unit>
+    <unit id="audit.download.all">
+      <notes>
+        <note category="location">src/app/features/audit/audit-log.html:316,317</note>
+      </notes>
+      <segment>
+        <source>All <ph id="0" equiv="INTERPOLATION" disp="{{ dr.download.items }}"/> items</source>
+      </segment>
+    </unit>
     <unit id="audit.detail.heading">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:226,227</note>
+        <note category="location">src/app/features/audit/audit-log.html:334,335</note>
       </notes>
       <segment>
         <source>Event</source>
@@ -5032,7 +5080,7 @@
     </unit>
     <unit id="audit.detail.close">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:228,230</note>
+        <note category="location">src/app/features/audit/audit-log.html:336,338</note>
       </notes>
       <segment>
         <source> Close </source>
@@ -5040,8 +5088,9 @@
     </unit>
     <unit id="audit.col.time">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:235,237</note>
-        <note category="location">src/app/features/audit/audit-log.ts:145</note>
+        <note category="location">src/app/features/audit/audit-log.html:343,345</note>
+        <note category="location">src/app/features/audit/audit-log.ts:155</note>
+        <note category="location">src/app/features/audit/audit-log.ts:320</note>
       </notes>
       <segment>
         <source>Time</source>
@@ -5049,9 +5098,9 @@
     </unit>
     <unit id="audit.col.action">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:241,242</note>
-        <note category="location">src/app/features/audit/audit-log.ts:150</note>
-        <note category="location">src/app/features/audit/audit-log.ts:211</note>
+        <note category="location">src/app/features/audit/audit-log.html:349,350</note>
+        <note category="location">src/app/features/audit/audit-log.ts:160</note>
+        <note category="location">src/app/features/audit/audit-log.ts:221</note>
       </notes>
       <segment>
         <source>Action</source>
@@ -5059,9 +5108,9 @@
     </unit>
     <unit id="audit.col.outcome">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:254,256</note>
-        <note category="location">src/app/features/audit/audit-log.ts:154</note>
-        <note category="location">src/app/features/audit/audit-log.ts:221</note>
+        <note category="location">src/app/features/audit/audit-log.html:362,364</note>
+        <note category="location">src/app/features/audit/audit-log.ts:164</note>
+        <note category="location">src/app/features/audit/audit-log.ts:231</note>
       </notes>
       <segment>
         <source>Outcome</source>
@@ -5069,9 +5118,9 @@
     </unit>
     <unit id="audit.col.actor">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:262,264</note>
-        <note category="location">src/app/features/audit/audit-log.ts:148</note>
-        <note category="location">src/app/features/audit/audit-log.ts:209</note>
+        <note category="location">src/app/features/audit/audit-log.html:370,372</note>
+        <note category="location">src/app/features/audit/audit-log.ts:158</note>
+        <note category="location">src/app/features/audit/audit-log.ts:219</note>
       </notes>
       <segment>
         <source>Actor</source>
@@ -5079,7 +5128,7 @@
     </unit>
     <unit id="audit.detail.token">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:276,277</note>
+        <note category="location">src/app/features/audit/audit-log.html:384,385</note>
       </notes>
       <segment>
         <source>Token</source>
@@ -5087,7 +5136,7 @@
     </unit>
     <unit id="audit.detail.resource">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:290,292</note>
+        <note category="location">src/app/features/audit/audit-log.html:398,400</note>
       </notes>
       <segment>
         <source>Resource</source>
@@ -5095,7 +5144,7 @@
     </unit>
     <unit id="audit.col.source">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:298,299</note>
+        <note category="location">src/app/features/audit/audit-log.html:406,407</note>
       </notes>
       <segment>
         <source>Source address</source>
@@ -5103,7 +5152,7 @@
     </unit>
     <unit id="audit.detail.endpoint">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:303,305</note>
+        <note category="location">src/app/features/audit/audit-log.html:411,413</note>
       </notes>
       <segment>
         <source>Endpoint</source>
@@ -5111,7 +5160,7 @@
     </unit>
     <unit id="audit.detail.replica">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:309,310</note>
+        <note category="location">src/app/features/audit/audit-log.html:417,418</note>
       </notes>
       <segment>
         <source>Replica</source>
@@ -5119,7 +5168,7 @@
     </unit>
     <unit id="audit.detail.event-id">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:312,314</note>
+        <note category="location">src/app/features/audit/audit-log.html:420,422</note>
       </notes>
       <segment>
         <source>Event ID</source>
@@ -5127,7 +5176,7 @@
     </unit>
     <unit id="audit.detail.trace">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:318,320</note>
+        <note category="location">src/app/features/audit/audit-log.html:426,428</note>
       </notes>
       <segment>
         <source>Trace ID</source>
@@ -5135,7 +5184,7 @@
     </unit>
     <unit id="audit.detail.details">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:325,326</note>
+        <note category="location">src/app/features/audit/audit-log.html:433,434</note>
       </notes>
       <segment>
         <source>Details</source>
@@ -5143,7 +5192,7 @@
     </unit>
     <unit id="audit.detail.loading">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:328,330</note>
+        <note category="location">src/app/features/audit/audit-log.html:436,438</note>
       </notes>
       <segment>
         <source>Loading the event.</source>
@@ -5151,15 +5200,23 @@
     </unit>
     <unit id="audit.caption">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.ts:133</note>
+        <note category="location">src/app/features/audit/audit-log.ts:142</note>
       </notes>
       <segment>
         <source>Audit events, newest first</source>
       </segment>
     </unit>
+    <unit id="audit.download.caption">
+      <notes>
+        <note category="location">src/app/features/audit/audit-log.ts:143</note>
+      </notes>
+      <segment>
+        <source>The events of one download, in the order they were written</source>
+      </segment>
+    </unit>
     <unit id="audit.empty-none">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.ts:135</note>
+        <note category="location">src/app/features/audit/audit-log.ts:145</note>
       </notes>
       <segment>
         <source>There is no event in the last 24 hours.</source>
@@ -5167,7 +5224,7 @@
     </unit>
     <unit id="audit.empty">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.ts:136</note>
+        <note category="location">src/app/features/audit/audit-log.ts:146</note>
       </notes>
       <segment>
         <source>No event matches.</source>
@@ -5175,7 +5232,7 @@
     </unit>
     <unit id="audit.help.time">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.ts:146</note>
+        <note category="location">src/app/features/audit/audit-log.ts:156</note>
       </notes>
       <segment>
         <source>Events are listed newest first. Narrow the time range in the filters to reach older ones.</source>
@@ -5183,7 +5240,7 @@
     </unit>
     <unit id="audit.col.target">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.ts:151</note>
+        <note category="location">src/app/features/audit/audit-log.ts:161</note>
       </notes>
       <segment>
         <source>Target</source>
@@ -5191,15 +5248,71 @@
     </unit>
     <unit id="audit.help.outcome">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.ts:155</note>
+        <note category="location">src/app/features/audit/audit-log.ts:165</note>
       </notes>
       <segment>
         <source>Success: the action was carried out. Failure: it was allowed but did not work. Denied: the caller was not permitted. Warning: it was carried out, and an administrator should look at it.</source>
       </segment>
     </unit>
+    <unit id="audit.filter.download">
+      <notes>
+        <note category="location">src/app/features/audit/audit-log.ts:232</note>
+      </notes>
+      <segment>
+        <source>Download</source>
+      </segment>
+    </unit>
+    <unit id="audit.download.open">
+      <notes>
+        <note category="location">src/app/features/audit/audit-log.ts:311</note>
+      </notes>
+      <segment>
+        <source>Items of the download of <ph id="0" equiv="subject" disp="s.title"/></source>
+      </segment>
+    </unit>
+    <unit id="audit.copy-sha">
+      <notes>
+        <note category="location">src/app/features/audit/audit-log.ts:317</note>
+      </notes>
+      <segment>
+        <source>Copy the SHA-256 digest</source>
+      </segment>
+    </unit>
+    <unit id="audit.download.items-caption">
+      <notes>
+        <note category="location">src/app/features/audit/audit-log.ts:318</note>
+      </notes>
+      <segment>
+        <source>The first items of the download, in the order they were written</source>
+      </segment>
+    </unit>
+    <unit id="audit.download.col.item">
+      <notes>
+        <note category="location">src/app/features/audit/audit-log.ts:321</note>
+      </notes>
+      <segment>
+        <source>Item</source>
+      </segment>
+    </unit>
+    <unit id="audit.download.col.sha256">
+      <notes>
+        <note category="location">src/app/features/audit/audit-log.ts:322</note>
+      </notes>
+      <segment>
+        <source>SHA-256</source>
+      </segment>
+    </unit>
+    <unit id="audit.download.col.size">
+      <notes>
+        <note category="location">src/app/features/audit/audit-log.ts:323</note>
+      </notes>
+      <segment>
+        <source>Size</source>
+      </segment>
+    </unit>
     <unit id="audit.copy-id">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.ts:467</note>
+        <note category="location">src/app/features/audit/audit-log.ts:543</note>
       </notes>
       <segment>
         <source>Copy the event ID</source>
@@ -5207,7 +5320,7 @@
     </unit>
     <unit id="audit.copy-trace">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.ts:468</note>
+        <note category="location">src/app/features/audit/audit-log.ts:544</note>
       </notes>
       <segment>
         <source>Copy the trace ID</source>
@@ -5215,7 +5328,7 @@
     </unit>
     <unit id="audit.copy-details">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.ts:470</note>
+        <note category="location">src/app/features/audit/audit-log.ts:550</note>
       </notes>
       <segment>
         <source>Copy the details</source>
@@ -5223,7 +5336,7 @@
     </unit>
     <unit id="audit.copy-resource">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.ts:471</note>
+        <note category="location">src/app/features/audit/audit-log.ts:551</note>
       </notes>
       <segment>
         <source>Copy the resource ID</source>

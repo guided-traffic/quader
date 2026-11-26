@@ -124,47 +124,20 @@ func CheckExportRange(from, to time.Time) error {
 // event is repeated or skipped by events that arrive between pages, and no page
 // holds a transaction open (R-OPS-017).
 func (s *Store) Query(ctx context.Context, f Filter, p Page) (Result, error) {
-	to := "infinity"
-	if !f.To.IsZero() {
-		to = f.To.UTC().Format(time.RFC3339Nano)
+	a, err := s.args(f, p)
+	if err != nil {
+		return Result{}, err
 	}
-	from := f.From
-	if from.IsZero() {
-		from = s.now().Add(-DefaultWindow)
-	}
-	if !f.To.IsZero() && !f.To.After(from) {
-		return Result{}, errs.E(errs.Invalid, errs.CodeInvalidAuditRange, "to must be after from")
-	}
-	limit := p.Limit
-	if limit <= 0 {
-		limit = DefaultLimit
-	}
-	limit = min(limit, MaxLimit)
-
-	exact, prefix := f.Action, ""
-	if pre, ok := strings.CutSuffix(f.Action, ".*"); ok {
-		exact, prefix = "", pre+"."
-	}
-	actorID := nilUUID
-	if id := uuidOrEmpty(f.Actor); id != "" {
-		actorID = id
-	}
-	cursorAt, cursorID := "1970-01-01T00:00:00Z", nilUUID
-	hasCursor := p.After != nil
-	if hasCursor {
-		cursorAt, cursorID = p.After.OccurredAt.UTC().Format(time.RFC3339Nano), strings.ToLower(p.After.ID)
-		if _, ok := parseUUID(cursorID); !ok {
-			return Result{}, errs.E(errs.Invalid, errs.CodeInvalid, "the cursor position is not an event ID")
-		}
-	}
+	from, to, exact, prefix, actorID, limit := a.from, a.to, a.exact, a.prefix, a.actorID, a.limit
+	hasCursor, cursorAt, cursorID := a.hasCursor, a.cursorAt, a.cursorID
 
 	var entries []Entry
-	err := s.db.Read(ctx, func(db q.DBTX) error {
+	err = s.db.Read(ctx, func(db q.DBTX) error {
 		qs := q.New(db)
 		rows := make([]Entry, 0, min(limit+1, 64))
 		if p.Oldest {
 			got, err := qs.ListAuditEventsOldest(ctx, q.ListAuditEventsOldestParams{
-				FromAt: from.UTC().Format(time.RFC3339Nano), ToAt: to, Action: exact, ActionPrefix: prefix,
+				FromAt: from, ToAt: to, Action: exact, ActionPrefix: prefix,
 				Category: f.Category, Outcome: string(f.Outcome), Actor: f.Actor, ActorID: actorID,
 				Repository: f.Repository, ResourceType: f.ResourceType, ResourceID: f.ResourceID, TraceID: f.TraceID,
 				HasCursor: hasCursor, CursorAt: cursorAt, CursorID: cursorID, RowLimit: int32(limit + 1), //nolint:gosec // limit <= MaxLimit
@@ -177,7 +150,7 @@ func (s *Store) Query(ctx context.Context, f Filter, p Page) (Result, error) {
 			}
 		} else {
 			got, err := qs.ListAuditEventsNewest(ctx, q.ListAuditEventsNewestParams{
-				FromAt: from.UTC().Format(time.RFC3339Nano), ToAt: to, Action: exact, ActionPrefix: prefix,
+				FromAt: from, ToAt: to, Action: exact, ActionPrefix: prefix,
 				Category: f.Category, Outcome: string(f.Outcome), Actor: f.Actor, ActorID: actorID,
 				Repository: f.Repository, ResourceType: f.ResourceType, ResourceID: f.ResourceID, TraceID: f.TraceID,
 				HasCursor: hasCursor, CursorAt: cursorAt, CursorID: cursorID, RowLimit: int32(limit + 1), //nolint:gosec // limit <= MaxLimit
@@ -202,6 +175,50 @@ func (s *Store) Query(ctx context.Context, f Filter, p Page) (Result, error) {
 		res.Next = &Cursor{OccurredAt: last.OccurredAt, ID: last.ID}
 	}
 	return res, nil
+}
+
+// queryArgs are the statement arguments of a filter and a page, shared by the events and the rows (R-OPS-017, R-OPS-055).
+type queryArgs struct {
+	from, to, exact, prefix, actorID string
+	limit                            int
+	hasCursor                        bool
+	cursorAt, cursorID               string
+}
+
+// args checks a filter and a page and turns them into statement arguments: the range (a zero From is the last [DefaultWindow], a
+// zero To open), the action as an exact name or a prefix, the actor as an ID where it is one, the limit and the cursor.
+func (s *Store) args(f Filter, p Page) (queryArgs, error) {
+	a := queryArgs{to: "infinity", actorID: nilUUID, cursorAt: "1970-01-01T00:00:00Z", cursorID: nilUUID}
+	if !f.To.IsZero() {
+		a.to = f.To.UTC().Format(time.RFC3339Nano)
+	}
+	from := f.From
+	if from.IsZero() {
+		from = s.now().Add(-DefaultWindow)
+	}
+	if !f.To.IsZero() && !f.To.After(from) {
+		return a, errs.E(errs.Invalid, errs.CodeInvalidAuditRange, "to must be after from")
+	}
+	a.from = from.UTC().Format(time.RFC3339Nano)
+	a.limit = p.Limit
+	if a.limit <= 0 {
+		a.limit = DefaultLimit
+	}
+	a.limit = min(a.limit, MaxLimit)
+	a.exact = f.Action
+	if pre, ok := strings.CutSuffix(f.Action, ".*"); ok {
+		a.exact, a.prefix = "", pre+"."
+	}
+	if id := uuidOrEmpty(f.Actor); id != "" {
+		a.actorID = id
+	}
+	if a.hasCursor = p.After != nil; a.hasCursor {
+		a.cursorAt, a.cursorID = p.After.OccurredAt.UTC().Format(time.RFC3339Nano), strings.ToLower(p.After.ID)
+		if _, ok := parseUUID(a.cursorID); !ok {
+			return a, errs.E(errs.Invalid, errs.CodeInvalid, "the cursor position is not an event ID")
+		}
+	}
+	return a, nil
 }
 
 // idWindow is how far from the time an event ID carries the event's own time may
@@ -335,6 +352,18 @@ func fromOldest(r q.ListAuditEventsOldestRow) Entry {
 }
 
 func fromGet(r q.GetAuditEventRow) Entry {
+	return entryOf(r.ID, r.OccurredAt, r.Action, r.Category, r.Outcome, r.ActorType, r.ActorID, r.ActorName, r.TokenID,
+		r.AuthMethod, r.SourceIp, r.UserAgent, r.TraceID, r.Replica, r.Endpoint, r.ResourceType, r.ResourceID,
+		r.Repository, r.Path, r.Reason, r.Details)
+}
+
+func fromRows(r q.ListAuditRowsNewestRow) Entry {
+	return entryOf(r.ID, r.OccurredAt, r.Action, r.Category, r.Outcome, r.ActorType, r.ActorID, r.ActorName, r.TokenID,
+		r.AuthMethod, r.SourceIp, r.UserAgent, r.TraceID, r.Replica, r.Endpoint, r.ResourceType, r.ResourceID,
+		r.Repository, r.Path, r.Reason, r.Details)
+}
+
+func fromMember(r q.ListAuditDownloadMembersRow) Entry {
 	return entryOf(r.ID, r.OccurredAt, r.Action, r.Category, r.Outcome, r.ActorType, r.ActorID, r.ActorName, r.TokenID,
 		r.AuthMethod, r.SourceIp, r.UserAgent, r.TraceID, r.Replica, r.Endpoint, r.ResourceType, r.ResourceID,
 		r.Repository, r.Path, r.Reason, r.Details)

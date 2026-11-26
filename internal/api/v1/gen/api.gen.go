@@ -9217,6 +9217,41 @@ type AuditActor struct {
 	Type string `json:"type"`
 }
 
+// AuditDownload A download of one unit by one caller (R-OPS-055): the `artifact.downloaded` events of its items, read from its
+// first event. `items` counts at most 1,000 items; `more` says that the download goes on beyond them.
+type AuditDownload struct {
+	First []AuditDownloadItem `json:"first"`
+	Items int                 `json:"items"`
+
+	// LastAt The time of its last item.
+	LastAt  time.Time `json:"lastAt"`
+	More    bool      `json:"more"`
+	Package *string   `json:"package"`
+
+	// Size The sum of the items' sizes in bytes; null when an item carries none.
+	Size *int `json:"size"`
+
+	// Unit The unit the events name, `details.unit`.
+	Unit string `json:"unit"`
+
+	// Version The first version or tag any item names; null where none does (an image pulled by its digest).
+	Version *string `json:"version"`
+}
+
+// AuditDownloadItem One item of a download, from its event.
+type AuditDownloadItem struct {
+	// Delivery `link` or `handover` for an item not delivered by Quader's own bytes.
+	Delivery *string `json:"delivery"`
+
+	// Id The ID of the item's event.
+	Id         string    `json:"id"`
+	OccurredAt time.Time `json:"occurredAt"`
+	Path       string    `json:"path"`
+	Replica    *string   `json:"replica"`
+	Sha256     string    `json:"sha256"`
+	Size       *int      `json:"size"`
+}
+
 // AuditEvent One audit event (R-OPS-017). The event names, categories and the shape of `details` per name are R-OPS-016; `details` never holds a secret.
 type AuditEvent struct {
 	// Action Examples: authz.policy.created
@@ -9254,6 +9289,21 @@ type AuditEventList struct {
 type AuditResource struct {
 	Id   *string `json:"id"`
 	Type *string `json:"type"`
+}
+
+// AuditRow One row of the audit log's screen (R-OPS-055): an event, and where the event is the first of a download, the
+// download it begins.
+type AuditRow struct {
+	Download *AuditDownload `json:"download"`
+
+	// Event One audit event (R-OPS-017). The event names, categories and the shape of `details` per name are R-OPS-016; `details` never holds a secret.
+	Event AuditEvent `json:"event"`
+}
+
+// AuditRowList defines model for AuditRowList.
+type AuditRowList struct {
+	Items      []AuditRow `json:"items"`
+	NextCursor *string    `json:"nextCursor"`
 }
 
 // AuditSource defines model for AuditSource.
@@ -20229,6 +20279,15 @@ type Unprocessable = Problem
 // UnsupportedMediaType RFC 9457 problem details. The extension members are `code`, `requestId`, `errors`, `currentEtag`, `job` and `references`.
 type UnsupportedMediaType = Problem
 
+// ListAuditDownloadEventsParams defines parameters for ListAuditDownloadEvents.
+type ListAuditDownloadEventsParams struct {
+	// Limit Page size, 1 to 1000 (default 100).
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Cursor The `nextCursor` of the previous page. Opaque; valid only with the filters and sort it was issued for.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+}
+
 // ListAuditEventsParams defines parameters for ListAuditEvents.
 type ListAuditEventsParams struct {
 	// From Start of the range, inclusive (RFC 3339); default the last 24 hours.
@@ -20294,6 +20353,39 @@ type ExportAuditEventsParams struct {
 
 // ExportAuditEventsParamsFormat defines parameters for ExportAuditEvents.
 type ExportAuditEventsParamsFormat string
+
+// ListAuditRowsParams defines parameters for ListAuditRows.
+type ListAuditRowsParams struct {
+	// From Start of the range, inclusive (RFC 3339); default the last 24 hours.
+	From *time.Time `form:"from,omitempty" json:"from,omitempty"`
+
+	// To End of the range, exclusive (RFC 3339); default open.
+	To *time.Time `form:"to,omitempty" json:"to,omitempty"`
+
+	// Action An event name, or a prefix ending in `.*` such as `authz.*`.
+	Action *string `form:"action,omitempty" json:"action,omitempty"`
+
+	// Category One of auth, token, identity, authz, repository, content, system, config, webhook.
+	Category *string `form:"category,omitempty" json:"category,omitempty"`
+
+	// Outcome success, failure, denied or warning (Q-AUTH-402).
+	Outcome *string `form:"outcome,omitempty" json:"outcome,omitempty"`
+
+	// Actor A principal ID or a name.
+	Actor        *string `form:"actor,omitempty" json:"actor,omitempty"`
+	Repository   *string `form:"repository,omitempty" json:"repository,omitempty"`
+	ResourceType *string `form:"resourceType,omitempty" json:"resourceType,omitempty"`
+	ResourceId   *string `form:"resourceId,omitempty" json:"resourceId,omitempty"`
+
+	// TraceId The trace ID the client received as `X-Request-Id`.
+	TraceId *string `form:"traceId,omitempty" json:"traceId,omitempty"`
+
+	// Limit Page size in rows, 1 to 1000 (default 100).
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Cursor The `nextCursor` of the previous page. Opaque; valid only with the filters and sort it was issued for.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+}
 
 // GetAvatarParams defines parameters for GetAvatar.
 type GetAvatarParams struct {
@@ -23829,6 +23921,9 @@ func (t *UsageSubject) UnmarshalJSON(b []byte) error {
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// ListAuditDownloadEvents List the events of one download
+	// (GET /api/v1/audit/downloads/{id}/events)
+	ListAuditDownloadEvents(w http.ResponseWriter, r *http.Request, id string, params ListAuditDownloadEventsParams)
 	// ListAuditEvents Query the audit trail
 	// (GET /api/v1/audit/events)
 	ListAuditEvents(w http.ResponseWriter, r *http.Request, params ListAuditEventsParams)
@@ -23838,6 +23933,9 @@ type ServerInterface interface {
 	// GetAuditEvent Read one audit event
 	// (GET /api/v1/audit/events/{id})
 	GetAuditEvent(w http.ResponseWriter, r *http.Request, id string)
+	// ListAuditRows Read the audit log's rows
+	// (GET /api/v1/audit/rows)
+	ListAuditRows(w http.ResponseWriter, r *http.Request, params ListAuditRowsParams)
 	// GetLoginOptions Read what the sign-in screen offers
 	// (GET /api/v1/auth/login-options)
 	GetLoginOptions(w http.ResponseWriter, r *http.Request)
@@ -25070,6 +25168,61 @@ type ServerInterfaceWrapper struct {
 
 type MiddlewareFunc func(http.Handler) http.Handler
 
+// ListAuditDownloadEvents operation middleware
+func (siw *ServerInterfaceWrapper) ListAuditDownloadEvents(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListAuditDownloadEventsParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAuditDownloadEvents(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListAuditEvents operation middleware
 func (siw *ServerInterfaceWrapper) ListAuditEvents(w http.ResponseWriter, r *http.Request) {
 
@@ -25426,6 +25579,182 @@ func (siw *ServerInterfaceWrapper) GetAuditEvent(w http.ResponseWriter, r *http.
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetAuditEvent(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListAuditRows operation middleware
+func (siw *ServerInterfaceWrapper) ListAuditRows(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListAuditRowsParams
+
+	// ------------- Optional query parameter "from" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "from", r.URL.Query(), &params.From, runtime.BindQueryParameterOptions{Type: "string", Format: "date-time"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "from"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "from", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "to" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "to", r.URL.Query(), &params.To, runtime.BindQueryParameterOptions{Type: "string", Format: "date-time"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "to"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "to", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "action" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "action", r.URL.Query(), &params.Action, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "action"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "action", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "category" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "category", r.URL.Query(), &params.Category, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "category"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "category", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "outcome" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "outcome", r.URL.Query(), &params.Outcome, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "outcome"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "outcome", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "actor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "actor", r.URL.Query(), &params.Actor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "actor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "actor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "repository" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "repository", r.URL.Query(), &params.Repository, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "repository"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repository", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "resourceType" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "resourceType", r.URL.Query(), &params.ResourceType, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "resourceType"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "resourceType", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "resourceId" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "resourceId", r.URL.Query(), &params.ResourceId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "resourceId"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "resourceId", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "traceId" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "traceId", r.URL.Query(), &params.TraceId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "traceId"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "traceId", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAuditRows(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -45260,6 +45589,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/audit/events", wrapper.ListAuditEvents)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/audit/events/export", wrapper.ExportAuditEvents)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/audit/events/{id}", wrapper.GetAuditEvent)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/audit/rows", wrapper.ListAuditRows)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/audit/downloads/{id}/events", wrapper.ListAuditDownloadEvents)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/system/jobs", wrapper.ListJobs)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/system/jobs/{id}", wrapper.GetJob)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/system/jobs/{id}/cancel", wrapper.CancelJob)
