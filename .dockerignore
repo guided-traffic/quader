@@ -16,6 +16,10 @@ web/dist
 web/.angular
 web/coverage
 # The embedded UI is built by the web stage; a locale directory left over from a local build is not
-# copied in (the placeholder index.html stays).
-internal/webui/dist/*/
-internal/bastion/gui/dist/*/
+# copied in. Docker cleans a trailing slash off a pattern, so "dist/*/" would leave out every file of the
+# folder: the committed files are named back in (the package's embed.go and the placeholders).
+internal/webui/dist/*
+!internal/webui/dist/embed.go
+!internal/webui/dist/index.html
+internal/bastion/gui/dist/*
+!internal/bastion/gui/dist/index.html
