@@ -314,7 +314,7 @@ wrapped line was seen (2026-11-19), so its condition to build a check is met.
 | W30-A3 · Finding collections, the page of a name in every format, the documentation searched across collections (W-30, the owner's d2 = b and d3 = b) | the plan's package A3 with R-ANS-057, R-ANS-058 and R-UI-220; Q-ANS-120 to Q-ANS-129, Q-UI-1290 to Q-UI-1299, H-2150 to H-2159 | landed and pushed on 2026-11-26 at 05:49, with the migration 00138 |
 | W30-G4 · "Deprecated" is a property of every format that has it (W-30) | R-API-085, R-NUGET-036, R-ANS-060 of the plan `.dev/w30-plan.md`; Q-API-440 to Q-API-449, Q-NUGET-140 to Q-NUGET-149, Q-ANS-130 to Q-ANS-139, Q-NPM-95 to Q-NPM-99, Q-UI-1300 to Q-UI-1309, ADR-286, H-2160 to H-2169 | landed and pushed on 2026-11-26 at 04:59, with the migration 00137 (W30-A3 takes 00138) |
 | W30-G3 · One way to show a version's facts in every format (W-30) | the plan's package G3 with R-UI-221 and R-UI-222: an inventory of the six formats' Details and tables as they are now, then the differences closed; Q-UI-1310 to Q-UI-1319, ADR-288, H-2170 to H-2179 | landed and pushed on 2026-11-26 at 07:08 |
-| W30-A5 · A collection is published from the screen, with its import's log (W-30; the owner's d5 = a, no approval) | the plan's package A5 with R-ANS-061 and R-ANS-062: the upload's operation and dialog, the import's warning for a missing changelog, a per-format table of publishing from the screen; Q-ANS-140 to Q-ANS-149, Q-UI-1320 to Q-UI-1329, ADR-289, H-2180 to H-2189 | built; rebuilt at about 06:55 for split roles (an upload token of five minutes from the role `api`, the publish on the role `packages`); lands after W30-G9 |
+| W30-A5 · A collection is published from the screen, with its import's log (W-30; the owner's d5 = a, no approval) | the plan's package A5 with R-ANS-061 and R-ANS-062: the upload's operation and dialog, the import's warning for a missing changelog, a per-format table of publishing from the screen; Q-ANS-140 to Q-ANS-149, Q-UI-1320 to Q-UI-1329, ADR-289, H-2180 to H-2189 | landed and pushed on 2026-11-26 at 09:00 |
 | W30-G9 · A generic file's commands behind the button, and a content type that says what it is (W-30) | R-GENERIC-017 of the plan `.dev/w30-plan.md`: curl, wget and PowerShell in the panel at every place a file has an act, the upload's commands, a closed list of guessed text types; Q-UI-1330 to Q-UI-1339, ADR-290, H-2190 to H-2199 | landed and pushed on 2026-11-26 at 07:40 |
 | W30-G2 · An upstream's package shows its documentation before a version of it is stored (W-30) | R-CUR-028 of the plan `.dev/w30-plan.md`: read through, not stored, per format; the facts the same answers carry; Q-CUR-260 to Q-CUR-269, Q-UI-1340 to Q-UI-1349, ADR-291, H-2200 to H-2209 | landed and pushed on 2026-11-26 at 08:29 |
 | W30-G5 · "Used by": a version's page lists the packages that depend on its package (W-30) | R-API-086 of the plan `.dev/w30-plan.md`: a side table every format fills, the read under the reader's scope, a filter `dependsOn` of the package list; Q-API-455 to Q-API-459, Q-UI-1350 to Q-UI-1359, ADR-294, H-2220 to H-2229, migration 00139 | in work since 2026-11-26, 07:14 |
@@ -1073,6 +1073,12 @@ order is what a user or an operator meets first. The state is kept here.
 
 ### Tests and tools
 
+- **Open since 2026-11-26, 08:32: to read at the next pipeline window (17:00), the runs of this morning's pushes.**
+  The window of the night ended at 08:00. Not yet read: the run of 08:29 (the upstream's documentation, with the
+  corrected journey of the deprecated NuGet package: its last step, `dotnet list package --deprecated`, has never run
+  green or red), the runs of 07:10 and 07:40, and the runs of the landings that follow. Known from the run of 06:59:
+  the deprecation's `PUT` answers on the cluster's API role since the fix.
+
 - **Open since 2026-11-26, 06:18, two gaps of the tools the blocker above showed.** (1) A journey leg keeps the logs of
   deleted pods only (`evidence/kept-pod-logs`); a failed request's cause on a living API pod is in no artifact, so a
   500 in a journey cannot be read from the run. The leg should keep the logs of the product's pods at its end, at
@@ -1303,6 +1309,55 @@ records the recorder that tells such a stall apart).
   that failed between 07:39 and 09:00 is no finding of the code.
 
 ### Product
+
+- **Closed on 2026-11-26, 09:00 (R-UI-213; Q-UI-1370; gap H-2240): a link to a screen whose script the server no longer holds
+  opens the link's address from the server, and a navigation that fails says so.** The owner, 08:40, with a picture of
+  the images of `upstream/docker-hub` in his development profile: "In dieser Übersicht kann man nicht mehr auf die
+  Images klicken um zu den Details des Images zu kommen. In z.B. Ansible funktioniert das […] ist das Absicht?" No
+  intent, and his click was not reproduced: on his profile, same repository, both rows, the link opened the image's
+  page in Chromium, Firefox and WebKit (signed in with the profile's break-glass account, signed out again; read
+  only). Reproduced is a way that gives exactly his picture: a screen's script is loaded when the screen is first
+  opened, under a name that changes with every build; a window of an earlier build asks for that build's names, and
+  when the server does not answer them the navigation failed and nothing was shown or said. A screen the window had
+  opened (a collection's page) went on working, one it had not (an image's page) did not. The router had no handler
+  of a failed navigation at all, so a guard or a screen that threw was as silent. Built (`loadGoneScreen`,
+  `web/src/app/core/gone-script.ts`): a script that did not load (the three engines' sentences) loads the link's
+  address from the server, with query and fragment; a window that was just loaded and misses a script says "This
+  screen could not be loaded, its script is missing on the server:" with the engine's sentence and does not load
+  again; every other failed navigation is a notice with the error's text. Where it happens: the dev server after a
+  build whose reload the window missed (the likely case of 08:40: the dev server had built at 08:29 with the landing
+  before, not proven, his browser's console was not read); an installation only when the store of earlier releases'
+  files (R-HA-020) has no copy or cannot be asked. Proven on a dev server of the fix in front of the landing
+  instance, in the three engines: the script gone until the window loads again, one load and the image's page; the
+  script gone for good, one load, the notice, no loop. Four unit tests (a second in all). Open: a screen that is open
+  keeps its window's build until the window is loaded again (H-2240); after a load that still misses the script the
+  address is the application's root, not the link's.
+
+- **Closed on 2026-11-26, 09:00, by W30-A5 (W-30; the owner's d5 = a; R-ANS-061, R-ANS-062; Q-ANS-140 to Q-ANS-145; Q-UI-1320
+  to Q-UI-1324; gaps H-2180 to H-2183; no migration): a collection is published on the screen, and its import's log
+  is shown.** **Upload collection** stands in the toolbar of a local Ansible repository's collections, in the head of
+  an Ansible namespace's page and on a role's page (there with the project's repositories the reader may publish
+  into): one archive of `ansible-galaxy collection build`, the repository, **Upload**; the namespace, the name and
+  the version are read from the archive's manifest, the file name is not compared. The dialog then shows the import's
+  log with its warnings and leads to the version's page on a press; a refusal shows the server's sentence with the
+  status, the call, the time, the request ID and the code. No approval before a version is listed (d5 = a). The
+  import warns, and refuses nothing, of a missing changelog (also looked for in `docs/`), README, `requires_ansible`
+  and licence, as Galaxy's importer does without running a program (R-ANS-062; the generator's version is 4). The
+  design, departed from the plan and told to the owner on the morning of 2026-11-26: the first build handed the
+  management request to the publish route in process and answered 503 on a replica of the role `api`, which the
+  chart serves the management API on (the fault W30-G4 had brought to main the same night; the integration replicas
+  ran `web`). Now the management API issues the session a token of five minutes with read and deploy on that one
+  repository, the browser publishes with it on the client's own route, which the role `packages` serves with every
+  check of a client's publish, and the dialog revokes it afterwards; the token is given to a session only and is
+  never shown, stored or logged (Q-ANS-140; the alternative, a job on a worker, is the option to take if the owner
+  wants no token in the page). Tested on replicas of the roles `api` and `packages`. The landing: six commits picked
+  onto main, the count of requirements 1,311; with it the gaps of the Ansible format's page stand under one heading
+  again (my union merge of an earlier landing had doubled it); the thirteen gates green, the dialogs' states, the renders in English (124 screens) and German (3) without a layout finding, the upload's dialog, its refusal and its log and the namespace's page looked at in both schemes and at 390 px, the integration areas ansiblelocal, ansiblevirtual, roles, authz, files and transfer green; the fix above picked on top, lint, the web's 2,356 unit tests and the translation check green with both. Open: a signature cannot be given on the
+  screen, a gated repository's version is signed afterwards (H-2180); a refusal of the archive's identity comes
+  after its bytes were sent (H-2181); an endpoint that serves the UI without the packages family answers the upload
+  404 (H-2182; the default endpoint holds every family); the import checks no licence against SPDX, no sanity ignore
+  files and no execution environment files (H-2183). Not verified: an archive of tens of megabytes from the screen;
+  the owner's installation.
 
 - **Closed on 2026-11-26, 08:29, by W30-G2 (W-30; R-CUR-028; Q-CUR-260 to Q-CUR-267; Q-UI-1340; ADR-291; gaps H-2200 to
   H-2203, H-2080 closed; no migration): an upstream's package shows its documentation and its facts on the tab
