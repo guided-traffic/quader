@@ -158,8 +158,8 @@ routes read them. The areas of the client listener are split by route family:
 | `virtual-engine` | the virtual engine (R-REPO-019) | the explanation only, over a read-only view of the remote members (Q-ARCH-294) | yes | no | yes |
 | `formathost` | the format host and the protocol dispatcher of `/api/<format>/` | **no** | yes | no | yes |
 | `management-host` | the Host the management operations a format decides write through (a deprecation, R-API-085) and the files seam's serve check reads through (Q-ARCH-1070) | a Host of its own: item store, package store, decision point, the virtual engine as its Resolver; no remote engine, no dispatcher | **no** | no | the format host |
-| `packages-api` | the services of the package screens of the management API (R-API-029, R-API-030) | yes | **no** | no | yes |
-| `vuln-api` | the services of the vulnerability operations of the management API | yes | **no** | no | yes |
+| `packages-api` | the services of the package screens of the management API (R-API-029, R-API-030); in `worker` for the renderer of the Bastions' public catalogue ([bastion.md](bastion.md) R-BAS-104) | yes | **no** | yes | yes |
+| `vuln-api` | the services of the vulnerability operations of the management API; in `worker` for the same renderer | yes | **no** | yes | yes |
 | `sessions` | the session store (R-AUTH-001) | yes | **no** | no | yes |
 | `login` | the OIDC and break-glass login with its browser routes | yes | **no** | no | yes |
 | `auth` | the authentication stage of the chain | with the session credential | tokens only: no session store, a session cookie is ignored as absent | no | with the session credential |
@@ -168,6 +168,7 @@ routes read them. The areas of the client listener are split by route family:
 | `ui-assets` | the shared asset store of the UI ([ha-and-helm.md](ha-and-helm.md) R-HA-020, Q-HA-120): the build's hashed files published before the replica turns ready and renewed hourly, the files of the other release read from it | yes | **no** | no | yes |
 | `ci_exchange` | the CI token exchange (`POST /api/v1/auth/oidc/token`, the npm exchange of R-NPM-022 at P1) | yes | **no** | no | yes |
 | `mirror` | the counters and the gauge source of R-REPO-057 (every role), the engine built at the first job of a process that claims one (R-REPO-053, Q-ARCH-312) | yes | yes | yes | yes |
+| `bastion-catalogue` | the builder of the Bastions' public catalogues and its trigger ([bastion.md](bastion.md) R-BAS-105): the job `bastion-catalogue` reads the management API in process through a router of its own (Q-BAS-355) | no | **no** | yes | `all` only |
 | `mirror-engine` | the remote engine and the format host behind `mirror.Host` and the upstream catalogue's lent upstream: in `web` and `all` the engine and host of the client path, in `worker` and `api` an engine of its own for background requests, built at its first use (Q-ARCH-316, Q-ARCH-317, [remote-curation.md](remote-curation.md) Q-CUR-60) | yes | **no** | yes | yes |
 
 - A `packages` replica MUST NOT build the areas `sessions`, `login`, `ci_exchange`, `packages-api` and `vuln-api`, MUST NOT
@@ -559,7 +560,7 @@ Acceptance criteria:
   A package-level `*regexp.Regexp` is exempt; generated
   files, variables with a `//go:embed` directive and variables of interface type are not checked
   (Q-ARCH-19). Code that no replica runs is not checked: the trees of tooling and tests (`internal/archtest`, `internal/tools`,
-  `test`, `tools`, `perf`, `web`, `deploy`) and the test support `internal/api/v1/apitest`, which shares its parse of the API
+  `test`, `tools`, `perf`, `web`, `deploy`, `hack`) and the test support `internal/api/v1/apitest`, which shares its parse of the API
   document per test process ([Q-ARCH-580](#q-arch-580--a-test-process-parses-the-api-document-for-its-response-validators-once)).
 
 ### R-ARCH-036 · The role `scanner`: what it serves, builds, reads and holds

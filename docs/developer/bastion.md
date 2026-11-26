@@ -1277,7 +1277,8 @@ request. Do not note a lookup whose empty result is not an answer (an optional r
 
 Migrations ([database.md](database.md#migrations-of-the-bastion-q-bas-48)): `00032_bastion` (expand: `bastion`, `bastion_contact`,
 the name rule, the token guard), `00033_bastion_kinds` (contract, `requires-app >= 0.1.0`: the checks of `principal.kind` and
-`api_token.type`), `00034_bastion_validate` (expand). The query files are owned by the package that writes them and read by others
+`api_token.type`), `00034_bastion_validate` (expand), and W-35's `00146_bastion_catalogue` (expand: the public catalogue's tables,
+[database.md](database.md#the-bastions-public-catalogue-00146)). The query files are owned by the package that writes them and read by others
 as the table in [Seams](#seams) says; nobody edits another package's file: add a file of your own.
 
 ## Configuration
@@ -1590,10 +1591,37 @@ at about 1.75 million; raw 1 GiB at about 43,800. Ansible's documentation entrie
 they are deduplicated, when README HTML and the set-up snippets weigh as much. A full build of one registration is 14 documents per version: at 100,000 public versions 1.4 million
 documents, which at the measured 36 to 45 ms per document is 14 to 17.5 hours for one worker through HTTP.
 
+### The builder in process (measured 2026-11-26, P6)
+
+The builder of P6, run once on the render seed of `make ui-renders` (this checkout's instance of the UI development profile) by
+[hack/bastion-catalogue-build](../../hack/bastion-catalogue-build/main.go): a replica of the role worker with `gui` and `docs` on for
+every registration, the profile's own quader stopped, the image and malware scanning off. The seed's registration `dmz-berlin` reports a
+base URL the profile lists, so it is built. The machine was shared: load average 30 to 45 on 20 cores (an integration suite ran beside it).
+A measurement, not a test.
+
+| Run | Units rendered | Documents written | Time of the job (measured) |
+|---|---:|---:|---:|
+| The first build of `dmz-berlin`, with the renderer built at its start | 8 (7 packages, `upstream/clamav`'s files) | 111 | 1.36 s |
+| A reconciliation with nothing changed | 0 | 0 | 0.16 to 0.23 s |
+| One package's fingerprint changed (`config-merge`, npm; `acme.network`, Ansible), with the renderer built at the start of that process | 1 | 0 (no byte of a document changed) | 0.61 s and 0.72 s |
+
+**What the seed's public content is (measured):** 7 public packages with 13 public versions (npm, an image, Ansible), the files of
+`upstream/clamav`; 111 documents, 100 distinct contents, 86.7 KiB raw and 37.5 KiB gzip, the largest 4.6 KiB. No README and no Ansible
+documentation: the seed's public repositories keep their wiki below `public`, so the anonymous caller reads none. Every document was scanned
+for the profile's own base URL, the loopback and `/api/v1/`: none holds one.
+
+**What follows (derived):** 1.36 s for 111 documents is at most 12 ms a document with the renderer's construction counted in, against
+the 36 to 45 ms over HTTPS of P1 (above): the in-process path is at least three times faster, under a load of the same order. At that
+rate one worker renders 100,000 versions' 1.4 million documents in under 4.7 hours and the four workers of a run in under 1.2 hours,
+bounded below by the database the handlers read. A reconciliation that finds nothing costs the index, the fingerprints' statement and the
+registration's own documents: 0.2 s here; it grows with the packages (the index pages and the fingerprints' rows), not with the documents.
+The seed is small; the figures at scale stay derived until a large set is built this way.
+
 ### What was not measured
 
 - **The builder's own path.** P6 renders through the management API's handlers in the process, not through HTTPS and the edge; its
-  time per document lies below the measured one by an amount not measured. The fingerprint pass of the reconciliation does not exist yet.
+  time per document lies below the measured one by an amount not measured here (P6 measured the render seed in process, above). The
+  fingerprint pass of the reconciliation did not exist yet.
 - **The strip of B.10 and the link rewrite.** The documents are measured as the main installation serves them; the strip removes a few
   members (`origin`, `releasedBy`, triage), so the bytes are slightly high.
 - **An OCI rescan.** The profile runs no image scanner (its database is fetched from a public registry); the OCI findings were written by
@@ -1634,6 +1662,48 @@ documents, which at the measured 36 to 45 ms per document is 14 to 17.5 hours fo
    compressed bytes), because 1.4 million single fetches cost more in round trips than in bytes; and a **bound per document of 16 MiB
    raw**, which an OCI vulnerabilities document reaches at about 18,000 findings (derived: 0.9 KiB per finding, measured). A document
    above the bound is left out and named in the state document, so that the version's page says its findings are not available there.
+
+## The public catalogue's builder (package P6)
+
+W-35's P6, built on 2026-11-26: the main installation builds the public catalogue of every registration whose web interface is on
+([spec](../spec/bastion.md#the-builder-of-the-public-catalogue), R-BAS-104 to R-BAS-108; the wire is R-BAS-101 to R-BAS-103). The
+Bastion's side (P7) mirrors it through the routes of [bastion_catalogue_api.go](../../internal/api/v1/bastion_catalogue_api.go).
+
+| File | Responsibility |
+|---|---|
+| [catalogue/builder.go](../../internal/bastionmain/catalogue/builder.go) | `Builder.Run`: per registration the public set, the index, the fingerprints, the units in parallel (four workers), the documents of the registration as a whole, the deletion of gone units; drops the catalogue of a registration whose `gui` is off; the sweep |
+| [catalogue/render.go](../../internal/bastionmain/catalogue/render.go) | `Renderer` (the seam the composition root fills), the reads and the lists of the management API |
+| [catalogue/prepare.go](../../internal/bastionmain/catalogue/prepare.go) | `Prepare`: the strip of B.10, the times into the state, the link rewrite of B.13, the signature objects a document names |
+| [catalogue/store.go](../../internal/bastionmain/catalogue/store.go) | `Store` and `Reader` and their PostgreSQL implementation `DB`: the numbering, the reset, the change list, the documents, the fingerprints' statements |
+| [catalogue/cataloguetest](../../internal/bastionmain/catalogue/cataloguetest/memory.go) | the store in memory with the same rules, for the unit tests of the builder and of the routes |
+| [wire_bastion_catalogue.go](../../internal/app/wire_bastion_catalogue.go) | the area `bastion-catalogue` (worker, all): the job and its task, the trigger, the renderer (a router of the default endpoint's snapshot behind a chain that only resolves the base URL), the registrations with their switches and base URL |
+| [bastion_catalogue.sql](../../internal/meta/postgres/queries/bastion_catalogue.sql), [00146_bastion_catalogue.sql](../../internal/meta/postgres/migrations/00146_bastion_catalogue.sql) | the tables and their statements ([database.md](database.md#the-bastions-public-catalogue-00146)) |
+
+**A run** (the job `bastion-catalogue`, one at a time in the installation): list the registrations; for one whose `gui` is on and whose
+reported base URL `server.additional_base_urls` lists, read `GET /api/v1/formats`, the projects and their repositories (the public set),
+`GET /api/v1/packages?include=vulnerabilities` in pages of 100 (the index), and the fingerprints (`BastionCataloguePackageFacts`,
+`BastionCatalogueRepositoryFacts`); render every package and generic repository whose fingerprint differs from the one it was rendered
+at; write what changed; delete the units no longer listed; render and write the registration's own documents; record the state. A
+registration whose `gui` is off loses its catalogue; documents no row names go at the end.
+
+**The renderer** runs every read through the management API's handlers as the anonymous caller of the default endpoint: an
+`http.Request` from `127.0.0.1` with `X-Forwarded-Proto` and `X-Forwarded-Host` of the Bastion's base URL, which the renderer's own
+resolver (trusting only the loopback) turns into the response base URL, so every link a handler renders is the Bastion's. It never
+passes the edge chain of a listener: no rate limit, no request log, no usage record. On a worker the areas `packages-api` and `vuln-api`
+are built for it; it is built at the first run.
+
+**Until E8** a registration's switches are the interim configuration's (off), so a running installation builds nothing yet; the tests
+and the measurement below set them through `app.Options.BastionSwitches`.
+
+**Tests** (tier, time, data):
+
+| Test | Tier | Time | Data |
+|---|---|---|---|
+| `TestR_BAS_104_TheBuilderRendersEveryDocumentOnTheBastionsBase`, `TestR_BAS_104_TheBaseURLIsAnEntryOfTheAdditionalBaseURLs`, `TestR_BAS_106_NoDocumentNamesAnInternalIdentityOrTheMainInstallation`, `TestR_BAS_103_NoDocumentCarriesATimeOfItsCheck`, `TestR_BAS_105_TheReconciliationRendersOnlyWhatChanged`, `TestR_BAS_102_TheSwitchesDecideWhatIsBuilt`, `TestR_BAS_107_LinksAreTheBastionsAndItsDataPath`, `TestR_BAS_108_ACatalogueBuiltAgainAnswersReset` ([internal/bastionmain/catalogue](../../internal/bastionmain/catalogue)) | unit, a fake management API and the store in memory | 0.4 s for the package | one npm package, one generic file, bytes |
+| `TestR_BAS_101_TheCatalogueRoutesServeTheKeptDocuments`, `TestR_BAS_101_TheBatchStopsAtItsBound`, `TestR_BAS_102_TheCatalogueRoutesAnswerByTheSwitches` (`internal/api/v1`) | unit, the handlers in process | milliseconds each | three documents |
+| `TestR_BAS_104_TheCatalogueFollowsPublishesLevelsAndTheSwitch` ([test/integration/bastion](../../test/integration/bastion/catalogue_test.go)) | integration, the role all on the stack | about 11 s with the world's set-up | two npm packages and a NuGet package of bytes |
+
+The integration test adds about 11 s to the area `bastion`, a constant: it is no format's case, and a new format adds nothing to it.
 
 ## Tests
 

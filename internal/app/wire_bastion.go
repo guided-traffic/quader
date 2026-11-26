@@ -13,6 +13,7 @@ import (
 	"github.com/guided-traffic/quader/internal/auth"
 	"github.com/guided-traffic/quader/internal/bastion/iface"
 	"github.com/guided-traffic/quader/internal/bastionmain"
+	"github.com/guided-traffic/quader/internal/bastionmain/catalogue"
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/formathost"
 	"github.com/guided-traffic/quader/internal/formats"
@@ -281,6 +282,8 @@ func (a *App) bastionServices(rt *endpointRuntime) v1.BastionServices {
 		BoundRepository: a.bastionBoundRepository(),
 		Handover:        a.bastionSnapshot(),
 		Configuration:   a.bastionConfiguration(),
+		// The public catalogue the builder keeps (R-BAS-101, wire_bastion_catalogue.go).
+		Catalogue: catalogue.NewDB(in.db),
 	}
 }
 
@@ -298,7 +301,9 @@ func (a *App) bastionConfiguration() func(context.Context, bastionmain.Recogniti
 		if err != nil {
 			return iface.Configuration{}, err
 		}
-		return bastionmain.InterimConfiguration(reg.Revision, reg.Handover), nil
+		c := bastionmain.InterimConfiguration(reg.Revision, reg.Handover)
+		c.Switches = a.bastionSwitches(reg.Name, reg.Handover)
+		return c, nil
 	}
 }
 

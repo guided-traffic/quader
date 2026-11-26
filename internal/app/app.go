@@ -24,6 +24,7 @@ import (
 	"github.com/guided-traffic/quader/internal/auth/token"
 	"github.com/guided-traffic/quader/internal/authz"
 	"github.com/guided-traffic/quader/internal/backup/tables"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
 	"github.com/guided-traffic/quader/internal/bastionmain"
 	"github.com/guided-traffic/quader/internal/blob"
 	"github.com/guided-traffic/quader/internal/blob/scrub"
@@ -37,6 +38,7 @@ import (
 	"github.com/guided-traffic/quader/internal/httpserver"
 	"github.com/guided-traffic/quader/internal/items"
 	"github.com/guided-traffic/quader/internal/jobs"
+	"github.com/guided-traffic/quader/internal/legaltext"
 	"github.com/guided-traffic/quader/internal/manual"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/meta/postgres"
@@ -83,6 +85,10 @@ type Options struct {
 	// SkipInfrastructure starts the HTTP shell without PostgreSQL and Valkey. The
 	// shell tests use it; a production caller never sets it.
 	SkipInfrastructure bool
+	// BastionSwitches answers the switches gui and docs of a Bastion registration by its name, in place of the interim configuration
+	// whose switches are off until a registration stores a configuration of its own (bastion.md Q-BAS-352): the catalogue routes and
+	// the catalogue's builder read it. Tests only. Production passes nil.
+	BastionSwitches func(name string) iface.Switches
 	// UIAssets replaces the UI build embedded in the binary (webui.Options.Assets): the build the
 	// replica serves and publishes to the shared asset store. Tests only: two replicas of one test
 	// process stand for two releases with different builds (R-HA-020). Production passes nil.
@@ -176,8 +182,10 @@ type App struct {
 	tokenSvc     late[*token.Service]
 	folder       late[*invalidation.Folder]
 	reseal       late[resealDeps]
-	host         late[formats.Host]
-	semver2      late[*nugetdata.Semver2]
+	// catalogue is the builder of the Bastions' public catalogues, the job bastion-catalogue's (wire_bastion_catalogue.go).
+	catalogue late[catalogueRuntime]
+	host      late[formats.Host]
+	semver2   late[*nugetdata.Semver2]
 	// sortKeys is the background migration version_sort_key (Q-HA-492).
 	sortKeys   late[*sortkey.Fill]
 	ociSweep   late[*ocidata.Sweeper]
@@ -603,66 +611,7 @@ func (a *App) startClient() error {
 	}
 	for _, rt := range a.eps {
 		router := httpserver.NewEndpointRouter(rt.ep)
-		api := v1.New(v1.Options{
-			Document: doc, Identity: v1.Identity{Replica: a.id.Instance, Role: a.id.Role},
-			Ready: a.health.Serving, PublicVersion: cfg.System.PublicVersion, Formats: formatNames(),
-			Access:   a.access(),
-			Replicas: replicaSource{a: a}, Scanners: scannerSource{a: a}, Facts: configFacts{cfg: cfg, a: a},
-			// The downloads from upstreams of every replica, read from PostgreSQL (R-OPS-052, wire_upstream_downloads.go).
-			UpstreamDownloads:        part[upstreamDownloadsArea](a.parts).reader(),
-			UpstreamDownloadInterval: cfg.Proxy.UpstreamDownloads.PublishInterval,
-			API:                      a.apiServices(),
-			Auth:                     a.authServices(), Avatars: avatars, AuditStore: a.auditStoreForAPI(), Authz: a.authzServices(), CI: a.ciAPI(),
-			// The endpoint and exposure-rule operations (R-EP-016, wire_exposure.go).
-			Endpoints:    a.endpointServices(),
-			Repositories: a.repositoryAPI(), Packages: part[packagesAPIArea](a.parts).services,
-			Files: part[filesArea](a.parts).service, FilesDecider: part[filesArea](a.parts).decider,
-			Cache: a.cacheAPI(),
-			// The delivery rules of a remote repository (wire_delivery_rules.go).
-			DeliveryRules: a.deliveryRulesAPI(),
-			Deb:           a.debAPI(),
-			Resolution:    a.resolutionExplainer(),
-			LoadManual:    help,
-			// The imprint and the privacy notice of ui.legal, rendered once above (R-UI-225).
-			Legal: legal,
-			// The operations of the Bastion work answer 501 until their packages are built (wire_bastion.go).
-			Bastions: a.bastionRegistrations(),
-			Bastion:  a.bastionServices(rt),
-			// The vulnerability scanning's operations (wire_vuln_api.go).
-			Vuln: part[vulnAPIArea](a.parts).services,
-			// The backup runs, the summary and the backup block of the system information (wire_backup_gauges.go).
-			Backup: a.backupAPI(),
-			// The signing keys of the Debian repositories (wire_formats.go).
-			DebKeys: a.debKeyStore(), Ansible: a.ansibleStore(), DebContents: a.debContentsStore(), Reindexers: a.reindexers(),
-			// The deprecation of a version or a package, written by its format through the format host (R-API-085).
-			Deprecation: v1.DeprecationServices{Host: func() formats.Host { return part[managementHostArea](a.parts).host }},
-			// The banner and the read-only maintenance mode (R-OPS-024, R-OPS-025).
-			SystemState: part[infra](a.parts).sys,
-			// The download limits and the usage overview (wire_limits.go).
-			Limits: a.limitsAPI(),
-			// The download queue of the remote repositories (wire_remote_downloads.go).
-			RemoteDownloads: a.remoteDownloadsAPI(),
-			// The requests for an allow and the discard of what was fetched for examination (wire_delivery_requests.go).
-			DeliveryRequests: a.deliveryRequestsAPI(),
-			// The upstream catalogue of the remote repositories (wire_upstream_catalogue.go).
-			UpstreamCatalogue: a.upstreamCatalogueAPI(),
-			// The list of damaged blobs and the recheck of one blob (wire_storage_scrub.go).
-			Storage: a.storageAPI(),
-			// The malware scanning's operations and the member malware of a file (wire_malware.go).
-			Malware: a.malwareAPI(),
-			// The operations of the delivery by signed links of the object store (wire_downloadlinks.go).
-			DownloadLinks: a.downloadLinksAPI(),
-			// The signatures' operations and the member signatures of a file and a version (wire_signatures.go).
-			Signatures: a.signaturesAPI(),
-			// Quader's signing identity (wire_signing.go).
-			Signing: a.signingAPI(),
-			// The system repositories' "in use" line, from this replica's configuration: upstream/scanner-trivy while the image
-			// scanning reads its database through it (R-REPO-070, R-VULN-044), upstream/clamav while the malware scanning
-			// keeps its database there (R-REPO-075, wire_malware_database.go).
-			Upstream: v1.UpstreamServices{
-				ScannerTrivyInUse: cfg.Vulnerabilities.ReadsThroughScannerTrivy, ClamavInUse: a.malwareDatabaseInUse,
-			},
-		})
+		api := v1.New(a.apiOptions(doc, a.bastionServices(rt), legal, help, avatars))
 		// The router drops the routes of a family the endpoint's surface does not hold.
 		api.Register(router)
 		// Routes outside /api/v1/ that areas own: /auth/ (login) and /files/ (files).
@@ -720,6 +669,75 @@ func (a *App) startClient() error {
 		}
 	}
 	return nil
+}
+
+// apiOptions are the handlers' options of the management API: every endpoint's, with the services of the Bastion interface its own
+// (the default endpoint's), and the renderer of the public catalogue's, which reads as the anonymous caller and serves no interface
+// route (wire_bastion_catalogue.go).
+func (a *App) apiOptions(doc *v1.Document, bastion v1.BastionServices, legal *legaltext.Pages, help func() (*manual.Manual, error),
+	avatars v1.AvatarService,
+) v1.Options {
+	cfg := a.cfg
+	return v1.Options{
+		Document: doc, Identity: v1.Identity{Replica: a.id.Instance, Role: a.id.Role},
+		Ready: a.health.Serving, PublicVersion: cfg.System.PublicVersion, Formats: formatNames(),
+		Access:   a.access(),
+		Replicas: replicaSource{a: a}, Scanners: scannerSource{a: a}, Facts: configFacts{cfg: cfg, a: a},
+		// The downloads from upstreams of every replica, read from PostgreSQL (R-OPS-052, wire_upstream_downloads.go).
+		UpstreamDownloads:        part[upstreamDownloadsArea](a.parts).reader(),
+		UpstreamDownloadInterval: cfg.Proxy.UpstreamDownloads.PublishInterval,
+		API:                      a.apiServices(),
+		Auth:                     a.authServices(), Avatars: avatars, AuditStore: a.auditStoreForAPI(), Authz: a.authzServices(), CI: a.ciAPI(),
+		// The endpoint and exposure-rule operations (R-EP-016, wire_exposure.go).
+		Endpoints:    a.endpointServices(),
+		Repositories: a.repositoryAPI(), Packages: part[packagesAPIArea](a.parts).services,
+		Files: part[filesArea](a.parts).service, FilesDecider: part[filesArea](a.parts).decider,
+		Cache: a.cacheAPI(),
+		// The delivery rules of a remote repository (wire_delivery_rules.go).
+		DeliveryRules: a.deliveryRulesAPI(),
+		Deb:           a.debAPI(),
+		Resolution:    a.resolutionExplainer(),
+		LoadManual:    help,
+		// The imprint and the privacy notice of ui.legal, rendered once above (R-UI-225).
+		Legal: legal,
+		// The operations of the Bastion work answer 501 until their packages are built (wire_bastion.go).
+		Bastions: a.bastionRegistrations(),
+		Bastion:  bastion,
+		// The vulnerability scanning's operations (wire_vuln_api.go).
+		Vuln: part[vulnAPIArea](a.parts).services,
+		// The backup runs, the summary and the backup block of the system information (wire_backup_gauges.go).
+		Backup: a.backupAPI(),
+		// The signing keys of the Debian repositories (wire_formats.go).
+		DebKeys: a.debKeyStore(), Ansible: a.ansibleStore(), DebContents: a.debContentsStore(), Reindexers: a.reindexers(),
+		// The deprecation of a version or a package, written by its format through the format host (R-API-085).
+		Deprecation: v1.DeprecationServices{Host: func() formats.Host { return part[managementHostArea](a.parts).host }},
+		// The banner and the read-only maintenance mode (R-OPS-024, R-OPS-025).
+		SystemState: part[infra](a.parts).sys,
+		// The download limits and the usage overview (wire_limits.go).
+		Limits: a.limitsAPI(),
+		// The download queue of the remote repositories (wire_remote_downloads.go).
+		RemoteDownloads: a.remoteDownloadsAPI(),
+		// The requests for an allow and the discard of what was fetched for examination (wire_delivery_requests.go).
+		DeliveryRequests: a.deliveryRequestsAPI(),
+		// The upstream catalogue of the remote repositories (wire_upstream_catalogue.go).
+		UpstreamCatalogue: a.upstreamCatalogueAPI(),
+		// The list of damaged blobs and the recheck of one blob (wire_storage_scrub.go).
+		Storage: a.storageAPI(),
+		// The malware scanning's operations and the member malware of a file (wire_malware.go).
+		Malware: a.malwareAPI(),
+		// The operations of the delivery by signed links of the object store (wire_downloadlinks.go).
+		DownloadLinks: a.downloadLinksAPI(),
+		// The signatures' operations and the member signatures of a file and a version (wire_signatures.go).
+		Signatures: a.signaturesAPI(),
+		// Quader's signing identity (wire_signing.go).
+		Signing: a.signingAPI(),
+		// The system repositories' "in use" line, from this replica's configuration: upstream/scanner-trivy while the image
+		// scanning reads its database through it (R-REPO-070, R-VULN-044), upstream/clamav while the malware scanning
+		// keeps its database there (R-REPO-075, wire_malware_database.go).
+		Upstream: v1.UpstreamServices{
+			ScannerTrivyInUse: cfg.Vulnerabilities.ReadsThroughScannerTrivy, ClamavInUse: a.malwareDatabaseInUse,
+		},
+	}
 }
 
 // checkAPIRoutes compares the management API routes of one endpoint's router with

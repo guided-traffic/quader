@@ -225,8 +225,12 @@ func wiringSteps() []step {
 		// virtual engine as its Resolver (Q-ARCH-1070).
 		newStep(AreaManagementHost, onManagement, (*App).wireManagementHost, withOptional(formatHostArea{})),
 		newStep(AreaMirrorEngine, onWorker|onManagement, (*App).wireMirrorEngine, withOptional(proxyEngineArea{}, formatHostArea{})),
-		newStep(AreaPackagesAPI, onManagement, (*App).wirePackagesAPI),
-		newStep(AreaVulnAPI, onManagement, (*App).wireVulnAPI),
+		// The package and vulnerability services serve the management API and, on a replica that claims jobs, the renderer of the
+		// Bastions' public catalogue, which reads the management API in process (R-BAS-104).
+		newStep(AreaPackagesAPI, onManagement|onWorker, (*App).wirePackagesAPI),
+		newStep(AreaVulnAPI, onManagement|onWorker, (*App).wireVulnAPI),
+		// The builder of the Bastions' public catalogues and its trigger, where jobs are claimed (R-BAS-105).
+		newStep(AreaBastionCatalogue, onWorker|onAll, (*App).wireBastionCatalogue),
 		newStep(AreaSessions, onManagement, (*App).wireSessions),
 		newStep(AreaLogin, onManagement, (*App).wireLogin),
 		newStep(AreaUIAssets, onManagement, (*App).wireUIAssets),

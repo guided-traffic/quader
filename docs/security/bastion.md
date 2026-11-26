@@ -452,6 +452,19 @@ What it changes in the trust boundary:
 | A configuration in the handshake | A Bastion learns the figures, the rule IDs, the address rules and the exempt networks of its place; whoever holds its token or takes over a pod learns them too ([H-2307](#h-2307--a-bastions-configuration-tells-its-holder-the-rules-and-networks-of-its-place)). Until E8 the main installation sends an interim configuration with no rule but one without figures, no address rule and no exempt network, so nothing of the kind travels yet | R-BAS-093, Q-BAS-352 |
 | No probe | Until E15 a probe was a forward of a writing method without a body and without a caller's credential, which the main installation admitted as the anonymous caller for routing only. E15 removed it: the main installation admits no forward for routing alone, a forwarded write is the authentication stage's and then the backstop's, and a read route with a body that a format does not declare is refused at the Bastion (H-2293) | R-BAS-095, Q-BAS-351 |
 
+## The builder of the public catalogue
+
+W-35's package P6, built on 2026-11-26 ([spec/bastion.md](../spec/bastion.md#the-builder-of-the-public-catalogue), R-BAS-104 to R-BAS-108).
+The main installation renders what its anonymous caller reads into the documents a Bastion mirrors. What it means for trust:
+
+| Mechanism | What it means for trust | Held by |
+|---|---|---|
+| The anonymous caller decides | The builder reads the management API as the anonymous caller of the default endpoint, through the decision point and the exposure ceiling, so the catalogue holds what an anonymous visitor reads today and nothing a level or a grant closes; it never reads as a user or with the Bastion token | R-BAS-104, Q-BAS-355 |
+| The strip | Who uploaded, released or triaged, a CI job's claims, an internal anchor's title, a state code, an upstream that is no public registry, a principal's reference and every download count leave every document before it is kept ([H-2309](#h-2309--the-strip-knows-the-members-the-main-installation-writes-today)) | R-BAS-106, Q-BAS-364 |
+| Nothing names the main installation | Every link is the Bastion's; an origin of the main installation in any text becomes the Bastion's base URL; a link of the management API becomes the Bastion's data path or nothing ([H-2308](#h-2308--a-bare-host-name-of-the-main-installation-in-author-text-is-not-rewritten)) | R-BAS-107, Q-BAS-363, Q-BAS-365 |
+| The base URL is the installation's word | A registration's documents are rendered only on a base URL `server.additional_base_urls` lists; what a Bastion reports alone never decides a host the documents name | R-BAS-104 |
+| A narrowing is a change | A level lowered, a grant removed or a block set changes the fingerprint or the public set, and the next run deletes what fell out; the run starts 5 s after the change ([H-2311](#h-2311--a-narrowing-stays-in-the-catalogue-until-the-next-run), [H-2314](#h-2314--a-narrowing-reaches-a-bastions-pages-only-at-its-next-poll-after-the-run)) | R-BAS-105 |
+
 ## What this does not cover
 
 The gaps of the Bastion's mechanisms are recorded on the spec page, where the mechanisms are, and only linked here. The one gap
@@ -459,7 +472,7 @@ that no mechanism of the Bastion holds, because the chart leaves it to the clust
 [H-522](#h-522--the-chart-restricts-no-egress-of-the-bastion-pods). The gaps of the owner's decisions of 2026-11-26 (W-34), specified and
 not built, are recorded on this page as well, each with the package whose mechanism has it: H-2280 to H-2283, H-2285, H-2289 to H-2297,
 H-2348 to H-2351 (H-2291, H-2348 and H-2349 are E13's, built); so are the gaps of the public catalogue's wire (W-35, interface version 8),
-H-2305 to H-2307;
+H-2305 to H-2307, and of its builder (W-35's P6), H-2308 to H-2314;
 those of a Bastion's budgets are on [usage-and-limits.md](usage-and-limits.md#what-this-does-not-cover) (H-2284, H-2286 to H-2288). Numbers
 marked [derived] are calculated from the defaults, not measured.
 
@@ -882,6 +895,61 @@ Bastion token is, or a Bastion pod is taken over. Its holder learns which networ
 much each kind of caller may take, which helps an attacker size a flood below the figures and pick an address range that is exempt. What
 holds: a configuration names no user, group or profile (Q-BAS-320 sends each rule's effective figures, not the profiles), and the figures
 bound only what this Bastion admits; the main installation charges every forward to the caller there (Q-LIM-306).
+
+### H-2308 · A bare host name of the main installation in author text is not rewritten
+
+Stage: the link rewrite of the builder (R-BAS-107, Q-BAS-365). Subject: a README, a docs entry or a package's metadata whose author wrote the
+main installation's host without a scheme (`quader.corp.example/team`), or a host of it no base URL names. The rewrite replaces origins
+(`scheme://host[:port]`) of `server.base_url`, `server.additional_base_urls` and the further endpoints; a bare host name passes. Live
+wherever an author names the internal host in a public package's text; what makes it real is the author, not the builder. What holds: the
+links the main installation renders itself are on the Bastion's base URL; the integration test scans every document for the origins.
+
+### H-2309 · The strip knows the members the main installation writes today
+
+Stage: the strip of the builder (R-BAS-106). Subject: a member a later change of an answer adds that names an internal identity or the
+infrastructure under another name than the strip's (`releasedBy`, `origin`, the triage members, `upstreamUrl`, a principal's reference).
+Dormant: no answer the builder reads carries one today (the unit and the integration tests scan for the fixtures' principals and hosts).
+What makes it real: a new member in a package, version or signatures answer. What holds: a principal's reference is removed wherever it
+stands, whatever the member's name; the review of a change to these answers is the strip's other half.
+
+### H-2310 · A version's state shows the times of its package's last render
+
+Stage: the reconciliation (R-BAS-105, Q-BAS-359). Subject: the times in `packages/<id>/versions/<v>/state`: when a version was scanned, when
+its findings were checked, the malware database a verdict was made with. The fingerprint holds no time, so a rescan or a sync that finds
+the same renders nothing, and the state keeps the times of the render before. Live: a visitor reads "checked at" older than the last check,
+up to the package's next change. What holds: what was found is current; only its date is older. The time of the catalogue's own runs is the
+Bastion's age of P7.
+
+### H-2311 · A narrowing stays in the catalogue until the next run
+
+Stage: the trigger and the job (R-BAS-105). Subject: a document of a package whose repository's level was lowered, whose grant was removed
+or whose version was blocked. The catalogue still holds it from the change's commit until the run that the change starts 5 s later has
+written its deletion; a run that is already rendering a large registration takes the change only when it ends. Live with every narrowing;
+the window is the debounce plus a run (measured 0.9 to 1.7 s for three packages in the integration suite). A signal missed (Valkey
+unavailable) leaves a change to the hourly reconciliation, but a level, a grant and a block arrive through change areas (`repo_config`,
+`authz`), whose poll does not lose one. What holds: the package API of a Bastion decides every download at the main installation (R-BAS-011);
+the catalogue only shows.
+
+### H-2312 · What the fingerprint does not see waits for another change of the package
+
+Stage: the fingerprint (R-BAS-105, Q-BAS-360). Subject: a change of a document that none of the fingerprint's facts records: the content of
+an Ansible documentation build of a version that had one already, a release of the signature gate, a change of a repository's settings that
+shows in a set-up of a version (the set-ups per repository are rendered every run). Live but narrow; the documents follow at the package's
+next change, or at a full render when the salt changes (the public set, `docs`, the base URL, the README policy). What holds: none of these
+widens what a visitor reads beyond what the anonymous caller reads; a narrowing of access is a change of the public set or of the facts.
+
+### H-2313 · A disabled or deleted registration's catalogue goes at the next run
+
+Stage: the builder (R-BAS-104, R-BAS-108). Subject: the documents of a registration that was disabled. Its catalogue rows stay until the
+next run drops them; a deleted registration takes its rows at once (the foreign key), its documents with the next sweep. Live for the
+seconds until the next run; the routes refuse a disabled registration's token in the meantime (R-BAS-006), so nothing is served from them.
+
+### H-2314 · A narrowing reaches a Bastion's pages only at its next poll after the run
+
+Stage: the change list (R-BAS-101, Q-BAS-369). Subject: a deletion the builder wrote. The builder writes no feed entry of the kind
+`catalogue` yet, so a Bastion learns of it at its next read of the change list (P7's poll, 10 s by default), not within the feed's seconds.
+Live once P7 serves pages: a lowered level is visible on a Bastion's pages for the debounce, the run and up to one poll. What holds: the
+Bastion's downloads are decided at the main installation; P7 revisits the feed entry.
 
 ### H-2356 · The anonymous ceiling is a share per replica without Valkey, and requests in flight pass its hour
 

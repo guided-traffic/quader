@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/guided-traffic/quader/internal/auth/scope"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
 	"github.com/guided-traffic/quader/internal/tlsfiles/tlstest"
 	"github.com/guided-traffic/quader/test/integration/testenv"
 	"github.com/guided-traffic/quader/test/npmstub"
@@ -97,6 +98,8 @@ type worldOptions struct {
 	// Egress are the networks the registration partners lists as the addresses its Bastion connects from (R-BAS-017); none by
 	// default, so nothing a Bastion forwards counts.
 	Egress []string
+	// Switches answers the registrations' switches gui and docs (app.Options.BastionSwitches); nil keeps them off.
+	Switches func(name string) iface.Switches
 }
 
 func newWorld(t *testing.T, o worldOptions) *world {
@@ -180,7 +183,7 @@ func newWorld(t *testing.T, o worldOptions) *world {
 		mainEnv = o.MainEnv(w)
 	}
 
-	w.main = st.Start(t, testenv.ReplicaOptions{Name: "web-1", Endpoints: o.Endpoints, Role: o.Role, Env: mainEnv})
+	w.main = st.Start(t, testenv.ReplicaOptions{Name: "web-1", Endpoints: o.Endpoints, Role: o.Role, Env: mainEnv, BastionSwitches: o.Switches})
 	w.front = newFront(t, dir, w.main.Addr("default"))
 
 	w.registerBastion("partners", o.Egress...)

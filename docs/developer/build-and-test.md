@@ -249,8 +249,8 @@ synthetic violation and asserts that the offending edge is named.
 | `internal/proxy` and `internal/virtual` use no `pg_advisory*` call | R-ARCH-033 | `CheckSourceBans` |
 
 To add a package: give it a layer in `layerTable`. A package under `internal/` without a layer fails the
-test and says so. The trees `internal/archtest`, `internal/tools`, `test`, `tools`, `perf`, `web` and
-`deploy` are not checked. The state check also leaves out the test support `internal/api/v1/apitest`, which no production package
+test and says so. The trees `internal/archtest`, `internal/tools`, `test`, `tools`, `perf`, `web`,
+`deploy` and `hack` (the measurements, which no replica runs) are not checked. The state check also leaves out the test support `internal/api/v1/apitest`, which no production package
 imports and which keeps one parse of the API document per test process ([Q-ARCH-580](../spec/architecture.md#q-arch-580--a-test-process-parses-the-api-document-for-its-response-validators-once)).
 
 Two behaviours of the state check are decisions, not accidents. Variables whose type is an interface (an

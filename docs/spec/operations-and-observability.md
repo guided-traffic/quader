@@ -3048,6 +3048,7 @@ shared key is offered again on the next scheduler tick, so it is postponed, neve
 | `signature-verify` | [signatures.md](signatures.md) R-SIG-011: the discovery of the job of the same name, which asks the formats for the signatures of items in batches from a cursor; queue `signatures`, coalesce | `*/5 * * * *` (signatures.md) |
 | `signature-trust-root` | [signatures.md](signatures.md) R-SIG-017: fetches the public Sigstore root through the outbound client and stores a newer one; queue `signatures`, exclusive | `17 4 * * *` (signatures.md) |
 | `signing` | [signatures.md](signatures.md) R-SIG-049: the discovery of the job of the same name, the npm versions without a served signature and the attestation subjects without an attestation of the current identity | `*/10 * * * *` (signatures.md) |
+| `bastion-catalogue` | [bastion.md](bastion.md) R-BAS-105: the reconciliation of the Bastions' public catalogues by fingerprints; the job of the same name also runs 5 s after a change (Coalesce key `bastion-catalogue`, queue `default`) | `41 * * * *` (hourly, bastion.md) |
 
 Retention policies ([storage.md](storage.md)) carry their own schedules and appear in the job list,
 not in the task list.

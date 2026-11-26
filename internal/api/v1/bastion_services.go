@@ -8,6 +8,7 @@ import (
 
 	"github.com/guided-traffic/quader/internal/bastion/iface"
 	"github.com/guided-traffic/quader/internal/bastionmain"
+	"github.com/guided-traffic/quader/internal/bastionmain/catalogue"
 	"github.com/guided-traffic/quader/internal/config"
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/httpserver"
@@ -53,6 +54,8 @@ type BastionServices struct {
 	// holds a configuration of its own (E8), the composition root answers the interim one with the registration's
 	// revision and switch.
 	Configuration func(ctx context.Context, rec bastionmain.Recognition) (iface.Configuration, error)
+	// Catalogue reads the public catalogue the builder keeps (R-BAS-101, *catalogue.DB); nil answers the catalogue routes with 503.
+	Catalogue catalogue.Reader
 }
 
 // BastionFeedSource is what the handshake and the feed operation read of the revocation feed (R-BAS-010, R-BAS-015):

@@ -34,7 +34,7 @@ func stateExempt(r string) bool {
 			return true
 		}
 	}
-	return underAny(r, []string{"internal/archtest", "internal/tools", "internal/api/v1/apitest", "test", "tools", "perf", "web", "deploy"})
+	return underAny(r, []string{"internal/archtest", "internal/tools", "internal/api/v1/apitest", "test", "tools", "perf", "web", "deploy", "hack"})
 }
 
 // LoadTyped loads every package of the module in dir with syntax and type

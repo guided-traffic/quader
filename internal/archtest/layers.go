@@ -282,9 +282,10 @@ func layerTable() []layerRule {
 }
 
 // unchecked lists the trees the layer rules do not look at: this package, the
-// repository's own tooling and the tests that sit outside the production tree.
+// repository's own tooling, the measurements under hack/ and the tests that sit
+// outside the production tree.
 func unchecked() []string {
-	return []string{"internal/archtest", "internal/tools", "test", "tools", "perf", "web", "deploy"}
+	return []string{"internal/archtest", "internal/tools", "test", "tools", "perf", "web", "deploy", "hack"}
 }
 
 // isFormatRows reports whether a module-relative path is the rows leaf of a

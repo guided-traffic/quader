@@ -22,10 +22,13 @@ func roleTable() map[string][]Area {
 	filling := []Area{AreaProxyEngine, AreaFormatHost}
 	// The shared asset store of the UI is where the UI is served (R-HA-020, Q-HA-120): api, web and all.
 	// The Host of the management operations a format decides is the format host where the role builds one (Q-ARCH-1070).
-	management := []Area{AreaManagementHost, AreaPackagesAPI, AreaVulnAPI, AreaSessions, AreaLogin, AreaUIAssets, AreaCIExchange}
+	management := []Area{AreaManagementHost, AreaSessions, AreaLogin, AreaUIAssets, AreaCIExchange}
 	// The background engine runs where jobs are claimed (R-REPO-053) and where the management API lends the upstream catalogue an
-	// upstream (remote-curation.md R-CUR-008): worker, api, web and all.
-	jobs := []Area{AreaMirrorEngine}
+	// upstream (remote-curation.md R-CUR-008): worker, api, web and all. The package and vulnerability services serve the management
+	// API and the renderer of the Bastions' public catalogue, which a replica that claims jobs runs (bastion.md R-BAS-104).
+	jobs := []Area{AreaMirrorEngine, AreaPackagesAPI, AreaVulnAPI}
+	// The builder of the public catalogue and its trigger, where jobs are claimed (R-BAS-105): worker and all.
+	claims := []Area{AreaBastionCatalogue}
 	join := func(parts ...[]Area) []Area {
 		var out []Area
 		for _, p := range parts {
@@ -36,9 +39,9 @@ func roleTable() map[string][]Area {
 	return map[string][]Area{
 		"api":      join(common, listener, management, jobs),
 		"packages": join(common, listener, filling),
-		"worker":   join(common, jobs),
+		"worker":   join(common, jobs, claims),
 		"web":      join(common, listener, filling, management, jobs),
-		"all":      join(common, listener, filling, management, jobs, []Area{AreaScanner}),
+		"all":      join(common, listener, filling, management, jobs, claims, []Area{AreaScanner}),
 		// The role scanner builds its one area and nothing of the infrastructure (R-ARCH-036, Q-ARCH-527).
 		"scanner": {AreaScanner},
 	}

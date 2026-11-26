@@ -70,7 +70,7 @@ of the client listener are split by route family:
 | `api` | `ui`, `api`, `ci_exchange` | `limits`, `virtual-engine` (the explanation only, over `proxy.View`, a read-only view of the remote members), `management-host` (a Host of its own, Q-ARCH-1070), `packages-api`, `vuln-api`, `sessions`, `login`, `ui-assets` (the UI's shared asset store, [web-ui.md](web-ui.md#the-shared-asset-store)), `auth` (with sessions), `endpoints`, `api`, `ci_exchange` | `proxy-engine`, `formathost` |
 | `packages` | `packages`, `files` | `limits`, `proxy-engine`, `virtual-engine`, `formathost`, `auth` (tokens only), `endpoints`, `api` | `sessions`, `login`, `ui-assets`, `ci_exchange`, `packages-api`, `vuln-api` |
 | `web`, `all` | all | the union | none |
-| `worker` | none | none | all |
+| `worker` | none | `packages-api` and `vuln-api` (for the renderer of the Bastions' public catalogue, [bastion.md](bastion.md#the-public-catalogues-builder-package-p6)), `bastion-catalogue` | all the others |
 | `scanner` | none | the area `scanner` alone: no infrastructure area at all | everything else |
 
 The area `mirror` (the mirror's counters and gauges and, at the first job of a process that claims one, the engine, [mirror.md](mirror.md)) is on every role: its gauges are what the alerts read (Q-OPS-171). The area `mirror-engine` (the remote engine and the format host behind `mirror.Host` and the upstream catalogue's lent upstream: the client path's in `web` and `all`, an engine of its own in `worker` and `api`, built at its first use) is built on every role but `packages`: the roles with job loops (Q-ARCH-316) and the roles of the management API, whose catalogue reads an upstream through it ([remote-curation.md](../spec/remote-curation.md) Q-CUR-60).

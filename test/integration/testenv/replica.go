@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/guided-traffic/quader/internal/app"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
 	"github.com/guided-traffic/quader/internal/config"
 	"github.com/guided-traffic/quader/internal/httpserver"
 	"github.com/guided-traffic/quader/internal/meta/postgres"
@@ -74,6 +75,9 @@ type ReplicaOptions struct {
 	// releases with different bundles (R-HA-020). Nil serves the committed placeholder page alone (placeholderUI), as the
 	// pipeline's binaries do, also in a checkout that built the UI.
 	UI fs.FS
+	// BastionSwitches answers a Bastion registration's switches gui and docs by its name (app.Options.BastionSwitches), until a
+	// registration stores a configuration of its own.
+	BastionSwitches func(name string) iface.Switches
 }
 
 // placeholderUI is the UI tree of a binary built without the web build: the committed internal/webui/dist/index.html alone. A
@@ -149,7 +153,7 @@ func (s *Stack) Start(tb testing.TB, o ReplicaOptions) *Replica {
 		tb.Fatalf("config: %v", err)
 	}
 	logs := &SyncBuffer{}
-	a, err := app.New(app.Options{Loaded: loaded, Role: o.Role, Environ: environ, LogWriter: logs, Extra: o.Extra, Vuln: o.Vuln, Malware: o.Malware, Mirror: o.Mirror, DialOverride: o.DialOverride, Database: o.Database, UIAssets: o.UI})
+	a, err := app.New(app.Options{Loaded: loaded, Role: o.Role, Environ: environ, LogWriter: logs, Extra: o.Extra, Vuln: o.Vuln, Malware: o.Malware, Mirror: o.Mirror, DialOverride: o.DialOverride, Database: o.Database, UIAssets: o.UI, BastionSwitches: o.BastionSwitches})
 	if err != nil {
 		tb.Fatalf("new %s: %v", o.Name, err)
 	}

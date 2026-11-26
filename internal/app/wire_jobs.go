@@ -60,6 +60,7 @@ func (a *App) jobRegistry() (*jobs.Registry, error) {
 	a.registerLimitsJobs(r)
 	a.registerMalwareDatabaseJobs(r)
 	a.registerExaminationJobs(r)
+	a.registerBastionCatalogueJobs(r)
 	if err := jobs.ValidateSchedules(a.cfg.Maintenance); err != nil {
 		return nil, err
 	}

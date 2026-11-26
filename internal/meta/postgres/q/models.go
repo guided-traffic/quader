@@ -361,6 +361,41 @@ type Bastion struct {
 	Egress      []netip.Prefix
 }
 
+type BastionCatalogue struct {
+	BastionID pgtype.UUID
+	Path      string
+	Unit      string
+	Sha256    []byte
+	Size      pgtype.Int4
+	Seq       int64
+	ChangedAt pgtype.Timestamptz
+}
+
+type BastionCatalogueDocument struct {
+	Sha256 []byte
+	Size   int32
+	Gzip   []byte
+}
+
+type BastionCatalogueState struct {
+	BastionID pgtype.UUID
+	Floor     int64
+	Seq       int64
+	Salt      []byte
+	BaseUrl   string
+	Stopped   string
+	Public    json.RawMessage
+	BuiltAt   pgtype.Timestamptz
+	CheckedAt pgtype.Timestamptz
+}
+
+type BastionCatalogueUnit struct {
+	BastionID   pgtype.UUID
+	Unit        string
+	Fingerprint []byte
+	Refs        []string
+}
+
 type BastionContact struct {
 	BastionID        pgtype.UUID
 	Replica          string

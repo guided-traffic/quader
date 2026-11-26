@@ -1222,6 +1222,27 @@ shared one: [bastion_registration.sql](../../internal/meta/postgres/queries/bast
 [tables_bastion.go](../../internal/meta/postgres/tables_bastion.go). Tested by
 [bastion_test.go](../../test/integration/postgres/bastion_test.go).
 
+## The Bastion's public catalogue (00146)
+
+[00146_bastion_catalogue](../../internal/meta/postgres/migrations/00146_bastion_catalogue.sql) is an expand step of W-35's builder
+([bastion.md](../spec/bastion.md) R-BAS-104 to R-BAS-108, [developer/bastion.md](bastion.md#the-public-catalogues-builder-package-p6)):
+
+| Table | Content |
+|---|---|
+| `bastion_catalogue` | a registration's change list: one row per document path it ever held, with the unit it is rendered from, the SHA-256 and size of its document or none (deleted), and the change's number `seq`; indexes on `(bastion_id, seq)`, `(bastion_id, unit)` and the SHA-256 |
+| `bastion_catalogue_document` | a document's bytes, gzip-compressed alone, keyed by the SHA-256 of the raw bytes, once for every row of every registration that names them |
+| `bastion_catalogue_state` | per registration the range of the numbers (`floor`, `seq`), the salt of the fingerprints, the base URL, why the builder stopped, the public set, the times of the last runs |
+| `bastion_catalogue_unit` | per registration and unit the fingerprint it was rendered at and the signature objects it names |
+
+All four reference `bastion (principal_id)` with `ON DELETE CASCADE`, except the documents, which the end of every run deletes when no
+row names them (`BastionCatalogueSweep`). All four are transient in backups ([tables_bastion.go](../../internal/meta/postgres/tables_bastion.go)):
+derived data, rendered again after a restore; the new state's `floor` is the clock in microseconds, so a Bastion's cursor answers `reset`.
+The statements are [bastion_catalogue.sql](../../internal/meta/postgres/queries/bastion_catalogue.sql); `BastionCatalogueReserve` takes
+the numbers of a transaction on the state row in that transaction, which orders the commits of one registration by their numbers.
+`BastionCataloguePackageFacts` is the fingerprint of every package in one statement over the core tables (`packages`,
+`package_versions`, `items`) and the findings, verdicts, releases, Debian contents, signatures and trust, Ansible documentation and image
+scans that hang off them, without a time of a check. Tested by the area `bastion` ([catalogue_test.go](../../test/integration/bastion/catalogue_test.go)).
+
 ## Projects tables (00019 to 00025)
 
 Migrations 00019 to 00025 hold the project model (R-AUTHZ-026, Q-AUTHZ-206 to Q-AUTHZ-209, Q-REPO-212), edited in place before the

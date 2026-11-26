@@ -5760,17 +5760,19 @@ The priority is the one of R-BAS-100, the other requirement of W-35's web interf
 
 *Built on 2026-11-26 (W-35's P5 with E7), the wire and the routes:* [catalogue.go](../../internal/bastion/iface/catalogue.go),
 [bounds.go](../../internal/bastion/cataloguebounds/bounds.go), [bastion_catalogue_api.go](../../internal/api/v1/bastion_catalogue_api.go)
-and the four operations of the OpenAPI tag `bastion`. Until the builder exists (W-35's P6) the routes answer by the switches as R-BAS-102
-says and, past them, an empty change list (its cursor the request's), an empty public set, `404 not_found` for every document and a
-missing frame for every path of a batch. *Not built:* the builder and its table (P6, migrations 00146 and 00147), the writer of the feed
-kind `catalogue` (P6), the sync, the store and the frames' reading at the Bastion (P7).
+and the four operations of the OpenAPI tag `bastion`. *Built on 2026-11-26 (W-35's P6):* the routes serve what the builder keeps
+(R-BAS-104 to R-BAS-108): the change list after the cursor with `reset` for a cursor the catalogue does not continue, a document with the
+SHA-256 of its raw bytes as its `ETag`, the batch's frames up to the bound, and the public set of the last build. *Not built:* the writer of
+the feed kind `catalogue` ([Q-BAS-369](#q-bas-369--the-builder-writes-no-feed-entry-yet-a-bastion-learns-a-change-at-its-poll)), the sync,
+the store and the frames' reading at the Bastion (P7).
 
 Acceptance criteria:
 
 - Unit (`internal/bastion/iface`): the change list's order and cursor, the frames written and read back with their bounds, a batch of
   one to the bound of paths (`TestR_BAS_101_TheCatalogueChangeListHoldsItsOrder`, `TestR_BAS_101_TheBatchReadIsFramed`).
 - Unit (`internal/api/v1`): the four routes answer by the switches and as the grammar says
-  (`TestR_BAS_102_TheCatalogueRoutesAnswerByTheSwitches`).
+  (`TestR_BAS_102_TheCatalogueRoutesAnswerByTheSwitches`), and serve the kept documents (`TestR_BAS_101_TheCatalogueRoutesServeTheKeptDocuments`,
+  `TestR_BAS_101_TheBatchStopsAtItsBound`).
 
 ### R-BAS-102 · The switches gui and docs
 Priority: **P1** · Covers: quader-only
@@ -5788,7 +5790,9 @@ Priority: **P1** · Covers: quader-only
 
 *Built on 2026-11-26 (P5 with E7):* the switches on the wire and the routes' answers by them. Until E8 stores a configuration the main
 installation answers the interim one, whose `gui` and `docs` are off ([Q-BAS-352](#q-bas-352--until-e8-the-main-installation-sends-an-interim-configuration-that-equals-todays-behaviour)), so every catalogue route answers `404 not_found`.
-*Not built:* the switches on the card (E12), everything the switches start and stop at the Bastion (P7, P9) and at the builder (P6).
+*Built on 2026-11-26 (W-35's P6):* at the builder: `gui` on builds the registration's catalogue, off drops it at the next run, `docs` off
+builds no documentation and deletes what was built (R-BAS-104, R-BAS-108; `TestR_BAS_102_TheSwitchesDecideWhatIsBuilt`). *Not built:* the
+switches on the card (E12), everything the switches start and stop at the Bastion (P7, P9).
 
 Acceptance criteria:
 
@@ -5831,13 +5835,180 @@ A document of the catalogue is named by a path of this grammar (`iface.Catalogue
   minutes with nothing published, and 14,200 Ansible entries were 14,200 distinct documents where 1,264 were left without the time
   fields.
 
-*Built on 2026-11-26 (P5 with E7):* the grammar as pure functions. *Not built:* the builder's documents (P6) and its duty above.
+*Built on 2026-11-26 (P5 with E7):* the grammar as pure functions. *Built on 2026-11-26 (P6):* the builder's documents and its duty
+above: every time member goes into the version's state by JSON pointer (R-BAS-106, Q-BAS-359; `TestR_BAS_103_NoDocumentCarriesATimeOfItsCheck`).
 
 Acceptance criteria:
 
 - Unit (`internal/bastion/iface`, `TestR_BAS_103_TheCataloguePathGrammarRoundTrips`, milliseconds): every form is written and read back to
   the same value, `+`, `:`, a space, `%`, `?` and non-ASCII letters round-trip, and dot segments, encoded slashes in either case, empty
   segments, other spellings and unknown forms are refused.
+
+## The builder of the public catalogue
+
+W-35's package P6: the main installation builds, for every registration whose web interface is on (R-BAS-102), the catalogue the routes
+of R-BAS-101 serve. The documents are the main installation's anonymous answers (W-35's B.2), stripped of internal identities and
+infrastructure (B.10), with every link on the Bastion (B.13), and without a time of their building or checking (R-BAS-103). The Bastion's
+side, which mirrors them (P7), and the pages (P9 to P11) follow.
+
+### R-BAS-104 · The builder renders the anonymous answers on the Bastion's base URL
+Priority: **P1** · Covers: quader-only
+
+The priority is the one of R-BAS-101 to R-BAS-103.
+
+- **What it reads.** The builder reads the management API's own reads through its router and handlers, with the declarations of R-API-058
+  and the decision point, as the anonymous caller of the default endpoint, outside the edge chain: no limit, no request log, no usage record
+  (the renderer of `internal/app/wire_bastion_catalogue.go`, [Q-BAS-355](#q-bas-355--the-builder-is-the-workers-job-and-reads-the-management-api-through-a-router-of-its-own)).
+  What an anonymous visitor reads through the default endpoint is what the catalogue shows, and nothing else: every public repository of
+  every class, public remotes included, the open findings of P3's anonymous answer.
+- **The base URL.** A registration's documents are rendered on the base URL it reported at its last handshake, provided it is an entry of
+  `server.additional_base_urls` (the rule of client-setup with `bastion=<name>`, R-BAS-007, `catalogue.BaseURL`); a registration that
+  reported none, or one the installation does not list, is not built: the builder records `bastion_base_url_unknown` in its state for the
+  registration's card and keeps what it built before. A disabled registration builds nothing.
+- **What it builds, per format** (W-35's section C): the index of public packages (`index/<n>`, pages of 100 in the list's order, name),
+  per package its summary and its versions, per version the version, its README (`docs` on), its open findings, its signatures, the
+  Debian contents (the changelog and the copyright only with `docs` on), the Ansible documentation tree with every entry that has
+  documentation and every file (`docs` on), the set-up of every client of the format for the version in its first public repository, and
+  its state; per public repository the set-up of every client; per generic repository (a format whose items are paths) every folder's
+  listing, every file's description and its set-up per client; the signature objects the signatures name; `signing/trusted-root.json` and
+  `signing/chain.pem` where the installation has a signing identity; and the catalogue's `state`. A set-up is rendered with
+  `credentials=none` and `bastion=<name>`: the Bastion's addresses, no login line, no publish snippet. The public set of the routes is the
+  projects and repositories the anonymous caller lists, with the wiki public where the repository's wiki level is `public`.
+- **Bounds.** A document above `cataloguebounds.DocumentMaxBytes` is left out and named in its version's state (`omitted`); a path the
+  grammar does not admit (a generic file's name with a control character) is left out (R-BAS-103).
+
+*Built on 2026-11-26 (W-35's P6):* [builder.go](../../internal/bastionmain/catalogue/builder.go),
+[render.go](../../internal/bastionmain/catalogue/render.go), [wire_bastion_catalogue.go](../../internal/app/wire_bastion_catalogue.go).
+Until E8 stores a registration's configuration the switches are the interim configuration's, off (Q-BAS-352): no registration is built in a
+running installation yet; the integration suite sets them (`app.Options.BastionSwitches`, tests only).
+
+Acceptance criteria:
+
+- Unit ([builder_test.go](../../internal/bastionmain/catalogue/builder_test.go), a fake management API, milliseconds, bytes):
+  `TestR_BAS_104_TheBuilderRendersEveryDocumentOnTheBastionsBase` (every document of an npm package and a generic file, read on the
+  Bastion's base URL alone), `TestR_BAS_104_TheBaseURLIsAnEntryOfTheAdditionalBaseURLs`.
+- Integration (area `bastion`, [catalogue_test.go](../../test/integration/bastion/catalogue_test.go), the role all, two npm packages and a
+  NuGet package of bytes, about 11 s with the world's set-up): `TestR_BAS_104_TheCatalogueFollowsPublishesLevelsAndTheSwitch`: a publish is
+  in the change list within the debounce and a run (measured 0.9 to 1.7 s), every document read through the batch verifies and names
+  neither the main installation's base URL, nor another entry of `server.additional_base_urls`, nor `/api/v1/`, nor the publisher; a level
+  lowered to private deletes the packages; `gui` off answers `404` at once and the next run deletes the catalogue.
+
+### R-BAS-105 · When the builder runs: triggers, the hourly reconciliation by fingerprints
+Priority: **P1** · Covers: quader-only
+
+- **The job.** `bastion-catalogue`, on the queue `default`, in the Coalesce mode with one key: one run at a time in the installation, and
+  the changes that arrive during a run wait as the one job behind it. A replica that claims jobs (`worker`, `all`) runs it; it renders the
+  packages of a registration with four workers in parallel.
+- **Triggers.** A run starts 5 s after a change that can change a catalogue (the debounce: one publish arrives as several signals and change
+  areas): the signals `metadata_changed`, `malware_verdict` and `signature_verdict`, and the change areas `repo_config`, `authz` and
+  `vuln_data`. A replica enqueues only while some registration's web interface is on or some registration still holds a catalogue, so an
+  installation without one queues nothing ([Q-BAS-361](#q-bas-361--every-change-starts-the-same-run-after-5-s-and-the-hourly-run-is-the-reconciliation)).
+- **The reconciliation.** The task `bastion-catalogue` runs the same job every hour (`41 * * * *`, `maintenance.tasks.bastion-catalogue`,
+  R-OPS-019), so a change a trigger missed stays at most an hour. A run renders only what changed: a unit (a package, a generic repository)
+  is rendered again only when its fingerprint differs from the one it was rendered at. The fingerprint is read from the database in one
+  statement per run, not rendered: the package's revision and versions, its findings (status, severity, what the page shows of them), its
+  files' verdicts and releases, the Debian contents' state, its signatures with their trust, the Ansible documentation built for it, and its
+  image scans' outcome, never a time of a check; with the package's index entry and a salt of what changes every document at once (the
+  public set, `docs`, the base URL, the README renderer's policy, the builder's revision). The documents of the registration as a whole
+  (the index, the set-up per repository, the anchors, the signature objects, the state) are rendered in every run and written only where
+  their bytes changed ([Q-BAS-360](#q-bas-360--a-unit-is-rendered-again-only-when-its-fingerprint-of-database-facts-changed)).
+- **Writing.** A document is written only when its bytes changed; a path the unit no longer has is marked deleted; a unit gone from the index
+  is deleted whole. A run that changed nothing writes nothing.
+
+*Built on 2026-11-26 (W-35's P6):* [builder.go](../../internal/bastionmain/catalogue/builder.go),
+[wire_bastion_catalogue.go](../../internal/app/wire_bastion_catalogue.go), the statements `BastionCataloguePackageFacts` and
+`BastionCatalogueRepositoryFacts` of [bastion_catalogue.sql](../../internal/meta/postgres/queries/bastion_catalogue.sql). *Not built:* the
+feed entry of the kind `catalogue` (R-BAS-101): a Bastion learns of a change at its poll ([Q-BAS-369](#q-bas-369--the-builder-writes-no-feed-entry-yet-a-bastion-learns-a-change-at-its-poll),
+[H-2314](../security/bastion.md#h-2314--a-narrowing-reaches-a-bastions-pages-only-at-its-next-poll-after-the-run)).
+
+Acceptance criteria:
+
+- Unit: `TestR_BAS_105_TheReconciliationRendersOnlyWhatChanged` (a rescan that moved every time renders and writes nothing; a changed
+  fingerprint renders the package and writes only what changed; a package gone is deleted whole), milliseconds.
+- The task table of R-OPS-019 ([operations-and-observability.md](operations-and-observability.md)) and the role table of R-ARCH-001 (the
+  areas `packages-api`, `vuln-api` and `bastion-catalogue` of the role `worker`): `TestR_OPS_019_TheTaskTableIsTheRegistry`,
+  `TestR_ARCH_001_RoleTableIsData`.
+
+### R-BAS-106 · The strip: no internal identity, no infrastructure, no time of a check
+Priority: **P1** · Covers: quader-only
+
+Every JSON document passes the strip (`catalogue.Prepare`, W-35's B.10) before it is kept:
+
+| Member | What the strip does |
+|---|---|
+| `builtAt`, `checkedAt`, `syncedAt`, `scannedAt`, `computedAt`; `database` and `databaseBuiltAt` beside `scannedAt` (a malware check) | taken out and kept in the version's state document by JSON pointer and document kind (R-BAS-103, [Q-BAS-359](#q-bas-359--the-times-of-a-check-go-into-the-versions-state-by-json-pointer)) |
+| `downloadCount`, `downloads`, `lastDownloadAt`, `lastDownloadedAt` | taken out ([Q-BAS-358](#q-bas-358--no-document-carries-a-download-count)) |
+| `releasedBy` | `null` |
+| `origin` of a signature | `kind` and `at` stay; `principalKind`, `principalName` and the CI job's claims (`ci`) go; `upstreamUrl` only as below |
+| `upstreamUrl`, `fetchedFrom` | stays only when its host is one of the formats' well-known public registries (the remote presets: Docker Hub, Quay, ghcr.io, GitLab, npmjs.com, nuget.org, Galaxy, …), `null` otherwise |
+| a trust anchor (`id`, `title`, `scope`) | `title` goes unless `scope` is `shipped`; the state words stay |
+| `statusChangedBy`, `triagedBy`, `comment`, `history`, `dismissalReason`, `resolvedReason`, `stateCode` | taken out (P3's anonymous answer carries none already) |
+| a value that is a principal's reference (`user:…`, `sa:…`, `ci:…`, `bastion:…`), such as npm's publisher of a version published to a local repository | `null` ([Q-BAS-364](#q-bas-364--a-principals-reference-is-no-value)) |
+| `nextCursor` of a list | taken out |
+
+The members of a document are written in name order. A Debian package's contents carry no changelog or copyright while `docs` is off.
+
+*Built on 2026-11-26 (W-35's P6):* [prepare.go](../../internal/bastionmain/catalogue/prepare.go).
+
+Acceptance criteria:
+
+- Unit: `TestR_BAS_106_NoDocumentNamesAnInternalIdentityOrTheMainInstallation` (who uploaded, released and triaged, an internal anchor's
+  title, a state code, a download count, an upstream that is no public registry: none in any document; the shipped anchor's title and the
+  state stay), `TestR_BAS_103_NoDocumentCarriesATimeOfItsCheck` (no time member in any document but the state documents, which hold them by
+  pointer), milliseconds.
+
+### R-BAS-107 · Links on the Bastion's base URL and its data path
+Priority: **P1** · Covers: quader-only
+
+The rule of B.13 for what the builder writes:
+
+- An absolute link is rendered on the Bastion's base URL (R-BAS-104). An occurrence of the main installation's own origins in any text
+  (`server.base_url`, every entry of `server.additional_base_urls`, every further endpoint's base URL) becomes the registration's base URL,
+  in author content too ([Q-BAS-365](#q-bas-365--an-origin-of-the-main-installation-in-any-text-becomes-the-bastions-base-url)).
+- A value that is a link of the management API (`/api/v1/…`, relative or on one of those origins) becomes the Bastion's data path
+  `/ui/data/v1/…` where the catalogue holds what it names (a signature object, the signing anchors), and `null` where it does not (a file's
+  `contentUrl`, which only the main installation serves) ([Q-BAS-363](#q-bas-363--a-link-of-the-management-api-is-the-bastions-data-path-only-where-the-catalogue-holds-it)).
+  Inside text (a README's HTML) `/api/v1/` becomes `/ui/data/v1/`.
+- A link of another host (a package's homepage, its repository) stays: public content, readable by pulling the artifact.
+- Text answers (a PEM chain) have their links rewritten the same way; bytes that are no text (a signature object) are kept as they are.
+
+*Built on 2026-11-26 (W-35's P6):* [prepare.go](../../internal/bastionmain/catalogue/prepare.go).
+
+Acceptance criteria:
+
+- Unit: `TestR_BAS_107_LinksAreTheBastionsAndItsDataPath`, milliseconds.
+- Integration: every document of `TestR_BAS_104_TheCatalogueFollowsPublishesLevelsAndTheSwitch` is scanned for the main installation's
+  base URL, the other entry of `server.additional_base_urls` and `/api/v1/`.
+
+### R-BAS-108 · The catalogue's tables: derived, deduplicated, and a reset after a restore
+Priority: **P1** · Covers: quader-only
+
+- **Tables** (migration 00146, [database.md](../developer/database.md)): `bastion_catalogue` (a registration's change list: path, unit,
+  the document's SHA-256 and size or deleted, the change's number), `bastion_catalogue_document` (a document's bytes gzip-compressed once
+  for every registration and path that holds the same bytes, addressed by the SHA-256 of the raw bytes), `bastion_catalogue_state` (the
+  range of the numbers, the salt, the base URL, why the builder stopped, the public set, the times of the last runs) and
+  `bastion_catalogue_unit` (each unit's fingerprint and the signature objects it names). The routes read the documents the builder kept;
+  a read renders nothing ([Q-BAS-356](#q-bas-356--the-main-installation-keeps-every-document-compressed-once-per-content)).
+- **Numbers.** A run reserves a block of the registration's numbers on its state row in the transaction that writes the rows, so the
+  transactions of one registration commit in the order of their numbers and a reader never sees a number below one that arrived later.
+  The numbers of a catalogue start at the clock in microseconds when its state is created, above every number a catalogue of the
+  registration handed out before: a cursor below a catalogue's first number or above its last answers `reset`
+  ([Q-BAS-366](#q-bas-366--a-catalogues-numbers-start-at-the-clock-so-a-cursor-of-an-earlier-one-answers-reset)). A change list read from
+  the start leaves the deleted paths out.
+- **Derived data.** The four tables are transient for a backup (R-BAK-004): a restored installation holds no catalogue, builds it again at
+  the next run, and a Bastion's cursor answers `reset`. `gui` off deletes the registration's rows, units and state at the next run; the
+  documents no row names are deleted at the end of every run. A registration deleted takes its rows with it.
+
+*Built on 2026-11-26 (W-35's P6):* [00146_bastion_catalogue.sql](../../internal/meta/postgres/migrations/00146_bastion_catalogue.sql),
+[store.go](../../internal/bastionmain/catalogue/store.go), [tables_bastion.go](../../internal/meta/postgres/tables_bastion.go),
+[bastion_catalogue_api.go](../../internal/api/v1/bastion_catalogue_api.go).
+
+Acceptance criteria:
+
+- Unit: `TestR_BAS_108_ACatalogueBuiltAgainAnswersReset` (the in-memory store of `cataloguetest`, which keeps the PostgreSQL store's rules),
+  `TestR_BAS_101_TheCatalogueRoutesServeTheKeptDocuments`, `TestR_BAS_101_TheBatchStopsAtItsBound` (`internal/api/v1`), milliseconds.
+- Integration: the end of `TestR_BAS_104_TheCatalogueFollowsPublishesLevelsAndTheSwitch`: a catalogue switched off and on answers the
+  cursor of the one before with `reset`, on PostgreSQL.
 
 ## Deferred
 
@@ -11531,6 +11702,215 @@ whether the catalogue is kept P7 decides); the contact's row has no columns for 
 | (b) Required, `off` and `false` until known | Always present | Uniform | A false statement about the edge and the store |
 
 **Choice:** (a). **Applied in the spec:** R-BAS-010, the wire.
+
+### Q-BAS-355 · The builder is the worker's job and reads the management API through a router of its own
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: W-35's plan names a worker job and renders "through the management API's own router and handlers … not through the edge chain";
+a worker builds no client listener and so no router, and the measurement (docs/developer/bastion.md) puts a full build of 100,000 versions
+at hours of one worker.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The job `bastion-catalogue` on a replica that claims jobs; the worker builds the package and vulnerability services and, at the first run, a router of the default endpoint's snapshot behind a chain that resolves the base URL and nothing else (chosen) | One answer for the anonymous caller, the one the pages of the main installation show; the CPU of a build is the workers' | The decision point, the exposure ceiling and the answers' shapes are the main installation's own; no request of a user waits behind a build | The worker builds two more areas and one more router, a few MiB |
+| (b) A loop on the replicas of the management API under a lease | The router exists there | No new area in the worker | A full build takes the CPU of the replicas that answer users; a lease of its own |
+| (c) The domain services directly | No router | Fastest | A second copy of every handler's answer, drifting from the main installation's |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-104, R-BAS-105.
+
+### Q-BAS-356 · The main installation keeps every document, compressed, once per content
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the plan let the document route render on request and keep only the change list's rows; a Bastion's full sync reads every
+document (37,376 for 2,670 versions in the measurement), and every replica without a kept catalogue syncs again after a restart (P7).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The gzip bytes in `bastion_catalogue_document`, keyed by the raw SHA-256, shared by every registration and path (chosen) | A read is a statement; the builder renders once | A sync costs the main installation reads, not renders; documents equal across versions (an Ansible module's entry) and registrations (a README) are kept once | PostgreSQL holds the catalogue: 42 MiB gzip for the measured set, 1.38 GiB at 100,000 versions (derived), less with the dedupe |
+| (b) Render on request, keep the rows only | The plan's | No bytes kept | A full sync of every Bastion replica is a full render at the main installation, hours at scale |
+| (c) The object store | Content-addressed blobs | Big data in the store made for it | A second collector and its references for derived data |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-108.
+
+### Q-BAS-357 · A unit is a package, a generic repository or the registration as a whole, rendered and written whole
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: a change of one version changes its package's summary, its versions list and an index page as well (the measurement's "one
+changed version"); a path of the grammar names one document of one unit.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The unit of rendering is the package (all its versions), the generic repository, or the registration's own documents; each row names its unit (chosen) | A unit's paths are replaced at once: what it no longer has is deleted | Deletions follow from the unit's new set; a version's documents never outlive their package | A package of many versions renders all of them for one change of one; the bytes written are only the changed ones |
+| (b) The version as the unit | Finer | Less rendering per change | The package's facts change with every version anyway; a second level of fingerprints |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-105.
+
+### Q-BAS-358 · No document carries a download count
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the package, the version and the versions list carry `downloadCount` and `lastDownloadedAt`, which change with every download.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Taken out (chosen) | The documents change with their content alone | No document is rewritten by a download; a Bastion's visitor reads no figure of the main installation's traffic | The GUI shows no download count |
+| (b) Into the state document | Kept, apart | The figure stays | The state changes with every download that the run sees; the figure is the main installation's, not the Bastion's |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-106.
+
+### Q-BAS-359 · The times of a check go into the version's state by JSON pointer
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-BAS-103 requires that a document carries no time of its building or checking; the GUI still shows when a version was checked.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Every member named `builtAt`, `checkedAt`, `syncedAt`, `scannedAt`, `computedAt`, and `database` with `databaseBuiltAt` beside `scannedAt`, wherever it stands, into `packages/<id>/versions/<v>/state` as `{"times": {<kind>: {<JSON pointer>: <value>}}}` (chosen) | A page puts each time back where it was | Format-independent; nothing is lost; the measured cause of churn is gone | ClamAV's `builtAt` fact of its definitions moves into the state too; a state is only as fresh as its package's last render (H-2310) |
+| (b) A list of members per document kind | Exact | — | Every format's shape known to the builder |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-103, R-BAS-106.
+
+### Q-BAS-360 · A unit is rendered again only when its fingerprint of database facts changed
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the brief asks for a reconciliation by fingerprints, not by rendering; the measurement put one renderer at 36 to 45 ms per document
+over HTTP.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One statement per run: per package by format and name the facts that change a document and no time, in an MD5 over every repository that holds it; with the index entry and the salt (chosen) | A reconciliation reads the index and one statement, and renders the changed packages | Format-independent tables (packages, versions, items, findings, verdicts, signatures, the Ansible documentation, image scans); a rescan that finds the same renders nothing | A fact outside these tables reaches the catalogue only with another change of the package (H-2312) |
+| (b) The version documents as the fingerprint | Render one document per version | Sees everything a version page shows | A reconciliation renders a third of the catalogue |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-105.
+
+### Q-BAS-361 · Every change starts the same run after 5 s, and the hourly run is the reconciliation
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the plan names the change areas and signals that announce a change and a debounce of 5 s; the fingerprints decide what a run renders.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Every trigger enqueues the one job with a delay of 5 s; the Coalesce key keeps one waiting and one running; the task runs it hourly (chosen) | One path for a trigger and the reconciliation | Nothing to map from a signal to a package; the fingerprints find what changed | A run reads the index and the fingerprints for every trigger |
+| (b) A trigger names the packages | Narrower runs | Less reading at scale | A signal's payload names a hashed name, a blob or nothing; a second path beside the reconciliation |
+
+**Choice:** (a). A replica enqueues only while some registration's web interface is on or some registration holds a catalogue, so an
+installation without one queues no job for a publish. **Applied in the spec:** R-BAS-105.
+
+### Q-BAS-362 · Four workers render a registration's packages
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the measurement derived a full build of 100,000 versions at 14 to 17.5 hours for one worker over HTTP; a full build happens for a
+new registration, a changed salt and after a restore.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Four, a figure of the builder (chosen) | Four packages render at once in one job | A full build a quarter of one worker's; the writes stay one transaction per unit | Not configurable |
+| (b) A configuration key | The operator sizes it | Fits a large worker | A key whose right value nobody has measured yet |
+
+**Choice:** (a); the measurement of P6 (docs/developer/bastion.md) says what one registration of the render seed costs. **Applied in the
+spec:** R-BAS-105.
+
+### Q-BAS-363 · A link of the management API is the Bastion's data path only where the catalogue holds it
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: B.13 rewrites every `/api/v1/` link to `/ui/data/v1/`; a version's files carry `contentUrl` (`/api/v1/projects/…/content/…`), which
+no catalogue path serves.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A value that is such a link becomes `/ui/data/v1/…` for a signature object and the signing anchors, and `null` for any other (chosen) | No dead link, no path of the main installation | The page offers the download link on the Bastion's package path instead | The content view of a file is not offered at a Bastion |
+| (b) Every one rewritten | Uniform | — | Links that answer 404 at the Bastion |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-107.
+
+### Q-BAS-364 · A principal's reference is no value
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: npm's `publisher` of a version published to a local repository is the principal that published it (`sa:release-bot`); B.10 strips
+internal identities.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Any value that is exactly `user:<name>`, `sa:<name>`, `ci:<name>` or `bastion:<name>` becomes `null` (chosen) | Every member, every format | A format that adds such a member is held too | A text that is exactly such a word is lost |
+| (b) npm's `publisher` alone | Exact | — | The next format's member passes |
+
+**Choice:** (a). A remote's upstream publisher (an npm user of npmjs.com) has no prefix and stays. **Applied in the spec:** R-BAS-106.
+
+### Q-BAS-365 · An origin of the main installation in any text becomes the Bastion's base URL
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the owner's rule "Der Bastion verrät keine internen Informationen über die Hauptinstanz"; B.13 leaves links authors wrote as they are.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `server.base_url`, every additional base URL and every further endpoint's base URL become the registration's base URL wherever they stand, author content included (chosen) | No document names the main installation's origin | The rule holds for every document, as the integration test scans | A README link to the main installation's UI points at the Bastion, which may not serve it |
+| (b) Only the builder's own links | B.13's row 3 | Author content untouched | A README that names the internal host carries it to the internet |
+
+**Choice:** (a). A bare host name without a scheme is not rewritten (H-2308). **Applied in the spec:** R-BAS-107.
+
+### Q-BAS-366 · A catalogue's numbers start at the clock, so a cursor of an earlier one answers reset
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the catalogue is derived data and not in a backup; after a restore, and after `gui` off and on, a Bastion keeps a cursor of a
+catalogue that is gone.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A new state's first number is the clock in microseconds; a cursor below it or above the last number answers `reset` (chosen) | No column of epochs; the cursor alone tells | A restore is a reset without a hook in the restore | A clock set back by more than the numbers handed out would let an old cursor pass: about a second of numbers per million documents written |
+| (b) An epoch in the cursor | Exact | — | The wire's cursor is a number (P5's `CatalogueChanges`); a raise of the interface |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-108.
+
+### Q-BAS-367 · A change list read from the start leaves the deleted paths out
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: deleted paths stay as rows with their number, so a Bastion behind them learns the deletion.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) After 0, and after a reset, only live paths (chosen) | A Bastion that holds nothing deletes nothing | A first sync does not read the history of deletions | — |
+| (b) Every row | Uniform | — | The first sync grows with every deletion ever made |
+
+**Choice:** (a). The deleted rows themselves stay until the catalogue is dropped. **Applied in the spec:** R-BAS-108.
+
+### Q-BAS-368 · The index is the main installation's list in pages of 100, in its order
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: `index/<n>` is "a page of the index of public packages" (R-BAS-103); P7 builds its own index for search from them.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `GET /api/v1/packages?include=vulnerabilities` in pages of 100, sorted by name, the cursor taken out (chosen) | The list a visitor of the main installation sees | The grades are in it; the order is stable | A new package shifts the pages after it, which are written again (3.4 KiB gzip each, measured) |
+| (b) Pages by a hash of the ID | A new package changes one page | Fewer writes | No order a reader can page through |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-104.
+
+### Q-BAS-369 · The builder writes no feed entry yet; a Bastion learns a change at its poll
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-BAS-101 has a feed kind `catalogue`; the feed is read from the audit log, so an entry needs an audit event of its own, with its
+label in the audit screen and its translation.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) No entry in P6; P7's poll (10 s by default) carries the change (chosen) | A Bastion reads its change list at its poll | No audit event per run in the audit log, no screen work in a builder's package | A change reaches a Bastion up to a poll later (H-2314) |
+| (b) An audit event `bastion.catalogue.changed` per run that changed something | The feed's bound | Seconds | An event per publish in the audit log of every installation with a Bastion's web interface |
+
+**Choice:** (a), to be revisited with P7, which owns the poll. **Applied in the spec:** R-BAS-101, R-BAS-105.
 
 ### Q-BAS-425 · The headers of a forwarded answer pass an allowlist, and a format's need is a replay header
 
