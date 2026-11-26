@@ -291,7 +291,7 @@
         </nav>
       }
     }
-    <main #main id="main" tabindex="-1" [class.content]="shell()" [class.bare]="!shell()">
+    <main #main id="main" tabindex="-1" [class.content]="shell()" [class.bare]="!shell()" [class.booting]="firstLoad()">
       @if (shell() && loadFailure(); as failure) {
         <quader-error-notice [error]="failure" (retry)="retrySession()" />
       }

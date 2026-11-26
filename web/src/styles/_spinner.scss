@@ -147,6 +147,32 @@ $delay: 300ms;
   text-align: center;
 }
 
+// A page whose whole content loads (R-UI-252, Q-UI-1566): the spinner and its sentence stand in the middle of what the panel shows below
+// the page's title and tabs, not at its top left. The screen's host (and a view's host inside it, or a routed screen inside a frame)
+// becomes a column that takes the panel's height down to the legal line, while it holds the load, and the load takes what is left
+// below the title, the tabs and an error that stays while the page tries again, its spinner and sentence centred there; the panel does
+// not scroll for it. Only while the load stands: `:has()` lets the screen's layout alone once its content is there. A list's load
+// stays in its table (`table-status`), the first paint in the window (`quader-boot`); a load in a part of a page (a section, a column of
+// its own) has no host chain to the panel and stays in its part.
+$page-load: 'quader-loading.quader-loading-page:not(.table-status, .quader-boot)';
+
+main.content > :has(> #{$page-load}),
+main.content > :has(> * > #{$page-load}),
+main.content > * > :has(> #{$page-load}) {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+main.content > * > #{$page-load},
+main.content > * > * > #{$page-load} {
+  flex: 1 0 auto;
+  justify-content: center;
+  margin: 0;
+  // Centred in what is left, it needs no room of its own above and below: a tall error above it at 390 px left 3 px too few.
+  padding-block: 0;
+}
+
 @keyframes quader-appear {
   from {
     visibility: hidden;

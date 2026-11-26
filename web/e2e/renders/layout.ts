@@ -11,7 +11,7 @@ export interface LayoutFinding {
   /**
    * Which check found it: `icon-apart`, `broken`, `row-offset`, `row-actions`, `stacked-offset`, `stacked-place`, `label-apart`,
    * `empty-cell`, `cell-overflow`, `clipped`, `cramped`, `stacked-fits`, `sideways`, `empty-scroll`, `tab-scrollbar`, `english`,
-   * `inner-scroll`, `heading-broken`, `overlay-out`, `cut`, `separator-start`.
+   * `inner-scroll`, `heading-broken`, `overlay-out`, `cut`, `separator-start`, `loading-place`, `loading-scroll`.
    */
   readonly check: string;
   /** The element, as a path of up to four tags with their first two classes. */
@@ -1357,6 +1357,104 @@ export function innerScroll(): LayoutFinding[] {
     add(el, `scrolls ${px(over)} px of its own in the page (${px(el.clientHeight)} px high, ${why}); the page scrolls instead`);
   }
   return [...found.values()];
+}
+
+/**
+ * Where a page's load stands (R-UI-252, Q-UI-1568; run in the page, in the window's first height, before the render grows it): a load
+ * of the whole page (`quader-loading-page` in the shell's panel, not a list's in its table) has its spinner and sentence in the middle
+ * of the panel's width and in the middle of what the panel shows below the load's top (the page's title, its tabs and an error that
+ * stays stand above it); the first paint (`quader-boot`) in the middle of the window. While either shows, neither the panel nor the
+ * window scrolls, unless what stands above the load is itself taller than the panel. `loading-place` names a load off the middle by more
+ * than LOADING_TOLERANCE px, `loading-scroll` a page that scrolls
+ * while it loads.
+ */
+export function loadingPlace(): LayoutFinding[] {
+  const LOADING_TOLERANCE = 4;
+  const found: LayoutFinding[] = [];
+  const px = (n: number): string => String(Math.round(n));
+  const shown = (el: Element): boolean => {
+    const r = el.getBoundingClientRect();
+    return r.width > 1 && r.height > 1 && getComputedStyle(el).visibility !== 'hidden' && !el.closest('[hidden]');
+  };
+  /** The box of what the load shows: its spinner and its sentence together. */
+  const content = (el: Element): { left: number; right: number; top: number; bottom: number } | null => {
+    const parts = Array.from(el.querySelectorAll('.quader-spinner, .quader-loading-text'))
+      .filter(shown)
+      .map((p) => p.getBoundingClientRect());
+    if (parts.length === 0) return null;
+    return {
+      left: Math.min(...parts.map((r) => r.left)),
+      right: Math.max(...parts.map((r) => r.right)),
+      top: Math.min(...parts.map((r) => r.top)),
+      bottom: Math.max(...parts.map((r) => r.bottom)),
+    };
+  };
+  const doc = document.scrollingElement;
+  const main = document.querySelector('main');
+  let loading = false;
+  // Whether what the page holds besides its load fits the panel: a page whose content above its load (a long error at 390 px) is taller
+  // than the panel scrolls for that content, not for its load.
+  let fits = true;
+  const measure = (el: Element, area: { left: number; right: number; top: number; bottom: number }, where: string): void => {
+    const c = content(el);
+    if (!c) return;
+    loading = true;
+    const dx = (c.left + c.right) / 2 - (area.left + area.right) / 2;
+    const dy = (c.top + c.bottom) / 2 - (area.top + area.bottom) / 2;
+    if (Math.abs(dx) > LOADING_TOLERANCE || Math.abs(dy) > LOADING_TOLERANCE) {
+      const what = el.tagName.toLowerCase() + Array.from(el.classList).filter((k) => !k.startsWith('ng-')).slice(0, 2).map((k) => '.' + k).join('');
+      found.push({
+        check: 'loading-place',
+        what,
+        text: (el.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 80),
+        detail: `the load stands ${px(dx)} px beside and ${px(dy)} px below the middle of ${where}`,
+        count: 1,
+      });
+    }
+  };
+  for (const el of Array.from(document.querySelectorAll('.quader-boot'))) {
+    if (!shown(el)) continue;
+    measure(el, { left: 0, right: window.innerWidth, top: 0, bottom: window.innerHeight }, 'the window');
+  }
+  if (main?.classList.contains('content')) {
+    const m = main.getBoundingClientRect();
+    const style = getComputedStyle(main);
+    const left = m.left + main.clientLeft + parseFloat(style.paddingLeft);
+    const right = m.left + main.clientLeft + main.clientWidth - parseFloat(style.paddingRight);
+    // The page's area ends where the legal line starts, else at the panel's padding.
+    const footer = main.querySelector(':scope > quader-legal-footer');
+    const end = footer && shown(footer) ? footer.getBoundingClientRect().top : m.top + main.clientTop + main.clientHeight - parseFloat(style.paddingBottom);
+    for (const el of Array.from(main.querySelectorAll('.quader-loading-page:not(.table-status, .quader-boot)'))) {
+      // Inside a dialog or a list: another check's.
+      if (!shown(el) || el.closest('.cdk-overlay-container, quader-data-table')) continue;
+      // The area starts below what stands before the load in the page (the title, the tabs, an error), with its margin.
+      let start = m.top + main.clientTop + parseFloat(style.paddingTop);
+      for (let e: Element | null = el; e && e !== main; e = e.parentElement) {
+        for (let s = e.previousElementSibling; s; s = s.previousElementSibling) {
+          if (!shown(s)) continue;
+          start = Math.max(start, s.getBoundingClientRect().bottom + parseFloat(getComputedStyle(s).marginBottom));
+        }
+      }
+      measure(el, { left, right, top: start, bottom: end }, 'the panel below what stands above it');
+      const c = content(el);
+      const legal = footer && shown(footer) ? footer.getBoundingClientRect().height : 0;
+      if (c && start - m.top + (c.bottom - c.top) + legal + parseFloat(style.paddingBottom) > main.clientHeight + 1) fits = false;
+    }
+  }
+  if (loading) {
+    const panel = main && main.classList.contains('content') ? main.scrollHeight - main.clientHeight : 0;
+    const win = doc ? doc.scrollHeight - doc.clientHeight : 0;
+    if ((panel > 1 && fits) || win > 1) {
+      found.push({
+        check: 'loading-scroll',
+        what: panel > 1 ? 'main.content' : 'html',
+        text: '',
+        detail: `a page that loads scrolls ${px(Math.max(panel, win))} px`,
+        count: 1,
+      });
+    }
+  }
+  return found;
 }
 
 /**

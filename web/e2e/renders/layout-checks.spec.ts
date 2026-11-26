@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Page, expect, test } from '@playwright/test';
 import { compile } from 'sass';
-import { CODE_BLOCK_SCROLL, LayoutFinding, innerScroll, judge, layoutFindings } from './layout';
+import { CODE_BLOCK_SCROLL, LayoutFinding, innerScroll, judge, layoutFindings, loadingPlace } from './layout';
 import { root } from './paths';
 
 /**
@@ -1236,5 +1236,61 @@ test.describe('one scrollbar per page (R-UI-215)', () => {
   test('R-UI-215 a text area with a long value is a field and no finding', async ({ page }) => {
     const found = await scrolls(page, `<textarea rows="4" aria-label="Keys">${Array.from({ length: 80 }, (_, i) => `key ${i}`).join('\n')}</textarea>`);
     expect(found, describe(found)).toEqual([]);
+  });
+});
+
+test.describe('a page that loads has its spinner in the middle and does not scroll (R-UI-252)', () => {
+  /** The shell's panel, 600 px high, with the app's own stylesheet: the rule that sets a page's load into the panel is under test. */
+  async function loads(page: Page, body: string): Promise<LayoutFinding[]> {
+    await page.setViewportSize({ width: 1024, height: 700 });
+    await page.setContent(
+      `<!doctype html><html lang="en"><head><style>${shared()}</style><style>${fonts}</style>` +
+        `<style>html, body { block-size: 100%; margin: 0; } main.content { position: relative; display: flex; flex-direction: column; ` +
+        `block-size: 600px; overflow: auto; padding: 24px 32px; box-sizing: border-box; } .quader-loading { animation: none !important; }</style></head>` +
+        `<body><main class="content">${body}</main></body></html>`,
+    );
+    await page.evaluate(() => document.fonts.ready);
+    return page.evaluate(loadingPlace);
+  }
+  const load = (cls = 'quader-loading quader-loading-page'): string =>
+    `<quader-loading class="${cls}" role="status"><span class="quader-spinner quader-spinner-page"><svg viewBox="0 0 64 64"></svg></span>` +
+    `<span class="quader-loading-text">Loading your account.</span></quader-loading>`;
+  const screen = (inner: string): string =>
+    `<quader-profile><h1>Profile</h1><nav class="tab-nav" style="block-size: 40px">Tabs</nav>${inner}</quader-profile><quader-legal-footer>Imprint</quader-legal-footer>`;
+
+  test('R-UI-252 a page whose whole content loads has its spinner in the middle of what stands below its tabs, and nothing scrolls', async ({ page }) => {
+    const found = await loads(page, screen(load()));
+    expect(found, describe(found)).toEqual([]);
+    // An error that stays above while the page tries again moves the middle down with it.
+    const failed = await loads(page, screen(`<div data-testid="error-notice" style="block-size: 120px">Unavailable</div>${load()}`));
+    expect(failed, describe(failed)).toEqual([]);
+    // A view inside its page's host (a package's page), and a screen routed inside a frame, take the same place.
+    const view = await loads(page, screen(`<quader-package-detail-view>${load()}</quader-package-detail-view>`));
+    expect(view, describe(view)).toEqual([]);
+  });
+
+  test("R-UI-252 a page's load at the top left, as before, is found; so is a page that scrolls while it loads", async ({ page }) => {
+    const top = await loads(page, screen(load('quader-loading quader-loading-page" style="flex: none; align-items: flex-start')));
+    expect(top.map((f) => f.check), describe(top)).toEqual(['loading-place']);
+    // Set into the panel's end as one try did (2026-11-26): its own height, at the bottom over the legal line.
+    const low = await loads(page, screen(load('quader-loading quader-loading-page" style="position: absolute; inset-inline: 0; inset-block-end: 0')));
+    expect(low.map((f) => f.check), describe(low)).toEqual(['loading-place']);
+    const tall = await loads(page, screen(`${load()}<div style="block-size: 2000px"></div>`));
+    expect(tall.map((f) => f.check), describe(tall)).toContain('loading-scroll');
+    // An error above the load that is taller than the panel (a German notice at 390 px) scrolls for itself, not for the load.
+    const long = await loads(page, screen(`<div data-testid="error-notice" style="block-size: 700px">Unavailable</div>${load()}`));
+    expect(long.map((f) => f.check), describe(long)).not.toContain('loading-scroll');
+  });
+
+  test('R-UI-252 the first paint stands in the middle of the window, and a list that loads in its table is no page load', async ({ page }) => {
+    await page.setViewportSize({ width: 1024, height: 700 });
+    await page.setContent(
+      `<!doctype html><html lang="en"><head><style>${shared()}</style><style>${fonts} .quader-loading { animation: none !important; }</style></head>` +
+        `<body>${load('quader-boot quader-loading quader-loading-page')}</body></html>`,
+    );
+    const boot = await page.evaluate(loadingPlace);
+    expect(boot, describe(boot)).toEqual([]);
+    const table = await loads(page, screen(`<quader-data-table>${load('quader-loading quader-loading-page table-status')}</quader-data-table>`));
+    expect(table, describe(table)).toEqual([]);
   });
 });

@@ -640,6 +640,19 @@ quader-root {
     }
   }
 
+  // The first screen loads (R-UI-252, Q-UI-1567): the spinner of the first paint stands on in the middle of the window, where
+  // `index.html` drew it, and nothing scrolls. The bare column's padding above (12vh) and the first paint's height of the whole window
+  // (100dvh) made the page taller than the window and put the spinner below its middle.
+  .bare.booting {
+    padding: 0;
+
+    > .quader-boot {
+      flex: 1 0 auto;
+      min-block-size: 0;
+      max-inline-size: none;
+    }
+  }
+
   // The column of a bare screen: the wordmark, a centred heading, then the screen's content at full width.
   .bare-panel {
     h1 {

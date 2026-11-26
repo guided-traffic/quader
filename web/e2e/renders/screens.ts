@@ -87,7 +87,7 @@ import {
 } from './server-texts';
 import { downloadsButtonWalk, downloadsExpected, downloadsPanelWalk } from './upstream-downloads';
 import { failureExpected, failureNotices, failureStates } from './failures';
-import { loadingWalk } from './loading';
+import { loadingWalk, pageLoadExpected, pageLoadNotices, pageLoadWalk } from './loading';
 import {
   adminLists,
   debianKeys,
@@ -3650,6 +3650,9 @@ export const screens: readonly Screen[] = [
   { id: 'help', path: '/ui/help', kinds: all },
   { id: 'help-user-page', path: '/ui/help/user/getting-started', kinds: all },
   { id: 'profile', path: '/ui/profile', kinds: all, de: true },
+  // Where a load stands (R-UI-252, loading.ts): the first screen while the session is read, the Profile page's first load, and its load
+  // below the error of a 503, each measured by the check loading-place.
+  { id: 'page-loads', path: '/ui/profile', kinds: ['plain'], walk: pageLoadWalk, expected: pageLoadExpected, notices: pageLoadNotices, de: true },
   { id: 'profile-tokens', path: '/ui/profile/tokens', kinds: all },
   // The plain user holds a token (setup.ts): its revoke-all, last on the page behind Advanced.
   { id: 'profile-tokens-advanced', path: '/ui/profile/tokens', kinds: ['plain'], walk: advancedOpen },

@@ -57,3 +57,51 @@ export async function* loadingWalk(p: Page): AsyncGenerator<string> {
   await release();
   await p.unrouteAll({ behavior: 'ignoreErrors' });
 }
+
+const isSession = (url: URL): boolean => url.pathname === '/api/v1/auth/whoami';
+const isAccount = (url: URL): boolean => url.pathname === '/api/v1/users/me';
+const isPreferences = (url: URL): boolean => url.pathname === '/api/v1/users/me/preferences';
+
+/**
+ * Where a load stands (R-UI-252), on the Profile page: the first screen while the session is read (the spinner of the first paint in the
+ * middle of the window, no scrollbar), the page's first load (the spinner and its sentence in the middle of the content below the
+ * page's title and tabs), and the page after a 503 of its account's read with its preferences still held: the error above, the page's
+ * load below it. The render's check `loading-place` measures each; the calls are held or answered in the browser, nothing is written.
+ */
+export async function* pageLoadWalk(p: Page): AsyncGenerator<string> {
+  let release = await holdCalls(p, isSession);
+  await p.reload();
+  await expect(p.locator('.quader-boot').first()).toBeVisible();
+  yield 'boot';
+  await release();
+
+  let releasePreferences = await holdCalls(p, isPreferences);
+  release = await holdCalls(p, isAccount);
+  await p.reload();
+  await expect(p.locator('main quader-loading.quader-loading-page')).toBeVisible();
+  yield 'page';
+  await release();
+  await releasePreferences();
+
+  releasePreferences = await holdCalls(p, isPreferences);
+  await p.route(isAccount, (route) =>
+    route.request().method() === 'GET'
+      ? route.fulfill({
+          status: 503,
+          contentType: 'application/problem+json',
+          body: JSON.stringify({ type: 'about:blank', title: 'Service Unavailable', status: 503, code: 'unavailable', detail: 'The service is unavailable.' }),
+        })
+      : route.fallback(),
+  );
+  await p.reload();
+  await expect(p.locator('main [data-testid="error-notice"]')).toHaveCount(1);
+  await expect(p.locator('main quader-loading.quader-loading-page')).toBeVisible();
+  yield 'failed';
+  await releasePreferences();
+  await p.unrouteAll({ behavior: 'ignoreErrors' });
+}
+
+/** The answers the walk gives in the browser. */
+export const pageLoadExpected = [{ match: /^GET \/api\/v1\/users\/me answered 503$/, why: 'the walk answers the account with a 503 to picture the load below the error' }];
+/** The walk's notice is the state it renders. */
+export const pageLoadNotices = [{ match: /^/, why: "the 503 of the account's read, which the walk renders above the page's load" }];
