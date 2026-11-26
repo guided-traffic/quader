@@ -172,7 +172,7 @@ token file and applies the map ([migrate_bastions.go](../../internal/app/migrate
 
 **The role's tree** ([bastion_role.go](../../internal/config/bastion_role.go)): a second root struct `BastionConfig` with the sections `server`
 (listen, ops_listen, base_url, trusted_proxies, forwarded_header, max_in_flight, tls, ops_tls), `bastion` (main, answers, feed, cache,
-audit, token, edge_limit, replicas, signing_key_file; the flood figures, the blocking and the slots are the handshake's configuration since
+audit, token, gui (the public catalogue of the web interface, R-BAS-109 to R-BAS-111), edge_limit, replicas, signing_key_file; the flood figures, the blocking and the slots are the handshake's configuration since
 W34-E9a, R-BAS-093), `valkey` (the main section's keys with `mode: none` as the default),
 `log`, `tracing` (without `incoming_context` and `trusted_peers`: the role never continues a caller's trace context) and `runtime`. It is
 loaded by `config.LoadBastion`, which reuses the loader with `Options.Role` set: a key of any other section, in the file or the

@@ -60,8 +60,9 @@ generated schema of the role bastion (docs/developer/helm-chart.md, Bastion char
 {{- end -}}
 {{- $cacheBytes := include "quader-bastion.bytes" (dig "bastion" "cache" "max_bytes" "20GiB" $cfg) | int64 -}}
 {{- $documents := include "quader-bastion.bytes" (dig "bastion" "cache" "documents_max_bytes" "2GiB" $cfg) | int64 -}}
-{{- if lt (sub $cacheBytes $documents) $maxObject -}}
-{{- fail (printf "quader-bastion: config.bastion.cache.max_bytes (%v bytes) less config.bastion.cache.documents_max_bytes (%v bytes) leaves the artifacts less than one object of config.bastion.cache.max_object_bytes (%v bytes): the cache would keep no artifact. Raise max_bytes, or lower documents_max_bytes or max_object_bytes" $cacheBytes $documents $maxObject) -}}
+{{- $catalogue := include "quader-bastion.bytes" (dig "bastion" "gui" "max_bytes" "4GiB" $cfg) | int64 -}}
+{{- if lt (sub (sub $cacheBytes $documents) $catalogue) $maxObject -}}
+{{- fail (printf "quader-bastion: config.bastion.cache.max_bytes (%v bytes) less config.bastion.cache.documents_max_bytes (%v bytes) and config.bastion.gui.max_bytes (%v bytes, the public catalogue's share) leaves the artifacts less than one object of config.bastion.cache.max_object_bytes (%v bytes): the cache would keep no artifact. Raise max_bytes, or lower documents_max_bytes, gui.max_bytes or max_object_bytes" $cacheBytes $documents $catalogue $maxObject) -}}
 {{- end -}}
 {{- if include "quader-bastion.spoolInTmp" . -}}
 {{- $tmp := include "quader-bastion.tmpSizeLimit" . | include "quader-bastion.bytes" | int64 -}}

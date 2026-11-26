@@ -40,6 +40,9 @@ type Options struct {
 	// estimate of the areas, because the others write into the same bucket unseen until its next listing (Q-BAS-302). Zero
 	// is one.
 	Replicas int
+	// CatalogueMaxBytes is bastion.gui.max_bytes, the public catalogue's share of cache.max_bytes (R-BAS-110): the artifacts get
+	// max_bytes less documents_max_bytes less this. Zero reserves nothing (tests of the areas).
+	CatalogueMaxBytes int64
 }
 
 func (o *Options) fill() {
@@ -119,10 +122,12 @@ type Cache struct {
 	back   *backend
 	signer *Signer
 	cfg    config.BastionCache
-	m      *metrics.Metrics
-	log    *slog.Logger
-	now    func() time.Time
-	hold   int
+	// catalogue is the public catalogue's share of max_bytes (Options.CatalogueMaxBytes).
+	catalogue int64
+	m         *metrics.Metrics
+	log       *slog.Logger
+	now       func() time.Time
+	hold      int
 	// spool bounds the bytes of the fills in progress (bastion.cache.spool_max_bytes, Q-BAS-131).
 	spool *spoolBudget
 	// est is the running estimate of the areas' bytes that admits a commit (R-BAS-089); sweepNow asks the sweeper for a
@@ -191,7 +196,7 @@ func build(b *backend, signer *Signer, cfg config.BastionCache, o Options) *Cach
 		weight = o.Replicas
 	}
 	c := &Cache{
-		back: b, signer: signer, cfg: cfg, m: o.Metrics, log: o.Logger, now: o.Now, hold: o.HoldBack, touched: map[string]time.Time{},
+		back: b, signer: signer, cfg: cfg, catalogue: max(o.CatalogueMaxBytes, 0), m: o.Metrics, log: o.Logger, now: o.Now, hold: o.HoldBack, touched: map[string]time.Time{},
 		spool: newSpoolBudget(int64(cfg.SpoolMaxBytes)), started: o.Now(), est: newEstimate(weight), sweepNow: make(chan struct{}, 1), gap: sweepGap,
 	}
 	arts, docs := c.limits()
@@ -203,11 +208,11 @@ func build(b *backend, signer *Signer, cfg config.BastionCache, o Options) *Cach
 // Backend returns the backend, for the audit spool (R-BAS-039) and for tests.
 func (c *Cache) Backend() Backend { return c.back }
 
-// limits are the size limits of the areas (R-BAS-031): documents get their share, artifacts the rest, so that
-// documents never evict artifacts and the two together stay within max_bytes (Q-BAS-88).
+// limits are the size limits of the areas (R-BAS-031): documents get their share, the public catalogue its own (R-BAS-110),
+// artifacts the rest, so that documents never evict artifacts and the three together stay within max_bytes (Q-BAS-88).
 func (c *Cache) limits() (artifacts, documents int64) {
 	documents = int64(c.cfg.DocumentsMaxBytes)
-	return max(int64(c.cfg.MaxBytes)-documents, 0), documents
+	return max(int64(c.cfg.MaxBytes)-documents-c.catalogue, 0), documents
 }
 
 // Ready is the check that gates the first readiness (R-BAS-043): it checks the backend until one check

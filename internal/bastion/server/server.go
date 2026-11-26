@@ -34,6 +34,7 @@ import (
 	"time"
 
 	"github.com/guided-traffic/quader/internal/bastion/cache"
+	"github.com/guided-traffic/quader/internal/bastion/catalogue"
 	"github.com/guided-traffic/quader/internal/bastion/downloads"
 	"github.com/guided-traffic/quader/internal/bastion/engine"
 	"github.com/guided-traffic/quader/internal/bastion/guard"
@@ -44,6 +45,7 @@ import (
 	"github.com/guided-traffic/quader/internal/bastion/mainclient"
 	bmetrics "github.com/guided-traffic/quader/internal/bastion/metrics"
 	"github.com/guided-traffic/quader/internal/bastion/settings"
+	"github.com/guided-traffic/quader/internal/bastion/shared"
 	"github.com/guided-traffic/quader/internal/bastion/throughput"
 	"github.com/guided-traffic/quader/internal/buildinfo"
 	"github.com/guided-traffic/quader/internal/config"
@@ -88,6 +90,9 @@ type Server struct {
 	// legal are the imprint and the privacy notice of the role's ui.legal, rendered in New (R-BAS-100); the Bastion's web
 	// interface serves them, and until it exists no route does.
 	legal *legal.Pages
+	// catalogue is the public catalogue of the web interface (R-BAS-109 to R-BAS-113): its sync runs beside the link, and its
+	// reader is what the web interface serves from.
+	catalogue *catalogue.Catalogue
 
 	clientTLS, opsTLS *httpserver.ListenerTLS
 	client, ops       *httpserver.Server
@@ -237,6 +242,7 @@ func (s *Server) buildDeps() (engine.Deps, error) {
 	s.exportConstants()
 	c, err := cache.New(context.Background(), b.Cache, signer, cache.Options{
 		Metrics: s.bm, Logger: s.log.With("component", "cache"), TempDir: os.TempDir(), Replicas: b.Replicas,
+		CatalogueMaxBytes: int64(b.GUI.MaxBytes),
 	})
 	if err != nil {
 		return engine.Deps{}, fmt.Errorf("bastion.cache: %w", err)
@@ -265,9 +271,11 @@ func (s *Server) buildDeps() (engine.Deps, error) {
 	if b.EdgeLimit.Enabled {
 		edge = iface.EdgeLimit{RequestsPerSecond: b.EdgeLimit.RequestsPerSecond, Connections: b.EdgeLimit.Connections}
 	}
+	// The public catalogue survives a restart where the cache does: in a bucket or on a persistent volume (R-BAS-111).
+	kept := b.Cache.Backend == "bucket" || b.Cache.Volume.Persistent
 	client, err := mainclient.New(mainclient.Options{
 		URL: b.Main.URL, PackagesURL: b.Main.PackagesURL, BaseURL: s.cfg.Server.BaseURL, Replica: s.instance, Release: buildinfo.Get().Version, Tokens: s.holder,
-		Budget: budget, Throughput: pacer, EdgeLimit: &edge,
+		Budget: budget, Throughput: pacer, EdgeLimit: &edge, CatalogueKept: &kept,
 		ConnectTimeout: b.Main.ConnectTimeout, ResponseHeaderTimeout: b.Main.ResponseHeaderTimeout, CAFile: b.Main.CAFile,
 		Metrics: s.bm, Log: s.log, Tracer: s.tracer, Obs: s.metrics, TLSMetrics: s.tlsm,
 	})
@@ -292,7 +300,30 @@ func (s *Server) buildDeps() (engine.Deps, error) {
 		s.o.Deps(&d)
 	}
 	s.wireLink(&d)
+	s.wireCatalogue(client, c, st, kept)
 	return d, nil
+}
+
+// wireCatalogue builds the public catalogue of the web interface (W-35, R-BAS-109 to R-BAS-113): it reads the main installation
+// through the client's catalogue routes, paced in the throughput's catalogue class, keeps its documents in the cache backend's
+// tree of its own, follows the switches of the configuration the replica applies and the hooks of the link's feed. With the bucket
+// backend and Valkey a lease lets one replica sync.
+func (s *Server) wireCatalogue(client *mainclient.HTTPClient, c *cache.Cache, st *shared.State, kept bool) {
+	g := s.cfg.Bastion.GUI
+	bucket := s.cfg.Bastion.Cache.Backend == "bucket"
+	o := catalogue.Options{
+		Source: client, Store: c, SharedStore: bucket, Kept: kept, Replica: s.instance,
+		PollInterval: g.PollInterval, StaleAfter: g.StaleAfter, MaxBytes: int64(g.MaxBytes), Metrics: s.bm, Log: s.log,
+	}
+	if bucket && st != nil {
+		// A nil lease (no Valkey, or Valkey unavailable) converts to a nil catalogue.Lease: every replica syncs.
+		o.Lease = func() catalogue.Lease { return st.CatalogueLease() }
+	}
+	s.catalogue = catalogue.New(o)
+	s.configuration.Watch(func(a *settings.Applied) {
+		s.catalogue.SetSwitches(a.Configuration.Switches, a.Source != settings.SourceBuiltin)
+	})
+	s.link.OnFeed(s.catalogue.Feed)
 }
 
 // wireLink builds the link over the client the dependencies hold, wraps that client with the link's guard (a
@@ -366,6 +397,9 @@ func (s *Server) Engine() engine.Engine { return s.engine }
 // Legal returns the imprint and the privacy notice rendered at start (R-BAS-100), for the Bastion's web interface.
 func (s *Server) Legal() *legal.Pages { return s.legal }
 
+// Catalogue returns the reader of the public catalogue (R-BAS-113), for the Bastion's web interface and the tests.
+func (s *Server) Catalogue() catalogue.Reader { return s.catalogue }
+
 // ClientAddr returns the bound address of the client listener; nil before Start.
 func (s *Server) ClientAddr() net.Addr {
 	if s.client == nil {
@@ -434,6 +468,9 @@ func (s *Server) Start(ctx context.Context) error {
 	// replica started while the main installation is unreachable keeps the administrator's figures; without one the built-in
 	// configuration holds (Q-BAS-327). A cache backend that cannot be read costs at most its timeout and stops nothing.
 	s.configuration.LoadStored(ctx)
+	// The stored state of the public catalogue: a replica that finds one serves its pages from it, with its age, also while the
+	// main installation is unreachable (R-BAS-111). It gates nothing.
+	s.catalogue.Load(ctx)
 	if err := s.client.Bind(); err != nil {
 		return err
 	}
@@ -456,10 +493,12 @@ func (s *Server) runLink(ctx context.Context) {
 	s.reportStop = rcancel
 	cctx, ccancel := context.WithCancel(context.WithoutCancel(ctx))
 	s.sweepStop = ccancel
-	s.bg.Add(4)
+	s.bg.Add(5)
 	go func() { defer s.bg.Done(); s.link.Run(lctx) }()
 	go func() { defer s.bg.Done(); s.reloader.Run(lctx) }()
 	go func() { defer s.bg.Done(); s.deps.Cache.RunSweeper(cctx, s.deps.Shared) }()
+	// The public catalogue's sync stops with the sweeper, before the drain: it reads nothing a caller waits for.
+	go func() { defer s.bg.Done(); s.catalogue.Run(cctx) }()
 	go func() {
 		defer s.bg.Done()
 		if err := s.deps.Downloads.Run(rctx); err != nil {

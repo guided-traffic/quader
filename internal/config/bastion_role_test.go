@@ -80,6 +80,10 @@ func TestR_BAS_001_TheRoleLoadsWithTheMinimalKeysAndTheSpecDefaults(t *testing.T
 		{"audit.buffer_events", b.Audit.BufferEvents, 100000},
 		{"audit.spool_max_events", b.Audit.SpoolMaxEvents, 1000000},
 		{"token.warn_before", b.Token.WarnBefore, 720 * time.Hour},
+		{"gui.poll_interval", b.GUI.PollInterval, 10 * time.Second},
+		{"gui.max_bytes", b.GUI.MaxBytes, 4 * GiB},
+		{"gui.stale_after", b.GUI.StaleAfter, time.Hour},
+		{"cache.volume.persistent", b.Cache.Volume.Persistent, false},
 		{"replicas", b.Replicas, 1},
 		{"valkey.mode", c.Valkey.Mode, "none"},
 		{"runtime.memory_limit_ratio", c.Runtime.MemoryLimitRatio, 0.85},
@@ -153,7 +157,9 @@ func TestR_BAS_046_TheRangesOfTheSpecificationAreEnforced(t *testing.T) {
 		{"feed.poll_interval above 10s", "feed:\n    poll_interval: 11s\n", "bastion.feed.poll_interval"},
 		{"unreachable_after under 3 polls", "feed:\n    poll_interval: 5s\n  main:\n    unreachable_after: 10s\n", "bastion.main.unreachable_after"},
 		{"an unknown backend", "cache:\n    backend: disk\n", "bastion.cache.backend"},
-		{"documents above the cache", "cache:\n    max_bytes: 1GiB\n", "bastion.cache.documents_max_bytes"},
+		{"documents above the cache", "cache:\n    max_bytes: 1GiB\n", "cache.documents_max_bytes (2GiB)"},
+		{"gui.poll_interval below 1s", "gui:\n    poll_interval: 500ms\n", "bastion.gui.poll_interval"},
+		{"gui.stale_after below 1m", "gui:\n    stale_after: 30s\n", "bastion.gui.stale_after"},
 		{"the bucket backend without a bucket", "cache:\n    backend: bucket\n", "bastion.cache.bucket.bucket"},
 		{"a plain http bucket endpoint", "cache:\n    backend: bucket\n    bucket:\n      bucket: b\n      endpoint: http://s3.example.com\n", "bastion.cache.bucket.endpoint"},
 		{"a negative edge figure", "edge_limit:\n    requests_per_second: -1\n", "bastion.edge_limit.requests_per_second"},
@@ -175,31 +181,35 @@ func TestR_BAS_046_TheRangesOfTheSpecificationAreEnforced(t *testing.T) {
 	}
 }
 
-// TestR_BAS_031_ACacheWithoutRoomForOneLargestObjectIsRefused: the artifacts' room, max_bytes less the documents' share, holds at
-// least one object of max_object_bytes. A cache of 2 GiB with the defaults of the other two keeps no artifact and is refused with a
-// message that names the three keys and what to change; room of exactly one largest object is accepted, one MiB less is not; the
-// defaults and the sizes of deploy/dev/bastion-chart-common.yaml (the e2e and dev Bastions) pass. Unit, milliseconds.
+// TestR_BAS_031_ACacheWithoutRoomForOneLargestObjectIsRefused: the artifacts' room, max_bytes less the documents' share and the
+// public catalogue's share (R-BAS-110), holds at least one object of max_object_bytes. A cache of 2 GiB with the defaults of the
+// shares keeps no artifact and is refused with a message that names the four keys and what to change; room of exactly one largest
+// object is accepted, one MiB less is not, and so is a catalogue's share that takes the room; the defaults and the sizes of
+// deploy/dev/bastion-chart-common.yaml (the e2e and dev Bastions) pass. Unit, milliseconds.
 func TestR_BAS_031_ACacheWithoutRoomForOneLargestObjectIsRefused(t *testing.T) {
-	for _, c := range []struct{ name, cache string }{
-		{"a cache of 2 GiB with the default shares", "max_bytes: 2GiB\n"},
-		{"one MiB short of one largest object", "max_bytes: 4GiB\n    documents_max_bytes: 2049MiB\n"},
-		{"a largest object above the whole", "max_bytes: 4GiB\n    max_object_bytes: 5GiB\n    spool_max_bytes: 5GiB\n"},
+	const smallGUI = "  gui:\n    max_bytes: 128MiB\n"
+	for _, c := range []struct{ name, cache, gui string }{
+		{"a cache of 2 GiB with the default shares", "max_bytes: 2GiB\n", ""},
+		{"one MiB short of one largest object", "max_bytes: 4GiB\n    documents_max_bytes: 1921MiB\n", smallGUI},
+		{"a largest object above the whole", "max_bytes: 4GiB\n    max_object_bytes: 5GiB\n    spool_max_bytes: 5GiB\n", smallGUI},
+		{"a catalogue's share that takes the room", "max_bytes: 8GiB\n", "  gui:\n    max_bytes: 5GiB\n"},
 	} {
 		t.Run(c.name, func(t *testing.T) {
-			msg := bastionIssues(t, strings.Replace(bastionMinimal, "bastion:\n", "bastion:\n  cache:\n    "+c.cache, 1))
-			for _, key := range []string{"bastion.cache.max_bytes", "cache.documents_max_bytes", "cache.max_object_bytes", "raise max_bytes"} {
+			msg := bastionIssues(t, strings.Replace(bastionMinimal, "bastion:\n", "bastion:\n"+c.gui+"  cache:\n    "+c.cache, 1))
+			for _, key := range []string{"bastion.cache.max_bytes", "cache.documents_max_bytes", "gui.max_bytes", "cache.max_object_bytes", "raise max_bytes"} {
 				if !strings.Contains(msg, key) {
 					t.Errorf("the message does not name %q:\n%s", key, msg)
 				}
 			}
 		})
 	}
-	mustLoadBastion(t, bastionMinimal) // the defaults: 20 GiB, 2 GiB of documents, objects up to 2 GiB
-	for _, cache := range []string{
-		"max_bytes: 4GiB\n",
-		"max_bytes: 1GiB\n    max_object_bytes: 256MiB\n    spool_max_bytes: 512MiB\n    documents_max_bytes: 128MiB\n",
+	mustLoadBastion(t, bastionMinimal) // the defaults: 20 GiB, 2 GiB of documents, 4 GiB of catalogue, objects up to 2 GiB
+	for _, c := range []struct{ cache, gui string }{
+		{"max_bytes: 8GiB\n", ""},
+		{"max_bytes: 4GiB\n    documents_max_bytes: 1920MiB\n", smallGUI},
+		{"max_bytes: 1GiB\n    max_object_bytes: 256MiB\n    spool_max_bytes: 512MiB\n    documents_max_bytes: 128MiB\n", smallGUI},
 	} {
-		mustLoadBastion(t, strings.Replace(bastionMinimal, "bastion:\n", "bastion:\n  cache:\n    "+cache, 1))
+		mustLoadBastion(t, strings.Replace(bastionMinimal, "bastion:\n", "bastion:\n"+c.gui+"  cache:\n    "+c.cache, 1))
 	}
 }
 
@@ -211,7 +221,7 @@ func TestR_BAS_046_TheChartManagedKeysAreMarkedInTheSchema(t *testing.T) {
 		"server.tls.min_version": true, "server.tls.reload_interval": true,
 		"server.ops_tls.inherit": true, "server.ops_tls.certificates": true,
 		"bastion.main.token_file": true, "bastion.main.ca_file": true, "bastion.signing_key_file": true,
-		"bastion.cache.volume.dir": true, "bastion.cache.bucket.ca_file": true, "bastion.replicas": true, "bastion.cache.encryption_key_file": true,
+		"bastion.cache.volume.dir": true, "bastion.cache.volume.persistent": true, "bastion.cache.bucket.ca_file": true, "bastion.replicas": true, "bastion.cache.encryption_key_file": true,
 		"bastion.edge_limit.enabled": true, "bastion.edge_limit.requests_per_second": true, "bastion.edge_limit.connections": true,
 		"bastion.cache.bucket.credentials.access_key_id_file": true, "bastion.cache.bucket.credentials.secret_access_key_file": true,
 		"valkey.username_file": true, "valkey.password_file": true, "valkey.sentinel.username_file": true, "valkey.sentinel.password_file": true, "valkey.tls.ca_file": true, "tracing.ca_file": true,

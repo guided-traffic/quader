@@ -110,14 +110,15 @@ func New(v *cluster.Valkey, o Options) (*State, error) {
 	store := cluster.NewBastionStore(v)
 	lim := &valkeyLimiter{set: set, local: newLocal(o.Replicas, o.Now), replicas: o.Replicas, limiters: map[string]*limiterEntry{}}
 	return &State{
-		Limiter:  lim,
-		Blocks:   newValkeyBlocks(store, cluster.MarkBlock, o.Now),
-		Timeouts: newValkeyBlocks(store, cluster.MarkTimeout, o.Now),
-		Flights:  valkeyFlights{lock: cluster.NewFlightLock(v, cluster.FlightLockOptions{Registerer: o.Registry, InstanceUID: o.Instance})},
-		Sweep:    valkeySweep{store: store},
-		Answers:  &valkeyAnswers{store: store, signer: o.Signer, m: o.Metrics, log: o.Log},
-		Bytes:    &valkeyBytes{store: store, local: newLocalBytes(o.Replicas, o.Now)},
-		Shared:   v.Available,
+		Limiter:   lim,
+		Blocks:    newValkeyBlocks(store, cluster.MarkBlock, o.Now),
+		Timeouts:  newValkeyBlocks(store, cluster.MarkTimeout, o.Now),
+		Flights:   valkeyFlights{lock: cluster.NewFlightLock(v, cluster.FlightLockOptions{Registerer: o.Registry, InstanceUID: o.Instance})},
+		Sweep:     valkeySweep{store: store},
+		Catalogue: valkeyCatalogue{store: store},
+		Answers:   &valkeyAnswers{store: store, signer: o.Signer, m: o.Metrics, log: o.Log},
+		Bytes:     &valkeyBytes{store: store, local: newLocalBytes(o.Replicas, o.Now)},
+		Shared:    v.Available,
 	}, nil
 }
 
@@ -333,6 +334,19 @@ func (s valkeySweep) TryAcquire(ctx context.Context, ttl time.Duration) (bool, f
 	return held, release, nil
 }
 
+// valkeyCatalogue is the lease of the public catalogue's sync in Valkey (R-BAS-109).
+type valkeyCatalogue struct{ store *cluster.BastionStore }
+
+// TryAcquire implements [SweepLease]. A lease that cannot be asked about is held: every replica syncs, which is safe because the
+// documents are content-addressed and the state record is one object (Q-BAS-371).
+func (c valkeyCatalogue) TryAcquire(ctx context.Context, ttl time.Duration) (bool, func(), error) {
+	held, release, err := c.store.AcquireCatalogue(ctx, ttl)
+	if err != nil {
+		return true, func() {}, nil //nolint:nilerr // without the lease every replica syncs (R-BAS-109)
+	}
+	return held, release, nil
+}
+
 // valkeyAnswers is the [AnswerStore] in Valkey: signed on Put, verified on Get.
 type valkeyAnswers struct {
 	store  *cluster.BastionStore
@@ -379,6 +393,15 @@ func (a *valkeyAnswers) Delete(ctx context.Context, kind AnswerKind, keyHash str
 		return err
 	}
 	return a.store.DeleteAnswer(ctx, string(kind), keyHash, raw)
+}
+
+// CatalogueLease is the lease of the one replica that syncs the public catalogue into a shared bucket while the state is shared,
+// nil otherwise (R-BAS-109): without it every replica syncs.
+func (s *State) CatalogueLease() SweepLease {
+	if s == nil || s.Shared == nil || !s.Shared() || s.Catalogue == nil {
+		return nil
+	}
+	return s.Catalogue
 }
 
 // SweepLease is the lease of the one replica that sweeps a shared bucket while the state is shared, nil otherwise;

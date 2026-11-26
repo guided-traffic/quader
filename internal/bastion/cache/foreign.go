@@ -23,7 +23,7 @@ const (
 
 // plainFamilies are the top-level names of R-BAS-030's layout.
 func plainFamilies() []string {
-	return []string{dirArtifacts + "/", dirDocuments + "/", dirEntries + "/", dirAccess + "/", dirSpool + "/", dirProbe + "/"}
+	return []string{dirArtifacts + "/", dirDocuments + "/", dirEntries + "/", dirAccess + "/", dirSpool + "/", dirProbe + "/", "catalogue/"}
 }
 
 var errBatchFull = errors.New("cache: the batch of the sweep of other layouts is full")

@@ -940,7 +940,8 @@ HPA owns it. The NetworkPolicy holds ingress rules only, as the chart `quader`'s
 **Configuration (R-BAS-002).** `quader-bastion.config` merges `config` with the keys the chart manages (managed wins):
 `bastion.main.token_file`, `bastion.main.ca_file` and `bastion.cache.bucket.ca_file` (the one key of `trustedCA`),
 `bastion.signing_key_file`, `bastion.cache.encryption_key_file` (`/var/run/secrets/quader/cache-key/key`, only while
-`secrets.cacheKey.existingSecret` is set, R-BAS-061), `bastion.cache.volume.dir` (`/var/cache/quader-bastion`, volume backend), the bucket credential
+`secrets.cacheKey.existingSecret` is set, R-BAS-061), `bastion.cache.volume.dir` (`/var/cache/quader-bastion`, volume backend) with `persistent` (true for `cacheVolume.type: persistent`, which a replica
+reports as whether its public catalogue survives a restart, R-BAS-111), the bucket credential
 files (`source: static`), `bastion.replicas`, `bastion.edge_limit` (from `edgeLimit`: `enabled`, `requests_per_second`, `connections`, which
 the Bastion reports with every handshake, R-BAS-093), `valkey.username_file`, `valkey.password_file`, `valkey.sentinel.username_file`, `valkey.sentinel.password_file`
 (from `secrets.valkeySentinel`; the Sentinels of a Valkey that requires a password need them, found by the end-to-end run) and `valkey.tls.ca_file` (the Valkey CA,

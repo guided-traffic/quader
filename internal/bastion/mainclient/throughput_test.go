@@ -103,3 +103,57 @@ func TestR_BAS_097_AForwardIsAdmittedAfterItsSlotAndItsBodyIsPaced(t *testing.T)
 		t.Fatalf("a check after the refused admission: %v", err)
 	}
 }
+
+// catalogueThroughput is a fakeThroughput that also paces the catalogue's reads and counts them.
+type catalogueThroughput struct {
+	fakeThroughput
+	catalogue atomic.Int32
+}
+
+func (f *catalogueThroughput) CatalogueReader(_ context.Context, body io.ReadCloser) mainclient.PacedBody {
+	f.catalogue.Add(1)
+	return &countedBody{ReadCloser: body, f: &f.fakeThroughput}
+}
+
+// TestR_BAS_109_TheCatalogueReadsArePacedInTheirClassAndTakeNoSlot: the public set, the change list and the batch of documents are
+// read through the throughput's catalogue class, never admitted as a miss, and take no slot of the budget (R-BAS-097,
+// R-BAS-109); the batch hands each frame over in the request's order.
+func TestR_BAS_109_TheCatalogueReadsArePacedInTheirClassAndTakeNoSlot(t *testing.T) {
+	ft := &catalogueThroughput{}
+	r := newRig(t, func(o *mainclient.Options) {
+		o.Throughput = ft
+		o.Budget = mainclient.NewBudget(mainclient.BudgetOptions{MaxConcurrent: 1, Replicas: 1, AnonymousShare: 0.5, QueueTimeout: 50 * time.Millisecond})
+	})
+	r.main.SetConfiguration(func(c *iface.Configuration) { c.Switches.GUI = true })
+	r.main.PutDocument("state", []byte(`{"a":1}`))
+	r.main.PutDocument("signing/chain.pem", []byte("chain"))
+	ctx := context.Background()
+	if _, err := r.c.CataloguePublic(ctx); err != nil {
+		t.Fatal(err)
+	}
+	list, err := r.c.CatalogueChanges(ctx, 0, 0)
+	if err != nil || len(list.Entries) != 2 {
+		t.Fatalf("the change list: %+v %v", list, err)
+	}
+	var got []string
+	err = r.c.CatalogueDocuments(ctx, []string{"state", "signing/trusted-root.json", "signing/chain.pem"}, func(f iface.CatalogueFrame, gz []byte) error {
+		got = append(got, f.Path)
+		if f.Missing != (len(gz) == 0) {
+			t.Errorf("%s: missing %v with %d bytes", f.Path, f.Missing, len(gz))
+		}
+		return nil
+	})
+	if err != nil || len(got) != 3 || got[1] != "signing/trusted-root.json" {
+		t.Fatalf("the batch: %v %v", got, err)
+	}
+	if ft.catalogue.Load() != 3 || ft.admitted.Load() != 0 || ft.read.Load() == 0 {
+		t.Fatalf("paced %d catalogue reads, admitted %d, read %d bytes", ft.catalogue.Load(), ft.admitted.Load(), ft.read.Load())
+	}
+	if n := maintest.Value(r.m.MainRequests.WithLabelValues("catalogue", "2xx")); n != 3 {
+		t.Fatalf("catalogue 2xx = %v, want 3", n)
+	}
+	r.main.SetConfiguration(nil)
+	if _, err := r.c.CatalogueChanges(ctx, 0, 0); !errors.Is(err, mainclient.ErrBadAnswer) {
+		t.Fatalf("with gui off at the main installation: %v", err)
+	}
+}

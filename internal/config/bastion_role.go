@@ -65,6 +65,10 @@ type BastionSettings struct {
 	Cache   BastionCache   `yaml:"cache"`
 	Audit   BastionAudit   `yaml:"audit"`
 	Token   BastionToken   `yaml:"token"`
+	// GUI is the public catalogue the replica mirrors for its web interface (W-35, R-BAS-109 to R-BAS-111): how often it reads
+	// the change list, the share of the cache its documents take, and the age at which its pages say they are old. Whether the
+	// web interface is on is no key of this file: it is the registration's switch gui (R-BAS-102).
+	GUI BastionGUI `yaml:"gui"`
 	// EdgeLimit is the edge figure of the ingress in front of the replicas, which the chart renders from its edgeLimit
 	// values and every handshake reports to the main installation (R-BAS-093).
 	EdgeLimit BastionEdgeLimit `yaml:"edge_limit" chart:"managed" doc:"Rendered by the chart from edgeLimit: the per-address figures of the ingress in front of the Bastion, reported to the main installation with every handshake (R-BAS-093)."`
@@ -104,10 +108,10 @@ type BastionFeed struct {
 // BastionCache configures the cache (R-BAS-023, R-BAS-024, R-BAS-030, R-BAS-031).
 type BastionCache struct {
 	Backend                  string             `yaml:"backend" default:"volume" validate:"oneof=volume|bucket" doc:"Where the cache lives: a local volume per replica, or a bucket of the Bastion's own shared by its replicas (R-BAS-030)."`
-	MaxBytes                 ByteSize           `yaml:"max_bytes" default:"20GiB" validate:"min=1MiB" doc:"Bytes plus documents stay below this; a sweep evicts by last access (R-BAS-031). Less documents_max_bytes it holds at least one object of max_object_bytes: the artifacts' room, or the role does not start."`
-	MaxObjectBytes           ByteSize           `yaml:"max_object_bytes" default:"2GiB" validate:"min=1KiB" doc:"Larger answers are passed through and not kept (R-BAS-021). At most max_bytes less documents_max_bytes."`
+	MaxBytes                 ByteSize           `yaml:"max_bytes" default:"20GiB" validate:"min=1MiB" doc:"Artifacts, documents and the public catalogue stay below this; a sweep evicts by last access (R-BAS-031). Less documents_max_bytes and bastion.gui.max_bytes it holds at least one object of max_object_bytes: the artifacts' room, or the role does not start."`
+	MaxObjectBytes           ByteSize           `yaml:"max_object_bytes" default:"2GiB" validate:"min=1KiB" doc:"Larger answers are passed through and not kept (R-BAS-021). At most max_bytes less documents_max_bytes less bastion.gui.max_bytes."`
 	SpoolMaxBytes            ByteSize           `yaml:"spool_max_bytes" default:"2GiB" validate:"min=1MiB" doc:"The bytes all fills in progress of a replica may hold in temporary storage together; a fill that would pass it is passed through and not kept (Q-BAS-131). At least max_object_bytes. With the bucket backend the chart sizes the pod's tmp volume from it."`
-	DocumentsMaxBytes        ByteSize           `yaml:"documents_max_bytes" default:"2GiB" validate:"min=1MiB" doc:"A share of max_bytes for shared documents, so that documents never evict artifacts (R-BAS-023); the artifacts get the rest, which must hold one object of max_object_bytes (R-BAS-031)."`
+	DocumentsMaxBytes        ByteSize           `yaml:"documents_max_bytes" default:"2GiB" validate:"min=1MiB" doc:"A share of max_bytes for shared documents, so that documents never evict artifacts (R-BAS-023); the artifacts get the rest less bastion.gui.max_bytes, which must hold one object of max_object_bytes (R-BAS-031)."`
 	PrivateDocumentsMaxBytes ByteSize           `yaml:"private_documents_max_bytes" default:"256MiB" validate:"min=0" doc:"Memory per replica for the callers' private document copies (R-BAS-023)."`
 	MetadataRevalidateAfter  time.Duration      `yaml:"metadata_revalidate_after" default:"1m" validate:"min=1s,max=24h" doc:"A shared document is asked about again after this period (R-BAS-023)."`
 	ArtifactRevalidateAfter  time.Duration      `yaml:"artifact_revalidate_after" default:"10m" validate:"min=1s,max=24h" doc:"A cached artifact is checked again after this period (R-BAS-022)."`
@@ -124,6 +128,16 @@ type BastionCache struct {
 // BastionCacheVolume is the local volume of the volume backend.
 type BastionCacheVolume struct {
 	Dir string `yaml:"dir" default:"/var/cache/quader-bastion" chart:"managed" doc:"Mount point of the cache volume; rendered by the chart."`
+	// Persistent says whether the volume outlives its pod (the chart's cacheVolume.type persistent): the replica reports from it
+	// whether its copy of the public catalogue survives a restart (Quader-Bastion-Catalogue-Kept, R-BAS-111).
+	Persistent bool `yaml:"persistent" default:"false" chart:"managed" doc:"Rendered by the chart: true for cacheVolume.type persistent. The replica reports from it whether its copy of the public catalogue survives a restart (R-BAS-111)."`
+}
+
+// BastionGUI is the public catalogue of the web interface at the replica (W-35, R-BAS-109 to R-BAS-111).
+type BastionGUI struct {
+	PollInterval time.Duration `yaml:"poll_interval" default:"10s" validate:"min=1s,max=10m" doc:"How often the replica reads the change list of the public catalogue while the web interface is on (R-BAS-109); a feed entry of the kinds grants, settings, content and catalogue makes it read at once."`
+	MaxBytes     ByteSize      `yaml:"max_bytes" default:"4GiB" validate:"min=1MiB" doc:"A share of cache.max_bytes for the public catalogue's documents as stored (compressed), reserved whether or not the web interface is on; a catalogue above it is kept and raises QuaderBastionCatalogueOverBound (R-BAS-110). The artifacts get max_bytes less documents_max_bytes less this, which must hold one object of max_object_bytes."`
+	StaleAfter   time.Duration `yaml:"stale_after" default:"1h" validate:"min=1m,max=720h" doc:"The age of the catalogue's last confirmation after which the web interface says its information is old and QuaderBastionCatalogueStale fires (R-BAS-111); the pages are served whatever the age."`
 }
 
 // BastionCacheBucket is the Bastion's own bucket of the bucket backend (R-BAS-030).
@@ -275,11 +289,15 @@ func (b *BastionSettings) Validate(r *Report) {
 		r.Add("main.unreachable_after", "(%s) must be at least 3 x feed.poll_interval (%s): a feed poll that is merely late must not make the main installation unreachable (R-BAS-027)", m.UnreachableAfter, b.Feed.PollInterval)
 	}
 	c := b.Cache
-	if c.DocumentsMaxBytes > c.MaxBytes {
-		r.Add("cache.documents_max_bytes", "(%s) must not exceed cache.max_bytes (%s): it is a share of it", c.DocumentsMaxBytes, c.MaxBytes)
-	} else if room := c.MaxBytes - c.DocumentsMaxBytes; room < c.MaxObjectBytes {
-		r.Add("cache.max_bytes", "(%s) less cache.documents_max_bytes (%s) leaves the artifacts %s, less than one object of cache.max_object_bytes (%s): the cache would refuse the fills it is there for (R-BAS-031); raise max_bytes, or lower documents_max_bytes or max_object_bytes",
-			c.MaxBytes, c.DocumentsMaxBytes, room, c.MaxObjectBytes)
+	// The artifacts' room is what the two shares leave (R-BAS-031, R-BAS-110); below one largest object, or below nothing, the
+	// cache would refuse the fills it is there for.
+	if room := c.MaxBytes - c.DocumentsMaxBytes - b.GUI.MaxBytes; room < c.MaxObjectBytes {
+		left := "leaves the artifacts " + room.String()
+		if room < 0 {
+			left = "leaves the artifacts nothing"
+		}
+		r.Add("cache.max_bytes", "(%s) less cache.documents_max_bytes (%s) and gui.max_bytes (%s) %s, less than one object of cache.max_object_bytes (%s): the cache would refuse the fills it is there for (R-BAS-031, R-BAS-110); raise max_bytes, or lower documents_max_bytes, gui.max_bytes or max_object_bytes",
+			c.MaxBytes, c.DocumentsMaxBytes, b.GUI.MaxBytes, left, c.MaxObjectBytes)
 	}
 	if c.SpoolMaxBytes < c.MaxObjectBytes {
 		r.Add("cache.spool_max_bytes", "(%s) must be at least cache.max_object_bytes (%s): an object up to that size is spooled whole before it is kept, so a smaller spool would never keep one of the sizes the limit allows (Q-BAS-131); lower max_object_bytes or raise spool_max_bytes", c.SpoolMaxBytes, c.MaxObjectBytes)

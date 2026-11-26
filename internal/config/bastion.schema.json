@@ -184,7 +184,7 @@
             },
             "documents_max_bytes": {
               "default": "2GiB",
-              "description": "A share of max_bytes for shared documents, so that documents never evict artifacts (R-BAS-023); the artifacts get the rest, which must hold one object of max_object_bytes (R-BAS-031).",
+              "description": "A share of max_bytes for shared documents, so that documents never evict artifacts (R-BAS-023); the artifacts get the rest less bastion.gui.max_bytes, which must hold one object of max_object_bytes (R-BAS-031).",
               "type": [
                 "string",
                 "integer"
@@ -210,7 +210,7 @@
             },
             "max_bytes": {
               "default": "20GiB",
-              "description": "Bytes plus documents stay below this; a sweep evicts by last access (R-BAS-031). Less documents_max_bytes it holds at least one object of max_object_bytes: the artifacts' room, or the role does not start.",
+              "description": "Artifacts, documents and the public catalogue stay below this; a sweep evicts by last access (R-BAS-031). Less documents_max_bytes and bastion.gui.max_bytes it holds at least one object of max_object_bytes: the artifacts' room, or the role does not start.",
               "type": [
                 "string",
                 "integer"
@@ -220,7 +220,7 @@
             },
             "max_object_bytes": {
               "default": "2GiB",
-              "description": "Larger answers are passed through and not kept (R-BAS-021). At most max_bytes less documents_max_bytes.",
+              "description": "Larger answers are passed through and not kept (R-BAS-021). At most max_bytes less documents_max_bytes less bastion.gui.max_bytes.",
               "type": [
                 "string",
                 "integer"
@@ -288,6 +288,13 @@
                   "type": "string",
                   "x-quader-chart-managed": true,
                   "x-quader-env": "QUADER_BASTION_CACHE_VOLUME_DIR"
+                },
+                "persistent": {
+                  "default": false,
+                  "description": "Rendered by the chart: true for cacheVolume.type persistent. The replica reports from it whether its copy of the public catalogue survives a restart (R-BAS-111).",
+                  "type": "boolean",
+                  "x-quader-chart-managed": true,
+                  "x-quader-env": "QUADER_BASTION_CACHE_VOLUME_PERSISTENT"
                 }
               },
               "type": "object"
@@ -333,6 +340,38 @@
               "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
               "type": "string",
               "x-quader-env": "QUADER_BASTION_FEED_POLL_INTERVAL",
+              "x-quader-type": "duration"
+            }
+          },
+          "type": "object"
+        },
+        "gui": {
+          "additionalProperties": false,
+          "properties": {
+            "max_bytes": {
+              "default": "4GiB",
+              "description": "A share of cache.max_bytes for the public catalogue's documents as stored (compressed), reserved whether or not the web interface is on; a catalogue above it is kept and raises QuaderBastionCatalogueOverBound (R-BAS-110). The artifacts get max_bytes less documents_max_bytes less this, which must hold one object of max_object_bytes.",
+              "type": [
+                "string",
+                "integer"
+              ],
+              "x-quader-env": "QUADER_BASTION_GUI_MAX_BYTES",
+              "x-quader-type": "bytes"
+            },
+            "poll_interval": {
+              "default": "10s",
+              "description": "How often the replica reads the change list of the public catalogue while the web interface is on (R-BAS-109); a feed entry of the kinds grants, settings, content and catalogue makes it read at once.",
+              "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
+              "type": "string",
+              "x-quader-env": "QUADER_BASTION_GUI_POLL_INTERVAL",
+              "x-quader-type": "duration"
+            },
+            "stale_after": {
+              "default": "1h",
+              "description": "The age of the catalogue's last confirmation after which the web interface says its information is old and QuaderBastionCatalogueStale fires (R-BAS-111); the pages are served whatever the age.",
+              "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
+              "type": "string",
+              "x-quader-env": "QUADER_BASTION_GUI_STALE_AFTER",
               "x-quader-type": "duration"
             }
           },

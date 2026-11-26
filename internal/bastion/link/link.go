@@ -166,6 +166,7 @@ type Link struct {
 	nextHandshake time.Time
 	lastWarn      time.Time
 	watchers      []func(State)
+	feedHooks     []func([]iface.FeedEntry)
 	failLog       map[string]time.Time
 	mainVersion   int
 }
@@ -252,6 +253,25 @@ func (l *Link) Watch(f func(State)) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	l.watchers = append(l.watchers, f)
+}
+
+// OnFeed registers a function that is called, outside the link's lock, with the entries of every feed page the link applied that
+// it had not applied before, and with one entry of the kind grants after a reset of the feed: the public catalogue's hooks
+// (R-BAS-112). It runs on the link's goroutine and must not block.
+func (l *Link) OnFeed(f func([]iface.FeedEntry)) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.feedHooks = append(l.feedHooks, f)
+}
+
+// feed calls the hooks of OnFeed.
+func (l *Link) feed(entries []iface.FeedEntry) {
+	l.mu.Lock()
+	hooks := slices.Clone(l.feedHooks)
+	l.mu.Unlock()
+	for _, h := range hooks {
+		h(entries)
+	}
 }
 
 // RequestHandshake makes the next tick handshake: after a reload of the token (its expiry is then another's)
@@ -521,6 +541,9 @@ func (l *Link) applyEntries(entries []iface.FeedEntry, received time.Time) {
 	if sink := l.sink(); sink != nil && len(fresh) > 0 {
 		sink.Drop(fresh)
 	}
+	if len(fresh) > 0 {
+		l.feed(fresh)
+	}
 }
 
 // applyReset drops every answer and starts the history at the reset (R-BAS-026).
@@ -534,6 +557,8 @@ func (l *Link) applyReset(received time.Time, next iface.Cursor) {
 	l.mu.Lock()
 	l.st.HistoryStart = received
 	l.mu.Unlock()
+	// What changed in the gap is not known: the hooks read as after a grants entry.
+	l.feed([]iface.FeedEntry{{Kind: iface.FeedGrants, At: received}})
 }
 
 // fail handles the error of a handshake or a feed read. A failed handshake begins the unreachable state; a

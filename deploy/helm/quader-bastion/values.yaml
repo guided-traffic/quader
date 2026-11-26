@@ -100,7 +100,7 @@ config:
       poll_interval: 2s                 # 1s to 10s
     cache:
       backend: volume                   # volume | bucket
-      max_bytes: 20GiB                  # artifacts get max_bytes less documents_max_bytes, at least max_object_bytes, or the role does not start
+      max_bytes: 20GiB                  # artifacts get max_bytes less documents_max_bytes less gui.max_bytes, at least max_object_bytes, or the role does not start
       max_object_bytes: 2GiB
       spool_max_bytes: 2GiB             # the fills in progress of a replica hold at most this in temporary storage; at least max_object_bytes
       documents_max_bytes: 2GiB         # a share of max_bytes for metadata
@@ -128,6 +128,10 @@ config:
       spool_max_events: 1000000
     token:
       warn_before: 720h                 # 30 days (the owner's proposal)
+    gui:                                # the public catalogue of the web interface; on and off at the main installation (bastion.md R-BAS-109 to R-BAS-111)
+      poll_interval: 10s                # 1s to 10m; a feed entry reads at once
+      max_bytes: 4GiB                   # a share of cache.max_bytes, reserved whether or not the web interface is on (compressed documents)
+      stale_after: 1h                   # the pages say they are old after this, and QuaderBastionCatalogueStale fires; they are served on
   valkey:                               # optional; the keys of the chart quader, plus mode none
     mode: none                          # none | sentinel | standalone (development only)
     sentinel:

@@ -199,7 +199,8 @@ Priority: **MVP** · Covers: DIST-024
 - *Revised on 2026-11-26 by the owner's statement on W-35 ([Q-BAS-14](#q-bas-14--no-web-interface-at-the-bastion), R-BAS-101 to
   R-BAS-103):* the role gains a read-only web interface for anonymous visitors, switched on per registration at the main installation
   (`gui`, `docs`), fed by the public catalogue the replica mirrors over the interface; it still has no management API, no login and no
-  session. *Today, until W-35's packages P7 and P9 land:* no web interface; the catalogue's wire exists (interface version 8).
+  session. *Today, until W-35's package P9 lands:* no web interface; the catalogue's wire exists (interface version 8), and since
+  W-35's P7 (2026-11-26) every replica mirrors the catalogue while `gui` is on (R-BAS-109 to R-BAS-113).
 - Horizontal replicas: every Bastion replica is identical and interchangeable (INV-2); a request may reach any replica, and
   nothing a request needs is held only by the replica an earlier request reached (INV-18): answers, document copies and a
   local cache volume are caches whose loss costs performance only. The Bastion has no PostgreSQL; what it must not lose lives
@@ -640,7 +641,7 @@ replica sends them, a malformed value answers `400`, and they go into the event 
 ([Q-BAS-354](#q-bas-354--the-contact-headers-are-optional-and-recorded-in-the-contacts-event-until-e8)). *Built by E8 (2026-11-26):*
 `configuration` is the registration's own, and the contact's row keeps both values (`bastion_contact.edge_limit`, `catalogue_kept`,
 migration 00147), which `GET /api/v1/bastions/{name}` shows per replica as `edgeLimit` and `catalogueKept`; every replica sends the edge figure since
-E9a (the chart's `bastion.edge_limit`), and W-35's P7 will send the catalogue's. The forwarded host counts from the registration's own `egress` since E13 (2026-11-26).
+E9a (the chart's `bastion.edge_limit`), and the catalogue's since W-35's P7 (2026-11-26, R-BAS-111). The forwarded host counts from the registration's own `egress` since E13 (2026-11-26).
 
 - `responseBaseUrl` is the response base URL the main installation derived for this request (R-OPS-005, R-EP-003), with the
   Bastion's forwarded host counted only when the Bastion connected from an address of its registration's `egress` (R-BAS-017). The Bastion
@@ -1499,7 +1500,9 @@ Acceptance criteria:
 Priority: **MVP** · Covers: quader-only
 
 The Bastion follows the revocation feed every few seconds, so a revoked token or a narrowed right is dropped within seconds
-(owner, Q-BAS-8):
+(owner, Q-BAS-8). *Revised on 2026-11-26 (W-35's P7, R-BAS-112):* the link hands every entry it applied, and after a reset one entry of the
+kind `grants`, to the public catalogue of the web interface, which reads the public set and the change list at once and again after the
+builder's debounce; an entry of the kind `catalogue` changes no answer.
 
 - Every replica polls `feed` every `bastion.feed.poll_interval` and applies each new entry by its ID: it records the entry with
   its receipt time, which makes every matching answer unusable (R-BAS-020 rule 3), and deletes the matching answers from memory
@@ -1543,7 +1546,9 @@ Acceptance criteria:
 Priority: **MVP** · Covers: quader-only
 
 Answers the Bastion already holds stay valid for a configurable grace period beyond their normal period (owner,
-[Q-BAS-9](#q-bas-9--the-main-installation-unreachable-grace-period-503-for-unseen-tokens-then-nothing)):
+[Q-BAS-9](#q-bas-9--the-main-installation-unreachable-grace-period-503-for-unseen-tokens-then-nothing)). *Revised on 2026-11-26 by the
+owner's W-35 B.2b (R-BAS-111, built by W-35's P7):* the web interface has no grace period: its public catalogue is served whatever the
+age of its last confirmation, which the pages show; the package answers below keep theirs.
 
 - **Unreachable** ([Q-BAS-44](#q-bas-44--unreachable-means-a-failed-handshake-or-a-stale-feed)) is a state of each replica: it
   begins when the handshake fails (connect or TLS error, timeout, `5xx`, `401 bastion_token_invalid`, `400
@@ -1684,7 +1689,9 @@ Priority: **MVP** · Covers: quader-only
 The cache holds a small part of the artifacts, never the main installation's object store, which the Bastion cannot read
 (owner, [Q-BAS-10](#q-bas-10--the-cache-an-own-bucket-or-a-local-volume-never-the-main-installations-object-store)). *Lifted in part
 by the owner on 2026-11-22 (decision 12 (b)): a fill may read one blob of the main installation's store by a link handed for it
-(R-BAS-070); the cache itself is unchanged.* The chart chooses the backend (`bastion.cache.backend`):
+(R-BAS-070); the cache itself is unchanged.* *Revised on 2026-11-26 (W-35's P7, R-BAS-110):* the public catalogue of the web interface
+is a tree of its own beside the layout below, `catalogue/documents/<h0h1>/<h2h3>/<64 hex>` and `catalogue/state.json` (with a cache key
+`bc-<id>/g/…` and `bc-<id>/c/catalogue`). The chart chooses the backend (`bastion.cache.backend`):
 
 - **`bucket`**: an S3 bucket of the Bastion's own, shared by every replica (credentials from `secrets.cacheBucket` or workload
   identity; a bucket of the guided-traffic stackit-s3-provisioner, or SeaweedFS in the local profile). Layout below `prefix`:
@@ -1743,7 +1750,10 @@ Priority: **MVP** · Covers: quader-only
 *Revised on 2026-11-26 by the owner's [Q-BAS-333](#q-bas-333--what-was-served-twice-is-protected-in-the-cache)
 ([R-BAS-098](#r-bas-098--the-cache-protects-what-was-served-twice), built 2026-11-26):* a fill writes no access marker, so an entry
 with one was served twice and is protected; the sweep evicts unprotected entries first, then protected ones, with at most 80 % of an area
-protected.
+protected. *Revised on 2026-11-26 (W-35's P7, R-BAS-110):* the public catalogue's documents have a reserved share of their own,
+`bastion.gui.max_bytes` (4 GiB): artifacts are limited to `max_bytes − documents_max_bytes − gui.max_bytes`, which must hold one object of
+`max_object_bytes` (the role refuses to start and the chart to render otherwise, naming the four keys); no sweep of the areas lists or
+evicts a document of the catalogue.
 
 - **Size.** Bytes plus documents stay below `bastion.cache.max_bytes`; documents below `documents_max_bytes`, which is their reserved
   share: artifacts are limited to `max_bytes − documents_max_bytes` ([Q-BAS-88](#q-bas-88--documents-have-a-reserved-share-and-entries-are-removed-when-read)), and that room
@@ -1973,7 +1983,7 @@ it, the replicas share:
 |---|---|---|
 | Block list (R-BAS-037) | `block:<address>`, TTL = remaining duration | per replica |
 | Rate-limit and failed-authentication counters (R-BAS-035, R-BAS-036) | R-ARCH-034's sliding windows, limiters `bastion.<name>` | per replica, at the configured value ÷ `bastion.replicas` |
-| Fetch coordination (R-BAS-025), sweep lease (R-BAS-031) | `flight:<…>`, `sweep` | per replica |
+| Fetch coordination (R-BAS-025), sweep lease (R-BAS-031), the public catalogue's sync lease (R-BAS-109) | `flight:<…>`, `sweep`, `catalogue` | per replica |
 | The main installation's answers (R-BAS-020; the kinds credential, shape, URL and package of R-BAS-084), negative entries (R-BAS-024) | `ans:<kind>:<sha256 of the key>`, TTL = remaining validity, signed (R-BAS-032) | per replica |
 
 - This refines INV-3 for the Bastion: its Valkey holds positive authorization results of the main installation, by the
@@ -1986,7 +1996,7 @@ it, the replicas share:
   `quader_valkey_available` and `quader_ratelimit_fallback{limiter}` (1 for a limiter that answers from its share).
 - **The keys as formed** ([Q-BAS-91](#q-bas-91--the-bastions-keys-are-formed-by-the-cluster-package-without-a-keyspace-and-reuse-the-fetch-lock)):
   `quader-bastion:<valkey.key_prefix>:<mechanism>:v1:<parts>`: `block:v1:<address>`, `block:level:v1:<address>`,
-  `timeout:v1:<address>`, `ans:v1:<kind>:<sha256>`, `lock:fetch:v1:<sha256>`, `sweep:v1`, and the counters `rl:v1:…` of R-ARCH-034.
+  `timeout:v1:<address>`, `ans:v1:<kind>:<sha256>`, `lock:fetch:v1:<sha256>`, `sweep:v1`, `catalogue:v1`, and the counters `rl:v1:…` of R-ARCH-034.
   The table above names the families; the version segment, the encoding of an address and the reuse of the fetch lock are decided
   in Q-BAS-91.
 - **Signed answers** ([Q-BAS-93](#q-bas-93--the-store-signs-and-verifies-the-answer-records)): the store signs a record on `Put` and verifies it on `Get`; a
@@ -2279,7 +2289,7 @@ carries an address, a token, a path or a repository's name):
 |---|---|---|
 | `quader_bastion_requests_total` | counter | `class` (`artifact`, `shared`, `private`, `absent`, `pass`, `refused`), `result` (`hit`, `checked`, `miss`, `refused`, `error`) |
 | `quader_bastion_bytes_served_total` | counter | `source` (`cache`, `main`) |
-| `quader_bastion_main_requests_total` | counter | `kind` (`forward`, `conditional`, `check`, `feed`, `handshake`, `downloads`), `outcome` |
+| `quader_bastion_main_requests_total` | counter | `kind` (`forward`, `conditional`, `check`, `feed`, `handshake`, `downloads`, `catalogue`), `outcome` |
 | `quader_bastion_main_request_duration_seconds` | histogram | `kind` |
 | `quader_bastion_main_in_flight`, `quader_bastion_main_budget` | gauge | `class` (`authenticated`, `anonymous`) |
 | `quader_bastion_main_budget_exhausted_total` | counter | `class` |
@@ -2315,7 +2325,20 @@ carries an address, a token, a path or a repository's name):
 | `quader_bastion_throughput_limit_bytes_per_second` | gauge | `bucket` (`total`, `anonymous`) |
 | `quader_bastion_throughput_wait_seconds_total` | counter | `class` (`anonymous`, `signed_in`, `catalogue`) |
 | `quader_bastion_throughput_refused_total` | counter | `class`, `reason` (`busy`, `hour`) |
+| `quader_bastion_gui_enabled` | gauge | — |
+| `quader_bastion_catalogue_confirmed_timestamp_seconds`, `quader_bastion_catalogue_stale_after_seconds` | gauge | — |
+| `quader_bastion_catalogue_bytes`, `quader_bastion_catalogue_max_bytes`, `quader_bastion_catalogue_documents` | gauge | — |
+| `quader_bastion_catalogue_sync_total` | counter | `outcome` (`confirmed`, `failed`, `followed`) |
 
+- The last four rows are the public catalogue's of the web interface (W-35's P7, built on 2026-11-26): `quader_bastion_gui_enabled` is 1
+  while the switch gui is on for the replica (R-BAS-102); `…_confirmed_timestamp_seconds` the Unix time of the replica's last confirmed
+  state, 0 while it holds none, and `…_stale_after_seconds` `bastion.gui.stale_after` (R-BAS-111); `…_catalogue_bytes` what the catalogue's
+  tree holds in the cache backend as stored, `…_max_bytes` its share `bastion.gui.max_bytes`, `…_documents` the documents the replica
+  serves (R-BAS-110); `…_sync_total` a round by its outcome, `followed` for a replica of a shared bucket that took the state the syncing
+  one wrote (R-BAS-109). The catalogue's reads of the main installation are `kind="catalogue"` of `quader_bastion_main_requests_total`, its
+  wait for the throughput `class="catalogue"` of `quader_bastion_throughput_wait_seconds_total`, and a stored document that fails its
+  verification counts in `quader_bastion_cache_corrupt_total`. The feed's `catalogue` is a value of `kind` of
+  `quader_bastion_feed_entries_applied_total`.
 - `quader_bastion_refused_total` counts requests the Bastion refused itself. `reason="read_only"` counts a write refused with `403
   read_only` (R-BAS-014), whether the probe answered it or the kept answer replayed it, and a body above
   `bastion.main.max_forwarded_body`; a `404` that the main installation answers to a probe (a path with no route) is its own answer,
@@ -2425,6 +2448,9 @@ The chart's PrometheusRule (`metrics.prometheusRule.enabled`) holds these alerts
 | `QuaderBastionAuditEventsDropped` | `increase(quader_bastion_audit_events_dropped_total[15m]) > 0` | 0m | warning |
 | `QuaderBastionCacheCorrupt` | `increase(quader_bastion_cache_corrupt_total[1h]) > 0` | 0m | warning |
 | `QuaderBastionHandoverFailing` | `sum(increase(quader_bastion_handovers_total{outcome=~"fallback\|continued\|refused"}[15m])) > 0 and sum(increase(quader_bastion_handovers_total{outcome="read"}[15m])) == 0` (R-BAS-075) | 15m | warning |
+| `QuaderBastionCatalogueStale` | per replica: `time() - quader_bastion_catalogue_confirmed_timestamp_seconds > quader_bastion_catalogue_stale_after_seconds`, while it holds a state and `quader_bastion_gui_enabled == 1` (R-BAS-111) | 5m | warning |
+| `QuaderBastionCatalogueMissing` | per replica: `quader_bastion_catalogue_confirmed_timestamp_seconds == 0` while `quader_bastion_gui_enabled == 1` (R-BAS-111) | 15m | warning |
+| `QuaderBastionCatalogueOverBound` | `max(quader_bastion_catalogue_bytes) > max(quader_bastion_catalogue_max_bytes)` (R-BAS-110) | 15m | warning |
 | `QuaderBastionValkeyUnavailable` | `max(quader_valkey_available) == 0` (rendered only with Valkey configured) | 5m | warning |
 | `QuaderBastionReplicasNotReady` | `min(kube_deployment_status_replicas_available{deployment=~"<fullname>"}) < 2` (or the StatefulSet's) | 5m | warning |
 
@@ -2432,12 +2458,16 @@ Expressions are sketches. Two things differ from them in the chart ([Q-BAS-57](#
 `QuaderBastionMainUnreachable` uses `max(…) == 0`, because `min(…) == 0` is true as soon as one replica is cut off and would fire
 next to the single-replica alert instead of only when every replica is; and every selector is scoped to the release
 (`namespace` and `service="<fullname>-ops"`, the labels the chart's ServiceMonitor puts on the series), because one Prometheus
-scrapes several Bastions and an aggregate over all of them would blend their states.
+scrapes several Bastions and an aggregate over all of them would blend their states. The two alerts of the catalogue's age are per
+replica, matched `on(namespace, service, pod)`, because a replica's confirmation is its own and each page says its own age (W-35's B.2b);
+the bound is the release's, since the replicas of a bucket report the one shared tree (built on 2026-11-26, W-35's P7).
 
 Acceptance criteria:
 
 - `promtool check rules` and `promtool test rules` pass, with one test per alert that fires on its failure input and stays
-  silent on a healthy one.
+  silent on a healthy one. *As built for the catalogue's three alerts* ([rules_test.yaml](../../deploy/helm/quader-bastion/tests/rules_test.yaml),
+  part of `TestR_BAS_041_PromtoolRules`): the stale replica fires and the fresh one beside it does not, nothing fires with the web interface
+  off, a replica without a state fires after 15 minutes, a catalogue above its share fires.
 - The e2e suite sees `QuaderBastionInterfaceMismatch` and `QuaderBastionMainUnreachable` fire in the cluster's Prometheus
   (R-BAS-049).
 
@@ -2582,13 +2612,16 @@ Priority: **MVP** · Covers: DIST-024
 *Revised on 2026-11-26 (R-BAS-093):* `config.bastion.main.max_concurrent`, `anonymous_share` and `queue_timeout`,
 `config.bastion.limits`, `config.bastion.failed_auth` and `config.bastion.blocking` leave the block below for the registration;
 `edgeLimit.exemptCIDRs` (default `[]`) joins the edge's values; the chart renders the edge figure into the configuration file as the
-chart-managed `bastion.edge_limit`. *Built by E9a (2026-11-26):* the block below.
+chart-managed `bastion.edge_limit`. *Built by E9a (2026-11-26):* the block below. *Revised on 2026-11-26 (W-35's P7, R-BAS-109 to
+R-BAS-111):* `config.bastion.gui` joins the block (`poll_interval` 10 s, `max_bytes` 4 GiB, `stale_after` 1 h), `cache.max_bytes` less
+`documents_max_bytes` less `gui.max_bytes` must hold one `max_object_bytes`, and the chart renders the chart-managed
+`bastion.cache.volume.persistent` from `cacheVolume.type`.
 
 Every value of `quader-bastion` with its default. The block below is the chart's `values.yaml`: every value is its default, and
 a value is commented only where its name does not say its meaning, unit, range or consequence, with an `example:` where the
 default is empty (owner, 2026-11-04: no content-free comments). Keys under `config`
 are the Bastion's configuration file (R-BAS-001); the chart-managed keys (`server.tls`, `bastion.main.token_file`,
-`bastion.main.ca_file`, `bastion.signing_key_file`, `bastion.cache.encryption_key_file`, `bastion.cache.volume.dir`, `bastion.cache.bucket.ca_file`,
+`bastion.main.ca_file`, `bastion.signing_key_file`, `bastion.cache.encryption_key_file`, `bastion.cache.volume.dir` and `persistent`, `bastion.cache.bucket.ca_file`,
 `bastion.cache.bucket.credentials.access_key_id_file` and `secret_access_key_file`, `bastion.replicas`, `bastion.edge_limit`, the Valkey secret files
 `valkey.username_file`, `valkey.password_file`, `valkey.sentinel.username_file`, `valkey.sentinel.password_file` and `valkey.tls.ca_file`) are rendered by the chart and refused when set; the binary
 marks them in its schema (`x-quader-chart-managed`), and so are `server.ops_tls` and `tracing.ca_file`. The schema the chart
@@ -2729,6 +2762,10 @@ config:
       spool_max_events: 1000000
     token:
       warn_before: 720h                 # 30 days (the owner's proposal)
+    gui:                                # the public catalogue of the web interface; on and off at the main installation (R-BAS-109 to R-BAS-111)
+      poll_interval: 10s                # 1s to 10m; a feed entry reads at once
+      max_bytes: 4GiB                   # a share of cache.max_bytes, reserved whether or not the web interface is on (compressed documents)
+      stale_after: 1h                   # the pages say they are old after this, and QuaderBastionCatalogueStale fires; they are served on
   valkey:                               # optional; the keys of the chart quader, plus mode none
     mode: none                          # none | sentinel | standalone (development only)
     sentinel:
@@ -5064,7 +5101,8 @@ applies it in `Start` before the client listener binds, and the built-in configu
 `config.bastion.limits`, `failed_auth`, `blocking` and `main.max_concurrent`, `anonymous_share`, `queue_timeout` (a file that sets one stops
 startup naming it, the chart's schema refuses it), and renders the edge figure as `bastion.edge_limit`, which every handshake reports
 ([Q-BAS-447](#q-bas-447--the-edge-figure-is-a-chart-managed-section-of-the-configuration-file-and-every-handshake-reports-it)). Read
-nowhere yet at the Bastion: `mode`, `preset`, `place` (E9b), `switches.gui` and `docs` (W-35's P7); `throughput` since E10 (R-BAS-097). *Not built* (E12, the card).
+nowhere yet at the Bastion: `mode`, `preset`, `place` (E9b); `throughput` is read since E10 (R-BAS-097), `switches.gui` and `docs` since
+W-35's P7 (R-BAS-112). *Not built* (E12, the card).
 
 *Built on 2026-11-26 by E8, the main installation's side:* migration 00147 gives the registration `gui`, `docs`, `limits_mode`,
 `limits_preset` and the members `limits_flood`, `limits_slots`, `limits_throughput` and `limits_ceiling` in the interface's shapes, with a
@@ -5996,9 +6034,12 @@ The priority is the one of R-BAS-100, the other requirement of W-35's web interf
 [bounds.go](../../internal/bastion/cataloguebounds/bounds.go), [bastion_catalogue_api.go](../../internal/api/v1/bastion_catalogue_api.go)
 and the four operations of the OpenAPI tag `bastion`. *Built on 2026-11-26 (W-35's P6):* the routes serve what the builder keeps
 (R-BAS-104 to R-BAS-108): the change list after the cursor with `reset` for a cursor the catalogue does not continue, a document with the
-SHA-256 of its raw bytes as its `ETag`, the batch's frames up to the bound, and the public set of the last build. *Not built:* the writer of
-the feed kind `catalogue` ([Q-BAS-369](#q-bas-369--the-builder-writes-no-feed-entry-yet-a-bastion-learns-a-change-at-its-poll)), the sync,
-the store and the frames' reading at the Bastion (P7).
+SHA-256 of its raw bytes as its `ETag`, the batch's frames up to the bound, and the public set of the last build. *Built on 2026-11-26
+(W-35's P7):* the reads of the change list, the public set and the batch at the Bastion, paced in the throughput's class `catalogue`
+([catalogue.go](../../internal/bastion/mainclient/catalogue.go), R-BAS-109), and what a Bastion does with an entry of the kind `catalogue`
+(R-BAS-112). *Not built:* the writer of the feed kind `catalogue` at the main installation
+([Q-BAS-369](#q-bas-369--the-builder-writes-no-feed-entry-yet-a-bastion-learns-a-change-at-its-poll), kept by
+[Q-BAS-378](#q-bas-378--no-feed-entry-of-the-kind-catalogue-the-follow-up-round-after-the-builders-debounce-carries-a-change)).
 
 Acceptance criteria:
 
@@ -6027,7 +6068,8 @@ the registration, off for a new one, set by `PATCH /api/v1/bastions/{name}` with
 *Built on 2026-11-26 (W-35's P6):* at the builder, which reads the
 stored switches: `gui` on builds the registration's catalogue, off drops it at the next run, `docs` off
 builds no documentation and deletes what was built (R-BAS-104, R-BAS-108; `TestR_BAS_102_TheSwitchesDecideWhatIsBuilt`). *Not built:* the
-switches on the card (E12), everything the switches start and stop at the Bastion (P7, P9).
+switches on the card (E12), the pages the switches start and stop (P9). *Built on 2026-11-26 (W-35's P7):* at the Bastion: `gui` on
+starts the sync, off makes the catalogue unreadable at once and deletes its tree; `docs` off hides the documentation at once (R-BAS-112).
 
 Acceptance criteria:
 
@@ -6153,7 +6195,8 @@ Priority: **P1** · Covers: quader-only
 *Built on 2026-11-26 (W-35's P6):* [builder.go](../../internal/bastionmain/catalogue/builder.go),
 [wire_bastion_catalogue.go](../../internal/app/wire_bastion_catalogue.go), the statements `BastionCataloguePackageFacts` and
 `BastionCatalogueRepositoryFacts` of [bastion_catalogue.sql](../../internal/meta/postgres/queries/bastion_catalogue.sql). *Not built:* the
-feed entry of the kind `catalogue` (R-BAS-101): a Bastion learns of a change at its poll ([Q-BAS-369](#q-bas-369--the-builder-writes-no-feed-entry-yet-a-bastion-learns-a-change-at-its-poll),
+feed entry of the kind `catalogue` (R-BAS-101): a Bastion learns of a change at its poll or at the round it runs after the builder's
+debounce (R-BAS-112, [Q-BAS-378](#q-bas-378--no-feed-entry-of-the-kind-catalogue-the-follow-up-round-after-the-builders-debounce-carries-a-change); [Q-BAS-369](#q-bas-369--the-builder-writes-no-feed-entry-yet-a-bastion-learns-a-change-at-its-poll),
 [H-2314](../security/bastion.md#h-2314--a-narrowing-reaches-a-bastions-pages-only-at-its-next-poll-after-the-run)).
 
 Acceptance criteria:
@@ -6244,6 +6287,190 @@ Acceptance criteria:
   `TestR_BAS_101_TheCatalogueRoutesServeTheKeptDocuments`, `TestR_BAS_101_TheBatchStopsAtItsBound` (`internal/api/v1`), milliseconds.
 - Integration: the end of `TestR_BAS_104_TheCatalogueFollowsPublishesLevelsAndTheSwitch`: a catalogue switched off and on answers the
   cursor of the one before with `reset`, on PostgreSQL.
+
+## The public catalogue at the Bastion
+
+W-35's package P7: a Bastion replica mirrors its registration's public catalogue (R-BAS-101 to R-BAS-108) into its cache backend and
+serves the web interface's reads from it alone, so that no page view reaches the main installation (W-35's B.2), and serves on with its
+age while the main installation cannot be reached (the owner's B.2b). The pages themselves are W-35's P9; this section is the sync, the
+store, the age, the feed's hooks and the reader they read. The package is [internal/bastion/catalogue](../../internal/bastion/catalogue).
+
+### R-BAS-109 · The sync: the change list, the documents by batch, verified, and one replica of a shared bucket
+Priority: **P1** · Covers: quader-only
+
+The priority is the one of R-BAS-101 to R-BAS-108.
+
+- **A round.** While the switch `gui` is on (R-BAS-102) a replica runs a round every `bastion.gui.poll_interval` (10 s) and whenever the
+  feed wakes it (R-BAS-112): it reads the public set; it reads the change list from its cursor to the end, page by page; it reads the
+  documents the list names that its store does not hold, one path of each, in batches of at most `cataloguebounds.BatchMaxPaths` paths,
+  asking again for the paths an answer did not reach; it builds the index from the pages `index/<n>`; it swaps the new state in and keeps
+  it (R-BAS-110). A round that completed is the replica's confirmation: its time is `confirmedAt` (R-BAS-111).
+- **Verification** ([Q-BAS-372](#q-bas-372--a-document-that-does-not-verify-fails-the-round-a-missing-frame-takes-its-path-out)). Each
+  document is decompressed to at most the size its frame names and held to the SHA-256 of its raw bytes before it is kept (R-BAS-101). One
+  that does not verify is not kept and fails the round; what the round fetched before stays in the store, so the next round asks only for
+  what is left. A frame that is missing takes its path out of the state (the catalogue no longer holds it; its deletion follows in the
+  list); a frame that names newer bytes for its path gives the path those.
+- **A reset** (R-BAS-108). An answer with `reset` makes the round read the list from 0 into a state of its own; the old state is served,
+  with its `confirmedAt`, until the new one is complete and swapped in, and nothing of the old one stays that the new catalogue does not hold.
+- **Throughput and budget** ([Q-BAS-381](#q-bas-381--the-syncs-reads-take-no-slot-are-paced-in-their-class-and-are-bounded-by-the-sync)).
+  Every body of the sync is read through the throughput's class `catalogue` (R-BAS-097, `Pacer.CatalogueReader`), from the total only and
+  below the callers' misses, and nothing else reads a catalogue body. The reads take no slot of the budget (R-BAS-025), as the handshake and
+  the feed do, and are counted as `kind="catalogue"` of `quader_bastion_main_requests_total`; each read is bounded by two minutes, since a
+  paced batch of megabytes may take longer than an answer of the interface may.
+- **One replica of a shared bucket** ([Q-BAS-371](#q-bas-371--with-a-bucket-and-valkey-a-lease-lets-one-replica-sync-the-others-take-its-state)).
+  With the bucket backend and Valkey a lease (`catalogue` in the Bastion's keyspace, three poll intervals) lets one replica sync; the
+  others take the state it wrote at their turn when it is ahead of theirs or confirmed later. Without Valkey, and while it is unavailable,
+  every replica syncs, which is safe: the documents are content-addressed and the state record is one object, and a replica takes the
+  stored record before its round when the record's cursor is ahead of its own. With the volume backend each replica syncs its own volume.
+
+*Built on 2026-11-26 (W-35's P7):* [sync.go](../../internal/bastion/catalogue/sync.go),
+[catalogue.go](../../internal/bastion/mainclient/catalogue.go) of the client, the lease `AcquireCatalogue` of
+[valkey_bastion.go](../../internal/cluster/valkey_bastion.go) and `State.CatalogueLease` of the shared state.
+
+Acceptance criteria:
+
+- Unit ([catalogue_test.go](../../internal/bastion/catalogue/catalogue_test.go), against maintest's catalogue, which keeps the builder's
+  rules of R-BAS-108): `TestR_BAS_109_ARoundMirrorsTheCatalogueAndReadsOnlyWhatChanged` (a round serves every document verified, a round
+  with nothing new reads no document, a new and a deleted document arrive at the next round),
+  `TestR_BAS_109_AResetKeepsTheOldStateServedUntilTheNewOneIsComplete`, `TestR_BAS_109_AReplicaOfASharedStoreTakesTheStateAnotherWrote`;
+  ([throughput_test.go](../../internal/bastion/mainclient/throughput_test.go))
+  `TestR_BAS_109_TheCatalogueReadsArePacedInTheirClassAndTakeNoSlot`. Milliseconds, documents of bytes.
+- Integration (area `bastion`, [catalogue_sync_test.go](../../test/integration/bastion/catalogue_sync_test.go), the role all with the
+  builder of P6, a Bastion on a bucket and one on a volume, two npm packages of bytes):
+  `TestR_BAS_109_TheBastionMirrorsTheCatalogueAndServesOnWhileTheLinkIsCut` (a publish reaches both within the builder's debounce, its run
+  and a poll, measured 2.1 s with a poll of 2 s).
+
+### R-BAS-110 · The store: a tree of the cache backend with a share of its own, a signed state, a sweep
+Priority: **P1** · Covers: quader-only
+
+- **The tree.** The documents are kept gzip-compressed, as they travel, by the SHA-256 of their raw bytes in the catalogue's tree of the
+  cache backend: `catalogue/documents/<h0h1>/<h2h3>/<64 hex>`, with a cache key (R-BAS-061) objects of the stored format below
+  `bc-<id>/g/` under keyed names. A document many paths hold (an Ansible entry over many versions) is kept once.
+- **The manifest and the state record** ([Q-BAS-373](#q-bas-373--which-path-holds-which-document-is-a-manifest-of-256-shards-by-unit)).
+  Which path holds which document is a manifest of 256 shards, each a document of the same tree, a path's shard chosen by its unit (a
+  package, a repository's set-up, a generic repository's files), so that a change of one package rewrites one shard. The state record,
+  `catalogue/state.json` (with a cache key `bc-<id>/c/catalogue`, bound to its name), names the shards, the cursor, `confirmedAt`, the
+  public set and the switches; it is signed with the signing key in the domain `catalogue` where entries are signed (Q-BAS-98). It is
+  written when the cursor, a shard, the public set or a switch changed, and otherwise every minute for its `confirmedAt`
+  ([Q-BAS-374](#q-bas-374--the-state-record-is-written-when-it-changed-and-every-minute-for-its-time)).
+- **The share** ([Q-BAS-380](#q-bas-380--the-catalogues-share-is-reserved-always-a-catalogue-above-it-is-kept-and-alerted)).
+  `bastion.gui.max_bytes` (4 GiB of stored bytes, the measurement's proposal 4) is a share of `cache.max_bytes` reserved whether or not
+  the web interface is on: the artifacts are limited to `max_bytes − documents_max_bytes − gui.max_bytes`, and a configuration that leaves
+  them less than one `max_object_bytes` does not start and is not rendered by the chart (R-BAS-031's rule, extended). No sweep of the areas
+  lists the tree, so the artifacts' and the documents' evictions never take a document of the catalogue; a catalogue above its share is kept
+  and `QuaderBastionCatalogueOverBound` fires.
+- **The sweep** ([Q-BAS-375](#q-bas-375--a-document-no-state-names-is-deleted-an-hour-after-it-was-written-gui-off-deletes-the-tree)). Every
+  five minutes the syncing replica deletes the documents its state does not name that were written more than an hour before; the switch
+  `gui` off deletes the whole tree, the state record first.
+
+*Built on 2026-11-26 (W-35's P7):* [catalogue.go](../../internal/bastion/cache/catalogue.go) of the cache,
+[state.go](../../internal/bastion/catalogue/state.go), [sync.go](../../internal/bastion/catalogue/sync.go), the configuration's
+`bastion.gui` ([bastion_role.go](../../internal/config/bastion_role.go)) and the chart's room rule.
+
+Acceptance criteria:
+
+- Unit ([catalogue_test.go](../../internal/bastion/cache/catalogue_test.go)): `TestR_BAS_110_TheCatalogueTreeIsSignedSealedAndNeverSwept`
+  (plain and sealed: the tree read back, the state record signed and one changed on the volume refused, a sweep of a cache far above its
+  limits leaves the tree alone and does not count it, the share comes off the artifacts' limit); configuration
+  `TestR_BAS_031_ACacheWithoutRoomForOneLargestObjectIsRefused` with the catalogue's share; chart
+  `TestR_BAS_030_TheSpoolFitsTheTemporaryVolume`'s case of the room with `gui.max_bytes`. Milliseconds.
+- promtool: `QuaderBastionCatalogueOverBound` (R-BAS-041).
+
+### R-BAS-111 · The age: confirmedAt, serving on without the main installation, a restart with and without a kept state
+Priority: **P1** · Covers: quader-only
+
+The owner's B.2b (2026-11-26, against the development agent's favourite of a grace period): the web interface serves on while the main
+installation is unreachable and shows its state's age.
+
+- **confirmedAt** is the time a replica last completed a round (R-BAS-109); a replica of a shared bucket that took the state another wrote
+  carries that state's. The reader serves its state whatever its age; `State` answers it with `bastion.gui.stale_after` (1 h) and whether it
+  is older, for the pages' "As of" and their notice band (P9). The package answers of the package API keep their grace period (R-BAS-027).
+- **A start.** A replica reads the stored state before its client listener binds, after the stored configuration (Q-BAS-327). It serves a
+  state it finds with the stored `confirmedAt` and, while it applies the built-in configuration, the stored switches, also while the main
+  installation is unreachable. One that finds none answers not ready (`ErrNotReady`, P9's `503 not_ready`) until its first round; so does
+  one that knows neither its switches nor a state: such a replica is never off
+  ([Q-BAS-379](#q-bas-379--a-replica-that-knows-neither-its-switches-nor-a-state-is-not-ready-never-off)).
+- **Kept.** The state survives a restart where the cache does: with the bucket backend and a persistent volume. Every handshake reports it
+  in `Quader-Bastion-Catalogue-Kept` (R-BAS-010), from the backend and the chart-managed `bastion.cache.volume.persistent`, which the chart
+  renders from `cacheVolume.type` ([Q-BAS-382](#q-bas-382--kept-is-the-bucket-backend-or-the-charts-word-that-the-volume-is-persistent)).
+  The chart's default, the ephemeral volume, does not keep it (H-2318).
+- **Gauges and alerts** (R-BAS-040, R-BAS-041): `quader_bastion_catalogue_confirmed_timestamp_seconds`,
+  `quader_bastion_catalogue_stale_after_seconds` and `quader_bastion_gui_enabled`; `QuaderBastionCatalogueStale` and
+  `QuaderBastionCatalogueMissing` per replica.
+
+*Built on 2026-11-26 (W-35's P7):* [reader.go](../../internal/bastion/catalogue/reader.go), `Catalogue.Load` of
+[sync.go](../../internal/bastion/catalogue/sync.go), the wiring of [server.go](../../internal/bastion/server/server.go), the header in the
+client's handshake, the chart's `persistent` and alerts.
+
+Acceptance criteria:
+
+- Unit: `TestR_BAS_111_AStoredStateIsServedAfterARestartWithItsAge` (a replica restarted with the link cut serves the stored state with its
+  `confirmedAt` and switches, stale after `stale_after` and served on; without a state or switches not ready, never off), milliseconds;
+  chart `TestR_BAS_111_TheChartSaysWhetherTheCacheVolumeOutlivesItsPod`.
+- Integration: `TestR_BAS_109_TheBastionMirrorsTheCatalogueAndServesOnWhileTheLinkIsCut`: with the link cut both Bastions serve with the
+  `confirmedAt` of their last round; a replica of the bucket restarted during the cut serves the stored state; a replica whose volume was
+  removed answers not ready.
+- promtool: `QuaderBastionCatalogueStale` (the stale replica fires, the fresh one beside it does not, nothing with the web interface off),
+  `QuaderBastionCatalogueMissing`.
+
+### R-BAS-112 · The switches and the feed's hooks
+Priority: **P1** · Covers: quader-only
+
+- **gui and docs** (R-BAS-102). The replica applies the switches of the configuration it applies (R-BAS-093). `gui` on wakes the sync;
+  `gui` off makes every read answer off at once (`ErrOff`, P9's `404 not_found`), stops the sync and deletes the catalogue's tree. `docs`
+  off hides the documentation (`CataloguePath.Documentation`) at once, before the builder deletes it.
+- **The public set hides** ([Q-BAS-376](#q-bas-376--the-public-set-hides-a-package-while-none-of-its-repositories-is-in-it)). A round reads
+  the public set first and swaps it in before it reads anything else. A package is shown while one of its repositories (the index's
+  `repositories`) is in the public set, its documentation while one of them has a public wiki and `docs` is on; a repository's set-up and
+  files while the repository is in it; the anchors, the signature objects and the catalogue's state always. The pages of the index are the
+  reader's own and are never answered as documents.
+- **The hooks** ([Q-BAS-377](#q-bas-377--a-narrowing-of-the-feed-runs-a-round-at-once-and-again-after-the-builders-debounce)). The link
+  hands the catalogue every feed entry it applied, and after a reset one of the kind `grants`. An entry of the kinds `grants`, `settings`,
+  `principal` and `content` runs a round at once and a second one 8 s later, after the builder's debounce of 5 s and its run, since the public
+  set and the change list the main installation answers are those of its last build (R-BAS-101, R-BAS-105); an entry of the kind
+  `catalogue` runs a round at once. No feed entry of the kind `catalogue` is written by the main installation
+  ([Q-BAS-378](#q-bas-378--no-feed-entry-of-the-kind-catalogue-the-follow-up-round-after-the-builders-debounce-carries-a-change)).
+
+*Built on 2026-11-26 (W-35's P7):* `SetSwitches` and `Feed` of [catalogue.go](../../internal/bastion/catalogue/catalogue.go),
+`Link.OnFeed` of [link.go](../../internal/bastion/link/link.go).
+
+Acceptance criteria:
+
+- Unit: `TestR_BAS_112_TheFeedHooksHideAndResyncWithoutWaitingForThePoll` (with a poll of an hour: a `grants` entry hides a package whose
+  repository fell out of the public set, a `content` entry brings a withdrawal), `TestR_BAS_112_DocsOffHidesTheDocumentationAtOnce`; the
+  switch `gui` off in `TestR_BAS_111_AStoredStateIsServedAfterARestartWithItsAge` (off at once, the state record and every document
+  deleted). Milliseconds.
+- Integration: the end of `TestR_BAS_109_TheBastionMirrorsTheCatalogueAndServesOnWhileTheLinkIsCut`: a project lowered to private is gone
+  from both Bastions' pages within the builder's debounce, its run and the round after it (measured 7 s).
+
+### R-BAS-113 · The reader
+Priority: **P1** · Covers: quader-only
+
+`catalogue.Reader`, which the web interface (P9) and W-34's anonymous answers read, held by the replica (`Server.Catalogue`):
+
+| Method | Answers |
+|---|---|
+| `State()` | `gui`, `docs`, whether the switches are known, whether a state is served, `confirmedAt`, `stale_after` and whether it is older, whether the state is kept |
+| `ConfirmedAt()` | the time of the state served; zero without one |
+| `PublicSet()` | the projects and repositories the catalogue shows |
+| `Search(Query)` | the public packages by `q` (a substring of the name, the description or a keyword, without regard to case), `formats`, `project`, `repositories`, `deprecated`, sorted by `name` (the default), `createdAt`, `updatedAt` or `relevance` (a leading `-` descending), in pages of 50, at most 100, with the cursor of the page before ([Q-BAS-383](#q-bas-383--the-search-runs-over-the-index-in-memory-with-a-cursor-of-the-last-entrys-sort-key)) |
+| `Package(id)` | a public package of the index: the summary's members that are the same for every format, and the summary as the main installation answered it |
+| `Versions(id, after, limit)` | a page of the package's versions list, as the main installation answered it |
+| `Document(path)` | a document of the grammar (R-BAS-103) that the state shows (R-BAS-112), raw and compressed, verified against its SHA-256 on every read |
+
+- While the switch `gui` is off every method answers `ErrOff`, while no state is served `ErrNotReady` (R-BAS-111).
+- **Integrity on read** (W-35's D6, [Q-BAS-372](#q-bas-372--a-document-that-does-not-verify-fails-the-round-a-missing-frame-takes-its-path-out)).
+  A document the store lost, or one whose bytes do not verify, is answered as not found, deleted, counted in
+  `quader_bastion_cache_corrupt_total` and fetched again by the next round, which it wakes.
+
+*Built on 2026-11-26 (W-35's P7):* [reader.go](../../internal/bastion/catalogue/reader.go), [index.go](../../internal/bastion/catalogue/index.go).
+
+Acceptance criteria:
+
+- Unit: the search's pages, sort and keyword match and a sort it refuses, the versions' pages, an index page not served
+  (`TestR_BAS_109_ARoundMirrorsTheCatalogueAndReadsOnlyWhatChanged`); `TestR_BAS_113_AnIntegrityFailureIsFetchedAgain` (a document the
+  main installation sent that does not verify fails the round and is fetched by the next; a stored document changed on the volume is not
+  served and is fetched again). Milliseconds.
 
 ## A registration the configuration declares
 
@@ -12256,7 +12483,220 @@ label in the audit screen and its translation.
 | (a) No entry in P6; P7's poll (10 s by default) carries the change (chosen) | A Bastion reads its change list at its poll | No audit event per run in the audit log, no screen work in a builder's package | A change reaches a Bastion up to a poll later (H-2314) |
 | (b) An audit event `bastion.catalogue.changed` per run that changed something | The feed's bound | Seconds | An event per publish in the audit log of every installation with a Bastion's web interface |
 
-**Choice:** (a), to be revisited with P7, which owns the poll. **Applied in the spec:** R-BAS-101, R-BAS-105.
+**Choice:** (a), to be revisited with P7, which owns the poll. **Applied in the spec:** R-BAS-101, R-BAS-105. *Revisited by P7:*
+[Q-BAS-378](#q-bas-378--no-feed-entry-of-the-kind-catalogue-the-follow-up-round-after-the-builders-debounce-carries-a-change).
+
+### Q-BAS-370 · The catalogue is a package of its own that reads the main installation and the store through interfaces of its own
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: W-35's P7 names `internal/bastion/catalogue` as new; the sync reads the main installation like the link does, and the pages
+(P9) must not import the client of the main installation (W-35's B.7).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A package of its own in the domain layer, with `Source` and `Store` interfaces that the client and the cache implement (chosen) | The sync and the reader in one place; the client's catalogue reads in `mainclient` | The pages import the reader only; the unit tests run against maintest and a volume | Two small interfaces |
+| (b) The sync in the link | One loop | — | The link's state machine grows; the reader would sit in the link |
+| (c) The sync in the engine | Beside the request flow | — | The engine is the request flow; the pages must not import it |
+
+**Choice:** (a). The sync reads through the raw client, not the link's guard: its failures do not decide reachability, the link's own
+handshake and feed do. **Applied in the spec:** R-BAS-109, R-BAS-113.
+
+### Q-BAS-371 · With a bucket and Valkey a lease lets one replica sync; the others take its state
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the plan (W-35's P7): "With Valkey and the bucket backend a lease lets one replica sync (as the sweep's lease); otherwise each
+replica syncs".
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A lease `catalogue` of three poll intervals, taken per round; a replica without it takes the stored record when it is ahead of its own or confirmed later; without Valkey every replica syncs and takes a record that is ahead before its round (chosen) | One sync per Bastion with Valkey | One read of the main installation per round, not one per replica; a lease that cannot be asked is held, so a Valkey outage costs reads, not freshness | A follower serves the syncing replica's state up to one poll later |
+| (b) Every replica syncs always | Simplest | No lease | The main installation answers every replica's round |
+| (c) One replica named by the chart | No lease | — | The named one's outage stops every replica's sync |
+
+**Choice:** (a). The key is `quader-bastion:<prefix>:catalogue:…` of the family `catalogue` (`cluster.AcquireCatalogue`), with the ACL
+commands the sweep's lease uses. **Applied in the spec:** R-BAS-109.
+
+### Q-BAS-372 · A document that does not verify fails the round; a missing frame takes its path out
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-BAS-101: "the Bastion … verifies the SHA-256 before it keeps the compressed bytes"; W-35's D6: SHA-256 on read.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A document that does not verify fails the round, which keeps the old state and what it fetched before; a missing frame takes its path out; a stored document is verified on every read and fetched again when it fails (chosen) | Nothing unverified is ever kept or served | The next round asks only for what is left; a document the store lost or changed is repaired by itself | A document the main installation keeps sending broken stops the rounds; it is counted as a failed round |
+| (b) Skip a document that does not verify and complete the round | Fresher state | — | A page names a document the replica cannot serve |
+| (c) Verify once when it is kept | Cheaper reads | — | A store written by someone else is served unverified (D6) |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-109, R-BAS-113.
+
+### Q-BAS-373 · Which path holds which document is a manifest of 256 shards by unit
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: documents are content-addressed (R-BAS-101) and many paths hold one (14,200 Ansible entries were 1,264 documents, R-BAS-103), so
+a replica must keep which path holds which; the measurement's 100,000 versions are about 1.4 million paths.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A manifest of 256 shards, each a document of the tree, a path's shard by its unit (`packages/<id>`, `setup/<project>/<repo>`, `files/<project>/<repo>`, else the path) (chosen) | A change of one package rewrites one shard; a round clones only the shards it changed | Writes and memory per round of a size of the change; a restart reads 256 documents | The map is held whole in memory (H-2315) |
+| (b) One manifest | Simplest | — | Every change rewrites the whole map: about 200 MB raw at 1.4 million paths (derived) |
+| (c) One pointer object per path | No map | — | 1.4 million objects in the bucket, a listing per start |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-110.
+
+### Q-BAS-374 · The state record is written when it changed, and every minute for its time
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the record names `confirmedAt`, which moves every round (10 s), and a replica restarted during an outage serves the stored one.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Written when the cursor, a shard, the public set or a switch changed, and otherwise when its `confirmedAt` is a minute old (chosen) | One small write a minute when nothing changes | A restarted replica's age is at most a minute older than its last round | — |
+| (b) Every round | Exact age after a restart | — | 8,640 writes a day per syncing replica into the bucket |
+| (c) Only when something changed | Fewest writes | — | A restart after a quiet day shows the age of the last change, not of the last confirmation |
+
+**Choice:** (a). The record is signed in the domain `catalogue` and sealed with a cache key, as the stored configuration is
+(Q-BAS-327). **Applied in the spec:** R-BAS-110.
+
+### Q-BAS-375 · A document no state names is deleted an hour after it was written; gui off deletes the tree
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-BAS-102: gui off "makes its `catalogue/` tree unreadable and lets the sweep delete it"; a document a change replaced stays in
+the store; replicas of a bucket without Valkey write documents the others do not name yet.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Every five minutes the syncing replica deletes what its state does not name and was written over an hour ago; gui off deletes the record and every document at once (chosen) | A grace for the other replicas of a bucket | Nothing another replica is about to name goes | A replica an hour behind can find documents gone (H-2320) |
+| (b) Delete at once what the state no longer names | Smallest store | — | Another replica of the bucket loses documents it names |
+| (c) Never | — | — | The store grows with every change |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-110, R-BAS-112.
+
+### Q-BAS-376 · The public set hides a package while none of its repositories is in it
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the plan's P7: "`grants` and `settings` cause a re-read of the public set, which hides what fell out (no hold)". The documents are
+per package (by catalogue ID), not per repository; the index's summary names the repositories that hold a public version.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A package is shown while one of its repositories is in the public set, its documentation while one of them has a public wiki and docs is on; set-ups and files by their repository; the index pages are the reader's own (chosen) | Hiding from data the replica holds | Works before the builder ran, also while the main installation answers only the old change list | A package public in two repositories keeps the versions only the narrowed one held until the run (H-2321) |
+| (b) Hide nothing until the builder's documents arrive | — | — | A narrowing waits for the debounce, the run and the round |
+| (c) Hide per version | Exact | — | The replica would need per version which repository holds it, which no document says |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-112.
+
+### Q-BAS-377 · A narrowing of the feed runs a round at once and again after the builder's debounce
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the main installation answers the public set and the change list of its last build (R-BAS-101), which starts 5 s after a change
+(R-BAS-105); the feed brings a narrowing within its 2 s.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `grants`, `settings`, `principal` and `content` run a round at once and another 8 s later; `catalogue` at once (chosen) | The second round meets the build the change started | A narrowing reaches the pages in about the debounce and a run (measured 7 s), whatever the poll | A round more per entry, which reads an empty change list when nothing changed |
+| (b) A round at once only | — | — | At once finds the build before the change; the narrowing waits for the poll |
+| (c) Nothing; the poll | — | — | Up to 10 s more |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-112.
+
+### Q-BAS-378 · No feed entry of the kind catalogue; the follow-up round after the builder's debounce carries a change
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: Q-BAS-369 left the feed entry to P7, "decide with your poll interval whether that holds, and if a feed entry is cheaper in seconds,
+say what it needs at the main installation". With P7's poll of 10 s and the follow-up round of Q-BAS-377, a change that comes with a feed
+entry reaches the pages about 8 s after it; one that comes without (a publish: `package.published` writes none, R-BAS-015) reaches them
+within the debounce, the run and a poll, at most about 17 s (derived), measured 2.1 s with a poll of 2 s.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) No feed entry; the poll and the follow-up round (chosen) | As built | Nothing at the main installation | A publish shows on the pages up to a poll after its run |
+| (b) An audit event `bastion.catalogue.changed` per run that changed a registration's catalogue, mapped to the feed kind `catalogue` | The Bastion reads at its next feed poll (2 s) | Saves up to 8 s on a publish | An audit event per publishing run in every installation with a web interface on, its label and translation in the audit screen, the feed's mapping, and every Bastion with gui on reads its change list for any registration's change (H-2306) |
+
+**Choice:** (a): seconds on a publish do not pay for an audit event per run; a narrowing, which is what a delay costs, comes with a feed
+entry already. *The proposal, should the owner want (b):* at the main installation, in the builder's run, write one audit event
+`bastion.catalogue.changed` (no registration in its data) when a run wrote a row, map it to the feed kind `catalogue` in
+`internal/bastionmain/feed.go`, and add its label to the audit screen and `messages.de.xlf`; the Bastion needs nothing more (it handles
+the kind since P7). **Applied in the spec:** R-BAS-101, R-BAS-105, R-BAS-112.
+
+### Q-BAS-379 · A replica that knows neither its switches nor a state is not ready, never off
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: B.2b: "A replica that finds a stored state serves it with the stored `confirmedAt` and the stored switches"; a replica on an
+ephemeral volume restarted during an outage has no stored configuration either, so it applies the built-in one, whose `gui` is off.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) While the replica applies the built-in configuration the stored state's switches hold; without a state the reader is not ready (`503`), not off; the tree is deleted only on `gui` off of a configuration of the main installation, stored or of a handshake (chosen) | A replica that does not know does not say "gone" | Crawlers do not drop a page for a 503; a start never deletes a kept catalogue | — |
+| (b) The built-in `gui` off is off | Simple | — | Every page answers 404 after such a start, and the tree would be deleted |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-111, R-BAS-112.
+
+### Q-BAS-380 · The catalogue's share is reserved always; a catalogue above it is kept and alerted
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the measurement's proposal 4 (developer/bastion.md): `config.bastion.gui.max_bytes` of 4 GiB, a share of `cache.max_bytes` like
+`documents_max_bytes`, "a catalogue above it raises `QuaderBastionCatalogueOverBound` rather than evicting"; the brief: extend the room
+rule to the catalogue's share. Whether `gui` is on is the registration's switch, which the chart does not know.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Reserved whether or not the web interface is on; the room rule counts it (chosen) | The artifacts' room never changes with a switch at the main installation | A switch cannot make the cache refuse fills | 4 GiB of a cache is reserved for a web interface that may stay off; a small cache sets `gui.max_bytes` down (the dev profile: 128 MiB) |
+| (b) Reserved only while `gui` is on | More room for artifacts | — | A switch at the main installation shrinks the artifacts' limit of a running Bastion; a cache configured at its edge refuses fills |
+| (c) Evict documents above the share | Bounded | — | A page names a document the replica no longer holds |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-031, R-BAS-046, R-BAS-110.
+
+### Q-BAS-381 · The sync's reads take no slot, are paced in their class and are bounded by the sync
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-BAS-097: the catalogue's pull reads through `Pacer.CatalogueReader`; R-BAS-025: the handshake and the feed take no slot.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) No slot of the budget, every body paced in the class `catalogue`, each read bounded by two minutes of the sync instead of the interface's 45 s (chosen) | The background read of the Bastion's own | A sync never takes a caller's slot; a batch of 8 MiB paced at a low cap still ends | — |
+| (b) An authenticated slot per read | Counted like downloads' batches | — | A sync holds a slot for the length of a paced batch |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-109.
+
+### Q-BAS-382 · Kept is the bucket backend or the chart's word that the volume is persistent
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: B.2b: "The replica reports `catalogueKept` (bucket backend or persistent volume) with its contact"; the binary does not know
+whether its volume outlives the pod.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A chart-managed key `bastion.cache.volume.persistent`, rendered from `cacheVolume.type`; kept is the bucket backend or it (chosen) | The chart says what it rendered | Exact for the chart's three volume types; an `emptyDir` counts as not kept (it goes with the pod) | A Bastion run without the chart says not kept unless its file sets the key |
+| (b) Probe the volume for a marker of a previous start | No key | — | A first start of a persistent volume says not kept |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-046, R-BAS-111.
+
+### Q-BAS-383 · The search runs over the index in memory, with a cursor of the last entry's sort key
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: B.8: "The main installation's list filters (format, project, `q` over name, description and keywords, deprecated) and its sorts,
+with cursor pages of 50, at most 100", over the format-independent index.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A scan of the index per search, sorted by the asked key with the ID last, the cursor the last entry's key (chosen) | Milliseconds for 100,000 packages (derived) | A cursor finds its place after its entry left the index; no second structure | The relevance is the main installation's without the format's rank |
+| (b) An offset cursor | Simpler | — | A page shifts when the index changes between two pages |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-113.
 
 ### Q-BAS-385 · A forward's text is chosen at rendering from what the error carries
 

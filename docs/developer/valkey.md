@@ -20,7 +20,7 @@ Nothing outside `internal/cluster` reads or writes a Valkey key (Q-ARCH-16: noth
 | [`valkey_ratelimit.go`](../../internal/cluster/valkey_ratelimit.go), [`limiter.go`](../../internal/cluster/limiter.go) | The rate-limit counters (key family `rl`) and the limiter with its per-replica fallback, see [Rate-limit counters](#rate-limit-counters) |
 | [`valkey_flight.go`](../../internal/cluster/valkey_flight.go) | `FlightKey`, `FlightLock` (`Acquire`, `Wait`), `FlightHold` (extension, `Release`, `Lost`), the shared flight subscriptions, see [FlightLock](#flightlock) |
 | [`valkey_negative.go`](../../internal/cluster/valkey_negative.go) | `NegativeStore` (`Lookup`, `Record`): the entries of the negative cache in Valkey, see [Negative store](#negative-store) |
-| [`valkey_bastion.go`](../../internal/cluster/valkey_bastion.go), [`limiter_estimate.go`](../../internal/cluster/limiter_estimate.go) | The Quader Bastion's state: `BastionStore` (marks, answer records, sweep lease), `FlightKeyFromHash`, `Limiter.Estimate`, see [The Bastion's keys](#the-bastions-keys) |
+| [`valkey_bastion.go`](../../internal/cluster/valkey_bastion.go), [`limiter_estimate.go`](../../internal/cluster/limiter_estimate.go) | The Quader Bastion's state: `BastionStore` (marks, answer records, sweep and catalogue leases), `FlightKeyFromHash`, `Limiter.Estimate`, see [The Bastion's keys](#the-bastions-keys) |
 | [`valkey_pubsub.go`](../../internal/cluster/valkey_pubsub.go) | `subscribe`, the one Pub/Sub connection and its resubscription |
 | [`valkey_reason.go`](../../internal/cluster/valkey_reason.go) | `ReasonCode`, the fixed vocabulary of `ValkeyStatus.ReasonCode` |
 | [`valkey_integration.go`](../../internal/cluster/valkey_integration.go) | Compiled only with the `integration` build tag: `cluster.Raw(v)` and `RegisterTestKeyFamily`/`RegisterTestChannelFamily` for `test/integration/valkey`; no build of the binary has it |
@@ -211,6 +211,7 @@ it, and what it calls are typed methods; nothing outside this package forms a ke
 | `timeout` | `timeout:v1:<address>` | `1:<until in Unix ms>` | 24 h | the same (`MarkTimeout`) |
 | `ans` | `ans:v1:<kind>:<sha256 hex of the key>` | the record and its HMAC-SHA-256 | 48 h, the answer's remaining validity | `PutAnswer/GetAnswer/DeleteAnswer` |
 | `sweep` | `sweep:v1` | the holder's token | 48 h, two sweep intervals | `AcquireSweep` |
+| `catalogue` | `catalogue:v1` | the holder's token | 30 min, three poll intervals of `bastion.gui.poll_interval` | `AcquireCatalogue` (the one replica of a shared bucket that syncs the public catalogue, R-BAS-109) |
 | `lock:fetch` | `lock:fetch:v1:<sha256 hex of the cache key>` | the holder's token | `cluster.flight_lock_ttl`, 30 s | `NewFlightLock` over `FlightKeyFromHash` |
 | `rl` | `rl:v1:bastion-<name>:<hash>:<window>` | a counter | two windows | `LimiterSet.NewLimiter`, `Limiter.TakeUncharged`, `Limiter.Estimate`, `Limiter.EstimateWithin` |
 | `rl` | `rl:v1:bastion-<name>-refused:<hash>:<window>` | a counter of the refusals of the limiter above | two windows | `Limiter.TakeUncharged`, `Limiter.EstimateWithin` (Q-BAS-127) |

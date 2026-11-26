@@ -29,6 +29,8 @@ const (
 	MaxAnswerTTL = 48 * time.Hour
 	// MaxSweepLeaseTTL bounds two sweep intervals (the interval is at most 24 h).
 	MaxSweepLeaseTTL = 48 * time.Hour
+	// MaxCatalogueLeaseTTL bounds the lease of the public catalogue's sync (R-BAS-109): three poll intervals of at most 10 minutes.
+	MaxCatalogueLeaseTTL = 30 * time.Minute
 	// MaxThroughputTTL bounds the byte counters of the throughput (R-BAS-097): a counter of an hour lives two hours.
 	MaxThroughputTTL = 2 * time.Hour
 )
@@ -218,13 +220,25 @@ func (s *BastionStore) DeleteAnswer(ctx context.Context, kind, hash string, reco
 // AcquireSweep takes the sweep lease for ttl (twice the sweep interval, R-BAS-031). held is false when another
 // replica holds it. release gives the lease back if this holder still owns it.
 func (s *BastionStore) AcquireSweep(ctx context.Context, ttl time.Duration) (held bool, release func(), err error) {
+	return s.acquireLease(ctx, sweepFamily, min(ttl, MaxSweepLeaseTTL), ttl)
+}
+
+// AcquireCatalogue takes the lease of the public catalogue's sync for ttl (three poll intervals, R-BAS-109): the one replica of a
+// shared bucket that reads the change list and writes the catalogue. held is false when another replica holds it.
+func (s *BastionStore) AcquireCatalogue(ctx context.Context, ttl time.Duration) (held bool, release func(), err error) {
+	return s.acquireLease(ctx, catalogueFamily, min(ttl, MaxCatalogueLeaseTTL), ttl)
+}
+
+// acquireLease takes the one key of a lease family with SET NX for ttl (bounded, the asked ttl was asked) and returns its release,
+// which deletes the key while it still holds this holder's token.
+func (s *BastionStore) acquireLease(ctx context.Context, fam *KeyFamily, ttl, asked time.Duration) (held bool, release func(), err error) {
 	if s.v == nil {
 		return false, func() {}, errNoBastionClient
 	}
-	if ttl <= 0 {
+	if asked <= 0 {
 		return false, func() {}, errors.New("cluster: a lease needs a positive expiry")
 	}
-	k, err := s.v.formKeyTTL(sweepFamily, min(ttl, MaxSweepLeaseTTL))
+	k, err := s.v.formKeyTTL(fam, ttl)
 	if err != nil {
 		return false, func() {}, err
 	}

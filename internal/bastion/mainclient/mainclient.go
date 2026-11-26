@@ -299,6 +299,9 @@ type Options struct {
 	// EdgeLimit is bastion.edge_limit, the edge figure of the ingress in front of the replica, which every handshake reports in
 	// Quader-Bastion-Edge-Limit (R-BAS-093); nil sends no such header.
 	EdgeLimit *iface.EdgeLimit
+	// CatalogueKept says whether the replica's copy of the public catalogue survives a restart (the bucket backend or a persistent
+	// volume, R-BAS-111), which every handshake reports in Quader-Bastion-Catalogue-Kept; nil sends no such header.
+	CatalogueKept *bool
 	// ConnectTimeout and ResponseHeaderTimeout are bastion.main.connect_timeout and response_header_timeout.
 	ConnectTimeout        time.Duration
 	ResponseHeaderTimeout time.Duration

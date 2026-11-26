@@ -20,6 +20,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -141,6 +142,8 @@ type replica struct {
 	cfg    string
 	// mainNames are the strings that would name the main installation in an answer of this replica ([mainNames]).
 	mainNames []string
+	// stopped is set once the replica was shut down (replica.stop or the test's end).
+	stopped atomic.Bool
 }
 
 // mainNames are the strings that name the main installation in an answer of a Bastion whose base URL is base and which reaches
@@ -338,14 +341,26 @@ func (b *bastion) start(t *testing.T, dir string, o bastionOptions, i int) *repl
 		mainNames: mainNames(base, mainURL, b.w.main.Addr("default")),
 	}
 	t.Cleanup(func() {
-		if err := srv.Shutdown(context.Background()); err != nil {
-			t.Errorf("shutdown %s: %v", name, err)
-		}
 		if t.Failed() {
 			t.Logf("log of %s:\n%s", name, testenv.Tail(logs.String(), 40))
 		}
+		if !r.stopped.Swap(true) {
+			if err := srv.Shutdown(context.Background()); err != nil {
+				t.Errorf("shutdown %s: %v", name, err)
+			}
+		}
 	})
 	return r
+}
+
+// stop shuts the replica down before the end of the test, as a restart begins.
+func (r *replica) stop(t testing.TB) {
+	t.Helper()
+	if !r.stopped.Swap(true) {
+		if err := r.srv.Shutdown(context.Background()); err != nil {
+			t.Errorf("shutdown %s: %v", r.name, err)
+		}
+	}
 }
 
 // wait waits until every replica is ready and has reached the main installation.

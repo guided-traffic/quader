@@ -80,6 +80,8 @@ type Main struct {
 	bound         string
 	handover      bool
 	configure     func(*iface.Configuration)
+	// cat is the registration's public catalogue (catalogue.go).
+	cat *catalogue
 
 	headers map[string]http.Header
 
@@ -118,7 +120,7 @@ func New(t testing.TB) *Main {
 	m := &Main{
 		t: t, version: iface.InterfaceVersion, now: time.Now, tokens: map[string]*regToken{}, byID: map[string]*regToken{},
 		honoured: true, record: true, forced: map[string]int{}, replicas: map[string]time.Time{}, calls: map[string]int{}, headers: map[string]http.Header{},
-		formats: Formats(),
+		formats: Formats(), cat: newCatalogue(),
 	}
 	m.forward = m.defaultForward
 	m.check = func(iface.CheckRequest) iface.CheckAnswer { return iface.CheckAnswer{} }
@@ -368,7 +370,7 @@ func (m *Main) SetForward(h http.HandlerFunc) { m.lock(func() { m.forward = h })
 // SetCheck sets the function that answers the check.
 func (m *Main) SetCheck(f func(iface.CheckRequest) iface.CheckAnswer) { m.lock(func() { m.check = f }) }
 
-// Calls returns how many requests of an operation arrived: "handshake", "check", "feed", "downloads", "forward".
+// Calls returns how many requests of an operation arrived: "handshake", "check", "feed", "downloads", "catalogue", "forward".
 func (m *Main) Calls(op string) int {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -448,6 +450,8 @@ func operation(r *http.Request) string {
 		return iface.OperationFeed
 	case iface.PathDownloads:
 		return iface.OperationDownloads
+	case iface.PathCatalogue, iface.PathCatalogueDocument, iface.PathCatalogueDocuments, iface.PathCataloguePublic:
+		return iface.OperationCatalogue
 	}
 	return "forward"
 }
@@ -526,6 +530,8 @@ func (m *Main) serve(w http.ResponseWriter, r *http.Request) {
 		m.feed(w, r)
 	case iface.OperationDownloads:
 		m.downloadsOp(w, r)
+	case iface.OperationCatalogue:
+		m.catalogueOp(w, r)
 	default:
 		m.forwardOp(w, r)
 	}

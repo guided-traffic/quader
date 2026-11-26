@@ -490,6 +490,22 @@ The main installation renders what its anonymous caller reads into the documents
 | The base URL is the installation's word | A registration's documents are rendered only on a base URL `server.additional_base_urls` lists; what a Bastion reports alone never decides a host the documents name | R-BAS-104 |
 | A narrowing is a change | A level lowered, a grant removed or a block set changes the fingerprint or the public set, and the next run deletes what fell out; the run starts 5 s after the change ([H-2311](#h-2311--a-narrowing-stays-in-the-catalogue-until-the-next-run), [H-2314](#h-2314--a-narrowing-reaches-a-bastions-pages-only-at-its-next-poll-after-the-run)) | R-BAS-105 |
 
+## The public catalogue at the Bastion
+
+W-35's package P7, built on 2026-11-26 ([spec/bastion.md](../spec/bastion.md#the-public-catalogue-at-the-bastion), R-BAS-109 to
+R-BAS-113). A replica mirrors its registration's catalogue into its cache backend and serves the web interface from it alone. What it
+means for trust:
+
+| Mechanism | What it means for trust | Held by |
+|---|---|---|
+| No page view reaches the main installation | The reader answers from the replica's memory and its cache backend; the only requests to the main installation are the sync's, which the Bastion token makes, which take no slot of the callers' budget and are paced in the throughput's class `catalogue`, below the callers' misses. A visitor, a crawler or a scraper costs the Bastion and never the main installation | R-BAS-109, R-BAS-113, Q-BAS-381 |
+| Every document is verified, on the way in and on every read | A document is decompressed to at most the size its change named and held to the SHA-256 of its raw bytes before it is kept, and again whenever it is read; one that fails is not served, is deleted and is fetched again by the next round (W-35's D6) | R-BAS-109, R-BAS-113, Q-BAS-372 |
+| The state record is signed | The record that names the cursor, the public set, the switches and the shards of the manifest is signed with the signing key in the domain `catalogue` and, with a cache key, sealed and bound to its name, so a write to the bucket or the volume without the keys cannot make a replica serve another catalogue; without a signing key (the volume backend without Valkey) it is not authenticated ([H-2316](#h-2316--without-a-signing-key-the-catalogues-state-record-is-not-authenticated)) | R-BAS-110, Q-BAS-374 |
+| The public set hides at once | A feed entry of a narrowing makes the replica read the public set before anything else, and a package none of whose repositories is in it is no longer answered; its documents go at the builder's run ([H-2321](#h-2321--a-package-still-public-in-another-repository-shows-what-a-narrowed-one-held-until-the-run)) | R-BAS-112, Q-BAS-376, Q-BAS-377 |
+| The switch gui off | Every read answers off at once, the sync stops and the catalogue's tree is deleted; a replica that does not know its switches (the built-in configuration without a stored state) answers not ready, never off | R-BAS-102, R-BAS-112, Q-BAS-379 |
+| Serving on during an outage | The owner's choice (W-35's B.2b): the pages serve their last state whatever its age and say how old it is, so a narrowing made during an outage stays visible until the link returns ([H-2319](#h-2319--a-narrowing-made-during-an-outage-stays-on-the-pages-until-the-link-returns)) | R-BAS-111 |
+| The catalogue's share | The documents count against `bastion.gui.max_bytes`, which comes off the artifacts' room; a catalogue above it is kept and alerted, never evicted ([H-2317](#h-2317--a-catalogue-above-its-share-is-kept-and-the-cache-may-pass-its-size)) | R-BAS-110, Q-BAS-380 |
+
 ## What this does not cover
 
 The gaps of the Bastion's mechanisms are recorded on the spec page, where the mechanisms are, and only linked here. The one gap
@@ -1038,7 +1054,70 @@ seconds until the next run; the routes refuse a disabled registration's token in
 Stage: the change list (R-BAS-101, Q-BAS-369). Subject: a deletion the builder wrote. The builder writes no feed entry of the kind
 `catalogue` yet, so a Bastion learns of it at its next read of the change list (P7's poll, 10 s by default), not within the feed's seconds.
 Live once P7 serves pages: a lowered level is visible on a Bastion's pages for the debounce, the run and up to one poll. What holds: the
-Bastion's downloads are decided at the main installation; P7 revisits the feed entry.
+Bastion's downloads are decided at the main installation; P7 revisits the feed entry. *Revisited by W-35's P7 on 2026-11-26
+([Q-BAS-378](../spec/bastion.md#q-bas-378--no-feed-entry-of-the-kind-catalogue-the-follow-up-round-after-the-builders-debounce-carries-a-change)):*
+a narrowing of access arrives at the Bastion as a feed entry of the kinds `grants`, `settings`, `principal` or `content` within the feed's
+seconds, and the replica runs a round at once and a second one 8 s later, after the builder's debounce and its run, so the deletion reaches
+its pages without waiting for the poll (measured in the integration suite: a project lowered to private was gone from two Bastions' pages
+7 s after the change). What waits for the poll is a change the feed carries no entry for: a publish (`package.published` has none,
+R-BAS-015) and a narrowing the builder renders later than 8 s after its entry (a run of a large registration).
+
+### H-2315 · A replica holds the catalogue's map of paths and its index in memory
+
+Stage: the sync and the reader (R-BAS-109, R-BAS-113, Q-BAS-373). Subject: the memory of a replica whose registration has a large
+public catalogue. Each replica keeps which path names which document (about 150 bytes a path) and the index of the public packages in
+memory, and a change list after a reset or a first start is read whole before the round swaps. Derived from the measurement of
+2026-11-26 (14 documents per version): about 200 MB of map for 100,000 public versions; not measured at that size. Dormant until a
+catalogue of that size; the pod's memory limit is the operator's. What holds: the map is cloned only in the shards a round changed, so a
+round of one publish costs a shard, not the map.
+
+### H-2316 · Without a signing key the catalogue's state record is not authenticated
+
+Stage: the store (R-BAS-110, Q-BAS-374). Subject: someone who can write the cache volume of a Bastion that runs the volume backend without
+Valkey, where the configuration allows no signing key (Q-BAS-98). The state record is then stored plain, so such a writer can make a
+replica serve, after its next start, a catalogue of the writer's making: the documents are held to the addresses the record's shards name,
+and the writer writes those too. Dormant: it needs write access to the pod's volume, which is already the cache's (H-460's case). What
+holds: with a signing key, which the bucket backend and Valkey require, the record is signed in the domain `catalogue`; with a cache key it
+is sealed and bound to its name.
+
+### H-2317 · A catalogue above its share is kept, and the cache may pass its size
+
+Stage: the store (R-BAS-110, Q-BAS-380). Subject: the disk or the bucket of a Bastion whose public catalogue grew beyond
+`bastion.gui.max_bytes`. The catalogue is kept whole (the web interface serves it whole), so the cache's three parts may hold more than
+`cache.max_bytes`; `QuaderBastionCatalogueOverBound` fires. Dormant: the default of 4 GiB holds about 290,000 public versions of the
+measured mix (derived, developer/bastion.md). What holds: the artifacts and the documents keep their limits; the volume's size is
+checked against `max_bytes` plus the spool by the chart, so a catalogue far above its share fills the volume's headroom first.
+
+### H-2318 · A replica without a kept catalogue shows nothing after a restart during an outage
+
+Stage: the start (R-BAS-111, W-35's D14). Subject: the visitors of a Bastion on the chart's default ephemeral volume. A replica restarted
+while the main installation is unreachable finds no state and answers every page not ready until the link returns; other replicas serve
+on. Live with the ephemeral volume; the registration's card says so from the replica's `Quader-Bastion-Catalogue-Kept`, and
+`QuaderBastionCatalogueMissing` fires after 15 minutes. What holds: the bucket backend and a persistent volume keep the state.
+
+### H-2319 · A narrowing made during an outage stays on the pages until the link returns
+
+Stage: serving on (R-BAS-111, the owner's B.2b, W-35's D10). Subject: a package whose level was lowered while the Bastion cannot reach
+the main installation. The pages serve their last state whatever its age, so the package stays visible until the first round after the
+link returns. Live during any outage, by the owner's choice against a grace period. What holds: every page says how old it is,
+`QuaderBastionCatalogueStale` fires after `stale_after`, and a download of the package is decided at the main installation, so it fails
+once the package API's grace period ends (R-BAS-027).
+
+### H-2320 · A replica of a shared bucket whose state is an hour behind can find its documents swept
+
+Stage: the sweep of the catalogue's tree (R-BAS-110, Q-BAS-375). Subject: a replica of a bucket without Valkey that could not sync for
+more than an hour while another replica could. The other replica's sweep deletes the documents no state it knows names once they are an
+hour old, which may be documents the lagging replica still names; it answers those not found and fetches them at its next round. Dormant:
+it needs replicas of one Bastion that reach the main installation differently for an hour. What holds: the documents are content-addressed,
+so nothing wrong is served, only nothing.
+
+### H-2321 · A package still public in another repository shows what a narrowed one held until the run
+
+Stage: the reader's hiding (R-BAS-112, Q-BAS-376). Subject: a package held by two public repositories of which one is narrowed. The
+reader hides by package: the package stays shown because one of its repositories is public, and its documents still list the versions only
+the narrowed repository held until the builder's run renders the package again, which the replica takes at its round 8 s after the feed's
+entry or at its poll. Live for those seconds. What holds: the package's downloads are decided at the main installation per version
+(R-BAS-084).
 
 ### H-2356 · The anonymous ceiling is a share per replica without Valkey, and requests in flight pass its hour
 

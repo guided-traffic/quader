@@ -57,6 +57,9 @@ config:
       documents_max_bytes: 128MiB
       metadata_revalidate_after: 90s
       artifact_revalidate_after: 90s
+    # The public catalogue's share of the 1 GiB cache (R-BAS-110): its default of 4 GiB is larger than this whole cache.
+    gui:
+      max_bytes: 128MiB
   log:
     level: info
 

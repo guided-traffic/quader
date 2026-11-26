@@ -183,7 +183,8 @@ internal/bastion/
 ├── throughput/       the cap on the bytes the replica reads (R-BAS-097): Pacer (Admit, Running, Reader, CatalogueReader), the paced reader
 ├── handover/         the link client of a handover per blob and the readers of a plain and an encrypted copy (R-BAS-074); imports blobcrypt
 ├── cache/            Backend, Entry, the HMAC Signer; the volume and bucket backends, Cache, Fill, the sweep, Fault (a test's switch)
-├── shared/           the shared state (limiters, block list, timeouts, flight lock, sweep lease, answer records): the local form and the Valkey form
+├── shared/           the shared state (limiters, block list, timeouts, flight lock, sweep and catalogue leases, answer records): the local form and the Valkey form
+├── catalogue/        the public catalogue of the web interface (W-35's P7): the sync, the store in the cache backend, the age, the feed's hooks, the Reader
 ├── guard/            Guard (R-BAS-035 to R-BAS-037): Instance, the verdicts, the address key (an IPv6 address counts as its /64); Ceiling (R-BAS-094)
 ├── downloads/        Buffer of download events and its Reporter (R-BAS-039)
 ├── engine/           Deps, Engine: the request flow of R-BAS-018 to R-BAS-029
@@ -232,7 +233,8 @@ internal/bastionmain/ the main installation's seams (a domain package)
 | [cache/volume.go](../../internal/bastion/cache/volume.go), [cache/bucket.go](../../internal/bastion/cache/bucket.go) | the two stores: a directory, and S3 through `internal/blob/s3` |
 | [cache/verify.go](../../internal/bastion/cache/verify.go), [cache/fill.go](../../internal/bastion/cache/fill.go) | the verifying reader with its hold-back, the `Fill` spool |
 | [cache/store.go](../../internal/bastion/cache/store.go), [cache/sweep.go](../../internal/bastion/cache/sweep.go) | `Cache` (what the engine uses; `StoreConfiguration` and `LoadConfiguration`, the object `configuration/current.json` of Q-BAS-327), `New`, `NewVolume`, `NewBucket`, `Options`; `SweepOnce`, `RunSweeper` |
-| [shared/shared.go](../../internal/bastion/shared/shared.go) | `Limiter`, `BlockList`, `FlightLock`, `SweepLease`, `AnswerStore`, `State`, `NewLocal` |
+| [shared/shared.go](../../internal/bastion/shared/shared.go) | `Limiter`, `BlockList`, `FlightLock`, `SweepLease`, `AnswerStore`, `State` (with the catalogue's lease `Catalogue`), `NewLocal` |
+| [catalogue/](../../internal/bastion/catalogue) | the public catalogue of the web interface (W-35's P7): see [its section](#the-public-catalogue-at-the-bastion-package-p7) |
 | [shared/local.go](../../internal/bastion/shared/local.go) | the local forms: token buckets, sliding-window counters, block list, flights, answers in memory, all bounded |
 | [throughput/throughput.go](../../internal/bastion/throughput/throughput.go) | the throughput of R-BAS-097: `Pacer` over `shared.Bytes` and the applied configuration; the buckets (total, anonymous share, the catalogue's half), the reservation per slice of 100 ms, `Admit` (a miss's first bytes within its queue time, else `mainclient.ThroughputError`), `Running` and `Reader` (paced, never refused), the class's hourly volume, `Export` (the limit's gauge) |
 | [shared/bytes.go](../../internal/bastion/shared/bytes.go) | `Bytes`: the byte counters of the throughput per name and window, the replica's share in memory without Valkey, `cluster.BastionStore`'s `ClaimBytes`, `ReleaseBytes` and `AddBytes` with it |
@@ -342,7 +344,7 @@ figures are no keys of the configuration file but the configuration the main ins
 | Step | Call | A refusal |
 |---|---|---|
 | 2, block list | `Blocked(addr)` | `429 address_blocked`, `Quiet`, `Retry-After` |
-| 4, limits | `Request(addr, credentialed)`; for a page of the web interface `Page(addr)` (no route asks it before W-35's P7) | `429 rate_limited` |
+| 4, limits | `Request(addr, credentialed)`; for a page of the web interface `Page(addr)` (no route asks it before W-35's P9, which serves the pages) | `429 rate_limited` |
 | a credential the Bastion refuses itself (R-BAS-019) | `FailedAuth(addr)` | none, the answer is the `401` |
 | before a check or a forward for a credential with no usable answer | `AuthTimeout(addr)` | `429 auth_timeout`; nothing is sent to the main installation |
 | before every request to the main installation (forward, check, conditional) | `Miss(addr, credentialed)` | `429 rate_limited` while hits keep being served |
@@ -1190,7 +1192,8 @@ backend) and refuses a volume that cannot hold it ([helm-chart.md](helm-chart.md
 A fill's file, the spool of a stored object and a sealed object are written through `internal/syncwrite`, flushed to the disk every 32 MiB, so
 an object of 2 GiB never leaves its dirty pages in the pod's memory at once ([storage.md](../spec/storage.md) Q-STOR-486).
 
-**The sweep.** The limits are `max_bytes − documents_max_bytes` for artifacts and `documents_max_bytes` for documents
+**The sweep.** The limits are `max_bytes − documents_max_bytes − gui.max_bytes` for artifacts (the public catalogue's share comes off
+them, R-BAS-110; its tree is listed by no sweep of the areas) and `documents_max_bytes` for documents
 ([Q-BAS-88](../spec/bastion.md#q-bas-88--documents-have-a-reserved-share-and-entries-are-removed-when-read)); `quader_bastion_cache_capacity_bytes{area}`
 exports them. A cycle measures both areas (one listing each); an area above 95 % of its limit is swept, and on the timer every area is
 listed for its protected bytes: `backend.Sweep` lists its bytes and `access/` (two listings), takes the later of an object's marker and its
@@ -1205,7 +1208,7 @@ replica at `sweep_interval ± 20 %`. The forms plug in through `shared.State` (t
 bytes of each area as the replica believes them: `rebase` sets it from a listing (`Cache.measure`, which every sweep calls before and after
 it evicts) plus the commits since the listing began (a `mark` of the monotonic `added` taken before it), `add` raises it at every commit,
 nothing lowers it between listings. `Cache.admit`, called by `Fill.Commit` after the digest matched, admits bytes that keep the area at or
-below its limit, `max_bytes − documents_max_bytes` or `documents_max_bytes`; otherwise one `HeadObject` asks whether the address is held
+below its limit, `max_bytes − documents_max_bytes − gui.max_bytes` or `documents_max_bytes`; otherwise one `HeadObject` asks whether the address is held
 already (no room needed), and if not the commit gets `ErrNoRoom`, `no_room{area}` counts it and `wantSweep` asks for a sweep. The stored size
 of a sealed object is `frameSize(id) + blobcrypt.StoredSize(plain)` (`backend.storedSize`), what `Usage` lists. `Cache.committed` adds the
 bytes and asks for a sweep above 95 %; `NewFill` does the same for an announced length (`expect`). `wantSweep` is a non-blocking send on a
@@ -1760,6 +1763,49 @@ the tests and the measurement below may set them through `app.Options.BastionSwi
 | `TestR_BAS_104_TheCatalogueFollowsPublishesLevelsAndTheSwitch` ([test/integration/bastion](../../test/integration/bastion/catalogue_test.go)) | integration, the role all on the stack | about 11 s with the world's set-up | two npm packages and a NuGet package of bytes |
 
 The integration test adds about 11 s to the area `bastion`, a constant: it is no format's case, and a new format adds nothing to it.
+
+## The public catalogue at the Bastion (package P7)
+
+W-35's P7, built on 2026-11-26: a Bastion replica mirrors its registration's catalogue and serves the web interface's reads from it alone
+([spec](../spec/bastion.md#the-public-catalogue-at-the-bastion), R-BAS-109 to R-BAS-113; the security perspective is
+[security/bastion.md](../security/bastion.md#the-public-catalogue-at-the-bastion)). The pages are P9's; this package is what they read.
+
+| File | Responsibility |
+|---|---|
+| [catalogue/catalogue.go](../../internal/bastion/catalogue/catalogue.go) | `Catalogue`, `Options`, the `Source`, `Store` and `Lease` interfaces; the loop (`Run`, `Tick`), the switches (`SetSwitches`, decided or the stored state's), the feed's hooks (`Feed`: a round at once and 8 s later) |
+| [catalogue/sync.go](../../internal/bastion/catalogue/sync.go) | a round: the public set first (hides at once), the change list to its end (a `reset` into a state of its own), the batch reads of the documents the store does not hold, verified; the shards and the state record (`persist`); the start (`Load`), the follower's take, the deletion of the tree with `gui` off, the sweep of unnamed documents |
+| [catalogue/state.go](../../internal/bastion/catalogue/state.go) | the snapshot (256 shards of path → document, copied on write per shard), the state record and the shard documents, the verification (`open`) |
+| [catalogue/index.go](../../internal/bastion/catalogue/index.go) | the index from the pages `index/<n>` (parsed once per page document), what a package shows (`visible`, `wiki`), the match and the relevance of a search |
+| [catalogue/reader.go](../../internal/bastion/catalogue/reader.go) | `Reader`: `State`, `ConfirmedAt`, `PublicSet`, `Search`, `Package`, `Versions`, `Document` (verified on every read, a failure fetched again) |
+| [mainclient/catalogue.go](../../internal/bastion/mainclient/catalogue.go) | the client's three reads of the routes, every body through `CatalogueReader` of the throughput, no slot; `KindCatalogue` |
+| [cache/catalogue.go](../../internal/bastion/cache/catalogue.go) | the catalogue's tree of the cache backend: documents by address, the signed state record, the sealed names with a cache key, the listing; the share comes off the artifacts' limit in `limits` |
+| [maintest/catalogue.go](../../internal/bastion/maintest/catalogue.go) | the fake main installation's catalogue with the builder's rules (numbers from the clock, `reset` outside the range, deleted paths left out from 0, missing frames, the batch's bound) and a frame that does not verify |
+
+**What runs.** The server builds the catalogue in `wireCatalogue` over the raw client (not the link's guard: the sync's failures decide no
+reachability), the cache and, with the bucket backend, the shared state's lease; the holder's `Watch` hands it the switches, the link's
+`OnFeed` the feed's entries. `Start` calls `Load` after the stored configuration and before the client listener binds; the loop runs beside
+the cache's sweeper and stops with it, before the drain. Every handshake reports `Quader-Bastion-Catalogue-Kept` (the bucket backend or
+`bastion.cache.volume.persistent`, which the chart renders from `cacheVolume.type`).
+
+**Configuration** (`bastion.gui`): `poll_interval` 10 s, `max_bytes` 4 GiB (a share of `cache.max_bytes`, reserved: the artifacts get
+`max_bytes − documents_max_bytes − gui.max_bytes`, which must hold one `max_object_bytes`), `stale_after` 1 h. The dev profile's Bastions
+set `gui.max_bytes` to 128 MiB of their 1 GiB cache ([bastion-chart-common.yaml](../../deploy/dev/bastion-chart-common.yaml)), the
+measurement's attack to 256 MiB of 2 GiB.
+
+**Tests** (tier, time, data):
+
+| Test | Tier | Time | Data |
+|---|---|---|---|
+| `TestR_BAS_109_ARoundMirrorsTheCatalogueAndReadsOnlyWhatChanged`, `…_AResetKeepsTheOldStateServedUntilTheNewOneIsComplete`, `…_AReplicaOfASharedStoreTakesTheStateAnotherWrote`, `TestR_BAS_111_AStoredStateIsServedAfterARestartWithItsAge`, `TestR_BAS_112_TheFeedHooksHideAndResyncWithoutWaitingForThePoll`, `TestR_BAS_112_DocsOffHidesTheDocumentationAtOnce`, `TestR_BAS_113_AnIntegrityFailureIsFetchedAgain` ([internal/bastion/catalogue](../../internal/bastion/catalogue/catalogue_test.go)) | unit, against `maintest`'s catalogue, the real client and a volume cache | 0.5 s for the package (1.8 s under `-race`) | two packages of three versions, documents of tens of bytes |
+| `TestR_BAS_109_TheCatalogueReadsArePacedInTheirClassAndTakeNoSlot` (`internal/bastion/mainclient`) | unit | 0.02 s | two documents |
+| `TestR_BAS_110_TheCatalogueTreeIsSignedSealedAndNeverSwept` (`internal/bastion/cache`) | unit, plain and sealed | 0.02 s | one document of 40 bytes, an artifact of 8 KiB |
+| `TestR_BAS_031_ACacheWithoutRoomForOneLargestObjectIsRefused` (`internal/config`), `TestR_BAS_030_TheSpoolFitsTheTemporaryVolume` and `TestR_BAS_111_TheChartSaysWhetherTheCacheVolumeOutlivesItsPod` (`test/chart`) | unit and chart render | milliseconds; four renders | none |
+| `QuaderBastionCatalogueStale`, `…Missing`, `…OverBound` in [rules_test.yaml](../../deploy/helm/quader-bastion/tests/rules_test.yaml) | promtool | under a second with the other rules | series |
+| `TestR_BAS_109_TheBastionMirrorsTheCatalogueAndServesOnWhileTheLinkIsCut` ([test/integration/bastion](../../test/integration/bastion/catalogue_sync_test.go)) | integration, the role all with the builder, a Bastion on a bucket and one on a volume | 18 s with the world's set-up (measured 2026-11-26) | two npm packages of bytes |
+
+The integration test adds about 18 s to the area `bastion`, a constant: it is no format's case. Its waits are the builder's (a publish
+reached both Bastions after 2.1 s with a poll of 2 s; a project lowered to private was gone from both after 7 s, the follow-up round 8 s
+after the feed's entry), and the cut of the link (one failed round per Bastion and 2.5 s more).
 
 ## Tests
 

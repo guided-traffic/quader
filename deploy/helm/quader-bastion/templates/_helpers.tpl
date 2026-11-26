@@ -219,7 +219,8 @@ Secret rolls nothing.
 {{- end -}}
 {{- $_ := set $cache "bucket" $bucket -}}
 {{- else -}}
-{{- $_ := set $cache "volume" (dict "dir" "/var/cache/quader-bastion") -}}
+{{- /* persistent: whether the replica's copy of the public catalogue survives a restart, which it reports (R-BAS-111). */ -}}
+{{- $_ := set $cache "volume" (dict "dir" "/var/cache/quader-bastion" "persistent" (eq .Values.cacheVolume.type "persistent")) -}}
 {{- end -}}
 {{- $_ := set $bastion "cache" $cache -}}
 {{- /* The edge figure the replica reports with every handshake (R-BAS-093). */ -}}

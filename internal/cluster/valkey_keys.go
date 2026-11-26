@@ -297,6 +297,8 @@ var (
 	timeoutFamily    = registerKeyFamily("timeout", 1, MaxTimeoutTTL)
 	answerFamily     = registerKeyFamily("ans", 1, MaxAnswerTTL)
 	sweepFamily      = registerKeyFamily("sweep", 1, MaxSweepLeaseTTL)
+	// catalogueFamily is the lease of the one replica that syncs the public catalogue into a shared bucket (R-BAS-109, W-35).
+	catalogueFamily = registerKeyFamily("catalogue", 1, MaxCatalogueLeaseTTL)
 	// throughputFamily holds the byte counters of a Bastion's throughput (R-BAS-097, valkey_bastion_bytes.go): the bytes of a
 	// slice of a second per bucket and the bytes of an hour per class.
 	throughputFamily = registerKeyFamily("throughput", 1, MaxThroughputTTL)

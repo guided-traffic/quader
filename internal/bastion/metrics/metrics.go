@@ -61,6 +61,14 @@ const (
 	ThroughputLimit          = "quader_bastion_throughput_limit_bytes_per_second"
 	ThroughputWaitTotal      = "quader_bastion_throughput_wait_seconds_total"
 	ThroughputRefusedTotal   = "quader_bastion_throughput_refused_total"
+	// The public catalogue of the web interface (W-35, R-BAS-109 to R-BAS-111).
+	GUIEnabled                 = "quader_bastion_gui_enabled"
+	CatalogueConfirmed         = "quader_bastion_catalogue_confirmed_timestamp_seconds"
+	CatalogueStaleAfterSeconds = "quader_bastion_catalogue_stale_after_seconds"
+	CatalogueBytes             = "quader_bastion_catalogue_bytes"
+	CatalogueMaxBytes          = "quader_bastion_catalogue_max_bytes"
+	CatalogueDocuments         = "quader_bastion_catalogue_documents"
+	CatalogueSyncTotal         = "quader_bastion_catalogue_sync_total"
 )
 
 // Label values. The sets are closed: a value outside them is a defect, never a new series.
@@ -98,6 +106,8 @@ const (
 	KindFeed        = "feed"
 	KindHandshake   = "handshake"
 	KindDownloads   = "downloads"
+	// KindCatalogue is the public catalogue's reads of the web interface (R-BAS-109).
+	KindCatalogue = "catalogue"
 
 	// outcome of quader_bastion_main_requests_total: the status class of the answer, or how the request failed.
 	Outcome2xx     = "2xx"
@@ -187,6 +197,13 @@ const (
 	ConfigurationFromMain    = "main"
 	ConfigurationFromStored  = "stored"
 	ConfigurationFromBuiltin = "builtin"
+
+	// outcome of quader_bastion_catalogue_sync_total (R-BAS-109): a round of this replica's own that read the public set and the
+	// change list to its end and kept every document it named; a round that failed; a round that took the state another replica
+	// of a shared bucket synced (the lease's follower).
+	SyncConfirmed = "confirmed"
+	SyncFailed    = "failed"
+	SyncFollowed  = "followed"
 
 	// reason of quader_bastion_blocks_total.
 	BlockRefusals = "refusals"
@@ -292,6 +309,18 @@ type Metrics struct {
 	ThroughputLimit   *prometheus.GaugeVec
 	ThroughputWait    *prometheus.CounterVec
 	ThroughputRefused *prometheus.CounterVec
+	// GUIEnabled is 1 while the web interface is on for this replica (the switch gui, R-BAS-102). CatalogueConfirmed is the Unix
+	// time of the replica's last confirmed state of the public catalogue, 0 while it holds none; CatalogueStaleAfter exports
+	// bastion.gui.stale_after (R-BAS-111). CatalogueBytes is what the catalogue's documents hold in the cache backend, as stored,
+	// and CatalogueMaxBytes its share, bastion.gui.max_bytes (R-BAS-110); CatalogueDocuments is the number of documents the
+	// replica serves; CatalogueSync counts the rounds by outcome (R-BAS-109).
+	GUIEnabled          prometheus.Gauge
+	CatalogueConfirmed  prometheus.Gauge
+	CatalogueStaleAfter prometheus.Gauge
+	CatalogueBytes      prometheus.Gauge
+	CatalogueMaxBytes   prometheus.Gauge
+	CatalogueDocuments  prometheus.Gauge
+	CatalogueSync       *prometheus.CounterVec
 }
 
 // New creates the collectors and registers them on reg; a nil reg creates them unregistered. The series with
@@ -324,7 +353,7 @@ func New(reg prometheus.Registerer) (*Metrics, error) {
 		Answers:              gauge(Answers, "Answers of the main installation held by this replica, by kind (credential, shape, url, package).", "kind"),
 		AnswersTotal:         counter(AnswersTotal, "Answer lookups by kind and result (hit, miss, expired, dropped, bad_signature).", "kind", "result"),
 		FeedLag:              prometheus.NewGauge(prometheus.GaugeOpts{Name: FeedLagSeconds, Help: "Age of the last successful feed poll in seconds (R-BAS-026)."}),
-		FeedApplied:          counter(FeedEntriesAppliedTotal, "Feed entries applied by kind (token, principal, grants, settings, content).", "kind"),
+		FeedApplied:          counter(FeedEntriesAppliedTotal, "Feed entries applied by kind (token, principal, grants, settings, content, catalogue).", "kind"),
 		FeedResets:           prometheus.NewCounter(prometheus.CounterOpts{Name: FeedResetsTotal, Help: "Feed resets (R-BAS-026)."}),
 		TokenRemaining:       prometheus.NewGauge(prometheus.GaugeOpts{Name: TokenRemainingSeconds, Help: "Remaining lifetime of the Bastion token in use in seconds (R-BAS-006)."}),
 		TokenWarnBefore:      prometheus.NewGauge(prometheus.GaugeOpts{Name: TokenWarnBeforeSeconds, Help: "bastion.token.warn_before in seconds."}),
@@ -353,6 +382,13 @@ func New(reg prometheus.Registerer) (*Metrics, error) {
 		ThroughputLimit:      gauge(ThroughputLimit, "The configured byte rate between the main installation and the whole Bastion, by bucket (total, anonymous); 0 while unlimited (R-BAS-097).", "bucket"),
 		ThroughputWait:       counter(ThroughputWaitTotal, "Seconds this replica's reads from the main installation and the object store waited for the throughput cap, by class (anonymous, signed_in, catalogue) (R-BAS-097).", "class"),
 		ThroughputRefused:    counter(ThroughputRefusedTotal, "Misses the throughput did not admit, by class and reason (busy, hour) (R-BAS-097).", "class", "reason"),
+		GUIEnabled:           prometheus.NewGauge(prometheus.GaugeOpts{Name: GUIEnabled, Help: "1 while the web interface is on for this replica (R-BAS-102)."}),
+		CatalogueConfirmed:   prometheus.NewGauge(prometheus.GaugeOpts{Name: CatalogueConfirmed, Help: "Unix time of this replica's last confirmed state of the public catalogue; 0 while it holds none (R-BAS-111)."}),
+		CatalogueStaleAfter:  prometheus.NewGauge(prometheus.GaugeOpts{Name: CatalogueStaleAfterSeconds, Help: "bastion.gui.stale_after in seconds (R-BAS-111)."}),
+		CatalogueBytes:       prometheus.NewGauge(prometheus.GaugeOpts{Name: CatalogueBytes, Help: "Bytes the public catalogue's documents hold in the cache backend, as stored (R-BAS-110)."}),
+		CatalogueMaxBytes:    prometheus.NewGauge(prometheus.GaugeOpts{Name: CatalogueMaxBytes, Help: "bastion.gui.max_bytes: the public catalogue's share of the cache (R-BAS-110)."}),
+		CatalogueDocuments:   prometheus.NewGauge(prometheus.GaugeOpts{Name: CatalogueDocuments, Help: "Documents of the public catalogue this replica serves (R-BAS-109)."}),
+		CatalogueSync:        counter(CatalogueSyncTotal, "Rounds of the public catalogue's sync by outcome (confirmed, failed, followed) (R-BAS-109).", "outcome"),
 	}
 	m.seed()
 	if reg == nil {
@@ -380,7 +416,7 @@ func (m *Metrics) seed() {
 	for _, s := range []string{SourceCache, SourceMain} {
 		m.BytesServed.WithLabelValues(s)
 	}
-	for _, k := range []string{KindForward, KindConditional, KindCheck, KindFeed, KindHandshake, KindDownloads} {
+	for _, k := range []string{KindForward, KindConditional, KindCheck, KindFeed, KindHandshake, KindDownloads, KindCatalogue} {
 		m.MainDuration.WithLabelValues(k)
 		for _, o := range []string{Outcome2xx, Outcome3xx, Outcome4xx, Outcome5xx, OutcomeError, OutcomeTimeout, OutcomeBusy} {
 			m.MainRequests.WithLabelValues(k, o)
@@ -400,7 +436,7 @@ func (m *Metrics) seed() {
 			m.AnswersTotal.WithLabelValues(k, r)
 		}
 	}
-	for _, k := range []string{"token", "principal", "grants", "settings", "content"} {
+	for _, k := range []string{"token", "principal", "grants", "settings", "content", "catalogue"} {
 		m.FeedApplied.WithLabelValues(k)
 	}
 	for _, o := range []string{ReloadLoaded, ReloadRefused} {
@@ -448,6 +484,9 @@ func (m *Metrics) seed() {
 			m.ThroughputRefused.WithLabelValues(c, r)
 		}
 	}
+	for _, o := range []string{SyncConfirmed, SyncFailed, SyncFollowed} {
+		m.CatalogueSync.WithLabelValues(o)
+	}
 }
 
 func (m *Metrics) collectors() []prometheus.Collector {
@@ -460,6 +499,7 @@ func (m *Metrics) collectors() []prometheus.Collector {
 		m.CacheProtected, m.Refused, m.Blocks, m.Blocked, m.AuditEvents, m.AuditBuffer, m.AuditDropped,
 		m.Handovers, m.FillBytes, m.HandoverEnabled, m.HandoverCooldown, m.ConfigRevision, m.ConfigSource,
 		m.ThroughputLimit, m.ThroughputWait, m.ThroughputRefused,
+		m.GUIEnabled, m.CatalogueConfirmed, m.CatalogueStaleAfter, m.CatalogueBytes, m.CatalogueMaxBytes, m.CatalogueDocuments, m.CatalogueSync,
 	}
 }
 
@@ -475,5 +515,6 @@ func Names() []string {
 		RefusedTotal, BlocksTotal, BlockedAddresses, AuditEventsTotal, AuditBufferEvents, AuditEventsDroppedTotal,
 		HandoversTotal, FillBytesTotal, HandoverEnabled, HandoverCooldown, ConfigurationRevision, ConfigurationSource,
 		ThroughputLimit, ThroughputWaitTotal, ThroughputRefusedTotal,
+		GUIEnabled, CatalogueConfirmed, CatalogueStaleAfterSeconds, CatalogueBytes, CatalogueMaxBytes, CatalogueDocuments, CatalogueSyncTotal,
 	}
 }

@@ -173,8 +173,10 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 		// two P1 requirements of W-35, P8, with W-34's E17).
 		// 1356 since a Bastion registration can be declared in the main installation's configuration (R-BAS-127, one MVP
 		// requirement).
-		if len(m.Reqs) != 1356 || count[prioMVP] != 743 || count[prioP1] != 574 || count[prioP2] != 39 {
-			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1356 (743, 574, 39)",
+		// 1361 since the Bastion mirrors the public catalogue and serves it on with its age (R-BAS-109 to R-BAS-113, five P1
+		// requirements of W-35, P7).
+		if len(m.Reqs) != 1361 || count[prioMVP] != 743 || count[prioP1] != 579 || count[prioP2] != 39 {
+			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1361 (743, 579, 39)",
 				len(m.Reqs), count[prioMVP], count[prioP1], count[prioP2])
 		}
 	})

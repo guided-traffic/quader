@@ -31,6 +31,11 @@ tests:
       - {series: 'kube_deployment_status_replicas_available{namespace="default",deployment="quader-bastion"}', values: '2x200'}
       - {series: 'quader_bastion_handovers_total{namespace="default",service="quader-bastion-ops",pod="p1",outcome="read"}', values: '0+2x200'}
       - {series: 'quader_bastion_handovers_total{namespace="default",service="quader-bastion-ops",pod="p1",outcome="fallback"}', values: '0x200'}
+      - {series: 'quader_bastion_catalogue_confirmed_timestamp_seconds{namespace="default",service="quader-bastion-ops",pod="p1"}', values: '0+60x200'}
+      - {series: 'quader_bastion_catalogue_stale_after_seconds{namespace="default",service="quader-bastion-ops",pod="p1"}', values: '3600x200'}
+      - {series: 'quader_bastion_gui_enabled{namespace="default",service="quader-bastion-ops",pod="p1"}', values: '1x200'}
+      - {series: 'quader_bastion_catalogue_bytes{namespace="default",service="quader-bastion-ops",pod="p1"}', values: '100x200'}
+      - {series: 'quader_bastion_catalogue_max_bytes{namespace="default",service="quader-bastion-ops",pod="p1"}', values: '1000x200'}
     alert_rule_test:
       - {eval_time: 3h, alertname: QuaderBastionInterfaceMismatch, exp_alerts: []}
       - {eval_time: 3h, alertname: QuaderBastionMainUnreachable, exp_alerts: []}
@@ -44,6 +49,9 @@ tests:
       - {eval_time: 3h, alertname: QuaderBastionAuditEventsDropped, exp_alerts: []}
       - {eval_time: 3h, alertname: QuaderBastionCacheCorrupt, exp_alerts: []}
       - {eval_time: 3h, alertname: QuaderBastionHandoverFailing, exp_alerts: []}
+      - {eval_time: 3h, alertname: QuaderBastionCatalogueStale, exp_alerts: []}
+      - {eval_time: 3h, alertname: QuaderBastionCatalogueMissing, exp_alerts: []}
+      - {eval_time: 3h, alertname: QuaderBastionCatalogueOverBound, exp_alerts: []}
       - {eval_time: 3h, alertname: QuaderBastionValkeyUnavailable, exp_alerts: []}
       - {eval_time: 3h, alertname: QuaderBastionReplicasNotReady, exp_alerts: []}
 
@@ -300,3 +308,68 @@ tests:
             exp_annotations:
               summary: Fewer than two Bastion replicas are ready.
               description: Needs kube-state-metrics. The Bastion is meant to run at least two replicas spread across nodes (R-BAS-043).
+
+  # --- The public catalogue of the web interface (R-BAS-110, R-BAS-111) -----------------------------------
+  - name: QuaderBastionCatalogueStale fires for the replica whose catalogue is older than stale_after, not for the fresh one
+    interval: 1m
+    input_series:
+      # p1 confirmed at 60 s and never again; p2 confirms every minute.
+      - {series: 'quader_bastion_catalogue_confirmed_timestamp_seconds{namespace="default",service="quader-bastion-ops",pod="p1"}', values: '60x120'}
+      - {series: 'quader_bastion_catalogue_confirmed_timestamp_seconds{namespace="default",service="quader-bastion-ops",pod="p2"}', values: '0+60x120'}
+      - {series: 'quader_bastion_catalogue_stale_after_seconds{namespace="default",service="quader-bastion-ops",pod="p1"}', values: '3600x120'}
+      - {series: 'quader_bastion_catalogue_stale_after_seconds{namespace="default",service="quader-bastion-ops",pod="p2"}', values: '3600x120'}
+      - {series: 'quader_bastion_gui_enabled{namespace="default",service="quader-bastion-ops",pod="p1"}', values: '1x120'}
+      - {series: 'quader_bastion_gui_enabled{namespace="default",service="quader-bastion-ops",pod="p2"}', values: '1x120'}
+    alert_rule_test:
+      - eval_time: 62m
+        alertname: QuaderBastionCatalogueStale
+        exp_alerts: []
+      - eval_time: 70m
+        alertname: QuaderBastionCatalogueStale
+        exp_alerts:
+          - exp_labels: {severity: warning, namespace: default, service: quader-bastion-ops, pod: p1}
+            exp_annotations:
+              summary: A Bastion replica's web interface shows information older than config.bastion.gui.stale_after.
+              description: The replica has not confirmed the public catalogue since; its pages say how old they are and serve on, and a level lowered at the main installation stays visible on them until the next confirmation (R-BAS-111, H-2319). Check the connection to the main installation and its catalogue routes.
+  - name: QuaderBastionCatalogueStale stays silent while the web interface is off
+    interval: 1m
+    input_series:
+      - {series: 'quader_bastion_catalogue_confirmed_timestamp_seconds{namespace="default",service="quader-bastion-ops",pod="p1"}', values: '60x120'}
+      - {series: 'quader_bastion_catalogue_stale_after_seconds{namespace="default",service="quader-bastion-ops",pod="p1"}', values: '3600x120'}
+      - {series: 'quader_bastion_gui_enabled{namespace="default",service="quader-bastion-ops",pod="p1"}', values: '0x120'}
+    alert_rule_test:
+      - eval_time: 100m
+        alertname: QuaderBastionCatalogueStale
+        exp_alerts: []
+  - name: QuaderBastionCatalogueMissing fires while the web interface is on and the replica holds no state
+    interval: 1m
+    input_series:
+      - {series: 'quader_bastion_catalogue_confirmed_timestamp_seconds{namespace="default",service="quader-bastion-ops",pod="p1"}', values: '0x30'}
+      - {series: 'quader_bastion_gui_enabled{namespace="default",service="quader-bastion-ops",pod="p1"}', values: '1x30'}
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: QuaderBastionCatalogueMissing
+        exp_alerts: []
+      - eval_time: 20m
+        alertname: QuaderBastionCatalogueMissing
+        exp_alerts:
+          - exp_labels: {severity: warning, namespace: default, service: quader-bastion-ops, pod: p1}
+            exp_annotations:
+              summary: A Bastion replica's web interface is on and the replica holds no state of the public catalogue.
+              description: Its pages answer 503 not_ready until its first sync completes. A replica without a bucket or a persistent volume loses the catalogue at a restart and needs the main installation to get it back (R-BAS-111, H-2318).
+  - name: QuaderBastionCatalogueOverBound fires when the catalogue holds more than its share
+    interval: 1m
+    input_series:
+      - {series: 'quader_bastion_catalogue_bytes{namespace="default",service="quader-bastion-ops",pod="p1"}', values: '2000x30'}
+      - {series: 'quader_bastion_catalogue_max_bytes{namespace="default",service="quader-bastion-ops",pod="p1"}', values: '1000x30'}
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: QuaderBastionCatalogueOverBound
+        exp_alerts: []
+      - eval_time: 20m
+        alertname: QuaderBastionCatalogueOverBound
+        exp_alerts:
+          - exp_labels: {severity: warning}
+            exp_annotations:
+              summary: The public catalogue holds more than its share of the cache, config.bastion.gui.max_bytes.
+              description: The catalogue is kept whole and nothing is evicted for it, so the cache may hold more than config.bastion.cache.max_bytes (R-BAS-110, H-2317). Raise config.bastion.gui.max_bytes, and config.bastion.cache.max_bytes with it.

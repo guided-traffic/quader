@@ -577,6 +577,29 @@ func TestR_BAS_093_TheKeysThatMovedIntoTheRegistrationAreRefused(t *testing.T) {
 	}
 }
 
+// TestR_BAS_111_TheChartSaysWhetherTheCacheVolumeOutlivesItsPod: the chart renders bastion.cache.volume.persistent from
+// cacheVolume.type, which a replica reports as whether its public catalogue survives a restart; it is the chart's and refused under
+// config. Render only, milliseconds.
+func TestR_BAS_111_TheChartSaysWhetherTheCacheVolumeOutlivesItsPod(t *testing.T) {
+	persistent := func(t *testing.T, files []string, sets ...string) any {
+		t.Helper()
+		_, docs := bstRender(t, files, sets...)
+		b, _ := bstConfig(t, docs)["bastion"].(map[string]any)
+		c, _ := b["cache"].(map[string]any)
+		v, _ := c["volume"].(map[string]any)
+		return v["persistent"]
+	}
+	if got := persistent(t, []string{bastionSet("persistent-routed")}); got != true {
+		t.Errorf("a persistent volume: persistent = %v", got)
+	}
+	for _, typ := range []string{"ephemeral", "emptyDir"} {
+		if got := persistent(t, bstRequired(), "cacheVolume.type="+typ); got != false {
+			t.Errorf("cacheVolume.type %s: persistent = %v", typ, got)
+		}
+	}
+	bstFails(t, bstRequired(), []string{"config.bastion.cache.volume.persistent=true"}, "bastion.cache.volume")
+}
+
 // TestR_BAS_038_TheEdgeLimitIsRenderedAndReported (R-BAS-038, R-BAS-093): edgeLimit renders HAProxy Ingress's per-address
 // limits on the Ingress, its whitelist from edgeLimit.exemptCIDRs, and the same figure into the configuration file as the
 // chart-managed bastion.edge_limit, which every handshake reports to the main installation. The chart no longer compares it
@@ -991,7 +1014,8 @@ func TestR_BAS_041_PrometheusRuleAlerts(t *testing.T) {
 		"QuaderBastionInterfaceMismatch", "QuaderBastionMainUnreachable", "QuaderBastionMainUnreachableSingleReplica",
 		"QuaderBastionGraceExhausted", "QuaderBastionBaseURLMismatch", "QuaderBastionTokenExpiresSoon", "QuaderBastionTokenRefused",
 		"QuaderBastionFeedStale", "QuaderBastionMainBudgetSaturated", "QuaderBastionAuditEventsDropped", "QuaderBastionCacheCorrupt",
-		"QuaderBastionHandoverFailing", "QuaderBastionValkeyUnavailable", "QuaderBastionReplicasNotReady",
+		"QuaderBastionHandoverFailing", "QuaderBastionCatalogueStale", "QuaderBastionCatalogueMissing", "QuaderBastionCatalogueOverBound",
+		"QuaderBastionValkeyUnavailable", "QuaderBastionReplicasNotReady",
 	}
 	t.Run("every alert is rendered with Valkey", func(t *testing.T) {
 		got := ruleNames(t, []string{bastionSet("bucket-valkey")})

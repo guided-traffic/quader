@@ -193,10 +193,14 @@ func parseClient(s string) (netip.Addr, bool) {
 // Handshake implements [Client].
 func (c *HTTPClient) Handshake(ctx context.Context) (iface.Handshake, error) {
 	var hs iface.Handshake
-	var contact http.Header
+	contact := http.Header{}
 	if c.o.EdgeLimit != nil {
 		// The edge figure of the ingress in front of the replica, recorded with its contact (R-BAS-093, Q-BAS-354).
-		contact = http.Header{iface.HeaderEdgeLimit: {c.o.EdgeLimit.Header()}}
+		contact.Set(iface.HeaderEdgeLimit, c.o.EdgeLimit.Header())
+	}
+	if c.o.CatalogueKept != nil {
+		// Whether the replica's copy of the public catalogue survives a restart (R-BAS-111), for the registration's card.
+		contact.Set(iface.HeaderCatalogueKept, strconv.FormatBool(*c.o.CatalogueKept))
 	}
 	if err := c.interfaceCall(ctx, ifaceCall{kind: KindHandshake, method: http.MethodGet, path: iface.PathHandshake, header: contact, out: &hs}); err != nil {
 		return iface.Handshake{}, err
@@ -248,11 +252,19 @@ type ifaceCall struct {
 	in     any
 	// out is the body to decode on a 200; nil means any 2xx is success and the body is ignored.
 	out any
+	// catalogue marks a read of the public catalogue (R-BAS-109): its body is paced in the throughput's catalogue class, and the
+	// call is bounded by the caller's context alone, since a paced batch of megabytes may take longer than an answer of the
+	// interface does. read, when set, reads a 200's body in place of out.
+	catalogue bool
+	read      func(*http.Response) error
 }
 
 func (c *HTTPClient) interfaceCall(ctx context.Context, call ifaceCall) error {
-	ctx, cancel := context.WithTimeout(ctx, c.opTimeout)
-	defer cancel()
+	if !call.catalogue {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, c.opTimeout)
+		defer cancel()
+	}
 	if call.slot {
 		release, err := c.acquire(ctx, call.class, call.kind)
 		if err != nil {
@@ -292,7 +304,12 @@ func (c *HTTPClient) interfaceCall(ctx context.Context, call ifaceCall) error {
 		return err
 	}
 	defer resp.Body.Close()
-	err = c.decode(resp, call)
+	if call.catalogue {
+		resp.Body = c.pacedCatalogue(ctx, resp.Body)
+		err = c.readCatalogue(resp, call)
+	} else {
+		err = c.decode(resp, call)
+	}
 	// The connection a cancelled caller closes can draw an answer that raced the close (an empty 200 of a server
 	// whose handler saw the close first); judged after the cancellation, it says nothing about the main installation.
 	if cerr := ctx.Err(); err != nil && cerr != nil && !errors.Is(cerr, context.DeadlineExceeded) {

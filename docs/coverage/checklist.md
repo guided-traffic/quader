@@ -15,8 +15,8 @@ rendered from it ([checklist.md there](https://github.com/guided-traffic/quader/
 requirement lists the feature in its `Covers:` line. *open*: no requirement does. For entries with priority
 *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,356 spec requirements:
-807 cover catalog features, 549 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,361 spec requirements:
+807 cover catalog features, 554 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>549 requirements</summary>
+<summary>554 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3219,6 +3219,11 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-BAS-106 | The strip: no internal identity, no infrastructure, no time of a check | P1 | [bastion.md](../spec/bastion.md) |
 | R-BAS-107 | Links on the Bastion's base URL and its data path | P1 | [bastion.md](../spec/bastion.md) |
 | R-BAS-108 | The catalogue's tables: derived, deduplicated, and a reset after a restore | P1 | [bastion.md](../spec/bastion.md) |
+| R-BAS-109 | The sync: the change list, the documents by batch, verified, and one replica of a shared bucket | P1 | [bastion.md](../spec/bastion.md) |
+| R-BAS-110 | The store: a tree of the cache backend with a share of its own, a signed state, a sweep | P1 | [bastion.md](../spec/bastion.md) |
+| R-BAS-111 | The age: confirmedAt, serving on without the main installation, a restart with and without a kept state | P1 | [bastion.md](../spec/bastion.md) |
+| R-BAS-112 | The switches and the feed's hooks | P1 | [bastion.md](../spec/bastion.md) |
+| R-BAS-113 | The reader | P1 | [bastion.md](../spec/bastion.md) |
 | R-EP-002 | Endpoint identity comes from the listener | MVP | [endpoints.md](../spec/endpoints.md) |
 | R-EP-004 | TLS on endpoint listeners: certificates by SNI, wildcard certificates, reload | MVP | [endpoints.md](../spec/endpoints.md) |
 | R-EP-006 | Host-root binding: the reserved mechanism | MVP | [endpoints.md](../spec/endpoints.md) |

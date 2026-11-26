@@ -114,6 +114,30 @@ spec page used min() for "every replica", which fires on one replica.
   annotations:
     summary: Handovers fail and the Bastion reads none from the object store.
     description: The bytes come through the main installation instead (R-BAS-075). Check that the Bastion's network reaches each connection's public address and that trustedCA vouches for it, or switch the registration's handover off.
+- alert: QuaderBastionCatalogueStale
+  expr: (time() - quader_bastion_catalogue_confirmed_timestamp_seconds{ {{ $s }} } > on(namespace, service, pod) quader_bastion_catalogue_stale_after_seconds{ {{ $s }} }) and on(namespace, service, pod) (quader_bastion_catalogue_confirmed_timestamp_seconds{ {{ $s }} } > 0) and on(namespace, service, pod) (quader_bastion_gui_enabled{ {{ $s }} } == 1)
+  for: 5m
+  labels:
+    severity: warning
+  annotations:
+    summary: A Bastion replica's web interface shows information older than config.bastion.gui.stale_after.
+    description: The replica has not confirmed the public catalogue since; its pages say how old they are and serve on, and a level lowered at the main installation stays visible on them until the next confirmation (R-BAS-111, H-2319). Check the connection to the main installation and its catalogue routes.
+- alert: QuaderBastionCatalogueMissing
+  expr: (quader_bastion_catalogue_confirmed_timestamp_seconds{ {{ $s }} } == 0) and on(namespace, service, pod) (quader_bastion_gui_enabled{ {{ $s }} } == 1)
+  for: 15m
+  labels:
+    severity: warning
+  annotations:
+    summary: A Bastion replica's web interface is on and the replica holds no state of the public catalogue.
+    description: Its pages answer 503 not_ready until its first sync completes. A replica without a bucket or a persistent volume loses the catalogue at a restart and needs the main installation to get it back (R-BAS-111, H-2318).
+- alert: QuaderBastionCatalogueOverBound
+  expr: max(quader_bastion_catalogue_bytes{ {{ $s }} }) > max(quader_bastion_catalogue_max_bytes{ {{ $s }} })
+  for: 15m
+  labels:
+    severity: warning
+  annotations:
+    summary: The public catalogue holds more than its share of the cache, config.bastion.gui.max_bytes.
+    description: The catalogue is kept whole and nothing is evicted for it, so the cache may hold more than config.bastion.cache.max_bytes (R-BAS-110, H-2317). Raise config.bastion.gui.max_bytes, and config.bastion.cache.max_bytes with it.
 {{- if include "quader-bastion.valkeyOn" . }}
 - alert: QuaderBastionValkeyUnavailable
   expr: max(quader_valkey_available{ {{ $s }} }) == 0
@@ -136,5 +160,5 @@ spec page used min() for "every replica", which fires on one replica.
 
 {{/* The names of every alert the chart can render, for the check of disabledAlerts. */}}
 {{- define "quader-bastion.rules.names" -}}
-{{- toJson (list "QuaderBastionInterfaceMismatch" "QuaderBastionMainUnreachable" "QuaderBastionMainUnreachableSingleReplica" "QuaderBastionGraceExhausted" "QuaderBastionBaseURLMismatch" "QuaderBastionTokenExpiresSoon" "QuaderBastionTokenRefused" "QuaderBastionFeedStale" "QuaderBastionMainBudgetSaturated" "QuaderBastionAuditEventsDropped" "QuaderBastionCacheCorrupt" "QuaderBastionHandoverFailing" "QuaderBastionValkeyUnavailable" "QuaderBastionReplicasNotReady") -}}
+{{- toJson (list "QuaderBastionInterfaceMismatch" "QuaderBastionMainUnreachable" "QuaderBastionMainUnreachableSingleReplica" "QuaderBastionGraceExhausted" "QuaderBastionBaseURLMismatch" "QuaderBastionTokenExpiresSoon" "QuaderBastionTokenRefused" "QuaderBastionFeedStale" "QuaderBastionMainBudgetSaturated" "QuaderBastionAuditEventsDropped" "QuaderBastionCacheCorrupt" "QuaderBastionHandoverFailing" "QuaderBastionCatalogueStale" "QuaderBastionCatalogueMissing" "QuaderBastionCatalogueOverBound" "QuaderBastionValkeyUnavailable" "QuaderBastionReplicasNotReady") -}}
 {{- end -}}
