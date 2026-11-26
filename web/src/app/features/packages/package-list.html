@@ -183,6 +183,13 @@
           (input)="stagedKeyword.set($any($event.target).value)"
         />
       </quader-filter-category>
+      <!-- The packages whose latest version is deprecated, in every format that has a deprecation (R-API-085, Q-UI-1302). -->
+      <quader-filter-category i18n-label="@@pkg.filter.state" label="State">
+        <label class="check-row">
+          <input type="checkbox" [checked]="stagedDeprecated()" (change)="stagedDeprecated.set($any($event.target).checked)" />
+          <span i18n="@@pkg.filter.deprecated-only">Deprecated only</span>
+        </label>
+      </quader-filter-category>
       <quader-filter-category i18n-label="@@pkg.filter.created" label="Created">
         <select
           class="select-input"
@@ -240,8 +247,10 @@
         <tr>
           <th scope="row" class="wrap-name">
             <a [routerLink]="commands(row.format, row.key ?? row.name)" translate="no">{{ row.name }}</a>
+            <!-- The deprecation of the version the row names, its latest (R-API-085, Q-UI-1300). -->
+            &ngsp;<quader-deprecation-mark [deprecation]="row.deprecation" />
             @if (row.description) {
-              <span class="secondary">{{ row.description }}</span>
+              <span class="secondary" translate="no">{{ row.description }}</span>
             }
           </th>
           <td>

@@ -6,6 +6,7 @@ import { PackageSort, PackageSummary, PackagesApi } from '../../../api/packages-
 import { splitRef } from '../../../api/repositories-api';
 import { PagedResource } from '../../../shared/paged-resource';
 import { DataTable, TableColumn, TableSort } from '../../../shared/ui/data-table';
+import { DeprecationMark } from '../../../shared/ui/deprecation-mark';
 import { GradeLabel } from '../../../shared/vulnerability/grade';
 import { gradeRank } from '../../../shared/vulnerability/grade-words';
 import { systemClosed } from '../../../core/system-clients';
@@ -35,7 +36,7 @@ export const GRADE_SORT_MAX = 1000;
  */
 @Component({
   selector: 'quader-repository-items',
-  imports: [TimeAgo, DecimalPipe, RouterLink, DataTable, GradeLabel, RepositoryItemVersions, ClientCommandMenu],
+  imports: [TimeAgo, DecimalPipe, RouterLink, DataTable, DeprecationMark, GradeLabel, RepositoryItemVersions, ClientCommandMenu],
   template: `
     <div class="toolbar">
       <div class="filter">
@@ -83,6 +84,8 @@ export const GRADE_SORT_MAX = 1000;
               </button>
               <span>
                 <a class="item-name" [routerLink]="detailLink(p)" translate="no">{{ p.name }}</a>
+                <!-- The deprecation of its latest version (R-API-085, Q-UI-1300). -->
+                &ngsp;<quader-deprecation-mark [deprecation]="p.deprecation" />
                 @if (p.description; as d) {
                   <span class="item-description" translate="no">{{ d }}</span>
                 }

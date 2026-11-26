@@ -2,7 +2,14 @@ import { DownloadLink } from '../../shared/download-link';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, computed, effect, inject, input, resource, signal, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { PackageDocTree, PackageVersion, PackageVersionDocs, PackagesApi } from '../../api/packages-api';
+import { firstValueFrom } from 'rxjs';
+import { PackageDeprecation, PackageDocTree, PackageVersion, PackageVersionDocs, PackagesApi } from '../../api/packages-api';
+import { ApiError } from '../../api/problem';
+import { SessionStore } from '../../core/session-store';
+import { asApiError } from '../../shared/paged-resource';
+import { QuaderDialog } from '../../shared/ui/dialog';
+import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
+import { DeprecationDialog, DeprecationDialogData, reasonText } from './deprecation-dialog';
 import { VulnerabilitiesApi, VulnerabilityVersionReport } from '../../api/vulnerabilities-api';
 import { CopyButton } from '../../shared/copy-button';
 import { ErrorNotice } from '../../shared/error-notice';
@@ -45,7 +52,6 @@ import {
   debRelations,
   debSource,
   dependencyGroups,
-  deprecationOf,
   frameworkGroups,
   imageFacts,
   metadataLinks,
@@ -167,6 +173,9 @@ interface TabEntry {
     Disclosure,
     DatePipe,
     DistTags,
+    CdkMenu,
+    CdkMenuItem,
+    CdkMenuTrigger,
   ],
   templateUrl: './package-version.html',
   styleUrl: './package-version.scss',
@@ -406,7 +415,7 @@ export class PackageVersionPage {
   protected readonly dependencyGroups = computed(() => dependencyGroups(this.metadata()));
   protected readonly frameworkGroups = computed(() => frameworkGroups(this.metadata()['dependencyGroups']));
   /** A NuGet version the publisher unlisted (R-NUGET-006): it restores when pinned and is hidden from search. */
-  protected readonly unlisted = computed(() => this.metadata()['listed'] === false);
+  protected readonly unlisted = computed(() => this.detail()?.unlisted === true);
   protected readonly engines = computed(() => stringRecord(this.metadata()['engines']));
   protected readonly authors = computed(() => strings(this.metadata()['authors']));
   protected readonly nugetFacts = computed(() => nugetFacts(this.metadata()));
@@ -421,10 +430,6 @@ export class PackageVersionPage {
     const d = this.detail();
     return d ? ansibleFacts(d, valueOf(this.summary)?.keywords ?? []) : [];
   });
-  /** The deprecation of a version: npm's message; a Helm chart its Chart.yaml marks deprecated (R-OCI-042). */
-  protected readonly deprecated = computed(() =>
-    this.chart()?.deprecated ? $localize`:@@pkg.chart.deprecated:This chart is deprecated.` : deprecationOf(this.metadata()),
-  );
   /** A Helm chart's facts (R-OCI-042); null for anything else. */
   protected readonly chart = computed(() => (this.format() === 'oci' ? chartOf(this.metadata()) : null));
   /** Why a chart's facts and values are held (R-OCI-040): a download of its files would not be served to this reader now. */
@@ -434,6 +439,81 @@ export class PackageVersionPage {
   /** A Helm chart's values.yaml (R-OCI-042). */
   protected readonly chartValues = computed(() => (this.format() === 'oci' ? chartValues(this.metadata()) : null));
   protected readonly copyValues = $localize`:@@pkg.chart.copy-values:Copy values.yaml`;
+  /** The version's deprecation, its own or its package's (R-API-085): the banner says it, with NuGet's reasons and alternate package. */
+  protected readonly deprecated = computed<PackageDeprecation | null>(() => this.detail()?.deprecation ?? null);
+  protected readonly reasonsText = computed(() => (this.deprecated()?.reasons ?? []).map(reasonText).join('; '));
+  /** The alternate package's page where the reader may read it (R-API-085), else none and its name stays text. */
+  protected readonly alternateLink = computed(() => {
+    const a = this.deprecated()?.alternatePackage;
+    return a?.packageId ? packageCommands(this.project(), this.format(), a.name) : null;
+  });
+  protected readonly alternateRange = computed(() => {
+    const r = this.deprecated()?.alternatePackage?.range;
+    return r && r !== '*' ? r : null;
+  });
+
+  // ---- Deprecating the version, or an Ansible collection as a whole (R-API-085, Q-UI-1301) ----
+
+  private readonly session = inject(SessionStore);
+  private readonly dialog = inject(QuaderDialog);
+  /** The local repositories that hold the version, for a format whose protocol carries a deprecation (npm, NuGet, Ansible Galaxy). */
+  private readonly deprecationHolders = computed(
+    () => {
+      const d = this.detail();
+      if (!d || !['npm', 'nuget', 'ansible'].includes(d.format)) return undefined;
+      const keys = d.repositories.filter((r) => r.class === 'local').map((r) => r.key);
+      return keys.length > 0 ? { name: d.name, keys } : undefined;
+    },
+    { equal: (a, b) => a?.name === b?.name && (a?.keys ?? []).join('\n') === (b?.keys ?? []).join('\n') },
+  );
+  /** Those of them in which the reader may deploy the package: the act stands only for them, the server decides again. */
+  protected readonly deprecationRepositories = resource({
+    params: () => this.deprecationHolders(),
+    loader: async ({ params }) => {
+      const allowed = await this.session.check(params.keys.map((repository) => ({ repository, action: 'deploy', package: params.name })));
+      return params.keys.filter((_, i) => allowed[i]);
+    },
+  });
+  protected readonly mayDeprecate = computed(() => (valueOf(this.deprecationRepositories) ?? []).length > 0);
+  /** Ansible Galaxy deprecates the collection, not the version: the menu's words say which. */
+  protected readonly deprecatesPackage = computed(() => this.format() === 'ansible');
+  protected readonly actsLabel = $localize`:@@pkg.acts.label:More actions`;
+  protected readonly deprecationBusy = signal(false);
+  protected readonly deprecationFailure = signal<ApiError | null>(null);
+
+  protected async openDeprecation(): Promise<void> {
+    const d = this.detail();
+    if (!d) return;
+    const data: DeprecationDialogData = {
+      format: d.format, name: d.name, version: d.version, repositories: valueOf(this.deprecationRepositories) ?? [], current: this.deprecated(),
+    };
+    const ref = this.dialog.open<DeprecationDialog, DeprecationDialogData, PackageDeprecation>(DeprecationDialog, { data, width: '36rem' });
+    if (await firstValueFrom(ref.closed)) this.deprecationChanged();
+  }
+
+  /** **Undo deprecation**: the same act, without a dialog; its refusal is shown above the tabs, whole (R-UI-216). */
+  protected async undoDeprecation(): Promise<void> {
+    const d = this.detail();
+    const repository = (valueOf(this.deprecationRepositories) ?? [])[0];
+    if (!d || !repository || this.deprecationBusy()) return;
+    this.deprecationBusy.set(true);
+    this.deprecationFailure.set(null);
+    try {
+      await this.api.clearDeprecation(repository, d.name, this.deprecatesPackage() ? undefined : d.version);
+      this.deprecationChanged();
+    } catch (e) {
+      this.deprecationFailure.set(asApiError(e));
+    } finally {
+      this.deprecationBusy.set(false);
+    }
+  }
+
+  /** The page, its switch and the package's row show the new state at once, without a reload (R-UI-213). */
+  private deprecationChanged(): void {
+    this.details.reload();
+    this.switchVersions.reload();
+    this.summary.reload();
+  }
   protected readonly links = computed(() => {
     const d = this.detail();
     if (!d) return [];

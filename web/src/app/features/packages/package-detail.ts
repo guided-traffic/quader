@@ -34,6 +34,7 @@ import { DistTags } from './dist-tags';
 import { SignatureBadge } from '../../shared/signatures/signature-badge';
 import { CLAMAV_FORMAT, clamavState, stateRank, stateText } from './clamav-definitions';
 import { ImageTags, listsByContent } from './image-tags';
+import { DeprecationMark } from '../../shared/ui/deprecation-mark';
 import { Loading } from '../../shared/ui/loading';
 
 /**
@@ -53,7 +54,7 @@ function sameVersion(a: { id: string; version: string } | undefined, b: { id: st
 
 @Component({
   selector: 'quader-package-detail',
-  imports: [Loading, 
+  imports: [Loading, DeprecationMark,
     SignatureBadge,
     DecimalPipe,
     RouterLink,

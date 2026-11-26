@@ -17,6 +17,7 @@ import { RepositoriesApi, refOf } from '../../api/repositories-api';
 import { PagedResource, valueOf } from '../../shared/paged-resource';
 import { FormatIconView } from '../../shared/format-icon';
 import { DataTable, TableColumn, TableSort } from '../../shared/ui/data-table';
+import { DeprecationMark } from '../../shared/ui/deprecation-mark';
 import { FilterCategory, FilterPanel } from '../../shared/ui/filter-panel';
 import { ListChip, ListHead } from '../../shared/ui/list-head';
 import { TimeAgo } from '../../shared/ui/time-ago';
@@ -59,6 +60,7 @@ interface Chip extends ListChip {
     PageHeader,
     RouterLink,
     DataTable,
+    DeprecationMark,
     FilterCategory,
     FilterPanel,
     FormatIconView,
@@ -82,6 +84,8 @@ export class PackageList {
   readonly repository = input<Param>();
   readonly q = input<string | undefined>();
   readonly keyword = input<string | undefined>();
+  /** `true`: only the packages whose latest version is deprecated (R-API-085). */
+  readonly deprecated = input<string | undefined>();
   readonly period = input<string | undefined>();
   readonly from = input<string | undefined>();
   readonly to = input<string | undefined>();
@@ -99,6 +103,7 @@ export class PackageList {
 
   protected readonly panelOpen = signal(false);
   protected readonly stagedKeyword = signal('');
+  protected readonly stagedDeprecated = signal(false);
   protected readonly stagedFormats = signal<readonly string[]>([]);
   protected readonly stagedRepositories = signal<readonly string[]>([]);
   protected readonly stagedPeriod = signal('');
@@ -132,6 +137,7 @@ export class PackageList {
       repository: this.repositoryNames(),
       q: this.q(),
       keyword: this.keyword(),
+      ...(this.deprecated() === 'true' ? { deprecated: true } : {}),
       createdFrom: range.from,
       createdTo: range.to,
       sort: this.apiSort(),
@@ -168,6 +174,14 @@ export class PackageList {
             : $localize`:@@pkg.filter.keyword:Keyword`,
         value: this.keyword() ?? '',
         remove: { keyword: null },
+      });
+    }
+    if (this.deprecated() === 'true') {
+      out.push({
+        key: 'deprecated',
+        label: $localize`:@@pkg.filter.state:State`,
+        value: $localize`:@@pkg.filter.deprecated-chip:Deprecated`,
+        remove: { deprecated: null },
       });
     }
     const created = this.createdLabel();
@@ -299,6 +313,7 @@ export class PackageList {
   /** The drawer's values back to the applied ones: after a change of the query, and when the drawer closes without **Apply**. */
   protected restage(): void {
     this.stagedKeyword.set(this.keyword() ?? '');
+    this.stagedDeprecated.set(this.deprecated() === 'true');
     this.stagedFormats.set(this.formatNames());
     this.stagedRepositories.set(this.repositoryNames());
     this.stagedPeriod.set(this.period() ?? '');
@@ -312,6 +327,7 @@ export class PackageList {
       format: [...this.stagedFormats()],
       repository: [...this.stagedRepositories()],
       keyword: this.stagedKeyword().trim() || null,
+      deprecated: this.stagedDeprecated() ? 'true' : null,
       period: this.stagedPeriod() || null,
       from: custom ? this.stagedFrom() || null : null,
       to: custom ? this.stagedTo() || null : null,
@@ -320,12 +336,12 @@ export class PackageList {
 
   /** **Clear all** of the drawer: its filters go; the search text is the field's and stays. */
   protected clearFilters(): void {
-    this.navigate({ format: null, repository: null, keyword: null, period: null, from: null, to: null });
+    this.navigate({ format: null, repository: null, keyword: null, deprecated: null, period: null, from: null, to: null });
   }
 
   /** **Clear all filters** under a list that matches nothing: the search text goes too. */
   protected clearEverything(): void {
-    this.navigate({ format: null, repository: null, q: null, keyword: null, period: null, from: null, to: null });
+    this.navigate({ format: null, repository: null, q: null, keyword: null, deprecated: null, period: null, from: null, to: null });
   }
 
   protected removeChip(chip: ListChip): void {
@@ -347,6 +363,7 @@ export class PackageList {
     add('repository', this.repository());
     add('q', this.q());
     add('keyword', this.keyword());
+    add('deprecated', this.deprecated());
     add('period', this.period());
     add('from', this.from());
     add('to', this.to());

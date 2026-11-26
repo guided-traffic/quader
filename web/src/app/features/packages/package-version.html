@@ -72,6 +72,32 @@
         <a class="btn btn-default" [routerLink]="c.setup" [queryParams]="{ client: 'freshclam' }" i18n="@@repo.content.tab.setup">Set up client</a>
       }
     }
+    <!-- The version's acts for those who may deploy it (R-API-085, Q-UI-1301): a menu at the end of the head, as a repository's. -->
+    @if (mayDeprecate() && detail()) {
+      <button class="btn btn-default btn-icon" type="button" data-testid="version-acts" [attr.aria-label]="actsLabel" [cdkMenuTriggerFor]="actsMenu">
+        <span class="material-icons" aria-hidden="true">more_vert</span>
+      </button>
+      <ng-template #actsMenu>
+        <div class="menu" cdkMenu>
+          @if (deprecated()) {
+            <button class="menu-item" cdkMenuItem type="button" (cdkMenuItemTriggered)="openDeprecation()" i18n="@@pkg.acts.change-deprecation">
+              Change deprecation
+            </button>
+            <button class="menu-item" cdkMenuItem type="button" [disabled]="deprecationBusy()" (cdkMenuItemTriggered)="undoDeprecation()" i18n="@@pkg.acts.undo-deprecation">
+              Undo deprecation
+            </button>
+          } @else if (deprecatesPackage()) {
+            <button class="menu-item" cdkMenuItem type="button" (cdkMenuItemTriggered)="openDeprecation()" i18n="@@pkg.acts.deprecate-collection">
+              Deprecate collection
+            </button>
+          } @else {
+            <button class="menu-item" cdkMenuItem type="button" (cdkMenuItemTriggered)="openDeprecation()" i18n="@@pkg.acts.deprecate-version">
+              Deprecate version
+            </button>
+          }
+        </div>
+      </ng-template>
+    }
   </ng-container>
 </quader-page-header>
 
@@ -200,11 +226,37 @@
         </div>
       </div>
     }
-    @if (deprecated(); as why) {
-      <p class="banner-warning" role="note">
+    @if (deprecationFailure(); as f) {
+      <quader-error-notice [error]="f" />
+    }
+    <!-- The deprecation (R-API-085, Q-UI-1300): the word, the scope where the whole package is deprecated, the publisher's message as
+         text (never markup), NuGet's reasons and the package to use instead, a link where the reader may read it. -->
+    @if (deprecated(); as dep) {
+      <p class="banner-warning" role="note" data-testid="deprecation-banner">
         <span class="material-icons inline warn" aria-hidden="true">warning</span>
-        <span
-          ><strong i18n="@@pkg.deprecated">Deprecated.</strong>&ngsp;<span translate="no">{{ why }}</span></span
+        <span class="deprecation-text"
+          ><strong i18n="@@pkg.deprecated">Deprecated.</strong>
+          @if (dep.scope === 'package') {
+            &ngsp;<span i18n="@@pkg.deprecated-collection">Every version of this collection is deprecated.</span>
+          }
+          @if (dep.message) {
+            &ngsp;<span class="deprecation-message" translate="no">{{ dep.message }}</span>
+          }
+          @if (reasonsText(); as reasons) {
+            &ngsp;<span><ng-container i18n="@@pkg.deprecated-reasons">Reason:</ng-container>&ngsp;{{ reasons }}.</span>
+          }
+          @if (dep.alternatePackage; as alt) {
+            &ngsp;<span
+              ><ng-container i18n="@@pkg.deprecated-alternate">Use instead:</ng-container>&ngsp;@if (alternateLink(); as link) {
+                <a [routerLink]="link" translate="no">{{ alt.name }}</a>
+              } @else {
+                <span translate="no">{{ alt.name }}</span>
+              }
+              @if (alternateRange(); as range) {
+                &ngsp;<span translate="no">{{ range }}</span>
+              }</span
+            >
+          }</span
         >
       </p>
     }

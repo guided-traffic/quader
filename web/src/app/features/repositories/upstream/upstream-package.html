@@ -125,7 +125,13 @@
           <span class="version-line">
             <span class="version" translate="no">{{ v.version }}</span>
             @for (f of v.flags; track f) {
-              <span class="badge">{{ flag(f) }}</span>
+              <!-- A deprecated or unlisted version takes the mark of every list (R-API-085, Q-UI-1300); the upstream's other flags their
+                   words. -->
+              @if (f === 'deprecated' || f === 'unlisted') {
+                <quader-deprecation-mark [deprecation]="f === 'deprecated'" [unlisted]="f === 'unlisted'" />
+              } @else {
+                <span class="badge">{{ flag(f) }}</span>
+              }
             }
             @if (tags().get(v.version); as named) {
               <quader-dist-tags [tags]="named" [package]="name()" />

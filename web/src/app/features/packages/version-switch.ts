@@ -3,6 +3,7 @@ import { DecimalPipe } from '@angular/common';
 import { Component, computed, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { PackageVersionSummary } from '../../api/packages-api';
+import { DeprecationMark } from '../../shared/ui/deprecation-mark';
 import { Loading } from '../../shared/ui/loading';
 import { versionCommands, versionsCommands } from './package-links';
 
@@ -17,7 +18,7 @@ import { versionCommands, versionsCommands } from './package-links';
  */
 @Component({
   selector: 'quader-version-switch',
-  imports: [CdkMenu, CdkMenuItem, CdkMenuTrigger, DecimalPipe, Loading, RouterLink],
+  imports: [CdkMenu, CdkMenuItem, CdkMenuTrigger, DecimalPipe, DeprecationMark, Loading, RouterLink],
   template: `
     <button
       type="button"
@@ -53,6 +54,8 @@ import { versionCommands, versionsCommands } from './package-links';
             } @else if (v.prerelease) {
               <span class="badge muted" i18n="@@pkg.badge.prerelease">Pre-release</span>
             }
+            <!-- A deprecated or unlisted version says so here as in every list (R-API-085, Q-UI-1300). -->
+            <quader-deprecation-mark [deprecation]="v.deprecation" [unlisted]="v.unlisted" />
           </a>
         }
         <div class="menu-divider" role="separator"></div>

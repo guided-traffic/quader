@@ -6,6 +6,7 @@ import { PackageSummary, PackagesApi } from '../../api/packages-api';
 import { Project, ProjectRole, ProjectsApi } from '../../api/projects-api';
 import { RepositoriesApi, RepositorySummary, refOf } from '../../api/repositories-api';
 import { FormatIconView } from '../../shared/format-icon';
+import { DeprecationMark } from '../../shared/ui/deprecation-mark';
 import { PagedResource, valueOf } from '../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
 import { PageHeader } from '../../shared/ui/page-header';
@@ -36,7 +37,7 @@ const PAGE = 25;
  */
 @Component({
   selector: 'quader-search-results',
-  imports: [RouterLink, DataTable, FormatIconView, PageHeader, NoValue, ProjectLevel, ProjectLink, ProjectMark, TabContent, TabGroup, TabPage, TimeAgo, Tooltip, VisibilityIcon],
+  imports: [RouterLink, DataTable, DeprecationMark, FormatIconView, PageHeader, NoValue, ProjectLevel, ProjectLink, ProjectMark, TabContent, TabGroup, TabPage, TimeAgo, Tooltip, VisibilityIcon],
   template: `
     <quader-page-header [heading]="heading" [description]="description()" />
 
@@ -115,6 +116,7 @@ const PAGE = 25;
               <tr>
                 <th scope="row" class="wrap-name">
                   <a [routerLink]="packageLink(row)" translate="no">{{ row.name }}</a>
+                  &ngsp;<quader-deprecation-mark [deprecation]="row.deprecation" />
                   @if (row.description) {
                     <span class="secondary" translate="no">{{ row.description }}</span>
                   }

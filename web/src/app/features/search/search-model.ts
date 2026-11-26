@@ -38,6 +38,8 @@ export interface SearchEntry {
   readonly disabled?: boolean;
   /** A system repository of the project `upstream`, marked **System** among the others (R-UI-193, Q-UI-902). */
   readonly system?: boolean;
+  /** A package whose latest version is deprecated, marked as every list marks it (R-API-085, Q-UI-1300). */
+  readonly deprecated?: boolean;
   /** Whether the label is a name the typed text matched (keys and names are `translate="no"`). */
   readonly literal: boolean;
   readonly commands: readonly string[];
@@ -267,6 +269,7 @@ export function liveGroups(input: LiveInput): SearchGroup[] {
         secondary: `${p.project} / ${p.repository}`,
         format: p.format,
         literal: true,
+        ...(p.deprecated ? { deprecated: true } : {}),
         commands: packageCommands(p.project, p.format, p.key ?? p.name),
       }),
     );

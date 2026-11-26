@@ -90,6 +90,7 @@ unless the line is too short, and then breaks at the joint with a hyphen; withou
 | theme (light, dark, follow the system) | Design (Hell, Dunkel, Systemeinstellung folgen) |
 | lockfile | Lockfile |
 | unlisted (NuGet version), target framework | nicht gelistet, Zielframework |
+| deprecated, deprecate (a version, a collection), deprecation, use instead | veraltet, als veraltet markieren, Veraltet-Markierung, stattdessen verwenden |
 | CI identity, CI issuer, mapping (of a CI issuer), tier (of mappings) | CI-Identität, CI-Aussteller, Zuordnung, Ebene |
 | claim, claim tester, dry run | Claim, Claim-Tester, Testlauf |
 | ID token, exchange (of an ID token for a token) | ID-Token, Austausch |

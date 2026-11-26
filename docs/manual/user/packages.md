@@ -36,6 +36,7 @@ how many filters are set.
    | **Package type** | Packages of the ticked formats |
    | **Repository** | Packages with a version in one of the ticked repositories; a virtual repository stands for its members |
    | **Keyword** | Packages with a version that lists exactly this keyword |
+   | **State** | **Deprecated only**: packages whose latest version is deprecated (npm, NuGet, Ansible Galaxy) |
    | **Created** | Packages whose first version falls into **Last 7 days**, **Last 30 days**, **Last 90 days** or a **Custom period** from **From** to **To (included)** |
 
 3. Select **Apply filters**. The panel closes.
@@ -121,7 +122,8 @@ ClamAV definitions has **Set up client** there instead, since a ClamAV installat
 
 Under the name and the version, one line holds the facts of the version: its grade with the number of findings and how many have a
 fix (select it to open the findings), when it was published, its size, when a client last downloaded it, its downloads and its licences. A
-version that its publisher marked as deprecated shows **Deprecated.** with the publisher's message; a version whose download a
+version that its publisher marked as deprecated shows **Deprecated.** with the publisher's message, for NuGet with its reasons and the
+package to use instead, for an Ansible collection with "Every version of this collection is deprecated."; a version whose download a
 repository refuses shows **Blocked in** and the repository. A file of the version that the malware scan refuses shows **Malware found in**
 the file and the signature, or that the file **could not be checked for malware** where only checked artifacts can be downloaded; each
 ends with **Downloads are refused.** (see [the malware scan's states](files.md#the-malware-scans-states)).
@@ -136,6 +138,29 @@ ends with **Downloads are refused.** (see [the malware scan's states](files.md#t
 | **Details** | **Links** (**Homepage**, **Source repository**, **Issue tracker**), **Authors**, **Dependencies**, **Development dependencies**, **Peer dependencies**, **Optional dependencies** and **Required runtimes**, as far as the version declares them; for an image its digest, media type, size and platforms, each platform with its own size or, in a remote repository, **Not fetched** until a client pulls it; then **Repositories**: each repository that holds the version, its **Class** and when it was **Published** there |
 
 Links in **Details** open in a new tab and only for `http` and `https` addresses; any other link is shown as text.
+
+## Deprecated and unlisted versions
+
+npm and NuGet deprecate single versions, Ansible Galaxy a whole collection. A deprecated version is still downloaded and installed;
+the publisher says it should no longer be used, and why. Quader marks it **Deprecated** wherever it is listed: in the table of versions,
+in the switch of a version's head, in a repository's package list and in **Packages** (for a package, by its latest version), in the
+search's results and suggestions, and on the tab **Upstream** of a remote repository. Point at the mark to read the message.
+
+A NuGet version can also be **Unlisted**: it is hidden from search and still downloaded when a project asks for exactly this version. It
+is not deprecated, and the two marks can stand together.
+
+To deprecate a version of a local repository, open its page and select the menu at the right of the head: **Deprecate version** (npm,
+NuGet) or **Deprecate collection** (Ansible Galaxy). The dialog asks what the format carries:
+
+| Format | What you enter | What the clients do |
+|---|---|---|
+| npm | A message, required | `npm install` prints it as a warning; a version range installs another version where one is not deprecated |
+| NuGet | One or more reasons (**Legacy, no longer maintained**, **Critical bugs**, **Other**), a message, and the package to use instead with its versions | Visual Studio and `dotnet list package --deprecated` show the reasons and the package to use instead; no client shows the message; a restore goes on as before |
+| Ansible Galaxy | A message, shown on Quader's pages only | `ansible-galaxy` installs the collection as before and shows nothing |
+
+On a deprecated version the menu has **Change deprecation** and **Undo deprecation**. You need the deploy permission on the package and,
+where the package has owners, ownership of it. A remote repository shows the deprecation of its upstream and a virtual repository that of
+its members; neither can be changed there. `npm deprecate` itself is not available yet: deprecate an npm version on its page.
 
 ## Distribution tags
 

@@ -15,6 +15,8 @@ import { expectAccessible, inProject, renderScreen, settle, text } from '../../t
 import { PackageMemory } from './package-memory';
 import { PackageVersionPage } from './package-version';
 import { RepositoriesApi } from '../../api/repositories-api';
+import { SessionApi } from '../../api/session-api';
+import { FakeSessionApi } from '../../api/testing/fakes';
 import { FakeRepositoriesApi, GENERIC_FORMAT, OCI_FORMAT } from '../../api/testing/fakes-catalog';
 
 type Opened = Awaited<ReturnType<typeof open>>;
@@ -317,16 +319,121 @@ describe('The page of a version (R-UI-111)', () => {
     expect(r.get(PackageMemory).recent()[0]).toEqual({ format: 'npm', name: '@team-a/ui' });
   });
 
-  it('R-UI-007 a deprecated version is flagged with its reason', async () => {
+  it('R-API-085 a deprecated version is flagged with its message, as text', async () => {
     const r = await open({}, (fake) => {
-      for (const v of fake.versionList) v.metadata = { ...v.metadata, deprecated: 'Use @team-a/ui2' };
+      for (const v of fake.versionList) v.deprecation = { scope: 'version', message: 'Use <b>@team-a/ui2</b>' };
     });
-    expect(text(r.root.querySelector('.version-facts')!)).toContain('Deprecated. Use @team-a/ui2');
+    const banner = r.root.querySelector('[data-testid="deprecation-banner"]')!;
+    expect(text(banner)).toContain('Deprecated. Use <b>@team-a/ui2</b>');
+    expect(banner.querySelector('b')).toBeNull();
+    await expectAccessible(r.root);
+  });
+
+  describe('Deprecating (R-API-085, Q-UI-1301)', () => {
+    const acts = (r: Opened) => r.root.querySelector<HTMLButtonElement>('[data-testid="version-acts"]');
+    const menuItems = () => [...document.querySelectorAll<HTMLButtonElement>('.cdk-overlay-container .menu-item')];
+    const dialog = () => document.querySelector<HTMLElement>('.quader-dialog');
+    async function choose(r: Opened, label: string): Promise<void> {
+      acts(r)!.click();
+      await settle(r.fixture);
+      menuItems().find((b) => text(b) === label)!.click();
+      await settle(r.fixture);
+    }
+
+    it('R-API-085 a reader who may deploy deprecates the version from the menu with a message; the banner shows it without a reload', async () => {
+      const r = await open();
+      await choose(r, 'Deprecate version');
+      const d = dialog()!;
+      expect(text(d.querySelector('h2')!)).toBe('Deprecate @team-a/ui 1.4.0');
+      expect(text(d)).toContain('npm install prints the message as a warning');
+      const confirm = [...d.querySelectorAll<HTMLButtonElement>('.dialog-actions button')].find((b) => text(b) === 'Deprecate')!;
+      expect(confirm.disabled).toBe(true); // npm needs a message
+      const area = d.querySelector<HTMLTextAreaElement>('textarea')!;
+      area.value = 'Use 1.5.0';
+      area.dispatchEvent(new Event('input'));
+      await settle(r.fixture);
+      confirm.click();
+      await settle(r.fixture);
+      expect(r.fake.deprecationCalls).toEqual(['set web/npm-local @team-a/ui@1.4.0']);
+      expect(dialog()).toBeNull();
+      expect(text(r.root.querySelector('[data-testid="deprecation-banner"]')!)).toContain('Deprecated. Use 1.5.0');
+    });
+
+    it('R-API-085 a refusal of the server is shown in the dialog, whole, and the dialog stays open', async () => {
+      const r = await open({}, (fake) => {
+        fake.deprecationFailure = new ApiError(422, { code: 'validation_failed', detail: 'npm carries a deprecation message only.' }, 'req-1');
+      });
+      await choose(r, 'Deprecate version');
+      const area = dialog()!.querySelector<HTMLTextAreaElement>('textarea')!;
+      area.value = 'x';
+      area.dispatchEvent(new Event('input'));
+      await settle(r.fixture);
+      [...dialog()!.querySelectorAll<HTMLButtonElement>('.dialog-actions button')].find((b) => text(b) === 'Deprecate')!.click();
+      await settle(r.fixture);
+      expect(text(dialog()!)).toContain('npm carries a deprecation message only.');
+      expect(r.root.querySelector('[data-testid="deprecation-banner"]')).toBeNull();
+    });
+
+    it('R-API-085 a deprecated version offers Change and Undo; Undo clears it at once', async () => {
+      const r = await open({}, (fake) => {
+        for (const v of fake.versionList) if (v.version === '1.4.0') v.deprecation = { scope: 'version', message: 'old' };
+      });
+      acts(r)!.click();
+      await settle(r.fixture);
+      expect(menuItems().map((b) => text(b))).toEqual(['Change deprecation', 'Undo deprecation']);
+      menuItems()[1]!.click();
+      await settle(r.fixture);
+      expect(r.fake.deprecationCalls).toEqual(['clear web/npm-local @team-a/ui@1.4.0']);
+      expect(r.root.querySelector('[data-testid="deprecation-banner"]')).toBeNull();
+    });
+
+    it('R-API-085 a reader who may not deploy is offered no act', async () => {
+      const r = await renderScreen(
+        PackageVersionPage,
+        inProject({
+          inputs: { format: 'npm', name: '@team-a/ui', version: '1.4.0' },
+          setup: (get) => {
+            (get(SessionApi) as FakeSessionApi).allow = (c) => c.action !== 'deploy';
+          },
+        }),
+      );
+      expect(r.root.querySelector('[data-testid="version-acts"]')).toBeNull();
+    });
   });
 
   describe('NuGet', () => {
     const nuget = (inputs: Record<string, unknown> = {}, setup?: (fake: FakePackagesApi) => void) =>
       open({ format: 'nuget', version: '2.3.1', ...inputs }, setup, 'Contoso.Logging');
+
+    it('R-NUGET-036 a deprecated version says its reasons and links the package to use instead', async () => {
+      const r = await nuget({}, (fake) => {
+        for (const v of fake.versionList) {
+          if (v.version === '2.3.1') {
+            v.deprecation = {
+              scope: 'version', reasons: ['Legacy', 'CriticalBugs'], message: 'Moved.',
+              alternatePackage: { name: '@team-a/ui', range: '[2.0.0, )', packageId: 'pkg_01JBQ6V7S3K9' },
+            };
+          }
+        }
+      });
+      const banner = text(r.root.querySelector('[data-testid="deprecation-banner"]')!);
+      expect(banner).toContain('Deprecated. Moved. Reason: Legacy, no longer maintained; Critical bugs. Use instead: @team-a/ui [2.0.0, )');
+      expect(r.root.querySelector('[data-testid="deprecation-banner"] a')?.getAttribute('href')).toBe('/projects/web/packages/nuget/@team-a/ui');
+    });
+
+    it('R-NUGET-036 the dialog of NuGet asks for a reason, a message and the package to use instead', async () => {
+      const r = await nuget();
+      r.root.querySelector<HTMLButtonElement>('[data-testid="version-acts"]')!.click();
+      await settle(r.fixture);
+      [...document.querySelectorAll<HTMLButtonElement>('.cdk-overlay-container .menu-item')].find((b) => text(b) === 'Deprecate version')!.click();
+      await settle(r.fixture);
+      const d = document.querySelector<HTMLElement>('.quader-dialog')!;
+      expect([...d.querySelectorAll('.reasons .check-row')].map((l) => text(l))).toEqual(['Legacy, no longer maintained', 'Critical bugs', 'Other']);
+      expect(text(d)).toContain('Use instead (optional)');
+      [...d.querySelectorAll<HTMLButtonElement>('.dialog-actions button')].find((b) => text(b) === 'Deprecate')!.click();
+      await settle(r.fixture);
+      expect(r.fake.deprecationCalls).toEqual(['set web/nuget-local Contoso.Logging@2.3.1']);
+    });
 
     it('R-NUGET-006 an unlisted version is flagged as hidden from search', async () => {
       const r = await nuget({ version: '2.2.0' });
@@ -591,6 +698,19 @@ describe('The page of a version (R-UI-111)', () => {
       }, 'acme.tools');
     const facts = (r: Opened) =>
       Object.fromEntries([...r.root.querySelectorAll('[data-testid="ansible-facts"] dt')].map((dt) => [text(dt), text(dt.nextElementSibling!)]));
+
+    it('R-ANS-060 a deprecated collection says that every version is, and the menu deprecates the collection', async () => {
+      const r = await collection({}, (fake) => {
+        for (const v of fake.versionList) if (v.name === 'acme.tools') v.deprecation = { scope: 'package', message: 'Use acme.kit.' };
+      });
+      expect(text(r.root.querySelector('[data-testid="deprecation-banner"] .deprecation-text')!)).toBe(
+        'Deprecated. Every version of this collection is deprecated. Use acme.kit.',
+      );
+      const plain = await collection();
+      plain.root.querySelector<HTMLButtonElement>('[data-testid="version-acts"]')!.click();
+      await settle(plain.fixture);
+      expect([...document.querySelectorAll('.cdk-overlay-container .menu-item')].map((b) => text(b))).toContain('Deprecate collection');
+    });
 
     it('R-ANS-025 the head\'s Install shows the collection install command of the version under the client\'s name, no strip of one tab, and no error notice', async () => {
       const r = await collection();

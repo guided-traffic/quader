@@ -10,6 +10,7 @@ import { ErrorNotice } from '../../../shared/error-notice';
 import { asApiError, failureOf, valueOf } from '../../../shared/paged-resource';
 import { Checkbox } from '../../../shared/ui/checkbox';
 import { DataTable, TableColumn } from '../../../shared/ui/data-table';
+import { DeprecationMark } from '../../../shared/ui/deprecation-mark';
 import { QuaderDialog } from '../../../shared/ui/dialog';
 import { NoValue } from '../../../shared/ui/no-value';
 import { Switch } from '../../../shared/ui/switch';
@@ -66,7 +67,7 @@ function levelOf(param: string | null): readonly string[] {
  */
 @Component({
   selector: 'quader-remote-upstream',
-  imports: [Busy, Loading, Checkbox, DataTable, DeliveryRequestsPanel, ErrorNotice, NoValue, RouterLink, Switch, UpstreamPackageView],
+  imports: [Busy, Loading, Checkbox, DataTable, DeliveryRequestsPanel, DeprecationMark, ErrorNotice, NoValue, RouterLink, Switch, UpstreamPackageView],
   providers: [UpstreamActions],
   templateUrl: './remote-upstream.html',
   styleUrl: './remote-upstream.scss',

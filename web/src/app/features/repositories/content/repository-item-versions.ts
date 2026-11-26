@@ -11,6 +11,7 @@ import { systemClosed } from '../../../core/system-clients';
 import { CopyButton } from '../../../shared/copy-button';
 import { PagedResource } from '../../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../../shared/ui/data-table';
+import { DeprecationMark } from '../../../shared/ui/deprecation-mark';
 import { GradeLabel } from '../../../shared/vulnerability/grade';
 import { checkWaits } from '../../../shared/vulnerability/grade-words';
 import { ClientCommandMenu } from '../../packages/client-command-menu';
@@ -41,7 +42,7 @@ export const OPENED_OTHER_TAGS = 4;
  */
 @Component({
   selector: 'quader-repository-item-versions',
-  imports: [TimeAgo, RouterLink, CopyButton, DataTable, GradeLabel, ClientCommandMenu, VersionSize, ImageTags],
+  imports: [TimeAgo, RouterLink, CopyButton, DataTable, DeprecationMark, GradeLabel, ClientCommandMenu, VersionSize, ImageTags],
   template: `
     <quader-data-table
       [caption]="caption()"
@@ -75,6 +76,7 @@ export const OPENED_OTHER_TAGS = 4;
               @if (v.prerelease) {
                 <span class="badge" i18n="@@repo.content.prerelease">Pre-release</span>
               }
+              <quader-deprecation-mark [deprecation]="v.deprecation" [unlisted]="v.unlisted" />
             }
           </th>
           @if (shape().digest) {

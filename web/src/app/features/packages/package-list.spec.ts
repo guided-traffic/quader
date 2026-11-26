@@ -156,7 +156,7 @@ describe('Packages list', () => {
     expect(r.root.querySelector('.list-search input')?.getAttribute('aria-label')).toBe('Filter packages');
     const drawer = await openFilters(r.fixture, r.root);
     const legends = [...drawer.querySelectorAll('fieldset > legend')].map((c) => text(c));
-    expect(legends).toEqual(['Package type', 'Repository', 'Keyword', 'Created']);
+    expect(legends).toEqual(['Package type', 'Repository', 'Keyword', 'State', 'Created']);
     await expectAccessible(drawer);
     await expectAccessible(r.root);
   });
@@ -181,9 +181,36 @@ describe('Packages list', () => {
     await settle(r.fixture);
     await applyFilters(r.fixture);
     expect(navigate).toHaveBeenLastCalledWith([], {
-      queryParams: { format: ['nuget'], repository: [], keyword: 'log', period: null, from: null, to: null },
+      queryParams: { format: ['nuget'], repository: [], keyword: 'log', deprecated: null, period: null, from: null, to: null },
       queryParamsHandling: 'merge',
     });
+  });
+
+  it('R-API-085 the drawer filters the packages whose latest version is deprecated; the row marks it; the chip removes it', async () => {
+    const r = await open({}, (fake) => {
+      fake.packages = fake.packages.map((p) => (p.name === 'left-pad' ? { ...p, deprecation: { scope: 'version', message: 'Use padStart.' } } : p));
+    });
+    const row = [...r.root.querySelectorAll('tbody tr')].find((tr) => text(tr).includes('left-pad'))!;
+    expect(row.querySelector('[data-testid="deprecated-mark"]')?.getAttribute('title')).toBe('Use padStart.');
+    const navigate = navigateSpy();
+    const drawer = await openFilters(r.fixture, r.root);
+    const check = [...drawer.querySelectorAll<HTMLInputElement>('quader-filter-category input[type="checkbox"]')].find(
+      (i) => text(i.parentElement!) === 'Deprecated only',
+    )!;
+    check.checked = true;
+    check.dispatchEvent(new Event('change', { bubbles: true }));
+    await settle(r.fixture);
+    await applyFilters(r.fixture);
+    expect(navigate).toHaveBeenLastCalledWith([], {
+      queryParams: { format: [], repository: [], keyword: null, deprecated: 'true', period: null, from: null, to: null },
+      queryParamsHandling: 'merge',
+    });
+    const filtered = await open({ deprecated: 'true' }, (fake) => {
+      fake.packages = fake.packages.map((p) => (p.name === 'left-pad' ? { ...p, deprecation: { scope: 'version' } } : p));
+    });
+    expect(filtered.fake.listFilters.at(-1)?.deprecated).toBe(true);
+    expect(names(filtered)).toEqual(['left-pad']);
+    expect(chipTexts(filtered.root)).toEqual(['State: Deprecated']);
   });
 
   it('R-UI-006 acceptance: with format=nuget the list shows one row; the filter is a chip beside Filters, the drawer stays closed', async () => {
@@ -265,7 +292,7 @@ describe('Packages list', () => {
     const navigate = navigateSpy();
     button(none.root, 'Clear all filters').click();
     expect(navigate).toHaveBeenLastCalledWith([], {
-      queryParams: { format: null, repository: null, q: null, keyword: null, period: null, from: null, to: null },
+      queryParams: { format: null, repository: null, q: null, keyword: null, deprecated: null, period: null, from: null, to: null },
       queryParamsHandling: 'merge',
     });
     await expectAccessible(none.root);

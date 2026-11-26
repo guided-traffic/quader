@@ -132,6 +132,10 @@
     @if (e.system) {
       <span class="badge" aria-hidden="true">{{ systemText }}</span>
     }
+    <!-- A deprecated package (R-API-085): the mark of every list; the word is part of the option's name. -->
+    @if (e.deprecated) {
+      <quader-deprecation-mark aria-hidden="true" [deprecation]="true" />
+    }
     @if (e.area === 'admin') {
       <ng-container *ngTemplateOutlet="adminMark" />
     }

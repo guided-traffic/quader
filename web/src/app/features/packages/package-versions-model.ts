@@ -1,4 +1,4 @@
-import { PackageVersionSummary } from '../../api/packages-api';
+import { PackageDeprecation, PackageVersionSummary } from '../../api/packages-api';
 import { SignatureStatus } from '../../api/signatures-api';
 import { VulnerabilityGrade } from '../../api/vulnerabilities-api';
 import { SortDirection, TableSort } from '../../shared/ui/data-table';
@@ -40,6 +40,10 @@ export interface VersionRow {
   readonly aliases: readonly string[] | null;
   /** The answer names 100 aliases and the content has more. */
   readonly aliasesMore: boolean;
+  /** Its deprecation, its own or its package's (R-API-085); null for none. */
+  readonly deprecation: PackageDeprecation | null;
+  /** The format hides it from its search and serves it by its number (NuGet, R-NUGET-006). */
+  readonly unlisted: boolean;
 }
 
 /** The sortable columns, by the name the address carries (`?sort=-published`). */
@@ -76,6 +80,8 @@ export function versionRows(
     signatures: v.signatures ?? null,
     aliases: v.aliases ?? null,
     aliasesMore: v.aliasesMore ?? false,
+    deprecation: v.deprecation ?? null,
+    unlisted: v.unlisted ?? false,
   }));
 }
 

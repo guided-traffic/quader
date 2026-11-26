@@ -9,6 +9,8 @@ import {
   ClientSetupApi,
   ClientSetupQuery,
   ClientSnippet,
+  PackageDeprecation,
+  PackageDeprecationInput,
   PackageFilters,
   PackageReadme,
   PackageSummary,
@@ -636,8 +638,13 @@ export class FakePackagesApi extends PackagesApi {
       hasReadme: false,
       readme: null,
       metadata: { listed: false, authors: 'Contoso Team', dependencyGroups: [] },
+      unlisted: true,
     }),
   ];
+  /** Every deprecation the screen set or cleared, as `set <repository> <name>@<version>` or `clear …` (R-API-085). */
+  deprecationCalls: string[] = [];
+  /** The refusal the next deprecation write throws once. */
+  deprecationFailure: ApiError | null = null;
   listFilters: PackageFilters[] = [];
   /** Rejects the next `list` page once. */
   listError: ApiError | null = null;
@@ -666,7 +673,8 @@ export class FakePackagesApi extends PackagesApi {
         .filter((p) => !filters.namePrefix || p.name.startsWith(filters.namePrefix))
         .filter((p) => !filters.keyword || p.keywords.includes(filters.keyword))
         .filter((p) => !filters.createdFrom || p.createdAt >= filters.createdFrom)
-        .filter((p) => !filters.createdTo || p.createdAt < filters.createdTo);
+        .filter((p) => !filters.createdTo || p.createdAt < filters.createdTo)
+        .filter((p) => !filters.deprecated || !!p.deprecation);
       const sort = filters.sort ?? 'name';
       const desc = sort.startsWith('-');
       const field = sort.replace('-', '') as 'name' | 'createdAt' | 'updatedAt';
@@ -743,6 +751,8 @@ export class FakePackagesApi extends PackagesApi {
             ...(withDigest && digest ? { digest } : {}),
             ...(filters.include?.includes('state') && typeof v.metadata['state'] === 'string' ? { state: v.metadata['state'] } : {}),
             ...(filters.include?.includes('kind') && typeof v.metadata['kind'] === 'string' ? { kind: v.metadata['kind'] } : {}),
+            ...(v.deprecation ? { deprecation: v.deprecation } : {}),
+            ...(v.unlisted ? { unlisted: true } : {}),
           };
           return { digest, summary };
         })
@@ -817,6 +827,45 @@ export class FakePackagesApi extends PackagesApi {
     const offset = query.offset ?? 0;
     const items = matching.slice(offset, offset + (query.limit ?? 200));
     return { ...fx, files: { ...fx.files, matched: q === '' ? fx.files.kept : matching.length, offset, items } };
+  }
+
+  override async setDeprecation(repository: string, name: string, input: PackageDeprecationInput): Promise<PackageDeprecation> {
+    this.deprecationCalls.push(`set ${repository} ${name}@${input.version ?? ''}`);
+    this.throwDeprecationFailure();
+    const pkg = this.packages.find((p) => p.name === name);
+    const scope = pkg?.format === 'ansible' ? 'package' : 'version';
+    const held: PackageDeprecation = {
+      scope,
+      ...(input.message ? { message: input.message } : {}),
+      ...(input.reasons?.length ? { reasons: [...input.reasons] } : {}),
+      ...(input.alternatePackage ? { alternatePackage: { name: input.alternatePackage.name, range: input.alternatePackage.range ?? '*' } } : {}),
+    };
+    this.markDeprecation(name, scope === 'package' ? undefined : input.version, held);
+    return held;
+  }
+
+  override async clearDeprecation(repository: string, name: string, v?: string): Promise<void> {
+    this.deprecationCalls.push(`clear ${repository} ${name}@${v ?? ''}`);
+    this.throwDeprecationFailure();
+    this.markDeprecation(name, v, undefined);
+  }
+
+  private throwDeprecationFailure(): void {
+    if (this.deprecationFailure) {
+      const e = this.deprecationFailure;
+      this.deprecationFailure = null;
+      throw e;
+    }
+  }
+
+  /** Sets the deprecation of a version, or of every version of the package, and the package row's mark of its latest version. */
+  private markDeprecation(name: string, v: string | undefined, d: PackageDeprecation | undefined): void {
+    this.versionList = this.versionList.map((x) => (x.name === name && (v === undefined || x.version === v) ? { ...x, deprecation: d } : x));
+    this.packages = this.packages.map((p) => {
+      if (p.name !== name) return p;
+      const latest = this.versionList.find((x) => x.name === name && x.version === p.latestVersion);
+      return { ...p, deprecation: latest?.deprecation };
+    });
   }
 
   override async docEntry(packageId: string, v: string, type: string, name: string, repository?: string): Promise<PackageDocEntry> {

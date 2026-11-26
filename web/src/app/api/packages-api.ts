@@ -26,6 +26,8 @@ export type PackageDocOptionConfiguration = Schema<'PackageDocOptionConfiguratio
 export type PackageDocReturnValue = Schema<'PackageDocReturnValue'>;
 export type PackageDocFile = Schema<'PackageDocFile'>;
 export type PackageVersionDocs = Schema<'PackageVersionDocs'>;
+export type PackageDeprecation = Schema<'PackageDeprecation'>;
+export type PackageDeprecationInput = Schema<'PackageDeprecationInput'>;
 export type PackageVersionContents = Schema<'PackageVersionContents'>;
 export type PackageFileEntry = Schema<'PackageFileEntry'>;
 export type ClientSetup = Schema<'ClientSetup'>;
@@ -48,6 +50,8 @@ export interface PackageFilters {
   readonly sort?: PackageSort;
   /** `vulnerabilities` adds the counts of open findings per entry (R-UI-052). */
   readonly include?: readonly string[];
+  /** Only the packages whose latest version is deprecated (R-API-085). */
+  readonly deprecated?: boolean;
 }
 
 export interface VersionFilters {
@@ -92,6 +96,12 @@ export function packageUrl(id: string): string {
   return `/api/v1/packages/${seg(id)}`;
 }
 
+/** The deprecation of a package of a repository (`<projectKey>/<repoKey>`, R-API-085); the name is one path segment. */
+function deprecationUrl(repository: string, name: string): string {
+  const [project, key] = repository.split('/');
+  return `/api/v1/projects/${seg(project ?? '')}/repositories/${seg(key ?? '')}/packages/${seg(name)}/deprecation`;
+}
+
 /** Packages across repositories (R-API-029). */
 export abstract class PackagesApi {
   /** One page fetcher; a new filter or sort is a new fetcher (cursor binding, R-API-010). */
@@ -122,6 +132,13 @@ export abstract class PackagesApi {
    * that it reads them still or could not read them.
    */
   abstract contents(packageId: string, version: string, query?: ContentsQuery): Promise<PackageVersionContents>;
+  /**
+   * Deprecates a version, or a whole package where the format deprecates packages, of a local repository (`<projectKey>/<repoKey>`),
+   * or changes the message (R-API-085); answers the deprecation it holds now. The format refuses what its protocol cannot carry (422).
+   */
+  abstract setDeprecation(repository: string, name: string, input: PackageDeprecationInput): Promise<PackageDeprecation>;
+  /** Clears the deprecation of a version (`version`) or of a whole package (no version). */
+  abstract clearDeprecation(repository: string, name: string, version?: string): Promise<void>;
 }
 
 /** The client setup snippets of a repository (R-API-030). */
@@ -179,6 +196,14 @@ export class HttpPackagesApi extends PackagesApi {
         params: cleanQuery(query),
       })
     ).body;
+  }
+
+  override async setDeprecation(repository: string, name: string, input: PackageDeprecationInput): Promise<PackageDeprecation> {
+    return (await this.client.putJson<PackageDeprecation>(deprecationUrl(repository, name), input)).body;
+  }
+
+  override async clearDeprecation(repository: string, name: string, version?: string): Promise<void> {
+    await this.client.delete(deprecationUrl(repository, name), { params: cleanQuery({ version }) });
   }
 
   override async docEntry(

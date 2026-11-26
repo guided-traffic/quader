@@ -11,6 +11,7 @@ import {
 import { ErrorNotice } from '../../../shared/error-notice';
 import { asApiError } from '../../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../../shared/ui/data-table';
+import { DeprecationMark } from '../../../shared/ui/deprecation-mark';
 import { Switch } from '../../../shared/ui/switch';
 import { TimeAgo } from '../../../shared/ui/time-ago';
 import { DistTags, tagsByVersion } from '../../packages/dist-tags';
@@ -54,7 +55,7 @@ export function groupedCount(n: number): string {
  */
 @Component({
   selector: 'quader-upstream-package',
-  imports: [Loading, DataTable, DistTags, ErrorNotice, RouterLink, Switch, TimeAgo],
+  imports: [Loading, DataTable, DeprecationMark, DistTags, ErrorNotice, RouterLink, Switch, TimeAgo],
   templateUrl: './upstream-package.html',
   styleUrl: './upstream-package.scss',
 })

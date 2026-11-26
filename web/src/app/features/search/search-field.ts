@@ -28,6 +28,7 @@ import { ProjectContext } from '../../core/project-context';
 import { SessionStore } from '../../core/session-store';
 import { systemBadge } from '../../core/upstream-project';
 import { FormatIconView } from '../../shared/format-icon';
+import { DeprecationMark } from '../../shared/ui/deprecation-mark';
 import { ActiveOption, heldEnter, optionDomId } from '../../shared/ui/active-option';
 import { QuaderAvatar } from '../../shared/ui/avatar';
 import { Segment, highlight } from './highlight';
@@ -87,7 +88,7 @@ interface IndexedGroup {
  */
 @Component({
   selector: 'quader-search-field',
-  imports: [Loading, NgTemplateOutlet, CdkMenu, CdkMenuItemRadio, CdkMenuTrigger, CdkTrapFocus, FormatIconView, QuaderAvatar],
+  imports: [Loading, NgTemplateOutlet, CdkMenu, CdkMenuItemRadio, CdkMenuTrigger, CdkTrapFocus, DeprecationMark, FormatIconView, QuaderAvatar],
   templateUrl: './search-field.html',
   host: { '[class.narrow]': 'layout.narrow()' },
 })
@@ -134,6 +135,7 @@ export class SearchField {
   protected readonly disabledText = $localize`:@@search.user-disabled:Disabled`;
   /** The mark of a system repository of upstream (R-UI-193, Q-UI-902). */
   protected readonly systemText = systemBadge();
+  protected readonly deprecatedText = $localize`:@@mark.deprecated:Deprecated`;
   protected readonly anonymous = computed(() => !this.session.authenticated());
   protected readonly instanceAdmin = this.session.isInstanceAdmin;
   /** `/` is on for a signed-in caller whose preference allows it (Q-UI-401). */
@@ -335,6 +337,7 @@ export class SearchField {
     if (entry.secondary) name += ` · ${entry.secondary}`;
     if (entry.disabled) name += `, ${this.disabledText}`;
     if (entry.system) name += `, ${this.systemText}`;
+    if (entry.deprecated) name += `, ${this.deprecatedText}`;
     if (entry.area === 'admin') name += `, ${this.adminText}`;
     return name;
   }

@@ -91,6 +91,7 @@
                 @if (v.prerelease) {
                   <span class="badge" i18n="@@pkg.badge.prerelease">Pre-release</span>
                 }
+                <quader-deprecation-mark [deprecation]="v.deprecation" [unlisted]="v.unlisted" />
                 @if (stateBadge(v.state); as b) {
                   <span [class]="b.cls">
                     @if (b.cls === 'ok') {

@@ -253,3 +253,9 @@ tr.expansion td {
   color: var(--quader-text-muted);
   overflow-wrap: anywhere;
 }
+
+/* A deprecation's message is the publisher's text: its line breaks stay, and a long word or address breaks rather than widening the page (R-API-085). */
+.deprecation-message {
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
