@@ -316,7 +316,7 @@ wrapped line was seen (2026-11-19), so its condition to build a check is met.
 | W30-G3 · One way to show a version's facts in every format (W-30) | the plan's package G3 with R-UI-221 and R-UI-222: an inventory of the six formats' Details and tables as they are now, then the differences closed; Q-UI-1310 to Q-UI-1319, ADR-288, H-2170 to H-2179 | landed and pushed on 2026-11-26 at 07:08 |
 | W30-A5 · A collection is published from the screen, with its import's log (W-30; the owner's d5 = a, no approval) | the plan's package A5 with R-ANS-061 and R-ANS-062: the upload's operation and dialog, the import's warning for a missing changelog, a per-format table of publishing from the screen; Q-ANS-140 to Q-ANS-149, Q-UI-1320 to Q-UI-1329, ADR-289, H-2180 to H-2189 | built; rebuilt at about 06:55 for split roles (an upload token of five minutes from the role `api`, the publish on the role `packages`); lands after W30-G9 |
 | W30-G9 · A generic file's commands behind the button, and a content type that says what it is (W-30) | R-GENERIC-017 of the plan `.dev/w30-plan.md`: curl, wget and PowerShell in the panel at every place a file has an act, the upload's commands, a closed list of guessed text types; Q-UI-1330 to Q-UI-1339, ADR-290, H-2190 to H-2199 | landed and pushed on 2026-11-26 at 07:40 |
-| W30-G2 · An upstream's package shows its documentation before a version of it is stored (W-30) | R-CUR-028 of the plan `.dev/w30-plan.md`: read through, not stored, per format; the facts the same answers carry; Q-CUR-260 to Q-CUR-269, Q-UI-1340 to Q-UI-1349, ADR-291, H-2200 to H-2209 | built on 2026-11-26 at about 06:35, held on the role `api` at 06:50; its builder rebases it onto the version facts since about 07:12 |
+| W30-G2 · An upstream's package shows its documentation before a version of it is stored (W-30) | R-CUR-028 of the plan `.dev/w30-plan.md`: read through, not stored, per format; the facts the same answers carry; Q-CUR-260 to Q-CUR-269, Q-UI-1340 to Q-UI-1349, ADR-291, H-2200 to H-2209 | landed and pushed on 2026-11-26 at 08:29 |
 | W30-G5 · "Used by": a version's page lists the packages that depend on its package (W-30) | R-API-086 of the plan `.dev/w30-plan.md`: a side table every format fills, the read under the reader's scope, a filter `dependsOn` of the package list; Q-API-455 to Q-API-459, Q-UI-1350 to Q-UI-1359, ADR-294, H-2220 to H-2229, migration 00139 | in work since 2026-11-26, 07:14 |
 | W30-G6 · NuGet complete (W-30) | R-NUGET-037 to R-NUGET-039 of the plan: the install forms by package type, the icon, the licence file, the frameworks, the symbols, what a build runs, and the upload on the screen after W30-A5; Q-NUGET-155 to Q-NUGET-169, Q-UI-1360 to Q-UI-1369, ADR-293, H-2230 to H-2239 | in work since 2026-11-26, 07:14 |
 | W-30 planner · Ansible as an equal of Galaxy; general and specific properties per format | the owner's task of 20:39: a comparison screen by screen and answer by answer, and the table of properties per format | plan written at 21:05 (`.dev/w30-plan.md`) |
@@ -1303,6 +1303,42 @@ records the recorder that tells such a stall apart).
   that failed between 07:39 and 09:00 is no finding of the code.
 
 ### Product
+
+- **Closed on 2026-11-26, 08:29, by W30-G2 (W-30; R-CUR-028; Q-CUR-260 to Q-CUR-267; Q-UI-1340; ADR-291; gaps H-2200 to
+  H-2203, H-2080 closed; no migration): an upstream's package shows its documentation and its facts on the tab
+  Upstream before a version of it is stored.** The owner's rule, for remotes: a person who decides whether to
+  allow, block or download a package reads about it first. An opened package shows, after its switch and range: the
+  newest version with its licence, the links' row, the keyword chips, the README (the first 24 rem, then "Show the
+  whole README"; folded in a row of the search results), the dependencies folded, then the versions with their
+  switches as before; in the blocks and words of a stored version's Details. Per format: npm, the README and the
+  facts of the version `latest` names, from the package document the lookup reads anyway (no further request);
+  NuGet, the README at the service index's `ReadmeUriTemplate` (one request, at most 1 MiB) and the newest
+  registration leaf's licence, project address, tags, dependencies and deprecation; Ansible Galaxy, the collection's
+  README from the version's documentation blob (one request, sanitized) and a role's from the roles' content, with
+  the highest version's licence, links and dependencies; Debian, the short description only (the index parse keeps
+  no more, H-2200); OCI, nothing: the catalogue reads no manifest (a line says an image has no README). Read
+  through and not stored: no cache entry, no item, no row, no event (the integration cases check it); the text
+  stays in the catalogue's page cache of a replica (32 MiB, 300 s). The README is a call of its own (the package
+  call is cached per page and filter and would have repeated the request at every keystroke); it has the states
+  `unreachable` (a host the repository does not reach is not asked, and the screen names it), `limited` with its end
+  while the upstream's rate limit holds, and a failure that leaves the versions and switches standing. Who sees it:
+  who may read the wiki of a stored version; a blocked package still shows its README, the reader needs it to
+  decide. A hostile README: through the renderer and its sanitizer, external images as links, links only for http
+  and https. On a split installation the process of the role `api` asks the upstream, through the catalogue's
+  engine and the repository's upstream client, with the same egress rules, budget and rate limit; every case is
+  held on a replica of that role (asked for before the landing, after the night's blocker). The landing: joined
+  with the generic file's commands (the count of requirements 1,309; a commit of mine with conflict markers in the
+  count's test was caught before the gates and the picks redone); with it the journey of the deprecated NuGet
+  package (its check for a restore warning matched the word in its own directory's name: after the blocker's fix
+  the run of 06:59 passed the first step and failed there; it looks for a warning line now) and the repair of the
+  UI page's gaps (my union at W30-G9's landing had doubled the heading "What this does not cover" and left Q-UI-1336
+  among the gaps; the pick helper now stops on a doubled heading); the 13 gates, the dialog states, the renders on a
+  fresh instance (44 in English, 15 in German, no layout finding) and the whole areas `repository`, `upstream`,
+  `nuget`, `ansibleremote` and `debremote` green; looked at: lodash opened on the tab Upstream in light at 1,440 px.
+  Open: Debian's long description, homepage and relations (H-2200); only the newest version's README on the tab
+  (H-2201); a refused README address costs a unit of the budget (H-2202); a collection's README reads its whole
+  documentation blob (H-2203); a README over NuGet's bound names the wrong limit in its error. Not verified: the
+  real public registries through Quader (canned answers); the tab's journey on the cluster.
 
 - **Closed on 2026-11-26, 07:40, by W30-G9 (W-30; R-GENERIC-017; Q-GENERIC-10 to Q-GENERIC-12; Q-UI-1330 to Q-UI-1336;
   ADR-290; gaps H-2191 to H-2193; no migration): a generic file has its commands behind the button every format has,
