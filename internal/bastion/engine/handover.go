@@ -122,7 +122,7 @@ func (e *engine) onHandover(q *rq, resp *mainclient.Response, sent time.Time) {
 		return
 	}
 	e.putURL(q, sent, true, nil)
-	fill, err := e.d.Cache.NewFill(cache.EntryArtifact)
+	fill, err := e.d.Cache.NewFill(cache.EntryArtifact, h.Size)
 	if err != nil {
 		e.fallback(q, errors.New("the cache cannot start a fill"), false)
 		return

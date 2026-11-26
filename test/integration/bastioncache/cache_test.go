@@ -232,7 +232,7 @@ func TestR_BAS_030_KillingTheEphemeralVolumeOfAReplicaLosesOnlyItsCache(t *testi
 	e := newEnv(t, "pod")
 	a := e.replica()
 	a.put(t, cache.EntryArtifact, "/k", data)
-	fl, err := a.NewFill(cache.EntryArtifact) // a fill in flight when the pod dies
+	fl, err := a.NewFill(cache.EntryArtifact, -1) // a fill in flight when the pod dies
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -272,7 +272,7 @@ func TestR_BAS_031_EvictionKeepsTheRecentlyReadTwentyMiBOfThreeHundred(t *testin
 		go func() {
 			defer wg.Done()
 			defer func() { <-sem }()
-			r.put(t, cache.EntryArtifact, keys[i], payload(uint64(1000+i), mib))
+			r.putPast(t, cache.EntryArtifact, keys[i], payload(uint64(1000+i), mib)) // 300 MiB with no sweep between, past R-BAS-089's room
 		}()
 	}
 	wg.Wait()
@@ -365,8 +365,8 @@ func TestR_BAS_031_TwoSweepersWithoutValkeyThatBothEvictKeepWhatWasRecentlyAcces
 	cfg := func(c *config.BastionCache) { c.MaxBytes, c.DocumentsMaxBytes, c.MaxObjectBytes = 20*mib, 2*mib, 2*mib }
 	a, b := e.replica(cfg), e.replica(cfg)
 	var es []cache.Entry
-	for i := range 20 { // 20 MiB of an 18 MiB artifact limit: above 95 %
-		es = append(es, a.put(t, cache.EntryArtifact, fmt.Sprintf("/k/%d", i), payload(uint64(3000+i), mib)))
+	for i := range 20 { // 20 MiB of an 18 MiB artifact limit: above 95 %, past R-BAS-089's room as two replicas may leave it
+		es = append(es, a.putPast(t, cache.EntryArtifact, fmt.Sprintf("/k/%d", i), payload(uint64(3000+i), mib)))
 	}
 	time.Sleep(2200 * time.Millisecond)
 	for _, en := range es[:5] { // the oldest fills, read again
@@ -508,7 +508,7 @@ func digestOf(b []byte) string { return digest(b) }
 func fillAndStore(t *testing.T, c *cache.Cache, key string, data []byte) {
 	t.Helper()
 	ctx := context.Background()
-	f, err := c.NewFill(cache.EntryArtifact)
+	f, err := c.NewFill(cache.EntryArtifact, -1)
 	if err != nil {
 		t.Fatal(err)
 	}

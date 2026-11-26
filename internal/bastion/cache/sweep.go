@@ -18,6 +18,10 @@ const (
 // sweepJitter is the spread of the randomized interval of a bucket without Valkey: sweep_interval +- 20 %.
 const sweepJitter = 0.2
 
+// sweepGap is the least time from the end of one sweep to the start of a sweep of the size (Q-BAS-303): it bounds the
+// listings of a backend that fails, or of an area that fills faster than it is swept, to one a second.
+const sweepGap = time.Second
+
 // SweepLease is the lease of the one replica that sweeps a shared bucket (R-BAS-031): `sweep` in Valkey, for
 // 2 × sweep_interval.
 type SweepLease interface {
@@ -41,33 +45,39 @@ func sweepLease(src LeaseSource) SweepLease {
 
 func percent(limit, p int64) int64 { return limit * p / 100 }
 
-// SweepOnce is one cycle of R-BAS-031 for this replica: in the first hour after the start, and while it still finds
-// some, it deletes the objects of other layouts (R-BAS-061); it measures what the backend holds, publishes
-// quader_bastion_cache_bytes, and evicts by last access in each area above 95 % of its limit down to 85 %. With
-// the bucket backend and Valkey only the replica that holds the sweep lease runs it; without Valkey every
-// replica does, which is safe because a sweep only deletes. With the volume backend each replica sweeps its own
-// volume. src may be nil, which is a replica without shared state.
+// SweepOnce is one cycle of R-BAS-031 for this replica, started by the timer: see [Cache.sweep].
 func (c *Cache) SweepOnce(ctx context.Context, src LeaseSource) error {
+	return c.sweep(ctx, src, metrics.SweepInterval)
+}
+
+// sweep is one cycle of R-BAS-031 for this replica: in the first hour after the start, and while it still finds some, it
+// deletes the objects of other layouts (R-BAS-061); it measures what the backend holds, sets the running estimate of the areas
+// from the listing (R-BAS-089), publishes quader_bastion_cache_bytes, and evicts by last access in each area above 95 % of its
+// limit down to 85 %. With the bucket backend and Valkey only the replica that holds the sweep lease runs it; another replica
+// that committed since its last listing lists the areas to set its estimate and deletes nothing. Without Valkey every replica
+// sweeps, which is safe because a sweep only deletes. With the volume backend each replica sweeps its own volume. src may be
+// nil, which is a replica without shared state. trigger says what started it (quader_bastion_cache_sweeps_total).
+func (c *Cache) sweep(ctx context.Context, src LeaseSource, trigger string) error {
 	if lease := sweepLease(src); c.cfg.Backend == "bucket" && lease != nil {
 		held, release, err := lease.TryAcquire(ctx, 2*c.cfg.SweepInterval)
 		if err != nil {
 			c.log.Warn("the sweep lease could not be taken; sweeping without it, which is safe", "error", err)
 		} else {
 			if !held {
-				return nil
+				return c.relist(ctx)
 			}
 			defer release()
 		}
 	}
+	c.m.CacheSweeps.WithLabelValues(trigger).Inc()
 	var errs []error
 	if err := c.sweepOtherLayouts(ctx); err != nil {
 		errs = append(errs, err)
 	}
-	u, err := c.back.Usage(ctx)
+	u, err := c.measure(ctx)
 	if err != nil {
 		return errors.Join(append(errs, err)...)
 	}
-	c.publish(u)
 	arts, docs := c.limits()
 	for _, a := range []struct {
 		area  string
@@ -83,13 +93,33 @@ func (c *Cache) SweepOnce(ctx context.Context, src LeaseSource) error {
 			errs = append(errs, err)
 		}
 		if n > 0 {
-			c.log.Info("cache sweep", "area", a.area, "evicted", n, "limit", a.limit)
+			c.log.Info("cache sweep", "area", a.area, "evicted", n, "limit", a.limit, "trigger", trigger)
 		}
 	}
-	if u2, err := c.back.Usage(ctx); err == nil {
-		c.publish(u2)
-	}
+	_, _ = c.measure(ctx) // a failure is counted by the backend; the estimate keeps the first listing and the commits since
 	return errors.Join(errs...)
+}
+
+// measure lists what the backend holds, sets the running estimate from it and publishes it.
+func (c *Cache) measure(ctx context.Context) (Usage, error) {
+	mark := c.est.mark()
+	u, err := c.back.Usage(ctx)
+	if err != nil {
+		return Usage{}, err
+	}
+	c.est.rebase(u, mark)
+	c.publish(u)
+	return u, nil
+}
+
+// relist is the cycle of a replica that does not hold the sweep lease of a shared bucket: it sets its estimate from a listing
+// when it committed since its last one, so that it learns what the other replicas wrote and evicted, and deletes nothing.
+func (c *Cache) relist(ctx context.Context) error {
+	if !c.est.dirty() {
+		return nil
+	}
+	_, err := c.measure(ctx)
+	return err
 }
 
 func (c *Cache) publish(u Usage) {
@@ -106,23 +136,55 @@ func (c *Cache) interval() time.Duration {
 	return time.Duration(float64(d) * (1 - sweepJitter + 2*sweepJitter*rand.Float64())) //nolint:gosec // jitter, not security
 }
 
-// RunSweeper sweeps every sweep_interval until ctx ends. A failed cycle is logged and counted by the backend; the
-// next one runs on schedule.
+// RunSweeper lists the areas at once, which sets the running estimate (R-BAS-089) and starts a sweep when an area is above
+// its high mark, and then sweeps every sweep_interval and whenever a fill asks for one ([Cache.wantSweep]) until ctx ends. The
+// sweeps run one at a time; a request while one runs is served by one more sweep after it, at least [sweepGap] after it
+// ended. A failed cycle is logged and counted by the backend; the next one runs on schedule.
 func (c *Cache) RunSweeper(ctx context.Context, src LeaseSource) {
-	if u, err := c.back.Usage(ctx); err == nil {
-		c.publish(u)
+	c.listMu.Lock()
+	u, err := c.measure(ctx)
+	c.listMu.Unlock()
+	if err == nil {
+		arts, docs := c.limits()
+		if u.Artifacts > percent(arts, sweepHighPercent) || u.Documents > percent(docs, sweepHighPercent) {
+			c.wantSweep()
+		}
 	}
 	t := time.NewTimer(c.interval())
 	defer t.Stop()
+	var ended time.Time
 	for {
+		trigger := metrics.SweepInterval
 		select {
 		case <-ctx.Done():
 			return
 		case <-t.C:
+		case <-c.sweepNow:
+			trigger = metrics.SweepSize
+			if !c.waitGap(ctx, ended) {
+				return
+			}
 		}
-		if err := c.SweepOnce(ctx, src); err != nil && ctx.Err() == nil {
-			c.log.Warn("cache sweep failed", "error", err)
+		if err := c.sweep(ctx, src, trigger); err != nil && ctx.Err() == nil {
+			c.log.Warn("cache sweep failed", "error", err, "trigger", trigger)
 		}
+		ended = time.Now()
 		t.Reset(c.interval())
+	}
+}
+
+// waitGap waits until [sweepGap] has passed since ended; false when ctx ends first.
+func (c *Cache) waitGap(ctx context.Context, ended time.Time) bool {
+	wait := c.gap - time.Since(ended)
+	if ended.IsZero() || wait <= 0 {
+		return true
+	}
+	t := time.NewTimer(wait)
+	defer t.Stop()
+	select {
+	case <-ctx.Done():
+		return false
+	case <-t.C:
+		return true
 	}
 }

@@ -36,6 +36,10 @@ type Options struct {
 	Fault *Fault
 	// WrapTransport lets a test count the requests the bucket's client sends; nil leaves the transport alone.
 	WrapTransport func(http.RoundTripper) http.RoundTripper
+	// Replicas is bastion.replicas: with the bucket backend each replica counts its own commits this many times in its
+	// estimate of the areas, because the others write into the same bucket unseen until its next listing (Q-BAS-302). Zero
+	// is one.
+	Replicas int
 }
 
 func (o *Options) fill() {
@@ -121,6 +125,13 @@ type Cache struct {
 	hold   int
 	// spool bounds the bytes of the fills in progress (bastion.cache.spool_max_bytes, Q-BAS-131).
 	spool *spoolBudget
+	// est is the running estimate of the areas' bytes that admits a commit (R-BAS-089); sweepNow asks the sweeper for a
+	// sweep of the size, at most one pending.
+	est      *estimate
+	sweepNow chan struct{}
+	// listMu orders the first listing of the start and of the first commit, so that only one of them lists. gap is [sweepGap].
+	listMu sync.Mutex
+	gap    time.Duration
 
 	// started is when the cache was built; the sweep of other layouts runs in the sweeps of the first hour after it
 	// and as long as a sweep still finds something (R-BAS-061, Q-BAS-215).
@@ -175,9 +186,13 @@ func New(ctx context.Context, cfg config.BastionCache, signer *Signer, o Options
 
 // build assembles the cache around a backend and publishes the capacity gauges.
 func build(b *backend, signer *Signer, cfg config.BastionCache, o Options) *Cache {
+	weight := 1
+	if cfg.Backend == "bucket" {
+		weight = o.Replicas
+	}
 	c := &Cache{
 		back: b, signer: signer, cfg: cfg, m: o.Metrics, log: o.Logger, now: o.Now, hold: o.HoldBack, touched: map[string]time.Time{},
-		spool: newSpoolBudget(int64(cfg.SpoolMaxBytes)), started: o.Now(),
+		spool: newSpoolBudget(int64(cfg.SpoolMaxBytes)), started: o.Now(), est: newEstimate(weight), sweepNow: make(chan struct{}, 1), gap: sweepGap,
 	}
 	arts, docs := c.limits()
 	c.m.CacheCapacity.WithLabelValues(metrics.AreaArtifacts).Set(float64(arts))

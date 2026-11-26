@@ -1546,8 +1546,9 @@ Priority: **MVP** · Covers: quader-only
 
 - **Size.** Bytes plus documents stay below `bastion.cache.max_bytes`; documents below `documents_max_bytes`, which is their reserved
   share: artifacts are limited to `max_bytes − documents_max_bytes` ([Q-BAS-88](#q-bas-88--documents-have-a-reserved-share-and-entries-are-removed-when-read)). A sweep runs every
-  `bastion.cache.sweep_interval` and, above 95 % of a limit, deletes in order of last access until 85 % remain
-  ([Q-BAS-43](#q-bas-43--the-bucket-backend-evicts-by-listing-access-markers)).
+  `bastion.cache.sweep_interval`, and at once when an area passes 95 % of its limit between two of them; above 95 % of a limit it deletes
+  in order of last access until 85 % remain ([Q-BAS-43](#q-bas-43--the-bucket-backend-evicts-by-listing-access-markers)). No commit takes an
+  area past its limit between the sweeps: [R-BAS-089](#r-bas-089--the-cache-stays-below-its-size-between-sweeps).
 - **Last access.** A served entry writes its access marker (an empty object or file named by its content address, or a touch of
   the entry) at most once per `bastion.cache.access_resolution` per replica; the sweep orders by the markers' modification times,
   read with two listings, and deletes the bytes, the entries that point at them and the markers. An entry whose bytes are gone is
@@ -1567,10 +1568,80 @@ bastion:
 
 Acceptance criteria:
 
-- With `max_bytes: 100MiB`, filling 300 MiB of tarballs and then reading the first 20 MiB again leaves those 20 MiB cached and
-  the total below 100 MiB after the next sweep.
+- With `max_bytes: 100MiB`, 300 MiB of tarballs in the bucket (written past the room R-BAS-089 admits, as a lowered `max_bytes` or
+  replicas between their listings leave it) and the first 20 MiB read again: the next sweep leaves those 20 MiB cached and the total below
+  100 MiB.
 - Two replicas sweeping the same bucket without Valkey never delete an entry that was accessed within `access_resolution`
   while the total is below 85 %.
+
+### R-BAS-089 · The cache stays below its size between sweeps
+Priority: **MVP** · Covers: quader-only
+
+The planner's finding of W-34 (2026-11-26), reproduced in a unit test on the code before the change: the sweep of R-BAS-031 ran only on its
+timer, every `sweep_interval` (5 minutes by default), and nothing looked at the size when a fill was committed. Between two sweeps the cache
+grew past `max_bytes` as fast as fills arrived: 32 fills of 64 KiB into an artifact area of 896 KiB held 960 KiB after the fifteenth commit
+and 2 MiB after the last. On the volume backend the volume then fills; fills fail to write, and an `emptyDir` over its `sizeLimit` gets the
+pod evicted with its cache. The owner's case of 2026-11-26 is an attacker who loads a Bastion with many distinct artifacts until its
+cache overflows; the planner derived that at 80 MB/s of fills the room left after a sweep is gone in a minute or two. Built on 2026-11-26 in
+`internal/bastion/cache` ([room.go](../../internal/bastion/cache/room.go), [sweep.go](../../internal/bastion/cache/sweep.go)) with the
+decisions [Q-BAS-301](#q-bas-301--a-commit-is-admitted-against-a-running-estimate-of-its-area-and-a-fill-without-room-is-passed-through-unkept)
+to [Q-BAS-305](#q-bas-305--the-spool-of-fills-does-not-count-in-the-areas)
+([ADR-298](../decisions.md#adr-298--a-bastions-cache-is-bounded-at-every-commit-and-the-bytes-between-a-bastion-and-the-main-installation-are-counted)).
+
+- **A running estimate per area.** Each replica keeps an estimate of the bytes of each area, artifacts and documents, in the bytes the store
+  holds (with a cache key the objects of the stored format of R-BAS-061, record and tags included, as a listing counts them). Every listing
+  of the areas sets it (a sweep lists before and after it evicts, and a replica lists once at start); every commit of the replica adds to it.
+  Between listings it never decreases, so it errs high, never low, for what the replica writes itself (Q-BAS-301).
+- **A commit is admitted when it keeps its area at or below its limit** (`max_bytes − documents_max_bytes` for artifacts,
+  `documents_max_bytes` for documents, [Q-BAS-88](#q-bas-88--documents-have-a-reserved-share-and-entries-are-removed-when-read)), or when the
+  store holds its content address already, which costs no room. A fill without room is not kept: its callers are answered from its spool
+  as after a refused write of the backend (R-BAS-030), the next request for it is a miss, `quader_bastion_cache_no_room_total{area}` counts it
+  and a sweep is started. Nothing of it reaches the area, so a cache volume holds at most `max_bytes`, the spool of the fills in progress
+  ([Q-BAS-305](#q-bas-305--the-spool-of-fills-does-not-count-in-the-areas)) and the entries and markers
+  ([H-452](#h-452--the-entries-of-evicted-bytes-stay-until-they-are-read-and-are-not-counted-in-the-cache-size)); the chart already refuses a
+  `cacheVolume.size` below `max_bytes` plus the spool (Q-BAS-131).
+- **A sweep at once.** The commit that takes an area over 95 % of its limit (R-BAS-031's high mark), a fill whose announced length would,
+  a commit without room, and a listing at start that finds an area above the mark each ask for a sweep, which evicts down to 85 % as
+  R-BAS-031 says, under the sweep lease where one is used. A replica runs its sweeps one at a time: a request while one runs or waits is one
+  more sweep after it, never one per commit, and a sweep the size asked for starts at least a second after the last one ended
+  ([Q-BAS-303](#q-bas-303--at-once-is-one-sweep-at-a-time-asked-for-by-any-number-of-commits-at-most-one-a-second);
+  [Q-BAS-304](#q-bas-304--the-marks-are-r-bas-031s-a-sweep-at-95--a-refusal-only-at-the-limit)).
+  `quader_bastion_cache_sweeps_total{trigger}` counts the sweeps a replica ran: `interval` (the timer) and `size`.
+- **The first commit.** The first commit of a replica waits for the listing at start, or makes it, so that a cache that holds bytes from
+  before the start is not taken for an empty one. A listing that fails leaves the estimate unset and the commit admitted: a backend that
+  cannot list is failing, and its writes are counted errors (R-BAS-030); the next commit lists again.
+- **The volume backend** belongs to one replica, whose estimate holds every write to its area: the area stays at or below its limit at every
+  moment.
+- **Replicas sharing a bucket.** A replica learns what the other replicas wrote and evicted only from its own listings. Between them it counts
+  each of its commits `bastion.replicas` times, as if every replica filled as much as it does
+  ([Q-BAS-302](#q-bas-302--a-replica-on-a-shared-bucket-counts-each-of-its-commits-once-per-replica)). With Valkey only the holder of the
+  sweep lease sweeps; another replica lists, deleting nothing, at a sweep's turn when it committed since its last listing. The bound is then
+  an estimate, not a guarantee: [H-2270](#h-2270--a-replica-learns-another-replicas-writes-to-a-shared-bucket-only-at-its-own-listings).
+
+What this does not change: the order of eviction (last access, R-BAS-031) and what a fill costs the transfer network. A churn of distinct
+artifacts keeps the cache within its size and still evicts the working set
+([H-2272](#h-2272--a-churn-of-distinct-artifacts-still-evicts-the-working-set-and-crosses-the-transfer-network)); those wait for the owner's
+decisions of W-34.
+
+Acceptance criteria (unit, `internal/bastion/cache` on a temporary volume with `max_bytes` 1 MiB and objects of 64 KiB; unit,
+`internal/bastion/engine`; integration, `test/integration/bastioncache` on the stack's bucket):
+
+- 32 fills of 64 KiB into an artifact area of 896 KiB with no sweep between: 14 kept, 18 refused with `ErrNoRoom` and counted, the area never
+  above 896 KiB after any commit, one sweep asked for, no spool file left. Before the change the area held 960 KiB after the fifteenth.
+- A fill without room answers its caller whole from its spool; the next request for it is a miss.
+- A fill announced above the high mark and the commit that passes it each ask for a sweep; five commits without room leave one request.
+- Bytes written behind the replica are found by its first commit's listing, bytes evicted behind it by its next listing; an address held
+  already is admitted in a full area; documents and artifacts have their own room; with a cache key the stored bytes are counted.
+- With the bucket backend and two replicas a replica keeps half the fills, lists without the lease only after it committed, and two replicas
+  on the stack's bucket never hold more than the area.
+- The sweeper lists at start, sweeps an area above its mark at once, and sweeps again when a commit asks, without its timer.
+
+Built: `TestR_BAS_089_*` in [room_test.go](../../internal/bastion/cache/room_test.go) (eight tests, 0.35 s together with the race detector
+off), `TestR_BAS_089_AFillWithoutRoomIsServedAndNotKept` in [engine/room_test.go](../../internal/bastion/engine/room_test.go) (0.01 s) and
+`TestR_BAS_089_TwoReplicasSharingABucketKeepItBelowItsLimit` in [bastioncache](../../test/integration/bastioncache/room_test.go)
+(objects of 4 KiB, 0.14 s measured). The tests of R-BAS-031 and R-BAS-061 that need a cache over its limit write it through the backend, past the
+room. What each leg gains: the unit job about 0.4 s, the integration shard that holds `bastioncache` about 0.2 s, no end-to-end leg anything;
+nothing grows with the number of formats.
 
 ### R-BAS-032 · Integrity of cached content
 Priority: **MVP** · Covers: quader-only
@@ -1920,6 +1991,8 @@ carries an address, a token, a path or a repository's name):
 | `quader_bastion_cache_capacity_bytes` | gauge | `area` |
 | `quader_bastion_cache_evictions_total` | counter | `reason` |
 | `quader_bastion_cache_corrupt_total`, `quader_bastion_cache_errors_total` | counter | `op` for errors |
+| `quader_bastion_cache_sweeps_total` | counter | `trigger` (`interval`, `size`) |
+| `quader_bastion_cache_no_room_total` | counter | `area` (`artifacts`, `documents`) |
 | `quader_bastion_refused_total` | counter | `reason` (`blocked`, `rate_limited`, `miss_limited`, `auth_timeout`, `invalid_token`, `busy`, `unreachable`, `not_served`, `read_only`) |
 | `quader_bastion_blocks_total` | counter | `reason` (`refusals`) |
 | `quader_bastion_blocked_addresses` | gauge | — |
@@ -1938,6 +2011,10 @@ carries an address, a token, a path or a repository's name):
   `quader_bastion_bytes_served_total{source="cache"}`; requests to the main installation are
   `quader_bastion_main_requests_total` (the observability item of phase 5b).
 - `quader_valkey_available` and `quader_ratelimit_fallback{limiter}` are the shared ones.
+- `quader_bastion_cache_sweeps_total` and `quader_bastion_cache_no_room_total` are R-BAS-089's (2026-11-26): the sweeps a replica ran, by
+  `interval` (its timer) or `size` (an area passed its high mark between two timed sweeps, or a fill found no room), and the fills it passed
+  through unkept for want of room. A rate of `size` sweeps near one a second, or a rising `no_room`, says that fills arrive faster than the
+  sweep frees room: the cache churns.
 - `quader_bastion_answers` is per replica: the answers of a kind the replica holds in its memory, not the lookups. An answer leaves it
   when a use finds it past its period (R-BAS-020) or when period and grace have passed without a use (the janitor, R-BAS-026), so a
   replica that served no lookup for that long reads 0 while `quader_bastion_answers_total{result="hit"}` keeps its count; the other
@@ -9249,6 +9326,115 @@ encrypted one's as well, since its address and test link are on that page (api-a
 [bastion-handover.ts](../../web/src/app/features/bastions/bastion-handover.ts); the manual's
 [Direct reads from the object store](../manual/admin/bastion.md#direct-reads-from-the-object-store) says what a key per file costs.
 
+### Q-BAS-301 · A commit is admitted against a running estimate of its area, and a fill without room is passed through unkept
+
+Status: **Decided by the builder** of W-34's package E1 (2026-11-26), a defect that needs no decision of the owner — selected from the options
+below; the owner sees it when it is built.
+
+Its entry in the decision log: [ADR-298](../decisions.md#adr-298--a-bastions-cache-is-bounded-at-every-commit-and-the-bytes-between-a-bastion-and-the-main-installation-are-counted).
+
+Context: R-BAS-031 promised that the cache stays below `max_bytes`, and only a sweep every `sweep_interval` held it there (R-BAS-089 says what
+that let through). A bound at every commit needs the bytes of the area at that moment. A listing gives them and costs one request per thousand
+objects on a bucket, or a walk of the directory on a volume; the volume's file system could say how full it is; the replica knows what it
+commits itself. The engine already treats a refused commit as a backend failure: the fill's callers are answered from its spool, nothing is
+kept (R-BAS-030, `Fill.Keep`).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) An estimate per area, set by every listing and raised by every commit of the replica; a commit that would pass the limit is refused with `ErrNoRoom` unless the store holds its address already, and a sweep is asked for; the first commit of a replica waits for, or makes, the first listing (chosen) | The bound is checked in memory at every commit; the store is asked only when the answer is no | No request per commit; the area stays below its limit on a volume at every moment; one code path for both backends and the sealed layout; the engine's existing path for a refused commit serves the caller | Between listings the replica does not see other replicas' writes (Q-BAS-302); the estimate errs high after an eviction until the next listing, so a few fills may be passed unkept that would have fit |
+| (b) A sweep inside the commit when the area is above its mark, the commit waiting for it | The commit makes its own room | Every fill is kept | The fill's callers wait for the withheld tail for the length of a listing and an eviction (seconds on a bucket of many objects); a burst of commits runs one sweep each |
+| (c) Ask the volume's file system for its free space at each commit | — | Sees what else fills the volume | Not for a bucket, which has no fixed size; not by area; a second rule beside the areas the sweep keeps |
+| (d) Shorter `sweep_interval` only | — | Nothing new | Still unbounded between two sweeps; listings every few seconds on an idle Bastion |
+
+**Choice:** (a). **Rationale:** the attack R-BAS-089 closes is fills arriving faster than a timer; only a check at the commit bounds it, and
+only a check in memory keeps that check out of the path of every fill. A refusal costs one fill that is not kept, which is the outcome the
+owner's case calls for: under a flood of distinct artifacts the volume does not fill and the pod is not evicted. **Applied in the spec:**
+R-BAS-089, R-BAS-031; code: `estimate`, `Cache.admit`, `Cache.committed`, `Cache.firstListing` in
+[room.go](../../internal/bastion/cache/room.go), `Fill.Commit` in [fill.go](../../internal/bastion/cache/fill.go).
+
+### Q-BAS-302 · A replica on a shared bucket counts each of its commits once per replica
+
+Status: **Decided by the builder** of W-34's package E1 (2026-11-26), a defect that needs no decision of the owner — selected from the options
+below; the owner sees it when it is built.
+
+Its entry in the decision log: [ADR-298](../decisions.md#adr-298--a-bastions-cache-is-bounded-at-every-commit-and-the-bytes-between-a-bastion-and-the-main-installation-are-counted).
+
+Context: with the bucket backend every replica writes into one bucket (R-BAS-030) and the estimate of Q-BAS-301 is a replica's own. A replica
+sees what the others wrote and evicted only when it lists: at its own sweeps without Valkey, and with Valkey only the holder of the sweep lease
+sweeps (R-BAS-031). The repository's rule for figures kept per replica is Q-BAS-11 and Q-BAS-34: without shared state a replica takes its share
+by `bastion.replicas`.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Each commit counts `bastion.replicas` times in the replica's estimate; a replica without the sweep lease lists, deleting nothing, at its sweep's turn when it committed since its last listing (chosen) | A replica assumes every other one fills as much as it does | The rule of Q-BAS-34 applied to bytes; with fills spread evenly the estimate is the bucket's; a replica that fills alone lists sooner, which costs listings, never evictions (a sweep evicts by the listing alone); works with and without Valkey | A bucket filled unevenly can pass its limit by what the other replicas wrote beyond their share between two of a replica's listings (H-2270) |
+| (b) A shared counter per area in Valkey, raised at every commit and set by the lease holder's listing | One estimate for the release | Exact across replicas while Valkey answers | A Valkey round trip per commit; without Valkey the same question again; a counter that the lease holder's listing and the others' increments race on |
+| (c) Each replica counts its own commits once | — | Nothing to configure | With N replicas the bucket can hold up to N times the headroom past its limit between listings |
+
+**Choice:** (a). **Rationale:** a bucket has no fixed size, so passing `max_bytes` by a share costs storage and not a pod; what must not happen
+is a bound that grows with the replicas, and (a) keeps it at one share of the headroom. (b) is the way to close H-2270 if a measurement shows
+the gap matters. **Applied in the spec:** R-BAS-089; code: `Options.Replicas` and `build` in
+[store.go](../../internal/bastion/cache/store.go), `Cache.relist` in [sweep.go](../../internal/bastion/cache/sweep.go), `buildDeps` in
+[server.go](../../internal/bastion/server/server.go).
+
+### Q-BAS-303 · At once is one sweep at a time, asked for by any number of commits, at most one a second
+
+Status: **Decided by the builder** of W-34's package E1 (2026-11-26), a defect that needs no decision of the owner — selected from the options
+below; the owner sees it when it is built.
+
+Its entry in the decision log: [ADR-298](../decisions.md#adr-298--a-bastions-cache-is-bounded-at-every-commit-and-the-bytes-between-a-bastion-and-the-main-installation-are-counted).
+
+Context: R-BAS-089 starts a sweep when an area passes its high mark between two timed sweeps. Under a burst every commit above the mark asks
+for one, and a sweep lists the area twice (before and after it evicts) and the markers once: on a bucket of 18 GiB of objects of 100 KiB, about
+180 requests of `ListObjectsV2` per listing. A sweep that cannot bring the area below its mark (a failing backend, fills faster than the
+eviction) would be asked for again by the next commit at once.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The replica's one sweeper loop takes a request from a channel that holds one: a request while a sweep runs or waits is one more sweep after it; a sweep the size asked for starts at least a second after the last one ended (chosen) | One sweep at a time per replica, coalesced, at most one a second | A burst of a thousand commits costs one or two sweeps; a failing backend is listed at most once a second; between two triggered sweeps the area must fill by the 10 % between the marks, so under normal load they are rare | Under a sustained flood above the eviction rate a replica lists once a second (H-2271); fills are refused for up to a second after the area is full |
+| (b) A sweep per commit above the mark | — | Simple | Hundreds of concurrent listings under a burst |
+| (c) A sweep at once and then none for `sweep_interval` | — | Cheapest | A flood fills the area within the interval again, and every fill after is refused until the timer |
+
+**Choice:** (a). **Rationale:** the second bounds the cost of the case where sweeping does not help, and costs nothing where it does: the band
+of 10 % between the marks (1.8 GiB of the default artifact area) takes seconds to fill even at the planner's 320 MB/s. **Applied in the
+spec:** R-BAS-089; code: `Cache.wantSweep` in [room.go](../../internal/bastion/cache/room.go), `RunSweeper` and `waitGap` in
+[sweep.go](../../internal/bastion/cache/sweep.go).
+
+### Q-BAS-304 · The marks are R-BAS-031's: a sweep at 95 %, a refusal only at the limit
+
+Status: **Decided by the builder** of W-34's package E1 (2026-11-26), a defect that needs no decision of the owner — selected from the options
+below; the owner sees it when it is built.
+
+Its entry in the decision log: [ADR-298](../decisions.md#adr-298--a-bastions-cache-is-bounded-at-every-commit-and-the-bytes-between-a-bastion-and-the-main-installation-are-counted).
+
+Context: R-BAS-031 sweeps an area above 95 % of its limit down to 85 %. R-BAS-089 needs a point that starts a sweep between the timed ones and a
+point past which a commit is refused.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A sweep is asked for above 95 %, the sweep R-BAS-031's own; a commit is refused only when it would pass 100 % (chosen) | The band from 95 % to 100 % takes the fills that arrive while the sweep runs | No new figure; a fill is refused only where the bound itself is at stake; the sweep's eviction is unchanged | — |
+| (b) Refuse above 95 % | — | A margin below the limit | Fills refused while the area still has room, at every sweep's start |
+| (c) Marks of their own in the chart | — | Tunable | Two more figures for a defect's repair, against "simple by default"; nothing measured to set them from |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-089; code: `Cache.limitOf` in [room.go](../../internal/bastion/cache/room.go).
+
+### Q-BAS-305 · The spool of fills does not count in the areas
+
+Status: **Decided by the builder** of W-34's package E1 (2026-11-26), a defect that needs no decision of the owner — selected from the options
+below; the owner sees it when it is built.
+
+Its entry in the decision log: [ADR-298](../decisions.md#adr-298--a-bastions-cache-is-bounded-at-every-commit-and-the-bytes-between-a-bastion-and-the-main-installation-are-counted).
+
+Context: a fill is written to the spool while it streams, on the cache volume (the volume backend without a cache key) or on the pod's `tmp`
+volume (the bucket backend, or a key), and is renamed into its area at the commit (Q-BAS-131). The spool has its own bound,
+`spool_max_bytes`, and the chart refuses a `cacheVolume.size` below `max_bytes` plus the spool.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The areas count committed bytes only; the spool keeps its own bound (chosen) | A volume holds at most `max_bytes` plus `spool_max_bytes` plus entries and markers | The two bounds the chart already sizes the volume from; a rename moves bytes from the spool into the area without changing the volume's level | A cache volume sized exactly to the two still holds entries and markers beyond them (H-452) |
+| (b) Count the fills in progress in the artifact area | — | One figure | A cold burst would refuse commits for bytes that are still in flight and may never be kept; the bucket's spool is not on the cache store at all |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-089; the chart's check is Q-BAS-131's, unchanged.
+
 ## What this does not cover
 
 ### H-382 · A volumetric attack on bandwidth is not absorbed by the Bastion
@@ -10108,3 +10294,42 @@ installation does not receive. What makes it real: an administrator who switches
 working. The manual says how to see that it works ([admin/bastion.md](../manual/admin/bastion.md#direct-reads-from-the-object-store)), and
 the test link is run from the Bastion's network. What would close it: the Bastion's report (R-BAS-059) carrying its outcomes per
 connection, which the card would show.
+
+### H-2270 · A replica learns another replica's writes to a shared bucket only at its own listings
+
+Stage: R-BAS-089, the estimate of a replica of the bucket backend
+([Q-BAS-302](#q-bas-302--a-replica-on-a-shared-bucket-counts-each-of-its-commits-once-per-replica)). Subject: the size of the Bastion's
+bucket, not the availability of a pod.
+
+Live on every Bastion with the bucket backend and more than one replica. A replica counts each of its own commits `bastion.replicas` times and
+learns the others' only from its listings, so while the replicas fill evenly its estimate is the bucket's, and when one replica fills more
+than its share the bucket can pass `max_bytes` by what that replica wrote beyond its share since another replica's last listing. A bucket has
+no fixed size: the excess costs storage until the next sweep evicts it, and no pod is evicted. A replica that fills alone counts its fills
+twice with two replicas and lists more often, which costs `ListObjectsV2` requests and no eviction. What makes it real: a release without
+routing in which one replica takes most of the cold misses for longer than a sweep interval. What would close it: a counter per area in
+Valkey (option (b) of Q-BAS-302).
+
+### H-2271 · A sweep the size asks for costs a listing of the area, at most one a second per replica
+
+Stage: R-BAS-089, the sweeps the size starts
+([Q-BAS-303](#q-bas-303--at-once-is-one-sweep-at-a-time-asked-for-by-any-number-of-commits-at-most-one-a-second)). Subject: the requests a
+Bastion sends its bucket, and the CPU of a walk of a large volume.
+
+Live on every Bastion; it matters for a bucket of many objects. A sweep lists the area twice and the markers once. While fills arrive faster
+than a sweep frees room (a flood of distinct artifacts, H-2272), or the backend fails, a replica sweeps once a second: on a bucket of 18 GiB
+of objects of 100 KiB that is about 540 requests of `ListObjectsV2` a second per replica, and fills are passed through unkept between two
+sweeps. `quader_bastion_cache_sweeps_total{trigger="size"}` shows it. What makes it real: a sustained churn of distinct artifacts above the
+rate one sweep evicts.
+
+### H-2272 · A churn of distinct artifacts still evicts the working set and crosses the transfer network
+
+Stage: R-BAS-031, R-BAS-089 and the fills of R-BAS-021. Subject: the hit rate of legitimate callers and the network between the Bastion and the
+main installation, the owner's case of W-34 (2026-11-26).
+
+Live wherever a caller can read more distinct content through a Bastion than its cache holds. R-BAS-089 keeps the cache within its size and
+the pod alive, which was the defect; it does not change what is kept. Eviction is by last access, and a fill is an access, so a stream of
+single requests for distinct artifacts evicts the working set within minutes (the planner's figures: 18 GiB in about a minute at 16 anonymous
+slots), every request of a legitimate caller turns into a miss, and the transfer network carries the churn and the refills. What bounds it
+today: the main installation's per-caller budgets, the Bastion's per-address miss limit and its 16 anonymous slots. What would close it, each waiting for
+an answer of the owner in W-34: an eviction that protects what was served twice, a maximum throughput per Bastion, and download budgets per
+caller at the Bastion; none of them is built here.

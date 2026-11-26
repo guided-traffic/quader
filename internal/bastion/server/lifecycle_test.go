@@ -498,7 +498,7 @@ func TestR_BAS_031_TheServerRunsTheCacheSweeper(t *testing.T) {
 	main := maintest.New(t)
 	dir := t.TempDir()
 	srv, logs := newLinked(t, linkedConfig(main, dir, tokenFileFor(t, dir, main.NewToken()), ""), nil)
-	f, err := srv.deps.Cache.NewFill(cache.EntryArtifact)
+	f, err := srv.deps.Cache.NewFill(cache.EntryArtifact, -1)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -29,12 +29,12 @@ func spoolBytes(t *testing.T, r *rig) int64 {
 // fill's bytes are given back at once, and the other fills go on (Q-BAS-131, R-BAS-021).
 func TestR_BAS_021_R_BAS_030_TheFillsInProgressNeverHoldMoreThanTheSpoolBudget(t *testing.T) {
 	r := newRig(t, func(c *config.BastionCache) { c.SpoolMaxBytes = 500; c.MaxObjectBytes = 500; c.MaxBytes = 1200 })
-	a, err := r.NewFill(EntryArtifact)
+	a, err := r.NewFill(EntryArtifact, -1)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer a.Abort()
-	b, err := r.NewFill(EntryArtifact)
+	b, err := r.NewFill(EntryArtifact, -1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -85,7 +85,7 @@ func TestR_BAS_021_AFillGivesItsSpoolBytesBackWhenItEnds(t *testing.T) {
 	r := newRig(t, func(c *config.BastionCache) { c.SpoolMaxBytes = 1000 })
 	for _, keep := range []bool{false, true} {
 		data := bytes.Repeat([]byte{7}, 100)
-		f, err := r.NewFill(EntryArtifact)
+		f, err := r.NewFill(EntryArtifact, -1)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -106,7 +106,7 @@ func TestR_BAS_021_AFillGivesItsSpoolBytesBackWhenItEnds(t *testing.T) {
 			t.Fatalf("keep=%v: held = %d after the fill ended, want 0", keep, got)
 		}
 	}
-	g, _ := r.NewFill(EntryArtifact)
+	g, _ := r.NewFill(EntryArtifact, -1)
 	_, _ = g.Write(bytes.Repeat([]byte{1}, 50))
 	g.Abort()
 	if got := r.spool.Held(); got != 0 {
@@ -117,7 +117,7 @@ func TestR_BAS_021_AFillGivesItsSpoolBytesBackWhenItEnds(t *testing.T) {
 // No budget configured (zero) is no bound: the tests and the configuration of a volume that bounds itself.
 func TestR_BAS_021_ASpoolBudgetOfZeroIsNoBound(t *testing.T) {
 	r := newRig(t)
-	f, err := r.NewFill(EntryArtifact)
+	f, err := r.NewFill(EntryArtifact, -1)
 	if err != nil {
 		t.Fatal(err)
 	}

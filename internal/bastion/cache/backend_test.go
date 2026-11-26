@@ -145,7 +145,7 @@ func TestR_BAS_030_AFillIsInvisibleUntilItIsCommittedAfterVerification(t *testin
 	data := payload(3, 500)
 	sha := digest(data)
 
-	f, err := r.NewFill(EntryArtifact)
+	f, err := r.NewFill(EntryArtifact, -1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -177,7 +177,7 @@ func TestR_BAS_030_AFillIsInvisibleUntilItIsCommittedAfterVerification(t *testin
 		t.Fatalf("spool files left: %d", len(tmp))
 	}
 	// Abort after commit is harmless; abort removes an unfinished fill.
-	f2, _ := r.NewFill(EntryArtifact)
+	f2, _ := r.NewFill(EntryArtifact, -1)
 	_, _ = f2.Write([]byte("x"))
 	f2.Abort()
 	f2.Abort()
@@ -188,7 +188,7 @@ func TestR_BAS_030_AFillIsInvisibleUntilItIsCommittedAfterVerification(t *testin
 
 func TestR_BAS_030_AFillStopsAtTheLimitOfItsKind(t *testing.T) {
 	r := newRig(t)
-	f, _ := r.NewFill(EntryArtifact)
+	f, _ := r.NewFill(EntryArtifact, -1)
 	if _, err := f.Write(make([]byte, 600)); err != nil {
 		t.Fatal(err)
 	}
@@ -196,7 +196,7 @@ func TestR_BAS_030_AFillStopsAtTheLimitOfItsKind(t *testing.T) {
 		t.Fatalf("artifact past max_object_bytes: %v", err)
 	}
 	f.Abort()
-	d, _ := r.NewFill(EntryDocument)
+	d, _ := r.NewFill(EntryDocument, -1)
 	if _, err := d.Write(make([]byte, 201)); !errors.Is(err, ErrTooLarge) {
 		t.Fatalf("document past documents_max_bytes: %v", err)
 	}
@@ -366,7 +366,7 @@ func TestR_BAS_030_KillingAnEphemeralVolumeLosesOnlyTheCache(t *testing.T) {
 // fillObjectFor commits data through a fill of c.
 func (c *Cache) fillObjectFor(t *testing.T, data []byte) {
 	t.Helper()
-	f, err := c.NewFill(EntryArtifact)
+	f, err := c.NewFill(EntryArtifact, -1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -419,13 +419,16 @@ func TestR_BAS_030_ConcurrentFillsReadsAndSweepsAreRaceFree(t *testing.T) {
 			for i := range 30 {
 				data := payload(uint64(g*100+i), 200+i)
 				key := "/k/" + digest(data)
-				f, err := r.NewFill(EntryArtifact)
+				f, err := r.NewFill(EntryArtifact, -1)
 				if err != nil {
 					t.Error(err)
 					return
 				}
 				_, _ = f.Write(data)
 				if err := f.Commit(ctx, digest(data)); err != nil {
+					if errors.Is(err, ErrNoRoom) {
+						continue // the area is full until the next sweep (R-BAS-089)
+					}
 					t.Error(err)
 					return
 				}

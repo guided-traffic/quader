@@ -137,6 +137,7 @@ the word `authorization` in a header name (tested in [redact_bastion_test.go](..
 | Bastion block list (stage 2) | refusals per address, shared through Valkey | blocks an address that collects too many refusals, with durations doubling to 24 h; IPv6 per `/64` | R-BAS-037 |
 | Bastion limits | credential or not, misses, failures | per-address request rates (anonymous stricter), per-address miss budgets, the failed-authentication timeout | R-BAS-035, R-BAS-036 |
 | Concurrency budget | requests to the main installation | at most `max_concurrent` across replicas, anonymous at most a share; collapsed misses | R-BAS-025 |
+| Cache room | the stored bytes of each area, from its listings and its own commits | a fill that would take its area past `max_bytes` is not kept, and a sweep starts at once above 95 %, so a flood of distinct artifacts cannot fill the cache volume or get the pod evicted; it still evicts what others read (H-2272) | R-BAS-089 |
 | Main installation | the real client, through `bastions.trusted_proxies` for a recognized Bastion request | its own rate limits, throttle and audit, applied to the client, not to the Bastion | R-BAS-017 |
 
 Without Valkey every counter and block holds per replica at the configured value divided by the chart's replica count (H-389).
@@ -510,7 +511,15 @@ that no mechanism of the Bastion holds, because the chart leaves it to the clust
   every remote and virtual repository a Bastion serves);
 - [H-1395](../spec/bastion.md#h-1395--an-official-image-of-a-docker-hub-remote-without-a-namespace-prefix-names-two-packages-and-carries-none):
   an official image of a Docker Hub remote without a namespace prefix names two packages and carries none, so its pull keeps a conditional
-  request per artifact (live, a load and not a confidentiality matter).
+  request per artifact (live, a load and not a confidentiality matter);
+- [H-2270](../spec/bastion.md#h-2270--a-replica-learns-another-replicas-writes-to-a-shared-bucket-only-at-its-own-listings): a replica
+  learns another replica's writes to a shared bucket only at its own listings, so the bucket's bound is an estimate (live with the bucket
+  backend and several replicas; storage, not a pod);
+- [H-2271](../spec/bastion.md#h-2271--a-sweep-the-size-asks-for-costs-a-listing-of-the-area-at-most-one-a-second-per-replica): a sweep the
+  size asks for costs a listing of the area, at most one a second per replica (live under a sustained churn; a load on the bucket);
+- [H-2272](../spec/bastion.md#h-2272--a-churn-of-distinct-artifacts-still-evicts-the-working-set-and-crosses-the-transfer-network): a churn
+  of distinct artifacts still evicts the working set and crosses the transfer network (live wherever a caller can read more distinct content
+  than the cache holds; the owner's case of W-34, whose remedies wait for his decisions).
 
 This page does not describe the main installation's own mechanisms that the Bastion relies on (the decision point, token
 validation, the revocation journal); their pages and gaps are linked above.

@@ -14,14 +14,16 @@ import (
 )
 
 // fillTwelve stores twelve objects of 100 bytes (1200 bytes against an artifact limit of 1000) with entries, and
-// sets their own times to base+i minutes. It returns their entries.
+// sets their own times to base+i minutes. It returns their entries. The bytes go to the backend directly, past the room a
+// fill is admitted by (R-BAS-089): what a cache over its limit holds after max_bytes was lowered, or what replicas sharing a
+// bucket wrote between two listings.
 func (r *rig) fillTwelve() []Entry {
 	r.t.Helper()
 	base := r.clock.Now().Add(-24 * time.Hour)
 	var out []Entry
 	for i := range 12 {
 		data := payload(uint64(100+i), 100)
-		r.fillObject(EntryArtifact, data)
+		r.putObject(EntryArtifact, data)
 		e := r.entry(EntryArtifact, data)
 		if err := r.StoreEntry(context.Background(), fmt.Sprintf("/obj/%d", i), e); err != nil {
 			r.t.Fatal(err)
@@ -110,7 +112,7 @@ func TestR_BAS_031_DocumentsAreSweptByTheirOwnLimitAndNeverEvictArtifacts(t *tes
 	var docs []Entry
 	for i := range 3 { // 3 x 70 = 210 > 190 (95 % of 200)
 		d := payload(uint64(50+i), 70)
-		r.fillObject(EntryDocument, d)
+		r.putObject(EntryDocument, d)
 		e := r.entry(EntryDocument, d)
 		r.setTime(r.objectPath(EntryDocument, e.SHA256), r.clock.Now().Add(time.Duration(i-10)*time.Hour))
 		docs = append(docs, e)

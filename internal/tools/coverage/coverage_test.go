@@ -148,8 +148,9 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 		// 1316 since a format declares what one download from an upstream is (R-OPS-053, one P1 requirement of W31).
 		// 1317 since what one act of a client costs in transfers (R-LIM-041, one MVP requirement of W32).
 		// 1319 since a download is audited per item and shown as one row (R-OPS-054, R-OPS-055, two P1 requirements of W33).
-		if len(m.Reqs) != 1319 || count[prioMVP] != 724 || count[prioP1] != 556 || count[prioP2] != 39 {
-			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1319 (724, 556, 39)",
+		// 1320 since a Bastion's cache stays below its size between two sweeps (R-BAS-089, one MVP requirement of W-34, E1).
+		if len(m.Reqs) != 1320 || count[prioMVP] != 725 || count[prioP1] != 556 || count[prioP2] != 39 {
+			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1320 (725, 556, 39)",
 				len(m.Reqs), count[prioMVP], count[prioP1], count[prioP2])
 		}
 	})

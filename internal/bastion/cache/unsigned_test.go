@@ -28,7 +28,7 @@ func TestR_BAS_032_WithoutASigningKeyTheVolumeKeepsPlainEntriesAndStillVerifiesT
 	}
 	ctx := context.Background()
 	data := payload(11, 400)
-	f, err := c.NewFill(EntryArtifact)
+	f, err := c.NewFill(EntryArtifact, -1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -83,7 +83,7 @@ func TestR_BAS_021_AKeptFillCanStillAnswerAfterTheCommitWasRefused(t *testing.T)
 	r.back.s = &faultStore{store: r.back.s, f: fl}
 	data := payload(12, 300)
 
-	f, err := r.NewFill(EntryArtifact)
+	f, err := r.NewFill(EntryArtifact, -1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -106,7 +106,7 @@ func TestR_BAS_021_AKeptFillCanStillAnswerAfterTheCommitWasRefused(t *testing.T)
 
 	// Without Keep a commit removes the spool file, as before.
 	fl.SetFailPut(false)
-	g, err := r.NewFill(EntryArtifact)
+	g, err := r.NewFill(EntryArtifact, -1)
 	if err != nil {
 		t.Fatal(err)
 	}

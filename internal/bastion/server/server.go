@@ -226,7 +226,7 @@ func (s *Server) buildDeps() (engine.Deps, error) {
 		return engine.Deps{}, err
 	}
 	c, err := cache.New(context.Background(), b.Cache, signer, cache.Options{
-		Metrics: s.bm, Logger: s.log.With("component", "cache"), TempDir: os.TempDir(),
+		Metrics: s.bm, Logger: s.log.With("component", "cache"), TempDir: os.TempDir(), Replicas: b.Replicas,
 	})
 	if err != nil {
 		return engine.Deps{}, fmt.Errorf("bastion.cache: %w", err)

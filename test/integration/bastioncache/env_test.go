@@ -10,6 +10,7 @@
 package bastioncache
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"crypto/sha256"
@@ -236,6 +237,13 @@ type replica struct {
 
 func (e *env) replica(mod ...func(*config.BastionCache)) *replica {
 	e.t.Helper()
+	return e.replicaOf(1, mod...)
+}
+
+// replicaOf is a replica of a release of replicas replicas (bastion.replicas), which counts its own commits that many times
+// (R-BAS-089, Q-BAS-302).
+func (e *env) replicaOf(replicas int, mod ...func(*config.BastionCache)) *replica {
+	e.t.Helper()
 	tmp := e.t.TempDir()
 	cfg := config.BastionCache{
 		Backend: "bucket", MaxBytes: 100 * mib, MaxObjectBytes: 4 * mib, DocumentsMaxBytes: 10 * mib,
@@ -249,7 +257,7 @@ func (e *env) replica(mod ...func(*config.BastionCache)) *replica {
 		e.t.Fatal(err)
 	}
 	c, err := cache.New(context.Background(), cfg, e.signer, cache.Options{
-		Metrics: met, Factory: e.factory, TempDir: tmp, WrapTransport: func(rt http.RoundTripper) http.RoundTripper {
+		Metrics: met, Factory: e.factory, TempDir: tmp, Replicas: replicas, WrapTransport: func(rt http.RoundTripper) http.RoundTripper {
 			return tap{c: e.count, next: rt}
 		},
 	})
@@ -276,11 +284,29 @@ func digest(b []byte) string {
 	return hex.EncodeToString(s[:])
 }
 
+// putPast stores data through the backend and its entry under cacheKey, past the room a fill is admitted by (R-BAS-089):
+// what other replicas wrote between two listings, or what a cache held before max_bytes was lowered.
+func (r *replica) putPast(t *testing.T, kind cache.EntryKind, cacheKey string, data []byte) cache.Entry {
+	t.Helper()
+	ctx := context.Background()
+	if err := r.Backend().PutObject(cache.WithArea(ctx, kind), digest(data), int64(len(data)), bytes.NewReader(data)); err != nil {
+		t.Fatal(err)
+	}
+	e := cache.Entry{
+		Kind: kind, SHA256: digest(data), Size: int64(len(data)), Repository: "it/npm-all", Status: 200,
+		Header: http.Header{"Content-Type": {"application/octet-stream"}}, ValidatedAt: time.Now().UTC().Truncate(time.Second),
+	}
+	if err := r.StoreEntry(ctx, cacheKey, e); err != nil {
+		t.Fatal(err)
+	}
+	return e
+}
+
 // put fills, commits and stores the entry of data under cacheKey, the way the engine does on a miss.
 func (r *replica) put(t *testing.T, kind cache.EntryKind, cacheKey string, data []byte) cache.Entry {
 	t.Helper()
 	ctx := context.Background()
-	f, err := r.NewFill(kind)
+	f, err := r.NewFill(kind, int64(len(data)))
 	if err != nil {
 		t.Fatal(err)
 	}

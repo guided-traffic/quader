@@ -61,6 +61,8 @@ func sealedRig(t *testing.T, dir, keyFile string, clk *clock, mod ...func(*confi
 	t.Helper()
 	cfg := testConfig(dir)
 	cfg.EncryptionKeyFile = keyFile
+	// A sealed object carries a record of 182 bytes and a tag per segment: room for them unless a test sets the limits.
+	cfg.MaxBytes, cfg.DocumentsMaxBytes = mib, 128*kib
 	for _, m := range mod {
 		m(&cfg)
 	}
@@ -217,7 +219,7 @@ func TestR_BAS_061_WithAKeyNoObjectHoldsAPlainRunOrANameOfWhatTheCacheKeeps(t *t
 	art := payload(1, 512)
 	doc := []byte(`{"name":"left-pad","versions":{"1.3.0":{"dist":{"tarball":"https://packages.example.com/left-pad-1.3.0.tgz"}}}}`)
 
-	f, err := r.NewFill(EntryArtifact)
+	f, err := r.NewFill(EntryArtifact, -1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -628,8 +630,13 @@ func TestR_BAS_061_TheSweepEvictsSealedObjectsByLastAccessWithTheirMarkers(t *te
 	})
 	base := r.clock.Now().Add(-time.Hour)
 	var es []Entry
-	for i := range 4 {
-		e := r.keep(EntryArtifact, fmt.Sprintf("/obj/%d", i), payload(uint64(20+i), 100))
+	for i := range 4 { // past the room a fill is admitted by (R-BAS-089), as a cache after max_bytes was lowered
+		data := payload(uint64(20+i), 100)
+		r.putObject(EntryArtifact, data)
+		e := r.entry(EntryArtifact, data)
+		if err := r.StoreEntry(ctx, fmt.Sprintf("/obj/%d", i), e); err != nil {
+			t.Fatal(err)
+		}
 		r.setTime(r.objectFile(EntryArtifact, e.SHA256), base.Add(time.Duration(i)*time.Minute))
 		es = append(es, e)
 	}
@@ -668,13 +675,16 @@ func TestR_BAS_061_ConcurrentFillsReadsAndSweepsOfASealedCacheAreRaceFree(t *tes
 			for i := range 8 {
 				data := payload(uint64(g*100+i), 200+i)
 				key := "/k/" + digest(data)
-				f, err := r.NewFill(EntryArtifact)
+				f, err := r.NewFill(EntryArtifact, -1)
 				if err != nil {
 					t.Error(err)
 					return
 				}
 				_, _ = f.Write(data)
 				if err := f.Commit(ctx, digest(data)); err != nil {
+					if errors.Is(err, ErrNoRoom) {
+						continue // the area is full until the next sweep (R-BAS-089)
+					}
 					t.Error(err)
 					return
 				}

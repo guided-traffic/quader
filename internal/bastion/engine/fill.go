@@ -259,7 +259,7 @@ func (e *engine) fillSpool(q *rq, resp *mainclient.Response, pre []byte, sha str
 	if kind == cache.EntryDocument {
 		class = metrics.ClassShared
 	}
-	fill, err := e.d.Cache.NewFill(kind)
+	fill, err := e.d.Cache.NewFill(kind, size)
 	if err != nil {
 		if kind == cache.EntryDocument {
 			e.markVolatile(q.cacheKey)
@@ -468,7 +468,7 @@ func (e *engine) followFill(q *rq, r *fillRun) (again bool) {
 
 // keepBytes stores the bytes of a shared document through a cache fill and returns their content address.
 func (e *engine) keepBytes(ctx context.Context, kind cache.EntryKind, body []byte) (string, error) {
-	fill, err := e.d.Cache.NewFill(kind)
+	fill, err := e.d.Cache.NewFill(kind, int64(len(body)))
 	if err != nil {
 		return "", err
 	}

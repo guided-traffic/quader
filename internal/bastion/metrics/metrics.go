@@ -43,6 +43,8 @@ const (
 	CacheEvictionsTotal      = "quader_bastion_cache_evictions_total"
 	CacheCorruptTotal        = "quader_bastion_cache_corrupt_total"
 	CacheErrorsTotal         = "quader_bastion_cache_errors_total"
+	CacheSweepsTotal         = "quader_bastion_cache_sweeps_total"
+	CacheNoRoomTotal         = "quader_bastion_cache_no_room_total"
 	RefusedTotal             = "quader_bastion_refused_total"
 	BlocksTotal              = "quader_bastion_blocks_total"
 	BlockedAddresses         = "quader_bastion_blocked_addresses"
@@ -136,6 +138,11 @@ const (
 	EvictStale   = "stale"
 	EvictMissing = "missing"
 
+	// trigger of quader_bastion_cache_sweeps_total (R-BAS-089): the timer of sweep_interval, or the size of an area, which a
+	// commit took over its high mark or found without room, a fill announced above it, or the listing at start found above it.
+	SweepInterval = "interval"
+	SweepSize     = "size"
+
 	// reason of quader_bastion_refused_total.
 	RefusedBlocked     = "blocked"
 	RefusedRateLimited = "rate_limited"
@@ -216,6 +223,10 @@ type Metrics struct {
 	CacheEvictions *prometheus.CounterVec
 	CacheCorrupt   prometheus.Counter
 	CacheErrors    *prometheus.CounterVec
+	// CacheSweeps counts the sweeps this replica ran by what started them; CacheNoRoom counts the fills passed through unkept by
+	// area because their bytes would have taken the area past its limit (R-BAS-089).
+	CacheSweeps *prometheus.CounterVec
+	CacheNoRoom *prometheus.CounterVec
 	// Refused counts the Bastion's own refusals by reason (R-BAS-029); Blocks counts blocks set; Blocked is the
 	// number of addresses blocked (R-BAS-037).
 	Refused *prometheus.CounterVec
@@ -276,6 +287,8 @@ func New(reg prometheus.Registerer) (*Metrics, error) {
 		CacheEvictions:       counter(CacheEvictionsTotal, "Evictions by reason (size, stale, missing).", "reason"),
 		CacheCorrupt:         prometheus.NewCounter(prometheus.CounterOpts{Name: CacheCorruptTotal, Help: "Cached objects whose verification failed (R-BAS-032)."}),
 		CacheErrors:          counter(CacheErrorsTotal, "Errors of the cache backend by operation.", "op"),
+		CacheSweeps:          counter(CacheSweepsTotal, "Sweeps of the cache this replica ran, by what started them (interval, size) (R-BAS-089).", "trigger"),
+		CacheNoRoom:          counter(CacheNoRoomTotal, "Fills passed through unkept because their area had no room for them, by area (R-BAS-089).", "area"),
 		Refused:              counter(RefusedTotal, "Requests the Bastion refused itself, by reason (R-BAS-029).", "reason"),
 		Blocks:               counter(BlocksTotal, "Blocks set on addresses, by reason.", "reason"),
 		Blocked:              prometheus.NewGauge(prometheus.GaugeOpts{Name: BlockedAddresses, Help: "Addresses blocked now."}),
@@ -342,6 +355,10 @@ func (m *Metrics) seed() {
 	for _, a := range []string{AreaArtifacts, AreaDocuments} {
 		m.CacheBytes.WithLabelValues(a)
 		m.CacheCapacity.WithLabelValues(a)
+		m.CacheNoRoom.WithLabelValues(a)
+	}
+	for _, tr := range []string{SweepInterval, SweepSize} {
+		m.CacheSweeps.WithLabelValues(tr)
 	}
 	for _, r := range []string{EvictSize, EvictStale, EvictMissing} {
 		m.CacheEvictions.WithLabelValues(r)
@@ -370,7 +387,7 @@ func (m *Metrics) collectors() []prometheus.Collector {
 		m.MainReachable, m.MainUnreachableSince, m.BaseURLMismatch, m.InterfaceMismatch, m.InterfaceVersion,
 		m.GracePeriod, m.AnswerPeriod, m.Answers, m.AnswersTotal, m.FeedLag, m.FeedApplied, m.FeedResets,
 		m.TokenRemaining, m.TokenWarnBefore, m.MainTokenRefused, m.TokenReloads,
-		m.CacheBytes, m.CacheCapacity, m.CacheEvictions, m.CacheCorrupt, m.CacheErrors,
+		m.CacheBytes, m.CacheCapacity, m.CacheEvictions, m.CacheCorrupt, m.CacheErrors, m.CacheSweeps, m.CacheNoRoom,
 		m.Refused, m.Blocks, m.Blocked, m.AuditEvents, m.AuditBuffer, m.AuditDropped,
 		m.Handovers, m.FillBytes, m.HandoverEnabled, m.HandoverCooldown,
 	}
@@ -384,6 +401,7 @@ func Names() []string {
 		InterfaceVersion, GracePeriodSeconds, AnswerPeriodSeconds, Answers, AnswersTotal, FeedLagSeconds,
 		FeedEntriesAppliedTotal, FeedResetsTotal, TokenRemainingSeconds, TokenWarnBeforeSeconds, MainTokenRefused,
 		TokenReloadsTotal, CacheBytes, CacheCapacityBytes, CacheEvictionsTotal, CacheCorruptTotal, CacheErrorsTotal,
+		CacheSweepsTotal, CacheNoRoomTotal,
 		RefusedTotal, BlocksTotal, BlockedAddresses, AuditEventsTotal, AuditBufferEvents, AuditEventsDroppedTotal,
 		HandoversTotal, FillBytesTotal, HandoverEnabled, HandoverCooldown,
 	}

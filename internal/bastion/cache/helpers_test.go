@@ -115,7 +115,7 @@ func newRig(t *testing.T, mod ...func(*config.BastionCache)) *rig {
 // fillObject stores bytes through a fill, as the engine does, and returns their digest.
 func (r *rig) fillObject(kind EntryKind, data []byte) string {
 	r.t.Helper()
-	f, err := r.NewFill(kind)
+	f, err := r.NewFill(kind, int64(len(data)))
 	if err != nil {
 		r.t.Fatal(err)
 	}
@@ -124,6 +124,17 @@ func (r *rig) fillObject(kind EntryKind, data []byte) string {
 	}
 	sha := digest(data)
 	if err := f.Commit(context.Background(), sha); err != nil {
+		r.t.Fatal(err)
+	}
+	return sha
+}
+
+// putObject stores bytes through the backend, past the room a fill is admitted by (R-BAS-089): what a cache holds beyond its
+// limit after max_bytes was lowered, or what replicas sharing a bucket wrote between two listings.
+func (r *rig) putObject(kind EntryKind, data []byte) string {
+	r.t.Helper()
+	sha := digest(data)
+	if err := r.Backend().PutObject(WithArea(context.Background(), kind), sha, int64(len(data)), bytes.NewReader(data)); err != nil {
 		r.t.Fatal(err)
 	}
 	return sha

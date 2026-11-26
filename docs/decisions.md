@@ -2953,6 +2953,44 @@ rows, opens a download in place to its first ten items and links the log of its 
 stay single rows. A push, a publish and a delete of several files still show their parts: joining them is the owner's to decide
 (H-2269). The developer view is [developer/audit.md](developer/audit.md#the-rows-of-the-screen).
 
+### ADR-298 · A Bastion's cache is bounded at every commit, and the bytes between a Bastion and the main installation are counted
+
+**Status:** Decided by the builder of W-34's packages without a decision of the owner, on 2026-11-26 — owner review at the walkthrough
+([R-BAS-089](spec/bastion.md#r-bas-089--the-cache-stays-below-its-size-between-sweeps),
+[Q-BAS-301](spec/bastion.md#q-bas-301--a-commit-is-admitted-against-a-running-estimate-of-its-area-and-a-fill-without-room-is-passed-through-unkept)
+to [Q-BAS-305](spec/bastion.md#q-bas-305--the-spool-of-fills-does-not-count-in-the-areas)). It amends
+[ADR-142](#adr-142--the-quader-bastion-an-internet-facing-read-only-cache-instance-in-the-beta)'s cache, whose sweep ran on a timer only.
+
+**Context.** The owner's task W-34 of 2026-11-26: a Bastion faces the internet, it alone takes the traffic and the attacks, and the main
+installation behind it is protected from being flooded through it; he fears an attacker who loads a Bastion with many distinct artifacts
+until its cache overflows and nearly every request goes through the main installation and saturates the network between them. The planner
+found that the cache was swept only every 5 minutes and nothing checked the size at a commit, so between two sweeps it grew past
+`max_bytes` until its volume was full, and an `emptyDir` then got the pod evicted with its cache; a unit test on the code before the change
+showed 960 KiB in an area of 896 KiB after the fifteenth of 32 fills.
+
+**Decision.**
+- Each replica keeps a running estimate of each area's stored bytes, set by every listing and raised by every commit of its own; a commit
+  that would take its area past its limit is not kept (its callers are answered from the spool, the next request is a miss) unless the
+  store holds its address already, and is counted in `quader_bastion_cache_no_room_total{area}` (Q-BAS-301).
+- A commit or an announced fill above 95 % of the area, a refused commit and a listing at start above it ask for a sweep at once; a replica
+  runs one sweep at a time, coalesces the requests and starts a sweep of the size at most once a second;
+  `quader_bastion_cache_sweeps_total{trigger}` (Q-BAS-303, Q-BAS-304).
+- On a bucket that several replicas share a replica counts each commit `bastion.replicas` times and learns the others' writes from its
+  listings (Q-BAS-302); the spool keeps its own bound (Q-BAS-305).
+
+**Consequences.** A cache volume holds at most `max_bytes`, the spool and the entries and markers, so a flood of fills no longer fills it or
+gets the pod evicted; under a flood fills are passed through unkept and the sweep lists once a second (H-2271). On a shared bucket the bound
+is an estimate (H-2270). The order of eviction and what a churn of distinct artifacts costs the network are unchanged (H-2272) and wait for the
+owner's decisions of W-34. No migration, no interface change; unit tests of about 0.4 s and one integration case of about 1 s.
+
+**Alternatives considered.** A sweep inside the commit; the file system's free space; a shorter interval; a shared counter in Valkey; marks
+of their own in the chart; the spool counted in the areas.
+
+**Revisit condition:** a measurement that shows H-2270 matters (then a counter per area in Valkey), or the owner's decision on protecting
+what was served twice, which changes what a sweep evicts.
+
+**Spec:** [bastion.md](spec/bastion.md) R-BAS-089, R-BAS-031, R-BAS-040, Q-BAS-301 to Q-BAS-305, H-2270 to H-2272.
+
 ## Design invariants
 
 The invariants of [spec/README.md](spec/README.md#design-invariants) are the baseline every spec
@@ -10218,10 +10256,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-BAS
 
-232 questions on [spec/bastion.md](spec/bastion.md).
+237 questions on [spec/bastion.md](spec/bastion.md).
 
 <details>
-<summary>Q-BAS: 232 questions</summary>
+<summary>Q-BAS: 237 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10457,6 +10495,11 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-BAS-295](spec/bastion.md#q-bas-295--the-card-names-the-connections-a-bastion-cannot-read-and-only-those) | The card names the connections a Bastion cannot read, and only those | Decided by the development agent during the build of R-BAS-071's screen (package 5 of the handover) | (a) Nothing of the connections while every one can serve a handover; a line per connection that cannot, its reasons in words, and one link to the storage settings' **Details**, where an address is set and tested | [ADR-250](#adr-250--the-handover-per-blob-to-a-bastion-a-link-and-the-data-key-of-one-released-blob-in-the-answer-to-its-forward) |
 | [Q-BAS-296](spec/bastion.md#q-bas-296--until-the-data-keys-are-handed-the-cards-sentence-names-no-key-and-an-encrypted-connection-has-its-line) | Until the data keys are handed, the card's sentence names no key and an encrypted connection has its line | Decided by the development agent during the build of R-BAS-071's screen (package 5 of the handover) | (a) The sentence without the key's clause until package 4; while the switch is on, for each encrypted connection the line "A Bastion gets the files of <name> through the main installation: the connection is encrypted.", without the link | [ADR-250](#adr-250--the-handover-per-blob-to-a-bastion-a-link-and-the-data-key-of-one-released-blob-in-the-answer-to-its-forward) |
 | [Q-BAS-300](spec/bastion.md#q-bas-300--with-the-data-keys-handed-the-cards-sentence-names-the-key-and-an-encrypted-connection-is-judged-as-a-plain-one) | With the data keys handed, the card's sentence names the key and an encrypted connection is judged as a plain one | Decided by the builder in the join of the handover's data keys (package 4 of [developer/bastion-handover.md](developer/bastion-handover.md)) with its surface (package 5) | (a) R-BAS-071's sentence with the key; a line for every connection whose `handoverUsable` is false, its clauses from `handoverReasons`, and the link with every line; the clause "the connection is encrypted" goes | [ADR-250](#adr-250--the-handover-per-blob-to-a-bastion-a-link-and-the-data-key-of-one-released-blob-in-the-answer-to-its-forward) |
+| [Q-BAS-301](spec/bastion.md#q-bas-301--a-commit-is-admitted-against-a-running-estimate-of-its-area-and-a-fill-without-room-is-passed-through-unkept) | A commit is admitted against a running estimate of its area, and a fill without room is passed through unkept | Decided by the builder of W-34's package E1 (2026-11-26), a defect that needs no decision of the owner | (a) An estimate per area, set by every listing and raised by every commit of the replica; a commit that would pass the limit is refused with `ErrNoRoom` unless the store holds its address already, and a sweep is asked for; the first commit of a replica waits for, or makes, the first listing | [ADR-298](#adr-298--a-bastions-cache-is-bounded-at-every-commit-and-the-bytes-between-a-bastion-and-the-main-installation-are-counted) |
+| [Q-BAS-302](spec/bastion.md#q-bas-302--a-replica-on-a-shared-bucket-counts-each-of-its-commits-once-per-replica) | A replica on a shared bucket counts each of its commits once per replica | Decided by the builder of W-34's package E1 (2026-11-26), a defect that needs no decision of the owner | (a) Each commit counts `bastion.replicas` times in the replica's estimate; a replica without the sweep lease lists, deleting nothing, at its sweep's turn when it committed since its last listing | [ADR-298](#adr-298--a-bastions-cache-is-bounded-at-every-commit-and-the-bytes-between-a-bastion-and-the-main-installation-are-counted) |
+| [Q-BAS-303](spec/bastion.md#q-bas-303--at-once-is-one-sweep-at-a-time-asked-for-by-any-number-of-commits-at-most-one-a-second) | At once is one sweep at a time, asked for by any number of commits, at most one a second | Decided by the builder of W-34's package E1 (2026-11-26), a defect that needs no decision of the owner | (a) The replica's one sweeper loop takes a request from a channel that holds one: a request while a sweep runs or waits is one more sweep after it; a sweep the size asked for starts at least a second after the last one ended | [ADR-298](#adr-298--a-bastions-cache-is-bounded-at-every-commit-and-the-bytes-between-a-bastion-and-the-main-installation-are-counted) |
+| [Q-BAS-304](spec/bastion.md#q-bas-304--the-marks-are-r-bas-031s-a-sweep-at-95--a-refusal-only-at-the-limit) | The marks are R-BAS-031's: a sweep at 95 %, a refusal only at the limit | Decided by the builder of W-34's package E1 (2026-11-26), a defect that needs no decision of the owner | (a) A sweep is asked for above 95 %, the sweep R-BAS-031's own; a commit is refused only when it would pass 100 % | [ADR-298](#adr-298--a-bastions-cache-is-bounded-at-every-commit-and-the-bytes-between-a-bastion-and-the-main-installation-are-counted) |
+| [Q-BAS-305](spec/bastion.md#q-bas-305--the-spool-of-fills-does-not-count-in-the-areas) | The spool of fills does not count in the areas | Decided by the builder of W-34's package E1 (2026-11-26), a defect that needs no decision of the owner | (a) The areas count committed bytes only; the spool keeps its own bound | [ADR-298](#adr-298--a-bastions-cache-is-bounded-at-every-commit-and-the-bytes-between-a-bastion-and-the-main-installation-are-counted) |
 
 </details>
 

@@ -15,8 +15,8 @@ rendered from it ([checklist.md there](https://github.com/guided-traffic/quader/
 requirement lists the feature in its `Covers:` line. *open*: no requirement does. For entries with priority
 *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,319 spec requirements:
-799 cover catalog features, 520 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,320 spec requirements:
+799 cover catalog features, 521 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>520 requirements</summary>
+<summary>521 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3151,6 +3151,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-BAS-029 | Responses of the Bastion's own | MVP | [bastion.md](../spec/bastion.md) |
 | R-BAS-030 | Cache backends | MVP | [bastion.md](../spec/bastion.md) |
 | R-BAS-031 | Size, eviction by last access and sweeps | MVP | [bastion.md](../spec/bastion.md) |
+| R-BAS-089 | The cache stays below its size between sweeps | MVP | [bastion.md](../spec/bastion.md) |
 | R-BAS-032 | Integrity of cached content | MVP | [bastion.md](../spec/bastion.md) |
 | R-BAS-061 | The cache encrypted in the stored format | P1 | [bastion.md](../spec/bastion.md) |
 | R-BAS-033 | Routing by path for local volumes | MVP | [bastion.md](../spec/bastion.md) |
