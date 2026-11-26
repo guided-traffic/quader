@@ -26,15 +26,22 @@ export function modeSentence(mode: LimitMode): string {
 }
 
 export interface ModeDialogData {
-  readonly settings: Versioned<LimitSettings>;
   readonly to: LimitMode;
+  /** The instance's settings: the switch sends their `PATCH` with their `ETag`, and **Switch to Enforce** shows the preview. */
+  readonly settings?: Versioned<LimitSettings>;
+  /**
+   * A Bastion's own mode (R-LIM-044, R-UI-240): its name and the request that switches it. No preview: the preview reads the main
+   * installation's places, not a Bastion's (H-2365).
+   */
+  readonly bastion?: { readonly name: string; readonly send: (to: LimitMode) => Promise<unknown> };
 }
 
 /**
  * The dialog of the mode switch (R-UI-182, Q-UI-733). **Switch to Enforce** shows first what the last 24 hours would have been
  * in Enforce, with the figures that would have refused most and the kinds of caller, each a link to the overview filtered by
  * **Would have been limited**; **Switch to Audit** says in one sentence that it removes the protection (Q-LIM-4). The switch sends `PATCH` with the `ETag`; recent
- * authentication is asked for by the session dialog of R-UI-042.
+ * authentication is asked for by the session dialog of R-UI-042, and its refusal stands in the dialog. For a Bastion (R-UI-240) the same
+ * dialog names the Bastion and what stays in Audit there (Q-LIM-309), without the preview.
  */
 @Component({
   selector: 'quader-limit-mode-dialog',
@@ -47,10 +54,19 @@ export interface ModeDialogData {
       <h2 quaderDialogTitle i18n="@@limits.mode.to-audit-title">Switch to Audit</h2>
     }
     <div class="dialog-body">
+      @if (data.bastion; as b) {
+        <p class="subject" translate="no">{{ b.name }}</p>
+      }
       @if (failure(); as e) {
         <quader-error-notice [error]="e" />
       }
-      @if (data.to === 'enforce') {
+      @if (data.bastion) {
+        @if (data.to === 'enforce') {
+          <p class="consequence" i18n="@@limits.mode.bastion-to-enforce">From now on, the download limits of this Bastion refuse and slow requests on every replica within seconds.</p>
+        } @else {
+          <p i18n="@@limits.mode.bastion-to-audit">In Audit this Bastion refuses and slows nothing by its download limits; every limit is counted and shown as "Would have been limited". Its flood protection per address, the anonymous ceiling, the slots and the throughput still hold.</p>
+        }
+      } @else if (data.to === 'enforce') {
         @if (previewFailure(); as e) {
           <quader-error-notice [error]="e" (retry)="loadPreview()" />
         } @else if (preview(); as p) {
@@ -120,11 +136,15 @@ export interface ModeDialogData {
       margin-block-start: var(--quader-space-3);
       font-weight: 600;
     }
+    .subject {
+      margin-block-start: 0;
+      font-weight: 600;
+    }
   `,
 })
 export class LimitModeDialog {
   protected readonly data = inject<ModeDialogData>(DIALOG_DATA);
-  private readonly ref = inject<DialogRef<Versioned<LimitSettings>>>(DialogRef);
+  private readonly ref = inject<DialogRef<unknown>>(DialogRef);
   private readonly api = inject(LimitsApi);
   private readonly locale = inject(LOCALE_ID);
 
@@ -137,7 +157,7 @@ export class LimitModeDialog {
   protected readonly topFigures = computed(() => [...(this.preview()?.byFigure ?? [])].sort((a, b) => b.events - a.events).slice(0, 3));
 
   constructor() {
-    if (this.data.to === 'enforce') void this.loadPreview();
+    if (this.data.to === 'enforce' && !this.data.bastion) void this.loadPreview();
   }
 
   protected async loadPreview(): Promise<void> {
@@ -202,7 +222,8 @@ export class LimitModeDialog {
     this.busy.set(true);
     this.failure.set(null);
     try {
-      this.ref.close(await this.api.patchSettings({ mode: this.data.to }, this.data.settings.etag));
+      const { bastion, settings } = this.data;
+      this.ref.close(bastion ? await bastion.send(this.data.to) : await this.api.patchSettings({ mode: this.data.to }, settings!.etag));
     } catch (e) {
       this.failure.set(asApiError(e));
     } finally {
@@ -289,11 +310,11 @@ export class LimitModeLine {
 
   protected async openSwitch(s: Versioned<LimitSettings>): Promise<void> {
     const to: LimitMode = s.value.mode === 'audit' ? 'enforce' : 'audit';
-    const ref = this.dialog.open<LimitModeDialog, ModeDialogData, Versioned<LimitSettings>>(LimitModeDialog, {
+    const ref = this.dialog.open<LimitModeDialog, ModeDialogData, unknown>(LimitModeDialog, {
       data: { settings: s, to },
       maxWidth: '40rem',
     });
-    const result = await firstValueFrom(ref.closed);
+    const result = (await firstValueFrom(ref.closed)) as Versioned<LimitSettings> | undefined;
     if (!result) return;
     this.settings.set(result);
     this.loaded.emit(result);

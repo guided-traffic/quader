@@ -18,6 +18,40 @@ export type NewBastion = Schema<'NewBastion'>;
 export type NewBastionToken = Schema<'NewBastionToken'>;
 export type BastionTokenCreated = Schema<'BastionTokenCreated'>;
 
+type Limits = Bastion['limits'];
+type Flood = Limits['flood'];
+
+/** A merge patch of a registration's flood figures (R-BAS-093): a member that is absent is unchanged, a nested one merges. */
+export interface BastionFloodPatch {
+  readonly anonymous?: Partial<Flood['anonymous']>;
+  readonly authenticated?: Partial<Flood['authenticated']>;
+  readonly gui?: Partial<Flood['gui']>;
+  readonly failedAuth?: Partial<Flood['failedAuth']>;
+  readonly blocking?: Partial<Flood['blocking']>;
+  readonly exemptNetworks?: readonly string[];
+}
+
+/**
+ * A merge patch of a registration's configuration (R-BAS-093, `BastionPatch`): `limits` needs `limits:write`, `switches`
+ * `endpoints:write` (Q-BAS-325); `limits.preset` applies a preset first (Q-LIM-311), and a change of `limits.mode` needs recent
+ * authentication (R-LIM-044).
+ */
+export interface BastionConfigurationPatch {
+  readonly switches?: Partial<Bastion['switches']>;
+  readonly limits?: {
+    readonly mode?: Limits['mode'];
+    readonly preset?: Limits['preset'];
+    readonly flood?: BastionFloodPatch;
+    readonly slots?: Partial<Limits['slots']>;
+    readonly throughput?: {
+      readonly bytesPerSecond?: number | null;
+      readonly anonymousShare?: number;
+      readonly bytesPerHour?: Partial<Limits['throughput']['bytesPerHour']>;
+    };
+    readonly anonymousCeiling?: Partial<Limits['anonymousCeiling']>;
+  };
+}
+
 /** The name rule of a registration (R-BAS-004), checked live in the form; the server decides. */
 export const BASTION_NAME_PATTERN = /^[a-z][a-z0-9-]{0,19}$/;
 
@@ -32,6 +66,8 @@ export abstract class BastionsApi {
   abstract setHandover(name: string, handover: boolean, etag: string): Promise<Versioned<Bastion>>;
   /** Replaces the networks the Bastion connects from (R-BAS-017, R-UI-243); `[]` empties the list. */
   abstract setEgress(name: string, egress: readonly string[], etag: string): Promise<Versioned<Bastion>>;
+  /** Changes the switches and the limits of the registration's configuration (R-BAS-093) with a merge patch. */
+  abstract configure(name: string, patch: BastionConfigurationPatch, etag: string): Promise<Versioned<Bastion>>;
   /** Deletes the registration and revokes its tokens. */
   abstract delete(name: string): Promise<void>;
   /** The secret is in this answer only (R-AUTH-022). */
@@ -68,6 +104,11 @@ export class HttpBastionsApi extends BastionsApi {
 
   override async setEgress(name: string, egress: readonly string[], etag: string): Promise<Versioned<Bastion>> {
     const r = await this.client.patch<Bastion>(`/api/v1/bastions/${seg(name)}`, { egress }, etag);
+    return { value: r.body, etag: r.etag ?? '' };
+  }
+
+  override async configure(name: string, patch: BastionConfigurationPatch, etag: string): Promise<Versioned<Bastion>> {
+    const r = await this.client.patch<Bastion>(`/api/v1/bastions/${seg(name)}`, patch, etag);
     return { value: r.body, etag: r.etag ?? '' };
   }
 

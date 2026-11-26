@@ -414,7 +414,7 @@
       <notes>
         <note category="location">src/app/app.routes.ts:174</note>
         <note category="location">src/app/features/projects/project-context.routes.ts:66</note>
-        <note category="location">src/app/features/usage/usage-overview.ts:139</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:160</note>
         <note category="location">src/app/features/usage/usage.routes.ts:43</note>
         <note category="location">src/app/features/usage/usage.routes.ts:61</note>
       </notes>
@@ -425,6 +425,8 @@
     <unit id="limits.heading">
       <notes>
         <note category="location">src/app/app.routes.ts:180</note>
+        <note category="location">src/app/features/bastions/bastions.routes.ts:20</note>
+        <note category="location">src/app/features/bastions/bastions.routes.ts:27</note>
         <note category="location">src/app/features/limits/limits-frame.ts:23,24</note>
         <note category="location">src/app/features/limits/limits.routes.ts:25</note>
       </notes>
@@ -445,7 +447,7 @@
     <unit id="route.bastions.title">
       <notes>
         <note category="location">src/app/app.routes.ts:194</note>
-        <note category="location">src/app/features/bastions/bastions.routes.ts:7</note>
+        <note category="location">src/app/features/bastions/bastions.routes.ts:9</note>
       </notes>
       <segment>
         <source>Bastions</source>
@@ -5468,7 +5470,7 @@
     </unit>
     <unit id="bastion.created">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:66,67</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:67,68</note>
       </notes>
       <segment>
         <source>Created</source>
@@ -5476,7 +5478,7 @@
     </unit>
     <unit id="bastion.declared-helm">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:75,76</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:76,77</note>
       </notes>
       <segment>
         <source>From the Helm values, token from Secret <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code class=&quot;secret-name&quot; translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ d.secretName }}"/></pc>. Its description, addresses and that token are changed or removed there; to delete it, remove it there first.</source>
@@ -5484,7 +5486,7 @@
     </unit>
     <unit id="bastion.declared-file">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:80,83</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:81,84</note>
       </notes>
       <segment>
         <source>From the installation&apos;s configuration file. Its description, addresses and declared token are changed or removed there; to delete it, remove it there first.</source>
@@ -5492,7 +5494,7 @@
     </unit>
     <unit id="bastion.issue">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:90,91</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:91,92</note>
       </notes>
       <segment>
         <source>Issue token</source>
@@ -5500,7 +5502,7 @@
     </unit>
     <unit id="bastion.disable">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:95,96</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:96,97</note>
       </notes>
       <segment>
         <source>Disable</source>
@@ -5508,7 +5510,7 @@
     </unit>
     <unit id="bastion.enable">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:100,101</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:101,102</note>
       </notes>
       <segment>
         <source>Enable</source>
@@ -5516,7 +5518,7 @@
     </unit>
     <unit id="bastion.delete">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:107,108</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:108,109</note>
       </notes>
       <segment>
         <source>Delete</source>
@@ -5524,7 +5526,7 @@
     </unit>
     <unit id="bastion.contacts">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:125,127</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:126,128</note>
       </notes>
       <segment>
         <source>Last contact</source>
@@ -5532,7 +5534,7 @@
     </unit>
     <unit id="bastion.contacts-empty">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:131,133</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:132,134</note>
       </notes>
       <segment>
         <source>No replica has contacted the main installation with a token of this registration yet. Its replicas appear here after their first handshake.</source>
@@ -5540,7 +5542,7 @@
     </unit>
     <unit id="bastion.contact.release">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:143,144</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:144,145</note>
       </notes>
       <segment>
         <source>Release <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ c.release }}"/></pc></source>
@@ -5548,7 +5550,7 @@
     </unit>
     <unit id="bastion.contact.interface">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:144,145</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:145,146</note>
       </notes>
       <segment>
         <source>Interface version <ph id="0" equiv="INTERPOLATION" disp="{{ c.interfaceVersion }}"/></source>
@@ -5556,7 +5558,7 @@
     </unit>
     <unit id="bastion.tokens">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:161,162</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:162,163</note>
       </notes>
       <segment>
         <source>Tokens</source>
@@ -5564,7 +5566,7 @@
     </unit>
     <unit id="bastion.tokens-empty">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:167,169</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:168,170</note>
       </notes>
       <segment>
         <source>This registration has no token. Issue one to connect a Bastion.</source>
@@ -5572,7 +5574,7 @@
     </unit>
     <unit id="bastion.token.created">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:177,178</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:178,179</note>
       </notes>
       <segment>
         <source>Created <pc id="0" equivStart="START_TAG_QUADER_TIME_AGO" equivEnd="CLOSE_TAG_QUADER_TIME_AGO" type="other" dispStart="&lt;quader-time-ago [at]=&quot;t.createdAt&quot; absolute=&quot;title&quot; /&gt;" dispEnd="&lt;quader-time-ago [at]=&quot;t.createdAt&quot; absolute=&quot;title&quot; /&gt;"></pc></source>
@@ -5580,7 +5582,7 @@
     </unit>
     <unit id="bastion.token.declared">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:180,181</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:181,182</note>
       </notes>
       <segment>
         <source>In the configuration</source>
@@ -5588,7 +5590,7 @@
     </unit>
     <unit id="bastion.token.never">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:190,192</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:191,193</note>
       </notes>
       <segment>
         <source>Never</source>
@@ -5596,7 +5598,7 @@
     </unit>
     <unit id="bastion.token.expired">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:194,195</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:195,196</note>
       </notes>
       <segment>
         <source>Expired</source>
@@ -5604,7 +5606,7 @@
     </unit>
     <unit id="bastion.token.soon">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:197</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:198</note>
       </notes>
       <segment>
         <source>Expires in</source>
@@ -5612,7 +5614,7 @@
     </unit>
     <unit id="bastion.token.unused">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:205,207</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:206,208</note>
       </notes>
       <segment>
         <source>Not used yet</source>
@@ -5620,7 +5622,7 @@
     </unit>
     <unit id="bastion.token.revoke">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:212,213</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:213,214</note>
       </notes>
       <segment>
         <source>Revoke</source>
@@ -5628,7 +5630,7 @@
     </unit>
     <unit id="bastion.contacts-caption">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:276</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:277</note>
       </notes>
       <segment>
         <source>Last contact of the replicas of <ph id="0" equiv="name" disp="this.bastion().name"/></source>
@@ -5636,7 +5638,7 @@
     </unit>
     <unit id="bastion.tokens-caption">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:277</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:278</note>
       </notes>
       <segment>
         <source>Tokens of <ph id="0" equiv="name" disp="this.bastion().name"/></source>
@@ -5644,7 +5646,7 @@
     </unit>
     <unit id="bastion.col.replica">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:289</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:290</note>
       </notes>
       <segment>
         <source>Replica</source>
@@ -5652,7 +5654,7 @@
     </unit>
     <unit id="bastion.help.replica">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:290</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:291</note>
       </notes>
       <segment>
         <source>Under its name: the address the main installation saw the replica connect from, its release, and the version of the interface between the Bastion and this installation, on which both sides must agree.</source>
@@ -5660,7 +5662,7 @@
     </unit>
     <unit id="bastion.col.time">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:293</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:294</note>
       </notes>
       <segment>
         <source>Time</source>
@@ -5668,7 +5670,7 @@
     </unit>
     <unit id="bastion.col.base">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:296</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:297</note>
       </notes>
       <segment>
         <source>Reported base URL</source>
@@ -5676,7 +5678,7 @@
     </unit>
     <unit id="bastion.help.base">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:297</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:298</note>
       </notes>
       <segment>
         <source>The address the Bastion says clients reach it on. Client setup uses it when it is listed in server.additional_base_urls.</source>
@@ -5684,7 +5686,7 @@
     </unit>
     <unit id="bastion.col.token">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:303</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:304</note>
       </notes>
       <segment>
         <source>Token</source>
@@ -5692,7 +5694,7 @@
     </unit>
     <unit id="bastion.col.expires">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:304</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:305</note>
       </notes>
       <segment>
         <source>Expires</source>
@@ -5700,7 +5702,7 @@
     </unit>
     <unit id="bastion.col.last-used">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:307</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:308</note>
       </notes>
       <segment>
         <source>Last used</source>
@@ -5708,7 +5710,7 @@
     </unit>
     <unit id="bastion.help.last-used">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:308</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:309</note>
       </notes>
       <segment>
         <source>The last time the token authenticated a request. When you renew, revoke the old token once the new one shows a recent time.</source>
@@ -5716,7 +5718,7 @@
     </unit>
     <unit id="bastion.col.actions">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:311</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:312</note>
       </notes>
       <segment>
         <source>Actions</source>
@@ -5724,7 +5726,7 @@
     </unit>
     <unit id="bastion.draft-restored">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:335</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:336</note>
       </notes>
       <segment>
         <source>Your entries were restored. Issue the token again.</source>
@@ -5732,7 +5734,7 @@
     </unit>
     <unit id="bastion.secret-note">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:353</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:354</note>
       </notes>
       <segment>
         <source>For <ph id="0" equiv="name" disp="this.bastion().name"/>: <ph id="1" equiv="description" disp="s.description"/></source>
@@ -5740,7 +5742,7 @@
     </unit>
     <unit id="bastion.disable-title">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:369</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:370</note>
       </notes>
       <segment>
         <source>Disable this Bastion?</source>
@@ -5748,7 +5750,7 @@
     </unit>
     <unit id="bastion.disable-text">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:371</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:372</note>
       </notes>
       <segment>
         <source>The tokens of <ph id="0" equiv="name" disp="this.bastion().name"/> are refused until you enable it again. Its replicas treat the main installation as unreachable and serve from their cache within the grace period.</source>
@@ -5756,7 +5758,7 @@
     </unit>
     <unit id="bastion.disable-confirm">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:373</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:374</note>
       </notes>
       <segment>
         <source>Disable</source>
@@ -5764,7 +5766,7 @@
     </unit>
     <unit id="bastion.disabled-done">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:376</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:377</note>
       </notes>
       <segment>
         <source>Bastion disabled.</source>
@@ -5772,7 +5774,7 @@
     </unit>
     <unit id="bastion.enabled-done">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:380</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:381</note>
       </notes>
       <segment>
         <source>Bastion enabled.</source>
@@ -5780,7 +5782,7 @@
     </unit>
     <unit id="bastion.delete-title">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:393</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:394</note>
       </notes>
       <segment>
         <source>Delete this Bastion?</source>
@@ -5788,7 +5790,7 @@
     </unit>
     <unit id="bastion.delete-text">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:394</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:395</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="name" disp="name"/> and its tokens are removed; the tokens stop working at once. This cannot be undone.</source>
@@ -5796,7 +5798,7 @@
     </unit>
     <unit id="bastion.delete-confirm">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:395</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:396</note>
       </notes>
       <segment>
         <source>Delete</source>
@@ -5804,7 +5806,7 @@
     </unit>
     <unit id="bastion.deleted">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:399</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:400</note>
       </notes>
       <segment>
         <source>Bastion deleted.</source>
@@ -5812,7 +5814,7 @@
     </unit>
     <unit id="bastion.revoke-title">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:404</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:405</note>
       </notes>
       <segment>
         <source>Revoke this token?</source>
@@ -5820,7 +5822,7 @@
     </unit>
     <unit id="bastion.revoke-text">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:406</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:407</note>
       </notes>
       <segment>
         <source>“<ph id="0" equiv="description" disp="t.description"/>” stops working at once on every replica. A replica that still uses it treats the main installation as unreachable. When you renew, revoke the old token only after the new one shows a recent time in Last used. This cannot be undone.</source>
@@ -5828,7 +5830,7 @@
     </unit>
     <unit id="bastion.revoke-confirm">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:408</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:409</note>
       </notes>
       <segment>
         <source>Revoke</source>
@@ -5836,7 +5838,7 @@
     </unit>
     <unit id="bastion.revoked">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:411</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:412</note>
       </notes>
       <segment>
         <source>Token revoked.</source>
@@ -5978,25 +5980,9 @@
         <source>Enter a number of days greater than zero.</source>
       </segment>
     </unit>
-    <unit id="bastion.egress.heading">
-      <notes>
-        <note category="location">src/app/features/bastions/bastion-egress.ts:34,35</note>
-      </notes>
-      <segment>
-        <source>Addresses this Bastion connects from</source>
-      </segment>
-    </unit>
-    <unit id="bastion.egress.note">
-      <notes>
-        <note category="location">src/app/features/bastions/bastion-egress.ts:36,38</note>
-      </notes>
-      <segment>
-        <source> The main installation believes the caller&apos;s address a Bastion forwards only from these addresses. </source>
-      </segment>
-    </unit>
     <unit id="bastion.egress.empty">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-egress.ts:42,45</note>
+        <note category="location">src/app/features/bastions/bastion-egress.ts:40,43</note>
       </notes>
       <segment>
         <source>No address is listed: every caller through this Bastion counts as the Bastion&apos;s own address at the main installation, with one budget and one block for all, and the audit log names the Bastion&apos;s address instead of the caller&apos;s.</source>
@@ -6004,7 +5990,7 @@
     </unit>
     <unit id="bastion.egress.unlisted">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-egress.ts:51,52</note>
+        <note category="location">src/app/features/bastions/bastion-egress.ts:49,50</note>
       </notes>
       <segment>
         <source>The last contact came from <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ a }}"/></pc>, which is not listed.</source>
@@ -6012,15 +5998,31 @@
     </unit>
     <unit id="bastion.egress.add-contact">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-egress.ts:55,56</note>
+        <note category="location">src/app/features/bastions/bastion-egress.ts:53,54</note>
       </notes>
       <segment>
         <source>Add <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ a }}"/></pc></source>
       </segment>
     </unit>
+    <unit id="bastion.egress.heading">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-egress.ts:59,60</note>
+      </notes>
+      <segment>
+        <source>Addresses this Bastion connects from</source>
+      </segment>
+    </unit>
+    <unit id="bastion.egress.note">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-egress.ts:61,63</note>
+      </notes>
+      <segment>
+        <source> The main installation believes the caller&apos;s address a Bastion forwards only from these addresses. </source>
+      </segment>
+    </unit>
     <unit id="bastion.egress.remove">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-egress.ts:79,80</note>
+        <note category="location">src/app/features/bastions/bastion-egress.ts:82,83</note>
       </notes>
       <segment>
         <source>Remove</source>
@@ -6028,7 +6030,7 @@
     </unit>
     <unit id="bastion.egress.add-row">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-egress.ts:90,91</note>
+        <note category="location">src/app/features/bastions/bastion-egress.ts:93,94</note>
       </notes>
       <segment>
         <source>Add address</source>
@@ -6036,15 +6038,23 @@
     </unit>
     <unit id="bastion.egress.save">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-egress.ts:92,94</note>
+        <note category="location">src/app/features/bastions/bastion-egress.ts:95,97</note>
       </notes>
       <segment>
         <source> Save changes </source>
       </segment>
     </unit>
+    <unit id="bastion.egress.none">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-egress.ts:174</note>
+      </notes>
+      <segment>
+        <source>No address is listed.</source>
+      </segment>
+    </unit>
     <unit id="bastion.egress.field-label">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-egress.ts:204</note>
+        <note category="location">src/app/features/bastions/bastion-egress.ts:218</note>
       </notes>
       <segment>
         <source>Address or network <ph id="0" equiv="position" disp="i + 1"/> of <ph id="1" equiv="name" disp="this.bastion().name"/></source>
@@ -6052,7 +6062,7 @@
     </unit>
     <unit id="bastion.egress.saved">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-egress.ts:232</note>
+        <note category="location">src/app/features/bastions/bastion-egress.ts:246</note>
       </notes>
       <segment>
         <source>Addresses saved.</source>
@@ -6060,7 +6070,7 @@
     </unit>
     <unit id="bastion.egress.added">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-egress.ts:237</note>
+        <note category="location">src/app/features/bastions/bastion-egress.ts:251</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="address" disp="address"/> added.</source>
@@ -6170,6 +6180,636 @@
         <source>Direct reads from the object store switched off.</source>
       </segment>
     </unit>
+    <unit id="bastion.details.rps">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limit-details.ts:31</note>
+      </notes>
+      <segment>
+        <source>Requests a second</source>
+      </segment>
+    </unit>
+    <unit id="bastion.details.burst">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limit-details.ts:32</note>
+      </notes>
+      <segment>
+        <source>Burst</source>
+      </segment>
+    </unit>
+    <unit id="bastion.details.misses">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limit-details.ts:33</note>
+      </notes>
+      <segment>
+        <source>Misses a minute</source>
+      </segment>
+    </unit>
+    <unit id="bastion.details.anonymous-share">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limit-details.ts:34</note>
+      </notes>
+      <segment>
+        <source>Share of anonymous callers in %</source>
+      </segment>
+    </unit>
+    <unit id="bastion.details.failures">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limit-details.ts:50</note>
+      </notes>
+      <segment>
+        <source>Failures before a timeout</source>
+      </segment>
+    </unit>
+    <unit id="bastion.details.counted-over">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limit-details.ts:51</note>
+        <note category="location">src/app/features/bastions/bastion-limit-details.ts:54</note>
+      </notes>
+      <segment>
+        <source>Counted over, in seconds</source>
+      </segment>
+    </unit>
+    <unit id="bastion.details.timeout">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limit-details.ts:52</note>
+      </notes>
+      <segment>
+        <source>Timeout, in seconds</source>
+      </segment>
+    </unit>
+    <unit id="bastion.details.block-threshold">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limit-details.ts:53</note>
+      </notes>
+      <segment>
+        <source>Refused requests before a block</source>
+      </segment>
+    </unit>
+    <unit id="bastion.details.block-first">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limit-details.ts:55</note>
+      </notes>
+      <segment>
+        <source>First block, in seconds</source>
+      </segment>
+    </unit>
+    <unit id="bastion.details.block-longest">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limit-details.ts:56</note>
+      </notes>
+      <segment>
+        <source>Longest block, in seconds</source>
+      </segment>
+    </unit>
+    <unit id="bastion.details.in-flight">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limit-details.ts:57</note>
+      </notes>
+      <segment>
+        <source>Requests in flight</source>
+      </segment>
+    </unit>
+    <unit id="bastion.details.wait">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limit-details.ts:59</note>
+      </notes>
+      <segment>
+        <source>Longest wait for a slot, in milliseconds</source>
+      </segment>
+    </unit>
+    <unit id="bastion.details.per-hour">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limit-details.ts:62</note>
+      </notes>
+      <segment>
+        <source>Requests an hour</source>
+      </segment>
+    </unit>
+    <unit id="bastion.details.gb-anonymous">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limit-details.ts:64</note>
+      </notes>
+      <segment>
+        <source>Anonymous callers, GB an hour</source>
+      </segment>
+    </unit>
+    <unit id="bastion.details.gb-signed-in">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limit-details.ts:65</note>
+      </notes>
+      <segment>
+        <source>Signed-in callers, GB an hour</source>
+      </segment>
+    </unit>
+    <unit id="bastion.details.gb-catalogue">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limit-details.ts:66</note>
+      </notes>
+      <segment>
+        <source>Web interface, GB an hour</source>
+      </segment>
+    </unit>
+    <unit id="bastion.details.required">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limit-details.ts:87</note>
+      </notes>
+      <segment>
+        <source>Enter a figure; this one cannot be unlimited.</source>
+      </segment>
+    </unit>
+    <unit id="bastion.details.percent">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limit-details.ts:92</note>
+      </notes>
+      <segment>
+        <source>A share from 0 to 100.</source>
+      </segment>
+    </unit>
+    <unit id="bastion.details.gb">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limit-details.ts:94</note>
+      </notes>
+      <segment>
+        <source>A number of GB above 0, or empty for unlimited.</source>
+      </segment>
+    </unit>
+    <unit id="bastion.details.whole-zero">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limit-details.ts:98</note>
+      </notes>
+      <segment>
+        <source>A whole number from 0.</source>
+      </segment>
+    </unit>
+    <unit id="bastion.details.whole">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limit-details.ts:99</note>
+      </notes>
+      <segment>
+        <source>A whole number from 1.</source>
+      </segment>
+    </unit>
+    <unit id="bastion.details.flood">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limit-details.ts:130,131</note>
+        <note category="location">src/app/features/bastions/bastion-limit-details.ts:171,172</note>
+      </notes>
+      <segment>
+        <source>Flood protection per address</source>
+      </segment>
+    </unit>
+    <unit id="bastion.flood.exempt">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limit-details.ts:145,147</note>
+        <note category="location">src/app/features/bastions/bastion-limit-details.ts:177,178</note>
+        <note category="location">src/app/features/bastions/presets.ts:165</note>
+      </notes>
+      <segment>
+        <source>Networks without flood protection</source>
+      </segment>
+    </unit>
+    <unit id="bastion.details.exempt-hint">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limit-details.ts:148,150</note>
+      </notes>
+      <segment>
+        <source>Addresses or networks, separated by commas: no flood figure, timeout or block applies to them.</source>
+      </segment>
+    </unit>
+    <unit id="bastion.details.save">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limit-details.ts:167,169</note>
+      </notes>
+      <segment>
+        <source>Save changes</source>
+      </segment>
+    </unit>
+    <unit id="bastion.details.anonymous">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limit-details.ts:298</note>
+      </notes>
+      <segment>
+        <source>Anonymous callers</source>
+      </segment>
+    </unit>
+    <unit id="bastion.details.signed-in">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limit-details.ts:300</note>
+      </notes>
+      <segment>
+        <source>Signed-in callers</source>
+      </segment>
+    </unit>
+    <unit id="bastion.details.pages">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limit-details.ts:302</note>
+      </notes>
+      <segment>
+        <source>Pages of the web interface</source>
+      </segment>
+    </unit>
+    <unit id="bastion.details.failed">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limit-details.ts:304</note>
+      </notes>
+      <segment>
+        <source>Failed sign-ins</source>
+      </segment>
+    </unit>
+    <unit id="bastion.details.blocks">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limit-details.ts:306</note>
+      </notes>
+      <segment>
+        <source>Blocks</source>
+      </segment>
+    </unit>
+    <unit id="bastion.details.slots">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limit-details.ts:308</note>
+      </notes>
+      <segment>
+        <source>Slots to the main installation</source>
+      </segment>
+    </unit>
+    <unit id="bastion.details.ceiling">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limit-details.ts:310</note>
+      </notes>
+      <segment>
+        <source>Anonymous ceiling</source>
+      </segment>
+    </unit>
+    <unit id="bastion.details.throughput">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limit-details.ts:312</note>
+      </notes>
+      <segment>
+        <source>Throughput by class</source>
+      </segment>
+    </unit>
+    <unit id="bastion.details.slots-hint">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limit-details.ts:319</note>
+      </notes>
+      <segment>
+        <source>The requests this Bastion&apos;s replicas send to the main installation at once, together.</source>
+      </segment>
+    </unit>
+    <unit id="bastion.details.ceiling-hint">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limit-details.ts:321</note>
+      </notes>
+      <segment>
+        <source>What all anonymous callers of this Bastion together may ask of the main installation. An empty field is unlimited.</source>
+      </segment>
+    </unit>
+    <unit id="bastion.details.throughput-hint">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limit-details.ts:323</note>
+      </notes>
+      <segment>
+        <source>The anonymous callers&apos; share of the maximum throughput, and the volume each class may read an hour. An empty field is unlimited.</source>
+      </segment>
+    </unit>
+    <unit id="limits.unlimited">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limit-details.ts:338</note>
+        <note category="location">src/app/features/bastions/bastion-limits.ts:367</note>
+        <note category="location">src/app/features/limits/figure-fields.ts:78,79</note>
+        <note category="location">src/app/features/limits/figures.ts:105</note>
+        <note category="location">src/app/features/limits/figures.ts:269</note>
+        <note category="location">src/app/features/limits/figures.ts:327</note>
+        <note category="location">src/app/features/limits/repository-limits-section.ts:71,72</note>
+        <note category="location">src/app/features/limits/repository-limits-section.ts:90,91</note>
+        <note category="location">src/app/features/usage/limit-explain.ts:245</note>
+      </notes>
+      <segment>
+        <source>Unlimited</source>
+      </segment>
+    </unit>
+    <unit id="bastion.preset.none">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limit-details.ts:351</note>
+        <note category="location">src/app/features/bastions/presets.ts:165</note>
+      </notes>
+      <segment>
+        <source>none</source>
+      </segment>
+    </unit>
+    <unit id="bastion.details.burst-needs-rate">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limit-details.ts:365</note>
+      </notes>
+      <segment>
+        <source>A burst needs requests a second.</source>
+      </segment>
+    </unit>
+    <unit id="bastion.details.saved">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limit-details.ts:399</note>
+      </notes>
+      <segment>
+        <source>The limits of <ph id="0" equiv="name" disp="name"/> are saved.</source>
+      </segment>
+    </unit>
+    <unit id="bastion.limits-page.nav">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limits-page.ts:41,42</note>
+      </notes>
+      <segment>
+        <source>Download limits of this Bastion</source>
+      </segment>
+    </unit>
+    <unit id="limits.tab.rules">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limits-page.ts:42,43</note>
+        <note category="location">src/app/features/limits/limits-frame.ts:30,31</note>
+      </notes>
+      <segment>
+        <source>Rules</source>
+      </segment>
+    </unit>
+    <unit id="limits.tab.blocks">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limits-page.ts:43,45</note>
+        <note category="location">src/app/features/limits/limits-frame.ts:33,35</note>
+      </notes>
+      <segment>
+        <source>Blocks</source>
+      </segment>
+    </unit>
+    <unit id="bastion.limits-page.heading">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limits-page.ts:61</note>
+      </notes>
+      <segment>
+        <source>Download limits of <ph id="0" equiv="name" disp="this.name()"/></source>
+      </segment>
+    </unit>
+    <unit id="bastion.limits-page.description">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limits-page.ts:62</note>
+      </notes>
+      <segment>
+        <source>What each caller may download through this Bastion, and how fast.</source>
+      </segment>
+    </unit>
+    <unit id="bastion.limits-page.budgets">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limits-page.ts:102,105</note>
+      </notes>
+      <segment>
+        <source> These rules count what this Bastion serves. The installation&apos;s own rules count what it serves, including what this Bastion fetches. </source>
+      </segment>
+    </unit>
+    <unit id="limits.rules.add">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limits-page.ts:106,109</note>
+        <note category="location">src/app/features/limits/limits-rules-tab.ts:32,35</note>
+        <note category="location">src/app/features/limits/project-limits-section.ts:52,54</note>
+        <note category="location">src/app/features/limits/repository-limits-section.ts:47,49</note>
+      </notes>
+      <segment>
+        <source>Add rule</source>
+      </segment>
+    </unit>
+    <unit id="limits.blocks.loading">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limits-page.ts:147,148</note>
+        <note category="location">src/app/features/limits/limits-blocks-tab.ts:49,50</note>
+      </notes>
+      <segment>
+        <source>Loading the blocks.</source>
+      </segment>
+    </unit>
+    <unit id="bastion.blocks.caption">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limits-page.ts:173</note>
+      </notes>
+      <segment>
+        <source>Blocks at Bastion <ph id="0" equiv="name" disp="this.state.name()"/></source>
+      </segment>
+    </unit>
+    <unit id="bastion.blocks.empty">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limits-page.ts:174</note>
+      </notes>
+      <segment>
+        <source>No replica reported a block in the last hour.</source>
+      </segment>
+    </unit>
+    <unit id="bastion.blocks.col-address">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limits-page.ts:176</note>
+      </notes>
+      <segment>
+        <source>Address</source>
+      </segment>
+    </unit>
+    <unit id="bastion.blocks.col-until">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limits-page.ts:177</note>
+      </notes>
+      <segment>
+        <source>Until</source>
+      </segment>
+    </unit>
+    <unit id="bastion.blocks.col-reason">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limits-page.ts:178</note>
+      </notes>
+      <segment>
+        <source>Reason</source>
+      </segment>
+    </unit>
+    <unit id="bastion.blocks.col-replica">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limits-page.ts:179</note>
+      </notes>
+      <segment>
+        <source>Replica</source>
+      </segment>
+    </unit>
+    <unit id="bastion.limits.heading">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limits.ts:52,54</note>
+      </notes>
+      <segment>
+        <source>Limits</source>
+      </segment>
+    </unit>
+    <unit id="bastion.state.none">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limits.ts:86,90</note>
+      </notes>
+      <segment>
+        <source>No report in the last 5 minutes</source>
+      </segment>
+    </unit>
+    <unit id="bastion.limits.edge">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limits.ts:93,94</note>
+      </notes>
+      <segment>
+        <source>The ingress of this Bastion refuses more than <ph id="0" equiv="INTERPOLATION" disp="{{ edgeText(e) }}"/> requests a second per address before these figures apply.</source>
+      </segment>
+    </unit>
+    <unit id="bastion.limits.catalogue-lost">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limits.ts:100,105</note>
+      </notes>
+      <segment>
+        <source>After a restart while the connection to it is down, this Bastion&apos;s web interface shows nothing until the connection returns. A bucket or persistent volumes keep it.</source>
+      </segment>
+    </unit>
+    <unit id="bastion.preset.label">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limits.ts:109,111</note>
+      </notes>
+      <segment>
+        <source>Preset</source>
+      </segment>
+    </unit>
+    <unit id="bastion.preset.custom">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limits.ts:116,119</note>
+        <note category="location">src/app/features/bastions/presets.ts:66</note>
+      </notes>
+      <segment>
+        <source>Custom</source>
+      </segment>
+    </unit>
+    <unit id="bastion.mode.enforce">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limits.ts:132,133</note>
+      </notes>
+      <segment>
+        <source>Mode: <pc id="0" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong translate=&quot;no&quot;&gt;" dispEnd="&lt;/strong&gt;">Enforce</pc></source>
+      </segment>
+    </unit>
+    <unit id="bastion.mode.audit">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limits.ts:134,135</note>
+      </notes>
+      <segment>
+        <source>Mode: <pc id="0" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong translate=&quot;no&quot;&gt;" dispEnd="&lt;/strong&gt;">Audit</pc>. Limits are counted, not applied at this Bastion.</source>
+      </segment>
+    </unit>
+    <unit id="limits.mode.to-enforce">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limits.ts:140,142</note>
+        <note category="location">src/app/features/limits/limit-mode.ts:255,256</note>
+      </notes>
+      <segment>
+        <source>Switch to Enforce…</source>
+      </segment>
+    </unit>
+    <unit id="limits.mode.to-audit">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limits.ts:142,144</note>
+        <note category="location">src/app/features/limits/limit-mode.ts:257,259</note>
+      </notes>
+      <segment>
+        <source>Switch to Audit…</source>
+      </segment>
+    </unit>
+    <unit id="bastion.throughput.label">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limits.ts:156,158</note>
+      </notes>
+      <segment>
+        <source>Maximum throughput to this Bastion in MB/s</source>
+      </segment>
+    </unit>
+    <unit id="bastion.throughput.save">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limits.ts:163,165</note>
+      </notes>
+      <segment>
+        <source> Save changes </source>
+      </segment>
+    </unit>
+    <unit id="bastion.throughput.text">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limits.ts:168,169</note>
+      </notes>
+      <segment>
+        <source>Maximum throughput to this Bastion: <ph id="0" equiv="INTERPOLATION" disp="{{ throughputText() }}"/></source>
+      </segment>
+    </unit>
+    <unit id="bastion.throughput.note">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limits.ts:172,175</note>
+      </notes>
+      <segment>
+        <source> Set this to the Bastion&apos;s share of the link between the two networks. Only what the Bastion does not hold crosses it; what it serves from its cache does not. Empty is unlimited. </source>
+      </segment>
+    </unit>
+    <unit id="bastion.details.heading">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limits.ts:180</note>
+      </notes>
+      <segment>
+        <source>Details</source>
+      </segment>
+    </unit>
+    <unit id="bastion.limits.rules-link">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limits.ts:186,189</note>
+      </notes>
+      <segment>
+        <source>Rules of this Bastion</source>
+      </segment>
+    </unit>
+    <unit id="bastion.state.meter">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limits.ts:345</note>
+      </notes>
+      <segment>
+        <source>Throughput of <ph id="0" equiv="name" disp="this.bastion().name"/> against its maximum</source>
+      </segment>
+    </unit>
+    <unit id="bastion.state.meter-text">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limits.ts:350</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="rate" disp="megabytesPerSecond(s.bytesPerSecond, this.locale)"/> of <ph id="1" equiv="cap" disp="megabytesPerSecond(cap, this.locale)"/></source>
+      </segment>
+    </unit>
+    <unit id="bastion.throughput.invalid">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limits.ts:374</note>
+      </notes>
+      <segment>
+        <source>A whole number of MB/s from 1, or empty for unlimited.</source>
+      </segment>
+    </unit>
+    <unit id="bastion.preset.applied">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limits.ts:391</note>
+      </notes>
+      <segment>
+        <source>The preset <ph id="0" equiv="preset" disp="presetLabel(preset)"/> applies to <ph id="1" equiv="name" disp="this.bastion().name"/>.</source>
+      </segment>
+    </unit>
+    <unit id="bastion.mode.switched">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limits.ts:409</note>
+      </notes>
+      <segment>
+        <source>Mode of <ph id="0" equiv="name" disp="name"/>: <ph id="1" equiv="mode" disp="modeName(result.value.limits.mode)"/>.</source>
+      </segment>
+    </unit>
+    <unit id="bastion.throughput.saved">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-limits.ts:426</note>
+      </notes>
+      <segment>
+        <source>The maximum throughput of <ph id="0" equiv="name" disp="name"/> is saved.</source>
+      </segment>
+    </unit>
     <unit id="bastions.heading">
       <notes>
         <note category="location">src/app/features/bastions/bastion-list.ts:31</note>
@@ -6208,6 +6848,515 @@
       </notes>
       <segment>
         <source>There is no Bastion yet.</source>
+      </segment>
+    </unit>
+    <unit id="bastion.preset.dialog-title">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-preset-dialog.ts:29,30</note>
+      </notes>
+      <segment>
+        <source>Apply the preset <ph id="0" equiv="INTERPOLATION" disp="{{ label }}"/>?</source>
+      </segment>
+    </unit>
+    <unit id="bastion.preset.nothing">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-preset-dialog.ts:39,41</note>
+      </notes>
+      <segment>
+        <source>The preset changes nothing: the rules, the flood figures and the mode are already its own.</source>
+      </segment>
+    </unit>
+    <unit id="bastion.preset.replaces">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-preset-dialog.ts:41,42</note>
+      </notes>
+      <segment>
+        <source>The preset replaces:</source>
+      </segment>
+    </unit>
+    <unit id="bastion.preset.kind-rules">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-preset-dialog.ts:43,44</note>
+      </notes>
+      <segment>
+        <source>Rules for every caller of a kind</source>
+      </segment>
+    </unit>
+    <unit id="bastion.preset.flood">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-preset-dialog.ts:51,52</note>
+      </notes>
+      <segment>
+        <source>Flood protection per address</source>
+      </segment>
+    </unit>
+    <unit id="bastion.preset.keeps">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-preset-dialog.ts:64,67</note>
+      </notes>
+      <segment>
+        <source>The rules for single callers, groups and addresses stay.</source>
+      </segment>
+    </unit>
+    <unit id="bastion.preset.loading">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-preset-dialog.ts:67,70</note>
+      </notes>
+      <segment>
+        <source>Reading the rules of this Bastion.</source>
+      </segment>
+    </unit>
+    <unit id="limits.cancel">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-preset-dialog.ts:71,72</note>
+        <note category="location">src/app/features/limits/limit-mode.ts:114,115</note>
+        <note category="location">src/app/features/limits/limits-rules-tab.ts:56,58</note>
+        <note category="location">src/app/features/limits/maximum-dialog.ts:79,80</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:191,192</note>
+      </notes>
+      <segment>
+        <source>Cancel</source>
+      </segment>
+    </unit>
+    <unit id="bastion.preset.apply">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-preset-dialog.ts:73,76</note>
+      </notes>
+      <segment>
+        <source> Apply preset </source>
+      </segment>
+    </unit>
+    <unit id="bastion.preset.change">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-preset-dialog.ts:135</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="what" disp="c.what"/>: <ph id="1" equiv="from" disp="c.from"/> → <ph id="2" equiv="to" disp="c.to"/></source>
+      </segment>
+    </unit>
+    <unit id="bastion.block-reason.refusals">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-state.ts:84</note>
+      </notes>
+      <segment>
+        <source>Too many requests refused by its flood protection</source>
+      </segment>
+    </unit>
+    <unit id="bastion.block-reason.failed-auth">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-state.ts:86</note>
+      </notes>
+      <segment>
+        <source>Too many failed sign-ins</source>
+      </segment>
+    </unit>
+    <unit id="bastion.block-reason.refused-requests">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-state.ts:88</note>
+      </notes>
+      <segment>
+        <source>Too many requests refused by its download limits</source>
+      </segment>
+    </unit>
+    <unit id="bastion.state.cache">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-state.ts:122</note>
+      </notes>
+      <segment>
+        <source>Cache <ph id="0" equiv="used" disp="used"/> of <ph id="1" equiv="capacity" disp="gigabytes(s.capacityBytes, locale)"/></source>
+      </segment>
+    </unit>
+    <unit id="bastion.state.hits">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-state.ts:124</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="percent" disp="formatNumber(s.hitRatio * 100, locale, &apos;1.0-0&apos;)"/> % hits</source>
+      </segment>
+    </unit>
+    <unit id="bastion.state.protected">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-state.ts:126</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="bytes" disp="gigabytes(s.protectedBytes, locale)"/> protected</source>
+      </segment>
+    </unit>
+    <unit id="bastion.state.read">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-state.ts:127</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="rate" disp="megabytesPerSecond(s.bytesPerSecond, locale)"/> from the main installation</source>
+      </segment>
+    </unit>
+    <unit id="bastion.state.limited-one">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-state.ts:134</note>
+      </notes>
+      <segment>
+        <source>1 caller limited now</source>
+      </segment>
+    </unit>
+    <unit id="bastion.state.limited">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-state.ts:135</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="formatCount(n, locale)"/> callers limited now</source>
+      </segment>
+    </unit>
+    <unit id="bastion.state.blocked-one">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-state.ts:141</note>
+      </notes>
+      <segment>
+        <source>1 address blocked</source>
+      </segment>
+    </unit>
+    <unit id="bastion.state.blocked">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-state.ts:142</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="formatCount(n, locale)"/> addresses blocked</source>
+      </segment>
+    </unit>
+    <unit id="bastion.switches.heading">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-switches.ts:23,25</note>
+      </notes>
+      <segment>
+        <source>Web interface</source>
+      </segment>
+    </unit>
+    <unit id="bastion.switches.gui-on">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-switches.ts:31,32</note>
+      </notes>
+      <segment>
+        <source>The <pc id="0" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">web interface</pc> is on.</source>
+      </segment>
+    </unit>
+    <unit id="bastion.switches.gui-off">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-switches.ts:33,34</note>
+      </notes>
+      <segment>
+        <source>The <pc id="0" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">web interface</pc> is off.</source>
+      </segment>
+    </unit>
+    <unit id="bastion.switches.gui-note">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-switches.ts:38,41</note>
+      </notes>
+      <segment>
+        <source> A read-only web interface on this Bastion shows the packages of public repositories to anyone, without signing in. Off, its pages answer &quot;not found&quot; within seconds and what it showed is deleted. </source>
+      </segment>
+    </unit>
+    <unit id="bastion.switches.docs-name">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-switches.ts:43,45</note>
+      </notes>
+      <segment>
+        <source>Documentation</source>
+      </segment>
+    </unit>
+    <unit id="bastion.switches.docs-on">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-switches.ts:50,51</note>
+      </notes>
+      <segment>
+        <source><pc id="0" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">Documentation</pc> is on.</source>
+      </segment>
+    </unit>
+    <unit id="bastion.switches.docs-off">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-switches.ts:52,53</note>
+      </notes>
+      <segment>
+        <source><pc id="0" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">Documentation</pc> is off.</source>
+      </segment>
+    </unit>
+    <unit id="bastion.switches.docs-note">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-switches.ts:57,60</note>
+      </notes>
+      <segment>
+        <source> The web interface also shows each package&apos;s README and documentation where its repository&apos;s level allows it. Takes effect only while the web interface is on. </source>
+      </segment>
+    </unit>
+    <unit id="bastion.switches.docs-idle">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-switches.ts:63,66</note>
+      </notes>
+      <segment>
+        <source>Documentation is on, but the web interface is off: nothing is shown.</source>
+      </segment>
+    </unit>
+    <unit id="bastion.switches.gui-label">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-switches.ts:116</note>
+      </notes>
+      <segment>
+        <source>Web interface of <ph id="0" equiv="name" disp="this.bastion().name"/></source>
+      </segment>
+    </unit>
+    <unit id="bastion.switches.docs-label">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-switches.ts:117</note>
+      </notes>
+      <segment>
+        <source>Documentation in the web interface of <ph id="0" equiv="name" disp="this.bastion().name"/></source>
+      </segment>
+    </unit>
+    <unit id="bastion.switches.gui-on-done">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-switches.ts:141</note>
+      </notes>
+      <segment>
+        <source>Web interface switched on.</source>
+      </segment>
+    </unit>
+    <unit id="bastion.switches.gui-off-done">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-switches.ts:142</note>
+      </notes>
+      <segment>
+        <source>Web interface switched off.</source>
+      </segment>
+    </unit>
+    <unit id="bastion.switches.docs-on-done">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-switches.ts:145</note>
+      </notes>
+      <segment>
+        <source>Documentation switched on.</source>
+      </segment>
+    </unit>
+    <unit id="bastion.switches.docs-off-done">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-switches.ts:146</note>
+      </notes>
+      <segment>
+        <source>Documentation switched off.</source>
+      </segment>
+    </unit>
+    <unit id="limits.title.blocks">
+      <notes>
+        <note category="location">src/app/features/bastions/bastions.routes.ts:32</note>
+        <note category="location">src/app/features/limits/limits.routes.ts:40</note>
+      </notes>
+      <segment>
+        <source>Blocks of the download limits</source>
+      </segment>
+    </unit>
+    <unit id="bastion.preset.internet">
+      <notes>
+        <note category="location">src/app/features/bastions/presets.ts:60</note>
+      </notes>
+      <segment>
+        <source>Internet</source>
+      </segment>
+    </unit>
+    <unit id="bastion.preset.partner">
+      <notes>
+        <note category="location">src/app/features/bastions/presets.ts:62</note>
+      </notes>
+      <segment>
+        <source>Partner network</source>
+      </segment>
+    </unit>
+    <unit id="bastion.preset.internal">
+      <notes>
+        <note category="location">src/app/features/bastions/presets.ts:64</note>
+      </notes>
+      <segment>
+        <source>Internal</source>
+      </segment>
+    </unit>
+    <unit id="bastion.preset.internet-sentence">
+      <notes>
+        <note category="location">src/app/features/bastions/presets.ts:74</note>
+      </notes>
+      <segment>
+        <source>Strict limits for callers from the internet; administrators too.</source>
+      </segment>
+    </unit>
+    <unit id="bastion.preset.partner-sentence">
+      <notes>
+        <note category="location">src/app/features/bastions/presets.ts:76</note>
+      </notes>
+      <segment>
+        <source>The installation&apos;s own profiles for known partners.</source>
+      </segment>
+    </unit>
+    <unit id="bastion.preset.internal-sentence">
+      <notes>
+        <note category="location">src/app/features/bastions/presets.ts:78</note>
+      </notes>
+      <segment>
+        <source>No limits, everything counted.</source>
+      </segment>
+    </unit>
+    <unit id="bastion.preset.custom-sentence">
+      <notes>
+        <note category="location">src/app/features/bastions/presets.ts:80</note>
+      </notes>
+      <segment>
+        <source>The rules or the flood figures differ from every preset.</source>
+      </segment>
+    </unit>
+    <unit id="bastion.flood.anonymous-rps">
+      <notes>
+        <note category="location">src/app/features/bastions/presets.ts:93</note>
+      </notes>
+      <segment>
+        <source>Anonymous callers: requests a second</source>
+      </segment>
+    </unit>
+    <unit id="bastion.flood.anonymous-burst">
+      <notes>
+        <note category="location">src/app/features/bastions/presets.ts:94</note>
+      </notes>
+      <segment>
+        <source>Anonymous callers: burst</source>
+      </segment>
+    </unit>
+    <unit id="bastion.flood.anonymous-misses">
+      <notes>
+        <note category="location">src/app/features/bastions/presets.ts:95</note>
+      </notes>
+      <segment>
+        <source>Anonymous callers: misses a minute</source>
+      </segment>
+    </unit>
+    <unit id="bastion.flood.signed-rps">
+      <notes>
+        <note category="location">src/app/features/bastions/presets.ts:96</note>
+      </notes>
+      <segment>
+        <source>Signed-in callers: requests a second</source>
+      </segment>
+    </unit>
+    <unit id="bastion.flood.signed-burst">
+      <notes>
+        <note category="location">src/app/features/bastions/presets.ts:97</note>
+      </notes>
+      <segment>
+        <source>Signed-in callers: burst</source>
+      </segment>
+    </unit>
+    <unit id="bastion.flood.signed-misses">
+      <notes>
+        <note category="location">src/app/features/bastions/presets.ts:98</note>
+      </notes>
+      <segment>
+        <source>Signed-in callers: misses a minute</source>
+      </segment>
+    </unit>
+    <unit id="bastion.flood.pages-rps">
+      <notes>
+        <note category="location">src/app/features/bastions/presets.ts:99</note>
+      </notes>
+      <segment>
+        <source>Pages of the web interface: requests a second</source>
+      </segment>
+    </unit>
+    <unit id="bastion.flood.pages-burst">
+      <notes>
+        <note category="location">src/app/features/bastions/presets.ts:100</note>
+      </notes>
+      <segment>
+        <source>Pages of the web interface: burst</source>
+      </segment>
+    </unit>
+    <unit id="bastion.flood.failures">
+      <notes>
+        <note category="location">src/app/features/bastions/presets.ts:101</note>
+      </notes>
+      <segment>
+        <source>Failed sign-ins before a timeout</source>
+      </segment>
+    </unit>
+    <unit id="bastion.flood.failures-window">
+      <notes>
+        <note category="location">src/app/features/bastions/presets.ts:102</note>
+      </notes>
+      <segment>
+        <source>Failed sign-ins counted over, in seconds</source>
+      </segment>
+    </unit>
+    <unit id="bastion.flood.timeout">
+      <notes>
+        <note category="location">src/app/features/bastions/presets.ts:103</note>
+      </notes>
+      <segment>
+        <source>Timeout after failed sign-ins, in seconds</source>
+      </segment>
+    </unit>
+    <unit id="bastion.flood.block-threshold">
+      <notes>
+        <note category="location">src/app/features/bastions/presets.ts:104</note>
+      </notes>
+      <segment>
+        <source>Refused requests before a block</source>
+      </segment>
+    </unit>
+    <unit id="bastion.flood.block-window">
+      <notes>
+        <note category="location">src/app/features/bastions/presets.ts:105</note>
+      </notes>
+      <segment>
+        <source>Refused requests counted over, in seconds</source>
+      </segment>
+    </unit>
+    <unit id="bastion.flood.block-duration">
+      <notes>
+        <note category="location">src/app/features/bastions/presets.ts:106</note>
+      </notes>
+      <segment>
+        <source>First block, in seconds</source>
+      </segment>
+    </unit>
+    <unit id="bastion.flood.block-max">
+      <notes>
+        <note category="location">src/app/features/bastions/presets.ts:107</note>
+      </notes>
+      <segment>
+        <source>Longest block, in seconds</source>
+      </segment>
+    </unit>
+    <unit id="bastion.preset.no-rule">
+      <notes>
+        <note category="location">src/app/features/bastions/presets.ts:146</note>
+      </notes>
+      <segment>
+        <source>no rule</source>
+      </segment>
+    </unit>
+    <unit id="bastion.preset.profile-one-changed">
+      <notes>
+        <note category="location">src/app/features/bastions/presets.ts:150</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="profile" disp="name(rule.profile)"/> with 1 changed figure</source>
+      </segment>
+    </unit>
+    <unit id="bastion.preset.profile-changed">
+      <notes>
+        <note category="location">src/app/features/bastions/presets.ts:151</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="profile" disp="name(rule.profile)"/> with <ph id="1" equiv="count" disp="changed"/> changed figures</source>
+      </segment>
+    </unit>
+    <unit id="bastion.preset.mode">
+      <notes>
+        <note category="location">src/app/features/bastions/presets.ts:169</note>
+      </notes>
+      <segment>
+        <source>Mode</source>
       </segment>
     </unit>
     <unit id="ci.warning.unpinned">
@@ -12223,20 +13372,6 @@
         <source> A very low rate makes a large file take longer than some clients wait for a whole download. </source>
       </segment>
     </unit>
-    <unit id="limits.unlimited">
-      <notes>
-        <note category="location">src/app/features/limits/figure-fields.ts:78,79</note>
-        <note category="location">src/app/features/limits/figures.ts:105</note>
-        <note category="location">src/app/features/limits/figures.ts:269</note>
-        <note category="location">src/app/features/limits/figures.ts:327</note>
-        <note category="location">src/app/features/limits/repository-limits-section.ts:71,72</note>
-        <note category="location">src/app/features/limits/repository-limits-section.ts:90,91</note>
-        <note category="location">src/app/features/usage/limit-explain.ts:245</note>
-      </notes>
-      <segment>
-        <source>Unlimited</source>
-      </segment>
-    </unit>
     <unit id="limits.use-profile-value">
       <notes>
         <note category="location">src/app/features/limits/figure-fields.ts:89,90</note>
@@ -12777,8 +13912,8 @@
     </unit>
     <unit id="limits.mode.to-enforce-title">
       <notes>
-        <note category="location">src/app/features/limits/limit-mode.ts:45,47</note>
-        <note category="location">src/app/features/limits/limit-mode.ts:100,102</note>
+        <note category="location">src/app/features/limits/limit-mode.ts:52,54</note>
+        <note category="location">src/app/features/limits/limit-mode.ts:116,118</note>
       </notes>
       <segment>
         <source>Switch to Enforce</source>
@@ -12786,16 +13921,32 @@
     </unit>
     <unit id="limits.mode.to-audit-title">
       <notes>
-        <note category="location">src/app/features/limits/limit-mode.ts:47,49</note>
-        <note category="location">src/app/features/limits/limit-mode.ts:102,106</note>
+        <note category="location">src/app/features/limits/limit-mode.ts:54,56</note>
+        <note category="location">src/app/features/limits/limit-mode.ts:118,122</note>
       </notes>
       <segment>
         <source>Switch to Audit</source>
       </segment>
     </unit>
+    <unit id="limits.mode.bastion-to-enforce">
+      <notes>
+        <note category="location">src/app/features/limits/limit-mode.ts:65,67</note>
+      </notes>
+      <segment>
+        <source>From now on, the download limits of this Bastion refuse and slow requests on every replica within seconds.</source>
+      </segment>
+    </unit>
+    <unit id="limits.mode.bastion-to-audit">
+      <notes>
+        <note category="location">src/app/features/limits/limit-mode.ts:67,69</note>
+      </notes>
+      <segment>
+        <source>In Audit this Bastion refuses and slows nothing by its download limits; every limit is counted and shown as &quot;Would have been limited&quot;. Its flood protection per address, the anonymous ceiling, the slots and the throughput still hold.</source>
+      </segment>
+    </unit>
     <unit id="limits.mode.preview-none">
       <notes>
-        <note category="location">src/app/features/limits/limit-mode.ts:58,60</note>
+        <note category="location">src/app/features/limits/limit-mode.ts:74,76</note>
       </notes>
       <segment>
         <source>In the last 24 hours no caller would have been limited.</source>
@@ -12803,7 +13954,7 @@
     </unit>
     <unit id="limits.mode.preview-figures">
       <notes>
-        <note category="location">src/app/features/limits/limit-mode.ts:67,69</note>
+        <note category="location">src/app/features/limits/limit-mode.ts:83,85</note>
       </notes>
       <segment>
         <source>Would have refused most</source>
@@ -12811,7 +13962,7 @@
     </unit>
     <unit id="limits.mode.preview-kinds">
       <notes>
-        <note category="location">src/app/features/limits/limit-mode.ts:78,80</note>
+        <note category="location">src/app/features/limits/limit-mode.ts:94,96</note>
       </notes>
       <segment>
         <source>Kinds of caller</source>
@@ -12819,7 +13970,7 @@
     </unit>
     <unit id="limits.mode.consequence">
       <notes>
-        <note category="location">src/app/features/limits/limit-mode.ts:89,91</note>
+        <note category="location">src/app/features/limits/limit-mode.ts:105,107</note>
       </notes>
       <segment>
         <source>From now on, limits refuse and slow requests on every replica within seconds.</source>
@@ -12827,7 +13978,7 @@
     </unit>
     <unit id="limits.mode.preview-loading">
       <notes>
-        <note category="location">src/app/features/limits/limit-mode.ts:91,93</note>
+        <note category="location">src/app/features/limits/limit-mode.ts:107,109</note>
       </notes>
       <segment>
         <source>Reading the last 24 hours…</source>
@@ -12835,26 +13986,15 @@
     </unit>
     <unit id="limits.mode.to-audit-removes">
       <notes>
-        <note category="location">src/app/features/limits/limit-mode.ts:94,97</note>
+        <note category="location">src/app/features/limits/limit-mode.ts:110,113</note>
       </notes>
       <segment>
         <source>In Audit nothing is refused or slowed on the package and registry addresses, not even by the request limits; every limit is counted and shown as &quot;Would have been limited&quot;.</source>
       </segment>
     </unit>
-    <unit id="limits.cancel">
-      <notes>
-        <note category="location">src/app/features/limits/limit-mode.ts:98,99</note>
-        <note category="location">src/app/features/limits/limits-rules-tab.ts:56,58</note>
-        <note category="location">src/app/features/limits/maximum-dialog.ts:79,80</note>
-        <note category="location">src/app/features/limits/rule-dialog.ts:191,192</note>
-      </notes>
-      <segment>
-        <source>Cancel</source>
-      </segment>
-    </unit>
     <unit id="limits.mode.one-caller">
       <notes>
-        <note category="location">src/app/features/limits/limit-mode.ts:159</note>
+        <note category="location">src/app/features/limits/limit-mode.ts:179</note>
       </notes>
       <segment>
         <source>1 caller would have been limited.</source>
@@ -12862,7 +14002,7 @@
     </unit>
     <unit id="limits.mode.callers">
       <notes>
-        <note category="location">src/app/features/limits/limit-mode.ts:160</note>
+        <note category="location">src/app/features/limits/limit-mode.ts:180</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="count" disp="count"/> callers would have been limited.</source>
@@ -12870,7 +14010,7 @@
     </unit>
     <unit id="limits.mode.one-refused">
       <notes>
-        <note category="location">src/app/features/limits/limit-mode.ts:166</note>
+        <note category="location">src/app/features/limits/limit-mode.ts:186</note>
       </notes>
       <segment>
         <source>1 request would have been refused.</source>
@@ -12878,7 +14018,7 @@
     </unit>
     <unit id="limits.mode.refused">
       <notes>
-        <note category="location">src/app/features/limits/limit-mode.ts:167</note>
+        <note category="location">src/app/features/limits/limit-mode.ts:187</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="count" disp="count"/> requests would have been refused.</source>
@@ -12886,7 +14026,7 @@
     </unit>
     <unit id="limits.mode.one-slowed">
       <notes>
-        <note category="location">src/app/features/limits/limit-mode.ts:173</note>
+        <note category="location">src/app/features/limits/limit-mode.ts:193</note>
       </notes>
       <segment>
         <source>1 download would have been slowed down.</source>
@@ -12894,7 +14034,7 @@
     </unit>
     <unit id="limits.mode.slowed">
       <notes>
-        <note category="location">src/app/features/limits/limit-mode.ts:174</note>
+        <note category="location">src/app/features/limits/limit-mode.ts:194</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="count" disp="count"/> downloads would have been slowed down.</source>
@@ -12902,7 +14042,7 @@
     </unit>
     <unit id="limits.mode.one-blocked">
       <notes>
-        <note category="location">src/app/features/limits/limit-mode.ts:180</note>
+        <note category="location">src/app/features/limits/limit-mode.ts:200</note>
       </notes>
       <segment>
         <source>1 caller would have been blocked.</source>
@@ -12910,7 +14050,7 @@
     </unit>
     <unit id="limits.mode.blocked">
       <notes>
-        <note category="location">src/app/features/limits/limit-mode.ts:181</note>
+        <note category="location">src/app/features/limits/limit-mode.ts:201</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="count" disp="count"/> callers would have been blocked.</source>
@@ -12918,7 +14058,7 @@
     </unit>
     <unit id="limits.mode.caller-count-one">
       <notes>
-        <note category="location">src/app/features/limits/limit-mode.ts:190</note>
+        <note category="location">src/app/features/limits/limit-mode.ts:210</note>
       </notes>
       <segment>
         <source>1 caller</source>
@@ -12926,7 +14066,7 @@
     </unit>
     <unit id="limits.mode.caller-count">
       <notes>
-        <note category="location">src/app/features/limits/limit-mode.ts:190</note>
+        <note category="location">src/app/features/limits/limit-mode.ts:210</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="count" disp="formatCount(n, this.locale)"/> callers</source>
@@ -12934,7 +14074,7 @@
     </unit>
     <unit id="limits.mode.times-one">
       <notes>
-        <note category="location">src/app/features/limits/limit-mode.ts:194</note>
+        <note category="location">src/app/features/limits/limit-mode.ts:214</note>
       </notes>
       <segment>
         <source>once</source>
@@ -12942,7 +14082,7 @@
     </unit>
     <unit id="limits.mode.times">
       <notes>
-        <note category="location">src/app/features/limits/limit-mode.ts:194</note>
+        <note category="location">src/app/features/limits/limit-mode.ts:214</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="count" disp="formatCount(n, this.locale)"/> times</source>
@@ -12950,31 +14090,15 @@
     </unit>
     <unit id="limits.mode.label">
       <notes>
-        <note category="location">src/app/features/limits/limit-mode.ts:228</note>
+        <note category="location">src/app/features/limits/limit-mode.ts:249</note>
       </notes>
       <segment>
         <source>Mode:</source>
       </segment>
     </unit>
-    <unit id="limits.mode.to-enforce">
-      <notes>
-        <note category="location">src/app/features/limits/limit-mode.ts:234,235</note>
-      </notes>
-      <segment>
-        <source>Switch to Enforce…</source>
-      </segment>
-    </unit>
-    <unit id="limits.mode.to-audit">
-      <notes>
-        <note category="location">src/app/features/limits/limit-mode.ts:236,238</note>
-      </notes>
-      <segment>
-        <source>Switch to Audit…</source>
-      </segment>
-    </unit>
     <unit id="limits.mode.switched">
       <notes>
-        <note category="location">src/app/features/limits/limit-mode.ts:301</note>
+        <note category="location">src/app/features/limits/limit-mode.ts:322</note>
       </notes>
       <segment>
         <source>Mode: <ph id="0" equiv="mode" disp="modeWord(result.value.mode)"/>. <ph id="1" equiv="sentence" disp="modeSentence(result.value.mode)"/></source>
@@ -12982,7 +14106,7 @@
     </unit>
     <unit id="limits.rules.loading">
       <notes>
-        <note category="location">src/app/features/limits/limit-rules.ts:38,39</note>
+        <note category="location">src/app/features/limits/limit-rules.ts:52,53</note>
       </notes>
       <segment>
         <source>Loading the rules.</source>
@@ -12990,15 +14114,23 @@
     </unit>
     <unit id="limits.rules.empty">
       <notes>
-        <note category="location">src/app/features/limits/limit-rules.ts:43,44</note>
+        <note category="location">src/app/features/limits/limit-rules.ts:57,58</note>
       </notes>
       <segment>
         <source>No rule here. Callers get the instance&apos;s limits.</source>
       </segment>
     </unit>
+    <unit id="limits.rules.from-preset">
+      <notes>
+        <note category="location">src/app/features/limits/limit-rules.ts:66,68</note>
+      </notes>
+      <segment>
+        <source>From the preset</source>
+      </segment>
+    </unit>
     <unit id="limits.rules.builtin">
       <notes>
-        <note category="location">src/app/features/limits/limit-rules.ts:51,53</note>
+        <note category="location">src/app/features/limits/limit-rules.ts:68,70</note>
         <note category="location">src/app/features/limits/limits-profiles-tab.ts:64,66</note>
       </notes>
       <segment>
@@ -13007,7 +14139,7 @@
     </unit>
     <unit id="limits.rules.above-maximum">
       <notes>
-        <note category="location">src/app/features/limits/limit-rules.ts:65,67</note>
+        <note category="location">src/app/features/limits/limit-rules.ts:83,85</note>
       </notes>
       <segment>
         <source>Above the maximum</source>
@@ -13015,7 +14147,7 @@
     </unit>
     <unit id="limits.rules.delete">
       <notes>
-        <note category="location">src/app/features/limits/limit-rules.ts:77,78</note>
+        <note category="location">src/app/features/limits/limit-rules.ts:95,96</note>
       </notes>
       <segment>
         <source>Delete</source>
@@ -13023,7 +14155,7 @@
     </unit>
     <unit id="limits.rules.caption-instance">
       <notes>
-        <note category="location">src/app/features/limits/limit-rules.ts:135</note>
+        <note category="location">src/app/features/limits/limit-rules.ts:155</note>
       </notes>
       <segment>
         <source>Rules of the instance</source>
@@ -13031,7 +14163,7 @@
     </unit>
     <unit id="limits.rules.caption-project">
       <notes>
-        <note category="location">src/app/features/limits/limit-rules.ts:137</note>
+        <note category="location">src/app/features/limits/limit-rules.ts:157</note>
       </notes>
       <segment>
         <source>Rules of project <ph id="0" equiv="project" disp="place.project"/></source>
@@ -13039,7 +14171,7 @@
     </unit>
     <unit id="limits.rules.caption-repository">
       <notes>
-        <note category="location">src/app/features/limits/limit-rules.ts:139</note>
+        <note category="location">src/app/features/limits/limit-rules.ts:159</note>
       </notes>
       <segment>
         <source>Rules of <ph id="0" equiv="repository" disp="place.repository"/></source>
@@ -13047,7 +14179,7 @@
     </unit>
     <unit id="limits.rules.caption-bastion">
       <notes>
-        <note category="location">src/app/features/limits/limit-rules.ts:141</note>
+        <note category="location">src/app/features/limits/limit-rules.ts:161</note>
       </notes>
       <segment>
         <source>Rules of Bastion <ph id="0" equiv="bastion" disp="place.bastion"/></source>
@@ -13055,7 +14187,7 @@
     </unit>
     <unit id="limits.rules.col-who">
       <notes>
-        <note category="location">src/app/features/limits/limit-rules.ts:147</note>
+        <note category="location">src/app/features/limits/limit-rules.ts:167</note>
       </notes>
       <segment>
         <source>Applies to</source>
@@ -13063,7 +14195,7 @@
     </unit>
     <unit id="limits.rules.col-profile">
       <notes>
-        <note category="location">src/app/features/limits/limit-rules.ts:148</note>
+        <note category="location">src/app/features/limits/limit-rules.ts:168</note>
       </notes>
       <segment>
         <source>Profile</source>
@@ -13071,7 +14203,7 @@
     </unit>
     <unit id="limits.rules.col-actions">
       <notes>
-        <note category="location">src/app/features/limits/limit-rules.ts:149</note>
+        <note category="location">src/app/features/limits/limit-rules.ts:169</note>
         <note category="location">src/app/features/limits/limits-blocks-tab.ts:114</note>
         <note category="location">src/app/features/limits/limits-profiles-tab.ts:143</note>
         <note category="location">src/app/features/limits/limits-projects-tab.ts:153</note>
@@ -13082,7 +14214,7 @@
     </unit>
     <unit id="limits.rules.clamped">
       <notes>
-        <note category="location">src/app/features/limits/limit-rules.ts:196</note>
+        <note category="location">src/app/features/limits/limit-rules.ts:216</note>
       </notes>
       <segment>
         <source>Lowered to what the instance or the project&apos;s maximum allows: <ph id="0" equiv="figures" disp="parts.join(&apos;; &apos;)"/>.</source>
@@ -13090,7 +14222,7 @@
     </unit>
     <unit id="limits.rules.saved">
       <notes>
-        <note category="location">src/app/features/limits/limit-rules.ts:207</note>
+        <note category="location">src/app/features/limits/limit-rules.ts:227</note>
       </notes>
       <segment>
         <source>Rule saved.</source>
@@ -13098,7 +14230,7 @@
     </unit>
     <unit id="limits.rules.delete-title">
       <notes>
-        <note category="location">src/app/features/limits/limit-rules.ts:215</note>
+        <note category="location">src/app/features/limits/limit-rules.ts:235</note>
       </notes>
       <segment>
         <source>Delete the rule for <ph id="0" equiv="name" disp="name"/>?</source>
@@ -13106,7 +14238,7 @@
     </unit>
     <unit id="limits.rules.delete-text">
       <notes>
-        <note category="location">src/app/features/limits/limit-rules.ts:216</note>
+        <note category="location">src/app/features/limits/limit-rules.ts:236</note>
       </notes>
       <segment>
         <source>The caller gets the limits of the next place or of its kind from the next request on.</source>
@@ -13114,7 +14246,7 @@
     </unit>
     <unit id="limits.rules.delete-confirm">
       <notes>
-        <note category="location">src/app/features/limits/limit-rules.ts:217</note>
+        <note category="location">src/app/features/limits/limit-rules.ts:237</note>
       </notes>
       <segment>
         <source>Delete rule</source>
@@ -13122,7 +14254,7 @@
     </unit>
     <unit id="limits.rules.deleted">
       <notes>
-        <note category="location">src/app/features/limits/limit-rules.ts:223</note>
+        <note category="location">src/app/features/limits/limit-rules.ts:243</note>
       </notes>
       <segment>
         <source>Rule deleted.</source>
@@ -13150,14 +14282,6 @@
       </notes>
       <segment>
         <source>Blocks</source>
-      </segment>
-    </unit>
-    <unit id="limits.blocks.loading">
-      <notes>
-        <note category="location">src/app/features/limits/limits-blocks-tab.ts:49,50</note>
-      </notes>
-      <segment>
-        <source>Loading the blocks.</source>
       </segment>
     </unit>
     <unit id="limits.blocks.empty">
@@ -13227,7 +14351,7 @@
     <unit id="limits.blocks.lift-title">
       <notes>
         <note category="location">src/app/features/limits/limits-blocks-tab.ts:156</note>
-        <note category="location">src/app/features/usage/usage-detail.ts:271</note>
+        <note category="location">src/app/features/usage/usage-detail.ts:282</note>
       </notes>
       <segment>
         <source>Lift the block of <ph id="0" equiv="name" disp="name"/>?</source>
@@ -13236,7 +14360,7 @@
     <unit id="limits.blocks.lift-text">
       <notes>
         <note category="location">src/app/features/limits/limits-blocks-tab.ts:157</note>
-        <note category="location">src/app/features/usage/usage-detail.ts:272</note>
+        <note category="location">src/app/features/usage/usage-detail.ts:283</note>
       </notes>
       <segment>
         <source>The caller&apos;s requests are admitted again at once, and its refused requests count from zero.</source>
@@ -13245,7 +14369,7 @@
     <unit id="limits.blocks.lift-confirm">
       <notes>
         <note category="location">src/app/features/limits/limits-blocks-tab.ts:158</note>
-        <note category="location">src/app/features/usage/usage-detail.ts:273</note>
+        <note category="location">src/app/features/usage/usage-detail.ts:284</note>
       </notes>
       <segment>
         <source>Lift block</source>
@@ -13254,7 +14378,7 @@
     <unit id="limits.blocks.lifted">
       <notes>
         <note category="location">src/app/features/limits/limits-blocks-tab.ts:164</note>
-        <note category="location">src/app/features/usage/usage-detail.ts:278</note>
+        <note category="location">src/app/features/usage/usage-detail.ts:289</note>
       </notes>
       <segment>
         <source>Block lifted.</source>
@@ -13276,14 +14400,6 @@
         <source>Download limits</source>
       </segment>
     </unit>
-    <unit id="limits.tab.rules">
-      <notes>
-        <note category="location">src/app/features/limits/limits-frame.ts:30,31</note>
-      </notes>
-      <segment>
-        <source>Rules</source>
-      </segment>
-    </unit>
     <unit id="limits.tab.profiles">
       <notes>
         <note category="location">src/app/features/limits/limits-frame.ts:31,32</note>
@@ -13298,14 +14414,6 @@
       </notes>
       <segment>
         <source>Projects</source>
-      </segment>
-    </unit>
-    <unit id="limits.tab.blocks">
-      <notes>
-        <note category="location">src/app/features/limits/limits-frame.ts:33,35</note>
-      </notes>
-      <segment>
-        <source>Blocks</source>
       </segment>
     </unit>
     <unit id="limits.profiles.one-rule">
@@ -13615,16 +14723,6 @@
         <source><ph id="0" equiv="count" disp="formatCount(minutes, locale)"/> minutes</source>
       </segment>
     </unit>
-    <unit id="limits.rules.add">
-      <notes>
-        <note category="location">src/app/features/limits/limits-rules-tab.ts:32,35</note>
-        <note category="location">src/app/features/limits/project-limits-section.ts:52,54</note>
-        <note category="location">src/app/features/limits/repository-limits-section.ts:47,49</note>
-      </notes>
-      <segment>
-        <source>Add rule</source>
-      </segment>
-    </unit>
     <unit id="limits.block-time.label">
       <notes>
         <note category="location">src/app/features/limits/limits-rules-tab.ts:42,44</note>
@@ -13714,14 +14812,6 @@
       </notes>
       <segment>
         <source>Projects of the download limits</source>
-      </segment>
-    </unit>
-    <unit id="limits.title.blocks">
-      <notes>
-        <note category="location">src/app/features/limits/limits.routes.ts:40</note>
-      </notes>
-      <segment>
-        <source>Blocks of the download limits</source>
       </segment>
     </unit>
     <unit id="limits.maximum.change-title">
@@ -14182,7 +15272,7 @@
     </unit>
     <unit id="limits.rule.one-changed">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:292</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:293</note>
       </notes>
       <segment>
         <source>1 changed</source>
@@ -14190,7 +15280,7 @@
     </unit>
     <unit id="limits.rule.n-changed">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:292</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:293</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="count" disp="n"/> changed</source>
@@ -14198,7 +15288,7 @@
     </unit>
     <unit id="limits.rule.group">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:372</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:373</note>
       </notes>
       <segment>
         <source>Group</source>
@@ -14206,7 +15296,7 @@
     </unit>
     <unit id="limits.rule.token">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:374</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:375</note>
       </notes>
       <segment>
         <source>Technical token</source>
@@ -14214,7 +15304,7 @@
     </unit>
     <unit id="limits.rule.ci">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:376</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:377</note>
       </notes>
       <segment>
         <source>CI project</source>
@@ -14222,7 +15312,7 @@
     </unit>
     <unit id="limits.rule.user">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:378</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:379</note>
       </notes>
       <segment>
         <source>User</source>
@@ -14230,7 +15320,7 @@
     </unit>
     <unit id="limits.rule.token-hint">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:385</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:386</note>
       </notes>
       <segment>
         <source>Type the token&apos;s name or its account.</source>
@@ -14238,7 +15328,7 @@
     </unit>
     <unit id="limits.rule.ci-hint">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:387</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:388</note>
       </notes>
       <segment>
         <source>Type the project&apos;s path.</source>
@@ -14246,7 +15336,7 @@
     </unit>
     <unit id="limits.rule.group-hint">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:389</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:390</note>
       </notes>
       <segment>
         <source>Type the group&apos;s name.</source>
@@ -14254,7 +15344,7 @@
     </unit>
     <unit id="limits.rule.user-hint">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:391</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:392</note>
       </notes>
       <segment>
         <source>Type a name or a username.</source>
@@ -14262,7 +15352,7 @@
     </unit>
     <unit id="limits.rule.who-required">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:399</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:400</note>
       </notes>
       <segment>
         <source>Choose who the rule applies to.</source>
@@ -14270,7 +15360,7 @@
     </unit>
     <unit id="limits.rule.address-required">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:408</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:409</note>
       </notes>
       <segment>
         <source>Type an address or a range.</source>
@@ -14278,7 +15368,7 @@
     </unit>
     <unit id="limits.rule.address-invalid">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:409</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:410</note>
       </notes>
       <segment>
         <source>An IPv4 or IPv6 address, optionally with a prefix length such as /24.</source>
@@ -14286,7 +15376,7 @@
     </unit>
     <unit id="limits.rule.above-cap">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:497</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:498</note>
       </notes>
       <segment>
         <source>Above what you may set here.</source>
@@ -14294,7 +15384,7 @@
     </unit>
     <unit id="limits.rule.at-most">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:498</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:499</note>
       </notes>
       <segment>
         <source>At most <ph id="0" equiv="limit" disp="limitText(figure, cap, this.locale)"/> here.</source>
@@ -42354,7 +43444,7 @@
     <unit id="usage.period">
       <notes>
         <note category="location">src/app/features/usage/profile-usage.ts:36</note>
-        <note category="location">src/app/features/usage/usage-detail.ts:70</note>
+        <note category="location">src/app/features/usage/usage-detail.ts:71</note>
         <note category="location">src/app/features/usage/usage-overview.html:3</note>
       </notes>
       <segment>
@@ -42388,7 +43478,7 @@
     <unit id="usage.by-repository">
       <notes>
         <note category="location">src/app/features/usage/profile-usage.ts:72,73</note>
-        <note category="location">src/app/features/usage/usage-detail.ts:103,104</note>
+        <note category="location">src/app/features/usage/usage-detail.ts:112,113</note>
         <note category="location">src/app/features/usage/usage-tables.ts:26,27</note>
       </notes>
       <segment>
@@ -42398,7 +43488,7 @@
     <unit id="usage.by-credential">
       <notes>
         <note category="location">src/app/features/usage/profile-usage.ts:77,78</note>
-        <note category="location">src/app/features/usage/usage-detail.ts:110,111</note>
+        <note category="location">src/app/features/usage/usage-detail.ts:119,120</note>
         <note category="location">src/app/features/usage/usage-tables.ts:86,87</note>
       </notes>
       <segment>
@@ -42408,8 +43498,8 @@
     <unit id="usage.loading">
       <notes>
         <note category="location">src/app/features/usage/profile-usage.ts:81,83</note>
-        <note category="location">src/app/features/usage/usage-detail.ts:115,117</note>
-        <note category="location">src/app/features/usage/usage-overview.html:72,73</note>
+        <note category="location">src/app/features/usage/usage-detail.ts:124,126</note>
+        <note category="location">src/app/features/usage/usage-overview.html:80,81</note>
       </notes>
       <segment>
         <source>Loading the usage.</source>
@@ -42418,8 +43508,8 @@
     <unit id="usage.empty">
       <notes>
         <note category="location">src/app/features/usage/profile-usage.ts:123</note>
-        <note category="location">src/app/features/usage/usage-detail.ts:191</note>
-        <note category="location">src/app/features/usage/usage-overview.ts:191</note>
+        <note category="location">src/app/features/usage/usage-detail.ts:202</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:215</note>
       </notes>
       <segment>
         <source>No downloads <ph id="0" equiv="period" disp="periodPhrase(this.activePeriod())"/>.</source>
@@ -42491,7 +43581,7 @@
     </unit>
     <unit id="usage.block.lift">
       <notes>
-        <note category="location">src/app/features/usage/usage-detail.ts:84,86</note>
+        <note category="location">src/app/features/usage/usage-detail.ts:85,87</note>
       </notes>
       <segment>
         <source>Lift block</source>
@@ -42499,8 +43589,8 @@
     </unit>
     <unit id="usage.audit-line">
       <notes>
-        <note category="location">src/app/features/usage/usage-detail.ts:89,92</note>
-        <note category="location">src/app/features/usage/usage-overview.html:60,63</note>
+        <note category="location">src/app/features/usage/usage-detail.ts:90,93</note>
+        <note category="location">src/app/features/usage/usage-overview.html:68,71</note>
       </notes>
       <segment>
         <source>Mode: <pc id="0" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">Audit</pc>. Limits are counted, not applied.</source>
@@ -42508,15 +43598,23 @@
     </unit>
     <unit id="usage.limits">
       <notes>
-        <note category="location">src/app/features/usage/usage-detail.ts:93,94</note>
+        <note category="location">src/app/features/usage/usage-detail.ts:94,95</note>
       </notes>
       <segment>
         <source>Limits</source>
       </segment>
     </unit>
+    <unit id="usage.by-place">
+      <notes>
+        <note category="location">src/app/features/usage/usage-detail.ts:102,103</note>
+      </notes>
+      <segment>
+        <source>By place</source>
+      </segment>
+    </unit>
     <unit id="usage.block.text">
       <notes>
-        <note category="location">src/app/features/usage/usage-detail.ts:261</note>
+        <note category="location">src/app/features/usage/usage-detail.ts:272</note>
       </notes>
       <segment>
         <source>Blocked until <ph id="0" equiv="time" disp="time"/> after <ph id="1" equiv="count" disp="formatCount(b.refused, this.locale)"/> refused requests in an hour</source>
@@ -42524,7 +43622,7 @@
     </unit>
     <unit id="usage.block.text-short">
       <notes>
-        <note category="location">src/app/features/usage/usage-detail.ts:262</note>
+        <note category="location">src/app/features/usage/usage-detail.ts:273</note>
       </notes>
       <segment>
         <source>Blocked until <ph id="0" equiv="time" disp="time"/> after too many refused requests</source>
@@ -42609,7 +43707,7 @@
       <notes>
         <note category="location">src/app/features/usage/usage-history.ts:373</note>
         <note category="location">src/app/features/usage/usage-history.ts:431</note>
-        <note category="location">src/app/features/usage/usage-overview.ts:173</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:197</note>
         <note category="location">src/app/features/usage/usage-tables.ts:60</note>
         <note category="location">src/app/features/usage/usage-tables.ts:140</note>
       </notes>
@@ -42621,7 +43719,7 @@
       <notes>
         <note category="location">src/app/features/usage/usage-history.ts:374</note>
         <note category="location">src/app/features/usage/usage-history.ts:433</note>
-        <note category="location">src/app/features/usage/usage-overview.ts:174</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:198</note>
         <note category="location">src/app/features/usage/usage-tables.ts:61</note>
         <note category="location">src/app/features/usage/usage-tables.ts:141</note>
       </notes>
@@ -42633,7 +43731,7 @@
       <notes>
         <note category="location">src/app/features/usage/usage-history.ts:375</note>
         <note category="location">src/app/features/usage/usage-history.ts:435</note>
-        <note category="location">src/app/features/usage/usage-overview.ts:175</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:199</note>
         <note category="location">src/app/features/usage/usage-tables.ts:62</note>
         <note category="location">src/app/features/usage/usage-tables.ts:142</note>
       </notes>
@@ -42644,7 +43742,7 @@
     <unit id="usage.col.upstream">
       <notes>
         <note category="location">src/app/features/usage/usage-history.ts:378</note>
-        <note category="location">src/app/features/usage/usage-overview.ts:176</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:200</note>
         <note category="location">src/app/features/usage/usage-tables.ts:63</note>
       </notes>
       <segment>
@@ -42654,7 +43752,7 @@
     <unit id="usage.col.refused">
       <notes>
         <note category="location">src/app/features/usage/usage-history.ts:382</note>
-        <note category="location">src/app/features/usage/usage-overview.ts:177</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:201</note>
         <note category="location">src/app/features/usage/usage-tables.ts:64</note>
       </notes>
       <segment>
@@ -42729,7 +43827,7 @@
     <unit id="usage.col.now">
       <notes>
         <note category="location">src/app/features/usage/usage-meter.ts:102</note>
-        <note category="location">src/app/features/usage/usage-overview.ts:180</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:204</note>
       </notes>
       <segment>
         <source>Now</source>
@@ -42746,7 +43844,7 @@
     <unit id="usage.filter.kind">
       <notes>
         <note category="location">src/app/features/usage/usage-overview.html:30</note>
-        <note category="location">src/app/features/usage/usage-overview.ts:150</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:171</note>
       </notes>
       <segment>
         <source>Kind</source>
@@ -42755,7 +43853,7 @@
     <unit id="usage.filter.state">
       <notes>
         <note category="location">src/app/features/usage/usage-overview.html:34</note>
-        <note category="location">src/app/features/usage/usage-overview.ts:152</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:173</note>
       </notes>
       <segment>
         <source>State</source>
@@ -42764,15 +43862,24 @@
     <unit id="usage.filter.project">
       <notes>
         <note category="location">src/app/features/usage/usage-overview.html:39,40</note>
-        <note category="location">src/app/features/usage/usage-overview.ts:154</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:175</note>
       </notes>
       <segment>
         <source>Project</source>
       </segment>
     </unit>
+    <unit id="usage.filter.place">
+      <notes>
+        <note category="location">src/app/features/usage/usage-overview.html:47,48</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:178</note>
+      </notes>
+      <segment>
+        <source>Place</source>
+      </segment>
+    </unit>
     <unit id="usage.views">
       <notes>
-        <note category="location">src/app/features/usage/usage-overview.html:48</note>
+        <note category="location">src/app/features/usage/usage-overview.html:56</note>
       </notes>
       <segment>
         <source>Views</source>
@@ -42780,7 +43887,7 @@
     </unit>
     <unit id="usage.view.all">
       <notes>
-        <note category="location">src/app/features/usage/usage-overview.html:48,49</note>
+        <note category="location">src/app/features/usage/usage-overview.html:56,57</note>
       </notes>
       <segment>
         <source>All callers</source>
@@ -42788,7 +43895,7 @@
     </unit>
     <unit id="usage.state.close">
       <notes>
-        <note category="location">src/app/features/usage/usage-overview.html:49,50</note>
+        <note category="location">src/app/features/usage/usage-overview.html:57,58</note>
         <note category="location">src/app/features/usage/usage-words.ts:12</note>
         <note category="location">src/app/features/usage/usage-words.ts:57</note>
       </notes>
@@ -42798,7 +43905,7 @@
     </unit>
     <unit id="usage.state.would">
       <notes>
-        <note category="location">src/app/features/usage/usage-overview.html:52,54</note>
+        <note category="location">src/app/features/usage/usage-overview.html:60,62</note>
         <note category="location">src/app/features/usage/usage-words.ts:16</note>
         <note category="location">src/app/features/usage/usage-words.ts:61</note>
       </notes>
@@ -42808,7 +43915,7 @@
     </unit>
     <unit id="usage.state.reached">
       <notes>
-        <note category="location">src/app/features/usage/usage-overview.html:54,57</note>
+        <note category="location">src/app/features/usage/usage-overview.html:62,65</note>
         <note category="location">src/app/features/usage/usage-words.ts:17</note>
         <note category="location">src/app/features/usage/usage-words.ts:61</note>
       </notes>
@@ -42818,7 +43925,7 @@
     </unit>
     <unit id="usage.caption">
       <notes>
-        <note category="location">src/app/features/usage/usage-overview.html:64,65</note>
+        <note category="location">src/app/features/usage/usage-overview.html:72,73</note>
       </notes>
       <segment>
         <source>Usage by caller</source>
@@ -42826,7 +43933,7 @@
     </unit>
     <unit id="usage.state.blocked">
       <notes>
-        <note category="location">src/app/features/usage/usage-overview.html:86,87</note>
+        <note category="location">src/app/features/usage/usage-overview.html:94,95</note>
         <note category="location">src/app/features/usage/usage-words.ts:19</note>
         <note category="location">src/app/features/usage/usage-words.ts:59</note>
       </notes>
@@ -42836,15 +43943,32 @@
     </unit>
     <unit id="usage.search">
       <notes>
-        <note category="location">src/app/features/usage/usage-overview.ts:96</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:103</note>
       </notes>
       <segment>
         <source>Filter by name or address</source>
       </segment>
     </unit>
+    <unit id="usage.place.all">
+      <notes>
+        <note category="location">src/app/features/usage/usage-overview.ts:151</note>
+      </notes>
+      <segment>
+        <source>All</source>
+      </segment>
+    </unit>
+    <unit id="usage.place.installation">
+      <notes>
+        <note category="location">src/app/features/usage/usage-overview.ts:152</note>
+        <note category="location">src/app/features/usage/usage-words.ts:92</note>
+      </notes>
+      <segment>
+        <source>This installation</source>
+      </segment>
+    </unit>
     <unit id="usage.heading-repository">
       <notes>
-        <note category="location">src/app/features/usage/usage-overview.ts:141</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:162</note>
       </notes>
       <segment>
         <source>Usage of <ph id="0" equiv="repository" disp="repo"/></source>
@@ -42852,7 +43976,7 @@
     </unit>
     <unit id="usage.heading-project">
       <notes>
-        <note category="location">src/app/features/usage/usage-overview.ts:143</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:164</note>
       </notes>
       <segment>
         <source>Usage of <ph id="0" equiv="project" disp="name"/></source>
@@ -42860,8 +43984,8 @@
     </unit>
     <unit id="usage.filter.any">
       <notes>
-        <note category="location">src/app/features/usage/usage-overview.ts:160</note>
-        <note category="location">src/app/features/usage/usage-overview.ts:226</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:184</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:253</note>
       </notes>
       <segment>
         <source>Any</source>
@@ -42869,7 +43993,7 @@
     </unit>
     <unit id="usage.col.caller">
       <notes>
-        <note category="location">src/app/features/usage/usage-overview.ts:172</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:196</note>
       </notes>
       <segment>
         <source>Caller</source>
@@ -42877,7 +44001,7 @@
     </unit>
     <unit id="usage.empty.filtered">
       <notes>
-        <note category="location">src/app/features/usage/usage-overview.ts:186</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:210</note>
       </notes>
       <segment>
         <source>No caller matches.</source>
@@ -42885,7 +44009,7 @@
     </unit>
     <unit id="usage.empty.project">
       <notes>
-        <note category="location">src/app/features/usage/usage-overview.ts:189</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:213</note>
       </notes>
       <segment>
         <source>Nobody downloaded from this project in the last 24 hours.</source>
@@ -42893,7 +44017,7 @@
     </unit>
     <unit id="usage.exact-bytes">
       <notes>
-        <note category="location">src/app/features/usage/usage-overview.ts:370</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:414</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="bytes" disp="formatCount(n, this.locale)"/> bytes</source>
@@ -42901,10 +44025,58 @@
     </unit>
     <unit id="usage.meter-tooltip">
       <notes>
-        <note category="location">src/app/features/usage/usage-overview.ts:378</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:422</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="figure" disp="figureName(u.figure)"/> <ph id="1" equiv="place" disp="placeText(u.place)"/>: <ph id="2" equiv="percent" disp="percent"/> % of the limit</source>
+      </segment>
+    </unit>
+    <unit id="usage.places.total">
+      <notes>
+        <note category="location">src/app/features/usage/usage-places.ts:45</note>
+      </notes>
+      <segment>
+        <source>All places</source>
+      </segment>
+    </unit>
+    <unit id="usage.places.caption">
+      <notes>
+        <note category="location">src/app/features/usage/usage-places.ts:59</note>
+      </notes>
+      <segment>
+        <source>Usage by place</source>
+      </segment>
+    </unit>
+    <unit id="usage.places.col-place">
+      <notes>
+        <note category="location">src/app/features/usage/usage-places.ts:83</note>
+      </notes>
+      <segment>
+        <source>Place</source>
+      </segment>
+    </unit>
+    <unit id="usage.places.col-requests">
+      <notes>
+        <note category="location">src/app/features/usage/usage-places.ts:84</note>
+      </notes>
+      <segment>
+        <source>Requests in the last hour</source>
+      </segment>
+    </unit>
+    <unit id="usage.places.col-uncached">
+      <notes>
+        <note category="location">src/app/features/usage/usage-places.ts:85</note>
+      </notes>
+      <segment>
+        <source>From the upstream in the last hour</source>
+      </segment>
+    </unit>
+    <unit id="usage.places.col-day">
+      <notes>
+        <note category="location">src/app/features/usage/usage-places.ts:86</note>
+      </notes>
+      <segment>
+        <source>Bytes in the last 24 hours</source>
       </segment>
     </unit>
     <unit id="usage.no-repository">
@@ -43001,6 +44173,14 @@
       </notes>
       <segment>
         <source>in the last 30 days</source>
+      </segment>
+    </unit>
+    <unit id="usage.place.bastion">
+      <notes>
+        <note category="location">src/app/features/usage/usage-words.ts:93</note>
+      </notes>
+      <segment>
+        <source>Through <ph id="0" equiv="name" disp="place.replace(/^bastion:/, &apos;&apos;)"/></source>
       </segment>
     </unit>
     <unit id="user-create.title">

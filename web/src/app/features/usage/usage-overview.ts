@@ -17,6 +17,8 @@ import {
 import { collectAll } from '../../api/pagination';
 import { ApiError } from '../../api/problem';
 import { ProjectsApi } from '../../api/projects-api';
+import { BastionsApi } from '../../api/bastions-api';
+import { SessionStore } from '../../core/session-store';
 import { ProjectContext } from '../../core/project-context';
 import { SelectField, SelectOption } from '../../shared/access/fields';
 import { asApiError } from '../../shared/paged-resource';
@@ -32,7 +34,7 @@ import { CallerCell } from '../limits/caller-cell';
 import { placeText, subjectKindFilterLabel, subjectView } from '../limits/callers';
 import { figureName, formatBytes, formatCount } from '../limits/figures';
 import { UsageMeter } from './usage-meter';
-import { PERIODS, periodLabel, periodPhrase, reachedFilter, stateFilterLabel } from './usage-words';
+import { PERIODS, periodLabel, periodPhrase, placeFilterLabel, reachedFilter, stateFilterLabel } from './usage-words';
 
 const KINDS: readonly UsageSubjectKind[] = ['user', 'technicalToken', 'ci', 'certificate', 'anonymous', 'system'];
 const SORTS: readonly UsageSort[] = ['requests', 'cachedBytes', 'uncachedBytes', 'upstreamRequests', 'refused', 'utilisation', 'name'];
@@ -62,7 +64,8 @@ function parseState(v: string | undefined): UsageStateFilter | undefined {
 
 /**
  * The usage overview (R-UI-183, Q-UI-730, Q-UI-732): every caller with its consumption in the period, sortable by each figure,
- * filtered by kind, state and, in the instance, project, with the meter of the tightest hour or day figure now. The address
+ * filtered by kind, state and, in the instance, project and place (R-UI-242: **This installation** or one Bastion's, "Through
+ * <name>"), with the meter of the tightest hour or day figure now. The address
  * holds the filters, so a link opens the overview filtered (the mode switch's preview, R-UI-182). The instance scope is
  * `/admin/usage` for `usage:read`; the project scope `/projects/{project}/usage` for an Owner, `?repository=` narrows it to one
  * repository.
@@ -77,6 +80,8 @@ function parseState(v: string | undefined): UsageStateFilter | undefined {
 export class UsageOverview {
   private readonly api = inject(LimitsApi);
   private readonly projectsApi = inject(ProjectsApi);
+  private readonly bastionsApi = inject(BastionsApi);
+  private readonly session = inject(SessionStore);
   private readonly router = inject(Router);
   private readonly context = inject(ProjectContext);
   private readonly locale = inject(LOCALE_ID);
@@ -86,6 +91,8 @@ export class UsageOverview {
   /** The project: the route's `:project`, or in the instance scope the filter **Project**. */
   readonly project = input<string | undefined>(undefined);
   readonly repository = input<string | undefined>(undefined);
+  /** The instance's filter **Place** (R-UI-242): `installation` or `bastion:<name>`. */
+  readonly place = input<string | undefined>(undefined);
   readonly period = input<string | undefined>(undefined);
   readonly kind = input<string | undefined>(undefined);
   readonly state = input<string | undefined>(undefined);
@@ -100,7 +107,7 @@ export class UsageOverview {
   /** The project scope reads the project's list; the instance's filter **Project** narrows the instance's list (Q-UI-755). */
   protected readonly usageScope = computed<UsageScope>(() =>
     this.scope() === 'instance'
-      ? { projectFilter: this.project() ?? null }
+      ? { projectFilter: this.project() ?? null, place: this.place() ?? null }
       : { project: this.project() ?? null, repository: this.repository() ?? null },
   );
   protected readonly query = computed<UsageQuery>(() => {
@@ -132,6 +139,20 @@ export class UsageOverview {
   protected readonly stagedKinds = signal<readonly UsageSubjectKind[]>([]);
   protected readonly stagedState = signal('');
   protected readonly stagedProject = signal('');
+  protected readonly stagedPlace = signal('');
+  /** The Bastions the filter **Place** offers, by name; read where the viewer may read the registrations (`endpoints:read`). */
+  protected readonly bastionNames = signal<readonly string[]>([]);
+  protected readonly placeOptions = computed<readonly SelectOption[]>(() => {
+    const names = new Set(this.bastionNames());
+    // A place the address names stays a choice, also where the registrations cannot be read.
+    const current = this.place();
+    if (current?.startsWith('bastion:')) names.add(current.slice('bastion:'.length));
+    return [
+      { value: '', label: $localize`:@@usage.place.all:All` },
+      { value: 'installation', label: $localize`:@@usage.place.installation:This installation` },
+      ...[...names].sort().map((n) => ({ value: `bastion:${n}`, label: placeFilterLabel(`bastion:${n}`) })),
+    ];
+  });
   protected readonly panelOpen = signal(false);
   protected readonly projectOptions = signal<readonly SelectOption[]>([]);
 
@@ -152,6 +173,9 @@ export class UsageOverview {
     if (q.state) out.push({ key: 'state', label: $localize`:@@usage.filter.state:State`, value: stateFilterLabel(q.state, this.mode()) });
     if (this.scope() === 'instance' && this.project()) {
       out.push({ key: 'project', label: $localize`:@@usage.filter.project:Project`, value: this.project()! });
+    }
+    if (this.scope() === 'instance' && this.place()) {
+      out.push({ key: 'place', label: $localize`:@@usage.filter.place:Place`, value: placeFilterLabel(this.place()!) });
     }
     return out;
   });
@@ -182,7 +206,7 @@ export class UsageOverview {
 
   protected readonly emptyText = computed(() => {
     const q = this.query();
-    if (q.q || q.kind?.length || q.state || (this.scope() === 'instance' && this.project())) {
+    if (q.q || q.kind?.length || q.state || (this.scope() === 'instance' && (this.project() || this.place()))) {
       return $localize`:@@usage.empty.filtered:No caller matches.`;
     }
     if (this.scope() === 'project' && !this.repository() && q.period === 'day') {
@@ -202,6 +226,9 @@ export class UsageOverview {
     });
     effect(() => {
       if (this.scope() === 'instance') untracked(() => void this.loadProjects());
+    });
+    effect(() => {
+      if (this.scope() === 'instance' && this.session.has('endpoints:read')) untracked(() => void this.loadBastions());
     });
     // Downloads count up all the time: the first page is read again every minute in place while the page is seen (R-UI-213). A list
     // extended with **Load more** stays as it is until its query changes.
@@ -232,6 +259,15 @@ export class UsageOverview {
       this.projectsFailed = true;
     }
   }
+  /** The Bastions of the filter **Place**; without them it offers the place the address names, the installation and all. */
+  private async loadBastions(): Promise<void> {
+    try {
+      this.bastionNames.set((await this.bastionsApi.list()).map((b) => b.name));
+    } catch {
+      this.bastionNames.set([]);
+    }
+  }
+
   /** The project filter's choices failed to read: the list's next read reads them again. */
   private projectsFailed = false;
 
@@ -306,6 +342,7 @@ export class UsageOverview {
     this.stagedKinds.set(this.query().kind ?? []);
     this.stagedState.set(this.query().state ?? '');
     this.stagedProject.set(this.scope() === 'instance' ? (this.project() ?? '') : '');
+    this.stagedPlace.set(this.scope() === 'instance' ? (this.place() ?? '') : '');
   }
 
   protected toggleKind(kind: UsageSubjectKind, on: boolean): void {
@@ -317,13 +354,20 @@ export class UsageOverview {
       kind: this.stagedKinds().length ? KINDS.filter((k) => this.stagedKinds().includes(k)).join(',') : null,
       state: this.stagedState() || null,
     };
-    if (this.scope() === 'instance') params['project'] = this.stagedProject() || null;
+    if (this.scope() === 'instance') {
+      params['project'] = this.stagedProject() || null;
+      params['place'] = this.stagedPlace() || null;
+    }
     this.navigate(params);
   }
 
   protected clearFilters(): void {
     const params: Record<string, string | null> = { kind: null, state: null };
-    if (this.scope() === 'instance') params['project'] = null;
+    if (this.scope() === 'instance') {
+      params['project'] = null;
+      params['place'] = null;
+    }
+    this.stagedPlace.set('');
     this.stagedKinds.set([]);
     this.stagedState.set('');
     this.stagedProject.set('');

@@ -116,6 +116,76 @@ describe('The usage overview (R-UI-183)', () => {
   });
 });
 
+describe('Usage through a Bastion (R-UI-242)', () => {
+  it('R-UI-242 the place Through partners is a filter of the address: it sends place=bastion:partners and stands as a chip', async () => {
+    const { fixture, root, get } = await renderScreen(UsageOverview, {
+      capabilities: ['usage:read', 'endpoints:read'],
+      inputs: { place: 'bastion:partners' },
+    });
+    const api = get(LimitsApi) as FakeLimitsApi;
+    expect(api.usageQueries.at(-1)!.scope).toEqual({ projectFilter: null, place: 'bastion:partners' });
+    expect(root.querySelector<HTMLAnchorElement>('a[download]')!.getAttribute('href')).toBe('/api/v1/usage/export?period=day&place=bastion%3Apartners');
+    expect(text(root)).toContain('Through partners');
+    // The drawer offers all, the installation and every Bastion the viewer may read, by name.
+    root.querySelector<HTMLButtonElement>('button.filter-toggle')!.click();
+    await settle(fixture);
+    const drawer = document.querySelector<HTMLElement>('.quader-drawer [role="dialog"]')!;
+    const options = [...drawer.querySelectorAll<HTMLOptionElement>('select[name="place"] option')].map((o) => [o.value, text(o)]);
+    expect(options).toEqual([
+      ['', 'All'],
+      ['installation', 'This installation'],
+      ['bastion:partners', 'Through partners'],
+      ['bastion:standby', 'Through standby'],
+    ]);
+    const navigate = vi.spyOn(get(Router), 'navigate').mockResolvedValue(true);
+    type(drawer.querySelector<HTMLSelectElement>('select[name="place"]')!, 'installation');
+    await settle(fixture);
+    buttonByText(drawer, 'Apply').click();
+    await settle(fixture);
+    expect(navigate.mock.calls.at(-1)![1]).toMatchObject({ queryParams: { place: 'installation' }, queryParamsHandling: 'merge' });
+  });
+
+  it("R-UI-242 a caller's page lists the installation's consumption, each Bastion's and the sum", async () => {
+    const { root } = await renderScreen(UsageDetailPage, {
+      capabilities: ['usage:read'],
+      inputs: { kind: 'user', id: 'alice' },
+      setup: (get) => {
+        const api = get(LimitsApi) as FakeLimitsApi;
+        const [instance] = api.detailValue.budgets;
+        api.detailValue = {
+          ...api.detailValue,
+          budgets: [
+            ...api.detailValue.budgets,
+            {
+              ...instance!,
+              place: { kind: 'bastion', bastion: 'partners' },
+              figures: {
+                ...instance!.figures,
+                requestsPerHour: { limit: 100000, used: 4000, windowSeconds: 3600 },
+                uncachedBytesPerHour: { limit: null, used: 2_000_000_000, windowSeconds: 3600 },
+                bytesPerDay: { limit: null, used: 30_000_000_000, windowSeconds: 86400 },
+              },
+            },
+          ],
+        };
+      },
+    });
+    const section = root.querySelector('quader-usage-places')!;
+    const rows = [...section.querySelectorAll('tbody tr')].map((r) => [...r.querySelectorAll('th, td')].map((c) => text(c)));
+    expect(rows).toEqual([
+      ['This installation', '36,000', '50 MB', '13.3 GB'],
+      ['Through partners', '4,000', '2 GB', '30 GB'],
+      ['All places', '40,000', '2.1 GB', '43.3 GB'],
+    ]);
+  });
+
+  it("R-UI-242 a caller no Bastion counted shows no By place", async () => {
+    const { root } = await renderScreen(UsageDetailPage, { capabilities: ['usage:read'], inputs: { kind: 'user', id: 'alice' } });
+    expect(root.querySelector('quader-usage-places')).toBeNull();
+    expect(text(root)).not.toContain('By place');
+  });
+});
+
 describe("A caller's usage (R-UI-184) and a user's own (R-UI-185)", () => {
   it('R-UI-184 shows the limits per budget key with meters, the rule and why, and the rates as text; passes axe', async () => {
     const { root, get } = await renderScreen(UsageDetailPage, { capabilities: ['usage:read', 'limits:read'], inputs: { kind: 'user', id: 'alice' } });

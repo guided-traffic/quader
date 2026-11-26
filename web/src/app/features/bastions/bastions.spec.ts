@@ -1,5 +1,7 @@
 import { TestBed } from '@angular/core/testing';
-import { BastionsApi } from '../../api/bastions-api';
+import { Bastion, BastionsApi } from '../../api/bastions-api';
+import { LimitsApi } from '../../api/limits-api';
+import { FakeLimitsApi, sampleBastionProfiles, sampleProfiles } from '../../api/testing/fakes-limits';
 import { DownloadLinkConnection, DownloadLinksApi } from '../../api/download-links-api';
 import { ApiError } from '../../api/problem';
 import { FakeDownloadLinksApi, downloadLinkSettings, linkConnection } from '../../api/testing/fakes-download-links';
@@ -333,7 +335,8 @@ describe('Bastions screen (R-BAS-007)', () => {
   it('R-BAS-004 endpoints:read alone shows the list and offers no action', async () => {
     const { root } = await renderScreen(BastionList, { capabilities: ['endpoints:read'] });
     expect(card(root, 'partners')).toBeTruthy();
-    expect([...root.querySelectorAll('button')].map((b) => text(b)).filter((t) => !/^New Bastion|help_outline/.test(t))).toEqual([]);
+    // The fold of a card's Details is no action (R-UI-240).
+    expect([...root.querySelectorAll('button')].map((b) => text(b)).filter((t) => !/^New Bastion|help_outline|Details$/.test(t))).toEqual([]);
     const create = buttonByText(root, 'New Bastion') as HTMLButtonElement;
     expect(create.disabled).toBe(true);
     expect(text(root)).toContain('endpoints:write');
@@ -344,7 +347,7 @@ describe('Bastions screen (R-BAS-007)', () => {
     const { root } = await renderScreen(BastionList, { capabilities: ['endpoints:read', 'tokens:revoke'] });
     const partners = card(root, 'partners');
     expect(buttonByText(partners, 'Revoke')).toBeTruthy();
-    expect([...partners.querySelectorAll('button')].map((b) => text(b)).filter((t) => !/help_outline/.test(t))).toEqual(['Revoke partners 2026']);
+    expect([...partners.querySelectorAll('button')].map((b) => text(b)).filter((t) => !/help_outline|Details$/.test(t))).toEqual(['Revoke partners 2026']);
   });
 
   it('R-BAS-007 shows the empty state, the loading failure with a retry, and recovers', async () => {
@@ -582,7 +585,10 @@ describe('Direct reads from the object store on a Bastion card (R-BAS-071)', () 
 });
 
 describe('The addresses a Bastion connects from (R-UI-243)', () => {
-  const section = (root: HTMLElement, name: string): HTMLElement => card(root, name).querySelector<HTMLElement>('quader-bastion-egress')!;
+  // The list stands in the card's Details, the warnings in plain view on the card (Q-UI-1483, R-UI-240).
+  const section = (root: HTMLElement, name: string): HTMLElement => card(root, name).querySelector<HTMLElement>('quader-bastion-egress[part="list"]')!;
+  const warnings = (root: HTMLElement, name: string): HTMLElement =>
+    card(root, name).querySelector<HTMLElement>('quader-bastion-egress[part="warnings"]')!;
   const lineText = (el: Element): string => {
     const copy = el.cloneNode(true) as Element;
     copy.querySelectorAll('.material-icons, button').forEach((i) => i.remove());
@@ -606,12 +612,15 @@ describe('The addresses a Bastion connects from (R-UI-243)', () => {
     });
     const api = get(BastionsApi) as FakeBastionsApi;
     const egress = section(root, 'partners');
-    expect(text(egress.querySelector('h3')!)).toBe('Addresses this Bastion connects from');
+    const warn = warnings(root, 'partners');
+    expect(text(egress.querySelector('h4')!)).toBe('Addresses this Bastion connects from');
+    expect(egress.closest('quader-disclosure')).not.toBeNull();
+    expect(warn.closest('quader-disclosure')).toBeNull();
     expect(text(egress)).toContain("The main installation believes the caller's address a Bastion forwards only from these addresses.");
-    expect(lineText(egress.querySelector('[data-testid="bastion-egress-empty"]')!)).toBe(
+    expect(lineText(warn.querySelector('[data-testid="bastion-egress-empty"]')!)).toBe(
       "No address is listed: every caller through this Bastion counts as the Bastion's own address at the main installation, with one budget and one block for all, and the audit log names the Bastion's address instead of the caller's.",
     );
-    const offers = [...egress.querySelectorAll('[data-testid="bastion-egress-unlisted"]')];
+    const offers = [...warn.querySelectorAll('[data-testid="bastion-egress-unlisted"]')];
     expect(offers.map(lineText)).toEqual([
       'The last contact came from 198.51.100.21, which is not listed.',
       'The last contact came from 2001:db8:4::7, which is not listed.',
@@ -627,8 +636,8 @@ describe('The addresses a Bastion connects from (R-UI-243)', () => {
     await sleep(fixture, 100);
     expect(api.calls).toEqual(['setEgress partners 198.51.100.21']);
     expect(api.ifMatch).toEqual(['"1"']);
-    expect(egress.querySelector('[data-testid="bastion-egress-empty"]')).toBeNull();
-    expect([...egress.querySelectorAll('[data-testid="bastion-egress-unlisted"]')].map(lineText)).toEqual([
+    expect(warn.querySelector('[data-testid="bastion-egress-empty"]')).toBeNull();
+    expect([...warn.querySelectorAll('[data-testid="bastion-egress-unlisted"]')].map(lineText)).toEqual([
       'The last contact came from 2001:db8:4::7, which is not listed.',
     ]);
     expect(fields(egress).map((f) => f.value)).toEqual(['198.51.100.21/32']);
@@ -639,8 +648,8 @@ describe('The addresses a Bastion connects from (R-UI-243)', () => {
     const api = get(BastionsApi) as FakeBastionsApi;
     const egress = section(root, 'partners');
     expect(fields(egress).map((f) => f.value)).toEqual(['198.51.100.16/28']);
-    expect(egress.querySelector('[data-testid="bastion-egress-empty"]')).toBeNull();
-    expect(egress.querySelector('[data-testid="bastion-egress-unlisted"]')).toBeNull();
+    expect(warnings(root, 'partners').querySelector('[data-testid="bastion-egress-empty"]')).toBeNull();
+    expect(warnings(root, 'partners').querySelector('[data-testid="bastion-egress-unlisted"]')).toBeNull();
     button(egress, 'Add address').click();
     await settle(fixture);
     type(fields(egress)[1]!, '0.0.0.0/0');
@@ -666,7 +675,7 @@ describe('The addresses a Bastion connects from (R-UI-243)', () => {
     button(egress, 'Save changes').click();
     await sleep(fixture, 100);
     expect(api.calls.at(-1)).toBe('setEgress partners ');
-    expect(egress.querySelector('[data-testid="bastion-egress-empty"]')).not.toBeNull();
+    expect(warnings(root, 'partners').querySelector('[data-testid="bastion-egress-empty"]')).not.toBeNull();
   });
 
   it('R-UI-243 who may only read sees the networks as text and the warnings, and is offered no field and no Add', async () => {
@@ -681,11 +690,11 @@ describe('The addresses a Bastion connects from (R-UI-243)', () => {
     const partners = section(root, 'partners');
     expect(text(partners.querySelector('[data-testid="bastion-egress-list"]')!)).toBe('198.51.100.16/28, 2001:db8:4::/64');
     expect(fields(partners)).toHaveLength(0);
-    expect(lineText(partners.querySelector('[data-testid="bastion-egress-unlisted"]')!)).toBe('The last contact came from 192.0.2.9, which is not listed.');
-    expect(partners.querySelector('[data-testid="bastion-egress-unlisted"] button')).toBeNull();
-    const standby = section(root, 'standby');
-    expect(standby.querySelector('[data-testid="bastion-egress-empty"]')).not.toBeNull();
-    expect(standby.querySelector('[data-testid="bastion-egress-list"]')).toBeNull();
+    const partnersWarn = warnings(root, 'partners');
+    expect(lineText(partnersWarn.querySelector('[data-testid="bastion-egress-unlisted"]')!)).toBe('The last contact came from 192.0.2.9, which is not listed.');
+    expect(partnersWarn.querySelector('[data-testid="bastion-egress-unlisted"] button')).toBeNull();
+    expect(warnings(root, 'standby').querySelector('[data-testid="bastion-egress-empty"]')).not.toBeNull();
+    expect(text(section(root, 'standby').querySelector('[data-testid="bastion-egress-list"]')!)).toBe('No address is listed.');
     expect(await seriousViolations(root)).toEqual([]);
   });
 
@@ -745,6 +754,275 @@ describe('A registration the configuration declares (R-BAS-127)', () => {
     });
     expect(text(card(root, 'partners').querySelector('[data-testid="bastion-declared"]')!)).toContain("From the installation's configuration file.");
     expect(tokenExpiry({ expiresAt: null }, Date.now())).toBe('ok');
+  });
+});
+
+describe("A Bastion's limits, throughput, switches and state on its card (R-UI-240)", () => {
+  /** An administrator of the registrations and of the download limits. */
+  const ADMIN = ['endpoints:read', 'endpoints:write', 'limits:read', 'limits:write'];
+  const limitsOf = (root: HTMLElement, name: string): HTMLElement => card(root, name).querySelector<HTMLElement>('quader-bastion-limits')!;
+  const details = (root: HTMLElement, name: string): HTMLElement => limitsOf(root, name).querySelector<HTMLElement>('quader-disclosure')!;
+  const presetButtons = (el: HTMLElement): HTMLButtonElement[] => [...el.querySelectorAll<HTMLButtonElement>('.presets button')];
+  const fieldNamed = (el: ParentNode, name: string): HTMLInputElement => el.querySelector<HTMLInputElement>(`input[name="${name}"]`)!;
+  /** What a replica reported a minute ago (R-LIM-045): half of the state line's figures, a block, two callers limited. */
+  const report = (replica: string, over: Partial<Bastion['status'][number]> = {}): Bastion['status'][number] => ({
+    replica,
+    reportedAt: inDays(-1 / 1440),
+    cache: { bytes: 7e9, capacityBytes: 10e9, hits: 970, misses: 30, evictions: 4, protectedBytes: 4.5e9 },
+    throughput: { limited: false, bytesPerSecondByClass: { anonymous: 10e6, signedIn: 10.5e6, catalogue: 0 } },
+    limited: 2,
+    blocked: 1,
+    blocks: [{ address: '203.0.113.9/32', until: inDays(0.01), reason: 'refusals' }],
+    ...over,
+  });
+  const withProfiles = (g: <A>(token: abstract new (...args: never[]) => A) => A): void => {
+    (g(LimitsApi) as FakeLimitsApi).profileList = [...sampleProfiles(), ...sampleBastionProfiles()];
+  };
+
+  it('R-UI-240 a new registration shows Internet, Enforce and 200 MB/s, the details closed, and no report; passes axe', async () => {
+    const { root } = await renderScreen(BastionList, { capabilities: ADMIN });
+    const limits = limitsOf(root, 'partners');
+    expect(text(limits.querySelector('h3')!)).toBe('Limits');
+    expect(presetButtons(limits).map((b) => [text(b), b.getAttribute('aria-pressed')])).toEqual([
+      ['Internet', 'true'],
+      ['Partner network', 'false'],
+      ['Internal', 'false'],
+    ]);
+    expect(text(limits)).toContain('Strict limits for callers from the internet; administrators too.');
+    expect(limits.querySelector('[data-testid="bastion-preset-custom"]')).toBeNull();
+    expect(text(limits.querySelector('[data-testid="bastion-mode"]')!)).toBe('Mode: Enforce');
+    // A default is a value in the field (Q-BAS-455), as wide as five digits.
+    const throughput = fieldNamed(limits, 'throughput');
+    expect(throughput.value).toBe('200');
+    expect(throughput.classList).toContain('field-w-number');
+    expect(text(limits)).toContain("Set this to the Bastion's share of the link between the two networks.");
+    expect(details(root, 'partners').querySelector('button[aria-expanded]')!.getAttribute('aria-expanded')).toBe('false');
+    expect(text(limits.querySelector('[data-testid="bastion-no-report"]')!)).toBe('No report in the last 5 minutes');
+    expect(limits.querySelector('[data-testid="bastion-edge-warning"]')).toBeNull();
+    expect(await seriousViolations(root)).toEqual([]);
+  });
+
+  it("R-UI-240 the state line takes the cache once and adds up each replica's reads and callers of the last five minutes, with the meter and the link to the blocks", async () => {
+    const { root } = await renderScreen(BastionList, {
+      capabilities: ADMIN,
+      setup: (g) =>
+        void ((g(BastionsApi) as FakeBastionsApi).bastions = [
+          sampleBastion({ status: [report('quader-bastion-7d9c-x2k4q'), report('quader-bastion-7d9c-m8v2j')] }),
+          sampleBastion({ id: 'b-2', name: 'standby', status: [report('quader-bastion-7d9c-old', { reportedAt: inDays(-10 / 1440) })] }),
+        ]),
+    });
+    const state = limitsOf(root, 'partners').querySelector('[data-testid="bastion-state"]')!;
+    expect([...state.querySelectorAll('.state-line')[0]!.querySelectorAll('span')].map((s) => text(s))).toEqual([
+      'Cache 7.0 of 10.0 GB',
+      '97 % hits',
+      '4.5 GB protected',
+      '41 MB/s from the main installation',
+    ]);
+    const meter = state.querySelector('[role="meter"]')!;
+    expect(meter.getAttribute('aria-valuenow')).toBe('21');
+    expect(text(state)).toContain('41 MB/s of 200 MB/s');
+    // The bar is the data colour below 70 %, never green.
+    expect(state.querySelector('.fill.warn, .fill.bad')).toBeNull();
+    const callers = state.querySelector<HTMLAnchorElement>('[data-testid="bastion-state-callers"]')!;
+    expect(text(callers)).toBe('4 callers limited now · 1 address blocked');
+    // Why, in words: the closed list's reason, the address once though both replicas name it.
+    expect(text(state.querySelector('[data-testid="bastion-block-reasons"]')!)).toBe('Too many requests refused by its flood protection (1)');
+    expect(callers.getAttribute('href')).toBe('/admin/bastions/partners/limits/blocks');
+    // A report older than five minutes is no state.
+    expect(text(limitsOf(root, 'standby').querySelector('[data-testid="bastion-no-report"]')!)).toBe('No report in the last 5 minutes');
+  });
+
+  it('R-UI-240 warns where a per-address request figure lies above the edge figure a replica reported, and not below it', async () => {
+    const { root } = await renderScreen(BastionList, {
+      capabilities: ADMIN,
+      setup: (g) =>
+        void ((g(BastionsApi) as FakeBastionsApi).bastions = [
+          sampleBastion({ contacts: [sampleBastionContact({ edgeLimit: 'rps=150; connections=1000' }), sampleBastionContact({ replica: 'r-2', edgeLimit: 'off' })] }),
+          sampleBastion({ id: 'b-2', name: 'standby', contacts: [sampleBastionContact({ edgeLimit: 'rps=1000' })] }),
+        ]),
+    });
+    const warning = limitsOf(root, 'partners').querySelector('[data-testid="bastion-edge-warning"]')!;
+    expect(text(warning)).toContain('The ingress of this Bastion refuses more than 150 requests a second per address before these figures apply.');
+    expect(warning.classList).toContain('warn');
+    expect(limitsOf(root, 'standby').querySelector('[data-testid="bastion-edge-warning"]')).toBeNull();
+  });
+
+  it('R-UI-240 a preset applies after a dialog that names each kind rule, flood figure and mode it replaces and keeps the other rules', async () => {
+    const { fixture, root, get } = await renderScreen(BastionList, {
+      capabilities: ADMIN,
+      setup: (g) => {
+        withProfiles(g);
+        const custom = sampleBastion();
+        (g(BastionsApi) as FakeBastionsApi).bastions = [
+          { ...custom, limits: { ...custom.limits, mode: 'audit', flood: { ...custom.limits.flood, anonymous: { ...custom.limits.flood.anonymous, requestsPerSecond: 80 } } } },
+        ];
+      },
+    });
+    const api = get(BastionsApi) as FakeBastionsApi;
+    buttonByText(limitsOf(root, 'partners'), 'Partner network').click();
+    await settle(fixture);
+    const dialog = overlay().querySelector('quader-bastion-preset-dialog') as HTMLElement;
+    expect(text(dialog.querySelector('h2')!)).toBe('Apply the preset Partner network?');
+    expect([...dialog.querySelectorAll('[data-testid="preset-kinds"] li')].map((li) => text(li))).toEqual([
+      'Every anonymous caller: Bastion: anonymous → Anonymous',
+      'Every signed-in user: Bastion: signed-in → Standard',
+      'Every technical token: Bastion: signed-in → Technical',
+      'Every CI job: Bastion: signed-in → Technical',
+      'Every administrator: Bastion: signed-in → Unlimited',
+    ]);
+    expect([...dialog.querySelectorAll('[data-testid="preset-flood"] li')].map((li) => text(li))).toEqual(['Anonymous callers: requests a second: 80 → 50']);
+    expect(text(dialog.querySelector('[data-testid="preset-mode"]')!)).toBe('Mode: Audit → Enforce');
+    expect(text(dialog)).toContain('The rules for single callers, groups and addresses stay.');
+    expect(api.calls.filter((c) => c.startsWith('configure'))).toEqual([]);
+    buttonByText(dialog, 'Apply preset').click();
+    await sleep(fixture, 100);
+    expect(api.patches).toEqual([{ limits: { preset: 'partnerNetwork' } }]);
+    expect(api.ifMatch).toEqual(['"1"']);
+    expect(presetButtons(limitsOf(root, 'partners')).find((b) => b.getAttribute('aria-pressed') === 'true')!.textContent).toContain('Partner network');
+  });
+
+  it("R-UI-240 the preset's dialog says nothing changes where the preset changes nothing, and Custom is shown, not offered", async () => {
+    const { fixture, root } = await renderScreen(BastionList, {
+      capabilities: ADMIN,
+      setup: (g) => {
+        withProfiles(g);
+        const b = sampleBastion();
+        (g(BastionsApi) as FakeBastionsApi).bastions = [{ ...b, limits: { ...b.limits, preset: 'custom' } }];
+      },
+    });
+    const limits = limitsOf(root, 'partners');
+    expect(text(limits.querySelector('[data-testid="bastion-preset-custom"]')!)).toBe('Custom');
+    expect(presetButtons(limits).map((b) => text(b))).toEqual(['Internet', 'Partner network', 'Internal']);
+    expect(presetButtons(limits).every((b) => b.getAttribute('aria-pressed') === 'false')).toBe(true);
+    // The place's rules are Internet's and the flood figures too: applying Internet changes nothing, and the dialog says so alone.
+    buttonByText(limits, 'Internet').click();
+    await settle(fixture);
+    const dialog = overlay().querySelector('quader-bastion-preset-dialog') as HTMLElement;
+    expect(dialog.querySelector('[data-testid="preset-nothing"]')).not.toBeNull();
+    expect(dialog.querySelector('[data-testid="preset-kinds"]')).toBeNull();
+  });
+
+  it('R-UI-240 R-LIM-044 the mode switches through the dialog for this Bastion; a session whose sign-in is not recent is asked again and nothing changes', async () => {
+    const { fixture, root, get } = await renderScreen(BastionList, { capabilities: ADMIN });
+    const api = get(BastionsApi) as FakeBastionsApi;
+    buttonByText(limitsOf(root, 'partners'), 'Switch to Audit…').click();
+    await settle(fixture);
+    const dialog = overlay().querySelector('quader-limit-mode-dialog') as HTMLElement;
+    expect(text(dialog)).toContain('partners');
+    expect(text(dialog)).toContain('Its flood protection per address, the anonymous ceiling, the slots and the throughput still hold.');
+    api.failure = new ApiError(401, { code: 'reauthentication_required' }, 'req-1');
+    buttonByText(dialog.querySelector('.dialog-actions')!, 'Switch to Audit').click();
+    await sleep(fixture, 100);
+    expect(dialog.querySelector('quader-error-notice')).not.toBeNull();
+    expect(api.bastions[0]!.limits.mode).toBe('enforce');
+    buttonByText(dialog.querySelector('.dialog-actions')!, 'Switch to Audit').click();
+    await sleep(fixture, 100);
+    expect(api.patches).toEqual([{ limits: { mode: 'audit' } }]);
+    expect(text(limitsOf(root, 'partners').querySelector('[data-testid="bastion-mode"]')!)).toBe(
+      'Mode: Audit. Limits are counted, not applied at this Bastion.',
+    );
+  });
+
+  it('R-UI-240 the throughput is saved in MB/s, empty is unlimited, a word is refused before the request, a refusal keeps the server value', async () => {
+    const { fixture, root, get } = await renderScreen(BastionList, { capabilities: ADMIN });
+    const api = get(BastionsApi) as FakeBastionsApi;
+    const limits = limitsOf(root, 'partners');
+    const save = (): void => (limits.querySelector('form.field-action-row button[type="submit"]') as HTMLButtonElement).click();
+    type(fieldNamed(limits, 'throughput'), 'fast');
+    await settle(fixture);
+    save();
+    await sleep(fixture, 50);
+    expect(text(limits)).toContain('A whole number of MB/s from 1, or empty for unlimited.');
+    expect(api.patches).toEqual([]);
+    type(fieldNamed(limits, 'throughput'), '');
+    await settle(fixture);
+    save();
+    await sleep(fixture, 100);
+    expect(api.patches).toEqual([{ limits: { throughput: { bytesPerSecond: null } } }]);
+    expect(fieldNamed(limits, 'throughput').value).toBe('');
+    api.failure = new ApiError(422, { code: 'validation_failed', detail: 'a figure of throughput is 0' }, 'req-9');
+    type(fieldNamed(limits, 'throughput'), '75');
+    await settle(fixture);
+    save();
+    await sleep(fixture, 100);
+    expect(limits.querySelector('quader-error-notice')).not.toBeNull();
+    expect(fieldNamed(limits, 'throughput').value).toBe('');
+  });
+
+  it('R-UI-240 the details save the flood figures, the slots, the ceiling and the throughput by class in one merge patch', async () => {
+    const { fixture, root, get } = await renderScreen(BastionList, { capabilities: ADMIN });
+    const api = get(BastionsApi) as FakeBastionsApi;
+    const d = details(root, 'partners');
+    type(fieldNamed(d, 'flood.anonymous.requestsPerSecond'), '0');
+    await settle(fixture);
+    buttonByText(d.querySelector('quader-bastion-limit-details')!, 'Save changes').click();
+    await sleep(fixture, 50);
+    expect(text(d)).toContain('A whole number from 1.');
+    expect(api.patches).toEqual([]);
+    type(fieldNamed(d, 'flood.anonymous.requestsPerSecond'), '80');
+    type(fieldNamed(d, 'anonymousCeiling.requestsPerHour'), '');
+    type(fieldNamed(d, 'throughput.bytesPerHour.anonymous'), '50');
+    type(fieldNamed(d, 'slots.anonymousShare'), '30');
+    await settle(fixture);
+    buttonByText(d.querySelector('quader-bastion-limit-details')!, 'Save changes').click();
+    await sleep(fixture, 100);
+    const sent = api.patches[0]!.limits!;
+    expect(sent.flood!.anonymous).toEqual({ requestsPerSecond: 80, burst: 1000, missesPerMinute: 1000 });
+    expect(sent.anonymousCeiling).toEqual({ requestsPerSecond: 100, burst: 2000, requestsPerHour: null });
+    expect(sent.throughput).toEqual({ anonymousShare: 0.25, bytesPerHour: { anonymous: 50e9, signedIn: null, catalogue: null } });
+    expect(sent.slots).toEqual({ maxConcurrent: 64, anonymousShare: 0.3, queueTimeoutMillis: 5000 });
+    expect(sent.flood!.exemptNetworks).toEqual([]);
+    expect(api.bastions[0]!.limits.preset).toBe('custom');
+  });
+
+  it('R-UI-240 R-BAS-093 endpoints:write alone sees the limits as text and changes the switches and the addresses', async () => {
+    const { fixture, root, get } = await renderScreen(BastionList, { capabilities: ['endpoints:read', 'endpoints:write'] });
+    const api = get(BastionsApi) as FakeBastionsApi;
+    const limits = limitsOf(root, 'partners');
+    expect(presetButtons(limits)).toEqual([]);
+    expect(text(limits.querySelector('[data-testid="bastion-preset-text"]')!)).toBe('Internet');
+    expect(limits.querySelector('[data-testid="bastion-mode"] + button')).toBeNull();
+    expect(text(limits.querySelector('[data-testid="bastion-throughput-text"]')!)).toBe('Maximum throughput to this Bastion: 200 MB/s');
+    expect(limits.querySelector('quader-bastion-limit-details input')).toBeNull();
+    expect(text(limits.querySelector('[data-testid="bastion-details-read"]')!)).toContain('Requests a second 50 · Burst 1,000 · Misses a minute 1,000');
+    expect(limits.querySelector('a[href$="/limits"]')).toBeNull();
+    expect(limits.querySelector('quader-bastion-egress[part="list"] input')).not.toBeNull();
+    const gui = limits.querySelector<HTMLElement>('[role="switch"][aria-label="Web interface of partners"]')!;
+    expect(gui.getAttribute('aria-checked')).toBe('false');
+    gui.click();
+    await sleep(fixture, 100);
+    expect(api.patches).toEqual([{ switches: { gui: true } }]);
+    expect(limits.querySelector('[role="switch"][aria-label="Web interface of partners"]')!.getAttribute('aria-checked')).toBe('true');
+  });
+
+  it('R-UI-240 R-BAS-093 limits:write alone changes the limits and sees the switches and the addresses as text', async () => {
+    const { root } = await renderScreen(BastionList, { capabilities: ['endpoints:read', 'limits:read', 'limits:write'] });
+    const limits = limitsOf(root, 'partners');
+    expect(presetButtons(limits)).toHaveLength(3);
+    expect(buttonByText(limits, 'Switch to Audit…')).toBeTruthy();
+    expect(fieldNamed(limits, 'throughput')).not.toBeNull();
+    expect(limits.querySelector('quader-bastion-limit-details input')).not.toBeNull();
+    expect(limits.querySelector('[role="switch"]')).toBeNull();
+    expect(text(limits.querySelector('[data-testid="bastion-gui-state"]')!)).toBe('The web interface is off.');
+    expect(text(limits.querySelector('[data-testid="bastion-docs-state"]')!)).toBe('Documentation is off.');
+    expect(limits.querySelector('quader-bastion-egress[part="list"] input')).toBeNull();
+    expect(limits.querySelector<HTMLAnchorElement>('a[href="/admin/bastions/partners/limits"]')!.textContent).toContain('Rules of this Bastion');
+  });
+
+  it('R-BAS-102 documentation on while the web interface is off says it shows nothing; a web interface whose catalogue a restart loses warns', async () => {
+    const { root } = await renderScreen(BastionList, {
+      capabilities: ADMIN,
+      setup: (g) =>
+        void ((g(BastionsApi) as FakeBastionsApi).bastions = [
+          sampleBastion({ switches: { handover: false, gui: false, docs: true } }),
+          sampleBastion({ id: 'b-2', name: 'standby', switches: { handover: false, gui: true, docs: false }, contacts: [sampleBastionContact({ catalogueKept: false })] }),
+        ]),
+    });
+    expect(limitsOf(root, 'partners').querySelector('[data-testid="bastion-docs-idle"]')).not.toBeNull();
+    expect(limitsOf(root, 'partners').querySelector('[data-testid="bastion-catalogue-lost"]')).toBeNull();
+    expect(text(limitsOf(root, 'standby').querySelector('[data-testid="bastion-catalogue-lost"]')!)).toContain(
+      "After a restart while the connection to it is down, this Bastion's web interface shows nothing until the connection returns.",
+    );
   });
 });
 

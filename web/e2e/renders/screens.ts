@@ -48,7 +48,7 @@ import { mirrorFilled } from './mirror';
 import { formsHead, headLoading, longReadmeHead, manyVersionsHead, rowCommand, threeRepositoriesHead, versionHead } from './version-heads';
 import { deprecatedCollection, deprecationActs } from './deprecations';
 import { damagedBlobs, noDamagedBlob, oneConnection, secondUnreachable, severalConnections, twoConnectionFacts } from './storage';
-import { auditDataKeys, bastionsHandover, bastionsRead, forbiddenLink, seededBastion } from './bastions';
+import { auditDataKeys, bastionLimits, bastionLimitsPage, bastionsHandover, bastionsRead, forbiddenLink, seededBastion } from './bastions';
 import { auditRows } from './audit-rows';
 import { downloadsWalk } from './downloads';
 import { cachedDeb, cachedNpm } from './cached';
@@ -2094,6 +2094,33 @@ async function* usageDetailWalk(page: Page): AsyncGenerator<string> {
   yield 'explain';
   await page.locator('main quader-usage-history').getByRole('button', { name: 'Show as table' }).click();
   yield 'table';
+  // R-UI-242: the caller also took something through the seed's Bastion, answered in the browser (the profile runs no Bastion, and no
+  // Bastion reports usage yet): By place lists the installation, the Bastion and the sum.
+  const detail = (url: URL): boolean => /\/api\/v1\/usage\/subjects\//.test(url.pathname);
+  await page.route(detail, async (route) => {
+    const res = await route.fetch();
+    const body = (await res.json()) as { budgets: { place: unknown; figures: Record<string, { used?: number }> }[] };
+    const first = body.budgets[0];
+    if (first) {
+      const used = (n: number) => (f: { used?: number }) => ({ ...f, used: n });
+      body.budgets.push({
+        ...first,
+        place: { kind: 'bastion', bastion: seededBastion.name },
+        figures: {
+          ...first.figures,
+          requestsPerHour: used(4_200)(first.figures['requestsPerHour'] ?? {}),
+          uncachedBytesPerHour: used(1_800_000_000)(first.figures['uncachedBytesPerHour'] ?? {}),
+          bytesPerDay: used(31_000_000_000)(first.figures['bytesPerDay'] ?? {}),
+        },
+      });
+    }
+    await route.fulfill({ response: res, body: JSON.stringify(body) });
+  });
+  await page.reload();
+  await expect(page.locator('main quader-usage-places')).toBeVisible();
+  yield 'places';
+  await page.unroute(detail);
+  await page.reload();
   await inEnforce(page);
   await expect(page.locator('main h1')).toBeVisible();
   yield 'enforce';
@@ -3809,6 +3836,17 @@ export const screens: readonly Screen[] = [
   // The direct reads from the object store on a registration's card (R-BAS-071), answered in the browser (bastions.ts).
   { id: 'admin-bastions', path: '/ui/admin/bastions', kinds: admins, walk: bastionsHandover, tables: 'quader-bastion-card quader-data-table' },
   { id: 'admin-bastions-read', path: '/ui/admin/bastions', kinds: ['auditor'], walk: bastionsRead, tables: 'quader-bastion-card quader-data-table' },
+  // A Bastion's limits, throughput, switches and state on its card, and its limits page (R-UI-240, R-UI-241), answered in the browser and
+  // seeded (bastions.ts); in German too.
+  { id: 'admin-bastions-limits', path: '/ui/admin/bastions', kinds: admins, walk: bastionLimits, de: true },
+  {
+    id: 'admin-bastion-limits',
+    path: `/ui/admin/bastions/${seededBastion.name}/limits`,
+    kinds: auditors,
+    walk: bastionLimitsPage,
+    tables: 'quader-limit-rules quader-data-table',
+    de: true,
+  },
   { id: 'admin-endpoints', path: '/ui/admin/endpoints', kinds: admins },
   // The endpoint every installation has (R-EP-001).
   { id: 'admin-endpoint', path: '/ui/admin/endpoints/default', kinds: admins },

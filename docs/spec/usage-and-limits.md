@@ -1704,7 +1704,8 @@ rows of their subject kind ([report.go](../../internal/bastionmain/report.go)); 
 the replica's row of `bastion_status` (migration 00147, transient, deleted with the replica's contact and an hour after its last report,
 Q-BAS-443); `GET /api/v1/bastions/{name}` shows it as `status`; the usage overview's place filter
 ([Q-LIM-313](#q-lim-313--the-usage-overviews-place-filter-is-installation-or-bastionname)); a subject's detail names a Bastion's place by
-the registration's name. *Not built* (E9b, the Bastion's usage buffer; E12, the screens). Today no Bastion sends a usage row.
+the registration's name. *Built by E12 (2026-11-26):* the screens ([api-and-ui.md](api-and-ui.md) R-UI-240 to R-UI-242). *Not built* (E9b,
+the Bastion's usage buffer). Today no Bastion sends a usage row.
 The tests: `TestR_LIM_045_ABatchsUsageGoesToTheBuffer` ([configuration_test.go](../../internal/bastionmain/configuration_test.go),
 milliseconds) and `TestR_LIM_045_ABatchsUsageAndStateAreStored` (area `bastionreg`, rows only, under a second).
 

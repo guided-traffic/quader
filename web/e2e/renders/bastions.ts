@@ -16,8 +16,53 @@ const DAY = 86_400_000;
 export const forbiddenLink = { outcome: 'unexpected_answer', status: 403, bytes: 0, expectedStatus: 200, expectedBytes: 2048 };
 const at = (days: number): string => new Date(Date.now() + days * DAY).toISOString();
 
-function contact(replica: string, address: string, baseUrl: string, minutesAgo: number): Json {
-  return { replica, contactAt: at(-minutesAgo / 1440), clientAddress: address, release: '0.42.0', interfaceVersion: 6, baseUrl };
+function contact(replica: string, address: string, baseUrl: string, minutesAgo: number, over: Json = {}): Json {
+  return {
+    replica,
+    contactAt: at(-minutesAgo / 1440),
+    clientAddress: address,
+    release: '0.42.0',
+    interfaceVersion: 8,
+    baseUrl,
+    edgeLimit: 'rps=1000; connections=256',
+    catalogueKept: null,
+    ...over,
+  };
+}
+
+/** The limits of a new registration (R-LIM-046, R-BAS-093): the preset Internet in Enforce, 200 MB/s. */
+function limits(over: Json = {}): Json {
+  return {
+    mode: 'enforce',
+    preset: 'internet',
+    flood: {
+      anonymous: { requestsPerSecond: 50, burst: 1000, missesPerMinute: 1000 },
+      authenticated: { requestsPerSecond: 200, burst: 4000, missesPerMinute: 4000 },
+      gui: { requestsPerSecond: 20, burst: 100 },
+      failedAuth: { maxFailures: 20, windowSeconds: 600, timeoutSeconds: 900 },
+      blocking: { threshold: 3000, windowSeconds: 60, durationSeconds: 900, maxDurationSeconds: 86400 },
+      exemptNetworks: [],
+    },
+    slots: { maxConcurrent: 64, anonymousShare: 0.25, queueTimeoutMillis: 5000 },
+    throughput: { bytesPerSecond: 200_000_000, anonymousShare: 0.25, bytesPerHour: { anonymous: null, signedIn: null, catalogue: null } },
+    anonymousCeiling: { requestsPerSecond: 100, burst: 2000, requestsPerHour: 36000 },
+    ...over,
+  };
+}
+
+/** What a replica reported a minute ago (R-LIM-045): half of the card's line, the read rate near its cap, blocks. */
+function report(replica: string, blocks: readonly Json[], over: Json = {}): Json {
+  return {
+    replica,
+    reportedAt: at(-1 / 1440),
+    cache: { bytes: 7_000_000_000, capacityBytes: 10_000_000_000, hits: 9_700, misses: 300, evictions: 12, protectedBytes: 4_500_000_000 },
+    // Together 132 of the registration's 150 MB/s: the meter close to its cap, in the warning colour.
+    throughput: { limited: false, bytesPerSecondByClass: { anonymous: 18_000_000, signedIn: 46_000_000, catalogue: 2_000_000 } },
+    limited: 2,
+    blocked: blocks.length,
+    blocks,
+    ...over,
+  };
 }
 
 function token(id: string, description: string, hint: string, createdDays: number, expiresDays: number): Json {
@@ -40,7 +85,23 @@ function registrations(frankfurtOn: boolean): Json {
         description: 'The DMZ of the Frankfurt data centre, for the build agents of our partners',
         enabled: true,
         declared: null,
-        switches: { handover: frankfurtOn, gui: false, docs: false },
+        switches: { handover: frankfurtOn, gui: true, docs: true },
+        // Custom, in Audit, at 150 MB/s with a flood figure above the edge's (R-UI-240): every state of the card's section at once.
+        limits: limits({
+          mode: 'audit',
+          preset: 'custom',
+          flood: { ...(limits()['flood'] as Json), anonymous: { requestsPerSecond: 80, burst: 1600, missesPerMinute: 1000 }, exemptNetworks: ['198.51.100.0/24'] },
+          throughput: { bytesPerSecond: 150_000_000, anonymousShare: 0.25, bytesPerHour: { anonymous: 50_000_000_000, signedIn: null, catalogue: null } },
+        }),
+        status: [
+          report('quader-bastion-dmz-frankfurt-edge-partners-eu1-6f8b9c7d4f-x2k4q', [
+            { address: '203.0.113.9/32', until: at(0.01), reason: 'refusals' },
+          ]),
+          report('quader-bastion-dmz-frankfurt-edge-partners-eu1-6f8b9c7d4f-m8v2j', [
+            { address: '203.0.113.9/32', until: at(0.01), reason: 'refusals' },
+            { address: '2001:db8:4::/64', until: at(0.02), reason: 'failed_auth' },
+          ]),
+        ],
         // The /64 its IPv6 replica leaves from; the other replica came from an IPv4 address it does not list (R-UI-243).
         egress: ['2001:db8:85a3::/64'],
         createdAt: at(-120),
@@ -49,8 +110,8 @@ function registrations(frankfurtOn: boolean): Json {
           token('0192f0d1-1c2a-7c3e-8a51-6f7d2b9c4e42', 'frankfurt 2026', 'qdr_bst_9Hd2', 345, 20),
         ],
         contacts: [
-          contact('quader-bastion-dmz-frankfurt-edge-partners-eu1-6f8b9c7d4f-x2k4q', '2001:0db8:85a3:0000:0000:8a2e:0370:7334', 'https://packages.dmz-frankfurt.partners.example.com', 1),
-          contact('quader-bastion-dmz-frankfurt-edge-partners-eu1-6f8b9c7d4f-m8v2j', '198.51.100.21', 'https://packages.dmz-frankfurt.partners.example.com', 2),
+          contact('quader-bastion-dmz-frankfurt-edge-partners-eu1-6f8b9c7d4f-x2k4q', '2001:0db8:85a3:0000:0000:8a2e:0370:7334', 'https://packages.dmz-frankfurt.partners.example.com', 1, { edgeLimit: 'rps=60; connections=256', catalogueKept: false }),
+          contact('quader-bastion-dmz-frankfurt-edge-partners-eu1-6f8b9c7d4f-m8v2j', '198.51.100.21', 'https://packages.dmz-frankfurt.partners.example.com', 2, { edgeLimit: 'rps=60; connections=256', catalogueKept: false }),
         ],
       },
       {
@@ -63,6 +124,9 @@ function registrations(frankfurtOn: boolean): Json {
         // beside one issued on the screen.
         declared: { since: at(-2), secretName: 'quader-bastion-token' },
         switches: { handover: false, gui: false, docs: false },
+        // A new registration's limits, and no replica that reported its state (R-UI-240).
+        limits: limits(),
+        status: [],
         egress: ['10.252.0.0/16'],
         createdAt: at(-170),
         tokens: [
@@ -136,6 +200,150 @@ SELECT p.id, 'quader-bastion-6c9f7d5b8-k2m4x', now(), '192.0.2.41', '0.42.0', 6,
 ON CONFLICT (bastion_id, replica) DO UPDATE SET contact_at = now(), base_url = EXCLUDED.base_url, token_id = EXCLUDED.token_id;
 UPDATE api_token t SET last_used_at = now(), last_used_addr = '192.0.2.41'
   FROM principal p WHERE t.principal_id = p.id AND p.kind = 'bastion' AND p.name = '${seededBastion.name}';`);
+  await seedBastionConfiguration(admin);
+}
+
+/**
+ * The configuration of the seed's registration (R-UI-240, R-UI-241): a throughput of 150 MB/s with a volume an hour for anonymous callers,
+ * an anonymous ceiling without its hour, the web interface on, a rule of an address beside the preset's kind rules, the edge figure its
+ * replica reported and a state it reported now with two blocks, written through the profile's database as the intake writes it (the
+ * profile runs no Bastion; E9b's sender is not built). A second run leaves the rule and sets the rest again.
+ */
+async function seedBastionConfiguration(admin: Api): Promise<void> {
+  const url = `/api/v1/bastions/${seededBastion.name}`;
+  const read = await admin.get(url);
+  await expectStatus(read, [200], `the Bastion ${seededBastion.name}`);
+  const patched = await admin.patch(
+    url,
+    {
+      switches: { gui: true },
+      limits: {
+        throughput: { bytesPerSecond: 150_000_000, bytesPerHour: { anonymous: 50_000_000_000 } },
+        anonymousCeiling: { requestsPerHour: null },
+      },
+    },
+    { 'If-Match': read.headers()['etag'] ?? '' },
+  );
+  await expectStatus(patched, [200], `the configuration of the Bastion ${seededBastion.name}`);
+  const rule = await admin.post(
+    `${url}/limits/assignments`,
+    { who: { kind: 'address', prefix: '203.0.113.0/24' }, profile: 'restricted', overrides: {}, note: 'The partner office in Lyon' },
+    { 'Idempotency-Key': `render-bastion-rule-${Date.now()}` },
+  );
+  await expectStatus(rule, [201, 409], `a rule of the Bastion ${seededBastion.name}`);
+  const until = (hours: number): string => new Date(Date.now() + hours * 3_600_000).toISOString();
+  const status = {
+    replica: 'quader-bastion-6c9f7d5b8-k2m4x',
+    at: new Date().toISOString(),
+    cache: { bytes: 7_000_000_000, capacityBytes: 20_000_000_000, hits: 9_700, misses: 300, evictions: 12, protectedBytes: 4_500_000_000 },
+    throughput: { limited: false, bytesPerSecondByClass: { anonymous: 12_000_000, signedIn: 29_000_000, catalogue: 0 } },
+    limited: 4,
+    blocked: 3,
+    // One block of each reason of the closed list (R-LIM-045).
+    blocks: [
+      { address: '203.0.113.9/32', until: until(0.25), reason: 'refusals' },
+      { address: '2001:db8:4::/64', until: until(12), reason: 'failed_auth' },
+      { address: '198.51.100.77/32', until: until(1), reason: 'refused_requests' },
+    ],
+  };
+  psql(`UPDATE bastion_contact c SET edge_limit = 'rps=1000; connections=256', catalogue_kept = true
+  FROM principal p WHERE c.bastion_id = p.id AND p.kind = 'bastion' AND p.name = '${seededBastion.name}';
+INSERT INTO bastion_status (bastion_id, replica, reported_at, status)
+SELECT p.id, 'quader-bastion-6c9f7d5b8-k2m4x', now(), '${JSON.stringify(status)}'::jsonb
+  FROM principal p WHERE p.kind = 'bastion' AND p.name = '${seededBastion.name}'
+ON CONFLICT (bastion_id, replica) DO UPDATE SET reported_at = now(), status = EXCLUDED.status;`);
+}
+
+/** The kind rules a preset wrote at `partners`, as the place's rules answer them (R-LIM-043), for the preset's dialog. */
+function partnersRules(): Json {
+  const place = { kind: 'bastion', bastion: 'partners' };
+  const kinds: [string, string][] = [
+    ['anonymous', 'bastion-anonymous'],
+    ['user', 'bastion-signed-in'],
+    ['technicalToken', 'bastion-signed-in'],
+    ['ci', 'bastion-signed-in'],
+    ['administrator', 'bastion-signed-in'],
+  ];
+  const stamp = { version: 1, createdAt: at(-170), createdBy: null, updatedAt: at(-170), updatedBy: null };
+  return {
+    items: kinds.map(([kind, profile]) => ({
+      id: `0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a5${kinds.findIndex(([k]) => k === kind)}`,
+      place,
+      who: { kind: 'every', callerKind: kind },
+      profile,
+      overrides: {},
+      effective: {},
+      clamped: {},
+      capped: false,
+      builtin: true,
+      note: '',
+      ...stamp,
+    })),
+    nextCursor: null,
+  };
+}
+
+/** The registrations of the walk and the place's rules of `partners` answered in the browser, then the page loaded again. */
+async function answerLimits(page: Page): Promise<void> {
+  await page.route('**/api/v1/bastions', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(registrations(false)) }),
+  );
+  await page.route('**/api/v1/bastions/partners/limits/assignments**', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(partnersRules()) }),
+  );
+  await page.reload();
+  await page.waitForLoadState('networkidle');
+  await expect(page.locator('main quader-bastion-card')).toHaveCount(2);
+}
+
+/**
+ * The section **Limits** of a card (R-UI-240), in both languages, so every locator is the markup's, never a word: `dmz-frankfurt-edge`
+ * Custom in Audit at 150 MB/s with the state of two replicas, the edge warning, the catalogue's sentence and the egress offer, and
+ * `partners` as a new registration; then the details of `dmz-frankfurt-edge` opened, the preset's dialog of `partners` naming what
+ * Partner network replaces, and the mode's dialog of `dmz-frankfurt-edge`, each cancelled. Nothing is saved.
+ */
+export async function* bastionLimits(page: Page): AsyncGenerator<string> {
+  await answerLimits(page);
+  const frankfurt = page.locator('main quader-bastion-card').nth(0);
+  const partners = page.locator('main quader-bastion-card').nth(1);
+  await expect(frankfurt.locator('[data-testid="bastion-edge-warning"]')).toBeVisible();
+  yield '';
+  const details = frankfurt.locator('quader-bastion-limits quader-disclosure button[aria-expanded]').first();
+  await details.click();
+  await expect(details).toHaveAttribute('aria-expanded', 'true');
+  await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
+  yield 'details';
+  await details.click();
+  await expect(details).toHaveAttribute('aria-expanded', 'false');
+  const presets = partners.locator('.presets button');
+  if ((await presets.count()) > 0) {
+    await presets.nth(1).click();
+    const dialog = page.locator('quader-bastion-preset-dialog');
+    await expect(dialog.locator('[data-testid="preset-kinds"]')).toBeVisible();
+    yield 'preset';
+    await dialog.locator('.dialog-actions button').first().click();
+    await expect(dialog).toHaveCount(0);
+    await frankfurt.locator('.mode-line button').click();
+    const mode = page.locator('quader-limit-mode-dialog');
+    await expect(mode).toBeVisible();
+    yield 'mode';
+    await mode.locator('.dialog-actions button').first().click();
+    await expect(mode).toHaveCount(0);
+  }
+  await page.unroute('**/api/v1/bastions');
+  await page.unroute('**/api/v1/bastions/partners/limits/assignments**');
+}
+
+/**
+ * **Download limits of dmz-berlin** (R-UI-241): the rules of the seed's Bastion, the preset's five first and the address's rule after them,
+ * then the tab **Blocks** with the two blocks its replica reported. Locators are the markup's: the screen renders in German too.
+ */
+export async function* bastionLimitsPage(page: Page): AsyncGenerator<string> {
+  await expect(page.locator('main quader-limit-rules tbody tr').first()).toBeVisible();
+  yield '';
+  await page.locator('main .limits-nav a').nth(1).click();
+  await expect(page.locator('main quader-bastion-blocks-tab tbody tr').first()).toBeVisible();
+  yield 'blocks';
 }
 
 /** The registrations and the connections' states as the walk wants them, then the page loaded again. */
@@ -180,11 +388,19 @@ export async function* bastionsHandover(page: Page): AsyncGenerator<string> {
   await page.unroute('**/api/v1/download-links/settings');
 }
 
-/** The auditor (`endpoints:read`, `settings:read`): the state as a word, no switch, and the reasons of a registration whose reads are on. */
+/**
+ * The auditor (`endpoints:read`, `settings:read`): the state as a word, no switch, and the reasons of a registration whose reads are on;
+ * then the limits as text, the details of `dmz-frankfurt-edge` opened (R-UI-240).
+ */
 export async function* bastionsRead(page: Page): AsyncGenerator<string> {
   await answer(page, true, blocked);
   await expect(page.locator('main [data-testid="bastion-handover-reasons"]')).toBeVisible();
   yield 'reasons';
+  const details = page.locator('main quader-bastion-card').first().locator('quader-bastion-limits quader-disclosure button[aria-expanded]').first();
+  await details.click();
+  await expect(details).toHaveAttribute('aria-expanded', 'true');
+  await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
+  yield 'details';
   await page.unroute('**/api/v1/bastions');
   await page.unroute('**/api/v1/download-links/settings');
 }

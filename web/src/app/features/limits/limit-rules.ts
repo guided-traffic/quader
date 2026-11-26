@@ -19,10 +19,24 @@ export function orderRules(rules: readonly LimitRule[]): LimitRule[] {
   return [...rules].sort((a, b) => whoRank(a.who) - whoRank(b.who) || whoSortName(a.who).localeCompare(whoSortName(b.who)));
 }
 
+/** The order of the five kind rules a Bastion's preset writes (R-LIM-046). */
+const PRESET_ORDER: readonly string[] = ['anonymous', 'user', 'technicalToken', 'ci', 'administrator'];
+
 /**
- * The rules of one place (R-UI-179), the same table at the instance, a project and a repository: who it applies to, the profile
- * with its changed figures, the note. The name opens the rule's dialog where the caller may change it, and **Delete** is the
- * row's one action; a built-in rule has none (Q-UI-758). A capped rule whose
+ * The rules of a Bastion's place (R-UI-241): the five kind rules of the preset first, in the preset's order, then the others as
+ * resolution tries them.
+ */
+export function orderBastionRules(rules: readonly LimitRule[]): LimitRule[] {
+  const rank = (r: LimitRule): number => (r.builtin && r.who.kind === 'every' ? PRESET_ORDER.indexOf(r.who.callerKind) : PRESET_ORDER.length);
+  const preset = rules.filter((r) => rank(r) < PRESET_ORDER.length).sort((a, b) => rank(a) - rank(b));
+  return [...preset, ...orderRules(rules.filter((r) => rank(r) === PRESET_ORDER.length))];
+}
+
+/**
+ * The rules of one place (R-UI-179), the same table at the instance, a project, a repository and a Bastion: who it applies to, the
+ * profile with its changed figures, the note. The name opens the rule's dialog where the caller may change it, and **Delete** is the
+ * row's one action; a built-in rule has none (Q-UI-758). At a Bastion's place the five kind rules its preset wrote come first, marked
+ * **From the preset** (R-UI-241). A capped rule whose
  * figures are clamped now carries **Above the maximum** with what applies. **Add rule** is the parent's: it calls `add()`.
  */
 @Component({
@@ -48,7 +62,11 @@ export function orderRules(rules: readonly LimitRule[]): LimitRule[] {
           <th scope="row" class="wrap-name">
             <quader-caller-cell [view]="view(r)" [actionable]="canWrite()" (activate)="change(r)">
               @if (r.builtin) {
-                <span class="badge" i18n="@@limits.rules.builtin">Built-in</span>
+                @if (place().kind === 'bastion') {
+                  <span class="badge" i18n="@@limits.rules.from-preset">From the preset</span>
+                } @else {
+                  <span class="badge" i18n="@@limits.rules.builtin">Built-in</span>
+                }
               }
             </quader-caller-cell>
             <!-- The note under whom the rule applies to (Q-UI-1001): the list keeps its table in a settings column at 1,024 px. -->
@@ -126,7 +144,9 @@ export class LimitRules {
   protected readonly rules = signal<readonly LimitRule[] | null>(null);
   protected readonly profiles = signal<readonly LimitProfile[]>([]);
   protected readonly failure = signal<ApiError | null>(null);
-  protected readonly ordered = computed(() => orderRules(this.rules() ?? []));
+  protected readonly ordered = computed(() =>
+    this.place().kind === 'bastion' ? orderBastionRules(this.rules() ?? []) : orderRules(this.rules() ?? []),
+  );
 
   protected readonly caption = computed(() => {
     const place = this.place();

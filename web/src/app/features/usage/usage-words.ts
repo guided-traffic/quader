@@ -86,3 +86,9 @@ export function periodPhrase(period: UsagePeriod): string {
       return $localize`:@@usage.period.phrase-30d:in the last 30 days`;
   }
 }
+
+/** The filter **Place** as it reads (R-UI-242): "This installation", "Through partners". */
+export function placeFilterLabel(place: string): string {
+  if (place === 'installation') return $localize`:@@usage.place.installation:This installation`;
+  return $localize`:@@usage.place.bastion:Through ${place.replace(/^bastion:/, '')}:name:`;
+}

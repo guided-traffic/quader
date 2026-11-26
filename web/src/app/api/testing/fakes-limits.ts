@@ -172,6 +172,45 @@ export function sampleInstanceRules(): LimitRule[] {
   ];
 }
 
+/** The two profiles of a Bastion (R-LIM-046) with the figures of the measurement of 2026-11-26. */
+export function sampleBastionProfiles(): LimitProfile[] {
+  return [
+    profile(
+      'bastion-anonymous',
+      'Bastion: anonymous',
+      true,
+      figures({ requestsPerSecond: 50, requestsBurst: 1250, requestsPerHour: 20000, uncachedBytesPerSecond: 50 * MB, uncachedBytesPerHour: 9 * GB, cachedBytesPerSecond: 100 * MB, cachedBytesPerHour: 30 * GB, upstreamRequestsPerHour: 5200, parallelTransfers: 270, bytesPerDay: 220 * GB, refusedPerHour: 300 }),
+      1,
+    ),
+    profile(
+      'bastion-signed-in',
+      'Bastion: signed-in',
+      true,
+      figures({ requestsPerSecond: 200, requestsBurst: 5400, requestsPerHour: 100000, uncachedBytesPerSecond: 125 * MB, uncachedBytesPerHour: 20 * GB, cachedBytesPerSecond: 250 * MB, cachedBytesPerHour: 160 * GB, upstreamRequestsPerHour: 12000, parallelTransfers: 340, bytesPerDay: 1300 * GB, refusedPerHour: 1000 }),
+      4,
+    ),
+  ];
+}
+
+/**
+ * The rules of a Bastion's place (R-LIM-043): the five kind rules the preset Internet wrote, built in, and a rule of a technical token
+ * and of an address, which a preset keeps.
+ */
+export function sampleBastionRules(bastion = 'partners'): LimitRule[] {
+  const place: LimitPlace = { kind: 'bastion', bastion };
+  const kind = (k: 'administrator' | 'user' | 'technicalToken' | 'ci' | 'anonymous', p: string): LimitRule =>
+    rule(`${bastion}:${k}`, place, { kind: 'every', callerKind: k }, p, { builtin: true });
+  return [
+    rule('b-address', place, { kind: 'address', prefix: '203.0.113.0/24' }, 'restricted', { note: 'The partner office' }),
+    kind('administrator', 'bastion-signed-in'),
+    kind('ci', 'bastion-signed-in'),
+    kind('technicalToken', 'bastion-signed-in'),
+    kind('user', 'bastion-signed-in'),
+    kind('anonymous', 'bastion-anonymous'),
+    rule('b-token', place, { kind: 'technicalToken', technicalToken: 'tt-1', name: 'deploy-prod', account: 'sa:web/partner' }, 'technical'),
+  ];
+}
+
 export function sampleRepositoryRules(): LimitRule[] {
   const place: LimitPlace = { kind: 'repository', repository: 'web/npm-remote' };
   return [
@@ -441,6 +480,7 @@ export class FakeLimitsApi extends LimitsApi {
     ['instance', sampleInstanceRules()],
     ['project:web', [rule('r-project', { kind: 'project', project: 'web' }, { kind: 'group', group: 'web-devs', displayName: 'Web developers' }, 'technical', { capped: true })]],
     ['repository:web/npm-remote', sampleRepositoryRules()],
+    ['bastion:partners', sampleBastionRules()],
   ]);
   ceilingsByRepo = new Map<string, LimitCeilings>([['platform/dockerhub', sampleCeilings()]]);
   settingsValue: LimitSettings = { mode: 'audit', blockSeconds: 900, version: 4, updatedAt: '2026-11-20T08:00:00Z', updatedBy: 'ada' };

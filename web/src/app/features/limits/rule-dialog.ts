@@ -282,8 +282,9 @@ export class LimitRuleDialog {
 
   protected readonly kindOptions = computed<readonly SelectOption[]>(() => {
     const kinds: CallerKind[] = ['user', 'technicalToken', 'ci', 'anonymous'];
-    // Administrators are decided at the instance alone (R-LIM-012): a project or a repository cannot name them.
-    if (this.data.place.kind === 'instance') kinds.push('administrator');
+    // Administrators are decided at the instance and at a Bastion's place (R-LIM-012, R-LIM-043): a project or a repository cannot name
+    // them.
+    if (this.data.place.kind === 'instance' || this.data.place.kind === 'bastion') kinds.push('administrator');
     return kinds.map((k) => ({ value: k, label: everyLabel(k) }));
   });
 

@@ -482,7 +482,8 @@ Priority: **MVP** · Covers: quader-only
 - *Revised on 2026-11-26 (W-34, W-35):* the card holds the registration's configuration (R-UI-240): the switches `gui` and `docs` beside
   the handover, the limits, and, while `gui` is on and a reporting replica's catalogue is not kept (`Quader-Bastion-Catalogue-Kept: false`),
   the sentence of W-35's B.2b; the client setup for a Bastion is rendered by the Bastion's own web interface as well, on its host and
-  without publish lines (W-35's P9). *Today, until E12 and P9 land:* the card and the client setup as below.
+  without publish lines (W-35's P9). *Built by E12 (2026-11-26):* the card's configuration, switches and sentence (R-UI-240). *Today,
+  until P9 lands:* the client setup as below.
 - **Manual.** The admin manual gains `docs/manual/admin/bastion.md`: register a Bastion, issue its token, the chart values of a
   minimal and of an HA install, the settings on the main installation (the registration's `egress`, R-BAS-017;
   `server.additional_base_urls`), verify with the handshake metric, renew the token, and what each alert of R-BAS-041 means.
@@ -2155,7 +2156,7 @@ handshake, and the card warns where a configured per-address figure lies above i
   `edgeLimit.connections` on the Bastion's Ingress (owner, Q-BAS-16). It can be switched off.
 - It is meant to be wider than the Bastion's own, so that the Bastion's stage, which knows credentials and misses, decides first and the
   ingress only cuts what would overload the Bastion itself; the card of the main installation warns where a flood figure of the
-  registration lies above it (R-UI-240, E12), since the chart no longer knows those figures.
+  registration lies above it (R-UI-240, built by E12 on 2026-11-26), since the chart no longer knows those figures.
 - What the controller does with the values (verified for v0.16.3, [Q-BAS-56](#q-bas-56--haproxy-ingress-annotations-as-verified-against-the-controller-of-the-local-profile)):
   it tracks the connection's source address in a stick table and answers `429` while the address has more than
   `edgeLimit.connections` concurrent tracked streams or more than `edgeLimit.requestsPerSecond` new ones in the last second,
@@ -5102,7 +5103,7 @@ applies it in `Start` before the client listener binds, and the built-in configu
 startup naming it, the chart's schema refuses it), and renders the edge figure as `bastion.edge_limit`, which every handshake reports
 ([Q-BAS-447](#q-bas-447--the-edge-figure-is-a-chart-managed-section-of-the-configuration-file-and-every-handshake-reports-it)). Read
 nowhere yet at the Bastion: `mode`, `preset`, `place` (E9b); `throughput` is read since E10 (R-BAS-097), `switches.gui` and `docs` since
-W-35's P7 (R-BAS-112). *Not built* (E12, the card).
+W-35's P7 (R-BAS-112). *Built by E12 (2026-11-26):* the card (R-UI-240).
 
 *Built on 2026-11-26 by E8, the main installation's side:* migration 00147 gives the registration `gui`, `docs`, `limits_mode`,
 `limits_preset` and the members `limits_flood`, `limits_slots`, `limits_throughput` and `limits_ceiling` in the interface's shapes, with a
@@ -6067,9 +6068,10 @@ Priority: **P1** · Covers: quader-only
 the registration, off for a new one, set by `PATCH /api/v1/bastions/{name}` with `switches.gui` and `switches.docs` (`endpoints:write`).
 *Built on 2026-11-26 (W-35's P6):* at the builder, which reads the
 stored switches: `gui` on builds the registration's catalogue, off drops it at the next run, `docs` off
-builds no documentation and deletes what was built (R-BAS-104, R-BAS-108; `TestR_BAS_102_TheSwitchesDecideWhatIsBuilt`). *Not built:* the
-switches on the card (E12), the pages the switches start and stop (P9). *Built on 2026-11-26 (W-35's P7):* at the Bastion: `gui` on
-starts the sync, off makes the catalogue unreadable at once and deletes its tree; `docs` off hides the documentation at once (R-BAS-112).
+builds no documentation and deletes what was built (R-BAS-104, R-BAS-108; `TestR_BAS_102_TheSwitchesDecideWhatIsBuilt`). *Built by E12
+(2026-11-26):* the switches on the card, each with its sentence (R-UI-240). *Not built:* the pages the switches start and stop (P9).
+*Built on 2026-11-26 (W-35's P7):* at the Bastion: `gui` on starts the sync, off makes the catalogue unreadable at once and deletes its
+tree; `docs` off hides the documentation at once (R-BAS-112).
 
 Acceptance criteria:
 
@@ -11733,7 +11735,8 @@ requests in flight of a large `dotnet restore` (H-2276).
 *Revised on 2026-11-26 by the owner's [Q-BAS-323](#q-bas-323--a-bastion-is-configured-on-its-card-at-the-main-installation):* the
 Bastion's own figures move to its registration, so the chart's check of the edge figure against them goes (R-BAS-093); the edge's defaults
 of this decision stay, and the card warns where a configured figure lies above the edge figure the Bastion reports. *Built by E9a
-(2026-11-26):* the check in `_validate.tpl` is gone and the edge figure is reported; the card's warning is E12's.
+(2026-11-26):* the check in `_validate.tpl` is gone and the edge figure is reported; the card's warning is E12's, built on 2026-11-26 in plain view
+(R-UI-240, [Q-UI-1486](api-and-ui.md#q-ui-1486--the-edge-warning-stands-in-plain-view-not-under-the-flood-figures-in-details)).
 
 ### Q-BAS-320 · The configuration travels as one member with each rule's effective figures, and its revision is the registration's
 

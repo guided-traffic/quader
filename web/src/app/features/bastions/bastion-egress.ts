@@ -19,9 +19,10 @@ interface Row {
  * **Addresses this Bastion connects from** on a registration's card (R-UI-243, bastion.md R-BAS-017): the main installation believes
  * the caller's address a Bastion forwards, and the address its check names, only from these networks (Q-BAS-334, Q-BAS-430).
  *
- * The plain path is the warning (Q-UI-1483): it stands on the card while the list is empty, and for every address a replica's last
- * contact came from that the list does not hold, each with **Add <address>**, one `PATCH` of the list with that address (Q-UI-1482), so an
- * administrator who registered a Bastion enters its address in one click after its first handshake. The list itself is a field per
+ * The plain path is the warning (Q-UI-1483, part `warnings`): it stands on the card while the list is empty, and for every address a
+ * replica's last contact came from that the list does not hold, each with **Add <address>**, one `PATCH` of the list with that address
+ * (Q-UI-1482), so an administrator who registered a Bastion enters its address in one click after its first handshake. The list itself
+ * (part `list`) stands in the card's **Details** (R-UI-240) and is a field per
  * network, each as wide as the longest IPv6 network (the width of a host), with **Add address**, **Remove** and **Save changes**; one
  * empty field stands for the empty list, the default of a new registration. Who may change a registration (`endpoints:write`) edits it;
  * who may only read gets the networks as text (Q-UI-960). A refusal stands under the field it names and as a whole under the list
@@ -31,69 +32,72 @@ interface Row {
   selector: 'quader-bastion-egress',
   imports: [Busy, ErrorNotice],
   template: `
-    <h3 [id]="headingId()" i18n="@@bastion.egress.heading">Addresses this Bastion connects from</h3>
-    <p class="hint note" [id]="noteId()" i18n="@@bastion.egress.note">
-      The main installation believes the caller's address a Bastion forwards only from these addresses.
-    </p>
-    @if (empty()) {
-      <p class="hint warn line" data-testid="bastion-egress-empty">
-        <span class="material-icons inline" aria-hidden="true">warning</span
-        ><span i18n="@@bastion.egress.empty"
-          >No address is listed: every caller through this Bastion counts as the Bastion's own address at the main installation, with one
-          budget and one block for all, and the audit log names the Bastion's address instead of the caller's.</span
-        >
-      </p>
-    }
-    @for (a of unlisted(); track a) {
-      <div class="line offer" data-testid="bastion-egress-unlisted">
-        <p class="hint warn">
+    @if (part() === 'warnings') {
+      @if (empty()) {
+        <p class="hint warn line" data-testid="bastion-egress-empty">
           <span class="material-icons inline" aria-hidden="true">warning</span
-          ><span i18n="@@bastion.egress.unlisted">The last contact came from <span translate="no">{{ a }}</span>, which is not listed.</span>
+          ><span i18n="@@bastion.egress.empty"
+            >No address is listed: every caller through this Bastion counts as the Bastion's own address at the main installation, with one
+            budget and one block for all, and the audit log names the Bastion's address instead of the caller's.</span
+          >
         </p>
-        @if (canWrite()) {
-          <button class="btn btn-default btn-sm" type="button" [disabled]="busy()" [quaderBusy]="busy()" (click)="add(a)">
-            <ng-container i18n="@@bastion.egress.add-contact">Add <span translate="no">{{ a }}</span></ng-container>
+      }
+      @for (a of unlisted(); track a) {
+        <div class="line offer" data-testid="bastion-egress-unlisted">
+          <p class="hint warn">
+            <span class="material-icons inline" aria-hidden="true">warning</span
+            ><span i18n="@@bastion.egress.unlisted">The last contact came from <span translate="no">{{ a }}</span>, which is not listed.</span>
+          </p>
+          @if (canWrite()) {
+            <button class="btn btn-default btn-sm" type="button" [disabled]="busy()" [quaderBusy]="busy()" (click)="add(a)">
+              <ng-container i18n="@@bastion.egress.add-contact">Add <span translate="no">{{ a }}</span></ng-container>
+            </button>
+          }
+        </div>
+      }
+    } @else {
+      <h4 [id]="headingId()" i18n="@@bastion.egress.heading">Addresses this Bastion connects from</h4>
+      <p class="hint note" [id]="noteId()" i18n="@@bastion.egress.note">
+        The main installation believes the caller's address a Bastion forwards only from these addresses.
+      </p>
+      @if (canWrite()) {
+        <div class="rows" role="group" [attr.aria-labelledby]="headingId()" [attr.aria-describedby]="noteId()">
+          @for (row of rows(); track row.id; let i = $index) {
+            <div class="row">
+              <input
+                class="text-input field-w-name"
+                type="text"
+                [id]="fieldId(i)"
+                [value]="row.text"
+                spellcheck="false"
+                autocomplete="off"
+                translate="no"
+                [attr.aria-label]="fieldLabel(i)"
+                [attr.aria-invalid]="errorAt(i) ? true : null"
+                [attr.aria-describedby]="errorAt(i) ? fieldId(i) + '-error' : null"
+                (input)="setRow(row.id, $any($event.target).value)"
+              />
+              @if (rows().length > 1 || row.text !== '') {
+                <button class="btn btn-tertiary" type="button" (click)="removeRow(row.id)">
+                  <ng-container i18n="@@bastion.egress.remove">Remove</ng-container>
+                  <span class="visually-hidden"> {{ row.text }}</span>
+                </button>
+              }
+              @if (errorAt(i); as message) {
+                <p class="field-error" [id]="fieldId(i) + '-error'">{{ message }}</p>
+              }
+            </div>
+          }
+        </div>
+        <div class="row-actions">
+          <button class="btn btn-default" type="button" [disabled]="rows().length >= max" (click)="addRow()" i18n="@@bastion.egress.add-row">Add address</button>
+          <button class="btn btn-confirm" type="button" [disabled]="busy() || !dirty()" [quaderBusy]="busy()" (click)="save()" i18n="@@bastion.egress.save">
+            Save changes
           </button>
-        }
-      </div>
-    }
-    @if (canWrite()) {
-      <div class="rows" role="group" [attr.aria-labelledby]="headingId()" [attr.aria-describedby]="noteId()">
-        @for (row of rows(); track row.id; let i = $index) {
-          <div class="row">
-            <input
-              class="text-input field-w-name"
-              type="text"
-              [id]="fieldId(i)"
-              [value]="row.text"
-              spellcheck="false"
-              autocomplete="off"
-              translate="no"
-              [attr.aria-label]="fieldLabel(i)"
-              [attr.aria-invalid]="errorAt(i) ? true : null"
-              [attr.aria-describedby]="errorAt(i) ? fieldId(i) + '-error' : null"
-              (input)="setRow(row.id, $any($event.target).value)"
-            />
-            @if (rows().length > 1 || row.text !== '') {
-              <button class="btn btn-tertiary" type="button" (click)="removeRow(row.id)">
-                <ng-container i18n="@@bastion.egress.remove">Remove</ng-container>
-                <span class="visually-hidden"> {{ row.text }}</span>
-              </button>
-            }
-            @if (errorAt(i); as message) {
-              <p class="field-error" [id]="fieldId(i) + '-error'">{{ message }}</p>
-            }
-          </div>
-        }
-      </div>
-      <div class="row-actions">
-        <button class="btn btn-default" type="button" [disabled]="rows().length >= max" (click)="addRow()" i18n="@@bastion.egress.add-row">Add address</button>
-        <button class="btn btn-confirm" type="button" [disabled]="busy() || !dirty()" [quaderBusy]="busy()" (click)="save()" i18n="@@bastion.egress.save">
-          Save changes
-        </button>
-      </div>
-    } @else if (!empty()) {
-      <p class="state-text" data-testid="bastion-egress-list" translate="no">{{ listed().join(', ') }}</p>
+        </div>
+      } @else {
+        <p class="state-text" data-testid="bastion-egress-list" translate="no">{{ empty() ? noneText : listed().join(', ') }}</p>
+      }
     }
     @if (error(); as e) {
       <quader-error-notice [error]="e" />
@@ -102,6 +106,10 @@ interface Row {
   styles: `
     :host {
       display: block;
+    }
+    h4 {
+      margin: var(--quader-space-4) 0 var(--quader-space-2);
+      font: var(--quader-type-title-small);
     }
     .note,
     .line {
@@ -149,6 +157,11 @@ interface Row {
 })
 export class BastionEgress {
   readonly bastion = input.required<Bastion>();
+  /**
+   * `warnings`: the empty list's warning and the offers of the contacts' addresses, which stand on the card in plain view; `list`: the
+   * heading, the help and the fields, in the card's **Details** (Q-UI-1483, R-UI-240).
+   */
+  readonly part = input.required<'warnings' | 'list'>();
   /** The registration changed: the page reads the list again. */
   readonly changed = output<void>();
 
@@ -158,6 +171,7 @@ export class BastionEgress {
 
   /** The most networks a registration lists (Q-BAS-431). */
   protected readonly max = 32;
+  protected readonly noneText = $localize`:@@bastion.egress.none:No address is listed.`;
   protected readonly busy = signal(false);
   protected readonly error = signal<ApiError | null>(null);
   /** A registration the configuration declares takes its networks from there (R-BAS-127): the list is text then. */

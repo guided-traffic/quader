@@ -1,6 +1,7 @@
 import { Provider } from '@angular/core';
 import {
   Bastion,
+  BastionConfigurationPatch,
   BastionContact,
   BastionsApi,
   BastionTokenCreated,
@@ -221,6 +222,55 @@ export class FakeBastionsApi extends BastionsApi {
     }
     this.bumpRevision(name);
     const changed = { ...current, egress: egress.map((e) => (e.includes('/') ? e : `${e}/${e.includes(':') ? 128 : 32}`)) };
+    this.bastions = this.bastions.map((b) => (b.name === name ? changed : b));
+    return { value: changed, etag: this.etagOf(name) };
+  }
+
+  /** The merge patches of `configure`, in order. */
+  readonly patches: BastionConfigurationPatch[] = [];
+
+  /**
+   * A merge patch of the configuration (R-BAS-093): a preset writes its flood figures and Enforce first (R-LIM-046, every preset's flood
+   * figures are the Internet ones), then the other members merge; the preset reads `custom` once a flood figure differs from it.
+   */
+  override async configure(name: string, patch: BastionConfigurationPatch, etag: string): Promise<Versioned<Bastion>> {
+    this.fail();
+    this.ifMatch.push(etag);
+    this.patches.push(patch);
+    this.calls.push(`configure ${name} ${JSON.stringify(patch)}`);
+    const current = this.find(name);
+    if (etag !== this.etagOf(name)) throw problem(412, 'precondition_failed', { currentEtag: this.etagOf(name) });
+    this.bumpRevision(name);
+    let limits = current.limits;
+    const l = patch.limits;
+    if (l?.preset && l.preset !== 'custom') {
+      limits = { ...limits, preset: l.preset, flood: sampleBastionLimits().flood, mode: 'enforce' };
+    }
+    if (l) {
+      const f = l.flood ?? {};
+      const flood = {
+        anonymous: { ...limits.flood.anonymous, ...f.anonymous },
+        authenticated: { ...limits.flood.authenticated, ...f.authenticated },
+        gui: { ...limits.flood.gui, ...f.gui },
+        failedAuth: { ...limits.flood.failedAuth, ...f.failedAuth },
+        blocking: { ...limits.flood.blocking, ...f.blocking },
+        exemptNetworks: [...(f.exemptNetworks ?? limits.flood.exemptNetworks)],
+      };
+      limits = {
+        ...limits,
+        mode: l.mode ?? limits.mode,
+        flood,
+        slots: { ...limits.slots, ...l.slots },
+        throughput: {
+          ...limits.throughput,
+          ...l.throughput,
+          bytesPerHour: { ...limits.throughput.bytesPerHour, ...l.throughput?.bytesPerHour },
+        },
+        anonymousCeiling: { ...limits.anonymousCeiling, ...l.anonymousCeiling },
+      };
+      if (l.flood && JSON.stringify(flood) !== JSON.stringify(sampleBastionLimits().flood)) limits = { ...limits, preset: 'custom' };
+    }
+    const changed: Bastion = { ...current, switches: { ...current.switches, ...patch.switches }, limits };
     this.bastions = this.bastions.map((b) => (b.name === name ? changed : b));
     return { value: changed, etag: this.etagOf(name) };
   }

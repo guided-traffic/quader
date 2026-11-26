@@ -15,6 +15,7 @@ import { formatCount } from '../limits/figures';
 import { LimitExplain } from './limit-explain';
 import { UsageBudgets } from './usage-budgets';
 import { UsageHistory } from './usage-history';
+import { UsagePlaces } from './usage-places';
 import { UsageByCredentialTable, UsageByRepositoryTable } from './usage-tables';
 import { PERIODS, periodLabel, periodPhrase } from './usage-words';
 import { Loading } from '../../shared/ui/loading';
@@ -50,7 +51,7 @@ function sameSubject(a: UsageSubject, b: UsageSubject): boolean {
 @Component({
   selector: 'quader-usage-detail',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Busy, Loading, ErrorNotice, LimitExplain, PageHeader, RouterLink, UsageBudgets, UsageByCredentialTable, UsageByRepositoryTable, UsageHistory],
+  imports: [Busy, Loading, ErrorNotice, LimitExplain, PageHeader, RouterLink, UsageBudgets, UsageByCredentialTable, UsageByRepositoryTable, UsageHistory, UsagePlaces],
   template: `
     <quader-page-header [heading]="title()" [name]="true">
       <span meta class="meta">
@@ -94,6 +95,14 @@ function sameSubject(a: UsageSubject, b: UsageSubject): boolean {
         <quader-usage-budgets [budgets]="d.budgets" [mode]="d.mode" />
         <quader-limit-explain [subject]="{ kind: d.subject.kind, id: d.subject.id }" [subjectName]="caller(d.subject).primary" />
       </section>
+
+      <!-- Each Bastion's consumption beside the installation's, and the sum (R-UI-242); only where a Bastion counted the caller. -->
+      @if (throughBastion()) {
+        <section class="section" aria-labelledby="places-title">
+          <h2 id="places-title" i18n="@@usage.by-place">By place</h2>
+          <quader-usage-places [budgets]="d.budgets" />
+        </section>
+      }
 
       <section class="section">
         <quader-usage-history [points]="d.history" />
@@ -186,6 +195,8 @@ export class UsageDetailPage {
     const d = this.detail();
     return d ? blockedUntil(d) : null;
   });
+  /** A Bastion counted the caller: **By place** shows each place and the sum (R-UI-242). */
+  protected readonly throughBastion = computed(() => (this.detail()?.budgets ?? []).some((b) => b.place.kind === 'bastion'));
   /** `limits:write` lifts every block; an Owner the blocks of its project (R-LIM-016). */
   protected readonly canLift = computed(() => this.session.has('limits:write') || (this.scope() === 'project' && this.session.isOwnerOf(this.project())));
   protected readonly emptyText = computed(() => $localize`:@@usage.empty:No downloads ${periodPhrase(this.activePeriod())}:period:.`);

@@ -49,6 +49,11 @@ export interface UsageScope {
   readonly repository?: string | null;
   /** The instance's list narrowed to one project's repositories; ignored with `project`. */
   readonly projectFilter?: string | null;
+  /**
+   * The instance's list narrowed to where it was served (R-UI-242, Q-LIM-313): `installation` for the main installation's own places,
+   * `bastion:<name>` for one Bastion's; every place when absent. Ignored with `project`.
+   */
+  readonly place?: string | null;
 }
 
 /** The filters of a usage list (R-LIM-034). */
@@ -118,6 +123,7 @@ export function usageParams(scope: UsageScope, query: UsageQuery): QueryParams {
     order: query.order,
     repository: scope.project && scope.repository ? scope.repository : undefined,
     project: !scope.project && scope.projectFilter ? scope.projectFilter : undefined,
+    place: !scope.project && scope.place ? scope.place : undefined,
   });
 }
 

@@ -58,7 +58,7 @@ At most four builders at once (rule 10 of the project plan). The waves are the o
 | 4 | E9b | budgets on what the Bastion serves | E9a, E8 | not built |
 | 4 | E11 | the cache protects what was served twice | E1 (may take any free place from wave 2 on) | built |
 | 4 | E17 | the registry token's payload version 2 | E7 | built (with W-35's P8) |
-| 4 | E12 | the screens | E8, E10, E13 | not built |
+| 4 | E12 | the screens | E8, E10, E13 | built |
 
 ### E4 · The measurement, run once
 
@@ -250,6 +250,20 @@ At most four builders at once (rule 10 of the project plan). The waves are the o
 - **Tests**: Vitest about 4 s; the renders.
 - **Identifiers**: R-UI-240 to R-UI-243, Q-UI-1480 to Q-UI-1489 (Q-UI-1480 to Q-UI-1482 decided in the specification, Q-UI-1483 and
   Q-UI-1484 by E13, which built R-UI-243's section on the card).
+- **Built** on 2026-11-26. The card's section `<quader-bastion-limits>` ([bastion-limits.ts](../../web/src/app/features/bastions/bastion-limits.ts))
+  with the state of [bastion-state.ts](../../web/src/app/features/bastions/bastion-state.ts), the presets' table and words of
+  [presets.ts](../../web/src/app/features/bastions/presets.ts), the preset's dialog, the details' form
+  ([bastion-limit-details.ts](../../web/src/app/features/bastions/bastion-limit-details.ts)), the switches
+  ([bastion-switches.ts](../../web/src/app/features/bastions/bastion-switches.ts)) and `<quader-bastion-egress>` in two parts (warnings on
+  the card, the list in **Details**); `BastionsApi.configure`, a merge patch of `switches` and `limits`; the mode's dialog of
+  [limit-mode.ts](../../web/src/app/features/limits/limit-mode.ts) for a Bastion; the page `/admin/bastions/{name}/limits`
+  ([bastion-limits-page.ts](../../web/src/app/features/bastions/bastion-limits-page.ts)) with `orderBastionRules` of `limit-rules.ts`; the
+  overview's **Place** and a caller's **By place** ([usage-places.ts](../../web/src/app/features/usage/usage-places.ts)). Decisions
+  Q-UI-1485 to Q-UI-1489; gaps H-2364, H-2365 (both in api-and-ui.md). With E9b's report the state line takes the cache's fill,
+  capacity and protected bytes from one replica (the bucket backend reports the whole Bastion's cache in each) and names the block reasons
+  of its closed list (`refusals`, `failed_auth`, `refused_requests`) in words, on the card and on **Blocks** (`blockReasonText`). A
+  declared registration (R-BAS-127) shows the section as every other card; its addresses are text there as well. Tests: Vitest, 19 cases in `bastions.spec.ts`,
+  `bastion-limits-page.spec.ts` and `usage.spec.ts`, about 2.5 s together, fixtures only.
 
 ### E13 · Egress addresses on the registration
 

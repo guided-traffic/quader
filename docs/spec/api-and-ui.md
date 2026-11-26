@@ -3954,6 +3954,8 @@ selected tab live in query parameters; a version of a package is an object with 
 | `/admin/limits`, `/admin/limits/profiles`, `/admin/limits/profiles/new`, `/admin/limits/profiles/{key}`, `/admin/limits/projects`, `/admin/limits/blocks` | Download limits: rules, profiles and a profile's editor, the projects' maxima, blocks | R-UI-177, R-UI-178 |
 | `/admin/ci`, `/admin/ci/new`, `/admin/ci/issuances`, `/admin/ci/{issuer}`, `/admin/ci/{issuer}/mappings/new`, `/admin/ci/{issuer}/mappings/{mapping}`, `/admin/ci/{issuer}/test` | CI identity: issuers, a new issuer, the issuances, an issuer and its mappings, the claim tester (Q-UI-99) | R-UI-035, R-UI-036 |
 | `/admin/bastions` | Bastions: one page with a card per registration ([bastion.md](bastion.md) Q-BAS-95) | [bastion.md](bastion.md) R-BAS-007 |
+| `/admin/bastions/{name}` | No page: the trail's step of a registration's name, which leads to its card on `/admin/bastions` | R-UI-241 |
+| `/admin/bastions/{name}/limits`, `/admin/bastions/{name}/limits/blocks` | A Bastion's download limits: the rules of its place and the blocks its replicas reported | R-UI-241 |
 | `/admin/audit` | Audit log, with a project column | R-UI-037 |
 | `/admin/advisory-sources` | Advisory sources of the vulnerability data | [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-022 |
 | `/admin/endpoints`, `/admin/endpoints/{endpoint}`, `/admin/endpoints/{endpoint}/rules/new`, `/admin/endpoints/{endpoint}/rules/{name}` | Endpoints and exposure rules | [endpoints.md](endpoints.md) R-EP-017 |
@@ -10383,14 +10385,37 @@ demand ([Q-UI-1480](#q-ui-1480--a-bastions-card-shows-the-preset-the-mode-and-th
 - Every change sends `PATCH /api/v1/bastions/{name}` with the card's `ETag`; a `412` or a refusal stands under the field with every fact of
   its answer (R-UI-216), and the field keeps the server's value.
 
-*Not built* (package E12, after E8, E10 and E13). Today a card shows the registration's facts, its contacts, its tokens and the handover's
-switch only (R-BAS-007, R-BAS-071).
+*Built (package E12, 2026-11-26)*, as the card's section `<quader-bastion-limits>`
+([bastion-limits.ts](../../web/src/app/features/bastions/bastion-limits.ts)) after the switch of the direct reads, in this order: the heading
+**Limits**; the state line, live with the list's read every minute (R-UI-213), summed over the replicas that reported in the last five
+minutes ([bastion-state.ts](../../web/src/app/features/bastions/bastion-state.ts),
+[Q-UI-1489](#q-ui-1489--the-state-line-takes-the-cache-once-adds-up-each-replicas-own-figures-and-counts-a-blocked-address-once)), with the throughput's meter (the
+usage overview's `<quader-usage-meter>`, so the data colour below 70 %, then warning and danger, never green) and "4 callers limited now ·
+1 address blocked" linking to `/admin/bastions/{name}/limits/blocks` for a holder of `limits:read`, and under it why, each reason of the
+closed list (`refusals`, `failed_auth`, `refused_requests`) in words with its number of addresses (`blockReasons`); the warnings in plain view, the edge
+warning ([Q-UI-1486](#q-ui-1486--the-edge-warning-stands-in-plain-view-not-under-the-flood-figures-in-details)), W-35's sentence of a
+catalogue a restart loses (while `gui` is on and a contact reported `catalogueKept: false`) and R-UI-243's warnings; the preset (a
+segmented control of three pressed buttons, **Custom** a pressed segment that is no button), its dialog
+([bastion-preset-dialog.ts](../../web/src/app/features/bastions/bastion-preset-dialog.ts), with the presets' table of the screen,
+[Q-UI-1485](#q-ui-1485--the-screen-holds-the-presets-table-to-name-what-a-preset-replaces)); the mode with R-UI-182's dialog
+(`LimitModeDialog` of [limit-mode.ts](../../web/src/app/features/limits/limit-mode.ts) with the Bastion's name and its sentences, no
+preview, H-2365), whose `401 reauthentication_required` stands in the dialog while the session asks for the sign-in; the throughput field
+(`field-w-number`, 200 for a new registration, empty for unlimited). **Details** holds `<quader-bastion-limit-details>`
+([bastion-limit-details.ts](../../web/src/app/features/bastions/bastion-limit-details.ts): the flood figures in five groups, the exempt
+networks as one field, the slots, the anonymous ceiling, the throughput's share and GB an hour per class, one **Save changes**,
+[Q-UI-1487](#q-ui-1487--the-details-are-one-form-whose-refusal-keeps-what-was-typed-and-the-exempt-networks-are-one-field)), R-UI-243's
+list, `<quader-bastion-switches>` ([bastion-switches.ts](../../web/src/app/features/bastions/bastion-switches.ts), each switch with its
+sentence; **Documentation** says that it takes effect only with the web interface, and a line says so where it is on without it) and the
+link **Rules of this Bastion**. English and German.
 
 Acceptance criteria:
 
-- Vitest (`bastions.spec.ts`, about 1 s): a new registration shows Internet, "Mode: Enforce" and "Unlimited"; **Details** is closed; a
+- Vitest (`bastions.spec.ts`, about 1 s): a new registration shows Internet, "Mode: Enforce" and 200 MB/s; **Details** is closed; a
   holder of `endpoints:write` alone sees the limits as text; the edge warning for a reported figure below the configured one; the state
-  line from a status fixture and "No report in the last 5 minutes" without one.
+  line from a status fixture and "No report in the last 5 minutes" without one. *As built:* "A Bastion's limits, throughput, switches and
+  state on its card (R-UI-240)", eleven cases, about 1.5 s with fixtures of a few hundred bytes: also the preset's dialog with what it
+  replaces and with nothing to replace, **Custom**, the mode's dialog refused for recent authentication and then sent, the throughput's
+  field, the details' merge patch, both halves of the permission split and the switches' sentences.
 - Rendered (rule 11): the card in both schemes, wide and narrow, with Internet, Custom and an Audit mode, the details open and closed.
 
 ### R-UI-241 · A Bastion's limits page
@@ -10407,13 +10432,21 @@ of `limits:read`; reached from the card's **Rules of this Bastion**.
 - A sentence over the table: "These rules count what this Bastion serves. The installation's own rules count what it serves, including
   what this Bastion fetches."
 
-*Not built* (package E12, after E8). Today no page holds a Bastion's rules.
+*Built (package E12, 2026-11-26)* in [bastion-limits-page.ts](../../web/src/app/features/bastions/bastion-limits-page.ts): the frame reads
+the registration (and again every minute while seen, R-UI-213) for the tab **Blocks**, whose rows come from each replica's `status`
+(the one ending last first, an ended block left out, the reason in words, a code outside the closed list as it came); the tab **Rules** is `<quader-limit-rules>` with the place `bastion`, whose
+`orderBastionRules` puts the preset's five kind rules first and marks them **From the preset** instead of **Built-in**; the rule dialog offers
+**Every administrator** at a Bastion's place as at the instance (R-LIM-043). The route guards the page with `limits:read`; the trail's step
+of the Bastion's name leads to its card on the list. A holder of `limits:read` without `endpoints:read` reads the rules, and **Blocks**
+shows the registration's `403` with every fact of it (R-UI-216). English and German.
 
 Acceptance criteria:
 
 - Vitest (about 1 s): the kind rules come first and cannot be deleted; a rule for a technical token is added with one `POST` to
   `…/bastions/partners/limits/assignments`; the blocks of two replicas are listed.
 - Rendered: both tabs, both schemes, wide and narrow.
+- *As built:* [bastion-limits-page.spec.ts](../../web/src/app/features/bastions/bastion-limits-page.spec.ts), five cases, about 0.5 s:
+  also **Every administrator** among the kinds, a reader without **Add rule**, and the empty and the refused tab **Blocks**.
 
 ### R-UI-242 · Usage through a Bastion
 Priority: **P1** · Covers: quader-only
@@ -10422,12 +10455,20 @@ The owner's two budgets ([usage-and-limits.md](usage-and-limits.md) Q-LIM-306): 
 (**All**, **This installation**, and one entry per Bastion, "Through <name>"), kept in the page's address; a caller's page (R-UI-184) lists
 its consumption per place, each Bastion's beside the installation's, and the sum.
 
-*Not built* (package E12, after E8). Today the overview has no place filter and no Bastion's consumption.
+*Built (package E12, 2026-11-26):* the filter **Place** in the drawer of the instance's overview
+([usage-overview.ts](../../web/src/app/features/usage/usage-overview.ts)), the query parameter `place` (`installation` or
+`bastion:<name>`, Q-LIM-313) sent to the list and to its CSV, a chip "Place: Through partners"; the Bastions it offers are those the viewer
+may read (`endpoints:read`), and a place the address names stays a choice without them. A caller's page gains **By place**
+([usage-places.ts](../../web/src/app/features/usage/usage-places.ts)) where a Bastion's budget is among its budgets: **This installation**,
+one row per Bastion and **All places**, with the requests and the bytes from the upstream of the last hour and the bytes of the last
+24 hours, summed from the budgets' windows ([Q-UI-1488](#q-ui-1488--a-callers-consumption-per-place-is-read-from-its-budgets-windows)).
+English and German.
 
 Acceptance criteria:
 
 - Vitest (about 1 s): **Place** "Through partners" sends the filter and shows the Bastion's rows; a caller's page shows two places and the
-  sum.
+  sum. *As built:* "Usage through a Bastion (R-UI-242)" of [usage.spec.ts](../../web/src/app/features/usage/usage.spec.ts), three cases,
+  about 0.3 s.
 
 The priority is P1: the Bastion's limits hold and the card shows its state without it (R-UI-240); this view adds who took what through
 which door.
@@ -10452,7 +10493,9 @@ does not exist yet ([Q-UI-1483](#q-ui-1483--the-egress-warning-stands-on-the-car
 network holds, each with **Add <address>**, and the list as a field per network, each `field-w-name` wide (the width of a host, which holds
 the longest IPv6 network of 43 characters), with **Remove**, **Add address** and **Save changes**; one empty field is the empty list, the
 default of a new registration ([Q-UI-1484](#q-ui-1484--the-list-is-a-field-per-network-and-a-refused-entry-keeps-what-was-typed)). A holder of `endpoints:read` alone reads the networks as a line of text
-and the warnings without **Add**. English and German. E12 moves the list into **Details** and leaves the warnings on the card.
+and the warnings without **Add**. English and German. *Moved by E12 (2026-11-26):* the component has two parts, `part="warnings"` in plain
+view in the card's section **Limits** and `part="list"` (its heading, its help and the fields, or the line of text, "No address is listed."
+for an empty list) in its **Details** (R-UI-240).
 
 *Amended on 2026-11-26 ([bastion.md](bastion.md) R-BAS-127, [Q-UI-1497](#q-ui-1497--a-declared-bastion-registration-says-where-it-comes-from-with-the-words-of-a-declared-account)):*
 a registration the configuration declares shows its networks as the line of text a reader sees, with the warnings and without **Add**,
@@ -29100,6 +29143,91 @@ walkthrough.
 
 **Choice:** (a). **Applied in the spec:** R-BAS-127, R-BAS-007.
 
+### Q-UI-1485 · The screen holds the presets' table to name what a preset replaces
+
+Status: **Decided by the development agent on 2026-11-26** (package E12) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: Q-UI-1481's dialog names each kind rule's profile, each flood figure and the mode a preset replaces, from what to what; the API reads
+a registration's limits and its place's rules, but no preset (R-LIM-046's table lives in `bastionmain.Presets`), and the package may not
+change the API.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The screen holds R-LIM-046's table (`PRESETS` of [presets.ts](../../web/src/app/features/bastions/presets.ts)) and compares it with the limits and the place's rules it reads (chosen) | The dialog of Q-UI-1481 as specified | No API change; the table is the specification's, fixed, and not configurable | Two copies of one table: a change of a preset must change both, and a difference shows as a dialog that names a change the server does not make |
+| (b) A read of the presets in the API | `GET /api/v1/bastions/presets` | One table | An API change outside the package |
+| (c) A dialog that names only the parts it replaces, without values | "The five kind rules, the flood figures and the mode are replaced." | No copy | Not what Q-UI-1481 chose; it cannot say "nothing changes" |
+
+**Choice:** (a); the server applies its own table, so a difference can never configure a Bastion wrongly. A read of the presets is the
+better end state and is named in E12's report. **Applied in the spec:** R-UI-240.
+
+### Q-UI-1486 · The edge warning stands in plain view, not under the flood figures in Details
+
+Status: **Decided by the development agent on 2026-11-26** (package E12) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-UI-240 puts the edge warning "under the flood figures", which stand in the closed **Details**; Q-UI-1483 put R-UI-243's warnings
+in plain view for the same reason as here.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The warning in plain view in the section **Limits**, under the state (chosen) | Seen without a click | A fault the administrator has to act on is never hidden (Q-UI-1483's rule) | It stands apart from the figures it is about |
+| (b) Under the flood figures in **Details** | The specification's place | Beside the figures | Hidden by the closed fold, as Q-UI-1483's option (c) |
+
+**Choice:** (a). **Applied in the spec:** R-UI-240.
+
+### Q-UI-1487 · The details are one form whose refusal keeps what was typed, and the exempt networks are one field
+
+Status: **Decided by the development agent on 2026-11-26** (package E12) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-UI-240 says a refused field keeps the server's value, which holds for one value (the throughput); **Details** holds about
+twenty-five figures and a list of networks, and the server refuses a configuration as a whole (`422` at `/limits`, naming the member in its
+sentence), never at one figure's pointer.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One form with one **Save changes**, a merge patch of `limits`; each field checked in the browser before the request; a refusal under the form with every fact, the fields keeping what was typed; the exempt networks one field, comma-separated (chosen) | Q-UI-1484's rule for a list, applied to a form | A typo among twenty-five figures is corrected in place; the server's sentence names the member | Differs from the single field's rule; the networks are no list editor as the egress addresses are |
+| (b) A save per group | Five forms | Smaller patches | Five buttons in one fold |
+| (c) The fields return to the server's values on a refusal | R-UI-240's rule for one value | | Twenty-five typed figures lost for one wrong one |
+
+**Choice:** (a); the exempt networks are one field because the server names no entry of the list (a list editor's per-entry error, Q-UI-1484's
+reason, has nothing to show) and the list is expert, short and rarely set. **Applied in the spec:** R-UI-240.
+
+### Q-UI-1488 · A caller's consumption per place is read from its budgets' windows
+
+Status: **Decided by the development agent on 2026-11-26** (package E12) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-UI-242 lists a caller's consumption per place and the sum; the caller's detail (R-LIM-034) carries the totals of the period over
+every place and, per budget key, each figure's use in its window, but no totals per place, and the package may not change the API.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) **By place** from the budgets: the installation's budgets together, each Bastion's, and the sum; requests and bytes from the upstream of the last hour and bytes of the last 24 hours (chosen) | One table from the answer the page has | No request more; a request counts in the budget of the one rule that decided it, so the budgets add up | The windows are the budgets', not the page's period |
+| (b) The overview's list per place, filtered to the caller | One `GET /api/v1/usage?place=…` per place | The period of the page | A search by name for an ID; a request per Bastion |
+| (c) Totals per place in the detail | An API member | Exact | An API change outside the package |
+
+**Choice:** (a); the section shows only where a Bastion's budget is among the caller's, and its column heads name the windows. **Applied in
+the spec:** R-UI-242.
+
+### Q-UI-1489 · The state line takes the cache once, adds up each replica's own figures and counts a blocked address once
+
+Status: **Decided by the development agent on 2026-11-26** (package E12) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-UI-240 shows one line per card; each replica reports its state (R-LIM-045). E9b's sender defines the figures: on the bucket
+backend the cache's fill, capacity and protected bytes are the whole Bastion's in every replica's report; the hits and misses, the read
+rate and the callers limited are each replica's own.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Of the reports of the last five minutes, the cache's fill, capacity and protected bytes of one replica, the largest; the hits and misses (for the ratio), the read rate and the callers limited added up; an address blocked at several replicas once, or the largest reported count where that is larger (chosen) | One line for the Bastion | Right for the bucket backend, whose cache every replica reports whole | With a cache per replica (the volume backend) the line shows the largest replica's cache, not the Bastion's (H-2364) |
+| (b) A line per replica | | Exact per replica | A card of many lines for a plain administrator |
+| (c) The newest report alone | | Simple | Half the Bastion's traffic unseen |
+
+**Choice:** (a). **Applied in the spec:** R-UI-240.
+
 ## What this does not cover
 
 ### H-2221 · A Helm chart's dependencies are not matched to the charts Quader holds
@@ -29551,3 +29679,19 @@ Stage: R-API-085. When two repositories of the scope hold the latest version of 
 copy from a deprecated local repository into another, a remote whose upstream deprecated a version that a local repository holds too), the
 list's row and its filter read one of the two rows, which one is not defined; the version's page reads the copy that was stored first.
 Live only for such a pair; it decides a mark, not a permission.
+
+### H-2364 · A Bastion's state line shows the largest replica's cache, not the sum of caches per replica
+
+Stage: R-UI-240, Q-UI-1489, the card's state line. The line takes the cache's fill, capacity and protected bytes from one report, the
+largest, which is right for the bucket backend, where every replica reports the whole Bastion's cache; with the volume backend each replica
+has a cache of its own, and the line shows the largest of them, not what the Bastion holds in all. With Valkey the callers limited are each
+replica's count and are added. Live once E9b's sender reports, for a Bastion with the volume backend and more than one replica; what makes it
+real is an administrator who sizes the caches from the line. The report says no backend, so the screen cannot tell the two apart.
+
+### H-2365 · Switching a Bastion to Enforce shows no preview of what would have been limited
+
+Stage: R-UI-240, R-UI-182's dialog for a Bastion. The instance's **Switch to Enforce** first shows what the last 24 hours would have been in
+Enforce (`GET /api/v1/limits/mode-preview`); that read covers the main installation's places, not a Bastion's, so the Bastion's dialog says
+what Enforce does and shows no figures. Live for every switch of a Bastion to Enforce; what makes it real is an administrator who would
+have kept Audit after seeing the callers the Bastion would refuse. The usage overview's **Place** "Through <name>" with **Would have been
+limited** shows them by hand.
