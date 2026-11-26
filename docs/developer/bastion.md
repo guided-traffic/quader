@@ -1257,6 +1257,300 @@ installation's https URL (and `bastion.main.ca_file` when its certificate is not
 clients will use for the Bastion: the handshake refuses a base URL the main installation does not honour (`quader_bastion_base_url_mismatch`). The main installation's side of the interface (the four operations, the Recognize and Mark stages) is built, so the handshake succeeds against a current release; against an
 older one the handshake fails and the role stays unreachable.
 
+## The size of the public catalogue (measured 2026-11-26)
+
+The Bastion's web interface (W-35) serves anonymous visitors from a **public catalogue**: documents the main installation builds per
+registration and the Bastion mirrors whole, with a change list as the cursor ([the interface version 8](../spec/bastion.md#the-interface-version-8-the-shared-wire)).
+The catalogue is not built yet. This section measures the documents it will be made of, read from the reads the main installation already
+has, so that the builder (P6), the wire (P5) and the store at the Bastion (P7) are sized from numbers. It was run once; it is a
+measurement, not a test. The scripts and how to run them again are [hack/bastion-catalogue-measure](../../hack/bastion-catalogue-measure/README.md).
+
+Every number is marked: **measured** is read from the running instance; **derived** is computed from measured numbers by the rule given
+beside it.
+
+### The data set
+
+- **The instance.** One instance of the UI development profile (`make ui-dev-*`, role `all`, PostgreSQL, SeaweedFS and Valkey in
+  containers, no scanner), with the render seed of `make ui-renders`, plus a generated set in the public project `catalogue-measure`
+  ([what it holds](../../hack/bastion-catalogue-measure/README.md#what-the-generated-set-is)): npm with 20 packages of 50 versions and
+  200 of 2, NuGet 150 × 3, Debian 100 × 2 with 10 to 640 files each, Ansible 8 collections of 50 versions (25 to 34 modules, 5 roles) and
+  30 of 2, 300 generic files, 30 OCI images of 4 indexes with 2 platforms, a Sigstore bundle referrer each and 0 to 320 findings per
+  platform manifest. The artifacts are bytes; the documents are realistic in shape and size.
+- **What the anonymous caller reads (measured):** 543 public packages, 2,670 public versions (the seed's public content and the
+  generated set), 300 generic files.
+- **The documents read (measured):** the version page's reads per version (version, README HTML, vulnerabilities, signatures, Debian
+  contents, the Ansible docs tree, every entry with documentation and every file of it, the set-up snippets of every client of the
+  format for that version), per package (package, the whole versions list), per repository (the set-up snippets of every client), the
+  generic files (each folder's listing and each file's description and snippets), the signature objects, and the index of public
+  packages in pages of 100. The vulnerabilities document was read as the break-glass account, since the anonymous caller gets `401` until
+  P3; every generated finding is open, so its bytes are those P3 will answer the anonymous caller for the generated set.
+- **The machine:** an Apple M1 Ultra with 20 cores shared with other builders: load average 32 to 56 during the passes (measured with
+  `uptime`). The times below are slow by that load; their spread is given.
+
+### Counts and bytes (measured)
+
+| Format | Public packages | Public versions | Documents | Raw | gzip |
+|---|---:|---:|---:|---:|---:|
+| npm | 220 | 1,400 | 11,644 | 21.6 MiB | 7.0 MiB |
+| NuGet | 150 | 450 | 3,228 | 6.1 MiB | 1.9 MiB |
+| OCI | 31 | 154 | 992 | 20.6 MiB | 1.9 MiB |
+| Debian | 100 | 200 | 1,201 | 4.0 MiB | 1.0 MiB |
+| Ansible | 42 | 466 | 18,650 | 105.2 MiB | 32.1 MiB |
+| generic | (300 files) | | 1,535 | 1.4 MiB | 0.7 MiB |
+| index, signature objects | | | 126 | 0.3 MiB | 0.1 MiB |
+| **all** | **543** | **2,670** | **37,376** | **159.2 MiB** | **44.7 MiB** |
+| all, distinct contents | | | 36,043 | 149.9 MiB | 42.3 MiB |
+
+14.0 documents per public version on the mean (derived: 37,376 / 2,670). gzip is each document compressed alone, at zlib's default level 6.
+
+<details>
+<summary>Bytes per document kind and format: median, p95, max (measured)</summary>
+
+| Kind | Format | n | raw median | raw p95 | raw max | gzip median | gzip p95 | gzip max |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| version | npm | 1,400 | 1.6 KiB | 1.7 KiB | 1.8 KiB | 756 B | 783 B | 805 B |
+| version | NuGet | 450 | 2.6 KiB | 2.6 KiB | 2.6 KiB | 949 B | 953 B | 957 B |
+| version | OCI | 154 | 7.6 KiB | 7.7 KiB | 7.7 KiB | 1.8 KiB | 1.9 KiB | 1.9 KiB |
+| version | Debian | 200 | 2.1 KiB | 2.1 KiB | 2.1 KiB | 1,021 B | 1.0 KiB | 1.0 KiB |
+| version | Ansible | 466 | 1.6 KiB | 1.6 KiB | 1.9 KiB | 718 B | 724 B | 840 B |
+| README HTML | npm | 1,400 | 9.8 KiB | 11.3 KiB | 11.9 KiB | 2.3 KiB | 2.5 KiB | 2.6 KiB |
+| README HTML | NuGet | 225 | 9.6 KiB | 11.0 KiB | 11.6 KiB | 2.3 KiB | 2.5 KiB | 2.5 KiB |
+| README HTML | Ansible | 460 | 9.6 KiB | 11.4 KiB | 11.9 KiB | 2.3 KiB | 2.5 KiB | 2.6 KiB |
+| vulnerabilities | npm (0 to 6 findings) | 1,400 | 1.1 KiB | 2.2 KiB | 2.2 KiB | 566 B | 705 B | 721 B |
+| vulnerabilities | OCI (0 to 640 findings) | 154 | 71.0 KiB | 467.0 KiB | 559.9 KiB | 5.6 KiB | 30.0 KiB | 36.4 KiB |
+| vulnerabilities | NuGet, Debian, Ansible (no source) | 1,116 | 476 B | 503 B | 503 B | 278 B | 296 B | 297 B |
+| signatures | OCI (one bundle) | 154 | 1.5 KiB | 1.5 KiB | 1.5 KiB | 696 B | 701 B | 704 B |
+| signatures | the others (none) | 2,516 | 401 B | 424 B | 424 B | 276 B | 285 B | 286 B |
+| signature object | OCI | 120 | 758 B | 758 B | 758 B | 396 B | 397 B | 399 B |
+| contents | Debian (10 to 640 files) | 200 | 13.5 KiB | 22.1 KiB | 22.1 KiB | 2.6 KiB | 3.3 KiB | 3.3 KiB |
+| docs tree | Ansible | 460 | 4.5 KiB | 5.1 KiB | 5.1 KiB | 1.2 KiB | 1.3 KiB | 1.3 KiB |
+| docs entry | Ansible | 14,860 | 6.6 KiB | 9.2 KiB | 10.3 KiB | 2.0 KiB | 2.6 KiB | 2.9 KiB |
+| docs file | Ansible | 920 | 2.2 KiB | 11.2 KiB | 11.9 KiB | 950 B | 2.5 KiB | 2.7 KiB |
+| set-up snippets per version and client | npm (4 clients) | 5,600 | 633 B | 655 B | 655 B | 315 B | 329 B | 330 B |
+| set-up snippets per version and client | NuGet (3) | 1,350 | 1.5 KiB | 2.2 KiB | 2.2 KiB | 559 B | 581 B | 582 B |
+| set-up snippets per version and client | OCI (3) | 462 | 817 B | 877 B | 877 B | 359 B | 367 B | 368 B |
+| set-up snippets per version and client | Debian (1) | 200 | 2.1 KiB | 2.1 KiB | 2.1 KiB | 687 B | 688 B | 688 B |
+| set-up snippets per version and client | Ansible (1) | 466 | 2.0 KiB | 2.0 KiB | 2.0 KiB | 633 B | 634 B | 635 B |
+| set-up snippets per file and client | generic (3) | 900 | 1,003 B | 1,018 B | 1,018 B | 482 B | 485 B | 486 B |
+| set-up snippets per repository and client | all | 19 | 673 B to 2.6 KiB | | | 330 to 703 B | | |
+| package | all | 543 | 383 to 614 B | | | 268 to 409 B | | |
+| versions list (all pages) | npm, 50 versions | 20 | 12.6 KiB | | | 850 B | | |
+| versions list (all pages) | Ansible, 50 versions | 8 | 13.1 KiB | | | 950 B | | |
+| index page of 100 packages | | 6 | 45.2 KiB | 55.4 KiB | 55.4 KiB | 3.4 KiB | 9.5 KiB | 9.5 KiB |
+| folder listing | generic | 332 | 250 B | 789 B | 2.3 KiB | 215 B | 217 B | 390 B |
+| file description | generic | 300 | 1.5 KiB | 1.5 KiB | 1.5 KiB | 705 B | 708 B | 709 B |
+
+`signing/trusted-root.json` and `signing/chain.pem` answer `404` in the profile, which has no signing identity: not measured.
+</details>
+
+**Per public version, all its documents (measured):**
+
+| Format | Documents per version (median) | raw median | raw p95 | gzip median | gzip p95 | gzip mean |
+|---|---:|---:|---:|---:|---:|---:|
+| npm | 8 | 15.5 KiB | 17.3 KiB | 5.1 KiB | 5.3 KiB | 5.0 KiB |
+| NuGet | 6 | 8.5 KiB | 19.4 KiB | 3.1 KiB | 5.5 KiB | 4.2 KiB |
+| OCI | 6 | 82.5 KiB | 478.4 KiB | 9.1 KiB | 33.6 KiB | 12.2 KiB |
+| Debian | 5 | 18.6 KiB | 27.2 KiB | 4.8 KiB | 5.5 KiB | 4.9 KiB |
+| Ansible | 43 | 248.8 KiB | 295.5 KiB | 76.0 KiB | 88.7 KiB | 70.4 KiB |
+| generic (per file) | 4 | 4.4 KiB | 4.4 KiB | 2.1 KiB | 2.1 KiB | 2.1 KiB |
+
+**What dominates (measured, share of the gzip bytes):** Ansible documentation entries 63.1 %, README HTML 10.4 %, set-up snippets
+7.6 %, vulnerabilities 5.2 %, version documents 4.9 %, Ansible docs files 3.3 %, everything else under 2 % each. An OCI version with
+many findings is the largest single document (560 KiB raw for 640 findings, about 0.9 KiB per finding).
+
+### Dedupe across the versions of one package (measured)
+
+| Kind | Packages of 40+ versions | Documents | Distinct as served | Ratio | Distinct without the time members | Ratio |
+|---|---:|---:|---:|---:|---:|---:|
+| Ansible documentation entries | 8 × 50 versions | 14,200 | 14,200 | 1.0 | 1,264 | 11.2 |
+| README HTML, npm (changes with the minor) | 20 × 50 | 1,000 | 200 | 5.0 | | |
+| Ansible docs files (README changes every release, guide never) | 8 × 50 | 800 | 408 | 2.0 | | |
+| version, vulnerabilities, signatures, set-up snippets | 28 × 50 | | every one distinct | 1.0 | | |
+
+- **Every Ansible entry is distinct as served, because it carries `builtAt`**, the time its version's documentation was built. Two
+  versions of a module whose documentation did not change differ in that member alone (measured: `mod_30` of 5.8.0 and 5.9.0).
+  Without `builtAt` (measured with [volatile.mjs](../../hack/bastion-catalogue-measure/volatile.mjs)) the 14,200 entries are 1,264 distinct
+  documents, 158 per collection of 50 versions, and 87.6 MiB raw become about 8.4 MiB. 158 is exactly the generated set's own count of
+  distinct module sources (it changes two modules per release and adds one every fifth): the documentation renderer adds nothing else
+  that differs per version. The ratio is the publisher's; a collection that rewrites every module per release has none.
+- **The README renderer adds nothing per version:** the npm READMEs of one minor are byte-equal (10 distinct of 50 per package, as
+  generated). The ratio is the publisher's: a README that names the version is distinct per version, one that never changes is one per
+  package.
+- The documents that name the version (version, snippets, signatures, vulnerabilities) are distinct per version by nature.
+
+### Documents that change by themselves (measured)
+
+Between the two passes, 30 minutes apart, nothing was published. Of 37,376 documents **1,400 changed: every npm vulnerabilities
+document**, because `syncedAt` and the grade's `checkedAt` take the time of the last advisory sync, which runs every 15 minutes by
+default (`maintenance.tasks.vuln-sync-osv`). Read twice more an advisory sync apart and hashed without `builtAt`, `checkedAt`,
+`syncedAt` and `scannedAt` ([volatile.mjs](../../hack/bastion-catalogue-measure/volatile.mjs)), **none of the 17,530 entries and
+vulnerabilities documents changed, while the 1,400 npm vulnerabilities documents changed as served**: the time members are the whole
+change. An OCI vulnerabilities document carries `scannedAt` per platform and the grade's `checkedAt` in the same way; the profile runs
+no scanner, so its change at a rescan is not measured.
+
+### The builder's time (measured)
+
+Every document read through HTTPS on the loopback, one request at a time, as the anonymous caller (the vulnerabilities as the
+break-glass account). A builder in the process (P6) skips TLS, the edge chain, the limits and the request log, so these are upper
+bounds for one worker.
+
+| Pass | Documents | Sum of request times | Mean per document | Load average |
+|---|---:|---:|---:|---:|
+| 1 | 37,376 | 1,362 s | 36.4 ms | 32 to 42 |
+| 2 | 37,376 | 1,695 s | 45.4 ms | 32 to 56 |
+
+The spread between the passes is 24 % (1,362 s to 1,695 s); 50 and 71 waits on the profile's rate limit are left out of the sums.
+
+<details>
+<summary>Per document kind: mean time and statements (measured)</summary>
+
+The statements per document are the request pool's acquisitions (`quader_db_pool_acquire_duration_seconds_count{db_pool="request"}`)
+over 200 documents of the kind read in a row, less the background jobs' rate measured idle before (2.2 and 2.7 a second): a statement
+outside a transaction and a transaction count one each, so it is a lower bound of the statements and includes the edge's own reads.
+
+| Kind | Mean ms, pass 1 | Mean ms, pass 2 | Statements per document, pass 1 | pass 2 |
+|---|---:|---:|---:|---:|
+| version | 73.6 | 82.3 | 10.1 | 10.1 |
+| signatures | 67.0 | 76.8 | 8.9 | 9.0 |
+| index page of 100 | 208.0 | 76.7 | 8.8 | 8.8 |
+| versions list | 43.6 | 69.4 | 8.0 | 8.0 |
+| Ansible docs tree | 58.2 | 69.4 | 7.2 | 7.0 |
+| Ansible docs entry | 44.1 | 62.3 | 7.0 | 7.0 |
+| Ansible docs file | 43.8 | 58.5 | 7.0 | 7.0 |
+| Debian contents | 35.5 | 36.2 | 7.0 | 7.2 |
+| package | 26.6 | 40.4 | 5.2 | 4.1 |
+| generic file description | 72.3 | 22.8 | 5.0 | 5.1 |
+| README HTML | 33.4 | 42.8 | 4.0 | 4.0 |
+| vulnerabilities | 20.1 | 20.8 | 4.1 | 4.0 |
+| signature object | 245.0 | 17.1 | 3.9 | 4.0 |
+| generic folder listing | 36.0 | 12.5 | 2.0 | 2.0 |
+| set-up snippets | 3.5 | 3.7 | 0.0 | 0.0 |
+
+The set-up snippets take no statement: the repository's settings are cached. The signature object and the index page fell from the first
+pass to the second (the object store's and the page's caches warm).
+</details>
+
+**One changed version** (measured, pass 1: its documents' request times; derived: plus its package, its versions list and one index
+page, the documents a publish touches besides its own):
+
+| Format | ms median | ms p95 | ms max | gzip bytes median | gzip bytes p95 |
+|---|---:|---:|---:|---:|---:|
+| npm | 953 | 1,243 | 1,814 | 10.8 KiB | 11.1 KiB |
+| NuGet | 884 | 1,177 | 3,877 | 8.4 KiB | 10.8 KiB |
+| OCI | 1,482 | 2,968 | 4,852 | 14.3 KiB | 38.8 KiB |
+| Debian | 938 | 1,075 | 1,203 | 10.0 KiB | 10.7 KiB |
+| Ansible | 2,088 | 5,994 | 20,738 | 81.9 KiB | 94.6 KiB |
+| generic (one file) | 790 | 1,095 | 1,307 | 6.8 KiB | 6.8 KiB |
+
+### The sync (derived)
+
+From the distinct documents of the set (36,043; measured bytes), bytes divided by the rate, no per-request cost:
+
+| Transfer | Bytes | At 10 MB/s | At 100 MB/s |
+|---|---:|---:|---:|
+| raw | 149.9 MiB | 15.7 s | 1.6 s |
+| each document gzip-compressed | 42.3 MiB | 4.4 s | 0.4 s |
+| the change list of P5's shape (`path`, `sha256`, `size`, `deleted`, `seq`), raw / gzip | 7.7 MiB / 1.7 MiB | | |
+
+The change list is 217 bytes per entry raw and 47 gzip (derived: the measured paths, 77 characters on the mean and 96 at most, in
+P5's entry). The bytes are not what costs: 36,043 fetches at a round trip of 20 ms (an example of a DMZ link) take 12 minutes one at a
+time and 45 seconds 16 at a time.
+
+**A day's changes (derived).** A day is assumed to be: 1 % of the public versions published or changed, each with its own documents
+plus its package, versions list and an index page (about 19 KiB gzip in the mix: 15.2 KiB of its own documents, measured, and the
+three it touches), and every advisory sync and image rescan of the default schedule (OSV every 15 minutes, the image database every 6 hours).
+
+| Public versions | New or changed versions | Their documents, gzip | Vulnerabilities documents rewritten by the syncs, gzip, as served today | the same without the time members |
+|---:|---:|---:|---:|---:|
+| 1,000 | 10 | 0.2 MiB | 24 MiB | those whose findings changed |
+| 10,000 | 100 | 1.9 MiB | 237 MiB | those whose findings changed |
+| 100,000 | 1,000 | 19 MiB | 2.3 GiB | those whose findings changed |
+
+The fourth column: the npm share of the versions (47 %) times the measured mean npm vulnerabilities document (0.5 KiB gzip) times 96
+syncs a day, which rewrite every one of them (measured for npm, above), plus the OCI share (5 %) times its mean (8.6 KiB) times 4
+image database updates a day, assuming each rescan rewrites every image's document as `scannedAt` says it would. An installation that
+syncs the NuGet advisories too adds the NuGet share in the same way.
+
+### Scaled (derived)
+
+The measured gzip bytes per version of each format (above), times the versions, in the mix of this set (npm 47 %, Ansible 16 %, NuGet
+15 %, generic 10 %, Debian 7 %, OCI 5 %, a generic file counted as a version; a mean of 15.2 KiB gzip and 54.4 KiB raw per version);
+"distinct" applies the measured share of distinct bytes (95 % gzip, 94 % raw). The second table content-addresses the Ansible entries
+without `builtAt` (the set's distinct bytes, 17.4 MiB gzip and 69.4 MiB raw in 22,837 documents, divided by its 2,970 versions and files).
+
+| Public versions | Documents | gzip, every document | gzip, distinct | raw, distinct |
+|---:|---:|---:|---:|---:|
+| 1,000 | 14,000 | 14.9 MiB | 14.1 MiB | 50.0 MiB |
+| 10,000 | 140,000 | 148.8 MiB | 140.9 MiB | 500.4 MiB |
+| 100,000 | 1,400,000 | 1.45 GiB | 1.38 GiB | 4.89 GiB |
+
+| Public versions, entries deduplicated | gzip, distinct | raw, distinct |
+|---:|---:|---:|
+| 1,000 | 5.9 MiB | 23.4 MiB |
+| 10,000 | 58.6 MiB | 233.5 MiB |
+| 100,000 | 586.5 MiB | 2.28 GiB |
+
+| One format alone | gzip per version (mean) | Versions to 1 GiB | Versions to 10 GiB |
+|---|---:|---:|---:|
+| Ansible, as served | 70.4 KiB | 14,900 | 149,000 |
+| Ansible, entries deduplicated without `builtAt` | 14.9 KiB | 70,400 | 704,000 |
+| OCI | 12.2 KiB | 85,600 | 856,000 |
+| npm | 5.0 KiB | 208,000 | 2,080,000 |
+| Debian | 4.9 KiB | 212,000 | 2,120,000 |
+| NuGet | 4.2 KiB | 249,000 | 2,490,000 |
+| generic (per file) | 2.1 KiB | 500,000 | 5,000,000 |
+
+In the mix as served, the catalogue passes 1 GiB gzip at about 72,700 public versions and 10 GiB at about 727,000; raw it passes 1 GiB
+at about 20,500 and 10 GiB at about 205,000. With the entries deduplicated it passes 1 GiB gzip at about 175,000 versions and 10 GiB
+at about 1.75 million; raw 1 GiB at about 43,800. Ansible's documentation entries dominate: 63 % of the gzip bytes as served, 19 % once
+they are deduplicated, when README HTML and the set-up snippets weigh as much. A full build of one registration is 14 documents per version: at 100,000 public versions 1.4 million
+documents, which at the measured 36 to 45 ms per document is 14 to 17.5 hours for one worker through HTTP.
+
+### What was not measured
+
+- **The builder's own path.** P6 renders through the management API's handlers in the process, not through HTTPS and the edge; its
+  time per document lies below the measured one by an amount not measured. The fingerprint pass of the reconciliation does not exist yet.
+- **The strip of B.10 and the link rewrite.** The documents are measured as the main installation serves them; the strip removes a few
+  members (`origin`, `releasedBy`, triage), so the bytes are slightly high.
+- **An OCI rescan.** The profile runs no image scanner (its database is fetched from a public registry); the OCI findings were written by
+  SQL as a scan leaves them, and their change at a rescan is derived, not measured. Their grade reads `N/A` (`no_database`).
+- **Findings of NuGet**: the profile imports npm advisories only; a NuGet version with findings is as large as an npm one with as many
+  (the shape is the format's alike).
+- **Helm charts, ClamAV definitions and Ansible roles of a remote**: the seed's few public ones are in the counts; no large set of them
+  was generated. A chart's README is a README; a role's argument specs are an entry.
+- **`signing/trusted-root.json` and `signing/chain.pem`**: no signing identity in the profile.
+- **The real transfer**: the sync times are bytes divided by a rate; no network was in between.
+
+### Proposal for P5 to P7 (not a change of code or spec)
+
+1. **Leave the time members out of the documents** (P6): `builtAt` of an Ansible entry and file, `syncedAt`, `checkedAt` and `scannedAt`
+   of a vulnerabilities document belong in one small state document per version or per registration, not in each document. As served
+   today every npm vulnerabilities document changes every 15 minutes (measured: 1,400 of 1,400 in 30 minutes) and no Ansible entry
+   deduplicates (14,200 distinct of 14,200); without them the entries deduplicate 11 to 1 in this set and the set's catalogue falls from
+   42.3 MiB to 17.4 MiB gzip (derived), and a vulnerabilities document changes only when its findings do (measured: 0 of
+   1,400 between two syncs). This is the one change the numbers ask for before
+   P5's wire is fixed.
+2. **"Mirrored whole" holds.** At 100,000 public versions, more than a large company publishes publicly, the catalogue is 1.38 GiB gzip
+   (derived), and the initial sync's bytes take 2.5 minutes at 10 MB/s. No document kind needs to be fetched on demand. The candidate,
+   should one ever be needed, is the Ansible documentation entry (63 % of the bytes as served); deduplicated it is 19 %.
+3. **Store and send each document gzip-compressed** (P5, P7): the documents compress 3.5 to 1 (measured: 149.9 MiB to 42.3 MiB
+   distinct), and the GUI sends them to browsers compressed anyway. Kept raw, 100,000 versions are 4.89 GiB, a quarter of the default
+   cache (`cache.max_bytes` 20 GiB).
+4. **`config.bastion.gui.max_bytes`: 4 GiB of stored (compressed) bytes by default**, a share of `cache.max_bytes` like
+   `documents_max_bytes`. It holds about 290,000 public versions of the measured mix as served (derived: 4 GiB / 1.38 GiB × 100,000), about
+   700,000 with the entries deduplicated, or 282,000 Ansible versions deduplicated, and leaves 14 GiB of the default cache to artifacts. It is generous by a factor of three over
+   100,000 versions even before the dedupe; a catalogue above it raises `QuaderBastionCatalogueOverBound` rather than evicting, as B.2b plans.
+5. **The reconciliation compares fingerprints and re-renders only what differs; its interval is 1 hour by default.** A full re-render
+   of 100,000 versions is 14 to 17.5 hours for one worker (derived above), so a periodic full render is out; the triggers carry every
+   change within the debounce, and the reconciliation only repairs a missed trigger, so an hour bounds how long a missed change stays.
+   P6 measures its fingerprint pass on this set (543 packages) and keeps it under a minute. A full build (a new registration, a `reset`)
+   renders in parallel: at 8 workers 100,000 versions take about 2 hours by the measured rate.
+6. **P5's wire.** The change list in pages of **5,000 entries by default and 10,000 at most** (about 1.0 MiB raw and 0.2 MiB gzip at the
+   default page, derived; 280 pages for 100,000 versions); a **batch read of documents** (several paths in one request, up to 8 MiB of
+   compressed bytes), because 1.4 million single fetches cost more in round trips than in bytes; and a **bound per document of 16 MiB
+   raw**, which an OCI vulnerabilities document reaches at about 18,000 findings (derived: 0.9 KiB per finding, measured). A document
+   above the bound is left out and named in the state document, so that the version's page says its findings are not available there.
+
 ## Tests
 
 | Where | What |
