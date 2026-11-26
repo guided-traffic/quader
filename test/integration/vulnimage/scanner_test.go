@@ -289,8 +289,13 @@ func TestR_VULN_034_AScanRefusedForARepositoryTheListenerHoldsDisabledSpendsNoAt
 	// The worker starts before the row is switched: its start writes repositories of its own (the project upstream), which every
 	// replica follows, and would end the window the test holds open.
 	f.startWorker()
+	// The replica holds the switch once its grant index is also the state its change-log poll applied (staleness 0, R-AUTHZ-028
+	// "Confirmation and staleness"): until the poll catches up with the change the replica learned from its own commit, its watch loop
+	// builds the index from the rows again (authz.Engine.watchLoop), and a build after the row's switch below would read the repository
+	// enabled and end the window.
 	testenv.WaitFor(t, "the replica to hold the repository for disabled", 30*time.Second, func() bool {
-		return f.do("GET", v2("app")+"/manifests/1.0", nil, "Accept", manifestType).Status == http.StatusNotFound
+		return f.do("GET", v2("app")+"/manifests/1.0", nil, "Accept", manifestType).Status == http.StatusNotFound &&
+			testenv.MetricValue(f.api.Metrics(t), "quader_authz_index_staleness_seconds") == 0
 	})
 	f.st.Exec(`UPDATE repositories SET config = jsonb_set(config, '{disabled}', 'false') WHERE key = $1`, repoKey)
 	f.runScan()

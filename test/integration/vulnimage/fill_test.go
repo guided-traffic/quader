@@ -14,6 +14,7 @@ import (
 	"github.com/guided-traffic/quader/internal/app"
 	"github.com/guided-traffic/quader/internal/malware/clamd/clamdtest"
 	"github.com/guided-traffic/quader/internal/malware/scanner/scannertest"
+	"github.com/guided-traffic/quader/internal/packages/view"
 	"github.com/guided-traffic/quader/test/integration/testenv"
 	"github.com/guided-traffic/quader/test/ocistub"
 )
@@ -153,6 +154,11 @@ func TestR_VULN_050_R_MAL_035_ADownloadAheadAndAClientsFillAreScannedAtOnceWitho
 			t.Fatalf("the client's GET %s: %d %s", p, a.Status, a.Body)
 		}
 	}
+	// A remote's tag exists as a version once the GET of its manifest is counted (a flush of the download statistics) or the
+	// background download its probe started stored the probed platform (api-and-ui.md R-API-081): both come after the pull's answers.
+	testenv.WaitFor(t, "acme/b:1.0 listed after the client's pull", 30*time.Second, func() bool {
+		return f.do("GET", "/api/v1/packages/"+view.ID("oci", "acme/b")+"/versions/1.0/vulnerabilities", nil).Status == http.StatusOK
+	})
 
 	// Each tag is evaluated from the scans of its stored platform images, without a start of the task.
 	for _, tag := range []struct{ name, version, image string }{{"library/alpine", "3.20", amd64.Digest}, {"acme/b", "1.0", pulled.Digest}} {
