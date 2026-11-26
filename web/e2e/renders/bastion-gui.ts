@@ -1,5 +1,7 @@
 import { Page, Route, expect, request } from '@playwright/test';
-import { publicGradedPackage } from './advisories';
+import { publicGradedPackage, publicReadmePackage } from './advisories';
+import { docsDeb } from './debdocs';
+import { factsNugetReadme } from './facts';
 import { bastionEdge, locale } from './paths';
 import { fileCommands } from './file-commands';
 import { Api, ansiblePackage, expectStatus, nugetPackage, otherProject, publicDownloads, remoteImage, remoteSource } from './seed';
@@ -138,9 +140,11 @@ export const bastionScreens: readonly Screen[] = [
     de: true,
   },
   { id: 'bastion-packages-docs', path: `${P}/packages`, kinds: ['anonymous'], walk: searchDocumentation, de: true },
-  // The README of an npm and of a NuGet version, which their pages open on (R-UI-218), and a Debian package's changelog and copyright.
-  { id: 'bastion-version-npm', path: ver(publicGradedPackage, publicGradedPackage.version), kinds: ['anonymous'], expected: lookups, de: true },
-  { id: 'bastion-version-deb-changelog', path: `${ver(debian, debian.version)}?tab=changelog`, kinds: ['anonymous'], expected: lookups, de: true },
+  // The README of an npm and of a NuGet package, which their addresses open on (R-UI-218), and a Debian package's changelog and copyright.
+  { id: 'bastion-version-npm', path: pkg(publicReadmePackage), kinds: ['anonymous'], expected: lookups, de: true },
+  { id: 'bastion-version-nuget-readme', path: pkg(factsNugetReadme), kinds: ['anonymous'], expected: lookups, de: true },
+  // The Debian package of debdocs.ts, whose file holds a changelog of thirty entries and a copyright.
+  { id: 'bastion-version-deb-changelog', path: `${ver(docsDeb, docsDeb.version)}?tab=changelog`, kinds: ['anonymous'], expected: lookups, de: true },
   { id: 'bastion-imprint', path: `${B}/legal/imprint`, kinds: ['anonymous'], de: true },
   { id: 'bastion-privacy', path: `${B}/legal/privacy`, kinds: ['anonymous'], de: true },
   { id: 'bastion-stale', path: `${P}/packages`, kinds: ['anonymous'], walk: stale, de: true },
@@ -161,7 +165,16 @@ async function jobEnd(admin: Api, id: string): Promise<string> {
 }
 
 /** The packages the Bastion's screens open: the setup waits until the Bastion's catalogue holds each. */
-const shown: readonly { readonly format: string; readonly name: string }[] = [publicGradedPackage, nugetPackage, debian, image, collection];
+const shown: readonly { readonly format: string; readonly name: string }[] = [
+  publicGradedPackage,
+  publicReadmePackage,
+  nugetPackage,
+  factsNugetReadme,
+  debian,
+  docsDeb,
+  image,
+  collection,
+];
 
 /**
  * After the seed: the public catalogue's builder runs once more (the seed's writes through the database send no signal), and the setup

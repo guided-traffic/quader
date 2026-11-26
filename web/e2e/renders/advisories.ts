@@ -28,6 +28,8 @@ export interface VendorVersion {
   readonly fixedIn?: string;
   /** The distribution tag the version is published under; `latest` by default, `next` for a pre-release. */
   readonly tag?: string;
+  /** The README the tarball and the package document carry, none by default. */
+  readonly readme?: string;
 }
 
 /**
@@ -102,7 +104,21 @@ export const publicPackages: readonly VendorVersion[] = [
   { project: 'platform', repo: 'npm-open-source', name: 'config-merge', version: '2.3.0', counts: { high: 2, medium: 3, low: 4 }, grade: 'C', fixable: 5, fixedIn: '2.4.0' },
   { project: 'platform', repo: 'npm-open-source', name: 'config-merge', version: '2.4.0', counts: {}, grade: 'S' },
   { project: 'platform', repo: 'npm-open-source', name: 'tar-stream-lite', version: '1.0.4', counts: { critical: 2, high: 1, unknown: 1 }, grade: 'D' },
+  // A public package with a README, which a Bastion's page of it opens on (bastion.md R-BAS-126, R-UI-232).
+  {
+    project: 'platform',
+    repo: 'npm-open-source',
+    name: 'yaml-lines',
+    version: '1.2.0',
+    counts: {},
+    grade: 'S',
+    readme:
+      '# yaml-lines\n\nReads a YAML stream line by line and keeps the line numbers of every value.\n\n## Install\n\n```shell\nnpm install yaml-lines\n```\n\n## Use\n\n| Option | Default | What it does |\n|---|---|---|\n| `strict` | `true` | Refuses duplicate keys. |\n| `maxDepth` | `64` | Stops at nested values deeper than this. |\n',
+  },
 ];
+
+/** The public package with a README (R-UI-232). */
+export const publicReadmePackage = { format: 'npm', name: 'yaml-lines', version: '1.2.0' } as const;
 
 /** The public package whose version page the renders of a visitor without a session open (R-UI-224). */
 export const publicGradedPackage = { format: 'npm', name: 'config-merge', version: '2.3.0' } as const;

@@ -73,23 +73,25 @@
       <section class="pane pane-tree" aria-labelledby="docs-tree-heading">
         <h2 id="docs-tree-heading" class="visually-hidden" i18n="@@docs.tree.heading">Documentation</h2>
         <div class="pane-head tree-toolbar">
-          <label class="filter-field">
-            <span class="material-icons" aria-hidden="true">search</span>
-            <input
-              class="filter-input"
-              type="search"
-              autocomplete="off"
-              spellcheck="false"
-              aria-label="Search the documentation"
-              i18n-aria-label="@@docs.search.label"
-              placeholder="Search the documentation"
-              i18n-placeholder="@@docs.search.label"
-              [value]="draft()"
-              (input)="onInput($any($event.target).value)"
-              (keydown.escape)="clear()"
-            />
-          </label>
-          <p class="pane-count match-count" role="status">{{ matchText() }}</p>
+          <div class="search-stack">
+            <label class="filter-field">
+              <span class="material-icons" aria-hidden="true">search</span>
+              <input
+                class="filter-input"
+                type="search"
+                autocomplete="off"
+                spellcheck="false"
+                aria-label="Search the documentation"
+                i18n-aria-label="@@docs.search.label"
+                placeholder="Search the documentation"
+                i18n-placeholder="@@docs.search.label"
+                [value]="draft()"
+                (input)="onInput($any($event.target).value)"
+                (keydown.escape)="clear()"
+              />
+            </label>
+            <p class="pane-count match-count" role="status">{{ matchText() }}</p>
+          </div>
         </div>
         <div class="pane-body">
           <div class="tree-scroll">

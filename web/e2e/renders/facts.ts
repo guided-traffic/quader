@@ -22,6 +22,8 @@ export const factsNuget = { format: 'nuget', name: 'Acme.Platform.Http', version
 export const factsNugetTool = { format: 'nuget', name: 'Acme.Platform.Cli', version: '1.4.0' } as const;
 export const factsNugetTemplate = { format: 'nuget', name: 'Acme.Platform.Templates', version: '2.0.0' } as const;
 export const factsNugetPlain = { format: 'nuget', name: 'Acme.Platform.Meta', version: '1.0.0' } as const;
+/** A NuGet package that names its README (R-NUGET-024): its page opens on it, at the main installation and at a Bastion (R-UI-218, R-UI-232). */
+export const factsNugetReadme = { format: 'nuget', name: 'Acme.Platform.Json', version: '1.0.0' } as const;
 export const factsCollection = { format: 'ansible', name: 'acme.network', version: '2.0.0' } as const;
 export const factsImage = {
   format: 'oci',
@@ -255,6 +257,21 @@ function smallNupkg(p: { readonly name: string; readonly version: string }, type
   ]);
 }
 
+/** A package with its README named in the manifest and stored beside it. */
+function readmeNupkg(): Buffer {
+  const { name: id, version } = factsNugetReadme;
+  const nuspec = `<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd"><metadata><id>${id}</id><version>${version}</version><authors>Platform engineering</authors><description>JSON settings of the platform's .NET services.</description><license type="expression">MIT</license><readme>docs/README.md</readme></metadata></package>`;
+  const readme =
+    `# ${id}\n\nReads the platform's JSON settings into typed options and reports every unknown key.\n\n## Install\n\n` +
+    '```shell\ndotnet add package ' + id + '\n```\n\n## Use\n\nCall `AddPlatformJson()` on the service collection and bind the section `Platform`.\n';
+  return zipArchive([
+    { name: `${id}.nuspec`, data: Buffer.from(nuspec) },
+    { name: 'docs/README.md', data: Buffer.from(readme) },
+    { name: `lib/net8.0/${id}.dll`, data: Buffer.from(`MZ ${id}`) },
+  ]);
+}
+
 /** The collection: it depends on acme.platform, which the installation holds, and on two collections it does not. */
 function collectionArchive(): Buffer {
   const [namespace, name] = factsCollection.name.split('.') as [string, string];
@@ -379,6 +396,7 @@ export async function seedFacts(ctx: APIRequestContext, edge: string, token: str
   await push('package', smallNupkg(factsNugetTool, 'DotnetTool', `tools/net8.0/any/${factsNugetTool.name}.dll`, 'The command line of the platform.'), `nuget push ${factsNugetTool.name}`);
   await push('package', smallNupkg(factsNugetTemplate, 'Template', 'content/service/.template.config/template.json', 'Project templates of the platform.'), `nuget push ${factsNugetTemplate.name}`);
   await push('package', smallNupkg(factsNugetPlain, null, null, 'A package that brings nothing but its description.'), `nuget push ${factsNugetPlain.name}`);
+  await push('package', readmeNupkg(), `nuget push ${factsNugetReadme.name}`);
   const archive = collectionArchive();
   const [namespace, name] = factsCollection.name.split('.') as [string, string];
   const ansible = await patient(() =>

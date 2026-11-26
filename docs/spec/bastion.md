@@ -7054,8 +7054,9 @@ Acceptance criteria:
   the version announcing them; docs off and an internal wiki: none of them, the version announcing none, its other members kept),
   `TestR_BAS_124_TheTreeCarriesTheSearchWordsOfTheMainInstallation`, `TestR_BAS_124_SearchWordsKeepTheWordsThatNoOtherBegins`.
 - Integration (area `bastion`, inside `TestR_BAS_104_TheCatalogueFollowsPublishesLevelsAndTheSwitch`, no world of its own): the npm
-  READMEs are in the catalogue and their versions announce them; the wiki of the npm repositories lowered to internal takes them out,
-  public again brings them back; docs off leaves no README and no version that announces one.
+  READMEs are in the catalogue and their versions announce them; docs off leaves no README and no version that announces one; docs on
+  again with the npm repositories' wiki internal, a run that started after both builds none either (two runs, 6.9 s of the case,
+  measured 2026-11-26).
 - Integration (area `ansiblelocal`, [catalogue_docs_test.go](../../test/integration/ansiblelocal/catalogue_docs_test.go), one collection
   of five entries, about 2 s): `TestR_BAS_124_TheBrowsersSearchOfAVersionIsTheMainInstallations`: the tree built as the builder builds it
   (the management API's answer with the words of `BastionCatalogueDocSearchWords` on PostgreSQL) and the main installation's answers to

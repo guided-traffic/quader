@@ -39,6 +39,25 @@ span.tree-row {
   display: none;
 }
 
+// The search field takes the head's whole width, and the count of matches stands under it at the right: one column of the two, so that
+// the field's glyph is read with its field and not with the count below it (the layout check icon-apart, R-UI-175).
+.search-stack {
+  display: flex;
+  flex: 1 1 100%;
+  flex-direction: column;
+  gap: var(--quader-space-1);
+  min-inline-size: 0;
+
+  .filter-field {
+    flex: none;
+  }
+
+  .match-count {
+    align-self: flex-end;
+    margin: 0;
+  }
+}
+
 .doc-source {
   margin-block: var(--quader-space-4) 0;
   color: var(--quader-text-muted);

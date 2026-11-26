@@ -114,9 +114,33 @@ func (w *world) readmes() (docs, announced int) {
 	return docs, announced
 }
 
-// documentationFollowsTheWikiAndTheSwitch (R-BAS-124): with docs on and a public wiki the npm READMEs are in the catalogue and their
-// versions announce them; a wiki lowered to internal takes them out and the versions announce none, and so does docs off for every
-// format, at the next run.
+// runBuilder starts a run of the public catalogue's builder that begins after this call and waits until it succeeded: a start
+// answered 409 (a run already runs, which may have begun before) is tried again.
+func (w *world) runBuilder() {
+	w.t.Helper()
+	var id string
+	testenv.WaitFor(w.t, "a run of the builder started", 30*time.Second, func() bool {
+		a := w.api("POST", "/api/v1/system/tasks/bastion-catalogue/run", w.admin, nil)
+		if a.Status != http.StatusAccepted {
+			return false
+		}
+		job, _ := a.JSON(w.t)["job"].(map[string]any)
+		id, _ = job["id"].(string)
+		return id != ""
+	})
+	testenv.WaitFor(w.t, "the run of the builder", 60*time.Second, func() bool {
+		state, _ := w.mustAPI("GET", "/api/v1/system/jobs/"+id, 200, nil).JSON(w.t)["state"].(string)
+		if state == "failed" || state == "cancelled" {
+			w.t.Fatalf("the run of the builder ended %s", state)
+		}
+		return state == "succeeded"
+	})
+}
+
+// documentationFollowsTheWikiAndTheSwitch (R-BAS-124): with docs on and a public wiki the READMEs are in the catalogue and their
+// versions announce them; docs off takes every one out at the next run, and docs on with the npm repositories' wiki internal brings
+// back none while the npm repositories' wiki is internal (the NuGet packages of the case carry no README). Two runs of the builder;
+// the npm wiki stays internal for the rest of the case.
 func (w *world) documentationFollowsTheWikiAndTheSwitch(docs *atomic.Bool) {
 	w.t.Helper()
 	start := time.Now()
@@ -130,17 +154,17 @@ func (w *world) documentationFollowsTheWikiAndTheSwitch(docs *atomic.Bool) {
 				map[string]any{"visibility": map[string]any{"wiki": level}}, "If-Match", "*", "Content-Type", "application/merge-patch+json")
 		}
 	}
-	wiki("internal")
-	testenv.WaitFor(w.t, "the npm READMEs gone with an internal wiki", 30*time.Second, func() bool {
-		n, a := w.readmes()
-		return n < before && a < announced
-	})
-	wiki("public")
-	testenv.WaitFor(w.t, "the npm READMEs back", 30*time.Second, func() bool { n, _ := w.readmes(); return n == before })
 	docs.Store(false)
 	w.mustAPI("POST", "/api/v1/system/tasks/bastion-catalogue/run", 202, nil)
 	testenv.WaitFor(w.t, "no README with docs off", 30*time.Second, func() bool { n, a := w.readmes(); return n == 0 && a == 0 })
+	// docs on again with the npm repositories' wiki internal: a run that started after both builds no README and no version announces
+	// one.
 	docs.Store(true)
+	wiki("internal")
+	w.runBuilder()
+	if n, a := w.readmes(); n != 0 || a != 0 {
+		w.t.Fatalf("docs on with an internal wiki: %d READMEs, %d versions announce one", n, a)
+	}
 	w.t.Logf("the documentation followed the wiki and the switch in %s", time.Since(start).Round(100*time.Millisecond))
 }
 
