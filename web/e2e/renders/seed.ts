@@ -219,7 +219,26 @@ export const deepFolder =
   'deliveries/customer-portal-frontend-static-assets-for-the-november-release/build-artifacts-of-the-nightly-pipeline/2026-11-18-nightly-build-4711';
 export const manyIcons = 230;
 
-export const genericFiles: readonly { repo: string; path: string; content: string }[] = [
+/**
+ * The files of R-GENERIC-017's renders (`notes/`): one deployed without a type, which gets the type its name says; one whose
+ * deployed type wins over its name; and one whose name a shell would read as an option, a quote and a command substitution, which
+ * every client's command carries as one quoted argument.
+ */
+export const genericNotes = {
+  folder: 'notes',
+  guessed: 'CHANGELOG.md',
+  deployed: 'release-notes.md',
+  hostile: `--output=evil it's "final" $(id).txt`,
+} as const;
+
+/**
+ * `type`: the `Content-Type` of the upload; absent sends `application/octet-stream`, `null` the type of a form's body, as wget sends
+ * it, which the server stores as no type (Q-GENERIC-12): Playwright sends `application/octet-stream` for a body without a type.
+ */
+export const genericFiles: readonly { repo: string; path: string; content: string; type?: string | null }[] = [
+  { repo: 'assets', path: `${genericNotes.folder}/${genericNotes.guessed}`, content: '# Changelog\n\n## 2.5.0\n', type: null },
+  { repo: 'assets', path: `${genericNotes.folder}/${genericNotes.deployed}`, content: 'Release notes\n', type: 'text/plain; charset=utf-8' },
+  { repo: 'assets', path: `${genericNotes.folder}/${genericNotes.hostile}`, content: 'a name to quote\n', type: null },
   { repo: 'assets', path: 'README.md', content: '# Assets\n\nStatic files of the customer portal.\n' },
   { repo: 'assets', path: 'fonts/inter/Inter-Regular.woff2', content: 'font bytes' },
   { repo: 'assets', path: 'icons/sprite.svg', content: '<svg xmlns="http://www.w3.org/2000/svg"></svg>\n' },
@@ -655,7 +674,10 @@ export async function seedContent(ctx: APIRequestContext, edge: string, token: s
     const head = await patient(() => ctx.head(url, { headers: auth }));
     if (head.status() === 200) continue;
     const res = await patient(() =>
-      ctx.put(url, { data: Buffer.from(f.content), headers: { ...auth, 'Content-Type': 'application/octet-stream' } }),
+      ctx.put(url, {
+        data: Buffer.from(f.content),
+        headers: { ...auth, 'Content-Type': f.type === null ? 'application/x-www-form-urlencoded' : (f.type ?? 'application/octet-stream') },
+      }),
     );
     await expectStatus(res, [200, 201], `upload ${f.repo}/${f.path}`);
   }

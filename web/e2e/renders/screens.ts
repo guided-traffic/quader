@@ -29,7 +29,9 @@ import {
   certificateSubject,
   ciIssuer,
   ciProject,
+  genericNotes,
 } from './seed';
+import { fileCommands, folderUpload, rowFileCommands } from './file-commands';
 import { gradedPackage, manyVersionsPackage } from './advisories';
 import { malwarePackage, quarantine } from './malware';
 import { malwareWaiting, scanFailedCard, scanStatesList, scanStatesPackage } from './scan-states';
@@ -3293,6 +3295,19 @@ export const screens: readonly Screen[] = [
   { id: 'file-details-remembered', path: `${P}/repositories/assets/files/README.md`, kinds: ['power'], walk: detailsRemembered },
   // A file of a disabled repository: no Download, no address, one sentence (Q-UI-965).
   { id: 'files-file-disabled', path: `${P}/repositories/assets/files/README.md`, kinds: all, walk: disabledFile },
+  // A generic file's commands behind Download (R-GENERIC-017): the panel of the chevron with each client's tab, a file whose name a
+  // shell would read as an option and a command, the type its name says, a deployed type that wins, a row's panel, a folder's upload.
+  { id: 'files-file-commands', path: `${P}/repositories/assets/files/${genericNotes.folder}/${genericNotes.guessed}`, kinds: ['plain'], walk: fileCommands, de: true },
+  {
+    id: 'files-file-hostile',
+    // Parentheses encoded as the app's own links write them: the router reads a bare one as an outlet.
+    path: `${P}/repositories/assets/files/${genericNotes.folder}/${encodeURIComponent(genericNotes.hostile).replace(/\(/g, '%28').replace(/\)/g, '%29')}`,
+    kinds: ['plain'],
+    walk: fileCommands,
+  },
+  { id: 'files-file-deployed-type', path: `${P}/repositories/assets/files/${genericNotes.folder}/${genericNotes.deployed}`, kinds: ['plain'] },
+  { id: 'files-row-commands', path: `${P}/repositories/assets/files/${genericNotes.folder}`, kinds: ['plain'], walk: rowFileCommands, de: true },
+  { id: 'files-folder-upload', path: `${P}/repositories/assets/files/${genericNotes.folder}`, kinds: ['power'], walk: folderUpload, de: true },
   { id: 'files-file-long', path: `${P}/repositories/assets/files/${deepFolder}/sprite-with-every-icon-of-the-design-system-for-the-customer-portal.svg`, kinds: ['plain'] },
   { id: 'files-npm', path: `${P}/repositories/npm-internal/files/@acme/ui-kit/-`, kinds: all },
   { id: 'files-npm-file', path: `${P}/repositories/npm-internal/files/@acme/ui-kit/-/ui-kit-1.1.0.tgz`, kinds: owners },
@@ -3394,6 +3409,9 @@ export const screens: readonly Screen[] = [
   { id: 'setup-npm-bastion', path: `${P}/repositories/npm/setup?bastion=${seededBastion.name}`, kinds: all, de: true },
   { id: 'setup-long-key', path: `${P}/repositories/${longNpmKey}/setup`, kinds: all },
   { id: 'setup-generic', path: `${P}/repositories/assets/setup`, kinds: all, walk: setupVerify },
+  // wget's and PowerShell's setup, each with the line that signs it in and its download, check and upload (R-GENERIC-017).
+  { id: 'setup-generic-wget', path: `${P}/repositories/assets/setup?client=wget`, kinds: ['power'] },
+  { id: 'setup-generic-powershell', path: `${P}/repositories/assets/setup?client=powershell`, kinds: ['power'] },
   { id: 'setup-oci-local', path: `${P}/repositories/images/setup`, kinds: all, walk: setupVerify, de: true },
   { id: 'setup-oci-remote', path: `${O}/repositories/docker-hub-remote/setup`, kinds: all },
   { id: 'setup-nuget', path: `${O}/repositories/nuget/setup`, kinds: all },
