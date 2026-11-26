@@ -49,6 +49,9 @@ const (
 	// CodeScannerDiskFailed: the scanner could not write to its own spool, a full or failing volume (Q-VULN-237); the scanner's fault,
 	// neither the image's nor the caller's.
 	CodeScannerDiskFailed = "scanner_disk_failed"
+	// CodeBlobsPending: blobs the manifest names are still on their way into the repository, and the analysis waits for them without a
+	// call (Q-VULN-282).
+	CodeBlobsPending = "blobs_pending"
 )
 
 // The waits of a scan put off for a reason of the installation (R-VULN-034): no attempt is spent.

@@ -120,7 +120,14 @@ func TestR_VULN_050_R_MAL_035_ADownloadAheadAndAClientsFillAreScannedAtOnceWitho
 	f.startWorker()
 	hubV2 := "/v2/" + testenv.DefaultProject + "/" + hubKey + "/"
 
-	// The download ahead of a tag through the API, which the queue runs on the worker.
+	// The download ahead of a tag through the API, which the queue runs on the worker. Its blobs come slower than the scan delay, so the
+	// manifest's row is due while its layers are still on their way: the scan waits for them without a call and without an attempt
+	// (Q-VULN-282).
+	slow := hub.stub.Mode()
+	slow.DelayMS = map[string]int{ocistub.ClassCDN: 1500}
+	if err := hub.stub.SetMode(slow); err != nil {
+		t.Fatal(err)
+	}
 	path := "/api/v1/projects/" + testenv.DefaultProject + "/repositories/" + hubKey
 	a := f.do("POST", path+"/downloads", mustJSON(t, map[string]any{"level": "version", "name": "library/alpine", "version": "3.20"}), "Content-Type", "application/json")
 	if a.Status != http.StatusAccepted {
@@ -134,6 +141,10 @@ func TestR_VULN_050_R_MAL_035_ADownloadAheadAndAClientsFillAreScannedAtOnceWitho
 	})
 	if row["state"] != "done" || row["outcome"] != "completed" {
 		t.Fatalf("the download ahead's row: %v", row)
+	}
+	slow.DelayMS = nil
+	if err := hub.stub.SetMode(slow); err != nil {
+		t.Fatal(err)
 	}
 	alpine, err := hub.stub.Image("library/alpine", "3.20")
 	if err != nil {
@@ -173,6 +184,10 @@ func TestR_VULN_050_R_MAL_035_ADownloadAheadAndAClientsFillAreScannedAtOnceWitho
 		if !found {
 			t.Fatalf("%s:%s reads the images %+v, without %s", tag.name, tag.version, r.Repositories[0].Images, tag.image)
 		}
+	}
+	// No scan was called before an image's layers were there: none ended layer_missing.
+	if m := f.worker.Metrics(t); strings.Contains(m, `quader_vuln_image_scans_total{result="layer_missing"}`) {
+		t.Errorf("a scan ran before the image's layers were stored:\n%s", grepLines(m, "quader_vuln_image_scans_total"))
 	}
 	for _, att := range []string{attestation.Digest, probed.Digest} {
 		if n := f.st.Number(`SELECT count(*) FROM vuln_image_scan WHERE digest = decode($1, 'hex')`, strings.TrimPrefix(att, "sha256:")); n != 0 {
@@ -225,4 +240,15 @@ func mustJSON(t *testing.T, v any) []byte {
 		t.Fatal(err)
 	}
 	return b
+}
+
+// grepLines is the lines of a metrics text that contain what.
+func grepLines(text, what string) string {
+	var out []string
+	for _, l := range strings.Split(text, "\n") {
+		if strings.Contains(l, what) {
+			out = append(out, l)
+		}
+	}
+	return strings.Join(out, "\n")
 }

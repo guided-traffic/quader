@@ -146,6 +146,20 @@ func (s *Images) Deferred(ctx context.Context, repoID int64, name string, digest
 	})
 }
 
+// BlobsMissing returns how many of the blobs a manifest names its repository does not hold yet, and how long ago the manifest was stored
+// (Q-VULN-282). A manifest that is gone has none missing: the scan then finds what the scanner finds.
+func (s *Images) BlobsMissing(ctx context.Context, repoID int64, name string, digest [32]byte) (missing int, age time.Duration, err error) {
+	err = s.tx(ctx, func(qs *q.Queries) error {
+		r, err := qs.VulnImageBlobsMissing(ctx, q.VulnImageBlobsMissingParams{RepoID: repoID, Name: name, Digest: digest[:]})
+		if postgres.IsNoRows(err) {
+			return nil
+		}
+		missing, age = int(r.Missing), time.Duration(r.AgeSeconds*float64(time.Second))
+		return err
+	})
+	return missing, age, err
+}
+
 // Started marks the rows of a batch as taken for calls to the scanner now (Q-VULN-276); the record of each call's result clears the mark.
 func (s *Images) Started(ctx context.Context, due []ImageDue) error {
 	if len(due) == 0 {

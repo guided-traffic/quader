@@ -13668,10 +13668,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-VULN
 
-198 questions on [spec/vulnerability-scanning.md](spec/vulnerability-scanning.md).
+200 questions on [spec/vulnerability-scanning.md](spec/vulnerability-scanning.md).
 
 <details>
-<summary>Q-VULN: 198 questions</summary>
+<summary>Q-VULN: 200 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -13873,6 +13873,8 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-VULN-279](spec/vulnerability-scanning.md#q-vuln-279--a-pending-file-says-why-it-waits-from-the-same-facts) | A pending file says why it waits, from the same facts | Decided by the development agent | (a) `waiting` on `MalwareStatus`: `queued` (with `queuedSince`, the row's `created_at`), `no_scanner`, `no_database`, read once per answer for a pending file: the signature database first (`malware_database.version`), then the scanner by Q-VULN-277's rule for `clamav` | — |
 | [Q-VULN-280](spec/vulnerability-scanning.md#q-vuln-280--an-anonymous-caller-reads-the-open-findings-of-what-the-levels-admit-and-the-public-state-of-a-check) | An anonymous caller reads the open findings of what the levels admit, and the public state of a check | Decided by the owner on 2026-11-26 | (a) The three reads are `public: true` and decided by the read scope of the package reads; the report narrows an anonymous caller's statements to `vuln.OpenStatuses()` and answers its grades with the `state` in a public form, two values more of `VulnerabilityCheckState` (`pending`, `not_checked`) that only it is told; no `stateSince`, `stateCode`, `missingData` or manifest `errorCode`; `evaluation` folded alike | [ADR-301](#adr-301--an-anonymous-caller-reads-the-open-findings-and-the-grades-of-what-the-public-levels-admit) |
 | [Q-VULN-281](spec/vulnerability-scanning.md#q-vuln-281--an-advisory-is-an-anonymous-callers-only-where-it-affects-an-open-finding-the-caller-may-read) | An advisory is an anonymous caller's only where it affects an open finding the caller may read | Decided by the development agent on 2026-11-26 | (a) For an anonymous caller an advisory of which it may read no open finding answers the `404` of one that does not exist, every ecosystem alike; both answers run the same statements | [ADR-301](#adr-301--an-anonymous-caller-reads-the-open-findings-and-the-grades-of-what-the-public-levels-admit) |
+| [Q-VULN-282](spec/vulnerability-scanning.md#q-vuln-282--an-analysis-waits-for-the-blobs-of-its-manifest-without-a-call-and-without-an-attempt) | An analysis waits for the blobs of its manifest, without a call and without an attempt | Decided by the development agent on 2026-11-26 | (a) The job reads, before an analysis, whether the repository holds every blob the manifest names; while one is missing and the manifest is younger than 30 minutes the row is put off by `scan_delay` (`blobs_pending`), without a call and without an attempt, and the run wakes for it | — |
+| [Q-VULN-283](spec/vulnerability-scanning.md#q-vuln-283--the-malware-check-needs-no-wait-for-an-image-it-checks-each-file-at-its-own-commit) | The malware check needs no wait for an image: it checks each file at its own commit | Decided by the development agent on 2026-11-26 | no change. | — |
 
 </details>
 <!-- coverage-gen:end decisions -->

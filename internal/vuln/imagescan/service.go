@@ -47,6 +47,10 @@ const (
 	maxBackoff   = 6 * time.Hour
 	// versionsDifferWait is the wait of a row whose detection met two scanner versions in one cycle (R-VULN-048).
 	versionsDifferWait = time.Minute
+	// blobsWait is how long after a manifest was stored its analysis waits for the blobs it names without calling the scanner
+	// (Q-VULN-282); minBlobsRecheck is the shortest wait between two looks when the scan delay is shorter.
+	blobsWait       = 30 * time.Minute
+	minBlobsRecheck = time.Second
 )
 
 // Run is the part of a job's run handle the scan uses. *jobs.Run implements it.
@@ -76,6 +80,8 @@ type Rows interface {
 	PruneSBOMs(ctx context.Context) (int64, error)
 	Failed(ctx context.Context, repoID int64, name string, digest [32]byte, f store.ImageFailure) error
 	Deferred(ctx context.Context, repoID int64, name string, digest [32]byte, code, detail string, wait time.Duration) error
+	// BlobsMissing counts the blobs a manifest names that its repository does not hold yet, and says how long ago it was stored.
+	BlobsMissing(ctx context.Context, repoID int64, name string, digest [32]byte) (int, time.Duration, error)
 	// Started marks a batch as taken for calls to the scanner (Q-VULN-276), so that a list says "Scanning" of it until its results.
 	Started(ctx context.Context, due []store.ImageDue) error
 	Rearm(ctx context.Context, repoID int64) (int64, error)
@@ -503,6 +509,16 @@ func (s *Service) scoped(ctx context.Context, ref ImageRef) (bool, error) {
 // new one replaces. The call is logged with the repository, the image, the digest, the code and the scan ID, never the token (R-VULN-041).
 func (s *Service) analyse(ctx context.Context, ref ImageRef, repo qname.Repo) (store.StoredAnalysis, error) {
 	digest := ref.DigestString()
+	// A fill stores a manifest before its blobs: while they are on their way the analysis waits for them, without a call and without an
+	// attempt, and looks again after a scan delay (Q-VULN-282). Past blobsWait the scanner is called and ends layer_missing as before.
+	if missing, age, err := s.o.Images.BlobsMissing(ctx, ref.RepoID, ref.Name, ref.Digest); err != nil {
+		return store.StoredAnalysis{}, err
+	} else if missing > 0 && age < blobsWait {
+		return store.StoredAnalysis{}, &ScanError{
+			Code: CodeBlobsPending, Defer: max(s.o.Delay, minBlobsRecheck),
+			Detail: fmt.Sprintf("%d blobs of the image are not stored in the repository yet; the scan waits for them", missing),
+		}
+	}
 	tok, sid, err := s.o.Tokens.IssueScan(repo, ref.Name, digest, s.o.Now())
 	if err != nil {
 		return store.StoredAnalysis{}, fmt.Errorf("the scan token of %s@%s: %w", ref.Name, digest, err)

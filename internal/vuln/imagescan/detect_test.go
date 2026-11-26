@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -222,6 +223,14 @@ type fakeRows struct {
 	// nextNew is what NextNew answers once due is empty: the wait of a discovered manifest, hasNew whether one waits.
 	nextNew time.Duration
 	hasNew  bool
+	// missing and age are what BlobsMissing answers: the blobs of a manifest its repository does not hold yet, and since when it is
+	// stored (Q-VULN-282).
+	missing int
+	age     time.Duration
+}
+
+func (f *fakeRows) BlobsMissing(context.Context, int64, string, [32]byte) (int, time.Duration, error) {
+	return f.missing, f.age, nil
 }
 
 func (f *fakeRows) NextNew(context.Context) (time.Duration, bool, error) {
@@ -392,6 +401,41 @@ func TestR_VULN_048_WhileTheScannersLoadTheDatabaseTheRunEndsAndNoRowChanges(t *
 	}
 	if len(r.rows.failed)+len(r.rows.deferred)+len(r.applied) != 0 || len(r.scanner.analyses) != 0 {
 		t.Fatalf("a row changed: failed %v, deferred %v, applied %d, analyses %v", r.rows.failed, r.rows.deferred, len(r.applied), r.scanner.analyses)
+	}
+}
+
+// R-VULN-050, Q-VULN-282: a manifest whose blobs are still on their way into the repository is not analysed: the row is put off by the
+// scan delay without a call and without an attempt. A manifest stored longer ago than the wait is analysed, and the scanner's answer counts
+// as before; a stored analysis needs no blob and is detected at once.
+func TestR_VULN_050_AnImageWhoseBlobsAreOnTheirWayIsScannedAfterThem(t *testing.T) {
+	const delay = 30 * time.Second
+	for _, c := range []struct {
+		name     string
+		stored   string
+		age      time.Duration
+		deferred bool
+	}{
+		{"blobs on their way", "", time.Minute, true},
+		{"stored longer ago than the wait", "", blobsWait + time.Second, false},
+		{"an analysis is stored already", testAnalyser, time.Minute, false},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			r := newJobRig(t, c.stored)
+			r.svc.o.Delay = delay
+			r.rows.missing, r.rows.age = 2, c.age
+			r.scanner.analyse = analysisOf(testAnalyser, `{"bomFormat":"CycloneDX","specVersion":"1.6"}`)
+			r.scanner.detect = func(DetectCall) (Detection, error) { return Detection{}, nil }
+			if err := r.svc.RunScan(t.Context(), &fakeRun{}); err != nil {
+				t.Fatal(err)
+			}
+			called := len(r.scanner.analyses) > 0 || len(r.applied) > 0
+			if c.deferred && (called || len(r.rows.failed) != 0 || fmt.Sprint(r.rows.deferred) != "[blobs_pending 30s]") {
+				t.Fatalf("called %v, failed %v, deferred %v; want only [blobs_pending 30s]", called, r.rows.failed, r.rows.deferred)
+			}
+			if !c.deferred && (!called || len(r.rows.deferred) != 0) {
+				t.Fatalf("called %v, deferred %v; want the scanner called", called, r.rows.deferred)
+			}
+		})
 	}
 }
 

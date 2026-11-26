@@ -189,8 +189,9 @@ func TestR_VULN_042_ABlockedPrivateImageIsAnalysedAgainWithoutADownload(t *testi
 	}
 }
 
-// R-VULN-042, Q-VULN-165: the scanner reads a remote repository from what it holds. A manifest whose layers no client brought ends the
-// analysis with layer_missing and one attempt, and the upstream sees no request of the scan.
+// R-VULN-042, Q-VULN-165, Q-VULN-282: the scanner reads a remote repository from what it holds. A manifest whose layers no client brought
+// waits for them without a call and without an attempt (blobs_pending); stored longer ago than that wait, it ends the analysis with
+// layer_missing and one attempt, and the upstream sees no request of the scan.
 func TestR_VULN_042_ARemoteImageWithoutItsLayersEndsLayerMissing(t *testing.T) {
 	hub := newHub(t, nil)
 	f := newFlowWith(t, hub.options(options{}))
@@ -204,6 +205,12 @@ func TestR_VULN_042_ARemoteImageWithoutItsLayersEndsLayerMissing(t *testing.T) {
 		t.Fatalf("the manifest through the remote: %d %s", a.Status, a.Body)
 	}
 	before := stub.Counts().Total()
+	f.runScan()
+	testenv.WaitFor(t, "the analysis to wait for the layers", 60*time.Second, func() bool {
+		return f.st.Number(`SELECT count(*) FROM vuln_image_scan WHERE error_code = 'blobs_pending' AND attempts = 0 AND state = 'pending'`) == 1
+	})
+	f.st.Exec(`UPDATE oci_manifests SET created_at = now() - interval '1 hour'`)
+	f.st.Exec(`UPDATE vuln_image_scan SET not_before = now()`)
 	f.runScan()
 	testenv.WaitFor(t, "the analysis to end layer_missing", 60*time.Second, func() bool {
 		return f.st.Number(`SELECT count(*) FROM vuln_image_scan WHERE error_code = 'layer_missing' AND attempts = 1`) == 1

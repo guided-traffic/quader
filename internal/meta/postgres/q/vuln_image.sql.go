@@ -10,6 +10,36 @@ import (
 	"encoding/json"
 )
 
+const vulnImageBlobsMissing = `-- name: VulnImageBlobsMissing :one
+SELECT (count(r.target) FILTER (WHERE i.id IS NULL))::int AS missing, EXTRACT(EPOCH FROM now() - m.created_at)::float8 AS age_seconds
+  FROM oci_manifests m
+  LEFT JOIN oci_references r ON r.repo_id = m.repo_id AND r.name = m.name AND r.manifest = m.digest AND r.kind = 'blob'
+  LEFT JOIN items i ON i.repo_id = r.repo_id AND i.path = r.name || '/_blobs/sha256:' || encode(r.target, 'hex') AND i.kind = 'file'
+                   AND i.trashed_at IS NULL
+ WHERE m.repo_id = $1::bigint AND m.name = $2::text AND m.digest = $3
+ GROUP BY m.created_at
+`
+
+type VulnImageBlobsMissingParams struct {
+	RepoID int64
+	Name   string
+	Digest []byte
+}
+
+type VulnImageBlobsMissingRow struct {
+	Missing    int32
+	AgeSeconds float64
+}
+
+// The blobs (config and layers) a manifest names that its repository does not hold yet, and the seconds since the manifest was stored
+// (Q-VULN-282): a fill commits a manifest before its blobs, so an analysis called before they are all there would end layer_missing.
+func (q *Queries) VulnImageBlobsMissing(ctx context.Context, arg VulnImageBlobsMissingParams) (VulnImageBlobsMissingRow, error) {
+	row := q.db.QueryRow(ctx, vulnImageBlobsMissing, arg.RepoID, arg.Name, arg.Digest)
+	var i VulnImageBlobsMissingRow
+	err := row.Scan(&i.Missing, &i.AgeSeconds)
+	return i, err
+}
+
 const vulnImageComponentsOf = `-- name: VulnImageComponentsOf :many
 SELECT f.id::text AS id, f.components AS components FROM vuln_finding f WHERE f.id = ANY($1::text[]::uuid[]) AND f.ecosystem = 'OCI'
 `
@@ -777,12 +807,13 @@ func (q *Queries) VulnImageManifests(ctx context.Context, arg VulnImageManifests
 const vulnImageNextNew = `-- name: VulnImageNextNew :one
 SELECT COALESCE(EXTRACT(EPOCH FROM min(s.not_before) - now()), -1)::float8 AS wait_seconds
   FROM vuln_image_scan s
- WHERE s.state = 'pending' AND s.error_code IS NULL AND s.not_before > now()
+ WHERE s.state = 'pending' AND (s.error_code IS NULL OR s.error_code = 'blobs_pending') AND s.not_before > now()
 `
 
 // The seconds until the first manifest that was discovered and still waits out its scan delay becomes due, or -1 when none waits
 // (Q-VULN-268): a run that finds nothing due runs again at that time instead of at the task's next slot. A row that was put off keeps
-// its code and is left to the schedule, so an outage of the scanners does not wake a run per deferral.
+// its code and is left to the schedule, so an outage of the scanners does not wake a run per deferral; a row that waits for its blobs
+// (blobs_pending, Q-VULN-282) is the image's own wait, like the scan delay, and wakes the run as a discovered one does.
 func (q *Queries) VulnImageNextNew(ctx context.Context) (float64, error) {
 	row := q.db.QueryRow(ctx, vulnImageNextNew)
 	var wait_seconds float64

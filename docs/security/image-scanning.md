@@ -332,8 +332,8 @@ the slots avoids it.
 
 Component: the scanner's pull from a remote repository ([R-VULN-042](../spec/vulnerability-scanning.md#r-vuln-042--the-scanners-pull-through-the-registry),
 Q-VULN-165). Subject: the findings of remote images. Live, as before the role. A manifest that a client pulled while it already had the
-layers, or whose background download was not started or refused (R-REPO-065, H-1018), has its layers outside the repository; the scan ends
-`layer_missing` until `max_attempts` and then shows `scan_failed`. What makes it real: clients that pull a remote image by digest only, or a
+layers, or whose background download was not started or refused (R-REPO-065, H-1018), has its layers outside the repository; the scan waits
+for them `blobs_pending` for 30 minutes (Q-VULN-282), then ends `layer_missing` until `max_attempts` and shows `scan_failed`. What makes it real: clients that pull a remote image by digest only, or a
 remote with `downloadOnProbe` off; the image is then served from Quader without a finding, which `onMissingData: block` refuses instead.
 
 ### H-1043 · With `tls.enabled: false` the scanner's links are not authenticated
