@@ -38,6 +38,17 @@ td.state-cell {
   }
 }
 
+// The clients of a system repository: the switch and its word on one line, and under them what holds for the row (Q-UI-1500), which
+// wraps within the column.
+td.clients-cell {
+  min-inline-size: 12rem;
+
+  > .secondary {
+    display: block;
+    white-space: normal;
+  }
+}
+
 // The level: its icon, the select as wide as its longest option, and under them a refusal or the private row's note.
 td.level-cell {
   white-space: nowrap;

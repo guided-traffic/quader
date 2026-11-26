@@ -3848,7 +3848,9 @@ Priority: **MVP** · Covers: UI-001, UI-004
   the folders itself (R-UI-010, Q-UI-510). A trail of one step is not shown.
 - List screens: the repository, user, group, service account, token, permission policy, endpoint
   and audit log lists share one data table (bordered, growing the page with a head that scrolls with it, R-UI-215, sortable
-  column headers with `aria-sort`, a "?" help tooltip on a column that needs one, loading, empty
+  column headers with `aria-sort`, a "?" help tooltip on a column that needs one, which says what the column means for every row and
+  never what holds for one row, one format or one special case: that is said at its row, in words every reader sees, and a description
+  above a table holds to the same ([Q-UI-1500](#q-ui-1500--a-columns-help-says-what-the-column-means-for-every-row-what-holds-for-one-row-is-said-at-that-row)), loading, empty
   and error states with retry, "Load more") and one head above the table (R-UI-100): the search by name, **Filters** with the
   number of filters that are set, and the set filters as chips. **Filters** opens the filter drawer over the page (R-UI-101,
   [Q-UI-420](#q-ui-420--the-filters-of-a-list-open-in-a-drawer-from-the-right-over-the-page)): the filters open, one under the other, "Clear all", a close button, one apply button; the list keeps its width
@@ -9335,8 +9337,8 @@ The owner's decision of 2026-11-21 ([Q-UI-891](#q-ui-891--the-system-repositorie
 - **Below it**, set apart by room of its own over a hairline, the section **System repositories** (German "System-Repositories",
   [Q-UI-892](#q-ui-892--the-section-is-named-system-repositories)): the one collapsible section of every screen (`<quader-disclosure>`,
   Q-UI-322) with the number of its repositories after its heading as the neutral badge of a count, and one muted sentence under it,
-  "Quader writes these repositories itself. Its scanners read them, and an administrator can offer the ClamAV definitions to your ClamAV
-  installations." It is closed at every
+  "Quader writes these repositories itself, and its scanners read them."; the row `clamav` says under its name "An administrator can offer it
+  to your ClamAV installations." while it answers no client (Q-UI-1500). It is closed at every
   visit; nothing of its state is stored. Opened, it holds a table of the list's columns (Repository, Format, Class and the row's
   actions) with the system repositories the caller reads, by key.
 - **No Set up client**, but for `clamav` while ClamAV definition updates is on (R-UI-190). A row's menu offers what the API lets the
@@ -29617,6 +29619,42 @@ walkthrough.
 | (c) **Revoke** answered with the `409` | | | An action offered to be refused |
 
 **Choice:** (a). **Applied in the spec:** R-BAS-127, R-BAS-007.
+
+### Q-UI-1500 · A column's help says what the column means for every row; what holds for one row is said at that row
+
+Status: **Decided by the owner on 2026-11-26** (the rule) and **by the development agent** (the texts and the check) — the owner reviews
+the texts at the walkthrough.
+
+Context: the help of **Clients** in the table **System repositories** of **Upstream registries** read "Whether the repository answers
+clients. Only the ClamAV definitions can be offered, to your ClamAV installations." The owner: "Der Tabellenkopf macht eine Aussage
+über eine spezifische Row? Was das denn für ein Quatsch?" A header's help is read for every row, and it is reached by hover or focus
+only, so the one row it spoke of did not say it.
+
+**The rule.** A column's help (`help` of a data table's column) says what the column means for every row, and may say what a value
+means (a dash, **Never**); a description above a table says what holds for all its rows. What holds for one row, one format or one
+special case is said in that row, in words a reader sees without hover, and a control of that row is described by them
+(`aria-describedby`).
+
+**The sweep of 2026-11-26** over the 62 column helps and the descriptions above the tables found four:
+
+| Where | Was | Now |
+|---|---|---|
+| **Upstream registries**, **System repositories**, the help of **Clients** | "… Only the ClamAV definitions can be offered, to your ClamAV installations." | "Whether the repository answers clients."; the cell of the image scanning database reads "Not offered: Quader alone reads it.", the cell of the ClamAV definitions "Serves the definitions to your ClamAV installations." under its switch, which it describes |
+| the same section's description | "… You can offer the ClamAV definitions to your ClamAV installations." | "Repositories Quader reads for its own work, which decides their state." |
+| the project `upstream`'s section **System repositories** | "Quader writes these repositories itself. Its scanners read them, and an administrator can offer the ClamAV definitions to your ClamAV installations." | "Quader writes these repositories itself, and its scanners read them."; the row `clamav` says "An administrator can offer it to your ClamAV installations." under its name while it answers no client |
+| **Advisory sources**, the help of **Mode** | "… The image database always comes from the repository of this installation named here." | the modes alone; the image database's cell says "The image database comes from this repository alone." under the repository |
+
+Helps that explain a value (a dash, **Never**, a public issuer) and helps that name several formats as examples of one rule (the
+transfers of the download limits) stay: they hold for every row.
+
+| Option for the check | What it means | For | Against |
+|---|---|---|---|
+| (a) No automatic check; the rule stands in the data table's bullet and the style guide's review (chosen) | | | A new help is held by the review and the render only |
+| (b) A Vitest case over the catalogue's column helps that refuses the names of formats and products | | Seconds | Refuses the helps that name formats as examples and misses a row named in other words: what is wrong is the meaning, which a word list cannot read |
+| (c) A lint rule on `help:` | | At the edit | The same word list as (b) |
+
+**Choice:** the rule as above, and (a) for the check. The component tests of the two tables hold their texts and the description of the
+switch (`upstream-registries.spec.ts`, `system-repositories.spec.ts`). **Applied in the spec:** R-UI-002 (the data table's column help).
 
 ### Q-UI-1485 · The screen holds the presets' table to name what a preset replaces
 

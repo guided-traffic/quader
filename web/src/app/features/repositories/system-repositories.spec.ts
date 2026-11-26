@@ -93,9 +93,8 @@ describe('The system repositories of the project upstream (R-UI-192)', () => {
     // Heard as the heading and its number, the chevron left out.
     expect(spokenText(toggle(root))).toBe('System repositories 2');
     expect(s.querySelector('h2 .heading-count')?.textContent?.trim()).toBe('2');
-    expect(text(s.querySelector('.hint')!)).toBe(
-      'Quader writes these repositories itself. Its scanners read them, and an administrator can offer the ClamAV definitions to your ClamAV installations.',
-    );
+    // The section says what holds for every row; what holds for one row is said at that row (Q-UI-1500).
+    expect(text(s.querySelector('.hint')!)).toBe('Quader writes these repositories itself, and its scanners read them.');
     // Closed at the visit, so nothing in it can be focused (the style guide's collapse region).
     expect(toggle(root).getAttribute('aria-expanded')).toBe('false');
     expect(s.querySelector('.collapse-region')!.classList.contains('open')).toBe(false);
@@ -104,7 +103,10 @@ describe('The system repositories of the project upstream (R-UI-192)', () => {
     const heads = (t: Element) => [...t.querySelectorAll('thead th')].map((th) => text(th).replace('help_outline', '').trim());
     expect(heads(sectionTable(root)!)).toEqual(heads(mainTable(root)!));
     expect(keys(sectionTable(root))).toEqual(['clamav', 'scanner-trivy']);
-    const trivy = [...sectionTable(root)!.querySelectorAll('tbody tr')].find((tr) => text(tr).includes('scanner-trivy'))!;
+    const rowOf = (key: string) => [...sectionTable(root)!.querySelectorAll('tbody tr')].find((tr) => text(tr.querySelector('th a')!) === key)!;
+    expect(text(rowOf('clamav').querySelector('th')!)).toContain('An administrator can offer it to your ClamAV installations.');
+    expect(text(rowOf('scanner-trivy').querySelector('th')!)).not.toContain('ClamAV');
+    const trivy =[...sectionTable(root)!.querySelectorAll('tbody tr')].find((tr) => text(tr).includes('scanner-trivy'))!;
     expect(text(trivy.querySelector('td.format-cell')!)).toContain('OCI (Docker)');
     expect(text(trivy.querySelector('td.class-cell')!)).toContain('Remote');
     expect(sectionTable(root)!.querySelector('a.row-setup, td.with-setup')).toBeNull();

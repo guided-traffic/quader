@@ -3772,8 +3772,8 @@ export const screens: readonly Screen[] = [
   // The section of the installation's registries without any (R-UI-195): the list answered empty by the route.
   { id: 'admin-upstream-presets-empty', path: '/ui/admin/upstream', kinds: ['admin'], walk: registryPresetsEmpty },
   // The row of clamav in System repositories with its switch ClamAV definition updates (R-UI-187, Q-UI-903): on as the seed left it,
-  // the question before switching off, and off.
-  { id: 'admin-upstream-clamav-row', path: '/ui/admin/upstream', kinds: admins, walk: clamavRow },
+  // the question before switching off, and off; in German too, for what each row says in its cell of Clients (Q-UI-1500).
+  { id: 'admin-upstream-clamav-row', path: '/ui/admin/upstream', kinds: admins, walk: clamavRow, de: true },
   // The toasts (R-UI-042, Q-UI-1063): one registry switched on, a second whose toast replaces the first's, and the toasts that keep
   // their place beside it, a notice with an action and an error.
   { id: 'admin-upstream-toasts', path: '/ui/admin/upstream', kinds: ['admin'], walk: toastsWalk, de: true },

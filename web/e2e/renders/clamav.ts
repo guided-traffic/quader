@@ -284,14 +284,15 @@ export async function switchState(page: Page, state: SwitchState): Promise<void>
  * seed left it; the question before switching off; the switch off.
  */
 export async function* clamavRow(page: Page): AsyncGenerator<string> {
-  const toggle = page.getByRole('switch', { name: 'ClamAV definition updates' });
+  // The controls by their place, not their words: the German pass walks the row too (UI_RENDERS_LOCALE=de).
+  const toggle = page.locator('td.clients-cell [role="switch"]');
   await expect(toggle).toBeVisible();
   yield '';
   if ((await toggle.getAttribute('aria-checked')) === 'true') {
     await toggle.click();
-    await expect(page.getByRole('dialog')).toContainText('Stop serving the ClamAV definitions?');
+    await expect(page.getByRole('dialog')).toContainText(/Stop serving the ClamAV definitions\?|Die ClamAV-Definitionen nicht mehr ausliefern\?/);
     yield 'off-question';
-    await page.getByRole('dialog').getByRole('button', { name: 'Cancel' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: /^(Cancel|Abbrechen)$/ }).click();
   }
   await switchState(page, 'off');
   await expect(toggle).toHaveAttribute('aria-checked', 'false');

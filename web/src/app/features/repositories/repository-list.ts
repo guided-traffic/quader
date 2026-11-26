@@ -316,7 +316,7 @@ export class RepositoryList {
   /** Closed at every visit; a filter opens it where it matches one of them and closes it where it matches none (Q-UI-894). */
   protected readonly systemOpen = signal(false);
   protected readonly systemHeading = $localize`:@@repo.system.heading:System repositories`;
-  protected readonly systemHint = $localize`:@@repo.system.hint-clamav:Quader writes these repositories itself. Its scanners read them, and an administrator can offer the ClamAV definitions to your ClamAV installations.`;
+  protected readonly systemHint = $localize`:@@repo.system.hint:Quader writes these repositories itself, and its scanners read them.`;
   protected readonly systemEmptyText = $localize`:@@repo.system.empty-filtered:No system repository matches.`;
   /** The filters of the drawer that are set, as the head's chips (Q-UI-422); the search text is the field's. */
   protected readonly chips = computed<readonly ListChip[]>(() => {

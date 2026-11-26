@@ -174,7 +174,7 @@ function replaced(items: readonly UpstreamRepository[], next: readonly UpstreamR
     @if (system().length > 0) {
       <!-- The name of the project's page for the same two, one unit of the catalogue for both (R-UI-193, Q-UI-900). -->
       <h2 class="system-heading" id="upstream-system">{{ systemCaption }}</h2>
-      <p class="hint system-hint" i18n="@@wellknown.system.hint-clamav">Repositories Quader reads for its own work, which decides their state. You can offer the ClamAV definitions to your ClamAV installations.</p>
+      <p class="hint system-hint" i18n="@@wellknown.system.hint">Repositories Quader reads for its own work, which decides their state.</p>
       <quader-data-table [caption]="systemCaption" [columns]="systemColumns">
         @for (r of system(); track r.key) {
           <tr>
@@ -194,16 +194,18 @@ function replaced(items: readonly UpstreamRepository[], next: readonly UpstreamR
                 <span class="badge">{{ inUse(r) }}</span>
               }
             </td>
-            <!-- The one switch of the table: ClamAV definition updates of clamav (R-UI-187, Q-UI-903); the other rows serve no client. -->
-            <td class="state-cell">
+            <!-- The one switch of the table: ClamAV definition updates of clamav (R-UI-187, Q-UI-903); the other rows serve no client.
+                 Each row says in its cell what holds for it, in words every reader sees, never in the column's help (Q-UI-1500). -->
+            <td class="state-cell clients-cell">
               @if (r.clients; as c) {
                 @if (canWrite()) {
-                  <quader-switch [checked]="c.enabled" [label]="clientsLabel" [busy]="busy().has(r.key)" (checkedChange)="toggleClients(r, $event)" />
+                  <quader-switch [checked]="c.enabled" [label]="clientsLabel" [describedBy]="'clients-' + r.key" [busy]="busy().has(r.key)" (checkedChange)="toggleClients(r, $event)" />
                 } @else {
                   <span class="word">{{ clientsWord(r) }}</span>
                 }
+                <span class="secondary" [id]="'clients-' + r.key" i18n="@@wellknown.clients.clamav">Serves the definitions to your ClamAV installations.</span>
               } @else {
-                <quader-no-value />
+                <span class="secondary" i18n="@@wellknown.clients.none">Not offered: Quader alone reads it.</span>
               }
             </td>
             <td class="level-cell"><quader-visibility-icon [level]="r.visibility" />{{ levelText(r.visibility) }}</td>
@@ -309,7 +311,8 @@ export class UpstreamRegistries {
     {
       id: 'clients',
       label: $localize`:@@wellknown.col.clients:Clients`,
-      help: $localize`:@@wellknown.help.clients:Whether the repository answers clients. Only the ClamAV definitions can be offered, to your ClamAV installations.`,
+      // What the column means for every row; what holds for one row is said in its cell (Q-UI-1500).
+      help: $localize`:@@wellknown.help.clients:Whether the repository answers clients.`,
     },
     { id: 'visibility', label: $localize`:@@projects.col.visibility:Visibility` },
     { id: 'actions', label: $localize`:@@projects.col.actions:Actions`, hideLabel: true },

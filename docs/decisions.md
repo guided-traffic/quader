@@ -13120,10 +13120,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-738 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+739 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 738 questions</summary>
+<summary>Q-UI: 739 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -13865,6 +13865,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1497](spec/api-and-ui.md#q-ui-1497--a-declared-bastion-registration-says-where-it-comes-from-with-the-words-of-a-declared-account) | A declared Bastion registration says where it comes from, with the words of a declared account | Decided by the development agent on 2026-11-26 | (a) A lock line under the facts in the declared account's words: "From the Helm values, token from Secret <name>. Its description, addresses and that token are changed or removed there; to delete it, remove it there first.", and "From the installation's configuration file. …" without a Secret's name; the addresses as text, no field | — |
 | [Q-UI-1498](spec/api-and-ui.md#q-ui-1498--a-declared-registrations-card-offers-no-delete) | A declared registration's card offers no Delete | Decided by the development agent on 2026-11-26 | (a) **Delete** is not rendered; the lock line says to remove it in the values first | — |
 | [Q-UI-1499](spec/api-and-ui.md#q-ui-1499--the-declared-token-reads-never-under-expires-and-in-the-configuration-under-its-name-with-no-revoke) | The declared token reads Never under Expires and "In the configuration" under its name, with no Revoke | Decided by the development agent on 2026-11-26 | (a) In its row **Expires** reads **Never**, a lock with "In the configuration" stands beside the hint under its name, and the actions' cell is empty; the other tokens keep **Revoke** | — |
+| [Q-UI-1500](spec/api-and-ui.md#q-ui-1500--a-columns-help-says-what-the-column-means-for-every-row-what-holds-for-one-row-is-said-at-that-row) | A column's help says what the column means for every row; what holds for one row is said at that row | Decided by the owner on 2026-11-26 | the rule as above, and (a) for the check. | — |
 
 </details>
 

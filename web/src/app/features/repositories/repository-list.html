@@ -168,6 +168,11 @@
           @if (row.description) {
             <span class="secondary" translate="no">{{ row.description }}</span>
           }
+          <!-- What holds for this row alone is said at the row, not above the table (Q-UI-1500); once it answers clients, its Set up
+               client says so. -->
+          @if (isClamav(row) && closed(row)) {
+            <span class="secondary" i18n="@@repo.system.clamav-offer">An administrator can offer it to your ClamAV installations.</span>
+          }
         </span>
       </span>
     </th>

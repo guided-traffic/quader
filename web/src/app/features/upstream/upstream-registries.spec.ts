@@ -53,6 +53,20 @@ describe('Upstream registries (R-UI-187)', () => {
     await expectAccessible(root);
   });
 
+  it('R-UI-187 R-UI-002 the help of Clients says what the column means; each row says in its cell, in words, what holds for it', async () => {
+    const { root } = await render();
+    const help = [...root.querySelectorAll<HTMLElement>('.th-help')].find((b) => b.getAttribute('aria-label') === 'About the column Clients')!;
+    // The help is the description the tooltip gives its button.
+    const described = (help.getAttribute('aria-describedby') ?? '').split(' ').map((id) => document.getElementById(id)?.textContent ?? '');
+    expect(described).toEqual(['Whether the repository answers clients.']);
+    expect(text(root.querySelector('.system-hint')!)).toBe('Repositories Quader reads for its own work, which decides their state.');
+    const clients = (name: string): HTMLElement => row(root, name).querySelector<HTMLElement>('td.clients-cell')!;
+    expect(text(clients('Image scanning database'))).toBe('Not offered: Quader alone reads it.');
+    const sentence = clients('ClamAV definitions').querySelector('.secondary')!;
+    expect(text(sentence)).toBe('Serves the definitions to your ClamAV installations.');
+    expect(clients('ClamAV definitions').querySelector('[role="switch"]')!.getAttribute('aria-describedby')).toBe(sentence.id);
+  });
+
   it('R-UI-187 switching ClamAV definition updates on asks with the address and Public, sends PUT …/clamav/clients, and shows the level', async () => {
     const { fixture, root, api } = await render();
     const toggle = row(root, 'ClamAV definitions').querySelector<HTMLButtonElement>('[role="switch"]')!;

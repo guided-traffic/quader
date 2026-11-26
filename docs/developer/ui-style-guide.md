@@ -578,6 +578,8 @@ Before a screen is committed:
 - [ ] Only shared controls, classes of `_controls.scss` and `--quader-*` tokens; no colour literal.
 - [ ] One `<h1>`, one primary action per view, one way to each job (no button and tab for the same thing).
 - [ ] A row's one action is its quiet word, several are its menu **Actions for &lt;name&gt;**; no menu of one entry. A row that sets a state by a switch has the switch in that state's cell beside its badge and an act of one cell as that cell's one word, and no menu ([Q-CUR-201](../spec/remote-curation.md#q-cur-201--a-versions-acts-stand-where-their-state-stands)).
+- [ ] A column's help and a description above a table say what holds for every row; what holds for one row, one format or one special
+      case is said in that row, in words seen without hover ([Q-UI-1500](../spec/api-and-ui.md#q-ui-1500--a-columns-help-says-what-the-column-means-for-every-row-what-holds-for-one-row-is-said-at-that-row)).
 - [ ] Every value to copy of one line is an address field; a page shows one client address, further ones labelled in Details.
 - [ ] Every control named; the keyboard reaches everything; a spec of the screen calls `seriousViolations` and it passes.
 - [ ] Every string has an `i18n` ID and a German translation; a German word of more than 20 letters has its soft hyphen.
