@@ -288,9 +288,10 @@ func packageIdentity(id string) (format, name string, err error) {
 }
 
 // GetPackageVersionVulnerabilities implements GET /api/v1/packages/{packageId}/versions/{version}/vulnerabilities
-// (R-VULN-020): per readable repository that holds the version, the evaluation state, the block and the findings.
+// (R-VULN-020): per readable repository that holds the version, the evaluation state, the block and the findings. An anonymous caller
+// reads it by the levels as the package reads beside it (R-VULN-019): the open findings, the public states (Q-VULN-280).
 func (s *Server) GetPackageVersionVulnerabilities(w http.ResponseWriter, r *http.Request, id gen.PackageId, version gen.PackageVersionPath) {
-	rep, err := s.vulnReport()
+	rep, err := s.vulnPublicReport(r)
 	if err != nil {
 		httpserver.Problem(w, r, err)
 		return
@@ -347,7 +348,7 @@ func (s *Server) GetPackageVersionVulnerabilities(w http.ResponseWriter, r *http
 			item.MissingData = &m
 		}
 		for _, f := range rv.Findings {
-			item.Findings = append(item.Findings, toFinding(f))
+			item.Findings = append(item.Findings, findingFor(caller, f))
 		}
 		if rv.Images != nil {
 			images := make([]gen.VulnerabilityImageState, 0, len(rv.Images))
@@ -386,11 +387,12 @@ func toImageState(m report.ImageState) gen.VulnerabilityImageState {
 }
 
 // GetPackageVulnerabilities implements GET /api/v1/packages/{packageId}/vulnerabilities (R-VULN-020): the open findings per
-// version, counted by severity, over the findings the caller can read.
+// version, counted by severity, over the findings the caller can read; an anonymous caller's by the levels, with the public states
+// (R-VULN-019, Q-VULN-280).
 // A repository named in `repository` narrows the counts to that repository (a virtual one to its members), as the repository's content
 // page counts them (R-UI-052).
 func (s *Server) GetPackageVulnerabilities(w http.ResponseWriter, r *http.Request, id gen.PackageId, params gen.GetPackageVulnerabilitiesParams) {
-	rep, err := s.vulnReport()
+	rep, err := s.vulnPublicReport(r)
 	if err != nil {
 		httpserver.Problem(w, r, err)
 		return

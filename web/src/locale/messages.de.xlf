@@ -392,7 +392,7 @@
     <unit id="route.service-accounts.title">
       <notes>
         <note category="location">src/app/app.routes.ts:128</note>
-        <note category="location">src/app/features/projects/project-context.routes.ts:58</note>
+        <note category="location">src/app/features/projects/project-context.routes.ts:59</note>
         <note category="location">src/app/features/projects/project-list-pages.ts:41</note>
         <note category="location">src/app/features/service-accounts/service-accounts.routes.ts:7</note>
         <note category="location">src/app/features/service-accounts/service-accounts.routes.ts:24</note>
@@ -407,7 +407,7 @@
         <note category="location">src/app/app.routes.ts:136</note>
         <note category="location">src/app/features/permissions/permissions.routes.ts:7</note>
         <note category="location">src/app/features/permissions/permissions.routes.ts:29</note>
-        <note category="location">src/app/features/projects/project-context.routes.ts:53</note>
+        <note category="location">src/app/features/projects/project-context.routes.ts:54</note>
         <note category="location">src/app/features/projects/project-list-pages.ts:14</note>
       </notes>
       <segment>
@@ -438,7 +438,7 @@
     <unit id="usage.heading">
       <notes>
         <note category="location">src/app/app.routes.ts:155</note>
-        <note category="location">src/app/features/projects/project-context.routes.ts:65</note>
+        <note category="location">src/app/features/projects/project-context.routes.ts:66</note>
         <note category="location">src/app/features/usage/usage-overview.ts:139</note>
         <note category="location">src/app/features/usage/usage.routes.ts:43</note>
         <note category="location">src/app/features/usage/usage.routes.ts:61</note>
@@ -463,7 +463,7 @@
       <notes>
         <note category="location">src/app/app.routes.ts:168</note>
         <note category="location">src/app/features/ci/ci.routes.ts:13</note>
-        <note category="location">src/app/features/projects/project-context.routes.ts:72</note>
+        <note category="location">src/app/features/projects/project-context.routes.ts:73</note>
       </notes>
       <segment>
         <source>CI identity</source>
@@ -3091,7 +3091,7 @@
     </unit>
     <unit id="nav.vulnerabilities">
       <notes>
-        <note category="location">src/app/core/navigation.ts:250</note>
+        <note category="location">src/app/core/navigation.ts:253</note>
       </notes>
       <segment>
         <source>Vulnerabilities</source>
@@ -3100,7 +3100,7 @@
     </unit>
     <unit id="nav.section.project-access">
       <notes>
-        <note category="location">src/app/core/navigation.ts:259</note>
+        <note category="location">src/app/core/navigation.ts:262</note>
       </notes>
       <segment>
         <source>Access</source>
@@ -3109,7 +3109,7 @@
     </unit>
     <unit id="nav.project.settings">
       <notes>
-        <note category="location">src/app/core/navigation.ts:265</note>
+        <note category="location">src/app/core/navigation.ts:268</note>
       </notes>
       <segment>
         <source>Settings</source>
@@ -18021,7 +18021,7 @@
     <unit id="pkg.layers.heading">
       <notes>
         <note category="location">src/app/features/packages/image-details.ts:107,108</note>
-        <note category="location">src/app/features/packages/package-version.ts:765</note>
+        <note category="location">src/app/features/packages/package-version.ts:770</note>
       </notes>
       <segment>
         <source>Layers</source>
@@ -18094,7 +18094,7 @@
     <unit id="pkg.layers.copy">
       <notes>
         <note category="location">src/app/features/packages/image-details.ts:251</note>
-        <note category="location">src/app/features/packages/package-version.ts:776</note>
+        <note category="location">src/app/features/packages/package-version.ts:781</note>
       </notes>
       <segment>
         <source>Copy the digest of layer <ph id="0" equiv="number" disp="n"/></source>
@@ -18132,8 +18132,8 @@
       <notes>
         <note category="location">src/app/features/packages/image-details.ts:259</note>
         <note category="location">src/app/features/packages/package-version.html:648,650</note>
-        <note category="location">src/app/features/packages/package-version.ts:991</note>
-        <note category="location">src/app/features/packages/package-version.ts:998</note>
+        <note category="location">src/app/features/packages/package-version.ts:996</note>
+        <note category="location">src/app/features/packages/package-version.ts:1003</note>
       </notes>
       <segment>
         <source>Digest</source>
@@ -18144,7 +18144,7 @@
       <notes>
         <note category="location">src/app/features/packages/image-details.ts:260</note>
         <note category="location">src/app/features/packages/package-version.html:654,655</note>
-        <note category="location">src/app/features/packages/package-version.ts:992</note>
+        <note category="location">src/app/features/packages/package-version.ts:997</note>
       </notes>
       <segment>
         <source>Media type</source>
@@ -18155,8 +18155,8 @@
       <notes>
         <note category="location">src/app/features/packages/image-details.ts:261</note>
         <note category="location">src/app/features/packages/image-details.ts:266</note>
-        <note category="location">src/app/features/packages/package-version.ts:993</note>
-        <note category="location">src/app/features/packages/package-version.ts:999</note>
+        <note category="location">src/app/features/packages/package-version.ts:998</note>
+        <note category="location">src/app/features/packages/package-version.ts:1004</note>
       </notes>
       <segment>
         <source>Size</source>
@@ -19273,7 +19273,7 @@
     <unit id="pkg.ver.never-title">
       <notes>
         <note category="location">src/app/features/packages/package-detail.ts:249</note>
-        <note category="location">src/app/features/packages/package-version.ts:1007</note>
+        <note category="location">src/app/features/packages/package-version.ts:1012</note>
       </notes>
       <segment>
         <source>No client has downloaded this version through Quader yet.</source>
@@ -20540,7 +20540,7 @@
     </unit>
     <unit id="pkg.acts.label">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:629</note>
+        <note category="location">src/app/features/packages/package-version.ts:634</note>
       </notes>
       <segment>
         <source>More actions</source>
@@ -20549,7 +20549,7 @@
     </unit>
     <unit id="pkg.image.other-tags">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:734</note>
+        <note category="location">src/app/features/packages/package-version.ts:739</note>
       </notes>
       <segment>
         <source>Other tags of this image</source>
@@ -20558,7 +20558,7 @@
     </unit>
     <unit id="pkg.image.open-platform">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:761</note>
+        <note category="location">src/app/features/packages/package-version.ts:766</note>
       </notes>
       <segment>
         <source>Configuration and layers of <ph id="0" equiv="platform" disp="platform"/></source>
@@ -20567,7 +20567,7 @@
     </unit>
     <unit id="pkg.image.details">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:765</note>
+        <note category="location">src/app/features/packages/package-version.ts:770</note>
       </notes>
       <segment>
         <source>Configuration, layers and history</source>
@@ -20576,7 +20576,7 @@
     </unit>
     <unit id="pkg.image.heading">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:769</note>
+        <note category="location">src/app/features/packages/package-version.ts:774</note>
       </notes>
       <segment>
         <source>Image</source>
@@ -20585,7 +20585,7 @@
     </unit>
     <unit id="pkg.image.artifact-heading">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:769</note>
+        <note category="location">src/app/features/packages/package-version.ts:774</note>
       </notes>
       <segment>
         <source>Artifact</source>
@@ -20594,7 +20594,7 @@
     </unit>
     <unit id="pkg.file.copy-manifest">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:772</note>
+        <note category="location">src/app/features/packages/package-version.ts:777</note>
       </notes>
       <segment>
         <source>Copy the manifest&apos;s digest</source>
@@ -20603,7 +20603,7 @@
     </unit>
     <unit id="pkg.file.copy-config">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:773</note>
+        <note category="location">src/app/features/packages/package-version.ts:778</note>
       </notes>
       <segment>
         <source>Copy the config&apos;s digest</source>
@@ -20612,7 +20612,7 @@
     </unit>
     <unit id="pkg.file.copy-platform-layer">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:777</note>
+        <note category="location">src/app/features/packages/package-version.ts:782</note>
       </notes>
       <segment>
         <source>Copy the digest of layer <ph id="0" equiv="number" disp="n"/> of <ph id="1" equiv="platform" disp="platform"/></source>
@@ -20621,7 +20621,7 @@
     </unit>
     <unit id="clamav.member.name">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:803</note>
+        <note category="location">src/app/features/packages/package-version.ts:808</note>
       </notes>
       <segment>
         <source>Name</source>
@@ -20630,7 +20630,7 @@
     </unit>
     <unit id="pkg.file.size">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:804</note>
+        <note category="location">src/app/features/packages/package-version.ts:809</note>
       </notes>
       <segment>
         <source>Size</source>
@@ -20639,7 +20639,7 @@
     </unit>
     <unit id="clamav.member.lines">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:807</note>
+        <note category="location">src/app/features/packages/package-version.ts:812</note>
       </notes>
       <segment>
         <source>Lines</source>
@@ -20648,7 +20648,7 @@
     </unit>
     <unit id="clamav.member.lines-help">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:809</note>
+        <note category="location">src/app/features/packages/package-version.ts:814</note>
       </notes>
       <segment>
         <source>The member&apos;s lines that are neither empty nor a comment.</source>
@@ -20657,7 +20657,7 @@
     </unit>
     <unit id="clamav.members">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:812</note>
+        <note category="location">src/app/features/packages/package-version.ts:817</note>
       </notes>
       <segment>
         <source>Members</source>
@@ -20666,7 +20666,7 @@
     </unit>
     <unit id="clamav.checksums">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:813</note>
+        <note category="location">src/app/features/packages/package-version.ts:818</note>
       </notes>
       <segment>
         <source>Checksums of the archive</source>
@@ -20675,7 +20675,7 @@
     </unit>
     <unit id="clamav.member.digests">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:814</note>
+        <note category="location">src/app/features/packages/package-version.ts:819</note>
       </notes>
       <segment>
         <source>SHA-256 of each member</source>
@@ -20684,7 +20684,7 @@
     </unit>
     <unit id="pkg.file.path">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:951</note>
+        <note category="location">src/app/features/packages/package-version.ts:956</note>
       </notes>
       <segment>
         <source>File</source>
@@ -20693,7 +20693,7 @@
     </unit>
     <unit id="pkg.file.malware">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:952</note>
+        <note category="location">src/app/features/packages/package-version.ts:957</note>
       </notes>
       <segment>
         <source>Malware scan</source>
@@ -20702,7 +20702,7 @@
     </unit>
     <unit id="pkg.file.signature">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:953</note>
+        <note category="location">src/app/features/packages/package-version.ts:958</note>
       </notes>
       <segment>
         <source>Signature</source>
@@ -20711,7 +20711,7 @@
     </unit>
     <unit id="pkg.file.download-link">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:983</note>
+        <note category="location">src/app/features/packages/package-version.ts:988</note>
       </notes>
       <segment>
         <source>Download</source>
@@ -20720,7 +20720,7 @@
     </unit>
     <unit id="pkg.repo.repository">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:985</note>
+        <note category="location">src/app/features/packages/package-version.ts:990</note>
       </notes>
       <segment>
         <source>Repository</source>
@@ -20729,7 +20729,7 @@
     </unit>
     <unit id="pkg.repo.class">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:986</note>
+        <note category="location">src/app/features/packages/package-version.ts:991</note>
       </notes>
       <segment>
         <source>Class</source>
@@ -20738,7 +20738,7 @@
     </unit>
     <unit id="pkg.image.platform">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:990</note>
+        <note category="location">src/app/features/packages/package-version.ts:995</note>
       </notes>
       <segment>
         <source>Platform</source>
@@ -20747,7 +20747,7 @@
     </unit>
     <unit id="pkg.image.platforms-caption">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:995</note>
+        <note category="location">src/app/features/packages/package-version.ts:1000</note>
       </notes>
       <segment>
         <source>Platforms of this image index</source>
@@ -20756,7 +20756,7 @@
     </unit>
     <unit id="pkg.file.part">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:997</note>
+        <note category="location">src/app/features/packages/package-version.ts:1002</note>
       </notes>
       <segment>
         <source>Part</source>
@@ -20765,7 +20765,7 @@
     </unit>
     <unit id="pkg.file.image-caption">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:1003</note>
+        <note category="location">src/app/features/packages/package-version.ts:1008</note>
       </notes>
       <segment>
         <source>Manifest, config and layers of the image</source>
@@ -20774,7 +20774,7 @@
     </unit>
     <unit id="pkg.file.platform-caption">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:1004</note>
+        <note category="location">src/app/features/packages/package-version.ts:1009</note>
       </notes>
       <segment>
         <source>Manifest, config and layers of <ph id="0" equiv="platform" disp="platform"/></source>
@@ -20783,7 +20783,7 @@
     </unit>
     <unit id="pkg.image.not-fetched-title">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:1006</note>
+        <note category="location">src/app/features/packages/package-version.ts:1011</note>
       </notes>
       <segment>
         <source>No client has fetched this platform through Quader yet, so its manifest and its size are not held.</source>
@@ -20792,7 +20792,7 @@
     </unit>
     <unit id="pkg.image.copy-digest">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:1008</note>
+        <note category="location">src/app/features/packages/package-version.ts:1013</note>
       </notes>
       <segment>
         <source>Copy digest</source>
@@ -20801,7 +20801,7 @@
     </unit>
     <unit id="pkg.file.caption">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:1009</note>
+        <note category="location">src/app/features/packages/package-version.ts:1014</note>
       </notes>
       <segment>
         <source>Files of this version</source>
@@ -20810,7 +20810,7 @@
     </unit>
     <unit id="pkg.repo.caption">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:1010</note>
+        <note category="location">src/app/features/packages/package-version.ts:1015</note>
       </notes>
       <segment>
         <source>Repositories that hold this version</source>
@@ -20819,7 +20819,7 @@
     </unit>
     <unit id="pkg.file.copy-sha">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:1011</note>
+        <note category="location">src/app/features/packages/package-version.ts:1016</note>
       </notes>
       <segment>
         <source>Copy SHA-256</source>
@@ -23543,7 +23543,7 @@
     </unit>
     <unit id="route.vulnerabilities.title">
       <notes>
-        <note category="location">src/app/features/projects/project-context.routes.ts:41</note>
+        <note category="location">src/app/features/projects/project-context.routes.ts:42</note>
         <note category="location">src/app/features/vulnerabilities/vulnerabilities.routes.ts:39</note>
       </notes>
       <segment>
@@ -23553,7 +23553,7 @@
     </unit>
     <unit id="route.project.members.title">
       <notes>
-        <note category="location">src/app/features/projects/project-context.routes.ts:48</note>
+        <note category="location">src/app/features/projects/project-context.routes.ts:49</note>
       </notes>
       <segment>
         <source>Members</source>
@@ -23562,7 +23562,7 @@
     </unit>
     <unit id="route.project.settings.title">
       <notes>
-        <note category="location">src/app/features/projects/project-context.routes.ts:78</note>
+        <note category="location">src/app/features/projects/project-context.routes.ts:79</note>
       </notes>
       <segment>
         <source>Settings</source>
@@ -54173,7 +54173,7 @@
     </unit>
     <unit id="pkg.vuln.none-repositories">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/package-vulnerabilities.ts:49,51</note>
+        <note category="location">src/app/features/vulnerabilities/package-vulnerabilities.ts:51,53</note>
       </notes>
       <segment>
         <source>No repository you can read holds this version.</source>
@@ -54182,7 +54182,7 @@
     </unit>
     <unit id="pkg.vuln.blocked">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/package-vulnerabilities.ts:68,69</note>
+        <note category="location">src/app/features/vulnerabilities/package-vulnerabilities.ts:71,72</note>
       </notes>
       <segment>
         <source>Blocked.</source>
@@ -54191,7 +54191,7 @@
     </unit>
     <unit id="pkg.vuln.blocked-reason">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/package-vulnerabilities.ts:69,70</note>
+        <note category="location">src/app/features/vulnerabilities/package-vulnerabilities.ts:72,73</note>
       </notes>
       <segment>
         <source>Downloads of this version are refused. Reason:</source>
@@ -54200,7 +54200,7 @@
     </unit>
     <unit id="pkg.vuln.unavailable">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/package-vulnerabilities.ts:92,96</note>
+        <note category="location">src/app/features/vulnerabilities/package-vulnerabilities.ts:96,100</note>
       </notes>
       <segment>
         <source>The vulnerability report of this version is not available.</source>
@@ -55119,7 +55119,7 @@
     </unit>
     <unit id="pkg.vuln.findings-filtered">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/version-findings.ts:41,42</note>
+        <note category="location">src/app/features/vulnerabilities/version-findings.ts:52,53</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="INTERPOLATION" disp="{{ shown() | number }}"/> of <ph id="1" equiv="INTERPOLATION_1" disp="{{ total() | number }}"/> open findings: <ph id="2" equiv="INTERPOLATION_2" disp="{{ severityName(s) }}"/>.</source>
@@ -55128,16 +55128,25 @@
     </unit>
     <unit id="pkg.vuln.findings-all">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/version-findings.ts:42,44</note>
+        <note category="location">src/app/features/vulnerabilities/version-findings.ts:53,55</note>
       </notes>
       <segment>
         <source>Show all</source>
         <target>Alle zeigen</target>
       </segment>
     </unit>
+    <unit id="pkg.vuln.findings-bounded">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/version-findings.ts:55,56</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="INTERPOLATION" disp="{{ rows()!.length | number }}"/> of <ph id="1" equiv="INTERPOLATION_1" disp="{{ total() | number }}"/> open findings shown, the worst first.</source>
+        <target><ph id="0" equiv="INTERPOLATION" disp="{{ rows()!.length | number }}"/> von <ph id="1" equiv="INTERPOLATION_1" disp="{{ total() | number }}"/> offenen Befunden angezeigt, die schwersten zuerst.</target>
+      </segment>
+    </unit>
     <unit id="pkg.vuln.findings-total">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/version-findings.ts:44,46</note>
+        <note category="location">src/app/features/vulnerabilities/version-findings.ts:57,59</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="INTERPOLATION" disp="{{ total() | number }}"/> open findings, the worst first.</source>
@@ -55146,7 +55155,7 @@
     </unit>
     <unit id="vuln.findings.loading">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/version-findings.ts:52,53</note>
+        <note category="location">src/app/features/vulnerabilities/version-findings.ts:65,66</note>
         <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:192,193</note>
       </notes>
       <segment>
@@ -55154,10 +55163,39 @@
         <target>Die Befunde werden geladen.</target>
       </segment>
     </unit>
+    <unit id="vuln.marker.malicious">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/version-findings.ts:81,82</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:217,219</note>
+      </notes>
+      <segment>
+        <source>Malicious</source>
+        <target>Schädlich</target>
+      </segment>
+    </unit>
+    <unit id="vuln.marker.exploited">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/version-findings.ts:84,85</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:220,222</note>
+      </notes>
+      <segment>
+        <source>Known exploited</source>
+        <target>Bekannt ausgenutzt</target>
+      </segment>
+    </unit>
+    <unit id="pkg.vuln.components">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/version-findings.ts:92</note>
+      </notes>
+      <segment>
+        <source>In</source>
+        <target>In</target>
+      </segment>
+    </unit>
     <unit id="vuln.col.severity">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/version-findings.ts:90</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-advisory.ts:93</note>
+        <note category="location">src/app/features/vulnerabilities/version-findings.ts:128</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-advisory.ts:105</note>
         <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:305</note>
       </notes>
       <segment>
@@ -55167,7 +55205,7 @@
     </unit>
     <unit id="vuln.col.identifier">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/version-findings.ts:91</note>
+        <note category="location">src/app/features/vulnerabilities/version-findings.ts:129</note>
         <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:306</note>
       </notes>
       <segment>
@@ -55177,8 +55215,8 @@
     </unit>
     <unit id="vuln.col.status">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/version-findings.ts:92</note>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-advisory.ts:94</note>
+        <note category="location">src/app/features/vulnerabilities/version-findings.ts:130</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-advisory.ts:106</note>
       </notes>
       <segment>
         <source>Status</source>
@@ -55187,7 +55225,7 @@
     </unit>
     <unit id="pkg.vuln.col-fixed">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/version-findings.ts:93</note>
+        <note category="location">src/app/features/vulnerabilities/version-findings.ts:131</note>
       </notes>
       <segment>
         <source>Fixed in</source>
@@ -55196,7 +55234,7 @@
     </unit>
     <unit id="pkg.vuln.findings-none">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/version-findings.ts:95</note>
+        <note category="location">src/app/features/vulnerabilities/version-findings.ts:133</note>
       </notes>
       <segment>
         <source>No open finding of this severity.</source>
@@ -55205,7 +55243,7 @@
     </unit>
     <unit id="pkg.vuln.caption-in">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/version-findings.ts:96</note>
+        <note category="location">src/app/features/vulnerabilities/version-findings.ts:134</note>
       </notes>
       <segment>
         <source>Open findings of this version in <ph id="0" equiv="repository" disp="this.repository()"/></source>
@@ -55538,7 +55576,7 @@
     </unit>
     <unit id="vuln.advisory.loading">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-advisory.ts:32,33</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-advisory.ts:35,36</note>
       </notes>
       <segment>
         <source>Loading the advisory.</source>
@@ -55547,7 +55585,7 @@
     </unit>
     <unit id="vuln.advisory.text">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-advisory.ts:35,36</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-advisory.ts:38,39</note>
       </notes>
       <segment>
         <source>Advisory</source>
@@ -55556,7 +55594,7 @@
     </unit>
     <unit id="vuln.advisory.findings">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-advisory.ts:40,41</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-advisory.ts:43,44</note>
       </notes>
       <segment>
         <source>Where it is used</source>
@@ -55565,7 +55603,7 @@
     </unit>
     <unit id="vuln.advisory.open">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-advisory.ts:55,57</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-advisory.ts:61,63</note>
       </notes>
       <segment>
         <source>Open finding</source>
@@ -55574,7 +55612,7 @@
     </unit>
     <unit id="vuln.advisory.truncated">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-advisory.ts:62,63</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-advisory.ts:69,70</note>
       </notes>
       <segment>
         <source>You can read more than 1,000 findings of this advisory. The list shows the first 1,000.</source>
@@ -55583,7 +55621,7 @@
     </unit>
     <unit id="vuln.advisory.truncated-link">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-advisory.ts:63,66</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-advisory.ts:71,74</note>
       </notes>
       <segment>
         <source>Page through all of them in the report</source>
@@ -55592,7 +55630,7 @@
     </unit>
     <unit id="vuln.advisory.caption">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-advisory.ts:90</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-advisory.ts:102</note>
       </notes>
       <segment>
         <source>Findings of this advisory</source>
@@ -55601,7 +55639,7 @@
     </unit>
     <unit id="vuln.advisory.empty">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-advisory.ts:91</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-advisory.ts:103</note>
       </notes>
       <segment>
         <source>No stored version you can read is affected by this advisory.</source>
@@ -55610,7 +55648,7 @@
     </unit>
     <unit id="vuln.col.package">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-advisory.ts:95</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-advisory.ts:107</note>
         <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:307</note>
       </notes>
       <segment>
@@ -55620,7 +55658,7 @@
     </unit>
     <unit id="vuln.col.repository">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-advisory.ts:96</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-advisory.ts:108</note>
       </notes>
       <segment>
         <source>Repository</source>
@@ -55629,7 +55667,7 @@
     </unit>
     <unit id="vuln.col.detected">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-advisory.ts:97</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-advisory.ts:109</note>
         <note category="location">src/app/features/vulnerabilities/vulnerability-report.ts:309</note>
       </notes>
       <segment>
@@ -55639,7 +55677,7 @@
     </unit>
     <unit id="vuln.col.open">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-advisory.ts:98</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-advisory.ts:110</note>
       </notes>
       <segment>
         <source>Open</source>
@@ -56296,24 +56334,6 @@
       <segment>
         <source>Until</source>
         <target>Bis</target>
-      </segment>
-    </unit>
-    <unit id="vuln.marker.malicious">
-      <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:217,219</note>
-      </notes>
-      <segment>
-        <source>Malicious</source>
-        <target>Schädlich</target>
-      </segment>
-    </unit>
-    <unit id="vuln.marker.exploited">
-      <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:220,222</note>
-      </notes>
-      <segment>
-        <source>Known exploited</source>
-        <target>Bekannt ausgenutzt</target>
       </segment>
     </unit>
     <unit id="vuln.list.clear">
@@ -62883,7 +62903,7 @@
     </unit>
     <unit id="vuln.grade.prefix">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-card.ts:27</note>
+        <note category="location">src/app/shared/vulnerability/grade-card.ts:28</note>
         <note category="location">src/app/shared/vulnerability/grade.ts:28</note>
       </notes>
       <segment>
@@ -62893,7 +62913,7 @@
     </unit>
     <unit id="vuln.grade.fact.os">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-card.ts:40</note>
+        <note category="location">src/app/shared/vulnerability/grade-card.ts:41</note>
       </notes>
       <segment>
         <source>OS</source>
@@ -62902,7 +62922,7 @@
     </unit>
     <unit id="vuln.grade.fact.eosl">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-card.ts:43,45</note>
+        <note category="location">src/app/shared/vulnerability/grade-card.ts:44,46</note>
       </notes>
       <segment>
         <source>end of life</source>
@@ -62911,7 +62931,7 @@
     </unit>
     <unit id="vuln.grade.fact.findings">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-card.ts:49</note>
+        <note category="location">src/app/shared/vulnerability/grade-card.ts:51</note>
       </notes>
       <segment>
         <source>Findings in</source>
@@ -62920,7 +62940,7 @@
     </unit>
     <unit id="vuln.grade.fact.scanned">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-card.ts:121</note>
+        <note category="location">src/app/shared/vulnerability/grade-card.ts:126</note>
       </notes>
       <segment>
         <source>Scanned</source>
@@ -62929,7 +62949,7 @@
     </unit>
     <unit id="vuln.grade.fact.checked">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-card.ts:121</note>
+        <note category="location">src/app/shared/vulnerability/grade-card.ts:126</note>
       </notes>
       <segment>
         <source>Checked</source>
@@ -62994,7 +63014,7 @@
       <notes>
         <note category="location">src/app/shared/vulnerability/grade-words.ts:92</note>
         <note category="location">src/app/shared/vulnerability/grade-words.ts:114</note>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:292</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:301</note>
       </notes>
       <segment>
         <source>OS end of life</source>
@@ -63226,9 +63246,27 @@
         <target>Kein Image</target>
       </segment>
     </unit>
+    <unit id="vuln.check.word.pending">
+      <notes>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:192</note>
+      </notes>
+      <segment>
+        <source>Not checked yet</source>
+        <target>Noch nicht geprüft</target>
+      </segment>
+    </unit>
+    <unit id="vuln.check.word.not-checked">
+      <notes>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:194</note>
+      </notes>
+      <segment>
+        <source>Not checked</source>
+        <target>Nicht geprüft</target>
+      </segment>
+    </unit>
     <unit id="vuln.check.word.not-scanned">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:191</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:196</note>
       </notes>
       <segment>
         <source>Not scanned</source>
@@ -63237,7 +63275,7 @@
     </unit>
     <unit id="vuln.check.checked">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:239</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:244</note>
       </notes>
       <segment>
         <source>Checked for vulnerabilities</source>
@@ -63246,7 +63284,7 @@
     </unit>
     <unit id="vuln.check.queued-since">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:242</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:247</note>
       </notes>
       <segment>
         <source>Waits for its vulnerability scan since <ph id="0" equiv="time" disp="since"/>. It is scanned in turn, without anyone having to act.</source>
@@ -63255,7 +63293,7 @@
     </unit>
     <unit id="vuln.check.queued">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:243</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:248</note>
       </notes>
       <segment>
         <source>Waits for its vulnerability scan. It is scanned in turn, without anyone having to act.</source>
@@ -63264,7 +63302,7 @@
     </unit>
     <unit id="vuln.check.scanning-since">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:246</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:251</note>
       </notes>
       <segment>
         <source>Being scanned for vulnerabilities, since <ph id="0" equiv="time" disp="since"/>.</source>
@@ -63273,7 +63311,7 @@
     </unit>
     <unit id="vuln.check.scanning">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:247</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:252</note>
       </notes>
       <segment>
         <source>Being scanned for vulnerabilities.</source>
@@ -63282,7 +63320,7 @@
     </unit>
     <unit id="vuln.check.no-scanner">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:249</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:254</note>
       </notes>
       <segment>
         <source>No vulnerability scanner is connected, so it cannot be scanned now. It is scanned once one is.</source>
@@ -63291,7 +63329,7 @@
     </unit>
     <unit id="vuln.check.no-database">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:251</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:256</note>
       </notes>
       <segment>
         <source>No vulnerability database for images has been imported yet, so it cannot be scanned now. It is scanned once the database is there.</source>
@@ -63300,7 +63338,7 @@
     </unit>
     <unit id="vuln.check.no-advisory-data">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:253</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:258</note>
       </notes>
       <segment>
         <source>The advisory data of its ecosystem has not been imported yet. It is checked once the data is there.</source>
@@ -63309,7 +63347,7 @@
     </unit>
     <unit id="vuln.check.scan-failed">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:255</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:260</note>
       </notes>
       <segment>
         <source>The scan did not finish and is tried again.</source>
@@ -63318,7 +63356,7 @@
     </unit>
     <unit id="vuln.check.over-limits">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:257</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:262</note>
       </notes>
       <segment>
         <source>The image exceeds the limits of the scan. It is scanned once an administrator raises them.</source>
@@ -63327,7 +63365,7 @@
     </unit>
     <unit id="vuln.check.unreadable">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:259</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:264</note>
       </notes>
       <segment>
         <source>The scan could not read the image. It is scanned again by a release of Quader that reads it.</source>
@@ -63336,7 +63374,7 @@
     </unit>
     <unit id="vuln.check.off-installation">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:261</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:266</note>
       </notes>
       <segment>
         <source>Vulnerability scanning is switched off for this installation.</source>
@@ -63345,7 +63383,7 @@
     </unit>
     <unit id="vuln.check.off-repository">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:263</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:268</note>
       </notes>
       <segment>
         <source>Vulnerability scanning is switched off for this repository.</source>
@@ -63354,7 +63392,7 @@
     </unit>
     <unit id="vuln.check.not-matched">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:265</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:270</note>
       </notes>
       <segment>
         <source>This repository is set not to match public advisories.</source>
@@ -63363,7 +63401,7 @@
     </unit>
     <unit id="vuln.check.unknown-upstream">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:267</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:272</note>
       </notes>
       <segment>
         <source>Its upstream is not a known public registry, so public advisories are not matched. The repository&apos;s settings can match them.</source>
@@ -63372,7 +63410,7 @@
     </unit>
     <unit id="vuln.check.internal">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:269</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:274</note>
       </notes>
       <segment>
         <source>An internal name: public advisories do not apply.</source>
@@ -63381,16 +63419,34 @@
     </unit>
     <unit id="vuln.check.not-an-image">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:271</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:276</note>
       </notes>
       <segment>
         <source>Not a container image: this kind of artifact is not scanned for vulnerabilities.</source>
         <target>Kein Container-Image: Diese Art von Artefakt wird nicht auf Schwachstellen geprüft.</target>
       </segment>
     </unit>
+    <unit id="vuln.check.pending">
+      <notes>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:278</note>
+      </notes>
+      <segment>
+        <source>This version has not been checked for vulnerabilities yet.</source>
+        <target>Diese Version wurde noch nicht auf Schwachstellen geprüft.</target>
+      </segment>
+    </unit>
+    <unit id="vuln.check.not-checked">
+      <notes>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:280</note>
+      </notes>
+      <segment>
+        <source>This version is not checked for vulnerabilities.</source>
+        <target>Diese Version wird nicht auf Schwachstellen geprüft.</target>
+      </segment>
+    </unit>
     <unit id="vuln.check.format-not-scanned">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:274</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:283</note>
       </notes>
       <segment>
         <source>Packages of this type are not scanned for vulnerabilities.</source>
@@ -63399,7 +63455,7 @@
     </unit>
     <unit id="vuln.grade.count.critical">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:286</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:295</note>
         <note category="location">src/app/shared/vulnerability/severity-bar.ts:26</note>
       </notes>
       <segment>
@@ -63409,7 +63465,7 @@
     </unit>
     <unit id="vuln.grade.count.high">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:287</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:296</note>
         <note category="location">src/app/shared/vulnerability/severity-bar.ts:28</note>
       </notes>
       <segment>
@@ -63419,7 +63475,7 @@
     </unit>
     <unit id="vuln.grade.count.medium">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:288</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:297</note>
         <note category="location">src/app/shared/vulnerability/severity-bar.ts:30</note>
       </notes>
       <segment>
@@ -63429,7 +63485,7 @@
     </unit>
     <unit id="vuln.grade.count.low">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:289</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:298</note>
         <note category="location">src/app/shared/vulnerability/severity-bar.ts:32</note>
       </notes>
       <segment>
@@ -63439,7 +63495,7 @@
     </unit>
     <unit id="vuln.grade.count.unknown">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:290</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:299</note>
         <note category="location">src/app/shared/vulnerability/severity-bar.ts:34</note>
       </notes>
       <segment>

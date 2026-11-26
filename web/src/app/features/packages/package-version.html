@@ -313,7 +313,7 @@
           @switch (t.id) {
             @case ('vulnerabilities') {
               @if (activeTab() === 'vulnerabilities') {
-                <quader-package-vulnerabilities [report]="vulnerabilityReport()" [packageName]="d.name" [image]="format() === 'oci'" [format]="format()" [severity]="severityFilter()" />
+                <quader-package-vulnerabilities [report]="vulnerabilityReport()" [packageName]="d.name" [image]="format() === 'oci'" [format]="format()" [severity]="severityFilter()" [signedIn]="signedIn()" />
               }
             }
             @case ('documentation') {

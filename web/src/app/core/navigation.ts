@@ -247,7 +247,10 @@ export function projectEntries(key: string, session: SessionStore): readonly Nav
     { kind: 'item', route: at('packages'), icon: 'category', label: $localize`:@@nav.packages:Packages` },
     // <<< M2 ui-packages
     // >>> M4b vulnerabilities
-    { kind: 'item', route: at('vulnerabilities'), icon: 'security', label: $localize`:@@nav.vulnerabilities:Vulnerabilities` },
+    // The project's report needs a session: a visitor without one reads the open findings of a version on its page (R-UI-224).
+    ...(session.state() === 'anonymous'
+      ? []
+      : [{ kind: 'item' as const, route: at('vulnerabilities'), icon: 'security', label: $localize`:@@nav.vulnerabilities:Vulnerabilities` }]),
     // <<< M4b vulnerabilities
     ...(builtIn
       ? []

@@ -229,18 +229,10 @@ func (s *Service) Version(ctx context.Context, sc Scope, format, name, version s
 		}
 		versions = manifestDigests(images, version)
 	}
-	rows, err := s.st.List(ctx, sc.Scope, s.withPolicy(sc.snap, store.Filter{
-		Formats: []string{format}, Packages: []string{name}, Versions: versions, Repos: repos, HasRepos: true,
-	}), store.Order{Sort: "severity", Desc: true}, nil, 1000*len(repos))
+	fs, err := s.versionFindings(ctx, sc, format, name, versions, repos)
 	if err != nil {
 		return nil, false, err
 	}
-	if format == imageFormat {
-		if rows, err = s.st.WithComponents(ctx, rows); err != nil {
-			return nil, false, err
-		}
-	}
-	fs := s.findings(sc.snap, rows)
 	open, err := s.versionCounts(ctx, sc, format, name, version, repos)
 	if err != nil {
 		return nil, false, err
@@ -286,9 +278,74 @@ func (s *Service) Version(ctx context.Context, sc Scope, format, name, version s
 		rv.Missing = notChecked(format == imageFormat, rv.Evaluation, missing)
 		rv.Grade = gradeIn(rv.Repository, rv.Evaluation, open[id], rv.Images, info.SyncedAt)
 		rv.Grade.Check = check
+		if sc.anonymous {
+			rv = publicVersion(rv)
+		}
 		out = append(out, rv)
 	}
 	return out, true, nil
+}
+
+// MaxVersionFindings is the most findings the version report lists per repository (the schema's maxItems); the grade counts them
+// all, so a screen says "1,000 of N" where a repository holds more.
+const MaxVersionFindings = 1000
+
+// versionFindings lists the findings of the versions (a version, or an image tag with the digests of its manifests) per repository,
+// the worst first, at most MaxVersionFindings in each: one statement per repository that holds the version, so that one repository's
+// many findings never take another's place. An image's findings carry their components. The anonymous caller's are the open ones only.
+func (s *Service) versionFindings(ctx context.Context, sc Scope, format, name string, versions []string, repos []int64) ([]Finding, error) {
+	var rows []store.Row
+	for _, id := range repos {
+		f := sc.forCaller(store.Filter{Formats: []string{format}, Packages: []string{name}, Versions: versions, Repos: []int64{id}, HasRepos: true})
+		got, err := s.st.List(ctx, sc.Scope, s.withPolicy(sc.snap, f), store.Order{Sort: "severity", Desc: true}, nil, MaxVersionFindings)
+		if err != nil {
+			return nil, err
+		}
+		rows = append(rows, got...)
+	}
+	if format == imageFormat && len(rows) > 0 {
+		var err error
+		if rows, err = s.st.WithComponents(ctx, rows); err != nil {
+			return nil, err
+		}
+	}
+	return s.findings(sc.snap, rows), nil
+}
+
+// publicVersion is what an anonymous caller is told of a version in a repository (R-VULN-020, Q-VULN-280): the evaluation and the
+// state in their public form, no missing data (the installation's cause), and of each manifest of an image no error code; a failed scan
+// is one that has not finished. The findings are already the open ones (forCaller), the block and its reason stay: a refused download
+// is what a visitor's client meets.
+func publicVersion(rv RepositoryVersion) RepositoryVersion {
+	rv.Evaluation = vuln.PublicEvaluation(rv.Evaluation)
+	rv.Missing = ""
+	if rv.Images != nil {
+		images := make([]ImageState, 0, len(rv.Images))
+		for _, m := range rv.Images {
+			images = append(images, publicImage(m))
+		}
+		rv.Images = images
+	}
+	rv.Grade = publicGrade(rv.Grade)
+	return rv
+}
+
+// publicImage is a manifest of an image as an anonymous caller is told it: no error code and no judgement, a failed scan pending.
+func publicImage(m ImageState) ImageState {
+	m.ErrorCode, m.Judged = "", ""
+	if m.State == store.ImageScanFailed {
+		m.State = store.ImageScanPending
+	}
+	return m
+}
+
+// publicGrade is a grade as an anonymous caller is told it (Q-VULN-280): the letter, the counts, the fixable count, the OS and its end
+// of life and the time of the check as every reader reads them; the evaluation and the state in their public form, without the time a
+// wait began and without a scan's code.
+func publicGrade(g VersionGrade) VersionGrade {
+	g.Evaluation = vuln.PublicEvaluation(g.Evaluation)
+	g.Check = Check{State: g.Check.State.Public()}
+	return g
 }
 
 // versionCounts counts the open findings of the version per repository for its grade, from the counts and not from the listed

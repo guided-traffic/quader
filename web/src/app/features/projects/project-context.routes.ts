@@ -5,7 +5,7 @@ import { PROJECT_CI_ROUTES } from '../ci/ci.routes';
 // <<< M4 ci
 
 /** The step of a section whose routes are loaded lazily and have no title of their own. */
-const section = (label: string): { crumbs: CrumbSpec[] } => ({ crumbs: [{ label, link: true }] });
+const section = (label: string, session = false): { crumbs: CrumbSpec[] } => ({ crumbs: [{ label, link: true, session }] });
 
 /**
  * The screens of one project, `/projects/<project>/…` (Q-UI-129): the start page lists the caller's projects; below a
@@ -38,7 +38,8 @@ export const PROJECT_CONTEXT_ROUTES: Routes = [
       // >>> M4b vulnerabilities
       {
         path: 'vulnerabilities',
-        data: section($localize`:@@route.vulnerabilities.title:Vulnerabilities`),
+        // The report needs a session; a visitor without one reaches an advisory's page below it from a version's findings (R-UI-224).
+        data: section($localize`:@@route.vulnerabilities.title:Vulnerabilities`, true),
         loadChildren: () =>
           import('../vulnerabilities/vulnerabilities.routes').then((m) => m.VULNERABILITIES_ROUTES),
       },

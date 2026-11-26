@@ -2,6 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRouteSnapshot, NavigationEnd, Router } from '@angular/router';
 import { filter, map, startWith } from 'rxjs';
+import { SessionStore } from './session-store';
 
 /** One step of the trail above the page title. */
 export interface Crumb {
@@ -16,6 +17,8 @@ export interface Crumb {
 export interface CrumbSpec {
   readonly label: string;
   readonly link: boolean;
+  /** The step links only for a reader with a session: its page needs one (a project's vulnerability report, R-UI-224). */
+  readonly session?: boolean;
 }
 
 /**
@@ -41,6 +44,7 @@ export interface CrumbSpec {
 @Injectable({ providedIn: 'root' })
 export class Breadcrumbs {
   private readonly router = inject(Router);
+  private readonly session = inject(SessionStore);
 
   // A fresh wrapper per navigation, so that the signal notices even a navigation that keeps the
   // same route objects.
@@ -69,7 +73,7 @@ export class Breadcrumbs {
   /** The trail; empty when it would only repeat the page title. */
   readonly trail = computed<readonly Crumb[]>(() => {
     const names = this.names();
-    const crumbs = collect(this.snapshot().root).map((c) => (c.literal && names.has(c.label) ? { ...c, label: names.get(c.label)! } : c));
+    const crumbs = collect(this.snapshot().root, this.session.state() !== 'anonymous').map((c) => (c.literal && names.has(c.label) ? { ...c, label: names.get(c.label)! } : c));
     return crumbs.length > 1 ? crumbs : [];
   });
 
@@ -84,8 +88,11 @@ export class Breadcrumbs {
   });
 }
 
-/** Builds the trail from a snapshot tree (exported for the unit tests). */
-export function collect(root: ActivatedRouteSnapshot): Crumb[] {
+/**
+ * Builds the trail from a snapshot tree (exported for the unit tests); `signedIn` false is a visitor without a session, for whom a step
+ * whose page needs one (`session`) is a name without a link (R-UI-224).
+ */
+export function collect(root: ActivatedRouteSnapshot, signedIn = true): Crumb[] {
   const out: Crumb[] = [];
   const add = (crumb: Crumb): void => {
     const last = out[out.length - 1];
@@ -104,7 +111,7 @@ export function collect(root: ActivatedRouteSnapshot): Crumb[] {
 
     const specs = config?.data?.['crumbs'] as readonly CrumbSpec[] | undefined;
     for (const spec of specs ?? []) {
-      add({ label: spec.label, commands: spec.link ? commands : null, literal: false });
+      add({ label: spec.label, commands: spec.link && (signedIn || !spec.session) ? commands : null, literal: false });
     }
 
     const title = typeof config?.title === 'string' ? config.title : undefined;

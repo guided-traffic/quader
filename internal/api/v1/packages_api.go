@@ -141,11 +141,12 @@ func includes(lq ListQuery, want string) bool {
 }
 
 // addVulnerabilityGrades adds the grade of each package's latest version to its entry (R-VULN-039, R-UI-052), in a fixed number of
-// statements whatever the page holds. It is an addition to a public list: a caller who is anonymous, or an installation without
-// vulnerability scanning, gets the list without grades, and grades that cannot be read leave the page without them rather than
-// failing it (Q-VULN-158).
+// statements whatever the page holds. It is an addition to a public list: an installation without vulnerability scanning gets the
+// list without grades, and grades that cannot be read leave the page without them rather than failing it (Q-VULN-158). An anonymous
+// caller, whom the list's anonymous gate admitted, gets the grades of what it reads by the levels, from the open findings, with the
+// public states (the owner's decision of 2026-11-26, Q-VULN-280).
 func (s *Server) addVulnerabilityGrades(r *http.Request, lq ListQuery, page []view.Package, out []gen.PackageSummary) {
-	if len(page) == 0 || httpserver.PrincipalFrom(r.Context()).Anonymous {
+	if len(page) == 0 {
 		return
 	}
 	rep, err := s.vulnReport()

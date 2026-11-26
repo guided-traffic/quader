@@ -76,7 +76,18 @@ func (s *Server) vulnRequest(r *http.Request, rep *report.Service) (context.Cont
 	if err != nil {
 		return ctx, nil, report.Caller{}, err
 	}
-	return ctx, sn, report.Caller{Reads: rs, VirtualReadable: sn.Topo.IDs(virtuals)}, nil
+	return ctx, sn, report.Caller{Reads: rs, VirtualReadable: sn.Topo.IDs(virtuals), Anonymous: acc.Subject.Anonymous}, nil
+}
+
+// vulnPublicReport is vulnReport for the three reads an anonymous caller may make (R-VULN-019, Q-VULN-280): the vulnerabilities of
+// a version and of a package and the advisory page. The anonymous gate comes first, as on the package reads beside them: a caller
+// without a credential is answered 401 while the endpoint admits no anonymous caller or no repository is public, whatever the replica
+// has wired. What the caller reads is then decided by vulnRequest, the read scope the package reads use.
+func (s *Server) vulnPublicReport(r *http.Request) (*report.Service, error) {
+	if err := s.anonymousGate(r.Context()); err != nil {
+		return nil, err
+	}
+	return s.vulnReport()
 }
 
 // findingFilters are the query parameters of the list and of the export (R-VULN-020).
@@ -225,7 +236,7 @@ func findingOrder(lq ListQuery) store.Order { return store.Order{Sort: lq.Sort, 
 
 func toFinding(f report.Finding) gen.VulnerabilityFinding {
 	out := gen.VulnerabilityFinding{
-		Id: parseUUID(f.ID), Project: projectOf(f.Repository), Repository: f.Repository, Format: f.Format, Package: f.Package, Version: f.Version, Advisory: f.Advisory,
+		Id: parseUUID(f.ID), Project: projectOf(f.Repository), Repository: f.Repository, Format: f.Format, Ecosystem: f.Ecosystem, Package: f.Package, Version: f.Version, Advisory: f.Advisory,
 		Aliases: orEmpty(f.Aliases), Kind: gen.VulnerabilityKind(f.Kind), Summary: f.Summary, Severity: gen.VulnerabilitySeverity(f.Severity),
 		Cvss: toCvss(f.CVSSVersion, f.CVSSVector, f.CVSSScore), KnownExploited: f.KnownExploited, FixAvailable: f.FixAvailable,
 		FixedVersions: orEmpty(f.FixedVersions), Status: gen.VulnerabilityStatus(f.Status), Blocked: f.Blocked,
@@ -675,32 +686,36 @@ func toSetStatusResult(bulk string, res []triage.Result) gen.VulnerabilitySetSta
 }
 
 // GetVulnerabilityAdvisory implements GET /api/v1/vulnerabilities/advisories/{ecosystem}/{id} (R-VULN-020): the advisory is
-// public data and visible to every authenticated caller, the findings of it are the ones the caller can read.
+// public data, the findings of it are the ones the caller can read. An anonymous caller (R-VULN-019, Q-VULN-281) reads the open
+// findings only, and an advisory of which it may read no open finding answers it the 404 of one that does not exist: the advisories
+// of images are stored as a scan detects them, so that their existence would tell which advisories the installation's private images
+// have. Both answers run the same statements, so that the time does not tell them apart either.
 func (s *Server) GetVulnerabilityAdvisory(w http.ResponseWriter, r *http.Request, ecosystem, id string) {
-	rep, err := s.vulnReport()
+	rep, err := s.vulnPublicReport(r)
 	if err != nil {
 		httpserver.Problem(w, r, err)
 		return
 	}
-	adv, found, err := rep.ResolveAdvisory(r.Context(), ecosystem, id)
-	if err == nil && !found {
-		err = errs.E(errs.NotFound, errs.CodeNotFound, "The advisory does not exist.")
-	}
+	ctx, sn, c, err := s.vulnRequest(r, rep)
 	var (
-		ctx context.Context
-		sn  *report.Snapshot
-		c   report.Caller
-		sc  report.Scope
-		det report.AdvisoryDetail
+		adv   report.Advisory
+		found bool
+		sc    report.Scope
+		det   report.AdvisoryDetail
 	)
 	if err == nil {
-		ctx, sn, c, err = s.vulnRequest(r, rep)
+		adv, found, err = rep.ResolveAdvisory(ctx, ecosystem, id)
 	}
-	if err == nil {
-		sc, err = rep.Scope(ctx, sn, c, report.AdvisoryFilter(adv.Ecosystem, adv.ID))
+	if err == nil && !found && c.Anonymous {
+		adv.Ecosystem, adv.ID = ecosystem, id
 	}
-	if err == nil {
-		det, err = rep.AdvisoryFindings(ctx, sc, adv)
+	if err == nil && (found || c.Anonymous) {
+		if sc, err = rep.Scope(ctx, sn, c, report.AdvisoryFilter(adv.Ecosystem, adv.ID)); err == nil {
+			det, err = rep.AdvisoryFindings(ctx, sc, adv)
+		}
+	}
+	if err == nil && (!found || c.Anonymous && len(det.Findings) == 0) {
+		err = errs.E(errs.NotFound, errs.CodeNotFound, "The advisory does not exist.")
 	}
 	if err != nil {
 		httpserver.Problem(w, r, err)
@@ -708,13 +723,23 @@ func (s *Server) GetVulnerabilityAdvisory(w http.ResponseWriter, r *http.Request
 	}
 	out := gen.VulnerabilityAdvisoryDetail{Advisory: s.toAdvisory(det.Advisory), Findings: make([]gen.VulnerabilityFinding, 0, len(det.Findings))}
 	for _, f := range det.Findings {
-		out.Findings = append(out.Findings, toFinding(f))
+		out.Findings = append(out.Findings, findingFor(c, f))
 	}
 	if det.Truncated {
 		t := true
 		out.Truncated = &t
 	}
 	writeJSON(w, r, http.StatusOK, out)
+}
+
+// findingFor is a finding as the caller is told it: an anonymous caller (Q-VULN-280) without the reasons a triage or a resolution
+// gave, which its open findings do not carry anyway; every other caller as toFinding says it.
+func findingFor(c report.Caller, f report.Finding) gen.VulnerabilityFinding {
+	out := toFinding(f)
+	if c.Anonymous {
+		out.DismissalReason, out.ResolvedReason, out.ResolvedAt = nil, nil, nil
+	}
+	return out
 }
 
 // exportHeader are the columns of the CSV export (R-VULN-020).

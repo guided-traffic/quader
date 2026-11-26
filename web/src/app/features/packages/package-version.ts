@@ -604,6 +604,11 @@ export class PackageVersionPage {
   // ---- Deprecating the version, or an Ansible collection as a whole (R-API-085, Q-UI-1301) ----
 
   private readonly session = inject(SessionStore);
+  /**
+   * The reader has a session: a visitor without one reads the tab Vulnerabilities from the report's own findings, each linking to its
+   * advisory, and is offered no link into a screen that needs a session (R-UI-224).
+   */
+  protected readonly signedIn = computed(() => this.session.authenticated());
   private readonly dialog = inject(QuaderDialog);
   /** The local repositories that hold the version, for a format whose protocol carries a deprecation (npm, NuGet, Ansible Galaxy). */
   private readonly deprecationHolders = computed(

@@ -301,6 +301,9 @@ func (s *Service) grades(ctx context.Context, sc Scope, format string, holders [
 		p := s.policy(sc.snap, h.RepoID)
 		g := gradeIn(r.Name.String(), eval, open[k], images, data[p.Ecosystem].SyncedAt)
 		g.Check = check
+		if sc.anonymous {
+			g = publicGrade(g)
+		}
 		if prev, ok := out[k.gradeKey]; ok {
 			g = worst(prev, g)
 		}

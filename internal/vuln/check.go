@@ -52,11 +52,45 @@ const (
 	CheckFormatNotScanned CheckState = "format_not_scanned"
 	// CheckNotAnImage: an OCI artifact that is no container image (a chart, a signature, an attestation), which is never scanned.
 	CheckNotAnImage CheckState = "not_an_image"
+
+	// The two states an anonymous caller is told instead of the installation's causes (R-VULN-039, Q-VULN-280): never answered to a
+	// caller with a credential.
+
+	// CheckPending: not checked yet; it is checked once the installation can (a scan waits, runs or failed, the data or a scanner is missing).
+	CheckPending CheckState = "pending"
+	// CheckNotChecked: not checked, by a setting of the installation or of the repository, or because public advisories do not apply.
+	CheckNotChecked CheckState = "not_checked"
 )
 
 // Waits reports whether the state passes on its own: the version is checked without anyone's act. A screen that shows such a version
 // reads it again while it is seen (R-UI-213).
 func (c CheckState) Waits() bool { return c == CheckQueued || c == CheckScanning }
+
+// Public is the state as an anonymous caller is told it (R-VULN-039, Q-VULN-280): checked, not checked yet, not checked, or what the
+// version is (a format that is not scanned, an artifact that is no image), never the installation's cause behind it. The owner's
+// decision of 2026-11-26 opens the open findings of public repositories to everyone; what the installation lacks or how a repository is
+// set stays with who signs in.
+func (c CheckState) Public() CheckState {
+	switch c {
+	case CheckChecked, CheckFormatNotScanned, CheckNotAnImage, CheckPending, CheckNotChecked:
+		return c
+	case CheckQueued, CheckScanning, CheckNoScanner, CheckNoDatabase, CheckNoAdvisoryData, CheckScanFailed, CheckOverLimits, CheckUnreadable:
+		return CheckPending
+	}
+	return CheckNotChecked
+}
+
+// PublicEvaluation is the evaluation state as an anonymous caller is told it (Q-VULN-280): an internal name is not covered, and a
+// failed scan is a scan that has not finished.
+func PublicEvaluation(e Evaluation) Evaluation {
+	switch e {
+	case EvaluationInternal:
+		return EvaluationNotCovered
+	case EvaluationScanFailed:
+		return EvaluationPendingScan
+	}
+	return e
+}
 
 // NoScannerCode reports whether a pending row's code says that no scanner could take its call: the codes of R-VULN-034 that a row put
 // off for a reason of the installation keeps when none answered, the scanner could not pull from the scan listener, or the scan

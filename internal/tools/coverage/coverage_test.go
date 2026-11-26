@@ -159,8 +159,10 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 		// 1339 since a Bastion's limits, its configuration from the main installation, the throughput between the two and a
 		// Bastion that names nothing of the main installation are specified (R-BAS-093 to R-BAS-099, R-LIM-043 to R-LIM-046,
 		// R-UI-240, R-UI-241, R-UI-243: fourteen MVP requirements; R-UI-242: one P1 requirement; W-34, E6).
-		if len(m.Reqs) != 1339 || count[prioMVP] != 742 || count[prioP1] != 558 || count[prioP2] != 39 {
-			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1339 (742, 558, 39)",
+		// 1340 since a visitor without a session reads the open findings of a public repository (R-UI-224, one P1 requirement
+		// of W-35, P3).
+		if len(m.Reqs) != 1340 || count[prioMVP] != 742 || count[prioP1] != 559 || count[prioP2] != 39 {
+			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1340 (742, 559, 39)",
 				len(m.Reqs), count[prioMVP], count[prioP1], count[prioP2])
 		}
 	})

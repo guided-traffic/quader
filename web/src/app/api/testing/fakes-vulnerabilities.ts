@@ -50,6 +50,7 @@ export function sampleFinding(over: Partial<VulnerabilityFinding> = {}): Vulnera
     project: 'web',
     repository: 'web/npm-remote',
     format: 'npm',
+    ecosystem: over.format === 'nuget' ? 'NuGet' : over.format === 'oci' ? 'OCI' : 'npm',
     package: 'quader-test-vuln',
     version: '1.0.0',
     advisory: 'GHSA-aaaa-aaaa-0001',

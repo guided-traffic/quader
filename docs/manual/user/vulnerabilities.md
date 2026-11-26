@@ -83,8 +83,8 @@ finding does not count.
 
 A version held by several repositories you may read shows the worst of their grades. A package in a list shows the grade of its
 latest version: an older version you pin can be worse, so look at the versions table of the package before you keep an old one.
-Sorting it by **Vulnerabilities** twice lists the worst versions first. If you are signed
-out, or the installation does not scan, no grades are shown at all.
+Sorting it by **Vulnerabilities** twice lists the worst versions first. If the installation does not scan, no grades are shown at
+all. Without signing in you see the grades of what is **Public**; see [Without signing in](#without-signing-in).
 
 ## On the page of a version
 
@@ -108,6 +108,23 @@ package **advisory data not yet available**; for an image **the image has not be
 its scan has finished, usually within a minute), **the vulnerability scan of the image did not finish and is tried again**, **the image
 exceeds the limits of the scan and cannot be scanned** or **the scan could not read the content of the image** (these two need an
 administrator), or **no vulnerability database for images has been imported yet**. A client that pulls or downloads it is told the same.
+
+## Without signing in
+
+A visitor who has not signed in sees the vulnerabilities of what is **Public**, so that everyone can judge the images and packages an
+organisation hands out:
+
+- every grade, in the lists, the versions tables and the line under a version's name;
+- on the **Vulnerabilities** tab of a version the card of each public repository that holds it, and its open findings: severity and
+  score, the identifier with its aliases, **Malicious** and **Known exploited** where they apply, the summary, for an image the packages
+  inside it that are affected (**In** xz 5.6.0-r0 → 5.6.1-r2), and the fixed versions. The identifier opens the page of the advisory,
+  with its description, references and the public versions it affects. A repository with more than 1,000 open findings of a version
+  lists the worst 1,000 and says so ("1,000 of 1,234 open findings shown");
+- why a version is not checked, in general words: **Not checked yet**, **Not checked**, or the reason of the package type.
+
+A visitor does not see a finding that was dismissed or resolved, its status, who triaged it, a comment or a history, the reason the
+installation has not checked a version yet, or anything of a repository that is not **Public**. The report of a project, a finding's own
+page and every action need a sign-in. An administrator decides what is **Public** ([Visibility levels](../admin/permissions.md#visibility-levels)).
 
 ## Advisory sources
 

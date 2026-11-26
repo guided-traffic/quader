@@ -1,4 +1,5 @@
 import { InjectionToken } from '@angular/core';
+import { VulnerabilityFinding } from '../../api/vulnerabilities-api';
 
 /**
  * Where the vulnerability screens are mounted. The same screens (report, finding, advisory) serve the project's
@@ -25,6 +26,17 @@ export const SECURITY_CONTEXT: VulnContext = { instanceWide: true };
  */
 export function vulnCommands(ctx: VulnContext, project: string | undefined, ...rest: string[]): string[] {
   return ctx.instanceWide ? ['/security', ...rest] : ['/projects', project ?? '', 'vulnerabilities', ...rest];
+}
+
+/**
+ * Where a finding's row leads (R-UI-224): its detail in its project for a reader with a session; for a visitor without one the page of its
+ * advisory in its project, which the API answers such a visitor where the advisory affects a version it may read (Q-VULN-281). The detail,
+ * with its history and the triager, stays with who signs in.
+ */
+export function findingCommands(f: Pick<VulnerabilityFinding, 'project' | 'id' | 'ecosystem' | 'advisory'>, signedIn: boolean): string[] {
+  return signedIn
+    ? ['/projects', f.project, 'vulnerabilities', 'findings', f.id]
+    : ['/projects', f.project, 'vulnerabilities', 'advisories', f.ecosystem, f.advisory];
 }
 
 /**

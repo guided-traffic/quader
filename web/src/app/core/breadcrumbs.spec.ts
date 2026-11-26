@@ -5,7 +5,12 @@ import { RepositoriesApi } from '../api/repositories-api';
 import { provideFakeApis } from '../api/testing/fakes';
 import { FakeRepositoriesApi, GENERIC_FORMAT, OCI_FORMAT } from '../api/testing/fakes-catalog';
 import { routes } from '../app.routes';
+import { ApiError } from '../api/problem';
+import { SessionApi } from '../api/session-api';
+import { LoginApi } from '../api/login-api';
+import { FakeLoginApi, FakeSessionApi } from '../api/testing/fakes';
 import { Breadcrumbs } from './breadcrumbs';
+import { SessionStore } from './session-store';
 
 /** The trail of a URL of the real route map (R-UI-003), as the shell would render it. */
 async function trailAt(url: string, setup?: () => void) {
@@ -39,6 +44,29 @@ describe('Breadcrumbs', () => {
       { label: 'Repositories', link: '//projects/web/repositories', literal: false },
       { label: 'my-repo', link: '//projects/web/repositories/my-repo', literal: true },
     ]);
+  });
+
+  it('R-UI-224 a visitor without a session reads the project\'s Vulnerabilities as a name: the report needs a session', async () => {
+    const anonymous = async () => {
+      const store = TestBed.inject(SessionStore);
+      (TestBed.inject(SessionApi) as FakeSessionApi).whoamiResult = new ApiError(401, { code: 'unauthenticated', detail: 'no session' }, 'rid');
+      // Some repository is public: the application runs for the visitor instead of sending it to the sign-in (R-UI-057).
+      const login = TestBed.inject(LoginApi) as FakeLoginApi;
+      login.optionsResult = { ...login.optionsResult, publicContent: true };
+      await store.load();
+    };
+    const url = '/projects/web/vulnerabilities/advisories/npm/GHSA-aaaa-aaaa-0001';
+    const signedIn = await trailAt(url);
+    expect(signedIn[2]).toEqual({ label: 'Vulnerabilities', link: '//projects/web/vulnerabilities', literal: false });
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({ providers: [provideRouter(routes), provideHttpClient(), ...provideFakeApis()] });
+    await anonymous();
+    const router = TestBed.inject(Router);
+    const crumbs = TestBed.inject(Breadcrumbs);
+    await router.navigateByUrl(url);
+    const trail = crumbs.trail();
+    expect(trail[2]).toEqual({ label: 'Vulnerabilities', commands: null, literal: false });
+    expect(trail[1]?.commands).not.toBeNull();
   });
 
   it('R-UI-002 no step of a project screen links to a route that does not exist', async () => {

@@ -144,6 +144,9 @@ export class SessionStore {
    * 60 seconds. Resolves with one boolean per input, in order.
    */
   async check(checks: readonly PermissionCheck[]): Promise<boolean[]> {
+    // A visitor without a session may act nowhere, and the check needs a session (401): its page offers no act and asks nothing
+    // (R-UI-224).
+    if (this._state() === 'anonymous') return checks.map(() => false);
     const now = Date.now();
     const key = (c: PermissionCheck): string => JSON.stringify([c.repository, c.action, c.package, c.path]);
     const missing = checks.filter((c) => {

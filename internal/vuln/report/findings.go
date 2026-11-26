@@ -128,9 +128,10 @@ func (s *Service) ResolveAdvisory(ctx context.Context, ecosystem, id string) (Ad
 	return s.advisoryView(a), true, nil
 }
 
-// Findings returns the findings of an advisory group the caller can read (at most 1,000).
+// AdvisoryFindings returns the findings of an advisory group the caller can read (at most 1,000); the anonymous caller's are the open
+// ones only (Q-VULN-280).
 func (s *Service) AdvisoryFindings(ctx context.Context, sc Scope, a Advisory) (AdvisoryDetail, error) {
-	f := AdvisoryFilter(a.Ecosystem, a.ID)
+	f := sc.forCaller(AdvisoryFilter(a.Ecosystem, a.ID))
 	rows, err := s.st.List(ctx, sc.Scope, s.withPolicy(sc.snap, f), store.Order{Sort: "severity", Desc: true}, nil, maxAdvisoryFindings+1)
 	if err != nil {
 		return AdvisoryDetail{}, err

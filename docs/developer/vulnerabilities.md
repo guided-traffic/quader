@@ -138,8 +138,10 @@ The change to `GetLiveItem` of [files.sql](../../internal/meta/postgres/queries/
 ### API
 
 Every operation of R-VULN-011, R-VULN-020 and R-VULN-021 is in [api/openapi.yaml](../../api/openapi.yaml) (tag `vulnerabilities`, between `# >>> M4b vulnerabilities` markers in the tags, the
-paths, the responses and the schemas), with its `x-quader-permission` (R-VULN-019, Q-VULN-27): the reads of findings, advisories, summary, trend, export and the package views are
-`authenticated: true` and narrowed per finding in SQL by the handler; the status changes need `vulnerabilities:triage` (and `read` on the finding, checked in the handler, `404` otherwise); the sources need
+paths, the responses and the schemas), with its `x-quader-permission` (R-VULN-019, Q-VULN-27): the reads of findings, summary, trend and export are
+`authenticated: true` and narrowed per finding in SQL by the handler; the package views and the advisory are `public: true`, pass the anonymous gate first
+(`vulnPublicReport`) and are narrowed by the same read scope, and for the anonymous subject `report.Caller.Anonymous` narrows every statement to the open
+statuses and answers the public state of a check (`Scope.forCaller`, `publicVersion`, `publicGrade`; Q-VULN-280, Q-VULN-281); the status changes need `vulnerabilities:triage` (and `read` on the finding, checked in the handler, `404` otherwise); the sources need
 `settings:read`; the claimed-name matches `repositories:read-config`; the rescan is `manage` on the repository. The repository document has the member `vulnerabilities`
 (`VulnerabilitySettings`), `GET /system/info` the block `vulnerabilityData` (`VulnerabilityDataFacts`, not required), and `TaskRunRequest` documents `acceptShrink`.
 

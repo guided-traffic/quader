@@ -42,6 +42,18 @@ describe('SessionStore', () => {
     expect(b.store.loadError()?.requestId).toBe('rid');
   });
 
+  it('R-UI-224 a visitor without a session may act nowhere: its checks are false and ask nothing', async () => {
+    const { store, api } = setup();
+    api.whoamiResult = new ApiError(401, { code: 'unauthenticated' }, null);
+    await store.load();
+    const check = vi.spyOn(api, 'check');
+    expect(await store.check([{ repository: 'platform/npm-open-source', action: 'deploy' }, { repository: 'web/npm', action: 'read' }])).toEqual([
+      false,
+      false,
+    ]);
+    expect(check).not.toHaveBeenCalled();
+  });
+
   it('R-UI-216 a failed read of the session keeps its failure while it is read again, and the answer clears it', async () => {
     const { store, api } = setup();
     const fine = api.whoamiResult;

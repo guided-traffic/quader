@@ -6034,12 +6034,17 @@ Priority: **MVP** · Covers: quader-only
   **Sign in**. While it is false a visitor without a session is sent to the sign-in screen (R-UI-004). A browser whose session
   has ended is no such visitor until it chose to be: it lands on the sign-in screen with the notice that the session has ended,
   and "Continue without signing in" there makes it one (R-UI-004, Q-UI-710).
+- Such a visitor sees the vulnerabilities of what the public levels admit (the owner, 2026-11-26: "Natürlich soll die Hauptinstanz
+  Vulnerabilities an öffentlich sichtbaren Repos anzeigen."): the grades of every list and of a version's facts, and the tab
+  **Vulnerabilities** with the open findings, without the triage, and with no link into a screen that needs a session (R-UI-224,
+  [vulnerability-scanning.md](vulnerability-scanning.md#q-vuln-280--an-anonymous-caller-reads-the-open-findings-of-what-the-levels-admit-and-the-public-state-of-a-check)).
 
 Acceptance criteria:
 
 - An anonymous visitor opens the package page of `@web/button` in `web/npm-public` (artifacts Public, wiki Internal): the
   versions and the install panel are shown, the README tab is not, and the browser made no request for the README.
 - A signed-in internal user sees the README tab on the same page.
+- An anonymous visitor of a graded version of a public repository sees its grade and the tab **Vulnerabilities** (R-UI-224).
 
 Built as Q-UI-234: [package-detail.ts](../../web/src/app/features/packages/package-detail.ts) (the README tab and its request follow `hasReadme`), [auth-guard.ts](../../web/src/app/core/auth-guard.ts), [project-context.ts](../../web/src/app/core/project-context.ts) and [login.ts](../../web/src/app/features/login/login.ts) (`publicContent`); tests in [login.spec.ts](../../web/src/app/features/login/login.spec.ts) and [package-detail.spec.ts](../../web/src/app/features/packages/package-detail.spec.ts).
 
@@ -7204,8 +7209,9 @@ their severity (R-VULN-022). The list shows the grade; the bar and the facts are
 | Version page, tab **Vulnerabilities** (R-VULN-023) | Each repository's section | `<quader-grade-card>` above the block banner, its bar's segments the severity filter of the findings below (`severity` in the URL); then the open findings, 25 at a time from the findings API, worst first, with their number from the grade's counts ([Q-UI-379](#q-ui-379--the-vulnerabilities-tab-pages-the-open-findings-of-a-version-from-the-findings-api-filtered-by-the-cards-bar)) |
 | Vulnerability report (R-VULN-022), a project's and the security dashboard | The header | `<quader-severity-bar [links]>` of the open findings in scope in place of the five severity counts; the counts **Malicious**, **Needs triage** and **Blocked versions** stay ([Q-UI-376](#q-ui-376--the-reports-header-shows-the-severity-bar-whose-segments-are-its-filter-links)) |
 
-- A caller who gets no grades (signed out, an installation that does not scan, Q-VULN-158) sees no grade column, no card and no
-  header grade, not a column of dashes ([Q-UI-377](#q-ui-377--a-list-without-grades-has-no-grade-column)).
+- A caller who gets no grades (an installation that does not scan, Q-VULN-158) sees no grade column, no card and no header grade,
+  not a column of dashes ([Q-UI-377](#q-ui-377--a-list-without-grades-has-no-grade-column)). A visitor without a session gets the grades
+  of what the public levels admit and sees every place of this table (R-UI-224).
 
 Acceptance criteria:
 
@@ -10231,6 +10237,47 @@ Acceptance criteria:
   [package-versions-model.spec.ts](../../web/src/app/features/packages/package-versions-model.spec.ts), milliseconds): each version's
   downloads under its last download; an image's digest under its tags, and Pushed.
 - Rendered (rule 11): the tables of an npm, a NuGet and an Ansible package, an image and a Debian package (`package-*-facts*`).
+
+### R-UI-224 · A visitor without a session reads the open findings of a public repository
+Priority: **P1** · Covers: quader-only
+
+The owner, 2026-11-26: "Natürlich soll die Hauptinstanz Vulnerabilities an öffentlich sichtbaren Repos anzeigen. Ja, dann ändert sich
+das Verhalten der Hauptinstanz." His purpose: "Damit wollen wir Vertrauen in die ausgelieferten Images schaffen." The API answers such a
+visitor the grades and the open findings of what the public levels admit ([vulnerability-scanning.md](vulnerability-scanning.md#q-vuln-280--an-anonymous-caller-reads-the-open-findings-of-what-the-levels-admit-and-the-public-state-of-a-check)); the
+screens show them, in both languages, and offer nothing a visitor cannot use.
+
+- **Grades.** Every place of R-UI-094 shows the grade to a visitor without a session as to a signed-in reader: the column
+  **Vulnerabilities** of a repository's content and of its opened item's versions, the versions table of a package page, a version's
+  facts. A version that is not checked says so in public words: **Not checked yet** ("This version has not been checked for
+  vulnerabilities yet."), **Not checked** ("This version is not checked for vulnerabilities."), or the format's own reason where the
+  format is not scanned (Q-UI-1244) and **Not an image**; neither public state is a warning, and neither is read again faster than a
+  view's idle interval ([Q-UI-1413](#q-ui-1413--the-public-states-are-neutral-words-without-a-time-and-a-page-reads-them-at-its-idle-interval)).
+- **The tab Vulnerabilities.** Per repository the grade card (R-UI-093) without its link to the project's report, the block with its
+  reason, and the open findings of the version report itself, at most 1,000 per repository, 25 at a time, the worst first, narrowed by
+  the card's bar in the browser ([Q-UI-1410](#q-ui-1410--a-visitor-without-a-session-reads-the-findings-of-the-version-report-itself)).
+  A repository whose grade counts more says "1,000 of 1,234 open findings shown, the worst first.". An image at the end of life of its
+  OS whose grade is C without a High finding says why on the card: "OS end of life: no more security updates, the scan may miss
+  vulnerabilities" (R-VULN-038).
+- **A row.** The severity with its score, the identifier as a link to the advisory's page, the markers **Malicious** and **Known
+  exploited**, the aliases, the summary, an image's components ("In xz 5.6.0-r0 → 5.6.1-r2") and the fixed versions; no status
+  ([Q-UI-1411](#q-ui-1411--a-visitor-without-a-session-reads-a-finding-without-its-status-and-reaches-its-advisory-not-its-detail)).
+- **The advisory page.** The advisory, and the versions it affects that the visitor may read, without their status and without the
+  link to a finding; a list cut at 1,000 says so without the link into the report.
+- **Nothing that needs a session.** No triage, rescan or block, no link to a finding's detail or to the project's report: the project's
+  side bar has no **Vulnerabilities** for the visitor, and the breadcrumb's step of it is a name
+  ([Q-UI-1412](#q-ui-1412--what-needs-a-session-is-left-out-for-a-visitor-without-one-and-the-views-are-told-not-asked)).
+
+Acceptance criteria:
+
+- Unit ([anonymous-vulnerabilities.spec.ts](../../web/src/app/features/vulnerabilities/anonymous-vulnerabilities.spec.ts),
+  [grade-words.spec.ts](../../web/src/app/shared/vulnerability/grade-words.spec.ts),
+  [breadcrumbs.spec.ts](../../web/src/app/core/breadcrumbs.spec.ts), milliseconds): a visitor's tab lists the report's findings with
+  their aliases and an image's components, each linking to its advisory, without a status, asks no findings API and offers no link
+  into the report; "30 of 1,500 open findings shown"; the bar narrows in the browser; a blocked version's finding links to its
+  advisory; the public states' words in English and German; the advisory page without status and links; the side bar and the trail.
+- Rendered (rule 11): `anonymous-version-findings` (with the advisory page and a plain user's view of the same version),
+  `anonymous-version-clean`, `anonymous-version-image-pending`, `anonymous-version-image-eol`, `anonymous-version-ansible`,
+  `anonymous-repository-grades`, `anonymous-package-grades`, in both schemes, at 1,440, 1,024 and 390 px, the marked ones in German.
 
 ### R-UI-240 · A Bastion's card: its limits, its throughput and its state
 Priority: **MVP** · Covers: quader-only
@@ -17175,7 +17222,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) The column **Vulnerabilities** appears when the format is scanned and the answer carries grades (chosen) | A signed-out reader or an installation without scanning sees the list without it | No column that stays empty (the style guide); no N/A where nothing is known (Q-VULN-158) | The column comes with the first page, not before it |
+| (a) The column **Vulnerabilities** appears when the format is scanned and the answer carries grades (chosen) | An installation without scanning sees the list without it (a signed-out reader too, until the owner's decision of 2026-11-26, R-UI-224) | No column that stays empty (the style guide); no N/A where nothing is known (Q-VULN-158) | The column comes with the first page, not before it |
 | (b) A dash per row | The column always | Stable layout | A column of dashes says nothing |
 
 **Choice:** (a). **Rationale:** the style guide's rule that a column without data is left out. The development agent records no
@@ -28380,6 +28427,67 @@ that failed, and the title carries it without a word on the row. The development
 image's layers in the drawer.
 
 **Applied in the spec:** R-UI-211, R-UI-212. Code: [download-words.ts](../../web/src/app/shared/upstream-downloads/download-words.ts).
+
+### Q-UI-1410 · A visitor without a session reads the findings of the version report itself
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-UI-224. The tab pages a version's findings from the findings list (Q-UI-379), which needs a session; the version report the
+tab reads anyway carries the open findings of a visitor, at most 1,000 per repository
+([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-020).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The report's own findings, 25 at a time and narrowed by the bar in the browser; "1,000 of N shown" where the grade counts more (chosen) | `rows` of `<quader-version-findings>` | No request more, and the rows are the grade's by construction (R-VULN-019) | A visitor of a version with more than 1,000 open findings in a repository sees the worst 1,000 |
+| (b) Open the findings list to anonymous callers | A fourth public read | Every finding pageable | A read of the whole report's filters for every visitor, and a cost per page the owner's decision does not need |
+
+**Choice:** (a). **Rationale:** what the owner asked for, with the reads he opened. **Applied in the spec:** R-UI-224. Code:
+[version-findings.ts](../../web/src/app/features/vulnerabilities/version-findings.ts).
+
+### Q-UI-1411 · A visitor without a session reads a finding without its status, and reaches its advisory, not its detail
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the owner listed what a visitor reads of a finding (identifier, aliases, summary, severity, CVSS, known-exploited, fixed versions,
+an image's components, the advisory's references); a finding's detail, with its history and triager, stays with who signs in.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) No status column; the identifier links to the advisory's page; the row names the aliases, the markers and an image's components (chosen) | The visitor's row | *Needs triage* and *Confirmed* are the triage's words; what the owner listed is on the row or one click away | A visitor's table differs from a signed-in reader's |
+| (b) The status as for a signed-in reader | | One table | The triage's state on a public page |
+
+**Choice:** (a). A version blocked in triage still says **Blocked** with its reason in the banner: a refused download is what a visitor's
+client meets. **Applied in the spec:** R-UI-224.
+
+### Q-UI-1412 · What needs a session is left out for a visitor without one, and the views are told, not asked
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-UI-224. The grade card linked to the project's report, the tab's rows and the block banner to a finding's detail, the project's
+side bar to the report, and the advisory page to the report and the detail; all of them need a session. W-35's P2 makes the reading
+views free of the session, for a second application without one.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The page that holds the session tells its views (`signedIn` of `<quader-package-vulnerabilities>`, `withReport` of the card, `rows` of the findings); the advisory page, the side bar and the trail ask the session (`CrumbSpec.session`) (chosen) | No view imports the session | The views stay usable without a session, as P2 needs | One input more per view |
+| (b) Every view asks the session | | Fewer inputs | P2's rule would have to undo it |
+
+**Choice:** (a). **Applied in the spec:** R-UI-224. Code: [package-vulnerabilities.ts](../../web/src/app/features/vulnerabilities/package-vulnerabilities.ts),
+[grade-card.ts](../../web/src/app/shared/vulnerability/grade-card.ts), [vulnerability-advisory.ts](../../web/src/app/features/vulnerabilities/vulnerability-advisory.ts),
+[navigation.ts](../../web/src/app/core/navigation.ts), [breadcrumbs.ts](../../web/src/app/core/breadcrumbs.ts).
+
+### Q-UI-1413 · The public states are neutral words without a time, and a page reads them at its idle interval
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the API tells a visitor `pending` or `not_checked` instead of the installation's cause ([vulnerability-scanning.md](vulnerability-scanning.md#q-vuln-280--an-anonymous-caller-reads-the-open-findings-of-what-the-levels-admit-and-the-public-state-of-a-check)).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) **Not checked yet** and **Not checked**, sentences without a cause, a time or an administrator; neutral, never a warning; a view reads them again at its idle interval (chosen) | Two words, two sentences | Nothing a visitor cannot act on; the waiting scan of a public image does not make every visitor's page poll fast | A visitor waits up to the idle interval for a scan that finished |
+| (b) The words of the causes | | More detail | The installation's state on a public page |
+
+**Choice:** (a). **Applied in the spec:** R-UI-224; [grade-words.ts](../../web/src/app/shared/vulnerability/grade-words.ts).
 
 ### Q-UI-1395 · A download's row names its unit in the target and opens in place
 

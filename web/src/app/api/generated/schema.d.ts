@@ -3819,10 +3819,10 @@ export interface paths {
          *     without `q` it is the order of the name. An anonymous caller sees what a `public` level admits.
          *     The filter runs in SQL. A sort field or filter this document does not list answers
          *     `400 malformed_request`. `deprecated=true` keeps the packages whose latest visible version is deprecated, and each entry
-         *     carries the deprecation of its latest version (R-API-085). `include=vulnerabilities` adds `vulnerabilityGrade` to each entry, for a signed-in caller of an
-         *     installation that scans: the grade of the entry's `latestVersion` over the repositories the filter names (a virtual repository
-         *     expanded to its members), from the open findings the caller can read, in a fixed number of statements per page (R-VULN-038,
-         *     R-VULN-039, R-UI-052).
+         *     carries the deprecation of its latest version (R-API-085). `include=vulnerabilities` adds `vulnerabilityGrade` to each entry, for
+         *     every caller of an installation that scans: the grade of the entry's `latestVersion` over the repositories the filter names (a
+         *     virtual repository expanded to its members), from the open findings the caller can read, in a fixed number of statements per page
+         *     (R-VULN-038, R-VULN-039, R-UI-052); an anonymous caller's from what the levels admit, with the public `state` (Q-VULN-280).
          */
         get: operations["listPackages"];
         put?: never;
@@ -5460,7 +5460,11 @@ export interface paths {
          * Read an advisory with its readable findings
          * @description An advisory by identifier or alias (R-VULN-020), with its source and license (R-VULN-003) and the findings of it that
          *     the caller can read, across repositories and versions: the "where is it used" view. The advisory is public data and
-         *     visible to every authenticated caller; the list of findings is filtered as the findings list is (R-VULN-019).
+         *     visible to every signed-in caller; the list of findings is filtered as the findings list is (R-VULN-019). An anonymous
+         *     caller is decided by the levels as the package reads are (`401` while the endpoint admits no anonymous caller, the
+         *     endpoint's exposure rules, a virtual repository only while every member is public): it reads the open findings only
+         *     (`needs_triage`, `confirmed`, `blocked`), and an advisory of which it can read no open finding answers it `404`, as one
+         *     that does not exist (Q-VULN-281).
          */
         get: operations["getVulnerabilityAdvisory"];
         put?: never;
@@ -5573,7 +5577,12 @@ export interface paths {
         /**
          * The vulnerabilities of one version, per repository
          * @description Per readable repository that holds the version: `evaluation` (R-VULN-001), `blocked`, `blockReason` and the findings
-         *     (R-VULN-020): the download status without downloading.
+         *     (R-VULN-020): the download status without downloading. At most 1,000 findings per repository, the worst first; the grade
+         *     counts them all. An anonymous caller is decided by the levels as the package reads are (R-VULN-019: `401` while the
+         *     endpoint admits no anonymous caller, the endpoint's exposure rules, a virtual repository only while every member is
+         *     public) and is told the open findings only, so that each repository's listed findings are the ones its grade counts;
+         *     `evaluation` and the grade's `state` in their public form, no `missingData`, no `stateSince` or `stateCode`, and no
+         *     `errorCode` of an image's manifest (Q-VULN-280).
          */
         get: operations["getPackageVersionVulnerabilities"];
         put?: never;
@@ -5598,7 +5607,8 @@ export interface paths {
          * The open findings of a package, per version
          * @description Open findings per version of the package, counted by severity, over the findings the caller can read (R-VULN-020).
          *     `repository` (repeated) narrows them to the versions and findings of that repository; a virtual repository expands to
-         *     its members (R-UI-052).
+         *     its members (R-UI-052). An anonymous caller is decided by the levels as the package reads are (R-VULN-019), and each
+         *     grade's `state` is the public one (Q-VULN-280).
          */
         get: operations["getPackageVulnerabilities"];
         put?: never;
@@ -12823,9 +12833,9 @@ export interface components {
              */
             signature?: "verified_internal" | "verified_public";
             /**
-             * @description With `include=vulnerabilities` only, and only for a signed-in caller of an installation that scans (R-VULN-039): the grade
-             *     of `latestVersion` over the repositories the list is filtered by (every readable one without the filter), the worst of
-             *     them (R-VULN-038).
+             * @description With `include=vulnerabilities` only, and only in an installation that scans (R-VULN-039): the grade of `latestVersion` over the
+             *     repositories the list is filtered by (every readable one without the filter), the worst of them (R-VULN-038); for an
+             *     anonymous caller from the open findings of what the levels admit, with the public `state` (Q-VULN-280).
              */
             vulnerabilityGrade?: components["schemas"]["VulnerabilityGrade"];
             /** @description The deprecation of `latestVersion` (R-API-085); absent when it is not deprecated. */
@@ -15776,6 +15786,7 @@ export interface components {
          *       "project": "web",
          *       "repository": "web/npm-remote",
          *       "format": "npm",
+         *       "ecosystem": "npm",
          *       "package": "lodash",
          *       "version": "4.17.20",
          *       "advisory": "GHSA-35jh-r3h4-6jhm",
@@ -15810,6 +15821,8 @@ export interface components {
             /** @description The qualified name `<project>/<key>`. */
             repository: string;
             format: string;
+            /** @description The ecosystem of the advisory (`npm`, `NuGet`, `OCI`): with `advisory` the address of the advisory's page (R-VULN-022), which an anonymous reader's row links to (Q-VULN-280). */
+            ecosystem: string;
             package: string;
             version: string;
             /** @description The canonical identifier. */
@@ -16007,10 +16020,10 @@ export interface components {
             state: components["schemas"]["VulnerabilityCheckState"];
             /**
              * Format: date-time
-             * @description `queued`: when the image's earliest waiting manifest was queued; `scanning`: when the running call started; null otherwise and when not known.
+             * @description `queued`: when the image's earliest waiting manifest was queued; `scanning`: when the running call started; null otherwise, when not known, and for an anonymous caller (Q-VULN-280).
              */
             stateSince: string | null;
-            /** @description The code of R-VULN-034 of a failed scan (`scan_failed`, `over_limits`, `unreadable`), or of a row put off for a reason of the installation (`queued`: `scanner_busy`, `spool_too_small`, …; `no_scanner`: `scanner_unavailable`, `registry_unavailable`, `pull_refused`): technical detail for a reader who reports it, never a sentence of its own. null otherwise. */
+            /** @description The code of R-VULN-034 of a failed scan (`scan_failed`, `over_limits`, `unreadable`), or of a row put off for a reason of the installation (`queued`: `scanner_busy`, `spool_too_small`, …; `no_scanner`: `scanner_unavailable`, `registry_unavailable`, `pull_refused`): technical detail for a reader who reports it, never a sentence of its own. null otherwise, and always for an anonymous caller (Q-VULN-280). */
             stateCode: string | null;
             /** @description The qualified name of the repository whose grade it is. */
             repository: string;
@@ -16027,10 +16040,13 @@ export interface components {
          *     `matchPublicAdvisories` is `never`), `unknown_upstream` (a remote whose upstream is no public registry of its format, R-VULN-010),
          *     `internal` (a name of the organisation's own), `format_not_scanned` (a format without the vulnerability adapter: Debian, Ansible
          *     Galaxy, generic files), `not_an_image` (an OCI artifact that is no container image, Q-VULN-275). Every state but `checked` has the
-         *     grade N/A. An image's state is read per manifest, so every tag of one image says the same.
+         *     grade N/A. An image's state is read per manifest, so every tag of one image says the same. An anonymous caller is told the public
+         *     form only (Q-VULN-280): `checked`, `format_not_scanned`, `not_an_image`, `pending` (not checked yet: every state that waits, cannot be
+         *     checked now or failed) or `not_checked` (every state of a setting, of an upstream that is not matched, or of an internal name);
+         *     `pending` and `not_checked` are never answered to a caller with a credential.
          * @enum {string}
          */
-        VulnerabilityCheckState: "checked" | "queued" | "scanning" | "no_scanner" | "no_database" | "no_advisory_data" | "scan_failed" | "over_limits" | "unreadable" | "off_installation" | "off_repository" | "not_matched" | "unknown_upstream" | "internal" | "format_not_scanned" | "not_an_image";
+        VulnerabilityCheckState: "checked" | "queued" | "scanning" | "no_scanner" | "no_database" | "no_advisory_data" | "scan_failed" | "over_limits" | "unreadable" | "off_installation" | "off_repository" | "not_matched" | "unknown_upstream" | "internal" | "format_not_scanned" | "not_an_image" | "pending" | "not_checked";
         /** @description The open findings the caller can read (R-VULN-021). */
         VulnerabilitySummary: {
             bySeverity: components["schemas"]["VulnerabilitySeverityCounts"];

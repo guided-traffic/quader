@@ -146,6 +146,9 @@ func (sn *Snapshot) IDs() []int64 { return append(sn.Topo.Physical(), sn.Topo.Vi
 type Caller struct {
 	Reads           authz.ReadScope
 	VirtualReadable []int64
+	// Anonymous is the anonymous subject (R-VULN-019, Q-VULN-280): it reads the open findings only, and the public states of
+	// [vuln.CheckState.Public], never a dismissed or resolved finding, a reason, or the installation's cause of a version not checked.
+	Anonymous bool
 }
 
 // Scope is what a caller may read, with the snapshot it was built on.
@@ -157,6 +160,8 @@ type Scope struct {
 	// Holders are, for a package view, the (repository, version) pairs of the package the caller may read.
 	Holders []store.Candidate
 	virtual map[int64]bool
+	// anonymous is Caller.Anonymous.
+	anonymous bool
 }
 
 func tooBroad() error {
@@ -175,7 +180,7 @@ func (s *Service) build(sn *Snapshot, c Caller, formats []string, withWhole bool
 	load func(repoIDs []int64, max int) ([]store.Candidate, error),
 	loadPackages func(repoIDs []int64, max int) ([]store.Pair, int, error),
 ) (Scope, error) {
-	sc := Scope{snap: sn, virtual: map[int64]bool{}}
+	sc := Scope{snap: sn, virtual: map[int64]bool{}, anonymous: c.Anonymous}
 	for _, v := range c.VirtualReadable {
 		sc.virtual[v] = true
 	}
@@ -282,6 +287,19 @@ func (s *Service) PackageScope(ctx context.Context, sn *Snapshot, c Caller, form
 	return s.build(sn, c, []string{format}, true, func(repoIDs []int64, max int) ([]store.Candidate, error) {
 		return s.st.PackageCandidates(ctx, repoIDs, format, name, version, max)
 	}, nil)
+}
+
+// Anonymous reports whether the scope is the anonymous subject's (Caller.Anonymous).
+func (sc Scope) Anonymous() bool { return sc.anonymous }
+
+// forCaller narrows a filter to what the scope's caller is shown of the findings: the anonymous subject the open ones only
+// (Q-VULN-280, the owner's decision of 2026-11-26: no dismissed and no resolved finding, so that no row, no count and no reason of
+// a triage reaches a visitor); every other caller keeps the filter.
+func (sc Scope) forCaller(f store.Filter) store.Filter {
+	if sc.anonymous {
+		f.Statuses = vuln.OpenStatuses()
+	}
+	return f
 }
 
 // VirtualContaining returns the readable virtual repositories whose effective member list contains the repository, sorted by name.

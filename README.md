@@ -3034,13 +3034,13 @@ The operations of the vulnerability scanning ([docs/developer/vulnerabilities.md
 | `POST /api/v1/vulnerabilities/findings/set-status` | `setVulnerabilityFindingsStatus` | `vulnerabilities:triage` and `read` on each finding · idempotent; up to 500 ids in one transaction, one result per id |
 | `GET /api/v1/vulnerabilities/findings/{id}` | `getVulnerabilityFinding` | authenticated; `404` for a finding the caller cannot read |
 | `PATCH /api/v1/vulnerabilities/findings/{id}` | `updateVulnerabilityFinding` | `vulnerabilities:triage` and `read` on the finding · `If-Match`; a JSON merge patch with `status`, `dismissalReason`, `comment` |
-| `GET /api/v1/vulnerabilities/advisories/{ecosystem}/{id}` | `getVulnerabilityAdvisory` | authenticated; the advisory is public data, its findings are the readable ones |
+| `GET /api/v1/vulnerabilities/advisories/{ecosystem}/{id}` | `getVulnerabilityAdvisory` | public, decided as the package reads; the advisory is public data, its findings are the readable ones; an anonymous caller's are the open ones, and an advisory it reads none of is its `404` |
 | `GET /api/v1/vulnerabilities/summary` | `getVulnerabilitySummary` | authenticated; counted over the readable findings |
 | `GET /api/v1/vulnerabilities/trend` | `getVulnerabilityTrend` | authenticated; as above, at most 400 days |
 | `GET /api/v1/vulnerabilities/sources` | `listVulnerabilitySources` | `settings:read` |
 | `GET /api/v1/vulnerabilities/claimed-name-matches` | `listClaimedNameMatches` | `repositories:read-config` |
-| `GET /api/v1/packages/{packageId}/versions/{version}/vulnerabilities` | `getPackageVersionVulnerabilities` | authenticated; per readable repository that holds the version: evaluation, block and findings |
-| `GET /api/v1/packages/{packageId}/vulnerabilities` | `getPackageVulnerabilities` | authenticated; the readable open findings per version |
+| `GET /api/v1/packages/{packageId}/versions/{version}/vulnerabilities` | `getPackageVersionVulnerabilities` | public, decided as the package reads; per readable repository that holds the version: evaluation, block and findings (at most 1,000 each); an anonymous caller's are the open ones, with the public state of the check |
+| `GET /api/v1/packages/{packageId}/vulnerabilities` | `getPackageVulnerabilities` | public, decided as the package reads; the grade of every readable version |
 | `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/vulnerabilities/rescan` | `rescanRepositoryVulnerabilities` | action `manage` on `path.projectKey`/`path.repoKey` · idempotent; `202` with the `vuln-rescan` job, `409` while one is queued or running |
 
 **malware**

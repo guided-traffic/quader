@@ -198,9 +198,10 @@ test('R-UI-057 an anonymous visitor finds the public project and a package witho
   await visitor.goto(`/ui/en/projects/${publicProject}/packages`);
   await visitor.getByRole('link', { name: pkgName }).click();
   // npm leads with its documentation (R-UI-218): the name opens the newest version. Without the wiki it has no README to show, so the
-  // page opens on its first tab with content, and the tab README says only that there is none (Q-UI-1245).
+  // page opens on its first tab with content, and the tab README says only that there is none (Q-UI-1245). A visitor reads the
+  // vulnerabilities of a public repository (R-UI-224): a graded version opens on them, one that is not checked on its files.
   await expect(visitor.getByRole('heading', { name: `${pkgName} ${version}`, level: 1 })).toBeVisible();
-  await expect(visitor.getByRole('tab', { name: 'Files' })).toHaveAttribute('aria-selected', 'true');
+  await expect(visitor.getByRole('tab', { selected: true })).toHaveText(/^\s*(Vulnerabilities|Files)\s*$/);
   await visitor.getByRole('tab', { name: 'README' }).click();
   await expect(visitor.getByText('This version has no README to show.')).toBeVisible();
   await expectAccessible(visitor, 'version page of an anonymous visitor');

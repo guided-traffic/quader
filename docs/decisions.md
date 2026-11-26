@@ -3082,6 +3082,34 @@ R-BAS-023, R-BAS-025, R-BAS-029, R-BAS-031, R-BAS-035 to R-BAS-038, R-BAS-046, R
 R-BAS-071, R-BAS-074; [usage-and-limits.md](spec/usage-and-limits.md) R-LIM-043 to R-LIM-046; [api-and-ui.md](spec/api-and-ui.md) R-UI-240
 to R-UI-243; [formats/oci.md](spec/formats/oci.md) R-OCI-005.
 
+### ADR-301 · An anonymous caller reads the open findings and the grades of what the public levels admit
+
+**Status:** Decided by the owner on 2026-11-26 (the rule), the form by the development agent on 2026-11-26 — owner review of the form at
+the walkthrough ([Q-VULN-280](spec/vulnerability-scanning.md#q-vuln-280--an-anonymous-caller-reads-the-open-findings-of-what-the-levels-admit-and-the-public-state-of-a-check),
+[Q-VULN-281](spec/vulnerability-scanning.md#q-vuln-281--an-advisory-is-an-anonymous-callers-only-where-it-affects-an-open-finding-the-caller-may-read),
+[R-UI-224](spec/api-and-ui.md#r-ui-224--a-visitor-without-a-session-reads-the-open-findings-of-a-public-repository)). It revises
+R-VULN-019, R-VULN-020 and Q-VULN-158 in place.
+
+**Context.** Until then the vulnerabilities of a version and of a package and the advisory read were `authenticated`, and the package list
+dropped its grades for an anonymous caller, so a visitor of a public repository saw no vulnerability anywhere. The owner, answering the
+working paper of W-35: "Natürlich soll die Hauptinstanz Vulnerabilities an öffentlich sichtbaren Repos anzeigen. Ja, dann ändert sich das
+Verhalten der Hauptinstanz." His purpose: "Damit wollen wir Vertrauen in die ausgelieferten Images schaffen." The same rule holds at the
+coming read-only interface of a Bastion; dismissed findings are not shown, against the development agent's favourite.
+
+**Decision.**
+- The three reads are `public` and decided as the package reads beside them: the anonymous gate, then the read scope (levels, exposure
+  rules, a virtual repository only while every member is public). The list carries grades for every caller.
+- The report narrows an anonymous caller's statements to the open statuses the grade counts, so the rows and the counts are the same
+  findings; it answers the check's state in a public form (`pending`, `not_checked`, or what the version is) and nothing of the triage
+  or of the installation's causes. The version report reads up to 1,000 findings per repository that holds the version.
+- An advisory of which an anonymous caller reads no open finding is its `404`, with the same statements as a missing one.
+- The screens show a visitor without a session the grades, the tab Vulnerabilities from the report's own findings with links to the
+  advisories, and nothing that needs a session.
+
+**Consequences.** `VulnerabilityCheckState` gains `pending` and `not_checked`, `VulnerabilityFinding` its `ecosystem`. The perspective and
+its gaps (H-2300 to H-2302) are on [security/vulnerability-scanning.md](security/vulnerability-scanning.md#what-an-anonymous-caller-reads).
+
+
 ## Design invariants
 
 The invariants of [spec/README.md](spec/README.md#design-invariants) are the baseline every spec
@@ -12817,10 +12845,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-685 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+689 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 685 questions</summary>
+<summary>Q-UI: 689 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -13506,6 +13534,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1395](spec/api-and-ui.md#q-ui-1395--a-downloads-row-names-its-unit-in-the-target-and-opens-in-place) | A download's row names its unit in the target and opens in place | Decided by the development agent on 2026-11-26 on the owner's decision of that day (W33, Q-OPS-437) | (a) The five columns as for an event; the target holds the repository, the unit with its version, its items and bytes, and the chevron before them; the time holds how long it went on | [ADR-297](#adr-297--the-audit-log-shows-a-download-as-one-row-and-keeps-one-event-per-item) |
 | [Q-UI-1396](spec/api-and-ui.md#q-ui-1396--an-opened-download-lists-its-first-ten-items-and-links-all-of-them) | An opened download lists its first ten items and links all of them | Decided by the development agent on 2026-11-26 | (a) The row's first ten items in a list of its own under it (time, path, SHA-256, size), each time opening the item's event in the panel, and **All N items** to the log of the download | — |
 | [Q-UI-1397](spec/api-and-ui.md#q-ui-1397--the-log-of-one-download-lists-its-events-oldest-first-and-offers-no-export) | The log of one download lists its events oldest first and offers no export | Decided by the development agent on 2026-11-26 | (a) The audit log with `?download=`: the download's events, oldest first, one row each, the chip **Download** with the unit's name, no export | [ADR-297](#adr-297--the-audit-log-shows-a-download-as-one-row-and-keeps-one-event-per-item) |
+| [Q-UI-1410](spec/api-and-ui.md#q-ui-1410--a-visitor-without-a-session-reads-the-findings-of-the-version-report-itself) | A visitor without a session reads the findings of the version report itself | Decided by the development agent on 2026-11-26 | (a) The report's own findings, 25 at a time and narrowed by the bar in the browser; "1,000 of N shown" where the grade counts more | — |
+| [Q-UI-1411](spec/api-and-ui.md#q-ui-1411--a-visitor-without-a-session-reads-a-finding-without-its-status-and-reaches-its-advisory-not-its-detail) | A visitor without a session reads a finding without its status, and reaches its advisory, not its detail | Decided by the development agent on 2026-11-26 | (a) No status column; the identifier links to the advisory's page; the row names the aliases, the markers and an image's components | — |
+| [Q-UI-1412](spec/api-and-ui.md#q-ui-1412--what-needs-a-session-is-left-out-for-a-visitor-without-one-and-the-views-are-told-not-asked) | What needs a session is left out for a visitor without one, and the views are told, not asked | Decided by the development agent on 2026-11-26 | (a) The page that holds the session tells its views (`signedIn` of `<quader-package-vulnerabilities>`, `withReport` of the card, `rows` of the findings); the advisory page, the side bar and the trail ask the session (`CrumbSpec.session`) | — |
+| [Q-UI-1413](spec/api-and-ui.md#q-ui-1413--the-public-states-are-neutral-words-without-a-time-and-a-page-reads-them-at-its-idle-interval) | The public states are neutral words without a time, and a page reads them at its idle interval | Decided by the development agent on 2026-11-26 | (a) **Not checked yet** and **Not checked**, sentences without a cause, a time or an administrator; neutral, never a warning; a view reads them again at its idle interval | — |
 | [Q-UI-1480](spec/api-and-ui.md#q-ui-1480--a-bastions-card-shows-the-preset-the-mode-and-the-throughput-everything-else-is-behind-details) | A Bastion's card shows the preset, the mode and the throughput; everything else is behind Details | Decided by the development agent on 2026-11-26 | (a) The preset, the mode and the maximum throughput on the card; the figures, slots, ceiling, shares, egress addresses and switches of W-35 behind **Details**; the rules on a page of their own | [ADR-300](#adr-300--a-bastion-is-a-place-of-the-download-limits-configured-from-the-main-installation-and-names-nothing-of-it) |
 | [Q-UI-1481](spec/api-and-ui.md#q-ui-1481--a-preset-is-applied-after-a-dialog-that-names-what-it-replaces) | A preset is applied after a dialog that names what it replaces | Decided by the development agent on 2026-11-26 | (a); the dialog says nothing where the preset changes nothing. | — |
 | [Q-UI-1482](spec/api-and-ui.md#q-ui-1482--the-egress-addresses-warn-with-the-address-of-the-last-contact-and-offer-to-add-it) | The egress addresses warn with the address of the last contact and offer to add it | Decided by the development agent on 2026-11-26 | (a) A warning for an empty list and for a contact from an unlisted address, with **Add** for that address | [ADR-300](#adr-300--a-bastion-is-a-place-of-the-download-limits-configured-from-the-main-installation-and-names-nothing-of-it) |
@@ -13514,10 +13546,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-VULN
 
-196 questions on [spec/vulnerability-scanning.md](spec/vulnerability-scanning.md).
+198 questions on [spec/vulnerability-scanning.md](spec/vulnerability-scanning.md).
 
 <details>
-<summary>Q-VULN: 196 questions</summary>
+<summary>Q-VULN: 198 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -13651,7 +13683,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-VULN-155](spec/vulnerability-scanning.md#q-vuln-155--a-version-in-several-repositories-takes-the-worst-of-their-grades) | A version in several repositories takes the worst of their grades | Decided by the development agent | (a) A grade per repository; the version's is the worst by the order of R-VULN-038, N/A lowest | — |
 | [Q-VULN-156](spec/vulnerability-scanning.md#q-vuln-156--the-end-of-life-is-an-images-from-its-scans-a-package-shows-the-age-of-its-advisory-data-instead) | The end of life is an image's, from its scans; a package shows the age of its advisory data instead | Decided by the development agent | (a) An image tag is at its end of life when one of its manifests is; every other format has no end of life, and its line of facts names when its advisory data was synchronised | — |
 | [Q-VULN-157](spec/vulnerability-scanning.md#q-vuln-157--the-server-grades-and-the-clients-phrase-the-grade) | The server grades, and the clients phrase the grade | Decided by the development agent | (a), pre-alpha style: `openVulnerabilities` and the report's `open` are replaced by `VulnerabilityGrade`, no alias. | — |
-| [Q-VULN-158](spec/vulnerability-scanning.md#q-vuln-158--a-caller-who-may-see-no-findings-gets-no-grade-not-na) | A caller who may see no findings gets no grade, not N/A | Decided by the development agent | (a) No grade member, and no grade column or card on the screens | — |
+| [Q-VULN-158](spec/vulnerability-scanning.md#q-vuln-158--a-caller-who-may-see-no-findings-gets-no-grade-not-na) | A caller who may see no findings gets no grade, not N/A | Decided by the development agent | (a) No grade member, and no grade column or card on the screens | [ADR-301](#adr-301--an-anonymous-caller-reads-the-open-findings-and-the-grades-of-what-the-public-levels-admit) |
 | [Q-VULN-159](spec/vulnerability-scanning.md#q-vuln-159--the-thresholds-are-cogpits-and-no-setting) | The thresholds are cogpit's, and no setting | Decided by the development agent | (a). cogpit marks D and E as provisional until its owner looked at real images; Quader follows cogpit when it changes them. | — |
 | [Q-VULN-160](spec/vulnerability-scanning.md#q-vuln-160--the-fixable-count-is-a-member-of-the-grade-counted-in-the-grades-statements) | The fixable count is a member of the grade, counted in the grade's statements | Decided by the development agent | (a) `fixable` in `VulnerabilityGrade`, a `FILTER (WHERE fix_available)` aggregate of the grade's count statements | — |
 | [Q-VULN-161](spec/vulnerability-scanning.md#q-vuln-161--the-call-is-one-request-that-answers-the-analysis-when-it-is-done) | The call is one request that answers the analysis when it is done | Decided by the development agent | (a) One request; the answer is the document when the analysis is done | [ADR-212](#adr-212--the-image-analysis-runs-in-a-role-scanner-that-holds-no-secret) |
@@ -13717,6 +13749,8 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-VULN-277](spec/vulnerability-scanning.md#q-vuln-277--whether-a-scanner-is-connected-is-read-once-per-answer-and-only-when-an-image-waits) | Whether a scanner is connected is read once per answer, and only when an image waits | Decided by the development agent | (a) The rows of the System page's list of scanner replicas (R-OPS-048): a live, ready row of the kind proves one, whatever the reading replica's configuration says; without one, no address of the kind in its configuration (the chart gives every role the same) or replicas that report themselves mean none, and replicas that cannot report leave it unknown, when a pending row's own code (`scanner_unavailable`, `registry_unavailable`, `pull_refused`) names a scanner its last call could not reach. Read lazily, once per answer, only when an image of the answer waits | — |
 | [Q-VULN-278](spec/vulnerability-scanning.md#q-vuln-278--no-state-promises-when-an-image-is-scanned) | No state promises when an image is scanned | Decided by the development agent | (a) "Queued since" the time, and "it is scanned in turn", without a promise of when | — |
 | [Q-VULN-279](spec/vulnerability-scanning.md#q-vuln-279--a-pending-file-says-why-it-waits-from-the-same-facts) | A pending file says why it waits, from the same facts | Decided by the development agent | (a) `waiting` on `MalwareStatus`: `queued` (with `queuedSince`, the row's `created_at`), `no_scanner`, `no_database`, read once per answer for a pending file: the signature database first (`malware_database.version`), then the scanner by Q-VULN-277's rule for `clamav` | — |
+| [Q-VULN-280](spec/vulnerability-scanning.md#q-vuln-280--an-anonymous-caller-reads-the-open-findings-of-what-the-levels-admit-and-the-public-state-of-a-check) | An anonymous caller reads the open findings of what the levels admit, and the public state of a check | Decided by the owner on 2026-11-26 | (a) The three reads are `public: true` and decided by the read scope of the package reads; the report narrows an anonymous caller's statements to `vuln.OpenStatuses()` and answers its grades with the `state` in a public form, two values more of `VulnerabilityCheckState` (`pending`, `not_checked`) that only it is told; no `stateSince`, `stateCode`, `missingData` or manifest `errorCode`; `evaluation` folded alike | [ADR-301](#adr-301--an-anonymous-caller-reads-the-open-findings-and-the-grades-of-what-the-public-levels-admit) |
+| [Q-VULN-281](spec/vulnerability-scanning.md#q-vuln-281--an-advisory-is-an-anonymous-callers-only-where-it-affects-an-open-finding-the-caller-may-read) | An advisory is an anonymous caller's only where it affects an open finding the caller may read | Decided by the development agent on 2026-11-26 | (a) For an anonymous caller an advisory of which it may read no open finding answers the `404` of one that does not exist, every ecosystem alike; both answers run the same statements | [ADR-301](#adr-301--an-anonymous-caller-reads-the-open-findings-and-the-grades-of-what-the-public-levels-admit) |
 
 </details>
 <!-- coverage-gen:end decisions -->

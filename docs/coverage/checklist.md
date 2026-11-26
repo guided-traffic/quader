@@ -15,8 +15,8 @@ rendered from it ([checklist.md there](https://github.com/guided-traffic/quader/
 requirement lists the feature in its `Covers:` line. *open*: no requirement does. For entries with priority
 *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,339 spec requirements:
-806 cover catalog features, 533 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,340 spec requirements:
+806 cover catalog features, 534 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>533 requirements</summary>
+<summary>534 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3104,6 +3104,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-UI-218 | A package leads with the documentation its format carries | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-221 | A version's general properties read the same in every format | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-222 | Every table of versions says each version's downloads, and an image's digest | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-UI-224 | A visitor without a session reads the open findings of a public repository | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-240 | A Bastion's card: its limits, its throughput and its state | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-241 | A Bastion's limits page | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-242 | Usage through a Bastion | P1 | [api-and-ui.md](../spec/api-and-ui.md) |

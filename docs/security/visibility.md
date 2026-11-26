@@ -43,6 +43,10 @@ request arrived on, which binds a read by a level as it binds a read by a grant 
 token scope or by the caps of a CI token, because it needs no credential at all; an invalid credential is still refused with 401 and
 never read as anonymous (R-AUTH-001).
 
+What `public` gives the anonymous subject includes, since the owner's decision of 2026-11-26, the grades and the open findings of the
+versions it reads, and the advisories of those findings; not the triage, not a dismissed or resolved finding, not the installation's
+reasons ([vulnerability-scanning.md](vulnerability-scanning.md#what-an-anonymous-caller-reads)).
+
 ## What a leaked credential reads
 
 Per credential, what its holder reads besides what its grants and project roles give, and through which doors. A level never gives a

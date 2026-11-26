@@ -419,7 +419,7 @@ func (f *flow) waitEvaluation(name, tag, want string) versionReport {
 }
 
 func TestR_VULN_034_AnImageIsScannedAfterItsPushAndItsFindingsReachThePackageAPI(t *testing.T) {
-	f := newFlow(t)
+	f := newFlowWith(t, options{seed: public})
 	img := newImage(t)
 	f.push("app", "1.0", img)
 
@@ -457,6 +457,41 @@ func TestR_VULN_034_AnImageIsScannedAfterItsPushAndItsFindingsReachThePackageAPI
 	if a.Status != http.StatusOK || !strings.Contains(string(a.Body), `"critical":1`) || !strings.Contains(string(a.Body), `"grade":"D"`) || !strings.Contains(string(a.Body), `"fixable":1`) {
 		t.Fatalf("package grades: %d %s", a.Status, a.Body)
 	}
+
+	// R-VULN-019, Q-VULN-280: the repository's artifacts are public, so a visitor without a credential reads the same finding, its
+	// components and the grade: the rows listed are the findings the grade counts (an image's grade counts the findings of every
+	// manifest its tag stands for, the list names them by their digests), and the fixable count is the rows with a fixed version.
+	anon := f.anonymousReport("app", "1.0")
+	rv := anon.Repositories[0]
+	if len(rv.Findings) != 1 || rv.Findings[0].Advisory != cve || len(rv.Findings[0].Components) != 1 {
+		t.Fatalf("the anonymous findings: %+v", rv.Findings)
+	}
+	fixable := int64(0)
+	for _, fd := range rv.Findings {
+		if len(fd.FixedVersions) > 0 {
+			fixable++
+		}
+	}
+	if g := rv.Grade; g.Grade != "D" || g.Open.Critical != int64(len(rv.Findings)) || g.Fixable != fixable || g.State != "checked" || g.StateSince != nil {
+		t.Fatalf("the anonymous grade: %+v", g)
+	}
+}
+
+// public makes the repository of the flow and its project public before the replicas start (R-AUTHZ-033).
+func public(st *testenv.Stack) {
+	st.Exec("UPDATE project SET visibility = 'public'")
+	st.Exec("UPDATE repositories SET visibility_artifacts = 'public' WHERE key = $1", repoKey)
+}
+
+// anonymousReport is the version report of a tag as a visitor without a credential reads it (R-VULN-019).
+func (f *flow) anonymousReport(name, tag string) versionReport {
+	f.t.Helper()
+	a := f.st.Do(f.api, "GET", "/api/v1/packages/"+view.ID("oci", name)+"/versions/"+tag+"/vulnerabilities", "", nil)
+	var r versionReport
+	if a.Status != http.StatusOK || json.Unmarshal(a.Body, &r) != nil || len(r.Repositories) != 1 {
+		f.t.Fatalf("anonymous version report: %d %s", a.Status, a.Body)
+	}
+	return r
 }
 
 // R-VULN-034, Q-VULN-268: with a scan delay the run the commit woke finds the new manifest not yet due; it runs again when the manifest
@@ -503,7 +538,7 @@ func (f *flow) listGrade() imageGrade {
 
 // R-VULN-038: an image whose OS is at its end of life grades C at best, without a finding; the list grades the image by that tag.
 func TestR_VULN_038_AnImageAtTheEndOfLifeOfItsOSGradesCAtBest(t *testing.T) {
-	f := newFlow(t)
+	f := newFlowWith(t, options{seed: public})
 	f.setReport(`{"SchemaVersion":2,"Metadata":{"OS":{"Family":"alpine","Name":"3.12.0","EOSL":true}},"Results":[]}`)
 	f.push("app", "1.0", newImage(t))
 	f.runScan()
@@ -523,6 +558,15 @@ func TestR_VULN_038_AnImageAtTheEndOfLifeOfItsOSGradesCAtBest(t *testing.T) {
 	}
 	if len(page.Items) != 1 || page.Items[0].VulnerabilityGrade == nil || page.Items[0].VulnerabilityGrade.Grade != "C" || !page.Items[0].VulnerabilityGrade.Eosl {
 		t.Fatalf("the list grades the image by its latest tag: %s", a.Body)
+	}
+	// R-VULN-019, Q-VULN-280: a visitor without a credential reads the same C, the end of life and the OS that make it, so that its
+	// screen says why the image grades C without a High finding.
+	if g := f.anonymousReport("app", "1.0").Repositories[0].Grade; g.Grade != "C" || !g.Eosl || g.Os == nil || *g.Os != "alpine 3.12.0" || g.State != "checked" {
+		t.Fatalf("the anonymous grade: %+v", g)
+	}
+	anonList := f.st.Do(f.api, "GET", "/api/v1/packages?format=oci&include=vulnerabilities", "", nil)
+	if anonList.Status != http.StatusOK || !strings.Contains(string(anonList.Body), `"eosl":true`) || !strings.Contains(string(anonList.Body), `"grade":"C"`) {
+		t.Fatalf("the anonymous list: %d %s", anonList.Status, anonList.Body)
 	}
 }
 

@@ -4,6 +4,7 @@ import { VulnerabilityFinding, VulnerabilityVersionReport } from '../../api/vuln
 import { GradeCard } from '../../shared/vulnerability/grade-card';
 import { BAR_SEVERITIES, BarQueries, BarSeverity } from '../../shared/vulnerability/severity-bar';
 import { VersionFindings } from './version-findings';
+import { findingCommands } from './vuln-context';
 import { blockReasonLabel, missingDataLabel, missingDataNext } from './vuln-labels';
 
 /** The query of each segment of the card's bar: the tab's severity filter, merged into the page's address (Q-UI-379). */
@@ -37,7 +38,8 @@ export function blockedRepositories(report: VulnerabilityVersionReport | null): 
  * what happens next: a package's advisory data, an image's database or the state of its scan), and the open findings with severity,
  * identifier, status and fixed versions, each linking to the finding, 25 at a time from the findings API and narrowed by the bar's
  * segments (`<quader-version-findings>`, Q-UI-379). The report is the API's (`GET …/versions/{version}/vulnerabilities`); the page
- * shows nothing it does not carry.
+ * shows nothing it does not carry. A visitor without a session (R-UI-224) reads the report's own findings, the open ones only, each
+ * linking to its advisory's page.
  */
 @Component({
   selector: 'quader-package-vulnerabilities',
@@ -60,6 +62,7 @@ export function blockedRepositories(report: VulnerabilityVersionReport | null): 
             [format]="format()"
             [barQueries]="barQueries"
             [activeSeverity]="severity()"
+            [withReport]="signedIn()"
           />
           @if (repo.blocked) {
             <p class="banner-warning" role="note">
@@ -72,7 +75,7 @@ export function blockedRepositories(report: VulnerabilityVersionReport | null): 
                   {{ next }}
                 }
                 @for (f of blocking(repo.findings); track f.id) {
-                  <a [routerLink]="['/projects', f.project, 'vulnerabilities', 'findings', f.id]" translate="no">{{ f.advisory }}</a>
+                  <a [routerLink]="findingLink(f)" translate="no">{{ f.advisory }}</a>
                 }
               </span>
             </p>
@@ -84,6 +87,7 @@ export function blockedRepositories(report: VulnerabilityVersionReport | null): 
               [versions]="findingVersions(repo, r.version)"
               [counts]="repo.grade.open"
               [severity]="severity()"
+              [rows]="signedIn() ? null : repo.findings"
             />
           }
         </section>
@@ -107,6 +111,16 @@ export class PackageVulnerabilities {
   readonly format = input<string | null>(null);
   /** The severity the card's bar narrowed the findings to (the address's `severity`), or null. */
   readonly severity = input<BarSeverity | null>(null);
+  /**
+   * The reader has a session. A visitor without one (R-UI-224) reads the open findings the report carries, each linking to its advisory's
+   * page, and is offered no link into a screen that needs a session: the project's report and a finding's detail.
+   */
+  readonly signedIn = input(true);
+
+  /** Where a finding leads: its detail for a reader with a session, its advisory's page for a visitor without one (R-UI-224). */
+  protected findingLink(f: VulnerabilityFinding): string[] {
+    return findingCommands(f, this.signedIn());
+  }
 
   protected readonly missingNext = missingDataNext;
 

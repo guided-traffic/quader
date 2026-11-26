@@ -6826,10 +6826,12 @@ const (
 	VulnerabilityCheckStateNoDatabase       VulnerabilityCheckState = "no_database"
 	VulnerabilityCheckStateNoScanner        VulnerabilityCheckState = "no_scanner"
 	VulnerabilityCheckStateNotAnImage       VulnerabilityCheckState = "not_an_image"
+	VulnerabilityCheckStateNotChecked       VulnerabilityCheckState = "not_checked"
 	VulnerabilityCheckStateNotMatched       VulnerabilityCheckState = "not_matched"
 	VulnerabilityCheckStateOffInstallation  VulnerabilityCheckState = "off_installation"
 	VulnerabilityCheckStateOffRepository    VulnerabilityCheckState = "off_repository"
 	VulnerabilityCheckStateOverLimits       VulnerabilityCheckState = "over_limits"
+	VulnerabilityCheckStatePending          VulnerabilityCheckState = "pending"
 	VulnerabilityCheckStateQueued           VulnerabilityCheckState = "queued"
 	VulnerabilityCheckStateScanFailed       VulnerabilityCheckState = "scan_failed"
 	VulnerabilityCheckStateScanning         VulnerabilityCheckState = "scanning"
@@ -6854,6 +6856,8 @@ func (e VulnerabilityCheckState) Valid() bool {
 		return true
 	case VulnerabilityCheckStateNotAnImage:
 		return true
+	case VulnerabilityCheckStateNotChecked:
+		return true
 	case VulnerabilityCheckStateNotMatched:
 		return true
 	case VulnerabilityCheckStateOffInstallation:
@@ -6861,6 +6865,8 @@ func (e VulnerabilityCheckState) Valid() bool {
 	case VulnerabilityCheckStateOffRepository:
 		return true
 	case VulnerabilityCheckStateOverLimits:
+		return true
+	case VulnerabilityCheckStatePending:
 		return true
 	case VulnerabilityCheckStateQueued:
 		return true
@@ -14247,9 +14253,9 @@ type PackageSummary struct {
 	// VersionCount The number of visible versions.
 	VersionCount int64 `json:"versionCount"`
 
-	// VulnerabilityGrade With `include=vulnerabilities` only, and only for a signed-in caller of an installation that scans (R-VULN-039): the grade
-	// of `latestVersion` over the repositories the list is filtered by (every readable one without the filter), the worst of
-	// them (R-VULN-038).
+	// VulnerabilityGrade With `include=vulnerabilities` only, and only in an installation that scans (R-VULN-039): the grade of `latestVersion` over the
+	// repositories the list is filtered by (every readable one without the filter), the worst of them (R-VULN-038); for an
+	// anonymous caller from the open findings of what the levels admit, with the public `state` (Q-VULN-280).
 	VulnerabilityGrade *VulnerabilityGrade `json:"vulnerabilityGrade,omitempty"`
 }
 
@@ -19639,7 +19645,10 @@ type VulnerabilityBlockReason string
 // `matchPublicAdvisories` is `never`), `unknown_upstream` (a remote whose upstream is no public registry of its format, R-VULN-010),
 // `internal` (a name of the organisation's own), `format_not_scanned` (a format without the vulnerability adapter: Debian, Ansible
 // Galaxy, generic files), `not_an_image` (an OCI artifact that is no container image, Q-VULN-275). Every state but `checked` has the
-// grade N/A. An image's state is read per manifest, so every tag of one image says the same.
+// grade N/A. An image's state is read per manifest, so every tag of one image says the same. An anonymous caller is told the public
+// form only (Q-VULN-280): `checked`, `format_not_scanned`, `not_an_image`, `pending` (not checked yet: every state that waits, cannot be
+// checked now or failed) or `not_checked` (every state of a setting, of an upstream that is not matched, or of an internal name);
+// `pending` and `not_checked` are never answered to a caller with a credential.
 type VulnerabilityCheckState string
 
 // VulnerabilityCvss The vector the severity was scored from (R-VULN-007); Quader never mixes versions in one value.
@@ -19704,10 +19713,13 @@ type VulnerabilityFinding struct {
 	Cvss            *VulnerabilityCvss             `json:"cvss"`
 	DetectedAt      time.Time                      `json:"detectedAt"`
 	DismissalReason *VulnerabilityDismissalReason  `json:"dismissalReason,omitempty"`
-	FixAvailable    bool                           `json:"fixAvailable"`
-	FixedVersions   []string                       `json:"fixedVersions"`
-	Format          string                         `json:"format"`
-	Id              openapi_types.UUID             `json:"id"`
+
+	// Ecosystem The ecosystem of the advisory (`npm`, `NuGet`, `OCI`): with `advisory` the address of the advisory's page (R-VULN-022), which an anonymous reader's row links to (Q-VULN-280).
+	Ecosystem     string             `json:"ecosystem"`
+	FixAvailable  bool               `json:"fixAvailable"`
+	FixedVersions []string           `json:"fixedVersions"`
+	Format        string             `json:"format"`
+	Id            openapi_types.UUID `json:"id"`
 
 	// Kind `malicious` for the OpenSSF malicious-packages records (identifier prefix `MAL-`), else `vulnerability`.
 	Kind                  VulnerabilityKind   `json:"kind"`
@@ -19838,13 +19850,16 @@ type VulnerabilityGrade struct {
 	// `matchPublicAdvisories` is `never`), `unknown_upstream` (a remote whose upstream is no public registry of its format, R-VULN-010),
 	// `internal` (a name of the organisation's own), `format_not_scanned` (a format without the vulnerability adapter: Debian, Ansible
 	// Galaxy, generic files), `not_an_image` (an OCI artifact that is no container image, Q-VULN-275). Every state but `checked` has the
-	// grade N/A. An image's state is read per manifest, so every tag of one image says the same.
+	// grade N/A. An image's state is read per manifest, so every tag of one image says the same. An anonymous caller is told the public
+	// form only (Q-VULN-280): `checked`, `format_not_scanned`, `not_an_image`, `pending` (not checked yet: every state that waits, cannot be
+	// checked now or failed) or `not_checked` (every state of a setting, of an upstream that is not matched, or of an internal name);
+	// `pending` and `not_checked` are never answered to a caller with a credential.
 	State VulnerabilityCheckState `json:"state"`
 
-	// StateCode The code of R-VULN-034 of a failed scan (`scan_failed`, `over_limits`, `unreadable`), or of a row put off for a reason of the installation (`queued`: `scanner_busy`, `spool_too_small`, …; `no_scanner`: `scanner_unavailable`, `registry_unavailable`, `pull_refused`): technical detail for a reader who reports it, never a sentence of its own. null otherwise.
+	// StateCode The code of R-VULN-034 of a failed scan (`scan_failed`, `over_limits`, `unreadable`), or of a row put off for a reason of the installation (`queued`: `scanner_busy`, `spool_too_small`, …; `no_scanner`: `scanner_unavailable`, `registry_unavailable`, `pull_refused`): technical detail for a reader who reports it, never a sentence of its own. null otherwise, and always for an anonymous caller (Q-VULN-280).
 	StateCode *string `json:"stateCode"`
 
-	// StateSince `queued`: when the image's earliest waiting manifest was queued; `scanning`: when the running call started; null otherwise and when not known.
+	// StateSince `queued`: when the image's earliest waiting manifest was queued; `scanning`: when the running call started; null otherwise, when not known, and for an anonymous caller (Q-VULN-280).
 	StateSince *time.Time `json:"stateSince"`
 }
 
