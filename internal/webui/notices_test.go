@@ -72,7 +72,7 @@ func TestR_UI_001_ThirdPartyNotices(t *testing.T) {
 		if !strings.Contains(string(src), "const notices = '"+noticesFile+"'") {
 			t.Errorf("web/scripts/build-embed.mjs does not name %s as the notices file", noticesFile)
 		}
-		if !strings.Contains(string(src), "writeFileSync(join(target, locale, notices), text)") {
+		if !strings.Contains(string(src), "writeFileSync(join(app.target, locale, notices), text)") {
 			t.Error("web/scripts/build-embed.mjs does not write the notices into each locale directory")
 		}
 		if !strings.Contains(string(src), "const formatLogos = '"+formatLogoNotice+"'") {

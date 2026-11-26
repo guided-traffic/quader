@@ -849,7 +849,7 @@ W-35's P9 (2026-11-26): the Bastion's read-only web interface for anonymous visi
 Commands: `npx ng build bastion-gui` (both locales; `--localize=false --stats-json` for a quick look at the metafile in
 `dist/bastion-gui/browser-stats.json`), `npx ng serve bastion-gui` (development, no backend: its reads need a Bastion), and
 `make web-embed`, which builds both applications and runs the bundle check of R-UI-228 (`scripts/bastion-bundle-rule.mjs`). The specs
-of `src/bastion` run with `make web-test` (`npx ng test web --include 'src/bastion/**/*.spec.ts'` alone). `make web-i18n` extracts both
+of `src/bastion` run with `make web-test` (`npx ng test web --include 'src/bastion/**/*.spec.ts'` alone), its pages' states with `make ui-states` (`bastion.states.spec.ts`, Q-UI-1442). `make web-i18n` extracts both
 applications into the one pair of translation files (Q-UI-1441).
 
 **A view stays usable by both.** A view takes its reads from the abstract classes of `api/` and the plumbing that each application

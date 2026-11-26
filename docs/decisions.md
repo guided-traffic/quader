@@ -13117,10 +13117,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-726 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+727 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 726 questions</summary>
+<summary>Q-UI: 727 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -13832,6 +13832,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1439](spec/api-and-ui.md#q-ui-1439--the-theme-is-kept-in-the-browser-the-language-is-the-address) | The theme is kept in the browser, the language is the address | Decided by the development agent on 2026-11-26 | (a) The theme in the browser's local storage (`quader.theme`), the language a link to the same address in the other build | — |
 | [Q-UI-1440](spec/api-and-ui.md#q-ui-1440--a-bastion-without-a-catalogue-to-show-says-so-in-place-of-the-page) | A Bastion without a catalogue to show says so in place of the page | Decided by the development agent on 2026-11-26 | (a) The shell shows the sentence in place of the page and reads the state again every 30 s, the footer with the imprint stays | — |
 | [Q-UI-1441](spec/api-and-ui.md#q-ui-1441--both-applications-share-one-german-file) | Both applications share one German file | Decided by the development agent on 2026-11-26 | (a) `i18n-check.mjs` extracts both projects and appends the units only the Bastion has; both builds read `messages.de.xlf` | — |
+| [Q-UI-1442](spec/api-and-ui.md#q-ui-1442--the-bastions-pages-are-measured-in-the-states-suite-against-the-fakes-until-the-profile-starts-a-bastion) | The Bastion's pages are measured in the states suite against the fakes until the profile starts a Bastion | Decided by the development agent on 2026-11-26 | (a), and (b) stays open in R-UI-230. | — |
 | [Q-UI-1480](spec/api-and-ui.md#q-ui-1480--a-bastions-card-shows-the-preset-the-mode-and-the-throughput-everything-else-is-behind-details) | A Bastion's card shows the preset, the mode and the throughput; everything else is behind Details | Decided by the development agent on 2026-11-26 | (a) The preset, the mode and the maximum throughput on the card; the figures, slots, ceiling, shares, egress addresses and switches of W-35 behind **Details**; the rules on a page of their own | [ADR-300](#adr-300--a-bastion-is-a-place-of-the-download-limits-configured-from-the-main-installation-and-names-nothing-of-it) |
 | [Q-UI-1481](spec/api-and-ui.md#q-ui-1481--a-preset-is-applied-after-a-dialog-that-names-what-it-replaces) | A preset is applied after a dialog that names what it replaces | Decided by the development agent on 2026-11-26 | (a); the dialog says nothing where the preset changes nothing. | — |
 | [Q-UI-1482](spec/api-and-ui.md#q-ui-1482--the-egress-addresses-warn-with-the-address-of-the-last-contact-and-offer-to-add-it) | The egress addresses warn with the address of the last contact and offer to add it | Decided by the development agent on 2026-11-26 | (a) A warning for an empty list and for a contact from an unlisted address, with **Add** for that address | [ADR-300](#adr-300--a-bastion-is-a-place-of-the-download-limits-configured-from-the-main-installation-and-names-nothing-of-it) |

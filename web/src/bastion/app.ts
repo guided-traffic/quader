@@ -92,12 +92,10 @@ const THEME_KEY = 'quader.theme';
       <div class="panel">
         @if (store.state()?.stale) {
           <!-- W-35's B.2b: older than stale_after, the band says how old; it names no party. -->
-          <p class="stale-band" role="status" data-nosnippet>
-            <span class="material-icons" aria-hidden="true">schedule</span>
-            <span i18n="@@bastion.stale"
-              >This information is from {{ confirmedAt() | date: 'medium' }}. Newer information is not available right now.</span
-            >
-          </p>
+          <section class="stale-band" role="status" data-nosnippet>
+            <span class="material-icons icon" aria-hidden="true">schedule</span>
+            <p i18n="@@bastion.stale">This information is from {{ confirmedAt() | date: 'medium' }}. Newer information is not available right now.</p>
+          </section>
         }
         <main id="main" tabindex="-1">
           <div class="content">
@@ -148,14 +146,30 @@ const THEME_KEY = 'quader.theme';
       block-size: 100dvh;
     }
 
+    /* The banner's form and colours of a warning (shared/banner.ts): the icon a line high on the first line of a text that wraps. */
     .stale-band {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       gap: var(--quader-space-2);
-      margin: 0;
       padding: var(--quader-space-2) var(--quader-space-4);
-      background: var(--quader-warning-bg, var(--quader-surface-muted));
-      color: var(--quader-on-surface);
+      background: var(--quader-badge-warn-bg);
+      color: var(--quader-badge-warn-fg);
+
+      p {
+        margin: 0;
+      }
+
+      .icon {
+        flex: none;
+        font-size: 1.25em;
+        line-height: var(--quader-line);
+      }
+    }
+
+    /* The footer stands at the end of a short page (R-UI-226's rule): the column is at least the panel high. */
+    .content {
+      box-sizing: border-box;
+      min-block-size: 100%;
     }
 
     .not-ready h1 {

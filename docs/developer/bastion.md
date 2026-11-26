@@ -1914,7 +1914,7 @@ function of its options.
 The application itself (`web/src/bastion`) is [web-ui.md](web-ui.md#the-bastions-application)'s. **What the web stage of CI gains:**
 `make web-embed` builds the second application (measured 2026-11-26 on the development machine: 4.5 s for both locales of the
 Bastion beside 10.8 s of the main installation's, the metafile check under a second), `make web-i18n-check` extracts it too (3.2 s),
-and `make web-test` runs its seven cases (about 1 s); the layout checks of its pages (R-UI-230) are not built yet.
+and `make web-test` runs its seven cases (about 1 s); `make ui-states` (the job ui-layout-fixtures) measures eight states of its pages at two widths in 3.6 s; the renders against a running Bastion (R-UI-230) are not built yet.
 
 ## Tests
 
