@@ -259,32 +259,6 @@ func TestR_BAS_017_AForwardCarriesOneClientAddressInBothFamilies(t *testing.T) {
 	}
 }
 
-// TestR_BAS_014_AProbeIsBodilessAndCarriesNoCredential: the write probe has the caller's method, no body, no
-// caller credential and the probe header, and still names the Bastion.
-func TestR_BAS_014_AProbeIsBodilessAndCarriesNoCredential(t *testing.T) {
-	r := newRig(t, nil)
-	f := forward(http.MethodPut, "/api/npm/npm-local/x", "Authorization", "Bearer caller", "Content-Type", "application/json")
-	f.Probe = true
-	f.Body = strings.NewReader("should not be sent")
-	f.Request.ContentLength = 18
-	resp, err := r.c.Do(context.Background(), f)
-	if err != nil {
-		t.Fatal(err)
-	}
-	closeBody(t, resp)
-	got := r.main.Forwards()[0]
-	if got.Method != http.MethodPut || len(got.Body) != 0 {
-		t.Errorf("method %s, body %q", got.Method, got.Body)
-	}
-	// No header names the probe (interface version 8): its form does, a write without a body and without the caller's credential.
-	if got.Header.Get("Authorization") != "" || got.Header.Get("Quader-Bastion-Probe") != "" || got.Header.Get(iface.HeaderAuthorization) == "" {
-		t.Errorf("probe headers: %v", got.Header)
-	}
-	if n := maintest.Value(r.m.MainRequests.WithLabelValues("probe", "2xx")); n != 1 {
-		t.Errorf("probe 2xx = %v", n)
-	}
-}
-
 // TestR_BAS_021_AForwardedBodyIsStreamedAndTheMarkingIsStripped: a read route that takes a body is forwarded
 // with it; the response is marked, the marking is parsed and no Quader-Bastion header remains.
 func TestR_BAS_021_AForwardedBodyIsStreamedAndTheMarkingIsStripped(t *testing.T) {
@@ -641,7 +615,7 @@ func TestR_BAS_025_ASlotIsHeldUntilTheBodyEndsAndAnAnonymousFloodDoesNotStarveTh
 }
 
 // TestR_BAS_025_TheBodyHoldsTheSlot: the slot of a forward is released when its body is closed, not when the
-// headers arrive; a checked and a probed request take one as well; the handshake and the feed take none.
+// headers arrive; a checked request takes one as well; the handshake and the feed take none.
 func TestR_BAS_025_TheBodyHoldsTheSlot(t *testing.T) {
 	r := newRig(t, func(o *mainclient.Options) {
 		o.Budget = mainclient.NewBudget(mainclient.BudgetOptions{MaxConcurrent: 1, Replicas: 1, AnonymousShare: 0.5, QueueTimeout: 50 * time.Millisecond, Metrics: nil})
@@ -761,7 +735,7 @@ func TestR_BAS_039_ADownloadBatchIsOneRequestWithItsBody(t *testing.T) {
 }
 
 // TestR_BAS_044_ForwardsGoToThePackagesURLAndTheInterfaceToTheMainURL: with bastion.main.packages_url set (phase 6a, Q-HA-74),
-// the forwards and the probes go to the main installation's packages Service and the four interface operations to the main
+// the forwards and the conditional requests go to the main installation's packages Service and the four interface operations to the main
 // URL; without it both go to the main URL; a packages_url that is not https is refused.
 func TestR_BAS_044_ForwardsGoToThePackagesURLAndTheInterfaceToTheMainURL(t *testing.T) {
 	ctx := context.Background()
@@ -770,11 +744,11 @@ func TestR_BAS_044_ForwardsGoToThePackagesURLAndTheInterfaceToTheMainURL(t *test
 	r := newRig(t, func(o *mainclient.Options) { o.PackagesURL = packages.URL() })
 
 	_, _ = r.c.Do(ctx, forward(http.MethodGet, "/api/npm/web/npm-all/lodash"))
-	probe := forward(http.MethodGet, "/api/npm/web/npm-all/lodash")
-	probe.Probe, probe.Kind = true, mainclient.KindProbe
-	_, _ = r.c.Do(ctx, probe)
+	conditional := forward(http.MethodGet, "/api/npm/web/npm-all/lodash")
+	conditional.Kind, conditional.IfNoneMatch = mainclient.KindConditional, `"v1"`
+	_, _ = r.c.Do(ctx, conditional)
 	if got := packages.Calls("forward"); got != 2 {
-		t.Errorf("the packages Service received %d forwards and probes, want 2", got)
+		t.Errorf("the packages Service received %d forwards and conditional requests, want 2", got)
 	}
 	if got := r.main.Calls("forward"); got != 0 {
 		t.Errorf("the main URL received %d forwards, want 0", got)

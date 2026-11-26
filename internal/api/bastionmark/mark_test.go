@@ -167,7 +167,7 @@ func (s *shapes) Shapes(_ context.Context, idx *authz.Index, sub authz.Subject, 
 // Request headers of the test chain: they stand in for the recognition and the authentication, which are other
 // stages.
 const (
-	hRecognize = "X-Test-Recognize" // "forward", "probe" or "route"
+	hRecognize = "X-Test-Recognize" // "forward", "forward-offer" or "route"
 	hCred      = "X-Test-Cred"      // "token", "token-no-expiry", "anon", "session", "bad", "registry", "registry-anon"
 )
 
@@ -232,8 +232,6 @@ func newRig(t *testing.T, fs ...formats.Format) *rig {
 				req = req.WithContext(bastionmain.WithRecognition(req.Context(), bastionmain.Recognition{
 					Bastion: "edge-1", Interface: iface.InterfaceVersion, Offer: iface.HandoverOffer{MaxSize: 1 << 20}, Offered: true,
 				}))
-			case "probe":
-				req = req.WithContext(bastionmain.WithRecognition(req.Context(), bastionmain.Recognition{Bastion: "edge-1", Interface: iface.InterfaceVersion, Probe: true}))
 			case "route":
 				req = req.WithContext(bastionmain.WithRecognition(req.Context(), bastionmain.Recognition{Bastion: "edge-1", Interface: iface.InterfaceVersion, Route: true}))
 			}
@@ -567,9 +565,9 @@ func TestR_BAS_013_ForwardedRequestsAreCountedByClass(t *testing.T) {
 	r.do("GET", "/api/mk/web/mk-local/f/x.bin", hRecognize, "forward", hCred, "token")
 	r.do("GET", "/api/mk/web/mk-local/f/x.bin", hRecognize, "forward", hCred, "token")
 	r.do("GET", "/api/mk/web/mk-local/d/left-pad", hRecognize, "forward", hCred, "token")
-	r.do("PUT", "/api/mk/web/mk-local/f/x.bin", hRecognize, "probe")
-	r.do("GET", "/api/mk/web/mk-local/f/x.bin", hCred, "token") // an ordinary caller is not counted
-	for class, want := range map[string]float64{"artifact": 2, "shared": 1, "probe": 1} {
+	r.do("PUT", "/api/mk/web/mk-local/f/x.bin", hRecognize, "forward", hCred, "token") // the backstop's refusal is pass
+	r.do("GET", "/api/mk/web/mk-local/f/x.bin", hCred, "token")                        // an ordinary caller is not counted
+	for class, want := range map[string]float64{"artifact": 2, "shared": 1, "pass": 1} {
 		if got := counter(t, r.metrics, class); got != want {
 			t.Errorf("%s: %v, want %v", class, got, want)
 		}
@@ -620,9 +618,10 @@ func TestR_BAS_090_TheBytesOfRecognizedForwardsAreCountedByRegistrationAndClass(
 	}
 }
 
-// TestR_BAS_014_ProbeIsRefusedInTheShapeOfTheFormat: the write probe is answered after routing and before any
-// handler or body read.
-func TestR_BAS_014_ProbeIsRefusedInTheShapeOfTheFormat(t *testing.T) {
+// TestR_BAS_095_TheBackstopRefusesAForwardedWrite: a Bastion refuses every write itself, so a forward of a write that reaches the
+// main installation is a defect; the marking refuses it after routing and before any decision, handler or body read, in the
+// format's shape with the detail that names no address.
+func TestR_BAS_095_TheBackstopRefusesAForwardedWrite(t *testing.T) {
 	t.Run("every write route of the fake format is refused with read_only and no address", func(t *testing.T) {
 		r := newRig(t)
 		for _, tc := range []struct{ method, path string }{
@@ -631,9 +630,8 @@ func TestR_BAS_014_ProbeIsRefusedInTheShapeOfTheFormat(t *testing.T) {
 			{"DELETE", "/api/mk/web/mk-local/d/left-pad"},
 			{"PUT", "/api/mk/web/mk-local/a/left-pad"}, // an Admin route, whatever its action
 		} {
-			rec := r.do(tc.method, tc.path, hRecognize, "probe")
-			want := ReadOnlyDetail
-			if rec.Code != 403 || rec.Header().Get("X-Mk-Error") != iface.CodeReadOnly || rec.Header().Get("X-Mk-Detail") != want {
+			rec := r.do(tc.method, tc.path, hRecognize, "forward", hCred, "token")
+			if rec.Code != 403 || rec.Header().Get("X-Mk-Error") != iface.CodeReadOnly || rec.Header().Get("X-Mk-Detail") != errs.ReadOnlyDetail {
 				t.Errorf("%s %s: %d %v", tc.method, tc.path, rec.Code, rec.Header())
 			}
 			if markingOf(t, rec).Class != iface.ClassPass {
@@ -644,38 +642,21 @@ func TestR_BAS_014_ProbeIsRefusedInTheShapeOfTheFormat(t *testing.T) {
 			t.Fatalf("a handler ran: %v", r.reached)
 		}
 	})
-	t.Run("the probe of a read route that takes a body is refused and the handler does not run (H-2293)", func(t *testing.T) {
-		r := newRig(t)
-		rec := r.do("POST", "/api/mk/web/mk-local/audit/left-pad", hRecognize, "probe")
-		if rec.Code != 403 || rec.Header().Get("X-Mk-Error") != iface.CodeReadOnly || len(r.reached) != 0 {
-			t.Fatalf("%d %v reached %v", rec.Code, rec.Header(), r.reached)
-		}
-		if markingOf(t, rec).Class != iface.ClassPass {
-			t.Fatalf("%v", rec.Header())
-		}
-	})
 	t.Run("no route is the format's own 404", func(t *testing.T) {
 		r := newRig(t)
-		rec := r.do("PUT", "/api/mk/web/mk-local/no/such/route", hRecognize, "probe")
+		rec := r.do("PUT", "/api/mk/web/mk-local/no/such/route", hRecognize, "forward", hCred, "token")
 		if rec.Code != 404 || rec.Header().Get("X-Mk-Error") != "not_found" {
 			t.Fatalf("%d %v", rec.Code, rec.Header())
 		}
 	})
-	t.Run("the probe is answered before the decision point is asked", func(t *testing.T) {
+	t.Run("the write is refused before the decision point is asked", func(t *testing.T) {
 		r := newRig(t)
 		r.decider.outcome = authz.DenyVisible
-		if rec := r.do("PUT", "/api/mk/web/mk-local/f/x.bin", hRecognize, "probe"); rec.Header().Get("X-Mk-Error") != iface.CodeReadOnly {
+		if rec := r.do("PUT", "/api/mk/web/mk-local/f/x.bin", hRecognize, "forward", hCred, "token"); rec.Header().Get("X-Mk-Error") != iface.CodeReadOnly {
 			t.Fatalf("%v", rec.Header())
 		}
 	})
-	t.Run("a write that reaches the main installation in the form of no probe is refused the same way", func(t *testing.T) {
-		r := newRig(t)
-		rec := r.do("PUT", "/api/mk/web/mk-local/f/x.bin", hRecognize, "forward", hCred, "token")
-		if rec.Code != 403 || rec.Header().Get("X-Mk-Error") != iface.CodeReadOnly || len(r.reached) != 0 {
-			t.Fatalf("%d %v", rec.Code, rec.Header())
-		}
-	})
-	t.Run("the real request of a read route that takes a body is served", func(t *testing.T) {
+	t.Run("a read route that takes a body is served", func(t *testing.T) {
 		r := newRig(t)
 		r.status = 200
 		rec := r.do("POST", "/api/mk/web/mk-local/audit/left-pad", hRecognize, "forward", hCred, "token")
@@ -695,7 +676,7 @@ func TestR_BAS_014_ProbeIsRefusedInTheShapeOfTheFormat(t *testing.T) {
 	})
 	t.Run("the body of the request is not read", func(t *testing.T) {
 		r := newRig(t)
-		rec := r.doBody("PUT", "/api/mk/web/mk-local/f/x.bin", failingReader{t}, hRecognize, "probe")
+		rec := r.doBody("PUT", "/api/mk/web/mk-local/f/x.bin", failingReader{t}, hRecognize, "forward", hCred, "token")
 		if rec.Code != 403 {
 			t.Fatalf("%d", rec.Code)
 		}
@@ -703,7 +684,7 @@ func TestR_BAS_014_ProbeIsRefusedInTheShapeOfTheFormat(t *testing.T) {
 	t.Run("the detail names no party and no address (R-BAS-099 row 1)", func(t *testing.T) {
 		m := New(Options{})
 		err := m.readOnly(bastionmain.RouteMatch{Format: "npm", Repo: qr("npm-all")})
-		if e, ok := errs.As(err); !ok || e.Code != iface.CodeReadOnly || e.Status() != 403 || e.Detail != ReadOnlyDetail ||
+		if e, ok := errs.As(err); !ok || e.Code != iface.CodeReadOnly || e.Status() != 403 || e.Detail != errs.ReadOnlyDetail ||
 			strings.Contains(e.Detail, "main installation") || strings.Contains(e.Detail, "Bastion") || strings.Contains(e.Detail, "npm-all") {
 			t.Fatalf("%v", err)
 		}
@@ -717,59 +698,47 @@ func (f failingReader) Read([]byte) (int, error) {
 	return 0, io.EOF
 }
 
-// TestR_BAS_014_RealFormats: the refusal is in the error shape of npm and of NuGet, and every route of both of a method
-// other than GET and HEAD is refused as a probe, a read route that takes a body as well (H-2293).
-func TestR_BAS_014_RealFormats(t *testing.T) {
+// TestR_BAS_095_TheBackstopInRealFormats: the backstop's refusal is in the error shape of npm and of NuGet, every route of both of
+// a method other than GET and HEAD that writes is refused, and every one that reads with a body is not.
+func TestR_BAS_095_TheBackstopInRealFormats(t *testing.T) {
 	fs := []formats.Format{npm.New(), nuget.New()}
 	keys := map[string]string{"npm": "npm-all", "nuget": "nuget-v3"}
 	t.Run("npm publish prints the error in npm's shape without an address", func(t *testing.T) {
 		r := newRig(t, fs...)
-		rec := r.do("PUT", "/api/npm/web/npm-all/lodash", hRecognize, "probe")
+		rec := r.do("PUT", "/api/npm/web/npm-all/lodash", hRecognize, "forward", hCred, "token")
 		body := rec.Body.String()
 		if rec.Code != 403 || rec.Header().Get("Content-Type") != "application/json" ||
-			!strings.Contains(body, `"code":"read_only"`) || !strings.Contains(body, ReadOnlyDetail) || strings.Contains(body, mainURL) {
+			!strings.Contains(body, `"code":"read_only"`) || !strings.Contains(body, errs.ReadOnlyDetail) || strings.Contains(body, mainURL) {
 			t.Fatalf("%d %v\n%s", rec.Code, rec.Header(), body)
 		}
 	})
-	t.Run("npm audit, forwarded with its body, is served; its probe is refused", func(t *testing.T) {
+	t.Run("dotnet nuget push is refused in NuGet's line", func(t *testing.T) {
 		r := newRig(t, fs...)
-		for _, p := range []string{"/-/npm/v1/security/advisories/bulk", "/-/npm/v1/security/audits", "/-/npm/v1/security/audits/quick"} {
-			if rec := r.do("POST", "/api/npm/web/npm-all"+p, hRecognize, "probe"); rec.Code != 403 {
-				t.Errorf("the probe of %s: %d %v", p, rec.Code, rec.Header())
-			}
-		}
-	})
-	t.Run("dotnet nuget push is refused without a credential", func(t *testing.T) {
-		r := newRig(t, fs...)
-		rec := r.do("PUT", "/api/nuget/web/nuget-v3/v3/package", hRecognize, "probe")
-		if rec.Code != 403 || !strings.Contains(rec.Body.String(), "read_only") {
+		rec := r.do("PUT", "/api/nuget/web/nuget-v3/v3/package", hRecognize, "forward", hCred, "token")
+		if rec.Code != 403 || rec.Body.String() != "read_only: "+errs.ReadOnlyDetail {
 			t.Fatalf("%d %v\n%s", rec.Code, rec.Header(), rec.Body.String())
 		}
 	})
-	t.Run("every route that writes, of both formats, is refused as a probe", func(t *testing.T) {
+	t.Run("every route that writes, of both formats, is refused, and none that reads with a body", func(t *testing.T) {
 		r := newRig(t, fs...)
 		refused, bodies := 0, 0
 		for _, f := range fs {
 			id := string(f.Descriptor().ID)
 			for _, rt := range f.Routes() {
-				writes := rt.Kind == formats.Upload || rt.Kind == formats.Delete || rt.Kind == formats.Admin || rt.Action != formats.ActionRead
 				if rt.Method == http.MethodGet || rt.Method == http.MethodHead {
 					continue
 				}
+				writes := rt.Kind == formats.Upload || rt.Kind == formats.Delete || rt.Kind == formats.Admin || rt.Action != formats.ActionRead
 				for _, ex := range rt.Examples {
-					rec := r.do(rt.Method, "/api/"+id+"/web/"+keys[id]+"/"+ex, hRecognize, "probe")
+					rec := r.do(rt.Method, "/api/"+id+"/web/"+keys[id]+"/"+ex, hRecognize, "forward", hCred, "token")
+					readOnly := rec.Code == 403 && strings.Contains(rec.Body.String(), "read_only")
 					switch {
-					case rec.Code != 403 || !strings.Contains(rec.Body.String(), "read_only"):
-					case writes:
+					case writes && readOnly:
 						refused++
-						continue
-					default:
+					case !writes && !readOnly:
 						bodies++
-						continue
-					}
-					switch {
 					default:
-						t.Errorf("%s %s %s: %d %v", rt.Method, id, ex, rec.Code, rec.Header())
+						t.Errorf("%s %s %s (writes %v): %d %v", rt.Method, id, ex, writes, rec.Code, rec.Header())
 					}
 				}
 			}

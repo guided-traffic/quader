@@ -2061,7 +2061,8 @@ The rule that holds every format, built and future, to these figures is part of 
   is at 7 since the probes of W-25 ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-065, ADR-207).
 - **The contract test**: the format kit ([internal/formats/formattest](../../internal/formats/formattest)) gains a check that runs
   each example of each `Download` route of a format with a `GET` against a host whose admission refuses, and fails unless the
-  answer is 429 in the format's shape with nothing of the body written; and `formats/all` pins, per format, the kind of each route
+  answer is 429 in the format's shape with nothing of the body written (or 503, for a format that declares it for a rate limit: the ClamAV
+  definitions and Ansible Galaxy, [bastion.md](bastion.md) Q-BAS-453); and `formats/all` pins, per format, the kind of each route
   name in a table (`TestR_LIM_036_EveryRouteOfEveryFormatCountsByItsKind`), so a new route or a new format fails until its kinds are
   listed there, the way `TestR_API_079_…` holds `VersionFetch`.
 
@@ -2145,8 +2146,10 @@ of an error (R-DEB-005). Over HTTP/2 there is no reason phrase at all, and Go's 
 
 As the clients show it (the cases of R-LIM-039, 2026-11-20): `dotnet restore` prints `Response status code does not indicate success:
 429 (Too Many Requests).`; APT 3.0 prints `E: Failed to fetch <file>  TooManyRequests 429  Too Many Requests`. Two more clients show
-no reason, not named here before: `ansible-galaxy` 2.21 at a refused archive prints `HTTP Error 429: Too Many Requests`, and at a
-refused version list a message of its own response cache (`Missing expected 'results' in ansible-galaxy cache`); docker at a refused
+no reason, not named here before: `ansible-galaxy` 2.21 at a refused archive printed `HTTP Error 429: Too Many Requests`, and at a
+refused version list a message of its own response cache (`Missing expected 'results' in ansible-galaxy cache`; 2.17 exits 250 there),
+which is why a Galaxy endpoint answers a rate limit `503` since 2026-11-26 ([bastion.md](bastion.md) Q-BAS-451): the version list's refusal
+then prints its detail and code, the archive's `HTTP Error 503: Service Unavailable` (derived from the client's source, not run); docker at a refused
 `HEAD`, which has no body, prints `unexpected status from HEAD request to …: 429 Too Many Requests`. npm, docker at a `GET` and
 podman print the `detail`. The manual's table of the clients ([usage-and-limits.md](../manual/user/usage-and-limits.md#what-your-client-shows))
 holds every client's line.

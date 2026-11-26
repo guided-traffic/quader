@@ -213,7 +213,7 @@ func TestR_BAS_001_TheRoleServesItsTwoListenersAndAnswersWithItsOwnProblems(t *t
 			t.Errorf("another host = %d", resp.StatusCode)
 		}
 	}
-	// A write goes to the probe, which needs the main installation (R-BAS-014).
+	// A write is refused by the Bastion itself, without the main installation (R-BAS-095).
 	req, _ = http.NewRequest(http.MethodPut, client+"/api/npm/web/npm-all/x", strings.NewReader("{}"))
 	req.Host = "packages.example.com"
 	resp, err := http.DefaultClient.Do(req)
@@ -221,7 +221,7 @@ func TestR_BAS_001_TheRoleServesItsTwoListenersAndAnswersWithItsOwnProblems(t *t
 		t.Fatal(err)
 	}
 	resp.Body.Close()
-	if resp.StatusCode != http.StatusServiceUnavailable {
+	if resp.StatusCode != http.StatusForbidden {
 		t.Errorf("PUT = %d", resp.StatusCode)
 	}
 }

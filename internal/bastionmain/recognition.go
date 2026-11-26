@@ -29,9 +29,6 @@ type Recognition struct {
 	Interface int
 	// Replica is the Quader-Bastion-Replica header, empty when absent.
 	Replica string
-	// Probe is true on the bodiless probe of a request that is not a GET or HEAD (R-BAS-014): a forward of such a method
-	// without a body and without a caller's credential (IsProbe).
-	Probe bool
 	// Route is true on a route of the interface (below iface.PathPrefix): the token was taken from
 	// Authorization and the request is no forwarded read. False on a forwarded request, which the caller's
 	// own credential decides (R-BAS-005).

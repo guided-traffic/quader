@@ -52,7 +52,6 @@ type site struct {
 	revision  int
 	// corrupt, when set, makes the artifact of that path answer other bytes than its ETag names.
 	corrupt map[string]bool
-	probe   func(f mainclient.Forward) (*mainclient.Response, error)
 }
 
 func newSite(repo string) *site {
@@ -125,13 +124,6 @@ func (s *site) repoOf(target string) string {
 }
 
 func (s *site) doFn(f mainclient.Forward) (*mainclient.Response, error) {
-	if f.Probe {
-		if s.probe != nil {
-			return s.probe(f)
-		}
-		return resp(http.StatusForbidden, marking(iface.ClassPass, "", s.repoOf(f.Request.URL.Path), iface.Subject{Kind: iface.SubjectAnonymous}), http.Header{"Content-Type": {"application/problem+json"}},
-			`{"code":"read_only","detail":"read-only"}`), nil
-	}
 	path := f.Request.URL.Path
 	tok := tokenOf(f.Request.Header)
 	sub, r, ok := s.subject(tok)

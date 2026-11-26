@@ -477,6 +477,9 @@ const (
 	CodeBastionInterfaceMismatch = iface.CodeInterfaceMismatch
 	// CodeReadOnly: a write through a Bastion (403), refused by the Bastion or by the main installation's backstop.
 	CodeReadOnly = iface.CodeReadOnly
+	// ReadOnlyDetail is the detail of every refusal of a write through a Bastion, the Bastion's own and the main installation's
+	// backstop's (bastion.md R-BAS-095, R-BAS-099 row 1, Q-BAS-321): it names no address.
+	ReadOnlyDetail = "This address is read-only: it serves downloads and accepts no uploads."
 	// CodeBastionBaseURLUnknown: client-setup for a Bastion whose reported base URL is not an additional base
 	// URL of the installation (409).
 	CodeBastionBaseURLUnknown = iface.CodeBaseURLUnknown

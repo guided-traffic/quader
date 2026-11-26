@@ -47,8 +47,27 @@ func problemOf(t *testing.T, w *httptest.ResponseRecorder) errs.Problem {
 	return p
 }
 
+// ownAnswer reads one of the Bastion's own answers in the shape the format of its path declares (R-BAS-095): npm's on npm's paths,
+// problem details on a path that is not served, whose type is about:blank and whose title is the status phrase.
+func ownAnswer(t *testing.T, w *httptest.ResponseRecorder, path string) errs.Shaped {
+	t.Helper()
+	shape := iface.ErrorShapeProblem
+	if strings.HasPrefix(path, "/api/npm/") {
+		shape = iface.ErrorShapeNPM
+	}
+	got, err := errs.ReadShape(shape, w.Header().Get("Content-Type"), w.Body.Bytes())
+	if err != nil {
+		t.Fatalf("%d %s: not the shape %s: %v", w.Code, w.Body, shape, err)
+	}
+	if p := problemOf(t, w); shape == iface.ErrorShapeProblem && (p.Type != errs.AboutBlank || p.Title != http.StatusText(w.Code)) {
+		t.Errorf("type %q title %q", p.Type, p.Title)
+	}
+	return got
+}
+
 // TestR_BAS_099_TheBastionsOwnAnswersNameNoParty: every answer of the Bastion's own has the text of Q-BAS-321, which names
-// neither the Bastion nor the main installation, the problem type about:blank and the status phrase as its title (rows 2 and 3).
+// neither the Bastion nor the main installation, in the format's error shape; as problem details its type is about:blank and its
+// title the status phrase (rows 2 and 3).
 // The codes are E7's to rename; the RateLimit policy names carry no prefix (row 4).
 func TestR_BAS_099_TheBastionsOwnAnswersNameNoParty(t *testing.T) {
 	small := func(c *config.BastionConfig) { c.Bastion.Main.MaxForwardedBody = 4 }
@@ -62,10 +81,12 @@ func TestR_BAS_099_TheBastionsOwnAnswersNameNoParty(t *testing.T) {
 		status int
 		code   string
 		detail string
+		// problem: the answer is problem details whatever the path (before the first handshake no format's shape is known, H-2359).
+		problem bool
 	}{
 		{
 			name: "unreachable", o: options{down: true}, method: http.MethodGet, path: "/api/npm/web/npm-all/lodash", status: 503,
-			code: iface.CodeUnavailable, detail: "This service is not available right now; try again later.",
+			code: iface.CodeUnavailable, detail: "This service is not available right now; try again later.", problem: true,
 		},
 		{
 			name: "busy", doErr: mainclient.ErrBusy, method: http.MethodGet, path: "/api/npm/web/npm-all/lodash", status: 503,
@@ -106,12 +127,13 @@ func TestR_BAS_099_TheBastionsOwnAnswersNameNoParty(t *testing.T) {
 			}
 			w := httptest.NewRecorder()
 			h.e.ServeHTTP(w, r)
-			p := problemOf(t, w)
-			if w.Code != c.status || p.Code != c.code || p.Detail != c.detail {
-				t.Fatalf("%d %s, want %d %s %q", w.Code, w.Body, c.status, c.code, c.detail)
+			path := c.path
+			if c.problem {
+				path = "/"
 			}
-			if p.Type != errs.AboutBlank || p.Title != http.StatusText(c.status) || strings.Contains(p.Detail, "Bastion") {
-				t.Errorf("type %q title %q detail %q", p.Type, p.Title, p.Detail)
+			p := ownAnswer(t, w, path)
+			if w.Code != c.status || p.Code != c.code || p.Detail != c.detail || strings.Contains(p.Detail, "Bastion") {
+				t.Fatalf("%d %s, want %d %s %q", w.Code, w.Body, c.status, c.code, c.detail)
 			}
 			noMainInstallation(t, c.name, w)
 		})
@@ -132,7 +154,7 @@ func TestR_BAS_099_TheBastionsOwnAnswersNameNoParty(t *testing.T) {
 			}
 			h.guard.request = guard.Verdict{Status: 429, Code: code, RetryAfter: 3 * time.Second, Reason: reason}
 			w := h.get("/api/npm/web/npm-all/lodash")
-			if p := problemOf(t, w); w.Code != 429 || p.Code != code || p.Type != errs.AboutBlank || strings.Contains(p.Detail, "Bastion") {
+			if p := ownAnswer(t, w, "/api/npm/"); w.Code != 429 || p.Code != code || strings.Contains(p.Detail, "Bastion") {
 				t.Errorf("%s: %d %s", reason, w.Code, w.Body)
 			}
 			if pol := w.Header().Get("RateLimit-Policy"); !strings.HasPrefix(pol, want+";") || strings.Contains(pol, "bastion") {

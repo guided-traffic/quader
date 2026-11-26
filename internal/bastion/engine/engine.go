@@ -1,6 +1,6 @@
 // Package engine is the Bastion's request flow (R-BAS-018 to R-BAS-029, R-BAS-042): the classification of a
 // request, the credentials, the answers, the fetch on a miss, the artifacts and documents, the negative cache,
-// the concurrency budget and the collapsing of misses, the write probe, the unreachable behaviour and the
+// the concurrency budget and the collapsing of misses, the refusal of writes, the unreachable behaviour and the
 // Bastion's own responses. It is the one place that knows how the pieces fit; every piece it uses is behind an
 // package of its own (mainclient.Client, cache.Cache, guard.Guard, downloads.Buffer, link.Link).
 //
@@ -128,9 +128,8 @@ type engine struct {
 	priv     *lruCache[*privDoc]
 	vary     *lruCache[[]string]
 	volatile *lruCache[time.Time]
-	probes   *lruCache[*probeRec]
 
-	checks, probeFlights, fetches *group
+	checks, fetches *group
 
 	// The bounds of the transfers that must not depend on a client's speed (Q-BAS-123); the defaults are the
 	// constants below, tests shorten them.
@@ -177,7 +176,6 @@ const (
 	volatileTTL     = time.Minute
 	volatileEntries = 10000
 	varyEntries     = 20000
-	probeEntries    = 20000
 )
 
 func newFlow(d Deps) (*engine, error) {
@@ -194,7 +192,7 @@ func newFlow(d Deps) (*engine, error) {
 	e := &engine{
 		d: d, cfg: &d.Config.Bastion, log: d.Log, nowFunc: d.Now, baseHost: strings.ToLower(u.Hostname()), base: u,
 		forwarded: d.Config.Server.ForwardedHeader == "forwarded",
-		checks:    newGroup(), probeFlights: newGroup(), fetches: newGroup(),
+		checks:    newGroup(), fetches: newGroup(),
 		collapseWait: collapseWaitMax, fillStall: fillStallMax, paceGrace: paceGraceMax, paceMinRate: paceMinRate, paceChunk: paceChunkMax,
 		docMemory: maxDocumentBytes, fillWaitMax: d.Config.Bastion.Cache.FillWaitMax,
 		handoverCooldown: handoverCooldownMax, noOffer: newLRU[time.Time](volatileEntries, 0, nil),
@@ -223,7 +221,6 @@ func newFlow(d Deps) (*engine, error) {
 	e.priv = newLRU[*privDoc](0, int64(e.cfg.Cache.PrivateDocumentsMaxBytes), nil)
 	e.vary = newLRU[[]string](varyEntries, 0, nil)
 	e.volatile = newLRU[time.Time](volatileEntries, 0, nil)
-	e.probes = newLRU[*probeRec](probeEntries, 0, nil)
 	return e, nil
 }
 
@@ -308,5 +305,4 @@ func (e *engine) janitor() {
 	e.answers.prune(now)
 	e.d.Link.Feed().Prune(answers.PruneCutoff(now, e.cfg.Answers.Period, e.cfg.Answers.GracePeriod))
 	e.volatile.retain(func(_ string, t time.Time) bool { return now.Before(t) })
-	e.probes.retain(func(_ string, p *probeRec) bool { return now.Before(p.until) })
 }

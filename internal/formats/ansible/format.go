@@ -134,8 +134,10 @@ func (f *Format) Descriptor() formats.Descriptor {
 			OwnershipDefault: catalog.OwnershipEnforce,
 			SettingsSchema:   settingsSchema,
 			// A Bastion's own refusals tell a Galaxy client at most the wait WriteError tells it (R-ANS-007, R-BAS-058), in the
-			// Galaxy's error list: ansible-galaxy reads no problem details (measured 2026-11-26, Q-BAS-337).
-			Bastion: catalog.BastionFacts{RetryAfterMax: maxRetryAfter, ErrorShape: catalog.ShapeGalaxy},
+			// Galaxy's error list: ansible-galaxy reads no problem details (measured 2026-11-26, Q-BAS-337). A rate limit answers
+			// 503, as WriteError renders it: ansible-galaxy retries a 429 of a document it caches and then reads the empty entry
+			// its first attempt left in its response cache, which 2.17 ends with exit 250 (measured 2026-11-26, Q-BAS-451).
+			Bastion: catalog.BastionFacts{RetryAfterMax: maxRetryAfter, ErrorShape: catalog.ShapeGalaxy, RateLimitedStatus: http.StatusServiceUnavailable},
 		},
 		ContractVersion: formats.ContractVersion,
 		VersionFetch:    formats.FetchLeadFile, // the collection archive (R-API-079)

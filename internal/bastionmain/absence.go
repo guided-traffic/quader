@@ -162,7 +162,7 @@ func NoteCounted(ctx context.Context) {
 func NoteHandover(ctx context.Context, value string) bool {
 	rec, ok := RecognitionFrom(ctx)
 	a := absenceFrom(ctx)
-	if !ok || !rec.Offered || rec.Route || rec.Probe || a == nil || value == "" {
+	if !ok || !rec.Offered || rec.Route || a == nil || value == "" {
 		return false
 	}
 	a.handover.Store(&value)
@@ -174,7 +174,7 @@ func NoteHandover(ctx context.Context, value string) bool {
 // ordinary request pays a context lookup and nothing more.
 func MarksHandover(ctx context.Context) (Recognition, bool) {
 	rec, ok := RecognitionFrom(ctx)
-	if !ok || !rec.Offered || rec.Route || rec.Probe || absenceFrom(ctx) == nil {
+	if !ok || !rec.Offered || rec.Route || absenceFrom(ctx) == nil {
 		return Recognition{}, false
 	}
 	return rec, true

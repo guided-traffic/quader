@@ -183,8 +183,7 @@ func conditionals(f *front, mark int) []rec {
 	return out
 }
 
-// besidesTheToken returns what a pull cost the main installation after a mark besides its token step (the token request and the probe of
-// a POST to the token service): the forwarded reads and the checks. The Bastion's own polling (the feed, the handshake, the downloads) is
+// besidesTheToken returns what a pull cost the main installation after a mark besides its token step (the token request): the forwarded reads and the checks. The Bastion's own polling (the feed, the handshake, the downloads) is
 // no cost of a pull.
 func besidesTheToken(f *front, mark int) []rec {
 	var out []rec

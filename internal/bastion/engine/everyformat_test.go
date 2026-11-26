@@ -107,17 +107,14 @@ func registryMain(s *siteHarness) {
 		if f.Request.Header.Get("Authorization") != "" || f.Body != nil {
 			sub = tokenSubject("full", nil)
 		}
-		switch p := f.Request.URL.Path; {
-		case f.Probe && p == "/v2/_token":
-			s.t.Error("the token service's POST was probed: it is a read route with a body of the format table")
-			return nil, mainclient.ErrUnreachable
-		case p == "/v2/_token":
+		switch f.Request.URL.Path {
+		case "/v2/_token":
 			// Even a marking that would let the answer be kept must not: the token service's answer is never kept.
 			return resp(http.StatusOK, marking(iface.ClassShared, iface.ReadFull, "", sub), http.Header{"Content-Type": {"application/json"}, "Etag": {`"t1"`}},
 				`{"token":"qdr_rgt_issued","access_token":"qdr_rgt_issued","expires_in":300}`), nil
-		case p == "/v2/_catalog":
+		case "/v2/_catalog":
 			return resp(http.StatusOK, marking(iface.ClassPass, "", "", sub), http.Header{"Content-Type": {"application/json"}}, `{"repositories":[]}`), nil
-		case p == "/v2/" || p == "/v2":
+		case "/v2/", "/v2":
 			return resp(http.StatusOK, marking(iface.ClassPass, "", "", sub), http.Header{"Docker-Distribution-Api-Version": {"registry/2.0"}}, `{}`), nil
 		}
 		return viaSite(f)
@@ -182,7 +179,7 @@ func TestR_BAS_051_TheRegistryRootIsAPathFamilyOfTheBastion(t *testing.T) {
 			return true
 		})
 	})
-	t.Run("POST of the token service is forwarded with its form, without a probe", func(t *testing.T) {
+	t.Run("POST of the token service is forwarded with its form", func(t *testing.T) {
 		before := len(s.main.requests())
 		form := "grant_type=password&username=alice&password=" + s.full + "&service=packages.example.com&scope=repository%3Alibrary%2Fnginx%3Apull"
 		w := s.do(http.MethodPost, "/v2/_token", strings.NewReader(form), "Content-Type", "application/x-www-form-urlencoded")
@@ -190,7 +187,7 @@ func TestR_BAS_051_TheRegistryRootIsAPathFamilyOfTheBastion(t *testing.T) {
 			t.Fatalf("%d %s", w.Code, w.Body)
 		}
 		reqs := s.main.requests()[before:]
-		if len(reqs) != 1 || reqs[0].Probe || string(reqs[0].Body) != form || reqs[0].Class != mainclient.Authenticated {
+		if len(reqs) != 1 || string(reqs[0].Body) != form || reqs[0].Class != mainclient.Authenticated {
 			t.Fatalf("the forward: %+v", reqs)
 		}
 	})

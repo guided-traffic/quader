@@ -63,8 +63,9 @@ whose disagreement with the main installation could serve bytes.
   built, the document of a package it reads in full ([below](#read-shapes-per-package)), and a revocation at the main installation
   reaches every Bastion replica within the feed's poll interval and one round trip (R-BAS-026). During an outage of the main
   installation a revoked token reads on for the grace period (H-383).
-- **Writes.** None reach the main installation as writes: the Bastion sends a bodiless probe, the main installation answers `403
-  read_only` in the protocol's shape, and no upload body leaves the Bastion (R-BAS-014).
+- **Writes.** None reach the main installation: the Bastion refuses every write itself, `403 read_only` in the error shape the format
+  declares, before it reads the body or the credential and without a request to the main installation (R-BAS-095, Q-BAS-452); a forward of
+  a write that reaches the main installation anyway, a defect of the Bastion, is refused by the backstop of its marking stage.
 - **Learn about others.** The Bastion sends no cache state (Q-BAS-40), and negative entries go only to callers who read the whole
   repository, and a `404` that is not `absent` is never kept for anybody, so a narrowed reader cannot time hidden names (Q-BAS-42, Q-BAS-124). The time of a hit still tells whether a readable package
   was fetched recently (H-390).
@@ -82,7 +83,7 @@ API key (R-BAS-005).
 | Check any credential and read its shape on named repositories, for a client address it names (R-BAS-011) | Write content, change a setting, read the audit trail, issue or rotate a token |
 | Read the revocation feed: token IDs, principal IDs, qualified repository names `<projectKey>/<repoKey>` (R-BAS-015) | Reach any route on a further endpoint |
 | Submit download events for its cached downloads, marked with its registration (R-BAS-016) | Submit any other audit event type |
-| Make the main installation mark its forwarded responses and refuse writes (R-BAS-013, R-BAS-014) | Turn an anonymous forwarded request into anything but anonymous |
+| Make the main installation mark its forwarded responses and refuse a forwarded write (R-BAS-013, R-BAS-095's backstop) | Turn an anonymous forwarded request into anything but anonymous |
 | Read its registration's configuration in the handshake (R-BAS-093) and, while the registration's web interface is on, its public catalogue (R-BAS-101) | Read another registration's configuration or catalogue, or a catalogue while `gui` is off |
 
 What its holder can still do with those rights is H-386. It is revoked like every token, journaled, and renewed by hand with an
@@ -217,7 +218,8 @@ Without Valkey every counter and block holds per replica at the configured value
   and no grant of access; the ACL rule of the Bastion's user confines it to `quader-bastion:*`.
 ## What the main installation tells the Bastion about a response
 
-The main installation marks the response of a recognized Bastion request (R-BAS-013) and refuses writes (R-BAS-014). The code is
+The main installation marks the response of a recognized Bastion request (R-BAS-013) and refuses a forwarded write as R-BAS-095's
+backstop; a Bastion sends none. The code is
 [internal/api/bastionmark](../../internal/api/bastionmark/mark.go); the lookups that feed `absent` are in `internal/formathost` and
 `internal/files`.
 
@@ -421,13 +423,15 @@ The owner's decisions of 2026-11-26 (W-34; [spec/bastion.md](../spec/bastion.md#
 R-BAS-093 to R-BAS-099, [ADR-300](../decisions.md#adr-300--a-bastion-is-a-place-of-the-download-limits-configured-from-the-main-installation-and-names-nothing-of-it)),
 **specified and not built**, except the rows of R-BAS-099 that package E16 built on 2026-11-26 (the texts, the problem type, the
 policy names, the header allowlist, the check of `Location`, the forward's problems at the main installation and the replays' scan) and
-the anonymous token and anonymous documents of R-BAS-094 that package E14a built the same day; the build plan is [developer/bastion-limits.md](../developer/bastion-limits.md). What they change in the trust boundary once their packages
+the anonymous token and anonymous documents of R-BAS-094 that package E14a built the same day, and the refusal of writes at the Bastion
+that package E15 built the same day (R-BAS-095); the build plan is [developer/bastion-limits.md](../developer/bastion-limits.md). What they change in the trust boundary once their packages
 have landed:
 
 | Change | What it means for trust | Held by |
 |---|---|---|
 | The configuration comes from the main installation | The Bastion applies what its link delivers: its figures, its switches and its place's rules are the main installation's word, as every answer already is. Whoever can answer as the main installation sets them ([H-2280](#h-2280--whoever-answers-as-the-main-installation-sets-a-bastions-limits-and-switches)); a replica that cannot reach it keeps its last configuration, stored and signed in its cache backend, or fails closed ([H-2285](#h-2285--a-replica-restarted-during-an-outage-without-its-stored-configuration-applies-the-built-in-one)) | R-BAS-093, Q-BAS-327 |
-| Less of the internet reaches the main installation | Writes are refused at the Bastion, anonymous token requests are answered there, anonymous documents are kept for the metadata period, and a ceiling bounds what all anonymous callers of a Bastion cause together; a write never reaches the main installation's routing, so Q-BAS-118's admission of probes goes. *Built by E14a:* the anonymous token and the anonymous documents. The Bastion issues a token without a key: it is worth a request without a credential, anyone can mint one, and the main installation refuses it ([H-2350](#h-2350--anyone-can-mint-an-anonymous-registry-token-of-a-bastion)); a withdrawal reaches a kept anonymous document through the feed ([H-2351](#h-2351--a-withdrawal-reaches-an-anonymous-callers-kept-document-within-the-feeds-bound-no-longer-at-its-next-read)) | R-BAS-094, R-BAS-095, Q-BAS-435 |
+| Less of the internet reaches the main installation | Writes are refused at the Bastion, anonymous token requests are answered there, anonymous documents are kept for the metadata period, and a ceiling bounds what all anonymous callers of a Bastion cause together; a write never reaches the main installation's routing, so Q-BAS-118's admission of probes goes. *Built by E14a:* the anonymous token and the anonymous documents. *Built by E15:* the refusal of writes at the Bastion and the end of the
+probes' admission; a write costs the Bastion its request limit and nothing of the main installation. The Bastion issues a token without a key: it is worth a request without a credential, anyone can mint one, and the main installation refuses it ([H-2350](#h-2350--anyone-can-mint-an-anonymous-registry-token-of-a-bastion)); a withdrawal reaches a kept anonymous document through the feed ([H-2351](#h-2351--a-withdrawal-reaches-an-anonymous-callers-kept-document-within-the-feeds-bound-no-longer-at-its-next-read)) | R-BAS-094, R-BAS-095, Q-BAS-435 |
 | Budgets per subject at the Bastion | A hit is counted against the caller's budget at the Bastion's place, which narrows [H-1381](../spec/bastion.md#h-1381--the-main-installations-limits-and-blocks-do-not-reach-hits-from-per-package-answers); the subject key and the applying rule come from the main installation, which names more of each caller to the Bastion than the marking did ([H-2281](#h-2281--the-check-answer-names-each-callers-subject-key-and-rule-to-the-bastion)) | R-BAS-096, Q-BAS-328 |
 | A cap on the bytes between the two | The Bastion paces every body it reads; a Bastion that was taken over ignores its own cap ([H-2289](#h-2289--a-bastion-that-was-taken-over-ignores-its-throughput-cap)) | R-BAS-097 |
 | The Bastion reports usage and state | The main installation stores what a Bastion says it served; it is the Bastion's word ([H-2282](#h-2282--the-usage-and-the-state-a-bastion-reports-are-its-word)) | R-BAS-016, R-LIM-045 |
@@ -446,7 +450,7 @@ What it changes in the trust boundary:
 | A document's address is checked by the Bastion | A document's SHA-256 is of its raw bytes; a Bastion decompresses what it receives, at most to the size it was told, and verifies the SHA-256 before it keeps it. A path has one spelling, no dot segment and no encoded slash, so a path cannot name a file outside the catalogue's tree of the store (W-35's P7 keeps the documents by their address) | R-BAS-101, R-BAS-103, Q-BAS-346, Q-BAS-348 |
 | The feed's catalogue entries and configuration changes name no registration | Every Bastion learns that some registration's catalogue or configuration changed, and when ([H-2306](#h-2306--every-bastion-learns-when-some-catalogue-or-some-configuration-changed)) | R-BAS-015, Q-BAS-349 |
 | A configuration in the handshake | A Bastion learns the figures, the rule IDs, the address rules and the exempt networks of its place; whoever holds its token or takes over a pod learns them too ([H-2307](#h-2307--a-bastions-configuration-tells-its-holder-the-rules-and-networks-of-its-place)). Until E8 the main installation sends an interim configuration with no rule but one without figures, no address rule and no exempt network, so nothing of the kind travels yet | R-BAS-093, Q-BAS-352 |
-| The probe without headers | Until E15 a probe is a forward of a writing method without a body and without a caller's credential; the main installation admits it as the anonymous caller for routing only and refuses it at the route match, a read route's probe as well, so a probe reaches no handler whatever route it names (H-2293) | R-BAS-014, Q-BAS-351 |
+| No probe | Until E15 a probe was a forward of a writing method without a body and without a caller's credential, which the main installation admitted as the anonymous caller for routing only. E15 removed it: the main installation admits no forward for routing alone, a forwarded write is the authentication stage's and then the backstop's, and a read route with a body that a format does not declare is refused at the Bastion (H-2293) | R-BAS-095, Q-BAS-351 |
 
 ## What this does not cover
 
@@ -764,10 +768,31 @@ deletion, a block set in triage, a lowered visibility) ends the copy within the 
 
 ### H-2293 · A read route with a body that a format does not declare is refused
 
-Stage: R-BAS-095, kit check 19 (package E15). Subject: a client feature through a Bastion, availability only. Live once E15 lands. The
-refusal fails closed: a route with a writing method whose kind is a read and that the format does not list in `readWithBody` answers `403
-read_only` at the Bastion. Kit check 19 holds the routes a format declares; a client that uses a route the format does not have reaches
-nothing either way.
+Stage: R-BAS-095, kit check 19 (package E15). Subject: a client feature through a Bastion, availability only. Live since E15
+(2026-11-26). The refusal fails closed: a route with a writing method whose kind is a read and that the format does not list in
+`readWithBody` answers `403 read_only` at the Bastion. Kit check 19 holds the routes a format declares; a client that uses a route the
+format does not have reaches nothing either way.
+
+### H-2358 · A 502 on a document ansible-galaxy caches ends the client with exit 250
+
+Stage: the Bastion's `502 bad_gateway` (R-BAS-021, R-BAS-099 row 6) and the main installation's `502 upstream_unavailable` of a remote
+Galaxy (formats/ansible.md R-ANS-007). Subject: Ansible Galaxy's clients, availability and the readability of a failure only. Live:
+ansible-galaxy 2.17 and 2.21 retry a `502` as they retry a `429`, and the retry of a version list (the one document of an install it caches) reads the
+empty entry its first attempt left in the client's response cache, which ends the command with `Unexpected Exception … 'results'`
+(exit 250, 2.17) instead of the answer's detail (the mechanism measured for `429` on 2026-11-26, [spec/bastion.md](../spec/bastion.md)
+Q-BAS-451; for `502` read from the client's source, not run). Rate limits answer `503` since E15, which the client does not retry. What
+makes it real: a main installation that does not answer a forward, a `Location` on another host, or a remote Galaxy that fails. What
+closes it: the `galaxy` shape and the format's `WriteError` answering a gateway failure `503` on a Galaxy route, or a client that
+writes no empty entry.
+
+### H-2359 · Before its first handshake a Bastion answers in problem details
+
+Stage: the Bastion's own answers (R-BAS-029, R-BAS-095). Subject: what a client prints while a replica has never reached the main
+installation, readability only. Live: the format table, and with it each format's `errorShape`, comes with the handshake; a replica that
+started while the main installation was unreachable answers its `503 unavailable` (and a write's `403 read_only`) as problem details on
+every family but `/v2/`, which npm and ansible-galaxy print without the detail, and refuses a read route with a body `403 read_only`,
+since no format has declared one yet. The status and `Retry-After` of the `503` are right. What closes it: a replica that keeps the last
+format table across a restart, as E9a keeps the configuration (R-BAS-093, Q-BAS-327); no package plans it.
 
 ### H-2294 · A Bastion's answers still tell that an installation stands behind it
 

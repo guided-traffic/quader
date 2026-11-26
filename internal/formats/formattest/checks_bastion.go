@@ -49,7 +49,9 @@ func keptKind(k formats.RouteKind) bool {
 //     If-None-Match 304: the Bastion revalidates the documents it keeps with conditional requests;
 //   - the format's WriteError answers a rate limit with catalog.Facts.Bastion.RateLimited(): a Bastion's own rate-limit refusals
 //     on the format's family take that status;
-//   - the format declares catalog.Facts.Bastion.ErrorShape;
+//   - the format declares catalog.Facts.Bastion.ErrorShape, and its WriteError renders the refusal of a write in that shape
+//     (R-BAS-095): a Bastion refuses a write itself in the declared shape, and the main installation's backstop refuses one that
+//     reaches it anyway through WriteError, so a client reads both alike;
 //   - catalog.Facts.Bastion.ReadWithBody lists exactly the format's routes of a method other than GET and HEAD whose kind is a
 //     read (R-BAS-095): every example of such a route matches an entry of its method, and every entry matches an example of
 //     such a route. A Bastion refuses every other request of such a method as a write, so an undeclared read route would be
@@ -68,6 +70,8 @@ func (r *run) bastion() {
 	r.readWithBody(routes)
 	if r.d.Bastion.ErrorShape == "" {
 		r.failf("catalog.Facts.Bastion.ErrorShape is not declared: declare the shape of a Bastion's own refusals the format's clients print a reason from, one of problem, npm, text, distribution and galaxy (R-BAS-095, Q-BAS-337)")
+	} else {
+		r.errorShape()
 	}
 	allowed := map[string]bool{}
 	for _, h := range slices.Concat(catalog.RepresentationHeaders(), catalog.PerRequestHeaders(), r.d.Bastion.ReplayHeaders) {
@@ -257,6 +261,26 @@ func (r *run) forwardError() {
 		r.failf("WriteError names the main installation's request ID in the answer to a forward of a Bastion: render the error through errs.ProblemFor (R-BAS-099)")
 	case strings.Contains(all.String(), errs.ProblemTypePrefix):
 		r.failf("WriteError gives the answer to a forward of a Bastion the problem type %s…, a path of the management API: render the error through errs.ProblemFor, which gives it about:blank (R-BAS-099)", errs.ProblemTypePrefix)
+	}
+}
+
+// errorShape is the duty of WriteError towards the declared error shape (R-BAS-095, Q-BAS-337): the backstop's refusal of a write
+// that reaches the main installation from a Bastion, rendered by the format, reads as the shape the format declares, with the
+// backstop's detail and, where the shape carries one, its code. A Bastion renders its own refusal of the same write in the declared
+// shape, so a client of the format reads the two alike.
+func (r *run) errorShape() {
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequestWithContext(errs.WithBastionForward(context.Background()), http.MethodPut, DefaultBaseURL+"/", nil)
+	r.f.WriteError(rec, req, errs.E(errs.Forbidden, errs.CodeReadOnly, errs.ReadOnlyDetail))
+	shape := r.d.Bastion.Shape()
+	got, err := errs.ReadShape(shape, rec.Header().Get("Content-Type"), rec.Body.Bytes())
+	switch {
+	case err != nil:
+		r.failf("WriteError renders the refusal of a write %q, which is not the declared error shape %s: %v; a Bastion refuses a write in the declared shape and the main installation's backstop through WriteError, so declare the shape WriteError renders (catalog.Facts.Bastion.ErrorShape, R-BAS-095)",
+			rec.Body.String(), shape, err)
+	case got.Detail != errs.ReadOnlyDetail || (got.Code != "" && got.Code != errs.CodeReadOnly):
+		r.failf("WriteError renders the refusal of a write with the code %q and the detail %q in the shape %s, want %q and %q: a client reads the Bastion's refusal and the backstop's alike (R-BAS-095)",
+			got.Code, got.Detail, shape, errs.CodeReadOnly, errs.ReadOnlyDetail)
 	}
 }
 

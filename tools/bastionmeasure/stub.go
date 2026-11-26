@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-// The refusals of the Bastion as R-BAS-095 and Q-BAS-337 specify them (not built yet): the stub answers the entry points a client
+// The refusals of the Bastion as R-BAS-095 and Q-BAS-337 specify them (built by E15): the stub answers the entry points a client
 // needs before its first content request (the registry's /v2/, a NuGet service index, a Galaxy API root) and refuses everything
 // else with one status, code and detail in the error shape the format declares. Each request is logged as one JSON line, so a
 // client's retries can be counted.
@@ -33,6 +33,8 @@ func shapeOf(path string) string {
 		return "npm"
 	case strings.HasPrefix(path, "/api/nuget/"):
 		return "text"
+	case strings.HasPrefix(path, "/api/ansible/"):
+		return "galaxy"
 	}
 	return "problem"
 }
@@ -64,6 +66,10 @@ func writeRefusal(w http.ResponseWriter, path string, status int, code, detail, 
 	case "distribution":
 		w.Header().Set("Content-Type", "application/json")
 		body, _ = json.Marshal(map[string]any{"errors": []map[string]any{{"code": distributionCode(status), "message": detail, "detail": map[string]string{"code": code}}}})
+	case "galaxy":
+		// The fifth shape, Ansible Galaxy's (E7 from this measurement, built by E15).
+		w.Header().Set("Content-Type", "application/json")
+		body, _ = json.Marshal(map[string]any{"errors": []map[string]string{{"status": strconv.Itoa(status), "code": code, "title": http.StatusText(status) + ".", "detail": detail}}})
 	default:
 		w.Header().Set("Content-Type", "application/problem+json")
 		body, _ = json.Marshal(map[string]any{"type": "about:blank", "title": http.StatusText(status), "status": status, "detail": detail, "code": code})

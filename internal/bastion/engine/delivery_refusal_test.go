@@ -20,7 +20,7 @@ func TestR_CUR_004_ARuleRefusalReachesTheClientThroughABastionAndIsNotKept(t *te
 	refusing.Store(true)
 	serve := s.main.doFn
 	s.main.doFn = func(f mainclient.Forward) (*mainclient.Response, error) {
-		if refusing.Load() && !f.Probe && f.Request.URL.Path == tgz {
+		if refusing.Load() && f.Request.URL.Path == tgz {
 			sub, r, _ := s.site.subject(tokenOf(f.Request.Header))
 			return resp(http.StatusForbidden, marking(iface.ClassPass, r.read, s.site.repo, sub),
 				http.Header{"Content-Type": {"application/problem+json"}, "Cache-Control": {"no-store"}},

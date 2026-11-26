@@ -282,10 +282,9 @@ func TestR_BAS_072_TheBastionOffersToTakeAHandover(t *testing.T) {
 	if w := x.do(http.MethodHead, hoTgz2, nil, auth...); w.Code != http.StatusOK || x.lastForward(t).Method != http.MethodHead || x.lastForward(t).Offer.MaxSize != 0 {
 		t.Fatalf("a HEAD: %d, %+v", w.Code, x.lastForward(t))
 	}
-	x.do(http.MethodPut, hoTgz3, strings.NewReader("x"), auth...)
 	for _, r := range x.main.requests() {
-		if r.Probe && r.Offer.MaxSize != 0 {
-			t.Fatalf("a probe offered: %+v", r)
+		if r.Method != http.MethodGet && r.Offer.MaxSize != 0 {
+			t.Fatalf("a request that is no GET offered: %+v", r)
 		}
 	}
 	x.setSwitch(false)

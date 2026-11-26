@@ -98,26 +98,17 @@ func BastionPrincipal(rec bastionmain.Recognition) httpserver.Principal {
 // registration whatever the anonymous switches say (R-BAS-008, Q-BAS-52); the authentication stage is where an
 // anonymous request of an endpoint that admits none is refused, and it must not refuse the Bastion.
 //
-// A recognized write probe (R-BAS-014) is admitted as the anonymous caller for routing only, whatever the
-// anonymous switches say: it carries no credential of a caller by design, and the marking stage answers it at
-// the route match - 403 read_only, a read route that takes a body as well - before any decision, handler or body read
-// (Q-BAS-118); the recognition stage reads a probe from its form, a write without a body and without a credential. The
-// recognition stage admits a forward only below /api/<format>/, /files/ and the registry root /v2/, whose routes all
-// tell the marking stage their kind first (the registry's version check answers GET and HEAD only and decides
-// nothing), so a probe reaches no handler. Every other request is the stage's. admitted, when
-// set, is told of the registration on an interface route (the request log names it).
+// Every other request is the stage's, a forward of a Bastion included: it carries the caller's own credential, and a Bastion
+// sends no write (R-BAS-095), so nothing is admitted for routing alone. admitted, when set, is told of the registration on an
+// interface route (the request log names it).
 func BastionRouteAuth(stage func(*http.Request) (httpserver.Principal, error), admitted func(*http.Request, httpserver.Principal)) func(*http.Request) (httpserver.Principal, error) {
 	return func(r *http.Request) (httpserver.Principal, error) {
-		rec, ok := bastionmain.RecognitionFrom(r.Context())
-		switch {
-		case ok && rec.Route:
+		if rec, ok := bastionmain.RecognitionFrom(r.Context()); ok && rec.Route {
 			p := BastionPrincipal(rec)
 			if admitted != nil {
 				admitted(r, p)
 			}
 			return p, nil
-		case ok && rec.Probe:
-			return httpserver.AnonymousPrincipal(), nil
 		}
 		return stage(r)
 	}

@@ -30,10 +30,6 @@ import (
 	"github.com/guided-traffic/quader/internal/httpserver"
 )
 
-// ClassProbe is the class label of quader_bastion_forwarded_requests_total for a write probe (R-BAS-014). It is
-// no iface.Class: a probe answer is `pass` on the wire.
-const ClassProbe = "probe"
-
 // Options configure [New].
 type Options struct {
 	// Shapes computes the caller's read shape on the addressed repository (R-BAS-012). Required for a shape in
@@ -95,7 +91,6 @@ type state struct {
 	// decided holds what Decided was told: the request's context, the subject and the index the request decides on, so that
 	// the package shape is computed at the status line on the same index (R-BAS-082).
 	decided *decision
-	probe   bool // the request was answered as a probe
 }
 
 // decision is the subject and the index of a request's decision, with the request's context.
@@ -143,21 +138,17 @@ func (s *state) setRoute(mt bastionmain.RouteMatch) {
 // observer is the bastionmain.RouteObserver of one recognized request.
 type observer struct{ st *state }
 
-// Matched refuses the writes of a Bastion (R-BAS-014, R-BAS-095). A write is refused whether it came as a probe or, by a
-// defect of the Bastion, as the real request: the Bastion token makes every write read_only. The one forward of a method
-// other than GET and HEAD that passes is a read route that takes a body, sent with its body as the format table's
-// readWithBody lists it (interface version 8); a probe of such a route means a format that did not declare it, and is refused
-// as well, so that the failure is closed (H-2293).
+// Matched is the backstop of R-BAS-095: a Bastion refuses every write itself, so a forward of a write that reaches the main
+// installation is a defect of the Bastion, and the Bastion token makes it read_only before any decision, handler or body read.
+// The one forward of a method other than GET and HEAD that passes is a read route that takes a body, which the Bastion sends with
+// its body as the format table's readWithBody lists it.
 func (o *observer) Matched(_ http.ResponseWriter, _ *http.Request, mt bastionmain.RouteMatch) (bool, error) {
 	st := o.st
 	st.setRoute(mt)
 	if mt.Method == http.MethodGet || mt.Method == http.MethodHead {
 		return false, nil
 	}
-	if !readRoute(mt) || st.rec.Probe {
-		st.mu.Lock()
-		st.probe = st.rec.Probe
-		st.mu.Unlock()
+	if !readRoute(mt) {
 		return false, st.m.readOnly(mt)
 	}
 	return false, nil
@@ -176,11 +167,8 @@ func readRoute(mt bastionmain.RouteMatch) bool {
 // readOnly is the refusal of a write in the shape of the format: 403 read_only. Its detail names no address
 // to publish to: a caller of a Bastion learns nothing of the installation behind it (R-BAS-099 row 1, Q-BAS-338).
 func (m *Marker) readOnly(bastionmain.RouteMatch) error {
-	return errs.E(errs.Forbidden, errs.CodeReadOnly, ReadOnlyDetail)
+	return errs.E(errs.Forbidden, errs.CodeReadOnly, errs.ReadOnlyDetail)
 }
-
-// ReadOnlyDetail is the detail of the refusal of a write through a Bastion (Q-BAS-321).
-const ReadOnlyDetail = "This address is read-only: it serves downloads and accepts no uploads."
 
 // Decided computes the caller's read shape on the addressed repository (R-BAS-012). The subject and the
 // index are the ones the decision just used, so the shape agrees with the decision of this request; both are
@@ -231,7 +219,7 @@ func (m *Marker) packageRead(whole iface.Read, d *decision, grant *httpserver.Re
 func (s *state) marking(status int, h http.Header) iface.Marking {
 	s.mu.Lock()
 	mk := iface.Marking{Class: iface.ClassPass, Interface: iface.InterfaceVersion, Subject: s.subject}
-	match, kind, probe, read, whole, decided, grant := s.match, s.kind, s.probe, s.read, s.whole, s.decided, s.grant
+	match, kind, read, whole, decided, grant := s.match, s.kind, s.read, s.whole, s.decided, s.grant
 	s.mu.Unlock()
 	if status == http.StatusUnauthorized && !insufficientScope(h) {
 		// A rejected credential, or a caller the main installation asks to sign in: either way the credential
@@ -244,9 +232,6 @@ func (s *state) marking(status int, h http.Header) iface.Marking {
 		return mk
 	}
 	mk.Repository, mk.Read = match.Repo.String(), read
-	if probe {
-		return mk
-	}
 	content := kind == bastionmain.KindDownload || kind == bastionmain.KindMetadata || kind == bastionmain.KindComputed
 	switch {
 	case content && (status == http.StatusOK || status == http.StatusNotModified):
@@ -274,7 +259,7 @@ func (s *state) marking(status int, h http.Header) iface.Marking {
 // the class handover and the header Quader-Bastion-Handover go to a recognized forward that carried the offer and to nothing
 // else.
 func (s *state) handover() string {
-	if !s.rec.Offered || s.rec.Route || s.rec.Probe {
+	if !s.rec.Offered || s.rec.Route {
 		return ""
 	}
 	return s.absence.Handover()
@@ -342,11 +327,7 @@ func (w *markWriter) mark(code int) {
 		h.Set(iface.HeaderHandover, w.st.handover())
 	}
 	if mt := w.st.m.o.Metrics; mt != nil && mt.Forwarded != nil {
-		class := string(mk.Class)
-		if w.st.probe {
-			class = ClassProbe
-		}
-		mt.Forwarded.WithLabelValues(w.st.rec.Bastion, class).Inc()
+		mt.Forwarded.WithLabelValues(w.st.rec.Bastion, string(mk.Class)).Inc()
 		if mt.ForwardedBytes != nil {
 			w.bytes = mt.ForwardedBytes.WithLabelValues(w.st.rec.Bastion, w.st.callerClass())
 		}

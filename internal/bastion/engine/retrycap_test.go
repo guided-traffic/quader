@@ -41,7 +41,11 @@ func TestR_BAS_058_TheBastionsOwnRefusalsKeepTheFormatsLongestWait(t *testing.T)
 			if c.v.Code == iface.CodeAuthTimeout {
 				w = s.get(p.path, "Authorization", bearer(s.part))
 			}
-			if w.Code != http.StatusTooManyRequests {
+			status := http.StatusTooManyRequests
+			if format == "ansible" {
+				status = http.StatusServiceUnavailable // the status Ansible Galaxy declares for a rate limit (Q-BAS-451)
+			}
+			if w.Code != status {
 				t.Errorf("%s on %s: %d %s", c.name, format, w.Code, w.Body)
 				continue
 			}

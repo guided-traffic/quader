@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/guided-traffic/quader/internal/bastion/iface"
-	"github.com/guided-traffic/quader/internal/bastionmain"
 	"github.com/guided-traffic/quader/internal/tlsfiles/tlstest"
 )
 
@@ -57,7 +56,6 @@ type rec struct {
 	Status int
 	Bytes  int64
 	Kind   string // handshake, check, feed, downloads or forward
-	Probe  bool
 	At     time.Time
 }
 
@@ -123,7 +121,7 @@ func newFront(t *testing.T, dir, target string) *front {
 			f.mu.Lock()
 			f.recs = append(f.recs, rec{
 				Method: r.Method, Path: r.URL.Path, Query: r.URL.RawQuery, Header: r.Header.Clone(), Status: rw.status,
-				Kind: kindOf(r), Probe: bastionmain.IsProbe(r), At: time.Now(),
+				Kind: kindOf(r), At: time.Now(),
 			})
 			rw.idx = len(f.recs) - 1
 			f.mu.Unlock()
@@ -215,20 +213,18 @@ func (f *front) Since(mark int) []rec {
 	return append([]rec(nil), f.recs[mark:]...)
 }
 
-// Forwards returns the forwarded reads (not the interface operations, not probes) after a mark whose path
-// has the prefix.
+// Forwards returns the forwarded reads (not the interface operations) after a mark whose path has the prefix.
 func (f *front) Forwards(mark int, prefix string) []rec {
 	var out []rec
 	for _, r := range f.Since(mark) {
-		if r.Kind == "forward" && !r.Probe && strings.HasPrefix(r.Path, prefix) {
+		if r.Kind == "forward" && strings.HasPrefix(r.Path, prefix) {
 			out = append(out, r)
 		}
 	}
 	return out
 }
 
-// Cost counts what a client request costs the main installation after a mark: forwarded reads, probes and
-// checks. The Bastion's own polling (the feed, the handshake, the downloads) is not a cost of a request.
+// Cost counts what a client request costs the main installation after a mark: forwarded reads and checks. The Bastion's own polling (the feed, the handshake, the downloads) is not a cost of a request.
 func (f *front) Cost(mark int) int {
 	n := 0
 	for _, r := range f.Since(mark) {

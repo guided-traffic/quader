@@ -54,4 +54,5 @@ installation does not use; the stub and the second replica `bastion2` share two 
 | `measure.sh` | item 1: each command through a cold Bastion and again through the same, now warm Bastion |
 | `attack.sh` | items 2 and 3 |
 | `shapes.sh` | item 4 |
+| `galaxy-stub.py` | W34-E15's one run of ansible-galaxy 2.17 against the `galaxy` shape: a stub run inside the client's container, whose command is in [docs/developer/bastion.md](../../docs/developer/bastion.md#the-galaxy-shape-against-ansible-galaxy-217-measured-2026-11-26) |
 | [tools/bastionmeasure](../../tools/bastionmeasure) | the Go tool `e4` the scripts build (Go code lives under `tools/`, the tree the architecture tests leave to the repository's own tooling): `seed`, `tally`, `stub` (the four error shapes of the specification), `flood` (the attack) and `latency` |

@@ -285,8 +285,8 @@ func TestBastion_R_BAS_049_RoutingByPath(t *testing.T) {
 
 var e403 = regexp.MustCompile(`(?i)E403|403`)
 
-// TestBastion_R_BAS_049_ReadOnly (R-BAS-014): `npm publish` and `dotnet nuget push` pointing at a Bastion are refused in the
-// client's shape and name nothing of the main installation (R-BAS-099); the upload body is not read.
+// TestBastion_R_BAS_049_ReadOnly (R-BAS-095): `npm publish` and `dotnet nuget push` pointing at a Bastion are refused by the Bastion
+// itself in the client's shape and name nothing of the main installation (R-BAS-099); the upload body is not read.
 func TestBastion_R_BAS_049_ReadOnly(t *testing.T) {
 	env := basFx(t)
 	for _, site := range env.sites() {

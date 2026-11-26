@@ -10446,10 +10446,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-BAS
 
-289 questions on [spec/bastion.md](spec/bastion.md).
+293 questions on [spec/bastion.md](spec/bastion.md).
 
 <details>
-<summary>Q-BAS: 289 questions</summary>
+<summary>Q-BAS: 293 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10742,6 +10742,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-BAS-435](spec/bastion.md#q-bas-435--the-anonymous-token-is-the-anonymous-caller-at-every-replica-and-every-bastion-and-no-key-signs-it) | The anonymous token is the anonymous caller at every replica and every Bastion, and no key signs it | Decided by the development agent on 2026-11-26 | (a) No key: a token is recognized by its unverified claim `a` alone, wherever it is presented, and dropped | — |
 | [Q-BAS-436](spec/bastion.md#q-bas-436--an-anonymous-token-request-is-one-without-a-credential-and-the-bastion-reads-neither-its-scope-nor-its-service) | An anonymous token request is one without a credential, and the Bastion reads neither its scope nor its service | Decided by the development agent on 2026-11-26 | (a) A `GET` without an `Authorization` header and a `POST` whose form holds no password and that carries none are answered with the token; an anonymous registry token presented with either is no credential (Q-BAS-168); an anonymous `HEAD` answers the token service's `405` at the Bastion; scope and service are not read | — |
 | [Q-BAS-437](spec/bastion.md#q-bas-437--the-anonymous-callers-copy-is-kept-also-without-a-validator-and-judged-as-a-cache-entry-is) | The anonymous caller's copy is kept also without a validator, and judged as a cache entry is | Decided by the development agent on 2026-11-26 | (a) The anonymous copy is kept with or without an `ETag`, served while `metadata_revalidate_after` has not passed since its validation and no `content` or `grants` entry of the feed that names its repository was received after it, judged as a cache entry (`freshFor`); after it a conditional request, or a plain one without a validator | — |
+| [Q-BAS-450](spec/bastion.md#q-bas-450--every-answer-of-the-bastions-own-goes-through-one-renderer-by-the-declared-shape-and-each-shape-carries-the-code) | Every answer of the Bastion's own goes through one renderer by the declared shape, and each shape carries the code | Decided by the development agent on 2026-11-26 | (a) One renderer, `writeShaped`, for every answer of the Bastion's own (the write's refusal, the guard's refusals, `busy`, `unavailable`, `bad_gateway`, `gateway_timeout`, the `401`s and the rest of R-BAS-029's table), by the `errorShape` of the request's format; npm's body `{"error": "<detail>", "code": "<code>"}` | — |
+| [Q-BAS-451](spec/bastion.md#q-bas-451--ansible-galaxy-answers-a-rate-limit-503-because-ansible-galaxy-does-not-survive-the-retry-of-a-429) | Ansible Galaxy answers a rate limit 503, because ansible-galaxy does not survive the retry of a 429 | Decided by the development agent on 2026-11-26 | (a) The format declares `RateLimitedStatus` 503, and its `WriteError` answers a rate limit 503 with its code and `Retry-After`, as the ClamAV definitions do (R-BAS-056) | — |
+| [Q-BAS-452](spec/bastion.md#q-bas-452--a-write-is-refused-before-its-credential-is-read) | A write is refused before its credential is read | Decided by the development agent on 2026-11-26 | (a) A write is refused after the path, the block list and the request limit, before its credential is read | — |
+| [Q-BAS-453](spec/bastion.md#q-bas-453--kit-check-19-reads-the-backstops-refusal-with-the-shapes-reader-and-check-16-takes-503-as-a-rate-limit) | Kit check 19 reads the backstop's refusal with the shape's reader, and check 16 takes 503 as a rate limit | Decided by the development agent on 2026-11-26 | (a) `errs.ReadShape`, what a client of each shape reads (the media type and the members it prints), used by the engine's tests on the Bastion's renderer and by the kit on `WriteError`'s rendering of the backstop's `403 read_only` for a forward: the declared shape, the read-only detail, and the code where the shape carries one | — |
 
 </details>
 

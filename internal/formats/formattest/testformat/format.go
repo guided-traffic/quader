@@ -186,6 +186,9 @@ const (
 	StaleReadWithBody Defect = "stale-read-with-body"
 	// DeclaresRetryAfterCap declares a cap of 30 s that WriteError does not apply: check 19.
 	DeclaresRetryAfterCap Defect = "declares-retry-after-cap"
+	// DeclaresAnotherErrorShape declares npm's error shape while WriteError renders problem details, so the main installation's
+	// backstop would refuse a write in another shape than the Bastion does: check 19 (bastion.md R-BAS-095).
+	DeclaresAnotherErrorShape Defect = "declares-another-error-shape"
 	// DeclaresUnservedBody declares on the tarball route that the format's client checks a digest (Route.ClientDigest) while a
 	// local repository refuses the tarball 501, as a format whose downloads only its remote class serves: no case can show that
 	// the route's downloads are the stored blob, check 20 (storage.md R-STOR-071). Its test lists the route in NoContent with
@@ -411,6 +414,9 @@ func (f Format) Descriptor() formats.Descriptor {
 	}
 	if f.has(string(DeclaresRetryAfterCap)) {
 		bastion.RetryAfterMax = 30 * time.Second
+	}
+	if f.has(string(DeclaresAnotherErrorShape)) {
+		bastion.ErrorShape = catalog.ShapeNPM
 	}
 	return formats.Descriptor{
 		Facts: catalog.Facts{

@@ -24,7 +24,7 @@ import (
 // answers (the marking is in their headers) become the response.
 func (s *site) handler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		resp, err := s.doFn(mainclient.Forward{Request: r, IfNoneMatch: r.Header.Get("If-None-Match"), Probe: probeForm(r)})
+		resp, err := s.doFn(mainclient.Forward{Request: r, IfNoneMatch: r.Header.Get("If-None-Match")})
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -43,7 +43,7 @@ func (s *site) handler() http.HandlerFunc {
 // The engine runs over the real client and a budget of one slot against the in-process main installation, and
 // every kind of answer is served in turn: a miss that streams, a hit, a 304 that serves the cached bytes, a 304
 // whose bytes are gone, a Range request, a shared document, a private copy, an absent name, a pass-through, a
-// refusal, a write probe, an invalid token and a fill whose digest does not match (the transfer is aborted).
+// refusal, a write, an invalid token and a fill whose digest does not match (the transfer is aborted).
 // After each request no slot is in use; at the end, a request still gets the one slot at once, and the main
 // installation never saw two requests at a time.
 func TestR_BAS_025_EveryPathClosesTheResponseBodyAndSoReleasesItsSlot(t *testing.T) {
@@ -158,7 +158,7 @@ func TestR_BAS_025_EveryPathClosesTheResponseBodyAndSoReleasesItsSlot(t *testing
 	expect("an absent name", call("absent", http.MethodGet, "/api/npm/web/npm-all/nope", auth(full)...), 404)
 	expect("a pass-through", call("search", http.MethodGet, "/api/npm/web/npm-all/-/v1/search?text=a", auth(full)...), 200)
 	expect("a refusal", call("refusal", http.MethodGet, "/api/npm/web/npm-all/@acme/hidden.tgz", auth(none(t, st))...), 404)
-	expect("a write probe", call("probe", http.MethodPut, "/api/npm/web/npm-all/x", auth(full)...), 403)
+	expect("a write, refused at the Bastion", call("write", http.MethodPut, "/api/npm/web/npm-all/x", auth(full)...), 403)
 	expect("an invalid token", call("invalid", http.MethodGet, cold, auth(bad)...), 401)
 	call("a fill whose digest does not match", http.MethodGet, corrupt, auth(full)...)
 
@@ -185,11 +185,4 @@ func none(t *testing.T, st *site) string {
 func asError(p any) error {
 	err, _ := p.(error)
 	return err
-}
-
-// probeForm reads a probe as the main installation does (bastionmain.IsProbe): a write without a body and without a caller's
-// credential.
-func probeForm(r *http.Request) bool {
-	return r.Method != http.MethodGet && r.Method != http.MethodHead && r.ContentLength == 0 && len(r.TransferEncoding) == 0 &&
-		r.Header.Get("Authorization") == ""
 }

@@ -12,6 +12,7 @@ import (
 	"github.com/guided-traffic/quader/internal/api/edge"
 	"github.com/guided-traffic/quader/internal/bastion/iface"
 	"github.com/guided-traffic/quader/internal/bastionmain"
+	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/formats"
 	"github.com/guided-traffic/quader/internal/formats/oci"
 	"github.com/guided-traffic/quader/internal/httpserver"
@@ -151,9 +152,10 @@ func TestR_BAS_059_ADownloadTheCoreCountedIsMarkedCounted(t *testing.T) {
 }
 
 // TestR_BAS_051_AWriteBelowTheRegistryRootNamesNoAddress is the main installation's side of R-BAS-051's write refusal: the
-// probe of a push through a Bastion reaches the dispatcher's handler of the registry root, which tells the marking its route,
-// and is refused 403 DENIED in the distribution's shape before any decision, with the text that names no address to push to
-// (R-BAS-099 row 1). No handler runs and no body is read.
+// forward of a push that reaches the main installation anyway (a defect of the Bastion, which refuses every write itself,
+// R-BAS-095) reaches the dispatcher's handler of the registry root, which tells the marking its route, and is refused 403 DENIED
+// in the distribution's shape before any decision, with the text that names no address to push to (R-BAS-099 row 1). No handler
+// runs and no body is read.
 func TestR_BAS_051_AWriteBelowTheRegistryRootNamesNoAddress(t *testing.T) {
 	r := newRig(t)
 	d, err := dispatch.New(dispatch.Options{
@@ -182,7 +184,7 @@ func TestR_BAS_051_AWriteBelowTheRegistryRootNamesNoAddress(t *testing.T) {
 		Bastion: func(next http.Handler) http.Handler {
 			next = marker.Stage()(next)
 			return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-				rec := bastionmain.Recognition{Bastion: "edge-1", Interface: iface.InterfaceVersion, Probe: true}
+				rec := bastionmain.Recognition{Bastion: "edge-1", Interface: iface.InterfaceVersion}
 				next.ServeHTTP(w, req.WithContext(bastionmain.WithRecognition(req.Context(), rec)))
 			})
 		},
@@ -196,7 +198,7 @@ func TestR_BAS_051_AWriteBelowTheRegistryRootNamesNoAddress(t *testing.T) {
 		rec := r.doBody(c.method, c.path, failingReader{t})
 		body := rec.Body.String()
 		if rec.Code != http.StatusForbidden || !strings.Contains(body, `"code":"DENIED"`) ||
-			!strings.Contains(body, ReadOnlyDetail) || strings.Contains(body, "quader.example.com") ||
+			!strings.Contains(body, errs.ReadOnlyDetail) || strings.Contains(body, "quader.example.com") ||
 			rec.Header().Get("Docker-Distribution-Api-Version") != "registry/2.0" {
 			t.Errorf("%s %s: %d %v\n%s", c.method, c.path, rec.Code, rec.Header(), body)
 		}
@@ -205,6 +207,6 @@ func TestR_BAS_051_AWriteBelowTheRegistryRootNamesNoAddress(t *testing.T) {
 		}
 	}
 	if len(r.shapes.asked) != 0 {
-		t.Fatalf("a decision was observed for a probe: %v", r.shapes.asked)
+		t.Fatalf("a decision was observed for a refused write: %v", r.shapes.asked)
 	}
 }

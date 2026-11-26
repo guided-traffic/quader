@@ -125,10 +125,10 @@ func TestR_BAS_082_TheMarkingPerPackage(t *testing.T) {
 			t.Fatalf("no shape on the repository: %+v %v", mk, rec.Header())
 		}
 	})
-	t.Run("a probe carries no package", func(t *testing.T) {
+	t.Run("a refused write carries no package", func(t *testing.T) {
 		r := newRig(t)
 		r.notes = decide("left-pad")
-		rec := r.do("POST", "/api/mk/web/mk-local/audit/left-pad", hRecognize, "probe")
+		rec := r.do("PUT", "/api/mk/web/mk-local/f/x.bin", hRecognize, "forward", hCred, "token")
 		if rec.Header().Get(iface.HeaderPackage) != "" || len(r.shapes.pkgAsked) != 0 {
 			t.Fatalf("%v", rec.Header())
 		}

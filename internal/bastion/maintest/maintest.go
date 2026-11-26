@@ -283,8 +283,8 @@ func Configuration(handover bool) iface.Configuration {
 
 // Formats is the format table a main installation of today sends, filled from the formats' catalog.Facts in the order of
 // the IDs (R-BAS-057):
-// OCI with the registry root, its four replay headers and the bound prefix /v2/; the ClamAV definitions with 503 for a
-// rate limit; NuGet and Ansible Galaxy with the longest wait of 30 s their clients are told (R-BAS-058); npm with its audit
+// OCI with the registry root, its four replay headers and the bound prefix /v2/; the ClamAV definitions and Ansible Galaxy with
+// 503 for a rate limit; NuGet and Ansible Galaxy with the longest wait of 30 s their clients are told (R-BAS-058); npm with its audit
 // notice as a replay header (R-BAS-099 row 5); Debian with the defaults. The error shapes and the read routes that take a body
 // are the formats' declarations (R-BAS-095): npm's npm with its three audit routes, NuGet's text, OCI's distribution with the
 // token service's POST, Ansible Galaxy's galaxy, problem for the rest. Generic has no routes and no entry.
@@ -303,6 +303,7 @@ func Formats() iface.HandshakeFormats {
 	clamav.RateLimitedStatus = http.StatusServiceUnavailable
 	ansible, nuget := plain("ansible"), plain("nuget")
 	ansible.RetryAfterMaxSeconds, nuget.RetryAfterMaxSeconds = 30, 30
+	ansible.RateLimitedStatus = http.StatusServiceUnavailable
 	ansible.ErrorShape, nuget.ErrorShape = iface.ErrorShapeGalaxy, iface.ErrorShapeText
 	npm := plain("npm")
 	npm.ReplayHeaders, npm.ErrorShape = []string{"Npm-Notice"}, iface.ErrorShapeNPM

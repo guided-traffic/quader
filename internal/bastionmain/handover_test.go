@@ -94,14 +94,11 @@ func TestR_BAS_073_NoteHandoverOnlyOnAMarkedForwardThatOffered(t *testing.T) {
 	if _, ok := MarksHandover(ctx); !ok || !NoteHandover(ctx, "v") || a.Handover() != "v" {
 		t.Fatal("a marked forward that offered records no handover")
 	}
-	probe := offered
-	probe.Probe = true
 	notOffered := offered
 	notOffered.Offered = false
 	for name, ctx := range map[string]context.Context{
 		"an ordinary request":                  func() context.Context { c, _ := marked(nil); return c }(),
 		"a forward that did not offer":         func() context.Context { c, _ := marked(&notOffered); return c }(),
-		"a probe":                              func() context.Context { c, _ := marked(&probe); return c }(),
 		"a forward the marking does not mark":  WithRecognition(context.Background(), offered),
 		"a request without a context's record": context.Background(),
 	} {

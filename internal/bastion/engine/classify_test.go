@@ -273,7 +273,7 @@ func TestR_BAS_019_AMalformedTokenAnswers401WithoutARequest(t *testing.T) {
 		if w.Code != http.StatusUnauthorized || problemCode(w) != "invalid_token" || w.Header().Get("WWW-Authenticate") != `Basic realm="quader"` {
 			t.Errorf("%s: %d %s %v", name, w.Code, w.Body, w.Header())
 		}
-		if w.Header().Get("Cache-Control") != "no-store" || !strings.HasPrefix(w.Header().Get("Content-Type"), "application/problem+json") {
+		if w.Header().Get("Cache-Control") != "no-store" || w.Header().Get("Content-Type") != "application/json" {
 			t.Errorf("%s: %v", name, w.Header())
 		}
 	}

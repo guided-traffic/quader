@@ -27,14 +27,12 @@ import (
 type noBody struct{ t *testing.T }
 
 func (b noBody) Read([]byte) (int, error) {
-	b.t.Error("the body of a probe was read")
+	b.t.Error("the body of a refused write was read")
 	return 0, io.EOF
 }
 
 // markedChain serves the token service and the catalog behind the Mark stage and a stand-in for the recognition: a request
-// with X-Test-Probe is a probe of the Bastion edge-1 (the recognition reads a probe from the form of the forward), one with
-// X-Test-Forward a forward, any other an ordinary
-// request. The chain's authentication sees every request as anonymous, as the stage sees /v2/_token (the token service
+// with X-Test-Forward is a forward of the Bastion edge-1, any other an ordinary request. The chain's authentication sees every request as anonymous, as the stage sees /v2/_token (the token service
 // presents the credential itself).
 func markedChain(t *testing.T, tok *Token, cat *Catalog) http.Handler {
 	t.Helper()
@@ -49,10 +47,7 @@ func markedChain(t *testing.T, tok *Token, cat *Catalog) http.Handler {
 			next = marker.Stage()(next)
 			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				rec := bastionmain.Recognition{Bastion: "edge-1", Interface: iface.InterfaceVersion}
-				switch {
-				case r.Header.Get("X-Test-Probe") != "":
-					rec.Probe = r.Method != http.MethodGet && r.Method != http.MethodHead
-				case r.Header.Get("X-Test-Forward") == "":
+				if r.Header.Get("X-Test-Forward") == "" {
 					next.ServeHTTP(w, r)
 					return
 				}
@@ -81,8 +76,8 @@ func catalogOf(t *testing.T) *Catalog {
 
 // TestR_BAS_051_TheTokenServiceAndTheCatalogTellTheMarkingTheirKind: below /v2/ the token service and the catalog tell the
 // marking stage their route before they authenticate or read a body. The token service's POST is a read route that takes a
-// body, which a Bastion forwards with its form (the format table's readWithBody, R-BAS-095); a probe of it is refused 403
-// read_only without its form being read (H-2293); the probe of a method neither route answers gets the route's own 405. A token answer is pass, never kept, and names the
+// body, which a Bastion forwards with its form (the format table's readWithBody, R-BAS-095); a forward of a method neither route
+// answers gets the route's own 405 without its body being read. A token answer is pass, never kept, and names the
 // caller the service accepted (Q-BAS-187); a refused credential is invalid; the catalog is pass.
 func TestR_BAS_051_TheTokenServiceAndTheCatalogTellTheMarkingTheirKind(t *testing.T) {
 	f := newFixture(t, false)
@@ -106,15 +101,6 @@ func TestR_BAS_051_TheTokenServiceAndTheCatalogTellTheMarkingTheirKind(t *testin
 		return m
 	}
 
-	t.Run("the probe of a token request is refused without reading its form", func(t *testing.T) {
-		w := do(http.MethodPost, "/v2/_token", noBody{t}, "X-Test-Probe", "1", "Content-Type", "application/x-www-form-urlencoded")
-		if w.Code != http.StatusForbidden || !strings.Contains(w.Body.String(), iface.CodeReadOnly) || marking(t, w).Class != iface.ClassPass {
-			t.Fatalf("%d %v %s", w.Code, w.Header(), w.Body)
-		}
-		if f.count("issued") > 0 {
-			t.Fatal("the probe issued a token")
-		}
-	})
 	t.Run("the real request with the form is served and names the caller", func(t *testing.T) {
 		form := url.Values{"grant_type": {"password"}, "username": {"ci"}, "password": {f.pat}, "scope": {"repository:web/docker-local/app:pull"}}
 		w := do(http.MethodPost, "/v2/_token", strings.NewReader(form.Encode()), "X-Test-Forward", "1", "Content-Type", "application/x-www-form-urlencoded")
@@ -134,14 +120,14 @@ func TestR_BAS_051_TheTokenServiceAndTheCatalogTellTheMarkingTheirKind(t *testin
 			t.Fatalf("%d %v", w.Code, w.Header())
 		}
 	})
-	t.Run("a probe of another method gets the route's 405", func(t *testing.T) {
+	t.Run("a forward of another method gets the route's 405", func(t *testing.T) {
 		for _, target := range []string{"/v2/_token", "/v2/_catalog"} {
-			w := do(http.MethodPut, target, noBody{t}, "X-Test-Probe", "1")
+			w := do(http.MethodPut, target, noBody{t}, "X-Test-Forward", "1")
 			if w.Code != http.StatusMethodNotAllowed {
 				t.Errorf("%s: %d %v", target, w.Code, w.Header())
 			}
 		}
-		if w := do(http.MethodPost, "/v2/_catalog", noBody{t}, "X-Test-Probe", "1"); w.Code != http.StatusMethodNotAllowed {
+		if w := do(http.MethodPost, "/v2/_catalog", noBody{t}, "X-Test-Forward", "1"); w.Code != http.StatusMethodNotAllowed {
 			t.Errorf("POST /v2/_catalog: %d", w.Code)
 		}
 	})

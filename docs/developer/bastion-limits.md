@@ -3,8 +3,8 @@
 Status: specified on 2026-11-26 (W-34; the owner's answers to the working paper of W-34 and W-35, stored at 11:51). Packages E1, E2, E3
 and E5 are **built** (the cache bounded at every commit and the bytes counted, R-BAS-089, R-BAS-090; the format's cap of the wait and the
 figures that let one normal command through, R-BAS-091, R-BAS-092, interface version 7), and so are E16, E14a (the anonymous token and
-the anonymous documents of R-BAS-094), E13 (the addresses a Bastion connects from) and E7 (the shared wire, interface version 8, with
-W-35's P5); E4 is measured ([bastion.md](bastion.md#what-a-clients-command-costs-through-a-bastion-measured-2026-11-26)); E6 is this
+the anonymous documents of R-BAS-094), E13 (the addresses a Bastion connects from), E7 (the shared wire, interface version 8, with
+W-35's P5) and E15 (writes refused at the Bastion in the five error shapes, R-BAS-095); E4 is measured ([bastion.md](bastion.md#what-a-clients-command-costs-through-a-bastion-measured-2026-11-26)); E6 is this
 page and the specification. Every other package is **not built**. The requirements are [bastion.md](../spec/bastion.md#limits-configuration-and-throughput-from-the-main-installation)
 R-BAS-093 to R-BAS-099 and [its wire](../spec/bastion.md#the-interface-version-8-the-shared-wire),
 [usage-and-limits.md](../spec/usage-and-limits.md#a-bastion-as-a-place) R-LIM-043 to R-LIM-046 and
@@ -30,8 +30,9 @@ must follow, the identifiers it takes, and what its tests cost.
 - **One raise of the interface version, 7 to 8, by E7 together with W-35's P5** (Q-BAS-322). No other package changes the wire; a member a
   package needs and the wire lacks is a change of E7's work and of the specification first.
 - **Today's code** is at interface version 8 (E7): the handshake carries `configuration`, until E8 an interim one; the Bastion's figures are chart values
-  (`config.bastion.limits`, `failed_auth`, `blocking`, `main.max_concurrent`, `anonymous_share`, `queue_timeout`); a write is probed at the
-  main installation (`internal/bastion/engine/probe.go`, `BastionRouteAuth` in `internal/api/v1/bastion_services.go`); the main
+  (`config.bastion.limits`, `failed_auth`, `blocking`, `main.max_concurrent`, `anonymous_share`, `queue_timeout`); a write is refused at
+  the Bastion itself since E15 ([write.go](../../internal/bastion/engine/write.go)), every answer of its own in the format's error shape
+  ([shape.go](../../internal/bastion/engine/shape.go)); the main
   installation's egress list was `bastions.trusted_proxies` (`internal/config/bastions.go`) until E13 made it each registration's `egress`;
   the limits know three places
   (`limits.PlaceInstance`, `PlaceProject`, `PlaceRepository` in `internal/limits/model.go`).
@@ -53,7 +54,7 @@ At most four builders at once (rule 10 of the project plan). The waves are the o
 | 3 | E8 | the main installation's side | E7, W32, W36, E4 | not built |
 | 3 | E9a | the configuration at the Bastion, flood protection, the anonymous ceiling | E7, E4 | not built |
 | 3 | E10 | the throughput | E7 | not built |
-| 3 | E15 | writes refused at the Bastion | E7 | not built |
+| 3 | E15 | writes refused at the Bastion | E7 | built |
 | 4 | E9b | budgets on what the Bastion serves | E9a, E8 | not built |
 | 4 | E11 | the cache protects what was served twice | E1 (may take any free place from wave 2 on) | not built |
 | 4 | E17 | the registry token's payload version 2 | E7 | not built |
@@ -218,6 +219,22 @@ At most four builders at once (rule 10 of the project plan). The waves are the o
 - **Follows** E7.
 - **Tests**: unit under 1 s; kit about 20 ms per format; integration `write_test` adjusted, so the area's time falls.
 - **Identifiers**: Q-BAS-336, Q-BAS-337, H-2293.
+- *Built on 2026-11-26.* As planned: `write` in [write.go](../../internal/bastion/engine/write.go) refuses a write `403 read_only` before
+  its body or its credential is read and asks the main installation nothing (the anonymous `POST /v2/_token` is answered before it);
+  `writeShaped` in [shape.go](../../internal/bastion/engine/shape.go) renders every answer of the engine's own in the declared shape;
+  `errs.ReadShape` ([shape.go](../../internal/errs/shape.go)) reads each shape as its clients do, for the engine's tests and the kit; kit
+  check 19's duty that `WriteError` renders the declared shape on the backstop's refusal, with the `testformat` defect
+  `DeclaresAnotherErrorShape`; `probe.go`, `mainclient.Forward.Probe`, the kind and the class `probe`, `bastionmain.IsProbe`,
+  `Recognition.Probe` and the probes' admission in `BastionRouteAuth` are gone. Beyond the plan: the run of ansible-galaxy 2.17.14
+  against the `galaxy` shape still exited 250 on a `429` of the version list, because of the client's response cache, not the body
+  ([bastion.md](bastion.md#the-galaxy-shape-against-ansible-galaxy-217-measured-2026-11-26)); Ansible Galaxy therefore answers a rate
+  limit `503` (`RateLimitedStatus`, its `WriteError`), with which it exits 1 and prints the detail and the code, and kit check 16 takes
+  503 as a rate limit's status; npm's shape carries the code too. Tests: the engine's `TestR_BAS_095_AWriteIsRefusedAtTheBastionInTheFormatsShape`
+  (0.03 s, one body of 1 MiB that nobody reads), `TestR_BAS_095_EachShapeRenders` (under 0.01 s) and
+  `TestR_BAS_095_ARouteThatTakesABodyIsForwardedWithTheCallersCredential`; the kit's duty under a millisecond per format; the area
+  `bastion`'s `TestR_BAS_095_WritesAreRefusedAtTheBastion` (one Bastion instead of two, no loop of 1,000 writes). Decisions Q-BAS-450 to
+  Q-BAS-453 of [spec/bastion.md](../spec/bastion.md#q-bas-450--every-answer-of-the-bastions-own-goes-through-one-renderer-by-the-declared-shape-and-each-shape-carries-the-code);
+  gaps H-2358 and H-2359 of [security/bastion.md](../security/bastion.md#h-2358--a-502-on-a-document-ansible-galaxy-caches-ends-the-client-with-exit-250).
 
 ### E16 · Nothing of the main installation in a Bastion's answers
 
@@ -293,4 +310,5 @@ object store.
 
 - Whether a route of the main installation answers a forward with an absolute `Location` on its own host (R-BAS-099 row 6).
 - Every attack figure on the specification's pages is derived from the defaults, not run.
-- How docker, containerd, dotnet, apt and ansible-galaxy react to each of the four error shapes and to `503 busy`: E4 records it.
+- How docker, containerd, dotnet, apt and ansible-galaxy react to each of the four error shapes and to `503 busy`: E4 records it;
+  ansible-galaxy 2.17 against the fifth, `galaxy`, E15 (measured).

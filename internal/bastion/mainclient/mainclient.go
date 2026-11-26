@@ -41,7 +41,6 @@ const (
 	KindForward     Kind = "forward"
 	KindConditional Kind = "conditional"
 	KindCheck       Kind = "check"
-	KindProbe       Kind = "probe"
 	KindFeed        Kind = "feed"
 	KindHandshake   Kind = "handshake"
 	KindDownloads   Kind = "downloads"
@@ -158,16 +157,13 @@ type Forward struct {
 	Request *http.Request
 	// Class selects the budget class.
 	Class Class
-	// Kind is KindForward, KindConditional or KindProbe.
+	// Kind is KindForward or KindConditional.
 	Kind Kind
 	// ClientAddress is the caller's address as the Bastion determined it (R-BAS-019).
 	ClientAddress string
 	// IfNoneMatch is the validator of a conditional request (R-BAS-022, R-BAS-023): the Bastion's own
 	// If-None-Match, never the caller's.
 	IfNoneMatch string
-	// Probe makes the request the bodiless probe of R-BAS-014: the write's method, Content-Length 0 and no
-	// credential of the caller, which is the form the main installation reads as a probe.
-	Probe bool
 	// Body is the body of a forwarded read route that takes one, at most bastion.main.max_forwarded_body.
 	Body io.Reader
 	// Offer is the Bastion's offer to take a handover (R-BAS-072); a MaxSize below 1 offers nothing. It is set after the
@@ -213,7 +209,7 @@ type Client interface {
 	Feed(ctx context.Context, after iface.Cursor, limit int) (iface.FeedAnswer, error)
 	// Downloads calls POST /api/v1/bastion/downloads (R-BAS-016); a 2xx is nil.
 	Downloads(ctx context.Context, req iface.DownloadsRequest) error
-	// Do forwards a caller's request (R-BAS-021) or sends a probe (R-BAS-014).
+	// Do forwards a caller's request (R-BAS-021).
 	Do(ctx context.Context, f Forward) (*Response, error)
 }
 
@@ -222,7 +218,7 @@ type Options struct {
 	// URL is bastion.main.url; https only (R-BAS-044).
 	URL string
 	// PackagesURL is bastion.main.packages_url: the Service of the main installation's role packages, to which the
-	// forwards and the probes go; https only. Empty means URL (R-BAS-044, Q-HA-74).
+	// forwards go; https only. Empty means URL (R-BAS-044, Q-HA-74).
 	PackagesURL string
 	// BaseURL is server.base_url: the scheme, host and port the client sends as the forwarded host
 	// (R-BAS-017).

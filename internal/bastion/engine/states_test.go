@@ -6,12 +6,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -24,6 +22,7 @@ import (
 	"github.com/guided-traffic/quader/internal/bastion/iface"
 	"github.com/guided-traffic/quader/internal/bastion/mainclient"
 	"github.com/guided-traffic/quader/internal/bastion/metrics"
+	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/observability"
 )
 
@@ -102,15 +101,6 @@ func TestR_BAS_027_TheGraceExtendsOnlyWhileTheMainInstallationIsUnreachable(t *t
 	}
 }
 
-func TestR_BAS_027_AWriteWhileUnreachableAnswers503(t *testing.T) {
-	s := newSiteHarness(t, options{})
-	s.setUnreachable(true)
-	w := s.do(http.MethodPut, "/api/npm/web/npm-all/pkg", strings.NewReader("x"), "Authorization", bearer(s.full))
-	if w.Code != 503 || problemCode(w) != "unavailable" {
-		t.Fatalf("%d %s", w.Code, w.Body)
-	}
-}
-
 // ---- R-BAS-028 --------------------------------------------------------------------------------------------
 
 func TestR_BAS_028_AMismatchOrARefusedTokenOnARequestMakesTheReplicaUnreachable(t *testing.T) {
@@ -185,7 +175,10 @@ func TestR_BAS_006_R_BAS_021_ARefusalOfTheTokenOnAForwardDoesNotMakeTheReplicaUn
 
 // ---- R-BAS-029 --------------------------------------------------------------------------------------------
 
-func TestR_BAS_029_EveryOwnAnswerIsProblemDetailsWithNoStoreAndTheRightFields(t *testing.T) {
+// TestR_BAS_029_EveryOwnAnswerIsInTheFormatsShapeWithNoStoreAndTheRightFields: every row of R-BAS-029's table on npm's family,
+// whose declared shape is npm's (R-BAS-095): the status, the code, a detail, no-store, the challenge of a 401 and the wait of a
+// 429 or 503.
+func TestR_BAS_029_EveryOwnAnswerIsInTheFormatsShapeWithNoStoreAndTheRightFields(t *testing.T) {
 	type row struct {
 		name   string
 		status int
@@ -222,11 +215,14 @@ func TestR_BAS_029_EveryOwnAnswerIsProblemDetailsWithNoStoreAndTheRightFields(t 
 			return s.get(tgz, "Authorization", bearer(s.full))
 		}, auth: true},
 		{name: "not_found", status: 404, code: "not_found", call: get("/ui/")},
+		{name: "read_only", status: 403, code: "read_only", call: func(s *siteHarness) *httptest.ResponseRecorder {
+			return s.do(http.MethodPut, tgz, strings.NewReader("x"))
+		}},
 		{name: "method_not_allowed", status: 405, code: "method_not_allowed", call: func(s *siteHarness) *httptest.ResponseRecorder {
 			return s.do(http.MethodOptions, tgz, nil)
 		}},
 		{name: "payload_too_large", status: 413, code: "payload_too_large", call: func(s *siteHarness) *httptest.ResponseRecorder {
-			r := httptest.NewRequest(http.MethodPut, "https://packages.example.com"+tgz, strings.NewReader("x"))
+			r := httptest.NewRequest(http.MethodPost, "https://packages.example.com/api/npm/web/npm-all/-/npm/v1/security/advisories/bulk", strings.NewReader("x"))
 			r.ContentLength = 100 << 20
 			r.RemoteAddr = "203.0.113.7:1"
 			w := httptest.NewRecorder()
@@ -275,12 +271,12 @@ func TestR_BAS_029_EveryOwnAnswerIsProblemDetailsWithNoStoreAndTheRightFields(t 
 			if w.Header().Get("Cache-Control") != "no-store" {
 				t.Errorf("Cache-Control %q", w.Header().Get("Cache-Control"))
 			}
-			if !strings.HasPrefix(w.Header().Get("Content-Type"), "application/problem+json") {
-				t.Errorf("Content-Type %q", w.Header().Get("Content-Type"))
+			shape := iface.ErrorShapeNPM
+			if r.name == "not_found" {
+				shape = iface.ErrorShapeProblem // a path of no format's family
 			}
-			var p map[string]any
-			if err := json.Unmarshal(w.Body.Bytes(), &p); err != nil || p["status"] != float64(r.status) || p["code"] != r.code || p["title"] == "" || p["type"] == "" || p["instance"] == nil {
-				t.Errorf("not RFC 9457 problem details with the members of R-ARCH-023: %s", w.Body)
+			if p, err := errs.ReadShape(shape, w.Header().Get("Content-Type"), w.Body.Bytes()); err != nil || p.Code != r.code || p.Detail == "" {
+				t.Errorf("not the shape %s with the code %s: %v %s", shape, r.code, err, w.Body)
 			}
 			if r.auth && w.Header().Get("WWW-Authenticate") != `Basic realm="quader"` {
 				t.Errorf("WWW-Authenticate %q", w.Header().Get("WWW-Authenticate"))
@@ -292,228 +288,6 @@ func TestR_BAS_029_EveryOwnAnswerIsProblemDetailsWithNoStoreAndTheRightFields(t 
 				t.Errorf("the RateLimit fields are missing: %v", w.Header())
 			}
 		})
-	}
-}
-
-// ---- R-BAS-014 --------------------------------------------------------------------------------------------
-
-type countingReader struct {
-	r io.Reader
-	n int
-}
-
-func (c *countingReader) Read(p []byte) (int, error) {
-	n, err := c.r.Read(p)
-	c.n += n
-	return n, err
-}
-
-func TestR_BAS_014_AWriteIsProbedWithoutBodyAndCredentialAndTheRefusalIsReplayed(t *testing.T) {
-	s := newSiteHarness(t, options{})
-	body := &countingReader{r: strings.NewReader(strings.Repeat("u", 1<<20))}
-	w := s.do(http.MethodPut, "/api/npm/web/npm-all/acme-sdk", body, "Authorization", bearer(s.full), "Content-Type", "application/json", "Cookie", "a=b")
-	if w.Code != 403 || !strings.Contains(w.Body.String(), "read_only") {
-		t.Fatalf("%d %s", w.Code, w.Body)
-	}
-	if body.n != 0 {
-		t.Fatalf("%d bytes of the upload were read", body.n)
-	}
-	reqs := s.main.requests()
-	if len(reqs) != 1 {
-		t.Fatalf("%d requests", len(reqs))
-	}
-	r := reqs[0]
-	if r.Kind != mainclient.KindProbe || !r.Probe || r.Method != http.MethodPut || r.Target != "/api/npm/web/npm-all/acme-sdk" || r.Class != mainclient.Authenticated {
-		t.Fatalf("%+v", r)
-	}
-	if r.Header.Get("Authorization") != "" || r.Header.Get("Cookie") != "" || len(r.Body) != 0 {
-		t.Fatalf("the probe carries a credential, a cookie or a body: %v", r.Header)
-	}
-	for k := range w.Header() {
-		if strings.HasPrefix(k, "Quader-Bastion-") {
-			t.Errorf("%s reached the caller", k)
-		}
-	}
-	if counterValue(t, s.harness, "refused", metrics.RefusedReadOnly) != 1 {
-		t.Fatal("the refusal is not counted")
-	}
-}
-
-func TestR_BAS_014_ThousandWritesToOnePathCauseOneProbe(t *testing.T) {
-	m := &fakeMain{delay: 20 * time.Millisecond}
-	s := newSiteHarness(t, options{main: m})
-	var wg sync.WaitGroup
-	for i := 0; i < 50; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			if w := s.do(http.MethodPut, "/api/npm/web/npm-all/acme-sdk", strings.NewReader("x")); w.Code != 403 {
-				t.Errorf("%d %s", w.Code, w.Body)
-			}
-		}()
-	}
-	wg.Wait()
-	for i := 0; i < 950; i++ {
-		if w := s.do(http.MethodPut, "/api/npm/web/npm-all/acme-sdk", strings.NewReader("x")); w.Code != 403 || !strings.Contains(w.Body.String(), "read_only") {
-			t.Fatalf("%d %s", w.Code, w.Body)
-		}
-	}
-	if n := m.count(); n != 1 {
-		// Name every request the main installation saw, so a failure says which kind came twice (F-102).
-		var seen []string
-		for _, r := range m.requests() {
-			seen = append(seen, fmt.Sprintf("%v %s %s probe=%v", r.Kind, r.Method, r.Target, r.Probe))
-		}
-		t.Fatalf("%d probes for 1000 writes, want 1: %s", n, strings.Join(seen, "; "))
-	}
-	// another method and another path are probes of their own
-	s.do(http.MethodDelete, "/api/npm/web/npm-all/acme-sdk", nil)
-	s.do(http.MethodPut, "/api/npm/web/npm-all/other", nil)
-	if m.count() != 3 {
-		t.Fatalf("%d probes", m.count())
-	}
-	// the answer is kept for metadata_revalidate_after
-	s.clock.advance(s.cfg.Bastion.Cache.MetadataRevalidateAfter + time.Second)
-	s.do(http.MethodPut, "/api/npm/web/npm-all/acme-sdk", nil)
-	if m.count() != 4 {
-		t.Fatalf("%d probes after the period", m.count())
-	}
-}
-
-// TestR_BAS_014_AWriteThatMissedTheKeptAnswerBeforeTheProbeEndedDoesNotProbeAgain holds one write between its
-// look into the kept answers and its flight until another write of the same key has been probed and kept: the
-// held write must replay the kept answer and not send a second probe.
-func TestR_BAS_014_AWriteThatMissedTheKeptAnswerBeforeTheProbeEndedDoesNotProbeAgain(t *testing.T) {
-	g := newGuard()
-	entered, release := make(chan struct{}), make(chan struct{})
-	g.missHook = func(n int) {
-		if n == 1 {
-			close(entered)
-			<-release
-		}
-	}
-	m := &fakeMain{}
-	s := newSiteHarness(t, options{main: m, guard: g})
-	held := make(chan *httptest.ResponseRecorder, 1)
-	go func() { held <- s.do(http.MethodPut, "/api/npm/web/npm-all/acme-sdk", strings.NewReader("x")) }()
-	<-entered
-	if w := s.do(http.MethodPut, "/api/npm/web/npm-all/acme-sdk", strings.NewReader("x")); w.Code != 403 {
-		t.Fatalf("%d", w.Code)
-	}
-	close(release)
-	if w := <-held; w.Code != 403 || !strings.Contains(w.Body.String(), "read_only") {
-		t.Fatalf("%d %s", w.Code, w.Body)
-	}
-	if n := m.count(); n != 1 {
-		t.Fatalf("%d probes for two writes of one key, want 1", n)
-	}
-	// the held write is a replay: counted as a hit served from the cache, and as a refusal
-	if counterValue(t, s.harness, "requests", metrics.ClassPass, metrics.ResultHit) != 1 || counterValue(t, s.harness, "requests", metrics.ClassPass, metrics.ResultMiss) != 1 {
-		t.Fatalf("requests: hit %v miss %v, want 1 and 1", counterValue(t, s.harness, "requests", metrics.ClassPass, metrics.ResultHit), counterValue(t, s.harness, "requests", metrics.ClassPass, metrics.ResultMiss))
-	}
-	if cache, main := counterValue(t, s.harness, "bytes", metrics.SourceCache), counterValue(t, s.harness, "bytes", metrics.SourceMain); cache == 0 || cache != main {
-		t.Fatalf("bytes from the cache %v, from main %v: the replay must be served from the cache with the probe's body", cache, main)
-	}
-	if counterValue(t, s.harness, "refused", metrics.RefusedReadOnly) != 2 {
-		t.Fatalf("refused %v, want 2", counterValue(t, s.harness, "refused", metrics.RefusedReadOnly))
-	}
-}
-
-func TestR_BAS_014_ANuGetPushWithoutACredentialIsStillRefusedByTheProbe(t *testing.T) {
-	s := newSiteHarness(t, options{})
-	s.setAnonymous(false)
-	w := s.do(http.MethodPut, "/api/nuget/web/nuget-all/v2/package", strings.NewReader("nupkg"), "X-NuGet-ApiKey", "key")
-	if w.Code != 403 || !strings.Contains(w.Body.String(), "read_only") {
-		t.Fatalf("%d %s", w.Code, w.Body)
-	}
-	if r := s.main.requests()[0]; r.Header.Get("X-Nuget-Apikey") != "" {
-		t.Fatal("the API key reached the main installation")
-	}
-}
-
-// TestR_BAS_095_ARouteThatTakesABodyIsForwardedWithTheCallersCredential: a request that matches a read route with a body of
-// the format table (npm's bulk audit) is forwarded at once with its body and the caller's credential, without a probe; its
-// answer is passed on and never kept.
-func TestR_BAS_095_ARouteThatTakesABodyIsForwardedWithTheCallersCredential(t *testing.T) {
-	s := newSiteHarness(t, options{})
-	s.site.probe = func(mainclient.Forward) (*mainclient.Response, error) {
-		t.Error("a read route with a body was probed")
-		return nil, mainclient.ErrUnreachable
-	}
-	inner := s.main.doFn
-	s.main.doFn = func(f mainclient.Forward) (*mainclient.Response, error) {
-		if !f.Probe && f.Request.Method == http.MethodPost {
-			return resp(200, marking(iface.ClassPass, iface.ReadFull, "web/npm-all", tokenSubject("full", nil)), http.Header{"Content-Type": {"application/json"}}, `{"audit":"ok"}`), nil
-		}
-		return inner(f)
-	}
-	w := s.do(http.MethodPost, "/api/npm/web/npm-all/-/npm/v1/security/advisories/bulk", strings.NewReader(`{"lodash":["1.0.0"]}`), "Authorization", bearer(s.full))
-	if w.Code != 200 || w.Body.String() != `{"audit":"ok"}` {
-		t.Fatalf("%d %s", w.Code, w.Body)
-	}
-	reqs := s.main.requests()
-	if len(reqs) != 1 || reqs[0].Probe {
-		t.Fatalf("%+v", reqs)
-	}
-	if reqs[0].Header.Get("Authorization") != bearer(s.full) || string(reqs[0].Body) != `{"lodash":["1.0.0"]}` || reqs[0].Method != http.MethodPost {
-		t.Fatalf("the request: %+v", reqs[0])
-	}
-	if s.cache.entryCount() != 0 {
-		t.Fatal("the answer to a body request was kept")
-	}
-	// a chunked body is held up to the limit, and 413 above it
-	s.cfg.Bastion.Main.MaxForwardedBody = 10
-	r := httptest.NewRequest(http.MethodPost, "https://packages.example.com/api/npm/web/npm-all/-/npm/v1/security/advisories/bulk", io.NopCloser(strings.NewReader(strings.Repeat("z", 100))))
-	r.ContentLength = -1
-	r.RemoteAddr = "203.0.113.7:1"
-	r.Header.Set("Authorization", bearer(s.full))
-	rec := httptest.NewRecorder()
-	s.e.ServeHTTP(rec, r)
-	if rec.Code != 413 || problemCode(rec) != "payload_too_large" {
-		t.Fatalf("%d %s", rec.Code, rec.Body)
-	}
-}
-
-func TestR_BAS_014_ABodyAboveTheLimitIsRefusedBeforeTheProbe(t *testing.T) {
-	s := newSiteHarness(t, options{})
-	r := httptest.NewRequest(http.MethodPut, "https://packages.example.com/api/npm/web/npm-all/x", strings.NewReader("x"))
-	r.ContentLength = int64(s.cfg.Bastion.Main.MaxForwardedBody) + 1
-	r.RemoteAddr = "203.0.113.7:1"
-	w := httptest.NewRecorder()
-	s.e.ServeHTTP(w, r)
-	if w.Code != 413 || s.main.count() != 0 {
-		t.Fatalf("%d, %d requests", w.Code, s.main.count())
-	}
-}
-
-func TestR_BAS_014_AProbeAnswerThatIsNotARefusalIsReplayedAndNotKept(t *testing.T) {
-	s := newSiteHarness(t, options{})
-	s.site.probe = func(mainclient.Forward) (*mainclient.Response, error) {
-		return resp(404, marking(iface.ClassPass, "", "", iface.Subject{Kind: iface.SubjectAnonymous}), nil, `{"code":"not_found"}`), nil
-	}
-	for i := 0; i < 3; i++ {
-		if w := s.do(http.MethodPut, "/api/npm/web/npm-all/x", nil); w.Code != 404 {
-			t.Fatalf("%d", w.Code)
-		}
-	}
-	if s.main.count() != 1 {
-		t.Fatalf("a 404 probe answer is kept: %d probes", s.main.count())
-	}
-	s.site.probe = func(mainclient.Forward) (*mainclient.Response, error) { return respUnmarked(502, nil, "gw"), nil }
-	if w := s.do(http.MethodPost, "/api/npm/web/npm-all/y", nil); w.Code != 502 || problemCode(w) != "bad_gateway" {
-		t.Fatalf("%d %s", w.Code, w.Body)
-	}
-}
-
-func TestR_BAS_014_TheMissLimitAppliesToProbes(t *testing.T) {
-	g := newGuard()
-	g.missLimit = 1
-	s := newSiteHarness(t, options{guard: g})
-	if w := s.do(http.MethodPut, "/api/npm/web/npm-all/a", nil); w.Code != 403 {
-		t.Fatalf("%d", w.Code)
-	}
-	if w := s.do(http.MethodPut, "/api/npm/web/npm-all/b", nil); w.Code != 429 || problemCode(w) != "rate_limited" {
-		t.Fatalf("%d %s", w.Code, w.Body)
 	}
 }
 
@@ -713,36 +487,5 @@ func TestR_BAS_019_AnAnonymousRequestBeforeTheFirstHandshakeIs503(t *testing.T) 
 	s.setAnonymous(false)
 	if w := s.get(tgz); w.Code != http.StatusUnauthorized || problemCode(w) != "credentials_required" {
 		t.Fatalf("anonymous access off after the handshake: %d %s", w.Code, w.Body)
-	}
-}
-
-func TestR_BAS_040_AFreshAndAReplayedProbeAnswerRaiseTheSameReadOnlyCounter(t *testing.T) {
-	for _, tc := range []struct {
-		name   string
-		status int
-		want   float64
-	}{
-		{name: "403 is a refusal of a write", status: 403, want: 1},
-		{name: "404 is the main installation's own answer", status: 404, want: 0},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			s := newSiteHarness(t, options{})
-			s.site.probe = func(mainclient.Forward) (*mainclient.Response, error) {
-				return resp(tc.status, marking(iface.ClassPass, "", "", iface.Subject{Kind: iface.SubjectAnonymous}), nil, `{"code":"x"}`), nil
-			}
-			const path = "/api/npm/web/npm-all/x"
-			// The fresh answer, then the replay of the kept answer: each raises the counter by tc.want.
-			for i, calls := range []float64{1, 2} {
-				if w := s.do(http.MethodPut, path, nil); w.Code != tc.status {
-					t.Fatalf("call %d: %d", i, w.Code)
-				}
-				if got := counterValue(t, s.harness, "refused", metrics.RefusedReadOnly); got != tc.want*calls {
-					t.Fatalf("after call %d (%s): refused read_only %v, want %v", i, map[int]string{0: "fresh", 1: "replayed"}[i], got, tc.want*calls)
-				}
-			}
-			if s.main.count() != 1 {
-				t.Fatalf("%d probes, want 1: the second answer must be a replay", s.main.count())
-			}
-		})
 	}
 }

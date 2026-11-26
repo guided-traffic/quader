@@ -18,7 +18,8 @@ func admissionRefusal() error {
 }
 
 // admission is check 16 (usage-and-limits.md R-LIM-036): every content case of a Download route that the fixture serves (a GET
-// with a status below 400) runs again against a host whose admission refuses. The answer must be 429 with Retry-After, and
+// with a status below 400) runs again against a host whose admission refuses. The answer must be a rate limit's status (429, or 503
+// for a format whose clients take a 429 badly; check 19 holds it to the format's declaration) with Retry-After, and
 // no item may have been served: a format that writes a download's body itself, instead of answering it through Host.Serve or
 // the remote engine, escapes the admission and the pacing of the download limits, and fails here.
 func (r *run) admission() {
@@ -59,10 +60,10 @@ func (r *run) admission() {
 		switch {
 		case admitted == 0:
 			r.failf("content case %q: route %s answered a download without the admission of Host.Serve (status %d)", c.Name, rq.Route.Name, resp.Code)
-		case resp.Code != http.StatusTooManyRequests:
-			r.failf("content case %q: route %s answered %d to a refused admission, want 429", c.Name, rq.Route.Name, resp.Code)
+		case resp.Code != http.StatusTooManyRequests && resp.Code != http.StatusServiceUnavailable:
+			r.failf("content case %q: route %s answered %d to a refused admission, want 429, or 503 where the format declares it for a rate limit", c.Name, rq.Route.Name, resp.Code)
 		case resp.Header().Get("Retry-After") == "":
-			r.failf("content case %q: route %s answered 429 without Retry-After", c.Name, rq.Route.Name)
+			r.failf("content case %q: route %s answered %d without Retry-After", c.Name, rq.Route.Name, resp.Code)
 		}
 		h.mu.Lock()
 		served := h.served

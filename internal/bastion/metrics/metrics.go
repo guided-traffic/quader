@@ -89,7 +89,6 @@ const (
 	KindForward     = "forward"
 	KindConditional = "conditional"
 	KindCheck       = "check"
-	KindProbe       = "probe"
 	KindFeed        = "feed"
 	KindHandshake   = "handshake"
 	KindDownloads   = "downloads"
@@ -331,7 +330,7 @@ func (m *Metrics) seed() {
 	for _, s := range []string{SourceCache, SourceMain} {
 		m.BytesServed.WithLabelValues(s)
 	}
-	for _, k := range []string{KindForward, KindConditional, KindCheck, KindProbe, KindFeed, KindHandshake, KindDownloads} {
+	for _, k := range []string{KindForward, KindConditional, KindCheck, KindFeed, KindHandshake, KindDownloads} {
 		m.MainDuration.WithLabelValues(k)
 		for _, o := range []string{Outcome2xx, Outcome3xx, Outcome4xx, Outcome5xx, OutcomeError, OutcomeTimeout, OutcomeBusy} {
 			m.MainRequests.WithLabelValues(k, o)

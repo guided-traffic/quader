@@ -345,7 +345,13 @@ The client prints `detail` first, then `title` (verified in `GalaxyError`), so `
 Status codes: 401 and 403 and 404 by R-AUTHZ-016; 405 with `Allow` for a wrong method (a publish to a remote repository, with the
 reason in `detail`); 409 for `version_exists` and `version_tombstoned`; 413 for a body over the limit (`payload_too_large`); 422 for
 a name, a version or an archive the format refuses; 502 and 503 for an upstream failure of a remote (`upstream_unavailable`, with the
-upstream's status in `detail` when it is safe to show).
+upstream's status in `detail` when it is safe to show). A rate limit (the download limits of usage-and-limits.md, a Bastion's own limits)
+answers **503** with its code (`rate_limited`, `download_limit_reached`, …), its detail and `Retry-After`, never 429: ansible-galaxy retries
+a 429 of a document it caches and then reads the empty entry its first attempt left in its own response cache, which ends 2.17 with exit
+250 and 2.21 with "Missing expected 'results' in ansible-galaxy cache"; a 503 it prints and exits 1 ([bastion.md](../bastion.md)
+[Q-BAS-451](../bastion.md#q-bas-451--ansible-galaxy-answers-a-rate-limit-503-because-ansible-galaxy-does-not-survive-the-retry-of-a-429),
+measured with 2.17.14 on 2026-11-26). The format declares the status as `catalog.Facts.Bastion.RateLimitedStatus`, so a Bastion's own
+refusals answer the same; a 502 still meets the client's cache (H-2358 of [security/bastion.md](../../security/bastion.md#h-2358--a-502-on-a-document-ansible-galaxy-caches-ends-the-client-with-exit-250)).
 
 `Retry-After` on a Galaxy endpoint is at most 30 s (`maxRetryAfter` of [errors.go](../../../internal/formats/ansible/errors.go)), whatever
 the wait is: the client counts a wait against its own timeout. The detail keeps the whole wait. The format declares the cap as

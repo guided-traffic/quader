@@ -39,7 +39,7 @@ const (
 type HTTPClient struct {
 	o    Options
 	base *url.URL
-	// packages is the base of the forwards and probes: bastion.main.packages_url, or base (Q-HA-74).
+	// packages is the base of the forwards: bastion.main.packages_url, or base (Q-HA-74).
 	packages  *url.URL
 	origin    origin
 	http      *http.Client
@@ -439,9 +439,6 @@ func (c *HTTPClient) Do(ctx context.Context, f Forward) (*Response, error) {
 	if kind == "" {
 		kind = KindForward
 	}
-	if f.Probe {
-		kind = KindProbe
-	}
 	req, err := c.forwardRequest(ctx, f)
 	if err != nil {
 		return nil, err
@@ -455,7 +452,7 @@ func (c *HTTPClient) Do(ctx context.Context, f Forward) (*Response, error) {
 		release()
 		return nil, err
 	}
-	out, err := c.accept(resp, release, !f.Probe && f.Offer.MaxSize >= 1)
+	out, err := c.accept(resp, release, f.Offer.MaxSize >= 1)
 	if err != nil {
 		_ = resp.Body.Close()
 		release()
@@ -574,7 +571,7 @@ func stripped(name string) bool {
 func (c *HTTPClient) forwardRequest(ctx context.Context, f Forward) (*http.Request, error) {
 	src := f.Request
 	var body io.Reader
-	if !f.Probe && f.Body != nil {
+	if f.Body != nil {
 		body = f.Body
 	}
 	req, err := http.NewRequestWithContext(ctx, src.Method, c.packages.String(), body)
@@ -606,21 +603,13 @@ func (c *HTTPClient) forwardRequest(ctx context.Context, f Forward) (*http.Reque
 	if f.IfNoneMatch != "" {
 		req.Header.Set("If-None-Match", f.IfNoneMatch)
 	}
-	if !f.Probe {
-		// The Bastion's own headers, after the copy of the caller's, which dropped every Quader-*, Range and If-* header.
-		f.Offer.Set(req.Header)
-		if f.RangeFrom > 0 {
-			req.Header.Set("Range", "bytes="+strconv.FormatInt(f.RangeFrom, 10)+"-")
-			if f.IfRange != "" {
-				req.Header.Set("If-Range", f.IfRange)
-			}
+	// The Bastion's own headers, after the copy of the caller's, which dropped every Quader-*, Range and If-* header.
+	f.Offer.Set(req.Header)
+	if f.RangeFrom > 0 {
+		req.Header.Set("Range", "bytes="+strconv.FormatInt(f.RangeFrom, 10)+"-")
+		if f.IfRange != "" {
+			req.Header.Set("If-Range", f.IfRange)
 		}
-	}
-	if f.Probe {
-		// The probe is a write without its body and without the caller's credential; no header names it (interface version
-		// 8): the main installation reads a forwarded write of that form as a probe (R-BAS-014).
-		req.Header.Del("Authorization")
-		req.Body, req.GetBody, req.ContentLength = http.NoBody, nil, 0
 	}
 	c.origin.apply(req.Header, f.ClientAddress)
 	return req, nil

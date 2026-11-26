@@ -1,11 +1,7 @@
 package engine
 
 import (
-	"encoding/json"
-	"net/http"
-	"strconv"
 	"strings"
-	"time"
 
 	"github.com/guided-traffic/quader/internal/bastion/iface"
 	"github.com/guided-traffic/quader/internal/errs"
@@ -222,48 +218,4 @@ type registryErrorBody struct {
 // quaderProblem is the detail of an entry: the code of R-BAS-029.
 type quaderProblem struct {
 	Code string `json:"code"`
-}
-
-// writeRegistryError renders one of the Bastion's own answers below the registry root in the distribution's shape
-// (R-BAS-029, R-BAS-051, Q-BAS-169): the status of the error, the API version header, the challenge, Retry-After and the
-// other headers the error carries, and {"errors":[{"code":…,"message":…,"detail":{"code":"<Quader code>"}}]}.
-func writeRegistryError(w http.ResponseWriter, r *http.Request, err *errs.Error) {
-	p, e := errs.ProblemFor(r, err, "")
-	h := w.Header()
-	switch e.Kind {
-	case errs.Unauthenticated:
-		if e.Challenge != "" {
-			h.Set("WWW-Authenticate", e.Challenge)
-		}
-	case errs.MethodNotAllowed:
-		if len(e.Allow) > 0 {
-			h.Set("Allow", strings.Join(e.Allow, ", "))
-		}
-	case errs.RateLimited, errs.Unavailable:
-		h.Set("Retry-After", retrySeconds(e.RetryAfter))
-	}
-	for k, v := range e.Headers {
-		h.Set(k, v)
-	}
-	text := p.Detail
-	if text == "" {
-		text = p.Title
-	}
-	body, _ := json.Marshal(struct {
-		Errors []registryErrorBody `json:"errors"`
-	}{[]registryErrorBody{{Code: registryCode(e), Message: text, Detail: quaderProblem{Code: p.Code}}}})
-	h.Set("Content-Type", "application/json")
-	h.Set("X-Content-Type-Options", "nosniff")
-	h.Set(distributionVersionHeader, distributionVersion)
-	h.Set("Content-Length", strconv.Itoa(len(body)))
-	w.WriteHeader(e.Status())
-	if r.Method != http.MethodHead {
-		_, _ = w.Write(body)
-	}
-}
-
-// retrySeconds renders a Retry-After value in whole seconds, at least 1.
-func retrySeconds(d time.Duration) string {
-	s := int64((d + time.Second - 1) / time.Second)
-	return strconv.FormatInt(max(s, 1), 10)
 }

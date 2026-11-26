@@ -24,8 +24,9 @@ H-1242, and takes the interface's version 5, so that the handover takes 6. The o
 configuration from the main installation, the throughput between the two and a Bastion that names nothing of the main installation (W-34)
 are specified in [Limits, configuration and throughput from the main installation](#limits-configuration-and-throughput-from-the-main-installation) (R-BAS-093 to R-BAS-099,
 Q-BAS-320 to Q-BAS-339) and **not built**, except the rows of R-BAS-099 that package E16 built (Q-BAS-425 to Q-BAS-428), the anonymous
-token and the anonymous documents of R-BAS-094 that package E14a built (Q-BAS-435 to Q-BAS-437) and the addresses a Bastion connects
-from (R-BAS-017, the member `egress` of R-BAS-093, package E13, built on 2026-11-26 with Q-BAS-430 to Q-BAS-433); they revise in place R-BAS-002, R-BAS-009, R-BAS-010, R-BAS-014 to R-BAS-017, R-BAS-023,
+token and the anonymous documents of R-BAS-094 that package E14a built (Q-BAS-435 to Q-BAS-437), the addresses a Bastion connects
+from (R-BAS-017, the member `egress` of R-BAS-093, package E13, built on 2026-11-26 with Q-BAS-430 to Q-BAS-433) and the refusal of
+writes at the Bastion in the five error shapes (R-BAS-095, package E15, built on 2026-11-26 with Q-BAS-450 to Q-BAS-453); they revise in place R-BAS-002, R-BAS-009, R-BAS-010, R-BAS-014 to R-BAS-017, R-BAS-023,
 R-BAS-025, R-BAS-029, R-BAS-031, R-BAS-035 to R-BAS-038, R-BAS-046, R-BAS-051, R-BAS-052, R-BAS-054, R-BAS-058, R-BAS-059, R-BAS-071,
 R-BAS-074, Q-BAS-15, Q-BAS-21, Q-BAS-38, Q-BAS-43, Q-BAS-74, Q-BAS-88, Q-BAS-116, Q-BAS-118, Q-BAS-123, Q-BAS-315, H-388, H-1244, H-2272,
 H-2273 and H-2277, each with a marked sentence of what the code does until its package lands.
@@ -833,8 +834,9 @@ body and without a request to the main installation, with `403 read_only` and a 
 ([R-BAS-095](#r-bas-095--writes-are-refused-by-the-bastion-itself), R-BAS-099). The probe below, the main installation's admission of a
 probe as the anonymous caller for routing (Q-BAS-118), the headers `Quader-Bastion-Probe` and `Quader-Bastion-Route` and the detail that
 names the main installation's URL go; the main installation's refusal of a forwarded write stays as R-BAS-095's backstop with the neutral
-detail, and the forward of a path outside the package families keeps answering `404`. *Today, until E15 lands:* the probe below is what
-runs; its refusal has the neutral detail since E16 (R-BAS-099 row 1). *Revised on 2026-11-26 by E7 (interface version 8,
+detail, and the forward of a path outside the package families keeps answering `404`. *Built by E15 on 2026-11-26:* the probe below,
+`bastionmain.IsProbe`, the probe's admission in `BastionRouteAuth` and the probes' replay cache at the Bastion are gone; the requirement is
+R-BAS-095's. *Revised on 2026-11-26 by E7 (interface version 8,
 [Q-BAS-351](#q-bas-351--until-e15-a-probe-is-recognized-by-its-form-and-a-read-route-with-a-body-is-the-format-tables)):* the headers
 `Quader-Bastion-Probe` and `Quader-Bastion-Route` are gone. The Bastion forwards a request that matches a read route with a body of the
 format table (`readWithBody`, R-BAS-095) at once, with its body and the caller's credential, and probes every other request of a method
@@ -1136,8 +1138,10 @@ Q-BAS-17). Each request passes these steps in order; the first that answers ends
    the format. The Bastion reads no other part of a path. A family, format, project or key segment that is percent-encoded
    and a `.` or `..` segment are not classified: the path answers `404 not_found` (Q-BAS-121).
 4. **Per-address limits** (R-BAS-035) and **credentials** (R-BAS-019), including the failed-authentication timeout (R-BAS-036).
-5. **Method.** `GET` and `HEAD` go to the read flow (R-BAS-020 to R-BAS-024); `OPTIONS` answers `405`; every other method goes
-   to the write refusal of R-BAS-014. A write needs no credential before its probe ([Q-BAS-81](#q-bas-81--a-write-is-decided-by-the-probe-first-its-credential-is-checked-only-if-the-real-request-is-forwarded)).
+5. **Method.** `GET` and `HEAD` go to the read flow (R-BAS-020 to R-BAS-024); `OPTIONS` answers `405`; a read route with a body of
+   the format table is forwarded with its body; every other method is refused `403 read_only` by the Bastion itself (R-BAS-095). The
+   credential of a write is not read ([Q-BAS-452](#q-bas-452--a-write-is-refused-before-its-credential-is-read)); the credential
+   step of 4 is the read flow's and the forward's.
 6. **Read flow**: the cache entry for the request's cache key and the caller's answers decide between a hit, a check and a miss.
 
 - **Cache key**: the path and query exactly as received (percent-encoding kept), and the normalized values of the request
@@ -1163,7 +1167,7 @@ Reads at the Bastion authenticate exactly as at the main installation (owner,
 without sessions:
 
 - **Sources.** `Authorization: Bearer <token>`, or Basic with the token as password (any username). `X-NuGet-ApiKey` is
-  never a read credential: NuGet sends it on pushes, which the probe of R-BAS-014 refuses without it. The cookie is ignored
+  never a read credential: NuGet sends it on pushes, which the Bastion refuses without reading it (R-BAS-095). The cookie is ignored
   (R-BAS-003). The credential key of every answer is the SHA-256 of
   the token string; the Bastion keeps no token in memory beyond the request, on disk or in Valkey.
 - **Before any request to the main installation:** a token that fails R-AUTH-022's syntax and checksum answers `401
@@ -1580,8 +1584,10 @@ Bastion's own takes the error shape the format declares (`errorShape`), and wher
 `about:blank`; the package families answer a write `403`, and `405` stays for a path that serves `GET` and `HEAD` only. *Built by E16:*
 the texts of Q-BAS-321 and the type `about:blank` with the status phrase as the title, on every problem of the client listener, the
 chain's own refusals included (`errs.WithBastionAnswer`); the RateLimit policy names `requests`, `misses`, `failed-auth` and `blocking`
-(R-BAS-099 rows 2 to 4). *Built by E7 (interface version 8):* the codes of the table below. *Today, until E15 lands:* problem details
-on every family but `/v2/`, whatever the format table's `errorShape`.
+(R-BAS-099 rows 2 to 4). *Built by E7 (interface version 8):* the codes of the table below. *Built by E15:* every answer of the
+table in the shape the format table's `errorShape` declares, through one renderer ([Q-BAS-450](#q-bas-450--every-answer-of-the-bastions-own-goes-through-one-renderer-by-the-declared-shape-and-each-shape-carries-the-code)),
+with `403 read_only` for a write; before the first handshake, when no format's shape is known, problem details (H-2359). Where the
+text below says problem details, it is the shape `problem`.
 
 The Bastion produces only these answers itself; every other body comes from the main installation
 ([Q-BAS-39](#q-bas-39--the-bastions-own-refusals-are-problem-details)). They are problem details (RFC 9457,
@@ -2216,7 +2222,7 @@ carries an address, a token, a path or a repository's name):
 |---|---|---|
 | `quader_bastion_requests_total` | counter | `class` (`artifact`, `shared`, `private`, `absent`, `pass`, `refused`), `result` (`hit`, `checked`, `miss`, `refused`, `error`) |
 | `quader_bastion_bytes_served_total` | counter | `source` (`cache`, `main`) |
-| `quader_bastion_main_requests_total` | counter | `kind` (`forward`, `conditional`, `check`, `probe`, `feed`, `handshake`, `downloads`), `outcome` |
+| `quader_bastion_main_requests_total` | counter | `kind` (`forward`, `conditional`, `check`, `feed`, `handshake`, `downloads`), `outcome` |
 | `quader_bastion_main_request_duration_seconds` | histogram | `kind` |
 | `quader_bastion_main_in_flight`, `quader_bastion_main_budget` | gauge | `class` (`authenticated`, `anonymous`) |
 | `quader_bastion_main_budget_exhausted_total` | counter | `class` |
@@ -3108,8 +3114,8 @@ repository ([Q-BAS-165](#q-bas-165--the-registry-root-is-a-path-family-of-the-ba
   checks `service` against the host of the response base URL, which for a recognized Bastion request is the Bastion's host (R-BAS-017).
   The Bastion reads the one credential the token service reads, for its own syntax check, slot class and limits, and keeps or logs
   nothing of it: the Basic password of a `GET`, the form's `password` of a `POST`. A `POST` is a read route that takes a body: since interface
-  version 8 the format table names it (`readWithBody` of the entry with `registryRoot`, R-BAS-095) and the Bastion forwards it at once
-  without a probe; up to version 7 its probe was answered `204` with `Quader-Bastion-Route: read-with-body` (R-BAS-014). The request carries the form (at most 16 KiB,
+  version 8 the format table names it (`readWithBody` of the entry with `registryRoot`, R-BAS-095) and the Bastion forwards it at once;
+  up to version 7 its probe was answered `204` with `Quader-Bastion-Route: read-with-body` (R-BAS-014). The request carries the form (at most 16 KiB,
   within `bastion.main.max_forwarded_body`). A `POST` whose form holds a `password` takes an authenticated slot and the authenticated
   limits; a malformed token in it is refused `401` without a forward and counted (R-BAS-036). The anonymous `GET` of a token
   follows R-BAS-019: refused `401` by the Bastion itself while `anonymousReads` is false. The Bastion's own challenge below `/v2/` names no
@@ -3277,8 +3283,8 @@ What a Bastion keeps of the registry follows from the kinds of the format's rout
   its manifest is refused, as it is at the main installation.
 - **A scan token** (R-OCI-037) is never accepted by a Bastion: it is valid on the scan listener only (R-EP-010), and the Bastion's
   forward reaches the default endpoint.
-- **Writes.** `docker push` through a Bastion: its `HEAD` requests for blobs are reads; the `POST` that starts an upload is probed and
-  refused `403` `DENIED` with the read-only sentence, which names no image prefix (R-BAS-014, R-BAS-051, R-BAS-099 row 1).
+- **Writes.** `docker push` through a Bastion: its `HEAD` requests for blobs are reads; the `POST` that starts an upload is refused by
+  the Bastion itself `403` `DENIED` with the read-only sentence, which names no image prefix (R-BAS-095, R-BAS-099 row 1).
 
 Acceptance criteria:
 
@@ -3511,22 +3517,23 @@ The contract a format keeps so that every Bastion serves it without a decision o
 | `WriteError` renders its error through `errs.ProblemFor` with the request, so that the answer to a recognized forward of a Bastion names no member repository of a remote's failure, carries no request ID of the main installation and, in problem details, has the type `about:blank` | a forward's answer reaches a caller of the Bastion, who learns nothing of the main installation (R-BAS-099 rows 3, 7 and 15, [Q-BAS-428](#q-bas-428--a-forward-is-marked-on-the-requests-context-and-every-writer-of-an-error-renders-through-one-function)) | kit check 19 (through `WriteError`) |
 | A rate limit of the format answers the status `catalog.Facts.Bastion.RateLimitedStatus` (429 unless declared) | the Bastion's own rate-limit refusals of the format's family take that status | kit check 19 (through `WriteError`) |
 | A rate limit of the format tells the client the wait capped by `catalog.Facts.Bastion.RetryAfterMax` (the whole wait unless declared): a wait of a second as one second, a wait of a day as the cap or as a day | the Bastion's own refusals of the format's family tell the declared wait (R-BAS-091); a cap `WriteError` applies and the facts do not declare would reach the format's clients from a Bastion uncapped | kit check 19 (through `WriteError`) |
-| A write has a writing kind or an action other than `read`; a read route that takes a body is `Volatile` with `read` | the probe of R-BAS-014 | built (R-BAS-014) |
-| *Built on 2026-11-26 by E7 (Q-BAS-353):* a route with a writing method whose kind is a read is listed in `catalog.Facts.Bastion.ReadWithBody`, and no entry lists a route the format does not have; the format declares `catalog.Facts.Bastion.ErrorShape`. *Specified, not built (E15):* `WriteError` renders the declared shape (`problem`, `npm`, `text`, `distribution`, `galaxy`) | the Bastion's own refusal of a write and every answer of its own in the format's shape (R-BAS-095, [Q-BAS-337](#q-bas-337--a-bastions-own-refusals-take-one-of-five-error-shapes-a-format-declares)); they replace the row above once the probe goes | kit check 19 |
+| A write has a writing kind or an action other than `read`; a read route that takes a body is `Volatile` with `read` | the main installation's backstop (R-BAS-095); until E15 the probe of R-BAS-014 | built (R-BAS-014) |
+| *Built on 2026-11-26 by E7 (Q-BAS-353):* a route with a writing method whose kind is a read is listed in `catalog.Facts.Bastion.ReadWithBody`, and no entry lists a route the format does not have; the format declares `catalog.Facts.Bastion.ErrorShape`. *Built on 2026-11-26 by E15 (Q-BAS-453):* `WriteError` renders the backstop's refusal of a write in the declared shape (`problem`, `npm`, `text`, `distribution`, `galaxy`) as `errs.ReadShape` reads it | the Bastion's own refusal of a write and every answer of its own in the format's shape, and the backstop's alike (R-BAS-095, [Q-BAS-337](#q-bas-337--a-bastions-own-refusals-take-one-of-five-error-shapes-a-format-declares)) | kit check 19 |
 | `absent` comes from the core's lookups | the negative cache (R-BAS-024) | built (Q-BAS-70) |
 | Every rights decision of a content route is made through the host before its status line; a response that draws on packages other than the one it was decided for also decides a package-less read; a reader of only the response's package receives the same status, body and validators as a reader of the whole repository | a document marked `shared` for a reader of one package is served to every reader of that package in full (R-BAS-081, R-BAS-082) | kit check 21 (R-BAS-086) |
 
 - **The contract's addition** (an ADR, [ADR-238](../decisions.md#adr-238--a-bastion-serves-every-format-the-registry-root-the-formats-bastion-facts-and-the-handshakes-format-table)):
   `catalog.Facts.Bastion` of the type `catalog.BastionFacts` with `ReplayHeaders []string` (canonical header names, none of the core's
   representation or per-request headers, none with the prefix `Quader-`) and `RateLimitedStatus int` (0 is 429; 429 or 503). OCI declares
-  the four headers of R-BAS-053, the ClamAV definitions `503`. A second addition
+  the four headers of R-BAS-053, the ClamAV definitions and Ansible Galaxy `503` (Galaxy since E15,
+  [Q-BAS-451](#q-bas-451--ansible-galaxy-answers-a-rate-limit-503-because-ansible-galaxy-does-not-survive-the-retry-of-a-429)). A second addition
   ([ADR-299](../decisions.md#adr-299--the-longest-wait-a-formats-client-is-told-is-a-fact-of-the-format)): `RetryAfterMax time.Duration`
   (0 or whole seconds) with `BastionFacts.CapRetryAfter`, the longest wait the format's clients are told (R-BAS-091). NuGet and Ansible
   Galaxy declare 30 s, the `maxRetryAfter` of their `WriteError`; npm, OCI, Debian and the ClamAV definitions declare none. npm declares
   the replay header `Npm-Notice` (2026-11-26, R-BAS-099 row 5).
 - **Kit check 19** (`checks_bastion.go` of the conformance kit): over every content case, the duties above marked "kit check 19"; a
   `testformat` defect each (`DownloadWithoutContentAddress`, `UndeclaredReplayHeader`, `DocumentIgnoresConditional`,
-  `RateLimitedStatusDiffers`, `CapsRetryAfterUndeclared`, `DeclaresRetryAfterCap`, `IgnoresTheForward`). A route whose answers cannot meet a duty by design is listed in the fixture with its reason, as for the
+  `RateLimitedStatusDiffers`, `CapsRetryAfterUndeclared`, `DeclaresRetryAfterCap`, `IgnoresTheForward`, `DeclaresAnotherErrorShape`). A route whose answers cannot meet a duty by design is listed in the fixture with its reason, as for the
   other checks. Runs in every format's `TestR_ARCH_010_Conformance`, without PostgreSQL.
 - **As built** ([Q-BAS-181](#q-bas-181--the-cores-representation-and-per-request-headers-are-two-lists-of-the-catalog-and-the-content-headers-of-r-arch-007-are-representation-headers)
   to [Q-BAS-184](#q-bas-184--kit-check-19-judges-what-a-bastion-keeps-and-a-route-is-exempt-from-two-duties-only-with-a-reason)): the core's
@@ -5105,7 +5112,7 @@ itself and names nothing of the main installation in the refusal (R-BAS-099). It
 | `errorShape` | Formats | Body |
 |---|---|---|
 | `problem` | Debian, generic (`/files/`), the ClamAV definitions; the default for a format the table does not name | problem details (RFC 9457) |
-| `npm` | npm | `{"error": "<detail>"}`, `application/json` |
+| `npm` | npm | `{"error": "<detail>", "code": "<code>"}`, `application/json` (npm prints `error`) |
 | `text` | NuGet | one line `read_only: <detail>`, `text/plain; charset=utf-8` |
 | `distribution` | the registry root | `{"errors": [{"code": "DENIED", "message": "<detail>", "detail": {"code": "read_only"}}]}` (R-BAS-029's mapping of the other codes) |
 | `galaxy` | Ansible Galaxy | `{"errors": [{"status": "403", "code": "read_only", "title": "Forbidden.", "detail": "<detail>"}]}`, `application/json`, the list a Galaxy's API answers |
@@ -5118,7 +5125,7 @@ prints for a refusal"), and why each format declares its shape:
 | npm | `npm` | the status and the detail (`npm error 403 403 Forbidden - PUT … - <detail>`); retries a `503` after 10 s and 60 s of its own | npm reads the member `error` |
 | NuGet | `text` | the status and reason phrase only, never a body; retries five times about 1 s apart | the body changes nothing dotnet shows; the line serves curl and logs, and is what `WriteError` writes |
 | OCI (docker, podman) | `distribution` | podman and docker print the message (`denied: <detail>`); a refusal of a `HEAD` reaches docker without a body | the registries' own shape (R-OCI-008) |
-| Ansible Galaxy | `galaxy` | with problem details `Message: <status phrase> Code: Unknown`, and a `429` on the version list made ansible-galaxy 2.17.14 exit 250 ("Unexpected Exception … 'results'") against today's Bastion; it reads the Galaxy's own `errors` list (`Message: <detail> Code: <code>`) | none of the other four is a list ansible-galaxy reads |
+| Ansible Galaxy | `galaxy` | with problem details `Message: <status phrase> Code: Unknown`; with the `galaxy` list `ERROR! Error when getting available collection versions for e4.app … (HTTP Code: 503, Message: <detail> Code: <code>)`, exit 1 (E15's run, below). A `429` on a document it caches (the version list) made ansible-galaxy 2.17.14 exit 250 ("Unexpected Exception … 'results'") whatever the body: it retries 429, 502 and 520 and reads the empty entry its first attempt left in its response cache; so the format answers a rate limit `503` ([Q-BAS-451](#q-bas-451--ansible-galaxy-answers-a-rate-limit-503-because-ansible-galaxy-does-not-survive-the-retry-of-a-429)) | none of the other four is a list ansible-galaxy reads |
 | Debian | `problem` | APT prints the reason phrase only; `apt-get update` exits 0 when refused | the body changes nothing APT shows; problem details serve curl |
 | ClamAV definitions | `problem` | freshclam acts on the status alone | as Debian |
 | generic (`/files/`) | `problem` | curl prints the body as it is | the core's shape of `/files/` |
@@ -5135,17 +5142,47 @@ prints for a refusal"), and why each format declares its shape:
 and `readWithBody` of the format table, declared by every format ([Q-BAS-353](#q-bas-353--a-format-declares-its-read-routes-with-a-body-below-the-repository-and-kit-check-19-holds-the-list-to-its-routes)); the code `read_only`; the headers
 `Quader-Bastion-Probe` and `Quader-Bastion-Route` gone, the Bastion forwarding a declared read route with a body at once and the main
 installation recognizing a probe by its form ([Q-BAS-351](#q-bas-351--until-e15-a-probe-is-recognized-by-its-form-and-a-read-route-with-a-body-is-the-format-tables)); kit check 19's duty that `readWithBody` equals the format's routes of a
-writing method whose kind is a read, and that a format declares its `errorShape`. *Built by E16:* the backstop's neutral text. *Not built*
-(E15): the refusal at the Bastion in the five shapes, the removal of the probe, and the duty that `WriteError` renders the declared shape.
+writing method whose kind is a read, and that a format declares its `errorShape`. *Built by E16:* the backstop's neutral text. *Built by
+E15 on 2026-11-26:* `write` in [write.go](../../internal/bastion/engine/write.go) refuses a write before its body or its credential is
+read ([Q-BAS-452](#q-bas-452--a-write-is-refused-before-its-credential-is-read)) and asks the main installation nothing; every answer of
+the Bastion's own renders through `writeShaped` in [shape.go](../../internal/bastion/engine/shape.go) by the declared shape
+([Q-BAS-450](#q-bas-450--every-answer-of-the-bastions-own-goes-through-one-renderer-by-the-declared-shape-and-each-shape-carries-the-code));
+`errs.ReadShape` ([shape.go](../../internal/errs/shape.go)) is what a client of each shape reads, and kit check 19 holds every format's
+`WriteError` to it on the backstop's refusal ([Q-BAS-453](#q-bas-453--kit-check-19-reads-the-backstops-refusal-with-the-shapes-reader-and-check-16-takes-503-as-a-rate-limit),
+the defect `DeclaresAnotherErrorShape`); the probe (`probe.go`, `mainclient.Forward.Probe`, the kind `probe` of
+`quader_bastion_main_requests_total`), `bastionmain.IsProbe`, `Recognition.Probe`, the probe's admission in `BastionRouteAuth` and the
+class `probe` of `quader_bastion_forwarded_requests_total` are gone. Ansible Galaxy answers a rate limit `503` (Q-BAS-451).
+
+What ansible-galaxy 2.17.14 prints for the `galaxy` shape, run once on 2026-11-26 in the journeys' client image
+`quader-e2e-ansibleclients-core217` against a stub that serves the API root and the collection document and answers the version list
+`GET …/v3/collections/e4/app/versions/?limit=100` with the body `writeShaped` renders (`TestR_BAS_095_EachShapeRenders` holds the bytes),
+`Retry-After` 30 and `Cache-Control: no-store` (the command and the stub are in
+[developer/bastion.md](../developer/bastion.md#the-galaxy-shape-against-ansible-galaxy-217-measured-2026-11-26)):
+
+| Status, code | Requests | What ansible-galaxy printed | Exit |
+|---|---|---|---|
+| `429 rate_limited` | 3 (the API root, the collection document, the version list once) | `ERROR! Unexpected Exception, this is probably a bug: 'results'` | 250, after 1 s |
+| `503 rate_limited` | 3 | `ERROR! Error when getting available collection versions for e4.app from cmd_arg (…) (HTTP Code: 503, Message: Too many requests from this address. Try again in 14 minutes. Code: rate_limited)` | 1, after 1 s |
+| `503 busy` | 3 | `… (HTTP Code: 503, Message: Too many requests are waiting; try again in a moment. Code: busy)` | 1 |
+| `429 rate_limited` on the collection document too | 8 (the collection document seven times over 53 s) | `ERROR! Error when getting the collection info for e4.app … (HTTP Code: 429, Message: … Code: rate_limited)` | 1 |
+
+The shape is read in every row; the `250` is the client's response cache, not the body (Q-BAS-451).
 
 Acceptance criteria:
 
 - Unit (`internal/bastion/engine`, under 1 s): `PUT`, `POST`, `DELETE` and `PATCH` on npm, NuGet, OCI and `/files/` paths answer `403
   read_only` in the five shapes, the counting double of the main installation records nothing, and less than 64 KiB of a 1 MiB body is
-  read; npm's bulk audit and `POST /v2/_token` with a credential are forwarded.
-- Kit (every format, about 20 ms each): the two duties; a `testformat` defect each.
+  read; npm's bulk audit and `POST /v2/_token` with a credential are forwarded. *As built:*
+  `TestR_BAS_095_AWriteIsRefusedAtTheBastionInTheFormatsShape` (also Ansible Galaxy and Debian, with, without and with an unreadable
+  credential, reachable and unreachable; none of the body read; 0.03 s), `TestR_BAS_095_EachShapeRenders` (five shapes, five answers,
+  `GET` and `HEAD`, read back with `errs.ReadShape`; under 0.01 s), `TestR_BAS_095_ARouteThatTakesABodyIsForwardedWithTheCallersCredential`;
+  `POST /v2/_token` in `TestR_BAS_051_TheRegistryRootIsAPathFamilyOfTheBastion`, its anonymous form in
+  `TestR_BAS_094_TheBastionAnswersAnAnonymousTokenRequestItself`.
+- Kit (every format, about 20 ms each): the two duties; a `testformat` defect each. *As built:* the shape duty takes well under a
+  millisecond per format; its defect is `DeclaresAnotherErrorShape` in `TestR_BAS_058_KitCheck19`, the read routes' are E7's.
 - Integration (area `bastion`): `write_test` asserts the Bastion's refusal and no request at the main installation; the probe's cases go, so
-  the area's time falls.
+  the area's time falls. *As built:* `TestR_BAS_095_WritesAreRefusedAtTheBastion`, one Bastion instead of two (anonymous access no longer
+  matters to a write) and no loop of 1,000 writes.
 
 ### R-BAS-096 · Limits at a Bastion
 Priority: **MVP** · Covers: BEYOND-030
@@ -5503,8 +5540,9 @@ marking that names limits for a subject other than a token, twice, or malformed 
 `main_unreachable` `unavailable`, `main_failed` `bad_gateway`, `main_timeout` `gateway_timeout`, `bastion_busy` `busy`. The constants of
 `iface/problems.go` and the code registry of `internal/errs` change with them; `bastion_token_invalid`, `bastion_interface_mismatch`,
 `bastion_base_url_unknown` and `bastion_not_implemented` stay, since they concern the Bastion and never reach a caller. The headers
-`Quader-Bastion-Probe` and `Quader-Bastion-Route` and the value `read-with-body` leave the interface (R-BAS-095); until E15 removes the probe,
-the main installation recognizes it by its form ([Q-BAS-351](#q-bas-351--until-e15-a-probe-is-recognized-by-its-form-and-a-read-route-with-a-body-is-the-format-tables)).
+`Quader-Bastion-Probe` and `Quader-Bastion-Route` and the value `read-with-body` leave the interface (R-BAS-095); E15 removed the probe,
+which [Q-BAS-351](#q-bas-351--until-e15-a-probe-is-recognized-by-its-form-and-a-read-route-with-a-body-is-the-format-tables) had the main
+installation recognize by its form until then, without a change of the wire.
 
 **The contact** (R-BAS-010) gains two request headers of the handshake, recorded with the replica's contact:
 `Quader-Bastion-Edge-Limit: rps=<n>; connections=<n>` (either member alone) or `off` (R-BAS-093) and W-35's
@@ -7275,8 +7313,8 @@ never reached a successful authentication (a rejected credential, a refusal of a
 `ExpiresAt`, filled from the token the validator returned), `anonymous` without a credential, and `invalid` for a credential that
 is no token. A `401` is `invalid` whatever the principal was: the Bastion cannot use the credential. Interface routes carry
 `Quader-Bastion-Class: pass` and `Quader-Bastion-Interface` and nothing else. The stage counts
-`quader_bastion_forwarded_requests_total{bastion, class}` (the class `probe` for a write probe) on the metrics instance of the
-composition root.
+`quader_bastion_forwarded_requests_total{bastion, class}` on the metrics instance of the composition root (until E15 also the class
+`probe` for a write probe).
 
 **Rationale:** the contracts page named the stage and its place in the chain; where it lives was open. The development agent would
 revisit (b) if the recognition and the principal become one value in a domain package.
@@ -7364,7 +7402,7 @@ adds a route of that shape that a Bastion must forward.
 
 *Revised on 2026-11-26 by the owner's [Q-BAS-336](#q-bas-336--the-bastion-refuses-a-write-itself):* at a Bastion a write is every method but `GET` and `HEAD`
 that the format table's `readWithBody` does not list, refused by the Bastion itself; the route's kind and action stay the test of the main
-installation's backstop. *Today, until E15 lands:* the probe asks the main installation's route as above.
+installation's backstop. *Built by E15:* the probe and its class `probe` are gone.
 
 ### Q-BAS-75 · The anonymous cap of the budget is the share rounded down, at least one slot
 
@@ -11350,6 +11388,9 @@ until E15 refuses writes at the Bastion.
 
 **Choice:** (a). **Applied in the spec:** R-BAS-014, R-BAS-051, R-BAS-095.
 
+*Superseded on 2026-11-26 by E15:* the Bastion refuses every write itself and sends no probe, so the main installation recognizes none;
+`bastionmain.IsProbe` and `Recognition.Probe` are gone, and a forwarded write is the authentication stage's and then the backstop's.
+
 ### Q-BAS-352 · Until E8, the main installation sends an interim configuration that equals today's behaviour
 
 Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
@@ -11594,6 +11635,80 @@ walkthrough.
 **Choice:** (a). A network that overlaps `server.trusted_proxies` is logged when the snapshot first holds it: its forwarded headers count
 for every request, not only for that Bastion's. **Applied in the spec:** R-BAS-017; code:
 [snapshot.go](../../internal/bastionmain/snapshot.go), [areas.go](../../internal/cluster/areas.go).
+
+### Q-BAS-450 · Every answer of the Bastion's own goes through one renderer by the declared shape, and each shape carries the code
+
+Status: **Decided by the development agent on 2026-11-26** (package E15) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-BAS-095 gives every answer of the Bastion's own on a format's family the shape the format declares; the Bastion rendered
+problem details on every family but `/v2/`. Its table wrote npm's body as `{"error": "<detail>"}`, without the code that R-BAS-029 and
+the interface (`iface.ErrorShape`: "the body of each carries the answer's code and its detail") name for every shape.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One renderer, `writeShaped`, for every answer of the Bastion's own (the write's refusal, the guard's refusals, `busy`, `unavailable`, `bad_gateway`, `gateway_timeout`, the `401`s and the rest of R-BAS-029's table), by the `errorShape` of the request's format; npm's body `{"error": "<detail>", "code": "<code>"}` (chosen) | Each client reads every refusal it meets at a Bastion; the limits of E9b take the same path; every shape carries the code for curl and the logs | Before the first handshake no format's shape is known, and the answer is problem details (H-2359) |
+| (b) The shapes for the refusal of a write and the limits only | | Fewer answers change | A `401`, a `503 busy` and an unreachable main installation stay unreadable to npm and ansible-galaxy |
+| (c) npm's body without the code | As the table wrote it | — | The code is gone where npm's own `WriteError` renders it |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-029, R-BAS-095; code: [shape.go](../../internal/bastion/engine/shape.go), `problem` in
+[respond.go](../../internal/bastion/engine/respond.go).
+
+### Q-BAS-451 · Ansible Galaxy answers a rate limit 503, because ansible-galaxy does not survive the retry of a 429
+
+Status: **Decided by the development agent on 2026-11-26** (package E15) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: E15 ran ansible-galaxy 2.17.14 against the `galaxy` shape (R-BAS-095's table of E15's run). It reads the shape, but a `429` on
+the version list still ended it with exit 250. The cause, from its source (`ansible/galaxy/api.py`): `_call_galaxy` is retried for 429, 502
+and 520 (`RETRY_HTTP_ERROR_CODES`); for a document it caches (the version list) it writes an empty entry of its
+response cache before the request, valid for a day, and the retry reads that entry as a hit and takes its `results`, which the failed
+attempt never wrote: `KeyError: 'results'`. The body is never read again, so no shape helps; a status it does not retry does. ansible-core
+2.21.6 has the same retry set and cache code (read, not run) and ended at the main installation with "Missing expected 'results' in
+ansible-galaxy cache" (usage-and-limits.md, measured 2026-11-20).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The format declares `RateLimitedStatus` 503, and its `WriteError` answers a rate limit 503 with its code and `Retry-After`, as the ClamAV definitions do (R-BAS-056) (chosen) | ansible-galaxy exits 1 and prints the detail and the code, at a Bastion and at the main installation alike; one fact, held by kit check 19 | ansible-galaxy no longer retries a short limit by itself: a refused request ends the command at once, as it did on every cached document anyway |
+| (b) Keep 429, the `galaxy` shape alone | | No change | Exit 250 at a Bastion, measured |
+| (c) Users pass `--no-cache` | | The client retries a 429 six times | A switch nobody knows; the default crashes |
+
+**Choice:** (a). A `502` on a cached document crashes the client the same way (H-2358). **Applied in the spec:** R-BAS-056, R-BAS-095,
+[formats/ansible.md](formats/ansible.md) R-ANS-007, [usage-and-limits.md](usage-and-limits.md) gap 1; code:
+[format.go](../../internal/formats/ansible/format.go), [errors.go](../../internal/formats/ansible/errors.go).
+
+### Q-BAS-452 · A write is refused before its credential is read
+
+Status: **Decided by the development agent on 2026-11-26** (package E15) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-BAS-095 refuses a write before the Bastion reads a byte of its body; R-BAS-018 puts the credential at step 4, before the method.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A write is refused after the path, the block list and the request limit, before its credential is read (chosen) | A malformed, unknown or valid credential on a write all get `403 read_only`; no failed authentication is counted and no credential is looked up | A write costs the Bastion one limit and nothing of the main installation, not even a check (Q-BAS-336); the anonymous `POST /v2/_token` is answered before it (R-BAS-094) | A client that sends a bad token with a publish reads "read-only", not "invalid token" |
+| (b) The credential first | | The client learns that its token is bad | A write from the internet makes the Bastion check an unknown token at the main installation |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-018, R-BAS-095; code: `ServeHTTP` in
+[request.go](../../internal/bastion/engine/request.go), [write.go](../../internal/bastion/engine/write.go).
+
+### Q-BAS-453 · Kit check 19 reads the backstop's refusal with the shape's reader, and check 16 takes 503 as a rate limit
+
+Status: **Decided by the development agent on 2026-11-26** (package E15) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-BAS-095 gives kit check 19 the duty that a format's `WriteError` renders the declared `errorShape`. The formats' own bodies carry
+more than the Bastion's (npm's `message`, OCI's `detail` of `null`, NuGet's warning header).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `errs.ReadShape`, what a client of each shape reads (the media type and the members it prints), used by the engine's tests on the Bastion's renderer and by the kit on `WriteError`'s rendering of the backstop's `403 read_only` for a forward: the declared shape, the read-only detail, and the code where the shape carries one (chosen) | One definition of each shape for both sides | A format's richer body passes; well under a millisecond per format | The reader accepts what a client accepts, not the Bastion's exact bytes |
+| (b) The Bastion's bytes | | Exact | Every format's body would have to become the Bastion's |
+
+With Ansible Galaxy's 503 (Q-BAS-451) kit check 16 accepts 429 or 503 for a refused admission; check 19 holds the status to the format's
+declaration. **Choice:** (a). **Applied in the spec:** R-BAS-058, R-BAS-095, [usage-and-limits.md](usage-and-limits.md) R-LIM-036; code:
+[shape.go](../../internal/errs/shape.go), [checks_bastion.go](../../internal/formats/formattest/checks_bastion.go),
+[checks_admission.go](../../internal/formats/formattest/checks_admission.go).
 
 ## What this does not cover
 

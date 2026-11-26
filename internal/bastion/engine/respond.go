@@ -11,10 +11,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/guided-traffic/quader/internal/bastion/iface"
 	"github.com/guided-traffic/quader/internal/bastion/mainclient"
 	"github.com/guided-traffic/quader/internal/bastion/metrics"
 	"github.com/guided-traffic/quader/internal/errs"
-	"github.com/guided-traffic/quader/internal/httpserver"
 )
 
 // The retry hints of the Bastion's own answers (R-BAS-029).
@@ -33,6 +33,16 @@ func (e *engine) errCredentialsRequired(q *rq) *errs.Error {
 
 func errUnreachable() *errs.Error {
 	return errs.E(errs.Unavailable, errs.CodeUnavailable, "This service is not available right now; try again later.", errs.WithRetryAfter(retryUnreachable))
+}
+
+// errReadOnly is the refusal of a write (R-BAS-095, R-BAS-099 row 1): it names no address.
+func errReadOnly() *errs.Error {
+	return errs.E(errs.Forbidden, errs.CodeReadOnly, errs.ReadOnlyDetail)
+}
+
+// errTooLarge is the refusal of a read route's body above bastion.main.max_forwarded_body (R-BAS-095).
+func errTooLarge() *errs.Error {
+	return errs.E(errs.TooLarge, errs.CodeTooLarge, "The body is too large.")
 }
 
 func errBusy() *errs.Error {
@@ -64,20 +74,22 @@ func (e *engine) refuse(q *rq, err *errs.Error, reason string) {
 	e.problem(q, err)
 }
 
-// problem writes one of the Bastion's own answers in the shape of the request's family: below the registry root the
-// distribution's (Q-BAS-169), everywhere else the problem details of R-BAS-029. Its Retry-After is at most the longest wait
-// the format of the request tells its clients (R-BAS-058); the detail keeps the true wait.
+// problem writes one of the Bastion's own answers in the error shape the format of the request declares (R-BAS-095, Q-BAS-337):
+// below the registry root the distribution's (Q-BAS-169) whatever the table says, on /files/ and for a format the table does not
+// name the problem details of R-BAS-029. Its Retry-After is at most the longest wait the format of the request tells its clients
+// (R-BAS-058); the detail keeps the true wait.
 func (e *engine) problem(q *rq, err *errs.Error) {
-	if facts := e.factsOf(q); err.RetryAfter > 0 && facts.CapRetryAfter(err.RetryAfter) != err.RetryAfter {
+	facts := e.factsOf(q)
+	if err.RetryAfter > 0 && facts.CapRetryAfter(err.RetryAfter) != err.RetryAfter {
 		capped := *err
 		capped.RetryAfter = facts.CapRetryAfter(err.RetryAfter)
 		err = &capped
 	}
+	shape := facts.ErrorShape
 	if q.fam == familyRegistry {
-		writeRegistryError(q.w, q.r, err)
-		return
+		shape = iface.ErrorShapeDistribution
 	}
-	httpserver.Problem(q.w, q.r, err)
+	writeShaped(q.w, q.r, shape, err)
 }
 
 // fail answers 502 bad_gateway or 504 gateway_timeout: the request to the main installation did not produce an

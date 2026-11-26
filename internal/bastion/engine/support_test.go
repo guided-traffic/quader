@@ -84,7 +84,6 @@ type recorded struct {
 	Target string
 	Header http.Header
 	INM    string
-	Probe  bool
 	Body   []byte
 	Addr   string
 	Check  *iface.CheckRequest
@@ -227,7 +226,7 @@ func (m *fakeMain) Do(ctx context.Context, f mainclient.Forward) (*mainclient.Re
 	}
 	defer done()
 	r := recorded{
-		Kind: f.Kind, Class: f.Class, Method: f.Request.Method, Target: f.Request.URL.RequestURI(), Header: f.Request.Header.Clone(), INM: f.IfNoneMatch, Probe: f.Probe, Addr: f.ClientAddress,
+		Kind: f.Kind, Class: f.Class, Method: f.Request.Method, Target: f.Request.URL.RequestURI(), Header: f.Request.Header.Clone(), INM: f.IfNoneMatch, Addr: f.ClientAddress,
 		Offer: f.Offer, RangeFrom: f.RangeFrom, IfRange: f.IfRange,
 	}
 	if f.Body != nil {
@@ -644,9 +643,13 @@ func (h *harness) do(method, path string, body io.Reader, hdr ...string) *httpte
 
 func bearer(tok string) string { return "Bearer " + tok }
 
-// problemCode reads the code of a problem details body.
+// problemCode reads the code of one of the Bastion's own answers: the member code of a JSON shape, the line's prefix of the text shape.
 func problemCode(w *httptest.ResponseRecorder) string {
 	body := w.Body.String()
+	if strings.HasPrefix(w.Header().Get("Content-Type"), "text/plain") {
+		code, _, _ := strings.Cut(body, ": ")
+		return code
+	}
 	i := strings.Index(body, `"code":"`)
 	if i < 0 {
 		return ""
