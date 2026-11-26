@@ -10,8 +10,9 @@ package e2e
 // profile of the npm tests: three api, three packages, two worker and two vuln pods. The drain of packages replaces every
 // replica, so every replica's caches of documents (the rendition cache, the merged documents of npm-all, the remote's stored
 // documents) are cold afterwards. npm ci asks for tarballs only, so k6 asks for the document of every package the lockfile
-// locks (npmLoadOpts.allDocuments), and the documents' p99 is held to twice the warm-up's on its own: the tarballs of 1 to 5
-// MiB set the p99 of the mix. A long leg: the set drain-roles of the nightly workflow, on dispatch and locally (owner,
+// locks (npmLoadOpts.allDocuments), and the documents' p99 is held on its own: the tarballs of 1 to 5 MiB set the p99 of the mix.
+// Both p99s of the drain window are held to twice the larger of the warm-up's and the post-drain window's (drainp99, Q-HA-497), and
+// the p99 of each role's phase is logged. A long leg: the set drain-roles of the nightly workflow, on dispatch and locally (owner,
 // 2026-11-01), not of a change.
 
 import (
@@ -24,6 +25,8 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/guided-traffic/quader/test/e2e/drainp99"
 )
 
 type drainRole struct {
@@ -221,24 +224,35 @@ func TestDrainRoles(t *testing.T) {
 		xres := kx.stopTransfer(t)
 		nres := npm.stop(t)
 		nk := nres.K6
-		warmFrom, windowTo := nk.First.Add(prime), drainEnd.Add(2*time.Minute)
+		// The windows of Q-HA-497: the warm-up, the drain window until 2 minutes after the last replacement was ready, and the
+		// post-drain window from there until the load ended (about a minute); the larger of the warm-up's and the post-drain
+		// window's p99 is the baseline, so that a neighbour's load on the runner that lifts the drain and what follows it is not
+		// read as the drain's. Each role's phase is logged beside them.
+		warmFrom, windowTo, postTo := nk.First.Add(prime), drainEnd.Add(2*time.Minute), nk.Last.Add(time.Nanosecond)
+		samples := make([]drainp99.Sample, 0, len(nk.Lines))
+		for _, l := range nk.Lines {
+			samples = append(samples, drainp99.Sample{At: l.At, Kind: l.Kind, Took: time.Duration(l.MS) * time.Millisecond})
+		}
 		p99s := map[string]map[string]int64{}
-		var warm, during, warmDoc, duringDoc time.Duration
-		var nWarm, nDuring, nWarmDoc, nDuringDoc int
+		verdicts := map[string]drainp99.Verdict{}
 		for _, kind := range []string{"", "document", "tarball"} {
-			w, nw := nk.p99Of(kind, warmFrom, firstEviction)
-			d, nd := nk.p99Of(kind, firstEviction, windowTo)
-			pk, npk := nk.p99Of(kind, roleFrom["packages"], roleTo["packages"].Add(2*time.Minute))
+			v := drainp99.Judge(samples, kind, warmFrom, firstEviction, windowTo, postTo)
 			label := kind
-			switch kind {
-			case "":
-				label, warm, nWarm, during, nDuring = "all", w, nw, d, nd
-			case "document":
-				warmDoc, nWarmDoc, duringDoc, nDuringDoc = w, nw, d, nd
+			if kind == "" {
+				label = "all"
 			}
-			p99s[label] = map[string]int64{"warmup_ms": w.Milliseconds(), "warmup_n": int64(nw), "drain_ms": d.Milliseconds(), "drain_n": int64(nd), "packages_ms": pk.Milliseconds(), "packages_n": int64(npk)}
-			t.Logf("npm k6 p99 of %s: warm-up %s over %d requests; from the first eviction until 2 minutes after the last replacement was ready %s over %d; from the first eviction of packages until 2 minutes after its last replacement was ready %s over %d",
-				label, w, nw, d, nd, pk, npk)
+			verdicts[label] = v
+			p99s[label] = map[string]int64{
+				"warmup_ms": v.Warm.P99.Milliseconds(), "warmup_n": int64(v.Warm.N), "drain_ms": v.Drain.P99.Milliseconds(),
+				"drain_n": int64(v.Drain.N), "post_ms": v.Post.P99.Milliseconds(), "post_n": int64(v.Post.N), "bound_ms": v.Bound().Milliseconds(),
+			}
+			t.Logf("npm k6 p99 of %s: warm-up %s over %d requests; from the first eviction until 2 minutes after the last replacement was ready %s over %d; after that until the load ended %s over %d; bound %s",
+				label, v.Warm.P99, v.Warm.N, v.Drain.P99, v.Drain.N, v.Post.P99, v.Post.N, v.Bound())
+			for _, role := range drainRoles {
+				w := drainp99.Of(samples, kind, roleFrom[role.name], roleTo[role.name])
+				p99s[label][role.name+"_ms"], p99s[label][role.name+"_n"] = w.P99.Milliseconds(), int64(w.N)
+				t.Logf("npm k6 p99 of %s while %s was drained (%s to %s): %s over %d", label, role.name, w.From.Format("15:04:05"), w.To.Format("15:04:05"), w.P99, w.N)
+			}
 		}
 		served := nk.documentsServed(roleFrom["packages"])
 		t.Logf("k6 asked for %d distinct documents of %d; distinct documents answered 200 per replica since the first eviction of packages: %v", nk.distinctDocuments(), h.allDocuments, served)
@@ -264,15 +278,19 @@ func TestDrainRoles(t *testing.T) {
 		nres.allExitZero(t)
 		nres.loopsSpan(t, firstEviction, drainEnd)
 		nk.only2xx304(t)
-		if nWarm < 1000 || nDuring < 1000 || nWarmDoc < 1000 || nDuringDoc < 1000 {
-			t.Errorf("too few npm k6 requests for the latency conditions: %d (%d documents) in the warm-up, %d (%d documents) in the drain window", nWarm, nWarmDoc, nDuring, nDuringDoc)
+		all, docs := verdicts["all"], verdicts["document"]
+		if !all.Enough(1000) || !docs.Enough(1000) {
+			t.Errorf("too few npm k6 requests for the latency conditions: %d (%d documents) in the warm-up, %d (%d documents) in the drain window, %d (%d documents) after it",
+				all.Warm.N, docs.Warm.N, all.Drain.N, docs.Drain.N, all.Post.N, docs.Post.N)
 		}
-		if during > 2*warm {
-			t.Errorf("R-HA-059: the p99 of k6's npm requests from the first eviction until 2 minutes after the last replacement was ready is %s, more than twice the warm-up's %s", during, warm)
+		if !all.Within() {
+			t.Errorf("R-HA-059: the p99 of k6's npm requests from the first eviction until 2 minutes after the last replacement was ready is %s, more than twice the larger of the warm-up's %s and the post-drain window's %s",
+				all.Drain.P99, all.Warm.P99, all.Post.P99)
 		}
 		// Q-HA-94: the documents on their own, which the tarballs would hide in the mix
-		if duringDoc > 2*warmDoc {
-			t.Errorf("R-HA-059 Q-HA-94: the p99 of k6's document requests from the first eviction until 2 minutes after the last replacement was ready is %s, more than twice the warm-up's %s", duringDoc, warmDoc)
+		if !docs.Within() {
+			t.Errorf("R-HA-059 Q-HA-94: the p99 of k6's document requests from the first eviction until 2 minutes after the last replacement was ready is %s, more than twice the larger of the warm-up's %s and the post-drain window's %s",
+				docs.Drain.P99, docs.Warm.P99, docs.Post.P99)
 		}
 		// The load reached the cold caches: every packages replica that replaced one rendered at least half of the documents.
 		replaced := 0

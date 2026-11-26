@@ -350,32 +350,44 @@ func TestR_VULN_028_PerformanceRun(t *testing.T) {
 	// V-4: the evaluation added to a publish. 300 versions are published to npm-local with data present. The replica's
 	// histogram of the trigger publish observes each evaluation once, inside the publish; scraped before and after every
 	// publish, its _sum and _count move by that one call's duration, so the p99 is read from 300 exact samples and not from
-	// a bucket (F-43). The histogram stays what production reads; its bucket bound is noted beside the exact value.
+	// a bucket (F-43). The histogram stays what production reads; its bucket bound is noted beside the exact value. The publishes
+	// run in three rounds of 300, each of new names and versions, and the value is the median of the three rounds' p99 (Q-VULN-284):
+	// a neighbour on the shared runner that loads one round lifts one p99, not the value.
 	rep.scenario(t, "V-4 evaluation on publish", []string{"V-4"}, evaluated, func(t *testing.T) {
 		const metric, series = "quader_vuln_evaluation_duration_seconds", `trigger="publish"`
 		sum, count, _ := histogramTotals(web.Metrics(t), metric, series)
-		var samples []time.Duration
+		var samples, p99s []time.Duration
 		repeated := 0
-		for i := range publishes {
-			name := fmt.Sprintf("quader-test-filler-%04d", 100000+i) // not in the dump: the common case of a publish
-			if i%10 == 0 {
-				name = fmt.Sprintf("quader-test-filler-%04d", i) // one in ten has an advisory (version 1.0.0 is affected)
+		for r := range publishRounds {
+			var round []time.Duration
+			for i := range publishes {
+				n := r*publishes + i
+				name := fmt.Sprintf("quader-test-filler-%04d", 100000+n) // not in the dump: the common case of a publish
+				if i%10 == 0 {
+					name = fmt.Sprintf("quader-test-filler-%04d", n) // one in ten has an advisory (version 1.0.0 is affected)
+				}
+				publish(t, in, web, repoNPMLocal, name, fmt.Sprintf("1.%d.0", 20+n))
+				nextSum, nextCount, ok := histogramTotals(web.Metrics(t), metric, series)
+				if !ok || nextCount == count {
+					t.Fatalf("publish %d of round %d was not evaluated: %s{%s} did not move", i, r+1, metric, series)
+				}
+				if nextCount-count > 1 {
+					repeated++ // a transaction that ran again observed more than once: its sample is the sum of the runs
+				}
+				round = append(round, time.Duration((nextSum-sum)*float64(time.Second)))
+				sum, count = nextSum, nextCount
 			}
-			publish(t, in, web, repoNPMLocal, name, fmt.Sprintf("1.%d.0", 20+i))
-			nextSum, nextCount, ok := histogramTotals(web.Metrics(t), metric, series)
-			if !ok || nextCount == count {
-				t.Fatalf("publish %d was not evaluated: %s{%s} did not move", i, metric, series)
-			}
-			if nextCount-count > 1 {
-				repeated++ // a transaction that ran again observed more than once: its sample is the sum of the runs
-			}
-			samples = append(samples, time.Duration((nextSum-sum)*float64(time.Second)))
-			sum, count = nextSum, nextCount
+			p99s = append(p99s, percentile(round, 0.99))
+			samples = append(samples, round...)
+		}
+		rounds := make([]string, len(p99s))
+		for i, p := range p99s {
+			rounds[i] = fmt.Sprintf("%.2f", ms(p))
 		}
 		bound := histogramBound(web.Metrics(t), metric, series, 0.99)
-		rep.record("V-4", ms(percentile(samples, 0.99)),
-			fmt.Sprintf("%d publishes, median %.2f ms, max %.2f ms, %d evaluated more than once, histogram bucket bound of the p99 %.0f ms",
-				publishes, ms(percentile(samples, 0.5)), ms(percentile(samples, 1)), repeated, bound*1000))
+		rep.record("V-4", ms(percentile(p99s, 0.5)),
+			fmt.Sprintf("%d rounds of %d publishes, p99 per round %s ms, median %.2f ms, max %.2f ms, %d evaluated more than once, histogram bucket bound of the p99 %.0f ms",
+				publishRounds, publishes, strings.Join(rounds, ", "), ms(percentile(samples, 0.5)), ms(percentile(samples, 1)), repeated, bound*1000))
 	})
 
 	// V-5: the block check of a download of a stored item. One replica has the scanning on, one off; the same stored

@@ -40,7 +40,8 @@ const (
 	npmFiller        = 231000 // the records of the real npm archive, about (R-VULN-028 V-1)
 	nugetFiller      = 7400   // the records of the real NuGet archive, about
 	changedRecords   = 500    // V-3
-	publishes        = 300    // V-4
+	publishes        = 300    // V-4, per round
+	publishRounds    = 3      // V-4: the value is the median of the rounds' p99
 	cachedDownloads  = 2000   // V-5
 	auditPackages    = 1000   // V-6
 	auditRepeats     = 60
@@ -60,7 +61,7 @@ var rows = map[string]row{
 	"V-1":  {"full import of the npm archive into empty tables", "min", 15},
 	"V-2":  {"full evaluation of the 100,000 versions", "min", 5},
 	"V-3":  {"incremental sync with 500 changed records and their evaluation", "min", 2},
-	"V-4":  {"evaluation added to a publish commit, p99 (exact, per call)", "ms", 5},
+	"V-4":  {"evaluation added to a publish commit, p99 (exact, per call; the median of three rounds)", "ms", 5},
 	"V-5a": {"latency added by the block check on a cached download, p99", "ms", 1},
 	"V-5b": {"database statements of every cached download after the cache refills R-ARCH-027 exempts, the largest (both replicas, counted per request; each must be exactly 1)", "statements", 1.0},
 	"V-6":  {"npm local audit of a 1,000-package lockfile, p99", "ms", 500},

@@ -1880,8 +1880,10 @@ starts 3.5 minutes before the first eviction: its first 90 s fill the replicas' 
 - k6 records no response other than `2xx` or `304` for the npm requests and `200` for the ping and replica requests, and no
   connection error;
 - the p99 latency of k6's npm requests from the first eviction until 2 minutes after the last replacement is ready is at most
-  twice the p99 of the warm-up, and so is the p99 of k6's document requests on their own against the warm-up's documents (the
-  tarballs of 1–5 MB set the p99 of the mix);
+  twice the larger of the warm-up's p99 and the p99 of the post-drain window (from there until the load ends, about a minute), and
+  so is the p99 of k6's document requests on their own against the same windows' documents (the tarballs of 1–5 MB set the p99 of
+  the mix); each window holds at least 1,000 requests, and the p99 of each role's phase is logged beside them
+  ([Q-HA-497](#q-ha-497--the-drain-per-role-holds-its-p99-to-the-larger-of-the-warm-ups-and-the-post-drain-windows));
 - every acknowledged publish installs afterwards;
 - no transfer and no management call fails, and no download returns other bytes than were uploaded;
 - the pods of the other roles keep their names and restart counts while a role is drained;
@@ -13421,6 +13423,30 @@ process (R-OPS-048), and nothing reads the name as a key; only the scanner of th
 
 **Choice:** (a). The integration test of the rows holds that two reports of one kind and one name with two UIDs make two rows
 (`TestR_OPS_048_TheRowsOfTheScannerReplicas`). **Applied in the spec:** R-OPS-048 ("The report").
+
+### Q-HA-497 · The drain per role holds its p99 to the larger of the warm-up's and the post-drain window's
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: `e2e (drain-roles)` missed the documents' condition of "A drain per role" in 2 of 6 nightlies (the last: a p99 of 269 ms
+in the drain window against twice the warm-up's 115 ms), each while another job's load ran on the shared runner, and its ratio of
+drain to warm-up was flat at 1.15 to 1.36 in the others (the read of ten nightlies of 2026-11-26). The warm-up is the 2 minutes
+before the first eviction; the drain window runs until 2 minutes after the last replacement is ready, about 15 minutes later. A
+neighbour that starts in between lifts the drain window and not the warm-up, and the test read it as the drain's. The load already
+runs 3 minutes after the drain, so a minute after the drain window is measured and was not read.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The bound is twice the larger of the warm-up's p99 and the post-drain window's (the minute after the drain window, until the load ends); each role's phase is logged (chosen) | `test/e2e/drainp99`, unit-tested without a cluster | A neighbour that lasts past the drain lifts the baseline with the window; a drain that alone lifts its window fails as before; no minute more on the leg | A neighbour that runs only during the drain still fails it; a drain whose cold caches still slow the minute after it raises its own baseline |
+| (b) Raise the factor | 3 × the warm-up | Nothing to build | Hides a regression of half again on a quiet night as well |
+| (c) Run the leg alone on the runner | A runner of its own | No neighbour | Costs a runner for an hour a night; the nightly's legs already share |
+| (d) A post-drain window of 3 minutes | `after` 5 minutes | A larger sample | 2 minutes more on the leg for a p99 that 4,000 documents a minute already carry |
+
+**Choice:** (a). `TestDrainRoles` reads the three windows of the npm requests and of the documents through `drainp99.Judge`, fails
+a window below 1,000 requests, logs the p99 of each role's phase (from its first eviction to its last replacement's readiness) and
+writes all of them into the leg's note. **Applied in the spec:** R-HA-059 ("A drain per role", the pass conditions). Measured: the
+unit test of the comparison (`TestR_HA_059_TheDrainIsHeldToTheLargerOfWarmUpAndPostDrain`) with the failing night's 115 and 269 ms;
+the post-drain p99 of a real night is shown by the next nightly, which logs it for the first time.
 
 ### H-37 · A database restore revives revoked credentials and removed grants
 

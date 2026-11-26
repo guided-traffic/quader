@@ -11374,10 +11374,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-HA
 
-264 questions on [spec/ha-and-helm.md](spec/ha-and-helm.md).
+265 questions on [spec/ha-and-helm.md](spec/ha-and-helm.md).
 
 <details>
-<summary>Q-HA: 264 questions</summary>
+<summary>Q-HA: 265 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -11645,6 +11645,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-HA-494](spec/ha-and-helm.md#q-ha-494--secretsupstreamaccounts-is-a-map-by-the-registrys-key-and-authmode-defaults-to-basic) | `secrets.upstreamAccounts` is a map by the registry's key, and `authMode` defaults to basic | Decided by the development agent | (a) A map by the registry's key; `authMode` `basic` by default; `usernameKey` `username`, `passwordKey` `password` | — |
 | [Q-HA-495](spec/ha-and-helm.md#q-ha-495--a-stopping-scanner-tries-its-sign-off-again-for-ten-seconds-a-replica-that-vanished-without-a-word-stays-lost-by-the-registrys-rule) | A stopping scanner tries its sign-off again for ten seconds; a replica that vanished without a word stays lost by the registry's rule | Decided by the development agent | (a), and the profile stops its scanners before quader and the malware scanner's container with `TERM`, as the kubelet does (`deploy/ui-dev/serve.sh`, `malware.sh`). | — |
 | [Q-HA-496](spec/ha-and-helm.md#q-ha-496--two-processes-of-one-name-stand-side-by-side-the-rows-key-is-the-processs-uid-and-the-profile-names-its-image-scanner-after-the-unit) | Two processes of one name stand side by side: the row's key is the process's UID, and the profile names its image scanner after the unit | Decided by the development agent | (a) The profile sets `QUADER_POD_NAME=<project>-vuln-scanner-trivy` for both processes, as the chart does | — |
+| [Q-HA-497](spec/ha-and-helm.md#q-ha-497--the-drain-per-role-holds-its-p99-to-the-larger-of-the-warm-ups-and-the-post-drain-windows) | The drain per role holds its p99 to the larger of the warm-up's and the post-drain window's | Decided by the development agent on 2026-11-26 | (a) The bound is twice the larger of the warm-up's p99 and the post-drain window's (the minute after the drain window, until the load ends); each role's phase is logged | — |
 
 </details>
 
@@ -13869,10 +13870,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-VULN
 
-200 questions on [spec/vulnerability-scanning.md](spec/vulnerability-scanning.md).
+201 questions on [spec/vulnerability-scanning.md](spec/vulnerability-scanning.md).
 
 <details>
-<summary>Q-VULN: 200 questions</summary>
+<summary>Q-VULN: 201 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -14076,6 +14077,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-VULN-281](spec/vulnerability-scanning.md#q-vuln-281--an-advisory-is-an-anonymous-callers-only-where-it-affects-an-open-finding-the-caller-may-read) | An advisory is an anonymous caller's only where it affects an open finding the caller may read | Decided by the development agent on 2026-11-26 | (a) For an anonymous caller an advisory of which it may read no open finding answers the `404` of one that does not exist, every ecosystem alike; both answers run the same statements | [ADR-301](#adr-301--an-anonymous-caller-reads-the-open-findings-and-the-grades-of-what-the-public-levels-admit) |
 | [Q-VULN-282](spec/vulnerability-scanning.md#q-vuln-282--an-analysis-waits-for-the-blobs-of-its-manifest-without-a-call-and-without-an-attempt) | An analysis waits for the blobs of its manifest, without a call and without an attempt | Decided by the development agent on 2026-11-26 | (a) The job reads, before an analysis, whether the repository holds every blob the manifest names; while one is missing and the manifest is younger than 30 minutes the row is put off by `scan_delay` (`blobs_pending`), without a call and without an attempt, and the run wakes for it | — |
 | [Q-VULN-283](spec/vulnerability-scanning.md#q-vuln-283--the-malware-check-needs-no-wait-for-an-image-it-checks-each-file-at-its-own-commit) | The malware check needs no wait for an image: it checks each file at its own commit | Decided by the development agent on 2026-11-26 | no change. | — |
+| [Q-VULN-284](spec/vulnerability-scanning.md#q-vuln-284--v-4-is-the-median-of-three-rounds-p99) | V-4 is the median of three rounds' p99 | Decided by the development agent on 2026-11-26 | (a) Three rounds of 300 publishes, each of new names and versions; V-4 is the median of the three p99 | — |
 
 </details>
 <!-- coverage-gen:end decisions -->
