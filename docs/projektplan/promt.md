@@ -309,8 +309,9 @@ wrapped line was seen (2026-11-19), so its condition to build a check is met.
 | W30-A1 · A collection's documentation reads like the documentation site (W-30) | R-ANS-048 to R-ANS-050 of the plan `.dev/w30-plan.md`: anchors and links, a plugin's configuration, the page's contents, highlighted examples | landed and pushed at 23:55 |
 | W30-G7 · An image's facts: annotations and labels, the config, the layers, the history (W-30) | R-OCI-039 to R-OCI-041 of the plan `.dev/w30-plan.md`; with a Helm chart's facts since the owner's d4 = b; Q-UI-1250 to Q-UI-1259, R-UI-219, migration 00132 | built at about 23:58 (five commits); sent back at about 00:00 for the stored images, the gates' decision on a configuration and a chart's row menu, then its UI moves onto S19 |
 | W30-A4 · A role read through a remote reads like a role (W-30, the owner's d1 = b) | R-ANS-056 of the plan `.dev/w30-plan.md`: owner and name, description, README, `role search`; no local publish of a role; Q-ANS-110 to Q-ANS-119, Q-UI-1260 to Q-UI-1269, H-2120 to H-2129, migration 00133 | in work since 23:18 |
-| W30-G8 · A Debian package shows its relations, long description, changelog, copyright and file list (W-30) | R-DEB-038, R-DEB-039 of the plan `.dev/w30-plan.md`; the data archive read under bounds, which revises R-DEB-007; Q-DEB-140 to Q-DEB-149, Q-UI-1270 to Q-UI-1279, H-2130 to H-2139, migration 00134 | in work since 23:30 |
+| W30-G8 · A Debian package shows its relations, long description, changelog, copyright and file list (W-30) | R-DEB-038, R-DEB-039 of the plan `.dev/w30-plan.md`; the data archive read under bounds, which revises R-DEB-007; Q-DEB-140 to Q-DEB-149, Q-UI-1270 to Q-UI-1279, H-2130 to H-2139, migration 00134 | landed and pushed on 2026-11-26 at 01:25, with the migration 00132 (the OCI package takes 00133, the roles 00134) |
 | W30-A2 · The documentation generator reads fragments, a role's argument specs and the changelog (W-30) | R-ANS-051 to R-ANS-053 of the plan `.dev/w30-plan.md`; Q-ANS-96 to Q-ANS-105, Q-UI-1280 to Q-UI-1289, H-2140 to H-2149, migration 00135 | in work since 2026-11-26, about 00:29 |
+| W30-A3 · Finding collections, the page of a name in every format, the documentation searched across collections (W-30, the owner's d2 = b and d3 = b) | the plan's package A3 with R-ANS-057, R-ANS-058 and R-UI-220; Q-ANS-120 to Q-ANS-129, Q-UI-1290 to Q-UI-1299, H-2150 to H-2159 | in work since 2026-11-26, about 01:05 |
 | W-30 planner · Ansible as an equal of Galaxy; general and specific properties per format | the owner's task of 20:39: a comparison screen by screen and answer by answer, and the table of properties per format | plan written at 21:05 (`.dev/w30-plan.md`) |
 | W30-G1 · A remote's cached version of npm and Debian carries its facts (W-30) | R-NPM-050, R-NPM-051, R-DEB-037 of the plan `.dev/w30-plan.md`; the README of an npm version from the stored tarball | landed and pushed at 23:27 |
 | G1 · The checks see overlays and clipping as a person does | an overlay is measured in the window a person has and a modal state is not pictured in a grown window; `sideways` inside dialogs and drawers; the new checks `overlay-out` (the person search's list wider than its drawer, W-12), `cut` (a text cut at the start of a wrapped line) and `separator-start` (a separator dot that starts a line); a state's own widths and schemes; the correction of Q-UI-1060 | about 5 s of fixtures, at most 60 s of the render step | landed and pushed at 14:55 (two commits; Q-UI-1170 to Q-UI-1173, H-1912 closed; its builder worked from 11:13 to 13:17; with S11 on one landing: thirteen gates, `make ui-states`, the whole English set (532 screens, 43.1 minutes) and the German pass (98 screens, 9.2 minutes) each without a failure or a finding, the new checks over every screen that landed today) |
@@ -1065,6 +1066,15 @@ order is what a user or an operator meets first. The state is kept here.
 
 ### Tests and tools
 
+- **Open since 2026-11-26, 01:25, two findings of the night's builders, for the next batch of tools.** (1) Builders share one
+  temporary directory: a builder's helper scripts there were overwritten by another builder's of the same names; it
+  noticed and ran none of the changed ones. Briefs now say that a helper script belongs under the builder's own
+  worktree. (2) Under load (renders and lint beside an area's run) two tests of the area `mirror` failed on a pause of
+  1.67 s against a bound of 1.4 s (`TestR_REPO_051_NpmPublicRegistryFeed`,
+  `TestR_REPO_054_SlowDownWithoutAHintBacksOffExponentially`) and passed alone; with
+  `TestR_REPO_054_ALongWaitEndsTheJobDeferredAndTheNextJobContinuesAtThatTime` of the evening that is three tests of
+  the mirror's back-off whose bounds are wall-clock; not read to a fix.
+
 - **Closed on 2026-11-25, 23:55: a unit test of the tab Downloads failed every night from 23:20 to midnight.** The case
   "an upstream's rate limit is said above the list, on its waiting rows and on the bulk" sets the limit's end 40 minutes
   from now and expected "Rate limit until" followed by a digit; when that end lies past midnight the line carries the
@@ -1254,6 +1264,35 @@ records the recorder that tells such a stall apart).
   that failed between 07:39 and 09:00 is no finding of the code.
 
 ### Product
+
+- **Closed on 2026-11-26, 01:25, by W30-G8 (W-30; R-DEB-038, R-DEB-039; Q-DEB-140 to Q-DEB-145; Q-UI-1270 to Q-UI-1272; gaps
+  H-2130 to H-2137; migration 00132): a Debian package shows what Debian tells about it: its relations, its long
+  description, its changelog, its copyright file and the files it installs.** The owner's rule of 2026-11-25
+  (metadata and documentation a format regularly carries are used and shown). The nine relation fields are sent
+  parsed (name, architecture qualifier, constraint, alternatives, build profiles) and shown as lists whose names link
+  to the package where the installation holds it; the long description keeps Debian's paragraphs; Multi-Arch and
+  Essential are facts; the source package is a link to the list filtered by it. The changelog, the copyright file
+  and the file list are read from the package's data archive, which R-DEB-007 had kept unread: by a job
+  (`deb-contents`, the queue `default`) after the upload or the cached file's description, never in the upload's
+  request or the fill's transaction, and it never fails either; streamed as gz, xz, zst or plain, never extracted to
+  disk, no link, device or pipe followed; bounds: 2 GiB inflated, 200,000 entries, 2 minutes a file, 64 MiB of
+  dictionary or window (the pinned xz module allocates what a block's header declares, up to 4 GiB, before it decodes
+  a byte, so a parser of the container refuses a block over 64 MiB first); kept: the changelog's newest 64 KiB, the
+  copyright's first 64 KiB with its `License:` lines as the version's licences, 10,000 file names. An archive that
+  crosses a bound is refused whole, the file stays stored and served, the page says that Quader could not read it,
+  and a reader of the configuration gets the reason. The changelog and the copyright are wiki content. The screen:
+  Details with the description, the relations and the copyright in a fold; a tab Changelog; on the tab Files the
+  section Installed files with a path filter, the architecture's choice, 100 entries and "Show more". What was stored
+  before: the task `remote-describe` also queues the reading for local and cached files without their contents. The
+  landing: the landing's tree is the builder's tip; the 13 gates, the dialog states, the Debian renders on a fresh instance (40 in English, 13 in German, no layout finding) and the whole areas `deblocal`, `debremote` and `repository` green, the count of requirements 1,291; looked at: a version's Details in light at 1,440 px (the description's paragraphs, every relation field as a list with alternatives and links, the package's details with the source package, the copyright's fold, the tab Changelog); seen and noted: "Installed size 18432 KiB" would read better in MiB. Open: packages over the bounds and bzip2 or lzma archives show no contents (H-2130); a package
+  whose doc directory links to another package shows no changelog (H-2131); the first 10,000 files only (H-2132); a
+  changelog that is no UTF-8 shows replacement characters (H-2133); relation links use the installation-wide lookup
+  of at most 60 names (H-2134); the task covers local repositories under its old name (H-2135); the contents are
+  read with ranged, unverified reads of the blob (H-2136); many large uploads keep the queue `default` busy (H-2137);
+  and not built, a candidate: the members of the control archive, above all whether a package carries maintainer
+  scripts, which is a fact that matters for security. Not verified: real packages of Debian's or Ubuntu's archive
+  with large data archives; the time and memory of a package of 1 to 2 GiB; multi-block xz files as dpkg writes them
+  with threads.
 
 - **Closed on 2026-11-26, 00:45, by S19 (W-30; R-UI-218; Q-UI-1240 to Q-UI-1245; gaps H-2080 to H-2082, H-2084): the client's
   command stands behind its button on a version's page too, its panel has a tab per client, and a package of Ansible
