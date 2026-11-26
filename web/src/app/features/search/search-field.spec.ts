@@ -11,7 +11,7 @@ import { FakeRepositoriesApi } from '../../api/testing/fakes-catalog';
 import { FakeSearchApi } from '../../api/testing/fakes-search';
 import { BrowserStorage } from '../../core/storage';
 import { spokenText } from '../../testing/axe';
-import { expectAccessible, renderScreen, settle, sleep, text, waitUntil } from '../../testing/screen';
+import { expectAccessible, renderScreen, settle, text, waitUntil } from '../../testing/screen';
 import { SearchField } from './search-field';
 import { SearchLayout } from './search-layout';
 
@@ -76,6 +76,13 @@ const status = (root: HTMLElement): string => text(root.querySelector('.search-s
 async function answered(fixture: Parameters<typeof settle>[0], root: HTMLElement): Promise<void> {
   await waitUntil(fixture, () => root.querySelector('[role="listbox"][aria-busy="true"]') === null, 'the answer of the suggestions');
 }
+
+/**
+ * How much earlier than its delay a timer may fire, measured by `performance.now()`: the event loop counts whole milliseconds. A
+ * pause of the field is checked as a lower bound on the times the fake recorded, which a loaded host only lengthens; the spec never
+ * waits a time of its own to show that something was not sent yet.
+ */
+const EARLY_MS = 5;
 
 /** Waits until the field has sent its `n`th request: for a request the fake holds, whose answer does not come. */
 async function requested(fixture: Parameters<typeof settle>[0], search: FakeSearchApi, n: number): Promise<void> {
@@ -246,13 +253,14 @@ describe('Live suggestions (R-UI-097)', () => {
   it('R-UI-097 one request 250 ms after the last key, with the kinds of the filter; a superseded text sends nothing', async () => {
     const { root, fixture, search } = await render('sam');
     await open(fixture, root);
+    // 'ven' schedules its request at once; 'vend' supersedes it before its pause is over, whatever the host's load.
     typeText(root, 'ven');
-    await sleep(fixture, 50);
+    const last = performance.now();
     typeText(root, 'vend');
-    await sleep(fixture, 50);
     expect(search.requests).toHaveLength(0);
     await answered(fixture, root);
     expect(search.requests.map((r) => [r.q, r.kinds?.join(','), r.limit])).toEqual([['vend', 'repository,package,project,documentation', 5]]);
+    expect(search.sentAt[0]! - last).toBeGreaterThanOrEqual(250 - EARLY_MS);
     expect(groupNames(root)).toEqual(['Repositories']);
     const first = options(root)[0]!;
     expect(spokenText(first)).toBe('npm-vendor · web-frontend');
@@ -356,14 +364,15 @@ describe('Live suggestions (R-UI-097)', () => {
     await answered(fixture, root);
     expect(status(root)).toBe('Too many searches. Suggestions return in 1 s.');
     const sent = search.requests.length;
-    typeText(root, 'zzzzz');
-    await sleep(fixture, 400);
-    expect(search.requests).toHaveLength(sent);
+    // The request the 429 answered went out before the answer that set the pause.
+    const limited = search.sentAt[sent - 1]!;
     search.failure = new ApiError(500, null, null);
-    // the field sends again once Retry-After has passed, and its answer is the error
+    typeText(root, 'zzzzz');
+    // the field sends again once Retry-After has passed, not 250 ms after the key, and its answer is the error
     await waitUntil(fixture, () => search.requests.length > sent, 'the request after Retry-After');
     await answered(fixture, root);
-    expect(search.requests.length).toBe(sent + 1);
+    expect(search.requests.slice(sent).map((r) => r.q)).toEqual(['zzzzz']);
+    expect(search.sentAt[sent]! - limited).toBeGreaterThanOrEqual(1000 - EARLY_MS);
     expect(status(root)).toBe('Suggestions are not available.');
   });
 
@@ -371,13 +380,21 @@ describe('Live suggestions (R-UI-097)', () => {
     const { root, fixture, search } = await render('anonymous');
     await open(fixture, root);
     typeText(root, 'we');
-    await sleep(fixture, 600);
+    await settle(fixture);
+    // Two characters are no question: nothing is scheduled, so the list is not busy (a scheduled request makes it busy at once).
+    expect(root.querySelector('[role="listbox"]')).not.toBeNull();
+    expect(root.querySelector('[role="listbox"][aria-busy="true"]')).toBeNull();
     expect(search.requests).toHaveLength(0);
+    // Each text is typed once the request of the one before is out; the fifth waits until the first has left the window of 4 s.
+    const typed: number[] = [];
     for (const t of ['web', 'webx', 'weby', 'webz', 'webq']) {
+      typed.push(performance.now());
       typeText(root, t);
-      await sleep(fixture, 550);
+      await requested(fixture, search, typed.length);
     }
-    expect(search.requests.map((r) => r.q)).toEqual(['web', 'webx', 'weby', 'webz']);
+    expect(search.requests.map((r) => r.q)).toEqual(['web', 'webx', 'weby', 'webz', 'webq']);
+    typed.forEach((at, i) => expect(search.sentAt[i]! - at, `the pause before ${search.requests[i]!.q}`).toBeGreaterThanOrEqual(500 - EARLY_MS));
+    expect(search.sentAt[4]! - search.sentAt[0]!).toBeGreaterThanOrEqual(4000 - EARLY_MS);
   });
 
   it('R-UI-097 the keyboard: Down enters the list and crosses groups, Up from the first entry returns to the text, nothing wraps, Enter opens, Escape closes and then empties', async () => {

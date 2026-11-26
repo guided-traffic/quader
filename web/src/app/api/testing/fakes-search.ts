@@ -31,6 +31,11 @@ function abortError(): DOMException {
 export class FakeSearchApi extends SearchApi {
   /** Every request, in order, with its signal. */
   readonly requests: SuggestRequest[] = [];
+  /**
+   * When each request of `requests` reached the fake (`performance.now()`): a spec measures the field's pauses from them instead of
+   * waiting a time of its own, which a loaded host stretches.
+   */
+  readonly sentAt: number[] = [];
   repositories: RepositorySuggestion[] = [
     { project: 'web', key: 'npm-local', format: 'npm', class: 'local' },
     { project: 'web', key: 'npm-all', format: 'npm', class: 'virtual' },
@@ -105,6 +110,7 @@ export class FakeSearchApi extends SearchApi {
 
   override async suggest(request: SuggestRequest): Promise<SearchSuggestions> {
     this.requests.push(request);
+    this.sentAt.push(performance.now());
     if (request.signal?.aborted) throw abortError();
     if (this.hold) await this.held(request.signal);
     if (this.failure) throw this.failure;
