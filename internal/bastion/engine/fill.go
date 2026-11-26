@@ -396,6 +396,11 @@ func (e *engine) serveFill(q *rq, r *fillRun, label string, fromCache bool) {
 		hdr.Set("Content-Range", "bytes "+strconv.FormatInt(p.start, 10)+"-"+strconv.FormatInt(p.end, 10)+"/"+strconv.FormatInt(r.size, 10))
 	}
 	hdr.Set("Content-Length", strconv.FormatInt(length, 10))
+	// A download is checked before its first byte, a hit's against the cached bytes, the fill's own caller's against the uncached
+	// (R-BAS-096); a refused caller leaves the fill running into the cache.
+	if q.r.Method != http.MethodHead && (r.kind == cache.EntryArtifact || q.fam == familyFiles) && !e.admitTransfer(q, fromCache) {
+		return
+	}
 	copyHeader(q.w.Header(), hdr)
 	q.w.WriteHeader(status)
 	if q.r.Method == http.MethodHead {

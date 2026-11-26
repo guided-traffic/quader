@@ -10491,10 +10491,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-BAS
 
-352 questions on [spec/bastion.md](spec/bastion.md).
+357 questions on [spec/bastion.md](spec/bastion.md).
 
 <details>
-<summary>Q-BAS: 352 questions</summary>
+<summary>Q-BAS: 357 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10850,6 +10850,11 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-BAS-467](spec/bastion.md#q-bas-467--the-declared-value-is-a-bastion-token-in-the-issued-format-made-by-a-command-or-by-issue-token) | The declared value is a Bastion token in the issued format, made by a command or by Issue token | Decided by the development agent on 2026-11-26 | (a) Only the issued format (`qdr_bst_`, 57 characters, checksum); `quader admin bastion token generate` prints one without configuration or database; a token issued on the screen whose value the Secret holds is taken as the declared one | — |
 | [Q-BAS-468](spec/bastion.md#q-bas-468--a-declaration-taken-out-keeps-the-registration-a-revoked-value-stops-the-run) | A declaration taken out keeps the registration; a revoked value stops the run | Decided by the development agent on 2026-11-26 | (a) The registration stays, its mark and declared token go (reason `admin`), the run logs a warning; a revoked, expired or foreign value stops the run naming the entry | — |
 | [Q-BAS-469](spec/bastion.md#q-bas-469--only-the-migration-job-reads-the-declared-token) | Only the migration Job reads the declared token | Decided by the development agent on 2026-11-26 | (a) The chart projects the Secrets into the migration Job alone, optional, read-only; replicas verify against the hash in the database | — |
+| [Q-BAS-470](spec/bastion.md#q-bas-470--a-signed-in-caller-whose-answer-names-no-limits-is-charged-by-the-users-kind-rule-under-its-principal) | A signed-in caller whose answer names no limits is charged by the users' kind rule under its principal | Decided by the development agent on 2026-11-26 | (a) The users' kind rule under the key `user:<principal ID>` | — |
+| [Q-BAS-471](spec/bastion.md#q-bas-471--a-caller-learned-from-the-main-installations-answer-is-counted-for-that-request-and-refused-by-nothing-of-it) | A caller learned from the main installation's answer is counted for that request and refused by nothing of it | Decided by the development agent on 2026-11-26 | (a) The request and the upstream requests it sent are counted when the answer names the subject; nothing of that request is refused, except a download, which is checked before its first byte | — |
+| [Q-BAS-472](spec/bastion.md#q-bas-472--a-block-at-a-bastion-holds-for-the-rest-of-the-quarter-hour-it-began-in-and-the-next) | A block at a Bastion holds for the rest of the quarter hour it began in and the next | Decided by the development agent on 2026-11-26 | (a) A counter of the quarter hour the block began in; a request is refused while that counter or the previous one is set: 15 to 30 minutes | — |
+| [Q-BAS-473](spec/bastion.md#q-bas-473--a-fills-own-caller-is-checked-when-the-answer-names-the-class-artifact-and-paced-as-it-receives-not-as-the-fill-reads) | A fill's own caller is checked when the answer names the class artifact, and paced as it receives, not as the fill reads | Decided by the development agent on 2026-11-26 | (a) The miss is charged as an upstream request before it is sent; the answer of the class `artifact` is checked against the uncached hour, the day and the lease before the first byte to the caller; the caller's writes are paced, the fill reads on | — |
+| [Q-BAS-474](spec/bastion.md#q-bas-474--a-replica-reports-its-usage-as-deltas-with-every-flush-and-its-state-says-of-each-figure-whose-it-is) | A replica reports its usage as deltas with every flush, and its state says of each figure whose it is | Decided by the development agent on 2026-11-26 | (a) Each flush (every `bastion.audit.flush_interval`, 1 s by default) sends the usage counted since the last one, kept for the next on a failure, and the state; the wire section says per figure whether it is the replica's own or the Bastion's, and a block's reason is one of three codes | — |
 
 </details>
 

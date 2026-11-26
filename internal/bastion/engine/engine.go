@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/guided-traffic/quader/internal/bastion/answers"
+	"github.com/guided-traffic/quader/internal/bastion/budget"
 	"github.com/guided-traffic/quader/internal/bastion/cache"
 	"github.com/guided-traffic/quader/internal/bastion/downloads"
 	"github.com/guided-traffic/quader/internal/bastion/guard"
@@ -76,6 +77,9 @@ type Deps struct {
 	// Throughput paces a handover's direct read from the object store (R-BAS-097); the client of the main installation paces
 	// what it reads with the same pacer. nil paces nothing.
 	Throughput *throughput.Pacer
+	// Budgets are the budgets of the Bastion's place (R-BAS-096): every request is charged to its subject there. nil charges
+	// nothing (tests of other mechanisms).
+	Budgets *budget.Budgets
 }
 
 // Engine is the Bastion's request flow.

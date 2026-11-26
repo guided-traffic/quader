@@ -302,6 +302,9 @@ var (
 	// throughputFamily holds the byte counters of a Bastion's throughput (R-BAS-097, valkey_bastion_bytes.go): the bytes of a
 	// slice of a second per bucket and the bytes of an hour per class.
 	throughputFamily = registerKeyFamily("throughput", 1, MaxThroughputTTL)
+	// budgetFamily holds the counters of the budgets of a Bastion's place (R-BAS-096, valkey_bastion_bytes.go): a subject's
+	// requests, bytes and transfers per window, and its block.
+	budgetFamily = registerKeyFamily("budget", 1, MaxBudgetTTL)
 )
 
 // <<< M5b bastion

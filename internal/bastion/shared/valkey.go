@@ -117,7 +117,8 @@ func New(v *cluster.Valkey, o Options) (*State, error) {
 		Sweep:     valkeySweep{store: store},
 		Catalogue: valkeyCatalogue{store: store},
 		Answers:   &valkeyAnswers{store: store, signer: o.Signer, m: o.Metrics, log: o.Log},
-		Bytes:     &valkeyBytes{store: store, local: newLocalBytes(o.Replicas, o.Now)},
+		Bytes:     &valkeyBytes{store: store, family: cluster.CountersThroughput, local: newLocalBytes(o.Replicas, o.Now)},
+		Budget:    &valkeyBytes{store: store, family: cluster.CountersBudget, local: newLocalBytes(o.Replicas, o.Now)},
 		Shared:    v.Available,
 	}, nil
 }

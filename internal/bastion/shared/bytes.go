@@ -65,9 +65,10 @@ func (l *localBytes) entry(key string, ttl time.Duration) localCount {
 	}
 	c, ok := l.m[key]
 	if !ok || !c.expires.After(now) {
-		c = localCount{}
+		// The expiry is set when the counter is made and not extended, as Valkey's EXPIRE NX does: a window, a lease or a
+		// block ends at its time whoever reads it meanwhile.
+		c = localCount{expires: now.Add(ttl)}
 	}
-	c.expires = now.Add(ttl)
 	return c
 }
 
@@ -116,10 +117,12 @@ func (l *localBytes) Add(_ context.Context, name string, idx int64, ttl time.Dur
 	return c.n * r, p.n * r
 }
 
-// valkeyBytes is [Bytes] in Valkey, with the local form while Valkey cannot be used.
+// valkeyBytes is [Bytes] in Valkey, with the local form while Valkey cannot be used: the throughput's counters or the
+// budgets' (cluster.CounterFamily).
 type valkeyBytes struct {
-	store *cluster.BastionStore
-	local *localBytes
+	store  *cluster.BastionStore
+	family cluster.CounterFamily
+	local  *localBytes
 }
 
 // unusable reports a failure after which the replica counts in memory; the caller's own end is none.
@@ -129,7 +132,7 @@ func unusable(ctx context.Context, err error) bool {
 
 // Claim implements [Bytes].
 func (v *valkeyBytes) Claim(ctx context.Context, name string, idx int64, ttl time.Duration, want, limit int64) int64 {
-	n, err := v.store.ClaimBytes(ctx, name, idx, ttl, want, limit)
+	n, err := v.store.Claim(ctx, v.family, name, idx, ttl, want, limit)
 	if unusable(ctx, err) {
 		return v.local.Claim(ctx, name, idx, ttl, want, limit)
 	}
@@ -138,14 +141,14 @@ func (v *valkeyBytes) Claim(ctx context.Context, name string, idx int64, ttl tim
 
 // Release implements [Bytes]. A release that does not reach Valkey leaves the bytes counted until the window ends.
 func (v *valkeyBytes) Release(ctx context.Context, name string, idx int64, ttl time.Duration, n int64) {
-	if err := v.store.ReleaseBytes(ctx, name, idx, ttl, n); unusable(ctx, err) {
+	if err := v.store.Release(ctx, v.family, name, idx, ttl, n); unusable(ctx, err) {
 		v.local.Release(ctx, name, idx, ttl, n)
 	}
 }
 
 // Add implements [Bytes].
 func (v *valkeyBytes) Add(ctx context.Context, name string, idx int64, ttl time.Duration, n int64) (cur, prev int64) {
-	cur, prev, err := v.store.AddBytes(ctx, name, idx, ttl, n)
+	cur, prev, err := v.store.Add(ctx, v.family, name, idx, ttl, n)
 	if unusable(ctx, err) {
 		return v.local.Add(ctx, name, idx, ttl, n)
 	}

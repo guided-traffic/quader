@@ -170,6 +170,11 @@ func (h *Holder) export(a *Applied) {
 		return
 	}
 	m.ConfigRevision.Set(float64(a.Configuration.Revision))
+	mode := 0.0
+	if a.Enforce {
+		mode = 1
+	}
+	m.LimitsMode.Set(mode)
 	for _, s := range []Source{SourceMain, SourceStored, SourceBuiltin} {
 		v := 0.0
 		if s == a.Source {

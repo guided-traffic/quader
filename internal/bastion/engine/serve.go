@@ -34,6 +34,9 @@ type source struct {
 	open func(ctx context.Context) (io.ReadCloser, error)
 	// download is set for an artifact: a 200 or 206 served from the cache is a download event (R-BAS-016).
 	download func(q *rq)
+	// transfer is set for an artifact or a file below /files/ served from the cache: its bytes are a download, checked against the
+	// subject's budgets before they start and paced (R-BAS-096).
+	transfer bool
 	// label is the source of the bytes counted in quader_bastion_bytes_served_total: cache (the default) or main.
 	label string
 }
@@ -117,6 +120,9 @@ func (e *engine) serveSource(q *rq, src *source) bool {
 	if q.r.Method == http.MethodHead {
 		copyHeader(q.w.Header(), hdr)
 		q.w.WriteHeader(status)
+		return true
+	}
+	if src.transfer && !e.admitTransfer(q, true) {
 		return true
 	}
 	rc, err := src.open(q.ctx())

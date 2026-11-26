@@ -237,10 +237,13 @@ internal/bastionmain/ the main installation's seams (a domain package)
 | [catalogue/](../../internal/bastion/catalogue) | the public catalogue of the web interface (W-35's P7): see [its section](#the-public-catalogue-at-the-bastion-package-p7) |
 | [shared/local.go](../../internal/bastion/shared/local.go) | the local forms: token buckets, sliding-window counters, block list, flights, answers in memory, all bounded |
 | [throughput/throughput.go](../../internal/bastion/throughput/throughput.go) | the throughput of R-BAS-097: `Pacer` over `shared.Bytes` and the applied configuration; the buckets (total, anonymous share, the catalogue's half), the reservation per slice of 100 ms, `Admit` (a miss's first bytes within its queue time, else `mainclient.ThroughputError`), `Running` and `Reader` (paced, never refused), the class's hourly volume, `Export` (the limit's gauge) |
-| [shared/bytes.go](../../internal/bastion/shared/bytes.go) | `Bytes`: the byte counters of the throughput per name and window, the replica's share in memory without Valkey, `cluster.BastionStore`'s `ClaimBytes`, `ReleaseBytes` and `AddBytes` with it |
+| [shared/bytes.go](../../internal/bastion/shared/bytes.go) | `Bytes`: the counters per name and window of the throughput (`State.Bytes`) and of the budgets (`State.Budget`, the key family `budget`), the replica's share in memory without Valkey with the expiry it was made with, `cluster.BastionStore`'s `Claim`, `Release` and `Add` with it |
+| [budget/budget.go](../../internal/bastion/budget/budget.go), [budget/pace.go](../../internal/bastion/budget/pace.go) | the budgets of the Bastion's place (R-BAS-096): `SubjectOf` (the subject and rule of a request, Q-BAS-470), `Budgets` (`Charge`, `Limited`, `Blocks`), `Charge` (`Request`, `Count`, `Upstream`, `Transfer` with the lease, `Pace`, `Served`, `Refused` and its block, `End`), Audit in `decide`, the codes of R-LIM-020 |
+| [usage/usage.go](../../internal/bastion/usage/usage.go) | the replica's usage buffer (R-LIM-045, Q-LIM-308): rows per subject, credential, repository and rule in buckets of five minutes, the overflow rows, `Drain` and `Restore` |
+| [server/status.go](../../internal/bastion/server/status.go) | `reporting`: what every flush of the download reporter carries, the usage and the replica's state (the cache's gauges and counters, `throughput.Pacer.Status`, the budgets' limited subjects, the blocks of the guard and the budgets), Q-BAS-474 |
 | [shared/valkey.go](../../internal/bastion/shared/valkey.go) | `Open`, `New`, `Options`: the Valkey forms over `cluster.BastionStore`, the limiters of R-ARCH-034 and the FlightLock, with the local forms as the fallback; the signing of answer records |
 | [guard/guard.go](../../internal/bastion/guard/guard.go) | `Guard`, `Verdict`, `AddressKey` |
-| [guard/instance.go](../../internal/bastion/guard/instance.go) | `New`, `Options` (`Figures`, the configuration of the decision), `Instance`: the limits of the classes anonymous, authenticated and `gui` (`Page`), the miss limits, the timeout, the blocking |
+| [guard/instance.go](../../internal/bastion/guard/instance.go) | `New`, `Options` (`Figures`, the configuration of the decision), `Instance`: the limits of the classes anonymous, authenticated and `gui` (`Page`), the miss limits, the timeout, the blocking, `Blocks` (the blocks and timeouts the replica set, for its status) |
 | [guard/ceiling.go](../../internal/bastion/guard/ceiling.go) | `Ceiling`, `NewCeiling`: the anonymous ceiling of R-BAS-094 over the shared state, which the slot budget takes (`mainclient.Ceiling`) |
 | [server/shared.go](../../internal/bastion/server/shared.go) | `openShared`: builds the state and the guard (with the configuration holder's `For`) and closes them |
 | [downloads/downloads.go](../../internal/bastion/downloads/downloads.go), [downloads/reporter.go](../../internal/bastion/downloads/reporter.go) | `Buffer`; `Reporter` (the bounded buffer, batches, the spool to the cache backend, the adoption of spool files) |
@@ -255,6 +258,7 @@ internal/bastionmain/ the main installation's seams (a domain package)
 | [engine/handover.go](../../internal/bastion/engine/handover.go) | the handover per blob at the Bastion: `offerFor`, `onHandover`, `checkHandover`, `fallback`, the continuation (`continuation`, `continues`, `turnToMain`), `directFill` and its one outcome, the mark and the cooldown |
 | [handover/client.go](../../internal/bastion/handover/client.go), [handover/read.go](../../internal/bastion/handover/read.go) | the link client of R-BAS-074 (`Client`, `Open`, `Error` with its `Cause`, `ErrDigest`) and the readers of a plain and of an encrypted body (`Read`) |
 | [engine/serve.go](../../internal/bastion/engine/serve.go) | serving a representation with RFC 9110 semantics, the stream with the withheld tail, the download event |
+| [engine/budget.go](../../internal/bastion/engine/budget.go) | the budgets in the flow (R-BAS-096): `stepBudget` after the credential, `learnSubject` (Q-BAS-471), `chargeUpstream`, `admitTransfer`, `endCharge` (a refused request, the lease), `refuseBudget` (R-LIM-020's codes in the format's shape), `statusWriter` |
 | [engine/entries.go](../../internal/bastion/engine/entries.go) | the cache key and Vary, the entry through `cache.Cache`, freshness |
 | [engine/write.go](../../internal/bastion/engine/write.go) | the refusal of a write (R-BAS-095) and the forward of a read route that takes a body |
 | [engine/shape.go](../../internal/bastion/engine/shape.go) | `writeShaped`, the one renderer of the engine's own answers in the five error shapes (R-BAS-095, Q-BAS-450) |
@@ -932,6 +936,31 @@ Bastion's counters:
   `max_bytes` 2 GiB the first run of the attack had every one of 1,531 fills refused "no room", and every request went to the main
   installation. The scaled-down runs above give documents 256 MiB. Neither configuration starts any more: the role and the chart refuse an
   artifacts' room below one `max_object_bytes` (R-BAS-031), and `hack/bastion-measure/attack.sh` now also lowers `max_object_bytes` to 1 GiB.
+
+### A warm anonymous pull and the tag's HEAD (measured 2026-11-26)
+
+The open point E9a left (W34-E9b): does a warm anonymous `docker pull` still send the tag's `HEAD` to the main installation now that a
+Bastion answers the anonymous token itself and keeps the anonymous caller's documents for the metadata period (E14a, R-BAS-094)? Measured
+once in the area `bastion` (an in-process Bastion in front of the stack, `relaxed` flood figures, the anonymous world of
+`TestR_BAS_094_AnAnonymousPullAndAnAnonymousDocumentSpareTheMainInstallation`, an image of two blobs of 1 KiB), with Docker's sequence:
+`GET /v2/`, the anonymous token, `HEAD` of the tag, then the manifest and the blobs by digest; Docker never `GET`s the tag. The scratch test
+is not kept: a measurement is not a test.
+
+| Pull | Requests at the main installation |
+|---|---|
+| cold, address A | 4: the tag's `HEAD`, the manifest and the two blobs by digest |
+| warm, address A, the same second | 1: the tag's `HEAD` |
+| warm, address B | 1: the tag's `HEAD` |
+| five more warm pulls, address C | 1 each: the tag's `HEAD` |
+
+**Yes, it forwards it, every pull.** Why: a `HEAD` answer has no body, and the read flow keeps a document only from a `GET` answered `200`
+(`onShared`, `onPrivate` in [forward.go](../../internal/bastion/engine/forward.go)); the tag therefore never has an entry nor an anonymous
+copy, and each `HEAD` is a miss that is passed through. With the anonymous ceiling's 36,000 requests an hour a popular public image is held
+to about 36,000 pulls an hour per Bastion [derived: one request per warm pull]. What it would take to keep the tag's manifest for the
+metadata period: a `HEAD` miss of a path whose `GET` the Bastion keeps (a manifest by tag below `/v2/`) is sent as a `GET`, its answer kept
+as the entry, and the `HEAD` answered from it, as the conditional request of R-BAS-022 answers a later one; the warm pull then costs nothing
+at the main installation within `metadata_revalidate_after`, and one conditional `GET` after it. The cost is the manifest's body (kilobytes)
+once per period instead of headers. Not built: it changes the read flow of R-BAS-022 for every format's `HEAD`, which is not E9b's.
 
 ### The flood again, with the protection of what was served twice (measured 2026-11-26)
 

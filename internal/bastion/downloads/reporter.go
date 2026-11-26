@@ -55,6 +55,11 @@ type ReporterOptions struct {
 	AdoptEvery time.Duration
 	// Now is the clock; nil means time.Now.
 	Now func() time.Time
+	// Report returns the usage counted since the last flush and the replica's state (R-LIM-045), which the first batch of every
+	// flush carries, also while downloads are not recorded and without an event; Restore takes back a usage that could not be
+	// sent. nil sends neither, and a batch only when it holds events.
+	Report  func() (iface.UsageReport, iface.ReplicaStatus)
+	Restore func(iface.UsageReport)
 }
 
 // Reporter is the download buffer of a replica (R-BAS-016, R-BAS-039, Q-BAS-45). It implements [Buffer].
@@ -256,25 +261,40 @@ func (r *Reporter) flush(ctx context.Context) {
 }
 
 func (r *Reporter) flushLocked(ctx context.Context) (ok bool) {
+	if !r.o.Reachable() {
+		return false
+	}
+	// The first batch carries the usage and the state (R-LIM-045): every flush sends one, whether or not it holds events.
+	report := r.o.Report != nil
 	for ctx.Err() == nil {
 		if !r.o.Reachable() {
 			return false
 		}
 		req, n := r.batch()
-		if n == 0 && req.Dropped == 0 {
+		if n == 0 && req.Dropped == 0 && !report {
 			return true
+		}
+		if report {
+			req.Usage, req.Status = r.o.Report()
 		}
 		err := r.o.Sender.Downloads(ctx, req)
 		switch {
 		case err == nil:
 			r.sent(n, req.Dropped)
 		case permanent(err):
-			r.log.Error("the main installation refused a batch of download events; its events are counted as dropped", "events", n, "error", err)
+			r.log.Error("the main installation refused a batch of download events and usage; its events are counted as dropped", "events", n, "usageRows", len(req.Usage.Rows), "error", err)
 			r.rejected(req, n)
 		default:
-			r.log.Debug("download events could not be sent; they stay buffered", "events", n, "error", err)
+			r.log.Debug("download events and usage could not be sent; they stay buffered", "events", n, "error", err)
+			if report && r.o.Restore != nil {
+				r.o.Restore(req.Usage)
+			}
 			return false
 		}
+		if report && n == 0 && req.Dropped == 0 {
+			return true
+		}
+		report = false
 	}
 	return false
 }

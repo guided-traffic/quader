@@ -246,6 +246,10 @@ func layerTable() []layerRule {
 		// The throughput between the main installation and a Bastion (R-BAS-097): the pacer of every body the replica reads, over
 		// the shared byte counters and the applied configuration; the client of the main installation reads it as an interface.
 		{"internal/bastion/throughput", layerDomain},
+		// The budgets of a Bastion's place (R-BAS-096): the subjects, the figures over the shared counters and the applied
+		// configuration, and the replica's usage buffer that the reporting batch carries (R-LIM-045).
+		{"internal/bastion/budget", layerDomain},
+		{"internal/bastion/usage", layerDomain},
 		// The public catalogue of the web interface at a replica (W-35, R-BAS-109 to R-BAS-113): the sync from the main
 		// installation, the store in the cache backend, the age and the reader the pages read; it reads the main installation and
 		// the store through interfaces of its own.

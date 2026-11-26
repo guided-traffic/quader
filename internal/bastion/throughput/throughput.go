@@ -24,6 +24,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/guided-traffic/quader/internal/bastion/iface"
 	"github.com/guided-traffic/quader/internal/bastion/mainclient"
 	"github.com/guided-traffic/quader/internal/bastion/metrics"
 	"github.com/guided-traffic/quader/internal/bastion/settings"
@@ -87,6 +88,47 @@ type Pacer struct {
 	// frontier is per bucket the first slice not known to be full, a hint that saves a claim of every full slice to the
 	// reservations after the first that found it full.
 	frontier map[string]int64
+
+	// read counts the bytes this replica read per class, waiting the readers that wait for the cap now; last and lastAt are
+	// what [Pacer.Status] saw the last time, for the rate since.
+	read    [3]atomic.Int64
+	waiting atomic.Int64
+	last    [3]int64
+	lastAt  time.Time
+}
+
+func classIndex(c Class) int {
+	switch c {
+	case Anonymous:
+		return 0
+	case SignedIn:
+		return 1
+	}
+	return 2
+}
+
+// Status is the replica's throughput now (R-LIM-045's status, R-UI-240): whether a read of this replica waits for the cap, and the
+// bytes a second it read per class since the previous call. Both are the replica's own; the replicas' rates add up to the
+// Bastion's.
+func (p *Pacer) Status() iface.ThroughputStatus {
+	now := p.o.Now()
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	var cur [3]int64
+	for i := range cur {
+		cur[i] = p.read[i].Load()
+	}
+	var rate [3]int64
+	if el := now.Sub(p.lastAt); !p.lastAt.IsZero() && el > 0 {
+		for i := range rate {
+			rate[i] = int64(float64(cur[i]-p.last[i]) / el.Seconds())
+		}
+	}
+	p.last, p.lastAt = cur, now
+	return iface.ThroughputStatus{
+		Limited:               p.waiting.Load() > 0,
+		BytesPerSecondByClass: iface.ThroughputClasses{Anonymous: rate[0], SignedIn: rate[1], Catalogue: rate[2]},
+	}
 }
 
 var _ mainclient.Throughput = (*Pacer)(nil)
@@ -441,6 +483,9 @@ func (r *reader) Read(b []byte) (int, error) {
 		limit = min(limit, left)
 	}
 	n, err := r.body.Read(b[:limit])
+	if n > 0 {
+		r.p.read[classIndex(r.class)].Add(int64(n))
+	}
 	r.mu.Lock()
 	if left > 0 {
 		r.left = max(r.left-int64(n), 0)
@@ -469,7 +514,11 @@ func (r *reader) next() (n int64, paced bool, err error) {
 		return 0, true, r.ctx.Err()
 	}
 	if wait := startOf(res.idx).Sub(r.p.o.Now()); wait > 0 {
-		if err := r.p.o.Sleep(r.ctx, wait); err != nil {
+		// The replica's status says the cap holds a read back while one sleeps for its slice (R-LIM-045).
+		r.p.waiting.Add(1)
+		err := r.p.o.Sleep(r.ctx, wait)
+		r.p.waiting.Add(-1)
+		if err != nil {
 			r.p.release(r.ctx, res, res.n)
 			return 0, true, err
 		}

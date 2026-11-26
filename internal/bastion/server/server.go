@@ -33,6 +33,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	place "github.com/guided-traffic/quader/internal/bastion/budget"
 	"github.com/guided-traffic/quader/internal/bastion/cache"
 	"github.com/guided-traffic/quader/internal/bastion/catalogue"
 	"github.com/guided-traffic/quader/internal/bastion/downloads"
@@ -47,6 +48,7 @@ import (
 	"github.com/guided-traffic/quader/internal/bastion/settings"
 	"github.com/guided-traffic/quader/internal/bastion/shared"
 	"github.com/guided-traffic/quader/internal/bastion/throughput"
+	"github.com/guided-traffic/quader/internal/bastion/usage"
 	"github.com/guided-traffic/quader/internal/buildinfo"
 	"github.com/guided-traffic/quader/internal/config"
 	"github.com/guided-traffic/quader/internal/errs"
@@ -103,6 +105,8 @@ type Server struct {
 	// configuration is the configuration the replica applies (R-BAS-093): the built-in one at first, the stored one from
 	// Start, the main installation's from the first handshake.
 	configuration *settings.Holder
+	// reporting is the usage and the state every flush of the download buffer carries (R-LIM-045).
+	reporting *reporting
 
 	started    atomic.Bool
 	healthStop context.CancelFunc
@@ -292,9 +296,18 @@ func (s *Server) buildDeps() (engine.Deps, error) {
 	if err != nil {
 		return engine.Deps{}, fmt.Errorf("bastion.main: %w", err)
 	}
+	// The budgets of the Bastion's place (R-BAS-096) over the shared counters, and the usage they count for the reporting batch
+	// (R-LIM-045).
+	use := usage.New(0)
+	budgets := place.New(place.Options{
+		Limiter: st.Limiter, Counters: st.Budget, Usage: use, Metrics: s.bm, Log: s.log.With("component", "budget"),
+		MaxInFlight: s.cfg.Server.MaxInFlight,
+	})
+	gi, _ := g.(*guard.Instance)
+	s.reporting = &reporting{replica: s.instance, m: s.bm, usage: use, budgets: budgets, pacer: pacer, guard: gi, state: st, now: time.Now}
 	d := engine.Deps{
 		Config: s.cfg, Log: s.log.With("component", "engine"), Metrics: s.bm, Replica: s.instance, Release: buildinfo.Get().Version,
-		Main: client, Cache: c, Shared: st, Guard: g, Handover: links, Throughput: pacer,
+		Main: client, Cache: c, Shared: st, Guard: g, Handover: links, Throughput: pacer, Budgets: budgets,
 	}
 	if s.o.Deps != nil {
 		s.o.Deps(&d)
@@ -345,6 +358,9 @@ func (s *Server) wireLink(d *engine.Deps) {
 		o := downloads.ReporterOptions{
 			Config: b.Audit, Replica: s.instance, Sender: d.Main, Reachable: s.link.Reachable, Metrics: s.bm, Log: s.log, Now: d.Now,
 			Spool: d.Cache.Backend(),
+		}
+		if s.reporting != nil {
+			o.Report, o.Restore = s.reporting.report, s.reporting.usage.Restore
 		}
 		if d.Shared != nil && d.Shared.Flights != nil {
 			o.Claim = d.Shared.Flights.TryAcquire

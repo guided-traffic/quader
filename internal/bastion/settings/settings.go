@@ -14,6 +14,7 @@ import (
 	"context"
 	"fmt"
 	"net/netip"
+	"sort"
 	"time"
 
 	"github.com/guided-traffic/quader/internal/bastion/iface"
@@ -42,6 +43,38 @@ type Applied struct {
 	Slots         Slots
 	Ceiling       Ceiling
 	Throughput    Throughput
+	// Enforce is the mode of the budgets of the Bastion's place (R-LIM-044): true refuses and slows, false (Audit) only counts.
+	// The flood protection, the ceiling, the slots and the throughput hold in both (Q-LIM-309).
+	Enforce bool
+	// Place is the table of the Bastion's place with its address rules parsed, the longest prefix first (R-BAS-096).
+	Place Place
+}
+
+// Place is the rule table of the Bastion's place (R-BAS-096, Q-LIM-302): the main installation names a signed-in caller's rule,
+// the Bastion resolves the address and kind rules from here.
+type Place struct {
+	Rules map[string]iface.Figures
+	// Addresses are the address rules, the longest prefix first.
+	Addresses []AddressRule
+	Kinds     iface.KindRules
+}
+
+// AddressRule is one address rule of the place.
+type AddressRule struct {
+	Prefix netip.Prefix
+	Rule   string
+}
+
+// Anonymous resolves the rule of an anonymous caller at addr (R-LIM-013 step 3 at the Bastion's place): the address rule with the
+// longest prefix that holds the address, else the kind rule of anonymous callers.
+func (p Place) Anonymous(addr netip.Addr) string {
+	addr = addr.Unmap()
+	for _, r := range p.Addresses {
+		if r.Prefix.Contains(addr) {
+			return r.Rule
+		}
+	}
+	return p.Kinds.Anonymous
 }
 
 // Flood is the flood protection per address (R-BAS-035 to R-BAS-037, Q-LIM-307) with its windows as durations and its exempt
@@ -155,7 +188,17 @@ func FromConfiguration(c iface.Configuration, src Source) (*Applied, error) {
 		},
 		Ceiling:    ceilingOf(c.Limits.AnonymousCeiling),
 		Throughput: throughputOf(c.Limits.Throughput),
+		Enforce:    c.Limits.Mode == iface.ModeEnforce,
+		Place:      Place{Rules: c.Limits.Place.Rules, Kinds: c.Limits.Place.KindRules},
 	}
+	for _, r := range c.Limits.Place.AddressRules {
+		p, err := netip.ParsePrefix(r.Prefix)
+		if err != nil {
+			return nil, fmt.Errorf("bastion configuration: the address rule %q: %w", r.Prefix, err)
+		}
+		a.Place.Addresses = append(a.Place.Addresses, AddressRule{Prefix: p, Rule: r.Rule})
+	}
+	sort.SliceStable(a.Place.Addresses, func(i, j int) bool { return a.Place.Addresses[i].Prefix.Bits() > a.Place.Addresses[j].Prefix.Bits() })
 	for _, n := range f.ExemptNetworks {
 		p, err := netip.ParsePrefix(n)
 		if err != nil {

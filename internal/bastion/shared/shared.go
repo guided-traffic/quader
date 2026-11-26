@@ -127,6 +127,10 @@ type State struct {
 	Answers   AnswerStore
 	// Bytes are the byte counters of the throughput (R-BAS-097).
 	Bytes Bytes
+	// Budget are the counters of the budgets of the Bastion's place (R-BAS-096): a subject's bytes per hour and day, its paced
+	// bytes per slice, its transfers in progress and its block. They have the form of [Bytes] in a family of their own, whose
+	// counters live up to two days.
+	Budget Bytes
 	// Shared reports whether the state is shared across replicas (Valkey configured and available).
 	Shared func() bool
 }
@@ -143,6 +147,6 @@ func NewLocal(replicas int, now func() time.Time) *State {
 	l := newLocal(replicas, now)
 	return &State{
 		Limiter: l, Blocks: newMemBlocks(now), Timeouts: newMemBlocks(now), Flights: newLocalFlights(),
-		Sweep: localSweep{}, Catalogue: localSweep{}, Answers: newMemAnswers(now), Bytes: newLocalBytes(replicas, now), Shared: func() bool { return false },
+		Sweep: localSweep{}, Catalogue: localSweep{}, Answers: newMemAnswers(now), Bytes: newLocalBytes(replicas, now), Budget: newLocalBytes(replicas, now), Shared: func() bool { return false },
 	}
 }

@@ -179,6 +179,7 @@ func (e *engine) serveEntry(q *rq, ent cache.Entry, result string) bool {
 	if ent.Counted {
 		src.download = func(q *rq) { e.downloadEvent(q, ent.Repository, ent.SHA256) }
 	}
+	src.transfer = ent.Kind == cache.EntryArtifact || q.fam == familyFiles
 	if !e.serveSource(q, src) {
 		return false
 	}
@@ -268,6 +269,9 @@ func (e *engine) checkShape(q *rq, entryRepo, entryPkg string) (shape, pkg *answ
 		e.refuseVerdict(q, v)
 		return nil, nil, true
 	}
+	if !e.chargeUpstream(q) {
+		return nil, nil, true
+	}
 	name := ""
 	if entryRepo == q.repo && len(checkPackages(q.repo, entryPkg)) == 1 {
 		name = entryPkg
@@ -332,6 +336,7 @@ func (e *engine) applyCheck(q *rq, pkgName string, r checkResult) (shape, pkg *a
 		return nil, nil, true
 	}
 	q.subject = sub
+	e.learnSubject(q, sub)
 	return shape, pkg, false
 }
 

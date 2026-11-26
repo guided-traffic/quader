@@ -61,6 +61,8 @@ const (
 	ThroughputLimit          = "quader_bastion_throughput_limit_bytes_per_second"
 	ThroughputWaitTotal      = "quader_bastion_throughput_wait_seconds_total"
 	ThroughputRefusedTotal   = "quader_bastion_throughput_refused_total"
+	LimitsMode               = "quader_bastion_limits_mode"
+	BudgetEventsTotal        = "quader_bastion_budget_events_total"
 	// The public catalogue of the web interface (W-35, R-BAS-109 to R-BAS-111).
 	GUIEnabled                 = "quader_bastion_gui_enabled"
 	CatalogueConfirmed         = "quader_bastion_catalogue_confirmed_timestamp_seconds"
@@ -178,6 +180,12 @@ const (
 	// RefusedThroughput: a miss the throughput did not admit, answered 503 busy at the cap or 429 when its class's hourly volume
 	// is used up (R-BAS-097).
 	RefusedThroughput = "throughput"
+	// RefusedBudget: a request a budget of the Bastion's place refused in Enforce, 429 with a code of R-LIM-020 (R-BAS-096).
+	RefusedBudget = "budget"
+
+	// mode of quader_bastion_budget_events_total (R-BAS-096, R-LIM-044): a budget refused, or in Audit would have.
+	BudgetLimited    = "limited"
+	BudgetWouldLimit = "would_limit"
 
 	// bucket of quader_bastion_throughput_limit_bytes_per_second (R-BAS-097, Q-BAS-332).
 	BucketTotal     = "total"
@@ -205,14 +213,28 @@ const (
 	SyncFailed    = "failed"
 	SyncFollowed  = "followed"
 
-	// reason of quader_bastion_blocks_total.
-	BlockRefusals = "refusals"
+	// reason of quader_bastion_blocks_total and of a block in a replica's status (R-BAS-096's closed list): an address that
+	// collected too many of the Bastion's refusals (R-BAS-037), an address in the failed-authentication timeout (R-BAS-036), an
+	// anonymous caller's address over its refusedPerHour at the Bastion's place (R-LIM-025).
+	BlockRefusals        = "refusals"
+	BlockFailedAuth      = "failed_auth"
+	BlockRefusedRequests = "refused_requests"
 
 	// outcome of quader_bastion_audit_events_total.
 	AuditSent    = "sent"
 	AuditSpooled = "spooled"
 	AuditDropped = "dropped"
 )
+
+// FigureNames are the values of the label figure of quader_bastion_budget_events_total: the eleven figures of a rule as
+// iface.FigureNames names them; the budget's tests hold the two lists to one another.
+func FigureNames() []string {
+	return []string{
+		"requestsPerSecond", "requestsBurst", "requestsPerHour", "cachedBytesPerSecond", "cachedBytesPerHour",
+		"uncachedBytesPerSecond", "uncachedBytesPerHour", "upstreamRequestsPerHour", "parallelTransfers", "bytesPerDay",
+		"refusedPerHour",
+	}
+}
 
 // Cache operations of the op label of quader_bastion_cache_errors_total.
 const (
@@ -309,6 +331,10 @@ type Metrics struct {
 	ThroughputLimit   *prometheus.GaugeVec
 	ThroughputWait    *prometheus.CounterVec
 	ThroughputRefused *prometheus.CounterVec
+	// LimitsMode is 1 while the budgets of the Bastion's place refuse (Enforce), 0 while they only count (Audit) (R-LIM-044);
+	// BudgetEvents counts the decisions of a budget by figure (the eleven of R-LIM-004) and mode (limited, would_limit) (R-BAS-096).
+	LimitsMode   prometheus.Gauge
+	BudgetEvents *prometheus.CounterVec
 	// GUIEnabled is 1 while the web interface is on for this replica (the switch gui, R-BAS-102). CatalogueConfirmed is the Unix
 	// time of the replica's last confirmed state of the public catalogue, 0 while it holds none; CatalogueStaleAfter exports
 	// bastion.gui.stale_after (R-BAS-111). CatalogueBytes is what the catalogue's documents hold in the cache backend, as stored,
@@ -382,6 +408,8 @@ func New(reg prometheus.Registerer) (*Metrics, error) {
 		ThroughputLimit:      gauge(ThroughputLimit, "The configured byte rate between the main installation and the whole Bastion, by bucket (total, anonymous); 0 while unlimited (R-BAS-097).", "bucket"),
 		ThroughputWait:       counter(ThroughputWaitTotal, "Seconds this replica's reads from the main installation and the object store waited for the throughput cap, by class (anonymous, signed_in, catalogue) (R-BAS-097).", "class"),
 		ThroughputRefused:    counter(ThroughputRefusedTotal, "Misses the throughput did not admit, by class and reason (busy, hour) (R-BAS-097).", "class", "reason"),
+		LimitsMode:           prometheus.NewGauge(prometheus.GaugeOpts{Name: LimitsMode, Help: "1 while the budgets of the Bastion's place refuse (Enforce), 0 while they only count (Audit) (R-LIM-044)."}),
+		BudgetEvents:         counter(BudgetEventsTotal, "Decisions of a budget of the Bastion's place by figure and mode (limited, would_limit) (R-BAS-096).", "figure", "mode"),
 		GUIEnabled:           prometheus.NewGauge(prometheus.GaugeOpts{Name: GUIEnabled, Help: "1 while the web interface is on for this replica (R-BAS-102)."}),
 		CatalogueConfirmed:   prometheus.NewGauge(prometheus.GaugeOpts{Name: CatalogueConfirmed, Help: "Unix time of this replica's last confirmed state of the public catalogue; 0 while it holds none (R-BAS-111)."}),
 		CatalogueStaleAfter:  prometheus.NewGauge(prometheus.GaugeOpts{Name: CatalogueStaleAfterSeconds, Help: "bastion.gui.stale_after in seconds (R-BAS-111)."}),
@@ -457,10 +485,17 @@ func (m *Metrics) seed() {
 	for _, o := range []string{OpGet, OpPut, OpDelete, OpList, OpSpool} {
 		m.CacheErrors.WithLabelValues(o)
 	}
-	for _, r := range []string{RefusedBlocked, RefusedRateLimited, RefusedMissLimited, RefusedAuthTimeout, RefusedInvalid, RefusedBusy, RefusedUnreachable, RefusedNotServed, RefusedReadOnly, RefusedForeignLocation, RefusedCeiling, RefusedThroughput} {
+	for _, r := range []string{RefusedBlocked, RefusedRateLimited, RefusedMissLimited, RefusedAuthTimeout, RefusedInvalid, RefusedBusy, RefusedUnreachable, RefusedNotServed, RefusedReadOnly, RefusedForeignLocation, RefusedCeiling, RefusedThroughput, RefusedBudget} {
 		m.Refused.WithLabelValues(r)
 	}
-	m.Blocks.WithLabelValues(BlockRefusals)
+	for _, r := range []string{BlockRefusals, BlockFailedAuth, BlockRefusedRequests} {
+		m.Blocks.WithLabelValues(r)
+	}
+	for _, f := range FigureNames() {
+		for _, mode := range []string{BudgetLimited, BudgetWouldLimit} {
+			m.BudgetEvents.WithLabelValues(f, mode)
+		}
+	}
 	for _, o := range []string{AuditSent, AuditSpooled, AuditDropped} {
 		m.AuditEvents.WithLabelValues(o)
 	}
@@ -498,7 +533,7 @@ func (m *Metrics) collectors() []prometheus.Collector {
 		m.CacheBytes, m.CacheCapacity, m.CacheEvictions, m.CacheCorrupt, m.CacheErrors, m.CacheSweeps, m.CacheNoRoom,
 		m.CacheProtected, m.Refused, m.Blocks, m.Blocked, m.AuditEvents, m.AuditBuffer, m.AuditDropped,
 		m.Handovers, m.FillBytes, m.HandoverEnabled, m.HandoverCooldown, m.ConfigRevision, m.ConfigSource,
-		m.ThroughputLimit, m.ThroughputWait, m.ThroughputRefused,
+		m.ThroughputLimit, m.ThroughputWait, m.ThroughputRefused, m.LimitsMode, m.BudgetEvents,
 		m.GUIEnabled, m.CatalogueConfirmed, m.CatalogueStaleAfter, m.CatalogueBytes, m.CatalogueMaxBytes, m.CatalogueDocuments, m.CatalogueSync,
 	}
 }
@@ -514,7 +549,7 @@ func Names() []string {
 		CacheSweepsTotal, CacheNoRoomTotal, CacheProtectedBytes,
 		RefusedTotal, BlocksTotal, BlockedAddresses, AuditEventsTotal, AuditBufferEvents, AuditEventsDroppedTotal,
 		HandoversTotal, FillBytesTotal, HandoverEnabled, HandoverCooldown, ConfigurationRevision, ConfigurationSource,
-		ThroughputLimit, ThroughputWaitTotal, ThroughputRefusedTotal,
+		ThroughputLimit, ThroughputWaitTotal, ThroughputRefusedTotal, LimitsMode, BudgetEventsTotal,
 		GUIEnabled, CatalogueConfirmed, CatalogueStaleAfterSeconds, CatalogueBytes, CatalogueMaxBytes, CatalogueDocuments, CatalogueSyncTotal,
 	}
 }

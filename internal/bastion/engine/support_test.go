@@ -21,6 +21,7 @@ import (
 
 	"github.com/guided-traffic/quader/internal/auth/token"
 	"github.com/guided-traffic/quader/internal/bastion/answers"
+	"github.com/guided-traffic/quader/internal/bastion/budget"
 	"github.com/guided-traffic/quader/internal/bastion/cache"
 	"github.com/guided-traffic/quader/internal/bastion/guard"
 	"github.com/guided-traffic/quader/internal/bastion/handover"
@@ -518,6 +519,8 @@ type options struct {
 	log      *slog.Logger
 	// throughput paces a handover's direct read (R-BAS-097); nil paces nothing.
 	throughput *throughput.Pacer
+	// budgets charges every request at the Bastion's place (R-BAS-096); nil charges nothing.
+	budgets *budget.Budgets
 }
 
 func newHarness(t *testing.T, o options) *harness {
@@ -574,7 +577,7 @@ func newHarness(t *testing.T, o options) *harness {
 	d := Deps{
 		Config: cfg, Metrics: h.m, Replica: "bastion-0", Release: "test", Now: h.clock.now, Main: h.link.Guard(client),
 		Cache: h.cache.Cache, Shared: h.state, Guard: h.guard, Downloads: h.dl, Link: h.link, Handover: o.handover, Log: o.log,
-		Throughput: o.throughput,
+		Throughput: o.throughput, Budgets: o.budgets,
 	}
 	e, err := newFlow(d)
 	if err != nil {

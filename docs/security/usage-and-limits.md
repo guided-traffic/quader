@@ -136,10 +136,10 @@ counts its share from zero (H-1005).
 ## A Bastion as a place
 
 The owner's decisions of 2026-11-26 (W-34; [spec/usage-and-limits.md](../spec/usage-and-limits.md#a-bastion-as-a-place) R-LIM-043 to
-R-LIM-046, [spec/bastion.md](../spec/bastion.md) R-BAS-096), **specified and not built**
+R-LIM-046, [spec/bastion.md](../spec/bastion.md) R-BAS-096), built by E8 and E9b
 ([developer/bastion-limits.md](../developer/bastion-limits.md)): each Bastion is a place of the rules, and what it serves, its hits
-included, is counted against the caller's budget at that place, in the Bastion's memory or its Valkey. What changes for this page's
-perspective once the packages have landed:
+included, is counted against the caller's budget at that place, in the Bastion's memory or its Valkey
+([internal/bastion/budget](../../internal/bastion/budget/budget.go)). What changes for this page's perspective:
 
 - **Two budgets.** A forward of a Bastion is charged at the main installation as before and at the Bastion as well; neither replaces the
   other, so a taken-over Bastion that ignores its own budgets still meets the main installation's for everything it forwards.
@@ -153,8 +153,8 @@ perspective once the packages have landed:
 
 ## What this does not cover
 
-The gaps of a Bastion's budgets (W-34, specified and not built) are recorded on this page, each with the package whose mechanism has it:
-H-2284 and H-2286 to H-2288; those of a Bastion's other mechanisms are on [bastion.md](bastion.md#what-this-does-not-cover).
+The gaps of a Bastion's budgets (W-34) are recorded on this page, each with the package whose mechanism has it: H-2284, H-2286 to H-2288,
+H-2368 and H-2369; those of a Bastion's other mechanisms are on [bastion.md](bastion.md#what-this-does-not-cover).
 
 The gaps of the spec page whose mechanisms this page describes:
 
@@ -211,8 +211,8 @@ back to `enforce` within the block time refuses the key again for the rest of it
 
 ### H-2284 · A changed membership reaches a Bastion's charge only with the caller's next answer
 
-Stage: R-LIM-043, Q-LIM-302 (packages E8 and E9b). Subject: a signed-in caller whose group carries a rule at a Bastion's place. Live once
-E9b lands. The main installation resolves the caller's rule and names its ID with the answer; the Bastion charges by it until the caller's
+Stage: R-LIM-043, Q-LIM-302 (packages E8 and E9b). Subject: a signed-in caller whose group carries a rule at a Bastion's place. Live
+since E9b (2026-11-26). The main installation resolves the caller's rule and names its ID with the answer; the Bastion charges by it until the caller's
 answer ends (`bastion.answers.period`, 5 minutes by default) or a feed entry drops it. A `principal` entry drops it at once for a removed
 member; a group whose rule changes, or a membership that only widens, takes effect at the next answer. What makes it real: an administrator
 who tightens a group's rule at a Bastion and expects it in seconds; a new revision of the configuration carries the rule's new figures at
@@ -220,24 +220,49 @@ once, only the choice of the rule waits.
 
 ### H-2286 · Without Valkey a Bastion's budgets hold per replica, and a restart forgets them
 
-Stage: R-BAS-096 (package E9b). Subject: every budget key at a Bastion's place. Live once E9b lands, on a Bastion without Valkey. Each
+Stage: R-BAS-096 (package E9b). Subject: every budget key at a Bastion's place. Live since E9b (2026-11-26), on a Bastion without
+Valkey. Each
 replica counts its share of every figure (the rule of R-ARCH-034), so a caller spread over the replicas by the Service gets its whole budget,
-and a caller pinned to one replica its share only; a replica's restart starts its counters empty (the counterpart of H-1005). With Valkey the
-counters are shared and survive a replica, not Valkey's loss.
+and a caller pinned to one replica its share only; a replica's restart starts its counters empty (the counterpart of H-1005). A replica's
+memory holds at most 100,000 counters (`maxLocalCounters` in [bytes.go](../../internal/bastion/shared/bytes.go)), about ten per subject that
+moves bytes; a flood from more addresses than that empties them, and every subject starts its windows again. With Valkey the counters are
+shared and survive a replica, not Valkey's loss.
 
 ### H-2287 · Many addresses are many anonymous budgets at a Bastion too
 
 Stage: R-BAS-096 (package E9b), the anonymous subject by address. Subject: everything an anonymous caller can read through a Bastion. Live
-once E9b lands, as [H-1007](../spec/usage-and-limits.md#h-1007--many-addresses-are-many-anonymous-budgets) is at the main installation: a
+since E9b (2026-11-26), as [H-1007](../spec/usage-and-limits.md#h-1007--many-addresses-are-many-anonymous-budgets) is at the main installation: a
 caller with many IPv4 addresses or IPv6 `/64` prefixes gets a budget per prefix. What bounds them together: the anonymous ceiling for what
 reaches the main installation (R-BAS-094), the throughput's anonymous share for what crosses the link (R-BAS-097), and for hits nothing but
 the replicas' `max_in_flight` and the network (the Bastion's own H-382).
 
 ### H-2288 · A paced hit holds a replica's request slot for longer
 
-Stage: R-BAS-096, Q-BAS-330 (package E9b). Subject: the other callers of a Bastion replica. Live once E9b lands, in Enforce. A hit paced to a
+Stage: R-BAS-096, Q-BAS-330 (package E9b). Subject: the other callers of a Bastion replica. Live since E9b (2026-11-26), in Enforce. A hit paced to a
 subject's `cachedBytesPerSecond`, never below 64 KiB a second, holds its request slot until its last byte: a layer of 1 GB at the floor
 holds one for about 4.2 hours [derived], and a subject's parallel transfers multiply it up to its `parallelTransfers`. The waiting leases hold
 at most a quarter of `max_in_flight` (Q-BAS-329), the transfers in progress are bounded by the subject's figure only; many slow subjects can
 hold most of a replica's 1,024 slots, and the replica then sheds with `503`. What bounds it: the figures of "Bastion: anonymous" set by E4,
 the flood protection per address, and the replicas.
+
+### H-2368 · At the turn of an hour a subject can hold up to twice its parallel transfers at a Bastion
+
+Stage: R-BAS-096, Q-BAS-329 (package E9b; `Charge.claimLease` in [budget.go](../../internal/bastion/budget/budget.go)). Subject: every budget
+key with `parallelTransfers` at a Bastion's place. Live since E9b, in Enforce. A transfer's lease is counted in the counter of the hour it
+began in, which lives two hours, and given back there; a transfer that begins in the next hour counts in a new counter, which does not see
+the transfers still running from the previous one. What makes it real: a subject that holds its figure's transfers (270 anonymous, 340
+signed in by default) across the hour's turn may start as many again, and with long transfers paced at the floor it holds twice its figure's
+request slots of the replicas (H-2288). The waiting leases stay bounded by a quarter of `max_in_flight` (Q-BAS-329); each transfer still
+pays its bytes against the hour and day figures.
+
+### H-2369 · A Bastion charges a caller it does not know yet only after the main installation's answer
+
+Stage: R-BAS-096, Q-BAS-470 and Q-BAS-471 (package E9b; `learnSubject` in [budget.go](../../internal/bastion/engine/budget.go),
+`budget.SubjectOf`). Subject: a caller with a token the Bastion holds no answer for, and a caller the main installation names no limits for.
+Live since E9b, in Enforce. A token's first request within the answer period (`bastion.answers.period`, 5 minutes by default) is counted when
+the main installation's answer names its subject and is refused by none of the request figures; a download it starts is checked before its
+first byte. A caller whose answer names no key and rule (a registration the main installation's index does not hold yet, a replica without
+the limits' index) is charged by the users' kind rule under `user:<principal ID>`, so a technical token or a CI project is charged and
+reported as a user meanwhile. What makes it real: a client that presents a new token for each command (a signed-in registry client takes a
+registry token per pull, R-BAS-052) passes the first request of each command past the request figures; the flood protection per address
+and the main installation's own budget for every forward hold it (two budgets, Q-LIM-306).

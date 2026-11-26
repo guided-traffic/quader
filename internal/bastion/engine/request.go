@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 
+	"github.com/guided-traffic/quader/internal/bastion/budget"
 	"github.com/guided-traffic/quader/internal/bastion/guard"
 	"github.com/guided-traffic/quader/internal/bastion/iface"
 	"github.com/guided-traffic/quader/internal/bastion/metrics"
@@ -25,6 +26,7 @@ import (
 // rq is one request on its way through the flow.
 type rq struct {
 	w    http.ResponseWriter
+	sw   *statusWriter
 	out  *countingWriter
 	r    *http.Request
 	e    *engine
@@ -75,19 +77,43 @@ type rq struct {
 	offer           iface.HandoverOffer
 	noOffer         bool
 	handoverOutcome func() string
+
+	// charge is the request's subject at the Bastion's place (R-BAS-096), nil until it is known; pendingUpstream counts the
+	// requests to the main installation sent before it was (Q-BAS-471); budgetRefused marks a refusal of a budget, which is no
+	// refused request (R-LIM-008).
+	charge          *budget.Charge
+	pendingUpstream int
+	budgetRefused   bool
 }
 
-// countingWriter counts the body bytes served by their source (quader_bastion_bytes_served_total).
+// countingWriter counts the body bytes served by their source (quader_bastion_bytes_served_total) and charges them to the
+// request's subject (R-BAS-096): bytes of the cache as cached bytes, every other as uncached. A download in Enforce is paced to
+// its subject's bytes per second before its bytes are written (Q-BAS-330); paced is how long it waited, and deadline, when set,
+// is the write deadline a pass-through gives each chunk, renewed after a wait.
 type countingWriter struct {
 	http.ResponseWriter
-	q      *rq
-	source string
+	q        *rq
+	source   string
+	paced    time.Duration
+	deadline time.Duration
 }
 
 func (c *countingWriter) Write(p []byte) (int, error) {
+	ch := c.q.charge
+	if ch != nil {
+		if waited := ch.Pace(c.q.ctx(), len(p)); waited > 0 {
+			c.paced += waited
+			if c.deadline > 0 {
+				_ = http.NewResponseController(c.ResponseWriter).SetWriteDeadline(time.Now().Add(c.deadline))
+			}
+		}
+	}
 	n, err := c.ResponseWriter.Write(p)
 	if n > 0 {
 		c.q.e.d.Metrics.BytesServed.WithLabelValues(c.source).Add(float64(n))
+		if ch != nil {
+			ch.Served(c.q.ctx(), c.source == metrics.SourceCache, int64(n))
+		}
 	}
 	return n, err
 }
@@ -126,7 +152,7 @@ func (e *engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			e.versionChallenge(q)
 			return
 		}
-		if !e.stepCredentials(q) {
+		if !e.stepCredentials(q) || !e.stepBudget(q) {
 			return
 		}
 		if q.core != "" {
@@ -138,7 +164,7 @@ func (e *engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		e.refuse(q, errs.E(errs.MethodNotAllowed, errs.CodeMethodNotAllowed, "This address serves GET and HEAD.", errs.WithAllow(http.MethodGet, http.MethodHead)), metrics.RefusedNotServed)
 	default:
 		if anonymousTokenRequest(q) {
-			if e.stepCredentials(q) {
+			if e.stepCredentials(q) && e.stepBudget(q) {
 				e.answerAnonymousToken(q)
 			}
 			return
@@ -167,8 +193,9 @@ func (e *engine) newRq(w http.ResponseWriter, r *http.Request) *rq {
 	// The request reads the configuration once, at its start: every decision it makes is made with the same figures, the old
 	// ones or the new ones of a handshake that swaps them meanwhile (R-BAS-093).
 	r = r.WithContext(settings.With(r.Context(), e.d.Link.Configuration().Current()))
-	q := &rq{w: w, r: r, e: e, start: e.now(), span: trace.SpanFromContext(r.Context())}
-	q.out = &countingWriter{ResponseWriter: w, q: q, source: metrics.SourceMain}
+	sw := &statusWriter{ResponseWriter: w}
+	q := &rq{w: sw, sw: sw, r: r, e: e, start: e.now(), span: trace.SpanFromContext(r.Context())}
+	q.out = &countingWriter{ResponseWriter: sw, q: q, source: metrics.SourceMain}
 	q.peer, q.client = e.addresses(r)
 	if q.client.IsValid() {
 		q.clientText = q.client.Unmap().String()
@@ -207,6 +234,7 @@ func (e *engine) addresses(r *http.Request) (peer, client netip.Addr) {
 
 // end finishes the request: the counter, the request log fields and the span of R-BAS-042.
 func (q *rq) end() {
+	q.e.endCharge(q)
 	if !q.counted {
 		q.finish(metrics.ClassPass, metrics.ResultError)
 	}

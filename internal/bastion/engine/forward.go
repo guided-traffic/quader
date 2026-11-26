@@ -40,6 +40,9 @@ func (e *engine) forward(q *rq, kind mainclient.Kind, validator string, bl *base
 		e.refuseVerdict(q, v)
 		return
 	}
+	if !e.chargeUpstream(q) {
+		return
+	}
 	e.send(q, kind, validator, bl)
 }
 
@@ -197,6 +200,7 @@ func (e *engine) recordAnswers(q *rq, resp *mainclient.Response, sent time.Time)
 	switch sub.Kind {
 	case iface.SubjectToken:
 		q.subject = sub
+		e.learnSubject(q, sub)
 		if !q.cred.anonymous {
 			e.answers.put(ctx, answers.Credential, q.cred.key, &answerVal{Answer: answerBase(answers.Credential, sent, sub, ""), Subject: sub})
 		}
@@ -242,6 +246,9 @@ func (e *engine) putURL(q *rq, sent time.Time, allowed bool, ref *refusal) {
 // passThrough replays the main installation's response to the caller: its status, headers and body, without
 // the headers of the interface (R-BAS-021). pre holds bytes already read from the body.
 func (e *engine) passThrough(q *rq, resp *mainclient.Response, pre []byte, class, result string) {
+	if class == metrics.ClassArtifact && (resp.Status == http.StatusOK || resp.Status == http.StatusPartialContent) && !e.admitTransfer(q, false) {
+		return
+	}
 	q.finish(class, result)
 	copyHeader(q.w.Header(), replayHeader(resp.Header, q.facts.ReplayHeaders))
 	q.out.source = metrics.SourceMain
@@ -257,10 +264,12 @@ func (e *engine) passThrough(q *rq, resp *mainclient.Response, pre []byte, class
 	buf := make([]byte, 32<<10)
 	began, sent := time.Now(), int64(len(pre))
 	rc := http.NewResponseController(q.out)
-	waited := func() time.Duration { return 0 }
+	// The waits of the throughput and of the subject's pace are no slowness of the client (R-BAS-097, Q-BAS-330).
+	waited := func() time.Duration { return q.out.paced }
 	if resp.Pacing != nil {
-		waited = resp.Pacing.Waited
+		waited = func() time.Duration { return resp.Pacing.Waited() + q.out.paced }
 	}
+	q.out.deadline = e.paceChunk
 	for {
 		n, err := resp.Body.Read(buf)
 		if n > 0 {

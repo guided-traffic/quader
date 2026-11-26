@@ -5,9 +5,11 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"net/netip"
 	"sync"
 	"time"
 
+	"github.com/guided-traffic/quader/internal/bastion/iface"
 	"github.com/guided-traffic/quader/internal/bastion/metrics"
 	"github.com/guided-traffic/quader/internal/bastion/settings"
 	"github.com/guided-traffic/quader/internal/bastion/shared"
@@ -62,6 +64,10 @@ type Instance struct {
 	// the round trips of one address's decision hold no other address back (Q-BAS-128).
 	blocking keyedLock
 
+	// set are the blocks and timeouts this replica set, for its status (R-LIM-045): by reason and address.
+	setMu sync.Mutex
+	set   map[string]iface.StatusBlock
+
 	stop chan struct{}
 	done chan struct{}
 	once sync.Once
@@ -81,7 +87,7 @@ func New(o Options) (*Instance, error) {
 		}
 		o.Figures = func(context.Context) *settings.Applied { return builtin }
 	}
-	g := &Instance{o: o, log: o.Log, now: o.Now, stop: make(chan struct{}), done: make(chan struct{})}
+	g := &Instance{o: o, log: o.Log, now: o.Now, set: map[string]iface.StatusBlock{}, stop: make(chan struct{}), done: make(chan struct{})}
 	if g.log == nil {
 		g.log = slog.New(slog.DiscardHandler)
 	}
@@ -234,6 +240,8 @@ func (g *Instance) FailedAuth(ctx context.Context, addr string) {
 		return
 	}
 	_ = g.o.State.Timeouts.Set(ctx, addr, fa.Timeout, 1)
+	g.o.Metrics.Blocks.WithLabelValues(metrics.BlockFailedAuth).Inc()
+	g.remember(addr, metrics.BlockFailedAuth, fa.Timeout)
 	g.log.Info("bastion failed-authentication timeout", "address", addr, "failures", n, "duration", fa.Timeout.String())
 }
 
@@ -256,8 +264,60 @@ func (g *Instance) refused(ctx context.Context, f settings.Flood, addr, reason s
 	d := blockDuration(b.Duration, b.MaxDuration, level)
 	_ = g.o.State.Blocks.Set(ctx, addr, d, level)
 	g.o.Metrics.Blocks.WithLabelValues(metrics.BlockRefusals).Inc()
+	g.remember(addr, metrics.BlockRefusals, d)
 	g.refreshGauge(ctx)
 	g.log.Info("bastion address blocked", "address", addr, "reason", reason, "duration", d.String(), "count", level, "refusals", n)
+}
+
+// maxRemembered bounds the blocks a replica remembers for its status; a block past it is still set, only not listed.
+const maxRemembered = 10 * iface.MaxStatusBlocks
+
+// remember keeps a block this replica set for its status, with the reason of the closed list of R-BAS-096.
+func (g *Instance) remember(addr, reason string, d time.Duration) {
+	b := iface.StatusBlock{Address: statusAddress(addr), Until: g.now().Add(d).UTC(), Reason: reason}
+	g.setMu.Lock()
+	defer g.setMu.Unlock()
+	if len(g.set) >= maxRemembered {
+		g.pruneLocked()
+		if len(g.set) >= maxRemembered {
+			return
+		}
+	}
+	g.set[reason+"|"+addr] = b
+}
+
+func (g *Instance) pruneLocked() {
+	now := g.now()
+	for k, b := range g.set {
+		if !b.Until.After(now) {
+			delete(g.set, k)
+		}
+	}
+}
+
+// Blocks are the blocks and failed-authentication timeouts this replica set that have not ended (R-LIM-045's status): the
+// address as a canonical prefix, the end, and the reason refusals or failed_auth.
+func (g *Instance) Blocks() []iface.StatusBlock {
+	g.setMu.Lock()
+	defer g.setMu.Unlock()
+	g.pruneLocked()
+	out := make([]iface.StatusBlock, 0, len(g.set))
+	for _, b := range g.set {
+		out = append(out, b)
+	}
+	return out
+}
+
+// statusAddress writes a guard's address key as a canonical prefix: an IPv4 address as its /32, the /64 of an IPv6 one as it is.
+func statusAddress(key string) string {
+	if p, err := netip.ParsePrefix(key); err == nil {
+		return p.Masked().String()
+	}
+	if a, err := netip.ParseAddr(key); err == nil {
+		a = a.Unmap()
+		return netip.PrefixFrom(a, a.BitLen()).String()
+	}
+	return key
 }
 
 // blockDuration is the duration doubled level-1 times, held to max.

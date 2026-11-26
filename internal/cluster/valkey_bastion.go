@@ -33,6 +33,8 @@ const (
 	MaxCatalogueLeaseTTL = 30 * time.Minute
 	// MaxThroughputTTL bounds the byte counters of the throughput (R-BAS-097): a counter of an hour lives two hours.
 	MaxThroughputTTL = 2 * time.Hour
+	// MaxBudgetTTL bounds the counters of a Bastion's budgets (R-BAS-096): a counter of a day lives until the next day ended.
+	MaxBudgetTTL = 50 * time.Hour
 )
 
 // MarkKind selects the family of an address mark.

@@ -4,7 +4,8 @@ Status: specified on 2026-11-26 (W-34; the owner's answers to the working paper 
 and E5 are **built** (the cache bounded at every commit and the bytes counted, R-BAS-089, R-BAS-090; the format's cap of the wait and the
 figures that let one normal command through, R-BAS-091, R-BAS-092, interface version 7), and so are E16, E14a (the anonymous token and
 the anonymous documents of R-BAS-094), E13 (the addresses a Bastion connects from), E7 (the shared wire, interface version 8, with
-W-35's P5), E15 (writes refused at the Bastion in the five error shapes, R-BAS-095), E9a (the configuration at the Bastion, the flood protection's figures from it, the anonymous ceiling), E10 (the throughput, R-BAS-097), E11 (the cache protects what was served twice, R-BAS-098) E8 (the main installation's side) and E17 (the registry token's payload version 2, with W-35's P8, R-BAS-115); E4 is measured ([bastion.md](bastion.md#what-a-clients-command-costs-through-a-bastion-measured-2026-11-26)); E6 is this
+W-35's P5), E15 (writes refused at the Bastion in the five error shapes, R-BAS-095), E9a (the configuration at the Bastion, the flood protection's figures from it, the anonymous ceiling), E10 (the throughput, R-BAS-097), E11 (the cache protects what was served twice, R-BAS-098), E8 (the main installation's side), E9b (the budgets on what a Bastion serves,
+its usage and its state, R-BAS-096) and E17 (the registry token's payload version 2, with W-35's P8, R-BAS-115); E4 is measured ([bastion.md](bastion.md#what-a-clients-command-costs-through-a-bastion-measured-2026-11-26)); E6 is this
 page and the specification. Every other package is **not built**. The requirements are [bastion.md](../spec/bastion.md#limits-configuration-and-throughput-from-the-main-installation)
 R-BAS-093 to R-BAS-099 and [its wire](../spec/bastion.md#the-interface-version-8-the-shared-wire),
 [usage-and-limits.md](../spec/usage-and-limits.md#a-bastion-as-a-place) R-LIM-043 to R-LIM-046 and
@@ -55,7 +56,7 @@ At most four builders at once (rule 10 of the project plan). The waves are the o
 | 3 | E9a | the configuration at the Bastion, flood protection, the anonymous ceiling | E7, E4 | built |
 | 3 | E10 | the throughput | E7 | built |
 | 3 | E15 | writes refused at the Bastion | E7 | built |
-| 4 | E9b | budgets on what the Bastion serves | E9a, E8 | not built |
+| 4 | E9b | budgets on what the Bastion serves | E9a, E8 | built |
 | 4 | E11 | the cache protects what was served twice | E1 (may take any free place from wave 2 on) | built |
 | 4 | E17 | the registry token's payload version 2 | E7 | built (with W-35's P8) |
 | 4 | E12 | the screens | E8, E10, E13 | built |
@@ -202,6 +203,32 @@ At most four builders at once (rule 10 of the project plan). The waves are the o
   `internal/bastion/usage/`.
 - **Tests**: unit about 2 s; integration area `bastionshared` about 2 s; area `bastion` about 5 s.
 - **Identifiers**: Q-BAS-328 to Q-BAS-330, Q-LIM-305 to Q-LIM-309, H-2286 to H-2288.
+- *Built on 2026-11-26.* The package [internal/bastion/budget](../../internal/bastion/budget/budget.go): `SubjectOf` (the answer's key and
+  rule, else the users' kind rule under the principal, Q-BAS-470; an anonymous caller by its address prefix and the place's address or kind
+  rule, `settings.Place.Anonymous`), `Charge` with `Request` (a block, the request rate per rule, the hour), `Upstream`, `Transfer` (the hour
+  of its bytes, the day, the lease that waits 10 s while the waiting leases hold at most a quarter of `server.max_in_flight`), `Pace` (slices
+  of 100 ms of the subject's figure, never below 64 KiB a second per transfer, [pace.go](../../internal/bastion/budget/pace.go)), `Served`,
+  `Refused` (the block of Q-BAS-472) and `End`; Audit decides in `decide`. The usage buffer is [internal/bastion/usage](../../internal/bastion/usage/usage.go)
+  (Q-LIM-308). The engine's glue is [budget.go](../../internal/bastion/engine/budget.go) (`stepBudget` after `stepCredentials`, `learnSubject`
+  in `recordAnswers` and `applyCheck`, `chargeUpstream` in `forward` and `checkShape`, `admitTransfer` in `serveSource`, `serveFill` and
+  `passThrough`, the bytes and the pace in `countingWriter`, `endCharge` in `rq.end`, `refuseBudget` through the format's shape). The
+  counters are `shared.State.Budget`, the throughput's counter type in a Valkey key family of its own, `budget` (`cluster.CountersBudget`,
+  up to 50 hours); the local counters now keep the expiry they were made with, as Valkey's `EXPIRE NX` does. The settings gained
+  `Applied.Enforce` and `Applied.Place`; the server builds the budgets and `reporting` ([status.go](../../internal/bastion/server/status.go)),
+  which the download reporter calls with every flush (`ReporterOptions.Report`, `Restore`): the usage and the replica's state with the
+  throughput's live state (`throughput.Pacer.Status`), the blocks the guard and the budgets set (`guard.Instance.Blocks`), each with a
+  reason of the closed list (`refusals`, `failed_auth`, `refused_requests`), and per figure whose it is (Q-BAS-474). No interface change:
+  the codes of R-LIM-020 are the budget package's, the wire's members were E7's. Metrics `quader_bastion_limits_mode`,
+  `quader_bastion_budget_events_total{figure,mode}`, `quader_bastion_refused_total{reason="budget"}`, `quader_bastion_blocks_total` with
+  `failed_auth` and `refused_requests`. Decisions Q-BAS-470 to Q-BAS-474; gaps H-2368 and H-2369 of
+  [security/usage-and-limits.md](../security/usage-and-limits.md#h-2368--at-the-turn-of-an-hour-a-subject-can-hold-up-to-twice-its-parallel-transfers-at-a-bastion).
+  Tests: `internal/bastion/budget` (eight cases, 0.3 s), `internal/bastion/usage` (two, milliseconds), `internal/bastion/engine` (three,
+  0.05 s), `internal/bastion/downloads` (two, 2 s with the race detector, most of it the flush loop), `internal/bastion/server` (one,
+  milliseconds); integration `bastionshared` `TestR_BAS_096_WithValkeyTheReplicasShareTheBudgets` (0.2 s) and `bastion`
+  `TestR_BAS_096_ASubjectOverItsBudgetIsRefusedInItsFormatsShapeAndItsUsageAndStateReachTheMainInstallation` (3.7 s with its world).
+- *Measured on 2026-11-26 for E9a's open point*: a warm anonymous `docker pull` through a Bastion still sends the tag's `HEAD` to the main
+  installation, once per pull, whatever the address
+  ([developer/bastion.md](bastion.md#a-warm-anonymous-pull-and-the-tags-head-measured-2026-11-26)).
 
 ### E10 · The throughput
 
@@ -383,7 +410,7 @@ H-2298 and H-2299 are spare and stay unused.
 | E7 | unit, interface guard | none | under 0.5 s |
 | E8 | unit; integration `bastionreg`, `limits` | rows | 1.5 s; 3 s; 4 s |
 | E9a | unit; chart test; integration `bastion`, `bastionshared` | none to bytes | 1 s; chart; 9 s (two cases); 0.2 s (measured: see E9a's entry) |
-| E9b | unit; integration `bastionshared`, `bastion` | bytes | 2 s; 2 s; 5 s |
+| E9b | unit; integration `bastionshared`, `bastion` | bytes | 2.5 s (measured, the reporter's 2 s of it); 0.2 s; 3.7 s (measured) |
 | E10 | unit (injected clock); integration with Valkey | bytes to 300 KB | 0.35 s; 2.3 s (measured: see E10's entry) |
 | E11 | unit | none | 0.9 s measured (planned under 0.5 s) |
 | E12 | Vitest; renders | fixtures | about 4 s; renders |
