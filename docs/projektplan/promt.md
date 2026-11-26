@@ -319,11 +319,13 @@ wrapped line was seen (2026-11-19), so its condition to build a check is met.
 | W30-G2 · An upstream's package shows its documentation before a version of it is stored (W-30) | R-CUR-028 of the plan `.dev/w30-plan.md`: read through, not stored, per format; the facts the same answers carry; Q-CUR-260 to Q-CUR-269, Q-UI-1340 to Q-UI-1349, ADR-291, H-2200 to H-2209 | landed and pushed on 2026-11-26 at 08:29 |
 | W30-G5 · "Used by": a version's page lists the packages that depend on its package (W-30) | R-API-086 of the plan `.dev/w30-plan.md`: a side table every format fills, the read under the reader's scope, a filter `dependsOn` of the package list; Q-API-455 to Q-API-459, Q-UI-1350 to Q-UI-1359, ADR-294, H-2220 to H-2229, migration 00139 | landed and pushed on 2026-11-26 at 10:20 |
 | W30-G6 · NuGet complete (W-30) | R-NUGET-037 to R-NUGET-039 of the plan: the install forms by package type, the icon, the licence file, the frameworks, the symbols, what a build runs, and the upload on the screen after W30-A5; Q-NUGET-155 to Q-NUGET-169, Q-UI-1360 to Q-UI-1369, ADR-293, H-2230 to H-2239 | landed and pushed on 2026-11-26 at 11:13 |
-| W31 · A download is the unit a person asked for, in the top bar's Downloads and every other place (W-31) | R-OPS-049 to R-OPS-052 and R-UI-210 to R-UI-212 rewritten; R-OPS-053 to R-OPS-055, Q-OPS-427 to Q-OPS-436, Q-UI-1380 to Q-UI-1389, Q-CUR-270 to Q-CUR-274, H-2250 to H-2259, ADR-295, migration 00140 | in work since 2026-11-26, 09:09 |
+| W31 · A download is the unit a person asked for, in the top bar's Downloads and every other place (W-31) | R-OPS-049 to R-OPS-052 and R-UI-210 to R-UI-212 rewritten; R-OPS-053 to R-OPS-055, Q-OPS-427 to Q-OPS-436, Q-UI-1380 to Q-UI-1389, Q-CUR-270 to Q-CUR-274, H-2250 to H-2259, ADR-295, migration 00140 | landed and pushed on 2026-11-26 at 12:16 |
 | W32 · The limit of parallel downloads counts transfers and says so, and the built-in figures fit a large company (W-31, the owner's decision) | R-LIM-004, R-LIM-007, R-LIM-010, R-LIM-024 rewritten; R-LIM-041, Q-LIM-293 to Q-LIM-299, Q-UI-1390 to Q-UI-1394, H-2260 to H-2264, ADR-296, migration 00141 | in work since 2026-11-26, 10:29 |
-| W33 · The audit log shows a download as one row, and keeps one event per item (W-31, the owner's second decision) | R-OPS-054, R-OPS-055, Q-OPS-437 to Q-OPS-445, Q-UI-1395 to Q-UI-1399, H-2265 to H-2269, ADR-297, migration 00142 | in work since 2026-11-26, 10:35 |
+| W33 · The audit log shows a download as one row, and keeps one event per item (W-31, the owner's second decision) | R-OPS-054, R-OPS-055, Q-OPS-437 to Q-OPS-445, Q-UI-1395 to Q-UI-1399, H-2265 to H-2269, ADR-297, migration 00142 | built at about 12:00 (one commit; migration 00142); lands after W31 and W32 |
 | W34-E1 · A Bastion's cache stays below its size between sweeps, and the bytes between a Bastion and the main installation are counted (W-34, the plan's E1 and E5; no decision needed) | R-BAS-089, R-BAS-090, Q-BAS-301 to Q-BAS-309, H-2270 to H-2274, ADR-298 | in work since 2026-11-26, 11:07 |
 | W34-E2 · A Bastion's own refusals fit the clients: the format's cap of the time to wait, and request figures that let one normal command through (W-34, the plan's E2 and E3; the Bastion interface's version rises by one) | R-BAS-091, R-BAS-092, Q-BAS-310 to Q-BAS-319, H-2275 to H-2279, ADR-299 | in work since 2026-11-26, 11:07 |
+| W36 · The built-in limit profiles' byte and upstream figures fit a large company (the owner's rule of generous defaults, applied to the figures W32 listed, H-2262) | R-LIM-010 rewritten; R-LIM-042, Q-LIM-296 to Q-LIM-299, Q-UI-1390 to Q-UI-1394, H-2263, H-2264, ADR-296, migration 00143 | in work since 2026-11-26, 11:33 |
+| W35-P3 · An anonymous visitor of a public repository sees its vulnerabilities, the open ones (W-35, the owner's g4, g5, g6; the plan's P3) | R-VULN-019, R-VULN-020, Q-VULN-158 and R-UI-057 rewritten; R-UI-224, Q-UI-1410 to Q-UI-1419, H-2300 to H-2302, ADR-301 | in work since 2026-11-26, 12:06 |
 | W-30 planner · Ansible as an equal of Galaxy; general and specific properties per format | the owner's task of 20:39: a comparison screen by screen and answer by answer, and the table of properties per format | plan written at 21:05 (`.dev/w30-plan.md`) |
 | W30-G1 · A remote's cached version of npm and Debian carries its facts (W-30) | R-NPM-050, R-NPM-051, R-DEB-037 of the plan `.dev/w30-plan.md`; the README of an npm version from the stored tarball | landed and pushed at 23:27 |
 | G1 · The checks see overlays and clipping as a person does | an overlay is measured in the window a person has and a modal state is not pictured in a grown window; `sideways` inside dialogs and drawers; the new checks `overlay-out` (the person search's list wider than its drawer, W-12), `cut` (a text cut at the start of a wrapped line) and `separator-start` (a separator dot that starts a line); a state's own widths and schemes; the correction of Q-UI-1060 | about 5 s of fixtures, at most 60 s of the render step | landed and pushed at 14:55 (two commits; Q-UI-1170 to Q-UI-1173, H-1912 closed; its builder worked from 11:13 to 13:17; with S11 on one landing: thirteen gates, `make ui-states`, the whole English set (532 screens, 43.1 minutes) and the German pass (98 screens, 9.2 minutes) each without a failure or a finding, the new checks over every screen that landed today) |
@@ -1315,6 +1317,105 @@ records the recorder that tells such a stall apart).
 
 ### Product
 
+- **Closed on 2026-11-26, 12:16, by W31 (W-31; R-OPS-049 to R-OPS-052 and R-UI-210 to R-UI-212 rewritten; R-OPS-053;
+  Q-OPS-419 revised, Q-OPS-427 to Q-OPS-432; Q-UI-1380; ADR-295; gaps H-2250 to H-2254; migration 00140): a download
+  is the unit a person asked for, in the top bar's Downloads and in a remote's failed rows.** The owner's task of
+  09:05 (its entry below). A format declares its unit (`DownloadUnit`, required of every remote format, the format
+  contract's version is 15): OCI the image, as it was asked for by tag or by digest, with its manifests, configs,
+  layers and attestations; npm, NuGet, Ansible Galaxy and Debian the version (a tarball, a package with its symbols,
+  an archive, one binary package's file or a source package's files); the scanner's database one unit as before. By
+  cause: a queue row's run is one download with a total (the run names the sizes of what it will fetch, one bar for
+  the image); a mirror pass's download is the tag or version; a client's pull is the image one caller pulls by name,
+  named by the newest tag whose manifest names its first file, and stays among the running for 5 s after its last
+  file. Grouped on each replica in memory, merged at the read across replicas, and "the last 100", the button's
+  count, "and n more running" and the two metrics count units. The drawer shows one row per download and never its
+  files; a failed one names the file that failed in its badge's title. The sweep of every place that shows or counts
+  downloads: a remote's tab Downloads listed a client's failed pull of an image as one row per layer, and its label
+  "Downloads · n failed" counted them: one row per name and version now; the queue's own rows, a package's and a
+  version's "n downloads" and "Last download", the tab Upstream and the usage of background downloads were units
+  already. Left alone and the owner's to decide, one at a time: the limit `parallelDownloads` counts every file
+  request in progress (R-LIM-007, R-LIM-024); the audit event `artifact.downloaded` is one per item served. The
+  landing: two commits picked onto the NuGet package, the count of requirements 1,316; the thirteen gates green (the lint took 13 minutes beside four builders' runs), the dialogs' states, the renders in English (35 screens) and German without a layout finding, the drawer looked at: the owner's image is one row with one bar, a failed image one row with its badge, the integration areas proxy, ociremote, repository, mirror, api, postgres, backup and conventions green. Open: a client's pull of
+  an image has no bar (the client fetches only the layers it lacks; H-2252); one caller's pulls of two tags of one
+  image within 10 s are one row, and callers without a principal share a key (H-2251, H-2254); a mirror pass's image
+  stands among the finished with its manifests until its layers begin (H-2250); a version's files fetched one after
+  the other are two downloads (H-2253); the drawer scrolls inside itself (as before; R-UI-215 names the page).
+  Not verified: a real pull of one image over several replicas; clients of npm, NuGet, Debian and Ansible end to end
+  (they go the engine's same road); the write load, measured with a row per file.
+
+- **Open since 2026-11-26, 12:06: the final plans of W-34 and W-35 after the owner's answers, and the order of their packages.**
+  `.dev/w34-plan.md` (decisions D1 to D13, packages E1 to E17) and `.dev/w35-plan.md` (decisions B.1 to B.14, packages
+  P1 to P12), not in git. New in them, decided by the planners on my word or by me: a Bastion stores its last
+  configuration in its cache backend, so that a replica restarted during an outage serves the GUI (follows from
+  g2 = b); the refusal of a write is "This address is read-only: it serves downloads and accepts no uploads." in one
+  of four error shapes a format declares; fourteen places of a Bastion's answers were read for the main
+  installation's name, eight of them name it today (the write refusal, the Bastion's own problem texts and codes,
+  headers of forwarded answers such as `Quader-Resolved-From`, forwarded problem bodies with the main installation's
+  request ID, a registry token's readable claims) and get a package of their own; search engines (f3 = b): the
+  Bastion's Go handler fills the application's page with what a crawler reads from the catalogue documents it holds
+  (title, description, README, structured data, canonical address and language alternates on its own base URL), a
+  sitemap and `robots.txt`; findings are not indexed (a search result outlives a fix); imprint and privacy notice
+  (f2): Markdown per language in the values of both charts, rendered by the README's sanitizer, two pages and a
+  footer, no link where a text is empty. Identifier blocks: the planners' tables, with W-34's R-UI and Q-UI moved
+  to R-UI-240 and Q-UI-1480 and up (my two briefs had given both planners R-UI-223). Order: wave 1 without any other
+  package: W-35's P1 (measurement), P2 (the package screens split into views and acts), P3 (vulnerabilities for the
+  anonymous caller; started at 12:06), P4 (imprint and privacy), W-34's E4 (measurement) and E6 (the spec of D1 to
+  D13); then the shared wire (E7 with P5, one raise of the interface version), then the two sides. At most four
+  builders; places are taken as they come free.
+
+- **Answered by the owner on 2026-11-26 (stored at 11:51, read at 11:52 on his word "Einlesen"): the working paper of
+  W-34 and W-35, 31 decisions; my favourite in 28, three against it, four with a note.** Against my favourite:
+  **g2 = b** (the GUI goes on serving while the main installation is unreachable, with the age of its state shown; my
+  favourite was the answers' grace period: what is set private during an outage stays visible until the link
+  returns, which he accepts); **g5 = b** (dismissed findings are not shown; mine was to show them apart with the
+  reason); **f3 = b** (the GUI is to be found by search engines; mine was no work for it: the page said it changes g3
+  and is clearly more to build, so the small application of g3 = b gets pages a crawler can read). As my favourite:
+  k1 = a (a Bastion is configured on its card at the main installation), k2 = c (a ceiling for all anonymous callers
+  together, and the one-for-one paths removed), k3 = b (the Bastion refuses a write itself), k4 = c (flood protection
+  by address and budgets by subject on everything served, hits included), k5 = a (a preset per Bastion, rules on
+  demand), k6 = a (two budgets), k7 = a (Audit or Enforce per Bastion), k8 = a (the maximum throughput at the
+  Bastion, on every byte it reads), k9 = b (what was served twice is protected), k10 = b (the Bastion reports usage
+  and status), k11 = a (defaults from measurements), k12 = a (egress addresses on the card), g1 = b (a public
+  catalogue the Bastion serves alone), g3 = b (a second small application of the same components), g4 = a (the whole
+  list of findings), g6 = a, g7 = a (a second switch for documentation, the repository's wiki level decides), g8 = a
+  (a switch acts in about 3 s), g9 = a (no veto in the chart), g10 = a (the existing listener, under `/ui/`),
+  g11 = a, g12 = a, g13 = a (internal names out of the catalogue), f1 = a (every public repository appears, public
+  remotes included), f2 = a, f4 = a, f5 = a (certificates at the package API get a paper of their own), f6 = a. His
+  notes, whole: **k3**: "Der Bastion verrät keine internen Informationen über die Hauptinstanz. Es ist davon
+  auszugehen, das es einen Grund gibt wieso ein User auf dem Bastion landet und nicht direkt auf der Hauptinstanz."
+  So the refusal of a write names no address of the main installation (my option's "with the sentence where to
+  publish" is out), and, read by me as a rule beyond the refusal: nothing a Bastion answers names the main
+  installation (today's refusal says "This is a read-only Bastion of https://…; publish to …", R-BAS-014); a sweep of
+  every answer, header and page of the Bastion belongs to the packages. **g6**: "Natürlich soll die Hauptinstanz
+  Vulnerabilities an öffentlich sichtbaren Repos anzeigen. Ja, dann ändert sich das Verhalten der Hauptinstanz."
+  **f2**: "Wird von der Instanz selbst ausgeliefert. Der Text beider Links kann über ein Markdown frei bestimmt
+  werden. Eingestellt wird es bei der Installation über Helm, der Administrator des Bastion ist verantwortlich für
+  die Einhaltung dieser Werte. Auch die Hauptinstanz braucht diese Felder im Helm Chart falls jemand die
+  Hauptinstanz öffentlich betreiben möchte." Read by me, and told to him for his correction: imprint and privacy
+  notice are two pages the instance serves itself, their text Markdown from the chart's values, not links to another
+  site and not fields on the card; in the Bastion's chart and in the main installation's. The two planners revise
+  their plans by these answers and give the packages in their order; four builders work, the packages start as
+  places come free.
+
+- **Answered at 11:51 (its entry above); open since 2026-11-26, 11:25: the working paper of W-34 and W-35 lies with the owner, 31 decisions.** The two planners'
+  plans (`.dev/w34-plan.md`, `.dev/w35-plan.md`, not in git) as one private page with a store of his choices, my
+  favourite preset in each: k1 to k12 (where a Bastion is configured; what an anonymous request may cause at the main
+  installation; who refuses a write; what a Bastion counts and against whom; presets and rules; one budget or two; a
+  mode per Bastion; the maximum throughput; the cache against churn; what the administrator sees; the defaults; the
+  Bastion's egress addresses), g1 to g13 (the GUI's data as a public catalogue the Bastion serves alone; the GUI
+  while the main installation is unreachable; a second small application of the same components; how much of the
+  vulnerabilities the internet sees; dismissed findings; the main installation's own anonymous view; the switch for
+  documentation; how fast a switch acts; a veto in the chart; where the GUI runs; list and search; the other signals
+  of trust; internal names out of the catalogue) and f1 to f6 (which public repositories appear; links to an imprint;
+  search engines; an overview of security; certificates at the package API as a paper of their own; the expected
+  size). Read by the planners in code, new to me: a Bastion holds no list of packages at all, so any GUI needs data
+  it does not hold; an anonymous visitor sees no vulnerability anywhere today, the main installation included; the
+  anonymous view carries the uploader's name and CI claims and a remote's upstream address (not run, read in
+  `signatureOrigin`); five kinds of anonymous request reach the main installation one for one. Decided by me and
+  listed on the page for his objection: page views get a request class of their own and never count as a miss; the
+  catalogue's sync runs under the throughput cap; the GUI keeps the main installation's addresses; no request to a
+  third party from a page; no tab Upstream in the GUI.
+
 - **Closed on 2026-11-26, 11:13, by W30-G6 (W-30; R-NUGET-037 to R-NUGET-039; Q-NUGET-155 to Q-NUGET-162; Q-UI-1360 to
   Q-UI-1364; ADR-293; gaps H-2230, H-2232, H-2171 closed; no migration): a NuGet version offers the install forms of
   nuget.org by package type, shows what its package carries and says what a build or an install runs, and a package
@@ -1453,7 +1554,7 @@ records the recorder that tells such a stall apart).
   (H-2224). Not verified: the backfill's time on a large installation; a picture of a reader who may read only one of
   two dependents' repositories (the integration test holds the case); real clients.
 
-- **Open since 2026-11-26, 09:09, the owner's task (W-31): a download is the unit a person asked for, everywhere.** With a
+- **Closed on 2026-11-26, 12:16, by W31 (its entry above); opened at 09:09 as the owner's task (W-31): a download is the unit a person asked for, everywhere.** With a
   picture of the top bar's Downloads, whose section Finished showed seven rows of one image of 241 B to 10.1 MiB:
   "Ich habe gestern ein Image herunter geladen und festgestellt, dass der Download-Drawer mir einzelne Layer anzuzeigen
   scheint. Das ist nicht gewünscht. Alle Downloads sind überall in Quader zu logischen Einheiten zusammen zu fassen. Bei
