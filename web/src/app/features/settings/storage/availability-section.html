@@ -1,0 +1,148 @@
+@let o = overview();
+<p class="target-line">
+  <span i18n="@@storage.availability.target"
+    >{o.availability.target, plural, =1 {Target 1 copy per blob} other {Target {{ o.availability.target }} copies per blob}} · written before
+    answering: {{ o.availability.minCopies }}</span
+  >&ngsp;<button type="button" class="btn btn-tertiary btn-icon btn-sm help on-line" [quaderTooltip]="targetHelp" i18n-aria-label="@@storage.availability.target.about" aria-label="About the target">
+    <span class="material-icons" aria-hidden="true">help_outline</span>
+  </button>
+</p>
+
+@if (parts().length > 0) {
+  <div class="copies">
+    <span class="copies-label" i18n="@@storage.availability.per-blob">Copies per blob</span>
+    <span class="copies-bar" aria-hidden="true">
+      @for (p of parts(); track p.copies) {
+        <span class="copies-part" [attr.data-tone]="p.tone" [style.flex-grow]="p.percent"></span>
+      }
+    </span>
+    <ul class="copies-legend plain" role="list">
+      @for (p of parts(); track p.copies) {
+        <li [attr.data-tone]="p.tone">
+          <span class="swatch" aria-hidden="true"></span
+          ><ng-container i18n="@@storage.availability.part"
+            >{p.copies, plural, =0 {no copy} =1 {1 copy} other {{{ p.copies }} copies}}: {{ p.blobs | number }} ({{ formatSize(p.bytes) }})</ng-container
+          >
+        </li>
+      }
+    </ul>
+  </div>
+}
+
+<!-- The one line of the loss (B.6): green only while every blob survives the loss of any one connection. -->
+<div class="loss" role="status">
+  @if (o.availability.state === 'one_store') {
+    <p class="loss-line">
+      <span class="material-icons muted-icon" aria-hidden="true">info</span
+      ><ng-container i18n="@@storage.loss.one-store">One store: no copy elsewhere</ng-container>
+    </p>
+  } @else if (worst(); as w) {
+    <p class="loss-line warn">
+      <span class="material-icons" aria-hidden="true">warning</span
+      ><span i18n="@@storage.loss.losing"
+        >Losing <span translate="no">{{ w.connection }}</span>: {w.blobs, plural, =1 {1 blob} other {{{ w.blobs | number }} blobs}} ({{
+          formatSize(w.bytes)
+        }}) unavailable</span
+      >
+      @if (others().length > 0 && !othersOpen()) {
+        &ngsp;<button type="button" class="btn btn-tertiary btn-sm" (click)="othersOpen.set(true)" i18n="@@storage.loss.more">
+          {others().length, plural, =1 {1 more} other {{{ others().length }} more}}
+        </button>
+      }
+    </p>
+    @if (othersOpen()) {
+      <ul class="plain loss-others">
+        @for (l of others(); track l.connection) {
+          <li i18n="@@storage.loss.losing-other"
+            >Losing <span translate="no">{{ l.connection }}</span>: {l.blobs, plural, =1 {1 blob} other {{{ l.blobs | number }} blobs}} ({{
+              formatSize(l.bytes)
+            }}) unavailable</li
+          >
+        }
+      </ul>
+    }
+  } @else {
+    <p class="loss-line ok">
+      <span class="material-icons" aria-hidden="true">check_circle</span
+      ><ng-container i18n="@@storage.loss.survives">Survives the loss of any one connection</ng-container>
+    </p>
+  }
+</div>
+
+<quader-data-table [caption]="caption" [columns]="columns" [empty]="rows().length === 0">
+  @for (c of rows(); track c.id) {
+    <tr>
+      <th scope="row"><span class="connection-name" translate="no">{{ c.id }}</span></th>
+      <td>
+        @let h = holds(c);
+        @if (h !== null) {
+          <span class="meter-line">
+            <quader-storage-meter [ratio]="holdsRatio(c)" [label]="holdsLabel(c)" />
+            <span class="figure">{{ h }} %</span>
+          </span>
+        } @else {
+          <quader-no-value />
+        }
+      </td>
+      <td>
+        @if (c.summary && c.summary.soleCopies > 0) {
+          <span class="figure" i18n="@@storage.only-here.value">{{ c.summary.soleCopies | number }} · {{ formatSize(c.summary.soleBytes) }}</span>
+        } @else {
+          <quader-no-value />
+        }
+      </td>
+      <td class="lines-cell">
+        @if (backlogOf(c); as b) {
+          <div class="lines">
+            <span class="line"
+              ><span i18n="@@storage.backlog.blobs">{b.blobs, plural, =1 {1 blob} other {{{ b.blobs | number }} blobs}}</span>,&ngsp;@switch (b.age.unit) {
+                @case ('day') {
+                  <span i18n="@@storage.backlog.oldest-days">{b.age.n, plural, =1 {oldest 1 day} other {oldest {{ b.age.n }} days}}</span>
+                }
+                @case ('hour') {
+                  <span i18n="@@storage.backlog.oldest-hours">{b.age.n, plural, =1 {oldest 1 hour} other {oldest {{ b.age.n }} hours}}</span>
+                }
+                @case ('minute') {
+                  <span i18n="@@storage.backlog.oldest-minutes">{b.age.n, plural, =1 {oldest 1 minute} other {oldest {{ b.age.n }} minutes}}</span>
+                }
+                @default {
+                  <span i18n="@@storage.backlog.oldest-seconds">oldest less than a minute</span>
+                }
+              }</span
+            >
+            @if (b.behind) {
+              <span class="line warn"
+                ><span class="material-icons" aria-hidden="true">warning</span
+                ><ng-container i18n="@@storage.backlog.behind">Behind for over an hour</ng-container></span
+              >
+            }
+          </div>
+        } @else {
+          <quader-no-value />
+        }
+      </td>
+      <td class="lines-cell">
+        @if (c.passStartedAt || c.lastFullPassAt) {
+          <div class="lines">
+            @if (c.passStartedAt; as at) {
+              <span class="line" i18n="@@storage.pass.since">Pass since {{ at | time }}</span>
+            }
+            @if (c.lastFullPassAt; as at) {
+              <span class="line state-words" i18n="@@storage.pass.last">Last full pass {{ at | time }}</span>
+            }
+          </div>
+        } @else {
+          <quader-no-value />
+        }
+      </td>
+    </tr>
+  }
+</quader-data-table>
+
+@if (canRun()) {
+  <div class="section-actions">
+    <button type="button" class="btn btn-default" [disabled]="running()" [quaderBusy]="running()" (click)="run.emit()">
+      <ng-container i18n="@@storage.reconcile.run">Run the reconciliation now</ng-container>
+    </button>
+  </div>
+}

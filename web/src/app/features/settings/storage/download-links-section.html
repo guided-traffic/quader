@@ -1,6 +1,3 @@
-<quader-page-header heading="Storage" i18n-heading="@@storage.settings.heading" />
-<quader-needs capability="settings:write" />
-
 @if (loadError(); as e) {
   <quader-error-notice [error]="e" (retry)="retry()" />
 }
@@ -251,5 +248,5 @@
     </section>
   </div>
 } @else if (!loadError()) {
-  <quader-loading size="page" i18n="@@settings.loading">Loading the settings.</quader-loading>
+  <quader-loading i18n="@@links.loading">Loading the download links.</quader-loading>
 }

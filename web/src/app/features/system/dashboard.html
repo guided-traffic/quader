@@ -73,17 +73,26 @@
           ><ng-container i18n="@@dashboard.state.ready">All roles ready</ng-container></span
         >
       }
-      <!-- The alerts of R-STOR-060 in words (R-UI-197): a connection unreachable on every replica, or every one. -->
-      @if (st.storage === 'error') {
-        <span class="state bad"
-          ><span class="material-icons" aria-hidden="true">error</span
-          ><ng-container i18n="@@dashboard.state.storage-none">No storage connection is reachable</ng-container></span
-        >
-      } @else if (st.storage === 'warning') {
-        <span class="state warn"
-          ><span class="material-icons" aria-hidden="true">warning</span
-          ><ng-container i18n="@@dashboard.state.storage-one">A storage connection is unreachable</ng-container></span
-        >
+      <!-- The alerts of R-STOR-060 in words, from the storage overview's state of the connections (R-UI-266). -->
+      @switch (st.storage) {
+        @case ('none') {
+          <span class="state bad"
+            ><span class="material-icons" aria-hidden="true">error</span
+            ><ng-container i18n="@@dashboard.state.storage-none">No storage connection is reachable</ng-container></span
+          >
+        }
+        @case ('unreachable') {
+          <span class="state warn"
+            ><span class="material-icons" aria-hidden="true">warning</span
+            ><ng-container i18n="@@dashboard.state.storage-one">A storage connection is unreachable</ng-container></span
+          >
+        }
+        @case ('degraded') {
+          <span class="state warn"
+            ><span class="material-icons" aria-hidden="true">warning</span
+            ><ng-container i18n="@@dashboard.state.storage-degraded">Storage degraded</ng-container></span
+          >
+        }
       }
       @if (st.replacing) {
         <span class="state badge info"
@@ -278,51 +287,20 @@
       </dl>
     </section>
 
-    <section class="card" aria-labelledby="dash-s3">
+    <!-- The card Storage (R-UI-266): the object store's readiness check, then the page's summary in its compact form. -->
+    <section class="card storage-card" aria-labelledby="dash-s3">
       <div class="card-head">
-        <h3 id="dash-s3" i18n="@@dashboard.object-store">Object store</h3>
+        <h3 id="dash-s3" i18n="@@dashboard.storage">Storage</h3>
         <ng-container *ngTemplateOutlet="check; context: { $implicit: checks().objectStore }" />
       </div>
-      <dl class="kv">
-        @for (c of connectionLines(); track c.id) {
-          <div class="connection-row">
-            <dt>
-              <span translate="no">{{ c.id }}</span>
-              <span class="muted location" translate="no">{{ c.location }}</span>
-            </dt>
-            <dd>
-              @if (c.unreachable; as u) {
-                <span class="state bad"
-                  ><span class="material-icons" aria-hidden="true">error</span
-                  ><ng-container i18n="@@dashboard.connection.unreachable">Unreachable on {{ u.open }} of {{ u.of }} replicas</ng-container></span
-                >
-              } @else if (c.known) {
-                <span class="state ok"
-                  ><span class="material-icons" aria-hidden="true">check_circle</span
-                  ><ng-container i18n="@@dashboard.check.ok">Connected</ng-container></span
-                >
-              }
-            </dd>
-          </div>
-        }
-        @if (valueOf(overview); as o) {
-          <div>
-            <dt i18n="@@dashboard.stored">Stored content</dt>
-            <dd>{{ size(o.storage.bytes) }}</dd>
-          </div>
-          <div>
-            <dt i18n="@@dashboard.objects">Objects</dt>
-            <dd>{{ o.storage.blobs | number }}</dd>
-          </div>
-          <div>
-            <dt i18n="@@dashboard.pending-deletion">Queued for deletion</dt>
-            <dd>{{ o.storage.pendingDeletion | number }}</dd>
-          </div>
-        }
-      </dl>
+      @if (valueOf(storage); as o) {
+        <quader-storage-summary [overview]="o" [compact]="true" />
+      } @else if (storage.isLoading()) {
+        <quader-loading i18n="@@dashboard.storage.loading">Loading the storage.</quader-loading>
+      }
       @if (session.has('settings:read')) {
         <div class="card-foot">
-          <a class="btn btn-default btn-sm" routerLink="/admin/system/storage" i18n="@@dashboard.storage.view">Storage</a>
+          <a class="btn btn-default btn-sm" routerLink="/admin/settings/storage" i18n="@@dashboard.storage.view">Storage</a>
         </div>
       }
     </section>

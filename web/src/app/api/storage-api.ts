@@ -4,11 +4,13 @@ import { seg } from './query';
 import { Schema } from './types';
 
 /*
- * The object-store connections and the blobs no connection holds whole, as the admin area's tab Storage reads them (storage.md
- * R-STOR-061, R-STOR-027; api-and-ui.md R-UI-196). The connections are only shown: no operation changes one (the owner's decision 9).
- * The one write is the recheck of a damaged blob, which reads its copies again and writes no object.
+ * The stored content as the admin area's page Settings › Storage and the dashboard's card read it (storage.md R-STOR-061, R-STOR-107,
+ * R-STOR-027; api-and-ui.md R-UI-262 to R-UI-266): the overview of now, the object-store connections and the blobs no connection holds
+ * whole. The connections are only shown: no operation changes one (the owner's decision 9). The one write is the recheck of a damaged
+ * blob, which reads its copies again and writes no object.
  */
 
+export type StorageOverview = Schema<'StorageOverview'>;
 export type StorageConnection = Schema<'StorageConnection'>;
 export type StorageConnectionFigures = Schema<'StorageConnectionFigures'>;
 export type DamagedBlob = Schema<'DamagedBlob'>;
@@ -22,6 +24,8 @@ export interface DamagedPage {
 }
 
 export abstract class StorageApi {
+  /** `GET /api/v1/storage/overview` (R-STOR-107): the states of now, each derived by the server (Q-STOR-505). */
+  abstract overview(): Promise<StorageOverview>;
   /** `GET /api/v1/system/storage-connections` (R-STOR-061): every connection, the answering replica's in its order. */
   abstract connections(): Promise<readonly StorageConnection[]>;
   /** The first `limit` blobs of `GET /api/v1/storage/damaged-blobs?scope=blobs` (R-STOR-027). */
@@ -33,6 +37,10 @@ export abstract class StorageApi {
 @Injectable()
 export class HttpStorageApi extends StorageApi {
   private readonly client = inject(ApiClient);
+
+  async overview(): Promise<StorageOverview> {
+    return (await this.client.get('/api/v1/storage/overview')).body;
+  }
 
   async connections(): Promise<readonly StorageConnection[]> {
     return (await this.client.get('/api/v1/system/storage-connections')).body.connections;

@@ -1,0 +1,131 @@
+<quader-data-table [caption]="caption" [columns]="columns" [empty]="rows().length === 0">
+  @for (c of rows(); track c.id) {
+    <tr>
+      <th scope="row"><span class="connection-name" translate="no">{{ c.id }}</span></th>
+      <td class="lines-cell">
+        @if (c.encrypted) {
+          <div class="lines">
+            <span class="line ok"
+              ><span class="material-icons" aria-hidden="true">lock</span
+              >@if (c.encryptedSince; as at) {<ng-container i18n="@@storage.quader.on-since">On since {{ at | time: 'date' }}</ng-container>} @else {<ng-container
+                i18n="@@storage.quader.on"
+                >On</ng-container
+              >}</span
+            >
+            @let share = inFormat(c);
+            @if (share !== null) {
+              <span class="line meter-line">
+                <quader-storage-meter [ratio]="share" [tone]="share < 1 ? 'warn' : 'neutral'" [label]="formatLabel(c)" />
+                <span class="figure" i18n="@@storage.quader.in-format">{{ percent(share) }} % in the format</span>
+              </span>
+              @if (share < 1) {
+                <span class="line warn"
+                  ><span class="material-icons" aria-hidden="true">warning</span><ng-container i18n="@@storage.differs">Differs</ng-container></span
+                >
+              }
+            }
+            @if (c.keyedNames) {
+              <span class="line state-words" i18n="@@storage.quader.keyed-names">Keyed names</span>
+            }
+          </div>
+        } @else {
+          <span class="muted-mark"
+            ><span class="material-icons" aria-hidden="true">lock_open</span><ng-container i18n="@@storage.quader.off">Off</ng-container></span
+          >
+        }
+      </td>
+      <td class="lines-cell">
+        @if (c.settings; as s) {
+          <div class="lines">
+            <span class="line"
+              ><span class="pair-label" i18n="@@storage.configured">Configured</span>&ngsp;<code translate="no">{{ s.sseMode }}</code
+              >@if (s.sseKmsKeyId) {&ngsp;<span class="secondary" translate="no">{{ s.sseKmsKeyId }}</span>}</span
+            >
+            <span class="line state-words"
+              ><span class="pair-label" i18n="@@storage.actual">Actual</span>&ngsp;<ng-container i18n="@@storage.not-checked">not checked yet</ng-container></span
+            >
+          </div>
+        } @else {
+          <quader-no-value />
+        }
+      </td>
+      <td class="lines-cell">
+        @if (c.storageKeys.length > 0) {
+          @let ring = keyRing(c);
+          <div class="lines">
+            @if (ring.active; as k) {
+              <span class="line"><code translate="no">{{ k.id }}</code></span>
+              <span class="line state-words" i18n="@@storage.keys.active">active, generation {{ k.generation }}</span>
+            }
+            @if (ring.retired > 0 || ring.destroyed > 0) {
+              <span class="line state-words" i18n="@@storage.keys.others"
+                >{{ ring.retired }} retired · {{ ring.destroyed }} destroyed</span
+              >
+            }
+            <span class="line">
+              <button
+                type="button"
+                class="btn btn-tertiary btn-sm"
+                [attr.aria-expanded]="keysOpen().has(c.id)"
+                [attr.aria-label]="keysLabel(c)"
+                (click)="toggleKeys(c)"
+              >
+                <span class="material-icons expand-chevron" aria-hidden="true">expand_more</span
+                ><ng-container i18n="@@storage.keys.all">{c.storageKeys.length, plural, =1 {1 key} other {{{ c.storageKeys.length }} keys}}</ng-container>
+              </button>
+            </span>
+            @if (keysOpen().has(c.id)) {
+              <ul class="plain key-list">
+                @for (k of c.storageKeys; track k.id) {
+                  <li>
+                    <code translate="no">{{ k.id }}</code>&ngsp;<span class="secondary" i18n="@@storage.keys.item"
+                      >generation {{ k.generation }}, {{ keyState(k.state) }}, created {{ k.createdAt | time: 'date' }}, {{ k.copies === null ? '–' : (k.copies | number) }} copies</span
+                    >
+                  </li>
+                }
+              </ul>
+            }
+          </div>
+        } @else {
+          <quader-no-value />
+        }
+      </td>
+    </tr>
+  }
+</quader-data-table>
+
+<h3 class="sub-heading" i18n="@@storage.encrypts.heading">What Quader encrypts</h3>
+<ul class="encrypts plain" role="list">
+  @for (r of encrypts(); track r.family + r.mark) {
+    <li [attr.data-mark]="r.mark">
+      <span class="material-icons" aria-hidden="true">{{ markIcon(r) }}</span>
+      <span class="visually-hidden">{{ markText(r) }}:</span>
+      <span translate="no" class="family">{{ familyText(r) }}</span>
+      @if (familyHelp(r); as help) {
+        <button type="button" class="btn btn-tertiary btn-icon btn-sm help on-line" [quaderTooltip]="help" [attr.aria-label]="aboutLabel(r)">
+          <span class="material-icons" aria-hidden="true">help_outline</span>
+        </button>
+      }
+    </li>
+  }
+</ul>
+
+@if (ring(); as k) {
+  <p class="root-key">
+    <span class="pair-label" i18n="@@storage.root-key">Root key</span>&ngsp;<code translate="no">{{ k.activeKeyId }}</code>&ngsp;<span
+      i18n="@@storage.root-key.count"
+      >{k.keys.length, plural, =1 {1 key} other {{{ k.keys.length }} keys}}</span
+    >&ngsp;·&ngsp;@if (k.ringsCompatible) {
+      <span class="ok"
+        ><span class="material-icons" aria-hidden="true">check_circle</span><ng-container i18n="@@storage.root-key.agree">Rings agree</ng-container></span
+      >
+    } @else {
+      <span class="bad"
+        ><span class="material-icons" aria-hidden="true">error</span><ng-container i18n="@@storage.root-key.differ">Rings differ</ng-container></span
+      >
+    }
+    @if (k.lastReencryption?.finishedAt; as at) {
+      &ngsp;·&ngsp;<span i18n="@@storage.root-key.resealed">Last re-sealing {{ at | time }}</span>
+    }
+  </p>
+}

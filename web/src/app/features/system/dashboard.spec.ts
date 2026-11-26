@@ -4,8 +4,8 @@ import { BackupsApi } from '../../api/backups-api';
 import { ApiError } from '../../api/problem';
 import { FakeBackupsApi, sampleSummary } from '../../api/testing/fakes-backups';
 import { FakeSystemApi, provideFakeApis, sampleInfo, sampleReplica, sampleRuntime } from '../../api/testing/fakes';
-import { FakeStorageApi, sampleConnection } from '../../api/testing/fakes-storage';
-import { StorageApi } from '../../api/storage-api';
+import { FakeStorageApi, sampleOverview } from '../../api/testing/fakes-storage';
+import { StorageApi, StorageOverview } from '../../api/storage-api';
 import { Replica, SystemApi } from '../../api/system-api';
 import { SessionStore } from '../../core/session-store';
 import { seriousViolations } from '../../testing/axe';
@@ -69,7 +69,7 @@ describe('Admin dashboard (R-UI-038)', () => {
     expect(t).toContain('PostgreSQL');
     expect(t).toContain('Connected');
     expect(t).toContain('2.4 ms');
-    expect(t).toContain('8.5 GiB');
+    expect(t).toContain('1.7 TiB');
     expect(t).toContain('Repositories');
     // The classes as the lists show them: the system repository is System, not one of Local (Q-UI-1203, Q-UI-1217).
     const classes = [...root.querySelectorAll<HTMLElement>('.card:has(#dash-repos) .kv > div')].map((d) => text(d));
@@ -204,46 +204,41 @@ describe('Admin dashboard (R-UI-038)', () => {
     });
   });
 
-  describe('The object store, one line per connection (R-UI-197)', () => {
-    const twoStores = (s: FakeSystemApi) => {
-      installation(s);
-      s.infoResult = {
-        ...s.infoResult,
-        objectStore: {
-          connections: [
-            { id: 'default', endpoint: 'https://object.storage.eu01.example.net', bucket: 'quader-blobs', prefix: 'quader', credentialSource: 'static', encrypted: false, drain: false },
-            { id: 'secondary', endpoint: 'https://s3.eu-central-1.amazonaws.com', bucket: 'quader-copy', prefix: 'quader', credentialSource: 'webIdentity', encrypted: false, drain: false },
-          ],
-        },
-      };
-    };
-    const lines = (root: HTMLElement) => [...root.querySelectorAll<HTMLElement>('section[aria-labelledby="dash-s3"] .connection-row')];
+  describe('The card Storage, the summary of Settings › Storage (R-UI-266)', () => {
+    const tiles = (root: HTMLElement) => [...root.querySelectorAll<HTMLElement>('section[aria-labelledby="dash-s3"] quader-storage-summary .tile')];
 
-    it('R-UI-197 two connections render two lines with their place and their state, and the card links the tab Storage', async () => {
-      const { root } = await render(twoStores, undefined, (st) => (st.connectionsResult = [sampleConnection(), sampleConnection({ id: 'secondary', position: 2 })]));
-      expect(lines(root).map((l) => [text(l.querySelector('dt > span')!), text(l.querySelector('dt .location')!)])).toEqual([
-        ['default', 'object.storage.eu01.example.net · quader-blobs/quader'],
-        ['secondary', 's3.eu-central-1.amazonaws.com · quader-copy/quader'],
-      ]);
-      expect(lines(root).every((l) => text(l.querySelector('dd')!).includes('Connected'))).toBe(true);
-      expect(root.querySelector('section[aria-labelledby="dash-s3"] a[href="/admin/system/storage"]')?.textContent?.trim()).toBe('Storage');
+    it('R-UI-266 the card keeps the readiness check and shows the six tiles in their compact form from the one overview, and links the page', async () => {
+      const { root } = await render(installation);
+      const card = root.querySelector<HTMLElement>('section[aria-labelledby="dash-s3"]')!;
+      expect(text(card.querySelector('h3')!)).toBe('Storage');
+      expect(tiles(root).map((t) => t.getAttribute('data-tile'))).toEqual(['connections', 'availability', 'encryption', 'integrity', 'problems', 'stored']);
+      expect(text(tiles(root)[0]!)).toContain('Healthy');
+      expect(text(tiles(root)[0]!)).toContain('1 of 1 reachable');
+      // The compact form: the state and one figure, the page's second lines left out.
+      expect(text(tiles(root)[5]!)).not.toContain('blobs');
+      expect(card.querySelector('a[href="/admin/settings/storage"]')?.textContent?.trim()).toBe('Storage');
+      expect(card.querySelector('a[href="/admin/settings/storage#connections"]')).toBeTruthy();
       expect(text(root.querySelector('.instance-bar')!)).toContain('All roles ready');
       expect(await seriousViolations(root)).toEqual([]);
     });
 
-    it('R-UI-197 one of them unreachable on every replica makes the overall state the warning, both the error', async () => {
-      const down = (id: string) => sampleConnection({ id, replicas: { configured: 3, live: 3, circuitOpen: 3 } });
-      const one = await render(twoStores, undefined, (st) => (st.connectionsResult = [sampleConnection(), down('secondary')]));
+    it('R-UI-266 the overall state reads the overview: degraded with an unreachable connection warns, unreachable is the error, detached only says degraded', async () => {
+      const connections = (c: Partial<StorageOverview['connections']>) => (st: FakeStorageApi) =>
+        (st.overviewResult = sampleOverview({ connections: { ...sampleOverview().connections, ...c } }));
+      const one = await render(installation, undefined, connections({ state: 'degraded', reachable: 1, configured: 2, unreachable: [{ id: 'secondary', circuitOpen: 1, configured: 3 }] }));
       const bar = text(one.root.querySelector('.instance-bar')!);
       expect(bar).toContain('A storage connection is unreachable');
       expect(bar).not.toContain('All roles ready');
       expect(one.root.querySelector('.instance-bar .state.warn')).toBeTruthy();
-      expect(text(lines(one.root)[1]!)).toContain('Unreachable on 3 of 3 replicas');
       TestBed.resetTestingModule();
 
-      const both = await render(twoStores, undefined, (st) => (st.connectionsResult = [down('default'), down('secondary')]));
-      expect(text(both.root.querySelector('.instance-bar')!)).toContain('No storage connection is reachable');
-      expect(both.root.querySelector('.instance-bar .state.bad')).toBeTruthy();
+      const none = await render(installation, undefined, connections({ state: 'unreachable', reachable: 0 }));
+      expect(text(none.root.querySelector('.instance-bar')!)).toContain('No storage connection is reachable');
+      expect(none.root.querySelector('.instance-bar .state.bad')).toBeTruthy();
+      TestBed.resetTestingModule();
+
+      const detached = await render(installation, undefined, connections({ state: 'degraded', detached: ['archive'] }));
+      expect(text(detached.root.querySelector('.instance-bar')!)).toContain('Storage degraded');
     });
   });
 

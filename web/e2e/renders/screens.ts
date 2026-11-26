@@ -48,7 +48,7 @@ import { clamavDatabases, clamavRegistry, clamavRow, definitionsExpected, defini
 import { mirrorFilled } from './mirror';
 import { formsHead, headLoading, longReadmeHead, manyVersionsHead, rowCommand, threeRepositoriesHead, versionHead } from './version-heads';
 import { deprecatedCollection, deprecationActs } from './deprecations';
-import { damagedBlobs, noDamagedBlob, oneConnection, secondUnreachable, severalConnections, twoConnectionFacts } from './storage';
+import { damagedBlobs, noDamagedBlob, oneConnection, overviewOne, overviewSeveral, overviewTwo, severalConnections, twoForThePage } from './storage';
 import { auditDataKeys, bastionLimits, bastionLimitsPage, bastionsHandover, bastionsRead, forbiddenLink, seededBastion } from './bastions';
 import { auditRows } from './audit-rows';
 import { downloadsWalk } from './downloads';
@@ -755,54 +755,60 @@ async function* systemScanners(page: Page): AsyncGenerator<string> {
 }
 
 /**
- * The tab **Storage** of System status (R-UI-196): as the render profile answers it (one connection, perhaps before the first storage
- * summary), then answered in the browser (storage.ts): one connection with its summary and its fold open; several connections in every
- * state with blobs no connection holds whole; the same with two rows' folds and both sections of details open.
+ * **Settings › Storage** (R-UI-262 to R-UI-264): as the render profile answers it (one connection, perhaps before the first storage
+ * summary), then answered in the browser (storage.ts): one connection with its summary; the plan's two connections (one encrypted, one
+ * nearly full, one filling and unreachable on one replica) with both folds and the keys of the encrypted one open; six connections in
+ * every state, a detached one among them, with blobs no connection holds whole and their section open.
  */
-async function* systemStorage(page: Page): AsyncGenerator<string> {
+async function* storagePage(page: Page): AsyncGenerator<string> {
+  const overview = '**/api/v1/storage/overview';
   const connections = '**/api/v1/system/storage-connections';
   const damaged = '**/api/v1/storage/damaged-blobs**';
-  const tab = page.locator('main quader-storage-page');
-  await expect(tab.locator('table').first()).toBeVisible();
+  const main = page.locator('main quader-storage-page');
+  await expect(main.locator('quader-storage-summary')).toBeVisible();
+  await expect(main.locator('#connections quader-data-table')).toBeVisible();
   yield '';
   await routeWith(page, damaged, noDamagedBlob());
+  await routeWith(page, overview, overviewOne());
   await answerWith(page, connections, oneConnection());
-  await expect(tab.locator('quader-data-table').first().locator('tbody tr:not(.expansion)')).toHaveCount(1);
-  await tab.locator('th button[aria-expanded="false"]').first().click();
-  await expect(tab.locator('th button[aria-expanded="true"]')).toHaveCount(1);
+  await expect(main.locator('#connections tbody tr:not(.expansion)')).toHaveCount(1);
   yield 'one';
-  await routeWith(page, damaged, damagedBlobs());
-  await answerWith(page, connections, severalConnections());
-  await expect(tab.locator('quader-data-table').first().locator('tbody tr:not(.expansion)')).toHaveCount(6);
-  yield 'several';
-  for (const i of [1, 2]) await tab.locator('quader-data-table').first().locator('th button').nth(i).click();
-  // The page's two sections, Damaged blobs and the tasks' last runs, by what a click does not change: a list of the closed toggles
-  // shrank under the loop, and the second click waited 15 s for a match that the first click's answer had taken away.
-  const folds = tab.locator('quader-disclosure > .disclosure > .heading > button.toggle');
-  await expect(folds).toHaveCount(2);
-  for (const fold of await folds.all()) {
-    await expect(fold).toHaveAttribute('aria-expanded', 'false');
-    await fold.click();
-    await expect(fold).toHaveAttribute('aria-expanded', 'true');
-    // The section that opens moves the toggle under it while it grows; the next click waits until it stands still.
-    await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
+  await routeWith(page, overview, overviewTwo());
+  await answerWith(page, connections, twoForThePage());
+  await expect(main.locator('#connections tbody tr:not(.expansion)')).toHaveCount(2);
+  // Each fold by its place, and its state awaited before the next: a list of the closed toggles shrinks under the loop.
+  for (let i = 0; i < 2; i++) {
+    const toggle = main.locator('#connections tbody th button').nth(i);
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
   }
-  yield 'several-details';
+  const keys = main.locator('#encryption td button[aria-expanded]').first();
+  await keys.click();
+  await expect(keys).toHaveAttribute('aria-expanded', 'true');
+  await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
+  yield 'two';
+  await routeWith(page, damaged, damagedBlobs());
+  await routeWith(page, overview, overviewSeveral());
+  await answerWith(page, connections, severalConnections());
+  await expect(main.locator('#connections tbody tr:not(.expansion)')).toHaveCount(6);
+  const fold = main.locator('quader-storage-damaged-blobs quader-disclosure > .disclosure > .heading > button.toggle');
+  await fold.click();
+  await expect(fold).toHaveAttribute('aria-expanded', 'true');
+  await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
+  yield 'several-detached';
+  await page.unroute(overview);
   await page.unroute(connections);
   await page.unroute(damaged);
 }
 
-/** The dashboard (R-UI-197): as it opens, then two connections of which the second is unreachable on every replica. */
+/** The dashboard (R-UI-266): as it opens, then the card Storage with the plan's two connections, one unreachable on a replica. */
 async function* dashboardStorage(page: Page): AsyncGenerator<string> {
   yield '';
-  const info = '**/api/v1/system/info';
-  const connections = '**/api/v1/system/storage-connections';
-  await routeWith(page, info, twoConnectionFacts());
-  await answerWith(page, connections, secondUnreachable());
-  await expect(page.locator('main section[aria-labelledby="dash-s3"] .connection-row')).toHaveCount(2);
+  const overview = '**/api/v1/storage/overview';
+  await answerWith(page, overview, overviewTwo());
+  await expect(page.locator('main section[aria-labelledby="dash-s3"] quader-storage-summary .tile')).toHaveCount(6);
   yield 'storage';
-  await page.unroute(info);
-  await page.unroute(connections);
+  await page.unroute(overview);
 }
 
 /** Opens every folded section of the explanation; false where there is none. */
@@ -3759,7 +3765,7 @@ export const screens: readonly Screen[] = [
   { id: 'repository-settings-ansible-remote', path: `${O}/repositories/galaxy/settings`, kinds: admins, walk: remoteSections },
   { id: 'repository-settings-ansible-virtual', path: `${O}/repositories/ansible/settings`, kinds: admins, walk: allSections },
   { id: 'help-admin-page', path: '/ui/help/admin/repositories', kinds: admins },
-  { id: 'admin-dashboard', path: '/ui/admin/dashboard', kinds: admins, walk: dashboardStorage },
+  { id: 'admin-dashboard', path: '/ui/admin/dashboard', kinds: admins, walk: dashboardStorage, de: true },
   // The top bar's Downloads (R-UI-210 to R-UI-212), answered in the browser (upstream-downloads.ts): the button with nothing running,
   // with 3 and with 140 in the main and in the admin area; the panel with five running and 100 finished, the filter set, everything
   // hidden, a refresh that failed and both sections empty; a plain user and a project's Owner get no button.
@@ -3890,7 +3896,6 @@ export const screens: readonly Screen[] = [
   { id: 'admin-system-read', path: '/ui/admin/system', kinds: ['auditor'] },
   { id: 'admin-system-jobs', path: '/ui/admin/system/jobs', kinds: admins, de: true },
   { id: 'admin-system-backups', path: '/ui/admin/system/backups', kinds: admins },
-  { id: 'admin-system-storage', path: '/ui/admin/system/storage', kinds: admins, walk: systemStorage },
   // In German: the longest word of a heading, "Authentifizierungseinstellungen", which broke inside itself at 390 px (Q-UI-1091).
   { id: 'admin-settings-auth', path: '/ui/admin/settings/auth', kinds: admins, de: true },
   { id: 'admin-settings-general', path: '/ui/admin/settings/general', kinds: admins, walk: restrictedLevels },
@@ -3899,8 +3904,9 @@ export const screens: readonly Screen[] = [
   { id: 'admin-settings-malware-read', path: '/ui/admin/settings/malware', kinds: ['auditor'] },
   { id: 'admin-settings-signatures', path: '/ui/admin/settings/signatures', kinds: admins, walk: signatureSettings, tables: 'quader-data-table' },
   // >>> download-links
-  { id: 'admin-settings-storage', path: '/ui/admin/settings/storage', kinds: admins, walk: storageSettings },
-  { id: 'admin-settings-storage-read', path: '/ui/admin/settings/storage', kinds: ['auditor'] },
+  { id: 'admin-settings-storage', path: '/ui/admin/settings/storage', kinds: admins, walk: storagePage, de: true },
+  { id: 'admin-settings-storage-links', path: '/ui/admin/settings/storage', kinds: admins, walk: storageSettings },
+  { id: 'admin-settings-storage-read', path: '/ui/admin/settings/storage', kinds: ['auditor'], de: true },
   // <<< download-links
   { id: 'admin-settings-signatures-read', path: '/ui/admin/settings/signatures', kinds: ['auditor'] },
   // The section Signing identity in each state of R-SIG-056: with the controls of security-settings:write, and read-only.

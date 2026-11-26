@@ -1,0 +1,97 @@
+<quader-page-header heading="Storage" i18n-heading="@@storage.settings.heading" />
+<quader-needs capability="settings:write" />
+
+@if (failure(); as f) {
+  <quader-error-notice [error]="f" (retry)="retry()" />
+}
+
+@if (overview(); as o) {
+  <p class="figures-line">
+    @if (o.figuresAt; as at) {
+      <span i18n="@@storage.figures-at">Figures counted {{ at | time }}</span>
+    } @else {
+      <span i18n="@@storage.figures-none">Figures not counted yet</span>
+    }
+    @if (canWrite()) {
+      <button type="button" class="btn btn-default btn-sm" [disabled]="running('storage-summary')" [quaderBusy]="running('storage-summary')" (click)="run('storage-summary')">
+        @if (running('storage-summary')) {
+          <ng-container i18n="@@storage.counting">Counting…</ng-container>
+        } @else {
+          <ng-container i18n="@@storage.count-now">Count now</ng-container>
+        }
+      </button>
+    }
+  </p>
+
+  <h2 class="visually-hidden" i18n="@@storage.summary.heading">Summary</h2>
+  <quader-storage-summary [overview]="o" (go)="goTo($event)" />
+
+  <section id="connections" class="page-section" aria-labelledby="storage-connections-heading">
+    <div class="section-head">
+      <h2 id="storage-connections-heading" tabindex="-1">
+        <ng-container i18n="@@storage.connections.heading">Connections</ng-container>
+        @if (connections()) {
+          &ngsp;<span class="count">{{ shownCount() }}</span>
+        }
+      </h2>
+      <a class="help-link" routerLink="/help/admin/storage" fragment="connections" [quaderTooltip]="connectionsHelp" i18n-aria-label="@@storage.connections.about" aria-label="About the connections">
+        <span class="material-icons" aria-hidden="true">help_outline</span>
+      </a>
+    </div>
+    @if (connectionsFailure(); as f) {
+      <quader-error-notice [error]="f" (retry)="connectionsFailure.retry()" />
+    } @else if (connections(); as list) {
+      <quader-storage-connections [connections]="list" [links]="links()" />
+    } @else {
+      <quader-loading i18n="@@storage.connections.loading">Loading the connections.</quader-loading>
+    }
+  </section>
+
+  <section id="availability" class="page-section" aria-labelledby="storage-availability-heading">
+    <div class="section-head">
+      <h2 id="storage-availability-heading" tabindex="-1" i18n="@@storage.availability.heading">Availability</h2>
+      <a class="help-link" routerLink="/help/admin/storage" fragment="availability" [quaderTooltip]="availabilityHelp" i18n-aria-label="@@storage.availability.about" aria-label="About the availability">
+        <span class="material-icons" aria-hidden="true">help_outline</span>
+      </a>
+    </div>
+    @if (connections(); as list) {
+      <quader-storage-availability
+        [overview]="o"
+        [connections]="list"
+        [now]="now()"
+        [canRun]="canWrite()"
+        [running]="running('storage-reconcile')"
+        (run)="run('storage-reconcile')"
+      />
+    } @else if (!connectionsFailure()) {
+      <quader-loading i18n="@@storage.availability.loading">Loading the copies.</quader-loading>
+    }
+    @if (damagedFailure(); as f) {
+      <quader-error-notice [error]="f" (retry)="damagedFailure.retry()" />
+    } @else if (damaged(); as d) {
+      @if (d.items.length > 0) {
+        <quader-storage-damaged-blobs [page]="d" [canRecheck]="canWrite()" />
+      }
+    }
+  </section>
+
+  <section id="encryption" class="page-section" aria-labelledby="storage-encryption-heading">
+    <div class="section-head">
+      <h2 id="storage-encryption-heading" tabindex="-1" i18n="@@storage.encryption.heading">Encryption</h2>
+      <a class="help-link" routerLink="/help/admin/storage" fragment="encryption" [quaderTooltip]="encryptionHelp" i18n-aria-label="@@storage.encryption.about" aria-label="About the encryption">
+        <span class="material-icons" aria-hidden="true">help_outline</span>
+      </a>
+    </div>
+    @if (connections(); as list) {
+      <quader-storage-encryption [connections]="list" [ring]="ring()" />
+    } @else if (!connectionsFailure()) {
+      <quader-loading i18n="@@storage.encryption.loading">Loading the encryption.</quader-loading>
+    }
+  </section>
+
+  <div class="page-section links-section">
+    <quader-storage-download-links (settingsChange)="links.set($event)" />
+  </div>
+} @else if (!failure()) {
+  <quader-loading size="page" i18n="@@storage.loading">Loading the storage.</quader-loading>
+}

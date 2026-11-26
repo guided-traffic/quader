@@ -1,0 +1,59 @@
+// Settings › Storage (R-UI-262): the content panel's width (Q-UI-1580); the header's line of the figures, the summary, then each section
+// under its heading with its help on demand.
+.figures-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--quader-space-2) var(--quader-space-3);
+  margin-block: 0 var(--quader-space-4);
+  color: var(--quader-text-muted);
+}
+
+.page-section {
+  margin-block-start: var(--quader-space-6);
+  scroll-margin-block-start: var(--quader-space-4);
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  gap: var(--quader-space-1);
+  margin-block-end: var(--quader-space-3);
+
+  h2 {
+    margin: 0;
+    font: var(--quader-type-title-medium);
+  }
+
+  h2:focus {
+    outline: none;
+  }
+
+  .count {
+    color: var(--quader-text-muted);
+    font-weight: 400;
+  }
+}
+
+.help-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 2rem;
+  block-size: 2rem;
+  border-radius: var(--quader-radius-full);
+  color: var(--quader-text-muted);
+  text-decoration: none;
+
+  &:hover {
+    background: var(--quader-btn-tertiary-bg-hover);
+  }
+
+  > .material-icons {
+    font-size: 1.125rem;
+  }
+}
+
+.links-section {
+  max-inline-size: var(--quader-settings-measure);
+}

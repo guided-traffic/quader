@@ -1,6 +1,6 @@
 import { Injectable, Provider } from '@angular/core';
 import { ApiError } from '../problem';
-import { DamagedBlob, DamagedBlobRecheck, DamagedPage, StorageApi, StorageConnection } from '../storage-api';
+import { DamagedBlob, DamagedBlobRecheck, DamagedPage, StorageApi, StorageConnection, StorageOverview } from '../storage-api';
 
 /** The time the samples' summary was computed. */
 export const SAMPLE_SUMMARY_AT = '2026-11-22T10:17:00Z';
@@ -78,6 +78,36 @@ export function sampleConnection(
   return { ...base, ...over };
 }
 
+/**
+ * The overview of an installation with one store (R-STOR-107), as the server derives it for `sampleConnection()`: healthy, one store,
+ * plain, verified. Each member of `over` replaces that member whole.
+ */
+export function sampleOverview(over: Partial<StorageOverview> = {}): StorageOverview {
+  return {
+    at: '2026-11-22T10:39:22Z',
+    figuresAt: SAMPLE_SUMMARY_AT,
+    connections: { state: 'healthy', configured: 1, reachable: 1, unreachable: [], detached: [] },
+    stored: { blobs: 412_093, bytes: 1_893_341_184_512 },
+    availability: {
+      state: 'one_store',
+      target: 1,
+      minCopies: 1,
+      perBlob: [{ copies: 1, blobs: 412_093, bytes: 1_893_341_184_512 }],
+      belowTarget: { blobs: 0, bytes: 0 },
+      loss: [{ connection: 'default', blobs: 412_093, bytes: 1_893_341_184_512 }],
+    },
+    encryption: { state: 'off', encrypted: [], plain: ['default'], providerConfigured: [], encryptedShare: 0 },
+    integrity: {
+      state: 'verified',
+      downloadVerify: true,
+      authenticatedReads: [],
+      scrub: { coverage: 1, overdue: 0, lastRunAt: '2026-11-22T10:07:03Z', nextRunAt: '2026-11-22T11:07:00Z', running: false },
+      damagedNow: { copies: 0, blobs: 0 },
+    },
+    ...over,
+  };
+}
+
 /** A blob no connection holds whole (R-STOR-027): one copy missing, one item that references it. */
 export function sampleDamagedBlob(over: Partial<DamagedBlob> = {}): DamagedBlob {
   return {
@@ -93,6 +123,8 @@ export function sampleDamagedBlob(over: Partial<DamagedBlob> = {}): DamagedBlob 
 
 @Injectable()
 export class FakeStorageApi extends StorageApi {
+  overviewResult: StorageOverview | ApiError = sampleOverview();
+  overviewReads = 0;
   connectionsResult: readonly StorageConnection[] | ApiError = [sampleConnection()];
   damagedResult: DamagedPage | ApiError = { items: [], more: false };
   /** The answer of the next recheck; by default the blob read whole on its connection. */
@@ -100,6 +132,12 @@ export class FakeStorageApi extends StorageApi {
   connectionReads = 0;
   damagedReads = 0;
   rechecks: string[] = [];
+
+  override async overview(): Promise<StorageOverview> {
+    this.overviewReads++;
+    if (this.overviewResult instanceof ApiError) throw this.overviewResult;
+    return structuredClone(this.overviewResult);
+  }
 
   override async connections(): Promise<readonly StorageConnection[]> {
     this.connectionReads++;

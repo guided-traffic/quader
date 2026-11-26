@@ -6,11 +6,10 @@ import { TabStrip } from '../../shared/ui/tab-strip';
 import { SystemRefresh } from './system-refresh';
 
 /**
- * The page **System status** (R-UI-164, the owner's decision W-19, Q-UI-650): one header, the tabs **Status**, **Jobs**,
- * **Backups** and **Storage** (R-UI-196, Q-UI-930) under it, each with its own address (`/admin/system`, `/admin/system/jobs`,
- * `/admin/system/backups`, `/admin/system/storage`), and the tab's content below, as the profile's pages are built. The header's
- * **Pause automatic refresh** and **Refresh now** act on the tab that is shown (Q-UI-651). Status, Backups and Storage need
- * `settings:read`; Jobs answers every signed-in caller with the jobs
+ * The page **System status** (R-UI-164, the owner's decision W-19, Q-UI-650): one header, the tabs **Status**, **Jobs** and
+ * **Backups** under it, each with its own address (`/admin/system`, `/admin/system/jobs`, `/admin/system/backups`), and the tab's
+ * content below, as the profile's pages are built; the stored content is Settings › Storage (R-UI-262, ADR-316). The header's
+ * **Pause automatic refresh** and **Refresh now** act on the tab that is shown (Q-UI-651). Status and Backups need `settings:read`; Jobs answers every signed-in caller with the jobs
  * they started, so a caller without `settings:read` who follows a link to the jobs sees them without a strip of one tab
  * (Q-UI-652).
  */
@@ -39,9 +38,6 @@ import { SystemRefresh } from './system-refresh';
         >
         <a class="tab-link" routerLink="/admin/system/backups" routerLinkActive [routerLinkActiveOptions]="exact" ariaCurrentWhenActive="page" i18n="@@system.tab.backups"
           >Backups</a
-        >
-        <a class="tab-link" routerLink="/admin/system/storage" routerLinkActive [routerLinkActiveOptions]="exact" ariaCurrentWhenActive="page" i18n="@@system.tab.storage"
-          >Storage</a
         >
       </nav>
     }

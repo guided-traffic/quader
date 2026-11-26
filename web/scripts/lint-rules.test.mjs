@@ -88,6 +88,7 @@ test('R-UI-126 a link to the removed routes /setup and /browse fails the check, 
     'const url = `/setup?repository=${ref}`;',
     "<a routerLink=\"/browse\">Browse</a>",
     "return ['/browse', project, key];",
+    '<a class="btn btn-default btn-sm" routerLink="/admin/system/storage">Storage</a>',
   ];
   for (const t of bad) assert.equal(linksToRemovedRoutes(t).length, 1, t);
   const good = [
@@ -97,6 +98,8 @@ test('R-UI-126 a link to the removed routes /setup and /browse fails the check, 
     "loadComponent: () => import('../setup/client-setup').then((m) => m.ClientSetupPage),",
     "const path = setup ? '/project/setup' : raw;",
     "['/projects', project, 'repositories', key, 'files']",
+    '<a class="btn btn-default btn-sm" routerLink="/admin/settings/storage">Storage</a>',
+    "<a routerLink=\"/admin/system/backups\">Backups</a>",
   ];
   for (const t of good) assert.deepEqual(linksToRemovedRoutes(t), [], t);
   assert.equal(linksToRemovedRoutes('x\n<a routerLink="/setup">')[0].line, 2);

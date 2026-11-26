@@ -3830,7 +3830,7 @@ Priority: **MVP** · Covers: UI-001, UI-004
   [Q-UI-1040](#q-ui-1040--projects-and-repositories-leave-the-admin-area-the-main-area-holds-what-they-held), the owner's T-25), and related screens are grouped under folding headings: identity (users, groups,
   service accounts, tokens, CI identity), access (permission policies, system roles), system (system status, audit
   log, advisory sources) and, last, settings (General, then Authentication, then Malware scanning while the malware scanning is on, then
-  Signatures, the trust anchors and Quader's signing identity ([signatures.md](signatures.md) R-SIG-036 and R-SIG-056), then Storage (R-UI-200);
+  Signatures, the trust anchors and Quader's signing identity ([signatures.md](signatures.md) R-SIG-036 and R-SIG-056), then Storage (R-UI-262);
   Q-UI-326, [Q-UI-870](#q-ui-870--malware-scanning-is-the-third-page-of-the-settings-group), read once per page load,
   [Q-UI-874](#q-ui-874--the-screens-outside-the-settings-page-read-the-switch-once-per-page-load)). Every entry has an icon, which is decoration: the label is the accessible name.
   Entries the caller may not use are hidden (R-UI-005); a group without a visible entry disappears.
@@ -3964,8 +3964,8 @@ selected tab live in query parameters; a version of a package is an object with 
 | `/admin/audit` | Audit log, with a project column | R-UI-037 |
 | `/admin/advisory-sources` | Advisory sources of the vulnerability data | [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-022 |
 | `/admin/endpoints`, `/admin/endpoints/{endpoint}`, `/admin/endpoints/{endpoint}/rules/new`, `/admin/endpoints/{endpoint}/rules/{name}` | Endpoints and exposure rules | [endpoints.md](endpoints.md) R-EP-017 |
-| `/admin/system`, `/admin/system/jobs`, `/admin/system/backups`, `/admin/system/storage` | System status and its tabs: jobs, backups, the object-store connections | R-UI-038, R-UI-048, R-UI-164, R-UI-196 |
-| `/admin/settings` (leads to `general`), `/admin/settings/general`, `/admin/settings/auth`, `/admin/settings/storage` | The group Settings: General, Authentication (Q-UI-326); Storage, built first with its section **Download links** (built on 2026-11-23: R-UI-200, Q-UI-950) | R-UI-031 to R-UI-034, R-UI-200 |
+| `/admin/system`, `/admin/system/jobs`, `/admin/system/backups` | System status and its tabs: jobs and backups (the tab Storage moved to Settings › Storage, ADR-316) | R-UI-038, R-UI-048, R-UI-164 |
+| `/admin/settings` (leads to `general`), `/admin/settings/general`, `/admin/settings/auth`, `/admin/settings/storage` | The group Settings: General, Authentication (Q-UI-326); Storage, the page of the stored content with its section **Download links** (R-UI-262, R-UI-200) | R-UI-031 to R-UI-034, R-UI-200, R-UI-262 |
 | `/admin/settings/sign-in` | The group Settings: Sign-in (P1, specified, not built) | R-UI-031 to R-UI-034 |
 | `/admin/settings/malware` | The group Settings: Malware scanning, the switch **Only checked artifacts can be downloaded**, the backlog, the scanners and the signature database ([malware-scanning.md](malware-scanning.md) R-MAL-023) | R-MAL-023 |
 | `/admin/settings/signatures` | The group Settings: Signatures, the trust anchors of the installation and of the projects, the blocked signers and the public Sigstore root ([signatures.md](signatures.md) R-SIG-036) | R-SIG-036 |
@@ -5385,12 +5385,14 @@ Priority: **P1** · Covers: STOR-032, STOR-033
 
 The owner's decision of 2026-11-22 ([storage.md](storage.md) R-STOR-014): one switch of the installation in the admin area, off by
 default, the minimum size, the link's life and the public host behind a disclosure. Built on 2026-11-23 (package 3 of
-[developer/download-links.md](../developer/download-links.md#work-packages)):
-[storage-settings.ts](../../web/src/app/features/settings/storage-settings.ts).
+[developer/download-links.md](../developer/download-links.md#work-packages)), moved into the page of R-UI-262 on 2026-11-26:
+[download-links-section.ts](../../web/src/app/features/settings/storage/download-links-section.ts).
 
 - **Where** ([Q-UI-950](#q-ui-950--the-switch-is-the-first-section-of-the-storage-settings-page)). `/admin/settings/storage`, the page of
-  R-UI-034, the fifth of the group **Settings** after **Signatures**; its title **Storage**. It is built with this section first; the
-  sections of R-UI-034 (trash can, offline mode) join it when they are built. The holder of `settings:read` sees it, the holder of
+  R-UI-034, the fifth of the group **Settings** after **Signatures**; its title **Storage**. Since 2026-11-26 the page is R-UI-262's page
+  of the stored content, and this section is its last, unchanged in content
+  ([Q-UI-1590](#q-ui-1590--the-section-download-links-moves-unchanged)); the sections of R-UI-034 (trash can, offline mode) join it
+  when they are built. The holder of `settings:read` sees it, the holder of
   `settings:write` changes it; every other caller has no entry.
 - **The section Download links**, open, one column (R-UI-087's form; R-UI-085's widths). The plain path is the state, the connections
   that serve links and the switch; everything else is behind **Details**
@@ -5665,7 +5667,7 @@ INV-12 makes roles, drains and Valkey MVP and INV-19 the backup job (Q-UI-7).
   replicas name them (no row where none does, Q-UI-604),
   requests and server errors per second, the worst p95 latency, requests in flight, CPU and memory
   against the limits, summed from the runtime snapshots of R-OPS-003 (lost replicas left out; a role
-  without a replica says so); PostgreSQL, Valkey and the object store (one line per connection, R-UI-197) with their readiness check over
+  without a replica says so); PostgreSQL, Valkey and the card Storage (the summary of Settings › Storage, R-UI-266) with their readiness check over
   the live replicas (connected with the slowest `durationMs`, or how many replicas fail), their facts
   of R-OPS-004, and the stored content of the overview; the counts of the overview with links to
   their screens and "New repository" for `repositories:write-config`; and the job queue with the
@@ -8306,10 +8308,11 @@ The owner's decision of 2026-11-18 (W-19, [Q-UI-650](#q-ui-650--jobs-and-backups
 backups were reached only through two text links at the end of the long status screen, and the side bar marked **System
 status** on both.
 
-- **One page, four tabs.** The page **System status** has one header, the tab strip under it (`tab-nav`, links with
-  `aria-current="page"`, as the profile's pages) with **Status**, **Jobs**, **Backups** and **Storage** (R-UI-196, Q-UI-930), and the
-  tab's content below. Each tab has its own address: `/admin/system`, `/admin/system/jobs`, `/admin/system/backups`,
-  `/admin/system/storage`; the browser's back button and a
+- **One page, three tabs.** The page **System status** has one header, the tab strip under it (`tab-nav`, links with
+  `aria-current="page"`, as the profile's pages) with **Status**, **Jobs** and **Backups**, and the tab's content below; the fourth tab
+  **Storage** (R-UI-196, Q-UI-930) moved to Admin area › Settings › Storage on 2026-11-26 (R-UI-262,
+  [ADR-316](../decisions.md#adr-316--one-page-for-the-stored-content-the-tab-storage-of-system-status-goes)). Each tab has its own
+  address: `/admin/system`, `/admin/system/jobs`, `/admin/system/backups`; the browser's back button and a
   reload keep the tab. The title of the page stays **System status**; the document title and the breadcrumb end with the tab
   (**Admin area › System status › Jobs**), as the profile's pages do ([Q-UI-653](#q-ui-653--the-status-tab-loses-its-links-to-the-other-tabs-a-filter-belongs-to-its-tab)).
 - **One pair of refresh controls** ([Q-UI-651](#q-ui-651--one-pair-of-refresh-controls-in-the-pages-header-acts-on-the-shown-tab)):
@@ -8320,11 +8323,11 @@ status** on both.
   addresses and land on the tab.
 - **A filter belongs to its tab.** The jobs' `kind` and `state` and the runs' `operation` and `state` stay in the address of
   their tab; a tab's link carries none, so leaving the tab drops them, and the browser's back button brings them back.
-- **Who sees which tab** ([Q-UI-652](#q-ui-652--the-tab-strip-is-shown-to-whoever-may-open-every-tab)): Status, Backups and Storage
+- **Who sees which tab** ([Q-UI-652](#q-ui-652--the-tab-strip-is-shown-to-whoever-may-open-every-tab)): Status and Backups
   read operations that need `settings:read`; the jobs answer every signed-in caller with the jobs they started (R-API-015). A caller
-  with `settings:read` sees the four tabs; a caller without it, who follows a link of a repository screen to the jobs, sees
+  with `settings:read` sees the three tabs; a caller without it, who follows a link of a repository screen to the jobs, sees
   them without a strip of one tab. The API decides as before (R-UI-005).
-- **The side bar** keeps the one entry **System status**, marked on the four tabs.
+- **The side bar** keeps the one entry **System status**, marked on the three tabs.
 
 Acceptance criteria:
 
@@ -9528,77 +9531,21 @@ with presets of two formats and the empty state):
 ### R-UI-196 · The object-store connections on the tab Storage of System status
 Priority: **P1** · Covers: quader-only
 
-The owner's decision 9 of 2026-11-22: the admin area shows each connection with its state, fill and backlog and does not change it
-([storage.md](storage.md) R-STOR-050 to R-STOR-061). *Built* (package F of the several connections):
-[storage-page.ts](../../web/src/app/features/system/storage/storage-page.ts), its template and
-[storage-model.ts](../../web/src/app/features/system/storage/storage-model.ts), with the decisions Q-UI-933 and Q-UI-935.
-
-- **Where** ([Q-UI-930](#q-ui-930--the-connections-are-a-fourth-tab-storage-of-system-status)): a fourth tab **Storage**
-  (`/admin/system/storage`) of the page **System status** (R-UI-164), for holders of `settings:read`; the header's refresh controls act
-  on it as on the others. It reads `listStorageConnections` (R-STOR-061) and, for its last section, `GET /api/v1/storage/damaged-blobs`.
-- **The sentence under the tab strip**: "Where Quader keeps your artifacts. Connections are set in the deployment's configuration
-  (`config.storage.connections`); this page only shows them." with the link **How to add or remove a connection** to the operator
-  manual's page.
-- **The table**, one row per connection in its order ([Q-UI-931](#q-ui-931--a-connection-is-one-row-with-its-state-in-words-and-two-figures)):
-  - **Connection**: the `id` as a name, and muted under it the endpoint's host and `bucket/prefix`;
-  - **State** as a badge in words: **Active** (no colour), **Filling** (an hourglass, neutral) with "*n* % of the blobs", **Draining**
-    (neutral) with the copies left, **Drained**, **Detached** (warning) with "*n* blobs only here" and, while its circuit is open on a
-    replica, **Unreachable** (error) with "on *m* of *n* replicas", above the state; a connection configured on only some replicas shows
-    "Configured on *m* of *n* replicas" (information, a line with its icon). What a drained or a detached connection asks for ("can be
-    removed from the configuration", "not in the configuration of any replica") stands once, in the line over the table that names
-    what needs an act ([Q-UI-933](#q-ui-933--what-a-connection-asks-for-stands-once-over-the-table-and-a-states-words-beside-its-badge));
-    a share is rounded down, so a connection that lacks a blob never shows 100 %;
-  - **Fill**: present copies of all blobs as a percentage and the bytes ("100 %, 1.7 TiB"), from the latest storage summary, whose age
-    a line under the table gives;
-  - **Backlog**: the queue ("12 blobs, oldest 4 minutes"), or the en dash when empty; "behind for over an hour" in the warning colour when
-    the alert of R-STOR-056 would fire;
-  - **Damaged copies**: missing and corrupt, the en dash for none;
-  - **Scrub**: "*n* % read" with "within 30 days" (the connection's period) as the cell's muted second line, and "behind" in the
-    warning colour when copies are overdue;
-  - **Encrypted**: **No** (stage 1 knows no other value).
-- **Details on demand.** A row's name opens a fold below it with the connection's non-secret settings as read (the credential source,
-  `force_path_style`, the checksum modes, `batch_delete`, `storage_class`, `sse_mode`, `scrub_period`, `scrub_bytes_per_second`), its
-  capabilities found by the start check ("Payload checksums enforced", "Copies keep and replace metadata", "Server-side copy from
-  *other*"), `filledAt`, `lastFullPassAt`, and nothing that could be changed here.
-- **Blobs no connection holds whole**: below the table, a closed section of details with their number, the first 20 of `scope=blobs`
-  with digest (shortened, the full one in the title), state, the copies' states per connection and the first referencing item as a link
-  to it; "No damaged blob." when the list is empty; with more, "The list shows the first 20." and the command
-  `quader admin storage verify` to see them all (the page of the list carries no count of the rest); the line over the table names their
-  number, so the plain view says that they need an act
-  ([Q-UI-935](#q-ui-935--the-damaged-blobs-and-the-storages-tasks-are-closed-sections-and-the-line-over-the-table-names-what-needs-an-act)).
-  A holder of `settings:write` sees **Check again** per row (`POST …/damaged-blobs/{sha256}/recheck`), which shows the copies' states it
-  answered.
-- **The last runs of the storage's tasks**: a second closed section with `storage-reconcile`, `scrub`, `orphan-sweep` and
-  `storage-summary`, each with its last run and its next, linked to its jobs (Q-UI-935).
-- **One connection** shows one row; the columns that only matter with several (Backlog, the fold's server-side copies) show the en dash.
-- **Narrow screens**: below 48 rem the row becomes a card with the same labels; nothing scrolls sideways.
-
-Acceptance criteria (Vitest, `storage-connections.spec.ts`, about 1 s; rendered under rule 11 of promt.md, light and dark, wide and
-narrow, with one connection, with two of which one is filling and one unreachable on one replica, and with a detached one):
-
-- Two connections, `default` active and `secondary` filling at 50 %, render two rows in order with **Active** and **Filling** "50 % of
-  the blobs"; a queue of 12 blobs whose oldest is 4 minutes shows "12 blobs, oldest 4 minutes".
-- A connection with `replicas.circuitOpen: 1` of 3 shows **Unreachable** "on 1 of 3 replicas"; a detached one shows the warning with its
-  count.
-- A caller without `settings:read` does not see the tab (R-UI-164's rule); the page offers no control that changes a connection.
+**Moved to [R-UI-263](#r-ui-263--the-sections-connections-and-availability)** on 2026-11-26 (W-37,
+[ADR-316](../decisions.md#adr-316--one-page-for-the-stored-content-the-tab-storage-of-system-status-goes)): the owner named Admin area ›
+Settings › Storage as the place of the stored content, and the tab `/admin/system/storage` with its route is gone. What it showed (a row per
+connection with its state in words, its fold of non-secret settings and capabilities, the blobs no connection holds whole with **Check
+again**) is the section **Connections** and a closed section of **Availability** of R-UI-262's page; its line over the table that named
+what needs an act is the summary's tiles, and its closed section of the storage tasks' last runs is the header's line of the figures and
+the acts **Count now** and **Run the reconciliation now**. Its decisions Q-UI-930 to Q-UI-935 stay the record of the tab.
 
 ### R-UI-197 · The object store on the dashboard, one line per connection
 Priority: **P1** · Covers: quader-only
 
-*Built* (package F): [dashboard.ts](../../web/src/app/features/system/dashboard.ts) and its template, with the decision Q-UI-934.
-
-- The dashboard's object store (R-UI-038: its readiness check over the live replicas, its facts of R-OPS-004) lists one line per
-  connection of `objectStore.connections[]`: the `id`, the host and `bucket/prefix`, and its state over the live replicas from the
-  circuits of `listStorageConnections` (**Connected**, or **Unreachable on 1 of 3 replicas**); the time of the slowest check stays the
-  card's, because the check asks every connection in one run
-  ([Q-UI-934](#q-ui-934--a-connections-line-on-the-dashboard-reads-its-circuits-and-no-connection-reachable-is-said-so)). A link
-  **Storage** leads to the tab of R-UI-196 ([Q-UI-932](#q-ui-932--the-dashboard-names-each-connection-in-one-line-and-links-the-tab)).
-  With one connection it is one line.
-- The overall state of the dashboard names "A storage connection is unreachable" as a warning while one of several is unreachable on
-  every replica, and "No storage connection is reachable" as an error while every connection is (the alerts of R-STOR-060 in words).
-
-Acceptance criteria (Vitest, the dashboard's spec, about 0.3 s more): two connections render two lines; one of them unreachable on every
-replica makes the overall state the warning above.
+**Rewritten as [R-UI-266](#r-ui-266--the-dashboards-card-storage-is-the-pages-summary)** on 2026-11-26 (W-37, Q-UI-1589): the card
+**Object store** with one line per connection became the card **Storage** with the summary of Settings › Storage; the instance bar's words
+for the storage ("A storage connection is unreachable", "No storage connection is reachable") stay and read the storage overview.
+Its decision Q-UI-934 stays the record of the card's lines.
 
 ### R-UI-210 · The Downloads button in the top bar
 Priority: **P1** · Covers: quader-only
@@ -9764,7 +9711,8 @@ shows state the server changes without the viewer's own act reads it again by it
     events or findings others write never waits longer (the audit log, the security dashboard's findings, Q-UI-1216);
   - **60 s** (`LIVE_IDLE_MS`) for a page or a summary that changes in minutes: a version's page, a package's page, the tab Upstream,
     the security dashboards' summary, trend and sources, the ClamAV databases;
-  - the pages of System status keep their 15 s with **Pause automatic refresh** (R-UI-164, WCAG 2.2.2), now only while seen.
+  - the pages of System status keep their 15 s with **Pause automatic refresh** (R-UI-164, WCAG 2.2.2), now only while seen;
+  - Settings › Storage reads every 30 s while seen and every 3 s while a run started there runs (R-UI-262, Q-UI-1583).
 - **Back-off.** A read that fails doubles the wait before the next (3 s, 6 s, 12 s …; 30 s, 60 s …), up to 5 minutes
   (`LIVE_MAX_BACKOFF_MS`) or the view's own interval where that is longer; a read that answers restores the interval.
 - **In place, without flicker.** A read replaces what it read only when its answer is there: a list keeps its rows (tracked by their
@@ -10983,6 +10931,158 @@ Acceptance criteria:
   and `loading-scroll`, and the page state of `loading-states`.
 - Vitest ([profile.spec.ts](../../web/src/app/features/profile/profile.spec.ts)): while nothing is read, the page shows its load of page
   size and no section.
+
+### R-UI-262 · Admin area › Settings › Storage is one page of the stored content
+Priority: **P1** · Covers: quader-only
+
+The owner, 2026-11-26, about 21:55: "Ich will dafür unter Admin > Einstellungen > Speicher eine übersichtliche Maske, mit aussagekräftigen
+Darstellungen der getätigten Einstellung (wahrscheinlich über Helm) und der aktuellen Situation. Ich bitte dich Text Slop zu vermeiden und
+kurz und bündig die Situation zum Betrachter zu übertragen." And at 21:57: the integrity check of Quader's format and the copies over several
+connections belong on the page. ([ADR-316](../decisions.md#adr-316--one-page-for-the-stored-content-the-tab-storage-of-system-status-goes).)
+
+- **Where.** `/admin/settings/storage`, the fifth page of the group **Settings**, title **Storage**, for holders of `settings:read`; the
+  tab Storage of System status and its route are gone (R-UI-196 moved here). It takes the content panel's width
+  ([Q-UI-1580](#q-ui-1580--the-storage-page-takes-the-content-panels-width)); the section Download links keeps its measure.
+- **The header.** The title, the note of R-UI-005 for a reader without `settings:write`, and one muted line: "Figures counted
+  26.11.2026 21:17:00 (Thu.)" (the overview's `figuresAt`, through the one formatter of R-UI-250), "Figures not counted yet" before the first
+  summary; a holder of `settings:write` has **Count now** beside it (the task `storage-summary`, audited as `system.task_triggered`),
+  which says "Counting…" with the spinner while its job runs.
+- **The summary.** Six tiles, each a label, a state as a word with its icon and tone, and one or two lines of figures with their units, from
+  `GET /api/v1/storage/overview` (R-STOR-107): **Connections** ("2 of 2 reachable", the unreachable and the detached ones by id),
+  **Availability** ("Every blob on 2 connections", or the blobs and bytes below the target, or "No copy elsewhere"), **Encryption** ("1 of
+  2 connections", "50 % of the bytes"), **Integrity** (the scrub's coverage, the damaged copies or blobs, the overdue copies; "Every read
+  checked: archive", the last scrub), **Problems now** and **Stored** (bytes, "in 412,093 blobs"). The states and their words are B.14's
+  ([Q-UI-1587](#q-ui-1587--the-states-words-and-tones-of-the-summary)): every state is the server's (Q-STOR-505); green only for a
+  positive one. Until the history of the period is recorded (W-37 P4), the tile Problems names the problems of now: **Ongoing** while a
+  connection is unreachable on a replica, none is reachable or a blob has no whole copy, **Open** while copies wait for their repair, **None**
+  otherwise. A tile with a section on the page is a link to it ([Q-UI-1581](#q-ui-1581--a-tile-is-a-link-to-its-section)).
+- **The sections, in the order of the owner's questions:** **Connections** and **Availability** (R-UI-263), **Encryption** (R-UI-264),
+  **Download links** (R-UI-200). Each section's heading has a help button whose tooltip says at most two sentences and whose link opens the
+  manual's section; no paragraph stands above a section.
+- **Live** ([Q-UI-1583](#q-ui-1583--the-page-reads-every-30-s-while-seen-and-every-3-s-while-a-run-it-started-runs)): the page reads the
+  overview, the connections, the blobs no connection holds whole and the root key's ring again every 30 s while it is seen, every 3 s while a
+  run it started runs, never while it is hidden (R-UI-213); a read in place keeps what is shown. Every first load shows the spinner (R-UI-217);
+  a failed read keeps its notice with everything the answer carried in its place (R-UI-214, R-UI-216); nothing scrolls by itself (R-UI-215).
+- **Narrow screens** ([Q-UI-1591](#q-ui-1591--the-narrow-layout)): three tiles a row below 80 rem, two below 40 rem; the tables become cards
+  below 48 rem; nothing scrolls sideways.
+- **Nothing secret** (B.9): storage keys and the root key by identifier and generation, never key material, a sealed value, a credential, a
+  credential file's path or a signed URL.
+
+*Built on 2026-11-26 (W-37 P3):* [storage-page.ts](../../web/src/app/features/settings/storage/storage-page.ts) and its template,
+[storage-summary.ts](../../web/src/app/features/settings/storage/storage-summary.ts),
+[storage-model.ts](../../web/src/app/features/settings/storage/storage-model.ts). The period group of B.3 is not built yet: no figure of
+this package reads a period, so the control waits for the history (W-37 P4) that gives it something to change.
+
+Acceptance criteria (Vitest, [storage-page.spec.ts](../../web/src/app/features/settings/storage/storage-page.spec.ts) and
+[storage-model.spec.ts](../../web/src/app/features/settings/storage/storage-model.spec.ts), about 2 s; rendered under rule 11 of promt.md as
+the screens `admin-settings-storage`, `admin-settings-storage-read` and `admin-settings-storage-links`, English and German):
+
+- One store: the header names when the figures were counted; the tiles say Healthy, One store, Off, Verified and None, the neutral ones
+  without green; the sections follow in the order above; the tile Connections links `#connections`.
+- Every state of the overview has its word and its tone (19 rows of B.14); the problems of now are the server's states.
+- The auditor reads the page and is offered no act; the administrator's **Count now** and **Run the reconciliation now** run their tasks.
+- The page reads again every 30 s while seen, every 3 s while its count runs, and not while hidden.
+
+### R-UI-263 · The sections Connections and Availability
+Priority: **P1** · Covers: quader-only
+
+The owner's decision 9 of 2026-11-22 (the connections are set in the chart and only shown) and his second message of 2026-11-26 (the copies
+over several connections for availability). It takes R-UI-196's content.
+
+- **Connections.** A table of every connection that is not retired, in the order of the configuration:
+  - **Connection**: the id, and muted under it the endpoint's host and `bucket/prefix`, broken after a dot or a slash;
+  - **State**: **Unreachable** "on *m* of *n* replicas" first while its circuit is open on a replica, then the badge of its state (Active,
+    Filling "*n* % of the blobs", Draining with the copies left, Drained, Detached "*n* blobs only here", Retired), and "Configured on *m* of
+    *n* replicas" during a rolling update;
+  - **Role**: "Uploads 1. · Reads 1." from its place in the list (a draining connection takes no upload; a detached one has no place), and
+    the marks **Links** and **Bastion** from the download links' settings (clients get links to it; a Bastion reads it directly), each with
+    a check or a dash;
+  - **Region**;
+  - **Use**: the stored bytes of its present copies against the capacity its element states, as a bar and "1.7 TiB of 2.0 TiB", **Nearly
+    full** (warning) from 80 % and **Full** (error) from 95 % ([Q-UI-1586](#q-ui-1586--the-capacity-bars-thresholds-are-80--and-95-)); without
+    a stated capacity "1.7 TiB" and "no capacity set". Never enforced (Q-STOR-503).
+  - **The fold** of a row: every non-secret key of the element with its value and its key's name (`endpoint`, `bucket, prefix`, `region`,
+    `credentials_source`, `force_path_style`, the checksum modes, `batch_delete`, `storage_class`, `sse_mode` with its KMS key's identifier,
+    `scrub_period, scrub_bytes_per_second`, `capacity`, `encrypted, keyed_names`), what the start check found, and the times it was first seen,
+    filled, the current pass started and the last full pass ended ([Q-UI-1585](#q-ui-1585--the-configurations-key-names-stand-on-demand)).
+  - Retired connections are one muted line under the table.
+- **Availability** ([storage.md](storage.md) R-STOR-106):
+  - the target against what is written before an answer: "Target 2 copies per blob · written before answering: 1", the keys behind both in
+    the help;
+  - one bar of the copies per blob, each part with its count, blobs and bytes; a part below the target in the warning colour, blobs with no
+    copy in the error colour;
+  - one line of the loss: "Survives the loss of any one connection" (green) with several connections and no sole copy; "Losing default:
+    1,234 blobs (12 GiB) unavailable" (warning) for the connection whose loss costs most, the others on demand; "One store: no copy elsewhere"
+    (neutral) with one target connection;
+  - per connection that holds content: **Holds** (bar and share of every blob), **Only here** (blobs and bytes of its sole copies),
+    **Backlog** (blobs, the oldest's age, "Behind for over an hour"), **Reconciliation** (the current pass since, the last full pass);
+  - **Run the reconciliation now** for a holder of `settings:write` (the task `storage-reconcile`);
+  - the blobs no connection holds whole, while there is one, as a closed section (R-UI-196's list: digest, state, each copy's state, the first
+    referencing item; **Check again** for a holder of `settings:write`, audited as `storage.blob.rechecked`).
+
+*Built on 2026-11-26 (W-37 P3):* [connections-section.ts](../../web/src/app/features/settings/storage/connections-section.ts),
+[availability-section.ts](../../web/src/app/features/settings/storage/availability-section.ts),
+[damaged-blobs.ts](../../web/src/app/features/settings/storage/damaged-blobs.ts),
+[storage-meter.ts](../../web/src/app/features/settings/storage/storage-meter.ts) ([Q-UI-1592](#q-ui-1592--the-meter-is-a-component-of-the-page)).
+The counts of the period (reads from another copy, writes to the next connection, copies that failed) come with the history (W-37 P4).
+
+Acceptance criteria (Vitest, storage-page.spec.ts): two connections show the role with the marks of the links, the use nearly full and
+full, an unreachable and a filling one, and the loss line; several connections without a sole copy survive the loss of any one, in green;
+a detached connection warns with the blobs only it holds and has no role; a row's fold names every key of its element; the blobs no
+connection holds whole are a closed section of Availability, and an administrator checks one again.
+
+### R-UI-264 · The section Encryption
+Priority: **P1** · Covers: quader-only
+
+The owner, 2026-11-26: whether and where Quader encrypts, and what. Configured and actual stand in two places, never mixed
+([Q-UI-1584](#q-ui-1584--configured-and-actual-stand-apart-with-differs-where-they-disagree)).
+
+- **A table per connection that holds content**, the columns Quader, Object store, Storage keys:
+  - **Quader**: "On since 22.11.2026 (Sun.)" (the first storage key's creation, `encryptedSince`) in green, the share of its present copies in
+    Quader's format as a bar ("100 % in the format"; below 100 % **Differs** in the warning tone, which would be a defect), **Keyed names**;
+    or **Off**;
+  - **Object store**: **Configured** `sse_mode` with the KMS key's identifier, beside **Actual**, the mode the store applied, which the start
+    check's probe records with the history (W-37 P4): until then "not checked yet";
+  - **Storage keys**: the active key's identifier and generation, the count of retired and destroyed keys, and the list on demand (each with
+    its generation, state, creation and copies).
+- **What Quader encrypts** ([Q-UI-1588](#q-ui-1588--what-quader-encrypts-is-product-knowledge-in-the-page)): two columns of the families of the
+  stored content, each with a mark (encrypted, depends, not encrypted, plain on purpose) and a help where a gap or a condition stands
+  behind it: the artifacts and the upload parts on the encrypted and on the plain connections (H-1317), the upload spool on the pod's disk
+  (H-2), the secrets in the database (sealed under the root key), the rest of the database, a backup's artifacts as stored, a backup's
+  database files (H-48), the journal, the marker and the probes (plain on purpose, H-1316), the Bastions' caches (per Bastion).
+- **Root key**: the active key ring's identifier, the number of keys, **Rings agree** (or **Rings differ** in the error tone) and the last
+  re-sealing's time; the ring keeps no time of a key's activation
+  ([H-2431](../security/data-and-secret-flow.md#h-2431--the-storage-page-names-the-root-keys-last-re-sealing-not-when-a-key-became-active)).
+
+*Built on 2026-11-26 (W-37 P3):* [encryption-section.ts](../../web/src/app/features/settings/storage/encryption-section.ts) and its
+template; the list's words are the product's knowledge
+([H-2432](../security/stored-content-visibility.md#h-2432--what-quader-encrypts-on-the-storage-page-is-written-in-the-page)).
+
+Acceptance criteria (Vitest, storage-page.spec.ts and storage-model.spec.ts): an encrypted connection shows when it was switched on, its
+share in the format, its keyed names, its store's configured mode beside "not checked yet" and its keys by identifier, the list on demand; a
+share below 100 % differs in the warning tone; the list names every family, the artifacts by connection; no key material, credential or
+signed address stands on the page.
+
+### R-UI-266 · The dashboard's card Storage is the page's summary
+Priority: **P1** · Covers: quader-only
+
+Rewrites R-UI-197 (B.13, [Q-UI-1589](#q-ui-1589--the-dashboards-card-keeps-its-readiness-badge-and-loses-its-line-per-connection)).
+
+- **The card Storage** of the admin dashboard keeps the object store's readiness check over the live replicas in its head, then shows the
+  six tiles of R-UI-262 in their compact form (the state and one figure each) from the same `GET /api/v1/storage/overview`, then the link
+  **Storage** to the page; a tile links its section of the page. The card reads no list of connections. A caller without `settings:read`
+  sees the readiness check only.
+- **The instance bar** words the storage from the overview's state of the connections: "No storage connection is reachable" (error) while
+  it is `unreachable`; "A storage connection is unreachable" (warning) while it is `degraded` with a connection unreachable on a replica;
+  "Storage degraded" (warning) while it is `degraded` otherwise (a detached connection). The page and the card cannot word one state twice.
+
+*Built on 2026-11-26 (W-37 P3):* [dashboard.ts](../../web/src/app/features/system/dashboard.ts) and its template.
+
+Acceptance criteria (Vitest, [dashboard.spec.ts](../../web/src/app/features/system/dashboard.spec.ts) and
+[storage-summary.spec.ts](../../web/src/app/features/settings/storage/storage-summary.spec.ts), about 0.5 s): the card keeps the readiness
+check and shows the six tiles from the one overview and links the page; it reads the overview once and no list of connections, and words
+each state as the page does; the overall state warns for a degraded overview with an unreachable connection, is the error for an
+unreachable one, and says "Storage degraded" for a detached one.
 
 ## Deferred
 
@@ -23588,7 +23688,7 @@ status names the formats; Q-LIM-99 asked for one sentence about speed limits bes
 | (c) Only the status | | Shortest | "On" with a failing second connection reads as all well |
 
 **Choice:** (a). The labels name their unit ("Minimum size in MiB", "Link valid for, in seconds"), as R-UI-088 asks of a label.
-**Applied in the spec:** R-UI-200; code: [storage-settings.html](../../web/src/app/features/settings/storage-settings.html).
+**Applied in the spec:** R-UI-200; code: [download-links-section.html](../../web/src/app/features/settings/storage/download-links-section.html).
 
 ### Q-UI-958 · An encrypted connection has its address and its test link for a Bastion, and says what it serves today
 
@@ -23614,7 +23714,7 @@ installation streams its files. The Bastions screen links here where a connectio
 which it never serves, so they are not shown under its field; an address a save or a test refuses still shows its error there. When
 package 4 lands, the field's last sentence ("For now a Bastion gets the files of an encrypted connection through the main installation.")
 goes. **Applied in the spec:** R-UI-200 (changed); code: `connections` and `fieldReasons` of
-[storage-settings.ts](../../web/src/app/features/settings/storage-settings.ts), [storage-settings.html](../../web/src/app/features/settings/storage-settings.html).
+[download-links-section.ts](../../web/src/app/features/settings/storage/download-links-section.ts), [download-links-section.html](../../web/src/app/features/settings/storage/download-links-section.html).
 *Amended on 2026-11-23 by [Q-UI-990](#q-ui-990--with-the-data-keys-handed-an-encrypted-connections-field-says-how-a-bastion-reads-it-and-why-it-cannot)*,
 when package 4 landed: the field says how a Bastion reads such a connection, and why a Bastion cannot stands under it.
 
@@ -23686,8 +23786,8 @@ connection on the Bastions screen ([bastion.md](bastion.md) Q-BAS-300).
 
 **Choice:** (a). The test link's sentence of an encrypted connection ("… on a machine of a Bastion's network …") stays as it is: it was
 true before and is now. **Applied in the spec:** R-UI-200 (its texts); code: `fieldReasons`, `reasonText` and `bastionReasonText` of
-[storage-settings.ts](../../web/src/app/features/settings/storage-settings.ts), `@@links.address.hint-encrypted` in
-[storage-settings.html](../../web/src/app/features/settings/storage-settings.html).
+[download-links-section.ts](../../web/src/app/features/settings/storage/download-links-section.ts), `@@links.address.hint-encrypted` in
+[download-links-section.html](../../web/src/app/features/settings/storage/download-links-section.html).
 
 ### Q-UI-871 · The security dashboard has two views, Vulnerabilities and Malware
 
@@ -30378,6 +30478,164 @@ R-UI-251.
 | (c) Written into `index.html` by the server | | No call | A change needs a reload, which R-UI-213 forbids |
 
 **Choice:** (a). **Applied in the spec:** R-UI-251, R-API-021's table of operations is the generated document's.
+
+### Q-UI-1580 · The storage page takes the content panel's width
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+R-UI-262.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The page takes the panel's width, as the system pages do; the section Download links keeps `--quader-settings-measure` (chosen) | | The tables of five columns and the six tiles need the width | The settings group's other pages are narrower |
+| (b) The settings measure for the whole page | | One measure in the group | The tables become cards at 1,440 px |
+
+**Choice:** (a). **Applied in the spec:** R-UI-262.
+
+### Q-UI-1581 · A tile is a link to its section
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+R-UI-262, R-UI-266.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A tile with a section on the page is a link to the page with the section as the fragment; the page moves there and puts the focus on its heading; a tile without a section (Integrity and Problems until W-37 P4, Stored) is no link (chosen) | | One way from a state to its details, also from the dashboard | A tile without a section looks the same but does not lead |
+| (b) No links | | Nothing to build | The reader scrolls for the details |
+
+**Choice:** (a). **Applied in the spec:** R-UI-262, R-UI-266.
+
+### Q-UI-1582 · The period is a segmented group kept in the address
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+R-UI-262.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Five segmented buttons in the header, "24 h · 7 d · 30 d · 90 d · 1 year", the value in the address (`?period=30d`); built with the history (W-37 P4), the first figures that read a period (chosen) | | A link carries the period; no control stands on the page that changes nothing | The page of now has no period yet |
+| (b) The group built now, ahead of its figures | | The header is complete at once | A control that changes nothing is noise the owner asked to avoid |
+
+**Choice:** (a). **Applied in the spec:** R-UI-262.
+
+### Q-UI-1583 · The page reads every 30 s while seen, and every 3 s while a run it started runs
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+R-UI-262, R-UI-213.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `live()` at `LIVE_SLOW_MS` while seen, `LIVE_FAST_MS` while the job of **Count now** or **Run the reconciliation now** runs; nothing while hidden (chosen) | | The figures change by the hour, the connections' states by the minute; a run's result shows within 3 s | Four reads a run every 3 s |
+| (b) The system pages' 15 s with a pause | | As the tab was | A settings page has no pause control; 15 s reads twice as often for figures that change hourly |
+
+**Choice:** (a). **Applied in the spec:** R-UI-262, R-UI-213.
+
+### Q-UI-1584 · Configured and actual stand apart, with "Differs" where they disagree
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+R-UI-264.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Where a fact has both, **Configured** (muted) and **Actual** (a status word) stand on two lines of one cell; **Differs** in the warning tone where they disagree (chosen) | | Told apart by place and tone; the key names stay out of the plain view | Two lines where one would do while they agree |
+| (b) A chip with the Helm key at every value | | Exact | Long key names fill the plain view and break at 390 px |
+| (c) Only the actual | | Short | The owner asked for "die getätigte Einstellung" |
+
+**Choice:** (a). **Applied in the spec:** R-UI-264.
+
+### Q-UI-1585 · The configuration's key names stand on demand
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+R-UI-263, R-UI-264.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) In a connection's fold every fact carries its key's name, muted under the fact's name; a column's and a section's help names the keys behind it (chosen) | | The reader finds the line to change in the configuration; the plain view stays plain | The keys are a click away |
+| (b) Every value with its key in the table | | Nothing to open | The table doubles in width |
+
+**Choice:** (a). **Applied in the spec:** R-UI-263, R-UI-264.
+
+### Q-UI-1586 · The capacity bar's thresholds are 80 % and 95 %
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+R-UI-263.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) **Nearly full** (warning) from 80 %, **Full** (error) from 95 % of the stated capacity (chosen) | | Leaves time to order room; the error before the store refuses | Fixed thresholds for stores of every size |
+| (b) The usage meter's 70 % | | One threshold in the product | A store at 70 % has years of room at an enterprise's growth |
+
+**Choice:** (a). **Applied in the spec:** R-UI-263.
+
+### Q-UI-1587 · The states' words and tones of the summary
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+R-UI-262.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) B.14's table of W-37's plan: the server's state per tile (Q-STOR-506) with one word each (Healthy, Degraded, Unreachable; Redundant, Catching up, At risk, One store; Encrypted, Partly, Provider only, Off; Verified, Checking, Behind, Repairing, Damaged; None, Open, Ongoing), green only for the positive one, each with its icon (chosen) | | One word per state, the same on the page and the dashboard | A plain single store shows two neutral tiles, which is not a fault |
+| (b) Green for every state that needs no act | | Fewer tones | A single store and no encryption would read as a success |
+
+**Choice:** (a). **Applied in the spec:** R-UI-262.
+
+### Q-UI-1588 · What Quader encrypts is product knowledge in the page
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+R-UI-264.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The families of the stored content are a list of the page's model, with the connections from the list for the artifacts and the upload parts; a Vitest holds the list (chosen) | | No API for a fact that changes only with the product | A change of the product must change the page (H-2432) |
+| (b) A member of the overview | | The server says it | A server-side list of words for one screen |
+
+**Choice:** (a). **Applied in the spec:** R-UI-264.
+
+### Q-UI-1589 · The dashboard's card keeps its readiness badge and loses its line per connection
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+R-UI-266.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The card **Storage**: the readiness check as before, the summary's tiles in their compact form from the overview, the link to the page (chosen) | | One component, one call, one set of words with the page | The lines per connection are on the page only |
+| (b) Unchanged | | Nothing to build | "Connected" and "Healthy" from two calls can disagree |
+| (c) Only a link | | Smallest | The first screen should say whether the storage is fine |
+
+**Choice:** (a). **Applied in the spec:** R-UI-266.
+
+### Q-UI-1590 · The section Download links moves unchanged
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+R-UI-200, R-UI-262.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) R-UI-200's section moves into a component of its own, last on the page, with its words, its checks and its measure; it hands its settings to the connections' marks Links and Bastion (chosen) | | Nothing the owner saw changes; one read of the settings | The setting stands below the state |
+| (b) The switch into the Connections table | | One place per connection | A form inside a table of states |
+
+**Choice:** (a). **Applied in the spec:** R-UI-200, R-UI-262.
+
+### Q-UI-1591 · The narrow layout
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+R-UI-262.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Six tiles a row, three below 80 rem, two below 40 rem; the tables become the data table's cards below 48 rem; the fold's facts stand one under the other below 36 rem (chosen) | | At 390 px every tile keeps a readable width and nothing scrolls sideways | Three rows of tiles at 390 px |
+| (b) One tile a row at 390 px | | The widest tile | Six screens of tiles before the first section |
+
+**Choice:** (a). **Applied in the spec:** R-UI-262.
+
+### Q-UI-1592 · The meter is a component of the page
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+R-UI-263.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `<quader-storage-meter>`: a bar of 6 px on the text's line, the data colour, the warning or the error token, never green and never alone; the figure and the word beside it (chosen) | | Holds, use and the format share draw one bar | A second bar component in the product |
+| (b) The usage meter of the download limits | | One component | Its words ("Close to the limit") and its 70 % differ |
+
+**Choice:** (a). **Applied in the spec:** R-UI-263.
 
 ## What this does not cover
 

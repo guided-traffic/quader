@@ -1,19 +1,19 @@
 import { Router } from '@angular/router';
-import { DownloadLinksApi } from '../../api/download-links-api';
-import { ApiError } from '../../api/problem';
-import { RepositoriesApi } from '../../api/repositories-api';
-import { ANSIBLE_FORMAT, FakeRepositoriesApi, OCI_FORMAT } from '../../api/testing/fakes-catalog';
-import { FakeDownloadLinksApi, downloadLinkSettings, linkConnection } from '../../api/testing/fakes-download-links';
-import { DownloadLinksSwitchStore } from '../../core/download-links-switch';
-import { Navigation, areaItems } from '../../core/navigation';
-import { addressValues, button, expectAccessible, renderScreen, settle, text } from '../../testing/screen';
-import { StorageSettingsPage, isHttpsOrigin } from './storage-settings';
+import { DownloadLinksApi } from '../../../api/download-links-api';
+import { ApiError } from '../../../api/problem';
+import { RepositoriesApi } from '../../../api/repositories-api';
+import { ANSIBLE_FORMAT, FakeRepositoriesApi, OCI_FORMAT } from '../../../api/testing/fakes-catalog';
+import { FakeDownloadLinksApi, downloadLinkSettings, linkConnection } from '../../../api/testing/fakes-download-links';
+import { DownloadLinksSwitchStore } from '../../../core/download-links-switch';
+import { Navigation, areaItems } from '../../../core/navigation';
+import { addressValues, button, expectAccessible, renderScreen, settle, text } from '../../../testing/screen';
+import { DownloadLinksSection, isHttpsOrigin } from './download-links-section';
 
 const ADMIN = ['settings:read', 'settings:write'];
 const AUDITOR = ['settings:read'];
 
 async function render(capabilities: readonly string[], setup?: (api: FakeDownloadLinksApi) => void) {
-  const r = await renderScreen(StorageSettingsPage, {
+  const r = await renderScreen(DownloadLinksSection, {
     capabilities,
     setup: (get) => {
       (get(RepositoriesApi) as FakeRepositoriesApi).formatsResult = [OCI_FORMAT, ANSIBLE_FORMAT];
@@ -60,10 +60,9 @@ function mixed(api: FakeDownloadLinksApi): void {
   });
 }
 
-describe('Admin area › Settings › Storage: Download links (R-UI-200)', () => {
+describe('Admin area › Settings › Storage: the section Download links (R-UI-200)', () => {
   it('R-UI-200 off: the status says Quader delivers every download, the switch with its note and the speed limits, the details closed with their values; passes axe', async () => {
     const { root } = await render(ADMIN);
-    expect(text(root.querySelector('h1')!)).toBe('Storage');
     expect(text(root.querySelector('h2')!)).toBe('Download links');
     expect(status(root)).toBe('Off Quader delivers every download itself.');
     expect(root.querySelector('[data-testid="links-status"] .ok')).toBeNull();
@@ -254,7 +253,7 @@ describe('Admin area › Settings › Storage: Download links (R-UI-200)', () =>
   });
 
   it('R-BAS-071 the fragment details, which the Bastions screen links with, opens Details', async () => {
-    const { root } = await renderScreen(StorageSettingsPage, {
+    const { root } = await renderScreen(DownloadLinksSection, {
       capabilities: ADMIN,
       setup: async (get) => {
         (get(RepositoriesApi) as FakeRepositoriesApi).formatsResult = [OCI_FORMAT, ANSIBLE_FORMAT];

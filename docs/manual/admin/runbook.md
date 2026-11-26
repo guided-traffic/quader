@@ -59,7 +59,7 @@ Every answer of Quader on a client listener carries `X-Request-Id`. A `503` with
 
 **What to do.**
 
-1. The tab Storage of System status shows the connection as **Unreachable** on how many replicas. Check the endpoint, its certificate and the credential in the Secret of the connection the alert names. A warning line `the object store rejects the credential` names the credential source and the store's code.
+1. [Storage](storage.md#connections) shows the connection as **Unreachable** on how many replicas. Check the endpoint, its certificate and the credential in the Secret of the connection the alert names. A warning line `the object store rejects the credential` names the credential source and the store's code.
 2. For the single-replica alert, the cause is on the path of those pods: compare them on `quader_storage_s3_circuit_open` with that connection. Delete the pod if the path does not heal.
 3. When the store is back, check that `quader_storage_s3_circuit_open` is `0`; uploads and downloads resume within the open duration plus a few seconds.
 4. Objects that are really gone are a different entry: `QuaderBlobMissing` and [When the object store loses objects](operations.md#when-a-dependency-is-unavailable).
@@ -91,7 +91,7 @@ Every answer of Quader on a client listener carries `X-Request-Id`. A `503` with
 
 1. Find who destroyed which keys: the audit event `system.storage.keys_destroyed` names the connection and the key identifiers; `quader admin storage keys export --connection <id>` lists them with `"state": "destroyed"`.
 2. Remove that connection's element from every replica's `storage.connections` and roll out. A replica that starts with the element stops with "the storage keys of connection … were destroyed on …; the id is retired for good; choose another id".
-3. Watch the reconciliation repair the marked copies (the tab Storage of System status). A blob that no other connection holds is lost on Quader's side: restore it from a backup that holds it, or upload it again.
+3. Watch the reconciliation repair the marked copies ([Storage](storage.md#availability)). A blob that no other connection holds is lost on Quader's side: restore it from a backup that holds it, or upload it again.
 4. Do not import an older export to get the key back: the import skips every key of a connection whose keys were destroyed.
 
 **When to escalate.** To the maintainers when `destroyed_key` appears for a connection for which no `system.storage.keys_destroyed` was written and no restore replayed one: a destroyed row without that event means the database was changed by hand.
@@ -322,7 +322,7 @@ The chart's PrometheusRule holds the alerts below when `metrics.prometheusRule.e
 | `QuaderStorageReplicationBacklog` | warning | The oldest copy the reconciliation has to make for a connection that is not filling waits for more than an hour | The connection's circuit (`quader_storage_s3_circuit_open`), `quader_storage_reconcile_failures_total{reason}` and the last runs of the task `storage-reconcile` |
 | `QuaderStorageConnectionDetached` | warning | A connection holds copies and no running replica has it in its configuration | Put its element back into `storage.connections`, or drain it first; `quader admin storage forget-connection` gives up one that is gone for good |
 | `QuaderStorageUnknownKey` | critical | Reads of an encrypted connection meet records of storage keys the database does not hold | [Storage keys are missing](#storage-keys-are-missing) |
-| `QuaderStorageCopyDamaged` | warning | A connection has held a missing or corrupt copy for an hour, counted by the hourly storage summary | The tab Storage of System status (the connection's damaged copies and the blobs no connection holds whole), `GET /api/v1/storage/damaged-blobs?scope=copies&connection=<id>`, and `quader_storage_reconcile_failures_total{reason}` of the connection: the reconciliation rewrites a damaged copy from another connection that holds the blob |
+| `QuaderStorageCopyDamaged` | warning | A connection has held a missing or corrupt copy for an hour, counted by the hourly storage summary | [Storage](storage.md#connections) (the connection's damaged copies and the blobs no connection holds whole), `GET /api/v1/storage/damaged-blobs?scope=copies&connection=<id>`, and `quader_storage_reconcile_failures_total{reason}` of the connection: the reconciliation rewrites a damaged copy from another connection that holds the blob |
 | `QuaderStorageScrubBehind` | warning | The scrub has not read some present copies of a connection whole within its `scrub_period` and a day | The results of the last `scrub` jobs (`GET /api/v1/system/jobs?kind=scrub`): a connection that ends at `duration` every run needs a higher `scrub_bytes_per_second` or a longer `scrub_period`; one that ends at `circuit_open` or counts errors is unreachable |
 | `QuaderBlobMissing` | critical | A read found a blob's object missing on every connection that held it within the last hour | The log line with the digest; the bucket, its lifecycle rules and anything in front of it ([Loses objects](operations.md#when-a-dependency-is-unavailable)) |
 | `QuaderBlobCorrupt` | critical | A read found no connection that holds a blob whole within the last hour | The log line with the digest; who else writes to the buckets |
@@ -343,7 +343,7 @@ The chart's PrometheusRule holds the alerts below when `metrics.prometheusRule.e
 | `QuaderBackupFailed` | critical | The newest backup run failed and none has succeeded since | The run's error on the Backups screen and the Job's log; the [exit codes](backup-and-restore.md#reference) |
 | `QuaderBackupRunningLong` | warning | A backup or delete run has lasted over half the expected interval | The progress on the Backups screen; a stuck run ends itself after `config.backup.stall_timeout` |
 | `QuaderBackupGlobalHoldLong` | warning | A backup has held all garbage collection for 30 minutes | The active run; it should last minutes |
-| `QuaderBackupSourceDamage` | critical | The newest backup found blobs damaged or missing | The run's result; the tab Storage of System status lists the blobs no connection holds whole; restore the objects from the versions of a connection's bucket (`quader admin storage restore-versions`) or upload them, then back up again |
+| `QuaderBackupSourceDamage` | critical | The newest backup found blobs damaged or missing | The run's result; [Storage](storage.md#availability) lists the blobs no connection holds whole; restore the objects from the versions of a connection's bucket (`quader admin storage restore-versions`) or upload them, then back up again |
 | `QuaderBackupVerifyFindings` | critical | The newest `verify` found missing or damaged objects | Its output; take a new backup and look at the target's lifecycle and deletions |
 | `QuaderVulnerabilityDataStale` | warning | No sync run of a source and ecosystem succeeded within `vulnerabilities.stale_after` | [Advisory sync](#an-advisory-sync-that-is-stuck) |
 | `QuaderVulnerabilitySyncFailing` | warning | Three sync runs in a row failed | The sources screen, the job's error |

@@ -2,7 +2,8 @@ import { Routes } from '@angular/router';
 
 /**
  * The page System status and its tabs (R-UI-164): the page's header and tab strip around the tab's route, Status (R-UI-038),
- * Jobs (R-UI-038), Backups (R-UI-048) and Storage (R-UI-196). The page has no title of its own, so the breadcrumb ends with the tab's.
+ * Jobs (R-UI-038) and Backups (R-UI-048); the stored content is Settings › Storage (R-UI-262, ADR-316). The page has no title of its
+ * own, so the breadcrumb ends with the tab's.
  */
 export const SYSTEM_ROUTES: Routes = [
   {
@@ -23,11 +24,6 @@ export const SYSTEM_ROUTES: Routes = [
         path: 'backups',
         title: $localize`:@@route.system.backups.title:Backups`,
         loadComponent: () => import('./backups/backups-page').then((m) => m.BackupsPage),
-      },
-      {
-        path: 'storage',
-        title: $localize`:@@route.system.storage.title:Storage`,
-        loadComponent: () => import('./storage/storage-page').then((m) => m.StoragePage),
       },
     ],
   },

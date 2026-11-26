@@ -1,5 +1,5 @@
-import { personName } from '../../shared/person-name';
-import { Component, LOCALE_ID, computed, inject, resource, signal } from '@angular/core';
+import { personName } from '../../../shared/person-name';
+import { Component, LOCALE_ID, computed, inject, output, resource, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import {
   DownloadLinkConnection,
@@ -9,25 +9,23 @@ import {
   DownloadLinkTest,
   DownloadLinksApi,
   LoadedDownloadLinkSettings,
-} from '../../api/download-links-api';
-import { ApiError } from '../../api/problem';
-import { RepositoriesApi } from '../../api/repositories-api';
-import { DownloadLinksSwitchStore } from '../../core/download-links-switch';
-import { Notifier } from '../../core/notifier';
-import { SessionStore } from '../../core/session-store';
-import { Needs } from '../../shared/access/needs';
-import { AddressField } from '../../shared/address-field';
-import { ConflictField, ConflictResolver } from '../../shared/conflict-dialog';
-import { ErrorNotice } from '../../shared/error-notice';
-import { fieldErrorAt } from '../../shared/field-errors';
-import { linkCheckClause } from '../../shared/link-check';
-import { asApiError, valueOf } from '../../shared/paged-resource';
-import { Checkbox } from '../../shared/ui/checkbox';
-import { Disclosure } from '../../shared/ui/disclosure';
-import { PageHeader } from '../../shared/ui/page-header';
-import { TimeAgo } from '../../shared/ui/time-ago';
-import { Busy } from '../../shared/ui/busy';
-import { Loading } from '../../shared/ui/loading';
+} from '../../../api/download-links-api';
+import { ApiError } from '../../../api/problem';
+import { RepositoriesApi } from '../../../api/repositories-api';
+import { DownloadLinksSwitchStore } from '../../../core/download-links-switch';
+import { Notifier } from '../../../core/notifier';
+import { SessionStore } from '../../../core/session-store';
+import { AddressField } from '../../../shared/address-field';
+import { ConflictField, ConflictResolver } from '../../../shared/conflict-dialog';
+import { ErrorNotice } from '../../../shared/error-notice';
+import { fieldErrorAt } from '../../../shared/field-errors';
+import { linkCheckClause } from '../../../shared/link-check';
+import { asApiError, valueOf } from '../../../shared/paged-resource';
+import { Checkbox } from '../../../shared/ui/checkbox';
+import { Disclosure } from '../../../shared/ui/disclosure';
+import { TimeAgo } from '../../../shared/ui/time-ago';
+import { Busy } from '../../../shared/ui/busy';
+import { Loading } from '../../../shared/ui/loading';
 
 /** One MiB, the unit of the minimum size on the screen (Q-UI-951). */
 const MIB = 1048576;
@@ -101,7 +99,8 @@ interface TestOutcome {
 }
 
 /**
- * **Admin area › Settings › Storage** (R-UI-200, Q-UI-950): the section **Download links**, the installation's switch of the delivery
+ * The section **Download links** of Admin area › Settings › Storage (R-UI-200, a section of R-UI-262 since W-37, Q-UI-1590; moved
+ * unchanged from the page it was built as, Q-UI-950): the installation's switch of the delivery
  * by signed links of the object store (storage.md R-STOR-014). The plain path is the status, which connections serve links, and the
  * switch with what it means; the minimum size, the link's life, each connection's public address with its test link and reason (an
  * encrypted connection's too: no client gets a link to it, a Bastion's direct reads read its files with each file's key, Q-UI-958,
@@ -111,17 +110,17 @@ interface TestOutcome {
  * `settings:write` (the auditor) reads the state as text and is offered no action.
  */
 @Component({
-  selector: 'quader-storage-settings',
-  imports: [Loading, Busy, AddressField, Checkbox, Disclosure, ErrorNotice, Needs, PageHeader, RouterLink, TimeAgo],
-  templateUrl: './storage-settings.html',
-  styleUrl: '../../shared/access/access.scss',
+  selector: 'quader-storage-download-links',
+  imports: [Loading, Busy, AddressField, Checkbox, Disclosure, ErrorNotice, RouterLink, TimeAgo],
+  templateUrl: './download-links-section.html',
+  styleUrl: '../../../shared/access/access.scss',
   styles: `
     .settings {
       max-inline-size: var(--quader-settings-measure);
     }
     .open-section h2 {
-      margin: 0 0 var(--quader-space-2);
-      font: var(--quader-type-title-small);
+      margin: 0 0 var(--quader-space-3);
+      font: var(--quader-type-title-medium);
     }
     h4 {
       margin: var(--quader-space-4) 0 var(--quader-space-1);
@@ -157,7 +156,7 @@ interface TestOutcome {
     }
   `,
 })
-export class StorageSettingsPage {
+export class DownloadLinksSection {
   private readonly api = inject(DownloadLinksApi);
   private readonly repositories = inject(RepositoriesApi);
   private readonly notifier = inject(Notifier);
@@ -165,6 +164,9 @@ export class StorageSettingsPage {
   private readonly switchStore = inject(DownloadLinksSwitchStore);
   private readonly locale = inject(LOCALE_ID);
   protected readonly session = inject(SessionStore);
+
+  /** The settings as read or saved, for the connections' marks Links and Bastion on the page. */
+  readonly settingsChange = output<DownloadLinkSettings>();
 
   protected readonly loaded = signal<LoadedDownloadLinkSettings | null>(null);
   protected readonly loadError = signal<ApiError | null>(null);
@@ -279,6 +281,7 @@ export class StorageSettingsPage {
     this.addresses.set(Object.fromEntries(s.connections.map((c) => [c.name, c.publicAddress ?? c.endpoint])));
     this.attempted.set(false);
     this.switchStore.adopt(s.enabled, s.routes.map((r) => r.format));
+    this.settingsChange.emit(s);
   }
 
   private list(names: readonly string[]): string {

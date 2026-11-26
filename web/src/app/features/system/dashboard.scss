@@ -1,7 +1,9 @@
 // The admin dashboard (Q-OPS-175): an instance bar, then cards in a grid. Tokens only.
 .refresh {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--quader-space-2);
+  min-inline-size: 0;
 }
 
 // Section titles in the reference's heading-2 size.
@@ -185,23 +187,9 @@ p.state .material-icons {
   color: var(--quader-status-bad);
 }
 
-// A connection's line (R-UI-197): its id, its place muted under it, its state at the row's end on the id's line.
-.kv > div.connection-row {
-  align-items: flex-start;
-
-  dt {
-    min-inline-size: 0;
-  }
-
-  .location {
-    display: block;
-    overflow-wrap: anywhere;
-    font-size: var(--quader-text-muted-size);
-  }
-
-  dd {
-    flex: none;
-  }
+// The card Storage (R-UI-266): the summary's compact tiles on the card's content fill.
+.storage-card > quader-storage-summary {
+  padding: var(--quader-space-2);
 }
 
 .note {

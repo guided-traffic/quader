@@ -3375,6 +3375,37 @@ change copy rows (a place that forgets is a hole in the record).
 **Revisit condition:** a write rate of copy states at which the trigger's statements show in the commit's latency, or a page that needs a
 history per object that the hourly counts cannot give.
 
+### ADR-316 · One page for the stored content; the tab Storage of System status goes
+
+**Status:** Decided by the owner's words of 2026-11-26 ("Ich will dafür unter Admin > Einstellungen > Speicher Ein übersichtliche Maske,
+mit Aussagekräftigen Darstellungen der getätigten Einstellung (wahrscheinlich über Helm) und der aktuellen Situation."); the form by the
+development agent ([Q-UI-1580](spec/api-and-ui.md#q-ui-1580--the-storage-page-takes-the-content-panels-width) to
+[Q-UI-1592](spec/api-and-ui.md#q-ui-1592--the-meter-is-a-component-of-the-page),
+[R-UI-262](spec/api-and-ui.md#r-ui-262--admin-area--settings--storage-is-one-page-of-the-stored-content) to
+[R-UI-266](spec/api-and-ui.md#r-ui-266--the-dashboards-card-storage-is-the-pages-summary)). It builds W-37's P3.
+
+**Context.** The object-store connections had a tab of their own on System status (R-UI-196), and Settings › Storage held only the
+switch of the download links (R-UI-200). The owner named Settings › Storage as the place for the connections, the encryption, the integrity
+and what went wrong, configured beside actual, without prose.
+
+**Decision.**
+- Admin area › Settings › Storage is the one page of the stored content: the header with the time the figures were counted, six tiles of
+  the server's states, then Connections, Availability, Encryption and the section Download links, in the order of the owner's questions.
+- The tab Storage of System status, its route `/admin/system/storage`, its render walk and its live-cost entry are gone; no alias and no
+  redirect (pre-alpha). The lint of removed routes refuses a link to it.
+- The dashboard's card shows the same tiles from the same overview, so the card, the instance bar and the page word one state once.
+- The page derives no state: the overview's states are the server's (Q-STOR-505); the page picks their words and tones.
+- An explanation is on demand (a column's or a section's help with a link to the manual), never a paragraph above a section.
+
+**Consequences.** A reader who knew the tab looks in Settings once. A settings page reads live (30 s, 3 s while its run runs) without the
+system pages' pause. The page of now ships before the history: the period group, Integrity, Problems and the applied server-side encryption
+come with W-37's P4, and the tile Problems names the problems of now until then.
+
+**Alternatives considered.** The tab for the state of now beside a settings page for the configuration (two places for one connection, two
+cadences); the tab kept with a link from Settings (the owner's place shows a link, not the information).
+
+**Revisit condition:** the owner's word on the place, or a second page of the stored content that the one page cannot carry.
+
 ## Design invariants
 
 The invariants of [spec/README.md](spec/README.md#design-invariants) are the baseline every spec
@@ -13279,7 +13310,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-STOR-502](spec/storage.md#q-stor-502--copies-per-blob-count-the-connections-that-are-not-retired) | Copies per blob count the connections that are not retired | Decided by the development agent while building W-37's package P1 | (a) Present copies on every connection that is not retired | — |
 | [Q-STOR-503](spec/storage.md#q-stor-503--capacity-is-a-statement-shown-and-never-enforced) | Capacity is a statement, shown and never enforced | Decided by the development agent while building W-37's package P1 | (a) An optional key `capacity` per element, a size of at least `1GiB`, shown and never enforced | — |
 | [Q-STOR-504](spec/storage.md#q-stor-504--the-overviews-stored-reads-the-folded-totals) | The overview's stored reads the folded totals | Decided by the development agent while building W-37's package P1 | (a) `stored` from the folded counter and its unfolded deltas, read at the request | — |
-| [Q-STOR-505](spec/storage.md#q-stor-505--the-overview-derives-every-state-server-side) | The overview derives every state server-side | Decided by the development agent while building W-37's package P1 | (a) The server answers a state per tile with the figures behind it | — |
+| [Q-STOR-505](spec/storage.md#q-stor-505--the-overview-derives-every-state-server-side) | The overview derives every state server-side | Decided by the development agent while building W-37's package P1 | (a) The server answers a state per tile with the figures behind it | [ADR-316](#adr-316--one-page-for-the-stored-content-the-tab-storage-of-system-status-goes) |
 | [Q-STOR-506](spec/storage.md#q-stor-506--the-overviews-states) | The overview's states | Decided by the development agent while building W-37's package P1 after W-37's plan (B.14) | — | — |
 | [Q-STOR-507](spec/storage.md#q-stor-507--the-overview-and-the-connections-list-read-the-snapshot-without-its-repositories) | The overview and the connections' list read the snapshot without its repositories | Decided by the development agent while building W-37's package P1, by the measurement the plan asked for | (a) The reads that do not show the repositories ask the server for the snapshot without that member (`StorageSummaryLatestFigures`); `GET /api/v1/storage/summary` reads it whole | — |
 | [Q-STOR-510](spec/storage.md#q-stor-510--a-trigger-not-go-opens-and-resolves-findings) | A trigger, not Go, opens and resolves findings | Decided by the development agent | (a) Triggers on `blob_copies` that fire on a change of `state` | [ADR-315](#adr-315--the-history-of-the-stored-content-lives-in-postgresql-written-where-it-happens) |
@@ -13299,10 +13330,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-759 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+772 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 759 questions</summary>
+<summary>Q-UI: 772 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -14065,6 +14096,19 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1567](spec/api-and-ui.md#q-ui-1567--the-first-screen-loads-without-the-bare-columns-padding) | The first screen loads without the bare column's padding | Decided by the development agent on 2026-11-26 | (a), in [_shell.scss](../web/src/styles/_shell.scss) and [app.html](../web/src/app/app.html). | — |
 | [Q-UI-1568](spec/api-and-ui.md#q-ui-1568--the-render-checks-where-a-load-stands) | The render checks where a load stands | Decided by the development agent on 2026-11-26 | (a) `loadingPlace` of the render set, in every picture in the window's first height: a page's load has the middle of its spinner and sentence within 4 px of the middle of the panel's content width and of the area between what stands above the load (with its margin) and the legal line (`loading-place`), the first paint of the window's; while either shows, neither the panel nor the window scrolls (`loading-scroll`), unless what stands above the load is itself taller than the panel (an error of the German pass at 390 px); fixtures in the three engines and the walk `page-loads` | — |
 | [Q-UI-1569](spec/api-and-ui.md#q-ui-1569--the-installations-default-is-a-public-document-read-with-the-banner) | The installation's default is a public document read with the banner | Decided by the development agent on 2026-11-26 | (a) `GET`, `PUT /api/v1/system/time-format`, public to read, `settings:write` to change, kept in `system_state` under `time_format` beside the banner and the mode; the UI reads it with the banner at its cadence | — |
+| [Q-UI-1580](spec/api-and-ui.md#q-ui-1580--the-storage-page-takes-the-content-panels-width) | The storage page takes the content panel's width | Decided by the development agent on 2026-11-26 | (a) The page takes the panel's width, as the system pages do; the section Download links keeps `--quader-settings-measure` | [ADR-316](#adr-316--one-page-for-the-stored-content-the-tab-storage-of-system-status-goes) |
+| [Q-UI-1581](spec/api-and-ui.md#q-ui-1581--a-tile-is-a-link-to-its-section) | A tile is a link to its section | Decided by the development agent on 2026-11-26 | (a) A tile with a section on the page is a link to the page with the section as the fragment; the page moves there and puts the focus on its heading; a tile without a section (Integrity and Problems until W-37 P4, Stored) is no link | — |
+| [Q-UI-1582](spec/api-and-ui.md#q-ui-1582--the-period-is-a-segmented-group-kept-in-the-address) | The period is a segmented group kept in the address | Decided by the development agent on 2026-11-26 | (a) Five segmented buttons in the header, "24 h · 7 d · 30 d · 90 d · 1 year", the value in the address (`?period=30d`); built with the history (W-37 P4), the first figures that read a period | — |
+| [Q-UI-1583](spec/api-and-ui.md#q-ui-1583--the-page-reads-every-30-s-while-seen-and-every-3-s-while-a-run-it-started-runs) | The page reads every 30 s while seen, and every 3 s while a run it started runs | Decided by the development agent on 2026-11-26 | (a) `live()` at `LIVE_SLOW_MS` while seen, `LIVE_FAST_MS` while the job of **Count now** or **Run the reconciliation now** runs; nothing while hidden | — |
+| [Q-UI-1584](spec/api-and-ui.md#q-ui-1584--configured-and-actual-stand-apart-with-differs-where-they-disagree) | Configured and actual stand apart, with "Differs" where they disagree | Decided by the development agent on 2026-11-26 | (a) Where a fact has both, **Configured** (muted) and **Actual** (a status word) stand on two lines of one cell; **Differs** in the warning tone where they disagree | — |
+| [Q-UI-1585](spec/api-and-ui.md#q-ui-1585--the-configurations-key-names-stand-on-demand) | The configuration's key names stand on demand | Decided by the development agent on 2026-11-26 | (a) In a connection's fold every fact carries its key's name, muted under the fact's name; a column's and a section's help names the keys behind it | — |
+| [Q-UI-1586](spec/api-and-ui.md#q-ui-1586--the-capacity-bars-thresholds-are-80--and-95-) | The capacity bar's thresholds are 80 % and 95 % | Decided by the development agent on 2026-11-26 | (a) **Nearly full** (warning) from 80 %, **Full** (error) from 95 % of the stated capacity | — |
+| [Q-UI-1587](spec/api-and-ui.md#q-ui-1587--the-states-words-and-tones-of-the-summary) | The states' words and tones of the summary | Decided by the development agent on 2026-11-26 | (a) B.14's table of W-37's plan: the server's state per tile (Q-STOR-506) with one word each (Healthy, Degraded, Unreachable; Redundant, Catching up, At risk, One store; Encrypted, Partly, Provider only, Off; Verified, Checking, Behind, Repairing, Damaged; None, Open, Ongoing), green only for the positive one, each with its icon | — |
+| [Q-UI-1588](spec/api-and-ui.md#q-ui-1588--what-quader-encrypts-is-product-knowledge-in-the-page) | What Quader encrypts is product knowledge in the page | Decided by the development agent on 2026-11-26 | (a) The families of the stored content are a list of the page's model, with the connections from the list for the artifacts and the upload parts; a Vitest holds the list | — |
+| [Q-UI-1589](spec/api-and-ui.md#q-ui-1589--the-dashboards-card-keeps-its-readiness-badge-and-loses-its-line-per-connection) | The dashboard's card keeps its readiness badge and loses its line per connection | Decided by the development agent on 2026-11-26 | (a) The card **Storage**: the readiness check as before, the summary's tiles in their compact form from the overview, the link to the page | — |
+| [Q-UI-1590](spec/api-and-ui.md#q-ui-1590--the-section-download-links-moves-unchanged) | The section Download links moves unchanged | Decided by the development agent on 2026-11-26 | (a) R-UI-200's section moves into a component of its own, last on the page, with its words, its checks and its measure; it hands its settings to the connections' marks Links and Bastion | — |
+| [Q-UI-1591](spec/api-and-ui.md#q-ui-1591--the-narrow-layout) | The narrow layout | Decided by the development agent on 2026-11-26 | (a) Six tiles a row, three below 80 rem, two below 40 rem; the tables become the data table's cards below 48 rem; the fold's facts stand one under the other below 36 rem | — |
+| [Q-UI-1592](spec/api-and-ui.md#q-ui-1592--the-meter-is-a-component-of-the-page) | The meter is a component of the page | Decided by the development agent on 2026-11-26 | (a) `<quader-storage-meter>`: a bar of 6 px on the text's line, the data colour, the warning or the error token, never green and never alone; the figure and the word beside it | [ADR-316](#adr-316--one-page-for-the-stored-content-the-tab-storage-of-system-status-goes) |
 
 </details>
 

@@ -3,7 +3,8 @@ import { Routes } from '@angular/router';
 /**
  * The group Settings of the admin area (Q-UI-326): General (R-UI-033) first, where `/admin/settings` leads, then Authentication
  * (R-UI-031), then Malware scanning (R-MAL-023, Q-UI-870), whose entry the side bar shows while the scanning is on, Signatures
- * (R-SIG-036) and Storage (R-UI-200). The other P1 pages join the group when they are built.
+ * (R-SIG-036) and Storage (R-UI-262, with its section Download links of R-UI-200). The other P1 pages join the group when they are
+ * built.
  */
 export const SETTINGS_ROUTES: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'general' },
@@ -29,9 +30,9 @@ export const SETTINGS_ROUTES: Routes = [
     loadComponent: () => import('./signature-settings').then((m) => m.SignatureSettingsPage),
   },
   {
-    // The fifth page of the group (R-UI-200, Q-UI-950): Storage, built with its section Download links first.
+    // The fifth page of the group (R-UI-262, ADR-316): the stored content, and its one setting, Download links (R-UI-200).
     path: 'storage',
     title: $localize`:@@route.settings.storage.title:Storage settings`,
-    loadComponent: () => import('./storage-settings').then((m) => m.StorageSettingsPage),
+    loadComponent: () => import('./storage/storage-page').then((m) => m.StoragePage),
   },
 ];

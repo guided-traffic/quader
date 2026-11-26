@@ -1,0 +1,113 @@
+// The six tiles of the summary (R-UI-262, Q-UI-1591): six in a row on a wide screen, three below 80 rem, two below 40 rem; the
+// dashboard's compact form two by three in its card.
+:host {
+  display: block;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--quader-space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (max-width: 80rem) {
+  .tiles {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 40rem) {
+  .tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--quader-space-2);
+  }
+}
+
+.tiles.compact {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--quader-space-2);
+}
+
+.tile {
+  display: flex;
+  min-inline-size: 0;
+}
+
+.tile-link {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-inline-size: 0;
+  padding: var(--quader-space-3);
+  border: 1px solid var(--quader-border);
+  border-radius: var(--quader-radius-m);
+  background: var(--quader-surface);
+  color: inherit;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+// A tile is a link as a whole: its words keep the text's colour, above the page's link colour of `.content a` (_shell.scss).
+:host .tiles .tile a.tile-link {
+  color: var(--quader-on-surface);
+  text-decoration: none;
+}
+
+a.tile-link:hover {
+  border-color: var(--quader-border-strong);
+  background: var(--quader-row-hover);
+}
+
+.compact .tile-link {
+  padding: var(--quader-space-2) var(--quader-space-3);
+}
+
+.label {
+  font: var(--quader-type-label-small);
+  color: var(--quader-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.state {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--quader-space-1);
+  font-weight: 600;
+
+  > .material-icons {
+    font-size: 1.125rem;
+  }
+
+  &[data-tone='ok'] {
+    color: var(--quader-status-ok);
+  }
+
+  &[data-tone='warn'] {
+    color: var(--quader-status-warn);
+  }
+
+  &[data-tone='bad'] {
+    color: var(--quader-status-bad);
+  }
+
+  &[data-tone='neutral'] > .material-icons {
+    color: var(--quader-text-muted);
+  }
+}
+
+.figure {
+  font-variant-numeric: tabular-nums;
+}
+
+.figure.strong {
+  font-weight: 600;
+}
+
+.muted {
+  color: var(--quader-text-muted);
+}

@@ -29,7 +29,7 @@ const cases: readonly { id: string; kind: 'plain' | 'power' | 'admin'; running?:
   { id: 'admin-dashboard', kind: 'admin' },
   { id: 'admin-system', kind: 'admin' },
   { id: 'admin-system-jobs', kind: 'admin' },
-  { id: 'admin-system-storage', kind: 'admin' },
+  { id: 'admin-settings-storage', kind: 'admin' },
   { id: 'admin-audit', kind: 'admin' },
   { id: 'security', kind: 'admin' },
   { id: 'home', kind: 'plain' },

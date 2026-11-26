@@ -6,8 +6,8 @@ R-STOR-035; [ha-and-helm.md](../spec/ha-and-helm.md) R-HA-072; [backup-and-resto
 built: the connections, their copies, the commit and the reads over them, the marker and the start check per connection, the
 reconciliation that copies every blob to every connection, fills a new one and drains an old one, the scrub with its repair and the
 operator check per connection, sessions on their connection, collection per copy and the orphan sweep per connection, the backup and the
-restore per connection and the journal per connection, and since 2026-11-23 the connections' read-only API and the tab **Storage** of
-System status (R-STOR-061, R-STOR-028; [storage.md](../spec/storage.md#several-object-store-connections), the status there). What
+restore per connection and the journal per connection, and since 2026-11-23 the connections' read-only API, shown since 2026-11-26 on the page Settings ›
+Storage (R-STOR-061, R-STOR-028, R-UI-262; [storage.md](../spec/storage.md#several-object-store-connections), the status there). What
 [privilege-footprint.md](privilege-footprint.md) and
 [transport-encryption.md](transport-encryption.md) say of the object store holds for each connection.
 

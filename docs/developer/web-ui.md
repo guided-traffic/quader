@@ -2300,7 +2300,7 @@ shows the rows of `malware-scanner-clamav` with the shared `<quader-scanner-repl
 
 ## The download links screens
 
-The settings page **Admin area › Settings › Storage** (R-UI-200, [storage-settings.ts](../../web/src/app/features/settings/storage-settings.ts))
+The section **Download links** of **Admin area › Settings › Storage** (R-UI-200, [download-links-section.ts](../../web/src/app/features/settings/storage/download-links-section.ts))
 and a repository's section **Download links** (R-UI-201, [repository-download-links.ts](../../web/src/app/features/repositories/repository-download-links.ts));
 the files, the decisions and the tests are on [download-links.md](download-links.md#package-3-as-built). The page names the formats its
 switch reaches from the `routes` of its answer and their display names from `GET /api/v1/formats`, so a format that declares later needs no
@@ -2375,32 +2375,41 @@ the API through `LimitsApi` (R-UI-177 to R-UI-186). The files, the hand-written 
 account's page are on [usage-and-limits.md](usage-and-limits.md#the-screens). A download link that a limit may refuse carries
 `quaderDownload` ([download-link.ts](../../web/src/app/shared/download-link.ts)).
 
-## The tab Storage of System status
+## The storage page
 
-The fourth tab of System status (R-UI-196, [Q-UI-930](../spec/api-and-ui.md#q-ui-930--the-connections-are-a-fourth-tab-storage-of-system-status))
-is [storage-page.ts](../../web/src/app/features/system/storage/storage-page.ts) with its template; the derivations are pure functions of
-[storage-model.ts](../../web/src/app/features/system/storage/storage-model.ts) (the state in words, a share rounded down, the backlog's age, what
-needs an act, the dashboard's word), the client is [storage-api.ts](../../web/src/app/api/storage-api.ts) and its fake
-[fakes-storage.ts](../../web/src/app/api/testing/fakes-storage.ts). The page reads `listStorageConnections`, the first 20 of the damaged
-blobs and the task list, and refreshes with the page's header like the other tabs; its one action is **Check again** of a damaged blob for
-a holder of `settings:write`.
+**Admin area › Settings › Storage** (R-UI-262 to R-UI-264, [ADR-316](../decisions.md#adr-316--one-page-for-the-stored-content-the-tab-storage-of-system-status-goes))
+lives in [features/settings/storage/](../../web/src/app/features/settings/storage/); the tab Storage of System status it replaced is gone.
 
-- **The plain view**: the line over the table names what needs an act, worst first, or that every connection is healthy; the table has a
-  row per connection that is not retired, retired ones are a line under it. A state is a badge, its one figure beside it, so that the row's
-  first words stand on the line of its name (R-UI-172); an open circuit and a partial configuration stand before the badge
-  ([Q-UI-933](../spec/api-and-ui.md#q-ui-933--what-a-connection-asks-for-stands-once-over-the-table-and-a-states-words-beside-its-badge)).
-  A cell of several lines is `td.lines-cell` with a grid that keeps the column's name beside the first line where the row stands as a block
-  (Q-UI-762). The columns' least widths are measured so that the table is a table at 1,440 px with six connections; a host and a path break
-  after a dot or a slash (`<wbr>`), not inside a part.
-- **Details**: a row's chevron opens its fold (the settings as the answering replica reads them, the capabilities, the storage keys); the
-  damaged blobs and the last runs of the storage's tasks are closed `<quader-disclosure>` sections (Q-UI-935).
-- **The dashboard** names each connection of `objectStore.connections[]` in a line of its object store's card with its circuits from the
-  same list, and its instance bar warns while one of several is unreachable on every replica and errs while every one is
-  ([Q-UI-934](../spec/api-and-ui.md#q-ui-934--a-connections-line-on-the-dashboard-reads-its-circuits-and-no-connection-reachable-is-said-so)).
-- **Renders**: the profile runs one connection, so the walk `systemStorage` of [screens.ts](../../web/e2e/renders/screens.ts) answers the
-  list in the browser with the fixtures of [storage.ts](../../web/e2e/renders/storage.ts): one connection with its fold open, then six in every
-  state with three damaged blobs, then the same with two folds and both sections open; `dashboardStorage` answers two connections of which
-  one is unreachable everywhere.
+| File | Responsibility |
+|---|---|
+| [storage-page.ts](../../web/src/app/features/settings/storage/storage-page.ts), `.html`, `.scss` | The page: the header's line of the figures with **Count now**, the summary, the three sections, the section Download links; the reads (overview, connections, damaged blobs, the root key's ring) and their cadence (`live()`, 30 s, 3 s while a run it started runs, Q-UI-1583); the runs of `storage-summary` and `storage-reconcile` and their jobs |
+| [storage-summary.ts](../../web/src/app/features/settings/storage/storage-summary.ts), `.scss` | `<quader-storage-summary>`: the six tiles from `StorageOverview`, full on the page and `compact` on the dashboard's card (R-UI-266); a tile with a section is a link with the section as the fragment |
+| [storage-model.ts](../../web/src/app/features/settings/storage/storage-model.ts) | Pure helpers: a state's word and tone (B.14, `tileWord`, `tileTone`), the problems of now, a connection's state, role, use against its capacity, share in Quader's format and keys, the backlog's age, and the list "What Quader encrypts" (Q-UI-1588, H-2432). It picks the words of the server's states and derives no state of its own (Q-STOR-505) |
+| [connections-section.ts](../../web/src/app/features/settings/storage/connections-section.ts), `.html` | **Connections**: the table and a row's fold with every key's name (Q-UI-1585) |
+| [availability-section.ts](../../web/src/app/features/settings/storage/availability-section.ts), `.html` | **Availability**: the target, the bar of copies per blob, the loss line, the table per connection, **Run the reconciliation now** |
+| [damaged-blobs.ts](../../web/src/app/features/settings/storage/damaged-blobs.ts) | The blobs no connection holds whole, a closed section of Availability while there is one, with **Check again** |
+| [encryption-section.ts](../../web/src/app/features/settings/storage/encryption-section.ts), `.html` | **Encryption**: Quader against the object store per connection (configured and actual, Q-UI-1584), the storage keys, what Quader encrypts, the root key |
+| [storage-meter.ts](../../web/src/app/features/settings/storage/storage-meter.ts) | `<quader-storage-meter>`, the bar of a share (Q-UI-1592) |
+| [download-links-section.ts](../../web/src/app/features/settings/storage/download-links-section.ts), `.html` | R-UI-200's section Download links, moved unchanged (Q-UI-1590); it hands its settings to the page for the connections' marks Links and Bastion |
+| [storage-sections.scss](../../web/src/app/features/settings/storage/storage-sections.scss) | The sections' shared styles |
+
+- **The client** is [storage-api.ts](../../web/src/app/api/storage-api.ts) (`overview`, `connections`, `damagedBlobs`, `recheck`) with its fake
+  [fakes-storage.ts](../../web/src/app/api/testing/fakes-storage.ts) (`sampleOverview`, `sampleConnection`); the runs go through `JobsApi`.
+- **What waits for W-37 P4**: the period group, the sections Integrity and Problems, the timeline strips, the counts of the period in
+  Availability, and the applied server-side encryption ("not checked yet" until then). The tile Problems names the problems of now.
+- **The dashboard** ([dashboard.ts](../../web/src/app/features/system/dashboard.ts)) reads the overview once per refresh for a holder of
+  `settings:read` and shows `<quader-storage-summary compact>` in its card Storage; `storageAlarm` words the instance bar from the
+  overview's state of the connections (R-UI-266).
+- **Tests**: [storage-page.spec.ts](../../web/src/app/features/settings/storage/storage-page.spec.ts),
+  [storage-model.spec.ts](../../web/src/app/features/settings/storage/storage-model.spec.ts),
+  [storage-summary.spec.ts](../../web/src/app/features/settings/storage/storage-summary.spec.ts),
+  [download-links-section.spec.ts](../../web/src/app/features/settings/storage/download-links-section.spec.ts) and the dashboard's spec.
+- **Renders**: the profile runs one connection, so the walk `storagePage` of [screens.ts](../../web/e2e/renders/screens.ts) answers the
+  overview and the list in the browser with the fixtures of [storage.ts](../../web/e2e/renders/storage.ts): as the profile answers, one
+  connection, the plan's two (one encrypted, one nearly full, one filling and unreachable on a replica) with the folds open, six in every
+  state with a detached one and the damaged blobs open; `dashboardStorage` answers the card with the two. The screen
+  `admin-settings-storage-links` walks the section Download links, `admin-settings-storage-read` is the auditor's page; the first two and
+  the auditor's are rendered in German too.
 
 ## How to add a feature area
 

@@ -1,0 +1,324 @@
+<quader-data-table [caption]="caption" [columns]="columns" [empty]="shown().length === 0" [emptyText]="noConnection">
+  @for (c of shown(); track c.id) {
+    <tr>
+      <th scope="row" class="wrap-name">
+        <div class="name-cell">
+          <button
+            type="button"
+            class="btn btn-tertiary btn-icon on-line"
+            [attr.aria-expanded]="isOpen(c)"
+            [attr.aria-controls]="'connection-' + c.id"
+            [attr.aria-label]="openLabel(c)"
+            (click)="toggle(c)"
+          >
+            <span class="material-icons expand-chevron" aria-hidden="true">expand_more</span>
+          </button>
+          <span class="name-text">
+            <span class="connection-name" translate="no">{{ c.id }}</span>
+            <span class="secondary location" translate="no">@for (part of locationParts(c); track $index) {{{ part }}<wbr />}</span>
+          </span>
+        </div>
+      </th>
+      <td class="lines-cell">
+        <div class="lines">
+          @let st = connectionState(c);
+          <!-- An open circuit first, the worst word of the row, then the state. -->
+          @if (unreachable(c); as u) {
+            <div class="state-line">
+              <span class="bad"
+                ><span class="material-icons" aria-hidden="true">error</span
+                ><ng-container i18n="@@storage.state.unreachable">Unreachable</ng-container></span
+              >
+              <span class="state-words" i18n="@@storage.state.unreachable-on">on {{ u.open }} of {{ u.of }} replicas</span>
+            </div>
+          }
+          <div class="state-line">
+            @switch (st.kind) {
+              @case ('active') {
+                <span class="badge"
+                  ><span class="material-icons" aria-hidden="true">cloud_done</span
+                  ><ng-container i18n="@@storage.state.active">Active</ng-container></span
+                >
+              }
+              @case ('filling') {
+                <span class="badge"
+                  ><span class="material-icons" aria-hidden="true">hourglass_empty</span
+                  ><ng-container i18n="@@storage.state.filling">Filling</ng-container></span
+                >
+                @if (st.percent !== null) {
+                  <span class="state-words" i18n="@@storage.state.filling-share">{{ st.percent }} % of the blobs</span>
+                }
+              }
+              @case ('draining') {
+                <span class="badge"
+                  ><span class="material-icons" aria-hidden="true">hourglass_empty</span
+                  ><ng-container i18n="@@storage.state.draining">Draining</ng-container></span
+                >
+                @if (st.copiesLeft !== null) {
+                  <span class="state-words" i18n="@@storage.state.draining-left"
+                    >{st.copiesLeft, plural, =1 {1 copy left} other {{{ st.copiesLeft | number }} copies left}}</span
+                  >
+                }
+              }
+              @case ('drained') {
+                <span class="badge"
+                  ><span class="material-icons" aria-hidden="true">done</span
+                  ><ng-container i18n="@@storage.state.drained">Drained</ng-container></span
+                >
+              }
+              @case ('detached') {
+                <span class="warn"
+                  ><span class="material-icons" aria-hidden="true">warning</span
+                  ><ng-container i18n="@@storage.state.detached">Detached</ng-container></span
+                >
+                @if (st.soleBlobs) {
+                  <span class="state-words" i18n="@@storage.state.detached-sole"
+                    >{st.soleBlobs, plural, =1 {1 blob only here} other {{{ st.soleBlobs | number }} blobs only here}}</span
+                  >
+                }
+              }
+              @case ('retired') {
+                <span class="badge"><ng-container i18n="@@storage.state.retired">Retired</ng-container></span>
+              }
+            }
+          </div>
+          @if (partlyConfigured(c); as p) {
+            <span class="line state-words" i18n="@@storage.state.partly">Configured on {{ p.configured }} of {{ p.live }} replicas</span>
+          }
+        </div>
+      </td>
+      <td class="lines-cell">
+        @let r = roleOf(c);
+        @let l = linkRoles(c);
+        @if (r.uploads === null && r.reads === null && !l) {
+          <quader-no-value />
+        } @else {
+          <div class="lines">
+            @if (r.uploads !== null || r.reads !== null) {
+              <span class="line">
+                @if (r.uploads !== null) {
+                  <ng-container i18n="@@storage.role.uploads">Uploads {{ r.uploads }}.</ng-container>
+                }
+                @if (r.uploads !== null && r.reads !== null) {
+                  &ngsp;·&ngsp;
+                }
+                @if (r.reads !== null) {
+                  <ng-container i18n="@@storage.role.reads">Reads {{ r.reads }}.</ng-container>
+                }
+              </span>
+            }
+            @if (l) {
+              <span class="line marks">
+                <span class="mark" [class.on]="l.links"
+                  ><ng-container i18n="@@storage.role.links">Links</ng-container>&ngsp;<span class="material-icons" aria-hidden="true">{{
+                    l.links ? 'check' : 'remove'
+                  }}</span
+                  ><span class="visually-hidden">{{ l.links ? yes : no }}</span></span
+                >
+                <span class="mark" [class.on]="l.bastion"
+                  ><ng-container i18n="@@storage.role.bastion">Bastion</ng-container>&ngsp;<span class="material-icons" aria-hidden="true">{{
+                    l.bastion ? 'check' : 'remove'
+                  }}</span
+                  ><span class="visually-hidden">{{ l.bastion ? yes : no }}</span></span
+                >
+              </span>
+            }
+          </div>
+        }
+      </td>
+      <td translate="no">
+        @if (c.settings?.region; as region) {
+          {{ region }}
+        } @else {
+          <quader-no-value />
+        }
+      </td>
+      <td class="lines-cell">
+        @if (capacityUse(c); as u) {
+          <div class="lines">
+            @if (u.capacity !== null && u.ratio !== null) {
+              <span class="line meter-line">
+                <quader-storage-meter [ratio]="u.ratio" [tone]="u.level === 'full' ? 'bad' : u.level === 'nearly' ? 'warn' : 'neutral'" [label]="useLabel(c)" />
+                <span class="figure" i18n="@@storage.use.of">{{ formatSize(u.used) }} of {{ formatSize(u.capacity) }}</span>
+              </span>
+              @if (u.level === 'full') {
+                <span class="line bad"
+                  ><span class="material-icons" aria-hidden="true">error</span
+                  ><ng-container i18n="@@storage.use.full">Full</ng-container></span
+                >
+              } @else if (u.level === 'nearly') {
+                <span class="line warn"
+                  ><span class="material-icons" aria-hidden="true">warning</span
+                  ><ng-container i18n="@@storage.use.nearly-full">Nearly full</ng-container></span
+                >
+              }
+            } @else {
+              <span class="line figure">{{ formatSize(u.used) }}</span>
+              <span class="line state-words" i18n="@@storage.use.no-capacity">no capacity set</span>
+            }
+          </div>
+        } @else {
+          <quader-no-value />
+        }
+      </td>
+    </tr>
+    <tr class="expansion">
+      <td [attr.colspan]="columns.length">
+        <div [id]="'connection-' + c.id" class="collapse-region" [class.open]="isOpen(c)">
+          <div>
+            @if (isOpen(c)) {
+              <div class="fold">
+                <!-- Every key of the element with its name (Q-UI-1585): the reader finds the line to change in the configuration. -->
+                <dl class="facts">
+                  <dt><span i18n="@@storage.fold.endpoint">Endpoint</span>&ngsp;<code class="key" translate="no">endpoint</code></dt>
+                  <dd translate="no">
+                    @if (c.endpoint) {
+                      {{ c.endpoint }}
+                    } @else if (c.settings) {
+                      <ng-container i18n="@@storage.fold.endpoint-aws">The AWS endpoint of the region</ng-container>
+                    } @else {
+                      <quader-no-value />
+                    }
+                  </dd>
+                  <dt><span i18n="@@storage.fold.bucket">Bucket and prefix</span>&ngsp;<code class="key" translate="no">bucket, prefix</code></dt>
+                  <dd translate="no">{{ c.bucket }}/{{ c.prefix }}</dd>
+                  <dt i18n="@@storage.fold.position">Order</dt>
+                  <dd>
+                    @if (c.position !== null) {
+                      <ng-container i18n="@@storage.fold.position-value">Number {{ c.position }} in <code translate="no">storage.connections</code></ng-container>
+                    } @else {
+                      <ng-container i18n="@@storage.fold.not-configured">Not in the configuration of the replica that answered</ng-container>
+                    }
+                  </dd>
+                  @if (c.settings; as s) {
+                    <dt><span i18n="@@storage.fold.region">Region</span>&ngsp;<code class="key" translate="no">region</code></dt>
+                    <dd translate="no">
+                      @if (s.region) {
+                        {{ s.region }}
+                      } @else {
+                        <quader-no-value />
+                      }
+                    </dd>
+                    <dt><span i18n="@@storage.fold.credentials">Credentials</span>&ngsp;<code class="key" translate="no">credentials_source</code></dt>
+                    <dd translate="no">{{ c.credentialSource }}</dd>
+                    <dt><span i18n="@@storage.fold.path-style">Path-style addressing</span>&ngsp;<code class="key" translate="no">force_path_style</code></dt>
+                    <dd translate="no">{{ s.forcePathStyle }}</dd>
+                    <dt>
+                      <span i18n="@@storage.fold.checksums">Checksums</span
+                      >&ngsp;<code class="key" translate="no">payload_checksum, request_checksum_calculation, response_checksum_validation</code>
+                    </dt>
+                    <dd translate="no">{{ s.payloadChecksum }}, {{ s.requestChecksumCalculation }}, {{ s.responseChecksumValidation }}</dd>
+                    <dt><span i18n="@@storage.fold.batch-delete">Batch delete</span>&ngsp;<code class="key" translate="no">batch_delete</code></dt>
+                    <dd translate="no">{{ s.batchDelete }}</dd>
+                    <dt><span i18n="@@storage.fold.storage-class">Storage class</span>&ngsp;<code class="key" translate="no">storage_class</code></dt>
+                    <dd>
+                      @if (s.storageClass) {
+                        <span translate="no">{{ s.storageClass }}</span>
+                      } @else {
+                        <ng-container i18n="@@storage.fold.storage-class-default">The bucket's default</ng-container>
+                      }
+                    </dd>
+                    <dt><span i18n="@@storage.fold.sse">Server-side encryption</span>&ngsp;<code class="key" translate="no">sse_mode</code></dt>
+                    <dd translate="no">
+                      {{ s.sseMode }}
+                      @if (s.sseKmsKeyId) {
+                        · {{ s.sseKmsKeyId }}
+                      }
+                    </dd>
+                    <dt><span i18n="@@storage.fold.scrub">Scrub</span>&ngsp;<code class="key" translate="no">scrub_period, scrub_bytes_per_second</code></dt>
+                    <dd>
+                      @if (periodDays(c); as days) {
+                        @let rate = formatSize(s.scrubBytesPerSecond);
+                        <ng-container i18n="@@storage.fold.scrub-short">{days, plural, =1 {every day} other {every {{ days }} days}}, at most {{ rate }}/s</ng-container>
+                      }
+                    </dd>
+                    <dt><span i18n="@@storage.fold.capacity">Capacity</span>&ngsp;<code class="key" translate="no">capacity</code></dt>
+                    <dd>
+                      @if (c.capacityBytes !== null) {
+                        {{ formatSize(c.capacityBytes) }}
+                      } @else {
+                        <quader-no-value />
+                      }
+                    </dd>
+                  }
+                  <dt><span i18n="@@storage.fold.encrypted">Encrypted by Quader</span>&ngsp;<code class="key" translate="no">encrypted, keyed_names</code></dt>
+                  <dd translate="no">{{ c.encrypted }}, {{ c.keyedNames }}</dd>
+                  <dt i18n="@@storage.fold.capabilities">Found by the start check</dt>
+                  <dd>
+                    @if (c.capabilities; as cap) {
+                      <ul class="plain">
+                        <li>
+                          @if (cap.payloadChecksumEnforced) {
+                            <ng-container i18n="@@storage.cap.checksum-yes">Payload checksums enforced</ng-container>
+                          } @else {
+                            <ng-container i18n="@@storage.cap.checksum-no">Payload checksums not enforced: new copies are verified by the scrub</ng-container>
+                          }
+                        </li>
+                        <li>
+                          @if (cap.metadata && cap.copyReplacesMetadata) {
+                            <ng-container i18n="@@storage.cap.metadata-yes">Copies keep and replace metadata</ng-container>
+                          } @else if (cap.metadata) {
+                            <ng-container i18n="@@storage.cap.metadata-keep">Copies keep metadata and do not replace it</ng-container>
+                          } @else {
+                            <ng-container i18n="@@storage.cap.metadata-no">Objects keep no metadata</ng-container>
+                          }
+                        </li>
+                        @for (p of serverSideCopies(c); track p.id) {
+                          <li>
+                            @if (p.ok) {
+                              <ng-container i18n="@@storage.cap.server-copy-yes">Server-side copy from <span translate="no">{{ p.id }}</span></ng-container>
+                            } @else {
+                              <ng-container i18n="@@storage.cap.server-copy-no"
+                                >No server-side copy from <span translate="no">{{ p.id }}</span>: copies are streamed</ng-container
+                              >
+                            }
+                          </li>
+                        }
+                      </ul>
+                      @if (cap.checkedAt; as at) {
+                        <span class="secondary">{{ at | time }}</span>
+                      }
+                    } @else {
+                      <ng-container i18n="@@storage.cap.none">No start check has recorded it yet</ng-container>
+                    }
+                  </dd>
+                  <dt i18n="@@storage.fold.first-seen">First seen</dt>
+                  <dd>{{ c.firstSeenAt | time }}</dd>
+                  <dt i18n="@@storage.fold.filled">Filled</dt>
+                  <dd>
+                    @if (c.filledAt; as at) {
+                      {{ at | time }}
+                    } @else {
+                      <quader-no-value />
+                    }
+                  </dd>
+                  <dt i18n="@@storage.fold.pass">Current pass since</dt>
+                  <dd>
+                    @if (c.passStartedAt; as at) {
+                      {{ at | time }}
+                    } @else {
+                      <quader-no-value />
+                    }
+                  </dd>
+                  <dt i18n="@@storage.fold.last-pass">Last full pass</dt>
+                  <dd>
+                    @if (c.lastFullPassAt; as at) {
+                      {{ at | time }}
+                    } @else {
+                      <quader-no-value />
+                    }
+                  </dd>
+                </dl>
+              </div>
+            }
+          </div>
+        </div>
+      </td>
+    </tr>
+  }
+</quader-data-table>
+@if (retiredIds(); as ids) {
+  <p class="note">
+    <ng-container i18n="@@storage.retired">Retired, their ids are not used again:</ng-container>&ngsp;<span translate="no">{{ ids }}</span>
+  </p>
+}

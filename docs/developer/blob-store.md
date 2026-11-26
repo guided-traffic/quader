@@ -708,7 +708,7 @@ maps a view in [storage_connections_api.go](../../internal/api/v1/storage_connec
 
 **What a request costs.** The list is two reads: one statement over `storage_connections` (at most eight rows plus the retired ones) with
 the registry's rows and two index lookups of the queue per connection, a check of one copy per connection (`blob_copies_key`), and the
-storage keys; then the snapshot's one row. The tab Storage reads it every 15 seconds while it is open (R-UI-196).
+storage keys; then the snapshot's one row. The page Settings › Storage reads it every 30 seconds while it is seen (R-UI-262).
 
 **The overview.** `GET /api/v1/storage/overview` ([storage_overview_api.go](../../internal/api/v1/storage_overview_api.go)) reads the input
 through `v1.StorageServices.Overview` (`storageOverview` in [wire_storage_summary.go](../../internal/app/wire_storage_summary.go)): the list

@@ -86,6 +86,14 @@ mixes plain and encrypted connections. The encrypted provider sees ciphertext; t
 come from the plain copy where the switch allows them (Q-STOR-291). Encryption per connection protects one provider's copy, not the content.
 Live in every installation with both kinds; it is the owner's choice per connection, and the admin area shows `encrypted` per connection.
 
+### H-2432 · What Quader encrypts on the storage page is written in the page
+
+Component: the list **What Quader encrypts** of Settings › Storage ([api-and-ui.md](../spec/api-and-ui.md) R-UI-264, Q-UI-1588). Subject: an
+administrator's or an auditor's judgement of what a provider, a backup's reader or a holder of a pod's disk can read. The families and
+their marks are the product's knowledge in the page's model, with the connections taken from the list; nothing reads them from the running
+code. A change of what Quader encrypts (an encrypted spool, R-BAK-027's encrypted database files) leaves the page wrong until the page is
+changed with it; the model's Vitest holds the list as built. Live with every release that changes an encryption without the page.
+
 ### H-1318 · The Bastion's cache shows sizes, counts and times, and stays plain without a key
 
 Component: the Bastion's cache store ([bastion.md](../spec/bastion.md) R-BAS-061, R-BAS-030). Subject: what a Bastion holds in the DMZ. With

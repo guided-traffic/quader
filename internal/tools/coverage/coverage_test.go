@@ -193,8 +193,10 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 		// R-STOR-110, three P1 requirements of W-37, P2).
 		// 1390 since every answer that lists or shows an artifact carries its malware state, and today's signatures can be read
 		// (R-MAL-039, R-MAL-040, two P1 requirements of W-36, P3).
-		if len(m.Reqs) != 1390 || count[prioMVP] != 743 || count[prioP1] != 608 || count[prioP2] != 39 {
-			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1390 (743, 608, 39)",
+		// 1394 since the storage page shows connections, availability, encryption and the download links on one page, and the
+		// dashboard the same summary (R-UI-262 to R-UI-264, R-UI-266, four P1 requirements of W-37, P3).
+		if len(m.Reqs) != 1394 || count[prioMVP] != 743 || count[prioP1] != 612 || count[prioP2] != 39 {
+			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1394 (743, 612, 39)",
 				len(m.Reqs), count[prioMVP], count[prioP1], count[prioP2])
 		}
 	})

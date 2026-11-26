@@ -732,6 +732,15 @@ user, so a bulk download through a profile's `upstream/docker-hub` (on 2026-11-2
 address's anonymous allowance) or the kind nodes' pulls spend what the installation needs, and its fetches then wait on `429`. What closes
 it: a second Docker Hub user for the development machine, the owner's operational choice.
 
+### H-2431 · The storage page names the root key's last re-sealing, not when a key became active
+
+Component: the line **Root key** of Settings › Storage ([api-and-ui.md](../spec/api-and-ui.md) R-UI-264), read from
+`GET /api/v1/system/encryption`. Subject: an auditor who asks since when the active key of the stored secrets seals new values. The key ring
+is read from files at start (H-55) and keeps no time of a key's activation; the page names the last re-sealing job's end
+(`lastReencryption.finishedAt`) instead, which is when every sealed value was last moved to the active key, not when that key became
+active. Live on every installation that rotated the key without a re-sealing since; the time of the rollout that changed the key files is in
+the deployment's history, not in Quader's.
+
 ### H-1941 · Quader's audit trail does not show a rotation of a declared account's Secret
 
 Component: the accounts of `repositories.upstream_accounts` (R-REPO-077). Subject: an auditor who asks when an upstream registry's token

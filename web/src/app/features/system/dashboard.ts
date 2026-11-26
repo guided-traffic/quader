@@ -4,7 +4,7 @@ import { Component, computed, inject, resource, signal } from '@angular/core';
 import { live } from '../../core/live-refresh';
 import { RouterLink } from '@angular/router';
 import { BackupsApi } from '../../api/backups-api';
-import { StorageApi } from '../../api/storage-api';
+import { StorageApi, StorageOverview } from '../../api/storage-api';
 import { EncryptionApi, SystemApi } from '../../api/system-api';
 import { SessionStore } from '../../core/session-store';
 import { ErrorNotice } from '../../shared/error-notice';
@@ -13,7 +13,7 @@ import { formatSize } from '../packages/format-size';
 import { CheckSummary, checkSummary, lastBackup, roleLoad, share } from './dashboard-model';
 import { REFRESH_INTERVAL_MS } from './system-status';
 import { alarms, roleGroups, serviceStatus } from './system-status-model';
-import { dashboardStorageAlarm, hostOf, unreachable } from './storage/storage-model';
+import { StorageSummary } from '../settings/storage/storage-summary';
 import { PageHeader } from '../../shared/ui/page-header';
 import { TimeAgo } from '../../shared/ui/time-ago';
 import { Loading } from '../../shared/ui/loading';
@@ -22,13 +22,25 @@ import { Loading } from '../../shared/ui/loading';
  * The admin dashboard (Q-OPS-175): the first screen of the admin area, an overview of the installation in cards.
  * The instance bar, the components (each role's replicas and their load from the heartbeat measurements), the
  * dependencies (PostgreSQL, Valkey, the object store with the content it holds, each with its readiness check), and
- * the counts of content and access with the way to their screens, and the state of the backup (R-UI-165). The object store names each
- * connection in one line with its check over the live replicas and links the tab Storage; one unreachable on every replica makes the
- * instance bar warn, every one unreachable is an error (R-UI-197, Q-UI-932). It refreshes like the status screen, with a pause.
+ * the counts of content and access with the way to their screens, and the state of the backup (R-UI-165). The card Storage keeps the
+ * object store's readiness check and shows the summary of Settings › Storage in its compact form, from the same overview (R-UI-266,
+ * Q-UI-1589); the overview's state of the connections words the instance bar's storage alarm, so the card, the bar and the page agree.
+ * It refreshes like the status screen, with a pause.
  */
+/**
+ * The instance bar's word on the storage (R-UI-266, the alerts of R-STOR-060 in words): `none` while no connection is reachable,
+ * `unreachable` while the overview names the connections degraded and one is unreachable on a replica, `degraded` while they are
+ * degraded otherwise (a detached connection), else nothing. The state is the overview's (Q-STOR-505).
+ */
+export function storageAlarm(c: StorageOverview['connections'] | undefined): 'none' | 'unreachable' | 'degraded' | null {
+  if (c?.state === 'unreachable') return 'none';
+  if (c?.state === 'degraded') return c.unreachable.length > 0 ? 'unreachable' : 'degraded';
+  return null;
+}
+
 @Component({
   selector: 'quader-dashboard',
-  imports: [Loading, PageHeader, TimePipe, DecimalPipe, NgTemplateOutlet, RouterLink, ErrorNotice, TimeAgo],
+  imports: [Loading, PageHeader, TimePipe, DecimalPipe, NgTemplateOutlet, RouterLink, ErrorNotice, StorageSummary, TimeAgo],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
 })
@@ -46,8 +58,14 @@ export class Dashboard {
   protected readonly replicas = resource({ loader: () => this.system.replicas() });
   protected readonly overview = resource({ loader: () => this.system.overview() });
   protected readonly encryption = resource({ loader: () => this.encryptionApi.status() });
-  /** The connections' state over the live replicas (R-STOR-061); refused or failing, the lines show the place without it. */
-  protected readonly storage = resource({ loader: () => this.storageApi.connections() });
+  /**
+   * The storage overview of now (R-STOR-107, R-UI-266), for a holder of `settings:read`; refused or failing, the card keeps its
+   * readiness check and the instance bar says nothing of the connections.
+   */
+  protected readonly storage = resource({
+    params: () => (this.session.has('settings:read') ? true : undefined),
+    loader: () => this.storageApi.overview(),
+  });
   /** The Backups tab's own summary; refused or failing, the card leaves the backup out (R-UI-165). */
   protected readonly backup = resource({ loader: () => this.backups.summary() });
   protected readonly lastBackup = computed(() => {
@@ -83,27 +101,8 @@ export class Dashboard {
     return {
       first: alarms(st)[0] ?? null,
       replacing: st.conditions.some((c) => c.kind === 'replacing'),
-      storage: dashboardStorageAlarm(valueOf(this.storage) ?? []),
+      storage: storageAlarm(valueOf(this.storage)?.connections),
     };
-  });
-  /**
-   * One line per connection of the answering replica (R-UI-197): its id, the endpoint's host and bucket/prefix, and its circuit over
-   * the live replicas that configure it, from the connections' list; `null` where the list could not be read.
-   */
-  protected readonly connectionLines = computed(() => {
-    const info = valueOf(this.info);
-    if (!info) return [];
-    const states = valueOf(this.storage);
-    return info.objectStore.connections.map((c) => {
-      const s = states?.find((x) => x.id === c.id);
-      const host = hostOf(c.endpoint);
-      return {
-        id: c.id,
-        location: host ? `${host} · ${c.bucket}/${c.prefix}` : `${c.bucket}/${c.prefix}`,
-        unreachable: s ? unreachable(s) : null,
-        known: s !== undefined,
-      };
-    });
   });
   /**
    * One card per role. A live replica of the development role `all` serves every role, so the main roles it covers
