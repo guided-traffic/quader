@@ -278,6 +278,11 @@ func (remoteAdapter) Package(ctx context.Context, u discover.Upstream, pkg strin
 		all = append(all, versionFacts(e.text, e.v, parsed.Versions[e.text], times[e.text]))
 	}
 	info.Versions, info.Total, info.Cursor, info.Done = discover.PageTaggedVersions(all, info.Tags, rq)
+	// The latest version's facts and the document's README, from the document just read (R-CUR-028): no further request.
+	latest := latestOf(info.Tags, all, parsed.Versions)
+	info.About = aboutOf(parsed, latest)
+	readme := readmeOf(parsed, latest)
+	info.Readme = &readme
 	return info, nil
 }
 

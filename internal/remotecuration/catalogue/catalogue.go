@@ -33,6 +33,8 @@ const (
 	CallSearch   = "search"
 	CallChildren = "levels"
 	CallPackage  = "package"
+	// CallReadme reads a package's README through (R-CUR-028).
+	CallReadme = "readme"
 )
 
 // The outcomes, the label outcome of quader_remote_catalogue_requests_total (R-CUR-019).
@@ -285,6 +287,13 @@ func (e *Engine) pkg(ctx context.Context, t Target, name string, rq discover.Ver
 		}
 		p.Description = discover.CutText(p.Description)
 		p.Keywords = discover.CutKeywords(p.Keywords)
+		p.About = discover.CutAbout(p.About)
+		if p.Readme != nil {
+			// A README the lookup's answers carried (npm's package document) is kept for the README call, never answered with the
+			// package: the package is every reader's, the README the wiki's (R-CUR-028).
+			e.keepReadme(t, p.Name, *p.Readme)
+			p.Readme = nil
+		}
 		if len(p.Versions) > rq.Limit {
 			p.Versions = p.Versions[:rq.Limit]
 		}
@@ -301,6 +310,59 @@ func (e *Engine) pkg(ctx context.Context, t Target, name string, rq discover.Ver
 		return info, errs.E(errs.NotFound, errs.CodeCatalogueNotFound, "The upstream of "+t.Repo+" does not have a package named "+name+".")
 	}
 	return info, nil
+}
+
+// readmeArgs are the arguments of a README call, part of its key in the cache.
+type readmeArgs struct {
+	Name, Version string
+}
+
+// MaxReadmeVersionBytes bounds the version a README call names.
+const MaxReadmeVersionBytes = 256
+
+// Readme answers the README of a package's version, read through and not stored (R-CUR-028): one request at most beyond the lookup,
+// within the budget, the timeout and the bounds of every call, kept in the cache for its period like a page. 400 catalogue_not_offered
+// for a format whose upstream serves no README (OCI, Debian); a version without one is a Readme with Found false, and a README on a
+// host the repository does not reach one with Unreachable set.
+func (e *Engine) Readme(ctx context.Context, t Target, name, version string) (discover.Readme, error) {
+	name, version = strings.TrimSpace(name), strings.TrimSpace(version)
+	if name == "" || len(name) > 512 || len(version) > MaxReadmeVersionBytes {
+		return discover.Readme{}, errs.E(errs.Invalid, errs.CodeValidation, "A README names a package of at most 512 bytes and a version of at most 256.",
+			errs.WithFields(errs.FieldError{Pointer: "/name", Code: errs.CodeValidation, Detail: "a package name"}))
+	}
+	cat, err := e.catalogue(t)
+	if err != nil {
+		return discover.Readme{}, err
+	}
+	doc, ok := cat.(discover.Documented)
+	if !ok {
+		e.o.Metrics.count(t.Repo, CallReadme, OutcomeNotOffered)
+		return discover.Readme{}, notOffered("The format "+t.Format+" has no README its upstream serves.", "")
+	}
+	var r discover.Readme
+	err = e.call(ctx, t, CallReadme, readmeArgs{name, version}, &r, func(ctx context.Context, u discover.Upstream) (any, error) {
+		got, err := doc.Readme(ctx, u, name, version)
+		if err != nil {
+			return nil, err
+		}
+		if got.Version == "" {
+			got.Version = version
+		}
+		got.Unreachable = cut(got.Unreachable)
+		return discover.CutReadme(got), nil
+	})
+	return r, err
+}
+
+// keepReadme keeps a README a lookup carried under the keys of the README call that would read it: by its version and by none.
+func (e *Engine) keepReadme(t Target, name string, r discover.Readme) {
+	st := e.o.Settings()
+	r = discover.CutReadme(r)
+	for _, v := range []string{r.Version, ""} {
+		if key, err := cacheKey(t, CallReadme, readmeArgs{name, v}); err == nil {
+			e.cache.put(key, r, st.CacheBytes, st.CacheTTL)
+		}
+	}
 }
 
 // catalogue finds the format's browsing calls.
@@ -365,6 +427,8 @@ func foundNothing(v any) bool {
 		return len(p.Hits) == 0
 	case discover.LevelPage:
 		return len(p.Levels) == 0 && len(p.Packages) == 0
+	case discover.Readme:
+		return !p.Found && p.Unreachable == ""
 	}
 	return false
 }
@@ -557,7 +621,15 @@ func assign(v any, into any) error {
 			return errors.New("catalogue: the cached package is of another type")
 		}
 		p.Versions = append([]discover.VersionFacts(nil), p.Versions...)
+		p.About.Links = append([]discover.Link(nil), p.About.Links...)
+		p.About.Dependencies = append([]discover.Dependency(nil), p.About.Dependencies...)
 		*dst = p
+	case *discover.Readme:
+		r, ok := v.(discover.Readme)
+		if !ok {
+			return errors.New("catalogue: the cached README is of another type")
+		}
+		*dst = r
 	default:
 		return fmt.Errorf("catalogue: no page of type %T", into)
 	}
@@ -575,4 +647,14 @@ func platformsOf(ps []string) []string {
 		return ps
 	}
 	return slices.DeleteFunc(slices.Clone(ps), func(p string) bool { return p == attestationPlatform })
+}
+
+// ServesReadme reports whether the format's upstream serves a package's README to the README call (R-CUR-028).
+func (e *Engine) ServesReadme(format string) bool {
+	c, ok := e.o.Catalogues(format)
+	if !ok || c == nil {
+		return false
+	}
+	_, ok = c.(discover.Documented)
+	return ok
 }

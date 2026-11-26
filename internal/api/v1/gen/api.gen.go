@@ -5746,6 +5746,33 @@ func (e TokenScopeGrantActions) Valid() bool {
 	}
 }
 
+// Defines values for UpstreamAboutLinksKind.
+const (
+	UpstreamLinkDocumentation UpstreamAboutLinksKind = "documentation"
+	UpstreamLinkHomepage      UpstreamAboutLinksKind = "homepage"
+	UpstreamLinkIssues        UpstreamAboutLinksKind = "issues"
+	UpstreamLinkLicense       UpstreamAboutLinksKind = "license"
+	UpstreamLinkRepository    UpstreamAboutLinksKind = "repository"
+)
+
+// Valid indicates whether the value is a known member of the UpstreamAboutLinksKind enum.
+func (e UpstreamAboutLinksKind) Valid() bool {
+	switch e {
+	case UpstreamLinkDocumentation:
+		return true
+	case UpstreamLinkHomepage:
+		return true
+	case UpstreamLinkIssues:
+		return true
+	case UpstreamLinkLicense:
+		return true
+	case UpstreamLinkRepository:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for UpstreamCatalogueMode.
 const (
 	CatalogueModeAllExceptBlocked UpstreamCatalogueMode = "allExceptBlocked"
@@ -5989,6 +6016,27 @@ func (e UpstreamQueuedState) Valid() bool {
 	case UpstreamQueuedRunning:
 		return true
 	case UpstreamQueuedWaiting:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UpstreamReadmeState.
+const (
+	UpstreamReadmeAvailable   UpstreamReadmeState = "available"
+	UpstreamReadmeNone        UpstreamReadmeState = "none"
+	UpstreamReadmeUnreachable UpstreamReadmeState = "unreachable"
+)
+
+// Valid indicates whether the value is a known member of the UpstreamReadmeState enum.
+func (e UpstreamReadmeState) Valid() bool {
+	switch e {
+	case UpstreamReadmeAvailable:
+		return true
+	case UpstreamReadmeNone:
+		return true
+	case UpstreamReadmeUnreachable:
 		return true
 	default:
 		return false
@@ -17918,6 +17966,39 @@ type TokenScopePatterns struct {
 	Include *[]string `json:"include,omitempty"`
 }
 
+// UpstreamAbout What the answers the lookup read tell of the package's newest version besides its versions (R-CUR-028): npm's latest dist-tag,
+// NuGet's newest registration leaf, the Galaxy's highest version. No wiki content (R-AUTHZ-034): every reader of the tab sees it.
+// Every text is the upstream's, plain and bounded; an address is an absolute http or https address. `null` where the answers tell
+// nothing (OCI, Debian).
+type UpstreamAbout struct {
+	Dependencies []struct {
+		// Group npm's `peer` or `optional`, NuGet's target framework; null for a plain dependency.
+		Group *string `json:"group"`
+		Name  string  `json:"name"`
+		Range *string `json:"range"`
+	} `json:"dependencies"`
+	Deprecation *struct {
+		// Alternate The package to use instead.
+		Alternate      *string  `json:"alternate"`
+		AlternateRange *string  `json:"alternateRange"`
+		Message        *string  `json:"message"`
+		Reasons        []string `json:"reasons"`
+	} `json:"deprecation"`
+
+	// License The licence as the upstream names it, an SPDX expression or a name.
+	License *string `json:"license"`
+	Links   []struct {
+		Kind UpstreamAboutLinksKind `json:"kind"`
+		Url  string                 `json:"url"`
+	} `json:"links"`
+
+	// Version The version the facts are of.
+	Version string `json:"version"`
+}
+
+// UpstreamAboutLinksKind defines model for UpstreamAbout.Links.Kind.
+type UpstreamAboutLinksKind string
+
 // UpstreamArchiveKey defines model for UpstreamArchiveKey.
 type UpstreamArchiveKey struct {
 	// Fingerprint The fingerprint of an OpenPGP key of `deb.upstreamKeys`, upper-case hexadecimal.
@@ -18212,6 +18293,12 @@ type UpstreamLevelPage struct {
 
 // UpstreamPackage A package looked up by its exact name and one page of its versions (R-CUR-007, R-CUR-009).
 type UpstreamPackage struct {
+	// About What the answers the lookup read tell of the package's newest version besides its versions (R-CUR-028): npm's latest dist-tag,
+	// NuGet's newest registration leaf, the Galaxy's highest version. No wiki content (R-AUTHZ-034): every reader of the tab sees it.
+	// Every text is the upstream's, plain and bounded; an address is an absolute http or https address. `null` where the answers tell
+	// nothing (OCI, Debian).
+	About *UpstreamAbout `json:"about,omitempty"`
+
 	// Delivery The decision of R-CUR-001 and what made it.
 	Delivery    DeliveryDecision `json:"delivery"`
 	Description string           `json:"description"`
@@ -18231,6 +18318,11 @@ type UpstreamPackage struct {
 	Level      *DeliveryDecision `json:"level,omitempty"`
 	Name       string            `json:"name"`
 	NextCursor *string           `json:"nextCursor"`
+
+	// Readme Whether the screen asks `upstream/readme` for the package (R-CUR-028): the format's upstream serves a README (npm, NuGet,
+	// Ansible Galaxy) and the caller may read the wiki of the repository (R-AUTHZ-034). `false` for a caller who may not, who is
+	// told what a stored version without a README tells, and for a format whose packages carry none (OCI, Debian).
+	Readme *bool `json:"readme,omitempty"`
 
 	// Request The open request entry of a subject (R-CUR-015), null for none.
 	Request *UpstreamRequestState `json:"request"`
@@ -18299,6 +18391,27 @@ type UpstreamQueued struct {
 
 // UpstreamQueuedState defines model for UpstreamQueued.State.
 type UpstreamQueuedState string
+
+// UpstreamReadme The README of a package's version of the upstream, read through and not stored (R-CUR-028): rendered and sanitized as a
+// stored version's README is (R-UI-008), an upstream's HTML sanitized as it is (R-ANS-039).
+type UpstreamReadme struct {
+	// Host With `unreachable`, the host the upstream names.
+	Host   *string        `json:"host"`
+	Readme *PackageReadme `json:"readme"`
+
+	// State `available` with `readme`; `none`: the upstream has no README for the version; `unreachable`: the upstream names it on
+	// `host`, which the repository does not reach (neither its upstream's host nor one of its extra hosts, cleartext from an https
+	// upstream, or refused by the egress rules), and nothing was asked there.
+	State UpstreamReadmeState `json:"state"`
+
+	// Version The version the README is of.
+	Version string `json:"version"`
+}
+
+// UpstreamReadmeState `available` with `readme`; `none`: the upstream has no README for the version; `unreachable`: the upstream names it on
+// `host`, which the repository does not reach (neither its upstream's host nor one of its extra hosts, cleartext from an https
+// upstream, or refused by the egress rules), and nothing was asked there.
+type UpstreamReadmeState string
 
 // UpstreamRepository A well-known repository as the admin page shows it (R-REPO-073). `state` is `null` and `inUse` a boolean for a system
 // repository; `inUse` is `null` for a preset repository. `fixed` names what the product holds beyond the table of R-REPO-069
@@ -21490,6 +21603,15 @@ type GetUpstreamPackageParams struct {
 	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
+// GetUpstreamReadmeParams defines parameters for GetUpstreamReadme.
+type GetUpstreamReadmeParams struct {
+	// Name The package's exact name, as the lookup answered it.
+	Name string `form:"name" json:"name"`
+
+	// Version The version, as `about.version` of the lookup names it; without it the format reads its newest.
+	Version *string `form:"version,omitempty" json:"version,omitempty"`
+}
+
 // SearchUpstreamCatalogueParams defines parameters for SearchUpstreamCatalogue.
 type SearchUpstreamCatalogueParams struct {
 	// Q The text, 1 to 128 characters after trimming; a format may narrow it (npm takes 2 to 64).
@@ -24309,6 +24431,9 @@ type ServerInterface interface {
 	// GetUpstreamPackage Look a package of the upstream up by its exact name
 	// (GET /api/v1/projects/{projectKey}/repositories/{repoKey}/upstream/package)
 	GetUpstreamPackage(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string, params GetUpstreamPackageParams)
+	// GetUpstreamReadme The README of a package of the upstream, read through
+	// (GET /api/v1/projects/{projectKey}/repositories/{repoKey}/upstream/readme)
+	GetUpstreamReadme(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string, params GetUpstreamReadmeParams)
 	// SearchUpstreamCatalogue Search the upstream of a remote repository
 	// (GET /api/v1/projects/{projectKey}/repositories/{repoKey}/upstream/search)
 	SearchUpstreamCatalogue(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string, params SearchUpstreamCatalogueParams)
@@ -37534,6 +37659,70 @@ func (siw *ServerInterfaceWrapper) GetUpstreamPackage(w http.ResponseWriter, r *
 	handler.ServeHTTP(w, r)
 }
 
+// GetUpstreamReadme operation middleware
+func (siw *ServerInterfaceWrapper) GetUpstreamReadme(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetUpstreamReadmeParams
+
+	// ------------- Required query parameter "name" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "name", r.URL.Query(), &params.Name, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "name"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "name", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "version" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "version", r.URL.Query(), &params.Version, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "version"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "version", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetUpstreamReadme(w, r, projectKey, repoKey, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // SearchUpstreamCatalogue operation middleware
 func (siw *ServerInterfaceWrapper) SearchUpstreamCatalogue(w http.ResponseWriter, r *http.Request) {
 
@@ -45051,6 +45240,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/upstream/search", wrapper.SearchUpstreamCatalogue)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/upstream/levels", wrapper.ListUpstreamLevel)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/upstream/package", wrapper.GetUpstreamPackage)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/upstream/readme", wrapper.GetUpstreamReadme)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/upstream/vulnerabilities", wrapper.EvaluateUpstreamVulnerabilities)
 
 	return m

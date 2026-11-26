@@ -67,7 +67,7 @@ func (s remoteStore) CatalogueRows(ctx context.Context, repoID int64, name strin
 	for _, r := range list {
 		out = append(out, rows.Entry{
 			Dir: r.Dir, IndexPath: r.IndexPath, Package: r.Package, Version: r.Version, Architecture: r.Architecture, Path: r.Path,
-			SHA256: sum32(r.Sha256), Size: r.Size,
+			SHA256: sum32(r.Sha256), Size: r.Size, Description: r.Description,
 		})
 	}
 	return out, err

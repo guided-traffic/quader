@@ -136,6 +136,7 @@ var ownerRightsReads = map[string]string{
 	"searchUpstreamCatalogue": "as getUpstreamCatalogue",
 	"listUpstreamLevel":       "as getUpstreamCatalogue",
 	"getUpstreamPackage":      "as getUpstreamCatalogue",
+	"getUpstreamReadme":       "as getUpstreamCatalogue",
 	// <<< T-24 catalogue
 	"listCacheEntries":                 "decided through the decision point with the scope (requireCacheReader)",
 	"getVulnerabilitySummary":          "counts over the repositories the read scope of the decision point admits for the subject, scope included (vulnCaller, ReadScopeOn)",

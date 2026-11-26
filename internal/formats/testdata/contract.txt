@@ -747,6 +747,7 @@ formats.SignatureSourceValid: func(string) bool
 formats.SystemRead: func(*Request) bool
 formats.Template: func(string) (func(string) (Params, bool))
 formats.Undelivered: func(*Request, string, string, rules.RefusalKind) error
+formats.UnreachedHost: func(error, *url.URL) (string, bool)
 formats.Validate: func(Format) error
 formats.WithRefusal: func(*http.Request, Refusal) *http.Request
 formats.WithSignatureFetchLimits: func(context.Context, SignatureFetchLimits) context.Context
@@ -1067,6 +1068,12 @@ match.Entry: method Affects(string) Result
 match.Result: field Affected bool
 match.Result: field FixAvailable bool
 match.Result: field Unevaluable int
+discover.About: field Dependencies []Dependency
+discover.About: field Deprecation *Deprecation
+discover.About: field License string
+discover.About: field Links []Link
+discover.About: field Version string
+discover.About: method Empty() bool
 discover.Bounded: method VersionBounds() (int, bool)
 discover.Catalogue: method CatalogueCaps(context.Context, Upstream) (CatalogueCaps, error)
 discover.Catalogue: method Children(context.Context, Upstream, LevelRequest) (LevelPage, error)
@@ -1081,6 +1088,14 @@ discover.CatalogueCaps: field SearchWindow int
 discover.CatalogueCaps: field Sizes string
 discover.Cursor: alias json.RawMessage
 discover.Delivering: method Delivers(string, string) bool
+discover.Dependency: field Group string
+discover.Dependency: field Name string
+discover.Dependency: field Range string
+discover.Deprecation: field Alternate string
+discover.Deprecation: field AlternateRange string
+discover.Deprecation: field Message string
+discover.Deprecation: field Reasons []string
+discover.Documented: method Readme(context.Context, Upstream, string, string) (Readme, error)
 discover.Header: method Head(context.Context, *url.URL, string) (*Response, error)
 discover.Hit: embedded Popularity
 discover.Hit: field Description string
@@ -1103,6 +1118,9 @@ discover.LevelRef: field Path []string
 discover.LevelRequest: field Cursor Cursor
 discover.LevelRequest: field Level LevelRef
 discover.LevelRequest: field Limit int
+discover.Link: field Kind LinkKind
+discover.Link: field URL string
+discover.LinkKind: type string
 discover.Lister: method MirrorHosts(*url.URL) []string
 discover.Lister: method MirrorMethods(context.Context, Upstream) ([]Method, error)
 discover.Lister: method MirrorNames(context.Context, Upstream, PageRequest) (Page, error)
@@ -1111,11 +1129,13 @@ discover.Method: method Valid() bool
 discover.Method: type string
 discover.NameRule: type string
 discover.PackageInfo: embedded Popularity
+discover.PackageInfo: field About About
 discover.PackageInfo: field Cursor Cursor
 discover.PackageInfo: field Description string
 discover.PackageInfo: field Done bool
 discover.PackageInfo: field Found bool
 discover.PackageInfo: field Name string
+discover.PackageInfo: field Readme *Readme
 discover.PackageInfo: field Tags map[string]string
 discover.PackageInfo: field Total int
 discover.PackageInfo: field Versions []VersionFacts
@@ -1140,6 +1160,12 @@ discover.Popularity: field Signed *bool
 discover.RateLimited: embedded error
 discover.RateLimited: method RateLimitReason() string
 discover.RateLimited: method RetryAfter() (time.Duration, bool)
+discover.Readme: field Found bool
+discover.Readme: field HTML bool
+discover.Readme: field Text string
+discover.Readme: field Truncated bool
+discover.Readme: field Unreachable string
+discover.Readme: field Version string
 discover.RepositoryIDer: method RepositoryID() int64
 discover.Response: field Body []byte
 discover.Response: field Header http.Header
@@ -1187,12 +1213,20 @@ discover.VersionsRequest: field Limit int
 discover.ErrBadLevel: value = errors.New("discover: the level is its path joined by /, each part URL-encoded and not empty")
 discover.ErrMethodUnavailable: value = errors.New("discover: the upstream does not offer the discovery method")
 discover.ErrNotOffered: value = errors.New("discover: the upstream does not offer this catalogue call")
+discover.LinkDocumentation: value LinkKind = "documentation"
+discover.LinkHomepage: value LinkKind = "homepage"
+discover.LinkIssues: value LinkKind = "issues"
+discover.LinkLicense: value LinkKind = "license"
+discover.LinkRepository: value LinkKind = "repository"
 discover.MaxCursorBytes: value = 4096
+discover.MaxDependencies: value = 200
 discover.MaxKeywordRunes: value = 64
 discover.MaxKeywords: value = 32
 discover.MaxLevelEntries: value = 200
+discover.MaxReadmeBytes: value = 1 << 20
 discover.MaxSearchHits: value = 50
 discover.MaxTextRunes: value = 1000
+discover.MaxURLBytes: value = 2048
 discover.MaxVersionsOnPage: value = 100
 discover.MethodFeed: value Method = "feed"
 discover.MethodListing: value Method = "listing"

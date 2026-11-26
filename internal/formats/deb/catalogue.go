@@ -319,9 +319,24 @@ func (a remoteAdapter) Package(ctx context.Context, u discover.Upstream, name st
 		sort.Strings(f.Platforms)
 		all = append(all, *f)
 	}
-	info := discover.PackageInfo{Found: true, Name: entries[0].Package}
+	info := discover.PackageInfo{Found: true, Name: entries[0].Package, Description: newestDescription(entries, all)}
 	info.Versions, info.Total, info.Cursor, info.Done = discover.PageVersions(all, rq)
 	return info, nil
+}
+
+// newestDescription is the short description of the newest version's rows, which the parse of the indexes kept (R-DEB-036,
+// remote-curation.md R-CUR-028): no request. The long description, the homepage and the relations of the index's paragraph are not
+// kept by the parse, so the tab Upstream does not show them before a version is stored (Q-CUR-262).
+func newestDescription(entries []rows.Entry, newestFirst []discover.VersionFacts) string {
+	if len(newestFirst) == 0 {
+		return ""
+	}
+	for _, e := range entries {
+		if e.Version == newestFirst[0].Version && e.Description != "" {
+			return e.Description
+		}
+	}
+	return ""
 }
 
 func containsString(s []string, v string) bool {

@@ -2,9 +2,12 @@ package formats
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net/url"
 	"strings"
 
+	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/mirror/discover"
 )
 
@@ -89,4 +92,32 @@ func ProbeFromPlan(plan discover.Plan, version string) (Probe, bool) {
 		}
 	}
 	return p, len(p.Files) > 0
+}
+
+// UnreachedHost reports whether err is the lent upstream's refusal to send a request to target because the repository may not reach
+// its address (remote-curation.md R-CUR-028): the host is neither the upstream's nor one of its extraHosts (foreign_host_denied), the
+// address leaves an https upstream for cleartext (insecure_redirect), or the egress rules refuse it (egress_denied). Nothing was sent;
+// host is the address's host, which the screen names.
+//
+// target is the address the format asked; nil for a document the engine addressed, whose refusal names the address in its cause.
+func UnreachedHost(err error, target *url.URL) (host string, refused bool) {
+	ee, ok := errs.As(err)
+	if !ok {
+		return "", false
+	}
+	switch ee.Code {
+	case errs.CodeForeignHostDenied, errs.CodeInsecureRedirect, errs.CodeEgressDenied:
+	default:
+		return "", false
+	}
+	if target == nil {
+		var named interface{ RefusedAddress() string }
+		if errors.As(err, &named) {
+			target, _ = url.Parse(named.RefusedAddress())
+		}
+	}
+	if target == nil {
+		return "", true
+	}
+	return strings.ToLower(target.Hostname()), true
 }

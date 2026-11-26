@@ -476,6 +476,10 @@ func (s *Server) packageRow(c catalogueCall, info discover.PackageInfo) (map[str
 		"delivery": toDeliveryDecision(s.catalogueDecider().Package(c.ctx, repoID, name), mode), "stored": pst,
 		"request": requestRow(openOf(open, "")), "versions": rows, "total": nullTotal(info.Total),
 		"nextCursor": catalogueCursor(info.Cursor, info.Done), "done": info.Done,
+		// The newest version's facts and whether the screen asks for the README (R-CUR-028): the facts are every reader's, the README
+		// the wiki's (R-AUTHZ-034).
+		"about":  aboutRow(info.About),
+		"readme": s.o.UpstreamCatalogue.Engine.ServesReadme(c.repo.Format) && mayReadUpstreamWiki(c, name),
 	}
 	popularity(out, info.Popularity)
 	switchFacts(c, out, name)

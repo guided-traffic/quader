@@ -37,8 +37,10 @@ func catalogueFixture(t testing.TB) *formattest.CatalogueFixture {
 			unknownScope:                   {Body: read("scope-guidedtraffic.json")},
 			"https://registry.npmjs.org/-/org/guidedtraffic/package": {Status: http.StatusNotFound, Body: read("org-guidedtraffic.json")},
 		},
-		Documents: map[string][]byte{"left-pad\x00" + documentVariant: read("left-pad.json")},
+		Documents: map[string][]byte{"left-pad\x00" + documentVariant: read("left-pad-readme.json")},
 		Search:    "tufjs", Level: []string{"@tufjs"}, Package: "left-pad", Absent: "left-pad-absent", Limit: 2,
+		// The latest version's licence and the document's README, which the lookup hands over (R-CUR-028).
+		License: "WTFPL", Readme: "String left pad",
 		// A scope the registry does not have: its key range is empty, and so is that of a scope it has without a scoped package, so the
 		// scope's account tells them apart (Q-CUR-165).
 		UnknownLevel: []string{"@guidedtraffic"},
@@ -47,6 +49,8 @@ func catalogueFixture(t testing.TB) *formattest.CatalogueFixture {
 		Name: "a registry without the search route", Base: "https://npm.example.org/",
 		Documents: map[string][]byte{"left-pad\x00" + documentVariant: read("left-pad.json")},
 		Package:   "left-pad", Absent: "left-pad-absent", Limit: 2, Search: "tufjs",
+		// A document without a readme member: the package has none to show (R-CUR-028).
+		License: "WTFPL", NoReadme: true,
 		ExpectSearchUnavailable: true,
 	}}}
 }

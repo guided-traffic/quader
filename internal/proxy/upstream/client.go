@@ -150,6 +150,10 @@ func (t *RefusedTarget) Error() string {
 	return "upstream: the address " + t.Address + " was not asked"
 }
 
+// RefusedAddress is the address that was not asked: a format that read through a document, and does not know the address the
+// engine derived, names its host from it (formats.UnreachedHost, remote-curation.md R-CUR-028).
+func (t *RefusedTarget) RefusedAddress() string { return t.Address }
+
 // sameHost compares the host names and the effective ports. A port that is the
 // default of its scheme equals the other default, so that an upstream document of
 // an http upstream may move to https on the same host; the way back is refused

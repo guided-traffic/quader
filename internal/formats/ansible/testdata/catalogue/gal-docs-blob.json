@@ -1,0 +1,10 @@
+{
+ "docs_blob": {
+  "contents": [],
+  "collection_readme": {
+   "html": "<h1>Ansible collection osism.sonic</h1>\n<p>This collection includes Ansible core modules, network resource modules, and plugins needed to provision and manage SONiC.</p>\n<p>Documentation: https://docs.osism.tech/ansible-collection-sonic/</p>\n<h2>Upstream</h2>\n<p>This is a downstream of https://github.com/ansible-collections/osism.sonic.</p>",
+   "name": "README.md"
+  },
+  "documentation_files": []
+ }
+}

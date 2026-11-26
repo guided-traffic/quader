@@ -58,7 +58,7 @@ SELECT e.package, array_agg(DISTINCT e.version)::text[] AS versions, max(e.descr
  LIMIT sqlc.arg(lim)::int;
 
 -- name: CatalogueDebRows :many
-SELECT dir, index_path, package, version, architecture, path, sha256, size
+SELECT dir, index_path, package, version, architecture, path, sha256, size, description
   FROM deb_remote_entries
  WHERE repo_id = sqlc.arg(repo_id)::bigint AND package = sqlc.arg(name)::text AND architecture <> 'source'
  ORDER BY dir, index_path, version, architecture;

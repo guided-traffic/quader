@@ -420,6 +420,9 @@ type Entry struct {
 	Path         string
 	SHA256       [32]byte
 	Size         int64
+	// Description is the row's short description as the parse kept it (R-DEB-036); only the upstream catalogue's read of the rows
+	// of a name fills it (remote-curation.md R-CUR-028).
+	Description string
 }
 
 // NameScope is the scope a remote is asked about a name in (Q-DEB-37): the suites, components and architectures the virtual

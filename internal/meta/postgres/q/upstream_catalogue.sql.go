@@ -70,7 +70,7 @@ func (q *Queries) CatalogueDebIndexes(ctx context.Context, repoID int64) ([]Cata
 }
 
 const catalogueDebRows = `-- name: CatalogueDebRows :many
-SELECT dir, index_path, package, version, architecture, path, sha256, size
+SELECT dir, index_path, package, version, architecture, path, sha256, size, description
   FROM deb_remote_entries
  WHERE repo_id = $1::bigint AND package = $2::text AND architecture <> 'source'
  ORDER BY dir, index_path, version, architecture
@@ -90,6 +90,7 @@ type CatalogueDebRowsRow struct {
 	Path         string
 	Sha256       []byte
 	Size         int64
+	Description  string
 }
 
 func (q *Queries) CatalogueDebRows(ctx context.Context, arg CatalogueDebRowsParams) ([]CatalogueDebRowsRow, error) {
@@ -110,6 +111,7 @@ func (q *Queries) CatalogueDebRows(ctx context.Context, arg CatalogueDebRowsPara
 			&i.Path,
 			&i.Sha256,
 			&i.Size,
+			&i.Description,
 		); err != nil {
 			return nil, err
 		}

@@ -49,6 +49,9 @@ type Discovery struct {
 	// Catalog is the base of Catalog/3.0.0, the index of the catalog; nil when the upstream does
 	// not list it. Only a mirror reads it (R-REPO-051).
 	Catalog *url.URL
+	// ReadmeTemplate is the address template of ReadmeUriTemplate/6.13.0 as the upstream
+	// wrote it, "" when it announces none ([Discovery.ReadmeURL]).
+	ReadmeTemplate string
 }
 
 type indexDoc struct {
@@ -123,7 +126,36 @@ func ParseDiscovery(doc []byte) (*Discovery, error) {
 	if _, c, err := pick(typesCatalog()); err == nil {
 		d.Catalog = c
 	}
+	// The README template matters to the tab Upstream only (remote-curation.md R-CUR-028): it is
+	// kept as the upstream wrote it and checked where it is expanded (ReadmeURL).
+	if raw, ok := byType[strings.ToLower(TypeReadme)]; ok {
+		d.ReadmeTemplate = strings.TrimSpace(raw)
+	}
 	return d, nil
+}
+
+// TypeReadme is the @type of the resource that names a package version's README
+// (ReadmeUriTemplate/6.13.0).
+const TypeReadme = "ReadmeUriTemplate/6.13.0"
+
+// ReadmeURL expands the README template for a package version: {lower_id} and
+// {lower_version} replaced by their escaped lower-case forms. ok is false when the upstream
+// announces no template, or when the expansion is no absolute http or https address with a
+// host and without user info: such an address is never asked.
+func (d *Discovery) ReadmeURL(lowerID, lowerVersion string) (*url.URL, bool) {
+	if d == nil || d.ReadmeTemplate == "" {
+		return nil, false
+	}
+	s := strings.NewReplacer(
+		"{lower_id}", url.PathEscape(strings.ToLower(lowerID)),
+		"{lower_version}", url.PathEscape(strings.ToLower(lowerVersion)),
+	).Replace(d.ReadmeTemplate)
+	u, err := url.Parse(s)
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Hostname() == "" || u.User != nil {
+		return nil, false
+	}
+	u.Fragment, u.RawFragment = "", ""
+	return u, true
 }
 
 // typeNames reads an @type, a string or a list of strings.

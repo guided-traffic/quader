@@ -21862,6 +21862,15 @@ paths:
                 total: 2
                 nextCursor: null
                 done: true
+                about:
+                  version: 1.3.0
+                  license: WTFPL
+                  links:
+                    - {kind: homepage, url: "https://github.com/stevemao/left-pad#readme"}
+                    - {kind: repository, url: "https://github.com/stevemao/left-pad"}
+                  dependencies: []
+                  deprecation: {message: use String.prototype.padStart(), reasons: [], alternate: null, alternateRange: null}
+                readme: true
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -21872,6 +21881,81 @@ paths:
           $ref: "#/components/responses/Conflict"
         "422":
           $ref: "#/components/responses/Unprocessable"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/projects/{projectKey}/repositories/{repoKey}/upstream/readme:
+    parameters:
+      - $ref: "#/components/parameters/ProjectKey"
+      - name: repoKey
+        in: path
+        required: true
+        description: The repository key (R-REPO-002).
+        schema:
+          type: string
+          pattern: "^[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*$"
+          minLength: 2
+          maxLength: 64
+    get:
+      operationId: getUpstreamReadme
+      tags: [remote-curation]
+      summary: The README of a package of the upstream, read through
+      description: |
+        The README of a version of a package the repository has not stored, read through and not stored (R-CUR-028, R-CUR-008): npm's
+        package document (the latest version's README, at no further request when the lookup read it), the address of NuGet's
+        `ReadmeUriTemplate/6.13.0`, the Galaxy's docs-blob of a collection version and a role's content. One request at most, within
+        the catalogue's budget, kept in the catalogue's cache for its period. Markdown is rendered and sanitized as a stored version's
+        README is (R-UI-008), an upstream's HTML sanitized as it is (R-ANS-039); an external image is a link. A README the upstream
+        names on a host the repository does not reach is not asked for: `state: unreachable` with the host. The README is wiki content
+        (R-AUTHZ-034): the handler asks the wiki of the repository for the package and answers a caller who may not read it the `404`
+        of a package without one. Needs `read`; a format whose packages carry no README (OCI, Debian) answers `400
+        catalogue_not_offered`; a local or virtual repository `400 not_applicable`.
+      x-quader-permission:
+        authenticated: true
+      parameters:
+        - name: name
+          in: query
+          required: true
+          description: The package's exact name, as the lookup answered it.
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 512
+        - name: version
+          in: query
+          description: The version, as `about.version` of the lookup names it; without it the format reads its newest.
+          schema:
+            type: string
+            maxLength: 256
+      responses:
+        "200":
+          description: The README, or why there is none to show.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpstreamReadme"
+              example:
+                version: 1.3.0
+                state: available
+                host: null
+                readme:
+                  contentType: text/markdown
+                  html: "<h1 id=\"user-content-left-pad\">left-pad</h1>"
+                  truncated: false
+                  externalImagesBlocked: 0
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
         "429":
           $ref: "#/components/responses/TooManyRequests"
         "500":
@@ -36879,6 +36963,102 @@ components:
           type: [string, "null"]
         done:
           type: boolean
+        about:
+          $ref: "#/components/schemas/UpstreamAbout"
+        readme:
+          type: boolean
+          description: |
+            Whether the screen asks `upstream/readme` for the package (R-CUR-028): the format's upstream serves a README (npm, NuGet,
+            Ansible Galaxy) and the caller may read the wiki of the repository (R-AUTHZ-034). `false` for a caller who may not, who is
+            told what a stored version without a README tells, and for a format whose packages carry none (OCI, Debian).
+    UpstreamAbout:
+      type: [object, "null"]
+      additionalProperties: false
+      description: |
+        What the answers the lookup read tell of the package's newest version besides its versions (R-CUR-028): npm's latest dist-tag,
+        NuGet's newest registration leaf, the Galaxy's highest version. No wiki content (R-AUTHZ-034): every reader of the tab sees it.
+        Every text is the upstream's, plain and bounded; an address is an absolute http or https address. `null` where the answers tell
+        nothing (OCI, Debian).
+      required: [version, license, links, dependencies, deprecation]
+      properties:
+        version:
+          type: string
+          description: The version the facts are of.
+        license:
+          type: [string, "null"]
+          description: The licence as the upstream names it, an SPDX expression or a name.
+        links:
+          type: array
+          maxItems: 5
+          items:
+            type: object
+            additionalProperties: false
+            required: [kind, url]
+            properties:
+              kind:
+                type: string
+                enum: [homepage, repository, issues, documentation, license]
+                x-enum-varnames: [UpstreamLinkHomepage, UpstreamLinkRepository, UpstreamLinkIssues, UpstreamLinkDocumentation, UpstreamLinkLicense]
+              url:
+                type: string
+                maxLength: 2048
+        dependencies:
+          type: array
+          maxItems: 200
+          items:
+            type: object
+            additionalProperties: false
+            required: [name, range, group]
+            properties:
+              name:
+                type: string
+              range:
+                type: [string, "null"]
+              group:
+                type: [string, "null"]
+                description: npm's `peer` or `optional`, NuGet's target framework; null for a plain dependency.
+        deprecation:
+          type: [object, "null"]
+          additionalProperties: false
+          required: [message, reasons, alternate, alternateRange]
+          properties:
+            message:
+              type: [string, "null"]
+            reasons:
+              type: array
+              items:
+                type: string
+            alternate:
+              type: [string, "null"]
+              description: The package to use instead.
+            alternateRange:
+              type: [string, "null"]
+    UpstreamReadme:
+      type: object
+      additionalProperties: false
+      description: |
+        The README of a package's version of the upstream, read through and not stored (R-CUR-028): rendered and sanitized as a
+        stored version's README is (R-UI-008), an upstream's HTML sanitized as it is (R-ANS-039).
+      required: [version, state, host, readme]
+      properties:
+        version:
+          type: string
+          description: The version the README is of.
+        state:
+          type: string
+          enum: [available, none, unreachable]
+          x-enum-varnames: [UpstreamReadmeAvailable, UpstreamReadmeNone, UpstreamReadmeUnreachable]
+          description: |
+            `available` with `readme`; `none`: the upstream has no README for the version; `unreachable`: the upstream names it on
+            `host`, which the repository does not reach (neither its upstream's host nor one of its extra hosts, cleartext from an https
+            upstream, or refused by the egress rules), and nothing was asked there.
+        host:
+          type: [string, "null"]
+          description: With `unreachable`, the host the upstream names.
+        readme:
+          oneOf:
+            - $ref: "#/components/schemas/PackageReadme"
+            - type: "null"
     UpstreamVulnerabilitiesRequest:
       type: object
       additionalProperties: false

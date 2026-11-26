@@ -2833,6 +2833,30 @@ downloads and signed state. The core ranks no format's rows, knows no format's n
 **Consequences.** All three are additions: no format changes code to keep building, and a format that leaves them out keeps its
 behaviour. The package list's sort `relevance` and the filter `namespace` of `GET /api/v1/packages` read them.
 
+### ADR-291 · An upstream's package shows the facts its lookup read and its README read through, by one optional call of the catalogue
+
+**Status:** Decided by the development agent on 2026-11-26 — owner review at the walkthrough
+([R-CUR-028](spec/remote-curation.md#r-cur-028--an-opened-package-of-the-tab-upstream-shows-its-documentation-and-the-facts-of-its-newest-version-read-through-and-not-stored),
+[Q-CUR-260](spec/remote-curation.md#q-cur-260--the-readme-is-a-call-of-its-own-the-facts-ride-on-the-lookup)). It adds to the frozen
+format contract and keeps `ContractVersion` 14: the leaf's `About` on `PackageInfo`, the optional interface `discover.Documented` that the
+engine finds by assertion, a README a lookup may hand over (`PackageInfo.Readme`), and `formats.UnreachedHost`.
+
+**Context.** The tab Upstream showed a package of a public registry by its name, versions, flags and verdicts; its documentation and its
+licence, links and dependencies appeared only after a version was stored (W-30, G2). The owner's rule of 2026-11-25: documentation that
+belongs to the format and is regularly there is shown, and metadata that is there is used.
+
+**Decision.**
+- The facts of the newest version (licence, links, dependencies, deprecation) are what the lookup's answers hold anyway: they ride on
+  `PackageInfo.About`, every reader of the tab sees them, and no format sends a request for them.
+- The README is wiki content (R-AUTHZ-034) and may cost a request (NuGet's flat container, the Galaxy's docs-blob): a call of its own,
+  `discover.Documented.Readme`, which the API asks only after the wiki check, through the catalogue's engine (budget, cache, bounds). A
+  format whose lookup read the README already (npm's package document) hands it over on `PackageInfo.Readme`; the engine keeps it for
+  the call and never answers it with the package.
+- An address an upstream names for a README goes through the lent upstream like every request; its refusal (a host the repository
+  does not reach) is an answer, not a failure, so the screen says where the documentation is.
+
+**Consequences.** A format with READMEs implements one method; one without (OCI, Debian) implements nothing and the API answers
+`catalogue_not_offered`. Nothing is stored; the README is kept in the catalogue's per-replica cache for its period like a page.
 
 ## Design invariants
 

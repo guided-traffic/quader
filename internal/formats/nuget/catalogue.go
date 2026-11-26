@@ -152,7 +152,7 @@ func (remoteAdapter) Package(ctx context.Context, u discover.Upstream, name stri
 	if err != nil {
 		return discover.PackageInfo{}, err
 	}
-	facts, desc, err := registrationOf(ctx, u, lower)
+	facts, newest, err := registrationOf(ctx, u, lower)
 	if err != nil {
 		return discover.PackageInfo{}, err
 	}
@@ -193,25 +193,26 @@ func (remoteAdapter) Package(ctx context.Context, u discover.Upstream, name stri
 		}
 		all = append(all, f)
 	}
-	info := discover.PackageInfo{Found: true, Name: lower, Description: desc}
+	// The newest leaf's description and facts (R-CUR-028): the registration was read for the versions anyway.
+	info := discover.PackageInfo{Found: true, Name: lower, Description: newest.description, About: newest.about()}
 	info.Versions, info.Total, info.Cursor, info.Done = discover.PageVersions(all, rq)
 	return info, nil
 }
 
 // registrationOf reads the registration index of the ID and the pages it does not inline: the facts of each version by its URL form and
-// the newest leaf's description. A registration the upstream does not have gives nil facts.
-func registrationOf(ctx context.Context, u discover.Upstream, lower string) (map[string]registrationFacts, string, error) {
+// the newest leaf. A registration the upstream does not have gives nil facts.
+func registrationOf(ctx context.Context, u discover.Upstream, lower string) (map[string]registrationFacts, newestLeaf, error) {
 	doc, found, err := u.Document(ctx, RegistrationIndexPath(lower), documentVariant)
 	if err != nil || !found {
-		return nil, "", err
+		return nil, newestLeaf{}, err
 	}
 	budget := remote.NewBudget(maxDiscoveryBytes)
 	idx, err := budget.Index(doc)
 	if err != nil {
-		return nil, "", err
+		return nil, newestLeaf{}, err
 	}
 	out := map[string]registrationFacts{}
-	var desc string
+	var leaf newestLeaf
 	var newest *version.Version
 	for _, pg := range idx.Pages {
 		leaves := pg.Leaves
@@ -219,17 +220,17 @@ func registrationOf(ctx context.Context, u discover.Upstream, lower string) (map
 			lo, ok1 := urlForm(pg.Lower)
 			hi, ok2 := urlForm(pg.Upper)
 			if !ok1 || !ok2 {
-				return nil, "", invalidDocument("A page of the upstream's registration index has bounds that are no versions.")
+				return nil, newestLeaf{}, invalidDocument("A page of the upstream's registration index has bounds that are no versions.")
 			}
 			pageDoc, found, err := u.Document(ctx, RegistrationPagePath(lower, lo, hi), documentVariant)
 			if err != nil {
-				return nil, "", err
+				return nil, newestLeaf{}, err
 			}
 			if !found {
 				continue
 			}
 			if leaves, err = budget.Page(pageDoc); err != nil {
-				return nil, "", err
+				return nil, newestLeaf{}, err
 			}
 		}
 		for _, l := range leaves {
@@ -260,9 +261,9 @@ func registrationOf(ctx context.Context, u discover.Upstream, lower string) (map
 			f.vulnerable = len(e.Vulnerabilities) > 2 && string(e.Vulnerabilities) != "null"
 			out[v.URLForm()] = f
 			if newest == nil || version.Compare(v, *newest) > 0 {
-				newest, desc = &v, e.Description
+				newest, leaf = &v, newestLeaf{version: v.URLForm(), description: e.Description, entry: raw}
 			}
 		}
 	}
-	return out, desc, nil
+	return out, leaf, nil
 }

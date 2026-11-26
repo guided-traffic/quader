@@ -1,0 +1,67 @@
+//go:build integration
+
+package npm
+
+import (
+	"net/http"
+	"net/url"
+	"testing"
+
+	"github.com/guided-traffic/quader/internal/auth/scope"
+)
+
+// TestR_CUR_028_AnUpstreamPackageShowsItsReadmeReadThroughAndNotStored: the lookup of a package no client fetched answers the facts of
+// its latest version and that its README may be asked for; the README call answers the package document's README rendered, at no
+// further request of the upstream (the lookup handed it over), and stores nothing. A reader of the artifacts who may not read the wiki
+// gets the facts, readme false and the README call's 404, and the upstream is not asked for it. About 2 s, the stub's corpus.
+func TestR_CUR_028_AnUpstreamPackageShowsItsReadmeReadThroughAndNotStored(t *testing.T) {
+	r, rep := catalogueEnv(t, remoteOptions{Valkey: true})
+	p := upstreamPackage(t, 2)
+	lookup := upstreamPath + "/package?name=" + url.QueryEscape(p.Name)
+
+	a := r.st.Do(rep, http.MethodGet, lookup, r.tokA, nil)
+	m := a.JSON(t)
+	about, _ := m["about"].(map[string]any)
+	if a.Status != http.StatusOK || about == nil || m["readme"] != true {
+		t.Fatalf("R-CUR-028 the lookup: %d %.400s", a.Status, a.Body)
+	}
+	version, _ := about["version"].(string)
+	if version == "" {
+		t.Fatalf("R-CUR-028 the facts name no version: %v", about)
+	}
+	docs := r.upstreamDocs(p.Name)
+	a = r.st.Do(rep, http.MethodGet, upstreamPath+"/readme?name="+url.QueryEscape(p.Name)+"&version="+url.QueryEscape(version), r.tokA, nil)
+	rd := a.JSON(t)
+	if a.Status != http.StatusOK || rd["version"] != version || (rd["state"] != "available" && rd["state"] != "none") {
+		t.Fatalf("R-CUR-028 the README: %d %.400s", a.Status, a.Body)
+	}
+	if rd["state"] == "available" {
+		if body, _ := rd["readme"].(map[string]any); body == nil || body["html"] == "" || body["contentType"] != "text/markdown" {
+			t.Fatalf("R-CUR-028 the README's body: %.400s", a.Body)
+		}
+	}
+	if n := r.upstreamDocs(p.Name); n != docs {
+		t.Errorf("R-CUR-028 the README call asked the upstream %d more times, want none (the lookup handed it over)", n-docs)
+	}
+	if n := r.st.Number(`SELECT count(*) FROM remote_cache_entries e JOIN repositories r ON r.id = e.repo_id WHERE r.key = $1`, rRemote); n != 0 {
+		t.Errorf("R-CUR-028 the lookup and the README stored %d cache entries", n)
+	}
+
+	// dave reads the remote's artifacts by its level internal and has no grant: the wiki is private.
+	r.st.Exec("UPDATE repositories SET visibility_artifacts = 'internal', visibility_wiki = 'private' WHERE key = $1", rRemote)
+	dave := r.st.Token(r.st.User("dave"), scope.Default())
+	other := otherPackage(t, 2, p.Name)
+	before := r.upstreamDocs(other.Name)
+	a = r.st.Do(rep, http.MethodGet, upstreamPath+"/package?name="+url.QueryEscape(other.Name), dave, nil)
+	m = a.JSON(t)
+	if a.Status != http.StatusOK || m["about"] == nil || m["readme"] != false {
+		t.Fatalf("R-CUR-028 the lookup of a reader without the wiki: %d %.400s", a.Status, a.Body)
+	}
+	a = r.st.Do(rep, http.MethodGet, upstreamPath+"/readme?name="+url.QueryEscape(other.Name), dave, nil)
+	if a.Status != http.StatusNotFound {
+		t.Fatalf("R-CUR-028 the README for a reader without the wiki: %d %.300s, want 404", a.Status, a.Body)
+	}
+	if n := r.upstreamDocs(other.Name); n != before+1 {
+		t.Errorf("R-CUR-028 a reader without the wiki: the upstream was asked %d times, want the lookup's one", n-before)
+	}
+}

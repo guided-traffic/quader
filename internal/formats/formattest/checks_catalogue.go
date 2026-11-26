@@ -23,7 +23,9 @@ import (
 // offer answers discover.ErrNotOffered, and so does every call the format's declaration gives a reason for; a package lookup answers
 // canonical versions and a name the upstream does not have Found false; a level the upstream does not have, where the case names one,
 // answers a page that lists nothing and says Unknown within three reads of the upstream (Q-CUR-165); an answer above the catalogue's bound fails with
-// catalogue_answer_too_large; and no call reaches a host outside the upstream and the hosts the capabilities declare.
+// catalogue_answer_too_large; and no call reaches a host outside the upstream and the hosts the capabilities declare. A format whose
+// upstream serves READMEs (discover.Documented, R-CUR-028) answers the README of the version the lookup's About names within two reads
+// of the upstream (the README and the document that names its address), and the lookup's About names the case's licence.
 const CheckCatalogue Check = 22
 
 // CatalogueFixture is the fixture of check 22: one case per upstream of the format whose capabilities differ (a preset with its
@@ -62,6 +64,13 @@ type CatalogueCase struct {
 	// Seed stores what the format reads besides the fake upstream (a Debian remote's parsed indexes) in a Host built for the case and
 	// binds the format to it; nil stores nothing.
 	Seed func(h *Host) error
+	// License is the licence the lookup's About names for Package's newest version (R-CUR-028); "" for an upstream whose answers tell
+	// none.
+	License string
+	// Readme is a text the README of Package holds, for a format whose upstream serves READMEs; NoReadme says that the case's upstream
+	// has none for it (a feed that announces no address, a version without one). A Documented format's case names one of the two.
+	Readme   string
+	NoReadme bool
 }
 
 // CannedAnswer is one answer of the fake upstream.
@@ -428,6 +437,56 @@ func (r *run) cataloguePackage(ctx context.Context, cat formats.Catalogue, u *fa
 	}
 	if p, err := cat.Package(ctx, u, c.Absent, discover.VersionsRequest{Limit: limit}); err != nil || p.Found {
 		failf("Package %s, which the upstream does not have, answers found %v and %v, want not found and no error", c.Absent, p.Found, err)
+	}
+	r.catalogueReadme(ctx, cat, u, c, versions, failf)
+}
+
+// maxReadmeReads bounds what a README costs beyond the lookup: the README and the document that names its address (NuGet's service
+// index, the Galaxy's API root), each a stored copy where the remote holds one (R-CUR-028).
+const maxReadmeReads = 2
+
+// catalogueReadme holds the lookup's About and the README call to the case (R-CUR-028).
+func (r *run) catalogueReadme(ctx context.Context, cat formats.Catalogue, u *fakeCatalogueUpstream, c CatalogueCase, versions []string, failf func(string, ...any)) {
+	p, err := cat.Package(ctx, u, c.Package, discover.VersionsRequest{Limit: max(c.Limit, 1)})
+	if err != nil {
+		return
+	}
+	a := discover.CutAbout(p.About)
+	switch {
+	case a.Version != "" && !slices.Contains(versions, a.Version):
+		failf("the About of %s is of the version %q, which its versions do not list", c.Package, a.Version)
+	case a.License != c.License:
+		failf("the About of %s names the licence %q, want %q", c.Package, a.License, c.License)
+	}
+	doc, ok := cat.(discover.Documented)
+	if !ok {
+		if c.Readme != "" || c.NoReadme || p.Readme != nil {
+			failf("the case expects a README and the catalogue does not implement discover.Documented")
+		}
+		return
+	}
+	if c.Readme == "" && !c.NoReadme {
+		failf("the catalogue serves READMEs (discover.Documented) and the case names neither Readme nor NoReadme")
+		return
+	}
+	u.mu.Lock()
+	before := u.reads
+	u.mu.Unlock()
+	got, err := doc.Readme(ctx, u, p.Name, a.Version)
+	u.mu.Lock()
+	reads := u.reads - before
+	u.mu.Unlock()
+	switch {
+	case err != nil:
+		failf("Readme of %s %s: %v", p.Name, a.Version, err)
+	case reads > maxReadmeReads:
+		failf("Readme of %s read the upstream %d times, at most %d", p.Name, reads, maxReadmeReads)
+	case c.NoReadme && got.Found:
+		failf("Readme of %s answers a README the case's upstream does not have", p.Name)
+	case c.Readme != "" && (!got.Found || !strings.Contains(got.Text, c.Readme)):
+		failf("Readme of %s answers found %v and %d bytes, want a README that holds %q", p.Name, got.Found, len(got.Text), c.Readme)
+	case p.Readme != nil && c.Readme != "" && !strings.Contains(p.Readme.Text, c.Readme):
+		failf("the README the lookup hands over of %s does not hold %q", p.Name, c.Readme)
 	}
 }
 

@@ -304,6 +304,12 @@ type PackageInfo struct {
 	Total    int
 	Cursor   Cursor
 	Done     bool
+	// About is what the answers the lookup read tell of the newest version besides the versions (R-CUR-028); the zero value tells
+	// nothing.
+	About About
+	// Readme is the README of About.Version where the answers the lookup read carry it already (npm's package document): the engine
+	// keeps it for the README call, which then costs no request, and never answers it with the package. nil where it costs a request.
+	Readme *Readme
 }
 
 // Catalogue is the part of a format's upstream catalogue that browses (R-CUR-007): a remote adapter that has a catalogue implements it

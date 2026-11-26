@@ -112,6 +112,7 @@ func (t *catalogueTwin) CatalogueRows(_ context.Context, _ int64, name string) (
 	var out []rows.Entry
 	for _, e := range t.entries {
 		if e.Package == name {
+			e.Description = t.desc[e.Package]
 			out = append(out, e)
 		}
 	}

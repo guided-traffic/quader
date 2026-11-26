@@ -8480,6 +8480,39 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{projectKey}/repositories/{repoKey}/upstream/readme": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * The README of a package of the upstream, read through
+         * @description The README of a version of a package the repository has not stored, read through and not stored (R-CUR-028, R-CUR-008): npm's
+         *     package document (the latest version's README, at no further request when the lookup read it), the address of NuGet's
+         *     `ReadmeUriTemplate/6.13.0`, the Galaxy's docs-blob of a collection version and a role's content. One request at most, within
+         *     the catalogue's budget, kept in the catalogue's cache for its period. Markdown is rendered and sanitized as a stored version's
+         *     README is (R-UI-008), an upstream's HTML sanitized as it is (R-ANS-039); an external image is a link. A README the upstream
+         *     names on a host the repository does not reach is not asked for: `state: unreachable` with the host. The README is wiki content
+         *     (R-AUTHZ-034): the handler asks the wiki of the repository for the package and answers a caller who may not read it the `404`
+         *     of a package without one. Needs `read`; a format whose packages carry no README (OCI, Debian) answers `400
+         *     catalogue_not_offered`; a local or virtual repository `400 not_applicable`.
+         */
+        get: operations["getUpstreamReadme"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects/{projectKey}/repositories/{repoKey}/upstream/vulnerabilities": {
         parameters: {
             query?: never;
@@ -18295,6 +18328,61 @@ export interface components {
             total: number | null;
             nextCursor: string | null;
             done: boolean;
+            about?: components["schemas"]["UpstreamAbout"];
+            /**
+             * @description Whether the screen asks `upstream/readme` for the package (R-CUR-028): the format's upstream serves a README (npm, NuGet,
+             *     Ansible Galaxy) and the caller may read the wiki of the repository (R-AUTHZ-034). `false` for a caller who may not, who is
+             *     told what a stored version without a README tells, and for a format whose packages carry none (OCI, Debian).
+             */
+            readme?: boolean;
+        };
+        /**
+         * @description What the answers the lookup read tell of the package's newest version besides its versions (R-CUR-028): npm's latest dist-tag,
+         *     NuGet's newest registration leaf, the Galaxy's highest version. No wiki content (R-AUTHZ-034): every reader of the tab sees it.
+         *     Every text is the upstream's, plain and bounded; an address is an absolute http or https address. `null` where the answers tell
+         *     nothing (OCI, Debian).
+         */
+        UpstreamAbout: {
+            /** @description The version the facts are of. */
+            version: string;
+            /** @description The licence as the upstream names it, an SPDX expression or a name. */
+            license: string | null;
+            links: {
+                /** @enum {string} */
+                kind: "homepage" | "repository" | "issues" | "documentation" | "license";
+                url: string;
+            }[];
+            dependencies: {
+                name: string;
+                range: string | null;
+                /** @description npm's `peer` or `optional`, NuGet's target framework; null for a plain dependency. */
+                group: string | null;
+            }[];
+            deprecation: {
+                message: string | null;
+                reasons: string[];
+                /** @description The package to use instead. */
+                alternate: string | null;
+                alternateRange: string | null;
+            } | null;
+        } | null;
+        /**
+         * @description The README of a package's version of the upstream, read through and not stored (R-CUR-028): rendered and sanitized as a
+         *     stored version's README is (R-UI-008), an upstream's HTML sanitized as it is (R-ANS-039).
+         */
+        UpstreamReadme: {
+            /** @description The version the README is of. */
+            version: string;
+            /**
+             * @description `available` with `readme`; `none`: the upstream has no README for the version; `unreachable`: the upstream names it on
+             *     `host`, which the repository does not reach (neither its upstream's host nor one of its extra hosts, cleartext from an https
+             *     upstream, or refused by the egress rules), and nothing was asked there.
+             * @enum {string}
+             */
+            state: "available" | "none" | "unreachable";
+            /** @description With `unreachable`, the host the upstream names. */
+            host: string | null;
+            readme: components["schemas"]["PackageReadme"] | null;
         };
         UpstreamVulnerabilitiesRequest: {
             name: string;
@@ -36098,7 +36186,29 @@ export interface operations {
                      *       ],
                      *       "total": 2,
                      *       "nextCursor": null,
-                     *       "done": true
+                     *       "done": true,
+                     *       "about": {
+                     *         "version": "1.3.0",
+                     *         "license": "WTFPL",
+                     *         "links": [
+                     *           {
+                     *             "kind": "homepage",
+                     *             "url": "https://github.com/stevemao/left-pad#readme"
+                     *           },
+                     *           {
+                     *             "kind": "repository",
+                     *             "url": "https://github.com/stevemao/left-pad"
+                     *           }
+                     *         ],
+                     *         "dependencies": [],
+                     *         "deprecation": {
+                     *           "message": "use String.prototype.padStart()",
+                     *           "reasons": [],
+                     *           "alternate": null,
+                     *           "alternateRange": null
+                     *         }
+                     *       },
+                     *       "readme": true
                      *     }
                      */
                     "application/json": components["schemas"]["UpstreamPackage"];
@@ -36109,6 +36219,57 @@ export interface operations {
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
             422: components["responses"]["Unprocessable"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            502: components["responses"]["BadGateway"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getUpstreamReadme: {
+        parameters: {
+            query: {
+                /** @description The package's exact name, as the lookup answered it. */
+                name: string;
+                /** @description The version, as `about.version` of the lookup names it; without it the format reads its newest. */
+                version?: string;
+            };
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The README, or why there is none to show. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "version": "1.3.0",
+                     *       "state": "available",
+                     *       "host": null,
+                     *       "readme": {
+                     *         "contentType": "text/markdown",
+                     *         "html": "<h1 id=\"user-content-left-pad\">left-pad</h1>",
+                     *         "truncated": false,
+                     *         "externalImagesBlocked": 0
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["UpstreamReadme"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
             429: components["responses"]["TooManyRequests"];
             500: components["responses"]["Internal"];
             502: components["responses"]["BadGateway"];

@@ -44,12 +44,18 @@ func catalogueFixture() *formattest.CatalogueFixture {
 	return &formattest.CatalogueFixture{Cases: []formattest.CatalogueCase{{
 		Name: "nuget.org", Base: "https://api.nuget.org/v3/index.json",
 		Answers: map[string]formattest.CannedAnswer{
+			"https://api.nuget.org/v3-flatcontainer/newtonsoft.json.bson/1.0.3/readme": {Body: read("newtonsoft.json-13.0.4-readme.md")},
 			search("0"): {Body: read("search-owner-jamesnk-1.json")},
 			search("2"): {Body: read("search-owner-jamesnk-2.json")},
 		},
 		Documents: docs, Search: "owner:jamesnk", Package: "newtonsoft.json.bson", Absent: "acme.absent", Limit: 2,
+		// The newest leaf's licence, and the README at the address of the service index's ReadmeUriTemplate (R-CUR-028). Bson 1.0.3 has
+		// none (404, recorded 2026-11-26): the README Newtonsoft.Json 13.0.4 has is served at its address so that the case reads one.
+		License: "MIT", Readme: "Json.NET",
 	}, {
 		Name: "a feed without a search resource", Base: "https://feed.example/v3/index.json",
 		Documents: noSearch, Package: "newtonsoft.json.bson", Absent: "acme.absent", Limit: 4,
+		// A service index without ReadmeUriTemplate/6.13.0 names no README (R-CUR-028).
+		License: "MIT", NoReadme: true,
 	}}}
 }

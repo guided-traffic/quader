@@ -1851,6 +1851,11 @@ type VersionProber interface {
 	VersionProbe(ctx context.Context, u discover.Upstream, name, version string) (p Probe, ok bool, err error)
 }
 
+// A catalogue whose upstream serves a package's README implements discover.Documented, Readme(ctx, u, name, version), which the
+// engine finds by assertion; the facts of the newest version ride on PackageInfo.About (remote-curation.md R-CUR-028, ADR-291).
+// UnreachedHost(err, target) tells a format that the lent upstream refused an address the repository does not reach
+// (foreign_host_denied, insecure_redirect, egress_denied), with the host the screen names.
+
 // CatalogueDeclaration is what a format with the class remote declares of its upstream catalogue: the lookup by exact name (Package
 // and VersionProbe) as the floor, and search and levels each answered or given a one-sentence reason, never both.
 type CatalogueDeclaration struct {
