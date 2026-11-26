@@ -2,8 +2,23 @@ apiVersion: v1
 entries:
   quader:
   - apiVersion: v2
+    appVersion: 0.154.0
+    created: "2026-11-26T16:02:57.722578699Z"
+    description: quader, an artifact repository manager for package formats, as a
+      web and a worker Deployment.
+    digest: 62ad9fba362a4e9537b28c327b7d675d4ada3f9e1a97f177ab050d08e802365a
+    home: https://github.com/guided-traffic/quader
+    kubeVersion: '>=1.30.0-0'
+    name: quader
+    sources:
+    - https://github.com/guided-traffic/quader
+    type: application
+    urls:
+    - https://guided-traffic.github.io/quader/quader-0.154.0.tgz
+    version: 0.154.0
+  - apiVersion: v2
     appVersion: 0.153.0
-    created: "2026-11-26T14:30:52.84027129Z"
+    created: "2026-11-26T16:02:57.715796413Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: a4f98ff0bbdc346617709add5caf0f72ba6daf22cdd286cf62de0cfb85823e40
@@ -18,7 +33,7 @@ entries:
     version: 0.153.0
   - apiVersion: v2
     appVersion: 0.152.0
-    created: "2026-11-26T14:30:52.830284408Z"
+    created: "2026-11-26T16:02:57.706159572Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 0049571b9658904e0993769da814f899b623d2d4dbf6afe9ea739c67716c00ed
@@ -33,7 +48,7 @@ entries:
     version: 0.152.0
   - apiVersion: v2
     appVersion: 0.151.0
-    created: "2026-11-26T14:30:52.821196062Z"
+    created: "2026-11-26T16:02:57.699387696Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 331136f6f8c6c79be41c20a405d5ac845c0922588055ecea4621c043f98cc9ff
@@ -48,7 +63,7 @@ entries:
     version: 0.151.0
   - apiVersion: v2
     appVersion: 0.150.0
-    created: "2026-11-26T14:30:52.810404101Z"
+    created: "2026-11-26T16:02:57.690337231Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: c4f642775b2e412ab2e84d0b5a3ae1ad4eecaab496729ffcd180b4c23b487b10
@@ -63,7 +78,7 @@ entries:
     version: 0.150.0
   - apiVersion: v2
     appVersion: 0.149.0
-    created: "2026-11-26T14:30:52.800873921Z"
+    created: "2026-11-26T16:02:57.683171282Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: a52b1fd8deda131b7de6a293ffd6c5a2f1d628976c73dc7f177a93f9d412cad3
@@ -78,7 +93,7 @@ entries:
     version: 0.149.0
   - apiVersion: v2
     appVersion: 0.148.0
-    created: "2026-11-26T14:30:52.794983247Z"
+    created: "2026-11-26T16:02:57.674841958Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 6d40d13f0023a8c34d8688133aec6fe1fb2353a86851dff84a12f6c2bf322e51
@@ -93,7 +108,7 @@ entries:
     version: 0.148.0
   - apiVersion: v2
     appVersion: 0.147.0
-    created: "2026-11-26T14:30:52.786617804Z"
+    created: "2026-11-26T16:02:57.665977043Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 669eb20e077b1cdd52b34aa175c9633b54cb9ebf1ebca567641e79d3a5d1c50c
@@ -108,7 +123,7 @@ entries:
     version: 0.147.0
   - apiVersion: v2
     appVersion: 0.146.0
-    created: "2026-11-26T14:30:52.775790296Z"
+    created: "2026-11-26T16:02:57.659047159Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: de250be75f4655379190b2a56919fb0c66db95fff050545d12033db87ebc1c16
@@ -123,7 +138,7 @@ entries:
     version: 0.146.0
   - apiVersion: v2
     appVersion: 0.145.0
-    created: "2026-11-26T14:30:52.766233997Z"
+    created: "2026-11-26T16:02:57.651321754Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: c5a2a3057fe4fbdd247de2262e3d6e3f050841caf15be3d2a4462de342f0ab3c
@@ -138,7 +153,7 @@ entries:
     version: 0.145.0
   - apiVersion: v2
     appVersion: 0.144.0
-    created: "2026-11-26T14:30:52.759667047Z"
+    created: "2026-11-26T16:02:57.645149059Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 35072a051f7e1815d62f6bc705943b3e4491487047e9c29ee18500c70b16665c
@@ -153,7 +168,7 @@ entries:
     version: 0.144.0
   - apiVersion: v2
     appVersion: 0.143.0
-    created: "2026-11-26T14:30:52.747642651Z"
+    created: "2026-11-26T16:02:57.636242455Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: a76b699a8dfa4a278b23845713ade9dba887724924bb2f329127babdeba63560
@@ -168,7 +183,7 @@ entries:
     version: 0.143.0
   - apiVersion: v2
     appVersion: 0.142.0
-    created: "2026-11-26T14:30:52.740545913Z"
+    created: "2026-11-26T16:02:57.629559467Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: b231c8efbd4bf4b90729196ac42b2e9d83f0e4845e163220bd6fd35685f19d74
@@ -183,7 +198,7 @@ entries:
     version: 0.142.0
   - apiVersion: v2
     appVersion: 0.141.0
-    created: "2026-11-26T14:30:52.72904271Z"
+    created: "2026-11-26T16:02:57.622139048Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 5d5589ab1fc4da828ccfab32929df66be3369f0ce2e97d30485ca42177a1cf32
@@ -198,7 +213,7 @@ entries:
     version: 0.141.0
   - apiVersion: v2
     appVersion: 0.140.0
-    created: "2026-11-26T14:30:52.7155164Z"
+    created: "2026-11-26T16:02:57.614256866Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: f94145d087e0654228d2e7553a6de15f4a5212e25593db4cfbd8681e3f0efaf2
@@ -213,7 +228,7 @@ entries:
     version: 0.140.0
   - apiVersion: v2
     appVersion: 0.139.0
-    created: "2026-11-26T14:30:52.706770941Z"
+    created: "2026-11-26T16:02:57.608069132Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: febf18ef7acca695ed1fd155bcb04643aaff3777beceb7f92b8cec08602afb43
@@ -228,7 +243,7 @@ entries:
     version: 0.139.0
   - apiVersion: v2
     appVersion: 0.138.0
-    created: "2026-11-26T14:30:52.697142996Z"
+    created: "2026-11-26T16:02:57.599998005Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 915554fa89239a10c3b9a57e6d2d09d52f5cd332cbd40b5c3c8cb5e1e8063c7d
@@ -243,7 +258,7 @@ entries:
     version: 0.138.0
   - apiVersion: v2
     appVersion: 0.137.0
-    created: "2026-11-26T14:30:52.688444044Z"
+    created: "2026-11-26T16:02:57.593249163Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 7f722759832a5e3d8f21e27d480dc4e96588acd79ed029a60eb1310bbcb5041e
@@ -258,7 +273,7 @@ entries:
     version: 0.137.0
   - apiVersion: v2
     appVersion: 0.136.0
-    created: "2026-11-26T14:30:52.678876463Z"
+    created: "2026-11-26T16:02:57.585504342Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: a033c3cceb9b9c3422238274d4c840c563b0e1c56cc5db9de3bb4d86f5d50b29
@@ -273,7 +288,7 @@ entries:
     version: 0.136.0
   - apiVersion: v2
     appVersion: 0.135.0
-    created: "2026-11-26T14:30:52.67143328Z"
+    created: "2026-11-26T16:02:57.578371966Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 6281649ae85f37f7a1c1549e214ace4b85bf92f3e1312b7884e75a9cc8a95441
@@ -288,7 +303,7 @@ entries:
     version: 0.135.0
   - apiVersion: v2
     appVersion: 0.134.2
-    created: "2026-11-26T14:30:52.659139015Z"
+    created: "2026-11-26T16:02:57.569678685Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 1ad1bf7dc6689674955d3ca12664a99faeb3378320d5316ef5a52e491d582e85
@@ -303,7 +318,7 @@ entries:
     version: 0.134.2
   - apiVersion: v2
     appVersion: 0.134.1
-    created: "2026-11-26T14:30:52.650767611Z"
+    created: "2026-11-26T16:02:57.561996481Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 0cd37e3a6d2999160e37ef759ecd757432769b4302021d0dd9136ddd99b29429
@@ -318,7 +333,7 @@ entries:
     version: 0.134.1
   - apiVersion: v2
     appVersion: 0.134.0
-    created: "2026-11-26T14:30:52.64224357Z"
+    created: "2026-11-26T16:02:57.55613379Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: b3cd61a8657d06afd7ed9cab6e3c08713453728add79a108dd02f5cf411f9277
@@ -333,7 +348,7 @@ entries:
     version: 0.134.0
   - apiVersion: v2
     appVersion: 0.133.0
-    created: "2026-11-26T14:30:52.634807991Z"
+    created: "2026-11-26T16:02:57.548635054Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 089ff209fc0ea69614596f927e3ee411454aff547996db44ad8d78cb9ceb9707
@@ -348,7 +363,7 @@ entries:
     version: 0.133.0
   - apiVersion: v2
     appVersion: 0.131.1
-    created: "2026-11-26T14:30:52.62661854Z"
+    created: "2026-11-26T16:02:57.540802476Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: dbd728128b803ab31968a2d31899d734231332fe2eec1e15bcc223efb9adaa84
@@ -363,7 +378,7 @@ entries:
     version: 0.131.1
   - apiVersion: v2
     appVersion: 0.131.0
-    created: "2026-11-26T14:30:52.618586968Z"
+    created: "2026-11-26T16:02:57.534490167Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 02cd7a98dfa8e0a4c6a092999d2d12d0915a65644f07d8784121013019cf951b
@@ -378,7 +393,7 @@ entries:
     version: 0.131.0
   - apiVersion: v2
     appVersion: 0.130.0
-    created: "2026-11-26T14:30:52.610239739Z"
+    created: "2026-11-26T16:02:57.526502327Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 4a98bf8fad6e73647e4d653760ad33fcc1efb4e7560976b1af3856abfb0b396d
@@ -393,7 +408,7 @@ entries:
     version: 0.130.0
   - apiVersion: v2
     appVersion: 0.129.1
-    created: "2026-11-26T14:30:52.601731236Z"
+    created: "2026-11-26T16:02:57.520175931Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 979cd84d8d2ed1fc30e6830b7419779194939b0094615cfddd7fe76da352ad49
@@ -408,7 +423,7 @@ entries:
     version: 0.129.1
   - apiVersion: v2
     appVersion: 0.129.0
-    created: "2026-11-26T14:30:52.590907626Z"
+    created: "2026-11-26T16:02:57.512670382Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 6209c5a97cd8ff0c225a5b6f2212c9a73917743a730b0fb13cb29a84fc5e75e4
@@ -423,7 +438,7 @@ entries:
     version: 0.129.0
   - apiVersion: v2
     appVersion: 0.128.0
-    created: "2026-11-26T14:30:52.581819259Z"
+    created: "2026-11-26T16:02:57.504288056Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 2c4bf0ca560c22f9f8415c937bca6de8f962468cc4611fae1b35e9239ae1f190
@@ -438,7 +453,7 @@ entries:
     version: 0.128.0
   - apiVersion: v2
     appVersion: 0.127.0
-    created: "2026-11-26T14:30:52.571470575Z"
+    created: "2026-11-26T16:02:57.49826828Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 5a35d532d616a8e9a556797b186f1db18309afbeeb3df7d508b55b27c6abb8e5
@@ -453,7 +468,7 @@ entries:
     version: 0.127.0
   - apiVersion: v2
     appVersion: 0.126.0
-    created: "2026-11-26T14:30:52.564273366Z"
+    created: "2026-11-26T16:02:57.490992774Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 4f24b147b80e1d383d6c8b38bdacf65040ab837b64affe00c5da8f67478b4126
@@ -468,7 +483,7 @@ entries:
     version: 0.126.0
   - apiVersion: v2
     appVersion: 0.125.0
-    created: "2026-11-26T14:30:52.553810196Z"
+    created: "2026-11-26T16:02:57.485347594Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 9f03040bffb643ea79f0243456503f9fba3f3d4bf34f41ab664852286506d046
@@ -483,7 +498,7 @@ entries:
     version: 0.125.0
   - apiVersion: v2
     appVersion: 0.124.4
-    created: "2026-11-26T14:30:52.544528905Z"
+    created: "2026-11-26T16:02:57.477799173Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: d981f95b859a70426d7c90189eb8e1c52f005411ed37df70855c6e1063bd056b
@@ -498,7 +513,7 @@ entries:
     version: 0.124.4
   - apiVersion: v2
     appVersion: 0.124.3
-    created: "2026-11-26T14:30:52.53695695Z"
+    created: "2026-11-26T16:02:57.472024257Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: e7a1c9ccf7f7f0d978e1d31592011fd57b2b2c277d372133babd90e99102e1c6
@@ -513,7 +528,7 @@ entries:
     version: 0.124.3
   - apiVersion: v2
     appVersion: 0.124.2
-    created: "2026-11-26T14:30:52.527111324Z"
+    created: "2026-11-26T16:02:57.464659152Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 6a803bf06de2805b3d5b1329ba4148c01d32b528775490c6cba31fb6ecc0f357
@@ -528,7 +543,7 @@ entries:
     version: 0.124.2
   - apiVersion: v2
     appVersion: 0.124.0
-    created: "2026-11-26T14:30:52.516827853Z"
+    created: "2026-11-26T16:02:57.457202204Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 35b1e8ffd5a173e0da54e26f44e0530408d23c9713090a12922fa56bce20b917
@@ -543,7 +558,7 @@ entries:
     version: 0.124.0
   - apiVersion: v2
     appVersion: 0.123.0
-    created: "2026-11-26T14:30:52.510324944Z"
+    created: "2026-11-26T16:02:57.451593091Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 2195fae324b52d7ff1de2a08eb839ed5a50e21ad021f230615ea33497d5d270b
@@ -558,7 +573,7 @@ entries:
     version: 0.123.0
   - apiVersion: v2
     appVersion: 0.122.4
-    created: "2026-11-26T14:30:52.500799744Z"
+    created: "2026-11-26T16:02:57.444378841Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: c96849855076b2cac97c92149c41463fa76f5f54a8c2e64e4540181a633a17a2
@@ -573,7 +588,7 @@ entries:
     version: 0.122.4
   - apiVersion: v2
     appVersion: 0.122.3
-    created: "2026-11-26T14:30:52.4883584Z"
+    created: "2026-11-26T16:02:57.438361909Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 646628fb234814a550f30a921a8e69de38df76516d40332b01947cbd8a660f1b
@@ -588,7 +603,7 @@ entries:
     version: 0.122.3
   - apiVersion: v2
     appVersion: 0.122.2
-    created: "2026-11-26T14:30:52.48161548Z"
+    created: "2026-11-26T16:02:57.430681309Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 0d4386ae82d071dfe1ef3bb12e0ff7d1359a6129bc3b4d2ba789299810a546f0
@@ -603,7 +618,7 @@ entries:
     version: 0.122.2
   - apiVersion: v2
     appVersion: 0.122.1
-    created: "2026-11-26T14:30:52.471519021Z"
+    created: "2026-11-26T16:02:57.424650241Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: ae0e20f6898cf7860a3a91a64facdae99b8f88c4ddd57d42db30b01c04f75ef9
@@ -618,7 +633,7 @@ entries:
     version: 0.122.1
   - apiVersion: v2
     appVersion: 0.122.0
-    created: "2026-11-26T14:30:52.46124176Z"
+    created: "2026-11-26T16:02:57.416267646Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 9929b8b616dbcb05acfcb5d52fec13a7968cf83caa1a0ceb08abb447fcba9119
@@ -633,7 +648,7 @@ entries:
     version: 0.122.0
   - apiVersion: v2
     appVersion: 0.121.0
-    created: "2026-11-26T14:30:52.452565211Z"
+    created: "2026-11-26T16:02:57.408818261Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 97ee08786e677a894a639c01975ba0179f1dd9ad63895575ef44e13fc68bc35a
@@ -648,7 +663,7 @@ entries:
     version: 0.121.0
   - apiVersion: v2
     appVersion: 0.120.0
-    created: "2026-11-26T14:30:52.446455284Z"
+    created: "2026-11-26T16:02:57.402044041Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: d077b373c41731fa600394d5c88c1f50f8eb2ca459fe06d6153b0542e4725129
@@ -663,7 +678,7 @@ entries:
     version: 0.120.0
   - apiVersion: v2
     appVersion: 0.119.0
-    created: "2026-11-26T14:30:52.436402709Z"
+    created: "2026-11-26T16:02:57.394201144Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 6dd70c255fb3440c3504b765e6325aab5251847c0ada911943905e08219a8718
@@ -678,7 +693,7 @@ entries:
     version: 0.119.0
   - apiVersion: v2
     appVersion: 0.118.1
-    created: "2026-11-26T14:30:52.427438867Z"
+    created: "2026-11-26T16:02:57.388631416Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 157be2c04e8e70496fac4fd209e3c565a71b84b19c4c37584db6100b8b92c12f
@@ -693,7 +708,7 @@ entries:
     version: 0.118.1
   - apiVersion: v2
     appVersion: 0.118.0
-    created: "2026-11-26T14:30:52.419827326Z"
+    created: "2026-11-26T16:02:57.381294695Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 31d182e2900f3bedfaa64e2cb8595c1f82543d9022849718f079aead9abc30ac
@@ -708,7 +723,7 @@ entries:
     version: 0.118.0
   - apiVersion: v2
     appVersion: 0.117.0
-    created: "2026-11-26T14:30:52.409190338Z"
+    created: "2026-11-26T16:02:57.373729352Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 41e38872e39417278b4db264368e85839accaf5a64c4b9b3a98d9afc2762fd53
@@ -723,7 +738,7 @@ entries:
     version: 0.117.0
   - apiVersion: v2
     appVersion: 0.116.0
-    created: "2026-11-26T14:30:52.400040855Z"
+    created: "2026-11-26T16:02:57.367543302Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: b9cd942504b56d579fc741748a48b045a96329d8eb8ccee7d73b8d57659202ec
@@ -738,7 +753,7 @@ entries:
     version: 0.116.0
   - apiVersion: v2
     appVersion: 0.115.0
-    created: "2026-11-26T14:30:52.388401095Z"
+    created: "2026-11-26T16:02:57.35972948Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: d18838b74f39d6f8c4ee0c5b661b248b9d4c1481d45649b689454da86c986089
@@ -753,7 +768,7 @@ entries:
     version: 0.115.0
   - apiVersion: v2
     appVersion: 0.114.0
-    created: "2026-11-26T14:30:52.378550972Z"
+    created: "2026-11-26T16:02:57.353012808Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 04ee0ce05537b3cf867381e62a4507234e1e3109556c564e968377f0c5727d1a
@@ -768,7 +783,7 @@ entries:
     version: 0.114.0
   - apiVersion: v2
     appVersion: 0.113.0
-    created: "2026-11-26T14:30:52.372425345Z"
+    created: "2026-11-26T16:02:57.345293404Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: aa828fffb87b563b21165fc0abd37b1659fee7e4a450f162cce06b9f1479c0ae
@@ -783,7 +798,7 @@ entries:
     version: 0.113.0
   - apiVersion: v2
     appVersion: 0.112.2
-    created: "2026-11-26T14:30:52.362551897Z"
+    created: "2026-11-26T16:02:57.337862655Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 35e3bbe9653029e15db3176798050ab4cde55e25b77f5102df2386c829625418
@@ -798,7 +813,7 @@ entries:
     version: 0.112.2
   - apiVersion: v2
     appVersion: 0.112.1
-    created: "2026-11-26T14:30:52.353965127Z"
+    created: "2026-11-26T16:02:57.331884788Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: adc88450222e17938c6320d64c7cb3ca51623ff787fa0726160049c6b9042e68
@@ -813,7 +828,7 @@ entries:
     version: 0.112.1
   - apiVersion: v2
     appVersion: 0.112.0
-    created: "2026-11-26T14:30:52.344989342Z"
+    created: "2026-11-26T16:02:57.32379219Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 9e6f42838b708dde9750b38cbb202e492ed83c182ba36bf92b047776efb7ede4
@@ -828,7 +843,7 @@ entries:
     version: 0.112.0
   - apiVersion: v2
     appVersion: 0.111.0
-    created: "2026-11-26T14:30:52.336544871Z"
+    created: "2026-11-26T16:02:57.318037532Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 445803273f09ffc97d8fa275cdfc93d2f83f06f74ffda86134a246cd5019d625
@@ -843,7 +858,7 @@ entries:
     version: 0.111.0
   - apiVersion: v2
     appVersion: 0.110.1
-    created: "2026-11-26T14:30:52.32574276Z"
+    created: "2026-11-26T16:02:57.309810752Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 5503eec7acf530a748c01844d385a0406cd8bbe050d579d746bc9f5de7e04773
@@ -858,7 +873,7 @@ entries:
     version: 0.110.1
   - apiVersion: v2
     appVersion: 0.110.0
-    created: "2026-11-26T14:30:52.319368064Z"
+    created: "2026-11-26T16:02:57.30395853Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 040842be98c418423e9347e404714a56ab30b0907b9cae6e490dbe19d7eae2ab
@@ -873,7 +888,7 @@ entries:
     version: 0.110.0
   - apiVersion: v2
     appVersion: 0.109.2
-    created: "2026-11-26T14:30:52.308312315Z"
+    created: "2026-11-26T16:02:57.297436886Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 8a6f723a43fa3b1c4512604cb8a0d3b6fc9e5dda269b8f8be5f676954c18aaeb
@@ -888,7 +903,7 @@ entries:
     version: 0.109.2
   - apiVersion: v2
     appVersion: 0.109.1
-    created: "2026-11-26T14:30:52.299766873Z"
+    created: "2026-11-26T16:02:57.290509297Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: eef2bf159a0a1d18e193ce2947ae673186bbc3e1f37541af5c81acae1d3479a0
@@ -903,7 +918,7 @@ entries:
     version: 0.109.1
   - apiVersion: v2
     appVersion: 0.109.0
-    created: "2026-11-26T14:30:52.290884505Z"
+    created: "2026-11-26T16:02:57.284880197Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: c680e70dce2aea4f0e0502fa4008b397b7a1b037e9dbc1fd8a8f04493b9e7d04
@@ -918,7 +933,7 @@ entries:
     version: 0.109.0
   - apiVersion: v2
     appVersion: 0.108.1
-    created: "2026-11-26T14:30:52.283226217Z"
+    created: "2026-11-26T16:02:57.277600543Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 5ce024d39ae597e24f47eed3509dca9dfd171d9a837503e319599965fab19be3
@@ -933,7 +948,7 @@ entries:
     version: 0.108.1
   - apiVersion: v2
     appVersion: 0.108.0
-    created: "2026-11-26T14:30:52.275336862Z"
+    created: "2026-11-26T16:02:57.270039909Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 23c16fcbc0914f0bfbdf7156196b7610e484b46dcba7c0fdfac23e2783235561
@@ -948,7 +963,7 @@ entries:
     version: 0.108.0
   - apiVersion: v2
     appVersion: 0.107.0
-    created: "2026-11-26T14:30:52.265628005Z"
+    created: "2026-11-26T16:02:57.263928279Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 09ac4ca83a2a699821c9286722b8160339cb0277effcb2bbc83bc93b591167e6
@@ -963,7 +978,7 @@ entries:
     version: 0.107.0
   - apiVersion: v2
     appVersion: 0.106.0
-    created: "2026-11-26T14:30:52.259863018Z"
+    created: "2026-11-26T16:02:57.256695954Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: d4622af6e0b6cce13932dd300ad5c894e8f132556463c1f2674f671c70f99f8f
@@ -978,7 +993,7 @@ entries:
     version: 0.106.0
   - apiVersion: v2
     appVersion: 0.105.0
-    created: "2026-11-26T14:30:52.251158366Z"
+    created: "2026-11-26T16:02:57.250994638Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: ee4a978978e9d8a05540251394ae9d3aeb85f90eada4f30faea41cecfa67e802
@@ -993,7 +1008,7 @@ entries:
     version: 0.105.0
   - apiVersion: v2
     appVersion: 0.104.0
-    created: "2026-11-26T14:30:52.244467092Z"
+    created: "2026-11-26T16:02:57.24373958Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 41012c0b4034e1244a62f1ca1fc957d5e130697c8466596b14e68903ff53eee7
@@ -1008,7 +1023,7 @@ entries:
     version: 0.104.0
   - apiVersion: v2
     appVersion: 0.103.0
-    created: "2026-11-26T14:30:52.231667994Z"
+    created: "2026-11-26T16:02:57.237793612Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 80f1b9b2f7ffeb4ecadc288f854c7fcabb2cd9687e6a7c3e9a9309f852f8c5d2
@@ -1023,7 +1038,7 @@ entries:
     version: 0.103.0
   - apiVersion: v2
     appVersion: 0.102.0
-    created: "2026-11-26T14:30:52.22436696Z"
+    created: "2026-11-26T16:02:57.230703236Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: b73c4fdcc3973396a37818554cfab485059b54aa8d26c6102032e85d5f273833
@@ -1038,7 +1053,7 @@ entries:
     version: 0.102.0
   - apiVersion: v2
     appVersion: 0.101.0
-    created: "2026-11-26T14:30:52.213471223Z"
+    created: "2026-11-26T16:02:57.222987829Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: bdc961fcde5f55390c4e679ec860494f76bfdc4c3a9d6555ef3ade685851a5e6
@@ -1053,7 +1068,7 @@ entries:
     version: 0.101.0
   - apiVersion: v2
     appVersion: 0.100.0
-    created: "2026-11-26T14:30:52.206321574Z"
+    created: "2026-11-26T16:02:57.216584388Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 0c0f8388ab32afeceff7329aa88c9e826c50d8372d7199d4eca4149546e5591b
@@ -1068,7 +1083,7 @@ entries:
     version: 0.100.0
   - apiVersion: v2
     appVersion: 0.99.0
-    created: "2026-11-26T14:30:53.307810457Z"
+    created: "2026-11-26T16:02:58.139989546Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: d53017b540931e710524b123c6b2f3ee5cb46cdbec7eb30710a7aaf0fc1386b6
@@ -1083,7 +1098,7 @@ entries:
     version: 0.99.0
   - apiVersion: v2
     appVersion: 0.98.0
-    created: "2026-11-26T14:30:53.300769573Z"
+    created: "2026-11-26T16:02:58.132180633Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 52a36a6882edcc0639785d3b33855d3a7a6af725a9c463255b354d21beafe5e4
@@ -1098,7 +1113,7 @@ entries:
     version: 0.98.0
   - apiVersion: v2
     appVersion: 0.97.0
-    created: "2026-11-26T14:30:53.280662718Z"
+    created: "2026-11-26T16:02:58.125506532Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 341180a62ddcfb8c179bc0f040b403494e148a5970fb919c5c4551f6e8a59b29
@@ -1113,7 +1128,7 @@ entries:
     version: 0.97.0
   - apiVersion: v2
     appVersion: 0.96.0
-    created: "2026-11-26T14:30:53.271799085Z"
+    created: "2026-11-26T16:02:58.116981929Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 42ed2eba89f7b520916f6ff392efbe0afaa3203e5073a994a419c35870834128
@@ -1128,7 +1143,7 @@ entries:
     version: 0.96.0
   - apiVersion: v2
     appVersion: 0.95.0
-    created: "2026-11-26T14:30:53.262830104Z"
+    created: "2026-11-26T16:02:58.110440388Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: bdf1ec4803081cf5107851be8dfd0876c0fc5ed7c551fd2a17512fdb12a29015
@@ -1143,7 +1158,7 @@ entries:
     version: 0.95.0
   - apiVersion: v2
     appVersion: 0.94.0
-    created: "2026-11-26T14:30:53.254667755Z"
+    created: "2026-11-26T16:02:58.101640476Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 3d6a35cbdfc9466bfa731b1159bb1bad6cff23e4ec6e24102b43fbdade081767
@@ -1158,7 +1173,7 @@ entries:
     version: 0.94.0
   - apiVersion: v2
     appVersion: 0.93.2
-    created: "2026-11-26T14:30:53.244745214Z"
+    created: "2026-11-26T16:02:58.095555826Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 8f73a9489859f4f3792c2394b92dbf53ee236e5201800f6159c1aaebcf6b4520
@@ -1173,7 +1188,7 @@ entries:
     version: 0.93.2
   - apiVersion: v2
     appVersion: 0.93.1
-    created: "2026-11-26T14:30:53.237525042Z"
+    created: "2026-11-26T16:02:58.087950017Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 6538484c1247ded12a65ad4bb2f59a41d3868b805c6943d202e20dff97783642
@@ -1188,7 +1203,7 @@ entries:
     version: 0.93.1
   - apiVersion: v2
     appVersion: 0.93.0
-    created: "2026-11-26T14:30:53.230711296Z"
+    created: "2026-11-26T16:02:58.080904484Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 8e01e1e86bea6ec5ca9ab7342dbd533b41d81225fe0bbd7200f3767a6376af9b
@@ -1203,7 +1218,7 @@ entries:
     version: 0.93.0
   - apiVersion: v2
     appVersion: 0.92.0
-    created: "2026-11-26T14:30:53.221869835Z"
+    created: "2026-11-26T16:02:58.071306657Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 0cae0a27a13a49776639d322905a566a1cdfd4d972c7a0631809a0296de3eb85
@@ -1218,7 +1233,7 @@ entries:
     version: 0.92.0
   - apiVersion: v2
     appVersion: 0.91.0
-    created: "2026-11-26T14:30:53.21452551Z"
+    created: "2026-11-26T16:02:58.064572162Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 75a339fcd8e316809616b642ba52fc2c3f35fca88a6e8b63390fc69c26fdbdca
@@ -1233,7 +1248,7 @@ entries:
     version: 0.91.0
   - apiVersion: v2
     appVersion: 0.90.1
-    created: "2026-11-26T14:30:53.206139047Z"
+    created: "2026-11-26T16:02:58.056236786Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 4d59677d17b90a0d2a65d6765188705773300150bb2ae5943bd0f246fe2e97f7
@@ -1248,7 +1263,7 @@ entries:
     version: 0.90.1
   - apiVersion: v2
     appVersion: 0.90.0
-    created: "2026-11-26T14:30:53.199489532Z"
+    created: "2026-11-26T16:02:58.050299504Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 0f00d2b5c83f2ec661c7d3c6b8905d9a66353228e059a1bc05bad32bd15187bd
@@ -1263,7 +1278,7 @@ entries:
     version: 0.90.0
   - apiVersion: v2
     appVersion: 0.89.0
-    created: "2026-11-26T14:30:53.190914363Z"
+    created: "2026-11-26T16:02:58.042308698Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 0ee7d56d94ee9359706272eb93bdc8c311345b544e7c5aff21e56b6891060013
@@ -1278,7 +1293,7 @@ entries:
     version: 0.89.0
   - apiVersion: v2
     appVersion: 0.88.0
-    created: "2026-11-26T14:30:53.18479026Z"
+    created: "2026-11-26T16:02:58.036080949Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 40ec6395c3659c2559d8cb828acf82a62c936f843a3e224d7aa9f1d4ddbfed88
@@ -1293,7 +1308,7 @@ entries:
     version: 0.88.0
   - apiVersion: v2
     appVersion: 0.87.0
-    created: "2026-11-26T14:30:53.175382049Z"
+    created: "2026-11-26T16:02:58.028826493Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 0fbc65d8cf31279f15f45efe1accd8ec05ac76b1f442eba4d1c14c2d17bf4709
@@ -1308,7 +1323,7 @@ entries:
     version: 0.87.0
   - apiVersion: v2
     appVersion: 0.86.0
-    created: "2026-11-26T14:30:53.168049304Z"
+    created: "2026-11-26T16:02:58.023146978Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 1c5065e3fc477077c3ad9c893848998d16b2d74562dfeda43e3b6af613400aed
@@ -1323,7 +1338,7 @@ entries:
     version: 0.86.0
   - apiVersion: v2
     appVersion: 0.85.0
-    created: "2026-11-26T14:30:53.158787622Z"
+    created: "2026-11-26T16:02:58.015709016Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: fb2ee17ce80390c4e52302efd9d62fecc4a0a9cfa0ba113574a3040c3bf0427e
@@ -1338,7 +1353,7 @@ entries:
     version: 0.85.0
   - apiVersion: v2
     appVersion: 0.84.0
-    created: "2026-11-26T14:30:53.150922773Z"
+    created: "2026-11-26T16:02:58.009148057Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 21ef5b026b26666d205e0959060f63d7388f498fd9d17867e865b64af849f17c
@@ -1353,7 +1368,7 @@ entries:
     version: 0.84.0
   - apiVersion: v2
     appVersion: 0.83.0
-    created: "2026-11-26T14:30:53.14166684Z"
+    created: "2026-11-26T16:02:58.000634105Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 0e16e2f24855a35fe529881cb14b82a9364c265271d182c3188220f79db8c6b5
@@ -1368,7 +1383,7 @@ entries:
     version: 0.83.0
   - apiVersion: v2
     appVersion: 0.82.1
-    created: "2026-11-26T14:30:53.134852323Z"
+    created: "2026-11-26T16:02:57.995038718Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: d98930c4f3d01ffa5ad046584d5904839b5ebe83a8f8a91a286f3fffab69603c
@@ -1383,7 +1398,7 @@ entries:
     version: 0.82.1
   - apiVersion: v2
     appVersion: 0.82.0
-    created: "2026-11-26T14:30:53.123708809Z"
+    created: "2026-11-26T16:02:57.988264789Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: c21750a66db9344e227a453c3581aafb7e2c8cf4ce83cabd56e4f73fb5b05cf2
@@ -1398,7 +1413,7 @@ entries:
     version: 0.82.0
   - apiVersion: v2
     appVersion: 0.81.0
-    created: "2026-11-26T14:30:53.115590122Z"
+    created: "2026-11-26T16:02:57.982900909Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: c12e410ff651cce78a1505806d7d539c3a6b2b2487ebddcbe5d6efd738cce5b8
@@ -1413,7 +1428,7 @@ entries:
     version: 0.81.0
   - apiVersion: v2
     appVersion: 0.80.1
-    created: "2026-11-26T14:30:53.107799734Z"
+    created: "2026-11-26T16:02:57.97648808Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: b2b65c38534ddda5fb8acc760f2f3070464929ff4bf7ea0dcb496a10e03e3107
@@ -1428,7 +1443,7 @@ entries:
     version: 0.80.1
   - apiVersion: v2
     appVersion: 0.80.0
-    created: "2026-11-26T14:30:53.101201786Z"
+    created: "2026-11-26T16:02:57.971062003Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: b85086b627fcb48c9e47688724e297ed08064c2c2732c70df4b3a7dbc5bd19c2
@@ -1443,7 +1458,7 @@ entries:
     version: 0.80.0
   - apiVersion: v2
     appVersion: 0.79.0
-    created: "2026-11-26T14:30:53.093657773Z"
+    created: "2026-11-26T16:02:57.964050595Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 0530ae0961abcfd6eece5699d2b03b584d9416b941cb1f3b900206c9b44d0f46
@@ -1458,7 +1473,7 @@ entries:
     version: 0.79.0
   - apiVersion: v2
     appVersion: 0.78.0
-    created: "2026-11-26T14:30:53.087894871Z"
+    created: "2026-11-26T16:02:57.958497048Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 7429432adbface24715aeb94b8cf1a4f0c3ff952ded61241ac524de163d30831
@@ -1473,7 +1488,7 @@ entries:
     version: 0.78.0
   - apiVersion: v2
     appVersion: 0.77.0
-    created: "2026-11-26T14:30:53.08229748Z"
+    created: "2026-11-26T16:02:57.949647833Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 7a757c02d44e0a8a912d1a3e5e5d1e7128ba7767618a12d8331e67109cdeff92
@@ -1488,7 +1503,7 @@ entries:
     version: 0.77.0
   - apiVersion: v2
     appVersion: 0.76.0
-    created: "2026-11-26T14:30:53.075881335Z"
+    created: "2026-11-26T16:02:57.942764336Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 97f0741a652f115c2c914a89562f1d4ce8683e648082087331b777d16cc60248
@@ -1503,7 +1518,7 @@ entries:
     version: 0.76.0
   - apiVersion: v2
     appVersion: 0.75.0
-    created: "2026-11-26T14:30:53.067697285Z"
+    created: "2026-11-26T16:02:57.935643873Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 406f8de64ad8c20714bd43ce3aebc98674132b7dda2ad263f06070695d146de6
@@ -1518,7 +1533,7 @@ entries:
     version: 0.75.0
   - apiVersion: v2
     appVersion: 0.74.0
-    created: "2026-11-26T14:30:53.062479992Z"
+    created: "2026-11-26T16:02:57.929878335Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: c07102429021cc7dff90908a40b6d564d76eac9f86daba0b14b96348961d91e7
@@ -1533,7 +1548,7 @@ entries:
     version: 0.74.0
   - apiVersion: v2
     appVersion: 0.73.0
-    created: "2026-11-26T14:30:53.05693971Z"
+    created: "2026-11-26T16:02:57.920362512Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: aa2a335d9d68a67f30e013949dbf7122190d730a705ebaae64601afc4aa6a59e
@@ -1548,7 +1563,7 @@ entries:
     version: 0.73.0
   - apiVersion: v2
     appVersion: 0.72.1
-    created: "2026-11-26T14:30:53.047624615Z"
+    created: "2026-11-26T16:02:57.914508849Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 199dd90cdb4e75e9327fcdf31ac3ce42d2c61b867946a7c7a1deed053b052d07
@@ -1563,7 +1578,7 @@ entries:
     version: 0.72.1
   - apiVersion: v2
     appVersion: 0.72.0
-    created: "2026-11-26T14:30:53.042981615Z"
+    created: "2026-11-26T16:02:57.908793486Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: d5ecf6d2d15050b5231b993f68910828e09dbb00f05483f02f07c3d45f370dc8
@@ -1578,7 +1593,7 @@ entries:
     version: 0.72.0
   - apiVersion: v2
     appVersion: 0.71.1
-    created: "2026-11-26T14:30:53.036504275Z"
+    created: "2026-11-26T16:02:57.900526359Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: a3ec3a440f8b1aa0395806022c25fda55f97885de54dcda051be0ded367bf7b8
@@ -1593,7 +1608,7 @@ entries:
     version: 0.71.1
   - apiVersion: v2
     appVersion: 0.71.0
-    created: "2026-11-26T14:30:53.027813127Z"
+    created: "2026-11-26T16:02:57.896056816Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: afaf22b11be68c89de458528b39dc3acb33d1ea38e60735d833c7ca2c0f005aa
@@ -1608,7 +1623,7 @@ entries:
     version: 0.71.0
   - apiVersion: v2
     appVersion: 0.70.0
-    created: "2026-11-26T14:30:53.023210784Z"
+    created: "2026-11-26T16:02:57.889340636Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: b22e4597350e3c205f87e831a3928ae60cb46251da23f74dc2f9ddbd790d27db
@@ -1623,7 +1638,7 @@ entries:
     version: 0.70.0
   - apiVersion: v2
     appVersion: 0.69.2
-    created: "2026-11-26T14:30:53.017561305Z"
+    created: "2026-11-26T16:02:57.885519076Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 8a2e344f8708ac6db4ee68a4799ca15d1916d413a9033e9845bbc63f620f0033
@@ -1638,7 +1653,7 @@ entries:
     version: 0.69.2
   - apiVersion: v2
     appVersion: 0.69.1
-    created: "2026-11-26T14:30:53.009362828Z"
+    created: "2026-11-26T16:02:57.881266563Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: f0f28e3709c29536c9473a09a5f6a78fae4d1a70ff1be1430a178a42ed5cee56
@@ -1653,7 +1668,7 @@ entries:
     version: 0.69.1
   - apiVersion: v2
     appVersion: 0.69.0
-    created: "2026-11-26T14:30:53.004501697Z"
+    created: "2026-11-26T16:02:57.87427848Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 1fc520e7861e0aae210f479ace260b56091476204d5212481f55f66045fe9549
@@ -1668,7 +1683,7 @@ entries:
     version: 0.69.0
   - apiVersion: v2
     appVersion: 0.68.0
-    created: "2026-11-26T14:30:52.999233267Z"
+    created: "2026-11-26T16:02:57.869605874Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: ba8073f214b700e8a19f294292e4fcb1fd007e2f32608535aa70130ab2ec238f
@@ -1683,7 +1698,7 @@ entries:
     version: 0.68.0
   - apiVersion: v2
     appVersion: 0.67.0
-    created: "2026-11-26T14:30:52.991361014Z"
+    created: "2026-11-26T16:02:57.862443521Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 6567290ade94194eeecfdc8bcfff5129ad1e31ccfbdf72e1755231b5032b31b1
@@ -1698,7 +1713,7 @@ entries:
     version: 0.67.0
   - apiVersion: v2
     appVersion: 0.66.2
-    created: "2026-11-26T14:30:52.987443544Z"
+    created: "2026-11-26T16:02:57.857809439Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: e93af790a2a753f6bb69194605d4f1b24898932fc4cb78fc533cac72741285f7
@@ -1713,7 +1728,7 @@ entries:
     version: 0.66.2
   - apiVersion: v2
     appVersion: 0.66.1
-    created: "2026-11-26T14:30:52.982171697Z"
+    created: "2026-11-26T16:02:57.853468159Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 0cb9c341bb9fb8f93a722cf38d9ffca038edcb385e25a7e98a2903252be1a797
@@ -1728,7 +1743,7 @@ entries:
     version: 0.66.1
   - apiVersion: v2
     appVersion: 0.66.0
-    created: "2026-11-26T14:30:52.974230575Z"
+    created: "2026-11-26T16:02:57.847343433Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 75420d234187de731ca096f6736f28cc4d6edff80f239a13a5783f852f9de24a
@@ -1743,7 +1758,7 @@ entries:
     version: 0.66.0
   - apiVersion: v2
     appVersion: 0.65.0
-    created: "2026-11-26T14:30:52.97035328Z"
+    created: "2026-11-26T16:02:57.842963941Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 185c2ee92fe39240229ab68c4a949b3ba5ef50955b24f4ab5ac983e50f480bf0
@@ -1758,7 +1773,7 @@ entries:
     version: 0.65.0
   - apiVersion: v2
     appVersion: 0.64.2
-    created: "2026-11-26T14:30:52.966263213Z"
+    created: "2026-11-26T16:02:57.836925608Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 65c36f96a7f6283ebdbe19e00eba9ae8d28be52e1251bd529163d92710ea4b7c
@@ -1773,7 +1788,7 @@ entries:
     version: 0.64.2
   - apiVersion: v2
     appVersion: 0.64.1
-    created: "2026-11-26T14:30:52.959209515Z"
+    created: "2026-11-26T16:02:57.832450516Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: cb6ae19660c2c2c4d68ec71fe820524381ab375db050644b7ee6f65762b0b00e
@@ -1788,7 +1803,7 @@ entries:
     version: 0.64.1
   - apiVersion: v2
     appVersion: 0.64.0
-    created: "2026-11-26T14:30:52.954740996Z"
+    created: "2026-11-26T16:02:57.828220906Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: cd82e72cf52666b7258cab9279635880518f439b31e87170143b9a3489e84d43
@@ -1803,7 +1818,7 @@ entries:
     version: 0.64.0
   - apiVersion: v2
     appVersion: 0.63.3
-    created: "2026-11-26T14:30:52.94897678Z"
+    created: "2026-11-26T16:02:57.822591927Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 6f9a948bfd7fdb49e08ba2e62ad554c0cbe65edbed060163b9405701b32f2c13
@@ -1818,7 +1833,7 @@ entries:
     version: 0.63.3
   - apiVersion: v2
     appVersion: 0.63.2
-    created: "2026-11-26T14:30:52.941141087Z"
+    created: "2026-11-26T16:02:57.816873267Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: f65057ec4207bf6a7b438db31549d3f50d54af51a8e84846c047f8eab3e163a9
@@ -1833,7 +1848,7 @@ entries:
     version: 0.63.2
   - apiVersion: v2
     appVersion: 0.63.1
-    created: "2026-11-26T14:30:52.936921796Z"
+    created: "2026-11-26T16:02:57.81199249Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: d3e03066d589c3f71e57fc58a4e42fc8090ac39028f688bdb1cf70228972ba52
@@ -1848,7 +1863,7 @@ entries:
     version: 0.63.1
   - apiVersion: v2
     appVersion: 0.63.0
-    created: "2026-11-26T14:30:52.930636006Z"
+    created: "2026-11-26T16:02:57.805484Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: e94c1f92fe2c256e671e082820e57804e8ef3e303fe0561b138cb16725d43a6a
@@ -1863,7 +1878,7 @@ entries:
     version: 0.63.0
   - apiVersion: v2
     appVersion: 0.62.2
-    created: "2026-11-26T14:30:52.923493211Z"
+    created: "2026-11-26T16:02:57.8004642Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: e5c81850e7a81eb60587092bacb01595214e37c2caeb3274b2312cff20d3f70d
@@ -1878,7 +1893,7 @@ entries:
     version: 0.62.2
   - apiVersion: v2
     appVersion: 0.62.1
-    created: "2026-11-26T14:30:52.918744822Z"
+    created: "2026-11-26T16:02:57.796309521Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 300c72fa7ad9d25880a8599820dcb7b145b7dbb572a171a54e616023f4359bc7
@@ -1893,7 +1908,7 @@ entries:
     version: 0.62.1
   - apiVersion: v2
     appVersion: 0.62.0
-    created: "2026-11-26T14:30:52.911520473Z"
+    created: "2026-11-26T16:02:57.789429441Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 64cb62e3f7791eea7aa9c714f0ea10c6343ae1aaa150dc1d7858fa7353b37e68
@@ -1908,7 +1923,7 @@ entries:
     version: 0.62.0
   - apiVersion: v2
     appVersion: 0.61.0
-    created: "2026-11-26T14:30:52.906977953Z"
+    created: "2026-11-26T16:02:57.784640877Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 084f88f5ce902cd135f5b7e0d850be21a7523e4a8bbaa2e4f476bed256cd99d4
@@ -1923,7 +1938,7 @@ entries:
     version: 0.61.0
   - apiVersion: v2
     appVersion: 0.60.0
-    created: "2026-11-26T14:30:52.901495158Z"
+    created: "2026-11-26T16:02:57.777492871Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 521fe607e86fa884b609674b4d9616fb57b13bf4aa1143164a204d5f7ffa0517
@@ -1938,7 +1953,7 @@ entries:
     version: 0.60.0
   - apiVersion: v2
     appVersion: 0.59.1
-    created: "2026-11-26T14:30:52.893948039Z"
+    created: "2026-11-26T16:02:57.772505031Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: b1f0679842ab5281ba6114907b6275a3a1bd07b6273b84df946c18cdc01eb9b4
@@ -1953,7 +1968,7 @@ entries:
     version: 0.59.1
   - apiVersion: v2
     appVersion: 0.59.0
-    created: "2026-11-26T14:30:52.888307167Z"
+    created: "2026-11-26T16:02:57.767299631Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 3e4ac4f60a354ae4062e40d0395c15ed884d113e7c8923f1254cee0cb6c66b44
@@ -1968,7 +1983,7 @@ entries:
     version: 0.59.0
   - apiVersion: v2
     appVersion: 0.58.0
-    created: "2026-11-26T14:30:52.879535087Z"
+    created: "2026-11-26T16:02:57.76120331Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: b3e01e9191a333444af5131d81b98873f8cea8c7ef6c812d1a0189cf9a46e425
@@ -1983,7 +1998,7 @@ entries:
     version: 0.58.0
   - apiVersion: v2
     appVersion: 0.57.0
-    created: "2026-11-26T14:30:52.874760409Z"
+    created: "2026-11-26T16:02:57.756043695Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 2fefebadc3bd1ccfd7d9c16221bda86ff5526d957350cc6d5c588ca9ad8024ac
@@ -1998,7 +2013,7 @@ entries:
     version: 0.57.0
   - apiVersion: v2
     appVersion: 0.56.4
-    created: "2026-11-26T14:30:52.869292183Z"
+    created: "2026-11-26T16:02:57.749660212Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 04dc4fe954712fcf3f71f1fe52e2473e566e8e9b168ca97712c0e3a7208ec1cd
@@ -2013,7 +2028,7 @@ entries:
     version: 0.56.4
   - apiVersion: v2
     appVersion: 0.56.3
-    created: "2026-11-26T14:30:52.862670349Z"
+    created: "2026-11-26T16:02:57.745122802Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 2e4e97d5096768b93029ffa86c84580ec3b2b8321d2bf9339c55050a0fbbe364
@@ -2028,7 +2043,7 @@ entries:
     version: 0.56.3
   - apiVersion: v2
     appVersion: 0.56.2
-    created: "2026-11-26T14:30:52.857504152Z"
+    created: "2026-11-26T16:02:57.739952607Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 50bad68a327b22fdae0082a386ba4988ab5d5472f307e862622c29b9dc1b23c0
@@ -2043,7 +2058,7 @@ entries:
     version: 0.56.2
   - apiVersion: v2
     appVersion: 0.56.1
-    created: "2026-11-26T14:30:52.850659439Z"
+    created: "2026-11-26T16:02:57.733575747Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: 5ad83acea58459b4a7c337eace452408a70bb95087c20fa2c17ffe6c9ada62b9
@@ -2058,7 +2073,7 @@ entries:
     version: 0.56.1
   - apiVersion: v2
     appVersion: 0.56.0
-    created: "2026-11-26T14:30:52.844690237Z"
+    created: "2026-11-26T16:02:57.72891309Z"
     description: quader, an artifact repository manager for package formats, as a
       web and a worker Deployment.
     digest: a6461364035e696f8c09c6618f9280c6eb1bbb5bd79840b15896804a690f460b
@@ -2073,8 +2088,23 @@ entries:
     version: 0.56.0
   quader-bastion:
   - apiVersion: v2
+    appVersion: 0.154.0
+    created: "2026-11-26T16:02:58.339804812Z"
+    description: The quader Bastion, a read-only, internet-facing cache instance in
+      front of a main quader installation (quader serve --role bastion).
+    digest: c0ef3c25cca74f240efac00cd421e287dda5da84c4ab2eb71f9292ce57b6259e
+    home: https://github.com/guided-traffic/quader
+    kubeVersion: '>=1.30.0-0'
+    name: quader-bastion
+    sources:
+    - https://github.com/guided-traffic/quader
+    type: application
+    urls:
+    - https://guided-traffic.github.io/quader/quader-bastion-0.154.0.tgz
+    version: 0.154.0
+  - apiVersion: v2
     appVersion: 0.153.0
-    created: "2026-11-26T14:30:53.568880266Z"
+    created: "2026-11-26T16:02:58.337804558Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 6046b5a666de5348c284781aa823a5e44c683beceb0e0ae3190029da6a6467dd
@@ -2089,7 +2119,7 @@ entries:
     version: 0.153.0
   - apiVersion: v2
     appVersion: 0.152.0
-    created: "2026-11-26T14:30:53.563847772Z"
+    created: "2026-11-26T16:02:58.335515901Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 9ca032456871056a510d3f2a8987eba42f0d3731e026f88ba95549f9e2f61e06
@@ -2104,7 +2134,7 @@ entries:
     version: 0.152.0
   - apiVersion: v2
     appVersion: 0.151.0
-    created: "2026-11-26T14:30:53.558888554Z"
+    created: "2026-11-26T16:02:58.330558428Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 0c9db2b6c0520b55d6d340a44509b0cfb282be475b6d5b989f09aa6d7fde384f
@@ -2119,7 +2149,7 @@ entries:
     version: 0.151.0
   - apiVersion: v2
     appVersion: 0.150.0
-    created: "2026-11-26T14:30:53.554904127Z"
+    created: "2026-11-26T16:02:58.327919328Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: b89c5b82af328a29958bf866ed9747629918fb617c38698abbbc00c956081c82
@@ -2134,7 +2164,7 @@ entries:
     version: 0.150.0
   - apiVersion: v2
     appVersion: 0.149.0
-    created: "2026-11-26T14:30:53.549484262Z"
+    created: "2026-11-26T16:02:58.325360461Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: a35732f8bb45257ef5d15e3c921a442d40eb70a63c7c7ada8fef9ab4e88e7549
@@ -2149,7 +2179,7 @@ entries:
     version: 0.149.0
   - apiVersion: v2
     appVersion: 0.148.0
-    created: "2026-11-26T14:30:53.546857537Z"
+    created: "2026-11-26T16:02:58.322888257Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 903bcb3378a76b8d398b816c56eead97f6736b78d67305a69b125c7311ee0c3b
@@ -2164,7 +2194,7 @@ entries:
     version: 0.148.0
   - apiVersion: v2
     appVersion: 0.147.0
-    created: "2026-11-26T14:30:53.543482238Z"
+    created: "2026-11-26T16:02:58.320789478Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 0564ee3dc7acdf8a57590daf1bd1416345ed94e6180be816250373c51db416a3
@@ -2179,7 +2209,7 @@ entries:
     version: 0.147.0
   - apiVersion: v2
     appVersion: 0.146.0
-    created: "2026-11-26T14:30:53.541435507Z"
+    created: "2026-11-26T16:02:58.317147096Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 9787d08bd04c8bbf2db093f2f8a70df7da64baf715a967a02fc80610f249fa53
@@ -2194,7 +2224,7 @@ entries:
     version: 0.146.0
   - apiVersion: v2
     appVersion: 0.145.0
-    created: "2026-11-26T14:30:53.538730784Z"
+    created: "2026-11-26T16:02:58.31438248Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 8e0e3deba19fc591e3d0fc7eda42ff61b842150c75d322f9d6f9b3744a34a517
@@ -2209,7 +2239,7 @@ entries:
     version: 0.145.0
   - apiVersion: v2
     appVersion: 0.144.0
-    created: "2026-11-26T14:30:53.535247783Z"
+    created: "2026-11-26T16:02:58.3120769Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 2424477fba4e70c1457c66fbba4b0747e3dda09a2261c9e135191bc61f14ed26
@@ -2224,7 +2254,7 @@ entries:
     version: 0.144.0
   - apiVersion: v2
     appVersion: 0.143.0
-    created: "2026-11-26T14:30:53.529355145Z"
+    created: "2026-11-26T16:02:58.308985718Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 71157c8d694aba38f894d0c2eec0140f8b1f4b730b9dbdfb4ae2ebff5fc98b3b
@@ -2239,7 +2269,7 @@ entries:
     version: 0.143.0
   - apiVersion: v2
     appVersion: 0.142.0
-    created: "2026-11-26T14:30:53.526688164Z"
+    created: "2026-11-26T16:02:58.306736114Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: bbef8057ff1d8ee696b9344cc8bddb6d1557c884c37cbb1c3b460fab7b0a1197
@@ -2254,7 +2284,7 @@ entries:
     version: 0.142.0
   - apiVersion: v2
     appVersion: 0.141.0
-    created: "2026-11-26T14:30:53.524379107Z"
+    created: "2026-11-26T16:02:58.302359567Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 204fe95043783030ab0c1faa467ce123d12c4ba8ec4251944803cecf1863fdda
@@ -2269,7 +2299,7 @@ entries:
     version: 0.141.0
   - apiVersion: v2
     appVersion: 0.140.0
-    created: "2026-11-26T14:30:53.518431707Z"
+    created: "2026-11-26T16:02:58.299720878Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 1e6ac7b18d6109cbd116667ac2d65fa9c834963d9737e6747cd0758b1128804d
@@ -2284,7 +2314,7 @@ entries:
     version: 0.140.0
   - apiVersion: v2
     appVersion: 0.139.0
-    created: "2026-11-26T14:30:53.516084709Z"
+    created: "2026-11-26T16:02:58.297192929Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: b9d9d1b9719a72f7991d0a954df24a7086c02191911c3ed6f7a3b3f60b2cbaff
@@ -2299,7 +2329,7 @@ entries:
     version: 0.139.0
   - apiVersion: v2
     appVersion: 0.138.0
-    created: "2026-11-26T14:30:53.513565526Z"
+    created: "2026-11-26T16:02:58.294843436Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 9c04d765a19d696562767c07da4a18b49d0773c06624e8eb487759df94e89b2b
@@ -2314,7 +2344,7 @@ entries:
     version: 0.138.0
   - apiVersion: v2
     appVersion: 0.137.0
-    created: "2026-11-26T14:30:53.509108016Z"
+    created: "2026-11-26T16:02:58.292732134Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 1c33ed99d726a1b520259f0d399833b3e3192e5d0a07c33df6c985df5a6906d0
@@ -2329,7 +2359,7 @@ entries:
     version: 0.137.0
   - apiVersion: v2
     appVersion: 0.136.0
-    created: "2026-11-26T14:30:53.505849998Z"
+    created: "2026-11-26T16:02:58.288937565Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 05c1b97df6db9bdc9245919f61eb97c0b1bfaeb0427773de4e41570f2746f8ba
@@ -2344,7 +2374,7 @@ entries:
     version: 0.136.0
   - apiVersion: v2
     appVersion: 0.135.0
-    created: "2026-11-26T14:30:53.495222989Z"
+    created: "2026-11-26T16:02:58.286911883Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 613077ec2b948b83424ef96c8bccb4bd01c23e4e439f147b91015662b3e3b9b2
@@ -2359,7 +2389,7 @@ entries:
     version: 0.135.0
   - apiVersion: v2
     appVersion: 0.134.2
-    created: "2026-11-26T14:30:53.492369155Z"
+    created: "2026-11-26T16:02:58.284940383Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 034c195556f2108253af23c7d01c6c904a15823caf77fb8c120f08b97acad619
@@ -2374,7 +2404,7 @@ entries:
     version: 0.134.2
   - apiVersion: v2
     appVersion: 0.134.1
-    created: "2026-11-26T14:30:53.489421284Z"
+    created: "2026-11-26T16:02:58.282765801Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: c626dfa800eb84a888bd4875c569ebe7a19578f15f700ef2f511b0d18cb773f1
@@ -2389,7 +2419,7 @@ entries:
     version: 0.134.1
   - apiVersion: v2
     appVersion: 0.134.0
-    created: "2026-11-26T14:30:53.486847357Z"
+    created: "2026-11-26T16:02:58.280375732Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 1f0f5637c26f0a0f52e81316d9733c9ec7603e8a8acb30b0774be99434ee27ae
@@ -2404,7 +2434,7 @@ entries:
     version: 0.134.0
   - apiVersion: v2
     appVersion: 0.133.0
-    created: "2026-11-26T14:30:53.48450096Z"
+    created: "2026-11-26T16:02:58.27508502Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 00ec3c25ef852e5599ef7041e07c795590409d27f763552990d516fbb3a691b0
@@ -2419,7 +2449,7 @@ entries:
     version: 0.133.0
   - apiVersion: v2
     appVersion: 0.131.1
-    created: "2026-11-26T14:30:53.482259502Z"
+    created: "2026-11-26T16:02:58.272521574Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 2886fbe55f8c1dc5d761b94a82c62bfe34c03778f08f9c6b7b8a1500b64cb50b
@@ -2434,7 +2464,7 @@ entries:
     version: 0.131.1
   - apiVersion: v2
     appVersion: 0.131.0
-    created: "2026-11-26T14:30:53.479215348Z"
+    created: "2026-11-26T16:02:58.270052546Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 2779382ae6de37a8b6e70b36e9fe43b98ff1f6125354e6a1debc8691a26de717
@@ -2449,7 +2479,7 @@ entries:
     version: 0.131.0
   - apiVersion: v2
     appVersion: 0.130.0
-    created: "2026-11-26T14:30:53.475978332Z"
+    created: "2026-11-26T16:02:58.267677395Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: a2534832fddf61ba2c4640625f9fdfc6709e1b5eb9abd994969ea8bdd106a96f
@@ -2464,7 +2494,7 @@ entries:
     version: 0.130.0
   - apiVersion: v2
     appVersion: 0.129.1
-    created: "2026-11-26T14:30:53.472660001Z"
+    created: "2026-11-26T16:02:58.26501397Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: ccfe0aae2ec397f1644a285f0545280106482c64a8cb91c25250a3ca9ed7cf4a
@@ -2479,7 +2509,7 @@ entries:
     version: 0.129.1
   - apiVersion: v2
     appVersion: 0.129.0
-    created: "2026-11-26T14:30:53.469337512Z"
+    created: "2026-11-26T16:02:58.260737061Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 5fd49cca6d04e565c2f6ca0e18155ad8afc277d46e0cc9ac3a8396fac48d0bbe
@@ -2494,7 +2524,7 @@ entries:
     version: 0.129.0
   - apiVersion: v2
     appVersion: 0.128.0
-    created: "2026-11-26T14:30:53.465324992Z"
+    created: "2026-11-26T16:02:58.258515109Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: e031162a22cf5d2c7558569cc5529198dcee810e81bc11ca0ad278d6521a9394
@@ -2509,7 +2539,7 @@ entries:
     version: 0.128.0
   - apiVersion: v2
     appVersion: 0.127.0
-    created: "2026-11-26T14:30:53.463330199Z"
+    created: "2026-11-26T16:02:58.256282798Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 136df8269141bacd822c8161e48614244804d3cce9930dc6109ab07288f60e4c
@@ -2524,7 +2554,7 @@ entries:
     version: 0.127.0
   - apiVersion: v2
     appVersion: 0.126.0
-    created: "2026-11-26T14:30:53.461035589Z"
+    created: "2026-11-26T16:02:58.254061366Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 9a8be797e7783f41f92b7ceee2d71dbbc4b18db581c4a40a3581622153c9b4cf
@@ -2539,7 +2569,7 @@ entries:
     version: 0.126.0
   - apiVersion: v2
     appVersion: 0.125.0
-    created: "2026-11-26T14:30:53.458665878Z"
+    created: "2026-11-26T16:02:58.251630791Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 16daeb228c42dc902551a47ca3c99738a9f1047e7a0e4c03581609642d8737f1
@@ -2554,7 +2584,7 @@ entries:
     version: 0.125.0
   - apiVersion: v2
     appVersion: 0.124.4
-    created: "2026-11-26T14:30:53.455414816Z"
+    created: "2026-11-26T16:02:58.247348812Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 5134f42a74aa6b4aa88d7beade402dab3b6abb94f73094fe7c98c65fdc77cc38
@@ -2569,7 +2599,7 @@ entries:
     version: 0.124.4
   - apiVersion: v2
     appVersion: 0.124.3
-    created: "2026-11-26T14:30:53.452949684Z"
+    created: "2026-11-26T16:02:58.245161366Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: b998a9344c0aa8d845c44ad98adb427f09f5368b80524ea1fe9a3f4ab3052b15
@@ -2584,7 +2614,7 @@ entries:
     version: 0.124.3
   - apiVersion: v2
     appVersion: 0.124.2
-    created: "2026-11-26T14:30:53.449161847Z"
+    created: "2026-11-26T16:02:58.242633376Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 90fde9a1c5de5fc2eefac43fbd76af1ad5e08c5ebef46712e7c4a6994a65d43e
@@ -2599,7 +2629,7 @@ entries:
     version: 0.124.2
   - apiVersion: v2
     appVersion: 0.124.0
-    created: "2026-11-26T14:30:53.445488417Z"
+    created: "2026-11-26T16:02:58.239931258Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: db5ac32d06cd47f915f1167a483950e4f5096297e4503b92645eac308fe10ccb
@@ -2614,7 +2644,7 @@ entries:
     version: 0.124.0
   - apiVersion: v2
     appVersion: 0.123.0
-    created: "2026-11-26T14:30:53.440062731Z"
+    created: "2026-11-26T16:02:58.237155361Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: eaaf3a1fb3a9465451a91aea0d3376a46305951f549721f99e0cd14d8e0dfadd
@@ -2629,7 +2659,7 @@ entries:
     version: 0.123.0
   - apiVersion: v2
     appVersion: 0.122.4
-    created: "2026-11-26T14:30:53.436892921Z"
+    created: "2026-11-26T16:02:58.233448057Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 9c517bc34210b32deb7827260e7f46d3ea341641ce1368af342b633589205b46
@@ -2644,7 +2674,7 @@ entries:
     version: 0.122.4
   - apiVersion: v2
     appVersion: 0.122.3
-    created: "2026-11-26T14:30:53.434646121Z"
+    created: "2026-11-26T16:02:58.23131898Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 2bb8b38f75850aba837b05c39e6c6fecb7e6173a0b4a8682ba53f3bff68b4a08
@@ -2659,7 +2689,7 @@ entries:
     version: 0.122.3
   - apiVersion: v2
     appVersion: 0.122.2
-    created: "2026-11-26T14:30:53.430734652Z"
+    created: "2026-11-26T16:02:58.228965359Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: d8cfd930bdb254187e92dcc1df723f758119effd45343118518ecc513f4d83be
@@ -2674,7 +2704,7 @@ entries:
     version: 0.122.2
   - apiVersion: v2
     appVersion: 0.122.1
-    created: "2026-11-26T14:30:53.427504118Z"
+    created: "2026-11-26T16:02:58.225781483Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 1ebfd605cc33a7258a5dbb01e844a1fa124d8b13dcf7bffa00266cb970d79fc5
@@ -2689,7 +2719,7 @@ entries:
     version: 0.122.1
   - apiVersion: v2
     appVersion: 0.122.0
-    created: "2026-11-26T14:30:53.424483018Z"
+    created: "2026-11-26T16:02:58.221980892Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 7fde0b46e2e3f7fc34ada1924f0a9c582d3914a57ee9cffad0d04d0569338597
@@ -2704,7 +2734,7 @@ entries:
     version: 0.122.0
   - apiVersion: v2
     appVersion: 0.121.0
-    created: "2026-11-26T14:30:53.420532975Z"
+    created: "2026-11-26T16:02:58.219178586Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: e49010acadced55aab8cebe9a358b9a5bd411229a07ea7640ce22e8d3bacf126
@@ -2719,7 +2749,7 @@ entries:
     version: 0.121.0
   - apiVersion: v2
     appVersion: 0.120.0
-    created: "2026-11-26T14:30:53.418628552Z"
+    created: "2026-11-26T16:02:58.216600091Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: e028e6ac78db837d33e6dc9803404f0cf382a5aa60d7524ff74b6b9b84d8c415
@@ -2734,7 +2764,7 @@ entries:
     version: 0.120.0
   - apiVersion: v2
     appVersion: 0.119.0
-    created: "2026-11-26T14:30:53.416718108Z"
+    created: "2026-11-26T16:02:58.213852898Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 9c1332f3769ea0a73a74a21ba3a9df239566bcf4906440a7cf7f1fe3d2c4c8d8
@@ -2749,7 +2779,7 @@ entries:
     version: 0.119.0
   - apiVersion: v2
     appVersion: 0.118.1
-    created: "2026-11-26T14:30:53.413478656Z"
+    created: "2026-11-26T16:02:58.21006955Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 8e87d71784c92f8f64f77d59eb784cfcea80043b10579bbfd639cc0e92312603
@@ -2764,7 +2794,7 @@ entries:
     version: 0.118.1
   - apiVersion: v2
     appVersion: 0.118.0
-    created: "2026-11-26T14:30:53.406638481Z"
+    created: "2026-11-26T16:02:58.205644892Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 22f8ea51af6d08f0f6ce8a03ea13c57f9972496eb8401cf00121ad3b091e9b6f
@@ -2779,7 +2809,7 @@ entries:
     version: 0.118.0
   - apiVersion: v2
     appVersion: 0.117.0
-    created: "2026-11-26T14:30:53.404223384Z"
+    created: "2026-11-26T16:02:58.203381522Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 0bcd75251e9ddecf1f7205304977157c9d631f6143002e85802e9993aaceed82
@@ -2794,7 +2824,7 @@ entries:
     version: 0.117.0
   - apiVersion: v2
     appVersion: 0.116.0
-    created: "2026-11-26T14:30:53.40105641Z"
+    created: "2026-11-26T16:02:58.200903608Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 02bf00b2c6a1ba8c5a25a22c0f23851740371a4f7a8f88ff80b5161ccd1861da
@@ -2809,7 +2839,7 @@ entries:
     version: 0.116.0
   - apiVersion: v2
     appVersion: 0.115.0
-    created: "2026-11-26T14:30:53.398482604Z"
+    created: "2026-11-26T16:02:58.198782746Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 5822573eb16cc56084a55b3ff14bc84fc60338b0656cb78637616f0bba7b08ab
@@ -2824,7 +2854,7 @@ entries:
     version: 0.115.0
   - apiVersion: v2
     appVersion: 0.114.0
-    created: "2026-11-26T14:30:53.387029496Z"
+    created: "2026-11-26T16:02:58.196342482Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 82678eeb058dffa7353c57d97c88db37f3b4aa085d650d5a1ea4e93ff4360553
@@ -2839,7 +2869,7 @@ entries:
     version: 0.114.0
   - apiVersion: v2
     appVersion: 0.113.0
-    created: "2026-11-26T14:30:53.383413153Z"
+    created: "2026-11-26T16:02:58.192147829Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: d032226036cf0ddacbdd977500a00ac8b42f21ac09d0d0e2bf23df717393a3e6
@@ -2854,7 +2884,7 @@ entries:
     version: 0.113.0
   - apiVersion: v2
     appVersion: 0.112.2
-    created: "2026-11-26T14:30:53.380787409Z"
+    created: "2026-11-26T16:02:58.189673752Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: ad451046338c637a0a22983fa0c22670a98ebe9407d48bc27e26b2f6f0cb87d4
@@ -2869,7 +2899,7 @@ entries:
     version: 0.112.2
   - apiVersion: v2
     appVersion: 0.112.1
-    created: "2026-11-26T14:30:53.375166855Z"
+    created: "2026-11-26T16:02:58.187008423Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 77d9d92a246cd23aa795db7fc2ed594b3d923821b8b6522bc3f6fb60971e619b
@@ -2884,7 +2914,7 @@ entries:
     version: 0.112.1
   - apiVersion: v2
     appVersion: 0.112.0
-    created: "2026-11-26T14:30:53.37202631Z"
+    created: "2026-11-26T16:02:58.184658049Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 9c68bb535b6060d462b79eeab8996fe4a7ab5714c792de4d9e8a81be83078ea7
@@ -2899,7 +2929,7 @@ entries:
     version: 0.112.0
   - apiVersion: v2
     appVersion: 0.111.0
-    created: "2026-11-26T14:30:53.367560273Z"
+    created: "2026-11-26T16:02:58.182136321Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 3aa05b27f98e890ec9c28345571c6a9fea3770ed7e8b7f45272857ded83b0bc2
@@ -2914,7 +2944,7 @@ entries:
     version: 0.111.0
   - apiVersion: v2
     appVersion: 0.110.1
-    created: "2026-11-26T14:30:53.36191345Z"
+    created: "2026-11-26T16:02:58.178290586Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 2c2996343a6019d3d3d184304fea9b409d17be4b070ab88d2a5c8ef13f808eb5
@@ -2929,7 +2959,7 @@ entries:
     version: 0.110.1
   - apiVersion: v2
     appVersion: 0.110.0
-    created: "2026-11-26T14:30:53.356349262Z"
+    created: "2026-11-26T16:02:58.17609327Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 17cbc76b486aaff5c6c4802e3fff7792dca3a91f772f6c61b6e3b7e00b1b7631
@@ -2944,7 +2974,7 @@ entries:
     version: 0.110.0
   - apiVersion: v2
     appVersion: 0.109.2
-    created: "2026-11-26T14:30:53.354030217Z"
+    created: "2026-11-26T16:02:58.173852442Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 906d8e1c284a7d72273d397d8ae4a130e32cccb073228576d1e8cfe2eb814c23
@@ -2959,7 +2989,7 @@ entries:
     version: 0.109.2
   - apiVersion: v2
     appVersion: 0.109.1
-    created: "2026-11-26T14:30:53.351608738Z"
+    created: "2026-11-26T16:02:58.171287794Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: ae94f35c6e23f3f726473c0cbfe399934d31d3f9f9da2162dd2e00024f692e27
@@ -2974,7 +3004,7 @@ entries:
     version: 0.109.1
   - apiVersion: v2
     appVersion: 0.109.0
-    created: "2026-11-26T14:30:53.348706754Z"
+    created: "2026-11-26T16:02:58.168690774Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 69878cca238e7233cad034e7b26c73f321f39eae47e2a9819eb33bf38f6e98cb
@@ -2989,7 +3019,7 @@ entries:
     version: 0.109.0
   - apiVersion: v2
     appVersion: 0.108.1
-    created: "2026-11-26T14:30:53.344564399Z"
+    created: "2026-11-26T16:02:58.165342448Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 58c55906e9be328f1eaa70d35d293e6de970020afee7d62117b9d4781d5bd94f
@@ -3004,7 +3034,7 @@ entries:
     version: 0.108.1
   - apiVersion: v2
     appVersion: 0.108.0
-    created: "2026-11-26T14:30:53.342437275Z"
+    created: "2026-11-26T16:02:58.162957948Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 7bb7bdc352f1b9b9e1ef1a54dfc825e407e912f419d70fc160a6d0242a29cbaa
@@ -3019,7 +3049,7 @@ entries:
     version: 0.108.0
   - apiVersion: v2
     appVersion: 0.107.0
-    created: "2026-11-26T14:30:53.340512984Z"
+    created: "2026-11-26T16:02:58.160806309Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 946b80d01ef1c6b3d9985b358b66b043a976dfd0a5444ed5e42d0c43ebbb92dc
@@ -3034,7 +3064,7 @@ entries:
     version: 0.107.0
   - apiVersion: v2
     appVersion: 0.106.0
-    created: "2026-11-26T14:30:53.338294879Z"
+    created: "2026-11-26T16:02:58.15854918Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: d4d6209bc0ad73c607b0d17ebc8899a870afba1f79535ecb30c6c5e64b5fc82c
@@ -3049,7 +3079,7 @@ entries:
     version: 0.106.0
   - apiVersion: v2
     appVersion: 0.105.0
-    created: "2026-11-26T14:30:53.333177234Z"
+    created: "2026-11-26T16:02:58.155992828Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: dd0a32f6271f200e78a79f6bde41c54fbcf723014f387808cefc1b5d633dcfb4
@@ -3064,7 +3094,7 @@ entries:
     version: 0.105.0
   - apiVersion: v2
     appVersion: 0.104.0
-    created: "2026-11-26T14:30:53.329689855Z"
+    created: "2026-11-26T16:02:58.152008771Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: f69060f00d58389f1c05c8b047cd0e2451bfc2ca2678353b854d9e994d86b6fc
@@ -3079,7 +3109,7 @@ entries:
     version: 0.104.0
   - apiVersion: v2
     appVersion: 0.103.0
-    created: "2026-11-26T14:30:53.324894608Z"
+    created: "2026-11-26T16:02:58.148955461Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: e5baaeb7642531f30309049bef349d5dde64f905205a96fb1af81ee158368f9e
@@ -3094,7 +3124,7 @@ entries:
     version: 0.103.0
   - apiVersion: v2
     appVersion: 0.102.0
-    created: "2026-11-26T14:30:53.322576925Z"
+    created: "2026-11-26T16:02:58.146916775Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 2514d84d9477c49abe00453a243f2698a57eba254ee40c53017c897a62a64ba0
@@ -3109,7 +3139,7 @@ entries:
     version: 0.102.0
   - apiVersion: v2
     appVersion: 0.101.0
-    created: "2026-11-26T14:30:53.319376978Z"
+    created: "2026-11-26T16:02:58.144669365Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 88786a9de13715a52ac298c19809575136e277aafdb123eec413497c462a9019
@@ -3124,7 +3154,7 @@ entries:
     version: 0.101.0
   - apiVersion: v2
     appVersion: 0.100.0
-    created: "2026-11-26T14:30:53.315719407Z"
+    created: "2026-11-26T16:02:58.142473713Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 03219dd5e1dd3cb30e3128b855ed81e60fc28ad13574203370829efd7ab0c3a1
@@ -3139,7 +3169,7 @@ entries:
     version: 0.100.0
   - apiVersion: v2
     appVersion: 0.99.0
-    created: "2026-11-26T14:30:53.789860941Z"
+    created: "2026-11-26T16:02:58.513722259Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: c6de520646940a92b93fc8c3facb063a95db1d63721841c20d3a80e84aec2b7e
@@ -3154,7 +3184,7 @@ entries:
     version: 0.99.0
   - apiVersion: v2
     appVersion: 0.98.0
-    created: "2026-11-26T14:30:53.787222753Z"
+    created: "2026-11-26T16:02:58.511328021Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 1df453d6716c1f52a71b05aa752b38a8156d12ee8d2d503b008f06c98fbbbf07
@@ -3169,7 +3199,7 @@ entries:
     version: 0.98.0
   - apiVersion: v2
     appVersion: 0.97.0
-    created: "2026-11-26T14:30:53.784555521Z"
+    created: "2026-11-26T16:02:58.50883633Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: de2b7f4072488fba63dd90bc0560b9cf3d97bf4cf09029eacf0f32511f74f10b
@@ -3184,7 +3214,7 @@ entries:
     version: 0.97.0
   - apiVersion: v2
     appVersion: 0.96.0
-    created: "2026-11-26T14:30:53.779687307Z"
+    created: "2026-11-26T16:02:58.506697776Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: a51555e0fec0663a1bc82828fe3a35415a0678e4ed3e82c03fa1abb7eedbc538
@@ -3199,7 +3229,7 @@ entries:
     version: 0.96.0
   - apiVersion: v2
     appVersion: 0.95.0
-    created: "2026-11-26T14:30:53.773812924Z"
+    created: "2026-11-26T16:02:58.503069541Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: d2ef542288fa516e0e2adb4210bc395fef5d9b1b740ae7e8bf056fa5a2f6cf96
@@ -3214,7 +3244,7 @@ entries:
     version: 0.95.0
   - apiVersion: v2
     appVersion: 0.94.0
-    created: "2026-11-26T14:30:53.771004666Z"
+    created: "2026-11-26T16:02:58.500931397Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 656051ab872712ee0006fcb5ca621bad4d691c51985e9dbb25400fb7ee5bbf0c
@@ -3229,7 +3259,7 @@ entries:
     version: 0.94.0
   - apiVersion: v2
     appVersion: 0.93.2
-    created: "2026-11-26T14:30:53.768093713Z"
+    created: "2026-11-26T16:02:58.498793233Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 55d122549a6b094009e43ecfb0f987f8f9e7176e94a7474ed1236c15bc82ddaf
@@ -3244,7 +3274,7 @@ entries:
     version: 0.93.2
   - apiVersion: v2
     appVersion: 0.93.1
-    created: "2026-11-26T14:30:53.765051173Z"
+    created: "2026-11-26T16:02:58.496746461Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: fa621d9b9a1b01d831312829e172771a43752d910ac374839b311349acf05d1b
@@ -3259,7 +3289,7 @@ entries:
     version: 0.93.1
   - apiVersion: v2
     appVersion: 0.93.0
-    created: "2026-11-26T14:30:53.762572056Z"
+    created: "2026-11-26T16:02:58.494537564Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 916c5e9dd411ef3976101f714a089f0e519a68c792724d2bbaab604889c7a0ba
@@ -3274,7 +3304,7 @@ entries:
     version: 0.93.0
   - apiVersion: v2
     appVersion: 0.92.0
-    created: "2026-11-26T14:30:53.758645127Z"
+    created: "2026-11-26T16:02:58.490821624Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: f1bc648f4d26f99ff579ec3595fe4c7d89c8adec04fe5bb3add5356d044e3d09
@@ -3289,7 +3319,7 @@ entries:
     version: 0.92.0
   - apiVersion: v2
     appVersion: 0.91.0
-    created: "2026-11-26T14:30:53.756034792Z"
+    created: "2026-11-26T16:02:58.488797966Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 7e99a6c4702c43d9ef70271972459f6235335c266fe47675459f63a7679ceeba
@@ -3304,7 +3334,7 @@ entries:
     version: 0.91.0
   - apiVersion: v2
     appVersion: 0.90.1
-    created: "2026-11-26T14:30:53.753519547Z"
+    created: "2026-11-26T16:02:58.486585802Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: c237794615cbfdd7a41fb66d0a37887f84f36196fc7414fd49ed2922f0571a9d
@@ -3319,7 +3349,7 @@ entries:
     version: 0.90.1
   - apiVersion: v2
     appVersion: 0.90.0
-    created: "2026-11-26T14:30:53.751235888Z"
+    created: "2026-11-26T16:02:58.484310259Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 1d9af9f58b3dc4676836bdb59f4c600cdd89696956b83ca1702604ae9445402a
@@ -3334,7 +3364,7 @@ entries:
     version: 0.90.0
   - apiVersion: v2
     appVersion: 0.89.0
-    created: "2026-11-26T14:30:53.745539221Z"
+    created: "2026-11-26T16:02:58.481826563Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: a046a74bfdb95012b7d0e8c5055c1af71192bf99591d7b4a8016758c0477a5d8
@@ -3349,7 +3379,7 @@ entries:
     version: 0.89.0
   - apiVersion: v2
     appVersion: 0.88.0
-    created: "2026-11-26T14:30:53.741594839Z"
+    created: "2026-11-26T16:02:58.478324346Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 316b0ec54da0b19ef0c4204bf3df5b4cbe5a7242bb8c5232eb429963bbf3ad04
@@ -3364,7 +3394,7 @@ entries:
     version: 0.88.0
   - apiVersion: v2
     appVersion: 0.87.0
-    created: "2026-11-26T14:30:53.73891898Z"
+    created: "2026-11-26T16:02:58.47508812Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 40e2fa8dd74bd66d19cd1a52925072d22023d094cb8b22688790f5a165626f70
@@ -3379,7 +3409,7 @@ entries:
     version: 0.87.0
   - apiVersion: v2
     appVersion: 0.86.0
-    created: "2026-11-26T14:30:53.735788805Z"
+    created: "2026-11-26T16:02:58.47279296Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: b6b2780f23de713697f0223a750b0d59ff987cdb63a48f2ae44b578c7173e472
@@ -3394,7 +3424,7 @@ entries:
     version: 0.86.0
   - apiVersion: v2
     appVersion: 0.85.0
-    created: "2026-11-26T14:30:53.732094035Z"
+    created: "2026-11-26T16:02:58.470583542Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 4c1eeaf84870036af29a463c114b0396f1041d6544ccd5e51c9693c01fce99d6
@@ -3409,7 +3439,7 @@ entries:
     version: 0.85.0
   - apiVersion: v2
     appVersion: 0.84.0
-    created: "2026-11-26T14:30:53.727870416Z"
+    created: "2026-11-26T16:02:58.468609067Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: aec0a6baa6a37e663ece3de3bd5cd1ebb47b460cdcb252bc3f4d5afc49e016f9
@@ -3424,7 +3454,7 @@ entries:
     version: 0.84.0
   - apiVersion: v2
     appVersion: 0.83.0
-    created: "2026-11-26T14:30:53.72561999Z"
+    created: "2026-11-26T16:02:58.466494507Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: ca631a8832771d6062bc25f9045ef601bcf0d7f88aad733a45ddd9850d42a15f
@@ -3439,7 +3469,7 @@ entries:
     version: 0.83.0
   - apiVersion: v2
     appVersion: 0.82.1
-    created: "2026-11-26T14:30:53.721138084Z"
+    created: "2026-11-26T16:02:58.461454669Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 8fb3c244efe82c69ca37f81c35a3039b8871fd69e9c818aa834de916a18bfe4d
@@ -3454,7 +3484,7 @@ entries:
     version: 0.82.1
   - apiVersion: v2
     appVersion: 0.82.0
-    created: "2026-11-26T14:30:53.716504332Z"
+    created: "2026-11-26T16:02:58.459166623Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 5cfd90776075c8ce3b0c5b84a456bd9a65ae77913d7f2b72dd115520a1d90607
@@ -3469,7 +3499,7 @@ entries:
     version: 0.82.0
   - apiVersion: v2
     appVersion: 0.81.0
-    created: "2026-11-26T14:30:53.713468424Z"
+    created: "2026-11-26T16:02:58.45704456Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 3aedaafd09264593874437b79dc88e5d167555a07890d38aaff3a6028ab2959d
@@ -3484,7 +3514,7 @@ entries:
     version: 0.81.0
   - apiVersion: v2
     appVersion: 0.80.1
-    created: "2026-11-26T14:30:53.708069448Z"
+    created: "2026-11-26T16:02:58.454996215Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 9eaa0ac8b9d22579e6565dee1f4d3040843f67fb0806dce62f17bb159f9c69ba
@@ -3499,7 +3529,7 @@ entries:
     version: 0.80.1
   - apiVersion: v2
     appVersion: 0.80.0
-    created: "2026-11-26T14:30:53.70255781Z"
+    created: "2026-11-26T16:02:58.452896413Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 68dfab682b05ebc86d9191fd1e60379c2b57ede5b0fe2598c4847611f48cf6f7
@@ -3514,7 +3544,7 @@ entries:
     version: 0.80.0
   - apiVersion: v2
     appVersion: 0.79.0
-    created: "2026-11-26T14:30:53.700506569Z"
+    created: "2026-11-26T16:02:58.449193807Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: a45f02be134d3b1f355bbc06c586f3e24d644023caf1c0c85c928ad7b110a61c
@@ -3529,7 +3559,7 @@ entries:
     version: 0.79.0
   - apiVersion: v2
     appVersion: 0.78.0
-    created: "2026-11-26T14:30:53.698462854Z"
+    created: "2026-11-26T16:02:58.447019906Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 61739f46e73979558b15f80d396c3884a14d659a2e08dcc9734f4363e4cb529b
@@ -3544,7 +3574,7 @@ entries:
     version: 0.78.0
   - apiVersion: v2
     appVersion: 0.77.0
-    created: "2026-11-26T14:30:53.696291888Z"
+    created: "2026-11-26T16:02:58.444614398Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: cd22a010c93d551667ae17c86887f6bdd2668ca43bc83daeb0d81c94b4a2fd04
@@ -3559,7 +3589,7 @@ entries:
     version: 0.77.0
   - apiVersion: v2
     appVersion: 0.76.0
-    created: "2026-11-26T14:30:53.694250125Z"
+    created: "2026-11-26T16:02:58.442605098Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: a086e97f8369b90cfa7ecbd9d2503f50346c03ca1bd6616067ed02aa71a64db6
@@ -3574,7 +3604,7 @@ entries:
     version: 0.76.0
   - apiVersion: v2
     appVersion: 0.75.0
-    created: "2026-11-26T14:30:53.690545636Z"
+    created: "2026-11-26T16:02:58.440318203Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 081d3d3f796ff79be84262bf2b846ae04582f4583f95957dfb8933c613893b15
@@ -3589,7 +3619,7 @@ entries:
     version: 0.75.0
   - apiVersion: v2
     appVersion: 0.74.0
-    created: "2026-11-26T14:30:53.68735674Z"
+    created: "2026-11-26T16:02:58.436633341Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 1eb49b4a4cc7ded792d20d282c47bacf557d739105e61b783c24f296a234d839
@@ -3604,7 +3634,7 @@ entries:
     version: 0.74.0
   - apiVersion: v2
     appVersion: 0.73.0
-    created: "2026-11-26T14:30:53.684287529Z"
+    created: "2026-11-26T16:02:58.434203216Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 6ef27effeabbcd8ffec5cf090c2449a8b6a50f9b2af44d8521bbc95875ef88c1
@@ -3619,7 +3649,7 @@ entries:
     version: 0.73.0
   - apiVersion: v2
     appVersion: 0.72.1
-    created: "2026-11-26T14:30:53.682283779Z"
+    created: "2026-11-26T16:02:58.431641033Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: c79e2a5413f0752a8915deb6197442ed341c894d803191833022fbbb1d98f234
@@ -3634,7 +3664,7 @@ entries:
     version: 0.72.1
   - apiVersion: v2
     appVersion: 0.72.0
-    created: "2026-11-26T14:30:53.679936861Z"
+    created: "2026-11-26T16:02:58.429277834Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: c5b5e34d0a44a7c06d266b98eb119ca22a163d4b10bb38ba22b0b1aa4172a8a1
@@ -3649,7 +3679,7 @@ entries:
     version: 0.72.0
   - apiVersion: v2
     appVersion: 0.71.1
-    created: "2026-11-26T14:30:53.674989828Z"
+    created: "2026-11-26T16:02:58.426571558Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 261f519f12e51a18680b94c28de77bc887c15cddc78febe7dda8bac1c8eae13a
@@ -3664,7 +3694,7 @@ entries:
     version: 0.71.1
   - apiVersion: v2
     appVersion: 0.71.0
-    created: "2026-11-26T14:30:53.672211176Z"
+    created: "2026-11-26T16:02:58.422097688Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 6ae912a886fd94c471f6fcd21f56c11983c2cfbdcecb2609445284acd798e791
@@ -3679,7 +3709,7 @@ entries:
     version: 0.71.0
   - apiVersion: v2
     appVersion: 0.70.0
-    created: "2026-11-26T14:30:53.669750252Z"
+    created: "2026-11-26T16:02:58.419762141Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: e835aef4ee76b7a7e04cded5a2b50c3ce8a6947c0bc1d1d16bdba50b225ee2f0
@@ -3694,7 +3724,7 @@ entries:
     version: 0.70.0
   - apiVersion: v2
     appVersion: 0.69.2
-    created: "2026-11-26T14:30:53.666880098Z"
+    created: "2026-11-26T16:02:58.41704761Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 99ad6fa0dbc71203736b5ea10e9be440dae452faacfc9eba699422dbd385c4ed
@@ -3709,7 +3739,7 @@ entries:
     version: 0.69.2
   - apiVersion: v2
     appVersion: 0.69.1
-    created: "2026-11-26T14:30:53.664570851Z"
+    created: "2026-11-26T16:02:58.414741819Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 90861ebc44685d0edff0155e7c097137f9e2e475e772349c8738f523dc9b3208
@@ -3724,7 +3754,7 @@ entries:
     version: 0.69.1
   - apiVersion: v2
     appVersion: 0.69.0
-    created: "2026-11-26T14:30:53.660021638Z"
+    created: "2026-11-26T16:02:58.412092021Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: d6544dc46c49604dcfe885b6ea3319268d243fe18bec24be65f45c70a16b7906
@@ -3739,7 +3769,7 @@ entries:
     version: 0.69.0
   - apiVersion: v2
     appVersion: 0.68.0
-    created: "2026-11-26T14:30:53.655080336Z"
+    created: "2026-11-26T16:02:58.408062558Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 7e0288eead6ed5c283c8d76a55f2f94bbf82f8560dad45d3a363ffac913054b4
@@ -3754,7 +3784,7 @@ entries:
     version: 0.68.0
   - apiVersion: v2
     appVersion: 0.67.0
-    created: "2026-11-26T14:30:53.651064339Z"
+    created: "2026-11-26T16:02:58.405541582Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 5f25465217d83a625b9a7284e0b131487523c77068fbefec1b7af42c81eec6c1
@@ -3769,7 +3799,7 @@ entries:
     version: 0.67.0
   - apiVersion: v2
     appVersion: 0.66.2
-    created: "2026-11-26T14:30:53.649149396Z"
+    created: "2026-11-26T16:02:58.402973898Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 3881efea3a94291452a38b3d95c74b412a6c8e6acf5f3e975d3a644148a7e518
@@ -3784,7 +3814,7 @@ entries:
     version: 0.66.2
   - apiVersion: v2
     appVersion: 0.66.1
-    created: "2026-11-26T14:30:53.646973281Z"
+    created: "2026-11-26T16:02:58.400809846Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 10a4b2d8048fee8e93bf1f801b6f503d22003b919300acfdab4660f9b63aa881
@@ -3799,7 +3829,7 @@ entries:
     version: 0.66.1
   - apiVersion: v2
     appVersion: 0.66.0
-    created: "2026-11-26T14:30:53.644419663Z"
+    created: "2026-11-26T16:02:58.398064365Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: f5baa7e4039302a281d02e5525b8cce56597261c40cb1bf8533639df161e0ece
@@ -3814,7 +3844,7 @@ entries:
     version: 0.66.0
   - apiVersion: v2
     appVersion: 0.65.0
-    created: "2026-11-26T14:30:53.640647215Z"
+    created: "2026-11-26T16:02:58.393791915Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 7cd8f24f869e0e36913e5c414a6821db64c532cb49397195cd4bc5ac5d819ca4
@@ -3829,7 +3859,7 @@ entries:
     version: 0.65.0
   - apiVersion: v2
     appVersion: 0.64.2
-    created: "2026-11-26T14:30:53.634418123Z"
+    created: "2026-11-26T16:02:58.391662538Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 0ba0bb0fcc69d59c0126bce06e4d57d3e480d039ed49bb1ce02ed1f1916db54e
@@ -3844,7 +3874,7 @@ entries:
     version: 0.64.2
   - apiVersion: v2
     appVersion: 0.64.1
-    created: "2026-11-26T14:30:53.631487394Z"
+    created: "2026-11-26T16:02:58.38955442Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 760951cb0597f6a064b140575e5c6e1948325049135c2d9210f8527a4da5fd25
@@ -3859,7 +3889,7 @@ entries:
     version: 0.64.1
   - apiVersion: v2
     appVersion: 0.64.0
-    created: "2026-11-26T14:30:53.629675365Z"
+    created: "2026-11-26T16:02:58.387596226Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 6bceab0d48b47d7b1c756278e7c0d7d498967c0b6934d0121ad39ae24d1fba25
@@ -3874,7 +3904,7 @@ entries:
     version: 0.64.0
   - apiVersion: v2
     appVersion: 0.63.3
-    created: "2026-11-26T14:30:53.627850683Z"
+    created: "2026-11-26T16:02:58.385211717Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 3da64d62367441e50f249b4db50cf270d75e586ecd5f3f1df56c9a01b63bf49c
@@ -3889,7 +3919,7 @@ entries:
     version: 0.63.3
   - apiVersion: v2
     appVersion: 0.63.2
-    created: "2026-11-26T14:30:53.625661703Z"
+    created: "2026-11-26T16:02:58.381616254Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: a40f50ec6903e4f6d3ee5428d6da7269554af346ac0ce63b1fa2ad9dbc2eadde
@@ -3904,7 +3934,7 @@ entries:
     version: 0.63.2
   - apiVersion: v2
     appVersion: 0.63.1
-    created: "2026-11-26T14:30:53.62165323Z"
+    created: "2026-11-26T16:02:58.379439598Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 37e5e98203fe37ac5df346fcd9f7f5612ed6c3447f8d82d32a361ae1cf7300ae
@@ -3919,7 +3949,7 @@ entries:
     version: 0.63.1
   - apiVersion: v2
     appVersion: 0.63.0
-    created: "2026-11-26T14:30:53.619648908Z"
+    created: "2026-11-26T16:02:58.377259725Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 527dec5c760cb9238bd9d16a58007f46ae7ec89b9592cdd7e71ca6a93c59746f
@@ -3934,7 +3964,7 @@ entries:
     version: 0.63.0
   - apiVersion: v2
     appVersion: 0.62.2
-    created: "2026-11-26T14:30:53.617746038Z"
+    created: "2026-11-26T16:02:58.375118144Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 3cb2f14b7c522406a562e125ea5d2b9379e52a347ef5117890fdd008c0cd2206
@@ -3949,7 +3979,7 @@ entries:
     version: 0.62.2
   - apiVersion: v2
     appVersion: 0.62.1
-    created: "2026-11-26T14:30:53.615241693Z"
+    created: "2026-11-26T16:02:58.373045024Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: aece0a24eeb66b5c53e33ea0130359bec8d70ed615f65ade7da5b0e5eea60f8f
@@ -3964,7 +3994,7 @@ entries:
     version: 0.62.1
   - apiVersion: v2
     appVersion: 0.62.0
-    created: "2026-11-26T14:30:53.612799395Z"
+    created: "2026-11-26T16:02:58.369249744Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 03772e0bec6146a26ae76ac8705df3fd2d7de1f81343829a1db0dd24bf7d5c6d
@@ -3979,7 +4009,7 @@ entries:
     version: 0.62.0
   - apiVersion: v2
     appVersion: 0.61.0
-    created: "2026-11-26T14:30:53.604710635Z"
+    created: "2026-11-26T16:02:58.366896073Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 7d15852faf1cd428228c0eb0d0cd578342aa5966a9e2e51a32b154bc2da874c1
@@ -3994,7 +4024,7 @@ entries:
     version: 0.61.0
   - apiVersion: v2
     appVersion: 0.60.0
-    created: "2026-11-26T14:30:53.599298685Z"
+    created: "2026-11-26T16:02:58.364664312Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: d6d69da871e5cda182942d5fbc0d8d306991fc7b8a5fe3da9a63d05450d19c3b
@@ -4009,7 +4039,7 @@ entries:
     version: 0.60.0
   - apiVersion: v2
     appVersion: 0.59.1
-    created: "2026-11-26T14:30:53.597256742Z"
+    created: "2026-11-26T16:02:58.362707631Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 84c6b95cfe65e592402ea301ed148e68d3834a60f5832fce6fd9f07454eed047
@@ -4024,7 +4054,7 @@ entries:
     version: 0.59.1
   - apiVersion: v2
     appVersion: 0.59.0
-    created: "2026-11-26T14:30:53.594331062Z"
+    created: "2026-11-26T16:02:58.360562193Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 568f31062e2d4cb548c5180949cf64b37918eede01cc9a75860f426e031b868c
@@ -4039,7 +4069,7 @@ entries:
     version: 0.59.0
   - apiVersion: v2
     appVersion: 0.58.0
-    created: "2026-11-26T14:30:53.587997874Z"
+    created: "2026-11-26T16:02:58.356159016Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 624f5c73039265b7e7f2f7e34b3ea16c83ea83f7718bc12896b1e213b8ac2817
@@ -4054,7 +4084,7 @@ entries:
     version: 0.58.0
   - apiVersion: v2
     appVersion: 0.57.0
-    created: "2026-11-26T14:30:53.585529026Z"
+    created: "2026-11-26T16:02:58.353866391Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: ee9080109964f00b87d17a01e479fc3a6d2c8678a9642eb5f27ffe4e1fefc656
@@ -4069,7 +4099,7 @@ entries:
     version: 0.57.0
   - apiVersion: v2
     appVersion: 0.56.4
-    created: "2026-11-26T14:30:53.58291283Z"
+    created: "2026-11-26T16:02:58.351715913Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 5f4d329d2f7d1b49f1d413fb6002f12a20b6bca3271a9f9fb0e4243936e9c024
@@ -4084,7 +4114,7 @@ entries:
     version: 0.56.4
   - apiVersion: v2
     appVersion: 0.56.3
-    created: "2026-11-26T14:30:53.580314398Z"
+    created: "2026-11-26T16:02:58.3495569Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: f3af08208e0f1b420ad5c8506ed233ab528f60c794029f1290e07fa92f074ddb
@@ -4099,7 +4129,7 @@ entries:
     version: 0.56.3
   - apiVersion: v2
     appVersion: 0.56.2
-    created: "2026-11-26T14:30:53.577037586Z"
+    created: "2026-11-26T16:02:58.347231003Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: fa887a53a305beee2ef4ce7e718f239a40a05bbd5ef81f75f104010a98872a60
@@ -4114,7 +4144,7 @@ entries:
     version: 0.56.2
   - apiVersion: v2
     appVersion: 0.56.1
-    created: "2026-11-26T14:30:53.574810564Z"
+    created: "2026-11-26T16:02:58.343754484Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 56386b499d71f2d8efc6977b4a9ef9f5d5dc3131f054e551dee43053fb07e193
@@ -4129,7 +4159,7 @@ entries:
     version: 0.56.1
   - apiVersion: v2
     appVersion: 0.56.0
-    created: "2026-11-26T14:30:53.572129836Z"
+    created: "2026-11-26T16:02:58.341787693Z"
     description: The quader Bastion, a read-only, internet-facing cache instance in
       front of a main quader installation (quader serve --role bastion).
     digest: 6fd7da3d644f857c88331e17b2008447328227562f1d09dabc41d9e3b093abc6
@@ -4142,4 +4172,4 @@ entries:
     urls:
     - https://guided-traffic.github.io/quader/quader-bastion-0.56.0.tgz
     version: 0.56.0
-generated: "2026-11-26T14:30:52.19425599Z"
+generated: "2026-11-26T16:02:57.208056439Z"
