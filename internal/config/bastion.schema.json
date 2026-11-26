@@ -228,7 +228,7 @@
             },
             "documents_max_bytes": {
               "default": "2GiB",
-              "description": "A share of max_bytes for shared documents, so that documents never evict artifacts (R-BAS-023).",
+              "description": "A share of max_bytes for shared documents, so that documents never evict artifacts (R-BAS-023); the artifacts get the rest, which must hold one object of max_object_bytes (R-BAS-031).",
               "type": [
                 "string",
                 "integer"
@@ -254,7 +254,7 @@
             },
             "max_bytes": {
               "default": "20GiB",
-              "description": "Bytes plus documents stay below this; a sweep evicts by last access (R-BAS-031).",
+              "description": "Bytes plus documents stay below this; a sweep evicts by last access (R-BAS-031). Less documents_max_bytes it holds at least one object of max_object_bytes: the artifacts' room, or the role does not start.",
               "type": [
                 "string",
                 "integer"
@@ -264,7 +264,7 @@
             },
             "max_object_bytes": {
               "default": "2GiB",
-              "description": "Larger answers are passed through and not kept (R-BAS-021).",
+              "description": "Larger answers are passed through and not kept (R-BAS-021). At most max_bytes less documents_max_bytes.",
               "type": [
                 "string",
                 "integer"

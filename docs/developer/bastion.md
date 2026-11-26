@@ -864,7 +864,8 @@ Bastion's counters:
   1.3 s).
 - **With the defaults a cache of 2 GiB keeps no artifact at all.** `documents_max_bytes` (2 GiB) is a share of `max_bytes`; at
   `max_bytes` 2 GiB the first run of the attack had every one of 1,531 fills refused "no room", and every request went to the main
-  installation. The scaled-down runs above give documents 256 MiB.
+  installation. The scaled-down runs above give documents 256 MiB. Neither configuration starts any more: the role and the chart refuse an
+  artifacts' room below one `max_object_bytes` (R-BAS-031), and `hack/bastion-measure/attack.sh` now also lowers `max_object_bytes` to 1 GiB.
 
 ### The main installation's latency per check and per conditional request
 

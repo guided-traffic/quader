@@ -103,10 +103,10 @@ config:
       poll_interval: 2s                 # 1s to 10s
     cache:
       backend: volume                   # volume | bucket
-      max_bytes: 20GiB
+      max_bytes: 20GiB                  # artifacts get max_bytes less documents_max_bytes, at least max_object_bytes, or the role does not start
       max_object_bytes: 2GiB
       spool_max_bytes: 2GiB             # the fills in progress of a replica hold at most this in temporary storage; at least max_object_bytes
-      documents_max_bytes: 2GiB
+      documents_max_bytes: 2GiB         # a share of max_bytes for metadata
       private_documents_max_bytes: 256MiB  # per replica, memory
       metadata_revalidate_after: 1m
       artifact_revalidate_after: 10m

@@ -58,6 +58,11 @@ generated schema of the role bastion (docs/developer/helm-chart.md, Bastion char
 {{- if lt $spool $maxObject -}}
 {{- fail (printf "quader-bastion: config.bastion.cache.spool_max_bytes (%v bytes) must be at least config.bastion.cache.max_object_bytes (%v bytes): an object up to that size is spooled whole before it is kept; lower max_object_bytes or raise spool_max_bytes" $spool $maxObject) -}}
 {{- end -}}
+{{- $cacheBytes := include "quader-bastion.bytes" (dig "bastion" "cache" "max_bytes" "20GiB" $cfg) | int64 -}}
+{{- $documents := include "quader-bastion.bytes" (dig "bastion" "cache" "documents_max_bytes" "2GiB" $cfg) | int64 -}}
+{{- if lt (sub $cacheBytes $documents) $maxObject -}}
+{{- fail (printf "quader-bastion: config.bastion.cache.max_bytes (%v bytes) less config.bastion.cache.documents_max_bytes (%v bytes) leaves the artifacts less than one object of config.bastion.cache.max_object_bytes (%v bytes): the cache would keep no artifact. Raise max_bytes, or lower documents_max_bytes or max_object_bytes" $cacheBytes $documents $maxObject) -}}
+{{- end -}}
 {{- if include "quader-bastion.spoolInTmp" . -}}
 {{- $tmp := include "quader-bastion.tmpSizeLimit" . | include "quader-bastion.bytes" | int64 -}}
 {{- $need := add $spool (include "quader-bastion.tmpHeadroomBytes" . | int64) -}}

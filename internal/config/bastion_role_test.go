@@ -190,6 +190,34 @@ func TestR_BAS_046_TheRangesOfTheSpecificationAreEnforced(t *testing.T) {
 	}
 }
 
+// TestR_BAS_031_ACacheWithoutRoomForOneLargestObjectIsRefused: the artifacts' room, max_bytes less the documents' share, holds at
+// least one object of max_object_bytes. A cache of 2 GiB with the defaults of the other two keeps no artifact and is refused with a
+// message that names the three keys and what to change; room of exactly one largest object is accepted, one MiB less is not; the
+// defaults and the sizes of deploy/dev/bastion-chart-common.yaml (the e2e and dev Bastions) pass. Unit, milliseconds.
+func TestR_BAS_031_ACacheWithoutRoomForOneLargestObjectIsRefused(t *testing.T) {
+	for _, c := range []struct{ name, cache string }{
+		{"a cache of 2 GiB with the default shares", "max_bytes: 2GiB\n"},
+		{"one MiB short of one largest object", "max_bytes: 4GiB\n    documents_max_bytes: 2049MiB\n"},
+		{"a largest object above the whole", "max_bytes: 4GiB\n    max_object_bytes: 5GiB\n    spool_max_bytes: 5GiB\n"},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			msg := bastionIssues(t, strings.Replace(bastionMinimal, "bastion:\n", "bastion:\n  cache:\n    "+c.cache, 1))
+			for _, key := range []string{"bastion.cache.max_bytes", "cache.documents_max_bytes", "cache.max_object_bytes", "raise max_bytes"} {
+				if !strings.Contains(msg, key) {
+					t.Errorf("the message does not name %q:\n%s", key, msg)
+				}
+			}
+		})
+	}
+	mustLoadBastion(t, bastionMinimal) // the defaults: 20 GiB, 2 GiB of documents, objects up to 2 GiB
+	for _, cache := range []string{
+		"max_bytes: 4GiB\n",
+		"max_bytes: 1GiB\n    max_object_bytes: 256MiB\n    spool_max_bytes: 512MiB\n    documents_max_bytes: 128MiB\n",
+	} {
+		mustLoadBastion(t, strings.Replace(bastionMinimal, "bastion:\n", "bastion:\n  cache:\n    "+cache, 1))
+	}
+}
+
 // TestR_BAS_046_TheChartManagedKeysAreMarkedInTheSchema: the keys the chart renders carry the marker, and no
 // other key does (the chart refuses a value under config for exactly these).
 func TestR_BAS_046_TheChartManagedKeysAreMarkedInTheSchema(t *testing.T) {

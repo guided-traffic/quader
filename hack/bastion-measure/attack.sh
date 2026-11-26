@@ -58,8 +58,9 @@ case "${1:-}" in
     label="$2" spread="$3" secs="${4:-120}"
     bastion2
     # documents_max_bytes is a share of max_bytes (default 2 GiB): at its default a cache of 2 GiB keeps no artifact at all
-    # (measured: every fill "no room"), so the scaled-down cache gives documents 256 MiB and artifacts the rest.
-    E4_SERVER_EXTRA='  trusted_proxies: ["127.0.0.1/32"]' E4_BASTION_EXTRA="${E4_BASTION_EXTRA-    documents_max_bytes: 256MiB}" \
+    # (measured: every fill "no room"), so the scaled-down cache gives documents 256 MiB and artifacts the rest. The role refuses an
+    # artifacts' room below one max_object_bytes (R-BAS-031), so the largest object kept is 1 GiB here.
+    E4_SERVER_EXTRA='  trusted_proxies: ["127.0.0.1/32"]' E4_BASTION_EXTRA="${E4_BASTION_EXTRA-$'    documents_max_bytes: 256MiB\n    max_object_bytes: 1GiB'}" \
       $run bastion 2GiB >/dev/null
     sleep 20
     # The normal client's working set: one npm ci fills it, a second shows it warm before the attack.

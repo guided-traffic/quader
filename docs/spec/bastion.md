@@ -1692,7 +1692,10 @@ and the sweep evicts unprotected entries first, then protected ones, with at mos
 sweep evicts by last access alone, and a fill is an access.
 
 - **Size.** Bytes plus documents stay below `bastion.cache.max_bytes`; documents below `documents_max_bytes`, which is their reserved
-  share: artifacts are limited to `max_bytes − documents_max_bytes` ([Q-BAS-88](#q-bas-88--documents-have-a-reserved-share-and-entries-are-removed-when-read)). A sweep runs every
+  share: artifacts are limited to `max_bytes − documents_max_bytes` ([Q-BAS-88](#q-bas-88--documents-have-a-reserved-share-and-entries-are-removed-when-read)), and that room
+  holds at least one object of `max_object_bytes`: a configuration whose artifacts' room is smaller does not start, and the chart refuses to
+  render it, each with a message that names the three keys and what to change (a cache of 2 GiB with the default 2 GiB of documents would refuse every fill for lack of room,
+  measured 2026-11-26). A sweep runs every
   `bastion.cache.sweep_interval`, and at once when an area passes 95 % of its limit between two of them; above 95 % of a limit it deletes
   in order of last access until 85 % remain ([Q-BAS-43](#q-bas-43--the-bucket-backend-evicts-by-listing-access-markers)). No commit takes an
   area past its limit between the sweeps: [R-BAS-089](#r-bas-089--the-cache-stays-below-its-size-between-sweeps).
@@ -1715,6 +1718,10 @@ bastion:
 
 Acceptance criteria:
 
+- A configuration whose `max_bytes` less `documents_max_bytes` is below `max_object_bytes` (`max_bytes: 2GiB` with the defaults) stops the
+  role at start naming the three keys; room of exactly one largest object starts
+  (`TestR_BAS_031_ACacheWithoutRoomForOneLargestObjectIsRefused`, unit); the chart refuses the same values
+  (`TestR_BAS_030_TheSpoolFitsTheTemporaryVolume`, chart).
 - With `max_bytes: 100MiB`, 300 MiB of tarballs in the bucket (written past the room R-BAS-089 admits, as a lowered `max_bytes` or
   replicas between their listings leave it) and the first 20 MiB read again: the next sweep leaves those 20 MiB cached and the total below
   100 MiB.

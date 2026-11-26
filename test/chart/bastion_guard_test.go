@@ -65,6 +65,11 @@ func TestR_BAS_030_TheSpoolFitsTheTemporaryVolume(t *testing.T) {
 	t.Run("a spool smaller than the largest object fails", func(t *testing.T) {
 		bstFails(t, bstRequired(), []string{"config.bastion.cache.spool_max_bytes=512MiB"}, "spool_max_bytes", "max_object_bytes")
 	})
+	t.Run("a cache whose artifacts' room is below the largest object fails (R-BAS-031)", func(t *testing.T) {
+		bstFails(t, bstRequired(), []string{"config.bastion.cache.max_bytes=2GiB"}, "max_bytes", "documents_max_bytes", "max_object_bytes")
+		bstRender(t, bstRequired(), "config.bastion.cache.max_bytes=2GiB", "config.bastion.cache.documents_max_bytes=256MiB",
+			"config.bastion.cache.max_object_bytes=1GiB")
+	})
 	t.Run("the volume backend needs room for the cache and the spool", func(t *testing.T) {
 		bstFails(t, bstRequired(), []string{"cacheVolume.size=21Gi"}, "cacheVolume.size", "spool_max_bytes")
 		bstRender(t, bstRequired(), "cacheVolume.size=22Gi")

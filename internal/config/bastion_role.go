@@ -106,10 +106,10 @@ type BastionFeed struct {
 // BastionCache configures the cache (R-BAS-023, R-BAS-024, R-BAS-030, R-BAS-031).
 type BastionCache struct {
 	Backend                  string             `yaml:"backend" default:"volume" validate:"oneof=volume|bucket" doc:"Where the cache lives: a local volume per replica, or a bucket of the Bastion's own shared by its replicas (R-BAS-030)."`
-	MaxBytes                 ByteSize           `yaml:"max_bytes" default:"20GiB" validate:"min=1MiB" doc:"Bytes plus documents stay below this; a sweep evicts by last access (R-BAS-031)."`
-	MaxObjectBytes           ByteSize           `yaml:"max_object_bytes" default:"2GiB" validate:"min=1KiB" doc:"Larger answers are passed through and not kept (R-BAS-021)."`
+	MaxBytes                 ByteSize           `yaml:"max_bytes" default:"20GiB" validate:"min=1MiB" doc:"Bytes plus documents stay below this; a sweep evicts by last access (R-BAS-031). Less documents_max_bytes it holds at least one object of max_object_bytes: the artifacts' room, or the role does not start."`
+	MaxObjectBytes           ByteSize           `yaml:"max_object_bytes" default:"2GiB" validate:"min=1KiB" doc:"Larger answers are passed through and not kept (R-BAS-021). At most max_bytes less documents_max_bytes."`
 	SpoolMaxBytes            ByteSize           `yaml:"spool_max_bytes" default:"2GiB" validate:"min=1MiB" doc:"The bytes all fills in progress of a replica may hold in temporary storage together; a fill that would pass it is passed through and not kept (Q-BAS-131). At least max_object_bytes. With the bucket backend the chart sizes the pod's tmp volume from it."`
-	DocumentsMaxBytes        ByteSize           `yaml:"documents_max_bytes" default:"2GiB" validate:"min=1MiB" doc:"A share of max_bytes for shared documents, so that documents never evict artifacts (R-BAS-023)."`
+	DocumentsMaxBytes        ByteSize           `yaml:"documents_max_bytes" default:"2GiB" validate:"min=1MiB" doc:"A share of max_bytes for shared documents, so that documents never evict artifacts (R-BAS-023); the artifacts get the rest, which must hold one object of max_object_bytes (R-BAS-031)."`
 	PrivateDocumentsMaxBytes ByteSize           `yaml:"private_documents_max_bytes" default:"256MiB" validate:"min=0" doc:"Memory per replica for the callers' private document copies (R-BAS-023)."`
 	MetadataRevalidateAfter  time.Duration      `yaml:"metadata_revalidate_after" default:"1m" validate:"min=1s,max=24h" doc:"A shared document is asked about again after this period (R-BAS-023)."`
 	ArtifactRevalidateAfter  time.Duration      `yaml:"artifact_revalidate_after" default:"10m" validate:"min=1s,max=24h" doc:"A cached artifact is checked again after this period (R-BAS-022)."`
@@ -316,9 +316,9 @@ func (b *BastionSettings) Validate(r *Report) {
 	c := b.Cache
 	if c.DocumentsMaxBytes > c.MaxBytes {
 		r.Add("cache.documents_max_bytes", "(%s) must not exceed cache.max_bytes (%s): it is a share of it", c.DocumentsMaxBytes, c.MaxBytes)
-	}
-	if c.MaxObjectBytes > c.MaxBytes {
-		r.Add("cache.max_object_bytes", "(%s) must not exceed cache.max_bytes (%s)", c.MaxObjectBytes, c.MaxBytes)
+	} else if room := c.MaxBytes - c.DocumentsMaxBytes; room < c.MaxObjectBytes {
+		r.Add("cache.max_bytes", "(%s) less cache.documents_max_bytes (%s) leaves the artifacts %s, less than one object of cache.max_object_bytes (%s): the cache would refuse the fills it is there for (R-BAS-031); raise max_bytes, or lower documents_max_bytes or max_object_bytes",
+			c.MaxBytes, c.DocumentsMaxBytes, room, c.MaxObjectBytes)
 	}
 	if c.SpoolMaxBytes < c.MaxObjectBytes {
 		r.Add("cache.spool_max_bytes", "(%s) must be at least cache.max_object_bytes (%s): an object up to that size is spooled whole before it is kept, so a smaller spool would never keep one of the sizes the limit allows (Q-BAS-131); lower max_object_bytes or raise spool_max_bytes", c.SpoolMaxBytes, c.MaxObjectBytes)
