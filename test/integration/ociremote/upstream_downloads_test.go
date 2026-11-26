@@ -102,20 +102,20 @@ func TestR_OPS_049_AnImageIsOneDownload(t *testing.T) {
 				return false
 			}
 			row = rows[0].(map[string]any)
-			d, _ := row["download"].(map[string]any)
+			d, _ := row["group"].(map[string]any)
 			return d != nil && d["items"] == float64(len(events))
 		})
 		// The tag's manifest, counted on its digest, and every file of the pull: one event each.
 		if len(events) != len(files)+1 {
 			t.Errorf("%d events for a pull of %d files and its tag", len(events), len(files))
 		}
-		d := row["download"].(map[string]any)
+		d := row["group"].(map[string]any)
 		if d["unit"] != "acme/b" || d["package"] != "acme/b" || d["version"] != "1.0" || d["size"] == nil || d["more"] != false ||
 			len(d["first"].([]any)) != min(len(events), 10) {
 			t.Errorf("the pull's row: %v", d)
 		}
 		id := row["event"].(map[string]any)["id"].(string)
-		a := e.st.Do(api, http.MethodGet, "/api/v1/audit/downloads/"+id+"/events?limit=1000", e.admin, nil)
+		a := e.st.Do(api, http.MethodGet, "/api/v1/audit/rows/"+id+"/events?limit=1000", e.admin, nil)
 		if a.Status != http.StatusOK || len(a.JSON(t)["items"].([]any)) != len(events) {
 			t.Errorf("the download's events: %d %s", a.Status, a.Body)
 		}

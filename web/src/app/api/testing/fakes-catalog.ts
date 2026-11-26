@@ -1,6 +1,6 @@
 import { Provider } from '@angular/core';
 import { applyMergePatch, JsonObject } from '../../shared/merge-patch';
-import { AuditApi, AuditEvent, AuditFilters, AuditRow, ExportFormat } from '../audit-api';
+import { AuditApi, AuditEvent, AuditFilters, AuditGroup, AuditRow, ExportFormat } from '../audit-api';
 import {
   Endpoint,
   EndpointsApi,
@@ -1225,25 +1225,46 @@ export function sampleEvent(over: Partial<AuditEvent> = {}): AuditEvent {
   };
 }
 
-/** The longest pause between two items of one download (R-OPS-055, `audit.DownloadGap`). */
+/** The longest pause between two items of one row (R-OPS-055, `audit.DownloadGap`). */
 const DOWNLOAD_GAP_MS = 60_000;
 
-/** The unit an event names (`details.unit`), or null for an event that begins no download. */
+/** The act of each action a row joins (R-OPS-056, `audit.ActOf`): the actions of a push and of a delete are one act each. */
+const ACTS: Readonly<Record<string, AuditGroup['act']>> = {
+  'artifact.downloaded': 'download',
+  'bastion.data_key.handed': 'datakeys',
+  'artifact.deployed': 'upload',
+  'package.published': 'upload',
+  'npm.publish': 'upload',
+  'artifact.deleted': 'delete',
+  'oci.manifest.deleted': 'delete',
+  'deb.package.deleted': 'delete',
+  'npm.unpublish': 'delete',
+  'package.deleted': 'delete',
+  'ansible.version.deleted': 'delete',
+  'authz.write.allowed': 'writes',
+};
+const FILE_ACTIONS = ['artifact.downloaded', 'bastion.data_key.handed', 'artifact.deployed', 'artifact.deleted'];
+
+function details(e: AuditEvent): Record<string, unknown> {
+  return e.details as Record<string, unknown>;
+}
+
+/** The unit an event names (`details.unit`), or null for an event that begins no row of several events. */
 function unitOf(e: AuditEvent): string | null {
-  const unit = (e.details as Record<string, unknown>)['unit'];
-  return ['artifact.downloaded', 'bastion.data_key.handed'].includes(e.action) && typeof unit === 'string' && unit !== '' ? unit : null;
+  const unit = details(e)['unit'];
+  return ACTS[e.action] && typeof unit === 'string' && unit !== '' ? unit : null;
 }
 
-/** The key of a download: the action, the repository, the unit and the caller (`audit_download_key`). */
-function downloadKey(e: AuditEvent): string {
-  return [e.action, e.repository, unitOf(e), e.actor.type, e.actor.id, e.actor.tokenId, e.source.ip].join('\u001f');
+/** The key of a row: the act, the repository, the unit and the caller (`audit_row_key`). */
+function rowKey(e: AuditEvent): string {
+  return [ACTS[e.action], e.repository, unitOf(e), e.actor.type, e.actor.id, e.actor.name, e.actor.tokenId, e.source.ip].join('\u001f');
 }
 
-/** The events of the download that `head` begins: those of its key from it on, each within the pause of the one before. */
-function auditDownloadMembers(events: readonly AuditEvent[], head: AuditEvent): AuditEvent[] {
-  const key = downloadKey(head);
+/** The events of the row that `head` begins: those of its key from it on, each within the pause of the one before. */
+function auditRowMembers(events: readonly AuditEvent[], head: AuditEvent): AuditEvent[] {
+  const key = rowKey(head);
   const same = events
-    .filter((e) => unitOf(e) !== null && downloadKey(e) === key && e.occurredAt >= head.occurredAt)
+    .filter((e) => unitOf(e) !== null && rowKey(e) === key && e.occurredAt >= head.occurredAt)
     .sort((a, b) => a.occurredAt.localeCompare(b.occurredAt) || a.id.localeCompare(b.id));
   const out: AuditEvent[] = [];
   for (const e of same) {
@@ -1254,50 +1275,67 @@ function auditDownloadMembers(events: readonly AuditEvent[], head: AuditEvent): 
   return out;
 }
 
-/** The rows of the events as the server forms them (R-OPS-055), newest first by each row's first event. */
+/** The group of a row's events as the server reads it (`audit.groupOf`). */
+function groupOf(head: AuditEvent, members: readonly AuditEvent[]): AuditGroup {
+  const str = (m: AuditEvent, k: string): string | null => (typeof details(m)[k] === 'string' && details(m)[k] !== '' ? (details(m)[k] as string) : null);
+  const files = members.filter((m) => FILE_ACTIONS.includes(m.action));
+  const sizes = files.map((m) => details(m)['size']);
+  const versions = [...new Set(members.map((m) => str(m, 'version')).filter((v): v is string => v !== null))];
+  const published = members.find((m) => m.action === 'package.published' || m.action === 'npm.publish');
+  let act = ACTS[head.action]!;
+  if (act === 'upload' && published) act = ['oci', 'nuget'].includes(str(published, 'format') ?? '') ? 'push' : 'publish';
+  const sha = (m: AuditEvent): string => {
+    const d = details(m);
+    if (typeof d['sha256'] === 'string') return d['sha256'];
+    if (typeof d['digest'] === 'string') return d['digest'].replace(/^sha256:/, '');
+    const f = (d['files'] as { sha256?: string }[] | undefined)?.[0]?.sha256;
+    return f ?? '';
+  };
+  return {
+    act,
+    unit: unitOf(head)!,
+    package: str(head, 'package') ?? str(head, 'name'),
+    version: versions[0] ?? null,
+    versions: versions.length,
+    items: members.length,
+    more: false,
+    size: files.length > 0 && sizes.every((s) => typeof s === 'number') ? (sizes as number[]).reduce((a, b) => a + b, 0) : null,
+    lastAt: members.at(-1)!.occurredAt,
+    first: members.slice(0, 10).map((m) => ({
+      id: m.id,
+      occurredAt: m.occurredAt,
+      action: m.action,
+      path: m.path ?? '',
+      sha256: sha(m),
+      version: str(m, 'version'),
+      size: typeof details(m)['size'] === 'number' ? (details(m)['size'] as number) : null,
+      replica: m.replica,
+      delivery: str(m, 'delivery'),
+    })),
+  };
+}
+
+/** The rows of the events as the server forms them (R-OPS-055, R-OPS-056), newest first by each row's first event. */
 export function auditRowsOf(events: readonly AuditEvent[]): AuditRow[] {
   const newest = [...events].sort((a, b) => b.occurredAt.localeCompare(a.occurredAt) || b.id.localeCompare(a.id));
   const rows: AuditRow[] = [];
   for (const e of newest) {
     if (unitOf(e) === null) {
-      rows.push({ event: e, download: null });
+      rows.push({ event: e, group: null });
       continue;
     }
-    const key = downloadKey(e);
+    const key = rowKey(e);
     const before = events.find(
       (p) =>
         p !== e &&
         unitOf(p) !== null &&
-        downloadKey(p) === key &&
+        rowKey(p) === key &&
         p.occurredAt <= e.occurredAt &&
         Date.parse(e.occurredAt) - Date.parse(p.occurredAt) <= DOWNLOAD_GAP_MS &&
         (p.occurredAt < e.occurredAt || p.id < e.id),
     );
     if (before) continue;
-    const members = auditDownloadMembers(events, e);
-    const details = (m: AuditEvent): Record<string, unknown> => m.details as Record<string, unknown>;
-    const sizes = members.map((m) => details(m)['size']);
-    rows.push({
-      event: e,
-      download: {
-        unit: unitOf(e)!,
-        package: (details(e)['package'] as string | undefined) ?? null,
-        version: (members.map((m) => details(m)['version']).find((v) => typeof v === 'string' && v !== '') as string | undefined) ?? null,
-        items: members.length,
-        more: false,
-        size: sizes.every((s) => typeof s === 'number') ? (sizes as number[]).reduce((a, b) => a + b, 0) : null,
-        lastAt: members.at(-1)!.occurredAt,
-        first: members.slice(0, 10).map((m) => ({
-          id: m.id,
-          occurredAt: m.occurredAt,
-          path: m.path ?? '',
-          sha256: String(details(m)['sha256'] ?? ''),
-          size: typeof details(m)['size'] === 'number' ? (details(m)['size'] as number) : null,
-          replica: m.replica,
-          delivery: (details(m)['delivery'] as string | undefined) ?? null,
-        })),
-      },
-    });
+    rows.push({ event: e, group: groupOf(e, auditRowMembers(events, e)) });
   }
   return rows;
 }
@@ -1340,14 +1378,14 @@ export class FakeAuditApi extends AuditApi {
     return paged(auditRowsOf(events));
   }
 
-  override downloadEvents(id: string): PageFetcher<AuditEvent> {
-    const row = auditRowsOf(this.eventList).find((r) => r.event.id === id && r.download);
+  override rowEvents(id: string): PageFetcher<AuditEvent> {
+    const row = auditRowsOf(this.eventList).find((r) => r.event.id === id && r.group);
     if (!row) {
       return async () => {
         throw notFound();
       };
     }
-    return paged(auditDownloadMembers(this.eventList, row.event));
+    return paged(auditRowMembers(this.eventList, row.event));
   }
 
   override async event(id: string): Promise<AuditEvent> {

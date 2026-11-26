@@ -49,7 +49,7 @@ import { formsHead, headLoading, longReadmeHead, manyVersionsHead, rowCommand, t
 import { deprecatedCollection, deprecationActs } from './deprecations';
 import { damagedBlobs, noDamagedBlob, oneConnection, secondUnreachable, severalConnections, twoConnectionFacts } from './storage';
 import { auditDataKeys, bastionsHandover, bastionsRead, forbiddenLink, seededBastion } from './bastions';
-import { auditDownloads } from './audit-downloads';
+import { auditRows } from './audit-rows';
 import { downloadsWalk } from './downloads';
 import { cachedDeb, cachedNpm } from './cached';
 import { brokenDeb, debRelationLookups, docsDeb, manyFilesDeb } from './debdocs';
@@ -2997,7 +2997,7 @@ async function* auditEvent(page: Page): AsyncGenerator<string> {
   await page.route(list, async (route) => {
     const res = await route.fetch();
     type Event = Record<string, unknown> & { actor: Record<string, unknown> };
-    const body = (await res.json()) as { items: { event: Event; download: unknown }[] };
+    const body = (await res.json()) as { items: { event: Event; group: unknown }[] };
     const [first, second] = body.items.map((r) => r.event);
     // The import of advisory data as the job ui-layout met it among the seed's events: an actor without a name, only its identifier,
     // and a target that is a kind and an identifier (vulnerability_source, osv:npm); the log fell to blocks at 1,440 and 1,024 px.
@@ -3017,7 +3017,7 @@ async function* auditEvent(page: Page): AsyncGenerator<string> {
       path: 'releases/2026/11/customer-portal-installer-with-a-long-name-for-the-windows-build-agents.exe',
       actor: { ...first.actor, type: 'user', authMethod: 'bearer' },
     };
-    const rows = long && nameless ? [{ event: long, download: null }, { event: nameless, download: null }, ...body.items.slice(2)] : body.items;
+    const rows = long && nameless ? [{ event: long, group: null }, { event: nameless, group: null }, ...body.items.slice(2)] : body.items;
     await route.fulfill({ response: res, json: { ...body, items: rows } });
   });
   // The log anew, without the event of the address: the first row opens the long one.
@@ -3835,11 +3835,11 @@ export const screens: readonly Screen[] = [
   { id: 'admin-audit-event', path: '/ui/admin/audit', kinds: admins, walk: auditEvent, widths: [1280], tables: 'quader-audit-log quader-data-table' },
   // The traces of data keys handed to a Bastion (storage.md R-STOR-096), answered in the browser: the list and one opened.
   { id: 'admin-audit-data-keys', path: '/ui/admin/audit', kinds: admins, walk: auditDataKeys, tables: 'quader-audit-log quader-data-table' },
-  // A download as one row (R-OPS-055), answered in the browser: an image of 32 items closed and opened in place, a pull by digest, an
-  // npm install of three packages, a pull still going on, a refusal and events of before; then the log of one download's events. Not in
-  // the German pass yet: there the log of one download's events finds "Datei heruntergeladen" cramped in the action's 7.5 rem at
-  // 1,440 px beside an actor's column with 15 px to spare, which the log's column budget (Q-UI-997) has no room to widen.
-  { id: 'admin-audit-downloads', path: '/ui/admin/audit', kinds: admins, walk: auditDownloads, tables: 'quader-audit-log quader-data-table' },
+  // An act of several items as one row (R-OPS-055, R-OPS-056), answered in the browser: a push of an image of 24 tiny layers closed and
+  // opened in place beside its writes, a NuGet push, a delete of a version and of a package, files uploaded into a folder, a pull of an
+  // image of 32 items opened, a pull by digest, an npm install of three packages, a pull still going on, a refusal and events of before;
+  // then the log of one pull's events. In the German pass too: the action's words stand whole at 1,440, 1,024 and 390 px (Q-UI-1490).
+  { id: 'admin-audit-rows', path: '/ui/admin/audit', kinds: admins, walk: auditRows, tables: 'quader-audit-log quader-data-table', de: true },
   { id: 'admin-advisory-sources', path: '/ui/admin/advisory-sources', kinds: admins, walk: databaseCommandsOpen },
   // The auditor reads the sources and the image scanners (settings:read, R-OPS-048).
   { id: 'admin-advisory-sources-read', path: '/ui/admin/advisory-sources', kinds: ['auditor'] },

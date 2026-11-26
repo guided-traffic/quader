@@ -76,6 +76,39 @@ func (e AuditEventOutcome) Valid() bool {
 	}
 }
 
+// Defines values for AuditGroupAct.
+const (
+	AuditGroupActDatakeys AuditGroupAct = "datakeys"
+	AuditGroupActDelete   AuditGroupAct = "delete"
+	AuditGroupActDownload AuditGroupAct = "download"
+	AuditGroupActPublish  AuditGroupAct = "publish"
+	AuditGroupActPush     AuditGroupAct = "push"
+	AuditGroupActUpload   AuditGroupAct = "upload"
+	AuditGroupActWrites   AuditGroupAct = "writes"
+)
+
+// Valid indicates whether the value is a known member of the AuditGroupAct enum.
+func (e AuditGroupAct) Valid() bool {
+	switch e {
+	case AuditGroupActDatakeys:
+		return true
+	case AuditGroupActDelete:
+		return true
+	case AuditGroupActDownload:
+		return true
+	case AuditGroupActPublish:
+		return true
+	case AuditGroupActPush:
+		return true
+	case AuditGroupActUpload:
+		return true
+	case AuditGroupActWrites:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AuthSettingsStatusBreakGlassPasswordStatus.
 const (
 	AuthSettingsStatusBreakGlassPasswordStatusNotApplicable AuthSettingsStatusBreakGlassPasswordStatus = "not_applicable"
@@ -9259,41 +9292,6 @@ type AuditActor struct {
 	Type string `json:"type"`
 }
 
-// AuditDownload A download of one unit by one caller (R-OPS-055): the `artifact.downloaded` events of its items, read from its
-// first event. `items` counts at most 1,000 items; `more` says that the download goes on beyond them.
-type AuditDownload struct {
-	First []AuditDownloadItem `json:"first"`
-	Items int                 `json:"items"`
-
-	// LastAt The time of its last item.
-	LastAt  time.Time `json:"lastAt"`
-	More    bool      `json:"more"`
-	Package *string   `json:"package"`
-
-	// Size The sum of the items' sizes in bytes; null when an item carries none.
-	Size *int `json:"size"`
-
-	// Unit The unit the events name, `details.unit`.
-	Unit string `json:"unit"`
-
-	// Version The first version or tag any item names; null where none does (an image pulled by its digest).
-	Version *string `json:"version"`
-}
-
-// AuditDownloadItem One item of a download, from its event.
-type AuditDownloadItem struct {
-	// Delivery `link` or `handover` for an item not delivered by Quader's own bytes.
-	Delivery *string `json:"delivery"`
-
-	// Id The ID of the item's event.
-	Id         string    `json:"id"`
-	OccurredAt time.Time `json:"occurredAt"`
-	Path       string    `json:"path"`
-	Replica    *string   `json:"replica"`
-	Sha256     string    `json:"sha256"`
-	Size       *int      `json:"size"`
-}
-
 // AuditEvent One audit event (R-OPS-017). The event names, categories and the shape of `details` per name are R-OPS-016; `details` never holds a secret.
 type AuditEvent struct {
 	// Action Examples: authz.policy.created
@@ -9327,19 +9325,78 @@ type AuditEventList struct {
 	NextCursor *string      `json:"nextCursor"`
 }
 
+// AuditGroup The events of one act of one caller on one unit (R-OPS-055, R-OPS-056), read from its first event. `items` counts
+// at most 1,000 items; `more` says that the group goes on beyond them.
+type AuditGroup struct {
+	// Act What the row is: `download` (items served), `datakeys` (data keys handed to a Bastion for a download),
+	// `push` (files stored and a version published by a format whose clients push: OCI, NuGet), `publish` (the same
+	// by a format whose clients publish: npm, Ansible Galaxy, Debian), `upload` (files stored that published no
+	// version: generic files, an image's layers without a tag), `delete` (files, versions and manifests removed),
+	// `writes` (the allowed writes of an act).
+	Act   AuditGroupAct    `json:"act"`
+	First []AuditGroupItem `json:"first"`
+	Items int              `json:"items"`
+
+	// LastAt The time of its last item.
+	LastAt  time.Time `json:"lastAt"`
+	More    bool      `json:"more"`
+	Package *string   `json:"package"`
+
+	// Size The sum of the sizes of its files in bytes (the events of a version or a manifest carry none); null when a
+	// file carries none, or when the group holds no file.
+	Size *int `json:"size"`
+
+	// Unit The unit the events name, `details.unit`.
+	Unit string `json:"unit"`
+
+	// Version The first version or tag any item names; null where none does (an image pulled by its digest).
+	Version *string `json:"version"`
+
+	// Versions The number of distinct versions its items name (a delete of a package of five versions names five).
+	Versions int `json:"versions"`
+}
+
+// AuditGroupAct What the row is: `download` (items served), `datakeys` (data keys handed to a Bastion for a download),
+// `push` (files stored and a version published by a format whose clients push: OCI, NuGet), `publish` (the same
+// by a format whose clients publish: npm, Ansible Galaxy, Debian), `upload` (files stored that published no
+// version: generic files, an image's layers without a tag), `delete` (files, versions and manifests removed),
+// `writes` (the allowed writes of an act).
+type AuditGroupAct string
+
+// AuditGroupItem One item of a group, from its event.
+type AuditGroupItem struct {
+	// Action The item's event, such as `artifact.deployed` or `package.published`.
+	Action string `json:"action"`
+
+	// Delivery `link` or `handover` for an item not delivered by Quader's own bytes.
+	Delivery *string `json:"delivery"`
+
+	// Id The ID of the item's event.
+	Id         string    `json:"id"`
+	OccurredAt time.Time `json:"occurredAt"`
+	Path       string    `json:"path"`
+	Replica    *string   `json:"replica"`
+
+	// Sha256 The digest the item names (a file's, a manifest's), "" where it names none.
+	Sha256 string `json:"sha256"`
+	Size   *int   `json:"size"`
+
+	// Version The version or tag the item names.
+	Version *string `json:"version"`
+}
+
 // AuditResource defines model for AuditResource.
 type AuditResource struct {
 	Id   *string `json:"id"`
 	Type *string `json:"type"`
 }
 
-// AuditRow One row of the audit log's screen (R-OPS-055): an event, and where the event is the first of a download, the
-// download it begins.
+// AuditRow One row of the audit log's screen (R-OPS-055, R-OPS-056): an event, and where the event is the first of a group
+// of one act, the group it begins.
 type AuditRow struct {
-	Download *AuditDownload `json:"download"`
-
 	// Event One audit event (R-OPS-017). The event names, categories and the shape of `details` per name are R-OPS-016; `details` never holds a secret.
-	Event AuditEvent `json:"event"`
+	Event AuditEvent  `json:"event"`
+	Group *AuditGroup `json:"group"`
 }
 
 // AuditRowList defines model for AuditRowList.
@@ -20353,15 +20410,6 @@ type Unprocessable = Problem
 // UnsupportedMediaType RFC 9457 problem details. The extension members are `code`, `requestId`, `errors`, `currentEtag`, `job` and `references`.
 type UnsupportedMediaType = Problem
 
-// ListAuditDownloadEventsParams defines parameters for ListAuditDownloadEvents.
-type ListAuditDownloadEventsParams struct {
-	// Limit Page size, 1 to 1000 (default 100).
-	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
-
-	// Cursor The `nextCursor` of the previous page. Opaque; valid only with the filters and sort it was issued for.
-	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
-}
-
 // ListAuditEventsParams defines parameters for ListAuditEvents.
 type ListAuditEventsParams struct {
 	// From Start of the range, inclusive (RFC 3339); default the last 24 hours.
@@ -20445,7 +20493,7 @@ type ListAuditRowsParams struct {
 	// Outcome success, failure, denied or warning (Q-AUTH-402).
 	Outcome *string `form:"outcome,omitempty" json:"outcome,omitempty"`
 
-	// Actor A principal ID or a name.
+	// Actor A principal ID (a UUID, matched against the actor's ID) or a name (matched against the actor's name).
 	Actor        *string `form:"actor,omitempty" json:"actor,omitempty"`
 	Repository   *string `form:"repository,omitempty" json:"repository,omitempty"`
 	ResourceType *string `form:"resourceType,omitempty" json:"resourceType,omitempty"`
@@ -20455,6 +20503,15 @@ type ListAuditRowsParams struct {
 	TraceId *string `form:"traceId,omitempty" json:"traceId,omitempty"`
 
 	// Limit Page size in rows, 1 to 1000 (default 100).
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Cursor The `nextCursor` of the previous page. Opaque; valid only with the filters and sort it was issued for.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+}
+
+// ListAuditRowEventsParams defines parameters for ListAuditRowEvents.
+type ListAuditRowEventsParams struct {
+	// Limit Page size, 1 to 1000 (default 100).
 	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
 
 	// Cursor The `nextCursor` of the previous page. Opaque; valid only with the filters and sort it was issued for.
@@ -24007,9 +24064,6 @@ func (t *UsageSubject) UnmarshalJSON(b []byte) error {
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
-	// ListAuditDownloadEvents List the events of one download
-	// (GET /api/v1/audit/downloads/{id}/events)
-	ListAuditDownloadEvents(w http.ResponseWriter, r *http.Request, id string, params ListAuditDownloadEventsParams)
 	// ListAuditEvents Query the audit trail
 	// (GET /api/v1/audit/events)
 	ListAuditEvents(w http.ResponseWriter, r *http.Request, params ListAuditEventsParams)
@@ -24022,6 +24076,9 @@ type ServerInterface interface {
 	// ListAuditRows Read the audit log's rows
 	// (GET /api/v1/audit/rows)
 	ListAuditRows(w http.ResponseWriter, r *http.Request, params ListAuditRowsParams)
+	// ListAuditRowEvents List the events of one row
+	// (GET /api/v1/audit/rows/{id}/events)
+	ListAuditRowEvents(w http.ResponseWriter, r *http.Request, id string, params ListAuditRowEventsParams)
 	// GetLoginOptions Read what the sign-in screen offers
 	// (GET /api/v1/auth/login-options)
 	GetLoginOptions(w http.ResponseWriter, r *http.Request)
@@ -25257,61 +25314,6 @@ type ServerInterfaceWrapper struct {
 
 type MiddlewareFunc func(http.Handler) http.Handler
 
-// ListAuditDownloadEvents operation middleware
-func (siw *ServerInterfaceWrapper) ListAuditDownloadEvents(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-	_ = err
-
-	// ------------- Path parameter "id" -------------
-	var id string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
-		return
-	}
-
-	// Parameter object where we will unmarshal all parameters from the context
-	var params ListAuditDownloadEventsParams
-
-	// ------------- Optional query parameter "limit" -------------
-
-	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
-	if err != nil {
-		var requiredError *runtime.RequiredParameterError
-		if errors.As(err, &requiredError) {
-			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
-		} else {
-			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
-		}
-		return
-	}
-
-	// ------------- Optional query parameter "cursor" -------------
-
-	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
-	if err != nil {
-		var requiredError *runtime.RequiredParameterError
-		if errors.As(err, &requiredError) {
-			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
-		} else {
-			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
-		}
-		return
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.ListAuditDownloadEvents(w, r, id, params)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
 // ListAuditEvents operation middleware
 func (siw *ServerInterfaceWrapper) ListAuditEvents(w http.ResponseWriter, r *http.Request) {
 
@@ -25844,6 +25846,61 @@ func (siw *ServerInterfaceWrapper) ListAuditRows(w http.ResponseWriter, r *http.
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListAuditRows(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListAuditRowEvents operation middleware
+func (siw *ServerInterfaceWrapper) ListAuditRowEvents(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListAuditRowEventsParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAuditRowEvents(w, r, id, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -45733,7 +45790,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/audit/events/export", wrapper.ExportAuditEvents)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/audit/events/{id}", wrapper.GetAuditEvent)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/audit/rows", wrapper.ListAuditRows)
-	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/audit/downloads/{id}/events", wrapper.ListAuditDownloadEvents)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/audit/rows/{id}/events", wrapper.ListAuditRowEvents)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/system/jobs", wrapper.ListJobs)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/system/jobs/{id}", wrapper.GetJob)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/system/jobs/{id}/cancel", wrapper.CancelJob)

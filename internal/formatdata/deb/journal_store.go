@@ -62,9 +62,13 @@ func (g *group) actorOf(ctx context.Context, id string) audit.Actor {
 // RecordPackageDeleted writes deb.package.deleted with the journal entry a restore's replay withholds the file by (R-DEB-032).
 func (s journalStore) RecordPackageDeleted(ctx context.Context, tx meta.Tx, in rows.PackageDeleted) error {
 	sum := hex.EncodeToString(in.SHA256[:])
-	details, err := json.Marshal(map[string]any{
+	d := map[string]any{
 		"path": in.Path, "package": in.Package, "version": in.Version, "architecture": in.Architecture, "sha256": sum,
-	})
+	}
+	if in.Unit != "" {
+		d["unit"] = in.Unit
+	}
+	details, err := json.Marshal(d)
 	if err != nil {
 		return err
 	}

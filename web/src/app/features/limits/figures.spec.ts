@@ -1,3 +1,4 @@
+import german from '../../../locale/messages.de.xlf' with { loader: 'text' };
 import { PROFILE_FIGURES, sampleInstanceRules } from '../../api/testing/fakes-limits';
 import { everyLabel, subjectReference, subjectTitle, whoView } from './callers';
 import { readTexts, textsOf } from './figure-fields';
@@ -25,6 +26,10 @@ describe('Download limits: figures and callers (R-UI-178, R-UI-179)', () => {
       '200/s · 4,000 burst · 100,000/h · cache 250 MB/s, 300 GB/h · upstream 125 MB/s, 100 GB/h, 20,000 req/h · 250 parallel transfers · 1,000 GB/day · 1,000 refused/h',
     );
     expect(compactFigures(PROFILE_FIGURES['unlimited']!, 'en-US')).toBe('Unlimited');
+    // The day is a word of the language: German says "GB/Tag", never the English "day" (the glossary's "pro Tag").
+    const target = (id: string): string => new RegExp(`<unit id="${id.replace(/\./g, '\\.')}">[\\s\\S]*?<target>([\\s\\S]*?)</target>`).exec(german)?.[1] ?? '';
+    expect(target('limits.compact.day')).toBe('<ph id="0" equiv="n" disp="gb(day)"/> GB/Tag');
+    expect(target('limits.window.day')).toBe('/Tag');
     expect(compactFigures({ ...PROFILE_FIGURES['standard']!, requestsBurst: null, refusedPerHour: null }, 'en-US')).not.toContain('burst');
   });
 

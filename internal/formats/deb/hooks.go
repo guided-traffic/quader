@@ -240,6 +240,10 @@ func (f *Format) commitFile(ctx context.Context, tx formats.Tx, c formats.Commit
 		pub := rows.Published{
 			RepoKey: c.Repo.Name.String(), Path: c.Path.Path, Package: in.name(), Version: in.version(), Size: c.Size, Actor: c.Actor, Claim: claim,
 		}
+		// The unit the file's own event names by its path, so that the audit log shows the upload as one row (R-OPS-056).
+		if info := f.Classify(formats.Path{Path: c.Path.Path}); info.Package != "" && info.Version != "" {
+			pub.Unit = info.Package + "@" + info.Version
+		}
 		copy(pub.SHA256[:], c.Digests.SHA256)
 		if first {
 			pub.ShadowUndetermined = p.shadow.Undetermined
@@ -324,7 +328,7 @@ func (f *Format) OnItemsRemoved(ctx context.Context, tx formats.Tx, e formats.It
 			}
 			if journaled {
 				if err := st.RecordPackageDeleted(ctx, tx, rows.PackageDeleted{
-					RepoID: e.Repo.ID, RepoKey: e.Repo.Name.String(), RemovedFile: gone, Actor: e.Actor,
+					RepoID: e.Repo.ID, RepoKey: e.Repo.Name.String(), RemovedFile: gone, Actor: e.Actor, Unit: name,
 				}); err != nil {
 					return err
 				}

@@ -26,12 +26,15 @@ func (h *Host) downloadUnit(rq *formats.Request, path string) items.DownloadUnit
 // UnitOf is the unit a download of the item at path of format f names (R-OPS-054): the package and the version f classifies the path
 // in, read where the path names no version (the version the request was allowed to read: an image's tag on a remote, whose fetch is
 // counted on the manifest's digest), and the unit's key by f's declaration (formats.Descriptor.DownloadUnit, R-OPS-053): an image's
-// name, a version's "<name>@<version>", none for a format whose unit is a file or for an item of no package.
+// name, a version's "<name>@<version>", none for a format whose unit is a file or for an item of no package. Files says that f's unit
+// is a file: a change of such a file names its folder (R-OPS-056).
 func UnitOf(f formats.Format, path, read string) items.DownloadUnit {
+	unit := f.Descriptor().DownloadUnit
+	files := unit != formats.DownloadUnitImage && unit != formats.DownloadUnitVersion
 	info := f.Classify(formats.Path{Path: path})
 	u := items.DownloadUnit{Package: info.Package, Version: info.Version}
-	if u.Package == "" {
-		return items.DownloadUnit{}
+	if u.Package == "" || files {
+		return items.DownloadUnit{Files: files}
 	}
 	if u.Version == "" {
 		u.Version = read

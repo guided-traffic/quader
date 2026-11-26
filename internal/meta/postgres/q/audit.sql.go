@@ -11,33 +11,43 @@ import (
 	"time"
 )
 
-const auditDownloadStartKey = `-- name: AuditDownloadStartKey :one
+const auditGroupStartKey = `-- name: AuditGroupStartKey :one
 SELECT COALESCE((
-    SELECT audit_download_key(e.action, e.repository, e.details ->> 'unit', e.actor_type, e.actor_id, e.token_id, e.source_ip)::text
+    SELECT audit_row_key(e.action, e.repository, e.details ->> 'unit', e.actor_type, e.actor_id, e.actor_name, e.token_id,
+                            e.source_ip)::text
       FROM audit_event e
      WHERE e.occurred_at = $1::text::timestamptz AND e.id = $2::text::uuid
-       AND e.action IN ('artifact.downloaded', 'bastion.data_key.handed') AND (e.details ->> 'unit') IS NOT NULL
+       AND e.action IN ('artifact.downloaded', 'bastion.data_key.handed', 'artifact.deployed', 'package.published', 'npm.publish',
+                    'artifact.deleted', 'oci.manifest.deleted', 'deb.package.deleted', 'npm.unpublish', 'package.deleted',
+                    'ansible.version.deleted', 'authz.write.allowed')
+       AND (e.details ->> 'unit') IS NOT NULL
        AND NOT EXISTS (
            SELECT 1
              FROM audit_event p
-            WHERE p.action IN ('artifact.downloaded', 'bastion.data_key.handed') AND (p.details ->> 'unit') IS NOT NULL
-              AND audit_download_key(p.action, p.repository, p.details ->> 'unit', p.actor_type, p.actor_id, p.token_id, p.source_ip)
-                = audit_download_key(e.action, e.repository, e.details ->> 'unit', e.actor_type, e.actor_id, e.token_id, e.source_ip)
+            WHERE p.action IN ('artifact.downloaded', 'bastion.data_key.handed', 'artifact.deployed', 'package.published', 'npm.publish',
+                    'artifact.deleted', 'oci.manifest.deleted', 'deb.package.deleted', 'npm.unpublish', 'package.deleted',
+                    'ansible.version.deleted', 'authz.write.allowed')
+              AND (p.details ->> 'unit') IS NOT NULL
+              AND audit_row_key(p.action, p.repository, p.details ->> 'unit', p.actor_type, p.actor_id, p.actor_name, p.token_id,
+                            p.source_ip)
+                = audit_row_key(e.action, e.repository, e.details ->> 'unit', e.actor_type, e.actor_id, e.actor_name, e.token_id,
+                            e.source_ip)
               AND p.occurred_at >= e.occurred_at - make_interval(secs => $3::int)
               AND (p.occurred_at, p.id) < (e.occurred_at, e.id))
 ), '')::text AS key
 `
 
-type AuditDownloadStartKeyParams struct {
+type AuditGroupStartKeyParams struct {
 	At         string
 	ID         string
 	GapSeconds int32
 }
 
-// The key of the download whose first event is id at at (R-OPS-055), as text: a download event that names a unit and has no event of
-// its key before it within gap_seconds; ” for any other event or none. The items of a download are read from its first event only.
-func (q *Queries) AuditDownloadStartKey(ctx context.Context, arg AuditDownloadStartKeyParams) (string, error) {
-	row := q.db.QueryRow(ctx, auditDownloadStartKey, arg.At, arg.ID, arg.GapSeconds)
+// The key of the group whose first event is id at at (R-OPS-055), as text: an event of a grouped action that names a unit and has no
+// event of its key before it within gap_seconds; ” for any other event or none. The items of a group are read from its first event
+// only.
+func (q *Queries) AuditGroupStartKey(ctx context.Context, arg AuditGroupStartKeyParams) (string, error) {
+	row := q.db.QueryRow(ctx, auditGroupStartKey, arg.At, arg.ID, arg.GapSeconds)
 	var key string
 	err := row.Scan(&key)
 	return key, err
@@ -232,136 +242,6 @@ func (q *Queries) InsertRevocationOutbox(ctx context.Context, entries string) (i
 	return result.RowsAffected(), nil
 }
 
-const listAuditDownloadMembers = `-- name: ListAuditDownloadMembers :many
-WITH RECURSIVE chain AS (
-    SELECT (s ->> 'ord')::int AS ord, e.occurred_at, e.id, 1 AS n,
-           audit_download_key(e.action, e.repository, e.details ->> 'unit', e.actor_type, e.actor_id, e.token_id, e.source_ip) AS k
-      FROM jsonb_array_elements($1::text::jsonb) AS s
-      JOIN audit_event e ON e.occurred_at = (s ->> 'at')::timestamptz AND e.id = (s ->> 'id')::uuid
-     WHERE e.action IN ('artifact.downloaded', 'bastion.data_key.handed') AND (e.details ->> 'unit') IS NOT NULL
-    UNION ALL
-    SELECT c.ord, nx.occurred_at, nx.id, c.n + 1, c.k
-      FROM chain c
-      CROSS JOIN LATERAL (
-          SELECT m.occurred_at, m.id
-            FROM audit_event m
-           WHERE m.action IN ('artifact.downloaded', 'bastion.data_key.handed') AND (m.details ->> 'unit') IS NOT NULL
-             AND audit_download_key(m.action, m.repository, m.details ->> 'unit', m.actor_type, m.actor_id, m.token_id, m.source_ip) = c.k
-             AND (m.occurred_at, m.id) > (c.occurred_at, c.id)
-             AND m.occurred_at <= c.occurred_at + make_interval(secs => $2::int)
-             AND m.occurred_at < $3::text::timestamptz
-             AND ($4::text = '' OR m.trace_id = $4::text)
-           ORDER BY m.occurred_at, m.id
-           LIMIT 1) nx
-     WHERE c.n <= $5::int
-)
-SELECT c.ord::int AS ord, c.n::int AS n, c.k::text AS key,
-       a.id::text AS id, a.occurred_at, a.action, a.category, a.outcome, a.actor_type,
-       COALESCE(a.actor_id::text, '')::text AS actor_id, COALESCE(a.actor_name, '')::text AS actor_name,
-       COALESCE(a.token_id::text, '')::text AS token_id, COALESCE(a.auth_method, '')::text AS auth_method,
-       COALESCE(host(a.source_ip), '')::text AS source_ip, COALESCE(a.user_agent, '')::text AS user_agent,
-       COALESCE(a.trace_id, '')::text AS trace_id, COALESCE(a.replica, '')::text AS replica,
-       COALESCE(a.endpoint, '')::text AS endpoint, COALESCE(a.resource_type, '')::text AS resource_type,
-       COALESCE(a.resource_id, '')::text AS resource_id, COALESCE(a.repository, '')::text AS repository, COALESCE(a.project, '')::text AS project,
-       COALESCE(a.path, '')::text AS path, COALESCE(a.reason, '')::text AS reason, a.details
-  FROM chain c
-  JOIN audit_event a ON a.occurred_at = c.occurred_at AND a.id = c.id
- ORDER BY c.ord, c.n
-`
-
-type ListAuditDownloadMembersParams struct {
-	Starts      string
-	GapSeconds  int32
-	ToAt        string
-	TraceID     string
-	MemberLimit int32
-}
-
-type ListAuditDownloadMembersRow struct {
-	Ord          int32
-	N            int32
-	Key          string
-	ID           string
-	OccurredAt   time.Time
-	Action       string
-	Category     string
-	Outcome      string
-	ActorType    string
-	ActorID      string
-	ActorName    string
-	TokenID      string
-	AuthMethod   string
-	SourceIp     string
-	UserAgent    string
-	TraceID      string
-	Replica      string
-	Endpoint     string
-	ResourceType string
-	ResourceID   string
-	Repository   string
-	Project      string
-	Path         string
-	Reason       string
-	Details      json.RawMessage
-}
-
-// The items of downloads (R-OPS-055): from each start event of starts (a JSON array of {"ord", "id", "at"}, at as RFC 3339 text)
-// the events of its key in time order, each the next one after the one before within gap_seconds, before to_at and within the trace
-// filter, at most member_limit + 1 per start, so that the caller learns that a download goes on beyond what it reads. Each step is
-// one probe of audit_event_download_idx; the walk stops at the first pause longer than the gap. n is the position from the start
-// event (1); the events come back whole, read by their primary key.
-func (q *Queries) ListAuditDownloadMembers(ctx context.Context, arg ListAuditDownloadMembersParams) ([]ListAuditDownloadMembersRow, error) {
-	rows, err := q.db.Query(ctx, listAuditDownloadMembers,
-		arg.Starts,
-		arg.GapSeconds,
-		arg.ToAt,
-		arg.TraceID,
-		arg.MemberLimit,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []ListAuditDownloadMembersRow{}
-	for rows.Next() {
-		var i ListAuditDownloadMembersRow
-		if err := rows.Scan(
-			&i.Ord,
-			&i.N,
-			&i.Key,
-			&i.ID,
-			&i.OccurredAt,
-			&i.Action,
-			&i.Category,
-			&i.Outcome,
-			&i.ActorType,
-			&i.ActorID,
-			&i.ActorName,
-			&i.TokenID,
-			&i.AuthMethod,
-			&i.SourceIp,
-			&i.UserAgent,
-			&i.TraceID,
-			&i.Replica,
-			&i.Endpoint,
-			&i.ResourceType,
-			&i.ResourceID,
-			&i.Repository,
-			&i.Project,
-			&i.Path,
-			&i.Reason,
-			&i.Details,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const listAuditEventsNewest = `-- name: ListAuditEventsNewest :many
 SELECT id::text AS id, occurred_at, action, category, outcome, actor_type,
        COALESCE(actor_id::text, '')::text AS actor_id, COALESCE(actor_name, '')::text AS actor_name,
@@ -378,7 +258,8 @@ SELECT id::text AS id, occurred_at, action, category, outcome, actor_type,
    AND ($4::text = '' OR starts_with(action, $4::text))
    AND ($5::text = '' OR category = $5::text)
    AND ($6::text = '' OR outcome = $6::text)
-   AND ($7::text = '' OR actor_id = $8::text::uuid OR actor_name = $7::text)
+   AND ($7::text = '00000000-0000-0000-0000-000000000000' OR actor_id = $7::text::uuid)
+   AND ($8::text = '' OR actor_name = $8::text)
    AND ($9::text = '' OR repository = $9::text)
    AND ($10::text = '' OR project = $10::text)
    AND ($11::text = '' OR resource_type = $11::text)
@@ -397,8 +278,8 @@ type ListAuditEventsNewestParams struct {
 	ActionPrefix string
 	Category     string
 	Outcome      string
-	Actor        string
 	ActorID      string
+	ActorName    string
 	Repository   string
 	Project      string
 	ResourceType string
@@ -437,8 +318,10 @@ type ListAuditEventsNewestRow struct {
 
 // repository is the qualified name <project>/<key> and project the project key (Q-AUTHZ-209).
 // Newest first, keyset after (cursor_at, cursor_id) when has_cursor. The empty
-// string is "no filter". actor_id is a UUID or the nil UUID when the actor was
-// given as a name; the action prefix is matched literally.
+// string is "no filter". The actor is a principal's ID (actor_id, the nil UUID
+// for none) or a name (actor_name, ” for none), never both, so that the filter
+// is an index condition (audit_event_actor_idx, audit_event_actor_name_idx of
+// migration 00144); the action prefix is matched literally.
 func (q *Queries) ListAuditEventsNewest(ctx context.Context, arg ListAuditEventsNewestParams) ([]ListAuditEventsNewestRow, error) {
 	rows, err := q.db.Query(ctx, listAuditEventsNewest,
 		arg.FromAt,
@@ -447,8 +330,8 @@ func (q *Queries) ListAuditEventsNewest(ctx context.Context, arg ListAuditEvents
 		arg.ActionPrefix,
 		arg.Category,
 		arg.Outcome,
-		arg.Actor,
 		arg.ActorID,
+		arg.ActorName,
 		arg.Repository,
 		arg.Project,
 		arg.ResourceType,
@@ -516,7 +399,8 @@ SELECT id::text AS id, occurred_at, action, category, outcome, actor_type,
    AND ($4::text = '' OR starts_with(action, $4::text))
    AND ($5::text = '' OR category = $5::text)
    AND ($6::text = '' OR outcome = $6::text)
-   AND ($7::text = '' OR actor_id = $8::text::uuid OR actor_name = $7::text)
+   AND ($7::text = '00000000-0000-0000-0000-000000000000' OR actor_id = $7::text::uuid)
+   AND ($8::text = '' OR actor_name = $8::text)
    AND ($9::text = '' OR repository = $9::text)
    AND ($10::text = '' OR project = $10::text)
    AND ($11::text = '' OR resource_type = $11::text)
@@ -535,8 +419,8 @@ type ListAuditEventsOldestParams struct {
 	ActionPrefix string
 	Category     string
 	Outcome      string
-	Actor        string
 	ActorID      string
+	ActorName    string
 	Repository   string
 	Project      string
 	ResourceType string
@@ -582,8 +466,8 @@ func (q *Queries) ListAuditEventsOldest(ctx context.Context, arg ListAuditEvents
 		arg.ActionPrefix,
 		arg.Category,
 		arg.Outcome,
-		arg.Actor,
 		arg.ActorID,
+		arg.ActorName,
 		arg.Repository,
 		arg.Project,
 		arg.ResourceType,
@@ -635,6 +519,163 @@ func (q *Queries) ListAuditEventsOldest(ctx context.Context, arg ListAuditEvents
 	return items, nil
 }
 
+const listAuditGroupMembers = `-- name: ListAuditGroupMembers :many
+WITH RECURSIVE chain AS (
+    SELECT (s ->> 'ord')::int AS ord, e.occurred_at, e.id, 1 AS n,
+           audit_row_key(e.action, e.repository, e.details ->> 'unit', e.actor_type, e.actor_id, e.actor_name, e.token_id,
+                            e.source_ip) AS k
+      FROM jsonb_array_elements($1::text::jsonb) AS s
+      JOIN audit_event e ON e.occurred_at = (s ->> 'at')::timestamptz AND e.id = (s ->> 'id')::uuid
+     WHERE e.action IN ('artifact.downloaded', 'bastion.data_key.handed', 'artifact.deployed', 'package.published', 'npm.publish',
+                    'artifact.deleted', 'oci.manifest.deleted', 'deb.package.deleted', 'npm.unpublish', 'package.deleted',
+                    'ansible.version.deleted', 'authz.write.allowed')
+       AND (e.details ->> 'unit') IS NOT NULL
+    UNION ALL
+    SELECT c.ord, nx.occurred_at, nx.id, c.n + 1, c.k
+      FROM chain c
+      CROSS JOIN LATERAL (
+          SELECT m.occurred_at, m.id
+            FROM audit_event m
+           WHERE m.action IN ('artifact.downloaded', 'bastion.data_key.handed', 'artifact.deployed', 'package.published', 'npm.publish',
+                    'artifact.deleted', 'oci.manifest.deleted', 'deb.package.deleted', 'npm.unpublish', 'package.deleted',
+                    'ansible.version.deleted', 'authz.write.allowed')
+             AND (m.details ->> 'unit') IS NOT NULL
+             AND audit_row_key(m.action, m.repository, m.details ->> 'unit', m.actor_type, m.actor_id, m.actor_name, m.token_id,
+                            m.source_ip) = c.k
+             AND (m.occurred_at, m.id) > (c.occurred_at, c.id)
+             AND m.occurred_at <= c.occurred_at + make_interval(secs => $2::int)
+             AND m.occurred_at < $3::text::timestamptz
+             AND ($4::text = '' OR m.trace_id = $4::text)
+             AND ($5::text = '' OR m.action = $5::text)
+             AND ($6::text = '' OR starts_with(m.action, $6::text))
+             AND ($7::text = '' OR m.category = $7::text)
+             AND ($8::text = '' OR m.outcome = $8::text)
+             AND ($9::text = '' OR m.resource_type = $9::text)
+             AND ($10::text = '' OR m.resource_id = $10::text)
+           ORDER BY m.occurred_at, m.id
+           LIMIT 1) nx
+     WHERE c.n <= $11::int
+)
+SELECT c.ord::int AS ord, c.n::int AS n, c.k::text AS key,
+       a.id::text AS id, a.occurred_at, a.action, a.category, a.outcome, a.actor_type,
+       COALESCE(a.actor_id::text, '')::text AS actor_id, COALESCE(a.actor_name, '')::text AS actor_name,
+       COALESCE(a.token_id::text, '')::text AS token_id, COALESCE(a.auth_method, '')::text AS auth_method,
+       COALESCE(host(a.source_ip), '')::text AS source_ip, COALESCE(a.user_agent, '')::text AS user_agent,
+       COALESCE(a.trace_id, '')::text AS trace_id, COALESCE(a.replica, '')::text AS replica,
+       COALESCE(a.endpoint, '')::text AS endpoint, COALESCE(a.resource_type, '')::text AS resource_type,
+       COALESCE(a.resource_id, '')::text AS resource_id, COALESCE(a.repository, '')::text AS repository, COALESCE(a.project, '')::text AS project,
+       COALESCE(a.path, '')::text AS path, COALESCE(a.reason, '')::text AS reason, a.details
+  FROM chain c
+  JOIN audit_event a ON a.occurred_at = c.occurred_at AND a.id = c.id
+ ORDER BY c.ord, c.n
+`
+
+type ListAuditGroupMembersParams struct {
+	Starts       string
+	GapSeconds   int32
+	ToAt         string
+	TraceID      string
+	Action       string
+	ActionPrefix string
+	Category     string
+	Outcome      string
+	ResourceType string
+	ResourceID   string
+	MemberLimit  int32
+}
+
+type ListAuditGroupMembersRow struct {
+	Ord          int32
+	N            int32
+	Key          string
+	ID           string
+	OccurredAt   time.Time
+	Action       string
+	Category     string
+	Outcome      string
+	ActorType    string
+	ActorID      string
+	ActorName    string
+	TokenID      string
+	AuthMethod   string
+	SourceIp     string
+	UserAgent    string
+	TraceID      string
+	Replica      string
+	Endpoint     string
+	ResourceType string
+	ResourceID   string
+	Repository   string
+	Project      string
+	Path         string
+	Reason       string
+	Details      json.RawMessage
+}
+
+// The items of groups (R-OPS-055, R-OPS-056): from each start event of starts (a JSON array of {"ord", "id", "at"}, at as RFC 3339
+// text) the events of its key in time order, each the next one after the one before within gap_seconds, before to_at and within the
+// filters of ListAuditRowsNewest that may differ inside a key (the trace, the action, its prefix, the category, the outcome, the
+// resource; ” for none), at most member_limit + 1 per start, so that the caller learns that a group goes on beyond what it reads.
+// Each step is one probe of audit_event_row_idx; the walk stops at the first pause longer than the gap. n is the position from the
+// start event (1); the events come back whole, read by their primary key.
+func (q *Queries) ListAuditGroupMembers(ctx context.Context, arg ListAuditGroupMembersParams) ([]ListAuditGroupMembersRow, error) {
+	rows, err := q.db.Query(ctx, listAuditGroupMembers,
+		arg.Starts,
+		arg.GapSeconds,
+		arg.ToAt,
+		arg.TraceID,
+		arg.Action,
+		arg.ActionPrefix,
+		arg.Category,
+		arg.Outcome,
+		arg.ResourceType,
+		arg.ResourceID,
+		arg.MemberLimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListAuditGroupMembersRow{}
+	for rows.Next() {
+		var i ListAuditGroupMembersRow
+		if err := rows.Scan(
+			&i.Ord,
+			&i.N,
+			&i.Key,
+			&i.ID,
+			&i.OccurredAt,
+			&i.Action,
+			&i.Category,
+			&i.Outcome,
+			&i.ActorType,
+			&i.ActorID,
+			&i.ActorName,
+			&i.TokenID,
+			&i.AuthMethod,
+			&i.SourceIp,
+			&i.UserAgent,
+			&i.TraceID,
+			&i.Replica,
+			&i.Endpoint,
+			&i.ResourceType,
+			&i.ResourceID,
+			&i.Repository,
+			&i.Project,
+			&i.Path,
+			&i.Reason,
+			&i.Details,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listAuditRowsNewest = `-- name: ListAuditRowsNewest :many
 SELECT e.id::text AS id, e.occurred_at, e.action, e.category, e.outcome, e.actor_type,
        COALESCE(e.actor_id::text, '')::text AS actor_id, COALESCE(e.actor_name, '')::text AS actor_name,
@@ -651,7 +692,8 @@ SELECT e.id::text AS id, e.occurred_at, e.action, e.category, e.outcome, e.actor
    AND ($4::text = '' OR starts_with(e.action, $4::text))
    AND ($5::text = '' OR e.category = $5::text)
    AND ($6::text = '' OR e.outcome = $6::text)
-   AND ($7::text = '' OR e.actor_id = $8::text::uuid OR e.actor_name = $7::text)
+   AND ($7::text = '00000000-0000-0000-0000-000000000000' OR e.actor_id = $7::text::uuid)
+   AND ($8::text = '' OR e.actor_name = $8::text)
    AND ($9::text = '' OR e.repository = $9::text)
    AND ($10::text = '' OR e.project = $10::text)
    AND ($11::text = '' OR e.resource_type = $11::text)
@@ -659,16 +701,30 @@ SELECT e.id::text AS id, e.occurred_at, e.action, e.category, e.outcome, e.actor
    AND ($13::text = '' OR e.trace_id = $13::text)
    AND (NOT $14::bool
         OR (e.occurred_at, e.id) < ($15::text::timestamptz, $16::text::uuid))
-   AND (e.action NOT IN ('artifact.downloaded', 'bastion.data_key.handed') OR (e.details ->> 'unit') IS NULL OR NOT EXISTS (
+   AND (e.action NOT IN ('artifact.downloaded', 'bastion.data_key.handed', 'artifact.deployed', 'package.published', 'npm.publish',
+                    'artifact.deleted', 'oci.manifest.deleted', 'deb.package.deleted', 'npm.unpublish', 'package.deleted',
+                    'ansible.version.deleted', 'authz.write.allowed')
+        OR (e.details ->> 'unit') IS NULL OR NOT EXISTS (
          SELECT 1
            FROM audit_event p
-          WHERE p.action IN ('artifact.downloaded', 'bastion.data_key.handed') AND (p.details ->> 'unit') IS NOT NULL
-            AND audit_download_key(p.action, p.repository, p.details ->> 'unit', p.actor_type, p.actor_id, p.token_id, p.source_ip)
-              = audit_download_key(e.action, e.repository, e.details ->> 'unit', e.actor_type, e.actor_id, e.token_id, e.source_ip)
+          WHERE p.action IN ('artifact.downloaded', 'bastion.data_key.handed', 'artifact.deployed', 'package.published', 'npm.publish',
+                    'artifact.deleted', 'oci.manifest.deleted', 'deb.package.deleted', 'npm.unpublish', 'package.deleted',
+                    'ansible.version.deleted', 'authz.write.allowed')
+            AND (p.details ->> 'unit') IS NOT NULL
+            AND audit_row_key(p.action, p.repository, p.details ->> 'unit', p.actor_type, p.actor_id, p.actor_name, p.token_id,
+                            p.source_ip)
+              = audit_row_key(e.action, e.repository, e.details ->> 'unit', e.actor_type, e.actor_id, e.actor_name, e.token_id,
+                            e.source_ip)
             AND p.occurred_at >= e.occurred_at - make_interval(secs => $17::int)
             AND p.occurred_at >= $1::text::timestamptz
             AND (p.occurred_at, p.id) < (e.occurred_at, e.id)
-            AND ($13::text = '' OR p.trace_id = $13::text)))
+            AND ($13::text = '' OR p.trace_id = $13::text)
+            AND ($3::text = '' OR p.action = $3::text)
+            AND ($4::text = '' OR starts_with(p.action, $4::text))
+            AND ($5::text = '' OR p.category = $5::text)
+            AND ($6::text = '' OR p.outcome = $6::text)
+            AND ($11::text = '' OR p.resource_type = $11::text)
+            AND ($12::text = '' OR p.resource_id = $12::text)))
  ORDER BY e.occurred_at DESC, e.id DESC
  LIMIT $18::int
 `
@@ -680,8 +736,8 @@ type ListAuditRowsNewestParams struct {
 	ActionPrefix string
 	Category     string
 	Outcome      string
-	Actor        string
 	ActorID      string
+	ActorName    string
 	Repository   string
 	Project      string
 	ResourceType string
@@ -719,10 +775,14 @@ type ListAuditRowsNewestRow struct {
 	Details      json.RawMessage
 }
 
-// The rows of the audit log's screen (R-OPS-055): the events of ListAuditEventsNewest, newest first, leaving out every event of a
-// transfer (artifact.downloaded, bastion.data_key.handed) that names a unit and follows an event of its key (audit_download_key:
-// action, repository, unit, caller) by at most gap_seconds within the range and the trace filter. What stays is a single event, or the first event of a download, whose items ListAuditDownloadMembers
-// walks. The test of a predecessor is an index probe of audit_event_download_idx; it reads nothing of an event of another kind.
+// The rows of the audit log's screen (R-OPS-055, R-OPS-056): the events of ListAuditEventsNewest, newest first, leaving out every
+// event of a grouped action (audit.GroupedEvents: a download, the data keys handed for it, a push or a publish, a delete, the allowed
+// writes) that names a unit and follows a chosen event of its key (audit_row_key: the act, the repository, the unit and the caller) by
+// at most gap_seconds within the range. A chosen event is one the filters choose: the filters of the action, its prefix, the category,
+// the outcome, the resource and the trace apply to the predecessor as to the event (the repository and the actor are parts of the
+// key), so a filter that keeps one action of an act keeps its events as a row. What stays is a single event, or the first event of a
+// group, whose items ListAuditGroupMembers walks. The test of a predecessor is a probe of audit_event_row_idx; it reads nothing of an
+// event of another kind.
 func (q *Queries) ListAuditRowsNewest(ctx context.Context, arg ListAuditRowsNewestParams) ([]ListAuditRowsNewestRow, error) {
 	rows, err := q.db.Query(ctx, listAuditRowsNewest,
 		arg.FromAt,
@@ -731,8 +791,8 @@ func (q *Queries) ListAuditRowsNewest(ctx context.Context, arg ListAuditRowsNewe
 		arg.ActionPrefix,
 		arg.Category,
 		arg.Outcome,
-		arg.Actor,
 		arg.ActorID,
+		arg.ActorName,
 		arg.Repository,
 		arg.Project,
 		arg.ResourceType,

@@ -37,7 +37,8 @@ func init() {
 			`"reason":{"type":"string"},"actions":{"type":"array","maxItems":6,"items":{"type":"string"}},` +
 			`"repository":{"type":"string"},"package":{"type":"string"},"path":{"type":"string"},` +
 			`"sources":{"type":"array","maxItems":1000,"items":{"type":"string"}},` +
-			`"credential":{"type":"string"},"endpoint":{"type":"string"},"replica":{"type":"string"},"epoch":{"type":"integer"}}}`,
+			`"credential":{"type":"string"},"endpoint":{"type":"string"},"replica":{"type":"string"},"epoch":{"type":"integer"},` +
+			`"unit":{"type":"string","maxLength":512}}}`,
 	})
 	policy := `{"type":"object","properties":{"epoch":{"type":"integer"},` +
 		`"before":{"type":["object","null"]},"after":{"type":["object","null"]}}}`

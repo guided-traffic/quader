@@ -900,6 +900,24 @@ which the read walks for the repositories the caller may read alone (Q-API-458).
 R-ANS-057, Q-ANS-120). One statement, `CREATE INDEX CONCURRENTLY` in a step run outside a transaction; no row is written. `AnsibleViewFind`
 repeats the expression word for word; a change of the one changes the other. Expand phase only.
 
+## The rows of changes in the audit log (00144)
+
+[00144_audit_change_rows](../../internal/meta/postgres/migrations/00144_audit_change_rows.sql) replaces 00142's key and index with
+`audit_row_key(action, repository, unit, actor_type, actor_id, actor_name, token_id, source_ip)` (immutable SQL, the MD5 as a `uuid`)
+and the partial index `audit_event_row_idx` (the key, `occurred_at`, `id`) over every grouped action of `audit.GroupedEvents` that names a
+unit: the downloads and the data keys as before, and from this step the actions of a push (`artifact.deployed`, `package.published`,
+`npm.publish`), of a delete (`artifact.deleted`, `oci.manifest.deleted`, `deb.package.deleted`, `npm.unpublish`, `package.deleted`,
+`ansible.version.deleted`) and the allowed writes (`authz.write.allowed`)
+([operations-and-observability.md](../spec/operations-and-observability.md) R-OPS-056). The key's first part is the act, a `CASE` in the
+function's body that maps the actions of a push to `upload` and those of a delete to `delete`: PostgreSQL builds and maintains an index
+with the system's schemas as its search path, so an unqualified call of another function of the schema in an index expression is not
+found (the first draft's `audit_row_act` failed the migration so). The key holds the actor's name, so that two system actors without a
+principal are two callers. `audit_event_actor_name_idx` (`actor_name`, `occurred_at DESC`, where a name is set) makes the filter by an
+actor's name an index condition of the events, the rows and the export (Q-OPS-452). No row is written and no column added. The statements
+are `ListAuditRowsNewest`, `ListAuditGroupMembers` and `AuditGroupStartKey` in [audit.sql](../../internal/meta/postgres/queries/audit.sql);
+a unit test (`TestR_OPS_056_TheStatementsNameTheGroupedActions`) holds their lists of actions, the index's and the key's to
+`GroupedEvents`. Expand phase only.
+
 ## The rows of downloads in the audit log (00142)
 
 [00142_audit_download_rows](../../internal/meta/postgres/migrations/00142_audit_download_rows.sql) adds the function
@@ -911,7 +929,7 @@ column added: the events written before name no unit and are not in the index. T
 partition has it and `audit_attach_partition()` builds it on each new one when it attaches it; PostgreSQL builds an index of a
 partitioned table without `CONCURRENTLY`, so the migration holds a `SHARE` lock on each partition while it reads it (seconds for a
 million events, measured in [developer/audit.md](audit.md#the-rows-of-the-screen)). The statements are `ListAuditRowsNewest`,
-`ListAuditDownloadMembers` and `AuditDownloadStartKey` in [audit.sql](../../internal/meta/postgres/queries/audit.sql). Expand phase only.
+`ListAuditDownloadMembers` and `AuditDownloadStartKey` in [audit.sql](../../internal/meta/postgres/queries/audit.sql), since 00144 `ListAuditGroupMembers` and `AuditGroupStartKey`. 00144 replaced the function and the index. Expand phase only.
 
 ## A download from an upstream is a unit (00140)
 

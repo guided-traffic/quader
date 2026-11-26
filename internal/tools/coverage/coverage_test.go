@@ -163,8 +163,9 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 		// of W-35, P3).
 		// 1343 since an installation serves its imprint and privacy notice from the chart's values and every screen links them
 		// (R-UI-225, R-UI-226, R-BAS-100, three P1 requirements of W-35, P4).
-		if len(m.Reqs) != 1343 || count[prioMVP] != 742 || count[prioP1] != 562 || count[prioP2] != 39 {
-			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1343 (742, 562, 39)",
+		// 1344 since the audit log shows a push, a publish and a delete as one row (R-OPS-056, one P1 requirement of W33b).
+		if len(m.Reqs) != 1344 || count[prioMVP] != 742 || count[prioP1] != 563 || count[prioP2] != 39 {
+			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1344 (742, 563, 39)",
 				len(m.Reqs), count[prioMVP], count[prioP1], count[prioP2])
 		}
 	})

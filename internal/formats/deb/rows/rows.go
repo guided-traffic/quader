@@ -142,6 +142,8 @@ type Published struct {
 	// Shadowed are the virtual repositories and the remote members that serve it, uploaded on the strength of manage.
 	ShadowUndetermined bool
 	Shadowed           []ShadowPair
+	// Unit is the version the file's path names (<package>@<version>), the unit the audit log joins the upload's events by (R-OPS-056).
+	Unit string
 }
 
 // ShadowPair names a virtual repository and its remote member that serves a name.
@@ -155,6 +157,8 @@ type PackageDeleted struct {
 	RepoKey string
 	RemovedFile
 	Actor string
+	// Unit is the package the file's path names, the unit of a delete the audit log joins the act's events by (R-OPS-056).
+	Unit string
 }
 
 // CoordinatesRemoved is the data of the audit event deb.coordinates.removed with its journal entry (R-DEB-009, Q-DEB-34).

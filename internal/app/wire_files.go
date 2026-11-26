@@ -10,6 +10,8 @@ import (
 	"github.com/guided-traffic/quader/internal/auth"
 	"github.com/guided-traffic/quader/internal/auth/session"
 	"github.com/guided-traffic/quader/internal/files"
+	"github.com/guided-traffic/quader/internal/formathost"
+	"github.com/guided-traffic/quader/internal/formats"
 	"github.com/guided-traffic/quader/internal/httpserver"
 	"github.com/guided-traffic/quader/internal/items"
 	"github.com/guided-traffic/quader/internal/jobs"
@@ -92,6 +94,7 @@ func (a *App) wireFiles(ctx context.Context, in infra, repo repositoryArea, id i
 	store, err := items.New(items.Options{
 		Runner: in.db, Blobs: in.blobs, Recorder: in.rec, Jobs: in.queue,
 		Storage: a.cfg.Storage, RecordDownloads: a.cfg.Audit.RecordDownloads, Activity: activity, Stats: stats, Hooks: fm.hooks, Log: log,
+		Units: changeUnits,
 	})
 	if err != nil {
 		return filesArea{}, err
@@ -152,3 +155,14 @@ func (a *App) registerFilesJobs(r *jobs.Registry) {
 // Items returns the item store of the files area, nil on a replica without it. The restore hands it to the remote-cache
 // purgers as the storage delete path (fixup.Env.Items, R-BAK-008), and tests read it the same way.
 func (a *App) Items() *items.Store { s, _ := a.itemStore.get(); return s }
+
+// changeUnits names the unit of an item a push or a delete of it is part of (operations-and-observability.md R-OPS-056): the format of
+// the repository classifies the path and declares its unit, as for a download (formathost.UnitOf); a format this binary does not
+// have names none.
+func changeUnits(format, path string) items.DownloadUnit {
+	f, ok := formats.Lookup(format)
+	if !ok {
+		return items.DownloadUnit{}
+	}
+	return formathost.UnitOf(f, path, "")
+}

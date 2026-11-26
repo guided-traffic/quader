@@ -65,7 +65,7 @@ type Filter struct {
 	Action   string
 	Category string
 	Outcome  Outcome
-	// Actor is an actor ID or an actor name.
+	// Actor is an actor's ID (a UUID, matched against actor_id) or an actor's name (anything else, matched against actor_name).
 	Actor        string
 	Repository   string
 	ResourceType string
@@ -128,7 +128,7 @@ func (s *Store) Query(ctx context.Context, f Filter, p Page) (Result, error) {
 	if err != nil {
 		return Result{}, err
 	}
-	from, to, exact, prefix, actorID, limit := a.from, a.to, a.exact, a.prefix, a.actorID, a.limit
+	from, to, exact, prefix, actorID, actorName, limit := a.from, a.to, a.exact, a.prefix, a.actorID, a.actorName, a.limit
 	hasCursor, cursorAt, cursorID := a.hasCursor, a.cursorAt, a.cursorID
 
 	var entries []Entry
@@ -138,7 +138,7 @@ func (s *Store) Query(ctx context.Context, f Filter, p Page) (Result, error) {
 		if p.Oldest {
 			got, err := qs.ListAuditEventsOldest(ctx, q.ListAuditEventsOldestParams{
 				FromAt: from, ToAt: to, Action: exact, ActionPrefix: prefix,
-				Category: f.Category, Outcome: string(f.Outcome), Actor: f.Actor, ActorID: actorID,
+				Category: f.Category, Outcome: string(f.Outcome), ActorName: actorName, ActorID: actorID,
 				Repository: f.Repository, ResourceType: f.ResourceType, ResourceID: f.ResourceID, TraceID: f.TraceID,
 				HasCursor: hasCursor, CursorAt: cursorAt, CursorID: cursorID, RowLimit: int32(limit + 1), //nolint:gosec // limit <= MaxLimit
 			})
@@ -151,7 +151,7 @@ func (s *Store) Query(ctx context.Context, f Filter, p Page) (Result, error) {
 		} else {
 			got, err := qs.ListAuditEventsNewest(ctx, q.ListAuditEventsNewestParams{
 				FromAt: from, ToAt: to, Action: exact, ActionPrefix: prefix,
-				Category: f.Category, Outcome: string(f.Outcome), Actor: f.Actor, ActorID: actorID,
+				Category: f.Category, Outcome: string(f.Outcome), ActorName: actorName, ActorID: actorID,
 				Repository: f.Repository, ResourceType: f.ResourceType, ResourceID: f.ResourceID, TraceID: f.TraceID,
 				HasCursor: hasCursor, CursorAt: cursorAt, CursorID: cursorID, RowLimit: int32(limit + 1), //nolint:gosec // limit <= MaxLimit
 			})
@@ -179,10 +179,12 @@ func (s *Store) Query(ctx context.Context, f Filter, p Page) (Result, error) {
 
 // queryArgs are the statement arguments of a filter and a page, shared by the events and the rows (R-OPS-017, R-OPS-055).
 type queryArgs struct {
-	from, to, exact, prefix, actorID string
-	limit                            int
-	hasCursor                        bool
-	cursorAt, cursorID               string
+	// actorID is the filter's actor as a principal's ID, the nil UUID for none; actorName the filter's actor as a name, "" for none.
+	// One of them is set: an actor that is a UUID is an ID, any other a name, so that either is an index condition (R-OPS-017).
+	from, to, exact, prefix, actorID, actorName string
+	limit                                       int
+	hasCursor                                   bool
+	cursorAt, cursorID                          string
 }
 
 // args checks a filter and a page and turns them into statement arguments: the range (a zero From is the last [DefaultWindow], a
@@ -211,6 +213,8 @@ func (s *Store) args(f Filter, p Page) (queryArgs, error) {
 	}
 	if id := uuidOrEmpty(f.Actor); id != "" {
 		a.actorID = id
+	} else {
+		a.actorName = f.Actor
 	}
 	if a.hasCursor = p.After != nil; a.hasCursor {
 		a.cursorAt, a.cursorID = p.After.OccurredAt.UTC().Format(time.RFC3339Nano), strings.ToLower(p.After.ID)
@@ -363,7 +367,7 @@ func fromRows(r q.ListAuditRowsNewestRow) Entry {
 		r.Repository, r.Path, r.Reason, r.Details)
 }
 
-func fromMember(r q.ListAuditDownloadMembersRow) Entry {
+func fromMember(r q.ListAuditGroupMembersRow) Entry {
 	return entryOf(r.ID, r.OccurredAt, r.Action, r.Category, r.Outcome, r.ActorType, r.ActorID, r.ActorName, r.TokenID,
 		r.AuthMethod, r.SourceIp, r.UserAgent, r.TraceID, r.Replica, r.Endpoint, r.ResourceType, r.ResourceID,
 		r.Repository, r.Path, r.Reason, r.Details)

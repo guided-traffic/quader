@@ -3,11 +3,11 @@
 Status: implemented in M1: the writer, the append-only grants, the partition and retention maintenance, the revocation journal
 row and (phase 7) its shipper, the store-side query and the three management operations that expose it (`GET /api/v1/audit/events`, `/{id}` and
 `/export`), each behind the capability `audit:read`; since 2026-11-26 the two reads of the audit log's screen, `GET /api/v1/audit/rows` and
-`GET /api/v1/audit/downloads/{id}/events` (R-OPS-055), behind the same capability.
+`GET /api/v1/audit/rows/{id}/events` (R-OPS-055, R-OPS-056), behind the same capability.
 
 This page says who can write audit events, who can change or delete them, where else a copy lives, and what the journal row of
 the revocation journal contains. The mechanism is described for contributors in [developer/audit.md](../developer/audit.md);
-the requirements are R-OPS-014 to R-OPS-017, R-OPS-054 and R-OPS-055 in [operations-and-observability.md](../spec/operations-and-observability.md).
+the requirements are R-OPS-014 to R-OPS-017 and R-OPS-054 to R-OPS-056 in [operations-and-observability.md](../spec/operations-and-observability.md).
 
 ## Who writes, who reads, who can change
 
@@ -29,16 +29,24 @@ refusal is itself an `authz.denied` event of that caller. The store has no check
 (`TestR_OPS_017_PermissionAndFilters` in [api_test.go](../../test/integration/audit/api_test.go) refuses a caller without the
 capability on each of the five).
 
-## What a row of a download proves, and what the events prove
+## What a row of several events proves, and what the events prove
 
 The audit log's screen shows the `artifact.downloaded` events of one download as one row (R-OPS-055, the owner's decision of
-2026-11-26, ADR-297), and the data keys handed to a Bastion for one pull as another. The row is a reading aid, not a record: nothing is
-written for it, and the events stay one per item, each with its path, its digest and, from 2026-11-26, its size and unit (R-OPS-054).
-What an auditor proves is proven from the events: the events list, the read of one event, the export (one line per item) and the list of a
-download's events show every item, and an opened row links each of its first ten items to its event. A row joins by the stored key
-(the action, the repository, the unit, the caller's kind, principal, token and address) and a pause of at most a minute, so it can join
-two acts of one caller ([H-2265](../spec/operations-and-observability.md#h-2265--two-downloads-of-one-unit-by-one-caller-within-a-minute-are-one-row)) or split one ([H-2266](../spec/operations-and-observability.md#h-2266--a-download-whose-items-pause-for-more-than-a-minute-is-two-rows)); it never joins two callers, two tokens or two addresses, so a row never attributes
-one caller's items to another. The two reads take `audit:read` like the events, so a reader of a row may read every event in it.
+2026-11-26, ADR-297), and the data keys handed to a Bastion for one pull as another; since R-OPS-056 a push or a publish (its files and
+the version it published), a delete (its files and the versions or manifests it removed) and the allowed writes of an act are one row
+each too. The row is a reading aid, not a record: nothing is written for it, and the events stay one per file, per version and per
+decision, each with its path, its digest and, from 2026-11-26, its size and unit (R-OPS-054, R-OPS-056). What an auditor proves is proven
+from the events: the events list, the read of one event, the export (one line per event) and the list of a row's events show every item,
+and an opened row links each of its first ten items to its event. A row joins by the stored key (the act, the repository, the unit, the
+caller's kind, principal, name, token and address) and a pause of at most a minute, so it can join two acts of one caller
+([H-2265](../spec/operations-and-observability.md#h-2265--two-downloads-of-one-unit-by-one-caller-within-a-minute-are-one-row),
+[H-2341](../spec/operations-and-observability.md#h-2341--two-changes-of-one-unit-by-one-caller-within-a-minute-are-one-row)) or split
+one ([H-2266](../spec/operations-and-observability.md#h-2266--a-download-whose-items-pause-for-more-than-a-minute-is-two-rows)); it
+never joins two callers, two tokens or two addresses, so a row never attributes one caller's items to another. A row never joins a
+refusal, an allowed read or a decision with the content it decided on: the allowed writes are a row of their own, findable by their
+action and their category. The two reads take `audit:read` like the events, so a reader of a row may read every event in it
+(`TestR_OPS_056_APushAndADeleteAreOneRowInEveryFormat` refuses a reader of the repositories without it on both reads, on a replica of
+the role `api`).
 
 The export is the one read that is audited: `audit.exported` is committed in its own transaction before the first byte, with the
 range, the filters and the format, so an export that cannot be recorded does not run. It reads keyset batches of 1,000 events, each
@@ -169,7 +177,7 @@ What makes it real: an OOM kill or node loss during a burst of denials. Transact
 ### H-144 · Reading the audit trail leaves no event, except for the export
 
 Stage: `GET /api/v1/audit/events`, `GET /api/v1/audit/events/{id}` ([audit_api.go](../../internal/api/v1/audit_api.go)), and the
-screen's `GET /api/v1/audit/rows` and `GET /api/v1/audit/downloads/{id}/events` ([audit_rows_api.go](../../internal/api/v1/audit_rows_api.go)).
+screen's `GET /api/v1/audit/rows` and `GET /api/v1/audit/rows/{id}/events` ([audit_rows_api.go](../../internal/api/v1/audit_rows_api.go)).
 
 Live today. R-OPS-017 audits the export and nothing else, so a holder of `audit:read` can read the trail event by event, with the
 filters, and leave no trace of what they looked for; a compromised credential with the capability reads the whole history this way as

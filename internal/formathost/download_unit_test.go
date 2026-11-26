@@ -2,11 +2,15 @@ package formathost
 
 import (
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/ansible"
+	"github.com/guided-traffic/quader/internal/formats/deb"
 	"github.com/guided-traffic/quader/internal/formats/generic"
 	"github.com/guided-traffic/quader/internal/formats/npm"
+	"github.com/guided-traffic/quader/internal/formats/nuget"
 	"github.com/guided-traffic/quader/internal/formats/oci"
 	"github.com/guided-traffic/quader/internal/items"
 	"github.com/guided-traffic/quader/internal/qname"
@@ -29,7 +33,7 @@ func TestR_OPS_054_TheUnitOfADownloadIsTheFormats(t *testing.T) {
 		{"an image's tag", oci.New(), "acme/app/_tags/1.4.0", "", items.DownloadUnit{Package: "acme/app", Version: "1.4.0", Key: "acme/app"}},
 		{"a manifest fetched by its tag", oci.New(), "acme/app/_manifests/" + digest, "1.4.0", items.DownloadUnit{Package: "acme/app", Version: "1.4.0", Key: "acme/app"}},
 		{"an npm tarball", npm.New(), "@acme/ui/-/ui-2.4.0.tgz", "", items.DownloadUnit{Package: "@acme/ui", Version: "2.4.0", Key: "@acme/ui@2.4.0"}},
-		{"a generic file", generic.Format{}, "releases/1.0/app.zip", "", items.DownloadUnit{}},
+		{"a generic file", generic.Format{}, "releases/1.0/app.zip", "", items.DownloadUnit{Files: true}},
 	} {
 		if got := UnitOf(c.f, c.path, c.read); got != c.want {
 			t.Errorf("%s: %+v, want %+v", c.name, got, c.want)
@@ -45,5 +49,32 @@ func TestR_OPS_054_TheUnitOfADownloadIsTheFormats(t *testing.T) {
 	stateOf(rq).noteRead("acme/app", "2.0.0") // the first read stays the request's
 	if got := h.downloadUnit(rq, "acme/app/_manifests/"+digest); got.Version != "1.4.0" || got.Key != "acme/app" {
 		t.Errorf("the manifest of a tag fetched on a remote: %+v", got)
+	}
+}
+
+// R-OPS-056: the files of a push name the unit the format's own event of the version names (package.published, npm.publish), so that a
+// push is one row: the producers write <package>@<version> of the version (NuGet's lower-case ID and URL form, Ansible's
+// namespace.name, npm's name), the image's name (OCI), and the file's own (Debian); a generic file names no package and a folder as its
+// change's unit. The paths are the formats' own; the strings are those the producers build. Unit tier, microseconds.
+func TestR_OPS_056_APushsFilesNameTheUnitOfItsVersion(t *testing.T) {
+	for _, c := range []struct {
+		name string
+		f    formats.Format
+		path string
+		want string
+	}{
+		{"a NuGet package", nuget.New(), "acme.widgets/1.2.3/acme.widgets.1.2.3.nupkg", "acme.widgets" + "@" + "1.2.3"},
+		{"a NuGet manifest", nuget.New(), "acme.widgets/1.2.3/acme.widgets.nuspec", "acme.widgets@1.2.3"},
+		{"an npm tarball", npm.New(), "left-pad/-/left-pad-1.3.0.tgz", "left-pad@1.3.0"},
+		{"an Ansible archive", ansible.New(), "collections/acme/tools/acme-tools-1.4.0.tar.gz", "acme.tools@1.4.0"},
+		{"a Debian package", deb.New(), "pool/main/h/hello/hello_2.10-3_amd64.deb", "hello@2.10-3"},
+		{"an image's layer", oci.New(), "acme/app/_blobs/sha256:" + strings.Repeat("ab", 32), "acme/app"},
+	} {
+		if got := UnitOf(c.f, c.path, ""); got.Key != c.want {
+			t.Errorf("%s: %+v, want the unit %q", c.name, got, c.want)
+		}
+	}
+	if got := UnitOf(generic.Format{}, "releases/1.0/app.zip", ""); !got.Files || got.Package != "" {
+		t.Errorf("a generic file: %+v", got)
 	}
 }

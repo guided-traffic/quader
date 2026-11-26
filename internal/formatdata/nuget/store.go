@@ -198,7 +198,11 @@ func (s *Store) InsertVersion(ctx context.Context, tx meta.Tx, in rows.VersionIn
 	for i, f := range in.Files {
 		files[i] = map[string]any{"path": f.Path, "sha256": f.SHA256, "size": f.Size}
 	}
-	details := map[string]any{"package": in.LowerID, "version": in.LowerVersion, "files": files}
+	// The unit is the version's, as its files' events name it, so that the audit log shows the push as one row (R-OPS-056).
+	details := map[string]any{
+		"package": in.LowerID, "version": in.LowerVersion, "files": files, "format": "nuget",
+		"unit": in.LowerID + "@" + in.LowerVersion,
+	}
 	audit.PublishGuards(details, in.Claim, in.Shadowing.Undetermined)
 	journal, err := journalEntry(in.RepoID, in.LowerID, in.LowerVersion, in.SHA512)
 	if err != nil {
@@ -264,7 +268,8 @@ func (s *Store) recordDeleted(ctx context.Context, tx meta.Tx, a rows.Audit, rep
 		return err
 	}
 	return s.record(ctx, tx, audit.EventPackageDeleted, a, lowerID, lowerVersion,
-		map[string]any{"package": lowerID, "version": lowerVersion}, journal)
+		// The package is the unit of a delete (R-OPS-056): its files' events name it, and a delete of several versions is one row.
+		map[string]any{"package": lowerID, "version": lowerVersion, "unit": lowerID}, journal)
 }
 
 // DeleteTombstone removes the tombstone of a version stored again with its bytes.

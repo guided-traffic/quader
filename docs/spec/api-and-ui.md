@@ -5590,10 +5590,22 @@ Priority: **MVP** · Covers: OPS-023
   panel, its path, a link to the file, its SHA-256 cut to 12 digits with the whole as its title and a copy button, and its size; where it holds more, **All N items** opens the log of that
   download's events. It grows the page by at most ten rows and never scrolls (R-UI-215), and it stays open while the log reads itself
   again (R-UI-213); a download that goes on grows in its row.
-- **The log of one download** (`?download=<first event's ID>`,
-  [Q-UI-1397](#q-ui-1397--the-log-of-one-download-lists-its-events-oldest-first-and-offers-no-export)) lists every event of it from
-  `GET /api/v1/audit/downloads/{id}/events`, oldest first, one row each, with **Load more**; the head names it as the chip **Download**,
+- **A push, a publish and a delete are one row too** ([operations-and-observability.md](operations-and-observability.md) R-OPS-056,
+  [Q-UI-1491](#q-ui-1491--a-row-of-several-events-names-the-act-not-its-first-events-action)): every row of several events names its act
+  in one word instead of its first event's action, and no key under it: **Downloaded**, **Pushed** (OCI, NuGet), **Published** (npm,
+  Ansible Galaxy, Debian), **Uploaded** (files that published no version), **Deleted**, **Writes allowed**, **Data keys handed**. Its
+  target names the unit with its version or tag, or "3 versions" where it names several (the delete of a package), and the number of its
+  items and the bytes of its files. Opened, an item that is no file names its action and its version, without a link (**Package version
+  published 1.4.0**), with its digest where it names one
+  ([Q-UI-1492](#q-ui-1492--an-opened-row-names-an-item-that-is-no-file-by-its-action-and-its-version)).
+- **The log of one row** (`?group=<first event's ID>`,
+  [Q-UI-1397](#q-ui-1397--the-log-of-one-download-lists-its-events-oldest-first-and-offers-no-export),
+  [Q-UI-1493](#q-ui-1493--the-log-of-one-rows-events-is-group-and-its-chip-events-of)) lists every event of it from
+  `GET /api/v1/audit/rows/{id}/events`, oldest first, one row each, with **Load more**; the head names it as the chip **Events of**,
   whose removal returns to the log; it offers no export, which takes the log's filters.
+- **The German words** ([Q-UI-1490](#q-ui-1490--the-audit-log-holds-its-german-actions-by-the-acts-word-and-a-shorter-word-where-it-reads-right),
+  [Q-UI-1494](#q-ui-1494--german-counts-a-rows-items-as-einträge-and-a-days-volume-as-gbtag)): the acts' words fit the action's 7.5 rem in
+  both languages; "File downloaded" is "Heruntergeladen", "File deployed" "Bereitgestellt", the act "Data keys handed" "Datenschlüssel"; a row's items are "Einträge".
 - Times in the user's locale with a UTC toggle (in the list the title of each relative time, in the panel the moment); export of the
   current filter as CSV or JSON Lines (`/api/v1/audit/events/export`), one line per event, a download's items each a line.
 
@@ -5612,11 +5624,16 @@ Acceptance criteria:
   before the unit has no chevron; the opened row lists ten items, its first item's path links the file and its digest's title is the
   whole digest, an item's time opens its event, **All 13 items** links the download's log; a fourteenth item read every 30 s grows the
   row, which stays open; the log of one download lists its 13 events with the chip and no export.
-- Rendered (rule 11, the screen `admin-audit-downloads` of [screens.ts](../../web/e2e/renders/screens.ts), English and German, 1,440,
-  1,024 and 390 px, light and dark): the rows of an image of 32 items closed and opened, a pull by digest, an npm install of three
-  packages, a pull still going on, a refusal and events of before, and the log of one download. The German pass was rendered and looked
-  at once (2026-11-26) and is not part of the screen's run: its log of one download's events finds "Datei heruntergeladen" cramped in
-  the action's 7.5 rem at 1,440 px, which Q-UI-997's budget has no room to widen (8.5 rem made the log stand as blocks at 1,024 px).
+- Unit (`web`, [audit-log.spec.ts](../../web/src/app/features/audit/audit-log.spec.ts), the describe "R-OPS-056 a push, a publish and a
+  delete are one row", milliseconds): a push of two layers, its tag and its version is one row **Pushed** named `acme/app 1.4.0` with
+  "4 items" and the bytes of its three files, its writes a row **Writes allowed** beside it, an npm package's delete of three versions one
+  row **Deleted** naming "3 versions"; opened, the push lists its files by their paths and its version as **Package version published
+  1.4.0** without a link, its digest the version's file's.
+- Rendered (rule 11, the screen `admin-audit-rows` of [screens.ts](../../web/e2e/renders/screens.ts), in the German pass too, 1,440,
+  1,024 and 390 px, light and dark): a push of an image of 24 tiny layers closed and opened beside its writes, a NuGet push, a delete of
+  a version and of a package of three versions, three files uploaded into a folder, a pull of an image of 32 items opened, a pull by
+  digest, an npm install of three packages, a pull still going on, a refusal, events of before, and the log of one pull's events; the
+  layout checks find nothing in either language (Q-UI-1490).
 
 ### R-UI-038 · System status
 Priority: **MVP** · Covers: OPS-008
@@ -28590,7 +28607,7 @@ repository's content (Q-UI-1111). The unit's name breaks at its slashes (`IDENTI
 in the 148 px of the target at 1,024 px.
 
 **Applied in the spec:** R-UI-037. Code: [audit-log.html](../../web/src/app/features/audit/audit-log.html),
-[audit-download.ts](../../web/src/app/features/audit/audit-download.ts).
+[audit-group.ts](../../web/src/app/features/audit/audit-group.ts).
 
 ### Q-UI-1396 · An opened download lists its first ten items and links all of them
 
@@ -28762,6 +28779,81 @@ navigation (R-UI-002).
 | (b) No heading of the page; the text's own | | The operator decides | A text without a heading gives a page without `<h1>` |
 
 **Choice:** (a).
+
+### Q-UI-1490 · The audit log holds its German actions by the act's word and a shorter word where it reads right
+
+Status: **Decided by the development agent on 2026-11-26** (W33b) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: W33's German pass of the log of one download's events found "Datei heruntergeladen" (135 px) in two lines in the action's
+7.5 rem (120 px) at 1,440 px while the actor's column had 15 px no row used (the layout check `cramped`), and 8.5 rem made the log stand as
+blocks at 1,024 px (Q-UI-997's budget: the time, the actor's longest word, the action, the target's project mark and the outcome's badge).
+Measured in Inter at the row's 14 px and 600 (2026-11-26): 108 of the 237 actions take more lines in German than in English at 120 px and
+95 at 136 px, so no width of the column holds every German name in English's lines; what a person reads most are the acts of R-OPS-056 and
+the download of a file.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A row of several events names its act in one word that fits the 7.5 rem in both languages; German says "Heruntergeladen" for "File downloaded", "Bereitgestellt" for "File deployed" and "Datenschlüssel" for the act "Data keys handed", where the target beside it says the rest (chosen) | The words of the rows people read most fit; every other name wraps between its words as in English | The column keeps its width, so the log keeps five columns at 1,440 and 1,024 px; the German pass's layout checks find nothing; "Heruntergeladen" beside a file's path says what "Datei heruntergeladen" said | Many longer names of other events wrap in one line more than in English, as they did, between words and at their soft hyphens |
+| (b) A width of the column per language (8.5 rem in German) | Every short German name on one line | — | The log stands as blocks at 1,024 px (W33's try) unless another column gives way |
+| (c) The outcome under the action, four columns | Room for the action | Long names fit | Leaves Q-UI-997's form of the log; the outcome is read as a column |
+| (d) The action's name with `white-space: nowrap` | No wrap | — | A long name makes the column as wide as itself and the log falls to blocks |
+
+**Choice:** (a). **Rationale:** the words that stand in most rows fit, the form of the log stays, and no word breaks inside itself (the
+long German words carry their soft hyphens, Q-UI-1091). The acts' words are measured: Heruntergeladen 114 px, Datenschlüssel 104,
+Veröffentlicht 83, Schreiben erlaubt 107, Hochgeladen 78, Gelöscht 53, Gepusht 51.
+
+**Applied in the spec:** R-UI-037; the glossary ([GLOSSARY.md](../../web/src/locale/GLOSSARY.md)).
+
+### Q-UI-1491 · A row of several events names the act, not its first event's action
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The action's cell of a group's row says the act in one word (Downloaded, Pushed, Published, Uploaded, Deleted, Writes allowed, Data keys handed) and no event key; the button opens the first event as before (chosen) | What a person did | A push's first event is a layer's `artifact.deployed`, which says nothing of the push; one word fits the column | The key of the first event is in its panel, not the row |
+| (b) The first event's action and key, as W33's download row | Unchanged | — | "File deployed" for a push of an image, "File or folder deleted" for the delete of a package |
+
+**Choice:** (a). **Rationale:** the row stands for the act; its items name their actions when it is opened.
+
+**Applied in the spec:** R-UI-037.
+
+### Q-UI-1492 · An opened row names an item that is no file by its action and its version
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A file's item shows its path, linked; an item of a version, a manifest or a decision shows its action's name with its version muted beside it, no link; its digest where it names one, a dash otherwise (chosen) | One table for every act | A push's version published and a delete's versions removed read in place; the digest of a manifest or a version's file is copyable | The column **Item** holds paths and names |
+| (b) Only the files | Simpler | — | A delete's versions and a push's version are not seen without opening the log of the row |
+
+**Choice:** (a). **Rationale:** what the act did to the version is part of the act.
+
+**Applied in the spec:** R-UI-037.
+
+### Q-UI-1493 · The log of one row's events is `?group=` and its chip **Events of**
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `?group=<first event's ID>`, the chip **Events of** with the unit's name, the caption "The events of one row", from `GET /api/v1/audit/rows/{id}/events` (chosen) | One name for every act | A push's and a delete's events are no download | — |
+| (b) Keep `?download=` and **Download** | Unchanged | — | A delete's events under the chip **Download** |
+
+**Choice:** (a). **Rationale:** the row is an act, not always a download (Q-UI-1397 holds otherwise).
+
+**Applied in the spec:** R-UI-037.
+
+### Q-UI-1494 · German counts a row's items as "Einträge" and a day's volume as "GB/Tag"
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A row's items are "Einträge" (an item is a file, a version's event or a decision), and the compact line of a limit profile and a rule's override say "GB/Tag" and "/Tag" (chosen) | The glossary's words | "Dateien" was wrong for a push's version and a row of writes; "day" was English in a German line | — |
+| (b) Keep "Dateien" and "GB/day" | — | — | Wrong words |
+
+**Choice:** (a). **Applied in the spec:** R-UI-037, R-UI-178; the glossary.
 
 ## What this does not cover
 

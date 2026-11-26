@@ -13,12 +13,12 @@
     />
     <span i18n="@@audit.utc">Show times in UTC</span>
   </label>
-  <!-- The export holds one line per event, a download's items each a line of its own (R-OPS-054); it takes the log's filters, so the
-       list of one download's events has none (R-OPS-055). -->
-  @if (!download()) {
+  <!-- The export holds one line per event, a row's items each a line of its own (R-OPS-054); it takes the log's filters, so the list
+       of one row's events has none (R-OPS-055). -->
+  @if (!group()) {
     <a headEnd class="btn btn-default" [href]="csvUrl()" download i18n="@@audit.export.csv">Export CSV</a>
   }
-  @if (!download()) {
+  @if (!group()) {
     <a headEnd class="btn btn-default" [href]="jsonlUrl()" download i18n="@@audit.export.jsonl">Export JSON Lines</a>
   }
 </quader-list-head>
@@ -131,7 +131,7 @@
 <div class="layout" [class.with-detail]="event()">
   <div class="table-pane">
     <quader-data-table
-      [caption]="download() ? downloadCaption : caption"
+      [caption]="group() ? groupCaption : caption"
       [columns]="columns"
       [loaded]="list.loaded()"
       [loading]="list.loading() && !list.error()"
@@ -144,15 +144,15 @@
     >
       @for (r of list.items(); track r.event.id) {
         @let e = r.event;
-        @let dr = downloadOf(r);
+        @let gr = groupOf(r);
         <!-- One form at 1,440 and 1,024 px whatever the events hold (Q-UI-997, the rule of Q-UI-969): the time relative with the moment
              as its title, the actor with the address it came from under it, the action with its key, the target with its project
              under it, the outcome; blocks only where even these columns do not fit (390 px). -->
         <tr [class.current]="e.id === event()">
           <td class="nowrap">
             <quader-time-ago [at]="e.occurredAt" absolute="title" [zone]="timeZone()" />
-            <!-- A download's row stands at its first item; how long it went on to its last stands under it (R-OPS-055). -->
-            @if (dr && took(e, dr.download); as t) {
+            <!-- A group's row stands at its first item; how long it went on to its last stands under it (R-OPS-055). -->
+            @if (gr && took(e, gr.group); as t) {
               <span class="secondary" i18n="@@audit.download.took">for {{ t }}</span>
             }
           </td>
@@ -177,30 +177,37 @@
               [attr.aria-current]="e.id === event() ? 'true' : null"
               (click)="open(e.id)"
             >
-              <!-- An action without a name of its own shows its key, which breaks as the key under it does. -->
-              @for (part of labelParts(e.action); track $index) {<ng-container>{{ part }}</ng-container><wbr />}
+              @if (gr) {
+                <!-- A row of several events names the act a person did, in one word (R-OPS-056); its items name their actions. -->
+                {{ act(gr.group) }}
+              } @else {
+                <!-- An action without a name of its own shows its key, which breaks as the key under it does. -->
+                @for (part of labelParts(e.action); track $index) {<ng-container>{{ part }}</ng-container><wbr />}
+              }
             </button>
-            <!-- The action's key breaks only after a dot or an underscore, never inside a word (Q-UI-567). -->
-            <span class="secondary action-key" translate="no"
-              >@for (part of keyParts(e.action); track $index) {<ng-container>{{ part }}</ng-container><wbr />}</span
-            >
+            @if (!gr) {
+              <!-- The action's key breaks only after a dot or an underscore, never inside a word (Q-UI-567). -->
+              <span class="secondary action-key" translate="no"
+                >@for (part of keyParts(e.action); track $index) {<ng-container>{{ part }}</ng-container><wbr />}</span
+              >
+            }
           </th>
           <!-- The target: a repository and its path are read and wrap in their column (UI-A-46); a resource the entry knows by name
                shows the name, as the actor does, with its kind and identifier under it; otherwise its kind and its identifier, which
                stays on one line and is cut, its full value the title (Q-UI-568). The project of a repository stands under it by its
                mark and its name (Q-UI-424). -->
           <td class="target">
-            @if (dr) {
-              <!-- A download's row names the repository, the unit a person asked for with its version or tag, and its items and their
-                   bytes; the chevron opens its first ten items in place (R-OPS-055, R-UI-215). -->
-              @let s = subject(dr.download);
+            @if (gr) {
+              <!-- A group's row names the repository, the unit the act was on with its version or tag, and its items and their bytes;
+                   the chevron opens its first ten items in place (R-OPS-055, R-OPS-056, R-UI-215). -->
+              @let s = subject(gr.group);
               <div class="name-cell">
                 <button
                   type="button"
                   class="btn btn-tertiary btn-icon on-line"
                   [attr.aria-expanded]="isOpen(e.id)"
                   [attr.aria-controls]="'dl-' + e.id"
-                  [attr.aria-label]="openLabel(dr)"
+                  [attr.aria-label]="openLabel(gr)"
                   (click)="toggle(e.id)"
                 >
                   <span class="material-icons expand-chevron" aria-hidden="true">expand_more</span>
@@ -213,12 +220,12 @@
                   >
                   <!-- The figures carry their dot in front, so a wrapped line never starts with one (`.dot-separated`). -->
                   <span class="secondary"><span class="dot-separated">
-                    @if (dr.download.more) {
-                      <span class="figure" i18n="@@audit.download.items-more">more than {{ dr.download.items }} items</span>
+                    @if (gr.group.more) {
+                      <span class="figure" i18n="@@audit.download.items-more">more than {{ gr.group.items }} items</span>
                     } @else {
-                      <span class="figure" i18n="@@audit.download.items">{dr.download.items, plural, =1 {1 item} other {{{ dr.download.items }} items}}</span>
+                      <span class="figure" i18n="@@audit.download.items">{gr.group.items, plural, =1 {1 item} other {{{ gr.group.items }} items}}</span>
                     }
-                    @if (size(dr.download); as bytes) {
+                    @if (size(gr.group); as bytes) {
                       <span class="figure">{{ bytes }}</span>
                     }
                   </span></span>
@@ -262,9 +269,9 @@
             }
           </td>
         </tr>
-        @if (dr) {
-          <!-- The opened download: its first ten items with the facts a single event shows of them, each opening its event, and a link to
-               all of them, the log of the download's events; it grows the page by at most ten rows and never scrolls (R-UI-215). -->
+        @if (gr) {
+          <!-- The opened row: its first ten items with the facts a single event shows of them, each opening its event, and a link to all
+               of them, the log of the row's events; it grows the page by at most ten rows and never scrolls (R-UI-215). -->
           <tr class="expansion">
             <td [attr.colspan]="columns.length">
               <div [id]="'dl-' + e.id" class="collapse-region" [class.open]="isOpen(e.id)">
@@ -278,9 +285,9 @@
                         [loading]="false"
                         loadingText="Loading the items."
                         i18n-loadingText="@@audit.download.items-loading"
-                        [empty]="dr.download.first.length === 0"
+                        [empty]="gr.group.first.length === 0"
                       >
-                        @for (it of dr.download.first; track it.id) {
+                        @for (it of gr.group.first; track it.id) {
                           <tr [class.current]="it.id === event()">
                             <td class="nowrap">
                               <button
@@ -294,26 +301,34 @@
                               </button>
                             </td>
                             <th scope="row" class="wrap-name item-path">
-                              @if (e.repository) {
+                              @if (!isFile(it.action)) {
+                                <!-- An item that is no file names what its event did, and the version it did it to: the version a push
+                                     published, a version or a manifest a delete removed, a write allowed (R-OPS-056). -->
+                                <span class="item-act">{{ actionLabel(it.action) }}@if (it.version) {&ngsp;<span class="subject-version" translate="no">{{ it.version }}</span>}</span>
+                              } @else if (e.repository) {
                                 <a [routerLink]="fileLink(e.repository, it.path)" translate="no"><quader-parts-text [value]="it.path" [marks]="pathMarks" /></a>
                               } @else {
                                 <span translate="no"><quader-parts-text [value]="it.path" [marks]="pathMarks" /></span>
                               }
                             </th>
                             <td class="item-sha">
-                              <code translate="no" [attr.title]="it.sha256">{{ shortSha(it.sha256) }}</code>
-                              <quader-copy-button class="on-line" [value]="it.sha256" [label]="copySha" />
+                              @if (it.sha256) {
+                                <code translate="no" [attr.title]="it.sha256">{{ shortSha(it.sha256) }}</code>
+                                <quader-copy-button class="on-line" [value]="it.sha256" [label]="copySha" />
+                              } @else {
+                                <quader-no-value />
+                              }
                             </td>
                             <td class="num">{{ size({ size: it.size }) ?? '–' }}</td>
                           </tr>
                         }
                       </quader-data-table>
-                      @if (dr.download.more || dr.download.items > dr.download.first.length) {
-                        <a class="all-items" [routerLink]="[]" [queryParams]="{ download: e.id, event: null }" queryParamsHandling="merge">
-                          @if (dr.download.more) {
-                            <ng-container i18n="@@audit.download.all-more">All items of the download</ng-container>
+                      @if (gr.group.more || gr.group.items > gr.group.first.length) {
+                        <a class="all-items" [routerLink]="[]" [queryParams]="{ group: e.id, event: null }" queryParamsHandling="merge">
+                          @if (gr.group.more) {
+                            <ng-container i18n="@@audit.group.all-more">All items of the row</ng-container>
                           } @else {
-                            <ng-container i18n="@@audit.download.all">All {{ dr.download.items }} items</ng-container>
+                            <ng-container i18n="@@audit.download.all">All {{ gr.group.items }} items</ng-container>
                           }
                         </a>
                       }

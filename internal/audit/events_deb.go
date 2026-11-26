@@ -37,7 +37,8 @@ func init() {
 	Register(EventType{
 		Name: EventDebPackageDeleted, Category: CategoryContent, Mode: Transactional, Webhook: true, Journal: JournalRevocation,
 		Schema: `{"type":"object","properties":{` + debPath + `,"package":{"type":"string","maxLength":128},` +
-			`"version":{"type":"string","maxLength":128},"architecture":{"type":"string","maxLength":32},` + debSHA256 + `},` +
+			`"version":{"type":"string","maxLength":128},"architecture":{"type":"string","maxLength":32},` + debSHA256 +
+			`,"unit":{"type":"string","maxLength":512}},` +
 			`"required":["path","package","version","architecture","sha256"],"additionalProperties":false}`,
 	})
 	// The coordinates of a file were replaced (R-DEB-009); the removal of any is also recorded as deb.coordinates.removed.

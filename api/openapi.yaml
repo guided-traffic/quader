@@ -1069,15 +1069,21 @@ paths:
       tags: [audit]
       summary: Read the audit log's rows
       description: |
-        The rows of the audit log's screen (R-OPS-055), newest first by each row's first event: every event of the
-        filter, except that the `artifact.downloaded` events of one download are one row. A download is the events that
-        name one unit (`details.unit`: an image's name, a version's `name@version`) and were written for one caller (its
-        kind, its principal, its token and its address), each within a minute of the one before. Such a row carries its
-        first event as `event` and the download in `download`: its unit, its package and version, how many items it holds
-        and their size, its last item's time and its first ten items. The events themselves are unchanged: the events
-        list, the read of one event and the export hold one event per item (R-OPS-054). The filters, the range and the
-        paging are those of `GET /api/v1/audit/events`; `limit` counts rows, and a page never cuts a download. An event
-        written before the events named their unit is a row of its own. The same events always form the same rows.
+        The rows of the audit log's screen (R-OPS-055, R-OPS-056), newest first by each row's first event: every event of
+        the filter, except that the events of one act of one caller on one unit are one row: a download
+        (`artifact.downloaded`), the data keys handed to a Bastion for it (`bastion.data_key.handed`), a push or a publish
+        (`artifact.deployed`, `package.published`, `npm.publish`), a delete (`artifact.deleted`, `oci.manifest.deleted`,
+        `deb.package.deleted`, `npm.unpublish`, `package.deleted`, `ansible.version.deleted`) and the allowed writes of an
+        act (`authz.write.allowed`). A group is the events of one act that name one unit (`details.unit`: an image's name,
+        a version's `name@version`, a deleted package, a folder of files) and were written for one caller (its kind, its
+        principal, its name, its token and its address), each within a minute of the one before. Such a row carries its
+        first event as `event` and the group in `group`: what the act was, its unit, its package and version, how many
+        items it holds and the size of its files, its last item's time and its first ten items. The events themselves are
+        unchanged: the events list, the read of one event and the export hold one event per item (R-OPS-054). The
+        filters, the range and the paging are those of `GET /api/v1/audit/events`; the filters choose the events and a
+        row joins the events they chose; `limit` counts rows, and a page never cuts a group. A refusal, any other event
+        and an event written before the events named their unit are rows of their own. The same events always form the
+        same rows.
       x-quader-permission:
         permission: audit:read
       parameters:
@@ -1110,7 +1116,7 @@ paths:
             type: string
         - name: actor
           in: query
-          description: A principal ID or a name.
+          description: A principal ID (a UUID, matched against the actor's ID) or a name (matched against the actor's name).
           schema:
             type: string
         - name: repository
@@ -1167,10 +1173,12 @@ paths:
                       path: acme/app/_tags/1.4.0
                       reason: null
                       details: {path: acme/app/_tags/1.4.0, sha256: 3f1c0d8e2a7b9c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5, size: 1574, package: acme/app, version: 1.4.0, unit: acme/app}
-                    download:
+                    group:
+                      act: download
                       unit: acme/app
                       package: acme/app
                       version: 1.4.0
+                      versions: 1
                       items: 7
                       more: false
                       size: 48213377
@@ -1178,8 +1186,10 @@ paths:
                       first:
                         - id: 01933b1e-7c2a-7f4e-9d1b-6a2f0c9e8b11
                           occurredAt: "2026-11-26T11:58:02.417Z"
+                          action: artifact.downloaded
                           path: acme/app/_tags/1.4.0
                           sha256: 3f1c0d8e2a7b9c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5
+                          version: 1.4.0
                           size: 1574
                           replica: quader-packages-6f9c7d8b5-x2v4q
                           delivery: null
@@ -1198,23 +1208,24 @@ paths:
           $ref: "#/components/responses/Internal"
         "503":
           $ref: "#/components/responses/Unavailable"
-  /api/v1/audit/downloads/{id}/events:
+  /api/v1/audit/rows/{id}/events:
     get:
-      operationId: listAuditDownloadEvents
+      operationId: listAuditRowEvents
       tags: [audit]
-      summary: List the events of one download
+      summary: List the events of one row
       description: |
-        The `artifact.downloaded` events of the download whose first event is `id` (R-OPS-055), in the order they were
-        written, oldest first: one event per item, whole, as `GET /api/v1/audit/events` shows them. The download is read
+        The events of the row of several events whose first event is `id` (R-OPS-055, R-OPS-056): a download, a push or
+        a publish, a delete, the data keys handed for a download or the allowed writes of an act, in the order they were
+        written, oldest first: one event per item, whole, as `GET /api/v1/audit/events` shows them. The group is read
         from its first event on, without the range and the filters of the rows it was shown in. An ID that is no first
-        event of a download answers `404`.
+        event of a group answers `404`.
       x-quader-permission:
         permission: audit:read
       parameters:
         - name: id
           in: path
           required: true
-          description: The ID of the download's first event, `event.id` of its row.
+          description: The ID of the group's first event, `event.id` of its row.
           schema:
             type: string
         - name: limit
@@ -1228,7 +1239,7 @@ paths:
         - $ref: "#/components/parameters/Cursor"
       responses:
         "200":
-          description: One page of the download's events.
+          description: One page of the group's events.
           headers:
             Link:
               $ref: "#/components/headers/Link"
@@ -23880,25 +23891,34 @@ components:
     AuditRow:
       type: object
       description: |
-        One row of the audit log's screen (R-OPS-055): an event, and where the event is the first of a download, the
-        download it begins.
+        One row of the audit log's screen (R-OPS-055, R-OPS-056): an event, and where the event is the first of a group
+        of one act, the group it begins.
       additionalProperties: false
-      required: [event, download]
+      required: [event, group]
       properties:
         event:
           $ref: "#/components/schemas/AuditEvent"
-        download:
+        group:
           oneOf:
-            - $ref: "#/components/schemas/AuditDownload"
+            - $ref: "#/components/schemas/AuditGroup"
             - type: "null"
-    AuditDownload:
+    AuditGroup:
       type: object
       description: |
-        A download of one unit by one caller (R-OPS-055): the `artifact.downloaded` events of its items, read from its
-        first event. `items` counts at most 1,000 items; `more` says that the download goes on beyond them.
+        The events of one act of one caller on one unit (R-OPS-055, R-OPS-056), read from its first event. `items` counts
+        at most 1,000 items; `more` says that the group goes on beyond them.
       additionalProperties: false
-      required: [unit, package, version, items, more, size, lastAt, first]
+      required: [act, unit, package, version, versions, items, more, size, lastAt, first]
       properties:
+        act:
+          type: string
+          enum: [download, datakeys, push, publish, upload, delete, writes]
+          description: |
+            What the row is: `download` (items served), `datakeys` (data keys handed to a Bastion for a download),
+            `push` (files stored and a version published by a format whose clients push: OCI, NuGet), `publish` (the same
+            by a format whose clients publish: npm, Ansible Galaxy, Debian), `upload` (files stored that published no
+            version: generic files, an image's layers without a tag), `delete` (files, versions and manifests removed),
+            `writes` (the allowed writes of an act).
         unit:
           type: string
           description: The unit the events name, `details.unit`.
@@ -23907,6 +23927,10 @@ components:
         version:
           type: [string, "null"]
           description: The first version or tag any item names; null where none does (an image pulled by its digest).
+        versions:
+          type: integer
+          minimum: 0
+          description: The number of distinct versions its items name (a delete of a package of five versions names five).
         items:
           type: integer
           minimum: 1
@@ -23914,7 +23938,9 @@ components:
           type: boolean
         size:
           type: [integer, "null"]
-          description: The sum of the items' sizes in bytes; null when an item carries none.
+          description: |
+            The sum of the sizes of its files in bytes (the events of a version or a manifest carry none); null when a
+            file carries none, or when the group holds no file.
         lastAt:
           type: string
           format: date-time
@@ -23923,12 +23949,12 @@ components:
           type: array
           maxItems: 10
           items:
-            $ref: "#/components/schemas/AuditDownloadItem"
-    AuditDownloadItem:
+            $ref: "#/components/schemas/AuditGroupItem"
+    AuditGroupItem:
       type: object
-      description: One item of a download, from its event.
+      description: One item of a group, from its event.
       additionalProperties: false
-      required: [id, occurredAt, path, sha256, size, replica, delivery]
+      required: [id, occurredAt, action, path, sha256, version, size, replica, delivery]
       properties:
         id:
           type: string
@@ -23936,10 +23962,17 @@ components:
         occurredAt:
           type: string
           format: date-time
+        action:
+          type: string
+          description: The item's event, such as `artifact.deployed` or `package.published`.
         path:
           type: string
         sha256:
           type: string
+          description: The digest the item names (a file's, a manifest's), "" where it names none.
+        version:
+          type: [string, "null"]
+          description: The version or tag the item names.
         size:
           type: [integer, "null"]
         replica:

@@ -25,14 +25,16 @@ func init() {
 		Name: EventArtifactDeployed, Category: CategoryContent, Mode: Transactional, Webhook: true,
 		Schema: `{"type":"object","properties":{` +
 			`"path":{"type":"string"},"sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},` +
-			`"size":{"type":"integer","minimum":0},"overwritten":{"type":"boolean"}},` +
+			`"size":{"type":"integer","minimum":0},"overwritten":{"type":"boolean"},` +
+			`"package":{"type":"string"},"version":{"type":"string"},"unit":{"type":"string","maxLength":512}},` +
 			`"required":["path","sha256","size","overwritten"],"additionalProperties":false}`,
 	})
 	Register(EventType{
 		Name: EventArtifactDeleted, Category: CategoryContent, Mode: Transactional, Webhook: true,
 		Schema: `{"type":"object","properties":{` +
 			`"path":{"type":"string"},"sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},` +
-			`"size":{"type":"integer","minimum":0}},` +
+			`"size":{"type":"integer","minimum":0},` +
+			`"package":{"type":"string"},"version":{"type":"string"},"unit":{"type":"string","maxLength":512}},` +
 			`"required":["path","sha256","size"],"additionalProperties":false}`,
 	})
 	Register(EventType{

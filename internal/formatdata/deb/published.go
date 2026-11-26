@@ -16,7 +16,11 @@ import (
 func (s journalStore) RecordPublished(ctx context.Context, tx meta.Tx, in rows.Published) error {
 	details := map[string]any{
 		"package": in.Package, "version": in.Version,
-		"files": []map[string]any{{"path": in.Path, "sha256": hex.EncodeToString(in.SHA256[:]), "size": in.Size}},
+		"files":  []map[string]any{{"path": in.Path, "sha256": hex.EncodeToString(in.SHA256[:]), "size": in.Size}},
+		"format": "deb",
+	}
+	if in.Unit != "" {
+		details["unit"] = in.Unit
 	}
 	audit.PublishGuards(details, in.Claim, in.ShadowUndetermined)
 	raw, err := json.Marshal(details)

@@ -18,6 +18,8 @@ func (s *Store) RecordPublished(ctx context.Context, tx meta.Tx, in rows.Publish
 	details := map[string]any{
 		"package": in.Name, "version": in.Version,
 		"files": []map[string]any{{"path": in.Path, "sha256": hex.EncodeToString(in.SHA256[:]), "size": in.Size}},
+		// The image is the unit its files' events name, so that the audit log shows the push as one row (R-OPS-056).
+		"format": "oci", "unit": in.Name,
 	}
 	audit.PublishGuards(details, in.Claim, in.ShadowUndetermined)
 	raw, err := json.Marshal(details)

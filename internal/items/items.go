@@ -90,6 +90,10 @@ type Options struct {
 	Activity ActivitySink
 	Stats    *Stats
 	Log      *slog.Logger
+	// Units names the unit of an item that a change of it is part of (operations-and-observability.md R-OPS-056): what the
+	// repository's format classifies the path in and declares its unit to be. The events of a push and of a delete name it, so that
+	// the audit log shows the act as one row. Nil names none.
+	Units func(format, path string) DownloadUnit
 }
 
 // Store is the item store.
@@ -105,6 +109,7 @@ type Store struct {
 	activity ActivitySink
 	stats    *Stats
 	log      *slog.Logger
+	units    func(format, path string) DownloadUnit
 }
 
 // New creates the store.
@@ -126,7 +131,7 @@ func New(o Options) (*Store, error) {
 	}
 	return &Store{
 		run: o.Runner, blobs: o.Blobs, rec: o.Recorder, jobs: o.Jobs, hooks: o.Hooks, cfg: o.Storage,
-		download: o.RecordDownloads, activity: o.Activity, stats: o.Stats, log: o.Log,
+		download: o.RecordDownloads, activity: o.Activity, stats: o.Stats, log: o.Log, units: o.Units,
 	}, nil
 }
 

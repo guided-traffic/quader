@@ -15,8 +15,8 @@ rendered from it ([checklist.md there](https://github.com/guided-traffic/quader/
 requirement lists the feature in its `Covers:` line. *open*: no requirement does. For entries with priority
 *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,343 spec requirements:
-806 cover catalog features, 537 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,344 spec requirements:
+806 cover catalog features, 538 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>537 requirements</summary>
+<summary>538 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3361,6 +3361,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-OPS-014 | Event registry | MVP | [operations-and-observability.md](../spec/operations-and-observability.md) |
 | R-OPS-054 | A download is audited per item, and its events name their unit | P1 | [operations-and-observability.md](../spec/operations-and-observability.md) |
 | R-OPS-055 | The audit log shows a download as one row | P1 | [operations-and-observability.md](../spec/operations-and-observability.md) |
+| R-OPS-056 | The audit log shows a push, a publish and a delete as one row too | P1 | [operations-and-observability.md](../spec/operations-and-observability.md) |
 | R-OPS-018 | Trace context and OpenTelemetry export | MVP | [operations-and-observability.md](../spec/operations-and-observability.md) |
 | R-OPS-047 | Installation-wide cache flush | P1 | [operations-and-observability.md](../spec/operations-and-observability.md) |
 | R-OPS-024 | Read-only maintenance mode | P1 | [operations-and-observability.md](../spec/operations-and-observability.md) |

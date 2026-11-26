@@ -118,6 +118,11 @@ func (e *Engine) decisionEvent(name string, sub Subject, c Coordinate, d Decisio
 	if len(d.Sources) > 0 {
 		details["sources"] = d.Sources
 	}
+	if name == EventWriteAllowed {
+		if u := writeUnit(c); u != "" {
+			details["unit"] = u
+		}
+	}
 	raw, _ := json.Marshal(details)
 	// Repository and Path are the columns the writer's deduplication keys on
 	// (R-OPS-015); a package operation has a package name and no path.
@@ -131,6 +136,23 @@ func (e *Engine) decisionEvent(name string, sub Subject, c Coordinate, d Decisio
 		out.Outcome = audit.Success
 	}
 	return out
+}
+
+// writeUnit is the unit an allowed write names (operations-and-observability.md R-OPS-056): its package, so that the writes of one
+// act of one caller on one package are one row of the audit log beside the act's own; for a path of no package, its folder (the folder
+// with a slash at its end, "/" for the root, as a change of a format whose unit is a file names it); "" where it names neither.
+func writeUnit(c Coordinate) string {
+	switch {
+	case c.Package != "":
+		return c.Package
+	case c.Path != "":
+		folder := ""
+		if i := strings.LastIndexByte(c.Path, '/'); i >= 0 {
+			folder = c.Path[:i]
+		}
+		return folder + "/"
+	}
+	return ""
 }
 
 // auditCapability records a refused management operation (R-AUTHZ-029).

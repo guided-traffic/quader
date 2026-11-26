@@ -236,7 +236,7 @@ export async function* auditDataKeys(page: Page): AsyncGenerator<string> {
   ];
   // The log reads its rows (R-OPS-055): each of these events is a row of its own.
   const isList = (url: URL): boolean => url.pathname.endsWith('/api/v1/audit/rows');
-  const rows = items.map((event) => ({ event, download: null }));
+  const rows = items.map((event) => ({ event, group: null }));
   await page.route(isList, (route) =>
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: rows, nextCursor: null }) }),
   );

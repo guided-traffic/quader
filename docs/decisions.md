@@ -2953,6 +2953,16 @@ rows, opens a download in place to its first ten items and links the log of its 
 stay single rows. A push, a publish and a delete of several files still show their parts: joining them is the owner's to decide
 (H-2269). The developer view is [developer/audit.md](developer/audit.md#the-rows-of-the-screen).
 
+**Extended on 2026-11-26 (W33b)** by the development agent, at the lead's direction and by the owner's rule of the morning
+([R-OPS-056](spec/operations-and-observability.md#r-ops-056--the-audit-log-shows-a-push-a-publish-and-a-delete-as-one-row-too),
+[Q-OPS-446](spec/operations-and-observability.md#q-ops-446--a-push-a-publish-and-a-delete-are-one-row-and-their-events-stay-one-per-file)
+to [Q-OPS-452](spec/operations-and-observability.md#q-ops-452--the-filter-by-an-actors-name-is-an-index-condition)): the same holds for
+the changes. A push or a publish (its files and the version it published), a delete (its files and the versions or manifests it removed)
+and the allowed writes of an act are one row each, by a key that holds the act instead of the action (migration 00144, `audit_row_key`,
+`audit_event_row_idx`); the events of a change name their unit from then on, a delete the package, a generic file its folder; the filters
+apply to a row's every event; one row's events are `GET /api/v1/audit/rows/{id}/events`. The stored events, the export and the read of
+one event are unchanged. With `authz.audit.reads: all` an allowed read stays one row per request (H-2269, narrowed to that).
+
 ### ADR-298 · A Bastion's cache is bounded at every commit, and the bytes between a Bastion and the main installation are counted
 
 **Status:** Decided by the builder of W-34's packages without a decision of the owner, on 2026-11-26 — owner review at the walkthrough
@@ -12006,10 +12016,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-OPS
 
-120 questions on [spec/operations-and-observability.md](spec/operations-and-observability.md).
+127 questions on [spec/operations-and-observability.md](spec/operations-and-observability.md).
 
 <details>
-<summary>Q-OPS: 120 questions</summary>
+<summary>Q-OPS: 127 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -12133,6 +12143,13 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-OPS-443](spec/operations-and-observability.md#q-ops-443--a-downloads-events-are-read-from-its-first-event-oldest-first) | A download's events are read from its first event, oldest first | Decided by the development agent on 2026-11-26 | (a) `GET /api/v1/audit/downloads/{id}/events`, `id` the first event's: the walk of the row, paged, oldest first, whole events | — |
 | [Q-OPS-444](spec/operations-and-observability.md#q-ops-444--an-image-without-a-tag-is-named-by-its-first-items-digest) | An image without a tag is named by its first item's digest | Decided by the development agent on 2026-11-26 | (a) The row names the first version or tag any item names; without one, the digest of its first item | — |
 | [Q-OPS-445](spec/operations-and-observability.md#q-ops-445--the-data-keys-handed-for-a-pull-are-a-row-of-their-own) | The data keys handed for a pull are a row of their own | Decided by the development agent on 2026-11-26 | (a) Join the keys of one unit and caller as the downloads are, one row per action | [ADR-297](#adr-297--the-audit-log-shows-a-download-as-one-row-and-keeps-one-event-per-item) |
+| [Q-OPS-446](spec/operations-and-observability.md#q-ops-446--a-push-a-publish-and-a-delete-are-one-row-and-their-events-stay-one-per-file) | A push, a publish and a delete are one row, and their events stay one per file | Decided by the development agent on 2026-11-26 | (a) Store per file and per version as before; the screen shows one act on one unit as one row, by W33's mechanism | [ADR-297](#adr-297--the-audit-log-shows-a-download-as-one-row-and-keeps-one-event-per-item) |
+| [Q-OPS-447](spec/operations-and-observability.md#q-ops-447--the-key-of-a-row-holds-the-act-so-a-pushs-files-and-its-version-are-one-row) | The key of a row holds the act, so a push's files and its version are one row | Decided by the development agent on 2026-11-26 | (a) The key holds the act: the actions of a push are one act, those of a delete another | — |
+| [Q-OPS-448](spec/operations-and-observability.md#q-ops-448--the-allowed-writes-of-an-act-are-a-row-of-their-own-beside-it) | The allowed writes of an act are a row of their own beside it | Decided by the development agent on 2026-11-26 | (a) The writes of one caller on one package are a row of their own beside the act's, joined as a download is | — |
+| [Q-OPS-449](spec/operations-and-observability.md#q-ops-449--the-unit-of-a-delete-is-the-package-so-a-delete-of-a-package-is-one-row) | The unit of a delete is the package, so a delete of a package is one row | Decided by the development agent on 2026-11-26 | (a) A delete names the package as its unit; the row names its versions ("3 versions") | — |
+| [Q-OPS-450](spec/operations-and-observability.md#q-ops-450--a-change-of-a-format-whose-unit-is-a-file-names-its-folder) | A change of a format whose unit is a file names its folder | Decided by the development agent on 2026-11-26 | (a) The unit of a generic file's change is a folder: the folder an upload wrote it into, the folder a delete named (`<folder>/`, `/` for the root) | — |
+| [Q-OPS-451](spec/operations-and-observability.md#q-ops-451--the-filters-apply-to-a-rows-every-event-and-the-callers-name-is-part-of-its-key) | The filters apply to a row's every event, and the caller's name is part of its key | Decided by the development agent on 2026-11-26 | (a) The predecessor test and the walk apply every filter that can differ inside a key (action, prefix, category, outcome, resource, trace); the key holds the name | — |
+| [Q-OPS-452](spec/operations-and-observability.md#q-ops-452--the-filter-by-an-actors-name-is-an-index-condition) | The filter by an actor's name is an index condition | Decided by the development agent on 2026-11-26 | (a) The value is an ID when it is a UUID, a name otherwise, never both; a partial index on `(actor_name, occurred_at DESC)` | [ADR-297](#adr-297--the-audit-log-shows-a-download-as-one-row-and-keeps-one-event-per-item) |
 
 </details>
 
@@ -12874,10 +12891,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-695 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+700 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 695 questions</summary>
+<summary>Q-UI: 700 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -13576,6 +13593,11 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1480](spec/api-and-ui.md#q-ui-1480--a-bastions-card-shows-the-preset-the-mode-and-the-throughput-everything-else-is-behind-details) | A Bastion's card shows the preset, the mode and the throughput; everything else is behind Details | Decided by the development agent on 2026-11-26 | (a) The preset, the mode and the maximum throughput on the card; the figures, slots, ceiling, shares, egress addresses and switches of W-35 behind **Details**; the rules on a page of their own | [ADR-300](#adr-300--a-bastion-is-a-place-of-the-download-limits-configured-from-the-main-installation-and-names-nothing-of-it) |
 | [Q-UI-1481](spec/api-and-ui.md#q-ui-1481--a-preset-is-applied-after-a-dialog-that-names-what-it-replaces) | A preset is applied after a dialog that names what it replaces | Decided by the development agent on 2026-11-26 | (a); the dialog says nothing where the preset changes nothing. | — |
 | [Q-UI-1482](spec/api-and-ui.md#q-ui-1482--the-egress-addresses-warn-with-the-address-of-the-last-contact-and-offer-to-add-it) | The egress addresses warn with the address of the last contact and offer to add it | Decided by the development agent on 2026-11-26 | (a) A warning for an empty list and for a contact from an unlisted address, with **Add** for that address | [ADR-300](#adr-300--a-bastion-is-a-place-of-the-download-limits-configured-from-the-main-installation-and-names-nothing-of-it) |
+| [Q-UI-1490](spec/api-and-ui.md#q-ui-1490--the-audit-log-holds-its-german-actions-by-the-acts-word-and-a-shorter-word-where-it-reads-right) | The audit log holds its German actions by the act's word and a shorter word where it reads right | Decided by the development agent on 2026-11-26 | (a) A row of several events names its act in one word that fits the 7.5 rem in both languages; German says "Heruntergeladen" for "File downloaded", "Bereitgestellt" for "File deployed" and "Datenschlüssel" for the act "Data keys handed", where the target beside it says the rest | — |
+| [Q-UI-1491](spec/api-and-ui.md#q-ui-1491--a-row-of-several-events-names-the-act-not-its-first-events-action) | A row of several events names the act, not its first event's action | Decided by the development agent on 2026-11-26 | (a) The action's cell of a group's row says the act in one word (Downloaded, Pushed, Published, Uploaded, Deleted, Writes allowed, Data keys handed) and no event key; the button opens the first event as before | — |
+| [Q-UI-1492](spec/api-and-ui.md#q-ui-1492--an-opened-row-names-an-item-that-is-no-file-by-its-action-and-its-version) | An opened row names an item that is no file by its action and its version | Decided by the development agent on 2026-11-26 | (a) A file's item shows its path, linked; an item of a version, a manifest or a decision shows its action's name with its version muted beside it, no link; its digest where it names one, a dash otherwise | — |
+| [Q-UI-1493](spec/api-and-ui.md#q-ui-1493--the-log-of-one-rows-events-is-group-and-its-chip-events-of) | The log of one row's events is `?group=` and its chip **Events of** | Decided by the development agent on 2026-11-26 | (a) `?group=<first event's ID>`, the chip **Events of** with the unit's name, the caption "The events of one row", from `GET /api/v1/audit/rows/{id}/events` | — |
+| [Q-UI-1494](spec/api-and-ui.md#q-ui-1494--german-counts-a-rows-items-as-einträge-and-a-days-volume-as-gbtag) | German counts a row's items as "Einträge" and a day's volume as "GB/Tag" | Decided by the development agent on 2026-11-26 | (a) A row's items are "Einträge" (an item is a file, a version's event or a decision), and the compact line of a limit profile and a rule's override say "GB/Tag" and "/Tag" | — |
 
 </details>
 

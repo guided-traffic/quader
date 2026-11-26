@@ -187,6 +187,9 @@ type ServedEvent struct {
 // "<name>@<version>" for a format whose unit is a version, "" for one whose unit is a file or for an item of no package.
 type DownloadUnit struct {
 	Package, Version, Key string
+	// Files says that the format's unit is one file (generic): a download names no unit, and a change names the folder it was made in
+	// (R-OPS-056).
+	Files bool
 }
 
 // DeliveryHandover is the delivery of a download handed over to a Bastion (storage.md R-STOR-095).

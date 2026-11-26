@@ -153,6 +153,8 @@ func (s localStore) PutVersion(ctx context.Context, tx meta.Tx, v rows.VersionRo
 	details := map[string]any{
 		"package": v.Name, "version": v.Version,
 		"files": []map[string]any{{"path": "collections/" + ns + "/" + name + "/" + collection.FileName(ns, name, v.Version), "sha256": hex.EncodeToString(v.SHA256[:]), "size": v.Size}},
+		// The version is the unit its archive's event names, so that the audit log shows the publish as one row (R-OPS-056).
+		"format": "ansible", "unit": v.Name + "@" + v.Version,
 	}
 	audit.PublishGuards(details, p.Claim, p.ShadowUndetermined)
 	raw, err := json.Marshal(details)
@@ -200,7 +202,8 @@ func (s localStore) RemoveVersion(ctx context.Context, tx meta.Tx, repoID int64,
 		return err
 	}
 	sum := hex.EncodeToString(sha256)
-	details, err := json.Marshal(map[string]any{"name": name, "version": number, "stored": stored, "sha256": sum})
+	// The collection is the unit of a delete, as its archive's event names it, so that the audit log shows it as one row (R-OPS-056).
+	details, err := json.Marshal(map[string]any{"name": name, "version": number, "stored": stored, "sha256": sum, "unit": name})
 	if err != nil {
 		return err
 	}

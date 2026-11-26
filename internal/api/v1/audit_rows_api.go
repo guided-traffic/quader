@@ -10,58 +10,63 @@ import (
 	"github.com/guided-traffic/quader/internal/httpserver"
 )
 
-// The rows of the audit log's screen (operations-and-observability.md R-OPS-055): an addition beside the events list, the read of
-// one event and the export, which keep one event per item (R-OPS-054). Both operations take audit:read, as the events do, declared
+// The rows of the audit log's screen (operations-and-observability.md R-OPS-055, R-OPS-056): an addition beside the events list, the
+// read of one event and the export, which keep one event per item (R-OPS-054). Both operations take audit:read, as the events do, declared
 // in the document and enforced before the handler runs: the reader of a row may read every event in it.
 
-type auditDownloadItemView struct {
+type auditGroupItemView struct {
 	ID         string    `json:"id"`
 	OccurredAt time.Time `json:"occurredAt"`
+	Action     string    `json:"action"`
 	Path       string    `json:"path"`
 	SHA256     string    `json:"sha256"`
+	Version    *string   `json:"version"`
 	Size       *int64    `json:"size"`
 	Replica    *string   `json:"replica"`
 	Delivery   *string   `json:"delivery"`
 }
 
-type auditDownloadView struct {
-	Unit    string                  `json:"unit"`
-	Package *string                 `json:"package"`
-	Version *string                 `json:"version"`
-	Items   int                     `json:"items"`
-	More    bool                    `json:"more"`
-	Size    *int64                  `json:"size"`
-	LastAt  time.Time               `json:"lastAt"`
-	First   []auditDownloadItemView `json:"first"`
+type auditGroupView struct {
+	Act      string               `json:"act"`
+	Unit     string               `json:"unit"`
+	Package  *string              `json:"package"`
+	Version  *string              `json:"version"`
+	Versions int                  `json:"versions"`
+	Items    int                  `json:"items"`
+	More     bool                 `json:"more"`
+	Size     *int64               `json:"size"`
+	LastAt   time.Time            `json:"lastAt"`
+	First    []auditGroupItemView `json:"first"`
 }
 
 type auditRowView struct {
-	Event    auditEventView     `json:"event"`
-	Download *auditDownloadView `json:"download"`
+	Event auditEventView  `json:"event"`
+	Group *auditGroupView `json:"group"`
 }
 
 func toAuditRow(r audit.Row) auditRowView {
 	v := auditRowView{Event: toAuditEvent(r.Event)}
-	if d := r.Download; d != nil {
-		dv := &auditDownloadView{
-			Unit: d.Unit, Package: nz(d.Package), Version: nz(d.Version), Items: d.Items, More: d.More, LastAt: d.Last.UTC(),
-			First: make([]auditDownloadItemView, 0, len(d.First)),
+	if g := r.Group; g != nil {
+		gv := &auditGroupView{
+			Act: g.Act, Unit: g.Unit, Package: nz(g.Package), Version: nz(g.Version), Versions: g.Versions, Items: g.Items, More: g.More,
+			LastAt: g.Last.UTC(), First: make([]auditGroupItemView, 0, len(g.First)),
 		}
-		if d.SizeKnown {
-			size := d.Size
-			dv.Size = &size
+		if g.SizeKnown {
+			size := g.Size
+			gv.Size = &size
 		}
-		for _, it := range d.First {
-			iv := auditDownloadItemView{
-				ID: it.ID, OccurredAt: it.OccurredAt.UTC(), Path: it.Path, SHA256: it.SHA256, Replica: nz(it.Replica), Delivery: nz(it.Delivery),
+		for _, it := range g.First {
+			iv := auditGroupItemView{
+				ID: it.ID, OccurredAt: it.OccurredAt.UTC(), Action: it.Action, Path: it.Path, SHA256: it.SHA256, Version: nz(it.Version),
+				Replica: nz(it.Replica), Delivery: nz(it.Delivery),
 			}
 			if it.SizeKnown {
 				size := it.Size
 				iv.Size = &size
 			}
-			dv.First = append(dv.First, iv)
+			gv.First = append(gv.First, iv)
 		}
-		v.Download = dv
+		v.Group = gv
 	}
 	return v
 }
@@ -109,9 +114,9 @@ func (s *Server) ListAuditRows(w http.ResponseWriter, r *http.Request, _ gen.Lis
 	WritePage(w, r, page)
 }
 
-// ListAuditDownloadEvents implements GET /api/v1/audit/downloads/{id}/events (R-OPS-055): the events of one download, oldest first.
-// The cursor names the download it was issued for, so that a cursor of another download is refused.
-func (s *Server) ListAuditDownloadEvents(w http.ResponseWriter, r *http.Request, id string, _ gen.ListAuditDownloadEventsParams) {
+// ListAuditRowEvents implements GET /api/v1/audit/rows/{id}/events (R-OPS-055, R-OPS-056): the events of one row of several events,
+// oldest first. The cursor names the row it was issued for, so that a cursor of another row is refused.
+func (s *Server) ListAuditRowEvents(w http.ResponseWriter, r *http.Request, id string, _ gen.ListAuditRowEventsParams) {
 	store, err := s.auditStore()
 	if err != nil {
 		httpserver.Problem(w, r, err)
@@ -132,7 +137,7 @@ func (s *Server) ListAuditDownloadEvents(w http.ResponseWriter, r *http.Request,
 		httpserver.Problem(w, r, err)
 		return
 	}
-	res, err := store.DownloadItems(r.Context(), id, audit.Page{Limit: lq.Limit, After: after})
+	res, err := store.GroupItems(r.Context(), id, audit.Page{Limit: lq.Limit, After: after})
 	if err != nil {
 		httpserver.Problem(w, r, err)
 		return

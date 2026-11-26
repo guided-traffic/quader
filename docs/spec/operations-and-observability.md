@@ -2489,14 +2489,14 @@ asynchronous. "Hook" marks events that webhooks may select (R-OPS-037).
 | `proxy.integrity_mismatch` | A | — | Security event: a fetched artifact does not match the digest the upstream announced; nothing is stored (R-REPO-041) | `path`, `announced`, `computedSha256` |
 | `proxy.tls_untrusted` | A | — | Security event: the upstream's certificate is not trusted; at most once a minute per repository and host (R-REPO-047) | `host` |
 | `proxy.egress_denied` | A | — | Security event: the egress address policy refused the upstream's address; at most once a minute per repository and host (R-REPO-038) | `host` |
-| `package.published` | T | yes | A package version was accepted (npm publish, NuGet push, Ansible Galaxy publish, an OCI tag or the first manifest of an image name pushed by digest, a Debian package file uploaded, R-REPO-048). Journal flag with `journal_entry: optional` (R-OPS-014): journaled for local NuGet repositories only ([formats/nuget.md](formats/nuget.md) R-NUGET-033) | `package`, `version`, `files` |
-| `package.deleted` | T | yes | A package version was deleted or unpublished. Journal flag with `journal_entry: optional`, as for `package.published` | `package`, `version` |
-| `oci.manifest.deleted` | T | yes | A manifest of an OCI image name was deleted, with the cascade of [formats/oci.md](formats/oci.md) R-OCI-018. Journal flag with a required entry `{"repository", "name", "digest", "actorId"}`, so a restore withholds the image (R-OCI-033, Q-OCI-30); written for every manifest a deletion or its cascade removes, by the system actor `removal` when no principal asked for it | `name`, `digest`, `deleted` |
+| `package.published` | T | yes | A package version was accepted (npm publish, NuGet push, Ansible Galaxy publish, an OCI tag or the first manifest of an image name pushed by digest, a Debian package file uploaded, R-REPO-048). Journal flag with `journal_entry: optional` (R-OPS-014): journaled for local NuGet repositories only ([formats/nuget.md](formats/nuget.md) R-NUGET-033) | `package`, `version`, `files`; from 2026-11-26 `format` and `unit` (R-OPS-056) |
+| `package.deleted` | T | yes | A package version was deleted or unpublished. Journal flag with `journal_entry: optional`, as for `package.published` | `package`, `version`; from 2026-11-26 `unit` (R-OPS-056) |
+| `oci.manifest.deleted` | T | yes | A manifest of an OCI image name was deleted, with the cascade of [formats/oci.md](formats/oci.md) R-OCI-018. Journal flag with a required entry `{"repository", "name", "digest", "actorId"}`, so a restore withholds the image (R-OCI-033, Q-OCI-30); written for every manifest a deletion or its cascade removes, by the system actor `removal` when no principal asked for it | `name`, `digest`, `deleted`; from 2026-11-26 `unit` (R-OPS-056) |
 | `oci.reinstate` | T | — | `quader admin oci reinstate` put back a manifest that a journal replay had withheld ([formats/oci.md](formats/oci.md) R-OCI-033); not journaled, because it restores access rather than removing it | `name`, `digest` |
 | `npm.reinstate` | T | — | `quader admin npm reinstate` put back a version that a journal replay had withheld ([formats/npm.md](formats/npm.md) R-NPM-044, R-NPM-047); not journaled, because it restores access rather than removing it | `package`, `version`, `integrity`, `journal_entry` (the entry that withheld it) |
 | `package.metadata_changed` | T | yes | Deprecate, undeprecate, unlist, relist, dist-tag set or removed | `package`, `version` (absent for a whole package: an Ansible collection), `change`; a deprecation's `reasons`, `message` (at most 1,024 characters) and `alternatePackage` (R-API-085) |
-| `artifact.deployed` | T | yes | A file was stored in a local repository by any upload path | `path`, `sha256`, `size`, `overwritten` |
-| `artifact.deleted` | T | yes | A file was removed | `path`, `sha256`, `size` |
+| `artifact.deployed` | T | yes | A file was stored in a local repository by any upload path | `path`, `sha256`, `size`, `overwritten`; from 2026-11-26 `package`, `version` and `unit` where the format names them (R-OPS-056) |
+| `artifact.deleted` | T | yes | A file was removed | `path`, `sha256`, `size`; from 2026-11-26 `package`, `version` and `unit` where the format names them (R-OPS-056) |
 | `artifact.delete_stopped` | A | — | The job of a large delete stopped because a batch was refused or the subject that asked was withdrawn ([storage.md](storage.md) R-STOR-018, Q-STOR-193); the subject as actor, the reason code as `reason`, outcome `denied`; what earlier batches removed stays removed | `path` (the root the request named), `reason`, `job`, `removed` |
 | `artifact.downloaded` | A | — | Only with `audit.record_downloads`, one per item served (R-OPS-054) | `path`, `sha256`; from 2026-11-26 `size`, and `package`, `version` and `unit` where the format names them (R-OPS-054); `delivery` (`link`) and `linkExpiresAt` for a download handed to a signed link of the object store ([storage.md](storage.md) R-STOR-073); `delivery` (`handover`), `linkExpiresAt`, `bastion`, `connection` and `encrypted` for one handed over to a Bastion (R-STOR-095) |
 | `system.config_applied` | T | — | Configuration document applied (R-OPS-030, R-OPS-031) | `document`, `digest`, `summary`, `source` |
@@ -2582,11 +2582,11 @@ API (requires `audit:read`, the capability of R-AUTHZ-010; a system administrato
 
 | Method and path | Parameters | Response |
 |---|---|---|
-| `GET /api/v1/audit/events` | `from`, `to` (default: the last 24 h), `action` (exact, or a prefix ending in `.*`), `category`, `outcome` (`success`, `failure`, `denied`, `warning`), `actor` (ID or name), `project`, `repository` (qualified name `<projectKey>/<repoKey>`), `resourceType`, `resourceId`, `traceId`, `limit` (≤ 1000, default 100), `cursor` | `200 {"items":[…],"nextCursor":"…"}`, newest first |
+| `GET /api/v1/audit/events` | `from`, `to` (default: the last 24 h), `action` (exact, or a prefix ending in `.*`), `category`, `outcome` (`success`, `failure`, `denied`, `warning`), `actor` (a UUID is a principal's ID, anything else an actor's name; Q-OPS-452), `project`, `repository` (qualified name `<projectKey>/<repoKey>`), `resourceType`, `resourceId`, `traceId`, `limit` (≤ 1000, default 100), `cursor` | `200 {"items":[…],"nextCursor":"…"}`, newest first |
 | `GET /api/v1/audit/events/{id}` | — | `200` one event; `404` |
 | `GET /api/v1/audit/events/export` | `from`, `to` (both required, range ≤ 400 days), the same filters, `format=jsonl` (default) or `csv` | `200` streamed as [JSON Lines](https://jsonlines.org/) (`application/x-ndjson`) or CSV, oldest first, one line per event (a download one line per item, R-OPS-054); `400` for a missing or oversized range |
-| `GET /api/v1/audit/rows` | the filters, `limit` and `cursor` of the query | `200 {"items":[{"event":…,"download":…}],"nextCursor":"…"}`, the rows of the screen: a download of several items is one row (R-OPS-055) |
-| `GET /api/v1/audit/downloads/{id}/events` | `limit`, `cursor` | `200` the events of the download whose first event is `id`, oldest first (R-OPS-055); `404` |
+| `GET /api/v1/audit/rows` | the filters, `limit` and `cursor` of the query | `200 {"items":[{"event":…,"group":…}],"nextCursor":"…"}`, the rows of the screen: one act of several items (a download, a push or a publish, a delete) is one row (R-OPS-055, R-OPS-056) |
+| `GET /api/v1/audit/rows/{id}/events` | `limit`, `cursor` | `200` the events of the row whose first event is `id`, oldest first (R-OPS-055, R-OPS-056); `404` |
 
 ```json
 {
@@ -2693,13 +2693,14 @@ Priority: **P1** · Covers: quader-only
 
 - **A row is an event, or a download.** The audit log's screen (R-UI-037) reads `GET /api/v1/audit/rows`: every event of the filter is a
   row of its own, except that the events of one download are one row
-  ([Q-OPS-438](#q-ops-438--the-rows-are-a-read-of-the-server-over-the-stored-events)).
+  ([Q-OPS-438](#q-ops-438--the-rows-are-a-read-of-the-server-over-the-stored-events)). R-OPS-056 extends the mechanism to a push, a
+  publish, a delete and the allowed writes: what this requirement says of a download holds for every act there, by the act's key.
 - **A download** is the events of one action of a transfer (`artifact.downloaded`, and `bastion.data_key.handed`, whose keys of one pull are
   a row of their own beside its download, [Q-OPS-445](#q-ops-445--the-data-keys-handed-for-a-pull-are-a-row-of-their-own)) that name
   one unit and were written for one caller, each within a minute of the one before
   ([Q-OPS-439](#q-ops-439--a-download-is-one-unit-one-caller-and-items-at-most-a-minute-apart)):
-  - its key is the action, the repository, `details.unit` and the caller: the actor's kind, its principal, the token it used and the address
-    it came from (`audit_download_key`, migration 00142);
+  - its key is the act (for a download its action), the repository, `details.unit` and the caller: the actor's kind, its principal, its
+    name, the token it used and the address it came from (`audit_row_key`, migration 00144, which replaced 00142's `audit_download_key`);
   - its items are the events of its key from its first one on, each at most `audit.DownloadGap` (60 s) after the one before; a pause of
     more ends it, and the next event of the key begins another;
   - an event of a refusal (`malware.download_blocked`, `signature.download_refused`, `vulnerability.download_blocked`,
@@ -2717,19 +2718,19 @@ Priority: **P1** · Covers: quader-only
   the same for every item of a download (action, category, outcome, actor, repository, resource) keep its row whole; a filter by trace ID
   leaves the one item of that request. A range whose start lies inside a download shows its items from its first one in the range; a
   range's end ends a download's items.
-- **What a download's row carries** (`AuditDownload`): its first event; `unit`, `package` and `version` (the first version or tag any of
-  its items names); `items`, the number of its items, at most 1,000 (`more` when the download goes on beyond them); `size`, the sum of
-  its items' sizes (null when one carries none); `lastAt`, its last item's time; `first`, its first ten items with their event's ID and
-  time, path, SHA-256, size, replica and delivery.
-- **One download's events**: `GET /api/v1/audit/downloads/{id}/events`, `id` the first event's, lists every event of the download,
-  whole, oldest first, paged; an ID that begins no download answers `404`
+- **What a download's row carries** (`AuditGroup`, `act` `download`): its first event; `unit`, `package` and `version` (the first version
+  or tag any of its items names) and `versions` (how many distinct ones they name); `items`, the number of its items, at most 1,000
+  (`more` when the download goes on beyond them); `size`, the sum of its items' sizes (null when one carries none); `lastAt`, its last
+  item's time; `first`, its first ten items with their event's ID, time and action, path, SHA-256, version, size, replica and delivery.
+- **One download's events**: `GET /api/v1/audit/rows/{id}/events` (until R-OPS-056 `…/downloads/{id}/events`), `id` the first event's,
+  lists every event of the download, whole, oldest first, paged; an ID that begins no row of several events answers `404`
   ([Q-OPS-443](#q-ops-443--a-downloads-events-are-read-from-its-first-event-oldest-first)).
 - **What stays single.** `GET /api/v1/audit/events`, `GET /api/v1/audit/events/{id}` and `GET /api/v1/audit/events/export` are
   unchanged: one event per item, the export one line per item. The rows are an addition for the screen.
 - **Access.** Both operations take `audit:read`, the capability of the events (R-OPS-017), enforced before the handler: a reader of a row
   may read every event in it, and nobody reads an item through a row whom the events list would refuse.
-- **The statements** read the index `audit_event_download_idx` (the key, `occurred_at`, `id`, only the events of a transfer that name a
-  unit): the page's rows are the events of the filter newest first that have no predecessor of their key within the gap (one index probe
+- **The statements** read the index `audit_event_row_idx` (the key, `occurred_at`, `id`, only the events of a grouped action that name a
+  unit; until R-OPS-056 `audit_event_download_idx`): the page's rows are the events of the filter newest first that have no predecessor of their key within the gap (one index probe
   each), and each download's items one probe per item. A page costs its events and its downloads' items, never the table.
 
 Acceptance criteria:
@@ -2750,6 +2751,92 @@ Acceptance criteria:
   role `api`, the rows hold one row of the pull named `1.0` with every item, and the download's events are all of them.
 - Unit (`web`, [audit-log.spec.ts](../../web/src/app/features/audit/audit-log.spec.ts), the describe "R-OPS-055 a download is one row",
   milliseconds): see R-UI-037.
+
+### R-OPS-056 · The audit log shows a push, a publish and a delete as one row too
+Priority: **P1** · Covers: quader-only
+
+The owner's rule of 2026-11-26 (W31, R-OPS-049: "Alle Downloads sind überall in Quader zu logischen Einheiten zusammen zu fassen … Einen
+Download in vielen kleinen Dateien anzuzeigen, macht den gesamten prozess unübersichtlich") and his choice for the downloads (R-OPS-054,
+"Option A, klarer Fall") hold for the changes too: the stored events stay one per file and per version, and the screen shows one act of a
+person on one unit as one row ([Q-OPS-446](#q-ops-446--a-push-a-publish-and-a-delete-are-one-row-and-their-events-stay-one-per-file)).
+Nothing an auditor can prove gets weaker: `GET /api/v1/audit/events`, `GET /api/v1/audit/events/{id}` and the export are unchanged, one
+event and one line per file, per version and per decision.
+
+- **The acts** ([Q-OPS-447](#q-ops-447--the-key-of-a-row-holds-the-act-so-a-pushs-files-and-its-version-are-one-row)). The key of a row
+  (`audit_row_key`, migration 00144) holds the act an action is part of, not the action, so that the events of different actions of one
+  act join:
+
+  | Act (`group.act`) | Its actions | The row's word |
+  |---|---|---|
+  | `download` | `artifact.downloaded` | Downloaded |
+  | `datakeys` | `bastion.data_key.handed` (a row beside its download, Q-OPS-445) | Data keys handed |
+  | `push`, `publish`, `upload` | `artifact.deployed`, `package.published`, `npm.publish` | Pushed (the version published by a format whose clients push: OCI, NuGet), Published (npm, Ansible Galaxy, Debian), Uploaded (files that published no version) |
+  | `delete` | `artifact.deleted`, `oci.manifest.deleted`, `deb.package.deleted`, `npm.unpublish`, `package.deleted`, `ansible.version.deleted` | Deleted |
+  | `writes` | `authz.write.allowed` (a row beside the act it decided, [Q-OPS-448](#q-ops-448--the-allowed-writes-of-an-act-are-a-row-of-their-own-beside-it)) | Writes allowed |
+
+  A row's facts are R-OPS-055's: its first event, its unit, package and first version, `versions` (the distinct versions its items name),
+  its items (at most 1,000, `more` beyond), `size` (the sum of its files' sizes: the events of a version, a manifest or a decision carry
+  none of their own and are not counted), its last item's time and its first ten items, each with its action, path, digest (a file's, a
+  manifest's, a version's first file's) and version. `package.published` names its `format`, which decides between Pushed and Published.
+- **The unit of a change**, written from 2026-11-26 on as `details.unit` with `package` and `version` where the format names them:
+  - a push: the unit of R-OPS-049 by the format's declaration (an image's name, a version's `<name>@<version>`), on the files' events by
+    the item store (`items.Options.Units`, the format's classification and declaration as a download names it) and on the version's event
+    by the format's producer, the same string;
+  - a delete: the package ([Q-OPS-449](#q-ops-449--the-unit-of-a-delete-is-the-package-so-a-delete-of-a-package-is-one-row)), so that a
+    delete of a package of several versions is one row naming them ("3 versions");
+  - a file of a format whose unit is a file (generic): its folder, `<folder>/` (`/` for the root): the folder an upload wrote it into, the
+    folder a delete named ([Q-OPS-450](#q-ops-450--a-change-of-a-format-whose-unit-is-a-file-names-its-folder));
+  - an allowed write: its package, else the folder of its path.
+  A file of no package in a package format names none and stays a row of its own.
+- **The filters choose the events, and a row joins what they chose**
+  ([Q-OPS-451](#q-ops-451--the-filters-apply-to-a-rows-every-event-and-the-callers-name-is-part-of-its-key)): the filters of the action,
+  its prefix, the category, the outcome, the resource and the trace apply to the predecessor test and the walk as to the event (the
+  repository and the actor are parts of the key), so that a filter by `package.published` shows a push's version as a row of one item and a
+  filter by `category=authz` shows the writes. The key holds the caller's name besides its principal, so that two system actors without a
+  principal (a retention run and the purge of the trash) are two callers. The events of one row are read by
+  `GET /api/v1/audit/rows/{id}/events` (R-OPS-055's read, renamed from `…/downloads/{id}/events`), whole and without a filter.
+- **What stays single**: a refusal (Q-OPS-442), `authz.read.allowed` (one per request by design, H-2269), the claim of a namespace by a
+  first version (`repository.claims_changed`), every other change (a dist-tag, a deprecation, an unlist), and an event written before
+  2026-11-26.
+- **What one act writes, per format**, measured by doing it (integration area `audit`,
+  `TestR_OPS_056_APushAndADeleteAreOneRowInEveryFormat`, two replicas, the protocol's own requests with payloads of a few hundred bytes):
+
+  | Format, act | Events | Rows |
+  |---|---|---|
+  | OCI, a push of an image of *n* layers by its tag (one request per blob, then the manifest) | `artifact.deployed` *n* + 3 (the config, the layers, the manifest, the tag), `authz.write.allowed` *n* + 3, `package.published` 1; the first version of a name `repository.claims_changed` 1 | Pushed (*n* + 4 items), Writes allowed (*n* + 3) |
+  | OCI, the delete of a manifest by its digest | `artifact.deleted` 2 (the manifest, its tag), `oci.manifest.deleted` 1, `authz.write.allowed` 1 | Deleted (3), named by the tag |
+  | npm, a publish | `artifact.deployed` 1 (the tarball), `npm.publish` 1, `authz.write.allowed` 2 | Published (2), Writes allowed (2) |
+  | npm, the delete of a package of three versions from its screen (the items API on the package's folder) | `artifact.deleted` 3, `npm.unpublish` 3, `authz.write.allowed` 1 | Deleted (6, "3 versions") |
+  | NuGet, a push | `artifact.deployed` 2 (the `.nupkg`, the `.nuspec`), `package.published` 1, `authz.write.allowed` 2 | Pushed (3), Writes allowed (2) |
+  | NuGet, a delete (`deleteMode: delete`) | `artifact.deleted` 2, `package.deleted` 1, `authz.write.allowed` 3 | Deleted (3) |
+  | Debian, an upload of a package file | `artifact.deployed` 1, `package.published` 1, `authz.write.allowed` 1 | Published (2), Writes allowed (1) |
+  | Debian, the delete of the file | `artifact.deleted` 1, `deb.package.deleted` 1, `authz.write.allowed` 1 | Deleted (2) |
+  | Ansible Galaxy, a publish | `artifact.deployed` 1, `package.published` 1, `authz.write.allowed` 1 | Published (2), Writes allowed (1) |
+  | Ansible Galaxy, the delete of a version | `artifact.deleted` 1, `ansible.version.deleted` 1, `authz.write.allowed` 1 | Deleted (2) |
+  | generic, three files uploaded into one folder one after another | `artifact.deployed` 3, `authz.write.allowed` 3 | Uploaded (3, the folder), Writes allowed (3) |
+  | generic, the delete of a folder | `artifact.deleted` 3, `authz.write.allowed` 1 | Deleted (3, the folder) |
+
+  W33's "about one `artifact.deployed` per blob and manifest" for a `docker push` is *n* + 3 for an image of *n* layers: the config and
+  the tag's item are files too. A NuGet symbols package is pushed to the symbols endpoint and classified by no package: its file is a row
+  of its own. A Debian source package is not uploaded to a local repository; its files reach the log only as downloads from a remote.
+
+Acceptance criteria:
+
+- Integration (area `audit`, `TestR_OPS_056_APushAndADeleteAreOneRowInEveryFormat`, a replica of the role `all` that serves the
+  protocols and writes the events, a replica of the role `api` that reads, about 4 s): the table above, the events counted by action and
+  the rows by act, unit, version and items; no event of a push or a delete is a row of its own; a push's row's events are every event of
+  it; a reader of the repositories without `audit:read` is refused the rows, a row's events and the events (403).
+- Integration (area `audit`, `TestR_OPS_056_AChangeIsOneRowAndTheFiltersChooseItsEvents`, 11 events inserted with their times, about
+  1 s): a push is one row with its version, its writes another; two system actors' deletes of one package at once are two rows; a filter
+  by action, by category, by kind of resource and by an actor's name keeps what it chose of an act as a row; a row's events are every
+  event of its act whatever filter showed it; the second file of a push begins no row.
+- Unit (`internal/audit`, `TestR_OPS_056_TheStatementsNameTheGroupedActions`, `TestR_OPS_056_AGroupNamesItsActAndItsUnit`,
+  milliseconds): the statements, the index and the key's act name the actions of `GroupedEvents`; a group names its act, unit, versions
+  and the bytes of its files. Unit (`internal/items`, `TestR_OPS_056_AChangeNamesItsUnit`; `internal/formathost`,
+  `TestR_OPS_056_APushsFilesNameTheUnitOfItsVersion`; `internal/authz`, `TestR_OPS_056_AnAllowedWriteNamesItsUnit`, microseconds): the
+  unit of a push's file equals its version's event's, a delete names the package, a generic file its folder, a write its package.
+- Unit (`web`, [audit-log.spec.ts](../../web/src/app/features/audit/audit-log.spec.ts), the describe "R-OPS-056 a push, a publish and
+  a delete are one row", milliseconds): see R-UI-037.
 
 ## Tracing
 
@@ -7629,7 +7716,7 @@ of one pull are written by several replicas, each in its own batches.
 store and no coordination, and the server is the one place where a page of rows can be cut correctly.
 
 **Applied in the spec:** R-OPS-055. Code: [rows.go](../../internal/audit/rows.go), [audit.sql](../../internal/meta/postgres/queries/audit.sql)
-(`ListAuditRowsNewest`, `ListAuditDownloadMembers`), [audit_rows_api.go](../../internal/api/v1/audit_rows_api.go).
+(`ListAuditRowsNewest`, `ListAuditGroupMembers`, named `ListAuditDownloadMembers` until R-OPS-056), [audit_rows_api.go](../../internal/api/v1/audit_rows_api.go).
 
 ### Q-OPS-439 · A download is one unit, one caller and items at most a minute apart
 
@@ -7655,7 +7742,8 @@ transfer of a large layer at ordinary speeds and still separates repeated pulls 
 no setting, so the same events form the same rows in every installation.
 
 **Applied in the spec:** R-OPS-055. Code: [rows.go](../../internal/audit/rows.go) (`DownloadGap`),
-[00142_audit_download_rows.sql](../../internal/meta/postgres/migrations/00142_audit_download_rows.sql) (`audit_download_key`).
+[00142_audit_download_rows.sql](../../internal/meta/postgres/migrations/00142_audit_download_rows.sql) (`audit_download_key`; since
+R-OPS-056 `audit_row_key` of [00144_audit_change_rows.sql](../../internal/meta/postgres/migrations/00144_audit_change_rows.sql)).
 
 ### Q-OPS-440 · An event of a transfer names its unit and its size from now on
 
@@ -7704,8 +7792,8 @@ Context: the sweep of every event that is written per part of an act a person se
 |---|---|---|---|
 | `artifact.downloaded` | a pull, an install, a download | one per item served: OCI one per manifest and blob (a pull of 10 layers: 12); npm one per version; NuGet one per `.nupkg`, one more per `.snupkg`; Debian one per package file, a source package's `.dsc` and tarballs; Ansible Galaxy one per archive; generic one per file; also with a signed link (`delivery: link`), a handover (`handover`) and as a Bastion reports it | one row per download (R-OPS-055) |
 | `bastion.data_key.handed` | a pull through a Bastion with a handover per blob of an encrypted copy | one per item handed, whatever `audit.record_downloads` says | one row per pull, beside its download's row (Q-OPS-445) |
-| `artifact.deployed`, `authz.write.allowed`, `package.published` | a push, a publish, an upload | per stored file one `artifact.deployed` and the write's decision; one `package.published` per version or tag: a `docker push` of 10 layers about 12 of each and one `package.published`; NuGet two (`.nupkg`, `.nuspec`); npm, Debian, Ansible Galaxy one; generic one per file | one row per event (unchanged) |
-| `artifact.deleted`, `oci.manifest.deleted`, `deb.package.deleted`, `npm.unpublish`, `package.deleted` | a delete of a version, an image, a folder | one per file removed and one per version or manifest; a folder's delete one per file | one row per event (unchanged) |
+| `artifact.deployed`, `authz.write.allowed`, `package.published` | a push, a publish, an upload | per stored file one `artifact.deployed` and the write's decision; one `package.published` per version or tag: a `docker push` of 10 layers about 12 of each and one `package.published`; NuGet two (`.nupkg`, `.nuspec`); npm, Debian, Ansible Galaxy one; generic one per file | one row per event (until R-OPS-056: one row per push and one of its writes, Q-OPS-446) |
+| `artifact.deleted`, `oci.manifest.deleted`, `deb.package.deleted`, `npm.unpublish`, `package.deleted` | a delete of a version, an image, a folder | one per file removed and one per version or manifest; a folder's delete one per file | one row per event (until R-OPS-056: one row per delete, Q-OPS-446) |
 | `malware.download_blocked`, `signature.download_refused` | a refused pull or download | one per path and client address a minute on each replica: a pull refused at an infected layer is one, at most one per layer it asked for | one row per event (unchanged) |
 | `vulnerability.download_blocked`, `remote.delivery.refused` | a refused version | one per repository, version and client address a minute | one row per event (unchanged) |
 | `authz.denied`, `authz.read.allowed` | a refused request; with `authz.audit.reads: all` every allowed read | folded per principal, action, repository and path a window; an allowed read one per request (a pull of 10 layers: 12) | one row per event (unchanged) |
@@ -7766,6 +7854,147 @@ Context: a pull through a Bastion with a handover per blob of an encrypted copy 
 **Choice:** (a). **Rationale:** the trace of a key stays findable by its action and joins as a download does.
 
 **Applied in the spec:** R-OPS-055; [storage.md](storage.md) R-STOR-096.
+
+### Q-OPS-446 · A push, a publish and a delete are one row, and their events stay one per file
+
+Status: **Decided by the development agent on 2026-11-26** (W33b, at the lead's direction, by the owner's rule of the morning and his
+choice for the downloads) — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: W33 joined the downloads and left the changes to a decision (Q-OPS-442, H-2269): a `docker push` of an image of ten layers
+showed 13 `artifact.deployed`, 13 `authz.write.allowed` and one `package.published` as 27 rows, a NuGet push three, the delete of an npm
+package of three versions six. The owner's rule (R-OPS-049) is that a person reads the unit, not its files; his choice for the downloads
+(Q-OPS-437) is that the evidence stays as fine as the act was.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Store per file and per version as before; the screen shows one act on one unit as one row, by W33's mechanism (chosen) | The events gain their unit, the read groups them | The owner's rule and his choice for the downloads, applied alike; every event stays provable on its own; nothing new to keep consistent | A change's row is a reading of the server, as a download's is |
+| (b) One event per push or delete | Fewer events | A smaller trail | A push spans many requests with no end the server sees; what each file was is no longer an event; the journal and the webhooks are per file and per version |
+| (c) Leave the changes one row per event | — | Nothing to build | A push stays 27 rows, against the rule |
+
+**Choice:** (a). **Rationale:** the rule is about what a person reads, and the owner's choice for the downloads says how: the reading
+groups, the store does not. A push and a delete are acts of a person on a unit as a pull is.
+
+**Applied in the spec:** R-OPS-056; [api-and-ui.md](api-and-ui.md) R-UI-037; [ADR-297](../decisions.md#adr-297--the-audit-log-shows-a-download-as-one-row-and-keeps-one-event-per-item).
+
+### Q-OPS-447 · The key of a row holds the act, so a push's files and its version are one row
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: a push writes a file's `artifact.deployed` per file and one `package.published` (npm: `npm.publish`) for the version, in the
+transaction of its last file; a delete writes `artifact.deleted` per file and the format's event of the version or manifest
+(`oci.manifest.deleted`, `package.deleted`, `npm.unpublish`, `deb.package.deleted`, `ansible.version.deleted`). R-OPS-055's key held the
+action, so each action was a row of its own.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The key holds the act: the actions of a push are one act, those of a delete another (chosen) | `audit_row_key` maps an action to its act | One row per push or delete, which names the version it published or removed; the filters keep a row of one action where they choose one | A row holds events of several actions; its size is its files' |
+| (b) The key holds the action, as for the downloads | A push is a row of its files and a row of its version | No mapping | Two rows for one act, the version's row of one item |
+| (c) One key for every action of a caller on a unit | Pushes, deletes, writes and downloads of one unit in one row | Fewest rows | A pull right after a push would join it; a refusal's or a decision's category would mix with the content's |
+
+**Choice:** (a). **Rationale:** what a person did is the act; its version is part of it. The acts are `audit.ActOf`, and the key's CASE
+names the same actions (a unit test holds them together).
+
+**Applied in the spec:** R-OPS-056. Code: [rows.go](../../internal/audit/rows.go) (`actActions`, `GroupedEvents`, `ActOf`, `groupOf`),
+[00144_audit_change_rows.sql](../../internal/meta/postgres/migrations/00144_audit_change_rows.sql) (`audit_row_key`).
+
+### Q-OPS-448 · The allowed writes of an act are a row of their own beside it
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: every write's decision is `authz.write.allowed`, written in the transaction of the change (R-AUTHZ-029): one per blob and
+manifest of a push, one or two per publish, one per delete request and per file a client's fill stores. Its category is `authz`, the
+files' and the versions' `content`.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The writes of one caller on one package are a row of their own beside the act's, joined as a download is (chosen) | The act `writes` | The push's row lists its files and its version alone, and counts and sums them; the decisions stay findable by their action and their category (`category=authz` shows the row); as with the data keys of a pull (Q-OPS-445) | Two rows for one push |
+| (b) Join the writes into the act's row | One row per push | Fewest rows | Its items mix files and decisions (13 files and 13 decisions for a push of ten layers); a filter by category would split the act's row by its events' categories |
+| (c) Leave the writes single | — | — | A push of ten layers stays 13 rows of writes beside its one row |
+
+**Choice:** (a). **Rationale:** a decision is a security trace of its own, read by another question (who was allowed what) and filtered
+by its own category; it joins as the keys handed for a pull do. Its unit is the package (else the folder of its path), so the writes of
+two pushes of one image by one caller within a minute are one row (H-2341).
+
+**Applied in the spec:** R-OPS-056. Code: [audit.go](../../internal/authz/audit.go) (`writeUnit`).
+
+### Q-OPS-449 · The unit of a delete is the package, so a delete of a package is one row
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the delete of a whole package from its screen, of an image's every tag, or an `npm unpublish --force` removes several versions in
+one request; a download's and a push's unit is the version for npm, NuGet, Debian and Ansible Galaxy (R-OPS-053).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A delete names the package as its unit; the row names its versions ("3 versions") (chosen) | `details.unit` of a delete is the package | A delete of a package is the act the person did, one row; a delete of one version names that version | Two deletes of two versions by one caller within a minute are one row (H-2341) |
+| (b) The version, as a push names it | A row per version | One unit per format | The delete of a package of 40 versions is 40 rows |
+| (c) The path the request named | The act's own scope | Exact for a delete by path | A format's protocol names no path (`DELETE /v3/package/{id}/{version}`); the version events of the cascade name none |
+
+**Choice:** (a). **Rationale:** the person deleted a package, and the row says how many versions went with it; the versions stand in the
+opened row.
+
+**Applied in the spec:** R-OPS-056. Code: [commit.go](../../internal/items/commit.go) (`nameChangeUnit`), the format producers.
+
+### Q-OPS-450 · A change of a format whose unit is a file names its folder
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: generic files have no package; a download of one is a row of its own (R-OPS-053). The screen's upload dialog uploads the files a
+person drops into one target folder one request after another, and a delete of a folder removes every file below it in one request.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The unit of a generic file's change is a folder: the folder an upload wrote it into, the folder a delete named (`<folder>/`, `/` for the root) (chosen) | Files of one folder join | The screen's upload of several files is one row, a folder's delete one row | Files a client uploads into several folders are a row per folder (H-2342) |
+| (b) No unit: one row per file | As for downloads | — | A folder's delete of 500 files stays 500 rows |
+| (c) The client names the batch (a header the screen sends) | Exact for the screen | One row per dialog | A value of the client's in the audit's key; nothing for curl or a pipeline |
+
+**Choice:** (a). **Rationale:** a folder is what a person uploads into and deletes; it costs nothing on the request.
+
+**Applied in the spec:** R-OPS-056. Code: [commit.go](../../internal/items/commit.go) (`nameChangeUnit`, `FolderUnit`).
+
+### Q-OPS-451 · The filters apply to a row's every event, and the caller's name is part of its key
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-OPS-055's test of a predecessor and its walk applied the range and the trace only; that held because a download's events have
+one action, one category and one resource. A push's events do not: `package.published` is about a `package`, its files about the
+`repository`. A filter by action that took the version alone would find a predecessor among the files it left out, and the row would
+vanish. The key held the principal, not the name: two system actors without one (the retention run, the purge of the trash) were one
+caller.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The predecessor test and the walk apply every filter that can differ inside a key (action, prefix, category, outcome, resource, trace); the key holds the name (chosen) | A row is a chain over the chosen events | Every filter shows what it chose, as a row; two system actors are two callers | The probe reads the predecessor's row to test the filters, as it did for the trace |
+| (b) Apply no filter to the chain | As R-OPS-055 | — | A filter by `package.published` showed no push at all |
+| (c) Turn the filters off for the rows | — | — | The screen's filters stop working |
+
+**Choice:** (a). **Rationale:** the rows join what the filters chose, which was R-OPS-055's rule; with several actions in an act the rule
+must reach the chain. The events of one row (`GET /api/v1/audit/rows/{id}/events`) stay unfiltered.
+
+**Applied in the spec:** R-OPS-056. Code: [audit.sql](../../internal/meta/postgres/queries/audit.sql) (`ListAuditRowsNewest`,
+`ListAuditGroupMembers`, `AuditGroupStartKey`).
+
+### Q-OPS-452 · The filter by an actor's name is an index condition
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the filter `actor` was `actor_id = <the value as a UUID> OR actor_name = <the value>`, no index condition of the events list, the
+rows or the export: each read scanned the range until its page was full. W33 measured the rows with `actor=` at 1.2 s against the events
+list's 95 ms; with the acts of R-OPS-056 grouped a page of rows scans more. Measured at 3 million events (the screen's filter sends the
+actor's name): the rows of a name 2,134 ms and of a name with no event 3,946 ms without an index, 20 ms and 6 ms with one; the events list
+177 ms against 2.6 ms ([developer/audit.md](../developer/audit.md#the-rows-of-the-screen)).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The value is an ID when it is a UUID, a name otherwise, never both; a partial index on `(actor_name, occurred_at DESC)` (chosen) | Each read's actor filter is one index condition: the ID on `audit_event_actor_idx`, the name on `audit_event_actor_name_idx` | A hundredfold faster for a name, in all three reads; the events of a name a user had before a rename stay found by that name | 143 MB at 3 million events beside the table's other indexes (`audit_event_actor_idx` 165 MB), and an index entry more per event (H-2344) |
+| (b) Resolve a name to its principal's ID at the read, filter the ID alone | No new index | The ID's index exists | An event written under a former name, a system actor's name and a deleted principal's events are not found by the name the log shows |
+| (c) Leave it | — | — | Seconds per page of a filter the screen offers first |
+
+**Choice:** (a). **Rationale:** the screen filters by the name it shows, and an audit trail must find the events by what it recorded; a
+name that is a UUID is no name any principal can have.
+
+**Applied in the spec:** R-OPS-017, R-OPS-056. Code: [store.go](../../internal/audit/store.go) (`args`),
+[audit.sql](../../internal/meta/postgres/queries/audit.sql), [00144_audit_change_rows.sql](../../internal/meta/postgres/migrations/00144_audit_change_rows.sql).
 
 ## What this does not cover
 
@@ -7872,7 +8101,7 @@ close it: the tag of the client's request carried to the publication (Q-OPS-430 
 
 ### H-2265 · Two downloads of one unit by one caller within a minute are one row
 
-Component: the key and the pause of a download's row (Q-OPS-439, `audit_download_key`). Subject: whoever reads the audit log. Live when
+Component: the key and the pause of a download's row (Q-OPS-439, `audit_row_key`). Subject: whoever reads the audit log. Live when
 one caller (one principal, one token, one address) fetches one unit again less than a minute after the last item of the first download: a
 CI runner that pulls one image for two jobs, a node that starts two pods of one image, an `npm install` run twice. The row shows the items
 of both, its count the sum, and an item fetched twice stands twice in its list. Nothing is lost: the events list, the download's events and
@@ -7902,11 +8131,48 @@ as a file. Live: the list of a download's events offers no export, and the expor
 are exported with a range and the actor's filter, among the caller's other events of that range. What would close it: a `download` filter
 on the export, walking the download as its list does.
 
-### H-2269 · A push, a publish and a delete of several files still show one row per file
+### H-2269 · With every allowed read recorded, a pull is one row per request
 
-Component: the events of changes of state (Q-OPS-442). Subject: whoever reads the audit log. Live for a `docker push` (about one
-`artifact.deployed` and one `authz.write.allowed` per blob and manifest, and one `package.published`), a NuGet push (two
-`artifact.deployed`), the delete of an image (one `oci.manifest.deleted` and one `artifact.deleted` per item) or of a folder (one
-`artifact.deleted` per file), and with `authz.audit.reads: all` for every pull (one `authz.read.allowed` per request). What would close
-it: the owner's decision to join them; the mechanism of R-OPS-055 joins any event type that names a unit, so it needs the unit on those
-events and their action in `audit.TransferEvents` and in the index of migration 00142.
+Component: `authz.read.allowed` (R-AUTHZ-029, Q-OPS-442). Subject: whoever reads the audit log. Live only with `authz.audit.reads: all`:
+every allowed read is an event, one per request, so a pull of an image of ten layers is twelve rows of reads beside its download's one
+row. Narrowed by R-OPS-056 on 2026-11-26: a push, a publish, a delete and the allowed writes are one row each (Q-OPS-446); this read is
+the part that is left. What would close it: the decision to join the reads too; the mechanism needs `details.unit` on the event
+(`authz.Engine.decisionEvent`, as for the writes) and the action in `audit.GroupedEvents`, the key's CASE and the index of migration
+00144.
+
+### H-2341 · Two changes of one unit by one caller within a minute are one row
+
+Component: the key and the pause of a change's row (Q-OPS-447 to Q-OPS-449, `audit_row_key`). Subject: whoever reads the audit log. Live
+when one caller deletes two versions of one package less than a minute apart (a delete names the package), pushes two tags of one image
+(an image is the unit of a push), or pushes and deletes on one package within a minute (the writes of both acts name the package): the
+row holds the items of both, names "2 versions" where it holds two, and its count is the sum. Nothing is lost: the events, a row's events
+and the export hold every event with its time and trace ID. H-2265 is the same for the downloads. What would close it: an ID of the act
+on its events, which neither the protocols nor the screen's requests carry.
+
+### H-2342 · Files a client uploads into several folders are a row per folder
+
+Component: the unit of a generic file's change (Q-OPS-450). Subject: whoever reads the audit log. Live when a client uploads a tree of
+files (a pipeline's `curl` loop over a build's output, a mirror tool): the screen's upload writes into one folder and is one row, but a
+tree is a row per folder it writes into. A delete of the tree's top folder is one row. What would close it: an ID of the act that the
+client sends, which the files API does not take.
+
+### H-2343 · A retention run that deletes many packages is a row per package
+
+Component: the unit of a delete (Q-OPS-449). Subject: whoever reads the audit log. Live for the system's removals (the actor `removal`, the
+retention of a remote's cache or of a local repository's versions): a run that removes 500 packages writes their events in one minute and
+reads as 500 rows of the same actor, one per package, each naming its versions. What would close it: the job's ID on the events of its
+removals, a key that the system's runs could join by.
+
+### H-2344 · The filter by an actor's name costs an index on every event
+
+Component: `audit_event_actor_name_idx` (Q-OPS-452). Subject: the operator of an installation that records many events. Live always: every
+event with an actor's name (every event but an anonymous one) adds an entry of the name and the time, measured at 3 million events in
+[developer/audit.md](../developer/audit.md#the-rows-of-the-screen). What would close it: resolving a name to its principal's ID at the
+read and filtering the ID alone, which would miss the events written under a name a user had before a rename.
+
+### H-2345 · A NuGet symbols package's push is a row of its own beside its package's
+
+Component: the unit of a push (R-OPS-056). Subject: whoever reads the audit log. Live for every `dotnet nuget push` of a package with
+its `.snupkg`: the symbols file is stored under the symbols endpoint, whose path the format classifies by no package (a routing name), so
+its `artifact.deployed` names no unit and is a row of its own beside the package's push. What would close it: the format naming the
+package and the version of a symbols file in its classification, which the symbols path carries only as the file's name.

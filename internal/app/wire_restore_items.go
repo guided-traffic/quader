@@ -37,6 +37,7 @@ func RestoreItems(cfg *config.Config, log *slog.Logger) func(ctx context.Context
 		hooks := formathost.NewHooks(formathost.Deps{Bindings: bindings, Signals: silentSignals{}, Log: log.With("component", "restore-items")})
 		return items.New(items.Options{
 			Runner: db, Blobs: refusedBlobs{}, Recorder: rec, Hooks: hooks, Storage: cfg.Storage, Log: log.With("component", "restore-items"),
+			Units: changeUnits,
 		})
 	}
 }

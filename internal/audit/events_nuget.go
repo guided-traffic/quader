@@ -41,7 +41,8 @@ func init() {
 			`"files":{"type":"array","maxItems":1000,"items":{"type":"object","properties":{` +
 			`"path":{"type":"string"},"sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},"size":{"type":"integer","minimum":0}},` +
 			`"required":["path","sha256","size"],"additionalProperties":false}},` +
-			`"claim":{"type":"string"},"shadowCheck":{"type":"string","enum":["undetermined"]}},` +
+			`"claim":{"type":"string"},"shadowCheck":{"type":"string","enum":["undetermined"]},` +
+			`"format":{"type":"string","maxLength":32},"unit":{"type":"string","maxLength":512}},` +
 			`"required":["package","version","files"],"additionalProperties":false}`,
 	})
 	// A package version was removed: a hard delete, a raw delete of its .nupkg or a move out
@@ -50,7 +51,7 @@ func init() {
 		Name: EventPackageDeleted, Category: CategoryContent, Mode: Transactional, Webhook: true,
 		Journal: JournalRevocation, Entry: EntryOptional,
 		Schema: `{"type":"object","properties":{` +
-			`"package":{"type":"string"},"version":{"type":"string"}},` +
+			`"package":{"type":"string"},"version":{"type":"string"},"unit":{"type":"string","maxLength":512}},` +
 			`"required":["package","version"],"additionalProperties":false}`,
 	})
 	// A version was unlisted or relisted (change "unlist" or "relist"), or a version or a whole package (an Ansible collection, no

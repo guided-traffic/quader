@@ -47,14 +47,14 @@ func init() {
 		Schema: `{"type":"object","properties":{` +
 			`"package":{"type":"string"},"version":{"type":"string"},"integrity":{"type":"string"},` +
 			`"tag":{"type":"string"},"latest_guard":{"type":"boolean"},"tag_held":{"type":"boolean"},"claim":{"type":"string"},` +
-			`"shadowCheck":{"type":"string","enum":["undetermined"]}},` +
+			`"shadowCheck":{"type":"string","enum":["undetermined"]},"unit":{"type":"string","maxLength":512}},` +
 			`"required":["package","version","integrity","tag"],"additionalProperties":false}`,
 	})
 	// One event per removed version. The journal entry is the one a replay applies.
 	Register(EventType{
 		Name: EventNPMUnpublish, Category: CategoryContent, Mode: Transactional, Journal: JournalRevocation,
 		Schema: `{"type":"object","properties":{` +
-			`"package":{"type":"string"},"version":{"type":"string"},"integrity":{"type":"string"}},` +
+			`"package":{"type":"string"},"version":{"type":"string"},"integrity":{"type":"string"},"unit":{"type":"string","maxLength":512}},` +
 			`"required":["package","version","integrity"],"additionalProperties":false}`,
 	})
 	// journal_entry is the ID of the journal entry that withheld the version.

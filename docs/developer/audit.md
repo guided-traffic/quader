@@ -24,7 +24,7 @@ its event types here.
 | [row.go](../../internal/audit/row.go) | `Event` to table row: validation, truncation, UUID and address handling, the error sentinels |
 | [logcopy.go](../../internal/audit/logcopy.go) | the `log: audit` record |
 | [store.go](../../internal/audit/store.go) | `Store`: `Query`, `Get`, `Maintain`, `PartitionsReady`, `Prepare`, `SyncRetention`, `CheckExportRange` |
-| [rows.go](../../internal/audit/rows.go) | `Store.Rows` and `Store.DownloadItems`: the rows of the screen, a download of several items as one row (R-OPS-055); `TransferEvents`, `DownloadGap`, `DownloadPreview`, `DownloadReadLimit` |
+| [rows.go](../../internal/audit/rows.go) | `Store.Rows` and `Store.GroupItems`: the rows of the screen, one act of several items (a download, a push or a publish, a delete, the data keys, the allowed writes) as one row (R-OPS-055, R-OPS-056); `GroupedEvents`, `ActOf`, `DownloadGap`, `DownloadPreview`, `DownloadReadLimit` |
 | [uuid.go](../../internal/audit/uuid.go) | UUIDv7 for event IDs and the time they carry; the 12 bits after the millisecond are a per-process counter, so the events of one transaction (same `occurred_at`) sort in creation order (Q-OPS-62) |
 | [../api/v1/audit_api.go](../../internal/api/v1/audit_api.go), [../api/v1/audit_rows_api.go](../../internal/api/v1/audit_rows_api.go), [../api/v1/audit_source.go](../../internal/api/v1/audit_source.go) | The three management operations of the events and the two of the rows; the recorder wrapper that adds the request's source |
 | [../meta/postgres/queries/audit.sql](../../internal/meta/postgres/queries/audit.sql) | every statement; generated code in `q/audit.sql.go` |
@@ -156,8 +156,8 @@ no check of its own ([H-123](../security/audit.md) is closed by that, and by `Te
 | `listAuditEvents` | `GET /api/v1/audit/events` | `audit:read` | newest first; filters `from`, `to`, `action` (exact or `prefix.*`), `category`, `outcome`, `actor`, `repository`, `resourceType`, `resourceId`, `traceId`; `limit` 1 to 1,000, default 100; cursor over `(occurredAt, id)` with the fingerprint of the filters |
 | `getAuditEvent` | `GET /api/v1/audit/events/{id}` | `audit:read` | `404` for an unknown ID and for a string that is not an event ID |
 | `exportAuditEvents` | `GET /api/v1/audit/events/export` | `audit:read` | `from` and `to` required (`400 invalid_audit_range`), at most 400 days; `format=jsonl` (default) or `csv`; oldest first |
-| `listAuditRows` | `GET /api/v1/audit/rows` | `audit:read` | the filters, limit and cursor of `listAuditEvents`; a page of rows, each `{event, download}` ([below](#the-rows-of-the-screen)) |
-| `listAuditDownloadEvents` | `GET /api/v1/audit/downloads/{id}/events` | `audit:read` | the events of the download whose first event is `id`, oldest first; the cursor carries the ID and is refused for another download; `404` for an ID that begins no download |
+| `listAuditRows` | `GET /api/v1/audit/rows` | `audit:read` | the filters, limit and cursor of `listAuditEvents`; a page of rows, each `{event, group}` ([below](#the-rows-of-the-screen)) |
+| `listAuditRowEvents` | `GET /api/v1/audit/rows/{id}/events` | `audit:read` | the events of the row whose first event is `id`, oldest first, without a filter; the cursor carries the ID and is refused for another row; `404` for an ID that begins no row of several events |
 
 How the pieces fit:
 
@@ -182,41 +182,81 @@ of an anonymous refusal keys on that address, and the filter `traceId` finds an 
 
 ## The rows of the screen
 
-The audit log's screen reads rows, not events (R-OPS-055, ADR-297): the stored events stay one `artifact.downloaded` per item served
-(R-OPS-054), and the read joins the events of one download into one row. Nothing of it is written: the rows are a function of the
-stored events, so the same events form the same rows on every replica, at any time.
+The audit log's screen reads rows, not events (R-OPS-055, R-OPS-056, ADR-297): the stored events stay one per item (an
+`artifact.downloaded` per item served, an `artifact.deployed` per file stored, an `artifact.deleted` per file removed, the format's
+event per version), and the read joins the events of one act of one caller on one unit into one row. Nothing of it is written: the rows
+are a function of the stored events, so the same events form the same rows on every replica, at any time.
 
-- **What an event names.** `items.Store.Served` writes `size`, and `package`, `version` and `unit` from `ServedEvent.Unit`, which the
-  host fills for every serve, link, handover and remote stream through `Host.downloadUnit`
+- **The acts.** `audit.ActOf` maps an action to its act (`actActions` in [rows.go](../../internal/audit/rows.go)): `download`
+  (`artifact.downloaded`), `datakeys` (`bastion.data_key.handed`), `upload` (`artifact.deployed`, `package.published`, `npm.publish`),
+  `delete` (`artifact.deleted`, `oci.manifest.deleted`, `deb.package.deleted`, `npm.unpublish`, `package.deleted`,
+  `ansible.version.deleted`) and `writes` (`authz.write.allowed`). `GroupedEvents` lists them; a new action of an act is added there, in the
+  `CASE` of `audit_row_key` and in the lists of the statements and of the index, which `TestR_OPS_056_TheStatementsNameTheGroupedActions`
+  holds together. `groupOf` names an upload a `push` where its `package.published` names a format of `pushFormats` (OCI, NuGet), a
+  `publish` where it has any version's event, an `upload` otherwise.
+- **What an event names.** A download: `items.Store.Served` writes `size`, and `package`, `version` and `unit` from `ServedEvent.Unit`,
+  which the host fills for every serve, link, handover and remote stream through `Host.downloadUnit`
   ([download_unit.go](../../internal/formathost/download_unit.go)): `UnitOf` classifies the item's path with the request's format, takes
-  the version the request was allowed to read where the path names none (`requestState.noteRead`, set by `Host.Authorize` for a read
-  with a version: the tag of a remote's manifest, whose fetch `recordTagFetch` counts on the digest's item), and keys the unit by
-  `formats.Descriptor.DownloadUnit` (an image's name, `<name>@<version>`, none for a file). The trace of a data key handed to a Bastion
-  carries the same (`HandoverDownload.Unit`), and so does a download a Bastion reports (`IntakeOptions.Unit`, `App.downloadUnitOf`).
-- **The key.** `audit_download_key(action, repository, unit, actor_type, actor_id, token_id, source_ip)` of migration 00142, an MD5
-  as `uuid`, indexed with `occurred_at` and `id` for the actions of `audit.TransferEvents` that name a unit
-  (`audit_event_download_idx`). A statement that walks it states both predicates of the index (`action IN (…)` and
+  the version the request was allowed to read where the path names none (`requestState.noteRead`), and keys the unit by
+  `formats.Descriptor.DownloadUnit` (an image's name, `<name>@<version>`, none for a file). A change: the item store's
+  `Options.Units` (`changeUnits` of the composition root, `UnitOf` without a read) names the unit of `artifact.deployed` and
+  `artifact.deleted` in `nameChangeUnit` ([commit.go](../../internal/items/commit.go)): a push the format's unit, a delete the package,
+  a generic file its folder (`FolderUnit`: the folder written into, or the folder the delete named, `who.root`). The formats' producers
+  name the same unit on their events: OCI's `RecordPublished` and `RecordManifestDeleted` the image, NuGet's `package.published`
+  `<id>@<version>` and `package.deleted` the ID, npm's `npm.publish` `<name>@<version>` and `npm.unpublish` the name, Ansible's
+  `<namespace.name>@<version>` and the name, Debian's the file's own (`rows.Published.Unit`, `rows.PackageDeleted.Unit`, set by the hook
+  from the format's classification of the path). `authz.Engine.decisionEvent` names an allowed write's package, else its path's folder
+  (`writeUnit`). The trace of a data key handed to a Bastion and a download a Bastion reports carry a download's unit.
+- **The key.** `audit_row_key(action, repository, unit, actor_type, actor_id, actor_name, token_id, source_ip)` of migration 00144, an
+  MD5 as `uuid` whose first part is the act (a `CASE` in its body: an index's expression is evaluated with the system's schemas as its
+  search path, so it calls no function of the schema), indexed with `occurred_at` and `id` for the actions of `GroupedEvents` that name a
+  unit (`audit_event_row_idx`). A statement that walks it states both predicates of the index (`action IN (…)` and
   `details ->> 'unit' IS NOT NULL`) literally, so the planner can use it.
-- **A page** (`Store.Rows`): `ListAuditRowsNewest` is the events list's statement with one condition more: an event of a transfer that
-  names a unit is left out when an event of its key lies at most `DownloadGap` (60 s) before it within the range (an index probe).
-  What stays is a page of rows, each a single event or a download's first event. `ListAuditDownloadMembers` then walks every download
-  of the page in one statement: a recursive CTE that takes, from each start, the next event of its key within the gap (one probe each),
-  up to `DownloadReadLimit + 1` items, and returns the events whole. `downloadOf` sums the items and keeps the first `DownloadPreview`.
-  Two statements a page, one where the page holds no download.
-- **One download** (`Store.DownloadItems`): `Get` reads the first event, `AuditDownloadStartKey` checks that it begins a download and
-  returns its key, and the walk from the cursor's event reads a page; a cursor whose event has another key is refused.
-- **Measured once** (2026-11-26, the integration stack's PostgreSQL on the development machine, 3.0 million events in the last 24 hours:
-  1.8 million downloads, 120,000 pulls of 15 items by 2,000 callers of 300 images in 50 repositories, and 1.2 million other events;
-  the index 129 MB): the first page of 100 rows 6.6 ms, the next pages 2.6 to 4.5 ms, 1,000 rows 18 ms (the events list's page of 100:
-  2.9 ms); with `action=artifact.downloaded` 100 rows of 1,500 items 31 ms; with `repository=` 82 ms (the events list 2.6 ms); with
-  `actor=` 1.2 s (the events list 95 ms): the actor's filter is no index condition of either statement (it is `actor_id = … OR
-  actor_name = …`), so both scan the range until the page is full, and a page of rows needs as many events as its downloads hold. The
-  test of a predecessor is one probe of `audit_event_download_idx` per download event scanned (0.2 ms for the plan of the first page).
+- **A page** (`Store.Rows`): `ListAuditRowsNewest` is the events list's statement with one condition more: an event of a grouped action
+  that names a unit is left out when an event of its key that the filters choose lies at most `DownloadGap` (60 s) before it within the
+  range (an index probe that reads the predecessor's row for the filters of the action, its prefix, the category, the outcome, the
+  resource and the trace). What stays is a page of rows, each a single event or a group's first event. `ListAuditGroupMembers` then walks
+  every group of the page in one statement: a recursive CTE that takes, from each start, the next chosen event of its key within the gap
+  (one probe each), up to `DownloadReadLimit + 1` items, and returns the events whole. `groupOf` counts them, sums the sizes of the files
+  (`fileActions`), counts the distinct versions and keeps the first `DownloadPreview`. Two statements a page, one where the page holds no
+  group.
+- **One row's events** (`Store.GroupItems`): `Get` reads the first event, `AuditGroupStartKey` checks that it begins a group and returns its
+  key, and the walk from the cursor's event, without a filter, reads a page; a cursor whose event has another key is refused.
+- **The actor's filter** is an ID (a UUID, `actor_id`) or a name (`actor_name`), never both (`queryArgs.actorID`, `actorName`), so that it
+  is an index condition of the events, the rows and the export: `audit_event_actor_idx` of 00006 and `audit_event_actor_name_idx` of
+  00144 (Q-OPS-452).
+- **Measured once** (2026-11-26, W33's measurement repeated with the acts of R-OPS-056: the integration stack's PostgreSQL on the
+  development machine while other builders' tests ran on it, 3.0 million events in the last 24 hours: 1.8 million downloads (120,000 pulls
+  of 15 items by 2,000 callers of 300 images in 50 repositories), 420,000 events of 20,000 pushes of 11 files with their writes by 500
+  callers, 40,000 events of 10,000 deletes of three files and their version by 200 callers, and 740,000 other events by 3,000 actors; the
+  medians of seven reads through `Store.Rows` and `Store.Query`):
+
+  | Read | 00142 (W33's numbers, an idle machine) | 00144 with the name's index | without it |
+  |---|---|---|---|
+  | rows, first page of 100 | 6.6 ms | 43 ms (`EXPLAIN ANALYZE`: 11 ms, 1,158 events scanned, 1,158 probes) | 37 ms |
+  | rows, two pages of 100 | 2.6 to 4.5 ms for the second | 69 ms | 123 ms |
+  | rows, 1,000 | 18 ms | 439 ms (`EXPLAIN ANALYZE`: 1.5 s, 12,600 events scanned, 12,556 probes of 0.11 ms) | 680 ms |
+  | rows, `action=artifact.deployed` | — | 184 ms | 263 ms |
+  | rows, `category=authz` | — | 38 ms | 82 ms |
+  | rows, `repository=` | 82 ms | 28 ms | 55 ms |
+  | rows, `actor=` a name | 1.2 s | 20 ms | 2,134 ms |
+  | rows, `actor=` a name of no event | — | 6 ms | 3,946 ms |
+  | rows, `actor=` an ID | — | 30 ms | 61 ms |
+  | events, first page of 100 | 2.9 ms | 5.1 ms | 30 ms |
+  | events, `actor=` a name | 95 ms | 2.6 ms | 177 ms |
+
+  The two runs with and without the index were minutes apart on a machine whose load changed (the events list's first page took 5 and
+  30 ms), so only the order of magnitude compares; what is stable is that a page of rows scans every event of its range down to its last
+  row's first event and probes the index once per grouped event, so a page costs its events, about twelve per row of this mix (W33's 6.6 ms
+  were of the same shape). The indexes at 3 million events: `audit_event_row_idx` 183 MB (00142's held the downloads alone: 129 MB),
+  `audit_event_actor_name_idx` 143 MB, `audit_event_actor_idx` 165 MB, the primary key 155 MB. The write cost of the name's index: 100,000
+  events in batches of 1,000 took 1.44 s without it and 2.16 s with it (about 7 µs more per event, under the same load). The measurement
+  is not a test: it took four minutes and asserts nothing that the integration tests do not.
 - **Why a chain and not a window:** whether an event begins a row depends only on the events of its key in the minute before it, so a
   newer event never changes an older row, and no page needs the history before it (Q-OPS-439).
 
 The screen ([audit-log.ts](../../web/src/app/features/audit/audit-log.ts)) keeps the opened rows by their first event's ID, so they stay
-open while `live()` reads the rows shown again; `?download=<id>` lists one download's events through the same table.
+open while `live()` reads the rows shown again; `?group=<id>` lists one row's events through the same table.
 
 ## Partitions and retention
 

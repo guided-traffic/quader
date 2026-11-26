@@ -171,3 +171,6 @@ unless the line is too short, and then breaks at the joint with a hyphen; withou
 | package ownership (enforced, off), automatic claim, set by hand | Paket-Eigentümerschaft (erzwungen, aus), automatischer Claim, von Hand gesetzt |
 | tag (of a collection or a package), downloads at the upstream, signed at the upstream | Tag, Downloads beim Upstream, beim Upstream signiert |
 | entry (of a collection's documentation: a module, a plugin, a role) | Eintrag |
+| item (of a row of the audit log: the event of a file, a version or a decision; Q-UI-1491) | Eintrag |
+| the acts of a row of the audit log: downloaded, pushed (an image, a NuGet package: the clients' word), published, uploaded, deleted, writes allowed, data keys handed (Q-UI-1491) | Heruntergeladen, Gepusht, Veröffentlicht, Hochgeladen, Gelöscht, Schreiben erlaubt, Datenschlüssel (the row of the keys of a pull: the word fits the column, Q-UI-1490); "File downloaded" is "Heruntergeladen" and "File deployed" "Bereitgestellt", the path stands beside them |
+| per day (a window of a limit's figure: "GB/day", "pro Tag"; per hour and per second keep their signs, "/h", "/s") | pro Tag, /Tag (GB/Tag) |

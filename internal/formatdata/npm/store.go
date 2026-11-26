@@ -206,7 +206,11 @@ func (s *Store) Publish(ctx context.Context, tx meta.Tx, in rows.PublishInput) e
 	if err := setTags(ctx, qs, in.PackageID, in.Tags, in.At); err != nil {
 		return err
 	}
-	details := map[string]any{"package": in.Name, "version": in.Version, "integrity": in.Integrity, "tag": in.Tag, "latest_guard": in.LatestKept}
+	// The version is the unit its tarball's event names, so that the audit log shows the publish as one row (R-OPS-056).
+	details := map[string]any{
+		"package": in.Name, "version": in.Version, "integrity": in.Integrity, "tag": in.Tag, "latest_guard": in.LatestKept,
+		"unit": in.Name + "@" + in.Version,
+	}
 	if in.TagHeld {
 		details["tag_held"] = true
 	}
@@ -235,7 +239,7 @@ func (s *Store) Publish(ctx context.Context, tx meta.Tx, in rows.PublishInput) e
 
 // RecordRetry records the acknowledged retry of a publish.
 func (s *Store) RecordRetry(ctx context.Context, tx meta.Tx, in rows.RetryInput) error {
-	details := map[string]any{"package": in.Name, "version": in.Version, "integrity": in.Integrity, "tag": in.Tag}
+	details := map[string]any{"package": in.Name, "version": in.Version, "integrity": in.Integrity, "tag": in.Tag, "unit": in.Name + "@" + in.Version}
 	return s.record(ctx, tx, audit.EventNPMPublish, in.Audit, in.Name, details, audit.ReasonRetryAcknowledged, nil)
 }
 
@@ -333,7 +337,8 @@ func (s *Store) Tombstone(ctx context.Context, tx meta.Tx, in rows.TombstoneInpu
 		return "", err
 	}
 	return integrity, s.record(ctx, tx, audit.EventNPMUnpublish, in.Audit, in.Name,
-		map[string]any{"package": in.Name, "version": in.Version, "integrity": integrity}, "", journal)
+		// The package is the unit of a delete (R-OPS-056): an unpublish of several versions is one row of the audit log.
+		map[string]any{"package": in.Name, "version": in.Version, "integrity": integrity, "unit": in.Name}, "", journal)
 }
 
 // setTags stores the complete dist-tags map.

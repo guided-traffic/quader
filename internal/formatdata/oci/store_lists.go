@@ -179,7 +179,8 @@ func journalEntry(in rows.ManifestDeleted) ([]byte, error) {
 // RecordManifestDeleted writes oci.manifest.deleted with its journal entry in the transaction of the removal.
 func (s *Store) RecordManifestDeleted(ctx context.Context, tx meta.Tx, in rows.ManifestDeleted) error {
 	digest := "sha256:" + hex.EncodeToString(in.Digest[:])
-	details, err := json.Marshal(map[string]any{"name": in.Name, "digest": digest, "deleted": in.Deleted})
+	// The image is the unit the removed files' events name, so that the audit log shows the delete as one row (R-OPS-056).
+	details, err := json.Marshal(map[string]any{"name": in.Name, "digest": digest, "deleted": in.Deleted, "unit": in.Name})
 	if err != nil {
 		return err
 	}

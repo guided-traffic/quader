@@ -173,14 +173,14 @@ func rowsAll(t *testing.T, s *audit.Store, f audit.Filter, limit int) []audit.Ro
 
 // shape is a row as the test compares it: its first event and, of a download, its items' IDs.
 func shape(r audit.Row) string {
-	if r.Download == nil {
+	if r.Group == nil {
 		return r.Event.ID
 	}
-	ids := make([]string, 0, len(r.Download.First))
-	for _, it := range r.Download.First {
+	ids := make([]string, 0, len(r.Group.First))
+	for _, it := range r.Group.First {
 		ids = append(ids, it.ID)
 	}
-	return fmt.Sprintf("%s:%d:%s", r.Event.ID, r.Download.Items, strings.Join(ids, ","))
+	return fmt.Sprintf("%s:%d:%s", r.Event.ID, r.Group.Items, strings.Join(ids, ","))
 }
 
 func TestR_OPS_055_ADownloadIsOneRowAndItsEventsStayOnePerItem(t *testing.T) {
@@ -211,7 +211,7 @@ func TestR_OPS_055_ADownloadIsOneRowAndItsEventsStayOnePerItem(t *testing.T) {
 		}
 	})
 	t.Run("R-OPS-055 a pull's row: its items over both replicas, its tag, its size, its first ten items", func(t *testing.T) {
-		d := byFirst[w.pull[0]].Download
+		d := byFirst[w.pull[0]].Group
 		size := 1574
 		for i := range 12 {
 			size += 512 + i
@@ -230,21 +230,21 @@ func TestR_OPS_055_ADownloadIsOneRowAndItsEventsStayOnePerItem(t *testing.T) {
 		}
 	})
 	t.Run("R-OPS-055 another caller of the same image, two packages of one install, a pull a pause later are rows of their own", func(t *testing.T) {
-		if d := byFirst[w.anon[0]].Download; d == nil || d.Items != 4 || d.Version != "" {
+		if d := byFirst[w.anon[0]].Group; d == nil || d.Items != 4 || d.Version != "" {
 			t.Errorf("the anonymous pull: %+v", d)
 		}
 		for _, id := range []string{w.ui[0], w.leftPad[0]} {
-			if d := byFirst[id].Download; d == nil || d.Items != 1 || d.Version == "" {
+			if d := byFirst[id].Group; d == nil || d.Items != 1 || d.Version == "" {
 				t.Errorf("an npm package: %+v", d)
 			}
 		}
-		if d := byFirst[w.pullAgain[0]].Download; d == nil || d.Items != 3 || d.Version != "" {
+		if d := byFirst[w.pullAgain[0]].Group; d == nil || d.Items != 3 || d.Version != "" {
 			t.Errorf("the pull by digest: %+v", d)
 		}
 	})
 	t.Run("R-OPS-055 a refusal, an event written before the unit and any other event are single rows", func(t *testing.T) {
 		for _, id := range []string{w.refusal, w.old, w.created} {
-			if r, ok := byFirst[id]; !ok || r.Download != nil {
+			if r, ok := byFirst[id]; !ok || r.Group != nil {
 				t.Errorf("event %s: %+v", id, r)
 			}
 		}
@@ -269,7 +269,7 @@ func TestR_OPS_055_ADownloadIsOneRowAndItsEventsStayOnePerItem(t *testing.T) {
 		f := w.filter()
 		f.Actor = "alice"
 		got := rowsAll(t, w.store, f, 100)
-		if len(got) != 3 || got[0].Event.ID != w.pullAgain[0] || got[1].Event.ID != w.old || got[2].Download.Items != 13 {
+		if len(got) != 3 || got[0].Event.ID != w.pullAgain[0] || got[1].Event.ID != w.old || got[2].Group.Items != 13 {
 			t.Errorf("alice's rows: %d", len(got))
 		}
 		f = w.filter()
@@ -279,7 +279,7 @@ func TestR_OPS_055_ADownloadIsOneRowAndItsEventsStayOnePerItem(t *testing.T) {
 		}
 		f = w.filter()
 		f.TraceID = fmt.Sprintf("%032x", w.t0.Add(4*time.Second).UnixNano()) // the pull's fourth layer
-		if got := rowsAll(t, w.store, f, 100); len(got) != 1 || got[0].Download == nil || got[0].Download.Items != 1 ||
+		if got := rowsAll(t, w.store, f, 100); len(got) != 1 || got[0].Group == nil || got[0].Group.Items != 1 ||
 			got[0].Event.ID != w.pull[4] {
 			t.Errorf("the rows of one trace: %+v", got)
 		}
@@ -290,8 +290,8 @@ func TestR_OPS_055_ADownloadIsOneRowAndItsEventsStayOnePerItem(t *testing.T) {
 		for _, r := range rowsAll(t, w.store, f, 100) {
 			if r.Event.ID == w.pull[6] {
 				found = true
-				if r.Download == nil || r.Download.Items != 7 {
-					t.Errorf("the pull from 5.5 s on: %+v", r.Download)
+				if r.Group == nil || r.Group.Items != 7 {
+					t.Errorf("the pull from 5.5 s on: %+v", r.Group)
 				}
 			}
 		}
@@ -326,8 +326,8 @@ func TestR_OPS_055_ADownloadIsOneRowAndItsEventsStayOnePerItem(t *testing.T) {
 				t.Fatalf("row %d begins with %s, before %s", i, r.Event.ID, old.Event.ID)
 			}
 			if r.Event.ID == w.pullAgain[0] {
-				if r.Download.Items != 4 {
-					t.Errorf("the grown pull holds %d items, want 4", r.Download.Items)
+				if r.Group.Items != 4 {
+					t.Errorf("the grown pull holds %d items, want 4", r.Group.Items)
 				}
 			} else if shape(r) != shape(old) {
 				t.Errorf("row %d changed: %s, before %s", i, shape(r), shape(old))
@@ -338,7 +338,7 @@ func TestR_OPS_055_ADownloadIsOneRowAndItsEventsStayOnePerItem(t *testing.T) {
 		var got []string
 		var after *audit.Cursor
 		for range 10 {
-			res, err := w.store.DownloadItems(ctx, w.pull[0], audit.Page{Limit: 5, After: after})
+			res, err := w.store.GroupItems(ctx, w.pull[0], audit.Page{Limit: 5, After: after})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -354,14 +354,14 @@ func TestR_OPS_055_ADownloadIsOneRowAndItsEventsStayOnePerItem(t *testing.T) {
 			t.Fatalf("the pull's events: %v, want %v", got, w.pull)
 		}
 		for _, id := range []string{w.pull[1], w.old, w.refusal, w.created, "01933b1e-7c2a-7f4e-9d1b-6a2f0c9e8b11", "x"} {
-			if _, err := w.store.DownloadItems(ctx, id, audit.Page{}); errs.KindOf(err) != errs.NotFound {
+			if _, err := w.store.GroupItems(ctx, id, audit.Page{}); errs.KindOf(err) != errs.NotFound {
 				t.Errorf("%s: %v, want not found", id, err)
 			}
 		}
 		// A cursor of another download is no item of this one.
-		other := byFirst[w.anon[0]].Download.First[1]
+		other := byFirst[w.anon[0]].Group.First[1]
 		for _, c := range []audit.Cursor{{OccurredAt: other.OccurredAt, ID: other.ID}, {OccurredAt: other.OccurredAt, ID: w.anon[0]}} {
-			if _, err := w.store.DownloadItems(ctx, w.pull[0], audit.Page{After: &c}); errs.KindOf(err) != errs.Invalid {
+			if _, err := w.store.GroupItems(ctx, w.pull[0], audit.Page{After: &c}); errs.KindOf(err) != errs.Invalid {
 				t.Errorf("a cursor of another download %v: %v", c, err)
 			}
 		}
@@ -399,10 +399,10 @@ func TestR_OPS_055_ADownloadIsOneRowAndItsEventsStayOnePerItem(t *testing.T) {
 		}
 		actions := map[string]int{}
 		for _, r := range got {
-			if r.Download == nil {
+			if r.Group == nil {
 				t.Fatalf("a row of no download: %+v", r.Event)
 			}
-			actions[r.Event.Action] = r.Download.Items
+			actions[r.Event.Action] = r.Group.Items
 		}
 		if actions[audit.EventBastionDataKeyHanded] != 3 || actions[audit.EventArtifactDownloaded] != 3 {
 			t.Errorf("rows %v", actions)

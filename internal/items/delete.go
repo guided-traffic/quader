@@ -144,7 +144,7 @@ func (s *Store) Delete(ctx context.Context, spec DeleteSpec) (DeleteResult, erro
 				return err
 			}
 		}
-		if err := s.removeRows(ctx, tx, qs, who{spec.Actor, spec.Source, spec.Endpoint}, repo, rows, scopeOf(rows)); err != nil {
+		if err := s.removeRows(ctx, tx, qs, who{spec.Actor, spec.Source, spec.Endpoint, spec.Path}, repo, rows, scopeOf(rows)); err != nil {
 			return err
 		}
 		return s.sweepAncestors(ctx, tx, qs, repo.ID, ParentOf(spec.Path))
@@ -161,6 +161,9 @@ type who struct {
 	actor    audit.Actor
 	source   audit.Source
 	endpoint string
+	// root is the path the person named, a folder or a file; "" where a format named the paths. A file of a format whose unit is a file
+	// names it as its unit when it is a folder (R-OPS-056).
+	root string
 }
 
 type subtreeRow struct {
@@ -272,7 +275,7 @@ func (s *Store) removeRows(ctx context.Context, tx meta.Tx, qs *q.Queries, w who
 			}
 		}
 		for _, r := range removed {
-			if err := s.recordDeleted(ctx, tx, w, repo.Name, r.Path, r.BlobSha256, r.Size.Int64); err != nil {
+			if err := s.recordDeleted(ctx, tx, w, repo, r.Path, r.BlobSha256, r.Size.Int64); err != nil {
 				return err
 			}
 		}
@@ -290,8 +293,11 @@ func (s *Store) removeRows(ctx context.Context, tx meta.Tx, qs *q.Queries, w who
 	return nil
 }
 
-func (s *Store) recordDeleted(ctx context.Context, tx meta.Tx, w who, repoKey qname.Repo, path string, digest []byte, size int64) error {
-	raw, err := json.Marshal(map[string]any{"path": path, "sha256": hex.EncodeToString(digest), "size": size})
+func (s *Store) recordDeleted(ctx context.Context, tx meta.Tx, w who, repo RepoRef, path string, digest []byte, size int64) error {
+	repoKey := repo.Name
+	details := map[string]any{"path": path, "sha256": hex.EncodeToString(digest), "size": size}
+	s.nameChangeUnit(details, repo.Format, path, w.root, true)
+	raw, err := json.Marshal(details)
 	if err != nil {
 		return err
 	}
@@ -535,7 +541,7 @@ func (s *Store) deleteFileBatch(ctx context.Context, a DeleteArgs, st *deleteRun
 			}
 			ctx = WithCascadeGuard(ctx, func(ctx context.Context, paths []string) error { return refusal(guard.Check(ctx, paths)) })
 		}
-		return s.removeRows(ctx, tx, qs, who{actor: a.Actor}, repo, items, jobScope(qs, a))
+		return s.removeRows(ctx, tx, qs, who{actor: a.Actor, root: a.Path}, repo, items, jobScope(qs, a))
 	})
 	return n, err
 }
@@ -679,7 +685,8 @@ func (s *Store) RemoveIn(ctx context.Context, tx meta.Tx, spec RemoveSpec) error
 			return err
 		}
 	}
-	if err := s.removeRows(ctx, tx, qs, who{spec.Actor, spec.Source, spec.Endpoint}, spec.Repo, rows, joinScope(scopeOf(rows), spec.InScope)); err != nil {
+	if err := s.removeRows(ctx, tx, qs, who{actor: spec.Actor, source: spec.Source, endpoint: spec.Endpoint}, spec.Repo, rows,
+		joinScope(scopeOf(rows), spec.InScope)); err != nil {
 		return err
 	}
 	for _, p := range spec.Paths {

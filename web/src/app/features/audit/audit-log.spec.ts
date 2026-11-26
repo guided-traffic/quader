@@ -1,5 +1,5 @@
 import { Router } from '@angular/router';
-import { AuditApi } from '../../api/audit-api';
+import { AuditApi, AuditEvent } from '../../api/audit-api';
 import { ApiError } from '../../api/problem';
 import { FakeAuditApi, sampleEvent } from '../../api/testing/fakes-catalog';
 import { applyFilters, button, chipTexts, choosePrincipal, expectAccessible, openFilters, renderScreen, settle, text, type } from '../../testing/screen';
@@ -380,6 +380,9 @@ describe('Audit log', () => {
       expect(target.querySelector('.subject-name')?.textContent).toBe('acme/app');
       expect(target.querySelector('.subject-version')?.textContent).toBe('1.4.0');
       expect(target.textContent).toContain('13 items');
+      // The row names the act in one word, and no key: its items name their actions (R-OPS-056).
+      expect(pull.querySelector('th[scope="row"] button.link')?.textContent?.trim()).toBe('Downloaded');
+      expect(pull.querySelector('th[scope="row"] .action-key')).toBeNull();
       expect(target.textContent).toContain('12.8 KiB');
       expect(pull.querySelector('td.nowrap .secondary')?.textContent?.trim()).toBe('for 12 s');
       // The anonymous pull names no tag: its first item's digest, cut to 12 hex digits.
@@ -394,8 +397,8 @@ describe('Audit log', () => {
       vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
       try {
         const { root, fixture, audit, router } = await open({}, world);
-        const toggle = root.querySelector<HTMLButtonElement>('td.target button[aria-label="Items of the download of acme/app 1.4.0"]')!;
-        expect(toggle.getAttribute('aria-label')).toBe('Items of the download of acme/app 1.4.0');
+        const toggle = root.querySelector<HTMLButtonElement>('td.target button[aria-label="Show the items: Downloaded acme/app 1.4.0"]')!;
+        expect(toggle.getAttribute('aria-label')).toBe('Show the items: Downloaded acme/app 1.4.0');
         toggle.click();
         await settle(fixture);
         expect(toggle.getAttribute('aria-expanded')).toBe('true');
@@ -422,13 +425,89 @@ describe('Audit log', () => {
     });
 
     it('R-OPS-055 the log of one download lists every item as an event, oldest first, names the download as a filter and offers no export', async () => {
-      const { root } = await open({ download: '0193b4a0-0000-7000-8000-000000000000' }, world);
+      const { root } = await open({ group: '0193b4a0-0000-7000-8000-000000000000' }, world);
       const rows = [...root.querySelectorAll('table.data > tbody > tr:not(.expansion)')];
       expect(rows).toHaveLength(13);
       expect(rows[0]!.querySelector('td.target')?.textContent).toContain('acme/app/_tags/1.4.0');
-      expect(chipTexts(root)).toEqual(['Download: acme/app 1.4.0']);
+      expect(chipTexts(root)).toEqual(['Events of: acme/app 1.4.0']);
       expect(root.querySelectorAll('a[download]')).toHaveLength(0);
-      expect(root.querySelector('caption')?.textContent).toContain('The events of one download');
+      expect(root.querySelector('caption')?.textContent).toContain('The events of one row');
+      await expectAccessible(root);
+    });
+  });
+
+  describe('R-OPS-056 a push, a publish and a delete are one row', () => {
+    const priya = { type: 'user', id: 'u-2', name: 'priya', tokenId: 't-2', authMethod: 'bearer' } as const;
+    let n = 0;
+    function change(at: number, action: string, details: Record<string, unknown>, over: Partial<AuditEvent> = {}): AuditEvent {
+      n++;
+      return sampleEvent({
+        id: `0193b4a1-0000-7000-8000-${String(at).padStart(6, '0')}${String(n).padStart(6, '0')}`,
+        occurredAt: new Date(Date.UTC(2026, 10, 26, 11, 0, 0) + at).toISOString(),
+        action,
+        category: action.startsWith('authz.') ? 'authz' : 'content',
+        actor: priya,
+        source: { ip: '10.0.0.7', userAgent: 'docker/27.3.1' },
+        resource: { type: 'repository', id: null },
+        repository: 'platform/images',
+        path: typeof details['path'] === 'string' ? details['path'] : null,
+        details,
+        ...over,
+      });
+    }
+    const sha = (i: number) => i.toString(16).padStart(4, '0').repeat(16);
+    /** A push of an image of two layers with its tag, its allowed writes, and a delete of an npm package of three versions. */
+    function world(audit: FakeAuditApi): void {
+      n = 0;
+      const file = (at: number, path: string, size: number, version?: string) =>
+        change(at, 'artifact.deployed', { path, sha256: sha(at + 1), size, overwritten: false, package: 'acme/app', unit: 'acme/app', ...(version ? { version } : {}) });
+      const write = (at: number) => change(at, 'authz.write.allowed', { package: 'acme/app', unit: 'acme/app', reason: 'allow_grant' });
+      const push = [
+        file(0, 'acme/app/_blobs/sha256:' + sha(1), 2048),
+        write(1),
+        file(2, 'acme/app/_blobs/sha256:' + sha(2), 4096),
+        write(3),
+        file(4, 'acme/app/_tags/1.4.0', 1024, '1.4.0'),
+        write(5),
+        change(6, 'package.published', { package: 'acme/app', version: '1.4.0', format: 'oci', unit: 'acme/app', files: [{ path: 'acme/app', sha256: sha(9), size: 1024 }] },
+          { resource: { type: 'package', id: null } }),
+      ];
+      const del = ['1.0.0', '1.1.0', '2.0.0'].flatMap((v, i) => [
+        change(60_000 + i * 10, 'artifact.deleted', { path: `left-pad/-/left-pad-${v}.tgz`, sha256: sha(20 + i), size: 100, package: 'left-pad', version: v, unit: 'left-pad' }, { repository: 'web/npm-local' }),
+        change(60_001 + i * 10, 'npm.unpublish', { package: 'left-pad', version: v, integrity: 'sha512-x', unit: 'left-pad' }, { repository: 'web/npm-local' }),
+      ]);
+      audit.eventList = [...push, ...del];
+    }
+
+    it('R-OPS-056 R-UI-037 a push is one row naming the image, its tag, its items and the bytes of its files; its writes are a row beside it; a delete of three versions names three', async () => {
+      const { root } = await open({}, world);
+      const rows = [...root.querySelectorAll<HTMLTableRowElement>('table.data > tbody > tr:not(.expansion)')];
+      expect(rows.map((r) => r.querySelector('th[scope="row"] button.link')?.textContent?.trim())).toEqual(['Deleted', 'Writes allowed', 'Pushed']);
+      const push = rows[2]!.querySelector('td.target')!;
+      expect(push.querySelector('.subject-name')?.textContent).toBe('acme/app');
+      expect(push.querySelector('.subject-version')?.textContent).toBe('1.4.0');
+      expect(push.textContent).toContain('4 items');
+      expect(push.textContent).toContain('7.0 KiB');
+      const del = rows[0]!.querySelector('td.target')!;
+      expect(del.querySelector('.subject-name')?.textContent).toBe('left-pad');
+      expect(del.querySelector('.subject-version')?.textContent).toBe('3 versions');
+      expect(del.textContent).toContain('6 items');
+      await expectAccessible(root);
+    });
+
+    it('R-OPS-056 R-UI-215 an opened push lists its files with their paths and the version it published by its action, without a link', async () => {
+      const { root, fixture } = await open({}, world);
+      const toggle = root.querySelector<HTMLButtonElement>('td.target button[aria-label="Show the items: Pushed acme/app 1.4.0"]')!;
+      toggle.click();
+      await settle(fixture);
+      const items = [...root.querySelectorAll('.download-items tbody tr')];
+      expect(items).toHaveLength(4);
+      expect(items[0]!.querySelector('th a')?.textContent).toContain('acme/app/_blobs/sha256:');
+      const published = items[3]!.querySelector('th')!;
+      expect(published.querySelector('a')).toBeNull();
+      expect(published.querySelector('.item-act')?.textContent?.trim()).toBe('Package version published 1.4.0');
+      expect(items[3]!.querySelector('code')?.getAttribute('title')).toBe(sha(9));
+      expect(root.querySelector('.download-items a.all-items')).toBeNull();
       await expectAccessible(root);
     });
   });

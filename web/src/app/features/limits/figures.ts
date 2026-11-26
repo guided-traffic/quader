@@ -319,7 +319,8 @@ export function compactFigures(figures: Figures | FigureOverrides, locale: strin
   // The figure's words stay on one line ("64 parallel transfers" never breaks before its last word).
   if (par !== null) parts.push($localize`:@@limits.compact.parallel:${c(par)}:n: parallel transfers`.replace(/ /g, ' '));
   const day = v('bytesPerDay');
-  if (day !== null) parts.push(`${gb(day)} GB/day`);
+  // The day is a word of the language ("GB/Tag"); the hour and the second keep their units' signs, which German writes alike.
+  if (day !== null) parts.push($localize`:@@limits.compact.day:${gb(day)}:n: GB/day`);
   const ref = v('refusedPerHour');
   if (ref !== null) parts.push($localize`:@@limits.compact.refused:${c(ref)}:n: refused/h`);
   // A number keeps its unit on its line ("100 GB/day" never breaks between the two).
@@ -343,7 +344,7 @@ function windowSuffix(figure: Figure): string {
     case 'uncachedBytesPerSecond':
       return '/s';
     case 'bytesPerDay':
-      return '/day';
+      return $localize`:@@limits.window.day:/day`;
     case 'parallelTransfers':
     case 'requestsBurst':
       return '';

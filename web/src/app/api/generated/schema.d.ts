@@ -418,15 +418,21 @@ export interface paths {
         };
         /**
          * Read the audit log's rows
-         * @description The rows of the audit log's screen (R-OPS-055), newest first by each row's first event: every event of the
-         *     filter, except that the `artifact.downloaded` events of one download are one row. A download is the events that
-         *     name one unit (`details.unit`: an image's name, a version's `name@version`) and were written for one caller (its
-         *     kind, its principal, its token and its address), each within a minute of the one before. Such a row carries its
-         *     first event as `event` and the download in `download`: its unit, its package and version, how many items it holds
-         *     and their size, its last item's time and its first ten items. The events themselves are unchanged: the events
-         *     list, the read of one event and the export hold one event per item (R-OPS-054). The filters, the range and the
-         *     paging are those of `GET /api/v1/audit/events`; `limit` counts rows, and a page never cuts a download. An event
-         *     written before the events named their unit is a row of its own. The same events always form the same rows.
+         * @description The rows of the audit log's screen (R-OPS-055, R-OPS-056), newest first by each row's first event: every event of
+         *     the filter, except that the events of one act of one caller on one unit are one row: a download
+         *     (`artifact.downloaded`), the data keys handed to a Bastion for it (`bastion.data_key.handed`), a push or a publish
+         *     (`artifact.deployed`, `package.published`, `npm.publish`), a delete (`artifact.deleted`, `oci.manifest.deleted`,
+         *     `deb.package.deleted`, `npm.unpublish`, `package.deleted`, `ansible.version.deleted`) and the allowed writes of an
+         *     act (`authz.write.allowed`). A group is the events of one act that name one unit (`details.unit`: an image's name,
+         *     a version's `name@version`, a deleted package, a folder of files) and were written for one caller (its kind, its
+         *     principal, its name, its token and its address), each within a minute of the one before. Such a row carries its
+         *     first event as `event` and the group in `group`: what the act was, its unit, its package and version, how many
+         *     items it holds and the size of its files, its last item's time and its first ten items. The events themselves are
+         *     unchanged: the events list, the read of one event and the export hold one event per item (R-OPS-054). The
+         *     filters, the range and the paging are those of `GET /api/v1/audit/events`; the filters choose the events and a
+         *     row joins the events they chose; `limit` counts rows, and a page never cuts a group. A refusal, any other event
+         *     and an event written before the events named their unit are rows of their own. The same events always form the
+         *     same rows.
          */
         get: operations["listAuditRows"];
         put?: never;
@@ -437,7 +443,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/audit/downloads/{id}/events": {
+    "/api/v1/audit/rows/{id}/events": {
         parameters: {
             query?: never;
             header?: never;
@@ -445,13 +451,14 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List the events of one download
-         * @description The `artifact.downloaded` events of the download whose first event is `id` (R-OPS-055), in the order they were
-         *     written, oldest first: one event per item, whole, as `GET /api/v1/audit/events` shows them. The download is read
+         * List the events of one row
+         * @description The events of the row of several events whose first event is `id` (R-OPS-055, R-OPS-056): a download, a push or
+         *     a publish, a delete, the data keys handed for a download or the allowed writes of an act, in the order they were
+         *     written, oldest first: one event per item, whole, as `GET /api/v1/audit/events` shows them. The group is read
          *     from its first event on, without the range and the filters of the rows it was shown in. An ID that is no first
-         *     event of a download answers `404`.
+         *     event of a group answers `404`.
          */
-        get: operations["listAuditDownloadEvents"];
+        get: operations["listAuditRowEvents"];
         put?: never;
         post?: never;
         delete?: never;
@@ -9411,42 +9418,61 @@ export interface components {
             nextCursor: string | null;
         };
         /**
-         * @description One row of the audit log's screen (R-OPS-055): an event, and where the event is the first of a download, the
-         *     download it begins.
+         * @description One row of the audit log's screen (R-OPS-055, R-OPS-056): an event, and where the event is the first of a group
+         *     of one act, the group it begins.
          */
         AuditRow: {
             event: components["schemas"]["AuditEvent"];
-            download: components["schemas"]["AuditDownload"] | null;
+            group: components["schemas"]["AuditGroup"] | null;
         };
         /**
-         * @description A download of one unit by one caller (R-OPS-055): the `artifact.downloaded` events of its items, read from its
-         *     first event. `items` counts at most 1,000 items; `more` says that the download goes on beyond them.
+         * @description The events of one act of one caller on one unit (R-OPS-055, R-OPS-056), read from its first event. `items` counts
+         *     at most 1,000 items; `more` says that the group goes on beyond them.
          */
-        AuditDownload: {
+        AuditGroup: {
+            /**
+             * @description What the row is: `download` (items served), `datakeys` (data keys handed to a Bastion for a download),
+             *     `push` (files stored and a version published by a format whose clients push: OCI, NuGet), `publish` (the same
+             *     by a format whose clients publish: npm, Ansible Galaxy, Debian), `upload` (files stored that published no
+             *     version: generic files, an image's layers without a tag), `delete` (files, versions and manifests removed),
+             *     `writes` (the allowed writes of an act).
+             * @enum {string}
+             */
+            act: "download" | "datakeys" | "push" | "publish" | "upload" | "delete" | "writes";
             /** @description The unit the events name, `details.unit`. */
             unit: string;
             package: string | null;
             /** @description The first version or tag any item names; null where none does (an image pulled by its digest). */
             version: string | null;
+            /** @description The number of distinct versions its items name (a delete of a package of five versions names five). */
+            versions: number;
             items: number;
             more: boolean;
-            /** @description The sum of the items' sizes in bytes; null when an item carries none. */
+            /**
+             * @description The sum of the sizes of its files in bytes (the events of a version or a manifest carry none); null when a
+             *     file carries none, or when the group holds no file.
+             */
             size: number | null;
             /**
              * Format: date-time
              * @description The time of its last item.
              */
             lastAt: string;
-            first: components["schemas"]["AuditDownloadItem"][];
+            first: components["schemas"]["AuditGroupItem"][];
         };
-        /** @description One item of a download, from its event. */
-        AuditDownloadItem: {
+        /** @description One item of a group, from its event. */
+        AuditGroupItem: {
             /** @description The ID of the item's event. */
             id: string;
             /** Format: date-time */
             occurredAt: string;
+            /** @description The item's event, such as `artifact.deployed` or `package.published`. */
+            action: string;
             path: string;
+            /** @description The digest the item names (a file's, a manifest's), "" where it names none. */
             sha256: string;
+            /** @description The version or tag the item names. */
+            version: string | null;
             size: number | null;
             replica: string | null;
             /** @description `link` or `handover` for an item not delivered by Quader's own bytes. */
@@ -19794,7 +19820,7 @@ export interface operations {
                 category?: string;
                 /** @description success, failure, denied or warning (Q-AUTH-402). */
                 outcome?: string;
-                /** @description A principal ID or a name. */
+                /** @description A principal ID (a UUID, matched against the actor's ID) or a name (matched against the actor's name). */
                 actor?: string;
                 repository?: string;
                 resourceType?: string;
@@ -19859,10 +19885,12 @@ export interface operations {
                      *               "unit": "acme/app"
                      *             }
                      *           },
-                     *           "download": {
+                     *           "group": {
+                     *             "act": "download",
                      *             "unit": "acme/app",
                      *             "package": "acme/app",
                      *             "version": "1.4.0",
+                     *             "versions": 1,
                      *             "items": 7,
                      *             "more": false,
                      *             "size": 48213377,
@@ -19871,8 +19899,10 @@ export interface operations {
                      *               {
                      *                 "id": "01933b1e-7c2a-7f4e-9d1b-6a2f0c9e8b11",
                      *                 "occurredAt": "2026-11-26T11:58:02.417Z",
+                     *                 "action": "artifact.downloaded",
                      *                 "path": "acme/app/_tags/1.4.0",
                      *                 "sha256": "3f1c0d8e2a7b9c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5",
+                     *                 "version": "1.4.0",
                      *                 "size": 1574,
                      *                 "replica": "quader-packages-6f9c7d8b5-x2v4q",
                      *                 "delivery": null
@@ -19896,7 +19926,7 @@ export interface operations {
             503: components["responses"]["Unavailable"];
         };
     };
-    listAuditDownloadEvents: {
+    listAuditRowEvents: {
         parameters: {
             query?: {
                 /** @description Page size, 1 to 1000 (default 100). */
@@ -19906,14 +19936,14 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description The ID of the download's first event, `event.id` of its row. */
+                /** @description The ID of the group's first event, `event.id` of its row. */
                 id: string;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description One page of the download's events. */
+            /** @description One page of the group's events. */
             200: {
                 headers: {
                     Link: components["headers"]["Link"];

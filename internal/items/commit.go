@@ -7,6 +7,7 @@ import (
 	"errors"
 	"io"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/guided-traffic/quader/internal/qname"
@@ -537,7 +538,9 @@ func (s *Store) recordCommitted(ctx context.Context, tx meta.Tx, repoKey qname.R
 		return nil
 	}
 	sp := spec.Spooled
-	raw, err := json.Marshal(map[string]any{"path": spec.Path.Path, "sha256": sp.SHA256.Hex(), "size": sp.Size, "overwritten": overwritten})
+	details := map[string]any{"path": spec.Path.Path, "sha256": sp.SHA256.Hex(), "size": sp.Size, "overwritten": overwritten}
+	s.nameChangeUnit(details, spec.Repo.Format, spec.Path.Path, "", false)
+	raw, err := json.Marshal(details)
 	if err != nil {
 		return err
 	}
@@ -644,4 +647,40 @@ func PathConflict(why string) error {
 // CreateOnlyFailed is the 412 of a create-only request for a path that exists.
 func CreateOnlyFailed() error {
 	return errs.E(errs.PreconditionFailed, errs.CodePreconditionFailed, "The path exists and the request asked to create it only (If-None-Match: *).")
+}
+
+// nameChangeUnit writes into the details of a change's event (artifact.deployed, artifact.deleted) the package and the version the
+// repository's format classifies the file in and the unit the audit log joins the act's events by (operations-and-observability.md
+// R-OPS-056): for a push, the unit of R-OPS-049 (an image's name, a version's name@version); for a delete, the package, so that a
+// delete of a package of several versions is one row; for a format whose unit is a file, the folder: the folder the person deleted
+// (root, where it is a folder above the file), else the file's own. An event of a file of no package of a package format names none.
+func (s *Store) nameChangeUnit(details map[string]any, format, path, root string, deleted bool) {
+	if s.units == nil {
+		return
+	}
+	u := s.units(format, path)
+	switch {
+	case u.Package != "":
+		details["package"] = u.Package
+		if u.Version != "" {
+			details["version"] = u.Version
+		}
+		if deleted {
+			details["unit"] = u.Package
+		} else if u.Key != "" {
+			details["unit"] = u.Key
+		}
+	case u.Files:
+		folder := ParentOf(path)
+		if deleted && root != "" && strings.HasPrefix(path, root+"/") {
+			folder = root
+		}
+		details["unit"] = FolderUnit(folder)
+	}
+}
+
+// FolderUnit is the unit of the files of a folder (R-OPS-056): the folder's path with a slash at its end, "/" for the repository's
+// root.
+func FolderUnit(folder string) string {
+	return folder + "/"
 }

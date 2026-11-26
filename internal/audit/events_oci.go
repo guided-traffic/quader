@@ -23,7 +23,7 @@ func init() {
 		Journal: JournalRevocation,
 		Schema: `{"type":"object","properties":{` +
 			`"name":{"type":"string","maxLength":255},"digest":{"type":"string","pattern":"^sha256:[0-9a-f]{64}$"},` +
-			`"deleted":{"type":"integer","minimum":0}},` +
+			`"deleted":{"type":"integer","minimum":0},"unit":{"type":"string","maxLength":512}},` +
 			`"required":["name","digest"],"additionalProperties":false}`,
 	})
 	// The administrator put a withheld manifest back: the mark is gone and the manifest is served again.
