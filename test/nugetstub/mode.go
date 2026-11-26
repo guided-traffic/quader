@@ -52,6 +52,11 @@ type Mode struct {
 	// OmitResources removes resources from the service index: every entry whose @type starts with
 	// one of these values (for example "PackageBaseAddress").
 	OmitResources []string `json:"omit_resources,omitempty"`
+	// ReadmeHost names the host the service index's ReadmeUriTemplate/6.13.0 points at in place of the content host: a README on a
+	// host the remote may not reach (remote-curation.md R-CUR-028).
+	ReadmeHost string `json:"readme_host,omitempty"`
+	// ReadmeStatus, when set, is the status every README answers: a README that fails (R-CUR-028).
+	ReadmeStatus int `json:"readme_status,omitempty"`
 	// StrictHosts answers 404 to a request that reaches a resource on the wrong host of the two
 	// the service index spreads them over: the index and the registrations belong to the API host,
 	// the flat container and the search to the content host. It has an effect only when the two

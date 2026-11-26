@@ -69,7 +69,7 @@ func (b bases) wrongHost(kind, requestHost string) bool {
 		return false
 	}
 	host := strings.ToLower(requestHost)
-	contentKind := kind == KindVersions || kind == KindNuspec || kind == KindNupkg || kind == KindSearch
+	contentKind := kind == KindVersions || kind == KindNuspec || kind == KindNupkg || kind == KindSearch || kind == KindReadme
 	switch {
 	case contentKind && host == api:
 		return true
@@ -86,6 +86,7 @@ var (
 	searchTypes            = []string{"SearchQueryService", "SearchQueryService/3.0.0-beta", "SearchQueryService/3.0.0-rc", "SearchQueryService/3.5.0"}
 	flatTypes              = []string{"PackageBaseAddress/3.0.0"}
 	catalogTypes           = []string{"Catalog/3.0.0"}
+	readmeTypes            = []string{"ReadmeUriTemplate/6.13.0"}
 )
 
 func (s *Server) indexDoc(b bases, m Mode) []byte {
@@ -115,6 +116,12 @@ func (s *Server) indexDoc(b bases, m Mode) []byte {
 	if m.Catalog {
 		add(b.api, catalogIndexPath, "catalog", catalogTypes)
 	}
+	// The README of a version, as nuget.org's template names it on the content host; ReadmeHost names another host (R-CUR-028).
+	readmeBase := b.content
+	if m.ReadmeHost != "" {
+		readmeBase = "https://" + m.ReadmeHost
+	}
+	add(readmeBase, flatPath+"{lower_id}/{lower_version}/readme", "README of a version", readmeTypes)
 	out, _ := json.Marshal(map[string]any{"version": "3.0.0", "resources": res})
 	return out
 }

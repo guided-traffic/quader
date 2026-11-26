@@ -195,8 +195,10 @@ Tests and what they cost (each run once):
 | the preview's counts in `TestR_CUR_010_ADownloadAheadOfOneVersionAndOfAPackage` (area `npm`) | integration | unchanged | unchanged |
 | kit check 22's README case of npm, NuGet and Ansible Galaxy (R-CUR-028) | unit | milliseconds per format | npm `left-pad-readme.json` 5 KB; NuGet `newtonsoft.json-13.0.4-readme.md` 2 KB; Ansible `gal-docs-blob.json` 0.5 KB |
 | `TestR_CUR_028_TheReadmeCall` (`internal/remotecuration/catalogue`), `TestR_CUR_028_TheReadmeOfANuGetPackageIsAskedWhereTheTemplateNamesIt`, `TestR_CUR_028_AGalaxysFactsAndReadmes`, `TestR_CUR_028_AnAddressIsALinkOnlyForHTTPAndHTTPS`, `TestR_CUR_028_TheFactsOfAnUpstreamPackageAreTheSchemas` | unit | milliseconds to microseconds | a few hundred bytes; the engine's test builds one README of 1 MiB in memory to hold the bound |
-| `TestR_CUR_028_AnUpstreamPackageShowsItsReadmeReadThroughAndNotStored` (area `npm`) | integration | about 2 s | the stub's corpus |
-| `TestR_CUR_028_ACollectionsReadmeIsReadThroughItsDocsBlobAndSanitized` (area `ansibleremote`) | integration | about 1 s | the stub's corpus |
+| `TestR_CUR_028_AnUpstreamPackageShowsItsReadmeReadThroughAndNotStored` (area `npm`), on the roles `api` and `all` | integration | about 3 s | the stub's corpus |
+| `TestR_CUR_028_ACollectionsReadmeIsReadThroughItsDocsBlobAndSanitized` (area `ansibleremote`), on the roles `api` and `all` | integration | about 2 s | the stub's corpus |
+| `TestR_CUR_028_ANuGetPackagesReadmeIsReadThroughOnTheRolesAPIAndWeb` (area `nuget`): available, unreachable, failed, limited | integration | about 3 s | the stub's corpus; the stub's README of a few dozen bytes (`ReadmeUriTemplate/6.13.0`, its modes `readme_host` and `readme_status`) |
+| `TestR_CUR_028_TheStubServesAVersionsReadme` (`test/nugetstub`) | unit | milliseconds | none |
 | the lookup's short description in `TestR_DEB_036_TheCatalogueSearchesTheIndexesTheRemoteParsed` (area `debremote`) | integration | one lookup more, milliseconds | unchanged |
 | `upstream-docs.spec.ts` | Vitest | about 1 s | canned answers |
 

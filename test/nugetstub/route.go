@@ -90,6 +90,8 @@ func parseFlat(rest string) route {
 		return route{kind: KindNupkg, id: id, version: s[1]}
 	case len(s) == 3 && s[2] == id+".nuspec":
 		return route{kind: KindNuspec, id: id, version: s[1]}
+	case len(s) == 3 && s[2] == "readme":
+		return route{kind: KindReadme, id: id, version: s[1]}
 	}
 	return route{kind: KindOther, id: id}
 }

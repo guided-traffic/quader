@@ -2042,6 +2042,12 @@ werden." A person who decides on the tab **Upstream** whether to allow, block or
     `Retry-After`; while the upstream's limit holds the repository's queue (R-CUR-011), the README is not asked and answers `state: limited`
     with `until`. The screen says either and asks again at the time; the versions show.
   - *The log.* A failure's address goes through the scrubber of logged addresses (R-OPS-013 rule 7); no credential reaches an answer.
+  - *Which process asks.* The replica that answers the management call: in the chart the role `api`, in one process the role `web` or
+    `all`. The README rides the catalogue's engine and its lent upstream there, as the lookup and the search do: on the role `api` the
+    upstream is the background engine that role builds at its first catalogue call
+    ([Q-CUR-163](#q-cur-163--the-background-engine-of-the-role-api-shares-the-caches-of-its-read-only-view)), with the repository's
+    upstream client, the egress address policy and the redirect rules of that process, and the budget of the cluster limiter that every
+    replica shares (R-CUR-008). No format host is needed, and the role `packages` sends nothing for it.
 - **Delivery rules decide what is delivered, not what is read about**
   ([Q-CUR-267](#q-cur-267--a-package-the-rules-block-still-shows-its-documentation)): a package the rules block or do not allow shows its
   facts and its README to whoever may open the tab and read the wiki, since they decide on it.
@@ -2064,10 +2070,14 @@ Acceptance criteria:
   `TestR_CUR_028_AGalaxysFactsAndReadmes`; `internal/mirror/discover`, `TestR_CUR_028_AnAddressIsALinkOnlyForHTTPAndHTTPS`;
   `internal/api/v1`, `TestR_CUR_028_TheFactsOfAnUpstreamPackageAreTheSchemas`; microseconds): the template's address, a 404, a host the
   repository does not reach (nothing asked), a template that is no web address; a Galaxy's facts and a role's README; the links' rule.
-- Integration (area `npm`, `TestR_CUR_028_AnUpstreamPackageShowsItsReadmeReadThroughAndNotStored`, about 2 s, the stub's corpus): the
+- Integration (area `nuget`, `TestR_CUR_028_ANuGetPackagesReadmeIsReadThroughOnTheRolesAPIAndWeb`, about 3 s, the stub's corpus, whose
+  service index names `ReadmeUriTemplate/6.13.0`): the README read once and sanitized, a template on a host the remote does not reach
+  (`unreachable`), a README that fails (`502 upstream_error`), a holding limit (`limited`). Each integration case of this requirement
+  runs on a replica of the role `api` and on one of the role `web` or `all`.
+- Integration (area `npm`, `TestR_CUR_028_AnUpstreamPackageShowsItsReadmeReadThroughAndNotStored`, about 3 s, the stub's corpus): the
   lookup answers the facts and `readme: true`; the README answers at no further request of the stub and stores nothing; a reader of the
   artifacts without the wiki gets the facts, `readme: false` and `404`, and the stub is not asked for it.
-- Integration (area `ansibleremote`, `TestR_CUR_028_ACollectionsReadmeIsReadThroughItsDocsBlobAndSanitized`, about 1 s, the stub's
+- Integration (area `ansibleremote`, `TestR_CUR_028_ACollectionsReadmeIsReadThroughItsDocsBlobAndSanitized`, about 2 s, the stub's
   corpus): the lookup names the highest version's facts; the README of a version is read through its docs-blob once for two calls, without
   the stub's script, and no cache entry and no documentation row is written.
 - Web unit (`upstream-docs.spec.ts`, about 1 s): the facts line, a link only for http and https, the README read once per package and

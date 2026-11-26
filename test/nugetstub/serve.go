@@ -44,6 +44,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.serveVersions(w, r, rt, mode)
 	case KindNuspec, KindNupkg:
 		s.serveFile(w, r, rt, mode)
+	case KindReadme:
+		s.serveReadme(w, rt, mode)
 	case KindRegIndex, KindRegPage, KindRegLeaf:
 		s.serveRegistration(w, r, rt, mode, b)
 	case KindCatalogIndex, KindCatalogPage, KindCatalogLeaf:
@@ -181,6 +183,24 @@ func (s *Server) serveRegistration(w http.ResponseWriter, r *http.Request, rt ro
 
 // serveFile answers the .nuspec and the .nupkg of a version. The version need not be visible in the
 // documents: a dropped version keeps its files.
+// serveReadme answers the README of a version the corpus has: a few lines of Markdown with a script in them, which a reader must
+// never get (R-CUR-028, R-UI-008); 404 for a version it does not have.
+func (s *Server) serveReadme(w http.ResponseWriter, rt route, m Mode) {
+	if m.ReadmeStatus != 0 {
+		writeError(w, m.ReadmeStatus, "the README fails")
+		return
+	}
+	s.mu.Lock()
+	base, ok := s.baseLocked(rt.id)
+	s.mu.Unlock()
+	if !ok || base.find(rt.version) < 0 {
+		writeError(w, http.StatusNotFound, "Not found")
+		return
+	}
+	w.Header().Set("Content-Type", "binary/octet-stream")
+	_, _ = w.Write([]byte("# " + rt.id + " " + rt.version + "\n\nThe README the stub serves.\n\n<script>alert(1)</script>\n"))
+}
+
 func (s *Server) serveFile(w http.ResponseWriter, r *http.Request, rt route, m Mode) {
 	s.mu.Lock()
 	base, ok := s.baseLocked(rt.id)

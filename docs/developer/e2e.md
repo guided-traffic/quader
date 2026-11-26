@@ -2377,6 +2377,8 @@ path more than twice and no `.nupkg` path more than once, over every host.
 | `bad_digest` | IDs whose catalog entries announce a `packageHash` the bytes do not have |
 | `wrong_content` | IDs whose `.nupkg` URLs serve `Other.Pkg` instead |
 | `omit_resources` | `@type` prefixes left out of the service index, for example `PackageBaseAddress` |
+| `readme_host` | the host the service index's `ReadmeUriTemplate/6.13.0` names in place of the content host: a README on a host the remote does not reach (R-CUR-028) |
+| `readme_status` | the status every README of `…/v3-flatcontainer/{id}/{version}/readme` answers: a README that fails (R-CUR-028) |
 | `strict_hosts` | a resource asked from the wrong host answers 404 (only with two distinct hosts) |
 | `require_authorization` | 401 unless `Authorization` equals this value |
 | `gzip_always` | the version lists and the documents of both registration hives answer gzip-coded whatever `Accept-Encoding` asks, as nuget.org's gzip hive does (Q-NUGET-82) |

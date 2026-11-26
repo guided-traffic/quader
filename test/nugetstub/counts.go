@@ -16,6 +16,7 @@ const (
 	KindNuspec   = "nuspec"    // flat container .nuspec
 	KindNupkg    = "nupkg"     // flat container .nupkg
 	KindSearch   = "search"
+	KindReadme   = "readme" // flat container README of a version, ReadmeUriTemplate/6.13.0 (remote-curation.md R-CUR-028)
 	KindOther    = "other"
 
 	KindCatalogIndex = "catalog-index" // /v3/catalog/index.json
