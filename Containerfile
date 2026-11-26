@@ -2,7 +2,7 @@
 # The release image of quader (R-ARCH-003, R-HA-033): the Angular bundle embedded into a static
 # binary, on a distroless base that runs as UID 65532. Three stages:
 #
-#   web    the Angular build (build:embed) on the Node.js of web/.nvmrc, into internal/webui/dist
+#   web    the Angular builds (build:embed) on the Node.js of web/.nvmrc, into internal/webui/dist and internal/bastion/gui/dist
 #   build  the Go binary, cross-compiled for TARGETOS/TARGETARCH on the build platform, so that no
 #          emulation is needed for the other architecture (CGO_ENABLED=0)
 #   final  the distroless base of RUNTIME_BASE_IMAGE (tools/versions.env), the binary and nothing else
@@ -24,8 +24,10 @@ ARG RUNTIME_BASE_IMAGE
 FROM --platform=$BUILDPLATFORM node:${NODE_VERSION}-alpine AS web
 ARG UI_BUNDLE_MARK=
 WORKDIR /src
-# build:embed reads the target directory ../internal/webui/dist, which holds the committed placeholder.
+# build:embed reads the target directories ../internal/webui/dist and ../internal/bastion/gui/dist, which hold the committed
+# placeholders.
 COPY internal/webui/dist/ internal/webui/dist/
+COPY internal/bastion/gui/dist/ internal/bastion/gui/dist/
 COPY web/ web/
 WORKDIR /src/web
 # --loglevel=http writes every fetch of npm ci into the build's log, so a package whose download failed is named there: an
@@ -43,6 +45,7 @@ COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 COPY --from=web /src/internal/webui/dist/ internal/webui/dist/
+COPY --from=web /src/internal/bastion/gui/dist/ internal/bastion/gui/dist/
 RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -buildvcs=false \
       -ldflags "-s -w \
         -X github.com/guided-traffic/quader/internal/buildinfo.version=${VERSION} \

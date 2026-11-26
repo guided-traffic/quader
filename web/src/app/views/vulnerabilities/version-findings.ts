@@ -1,9 +1,9 @@
 import { DecimalPipe } from '@angular/common';
 import { Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { OPEN_STATUSES } from '../../api/vulnerability-reads';
 import {
   FindingFilters,
-  OPEN_STATUSES,
   VulnerabilityFinding,
   VulnerabilitySeverity,
   VulnerabilitySeverityCounts,

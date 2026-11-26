@@ -1,10 +1,16 @@
 import { Provider, inject } from '@angular/core';
 import { SessionStore } from '../core/session-store';
 import { SIGNED_IN } from '../core/signed-in';
+import { FormatCatalog } from '../core/format-names';
+import { HttpFormatCatalog } from '../core/format-catalog-http';
+import { SystemClients } from '../core/system-clients';
+import { HttpSystemClients } from '../core/system-clients-http';
+import { MEMORY_OWNER } from '../core/disclosure-memory';
 import { ClientSetupReads, PackageReads } from './package-reads';
 import { SignatureReads } from './signature-reads';
 import { VulnerabilityReads } from './vulnerability-reads';
-import { HttpLegalApi, LegalApi } from './legal-api';
+import { LegalApi } from './legal-api';
+import { HttpLegalApi } from './legal-api-http';
 import { HttpLoginApi, LoginApi } from './login-api';
 import { HttpPreferencesApi, PreferencesApi } from './preferences-api';
 import { HttpSessionApi, SessionApi } from './session-api';
@@ -94,7 +100,17 @@ export function provideViewReads(): Provider[] {
     { provide: PackageReads, useExisting: PackagesApi },
     { provide: VulnerabilityReads, useExisting: VulnerabilitiesApi },
     { provide: SignatureReads, useExisting: SignaturesApi },
+    { provide: FormatCatalog, useClass: HttpFormatCatalog },
+    { provide: SystemClients, useClass: HttpSystemClients },
     { provide: SIGNED_IN, useFactory: () => inject(SessionStore).authenticated },
+    // The memory of an opened section is kept per signed-in principal (Q-UI-967); the Bastion's application keeps it for the tab.
+    {
+      provide: MEMORY_OWNER,
+      useFactory: () => {
+        const session = inject(SessionStore);
+        return () => session.whoami()?.principal?.name ?? null;
+      },
+    },
   ];
 }
 

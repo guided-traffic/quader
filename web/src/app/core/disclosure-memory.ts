@@ -1,6 +1,15 @@
-import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
-import { SessionStore } from './session-store';
+import { Injectable, InjectionToken, computed, effect, inject, signal, untracked } from '@angular/core';
 import { BrowserStorage } from './storage';
+
+/**
+ * Whose memory it is: the name of the signed-in principal, read in a reactive context, or null for a reader without a session, whose
+ * choices last for the tab. The main installation binds it to its session (`provideViewReads`); without a binding, as in the Bastion's
+ * application, every reader is anonymous (R-UI-223, R-UI-228).
+ */
+export const MEMORY_OWNER = new InjectionToken<() => string | null>('MEMORY_OWNER', {
+  providedIn: 'root',
+  factory: () => () => null,
+});
 
 /**
  * Which **Details** sections the viewer left open (R-UI-067, Q-UI-319, Q-UI-967): one entry per screen and section (`file.details`,
@@ -12,11 +21,11 @@ import { BrowserStorage } from './storage';
 @Injectable({ providedIn: 'root' })
 export class DisclosureMemory {
   private readonly storage = inject(BrowserStorage);
-  private readonly session = inject(SessionStore);
+  private readonly owner = inject(MEMORY_OWNER);
   private readonly opened = signal<ReadonlySet<string>>(new Set());
 
   private readonly key = computed(() => {
-    const name = this.session.whoami()?.principal?.name;
+    const name = this.owner();
     return name ? `quader.open.${name}` : null;
   });
 

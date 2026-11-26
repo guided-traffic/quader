@@ -10298,7 +10298,9 @@ installation sees changes.
 
 What the views still reach through `core/` and `shared/` (the format catalogue, the switch of the system repositories, the memory of an
 opened section, the words of a limit's refusal) are injectables an application binds itself; that the second application's bundle holds
-no session and no write is the import-graph check of its build (W-35 P9), not this rule's.
+no session and no write is the import-graph check of its build (W-35 P9), not this rule's. *Built by W-35's P9 on 2026-11-26 (R-UI-228):*
+`FormatCatalog` and `SystemClients` are abstract and bound in `provideViewReads`, the memory asks `MEMORY_OWNER`, and the helpers the views
+take from API modules live in `api/refs.ts`; the check is `bastion-bundle-rule.mjs` over the Bastion's metafile.
 
 Acceptance criteria:
 
@@ -10587,6 +10589,121 @@ Acceptance criteria:
   `/login` and `/logged-out`; no serious accessibility violation.
 - Rendered (rule 11): the sign-in screen and a signed-in screen with the line, a short and a long page, a legal page in each language
   and with one text only, light and dark, 1,440, 1,024 and 390 px, in English and German.
+
+### R-UI-227 · The Bastion's application: its addresses and its shell
+Priority: **P1** · Covers: quader-only
+
+The owner, 2026-11-26 (W-35, his g3): the Bastion's web interface is "a second, small Angular application from the same views as the
+main installation", for anonymous visitors from the internet who want to know what is published, without a session, a sign-in or an act
+([bastion.md](bastion.md) R-BAS-116 to R-BAS-120).
+
+- **The project** ([Q-UI-1433](#q-ui-1433--the-bastions-application-is-a-second-project-of-the-workspace-with-the-main-installations-addresses)).
+  `bastion-gui` of `web/angular.json`, its sources in `web/src/bastion`, its root element `<quader-root>` (so the shell's global styles
+  hold), both locales, built and embedded by R-BAS-119.
+- **Its addresses** are the main installation's: the start (`/`), a project's packages (`/projects/<project>/packages`), a package, a
+  version (`…/packages/<format>/<name>@<version>`), the versions' table of a format whose packages lead with their documentation
+  (`…/-/versions`), the imprint and the privacy notice (`/legal/imprint`, `/legal/privacy`, each only while it has a text), and not found;
+  nothing else. A screen whose script the Bastion no longer holds after a rollout is loaded from the server (Q-UI-1370).
+- **The shell.** The mark and the product's name (a link to the start), the other language as a link to the same address in its build
+  (`/ui/<locale>/…`), the theme (follow the system, light, dark), kept in the browser alone
+  ([Q-UI-1439](#q-ui-1439--the-theme-is-kept-in-the-browser-the-language-is-the-address)); one scrolling panel (R-UI-215); the notices
+  of the shared views.
+- **The state** (W-35's B.2b). The shell reads `/ui/data/v1/state` and the legal pages at once and then every 60 s while seen, every
+  30 s while the Bastion is not ready (R-UI-213). Older than `stale_after`, a band above the page: "This information is from <date,
+  time>. Newer information is not available right now." Not ready (`503 not_ready`), the page is replaced by "Not available right now"
+  and "This page is not available right now. Try again in a few minutes."; the shell reads again by itself
+  ([Q-UI-1440](#q-ui-1440--a-bastion-without-a-catalogue-to-show-says-so-in-place-of-the-page)). Off (`404`), the answer is shown whole
+  (R-UI-216).
+- **The footer** ends the panel's column: "Imprint" and "Privacy notice" while they have a text (R-UI-226's rule), and "As of <relative
+  time>" ("Stand: …") with the date and time as its title.
+
+*Built on 2026-11-26 (W-35's P9):* [app.ts](../../web/src/bastion/app.ts), [app.routes.ts](../../web/src/bastion/app.routes.ts),
+[app.config.ts](../../web/src/bastion/app.config.ts), [state.ts](../../web/src/bastion/data/state.ts); the matchers of a package's
+addresses moved to [package-matchers.ts](../../web/src/app/features/packages/package-matchers.ts), which both applications import.
+
+Acceptance criteria:
+
+- Unit ([bastion.spec.ts](../../web/src/bastion/bastion.spec.ts), under a second): an old state shows the band, the footer the imprint
+  and "As of" and no privacy link without its text, the language link names the same address in German; a Bastion that is not ready
+  shows the sentence in place of the page; a fresh state shows the page and no band.
+
+### R-UI-228 · The Bastion's reads, and a bundle without a write, a session or a screen of the main installation
+Priority: **P1** · Covers: quader-only
+
+- **The reads** (R-UI-223's abstract classes, [bastion.md](bastion.md) R-BAS-118). The application binds `PackageReads`,
+  `ClientSetupReads`, `VulnerabilityReads`, `SignatureReads` and `LegalApi` to implementations that read `/ui/data/v1/` with the
+  catalogue's spelling of a path, GET only (`web/src/bastion/data/reads.ts`). What the catalogue holds no document for (the packages
+  that depend on one, a namespace's page, a package's vulnerability report, an advisory, a file's signatures, the gate's releases)
+  answers as a read the caller may not make, which the views show as none. A failed read is the `ApiError` every notice shows whole,
+  with one retry of a read after no answer, a `429` or a `503` with `Retry-After` (R-UI-042, R-UI-216).
+- **What a view reaches is bound per application** ([Q-UI-1434](#q-ui-1434--what-a-view-reaches-beyond-its-reads-is-abstract-and-each-application-binds-it)).
+  `FormatCatalog` and `SystemClients` are abstract; the main installation binds the reads of its API (`provideViewReads`), the Bastion its
+  format table ([Q-UI-1436](#q-ui-1436--the-bastion-names-the-formats-from-a-table-of-its-own)) and "a system repository it shows serves
+  its clients". The memory of an opened section asks `MEMORY_OWNER`, which the main installation binds to its session and the Bastion
+  leaves anonymous. The legal read's HTTP class is a module of its own (`legal-api-http.ts`), and the pure helpers the views take from API
+  modules live in modules without a client ([Q-UI-1435](#q-ui-1435--a-helper-a-view-takes-lives-in-a-module-without-a-client)).
+- **What the bundle holds** (W-35's B.7, R-BAS-119). No module of the main installation's API client, its session, a screen of its own
+  outside the folders the views use, or a dialog puts a byte into the Bastion's build: `build-embed.mjs` reads the build's metafile with
+  `bastion-bundle-rule.mjs` and fails otherwise ([Q-UI-1437](#q-ui-1437--what-the-bastions-bundle-holds-is-checked-over-its-builds-metafile)).
+
+*Built on 2026-11-26 (W-35's P9):* [reads.ts](../../web/src/bastion/data/reads.ts), [http.ts](../../web/src/bastion/data/http.ts),
+[formats.ts](../../web/src/bastion/data/formats.ts), [refs.ts](../../web/src/app/api/refs.ts),
+[format-catalog-http.ts](../../web/src/app/core/format-catalog-http.ts),
+[system-clients-http.ts](../../web/src/app/core/system-clients-http.ts), [bastion-bundle-rule.mjs](../../web/scripts/bastion-bundle-rule.mjs).
+
+Acceptance criteria:
+
+- Unit ([bastion.spec.ts](../../web/src/bastion/bastion.spec.ts)): a version with a `+`, a documentation file with `'()`, the lookup, a
+  page of versions without the view's filters, a README the catalogue lacks as none, what it holds no document for as `404` without a
+  request; a version's set-up found by the package's catalogue ID; a failed read with its status, code and call; the format table names
+  every format as the main installation's fakes do.
+- Unit (`lint-rules.test.mjs`, milliseconds): `R-UI-228 the Bastion bundle check names the client, the session, a screen and a dialog
+  that put bytes into the build`.
+- The specs of every package screen of the main installation pass unchanged (2,408 tests, measured 2026-11-26).
+
+### R-UI-229 · The Bastion's pages are the main installation's views
+Priority: **P1** · Covers: quader-only
+
+- **The start** lists the projects whose packages the catalogue shows (`/ui/data/v1/projects`); with one, it leads into it
+  ([Q-UI-1438](#q-ui-1438--the-bastions-start-lists-its-projects-and-one-project-leads-into-it)); with none, "No package is published here
+  yet."
+- **A project's packages** (W-35's B.8): the search by name, description and keyword in the list's head, the table of R-UI-223
+  (`views/packages/package-table.ts`) with its sorts and "Load more", the search and the sort in the address.
+- **A package and a version** are `views/packages/package-detail-view.ts` and `package-version-view.ts` for a reader who is never
+  signed in: the tab Vulnerabilities lists the version report's open findings (R-UI-224, W-35's B.4a), signatures and their trust state
+  (W-35's B.9), the format's own parts (an image's platforms and layers, an Ansible collection's documentation while `docs` is on, a
+  Debian package's contents), and the commands of the set-up documents; no place of `views/acts.ts` is provided, so no act is drawn.
+- **The legal pages and not found** are the main installation's (`features/legal/legal-page.ts`, `features/not-found/not-found.ts`) in
+  the shell.
+- *Not built:* the pages of a generic repository's folders and files (the catalogue's `files/…` documents; the main installation's
+  folder screen is no view yet), and the download of a version's file: the builder rewrites a file's content route to the Bastion's data
+  path, which serves no content, so a file's link at the Bastion answers `404` until the builder writes the package API's address
+  (W-35's B.13 row 2; the plan's P6).
+
+*Built on 2026-11-26 (W-35's P9):* [start-page.ts](../../web/src/bastion/pages/start-page.ts),
+[package-list-page.ts](../../web/src/bastion/pages/package-list-page.ts), [package-pages.ts](../../web/src/bastion/pages/package-pages.ts).
+
+Acceptance criteria:
+
+- Unit: the reads of R-UI-228 the pages read; the route table's matchers are the main installation's (`package-matchers.ts`, held by
+  [app.route-table.spec.ts](../../web/src/app/app.route-table.spec.ts)).
+- Rendered (rule 11): see R-UI-230.
+
+### R-UI-230 · The Bastion's pages are rendered and their layout checked
+Priority: **P1** · Covers: quader-only
+
+The Bastion's pages (the list, a search, a package, a version with findings and signatures, an image, an Ansible collection with its
+documentation, a generic folder, the legal pages, the band of an old state, not ready) are rendered against a local Bastion in front of
+the UI development profile's instance, light and dark, at 1,440, 1,024 and 390 px, in English and German, and the layout checks of the
+render suite (R-UI-170 to R-UI-176) hold four of them in both schemes at two widths in the parts of `make ui-renders SHARD=i/n`.
+
+*Not built (W-35's P9, left open on 2026-11-26):* the UI development profile starts no Bastion, so neither the renders nor the layout
+checks exist yet; the pages of R-UI-229 have not been looked at (rule 11 of promt.md).
+
+Acceptance criteria:
+
+- `make ui-renders GREP=bastion` renders the pages above; the layout checks find nothing; `make ui-renders-parts-check` holds every
+  Bastion page exactly once.
 
 ## Deferred
 
@@ -28994,6 +29111,130 @@ navigation (R-UI-002).
 |---|---|---|---|
 | (a) "Imprint" or "Privacy notice" as the page's heading in the interface's language, the text below; the values' examples start without a heading; a text in the other language gets the note "This page is available in German only." and its `lang` (chosen) | | Every page has its `<h1>` and a title in the reader's language | An operator's own `# Impressum` stands as a second heading |
 | (b) No heading of the page; the text's own | | The operator decides | A text without a heading gives a page without `<h1>` |
+
+**Choice:** (a).
+
+### Q-UI-1433 · The Bastion's application is a second project of the workspace, with the main installation's addresses
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-UI-227, the owner's g3 ("from the same views"), W-35's B.3.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A project `bastion-gui` of `web/angular.json` (root `src/bastion`), one `package.json`, the views imported from `src/app` (chosen) | One build tool, one lockfile, one German file | A view changes once for both; the CLI tells the two projects apart by their roots | The main project's type check sees the Bastion's files too |
+| (b) A library of the views and two applications | The cleanest boundary | — | Moving every view, its specs and its styles into a library for one consumer more |
+
+**Choice:** (a). The root element stays `<quader-root>`, so the shell's global styles hold without a copy.
+
+### Q-UI-1434 · What a view reaches beyond its reads is abstract, and each application binds it
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-UI-228, R-UI-223's note that the views still reach the session and the API through `FormatCatalog`, `SystemClients`, the
+disclosure's memory and the error notice's words. The Bastion's first build held the session store, the API client and seven API
+modules (measured in its metafile, 2026-11-26).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `FormatCatalog` and `SystemClients` abstract, their HTTP forms bound in `provideViewReads`; the disclosure asks a token `MEMORY_OWNER` (chosen) | The views' plumbing as reads | The main installation's screens and specs change nothing but a provider; the Bastion binds its own | Three more bindings in `provideViewReads` |
+| (b) The Bastion overrides the concrete classes | No change at the main installation | — | The concrete classes' modules, and with them the session and the client, stay in the Bastion's bundle |
+
+**Choice:** (a).
+
+### Q-UI-1435 · A helper a view takes lives in a module without a client
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-UI-228. `splitRef`, `contentPath`, `repositoryOfContent` and `OPEN_STATUSES` lived in API modules beside their HTTP classes; a
+view that imported one brought the module, and esbuild kept its decorated class and with it `ApiClient` in the Bastion's bundle.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `api/refs.ts` holds the names and addresses, `vulnerability-reads.ts` the open statuses; the API modules re-export them (chosen) | The views import the module without a client | The rest of the main installation's code is unchanged | Two places name one function (a re-export) |
+| (b) Each import of the main installation changed too | No re-export | — | A change of thirty files for nothing a user sees |
+
+**Choice:** (a). `repositoryOfContent` reads the Bastion's data path as well (`/ui/data/v1/projects/…`, R-BAS-107).
+
+### Q-UI-1436 · The Bastion names the formats from a table of its own
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-UI-228. A screen shows a format's name, never its key (R-UI-006); the main installation reads `GET /api/v1/formats`, and the
+catalogue holds no document of the formats (R-BAS-103).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A table in `web/src/bastion/data/formats.ts`: the names, the clients, the namespaces, the documentation, the signature kinds; a spec holds it to the fakes' catalogue (chosen) | No change of the interface | "OCI (Docker)", not `oci` | A format added to the server needs a line here; the fakes mirror the server by hand |
+| (b) A document `formats` in the catalogue | One source | The server's own words | A change of the grammar and the interface version (R-BAS-103, R-BAS-009), which this package was not to make |
+| (c) The keys | Nothing to keep | — | Against R-UI-006 |
+
+**Choice:** (a). **Revisit:** with the next change of the catalogue's grammar, (b) replaces the table.
+
+### Q-UI-1437 · What the Bastion's bundle holds is checked over its build's metafile
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-UI-228, R-BAS-119, W-35's B.7 and its plan's P9 ("an import-graph lint over the build's metafile").
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `build-embed.mjs` builds the Bastion with `--stats-json` and fails for a forbidden module that put a byte into an output (chosen) | The check reads what is shipped, after tree shaking | No false finding of a module the build drops; CI's web job runs it with every embed | `make web-lint` does not run it, since it builds nothing |
+| (b) A lint of the import statements from the Bastion's entry | Runs in the lint | — | Names every module the graph touches, also the ones esbuild drops |
+
+**Choice:** (a). The rule's own test runs in `make web-test` (milliseconds).
+
+### Q-UI-1438 · The Bastion's start lists its projects, and one project leads into it
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-UI-229. Every address of a package holds its project (R-UI-003), and the table of a list links its rows into one project.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The projects as links; with one project its packages at once (chosen) | The main installation's start for a caller with one project (Q-UI-129) | Most Bastions show one project; the addresses stay the main installation's | A visitor of several projects takes one step more |
+| (b) One list across projects | A search from the start | — | The table's rows link into one project; a list across projects needs a table of its own |
+
+**Choice:** (a).
+
+### Q-UI-1439 · The theme is kept in the browser, the language is the address
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-UI-227, W-35's B.7 ("no cookie and no per-visitor state … theme from prefers-color-scheme with a toggle kept in the browser;
+locale from the address and Accept-Language").
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The theme in the browser's local storage (`quader.theme`), the language a link to the same address in the other build (chosen) | Nothing reaches the Bastion | No cookie; a link in either language is shareable | A cleared storage follows the system again |
+| (b) A cookie | — | — | Against B.7 |
+
+**Choice:** (a).
+
+### Q-UI-1440 · A Bastion without a catalogue to show says so in place of the page
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-UI-227, W-35's B.2b ("The page reads 'This page is not available right now. Try again in a few minutes.'"), R-BAS-117 (a page
+is served `503`).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The shell shows the sentence in place of the page and reads the state again every 30 s, the footer with the imprint stays (chosen) | One answer of the shell for every address | The page comes back by itself (R-UI-213); the imprint is there exactly when the page is not | The address's own page is not drawn |
+| (b) Each page shows its read's `503` | — | — | Ten failed reads saying one thing |
+
+**Choice:** (a).
+
+### Q-UI-1441 · Both applications share one German file
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-UI-227, R-UI-047. The Bastion's application takes most of its texts from the shared views.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `i18n-check.mjs` extracts both projects and appends the units only the Bastion has; both builds read `messages.de.xlf` (chosen) | One translation of a shared text | A view's German is the same at both | A unit both hold keeps the main installation's location notes only |
+| (b) A file per application | — | — | A shared text translated twice and drifting |
 
 **Choice:** (a).
 

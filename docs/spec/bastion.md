@@ -6802,6 +6802,60 @@ Acceptance criteria:
   version through the Bastion's client listener, each `200`, and every status line, header and body is scanned for the main
   installation's host, the address the Bastion reaches it at and `/api/v1/` (W-35's B.13).
 
+### R-BAS-119 · The Bastion's bundle is built, checked and embedded beside the main installation's
+Priority: **P1** · Covers: quader-only
+
+- **Two applications of one workspace** ([api-and-ui.md](api-and-ui.md) R-UI-227). `npm run build:embed` (`make web-embed`) builds the
+  main installation's application (project `web`) and the Bastion's (project `bastion-gui`, `web/src/bastion`) in production, both
+  locales, and copies them to `internal/webui/dist/<locale>/` and `internal/bastion/gui/dist/<locale>/`. Each tree keeps its committed
+  placeholder `index.html`; a binary built without the web build serves the placeholder of each.
+- **The same checks for both.** The nonce placeholder in every `index.html`, the hashed names of R-UI-001 (Q-UI-140), no script naming
+  DiceBear's service, the compressed initial bundle within R-UI-001's 400 kB (the Bastion's: 158 kB in English, measured 2026-11-26), and
+  every locale's `3rdpartylicenses.txt` with the notices of Q-UI-144 (DiceBear's only for the main installation, whose avatars the
+  Bastion does not draw).
+- **What the Bastion's bundle may hold** (R-UI-228). The Bastion's build writes its metafile (`--stats-json`) and fails when a module of
+  the main installation's client, its session, a screen of its own that no page of the Bastion composes, or a dialog put a byte into an
+  output file ([Q-UI-1437](api-and-ui.md#q-ui-1437--what-the-bastions-bundle-holds-is-checked-over-its-builds-metafile)).
+- **The image.** The `web` stage of the `Containerfile` builds both and the `build` stage copies both trees; `.dockerignore` keeps a
+  locale directory of a local build out of both.
+
+*Built on 2026-11-26 (W-35's P9):* [build-embed.mjs](../../web/scripts/build-embed.mjs),
+[bastion-bundle-rule.mjs](../../web/scripts/bastion-bundle-rule.mjs), the project `bastion-gui` of
+[angular.json](../../web/angular.json), the `Containerfile`, the step of the web job in
+[release.yml](../../.github/workflows/release.yml).
+
+Acceptance criteria:
+
+- The web job of CI (`make web-embed`, then `QUADER_UI_BUILT=1 go test`): `TestR_BAS_116_TheEmbeddedBundleCarriesItsNotices`
+  ([gui_test.go](../../internal/bastion/gui/gui_test.go)) reads the embedded bundle's notices and page in both locales and finds neither
+  the main installation's CSRF header nor its read of who is signed in in any script; skipped on the placeholder elsewhere.
+- Unit (`web/scripts/lint-rules.test.mjs`, milliseconds): the check names the client, an API class, the session, a screen of the
+  main installation and a dialog that put bytes into an output, and passes a tree-shaken module and the Bastion's own.
+
+### R-BAS-120 · No page of the Bastion names the main installation
+Priority: **P1** · Covers: quader-only
+
+The owner's rule (W-35's B.13): "Der Bastion verrät keine internen Informationen über die Hauptinstanz." For the web interface:
+
+- **Its own texts.** The problems of R-BAS-117, the not-ready sentence, the band of an old state ("This information is from <date, time>.
+  Newer information is not available right now.") and the footer ("As of …") name no party.
+- **Its bundle.** It has no environment file and no compiled address: it reads the relative `/ui/data/v1/` of the host it was loaded from
+  (R-BAS-118), and the main installation's bundle is not in it (R-BAS-116, R-BAS-119).
+- **Its headers.** No `Quader-…` header, no `Server` header (R-BAS-117).
+- **Its data.** The documents are the builder's, which strips internal identities (R-BAS-106) and rewrites the main installation's
+  addresses to the Bastion's (R-BAS-107); the web interface adds nothing of its own to them.
+
+*Built on 2026-11-26 (W-35's P9):* the texts of [gui.go](../../internal/bastion/gui/gui.go) and of the application's shell
+(`web/src/bastion/app.ts`).
+
+Acceptance criteria:
+
+- Integration (area `bastion`): `walkWebInterface` inside `TestR_BAS_109_TheBastionMirrorsTheCatalogueAndServesOnWhileTheLinkIsCut`
+  scans every status line, header and body of eight addresses of the web interface for the main installation's host, its address and
+  `/api/v1/` (R-BAS-118's criterion).
+- Unit: `TestR_BAS_117_EveryAnswerCarriesTheHeadersAndNoCookie` (no `Quader-` header, no `Server`); the shell's spec finds no
+  "main installation" on a page (`R-UI-227 an old state shows the band …`, [bastion.spec.ts](../../web/src/bastion/bastion.spec.ts)).
+
 ## A registration the configuration declares
 
 The owner's wish of 2026-11-26: "Kannst du bitte dafür sorgen, dass der Bastion immer mit der Instanz verbunden wird, auch wenn du die DB
@@ -14172,6 +14226,10 @@ Context: R-BAS-093 moves `handover` into the configuration's `switches`; Q-BAS-3
 ## What this does not cover
 
 ### H-2304 · A Bastion serves its imprint and privacy notice only with its web interface
+
+*Closed by W-35's P9 (2026-11-26):* the web interface serves the pages at `/ui/data/v1/legal` and links them in its footer (R-BAS-118,
+[api-and-ui.md](api-and-ui.md) R-UI-227), also while the replica holds no catalogue yet; while the switch `gui` is off a Bastion serves no
+page and so has none to sign. What it was:
 
 Stage: the Bastion's client listener (R-BAS-003). Subject: an operator who has to name himself to the visitors of a public Bastion.
 

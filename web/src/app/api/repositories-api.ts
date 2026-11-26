@@ -1,4 +1,5 @@
 import { Injectable, inject } from '@angular/core';
+import { repositoryUrl } from './refs';
 import { ApiClient, QueryParams } from './client';
 import { PageFetcher, collectAll } from './pagination';
 import { Schema } from './types';
@@ -90,17 +91,7 @@ export function refOf(repository: { readonly project?: string; readonly key: str
   return repoRef(repository.project ?? '', repository.key);
 }
 
-/** The two parts of a qualified repository name; a name without a project has an empty `project`. */
-export function splitRef(ref: string): { readonly project: string; readonly key: string } {
-  const at = ref.indexOf('/');
-  return at < 0 ? { project: '', key: ref } : { project: ref.slice(0, at), key: ref.slice(at + 1) };
-}
-
-/** `/api/v1/projects/{projectKey}/repositories/{repoKey}` of a qualified repository name. */
-export function repositoryUrl(ref: string): string {
-  const { project, key } = splitRef(ref);
-  return `/api/v1/projects/${encodeURIComponent(project)}/repositories/${encodeURIComponent(key)}`;
-}
+export { repositoryUrl, splitRef } from './refs';
 
 /** Repositories and the format catalog: R-UI-020, R-UI-021, R-UI-010. */
 export abstract class RepositoriesApi {

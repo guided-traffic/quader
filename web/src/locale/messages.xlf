@@ -16453,8 +16453,8 @@
     </unit>
     <unit id="route.namespace.title">
       <notes>
-        <note category="location">src/app/features/packages/packages.routes.ts:72</note>
-        <note category="location">src/app/features/packages/packages.routes.ts:93</note>
+        <note category="location">src/app/features/packages/packages.routes.ts:31</note>
+        <note category="location">src/app/features/packages/packages.routes.ts:49</note>
       </notes>
       <segment>
         <source>Namespace</source>
@@ -16462,7 +16462,7 @@
     </unit>
     <unit id="route.packages.title">
       <notes>
-        <note category="location">src/app/features/packages/packages.routes.ts:88</note>
+        <note category="location">src/app/features/packages/packages.routes.ts:44</note>
       </notes>
       <segment>
         <source>Packages</source>
@@ -16470,7 +16470,7 @@
     </unit>
     <unit id="route.packages.versions.title">
       <notes>
-        <note category="location">src/app/features/packages/packages.routes.ts:100</note>
+        <note category="location">src/app/features/packages/packages.routes.ts:56</note>
       </notes>
       <segment>
         <source>Versions</source>
@@ -16478,7 +16478,7 @@
     </unit>
     <unit id="route.packages.version.title">
       <notes>
-        <note category="location">src/app/features/packages/packages.routes.ts:106</note>
+        <note category="location">src/app/features/packages/packages.routes.ts:62</note>
       </notes>
       <segment>
         <source>Package version</source>
@@ -16486,8 +16486,8 @@
     </unit>
     <unit id="route.packages.detail.title">
       <notes>
-        <note category="location">src/app/features/packages/packages.routes.ts:113</note>
-        <note category="location">src/app/features/packages/packages.routes.ts:119</note>
+        <note category="location">src/app/features/packages/packages.routes.ts:69</note>
+        <note category="location">src/app/features/packages/packages.routes.ts:75</note>
       </notes>
       <segment>
         <source>Package</source>
@@ -54060,7 +54060,7 @@
     <unit id="pkg.layers.heading">
       <notes>
         <note category="location">src/app/views/packages/image-details.ts:107,108</note>
-        <note category="location">src/app/views/packages/package-version-view.ts:708</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:707</note>
       </notes>
       <segment>
         <source>Layers</source>
@@ -54125,7 +54125,7 @@
     <unit id="pkg.layers.copy">
       <notes>
         <note category="location">src/app/views/packages/image-details.ts:251</note>
-        <note category="location">src/app/views/packages/package-version-view.ts:719</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:718</note>
       </notes>
       <segment>
         <source>Copy the digest of layer <ph id="0" equiv="number" disp="n"/></source>
@@ -54159,8 +54159,8 @@
       <notes>
         <note category="location">src/app/views/packages/image-details.ts:259</note>
         <note category="location">src/app/views/packages/package-version-view.html:623,625</note>
-        <note category="location">src/app/views/packages/package-version-view.ts:944</note>
-        <note category="location">src/app/views/packages/package-version-view.ts:951</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:943</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:950</note>
       </notes>
       <segment>
         <source>Digest</source>
@@ -54170,7 +54170,7 @@
       <notes>
         <note category="location">src/app/views/packages/image-details.ts:260</note>
         <note category="location">src/app/views/packages/package-version-view.html:629,630</note>
-        <note category="location">src/app/views/packages/package-version-view.ts:945</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:944</note>
       </notes>
       <segment>
         <source>Media type</source>
@@ -54180,8 +54180,8 @@
       <notes>
         <note category="location">src/app/views/packages/image-details.ts:261</note>
         <note category="location">src/app/views/packages/image-details.ts:266</note>
-        <note category="location">src/app/views/packages/package-version-view.ts:946</note>
-        <note category="location">src/app/views/packages/package-version-view.ts:952</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:945</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:951</note>
       </notes>
       <segment>
         <source>Size</source>
@@ -54891,7 +54891,7 @@
     <unit id="pkg.ver.never-title">
       <notes>
         <note category="location">src/app/views/packages/package-detail-view.ts:252</note>
-        <note category="location">src/app/views/packages/package-version-view.ts:960</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:959</note>
       </notes>
       <segment>
         <source>No client has downloaded this version through Quader yet.</source>
@@ -55438,7 +55438,7 @@
     </unit>
     <unit id="pkg.tab.vulnerabilities">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:311</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:310</note>
       </notes>
       <segment>
         <source>Vulnerabilities</source>
@@ -55446,7 +55446,7 @@
     </unit>
     <unit id="pkg.tab.readme">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:319</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:318</note>
       </notes>
       <segment>
         <source>README</source>
@@ -55454,7 +55454,7 @@
     </unit>
     <unit id="pkg.tab.documentation">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:324</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:323</note>
       </notes>
       <segment>
         <source>Documentation</source>
@@ -55462,7 +55462,7 @@
     </unit>
     <unit id="pkg.tab.contents">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:329</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:328</note>
       </notes>
       <segment>
         <source>Contents</source>
@@ -55470,7 +55470,7 @@
     </unit>
     <unit id="pkg.tab.values">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:336</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:335</note>
       </notes>
       <segment>
         <source>Values</source>
@@ -55478,7 +55478,7 @@
     </unit>
     <unit id="pkg.tab.files">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:337</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:336</note>
       </notes>
       <segment>
         <source>Files</source>
@@ -55486,7 +55486,7 @@
     </unit>
     <unit id="pkg.tab.signatures">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:339</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:338</note>
       </notes>
       <segment>
         <source>Signatures</source>
@@ -55494,7 +55494,7 @@
     </unit>
     <unit id="pkg.tab.details">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:340</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:339</note>
       </notes>
       <segment>
         <source>Details</source>
@@ -55502,7 +55502,7 @@
     </unit>
     <unit id="pkg.tab.changelog">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:342</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:341</note>
       </notes>
       <segment>
         <source>Changelog</source>
@@ -55510,7 +55510,7 @@
     </unit>
     <unit id="pkg.tab.import-log">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:344</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:343</note>
       </notes>
       <segment>
         <source>Import log</source>
@@ -55518,7 +55518,7 @@
     </unit>
     <unit id="pkg.runs.build">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:556</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:555</note>
       </notes>
       <segment>
         <source>Adds build logic that runs in every build of a project that references it:</source>
@@ -55526,7 +55526,7 @@
     </unit>
     <unit id="pkg.runs.analyzers">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:559</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:558</note>
       </notes>
       <segment>
         <source>Adds analyzers or source generators that run in the compiler:</source>
@@ -55534,7 +55534,7 @@
     </unit>
     <unit id="pkg.runs.scripts">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:562</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:561</note>
       </notes>
       <segment>
         <source>Runs PowerShell scripts when Visual Studio installs it into a packages.config project:</source>
@@ -55542,7 +55542,7 @@
     </unit>
     <unit id="pkg.meta.deb-copyright-file">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:577</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:576</note>
       </notes>
       <segment>
         <source>Copyright file</source>
@@ -55550,7 +55550,7 @@
     </unit>
     <unit id="pkg.chart.copy-values">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:586</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:585</note>
       </notes>
       <segment>
         <source>Copy values.yaml</source>
@@ -55558,7 +55558,7 @@
     </unit>
     <unit id="pkg.image.other-tags">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:677</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:676</note>
       </notes>
       <segment>
         <source>Other tags of this image</source>
@@ -55566,7 +55566,7 @@
     </unit>
     <unit id="pkg.image.open-platform">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:704</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:703</note>
       </notes>
       <segment>
         <source>Configuration and layers of <ph id="0" equiv="platform" disp="platform"/></source>
@@ -55574,7 +55574,7 @@
     </unit>
     <unit id="pkg.image.details">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:708</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:707</note>
       </notes>
       <segment>
         <source>Configuration, layers and history</source>
@@ -55582,7 +55582,7 @@
     </unit>
     <unit id="pkg.image.heading">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:712</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:711</note>
       </notes>
       <segment>
         <source>Image</source>
@@ -55590,7 +55590,7 @@
     </unit>
     <unit id="pkg.image.artifact-heading">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:712</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:711</note>
       </notes>
       <segment>
         <source>Artifact</source>
@@ -55598,7 +55598,7 @@
     </unit>
     <unit id="pkg.file.copy-manifest">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:715</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:714</note>
       </notes>
       <segment>
         <source>Copy the manifest&apos;s digest</source>
@@ -55606,7 +55606,7 @@
     </unit>
     <unit id="pkg.file.copy-config">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:716</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:715</note>
       </notes>
       <segment>
         <source>Copy the config&apos;s digest</source>
@@ -55614,7 +55614,7 @@
     </unit>
     <unit id="pkg.file.copy-platform-layer">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:720</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:719</note>
       </notes>
       <segment>
         <source>Copy the digest of layer <ph id="0" equiv="number" disp="n"/> of <ph id="1" equiv="platform" disp="platform"/></source>
@@ -55622,7 +55622,7 @@
     </unit>
     <unit id="clamav.member.name">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:746</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:745</note>
       </notes>
       <segment>
         <source>Name</source>
@@ -55630,7 +55630,7 @@
     </unit>
     <unit id="pkg.file.size">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:747</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:746</note>
       </notes>
       <segment>
         <source>Size</source>
@@ -55638,7 +55638,7 @@
     </unit>
     <unit id="clamav.member.lines">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:750</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:749</note>
       </notes>
       <segment>
         <source>Lines</source>
@@ -55646,7 +55646,7 @@
     </unit>
     <unit id="clamav.member.lines-help">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:752</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:751</note>
       </notes>
       <segment>
         <source>The member&apos;s lines that are neither empty nor a comment.</source>
@@ -55654,7 +55654,7 @@
     </unit>
     <unit id="clamav.members">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:755</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:754</note>
       </notes>
       <segment>
         <source>Members</source>
@@ -55662,7 +55662,7 @@
     </unit>
     <unit id="clamav.checksums">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:756</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:755</note>
       </notes>
       <segment>
         <source>Checksums of the archive</source>
@@ -55670,7 +55670,7 @@
     </unit>
     <unit id="clamav.member.digests">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:757</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:756</note>
       </notes>
       <segment>
         <source>SHA-256 of each member</source>
@@ -55678,7 +55678,7 @@
     </unit>
     <unit id="pkg.file.path">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:904</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:903</note>
       </notes>
       <segment>
         <source>File</source>
@@ -55686,7 +55686,7 @@
     </unit>
     <unit id="pkg.file.malware">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:905</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:904</note>
       </notes>
       <segment>
         <source>Malware scan</source>
@@ -55694,7 +55694,7 @@
     </unit>
     <unit id="pkg.file.signature">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:906</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:905</note>
       </notes>
       <segment>
         <source>Signature</source>
@@ -55702,7 +55702,7 @@
     </unit>
     <unit id="pkg.file.download-link">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:936</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:935</note>
       </notes>
       <segment>
         <source>Download</source>
@@ -55710,7 +55710,7 @@
     </unit>
     <unit id="pkg.repo.repository">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:938</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:937</note>
       </notes>
       <segment>
         <source>Repository</source>
@@ -55718,7 +55718,7 @@
     </unit>
     <unit id="pkg.repo.class">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:939</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:938</note>
       </notes>
       <segment>
         <source>Class</source>
@@ -55726,7 +55726,7 @@
     </unit>
     <unit id="pkg.image.platform">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:943</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:942</note>
       </notes>
       <segment>
         <source>Platform</source>
@@ -55734,7 +55734,7 @@
     </unit>
     <unit id="pkg.image.platforms-caption">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:948</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:947</note>
       </notes>
       <segment>
         <source>Platforms of this image index</source>
@@ -55742,7 +55742,7 @@
     </unit>
     <unit id="pkg.file.part">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:950</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:949</note>
       </notes>
       <segment>
         <source>Part</source>
@@ -55750,7 +55750,7 @@
     </unit>
     <unit id="pkg.file.image-caption">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:956</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:955</note>
       </notes>
       <segment>
         <source>Manifest, config and layers of the image</source>
@@ -55758,7 +55758,7 @@
     </unit>
     <unit id="pkg.file.platform-caption">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:957</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:956</note>
       </notes>
       <segment>
         <source>Manifest, config and layers of <ph id="0" equiv="platform" disp="platform"/></source>
@@ -55766,7 +55766,7 @@
     </unit>
     <unit id="pkg.image.not-fetched-title">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:959</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:958</note>
       </notes>
       <segment>
         <source>No client has fetched this platform through Quader yet, so its manifest and its size are not held.</source>
@@ -55774,7 +55774,7 @@
     </unit>
     <unit id="pkg.image.copy-digest">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:961</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:960</note>
       </notes>
       <segment>
         <source>Copy digest</source>
@@ -55782,7 +55782,7 @@
     </unit>
     <unit id="pkg.file.caption">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:962</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:961</note>
       </notes>
       <segment>
         <source>Files of this version</source>
@@ -55790,7 +55790,7 @@
     </unit>
     <unit id="pkg.repo.caption">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:963</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:962</note>
       </notes>
       <segment>
         <source>Repositories that hold this version</source>
@@ -55798,7 +55798,7 @@
     </unit>
     <unit id="pkg.file.copy-sha">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:964</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:963</note>
       </notes>
       <segment>
         <source>Copy SHA-256</source>
@@ -58031,6 +58031,103 @@
       </notes>
       <segment>
         <source>Open findings of this version in <ph id="0" equiv="repository" disp="this.repository()"/></source>
+      </segment>
+    </unit>
+    <unit id="bastion.start.title">
+      <notes>
+        <note category="location">src/bastion/app.routes.ts:30</note>
+        <note category="location">src/bastion/pages/start-page.ts:17</note>
+      </notes>
+      <segment>
+        <source>Projects</source>
+      </segment>
+    </unit>
+    <unit id="bastion.stale">
+      <notes>
+        <note category="location">src/bastion/app.ts:98,99</note>
+      </notes>
+      <segment>
+        <source>This information is from <ph id="0" equiv="INTERPOLATION" disp="{{ confirmedAt() | date: &apos;medium&apos; }}"/>. Newer information is not available right now.</source>
+      </segment>
+    </unit>
+    <unit id="bastion.not-ready.heading">
+      <notes>
+        <note category="location">src/bastion/app.ts:106,107</note>
+      </notes>
+      <segment>
+        <source>Not available right now</source>
+      </segment>
+    </unit>
+    <unit id="bastion.not-ready.text">
+      <notes>
+        <note category="location">src/bastion/app.ts:107,108</note>
+      </notes>
+      <segment>
+        <source>This page is not available right now. Try again in a few minutes.</source>
+      </segment>
+    </unit>
+    <unit id="bastion.not-ready.again">
+      <notes>
+        <note category="location">src/bastion/app.ts:108,110</note>
+      </notes>
+      <segment>
+        <source>The page tries again by itself.</source>
+      </segment>
+    </unit>
+    <unit id="bastion.loading">
+      <notes>
+        <note category="location">src/bastion/app.ts:113,114</note>
+      </notes>
+      <segment>
+        <source>Loading.</source>
+      </segment>
+    </unit>
+    <unit id="bastion.as-of">
+      <notes>
+        <note category="location">src/bastion/app.ts:133</note>
+      </notes>
+      <segment>
+        <source>As of</source>
+      </segment>
+    </unit>
+    <unit id="bastion.list.search">
+      <notes>
+        <note category="location">src/bastion/pages/package-list-page.ts:52</note>
+      </notes>
+      <segment>
+        <source>Search packages</source>
+      </segment>
+    </unit>
+    <unit id="bastion.list.empty">
+      <notes>
+        <note category="location">src/bastion/pages/package-list-page.ts:53</note>
+      </notes>
+      <segment>
+        <source>No package is published in this project.</source>
+      </segment>
+    </unit>
+    <unit id="bastion.list.empty-search">
+      <notes>
+        <note category="location">src/bastion/pages/package-list-page.ts:54</note>
+      </notes>
+      <segment>
+        <source>No package matches the search.</source>
+      </segment>
+    </unit>
+    <unit id="bastion.start.empty">
+      <notes>
+        <note category="location">src/bastion/pages/start-page.ts:22,24</note>
+      </notes>
+      <segment>
+        <source>No package is published here yet.</source>
+      </segment>
+    </unit>
+    <unit id="bastion.start.loading">
+      <notes>
+        <note category="location">src/bastion/pages/start-page.ts:33,37</note>
+      </notes>
+      <segment>
+        <source>Loading the projects.</source>
       </segment>
     </unit>
   </file>

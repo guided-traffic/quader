@@ -134,7 +134,7 @@ web-i18n-check: ## Fail when the translation source differs from a fresh extract
 	cd web && node scripts/i18n-check.mjs
 
 .PHONY: web-embed
-web-embed: ## Build the Angular workspace and embed it into internal/webui/dist (after web-ci)
+web-embed: ## Build the two Angular applications and embed them into internal/webui/dist and internal/bastion/gui/dist (after web-ci)
 	cd web && npm run build:embed
 
 .PHONY: web

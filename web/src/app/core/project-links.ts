@@ -1,4 +1,4 @@
-import { splitRef } from '../api/repositories-api';
+import { splitRef } from '../api/refs';
 import { isSystemRepository, mayServeClients } from './upstream-project';
 
 /**

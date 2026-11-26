@@ -523,7 +523,8 @@ Anonymous visitors from the internet read the public catalogue in a browser at t
 |---|---|---|
 | Read-only by construction | Every address of the web interface answers `GET` and `HEAD` alone; any other method is `405` before anything is read. There is no act on any page, no form, no session, no cookie and no state per visitor | R-BAS-116, R-BAS-117 |
 | Nothing behind the Bastion | The web interface reads the replica's catalogue and its legal pages only; an architecture rule keeps the client of the main installation, the handover and the engine out of its dependency closure, and the route test over the whole replica counts no forward and no check for any of its addresses. A visitor, a crawler or a scraper costs the Bastion alone ([H-2326](#h-2326--many-addresses-cost-a-bastions-cpu-and-bandwidth-through-its-pages)) | R-BAS-116 |
-| The Bastion's own bundle | The application is built and embedded apart from the main installation's; the main installation's bundle is a package the Bastion may not import, so none of its screens (sign-in, administration) is in the role's closure | R-BAS-116, Q-BAS-391 |
+| The Bastion's own bundle | The application is built and embedded apart from the main installation's; the main installation's bundle is a package the Bastion may not import, so none of its screens (sign-in, administration) is in the role's closure. Its build fails when the main installation's API client, its session, a screen of its own or a dialog put a byte into it, read from the build's metafile | R-BAS-116, R-BAS-119, R-UI-228 |
+| Authors' HTML on the page | READMEs, documentation and changelogs are the main installation's sanitized HTML, bound through Angular's sanitizer under Trusted Types ([H-2327](#h-2327--authors-html-is-shown-on-the-bastions-origin)) | R-UI-229, R-BAS-117 |
 | A page runs only its own code | The page's policy admits scripts, styles, images, fonts and requests of the Bastion's own origin alone, no form target, no frame ancestor and Trusted Types; every other answer runs nothing (`default-src 'none'`); frames are refused twice (`frame-ancestors 'none'`, `X-Frame-Options: DENY`), and no referrer leaves the page (W-35's D7) | R-BAS-117 |
 | The request class `gui` | Every request asks the block list and the class `gui` per address, never the anonymous class's budget and never a miss | R-BAS-117, Q-LIM-307 |
 | One origin with the package API | A browser that answered a `401` of the package API holds Basic credentials for the origin ([H-2325](#h-2325--the-web-interface-shares-its-origin-with-the-package-api)) | — |
@@ -536,7 +537,7 @@ that no mechanism of the Bastion holds, because the chart leaves it to the clust
 [H-522](#h-522--the-chart-restricts-no-egress-of-the-bastion-pods). The gaps of the owner's decisions of 2026-11-26 (W-34), specified and
 not built, are recorded on this page as well, each with the package whose mechanism has it: H-2280 to H-2283, H-2285, H-2289 to H-2297,
 H-2348 to H-2351, H-2354, H-2355 (H-2291, H-2348 and H-2349 are E13's, built; H-2281 to H-2283, H-2354 and H-2355 E8's, live); so are the gaps of the public catalogue's wire (W-35, interface version 8),
-H-2305 to H-2307, of its builder (W-35's P6), H-2308 to H-2314, and of the web interface (W-35's P9), H-2324 to H-2326; so are the gaps of the packages built since: H-2356 and H-2357
+H-2305 to H-2307, of its builder (W-35's P6), H-2308 to H-2314, and of the web interface (W-35's P9), H-2324 to H-2327; so are the gaps of the packages built since: H-2356 and H-2357
 (E9a), H-2358 and H-2359 (E15), H-2360 and H-2361 (E10), H-2362 (E11), H-2322 and H-2323 (W-35's P8 with E17), H-2374 and H-2375 (E18;
 H-2375 closed by E19), H-2370 (E19);
 and of a registration the configuration declares (R-BAS-127), H-2366 and H-2367;
@@ -1233,6 +1234,16 @@ class bounds each address (20 requests a second, a burst of 100); a scraper or a
 `server.max_in_flight` and the network in front (H-382). Live against the Bastion alone: every answer comes from the replica's memory and
 its cache backend, so the main installation pays nothing (R-BAS-116), and a document is sent compressed as stored (Q-BAS-397). The search is
 a scan of the index in memory per request (Q-BAS-383).
+
+### H-2327 · Authors' HTML is shown on the Bastion's origin
+
+Stage: the pages of a version (R-UI-229, W-35's D1). Subject: a publisher of a public package, or an upstream author behind a public
+remote, whose README, documentation or changelog the Bastion's pages show. The HTML is the main installation's sanitized output
+(R-UI-008's allowlist on the server), stored in the catalogue as it was rendered; the page binds it through Angular's sanitizer and under
+the page's Trusted Types policy (R-BAS-117), so a script, a handler or a frame does not run. Dormant: it takes a flaw in all three layers.
+A tightened server allowlist reaches the catalogue only when the builder renders the document again (the policy's hash in the
+fingerprint is W-35's P11). What makes it real: the same origin serves the package API (H-2325), so a script that ran would act with what
+the browser holds for the origin.
 
 ### H-2356 · The anonymous ceiling is a share per replica without Valkey, and requests in flight pass its hour
 

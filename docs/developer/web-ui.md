@@ -64,7 +64,7 @@ Run in `web/` after `nvm use` (or any Node matching `.nvmrc`).
 | `npm run generate:api` | `openapi-typescript ../api/openapi.yaml` into `src/app/api/generated/schema.d.ts`, committed. Rerun it whenever `api/openapi.yaml` changes |
 | `npm run build` | Localized production build into `web/dist/web/browser/<locale>/` |
 | `npx playwright install --with-deps chromium firefox webkit` | The browser builds of the locked Playwright version, outside the repository (Chromium for the journeys and the renders, all three for `make ui-layout-test`; not needed for `npm test`) |
-| `npm run build:embed` | `build`, the compressed-size budget check, the check of the hashed names ([hashed.mjs](../../web/scripts/hashed.mjs)), then copy each locale to `internal/webui/dist/<locale>/` with its `3rdpartylicenses.txt` (Q-UI-144). `QUADER_UI_BUNDLE_MARK=1` builds the second bundle of the upgrade test (`--extract-licenses=false`: the same code under other hashed names, Q-HA-124) |
+| `npm run build:embed` | the production builds of both applications (`web` and `bastion-gui`), the Bastion bundle check of R-UI-228, the compressed-size budget check, the check of the hashed names ([hashed.mjs](../../web/scripts/hashed.mjs)), then copy each locale to `internal/webui/dist/<locale>/` and `internal/bastion/gui/dist/<locale>/` with its `3rdpartylicenses.txt` (Q-UI-144). `QUADER_UI_BUNDLE_MARK=1` builds the second bundle of the upgrade test (`--extract-licenses=false`: the same code under other hashed names, Q-HA-124) |
 
 `make web` runs `make web-ci` (`npm ci`) and `make web-embed` (`npm run build:embed`); lint and the unit tests are
 `make web-lint` and `make web-test`.
@@ -742,10 +742,15 @@ pipeline and never committed. The gaps are H-1910 and H-1911 of
 ## How the build reaches the binary
 
 ```text
-web/ ──npm run build:embed──> web/dist/web/browser/{en,de}/ ──copy──> internal/webui/dist/{en,de}/
-                                                                       internal/webui/dist/index.html  (committed placeholder)
-internal/webui/dist (package dist):  //go:embed all:*   (dist.FS(), imported by internal/app only)
+web/ ──npm run build:embed──> web/dist/web/browser/{en,de}/          ──copy──> internal/webui/dist/{en,de}/
+                              web/dist/bastion-gui/browser/{en,de}/  ──copy──> internal/bastion/gui/dist/{en,de}/
+                                                                       internal/webui/dist/index.html, internal/bastion/gui/dist/index.html
+                                                                       (committed placeholders)
+internal/webui/dist (package dist):  //go:embed all:*     (dist.FS(), imported by internal/app only)
+internal/bastion/gui:                //go:embed all:dist  (gui.Bundle(), the Bastion's own)
 ```
+
+The second application is the Bastion's read-only web interface ([The Bastion's application](#the-bastions-application)).
 
 - `internal/webui/dist/index.html` is committed. It is a one-page notice and carries the nonce
   placeholder, so `go build ./cmd/quader` works on a clean checkout without Node.js (R-ARCH-003).
@@ -823,6 +828,34 @@ replica without the area `ui-assets`) and `OnSharedError` (the log line of a `50
 the other four: `CSP` (its stricter policy with the nonce's slot), `ReferrerPolicy` (`no-referrer`), `OnIndex` (a page answered `503`
 with `Retry-After` while the replica holds no catalogue) and `Problem` (its own problem details for the handler's `404`, `405` and
 `503`).
+
+## The Bastion's application
+
+W-35's P9 (2026-11-26): the Bastion's read-only web interface for anonymous visitors is a second project of this workspace,
+`bastion-gui` (root `src/bastion`), built from the main installation's views ([api-and-ui.md](../spec/api-and-ui.md) R-UI-227 to R-UI-230,
+[bastion.md](../spec/bastion.md) R-BAS-116 to R-BAS-120). The Go side that serves it is [internal/bastion/gui](../../internal/bastion/gui/gui.go)
+([bastion.md](bastion.md#the-web-interface-package-p9)).
+
+| File | Responsibility |
+|---|---|
+| [main.ts](../../web/src/bastion/main.ts), [index.html](../../web/src/bastion/index.html), [app.config.ts](../../web/src/bastion/app.config.ts) | the bootstrap; the providers: the reads of `data/reads.ts`, the router, an HTTP client with `bastionDataInterceptor` alone (no session, no CSRF) |
+| [app.ts](../../web/src/bastion/app.ts) | the shell `<quader-root>`: mark, language link, theme (local storage `quader.theme`), the band of an old state, the not-ready sentence, the footer with the legal links and "As of"; reads the state with `live()` |
+| [app.routes.ts](../../web/src/bastion/app.routes.ts) | the start, a project's packages, a package, a version, the versions' table, the legal pages, not found; the matchers of [package-matchers.ts](../../web/src/app/features/packages/package-matchers.ts) |
+| [data/http.ts](../../web/src/bastion/data/http.ts) | `BastionData` (GET below `/ui/data/v1/`), `seg` (the catalogue's spelling of a segment), `bastionDataInterceptor` (the `ApiError` of a failure, one retry of a read) |
+| [data/reads.ts](../../web/src/bastion/data/reads.ts) | `provideBastionReads`: `PackageReads`, `ClientSetupReads`, `VulnerabilityReads`, `SignatureReads`, `LegalApi`, `FormatCatalog`, `SystemClients`, `SIGNED_IN` |
+| [data/formats.ts](../../web/src/bastion/data/formats.ts), [data/state.ts](../../web/src/bastion/data/state.ts) | the formats' names (Q-UI-1436); the state store (`notReady`, `off`, the legal pages read with it) |
+| [pages/](../../web/src/bastion/pages) | the start (`/ui/data/v1/projects`), a project's packages (search, sort, the view `package-table`), a package and a version (the views `package-detail-view` and `package-version-view`, never signed in, no act) |
+
+Commands: `npx ng build bastion-gui` (both locales; `--localize=false --stats-json` for a quick look at the metafile in
+`dist/bastion-gui/browser-stats.json`), `npx ng serve bastion-gui` (development, no backend: its reads need a Bastion), and
+`make web-embed`, which builds both applications and runs the bundle check of R-UI-228 (`scripts/bastion-bundle-rule.mjs`). The specs
+of `src/bastion` run with `make web-test` (`npx ng test web --include 'src/bastion/**/*.spec.ts'` alone). `make web-i18n` extracts both
+applications into the one pair of translation files (Q-UI-1441).
+
+**A view stays usable by both.** A view takes its reads from the abstract classes of `api/` and the plumbing that each application
+binds (`FormatCatalog`, `SystemClients`, `MEMORY_OWNER` of the disclosure's memory, `LegalApi`); a helper it imports lives in a module
+without a client (`api/refs.ts`). A new import that brings the API client, the session, a screen or a dialog into the Bastion's bundle
+fails `make web-embed` with the module's name.
 
 ## The shared asset store
 

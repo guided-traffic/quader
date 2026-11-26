@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, resource, untracked } from '@angular/core';
 import { refreshResource } from '../../core/live-refresh';
-import { repositoryOfContent } from '../../api/files-api';
+import { repositoryOfContent } from '../../api/refs';
 import { PackageFile } from '../../api/packages-api';
 import { SignatureReads } from '../../api/signature-reads';
 import { SignatureRepositoryReport } from '../../api/signatures-api';

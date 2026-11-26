@@ -137,6 +137,103 @@
           }
         }
       }
+    },
+    "bastion-gui": {
+      "projectType": "application",
+      "i18n": {
+        "sourceLocale": {
+          "code": "en",
+          "subPath": "en"
+        },
+        "locales": {
+          "de": {
+            "translation": "src/locale/messages.de.xlf",
+            "subPath": "de"
+          }
+        }
+      },
+      "schematics": {
+        "@schematics/angular:component": {
+          "style": "scss"
+        }
+      },
+      "root": "src/bastion",
+      "sourceRoot": "src/bastion",
+      "prefix": "quader",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:application",
+          "options": {
+            "browser": "src/bastion/main.ts",
+            "index": "src/bastion/index.html",
+            "polyfills": ["@angular/localize/init"],
+            "tsConfig": "tsconfig.bastion.json",
+            "inlineStyleLanguage": "scss",
+            "baseHref": "/ui/",
+            "localize": true,
+            "i18nMissingTranslation": "error",
+            "assets": [
+              {
+                "glob": "**/*",
+                "input": "public"
+              }
+            ],
+            "styles": ["node_modules/@fontsource-variable/inter/wght.css", "src/styles/main.scss"]
+          },
+          "configurations": {
+            "production": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "700kB",
+                  "maximumError": "1000kB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "4kB",
+                  "maximumError": "8kB"
+                }
+              ],
+              "outputHashing": "all",
+              "optimization": {
+                "scripts": true,
+                "styles": {
+                  "minify": true,
+                  "inlineCritical": false
+                },
+                "fonts": {
+                  "inline": false
+                }
+              }
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "localize": ["en"]
+            },
+            "de": {
+              "localize": ["de"]
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "extract-i18n": {
+          "builder": "@angular/build:extract-i18n"
+        },
+        "serve": {
+          "builder": "@angular/build:dev-server",
+          "configurations": {
+            "development": {
+              "buildTarget": "bastion-gui:build:development"
+            },
+            "de": {
+              "buildTarget": "bastion-gui:build:development,de"
+            }
+          },
+          "defaultConfiguration": "development"
+        }
+      }
     }
   }
 }

@@ -18,3 +18,4 @@ web/coverage
 # The embedded UI is built by the web stage; a locale directory left over from a local build is not
 # copied in (the placeholder index.html stays).
 internal/webui/dist/*/
+internal/bastion/gui/dist/*/

@@ -1,27 +1,18 @@
-import { DestroyRef, Injectable, Signal, computed, effect, inject, resource, untracked } from '@angular/core';
-import { FormatDescriptor, RepositoriesApi } from '../api/repositories-api';
+import { DestroyRef, Signal, computed, effect, inject, resource, untracked } from '@angular/core';
+import type { FormatDescriptor } from '../api/repositories-api';
 import { valueOf } from '../shared/paged-resource';
 import { ReadAgain } from './read-again';
 
 /**
- * The formats of the installation as `GET /api/v1/formats` names them, read once per page load: wherever a screen shows a format, it
- * shows its name (**OCI (Docker)**, **NuGet**), never its key (`oci`), which stays in addresses and filters (R-UI-006). A failed read
- * is not remembered, so the next caller asks again.
+ * The formats wherever a screen shows a format: it shows its name (**OCI (Docker)**, **NuGet**), never its key (`oci`), which stays in
+ * addresses and filters (R-UI-006). A view reads it as one of its reads (R-UI-223): the main installation binds the read of
+ * `GET /api/v1/formats` (`HttpFormatCatalog` of format-catalog-http.ts, `provideViewReads`), the Bastion's application its own table (R-UI-228).
  */
-@Injectable({ providedIn: 'root' })
-export class FormatCatalog {
-  private readonly api = inject(RepositoriesApi);
-  private pending: Promise<readonly FormatDescriptor[]> | null = null;
-
+export abstract class FormatCatalog {
   /** The formats; one request for every caller of a page load. */
-  formats(): Promise<readonly FormatDescriptor[]> {
-    this.pending ??= this.api.formats().catch((e: unknown) => {
-      this.pending = null;
-      throw e;
-    });
-    return this.pending;
-  }
+  abstract formats(): Promise<readonly FormatDescriptor[]>;
 }
+
 
 /**
  * The name of the format `key()` (its `displayName`), the key itself until the formats are read or for a format the installation

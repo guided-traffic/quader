@@ -1,7 +1,8 @@
 import { Injectable, inject } from '@angular/core';
 import { ApiClient } from './client';
 import { PageFetcher } from './pagination';
-import { DeleteOutcome, JobReference, repositoryUrl } from './repositories-api';
+import { DeleteOutcome, JobReference } from './repositories-api';
+import { contentPath, repositoryUrl } from './refs';
 import { Schema } from './types';
 import { TransferOptions, UploadTransfer } from './upload-transfer';
 
@@ -32,33 +33,7 @@ export interface UploadRequest {
   readonly signal?: AbortSignal;
 }
 
-/** True for a client address template of the raw files family (`protocolBasePath` of a format). */
-export function isFilesAddress(template: string): boolean {
-  return template.startsWith('/files/');
-}
-
-/** Percent-encodes every segment of a repository path and keeps the slashes. */
-export function encodePath(path: string): string {
-  return path.split('/').map(encodeURIComponent).join('/');
-}
-
-/**
- * The content route of a path in a repository (R-API-025, Q-UI-106): the one place that builds the URL of an upload.
- * The session cookie authenticates it on the role `api`, on the origin the UI was loaded from; the downloads of the UI use
- * the `contentUrl` the server sends, never a string assembled here (R-UI-001).
- */
-export function contentPath(repository: string, path: string): string {
-  return `${repositoryUrl(repository)}/content/${encodePath(path)}`;
-}
-
-/**
- * The repository `<project>/<key>` of a content route (`/api/v1/projects/{project}/repositories/{key}/content/…`), the one place a
- * version's file names the repository that holds it (R-API-025); null for another address.
- */
-export function repositoryOfContent(url: string): string | null {
-  const m = /^\/api\/v1\/projects\/([^/]+)\/repositories\/([^/]+)\/content\//.exec(url);
-  return m ? `${decodeURIComponent(m[1] ?? '')}/${decodeURIComponent(m[2] ?? '')}` : null;
-}
+export { contentPath, encodePath, isFilesAddress, repositoryOfContent } from './refs';
 
 /** SHA-256 of the file as the `Repr-Digest` value of RFC 9530, or undefined above the limit. */
 export async function reprDigestOf(file: Blob): Promise<string | undefined> {

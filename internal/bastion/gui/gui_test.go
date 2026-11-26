@@ -8,8 +8,10 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"io"
+	"io/fs"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"regexp"
 	"strings"
 	"sync"
@@ -524,5 +526,49 @@ func TestR_BAS_116_TheBundleIsTheBastionsOwnAndBuildsWithoutTheWebBuild(t *testi
 	}
 	if _, err := New(Options{Legal: legalPages(t)}); err == nil {
 		t.Error("New without a catalogue")
+	}
+}
+
+// TestR_BAS_116_TheEmbeddedBundleCarriesItsNotices: a binary built with the web build serves the Bastion's application in both
+// locales with the notices of its bundled software (R-UI-001, Q-UI-144), and no script of it holds the session or the writes. The
+// web job of CI builds the UI and sets QUADER_UI_BUILT=1, where a placeholder is a failure; elsewhere the test is skipped.
+func TestR_BAS_116_TheEmbeddedBundleCarriesItsNotices(t *testing.T) {
+	h, err := New(Options{Catalogue: newReader(), Legal: legalPages(t)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if h.Placeholder() {
+		if os.Getenv("QUADER_UI_BUILT") != "" {
+			t.Fatal("QUADER_UI_BUILT is set, but internal/bastion/gui holds no web build (run make web-embed)")
+		}
+		t.Skip("no web build is embedded (make web-embed); the web job of the release workflow requires it with QUADER_UI_BUILT=1")
+	}
+	for _, l := range []string{"en", "de"} {
+		rec := do(h, http.MethodGet, "/ui/"+l+"/3rdpartylicenses.txt")
+		body := rec.Body.String()
+		if rec.Code != 200 || !strings.Contains(body, "Package: material-icons") || !strings.Contains(body, "OFL-1.1") {
+			t.Errorf("%s notices = %d (%d bytes)", l, rec.Code, len(body))
+		}
+		page := do(h, http.MethodGet, "/ui/"+l+"/")
+		if page.Code != 200 || !strings.Contains(page.Body.String(), "<quader-root") {
+			t.Errorf("%s page = %d", l, page.Code)
+		}
+	}
+	err = fs.WalkDir(Bundle(), ".", func(p string, d fs.DirEntry, err error) error {
+		if err != nil || d.IsDir() || !strings.HasSuffix(p, ".js") {
+			return err
+		}
+		b, err := fs.ReadFile(Bundle(), p)
+		// The marks of the main installation's session and acts: its CSRF header, which every write carries, and the read of who is
+		// signed in. The build's own check (web/scripts/bastion-bundle-rule.mjs) holds the modules; this holds the bytes shipped.
+		for _, mark := range []string{"X-CSRF-Token", "/api/v1/auth/whoami"} {
+			if err == nil && strings.Contains(string(b), mark) {
+				t.Errorf("%s holds %q", p, mark)
+			}
+		}
+		return err
+	})
+	if err != nil {
+		t.Fatal(err)
 	}
 }

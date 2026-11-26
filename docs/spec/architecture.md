@@ -867,6 +867,10 @@ web/
   format adds a panel under `features/formats/<id>/` only for interactions a schema cannot express.
 - The production build writes one directory per locale. The release build copies them to
   `internal/webui/dist/<locale>/`.
+- *Since W-35's P9 (2026-11-26):* the workspace has a second application, the Bastion's read-only web interface (project
+  `bastion-gui`, `web/src/bastion`, [api-and-ui.md](api-and-ui.md) R-UI-227), built from the same views and copied to
+  `internal/bastion/gui/dist/<locale>/` ([bastion.md](bastion.md) R-BAS-119); the main installation's build is the package
+  `internal/webui/dist`, which only `internal/app` imports.
 - `internal/webui` serves them under `/ui/{locale}/`. It injects the per-response CSP nonce into
   `index.html` and applies the cache and fallback rules of R-UI-001.
 

@@ -1,4 +1,5 @@
-// The translation source and the German translation file against a fresh extraction (R-UI-047). `ng extract-i18n` writes the
+// The translation source and the German translation file against a fresh extraction (R-UI-047) of both applications, the main
+// installation's and the Bastion's (R-UI-227), which share the one German file. `ng extract-i18n` writes the
 // source file messages.xlf from the templates and the $localize calls; nothing kept it in step with the code, so the committed
 // file drifted (687 location notes and the order of the units), and the German file kept the notes of the day each unit was
 // translated and a unit of a removed hint. This script extracts into a temporary directory and fails when:
@@ -117,19 +118,40 @@ export function rewrite(extracted, german) {
   return head + out.join(`\n${indent}`) + tail;
 }
 
-function extract(webDir) {
+/**
+ * merge answers the extraction of the main installation's application with the units only the Bastion's application has (bastion.md
+ * R-BAS-116, R-UI-227) appended in that extraction's order: both applications are built with the one German file. A unit both hold
+ * keeps the main installation's notes; its text is one, since an ID names one text.
+ */
+export function merge(main, bastion) {
+  const ours = units(main);
+  const have = new Set(ours.map((u) => u.id));
+  const extra = units(bastion).filter((u) => !have.has(u.id));
+  if (extra.length === 0 || ours.length === 0) return main;
+  const head = main.slice(0, ours[0].start);
+  const indent = head.slice(head.lastIndexOf('\n') + 1);
+  const end = ours[ours.length - 1].end;
+  return main.slice(0, end) + extra.map((u) => `\n${indent}${u.text}`).join('') + main.slice(end);
+}
+
+function extractProject(webDir, project) {
   const dir = mkdtempSync(join(tmpdir(), 'quader-i18n-'));
   try {
     const ng = join(webDir, 'node_modules', '.bin', 'ng');
-    const r = spawnSync(ng, ['extract-i18n', '--format', 'xlf2', '--output-path', dir, '--out-file', 'messages.xlf'], {
+    const r = spawnSync(ng, ['extract-i18n', project, '--format', 'xlf2', '--output-path', dir, '--out-file', 'messages.xlf'], {
       cwd: webDir,
       stdio: ['ignore', 'inherit', 'inherit'],
     });
-    if (r.status !== 0) throw new Error(`ng extract-i18n exited with ${r.status ?? r.signal}`);
+    if (r.status !== 0) throw new Error(`ng extract-i18n ${project} exited with ${r.status ?? r.signal}`);
     return readFileSync(join(dir, 'messages.xlf'), 'utf8');
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
+}
+
+/** The extraction of both applications: the main installation's, then what only the Bastion's holds. */
+function extract(webDir) {
+  return merge(extractProject(webDir, 'web'), extractProject(webDir, 'bastion-gui'));
 }
 
 function list(label, ids) {

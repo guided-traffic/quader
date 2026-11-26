@@ -41,7 +41,7 @@ export type VulnerabilityCheckState = Schema<'VulnerabilityCheckState'>;
 export const SEVERITIES: readonly VulnerabilitySeverity[] = ['critical', 'high', 'medium', 'low', 'none', 'unknown'];
 export const STATUSES: readonly VulnerabilityStatus[] = ['needs_triage', 'confirmed', 'blocked', 'dismissed', 'resolved'];
 /** The statuses of an open finding (R-VULN-012): what the counts of the report count. */
-export const OPEN_STATUSES: readonly VulnerabilityStatus[] = ['needs_triage', 'confirmed', 'blocked'];
+export { OPEN_STATUSES } from './vulnerability-reads';
 export const KINDS: readonly VulnerabilityKind[] = ['vulnerability', 'malicious'];
 export const BLOCK_REASONS: readonly VulnerabilityBlockReason[] = ['malicious', 'triage'];
 export const DISMISSAL_REASONS: readonly VulnerabilityDismissalReason[] = [

@@ -1907,6 +1907,14 @@ function of its options.
 | `TestR_BAS_113_TheLookupFindsAPublicPackageByItsFormatAndName` (`internal/bastion/catalogue`) | unit | 0.05 s | two packages |
 | `CheckBastionGUIImports` in `TestBastionImportAllowlist` and `TestRealTree` (`internal/archtest`) | architecture | milliseconds; the real tree with the others | — |
 | `walkWebInterface` in `TestR_BAS_109_TheBastionMirrorsTheCatalogueAndServesOnWhileTheLinkIsCut` ([test/integration/bastion](../../test/integration/bastion/catalogue_sync_test.go)) | integration, eight addresses of the web interface through the client listener, scanned for the main installation | about 0.1 s inside the existing world (the case ran 20.6 s, measured 2026-11-26) | the case's npm package of bytes |
+| `TestR_BAS_116_TheEmbeddedBundleCarriesItsNotices` (`internal/bastion/gui`) | unit on the embedded build; the web job of CI sets `QUADER_UI_BUILT=1`, elsewhere skipped on the placeholder | 0.05 s | the bundle's scripts |
+| [bastion.spec.ts](../../web/src/bastion/bastion.spec.ts) (`R-UI-227 …`, `R-UI-228 …`) | Vitest, the application against the HTTP testing backend | under a second (seven cases) | answers of tens of bytes |
+| `R-UI-228 the Bastion bundle check …` ([lint-rules.test.mjs](../../web/scripts/lint-rules.test.mjs)) | node:test on a metafile of its own | milliseconds | — |
+
+The application itself (`web/src/bastion`) is [web-ui.md](web-ui.md#the-bastions-application)'s. **What the web stage of CI gains:**
+`make web-embed` builds the second application (measured 2026-11-26 on the development machine: 4.5 s for both locales of the
+Bastion beside 10.8 s of the main installation's, the metafile check under a second), `make web-i18n-check` extracts it too (3.2 s),
+and `make web-test` runs its seven cases (about 1 s); the layout checks of its pages (R-UI-230) are not built yet.
 
 ## Tests
 

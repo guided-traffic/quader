@@ -15,8 +15,8 @@ rendered from it ([checklist.md there](https://github.com/guided-traffic/quader/
 requirement lists the feature in its `Covers:` line. *open*: no requirement does. For entries with priority
 *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,364 spec requirements:
-807 cover catalog features, 557 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,370 spec requirements:
+807 cover catalog features, 563 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>557 requirements</summary>
+<summary>563 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3112,6 +3112,10 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-UI-243 | The addresses a Bastion connects from | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-225 | The installation serves its own imprint and privacy notice from the chart's Markdown | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-226 | Every screen ends with the line of the imprint and the privacy notice | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-UI-227 | The Bastion's application: its addresses and its shell | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-UI-228 | The Bastion's reads, and a bundle without a write, a session or a screen of the main installation | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-UI-229 | The Bastion's pages are the main installation's views | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-UI-230 | The Bastion's pages are rendered and their layout checked | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-220 | The page of a name: a namespace, a scope or a path prefix, in every format that has one | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-ARCH-037 | The scan listener of `packages` | P1 | [architecture.md](../spec/architecture.md) |
 | R-ARCH-003 | Go module and package layout | MVP | [architecture.md](../spec/architecture.md) |
@@ -3227,6 +3231,8 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-BAS-116 | The web interface is a bundle of the Bastion's own, mounted before the engine, that reaches nothing behind the Bastion | P1 | [bastion.md](../spec/bastion.md) |
 | R-BAS-117 | The web interface's state, headers and request class | P1 | [bastion.md](../spec/bastion.md) |
 | R-BAS-118 | The data a page reads: the main installation's shapes below `/ui/data/v1/` | P1 | [bastion.md](../spec/bastion.md) |
+| R-BAS-119 | The Bastion's bundle is built, checked and embedded beside the main installation's | P1 | [bastion.md](../spec/bastion.md) |
+| R-BAS-120 | No page of the Bastion names the main installation | P1 | [bastion.md](../spec/bastion.md) |
 | R-EP-002 | Endpoint identity comes from the listener | MVP | [endpoints.md](../spec/endpoints.md) |
 | R-EP-004 | TLS on endpoint listeners: certificates by SNI, wildcard certificates, reload | MVP | [endpoints.md](../spec/endpoints.md) |
 | R-EP-006 | Host-root binding: the reserved mechanism | MVP | [endpoints.md](../spec/endpoints.md) |

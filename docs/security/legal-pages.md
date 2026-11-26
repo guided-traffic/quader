@@ -59,7 +59,8 @@ every caller and holds nothing personal, so a browser may keep it and ask again 
 ## What this does not cover
 
 - [H-2304](../spec/bastion.md#h-2304--a-bastion-serves-its-imprint-and-privacy-notice-only-with-its-web-interface) A Bastion serves its
-  pages only with its web interface, which does not exist yet.
+  pages only with its web interface (closed by W-35's P9: the web interface serves and links them, also while it has no catalogue to
+  show; with the switch `gui` off a Bastion serves no page).
 
 ### H-2303 · An operator's text is not checked: its links lead wherever it says
 

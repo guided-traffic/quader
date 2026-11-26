@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Quader</title>
+    <base href="/ui/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="icon" type="image/x-icon" sizes="16x16 32x32 48x48" href="favicon.ico" />
+  </head>
+  <body>
+    <quader-root ngCspNonce="QUADER_CSP_NONCE">
+      <!-- The first paint of a cold load, until the app starts and replaces it (R-UI-217, Q-UI-1236): the spinner of every load, drawn
+           by the global stylesheet's rules (_spinner.scss), its stones in the order of shared/ui/spinner.ts (spinner.spec.ts holds the
+           copy equal). This file is not translated; the build sets the page's language, and the stylesheet shows the sentence of it. -->
+      <div class="quader-boot quader-loading quader-loading-page" role="status">
+        <span class="quader-spinner quader-spinner-page" aria-hidden="true"><svg viewBox="0 0 64 64" focusable="false" aria-hidden="true"><rect x="4" y="4" width="36" height="16" rx="1.5"></rect><rect x="44" y="4" width="16" height="16" rx="1.5"></rect><rect x="24" y="24" width="36" height="16" rx="1.5"></rect><rect x="44" y="44" width="16" height="16" rx="1.5"></rect><rect x="4" y="44" width="36" height="16" rx="1.5"></rect><rect x="4" y="24" width="16" height="16" rx="1.5"></rect></svg></span>
+        <span class="quader-loading-text"><span lang="en">Loading Quader.</span><span lang="de">Quader wird geladen.</span></span>
+      </div>
+    </quader-root>
+  </body>
+</html>

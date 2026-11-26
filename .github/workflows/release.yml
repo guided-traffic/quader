@@ -602,13 +602,13 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
-      - name: make web-embed (build and embed into internal/webui)
+      - name: make web-embed (build both applications and embed them into internal/webui and internal/bastion/gui)
         run: make web-embed
 
       # The notices of the bundled software in the embedded build (R-UI-001, Q-UI-144). Only this job holds a built UI;
       # the unit job runs the same test on the placeholder, where it is skipped.
       - name: go test of the embedded notices
-        run: QUADER_UI_BUILT=1 go test -count=1 -run 'TestR_UI_001_ThirdPartyNotices' ./internal/webui/
+        run: QUADER_UI_BUILT=1 go test -count=1 -run 'TestR_UI_001_ThirdPartyNotices|TestR_BAS_116_TheEmbeddedBundleCarriesItsNotices' ./internal/webui/ ./internal/bastion/gui/
 
   # The layout checks of the renders (R-UI-170 to R-UI-176; owner, 2026-11-19: "Ja, die Renderprüfung soll auch in der CI
   # laufen."): their own fixture pages and the states of the dialogs here, once, without a stack; every screen of the render set as

@@ -19,6 +19,7 @@ import { serverTextBindings, serverTextFindings } from './server-text-rule.mjs';
 import { clearedBeforeAnswer, handMadeFailures } from './read-failure-rule.mjs';
 import { busyFindings } from './busy-rule.mjs';
 import { viewFindings } from './views-rule.mjs';
+import { bastionBundleFindings } from './bastion-bundle-rule.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const eslint = new ESLint({ cwd: root });
@@ -505,4 +506,47 @@ test('R-UI-223 the rule holds the files below src/app/views/ only, and not their
   assert.equal(viewFindings('src/app/views/vulnerabilities/probe.ts', t, () => null).length, 1);
   assert.deepEqual(viewFindings('src/app/features/packages/package-version.ts', t, () => null), []);
   assert.deepEqual(viewFindings('src/app/views/packages/probe.spec.ts', t, () => null), []);
+});
+
+test('R-UI-228 the Bastion bundle check names the client, the session, a screen and a dialog that put bytes into the build', () => {
+  const output = (inputs) => ({ outputs: { 'chunk-A.js': { inputs } } });
+  const used = (...paths) => Object.fromEntries(paths.map((p) => [p, { bytesInOutput: 10 }]));
+  const meta = output({
+    ...used(
+      'src/app/api/client.ts',
+      'src/app/api/packages-api.ts',
+      'src/app/api/legal-api-http.ts',
+      'src/app/core/session-store.ts',
+      'src/app/features/login/login.ts',
+      'src/app/features/admin/thing.ts',
+      'src/app/features/packages/deprecation-dialog.ts',
+      'src/app/shared/ui/dialog.ts',
+    ),
+    // Tree-shaken: in the graph without a byte, so it passes.
+    'src/app/api/repositories-api.ts': { bytesInOutput: 0 },
+  });
+  const found = bastionBundleFindings(meta).map((f) => f.path);
+  assert.deepEqual(found, [
+    'src/app/api/client.ts',
+    'src/app/api/legal-api-http.ts',
+    'src/app/api/packages-api.ts',
+    'src/app/core/session-store.ts',
+    'src/app/features/admin/thing.ts',
+    'src/app/features/login/login.ts',
+    'src/app/features/packages/deprecation-dialog.ts',
+    'src/app/shared/ui/dialog.ts',
+  ]);
+  const clean = output(
+    used(
+      'src/app/api/package-reads.ts',
+      'src/app/api/legal-api.ts',
+      'src/app/api/refs.ts',
+      'src/app/views/packages/package-version-view.ts',
+      'src/app/features/packages/package-links.ts',
+      'src/app/features/limits/figures.ts',
+      'src/bastion/data/reads.ts',
+      'node_modules/@angular/core/fesm2022/core.mjs',
+    ),
+  );
+  assert.deepEqual(bastionBundleFindings(clean), []);
 });
