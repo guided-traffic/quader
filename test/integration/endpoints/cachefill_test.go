@@ -45,7 +45,8 @@ func (relayFormat) Descriptor() formats.Descriptor {
 			DefaultMetadataTTLSeconds: &ttl,
 		},
 		ContractVersion: formats.ContractVersion, Names: foldedNames{}, PropertyPrefix: "relay.", MaxDocumentBytes: 1 << 20,
-		NoProbe: "a format of the endpoint tests, whose routes fetch what they name",
+		NoProbe:      "a format of the endpoint tests, whose routes fetch what they name",
+		DownloadUnit: formats.DownloadUnitFile,
 		Catalogue: formats.CatalogueDeclaration{
 			Lookup: true, NoSearch: "a format of the endpoint tests", NoLevels: "a format of the endpoint tests",
 		},
