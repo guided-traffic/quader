@@ -27818,6 +27818,24 @@ repository, which takes no publish.
 **Choice:** (a). **Applied in the spec:** R-ANS-061. Code: `AnsibleRoleReadmeNote` of
 [ansible-role.ts](../../web/src/app/features/packages/ansible-role.ts).
 
+### Q-UI-1324 · An Ansible namespace's page offers Upload collection in its head
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: Galaxy's upload stands on a namespace's page. Quader's page of a name (R-UI-220, Q-UI-1290) is made from what exists; it names the
+repositories that decide a publish into the name only to a reader of their configuration, while the dialog's choice is by `deploy`.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) **Upload collection** in the page's head, for a reader who may deploy into an Ansible Galaxy repository of the page's scope (its project, or every project at `/namespaces/…`), the dialog with those to choose from (chosen) | Where Galaxy has it | The person who looks at a namespace publishes into it in one press; the same code as a role's page | The choice lists every repository the reader may publish into, not only those whose claims admit the name: the server decides the name |
+| (b) Only the repositories whose claims admit the name | — | A narrower choice | The claims are configuration a plain publisher may not read |
+| (c) No act on the page | — | Nothing new | Galaxy's place of the act left empty |
+
+**Choice:** (a), for Ansible Galaxy only; the other formats' names keep no act until they have an upload on the screen. **Applied in the spec:**
+R-ANS-061. Code: `collectionUpload` of
+[ansible-upload-targets.ts](../../web/src/app/features/repositories/content/ansible-upload-targets.ts), the head of
+[namespace-page.html](../../web/src/app/features/packages/namespace-page.html).
+
 ### Q-UI-1340 · An upstream package's README shows its first 24 rem, and the versions follow
 
 Status: **Decided by the development agent on 2026-11-26** (W-30 G2) — selected from the options below; the owner reviews it at the

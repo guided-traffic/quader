@@ -106,7 +106,9 @@ the task from the repository that holds it (`ansibleTarget` with the virtual rep
 management API is the dispatcher ([wire_ansible.go](../../internal/app/wire_ansible.go) `routeHandoff`). The dialog is
 [ansible-upload-dialog.ts](../../web/src/app/features/repositories/content/ansible-upload-dialog.ts); it sends the file through the
 XHR-based client the deploy dialog uses ([upload-transfer.ts](../../web/src/app/api/upload-transfer.ts)) and shows the task with the view
-the tab Import log uses ([ansible-import-task.ts](../../web/src/app/features/packages/ansible-import-task.ts)). Tests: unit
+the tab Import log uses ([ansible-import-task.ts](../../web/src/app/features/packages/ansible-import-task.ts)). A page that names no repository (a
+role's, a namespace's) opens it through `collectionUpload` ([ansible-upload-targets.ts](../../web/src/app/features/repositories/content/ansible-upload-targets.ts)),
+which lists the Ansible Galaxy repositories of the page's scope the reader may deploy into. Tests: unit
 [handoff_test.go](../../internal/api/dispatch/handoff_test.go); integration `ansiblelocal` and `ansiblevirtual` `screen_publish_test.go`;
 the dialog's unit tests and its states (`ansible-upload.states.spec.ts`, `make ui-states`).
 

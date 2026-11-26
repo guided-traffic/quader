@@ -3,6 +3,8 @@ import { PackageSummary, PackagesApi } from '../../api/packages-api';
 import { RepositoriesApi } from '../../api/repositories-api';
 import { FakePackagesApi } from '../../api/testing/fakes-packages';
 import { ANSIBLE_FORMAT, FakeRepositoriesApi, OCI_FORMAT, PACKAGE_FORMAT } from '../../api/testing/fakes-catalog';
+import { SessionApi } from '../../api/session-api';
+import { FakeSessionApi } from '../../api/testing/fakes';
 import { expectAccessible, renderScreen, settle, text } from '../../testing/screen';
 import { NamespacePage } from './namespace-page';
 import { isNamespace, nameParts, namespaceCommands, namespacesOf } from './namespaces';
@@ -85,6 +87,39 @@ describe('The addresses of a name (R-UI-220)', () => {
 });
 
 describe('The page of a name (R-UI-220)', () => {
+  it('R-ANS-061 R-UI-220 an Ansible namespace offers Upload collection with the repositories of its scope the reader may publish into', async () => {
+    const page = async (inputs: Record<string, unknown>, deploy: (repository: string) => boolean) => {
+      const r = await renderScreen(NamespacePage, {
+        inputs,
+        setup: (get) => {
+          const catalog = get(RepositoriesApi) as FakeRepositoriesApi;
+          const repo = (project: string, key: string, cls: 'local' | 'remote' | 'virtual') => ({ key, project, class: cls, format: 'ansible', description: '', disabled: false });
+          catalog.repositories = [...catalog.repositories, repo('platform', 'collections', 'local'), repo('platform', 'galaxy', 'remote'), repo('web', 'ansible-local', 'local')];
+          (get(SessionApi) as FakeSessionApi).allow = (c) => c.action !== 'deploy' || deploy(c.repository ?? '');
+        },
+      });
+      await settle(r.fixture);
+      return r;
+    };
+    const inProject = await page({ project: 'platform', format: 'ansible', name: 'acme' }, () => true);
+    const act = inProject.root.querySelector<HTMLButtonElement>('[data-testid="namespace-upload"]')!;
+    expect(text(act)).toContain('Upload collection');
+    act.click();
+    await settle(inProject.fixture);
+    expect(text(document.querySelector('quader-ansible-upload-dialog .target')!)).toBe('platform/collections');
+    // Across every project, the repositories of each project the reader may publish into.
+    const everywhere = await page({ format: 'ansible', name: 'acme' }, () => true);
+    everywhere.root.querySelector<HTMLButtonElement>('[data-testid="namespace-upload"]')!.click();
+    await settle(everywhere.fixture);
+    expect([...document.querySelectorAll<HTMLOptionElement>('quader-ansible-upload-dialog select option')].map((o) => o.value)).toEqual([
+      'platform/collections',
+      'web/ansible-local',
+    ]);
+    // A reader who may publish nowhere, and a name of another format, have none.
+    expect((await page({ project: 'platform', format: 'ansible', name: 'acme' }, () => false)).root.querySelector('[data-testid="namespace-upload"]')).toBeNull();
+    expect((await page({ project: 'platform', format: 'oci', name: 'team' }, () => true)).root.querySelector('[data-testid="namespace-upload"]')).toBeNull();
+  });
+
   it('R-UI-220 lists the packages of a namespace in the project with their tags and badge; a reader of the packages sees no publishing', async () => {
     const r = await open({ project: 'platform', format: 'ansible', name: 'acme' });
     expect(text(r.root.querySelector('h1')!)).toBe('Namespace acme');

@@ -12516,10 +12516,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-669 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+670 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 669 questions</summary>
+<summary>Q-UI: 670 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -13184,6 +13184,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1321](spec/api-and-ui.md#q-ui-1321--upload-collection-is-one-file-the-repository-and-the-import-log-and-reads-nothing-again) | Upload collection is one file, the repository and the import log, and reads nothing again | Decided by the development agent on 2026-11-26 | (a) The repository, one file (button and drop), **Upload**; the bar while the bytes go, a sentence while the server reads; then the task, final | — |
 | [Q-UI-1322](spec/api-and-ui.md#q-ui-1322--a-completed-upload-shows-its-import-log-and-leads-to-the-versions-page-on-a-press) | A completed upload shows its import log and leads to the version's page on a press | Decided by the development agent on 2026-11-26 | (a) The log in the dialog with **Open version** and **Close** | — |
 | [Q-UI-1323](spec/api-and-ui.md#q-ui-1323--a-roles-page-offers-upload-collection-with-the-projects-repositories-the-reader-may-publish-into) | A role's page offers Upload collection with the project's repositories the reader may publish into | Decided by the development agent on 2026-11-26 | (a) **Upload collection** below the sentence, for a reader who may publish into a local or virtual Ansible Galaxy repository of the project, the dialog with those to choose from | — |
+| [Q-UI-1324](spec/api-and-ui.md#q-ui-1324--an-ansible-namespaces-page-offers-upload-collection-in-its-head) | An Ansible namespace's page offers Upload collection in its head | Decided by the development agent on 2026-11-26 | (a), for Ansible Galaxy only; the other formats' names keep no act until they have an upload on the screen. | — |
 | [Q-UI-1330](spec/api-and-ui.md#q-ui-1330--a-generic-files-download-is-a-split-button-the-browser-download-first-the-clients-commands-behind-the-chevron) | A generic file's Download is a split button: the browser download first, the clients' commands behind the chevron | Decided by the development agent on 2026-11-26 | (a) **Download** stays the main act and saves the file; a chevron joined to it, **Download with a client**, opens the panel | — |
 | [Q-UI-1331](spec/api-and-ui.md#q-ui-1331--a-files-download-address-stands-in-the-panel-above-its-clients) | A file's download address stands in the panel, above its clients | Decided by the development agent on 2026-11-26 | (a). npm's groups are its manifest's fields in the order an install uses them, `devDependencies` last (an install of the package does not fetch them); `bundleDependencies` (or `true` for all) and `peerDependenciesMeta`'s optional peers are read by the server. | — |
 | [Q-UI-1332](spec/api-and-ui.md#q-ui-1332--the-check-of-a-download-is-the-second-line-of-each-clients-tab) | The check of a download is the second line of each client's tab | Decided by the development agent on 2026-11-26 | (a) **Keywords** first in Details, chips that open the package list filtered by the format and the keyword | — |

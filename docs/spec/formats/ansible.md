@@ -2278,7 +2278,9 @@ on the repository's page, by the client's own publish (the owner, 2026-11-25: "d
   repository's folder has **Upload files**, for a caller the page's batched check allows `deploy` there; a reader, a remote repository, a
   disabled one and a system one show none ([Q-UI-1320](../api-and-ui.md#q-ui-1320--upload-collection-stands-in-the-toolbar-of-the-collections-where-upload-files-stands)).
   The line of a role's page that says a role is published inside a collection (R-ANS-056) offers it too, with the project's Ansible Galaxy
-  repositories the reader may publish into to choose from ([Q-UI-1323](../api-and-ui.md#q-ui-1323--a-roles-page-offers-upload-collection-with-the-projects-repositories-the-reader-may-publish-into)).
+  repositories the reader may publish into to choose from ([Q-UI-1323](../api-and-ui.md#q-ui-1323--a-roles-page-offers-upload-collection-with-the-projects-repositories-the-reader-may-publish-into)),
+  and so does the head of an Ansible namespace's page (R-UI-220), with the repositories of its scope, the project or every project, the reader
+  may publish into ([Q-UI-1324](../api-and-ui.md#q-ui-1324--an-ansible-namespaces-page-offers-upload-collection-in-its-head)).
 - **The dialog** (`web/src/app/features/repositories/content/ansible-upload-dialog.ts`, [Q-UI-1321](../api-and-ui.md#q-ui-1321--upload-collection-is-one-file-the-repository-and-the-import-log-and-reads-nothing-again)):
   the repository it goes into (named, or a choice when it was opened with several), one archive chosen with a button or dropped, shown by its name
   and size, and **Upload**; nothing else in the first view. While the bytes go the button spins and a bar shows them; once they are sent the
@@ -2298,7 +2300,7 @@ Galaxy's upload and import log, element by element, and what Quader shows of eac
 
 | Galaxy (ansible-hub-ui, read on 2026-11-26) | Quader |
 |---|---|
-| **Upload collection** on a namespace's page, for a holder of `upload_to_namespace`; **Upload new version** on a collection's page | **Upload collection** on the repository's page and a role's page, for a holder of `deploy`; Quader has no namespace page (H-845) |
+| **Upload collection** on a namespace's page, for a holder of `upload_to_namespace`; **Upload new version** on a collection's page | **Upload collection** on the repository's page, a namespace's page (R-UI-220) and a role's page, for a holder of `deploy` on a repository; the namespace is no object of its own (H-845), so the right is the repository's |
 | The title "New collection" or "New version of `<ns>.<name>`" | "Upload collection" |
 | A file field "Select file", one file | One file, chosen with **Choose file** or dropped |
 | Checks in the browser: the file's type, its name `namespace-name-version`, its namespace against the page's, with "Upload anyway?" | None: the server reads the identity from `MANIFEST.json` (Q-ANS-142) |

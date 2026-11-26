@@ -16,6 +16,7 @@ import { NamespaceRules, namespaceCommands, namespaceHeading, namespacesOf } fro
 import { packageCommands } from './package-links';
 import { PackageName } from './package-name';
 import { PackageTags } from './package-tags';
+import { collectionUpload } from '../repositories/content/ansible-upload-targets';
 
 /**
  * The page of a name (R-UI-220, Q-UI-1290 to Q-UI-1294): a namespace (Ansible Galaxy), a scope (npm) or a path prefix (OCI), made from
@@ -63,6 +64,11 @@ export class NamespacePage {
   /** What every name of the namespace starts with: `acme.`, `@acme/`, `team/app/`. */
   protected readonly prefix = computed(() => this.name() + (this.rule()?.separator ?? ''));
   protected readonly publishing = computed(() => valueOf(this.facts)?.publishing ?? null);
+  /**
+   * **Upload collection** in the head of an Ansible namespace's page (R-ANS-061, Q-UI-1324): the dialog with the repositories of the
+   * page's scope (its project, or every project) the reader may publish into; none for another format.
+   */
+  protected readonly upload = collectionUpload(() => (this.format() === 'ansible' ? (this.project() ?? null) : undefined));
 
   protected readonly columns = computed<readonly TableColumn[]>(() => [
     { id: 'name', label: $localize`:@@pkg.col.package:Package`, width: '16rem', prefer: true },

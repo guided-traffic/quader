@@ -14,6 +14,15 @@
       }
     </p>
   }
+  <!-- Upload collection for a reader who may publish into an Ansible Galaxy repository of the page's scope (R-ANS-061, Q-UI-1324). -->
+  @if (upload.targets().length > 0) {
+    <ng-container actions>
+      <button class="btn btn-default" type="button" data-testid="namespace-upload" (click)="upload.open()">
+        <span class="material-icons" aria-hidden="true">upload</span>
+        <ng-container i18n="@@ns.upload-collection">Upload collection</ng-container>
+      </button>
+    </ng-container>
+  }
 </quader-page-header>
 
 <quader-data-table

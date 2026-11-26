@@ -104,7 +104,7 @@ The collection's `galaxy.yml` names the namespace, name and version, so the comm
 ### On the repository's page
 
 Without a client, a collection is published with **Upload collection** in the toolbar of a local or virtual repository's page, which you see
-when you may publish there. Choose the archive that `ansible-galaxy collection build` made, or drop it, and press **Upload**. Quader reads the
+when you may publish there; the page of a namespace offers it too, with the repositories you may publish into. Choose the archive that `ansible-galaxy collection build` made, or drop it, and press **Upload**. Quader reads the
 namespace, the name and the version from the archive, never from the file's name, and runs every check of the command above. The dialog then
 shows the import log: the state, and the messages with their warnings. **Open version** leads to the version's page. A refusal (no permission,
 a version that exists, a namespace that belongs to other publishers, an archive that is too large) shows the reason with its details, and the file
