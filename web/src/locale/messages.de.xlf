@@ -21930,7 +21930,7 @@
     </unit>
     <unit id="profile.sessions.agent">
       <notes>
-        <note category="location">src/app/features/profile/profile-sessions.ts:89</note>
+        <note category="location">src/app/features/profile/profile-sessions.ts:91</note>
       </notes>
       <segment>
         <source>Browser</source>
@@ -21939,7 +21939,7 @@
     </unit>
     <unit id="profile.sessions.method">
       <notes>
-        <note category="location">src/app/features/profile/profile-sessions.ts:90</note>
+        <note category="location">src/app/features/profile/profile-sessions.ts:92</note>
       </notes>
       <segment>
         <source>Sign-in</source>
@@ -21948,7 +21948,7 @@
     </unit>
     <unit id="profile.sessions.actions">
       <notes>
-        <note category="location">src/app/features/profile/profile-sessions.ts:91</note>
+        <note category="location">src/app/features/profile/profile-sessions.ts:93</note>
       </notes>
       <segment>
         <source>Actions</source>
@@ -21957,7 +21957,7 @@
     </unit>
     <unit id="profile.sessions.heading">
       <notes>
-        <note category="location">src/app/features/profile/profile-sessions.ts:93</note>
+        <note category="location">src/app/features/profile/profile-sessions.ts:95</note>
       </notes>
       <segment>
         <source>Sessions</source>
@@ -21966,7 +21966,7 @@
     </unit>
     <unit id="profile.sessions.ended">
       <notes>
-        <note category="location">src/app/features/profile/profile-sessions.ts:123</note>
+        <note category="location">src/app/features/profile/profile-sessions.ts:125</note>
       </notes>
       <segment>
         <source>Session ended.</source>
@@ -21975,7 +21975,7 @@
     </unit>
     <unit id="profile.sessions.end-others-title">
       <notes>
-        <note category="location">src/app/features/profile/profile-sessions.ts:129</note>
+        <note category="location">src/app/features/profile/profile-sessions.ts:131</note>
       </notes>
       <segment>
         <source>End all other sessions?</source>
@@ -21984,7 +21984,7 @@
     </unit>
     <unit id="profile.sessions.end-others-text">
       <notes>
-        <note category="location">src/app/features/profile/profile-sessions.ts:130</note>
+        <note category="location">src/app/features/profile/profile-sessions.ts:132</note>
       </notes>
       <segment>
         <source>Every other browser is signed out at once. This session stays.</source>
@@ -21993,7 +21993,7 @@
     </unit>
     <unit id="profile.sessions.end-others-confirm">
       <notes>
-        <note category="location">src/app/features/profile/profile-sessions.ts:131</note>
+        <note category="location">src/app/features/profile/profile-sessions.ts:133</note>
       </notes>
       <segment>
         <source>End other sessions</source>
@@ -22002,7 +22002,7 @@
     </unit>
     <unit id="profile.sessions.ended-others">
       <notes>
-        <note category="location">src/app/features/profile/profile-sessions.ts:136</note>
+        <note category="location">src/app/features/profile/profile-sessions.ts:138</note>
       </notes>
       <segment>
         <source>Other sessions ended.</source>
@@ -50383,7 +50383,7 @@
     <unit id="user.display-name">
       <notes>
         <note category="location">src/app/features/users/user-detail.html:20</note>
-        <note category="location">src/app/features/users/user-detail.ts:198</note>
+        <note category="location">src/app/features/users/user-detail.ts:200</note>
       </notes>
       <segment>
         <source>Display name</source>
@@ -50393,7 +50393,7 @@
     <unit id="user.email">
       <notes>
         <note category="location">src/app/features/users/user-detail.html:21</note>
-        <note category="location">src/app/features/users/user-detail.ts:197</note>
+        <note category="location">src/app/features/users/user-detail.ts:199</note>
       </notes>
       <segment>
         <source>Email</source>
@@ -50422,7 +50422,7 @@
     <unit id="user.external">
       <notes>
         <note category="location">src/app/features/users/user-detail.html:41,42</note>
-        <note category="location">src/app/features/users/user-detail.ts:223</note>
+        <note category="location">src/app/features/users/user-detail.ts:225</note>
       </notes>
       <segment>
         <source>External user</source>
@@ -50962,7 +50962,7 @@
     </unit>
     <unit id="user.session.agent">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:104</note>
+        <note category="location">src/app/features/users/user-detail.ts:106</note>
       </notes>
       <segment>
         <source>Browser</source>
@@ -50971,7 +50971,7 @@
     </unit>
     <unit id="user.saved">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:207</note>
+        <note category="location">src/app/features/users/user-detail.ts:209</note>
       </notes>
       <segment>
         <source>User saved.</source>
@@ -50980,7 +50980,7 @@
     </unit>
     <unit id="user.external-saved">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:233</note>
+        <note category="location">src/app/features/users/user-detail.ts:235</note>
       </notes>
       <segment>
         <source>External flag saved.</source>
@@ -50989,7 +50989,7 @@
     </unit>
     <unit id="user.disable-title">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:239</note>
+        <note category="location">src/app/features/users/user-detail.ts:241</note>
       </notes>
       <segment>
         <source>Disable this user?</source>
@@ -50998,7 +50998,7 @@
     </unit>
     <unit id="user.disable-text">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:240</note>
+        <note category="location">src/app/features/users/user-detail.ts:242</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="user" disp="this.username()"/> can no longer sign in, and their sessions end.</source>
@@ -51007,7 +51007,7 @@
     </unit>
     <unit id="user.disable-confirm">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:241</note>
+        <note category="location">src/app/features/users/user-detail.ts:243</note>
       </notes>
       <segment>
         <source>Disable</source>
@@ -51016,7 +51016,7 @@
     </unit>
     <unit id="user.disable-revoke">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:242</note>
+        <note category="location">src/app/features/users/user-detail.ts:244</note>
       </notes>
       <segment>
         <source>Also revoke all tokens of this user</source>
@@ -51025,7 +51025,7 @@
     </unit>
     <unit id="user.disabled">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:248</note>
+        <note category="location">src/app/features/users/user-detail.ts:250</note>
       </notes>
       <segment>
         <source>User disabled.</source>
@@ -51034,7 +51034,7 @@
     </unit>
     <unit id="user.enabled">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:253</note>
+        <note category="location">src/app/features/users/user-detail.ts:255</note>
       </notes>
       <segment>
         <source>User enabled.</source>
@@ -51043,7 +51043,7 @@
     </unit>
     <unit id="user.unlocked">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:257</note>
+        <note category="location">src/app/features/users/user-detail.ts:259</note>
       </notes>
       <segment>
         <source>Account unlocked.</source>
@@ -51052,7 +51052,7 @@
     </unit>
     <unit id="user.remove-avatar-title">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:263</note>
+        <note category="location">src/app/features/users/user-detail.ts:265</note>
       </notes>
       <segment>
         <source>Remove the avatar of this user?</source>
@@ -51061,7 +51061,7 @@
     </unit>
     <unit id="user.remove-avatar-text">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:265</note>
+        <note category="location">src/app/features/users/user-detail.ts:267</note>
       </notes>
       <segment>
         <source>The avatar of <ph id="0" equiv="user" disp="this.username()"/> is removed and replaced by the generated one. The user can upload a new one.</source>
@@ -51070,7 +51070,7 @@
     </unit>
     <unit id="user.remove-avatar-confirm">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:267</note>
+        <note category="location">src/app/features/users/user-detail.ts:269</note>
       </notes>
       <segment>
         <source>Remove avatar</source>
@@ -51079,7 +51079,7 @@
     </unit>
     <unit id="user.avatar-removed">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:270</note>
+        <note category="location">src/app/features/users/user-detail.ts:272</note>
       </notes>
       <segment>
         <source>Avatar removed.</source>
@@ -51088,7 +51088,7 @@
     </unit>
     <unit id="user.delete-title">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:275</note>
+        <note category="location">src/app/features/users/user-detail.ts:277</note>
       </notes>
       <segment>
         <source>Delete this user?</source>
@@ -51097,7 +51097,7 @@
     </unit>
     <unit id="user.delete-text">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:276</note>
+        <note category="location">src/app/features/users/user-detail.ts:278</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="user" disp="this.username()"/> and their tokens and sessions are removed. This cannot be undone.</source>
@@ -51106,7 +51106,7 @@
     </unit>
     <unit id="user.delete-confirm">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:277</note>
+        <note category="location">src/app/features/users/user-detail.ts:279</note>
       </notes>
       <segment>
         <source>Delete</source>
@@ -51115,7 +51115,7 @@
     </unit>
     <unit id="user.deleted">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:283</note>
+        <note category="location">src/app/features/users/user-detail.ts:285</note>
       </notes>
       <segment>
         <source>User deleted.</source>
@@ -51124,7 +51124,7 @@
     </unit>
     <unit id="user.group-added">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:301</note>
+        <note category="location">src/app/features/users/user-detail.ts:303</note>
       </notes>
       <segment>
         <source>Group membership added.</source>
@@ -51133,7 +51133,7 @@
     </unit>
     <unit id="user.group-removed">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:309</note>
+        <note category="location">src/app/features/users/user-detail.ts:311</note>
       </notes>
       <segment>
         <source>Group membership removed.</source>
@@ -51142,7 +51142,7 @@
     </unit>
     <unit id="user.end-sessions-title">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:315</note>
+        <note category="location">src/app/features/users/user-detail.ts:317</note>
       </notes>
       <segment>
         <source>End all sessions of this user?</source>
@@ -51151,7 +51151,7 @@
     </unit>
     <unit id="user.end-sessions-text">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:316</note>
+        <note category="location">src/app/features/users/user-detail.ts:318</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="user" disp="this.username()"/> is signed out of every browser at once.</source>
@@ -51160,7 +51160,7 @@
     </unit>
     <unit id="user.end-sessions-confirm">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:317</note>
+        <note category="location">src/app/features/users/user-detail.ts:319</note>
       </notes>
       <segment>
         <source>End sessions</source>
@@ -51169,7 +51169,7 @@
     </unit>
     <unit id="user.sessions-ended">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:326</note>
+        <note category="location">src/app/features/users/user-detail.ts:328</note>
       </notes>
       <segment>
         <source>Sessions ended.</source>
@@ -51178,7 +51178,7 @@
     </unit>
     <unit id="user.source.manual">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:336</note>
+        <note category="location">src/app/features/users/user-detail.ts:338</note>
       </notes>
       <segment>
         <source>Manual</source>
@@ -51187,7 +51187,7 @@
     </unit>
     <unit id="user.source.auto">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:337</note>
+        <note category="location">src/app/features/users/user-detail.ts:339</note>
       </notes>
       <segment>
         <source>Auto-join</source>
@@ -51196,7 +51196,7 @@
     </unit>
     <unit id="user.source.provider">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:339</note>
+        <note category="location">src/app/features/users/user-detail.ts:341</note>
       </notes>
       <segment>
         <source>Identity provider</source>
@@ -51205,7 +51205,7 @@
     </unit>
     <unit id="user.claim-reason.wrong-type">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:344</note>
+        <note category="location">src/app/features/users/user-detail.ts:346</note>
       </notes>
       <segment>
         <source>a group claim of the wrong type</source>
@@ -51214,7 +51214,7 @@
     </unit>
     <unit id="user.claim-reason.overage">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:345</note>
+        <note category="location">src/app/features/users/user-detail.ts:347</note>
       </notes>
       <segment>
         <source>too many groups for the token</source>
@@ -51223,7 +51223,7 @@
     </unit>
     <unit id="user.claim-reason.absent">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:346</note>
+        <note category="location">src/app/features/users/user-detail.ts:348</note>
       </notes>
       <segment>
         <source>no group claim</source>
