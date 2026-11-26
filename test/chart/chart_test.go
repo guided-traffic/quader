@@ -342,24 +342,24 @@ func TestChart(t *testing.T) {
 		}
 	})
 
-	// Q-HA-374: the longest name built from <fullname> alone is the Service of the kind malware-updater-freshclam (R-HA-069), so <fullname>
-	// has at most 63 - 1 - 25 = 37 characters, for every release whichever kinds it renders, and <fullname> is never cut.
+	// Q-HA-374, Q-HA-500: the longest name built from <fullname> alone is the headless Service malware-scanner-clamav-pods (R-HA-068), so
+	// <fullname> has at most 63 - 1 - 27 = 35 characters, for every release whichever kinds it renders, and <fullname> is never cut.
 	t.Run("R-HA-029 R-HA-069 a fullname too long for the names the chart builds fails the render, naming the name and what fits", func(t *testing.T) {
-		at := strings.Repeat("a", 37)
+		at := strings.Repeat("a", 35)
 		_, docs := render(t, required(), "fullnameOverride="+at)
-		if find(docs, "Service", at+"-malware-updater-freshclam") == nil {
-			t.Errorf("no Service %s-malware-updater-freshclam", at)
+		if find(docs, "Service", at+"-malware-scanner-clamav-pods") == nil {
+			t.Errorf("no Service %s-malware-scanner-clamav-pods", at)
 		}
-		over := strings.Repeat("a", 38)
-		renderFails(t, required(), []string{"fullnameOverride=" + over}, over+"-malware-updater-freshclam has 64 characters",
-			"at most 63", "set fullnameOverride to at most 37 characters")
+		over := strings.Repeat("a", 36)
+		renderFails(t, required(), []string{"fullnameOverride=" + over}, over+"-malware-scanner-clamav-pods has 64 characters",
+			"at most 63", "set fullnameOverride to at most 35 characters")
 		renderFails(t, required(), []string{"fullnameOverride=" + over, "config.malware.enabled=false", "config.vulnerabilities.enabled=false"},
-			over+"-malware-updater-freshclam")
-		renderRelease(t, strings.Repeat("r", 30), required())
-		_, stderr, err := helm(t, templateArgs(strings.Repeat("r", 31), required(), nil)...)
-		if err == nil || !strings.Contains(stderr, strings.Repeat("r", 31)+"-quader-malware-updater-freshclam has 64 characters") ||
-			!strings.Contains(stderr, "a release name of at most 30 characters, or one of at most 37 that contains quader") {
-			t.Errorf("a release name of 31 characters: %v\n%s", err, stderr)
+			over+"-malware-scanner-clamav-pods")
+		renderRelease(t, strings.Repeat("r", 28), required())
+		_, stderr, err := helm(t, templateArgs(strings.Repeat("r", 29), required(), nil)...)
+		if err == nil || !strings.Contains(stderr, strings.Repeat("r", 29)+"-quader-malware-scanner-clamav-pods has 64 characters") ||
+			!strings.Contains(stderr, "a release name of at most 28 characters, or one of at most 35 that contains quader") {
+			t.Errorf("a release name of 29 characters: %v\n%s", err, stderr)
 		}
 	})
 

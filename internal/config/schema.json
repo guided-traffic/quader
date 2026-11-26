@@ -2828,7 +2828,7 @@
             },
             "url": {
               "default": "",
-              "description": "The malware scanners' listener, an origin: https://\u003cfullname\u003e-malware-scanner-clamav.\u003cnamespace\u003e.svc:8080 in the chart, which sets it; its host is a headless Service, which the scan controller resolves every 10 seconds to the ready replicas and calls each by its address (R-MAL-038). Empty: the worker's job makes no call and its check malwareScannerClamav reports why (Q-MAL-60); the blobs wait pending.",
+              "description": "The malware scanners' listener, an origin: https://\u003cfullname\u003e-malware-scanner-clamav-pods.\u003cnamespace\u003e.svc:8080 in the chart, which sets it; its host is a headless Service, which the scan controller resolves every 10 seconds to the ready replicas and calls each by its address (R-MAL-038). Empty: the worker's job makes no call and its check malwareScannerClamav reports why (Q-MAL-60); the blobs wait pending.",
               "type": "string",
               "x-quader-env": "QUADER_MALWARE_SCANNER_URL"
             }

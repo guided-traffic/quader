@@ -235,17 +235,17 @@ func TestRolesServices(t *testing.T) {
 	t.Run("R-HA-002 R-HA-062 each Service selects the pods of one Deployment; the ops Service every serving pod", func(t *testing.T) {
 		_, docs := render(t, rolesSet())
 		want := map[string][]string{
-			"quader-api":                       {"quader-api"},
-			"quader-packages":                  {"quader-packages"},
-			"quader-api-admin":                 {"quader-api-admin"},
-			"quader-packages-npm":              {"quader-packages-npm"},
-			"quader-ep-customers":              {"quader-packages-ep-customers"},
-			"quader-api-ep-customers":          {"quader-api-ep-customers"},
-			"quader-vuln-scanner-trivy":        {"quader-vuln-scanner-trivy"},
-			"quader-malware-scanner-clamav":    {"quader-malware-scanner-clamav"},
-			"quader-malware-updater-freshclam": {"quader-malware-updater-freshclam"},
-			"quader-packages-scan":             {"quader-packages"}, // the main packages pods only, which serve the scan listener (R-HA-066)
-			"quader-ops":                       deploymentNames(docs),
+			"quader-api":                         {"quader-api"},
+			"quader-packages":                    {"quader-packages"},
+			"quader-api-admin":                   {"quader-api-admin"},
+			"quader-packages-npm":                {"quader-packages-npm"},
+			"quader-ep-customers":                {"quader-packages-ep-customers"},
+			"quader-api-ep-customers":            {"quader-api-ep-customers"},
+			"quader-vuln-scanner-trivy":          {"quader-vuln-scanner-trivy"},
+			"quader-malware-scanner-clamav-pods": {"quader-malware-scanner-clamav"}, // headless, the replicas the scan controller calls (Q-HA-500)
+			"quader-malware-updater-freshclam":   {"quader-malware-updater-freshclam"},
+			"quader-packages-scan":               {"quader-packages"}, // the main packages pods only, which serve the scan listener (R-HA-066)
+			"quader-ops":                         deploymentNames(docs),
 		}
 		for _, s := range ofKind(docs, "Service") {
 			name := str(s, "metadata", "name")
@@ -580,7 +580,7 @@ func TestRolesValidation(t *testing.T) {
 		{"an api pool path equal to the role's prefix", pools("api.pools[0].name=a", "api.pools[0].paths={/api/v1}"), []string{"api.pools[a].paths", "/api/v1"}},
 		{"a worker pool queue that does not exist", pools("worker.pools[0].name=a", "worker.pools[0].queues={nope}"), []string{"worker.pools[a].queues", "nope"}},
 		{"two worker pools with the same queue", pools("worker.pools[0].name=a", "worker.pools[0].queues={vuln}", "worker.pools[1].name=b", "worker.pools[1].queues={vuln}"), []string{"worker.pools[b].queues", "vuln", "pool a"}},
-		{"a pool name too long for a Deployment name", pools("fullnameOverride="+strings.Repeat("a", 37), "packages.pools[0].name=abcdefghijklmnopqrst", "packages.pools[0].paths={/api/npm}"), []string{"packages.pools[abcdefghijklmnopqrst].name", "63"}},
+		{"a pool name too long for a Deployment name", pools("fullnameOverride="+strings.Repeat("a", 35), "packages.pools[0].name=abcdefghijklmnopqrst", "packages.pools[0].paths={/api/npm}"), []string{"packages.pools[abcdefghijklmnopqrst].name", "63"}},
 		{"a pool below two replicas", pools("worker.pools[0].name=a", "worker.pools[0].queues={vuln}", "worker.pools[0].replicaCount=1"), []string{"worker.pools[a].replicaCount", "quader-worker-a"}},
 		{"a pool without a disruption budget", pools("api.pools[0].name=a", "api.pools[0].paths={/ui/x}", "api.pools[0].podDisruptionBudget.enabled=false"), []string{"api.pools[a].podDisruptionBudget.enabled"}},
 		{"a pool without a memory limit", pools("packages.pools[0].name=a", "packages.pools[0].paths={/api/npm}", "packages.pools[0].resources.limits.memory="), []string{"packages.pools[a].resources.limits.memory is required"}},

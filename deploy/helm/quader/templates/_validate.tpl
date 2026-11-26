@@ -24,8 +24,8 @@ fixes the form, so every term is a number and a unit.
 {{/*
 The names the chart builds from <fullname> alone that Kubernetes limits (R-HA-029, Q-HA-374): the Service of every kind of pod of
 quader.tlsKindTable and the kind's name in its certificate, DNS labels of at most 63 characters, for every kind of the table whether
-this release renders it or not, so that switching a kind on never fails for its name; the Services <fullname>-ops and
-<fullname>-packages-scan; the Jobs <fullname>-migrate, <fullname>-restore and <fullname>-post-restore-<8 hex>, whose name is a label
+this release renders it or not, so that switching a kind on never fails for its name; the Services <fullname>-ops,
+<fullname>-packages-scan and <fullname>-malware-scanner-clamav-pods (Q-HA-500), the longest of them; the Jobs <fullname>-migrate, <fullname>-restore and <fullname>-post-restore-<8 hex>, whose name is a label
 value of their pods; and the CronJob <fullname>-backup, at most 52, because its controller names a Job <CronJob>-<10 digits>. The
 tightest of them decides how long <fullname> may be: the render fails naming that name and the longest release name and
 fullnameOverride that fit. A name that carries a value of the installation (a pool, an endpoint) is checked with that value
@@ -37,7 +37,7 @@ fullnameOverride that fit. A name that carries a value of the installation (a po
 {{- range $e := include "quader.tlsKindTable" . | fromYamlArray -}}
 {{- $names = append $names (dict "object" "Service" "suffix" $e.kind "len" (len $e.kind) "max" 63) -}}
 {{- end -}}
-{{- range $s := list "ops" "packages-scan" -}}
+{{- range $s := list "ops" "packages-scan" "malware-scanner-clamav-pods" -}}
 {{- $names = append $names (dict "object" "Service" "suffix" $s "len" (len $s) "max" 63) -}}
 {{- end -}}
 {{- range $s := list "migrate" "restore" -}}

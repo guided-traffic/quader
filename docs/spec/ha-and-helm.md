@@ -629,9 +629,10 @@ leaves their text to them.
   loaded and `clamd` answers `PING`, and the process is not draining; the label `listener` of its listener and of the worker's link to it is
   `malware-scanner-clamav` ([Q-HA-373](#q-ha-373--every-name-an-operator-or-an-auditor-reads-of-a-scanner-unit-carries-its-tool)); liveness is the scanner's `/healthz`. `terminationGracePeriodSeconds: 60`; at `SIGTERM` new calls are answered
   `503 scanner_draining`.
-- **Service and policies.** `<fullname>-malware-scanner-clamav`: headless (`clusterIP: None`, `publishNotReadyAddresses: false`,
-  [Q-HA-500](#q-ha-500--the-malware-scanners-service-is-headless)), port `https` 8080, no `service.type`, no Ingress; its name resolves to
-  the ready pods' addresses, which the worker calls each under the Service's TLS name. NetworkPolicy
+- **Service and policies.** `<fullname>-malware-scanner-clamav-pods`: headless (`clusterIP: None`, `publishNotReadyAddresses: false`,
+  [Q-HA-500](#q-ha-500--the-malware-scanners-service-is-headless-under-a-name-of-its-own)), port `https` 8080, no `service.type`, no
+  Ingress; its name resolves to the ready pods' addresses, which the worker calls each while it verifies the kind's name
+  `<fullname>-malware-scanner-clamav.<namespace>.svc` in the replica's certificate. No Service carries the kind's name. NetworkPolicy
   (R-HA-042): `:8080` from the pods of the worker Deployments that claim the queue `malware`; `:8081` from the ops sources; the scan listener
   `:8082` of `packages` also from the malware scanner pods. The chart sets `config.malware.scanner.url` and `config.malware.scan_listener.url`
   as R-HA-066 sets the image scanning's, refused when set by hand (R-HA-029), and renders `QUADER_SERVER_SCAN_LISTEN=:8082` on the main
@@ -660,8 +661,8 @@ Acceptance criteria:
 - Chart test (`test/chart`, about 1 s): with default values the Deployment `quader-malware-scanner-clamav` has the containers `quader`
   (`--role scanner`, the kind `clamav`) and `clamd` (the pinned image), the volumes above and no other, no Secret but the TLS pair and the CA in
   `quader`, none in `clamd`; `clamd.conf` holds `LocalSocket`, no `TCPSocket`, `AlertExceedsMax yes` and `ConcurrentDatabaseReload no`; the
-  policy admits `:8080` from the worker pool that claims `malware` only; the Service is headless and publishes no address of a pod that is
-  not ready; with `config.malware.enabled: false` nothing of it renders.
+  policy admits `:8080` from the worker pool that claims `malware` only; the Service `quader-malware-scanner-clamav-pods` is headless and publishes no address of a
+  pod that is not ready, and no Service `quader-malware-scanner-clamav` renders; with `config.malware.enabled: false` nothing of it renders.
 
 ### R-HA-069 · The updater Deployment `malware-updater-freshclam`
 Priority: **P1** · Covers: quader-only
@@ -723,8 +724,8 @@ that claimed `malware` ([Q-HA-362](#q-ha-362--freshclam-runs-beside-the-worker-w
   and `server_name` as the malware scanner does.
 - **The kind table** (`quader.tlsKindTable`, R-HA-063) gains `malware-updater-freshclam` with `client` and `scanClient` true, on while the
   updater renders: a Certificate, a Secret, the name `<fullname>-malware-updater-freshclam.<namespace>.svc` and the name-length check of
-  R-HA-029. That name is the longest the chart builds from `<fullname>` alone (26 characters more), so the chart now refuses a `<fullname>` of
-  more than 37 characters ([Q-HA-374](#q-ha-374--the-chart-refuses-a-fullname-too-long-for-the-names-it-builds-and-never-cuts-it)).
+  R-HA-029. That name was the longest the chart builds from `<fullname>` alone (26 characters more), so the chart refused a `<fullname>` of
+  more than 37 characters; since Q-HA-500 the headless Service `<fullname>-malware-scanner-clamav-pods` is longer, and the bound is 35 ([Q-HA-374](#q-ha-374--the-chart-refuses-a-fullname-too-long-for-the-names-it-builds-and-never-cuts-it)).
 - **The way out of the cluster** is `freshclam`'s alone: DNS (port 53 to the cluster's resolver) and HTTPS (443) to `database.clamav.net`,
   which Cloudflare serves from addresses of its own that change, so an egress policy by address needs Cloudflare's published ranges and one by
   name a policy engine that can match a name; or the host and port of `privateMirror`; or the proxy of `proxy`. The chart renders no egress
@@ -12618,7 +12619,7 @@ R-MAL-006. Code: [link_tls.go](../../internal/httpserver/link_tls.go), [wire_sca
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The task is the
 owner's, with [Q-HA-373](#q-ha-373--every-name-an-operator-or-an-auditor-reads-of-a-scanner-unit-carries-its-tool): the chart checks the
-length of the names it builds. Amended on 2026-11-21: the updater's Service `<fullname>-malware-updater-freshclam` (R-HA-069) is now the longest name, 26 characters more, so the bound is a `<fullname>` of at most 37 characters; the rule stands.
+length of the names it builds. Amended on 2026-11-21: the updater's Service `<fullname>-malware-updater-freshclam` (R-HA-069) is now the longest name, 26 characters more, so the bound is a `<fullname>` of at most 37 characters; the rule stands. Amended on 2026-11-26: the malware scanners' headless Service `<fullname>-malware-scanner-clamav-pods` ([Q-HA-500](#q-ha-500--the-malware-scanners-service-is-headless-under-a-name-of-its-own)) is now the longest, 28 characters more, so the bound is 35 characters (a release name of at most 28, or 35 if it contains `quader`); the rule stands.
 
 Context: `quader.fullname` cut at 50 characters "so that every derived name stays a valid DNS label". Since Q-HA-372 the longest name
 built from `<fullname>` alone is the Service `<fullname>-malware-scanner-clamav`, 23 characters more, a DNS label only for a `<fullname>` of
@@ -13484,21 +13485,27 @@ The retention of the history of the stored content ([storage.md](storage.md) R-S
 its binary default and gets no key in the chart's values: the plain path needs none, and an operator who must set another value sets the
 variable `QUADER_STORAGE_HISTORY_RETENTION` through `extraEnv`. The chart's schema and tests are unchanged. **Applied in the spec:** R-STOR-110.
 
-### Q-HA-500 · The malware scanners' Service is headless
+### Q-HA-500 · The malware scanners' Service is headless, under a name of its own
 
 Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+Revised the same night on the coordinator's word: the shape must upgrade by itself, since the owner's cluster changes through git only and a
+permanent `force` on its release is not wanted.
 
 Context: the scan controller ([malware-scanning.md](malware-scanning.md) R-MAL-038, Q-MAL-121) calls each malware scanner replica by its
-address, so that its calls follow the replicas the autoscaler runs; a ClusterIP Service spread each connection at random.
+address, so that its calls follow the replicas the autoscaler runs; a ClusterIP Service spread each connection at random. A Service's
+`spec.clusterIP` is immutable: the ClusterIP Service `<fullname>-malware-scanner-clamav` cannot become headless in an upgrade.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) `clusterIP: None` and `publishNotReadyAddresses: false` on `<fullname>-malware-scanner-clamav`, its name, port and certificate unchanged (chosen) | Headless | The name resolves to the ready pods; the certificate's name stays the one the worker verifies; no RBAC | `clusterIP` is immutable: an installation's existing Service must be replaced once (deleted, or the release upgraded with `--force`) |
-| (b) A second, headless Service beside the ClusterIP one | Two Services | No replacement | Two names for one unit, and a certificate name that is not the one the worker dials by |
-| (c) EndpointSlices through the Kubernetes API | Exact | Events | List and watch rights for the worker |
+| (a) A headless Service `<fullname>-malware-scanner-clamav-pods` (`clusterIP: None`, `publishNotReadyAddresses: false`, the same selector and port) that `malware.scanner.url` names; the ClusterIP Service under the kind's name, which nothing else used, leaves the chart (chosen) | A new name | An upgrade deletes the old Service and creates the new one, which Kubernetes allows: no hand step anywhere; the worker keeps verifying the kind's name `<fullname>-malware-scanner-clamav.<namespace>.svc` in the replica's certificate, and no client dials the new name over TLS, so the certificate gains no name | The longest name the chart builds from `<fullname>` grows by two characters: `<fullname>` may have 35, no longer 37 ([Q-HA-374](#q-ha-374--the-chart-refuses-a-fullname-too-long-for-the-names-it-builds-and-never-cuts-it)) |
+| (b) `clusterIP: None` on the Service under the kind's name | One Service | No new name | Every installation's upgrade fails until someone deletes the Service by hand or upgrades with `--force` |
+| (c) Keep the ClusterIP Service beside the headless one | Two Services | Nothing removed | A Service no client calls |
+| (d) EndpointSlices through the Kubernetes API | Exact | Events | List and watch rights for the worker |
 
-**Choice:** (a). CoreDNS's cache lags readiness by seconds; a draining pod answers `503 scanner_draining` meanwhile, which pauses it in the
-controller. **Applied in the spec:** R-HA-068.
+**Choice:** (a). The name follows the unit's (Q-HA-372) with what the Service lists, its pods; a suffix of 27 characters, two more than the
+updater's Service. CoreDNS's cache lags readiness by seconds; a draining pod answers `503 scanner_draining` meanwhile, which pauses it in
+the controller. The NetworkPolicy selects the scanner's pods, not a Service, so it admits the worker's calls to each pod's address as
+before (ingress only, ADR-154). **Applied in the spec:** R-HA-029 (the bound of `<fullname>`), R-HA-068.
 
 ### Q-HA-501 · The profiles set no number of calls; the replicas do
 
