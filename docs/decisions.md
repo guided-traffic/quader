@@ -2807,6 +2807,33 @@ deprecation set on the screen is served to the format's clients at once (npm's d
 document). OCI images, Debian packages and generic files have none; a Helm chart's `deprecated` of its `Chart.yaml` joins as a
 `DeprecationFinder` without a `Deprecator`, since it is set by pushing the chart.
 
+### ADR-287 · The format contract gains the ranked package search, the namespaces of a format's names, and what an upstream tells beside a package
+
+**Status:** Decided by the development agent on 2026-11-26 — owner review at the walkthrough
+([Q-ANS-120](spec/formats/ansible.md#q-ans-120--a-collection-is-found-by-the-full-text-configuration-of-the-documentation-search),
+[Q-ANS-121](spec/formats/ansible.md#q-ans-121--the-package-list-ranks-by-the-name-first-and-by-the-formats-rank-within-it),
+[Q-UI-1290](spec/api-and-ui.md#q-ui-1290--a-name-of-a-format-has-a-page-made-from-what-exists-in-every-format),
+[Q-ANS-129](spec/formats/ansible.md#q-ans-129--the-upstreams-tags-downloads-and-signed-state-are-optional-members-of-every-formats-catalogue)). It adds to the
+frozen format contract and keeps `ContractVersion` 14.
+
+**Context.** The owner's decisions of W-30 (2026-11-25): finding collections as on Galaxy ranks a search by the name, the tags and the
+description; a namespace, a scope or a path prefix has a page in every format (d2 = b); the tab Upstream shows the upstream's tags,
+downloads and signed state. The core ranks no format's rows, knows no format's names and reads no upstream.
+
+**Decision.**
+- `formats.ViewRanker` (`FindRanked`, `RankedVersion`) is an optional interface of a `Format`, found by `CapabilitiesOf`
+  (`Capabilities.ViewRanker`); the host's view bridge asks it where it exists, and every other format's matches rank 0. Ansible Galaxy
+  has it.
+- `catalog.Facts.Namespaces` (`NamespaceRule`: `Kind`, `Separator`, `Marker`, `Nested`) says how a format's names group; nil for a
+  format without namespaces. Ansible Galaxy (`.`), npm (`@` and `/`) and OCI (`/`, nested) declare one; `GET /api/v1/formats` serves it,
+  so the screens name no format.
+- `discover.Popularity` (`Keywords`, `Downloads`, `Signed`) is embedded in `discover.Hit` and `discover.PackageInfo`; the engine bounds the
+  keywords as it bounds every text (`CutKeywords`). Ansible Galaxy fills them; npm and NuGet in another package.
+
+**Consequences.** All three are additions: no format changes code to keep building, and a format that leaves them out keeps its
+behaviour. The package list's sort `relevance` and the filter `namespace` of `GET /api/v1/packages` read them.
+
+
 ## Design invariants
 
 The invariants of [spec/README.md](spec/README.md#design-invariants) are the baseline every spec
@@ -9099,10 +9126,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 <!-- coverage-gen:begin decisions -->
 ### Q-ANS
 
-96 questions on [spec/formats/ansible.md](spec/formats/ansible.md).
+106 questions on [spec/formats/ansible.md](spec/formats/ansible.md).
 
 <details>
-<summary>Q-ANS: 96 questions</summary>
+<summary>Q-ANS: 106 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -9200,6 +9227,16 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-ANS-113](spec/formats/ansible.md#q-ans-113--a-role-cached-before-is-named-by-its-next-lookup-and-no-pass-fills-it) | A role cached before is named by its next lookup, and no pass fills it | Decided by the development agent on 2026-11-25 | (a) No pass: an archive filled again records its package, the next lookup of a role writes its facts, renames its package and queues its README | — |
 | [Q-ANS-114](spec/formats/ansible.md#q-ans-114--a-roles-install-snippets-are-its-own-and-name-it-by-its-display-name) | A role's install snippets are its own and name it by its display name | Decided by the development agent on 2026-11-25 | (a) An install template declares the package names it is for (`Packages`, a prefix of the normalized name); for a package it claims, the unprefixed install templates are left out and the package is written by its display name, read in the caller's scope | [ADR-285](#adr-285--a-package-can-be-renamed-on-the-screens-take-an-upstreams-html-readme-and-have-install-snippets-of-its-own) |
 | [Q-ANS-115](spec/formats/ansible.md#q-ans-115--a-role-is-looked-up-in-the-tab-upstream-by-the-name-the-rules-see) | A role is looked up in the tab Upstream by the name the rules see | Decided by the development agent on 2026-11-25 | (a) The catalogue's lookup of `role/<id>` lists every version of the role's list, newest first by its date, and a download from the tab names the version's archive | — |
+| [Q-ANS-120](spec/formats/ansible.md#q-ans-120--a-collection-is-found-by-the-full-text-configuration-of-the-documentation-search) | A collection is found by the full-text configuration of the documentation search | Decided by the development agent on 2026-11-26 | (a); (b) was the first build and its measurement decided it. | [ADR-287](#adr-287--the-format-contract-gains-the-ranked-package-search-the-namespaces-of-a-formats-names-and-what-an-upstream-tells-beside-a-package) |
+| [Q-ANS-121](spec/formats/ansible.md#q-ans-121--the-package-list-ranks-by-the-name-first-and-by-the-formats-rank-within-it) | The package list ranks by the name first and by the format's rank within it | Decided by the development agent on 2026-11-26 | (a) A sort `relevance`: 3000 a name equal to the text, 2000 one that starts with it, 1000 one that holds it, plus the format's rank 0 to 999 | [ADR-287](#adr-287--the-format-contract-gains-the-ranked-package-search-the-namespaces-of-a-formats-names-and-what-an-upstream-tells-beside-a-package) |
+| [Q-ANS-122](spec/formats/ansible.md#q-ans-122--signed-is-a-verified-signature-of-the-latest-version) | Signed is a verified signature of the latest version | Decided by the development agent on 2026-11-26 | (a) The latest visible version carries a signature that verifies (`verified_internal`, `verified_public`, R-SIG-009) | — |
+| [Q-ANS-123](spec/formats/ansible.md#q-ans-123--a-hits-tags-are-links-that-filter-by-one) | A hit's tags are links that filter by one | Decided by the development agent on 2026-11-26 | (a) Links: in a project the list filtered by the tag (`keyword`), across projects the search for it; five shown, "+N" | — |
+| [Q-ANS-124](spec/formats/ansible.md#q-ans-124--the-filter-deprecated-is-the-deprecations-and-reads-the-same-latest-as-signed) | The filter deprecated is the deprecation's, and reads the same latest as signed | Decided by the development agent on 2026-11-26 | (a) The filter `deprecated` of R-API-085 and `signed` read one latest visible version, picked once in the list's statement; both under State in the drawer | — |
+| [Q-ANS-125](spec/formats/ansible.md#q-ans-125--the-documentation-is-searchable-across-the-newest-version-of-every-collection) | The documentation is searchable across the newest version of every collection | Decided by the owner on 2026-11-25 (working paper W-30, d3 = b: "überall Favorit. Genau so umsetzen wie dort im Fav beschrieben") | (b) Across the newest version of every collection the reader may read, from the global search, with the entry as the hit | — |
+| [Q-ANS-126](spec/formats/ansible.md#q-ans-126--the-wiki-gate-is-decided-per-version-before-an-entry-is-read) | The wiki gate is decided per version before an entry is read | Decided by the development agent on 2026-11-26 | (a) The newest versions are read, each kept only where the reader may read its wiki, and only their entries are searched | — |
+| [Q-ANS-127](spec/formats/ansible.md#q-ans-127--the-search-starts-at-the-index-of-the-entries-no-new-storage) | The search starts at the index of the entries; no new storage | Decided by the development agent on 2026-11-26 | (a), after the measurement of (b) on 2026-11-26; no migration. | — |
+| [Q-ANS-128](spec/formats/ansible.md#q-ans-128--a-hit-opens-the-entry-in-the-newest-version-and-the-name-ranks-first) | A hit opens the entry in the newest version, and the name ranks first | Decided by the development agent on 2026-11-26 | (a) The package's own address with `?doc=<type>/<name>`; a name equal to, starting with, holding the text first | — |
+| [Q-ANS-129](spec/formats/ansible.md#q-ans-129--the-upstreams-tags-downloads-and-signed-state-are-optional-members-of-every-formats-catalogue) | The upstream's tags, downloads and signed state are optional members of every format's catalogue | Decided by the development agent on 2026-11-26 | (a) `discover.Popularity` in `Hit` and `PackageInfo`, each member only where the upstream's answer carries it; the count named "downloads at the upstream" | [ADR-287](#adr-287--the-format-contract-gains-the-ranked-package-search-the-namespaces-of-a-formats-names-and-what-an-upstream-tells-beside-a-package) |
 | [Q-ANS-130](spec/formats/ansible.md#q-ans-130--a-collections-deprecation-carries-a-message-for-quaders-screens-only) | A collection's deprecation carries a message for Quader's screens only | Decided by the development agent on 2026-11-26 | (a) An optional message, kept with the row and shown on Quader's pages; the document carries the flag | — |
 | [Q-ANS-131](spec/formats/ansible.md#q-ans-131--a-remote-takes-its-upstreams-flag-from-the-collection-document-it-fills-a-virtual-its-first-members) | A remote takes its upstream's flag from the collection document it fills, a virtual its first member's | Decided by the development agent on 2026-11-26 | (a) The fill of a collection document records the flag in the same table, without a principal; a virtual repository's merged document takes the flag of the first member that holds the collection, the member whose versions come first (R-ANS-022) | — |
 
@@ -12437,10 +12474,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-643 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+648 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 643 questions</summary>
+<summary>Q-UI: 648 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -13084,6 +13121,11 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1271](spec/api-and-ui.md#q-ui-1271--the-source-package-of-a-debian-version-links-to-the-package-list-of-its-binaries) | The source package of a Debian version links to the package list of its binaries | Decided by the development agent on 2026-11-26 | (a) A link to the package list filtered by the keyword, which Debian answers with the source package; the filter's chip says "Source package" while the list shows Debian alone | — |
 | [Q-UI-1272](spec/api-and-ui.md#q-ui-1272--a-debian-packages-changelog-is-a-tab-its-copyright-a-fold-its-files-a-section-of-files) | A Debian package's changelog is a tab, its copyright a fold, its files a section of Files | Decided by the development agent on 2026-11-26 | (a) A tab **Changelog** after Details; the copyright file a closed fold under Package details (its licence stands on the facts line); the installed files a section under the package files of **Files**: the first 100, a filter on the path, "Show more" by 500, an architecture choice when the version has several | — |
 | [Q-UI-1280](spec/api-and-ui.md#q-ui-1280--a-roles-entry-points-are-sections-of-its-page-before-its-readme-and-the-changelog-is-a-file-of-documentation-with-a-head) | A role's entry points are sections of its page before its README, and the changelog is a file of Documentation with a head | Decided by the development agent on 2026-11-26 | (a) One section per entry point (heading "Entry point main", the short description, "added in", the prose, **Parameters** with the same two-column table, Notes, Requirements, Attributes, See also, Authors), then **README**; the changelog a file **Changelog** after the other files of Documentation, its page headed **Changelog** with the member it was read from and a note of its own when cut | — |
+| [Q-UI-1290](spec/api-and-ui.md#q-ui-1290--a-name-of-a-format-has-a-page-made-from-what-exists-in-every-format) | A name of a format has a page made from what exists, in every format | Decided by the owner on 2026-11-25 (working paper W-30, d2 = b: "überall Favorit. Genau so umsetzen wie dort im Fav beschrieben") | (b) A page made from what exists, in every format: its packages and who may publish into the name (the claims); no description of its own; one screen for all formats | [ADR-287](#adr-287--the-format-contract-gains-the-ranked-package-search-the-namespaces-of-a-formats-names-and-what-an-upstream-tells-beside-a-package) |
+| [Q-UI-1291](spec/api-and-ui.md#q-ui-1291--the-page-of-a-name-lives-in-the-projects-packages-and-across-every-project) | The page of a name lives in the project's packages, and across every project | Decided by the development agent on 2026-11-26 | (a) `/projects/{project}/packages/-/namespaces/{format}/{name…}` and `/namespaces/{format}/{name…}` | — |
+| [Q-UI-1292](spec/api-and-ui.md#q-ui-1292--who-may-publish-is-shown-to-a-reader-of-the-configuration-in-plain-words-naming-no-principal) | Who may publish is shown to a reader of the configuration, in plain words, naming no principal | Decided by the development agent on 2026-11-26 | (a) The local repositories whose configuration the reader may read, each with who may publish (the project's roles and its policies as links), its package ownership, its covering claims and its automatic claims, in sentences | — |
+| [Q-UI-1293](spec/api-and-ui.md#q-ui-1293--a-names-namespace-is-a-link-of-its-own-in-lists-hits-and-heads) | A name's namespace is a link of its own in lists, hits and heads | Decided by the development agent on 2026-11-26 | (a) Each level of the namespace a link to its page, the rest the link to the package; the package's link named by the whole name | — |
+| [Q-UI-1294](spec/api-and-ui.md#q-ui-1294--nuget-debian-and-generic-files-have-no-name-page) | NuGet, Debian and generic files have no name page | Decided by the development agent on 2026-11-26 | (a) None of the three | — |
 | [Q-UI-1300](spec/api-and-ui.md#q-ui-1300--one-mark-deprecated-is-a-warning-badge-unlisted-a-plain-one) | One mark: Deprecated is a warning badge, Unlisted a plain one | Decided by the development agent on 2026-11-26 | (a) One component, `quader-deprecation-mark`: **Deprecated** as the warning badge with the icon `warning` and the message as its title, **Unlisted** as a plain badge with the icon `visibility_off` | — |
 | [Q-UI-1301](spec/api-and-ui.md#q-ui-1301--deprecating-is-an-act-in-the-menu-of-the-versions-head-with-a-small-dialog) | Deprecating is an act in the menu of the version's head, with a small dialog | Decided by the development agent on 2026-11-26 | (a) A menu (`more_vert`) at the end of the head for a reader who may deploy in a local repository that holds the version: **Deprecate version**, or **Deprecate collection**; a dialog of what the format carries (npm a message, NuGet reasons, a message and an alternate, Ansible a message for Quader's pages) with a sentence of what the clients do; **Change deprecation** and **Undo deprecation** on a deprecated version, the undo without a dialog | — |
 | [Q-UI-1302](spec/api-and-ui.md#q-ui-1302--the-filter-deprecated-stands-in-the-drawer-of-the-list-packages) | The filter "deprecated" stands in the drawer of the list Packages | Decided by the development agent on 2026-11-26 | (a) A category **State** with **Deprecated only** in the drawer of **Packages**, a chip **State: Deprecated** while it is set, kept in a saved view | — |

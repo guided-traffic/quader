@@ -166,3 +166,7 @@ unless the line is too short, and then breaks at the joint with a hyphen; withou
 | filling, active, draining, drained, detached, retired (the states of a connection) | Wird befüllt, Aktiv, Wird geleert, Geleert, Abgekoppelt, Stillgelegt |
 | technical details (a server's own text, folded under the sentence of the screen), verifier's note (of a signature) | Technische Details, Hinweis der Prüfung |
 | source network (of a remote repository) | Quellnetzwerk |
+| namespace (Ansible Galaxy), scope (npm), path (OCI: a path prefix of an image), the page of a name, inside (a namespace that holds another) | Namespace, Scope, Pfad, die Seite eines Namens, innerhalb |
+| package ownership (enforced, off), automatic claim, set by hand | Paket-Eigentümerschaft (erzwungen, aus), automatischer Claim, von Hand gesetzt |
+| tag (of a collection or a package), downloads at the upstream, signed at the upstream | Tag, Downloads beim Upstream, beim Upstream signiert |
+| entry (of a collection's documentation: a module, a plugin, a role) | Eintrag |

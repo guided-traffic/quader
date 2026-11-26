@@ -98,8 +98,10 @@ func (f *Format) Descriptor() formats.Descriptor {
 			ChecksumAlwaysVerified:    true,
 			PatternSubject:            formats.SubjectName,
 			PackageNames:              true,
-			PriorityMembers:           true,
-			PinsAndClaims:             true,
+			// Every path prefix of an image, "team" and "team/app" of "team/app/image", has a page of its own (R-UI-220, Q-UI-1290).
+			Namespaces:      &catalog.NamespaceRule{Kind: catalog.NamespacePath, Separator: "/", Nested: true},
+			PriorityMembers: true,
+			PinsAndClaims:   true,
 			// Writes pass the ownership check with the image name as the package (R-OCI-006).
 			OwnershipDefault: catalog.OwnershipEnforce,
 			SettingsSchema:   settingsSchema,

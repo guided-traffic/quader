@@ -110,23 +110,27 @@ func (s viewStore) readme(ctx context.Context, d rows.ViewDetail) (text, file st
 	return strings.ToValidUTF8(string(data), "�"), info.Readme
 }
 
-// ViewFind returns the ids of at most limit generic versions whose description contains text or whose tags contain keyword: the
-// versions of collections, then those of the roles a remote read (R-ANS-056).
-func (s viewStore) ViewFind(ctx context.Context, repos []string, text, keyword string, limit int) ([]int64, error) {
-	var out []int64
+// ViewFind returns at most limit generic versions that match the full-text query or the keyword, with their rank: the versions of
+// collections, then those of the roles a remote read (R-ANS-056, R-ANS-057).
+func (s viewStore) ViewFind(ctx context.Context, repos []string, query, keyword string, limit int) ([]rows.Found, error) {
+	var out []rows.Found
 	n := int32(min(limit, 1<<20)) //nolint:gosec // bounded above
 	err := s.read(ctx, nil, func(qs *q.Queries) error {
-		cols, err := qs.AnsibleViewFind(ctx, q.AnsibleViewFindParams{Repos: repos, Text: text, Keyword: keyword, RowLimit: n})
+		cols, err := qs.AnsibleViewFind(ctx, q.AnsibleViewFindParams{Repos: repos, Query: query, Keyword: keyword, RowLimit: n})
 		if err != nil {
 			return err
 		}
-		out = cols
+		for _, r := range cols {
+			out = append(out, rows.Found{ID: r.VersionID, Rank: int(r.Rank)})
+		}
 		if left := n - int32(len(cols)); left > 0 { //nolint:gosec // at most n
-			roles, err := qs.AnsibleRoleViewFind(ctx, q.AnsibleRoleViewFindParams{Repos: repos, Text: text, Keyword: keyword, RowLimit: left})
+			roles, err := qs.AnsibleRoleViewFind(ctx, q.AnsibleRoleViewFindParams{Repos: repos, Query: query, Keyword: keyword, RowLimit: left})
 			if err != nil {
 				return err
 			}
-			out = append(out, roles...)
+			for _, r := range roles {
+				out = append(out, rows.Found{ID: r.VersionID, Rank: int(r.Rank)})
+			}
 		}
 		return nil
 	})

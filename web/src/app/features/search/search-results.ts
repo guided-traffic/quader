@@ -3,6 +3,10 @@ import { isSystemRepository, isUpstreamProject, projectDescription, systemBadge 
 import { NoValue } from '../../shared/ui/no-value';
 import { Router, RouterLink } from '@angular/router';
 import { PackageSummary, PackagesApi } from '../../api/packages-api';
+import { DocumentationHit, SearchApi } from '../../api/search-api';
+import { SignatureBadge } from '../../shared/signatures/signature-badge';
+import { PackageName } from '../packages/package-name';
+import { PackageTags } from '../packages/package-tags';
 import { Project, ProjectRole, ProjectsApi } from '../../api/projects-api';
 import { RepositoriesApi, RepositorySummary, refOf } from '../../api/repositories-api';
 import { FormatIconView } from '../../shared/format-icon';
@@ -20,7 +24,7 @@ import { classIcon, classLabel, classTip, shownClass } from '../repositories/rep
 import { Tooltip } from '../../shared/ui/tooltip';
 
 /** The tabs of the page, in their order (R-UI-098). */
-export const RESULT_KINDS = ['repository', 'package', 'project'] as const;
+export const RESULT_KINDS = ['repository', 'package', 'project', 'documentation'] as const;
 export type ResultKind = (typeof RESULT_KINDS)[number];
 
 /** Rows per page of each tab, with **Load more** (R-API-010). */
@@ -37,7 +41,26 @@ const PAGE = 25;
  */
 @Component({
   selector: 'quader-search-results',
-  imports: [RouterLink, DataTable, DeprecationMark, FormatIconView, PageHeader, NoValue, ProjectLevel, ProjectLink, ProjectMark, TabContent, TabGroup, TabPage, TimeAgo, Tooltip, VisibilityIcon],
+  imports: [
+    RouterLink,
+    DataTable,
+    DeprecationMark,
+    FormatIconView,
+    PackageName,
+    PackageTags,
+    PageHeader,
+    NoValue,
+    ProjectLevel,
+    ProjectLink,
+    ProjectMark,
+    SignatureBadge,
+    TabContent,
+    TabGroup,
+    TabPage,
+    TimeAgo,
+    Tooltip,
+    VisibilityIcon,
+  ],
   template: `
     <quader-page-header [heading]="heading" [description]="description()" />
 
@@ -115,11 +138,18 @@ const PAGE = 25;
               @let at = placeOf(row);
               <tr>
                 <th scope="row" class="wrap-name">
-                  <a [routerLink]="packageLink(row)" translate="no">{{ row.name }}</a>
-                  &ngsp;<quader-deprecation-mark [deprecation]="row.deprecation" />
+                  <!-- A hit crosses projects: its namespace leads to the name's page in every project (R-UI-220), its tags to the
+                       search for them; the deprecation of its latest version (R-API-085) and a verified latest version's badge
+                       (R-ANS-057) beside the name. -->
+                  <span class="name-line">
+                    <quader-package-name [format]="row.format" [name]="row.name" [key]="row.key" [link]="packageLink(row)" />
+                    <quader-deprecation-mark [deprecation]="row.deprecation" />
+                    <quader-signature-badge [state]="row.signature" />
+                  </span>
                   @if (row.description) {
                     <span class="secondary" translate="no">{{ row.description }}</span>
                   }
+                  <quader-package-tags [tags]="row.keywords" />
                 </th>
                 <td class="project-cell"><quader-project-link [key]="at.project" /></td>
                 <td class="repository-cell">
@@ -198,6 +228,50 @@ const PAGE = 25;
           </quader-data-table>
         </ng-template>
       </quader-tab>
+      <quader-tab [label]="labels.documentation">
+        <ng-template quaderTabContent>
+          <!-- The modules, plugins and roles of the newest version of every collection the reader may read, whose documentation
+               the reader may read (R-ANS-058); an entry opens its page in its collection, the package's address with ?doc=. -->
+          <quader-data-table
+            [caption]="labels.documentation"
+            [columns]="documentationColumns"
+            [loaded]="tooShort() || documentation.loaded()"
+            [loading]="documentation.loading()"
+            loadingText="Searching."
+            i18n-loadingText="@@search.results.loading"
+            [error]="documentation.error()"
+            [empty]="tooShort() || documentation.items().length === 0"
+            [emptyText]="emptyText()"
+            [hasMore]="documentation.hasMore()"
+            (more)="documentation.more()"
+            (retry)="retry(documentation)"
+          >
+            @for (d of documentation.items(); track d.project + '/' + d.repository + '/' + d.package + '/' + d.type + '/' + d.name) {
+              <tr>
+                <th scope="row" class="wrap-name">
+                  <a [routerLink]="docLink(d)" [queryParams]="{ doc: d.type + '/' + d.name }" translate="no">{{ d.name }}</a>
+                  <!-- The entry's type, then its short description: one muted line. -->
+                  <span class="secondary" translate="no"
+                    >{{ d.type }}@if (d.shortDescription) {&ngsp;·&ngsp;{{ d.shortDescription }}}</span
+                  >
+                </th>
+                <td class="wrap-name">
+                  <!-- The collection, with its deprecation in the hit's repository beside its name (R-ANS-060, R-API-085). -->
+                  <span class="name-line">
+                    <quader-package-name [format]="d.format" [name]="d.package" [link]="docLink(d)" />
+                    <quader-deprecation-mark [deprecation]="d.deprecation" />
+                  </span>
+                  <span class="secondary" translate="no">{{ d.version }}</span>
+                </td>
+                <td class="project-cell"><quader-project-link [key]="d.project" /></td>
+                <td class="repository-cell">
+                  <a [routerLink]="['/projects', d.project, 'repositories', d.repository]" translate="no">{{ d.repository }}</a>
+                </td>
+              </tr>
+            }
+          </quader-data-table>
+        </ng-template>
+      </quader-tab>
     </quader-tab-group>
   `,
 })
@@ -206,6 +280,7 @@ export class SearchResults {
   private readonly repositoriesApi = inject(RepositoriesApi);
   private readonly packagesApi = inject(PackagesApi);
   private readonly projectsApi = inject(ProjectsApi);
+  private readonly searchApi = inject(SearchApi);
 
   /** The text of the search, the query parameter `q`. */
   readonly q = input<string | undefined>();
@@ -233,6 +308,7 @@ export class SearchResults {
   protected readonly repositories = new PagedResource<RepositorySummary>(PAGE);
   protected readonly packages = new PagedResource<PackageSummary>(PAGE);
   protected readonly projects = new PagedResource<Project>(PAGE);
+  protected readonly documentation = new PagedResource<DocumentationHit>(PAGE);
   private readonly formats = resource({ loader: () => this.repositoriesApi.formats() });
 
   protected readonly heading = $localize`:@@search.results.heading:Search`;
@@ -240,6 +316,7 @@ export class SearchResults {
     repository: $localize`:@@search.group.repositories:Repositories`,
     package: $localize`:@@search.group.packages:Packages`,
     project: $localize`:@@search.group.projects:Projects`,
+    documentation: $localize`:@@search.group.documentation:Documentation`,
   };
   protected readonly description = computed(() =>
     this.term() ? $localize`:@@search.results.description:What you may read that matches “${this.term()}:text:”.` : '',
@@ -281,6 +358,13 @@ export class SearchResults {
       width: '7rem',
     },
   ];
+  /** What a reader chooses an entry of the documentation by (R-ANS-058): the entry, the collection it documents, where it is. */
+  protected readonly documentationColumns: readonly TableColumn[] = [
+    { id: 'entry', label: $localize`:@@search.col.entry:Entry`, width: '14rem', prefer: true },
+    { id: 'collection', label: $localize`:@@search.col.collection:Collection`, width: '12rem' },
+    { id: 'project', label: $localize`:@@projects.col.project:Project`, width: '11rem' },
+    { id: 'repository', label: $localize`:@@repo.col.repository:Repository`, width: '8rem' },
+  ];
   /** The start page's columns (Q-UI-311), the project's mark before its name (Q-UI-424). */
   protected readonly projectColumns: readonly TableColumn[] = [
     { id: 'name', label: $localize`:@@projects.col.project:Project`, width: '14rem' },
@@ -306,7 +390,8 @@ export class SearchResults {
       if (q.length < 2) return;
       untracked(() => {
         if (tab === 'repository') void this.repositories.start(this.repositoriesApi.list({ q }));
-        else if (tab === 'package') void this.packages.start(this.packagesApi.list({ q }));
+        else if (tab === 'package') void this.packages.start(this.packagesApi.list({ q, sort: 'relevance' }));
+        else if (tab === 'documentation') void this.documentation.start(this.searchApi.documentation(q));
         else void this.projects.start(this.projectsApi.list({ q }));
       });
     });
@@ -328,6 +413,11 @@ export class SearchResults {
   protected packageLink(row: PackageSummary): string[] {
     // The address is the key, the name the rules see (an Ansible role's role/<id>, R-ANS-056); the row shows the name.
     return packageCommands(this.placeOf(row).project, row.format, row.key ?? row.name);
+  }
+
+  /** The address of the collection an entry documents: its newest version's page, which `?doc=` opens on the entry (R-ANS-049). */
+  protected docLink(d: DocumentationHit): string[] {
+    return packageCommands(d.project, d.format, d.package);
   }
 
   /**

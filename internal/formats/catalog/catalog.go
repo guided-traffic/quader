@@ -146,6 +146,9 @@ type Facts struct {
 	// the create schemas leave it out. Register refuses it with the class remote or virtual; formats.Validate refuses it with a
 	// route of the kind Upload.
 	SystemOnly bool
+	// Namespaces is how the format's package names group into namespaces, the part of a name that has a page of its own (R-UI-220):
+	// nil for a format whose names have no such part.
+	Namespaces *NamespaceRule
 	// PatternSubject is what include and exclude patterns match.
 	PatternSubject PatternSubject
 	// PackageNames is true for a format whose content has package names:

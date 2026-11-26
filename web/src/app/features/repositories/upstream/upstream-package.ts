@@ -1,4 +1,5 @@
 import { Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
+import { UpstreamPopularity } from './upstream-popularity';
 import { RouterLink } from '@angular/router';
 import { ApiError } from '../../../api/problem';
 import {
@@ -55,7 +56,7 @@ export function groupedCount(n: number): string {
  */
 @Component({
   selector: 'quader-upstream-package',
-  imports: [Loading, DataTable, DeprecationMark, DistTags, ErrorNotice, RouterLink, Switch, TimeAgo],
+  imports: [Loading, DataTable, DeprecationMark, DistTags, ErrorNotice, RouterLink, Switch, TimeAgo, UpstreamPopularity],
   templateUrl: './upstream-package.html',
   styleUrl: './upstream-package.scss',
 })

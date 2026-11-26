@@ -138,31 +138,49 @@ func (q *Queries) AnsibleRoleReadmeSet(ctx context.Context, arg AnsibleRoleReadm
 }
 
 const ansibleRoleViewFind = `-- name: AnsibleRoleViewFind :many
-SELECT pv.id AS version_id
+SELECT pv.id AS version_id,
+       (CASE WHEN $1::text = '' THEN 0
+             ELSE least(999, floor(1000 * ts_rank(
+                    setweight(to_tsvector('simple'::regconfig, translate(ro.owner || ' ' || ro.name, '._', '  ')), 'A')
+                    || setweight(jsonb_to_tsvector('simple'::regconfig, ro.tags, '["string"]'), 'B')
+                    || setweight(to_tsvector('simple'::regconfig, ro.description), 'C'),
+                    to_tsquery('simple', $1::text)))) END)::integer AS rank
   FROM ansible_roles ro
   JOIN repositories r ON r.id = ro.repo_id
   JOIN project p ON p.id = r.project_id
   JOIN packages pk ON pk.repo_id = ro.repo_id AND pk.name = 'role/' || ro.role_id::text
   JOIN package_versions pv ON pv.package_id = pk.id AND pv.trashed_at IS NULL
- WHERE (p.key || '/' || r.key) = ANY($1::text[])
-   AND (($2::text <> '' AND position(lower($2::text) in lower(ro.description)) > 0)
+ WHERE (p.key || '/' || r.key) = ANY($2::text[])
+   AND (($1::text <> ''
+         AND (setweight(to_tsvector('simple'::regconfig, translate(ro.owner || ' ' || ro.name, '._', '  ')), 'A')
+              || setweight(jsonb_to_tsvector('simple'::regconfig, ro.tags, '["string"]'), 'B')
+              || setweight(to_tsvector('simple'::regconfig, ro.description), 'C'))
+             @@ to_tsquery('simple', $1::text))
         OR ($3::text <> '' AND ro.tags ? $3::text))
  ORDER BY pv.id
  LIMIT $4::int
 `
 
 type AnsibleRoleViewFindParams struct {
+	Query    string
 	Repos    []string
-	Text     string
 	Keyword  string
 	RowLimit int32
 }
 
-// The generic versions of roles of the repositories (by key) whose description contains the text or whose tags contain the keyword.
-func (q *Queries) AnsibleRoleViewFind(ctx context.Context, arg AnsibleRoleViewFindParams) ([]int64, error) {
+type AnsibleRoleViewFindRow struct {
+	VersionID int64
+	Rank      int32
+}
+
+// The generic versions of roles of the repositories (by key) that match, each with its rank (0 to 999), by the rule of AnsibleViewFind
+// (R-ANS-057): with a query, every word of it begins a word of the role's owner and name (weight A), of its tags (B) or of its
+// description (C), ranked by ts_rank; with a keyword, its tags hold it (rank 0). The vector is built per row of the repositories asked:
+// a remote holds the rows of the roles a client looked up, no index of the upstream's, so they are few beside its collections.
+func (q *Queries) AnsibleRoleViewFind(ctx context.Context, arg AnsibleRoleViewFindParams) ([]AnsibleRoleViewFindRow, error) {
 	rows, err := q.db.Query(ctx, ansibleRoleViewFind,
+		arg.Query,
 		arg.Repos,
-		arg.Text,
 		arg.Keyword,
 		arg.RowLimit,
 	)
@@ -170,13 +188,13 @@ func (q *Queries) AnsibleRoleViewFind(ctx context.Context, arg AnsibleRoleViewFi
 		return nil, err
 	}
 	defer rows.Close()
-	items := []int64{}
+	items := []AnsibleRoleViewFindRow{}
 	for rows.Next() {
-		var version_id int64
-		if err := rows.Scan(&version_id); err != nil {
+		var i AnsibleRoleViewFindRow
+		if err := rows.Scan(&i.VersionID, &i.Rank); err != nil {
 			return nil, err
 		}
-		items = append(items, version_id)
+		items = append(items, i)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

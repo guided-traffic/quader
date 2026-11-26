@@ -1923,6 +1923,7 @@ type Capabilities struct {
 	ImageScanned  ImageScanned         // nil for a format whose content the image scanning does not read (R-VULN-033, ADR-190)
 	ServeFacts    ServeFactsKeyer      // nil for a format whose serve check reads nothing besides the item (Q-ARCH-291)
 	ViewSizer     ViewSizer            // nil for a format whose versions are the sum of their files (ADR-177)
+	ViewRanker    ViewRanker           // nil for a format whose package search ranks every match 0 (formats/ansible.md R-ANS-057, ADR-287)
 	VersionPath   VersionPather        // nil for a format whose versions have no file of their own (Q-AUTHZ-255, ADR-174)
 	SourceSpeller SourceSpeller        // nil for a format whose items have one spelling (Q-OCI-129)
 	SignatureCoverage SignatureCoverage // nil for a format whose signatures cover the artifact itself (signatures.md R-SIG-030)
@@ -2005,6 +2006,19 @@ type DeprecationChange struct {
 	Package     string
 	Version     string
 	Deprecation *Deprecation
+}
+
+// ViewRanker is the optional interface of a Format whose package search ranks what it finds (formats/ansible.md R-ANS-057, Q-ANS-121,
+// ADR-287): FindRanked answers what the view adapter's Find answers, each version with its rank from 0 to 999, higher for a better match.
+// The package list's sort relevance adds it to the rank of the package's name; a format without it ranks every match 0.
+type ViewRanker interface {
+	FindRanked(ctx context.Context, ports DataPorts, f ViewFind, limit int) ([]RankedVersion, error)
+}
+
+// RankedVersion is a version a ViewRanker found, with its rank (ADR-287).
+type RankedVersion struct {
+	ID   VersionID
+	Rank int // 0 to 999
 }
 
 // VersionPather gives the canonical path of the file that holds a version's content (npm's tarball, NuGet's .nupkg) for
@@ -2571,7 +2585,7 @@ R-ARCH-025 says which changes keep the version (Q-ARCH-280).
 **Optional behaviour.** `Format` holds what every format answers. A behaviour that only some formats have, or that
 the core cannot call yet, is an optional interface of this package, found by `CapabilitiesOf` when the format registers
 and recorded in the registry (`CapabilitiesFor`); the core never asks the format value (the architecture test allows
-that assertion in `CapabilitiesOf` alone). Today there are twelve: `ItemsRestorer`, `RemovalLocker`, `ServeFactsKeyer` (`Capabilities.ServeFacts`, Q-ARCH-291) and `ViewSizer` (`Capabilities.ViewSizer`, [ADR-177](../decisions.md#adr-177--the-format-contract-gains-the-optional-viewsizer-for-the-size-of-a-version-that-is-not-the-sum-of-its-files)) on the format, `Discoverer`,
+that assertion in `CapabilitiesOf` alone). Today there are thirteen: `ItemsRestorer`, `RemovalLocker`, `ServeFactsKeyer` (`Capabilities.ServeFacts`, Q-ARCH-291), `ViewSizer` (`Capabilities.ViewSizer`, [ADR-177](../decisions.md#adr-177--the-format-contract-gains-the-optional-viewsizer-for-the-size-of-a-version-that-is-not-the-sum-of-its-files)) and `ViewRanker` (`Capabilities.ViewRanker`, [ADR-287](../decisions.md#adr-287--the-format-contract-gains-the-ranked-package-search-the-namespaces-of-a-formats-names-and-what-an-upstream-tells-beside-a-package)) on the format, `Discoverer`,
 `FillInspector`, `MirrorLister`, `Authenticator`, `Revalidator`, `FactsGate` and `NameServer` (`RemoteCaps.Names`, [ADR-172](../decisions.md#adr-172--the-format-contract-gains-the-remote-name-index-and-the-serve-facts-kinds-deb_local-and-deb_remote)) on its remote adapter (`Capabilities.Remote`, Q-ARCH-267, Q-ARCH-268, Q-ARCH-284,
 [ADR-161](../decisions.md#adr-161--the-format-contract-gains-the-registry-root-the-upstream-handshake-head-revalidation-and-upload-sessions)), and
 `VulnerabilityAdapter` on the format (`Capabilities.Vulnerability`, R-VULN-009,

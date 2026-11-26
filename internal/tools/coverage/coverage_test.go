@@ -131,8 +131,10 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 		// (R-ANS-051 to R-ANS-053, three P1 requirements of W-30).
 		// 1302 since deprecation is a property of every format that has it (R-API-085, R-NUGET-036, R-ANS-060, three P1 requirements of
 		// W-30).
-		if len(m.Reqs) != 1302 || count[prioMVP] != 721 || count[prioP1] != 542 || count[prioP2] != 39 {
-			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1302 (721, 542, 39)",
+		// 1305 since collections are found as on Galaxy, a name has a page, and the documentation is searched across collections
+		// (R-ANS-057, R-ANS-058, R-UI-220, three P1 requirements of W-30, A3).
+		if len(m.Reqs) != 1305 || count[prioMVP] != 721 || count[prioP1] != 545 || count[prioP2] != 39 {
+			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1305 (721, 545, 39)",
 				len(m.Reqs), count[prioMVP], count[prioP1], count[prioP2])
 		}
 	})

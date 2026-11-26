@@ -49,15 +49,28 @@ SELECT pv.id AS version_id, pk.name AS package, r.role_id, r.owner, r.name, r.de
  WHERE pv.id = ANY(sqlc.arg(ids)::bigint[]);
 
 -- name: AnsibleRoleViewFind :many
--- The generic versions of roles of the repositories (by key) whose description contains the text or whose tags contain the keyword.
-SELECT pv.id AS version_id
+-- The generic versions of roles of the repositories (by key) that match, each with its rank (0 to 999), by the rule of AnsibleViewFind
+-- (R-ANS-057): with a query, every word of it begins a word of the role's owner and name (weight A), of its tags (B) or of its
+-- description (C), ranked by ts_rank; with a keyword, its tags hold it (rank 0). The vector is built per row of the repositories asked:
+-- a remote holds the rows of the roles a client looked up, no index of the upstream's, so they are few beside its collections.
+SELECT pv.id AS version_id,
+       (CASE WHEN sqlc.arg(query)::text = '' THEN 0
+             ELSE least(999, floor(1000 * ts_rank(
+                    setweight(to_tsvector('simple'::regconfig, translate(ro.owner || ' ' || ro.name, '._', '  ')), 'A')
+                    || setweight(jsonb_to_tsvector('simple'::regconfig, ro.tags, '["string"]'), 'B')
+                    || setweight(to_tsvector('simple'::regconfig, ro.description), 'C'),
+                    to_tsquery('simple', sqlc.arg(query)::text)))) END)::integer AS rank
   FROM ansible_roles ro
   JOIN repositories r ON r.id = ro.repo_id
   JOIN project p ON p.id = r.project_id
   JOIN packages pk ON pk.repo_id = ro.repo_id AND pk.name = 'role/' || ro.role_id::text
   JOIN package_versions pv ON pv.package_id = pk.id AND pv.trashed_at IS NULL
  WHERE (p.key || '/' || r.key) = ANY(sqlc.arg(repos)::text[])
-   AND ((sqlc.arg(text)::text <> '' AND position(lower(sqlc.arg(text)::text) in lower(ro.description)) > 0)
+   AND ((sqlc.arg(query)::text <> ''
+         AND (setweight(to_tsvector('simple'::regconfig, translate(ro.owner || ' ' || ro.name, '._', '  ')), 'A')
+              || setweight(jsonb_to_tsvector('simple'::regconfig, ro.tags, '["string"]'), 'B')
+              || setweight(to_tsvector('simple'::regconfig, ro.description), 'C'))
+             @@ to_tsquery('simple', sqlc.arg(query)::text))
         OR (sqlc.arg(keyword)::text <> '' AND ro.tags ? sqlc.arg(keyword)::text))
  ORDER BY pv.id
  LIMIT sqlc.arg(row_limit)::int;

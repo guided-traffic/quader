@@ -48,9 +48,14 @@ the client setup page of the admin UI ([web-ui.md](web-ui.md#package-screens-and
    virtual ones, then `view.Service.Scope`.
 3. `Scope` takes the repositories that are `ReadAll` and have no include or exclude patterns (`Repository.Restricts`, R-REPO-005) as a list of repository IDs (`Topology.Physical` is keyed by ID; the statements compare `packages.repo_id`, see [Repositories as IDs in the statements](vulnerabilities.md#repositories-as-ids-in-the-statements-r-vuln-028)). For every other repository that is not `ReadNone` it reads their version triples (`PackageViewCandidates`, which returns `repo_id`,
    at most 200 000, narrowed by format and name prefix), keeps the ones the repository's patterns admit (`Topology.Admits`) and the caller may read (`ReadScope.MayRead` with `Topology.Name(id)`, a map lookup; skipped for a `ReadAll` repository) as `repositoryId US name US version` strings (`rowKey`).
-4. `Service.List` asks the adapters for the versions that match `q` and `keyword` (`Find`) and for the withheld versions (`Withheld`), then runs
-   `PackageViewList`: the CTE `vis` holds the versions that are live, not withheld, in the scope and inside the filters, one cheap row each; `grouped`
-   counts and dates them per format and name; `page` applies the keyset condition and the order of the sort and the limit; `dl` sums the downloads of the
+4. `Service.List` asks the adapters for the versions that match `q` (`FindRanked` of `view.Ranker`, which the host's bridge answers with the format's
+   `formats.ViewRanker` where it has one and rank 0 otherwise, R-ANS-057) and `keyword` (`Find`) and for the withheld versions (`Withheld`), then runs
+   `PackageViewList`: the CTE `vis` holds the versions that are live, not withheld, in the scope and inside the filters (the filter `namespace` is
+   the name prefix the format's `catalog.NamespaceRule` makes, R-UI-220), one cheap row each; `qr` zips the matched ids with their ranks; `grouped`
+   counts and dates them per format and name and computes `relevance` (3000, 2000 or 1000 by the name, plus the best rank) and, only while
+   `signed` is asked, the latest version by the stored key; `page` keeps a package whose latest version carries a verified signature (the
+   badge's rule of R-SIG-009 in SQL) when `signed` is asked, applies the keyset condition and the order of the sort (`relevance`: the
+   highest first) and the limit; `dl` sums the downloads of the
    page's packages alone (the lead file or any file of a visible version by a join with `item_download_stats`; the document of an OCI version from the
    package's downloaded files, each counted once per visible version or tag that holds its bytes). Names are compared with collation `C`.
 5. For the packages of the page it reads the candidates of their latest version (`PackageViewLatest`, Q-API-429): per package row its highest visible release
@@ -62,6 +67,43 @@ the client setup page of the admin UI ([web-ui.md](web-ui.md#package-screens-and
    remote's tags (`package_versions_unranked`, `remote_cache_entries_tag_unranked`, Q-API-431). `latestOf` takes the latest among them: a release before a
    pre-release before an unranked version, the adapter's order within the first two, the time within the third; it names the
    repositories whose rows gave a candidate, and asks the adapter for the description and keywords of that version.
+6. On an installation that verifies signatures the API reads the badge of the page's latest versions in one statement (`PackageViewVerified`,
+   `addVerifiedBadges`): `signature` of an entry is `verified_internal` or `verified_public`, absent otherwise.
+
+The page of a name (`GET /api/v1/packages/namespace`, [namespace_api.go](../../internal/api/v1/namespace_api.go), R-UI-220) reads the format's
+`catalog.NamespaceRule`, and for a reader of a repository's configuration (`configScope`) the active local repositories of the format with
+their package ownership, their automatic claims and the claims that cover the namespace's prefix (`repository.Service.ClaimsWithin`, one
+statement, `ListClaimsOfRepositories`; `ClaimPattern.Within` says all or some). Its packages are the list with the filter `namespace`.
+
+The documentation searched across collections (`GET /api/v1/search/documentation` and the suggestions' kind `documentation`,
+[docs_search_api.go](../../internal/api/v1/docs_search_api.go), R-ANS-058) starts at the index of the entries: the versions with a matching
+entry in the scope's repositories (`AnsibleDocsCandidates` through `ansible_doc_entries_search`, the data port's `DocCandidates`, at most
+20,000), the newest version of each of their package rows (`view.Service.NewestOf`: `PackageViewLatestOfPackages`, each row by its key, and
+`latestOf`, the version the package's page opens on), kept where it is a candidate and `Scope.MayReadWiki` allows it, then one statement over
+their entries (`AnsibleDocsSearch` through `SearchDocs`). `querybudget`'s `TestR_ANS_058_TheDocumentationSearchCostsAFixedNumberOfStatements`
+holds the count, `search`'s `TestR_ANS_057_R_ANS_058_TheSearchOfCollectionsAndOfTheirDocumentationUsesItsIndexes` the indexes.
+
+The find of collections (`AnsibleViewFind`, R-ANS-057) reads the expression index `ansible_collection_versions_search` (migration 00138)
+first, in a `MATERIALIZED` step, and joins the matches to the repositories asked; the statement repeats the index's expression word for
+word, which the planner needs to use it. The roles a remote read (`AnsibleRoleViewFind`, R-ANS-056) follow with the rows the limit leaves,
+by the same rule over owner and name, tags and description; they have no index and build each role's vector, since a remote holds only the
+roles a client looked up. A role's display name `<owner>.<name>` is matched by the list's substring and counts for the relevance like the
+name (`PackageViewList`).
+
+**Measured once** (2026-11-26, `TestMeasureTheSearchOfCollections` in `querybudget`, run with `QUADER_TEST_MEASURE_FIND=1`; tiny rows, one
+version per collection):
+
+| Collections | Find, a word of 1 % | Find, a word of every row | List without a text | List, 1 % | List, every row | Package suggestions |
+|---|---|---|---|---|---|---|
+| 1,000 | 0.4 ms | 14 ms | 21 ms | 24 ms | 88 ms | 13 ms |
+| 10,000 | 2.5 ms | 153 ms | 45 ms | 55 ms | 156 ms | 23 ms |
+| 50,000 | 8.1 ms (447 ms with the vector built per row) | 391 ms | 132 ms | 150 ms | 717 ms | 75 ms |
+
+The documentation with 200,000 entries of 2,000 collections among 50,000: the candidates 4.5 ms (a word of 200 entries, bitmap scan of
+`ansible_doc_entries_search`) and 31 ms (a word of every entry); the list 22 ms; the suggestions 31 ms (`do`), 41 ms (`doc`), 44 ms (`docker`),
+350 to 370 ms for a word of every entry (H-2157). The first build read the newest version of every collection and every entry of those with
+documentation: 770 ms. The package suggestions' 75 ms with 50,000 collections are the statements of R-API-064 whatever the text and were not
+changed here.
 
 Every transaction of the service runs with the server's JIT compilation off (`Service.read`, Q-API-428).
 

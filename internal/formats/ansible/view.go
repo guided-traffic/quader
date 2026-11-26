@@ -90,14 +90,43 @@ func (viewAdapter) Withheld(ctx context.Context, ports formats.DataPorts, repos 
 	return versionIDs(ids), err
 }
 
-// Find asks the data port for the versions whose description or tags match.
-func (viewAdapter) Find(ctx context.Context, ports formats.DataPorts, f formats.ViewFind, limit int) ([]formats.VersionID, error) {
+var _ formats.ViewRanker = (*Format)(nil)
+
+// FindRanked implements [formats.ViewRanker] for the format: its view adapter ranks (R-ANS-057).
+func (f *Format) FindRanked(ctx context.Context, ports formats.DataPorts, q formats.ViewFind, limit int) ([]formats.RankedVersion, error) {
+	return viewAdapter{}.FindRanked(ctx, ports, q, limit)
+}
+
+// Find asks the data port for the versions whose namespace, name, tags or description match.
+func (a viewAdapter) Find(ctx context.Context, ports formats.DataPorts, f formats.ViewFind, limit int) ([]formats.VersionID, error) {
+	found, err := a.FindRanked(ctx, ports, f, limit)
+	out := make([]formats.VersionID, len(found))
+	for i, v := range found {
+		out[i] = v.ID
+	}
+	return out, err
+}
+
+// FindRanked is the ranked search of the view (R-ANS-057, Q-ANS-120): a text is matched as the documentation search matches, every word
+// a prefix of a word of the namespace and name, the tags or the description, and ranked in that order of weight; a keyword is one tag
+// exactly. A text without a letter or a digit finds nothing here; the core still matches it in the name.
+func (viewAdapter) FindRanked(ctx context.Context, ports formats.DataPorts, f formats.ViewFind, limit int) ([]formats.RankedVersion, error) {
 	p, err := viewOf(ports)
 	if err != nil {
 		return nil, err
 	}
-	ids, err := p.ViewFind(ctx, f.Repos, f.Text, f.Keyword, limit+1)
-	return versionIDs(ids), err
+	query := ""
+	if f.Text != "" {
+		if query = rows.ViewQuery(f.Text); query == "" {
+			return nil, nil
+		}
+	}
+	found, err := p.ViewFind(ctx, f.Repos, query, f.Keyword, limit+1)
+	out := make([]formats.RankedVersion, len(found))
+	for i, v := range found {
+		out[i] = formats.RankedVersion{ID: formats.VersionID(v.ID), Rank: v.Rank}
+	}
+	return out, err
 }
 
 func versionIDs(ids []int64) []formats.VersionID {

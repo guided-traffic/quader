@@ -242,7 +242,7 @@ func (s *Store) ViewDetails(context.Context, []int64, bool) ([]rows.ViewDetail, 
 }
 
 // ViewFind finds nothing.
-func (s *Store) ViewFind(context.Context, []string, string, string, int) ([]int64, error) {
+func (s *Store) ViewFind(context.Context, []string, string, string, int) ([]rows.Found, error) {
 	return nil, nil
 }
 

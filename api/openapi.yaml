@@ -6775,6 +6775,7 @@ paths:
                     mirror: false
                     wiki: false
                     systemOnly: false
+                    namespaces: null
                     signatureKinds:
                       - { name: signature file, role: publisher }
                     settingsSchema: null
@@ -10859,10 +10860,15 @@ paths:
         `updatedAt`) is computed from the visible versions only, so a hidden version leaks neither its
         number nor its existence. `format` and `repository` repeat for OR; a virtual repository
         expands to its members; a remote repository contributes only cached versions (an OCI remote: the tags
-        whose document the cache holds, R-OCI-036). `q` matches the name and the description case-insensitively, `namePrefix` the start of the name,
-        `keyword` one keyword exactly. `createdFrom` (inclusive) and `createdTo` (exclusive) bound
+        whose document the cache holds, R-OCI-036). `q` matches the name case-insensitively and what the format searches: the
+        description and the keywords (an Ansible Galaxy collection: every word a prefix of a word of its namespace and name, its tags
+        or its description, R-ANS-057), `namePrefix` the start of the name, `namespace` the packages of one namespace of the one
+        `format` asked (R-UI-220), `keyword` one keyword exactly, `signed=true` the packages whose latest visible version carries a
+        verified signature (R-ANS-057). `createdFrom` (inclusive) and `createdTo` (exclusive) bound
         the creation time of the first visible version. `sort` takes one field, a leading `-` sorts
-        descending; the default is `name`. An anonymous caller sees what a `public` level admits.
+        descending; the default is `name`. `relevance` puts the best match of `q` first: a name equal to it, then one that starts
+        with it, then one that holds it, each ahead of a match in the description, and within that the format's rank (Q-ANS-121);
+        without `q` it is the order of the name. An anonymous caller sees what a `public` level admits.
         The filter runs in SQL. A sort field or filter this document does not list answers
         `400 malformed_request`. `deprecated=true` keeps the packages whose latest visible version is deprecated, and each entry
         carries the deprecation of its latest version (R-API-085). `include=vulnerabilities` adds `vulnerabilityGrade` to each entry, for a signed-in caller of an
@@ -10899,13 +10905,27 @@ paths:
           explode: true
         - name: q
           in: query
-          description: Case-insensitive substring of the name or the description.
+          description: Case-insensitive substring of the name, or what the format's search matches (the description, the keywords).
           schema:
             type: string
         - name: namePrefix
           in: query
           schema:
             type: string
+        - name: namespace
+          in: query
+          description: |
+            A namespace of the format's names (R-UI-220, `GET /api/v1/formats` `namespaces`): an Ansible Galaxy namespace (`acme`), an
+            npm scope (`@acme`), an OCI path prefix (`team/app`). It needs exactly one `format` that has namespaces and no `namePrefix`;
+            otherwise `400 malformed_request`.
+          schema:
+            type: string
+            maxLength: 256
+        - name: signed
+          in: query
+          description: "`true`: only the packages whose latest visible version carries a verified signature (R-SIG-009, R-ANS-057)."
+          schema:
+            type: boolean
         - name: keyword
           in: query
           schema:
@@ -10943,7 +10963,7 @@ paths:
           in: query
           schema:
             type: string
-            enum: [name, -name, createdAt, -createdAt, updatedAt, -updatedAt]
+            enum: [name, -name, createdAt, -createdAt, updatedAt, -updatedAt, relevance, -relevance]
             default: name
         - $ref: "#/components/parameters/Limit"
         - $ref: "#/components/parameters/Cursor"
@@ -10975,6 +10995,72 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthenticated"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/packages/namespace:
+    get:
+      operationId: getPackageNamespace
+      tags: [packages]
+      summary: Who may publish into a namespace
+      description: |
+        The page of a name (R-UI-220, Q-UI-1290 to Q-UI-1294): what decides a publish into a namespace of a format (an Ansible Galaxy
+        namespace, an npm scope, an OCI path prefix), made from what exists; no description, no owner, no entity of its own. Its
+        packages are the list `GET /api/v1/packages?format=&namespace=`. `publishing` names the local repositories of the format
+        (in `project` when it is given) whose configuration the caller may read: a holder of `repositories:read-config`, or an Owner
+        of the repository's project (R-REPO-010); for each, its package ownership, whether its first publish of a name claims it, and
+        its claims that cover names of the namespace (R-REPO-023, R-AUTHZ-018). A repository whose configuration the caller may not
+        read is not named and not counted, and no principal is named: who may publish there is the role of the project's members
+        (R-AUTHZ-026) and its permission policies, which the screen links to. `publishing` is `null` for a caller who may read no
+        such configuration. A format without namespaces, or a text that is no namespace of the format, answers `404`.
+      x-quader-permission:
+        public: true
+      parameters:
+        - name: format
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: name
+          in: query
+          required: true
+          description: The namespace (`acme`, `@acme`, `team/app`).
+          schema:
+            type: string
+            maxLength: 256
+        - name: project
+          in: query
+          description: A project key; only that project's repositories are named.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The namespace.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PackageNamespace"
+              example:
+                format: ansible
+                name: acme
+                kind: namespace
+                publishing:
+                  repositories:
+                    - project: platform
+                      key: ansible-local
+                      packageOwnership: enforce
+                      autoClaim: true
+                      claims:
+                        - {pattern: "acme.*", scope: members, source: manual, covers: all}
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
         "429":
           $ref: "#/components/responses/TooManyRequests"
         "500":
@@ -18542,13 +18628,15 @@ paths:
         - name: kind
           in: query
           description: |
-            The kinds to suggest, repeated or comma-separated; `repository,package,project` when absent. An unknown kind answers
-            `400 malformed_request`; `user`, `group` and `service_account` need `identities:read` (`403` otherwise).
+            The kinds to suggest, repeated or comma-separated; `repository,package,project` when absent. `documentation` suggests
+            modules, plugins and roles of the newest version of the collections the caller may read, by the rule of
+            `GET /api/v1/search/documentation` (R-ANS-058). An unknown kind answers `400 malformed_request`; `user`, `group` and
+            `service_account` need `identities:read` (`403` otherwise).
           schema:
             type: array
             items:
               type: string
-              enum: [repository, package, project, user, group, service_account]
+              enum: [repository, package, project, documentation, user, group, service_account]
           style: form
           explode: true
         - name: limit
@@ -18587,6 +18675,57 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "412":
           $ref: "#/components/responses/PreconditionFailed"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/search/documentation:
+    get:
+      operationId: searchDocumentation
+      tags: [search]
+      summary: Find modules, plugins and roles across collections
+      description: |
+        The documentation searched across collections (formats/ansible.md R-ANS-058, Q-ANS-125 to Q-ANS-128): the entries (modules,
+        plugins of every type, roles) of the newest version of every Ansible Galaxy collection the caller may read, per repository,
+        whose name holds the text or each of whose terms begins a word of the entry's name, short description, options or return
+        values (the full-text configuration of R-ANS-036). The newest version is the one the package's page opens on (R-UI-218). The
+        wiki gate holds per repository (R-ANS-037): an entry of a collection whose documentation the caller may not read is no hit and
+        counts nowhere. The best first: a name equal to the text, then one that starts with it, then one that holds it, then a match in
+        the text; within that by the entry's name, the collection and the repository. A list of R-API-010 with `cursor`. It costs a
+        fixed number of statements whatever the number of entries (the scope's, the withheld versions, the newest versions, the
+        entries).
+      x-quader-permission:
+        public: true
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: The text, 2 to 100 characters after trimming, at most 8 terms; else `400 malformed_request`.
+          schema:
+            type: string
+        - name: project
+          in: query
+          description: A project key; only the collections of that project's repositories.
+          schema:
+            type: string
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: One page of entries.
+          headers:
+            Link:
+              $ref: "#/components/headers/Link"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentationHitList"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
         "429":
           $ref: "#/components/responses/TooManyRequests"
         "500":
@@ -21967,7 +22106,7 @@ components:
       schema:
         type: string
         pattern: "^pkg_[0-9A-Za-z]+$"
-        x-quader-reserved-names: [lookup]
+        x-quader-reserved-names: [lookup, namespace]
     DocRepository:
       name: repository
       in: query
@@ -26159,7 +26298,7 @@ components:
     # >>> M1 repository
     FormatDescriptor:
       type: object
-      required: [name, classes, clients, layout, protocolBasePath, upstreamPresets, defaultMetadataTtlSeconds, defaultNotFoundTtlSeconds, patternSubject, priorityMembers, pinsAndClaims, caps, vulnerabilityScanning, mirror, wiki, systemOnly, signatureKinds, settingsSchema]
+      required: [name, classes, clients, layout, protocolBasePath, upstreamPresets, defaultMetadataTtlSeconds, defaultNotFoundTtlSeconds, patternSubject, priorityMembers, pinsAndClaims, caps, vulnerabilityScanning, mirror, wiki, systemOnly, namespaces, signatureKinds, settingsSchema]
       properties:
         name:
           type: string
@@ -26233,6 +26372,14 @@ components:
             Whether the format's only repository is one Quader declares in the project `upstream` (`clamav`, R-CLAMAV-001, ADR-225): no
             repository of it is created (`422 validation_failed` with `format_system_only` at `/format`), and the create form does
             not offer it.
+        namespaces:
+          description: |
+            How the format's package names group into namespaces, each of which has a page (R-UI-220, Q-UI-1290): Ansible Galaxy's
+            namespace (`acme` of `acme.tools`), npm's scope (`@acme` of `@acme/ui`), every path prefix of an OCI image (`team` and
+            `team/app` of `team/app/image`). `null` for a format whose names have no such part (NuGet, Debian, generic files).
+          oneOf:
+            - $ref: "#/components/schemas/FormatNamespaces"
+            - type: "null"
         signatureKinds:
           type: array
           description: |
@@ -26252,6 +26399,23 @@ components:
             the label the form shows for each value (R-UI-088). A `title` and a `description` are the texts the form shows,
             in plain words; the member schemas of this document (`NpmSettings`, …) describe each setting for the API
             reader. `null` for a format without settings.
+    FormatNamespaces:
+      type: object
+      description: |
+        The rule of a format's namespaces (R-UI-220): a namespace is a prefix of a package name that ends before `separator`, starts
+        with `marker` (`@` of an npm scope, empty for none), and is the first such prefix only unless `nested` (every path prefix of an
+        image). `kind` is the word the screens use.
+      required: [kind, separator, marker, nested]
+      properties:
+        kind:
+          type: string
+          enum: [namespace, scope, path]
+        separator:
+          type: string
+        marker:
+          type: string
+        nested:
+          type: boolean
     FormatSignatureKind:
       type: object
       required: [name, role]
@@ -27807,6 +27971,13 @@ components:
           type: integer
           format: int64
           description: The downloads of the visible versions, summed.
+        signature:
+          type: string
+          enum: [verified_internal, verified_public]
+          description: |
+            The verified badge of `latestVersion` (R-SIG-009, R-SIG-035), present only when it carries a verified signature and the
+            installation verifies signatures (R-ANS-057, Q-ANS-122): the list shows the badge of a verified version only; the version's
+            page shows every state.
         vulnerabilityGrade:
           description: |
             With `include=vulnerabilities` only, and only for a signed-in caller of an installation that scans (R-VULN-039): the grade
@@ -34568,12 +34739,141 @@ components:
           $ref: "#/components/schemas/PackageSuggestions"
         projects:
           $ref: "#/components/schemas/ProjectSuggestions"
+        documentation:
+          $ref: "#/components/schemas/DocumentationSuggestions"
         users:
           $ref: "#/components/schemas/UserSuggestions"
         groups:
           $ref: "#/components/schemas/GroupSuggestions"
         serviceAccounts:
           $ref: "#/components/schemas/ServiceAccountSuggestions"
+    DocumentationSuggestions:
+      type: object
+      additionalProperties: false
+      required: [items, more]
+      properties:
+        items:
+          type: array
+          maxItems: 10
+          items:
+            $ref: "#/components/schemas/DocumentationHit"
+        more:
+          type: boolean
+          description: A readable match was left out (R-API-061); never `true` because of an entry the caller may not read.
+    DocumentationHitList:
+      type: object
+      additionalProperties: false
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/DocumentationHit"
+        nextCursor:
+          type: [string, "null"]
+    DocumentationHit:
+      type: object
+      additionalProperties: false
+      description: |
+        An entry of a collection's documentation (R-ANS-058): its type (`module`, a plugin type, `role`), its name, its short
+        description, and the collection, the version and the repository it is the documentation of. The entry's page is the package's
+        page with `?doc=<type>/<name>` (R-ANS-049); the package's own address shows its newest version, which `version` is.
+      required: [format, packageId, package, version, project, repository, type, name, shortDescription]
+      properties:
+        format:
+          type: string
+        packageId:
+          type: string
+          description: The identifier of `GET /api/v1/packages/{packageId}`.
+        package:
+          type: string
+          description: The collection's full name (`acme.tools`).
+        version:
+          type: string
+        project:
+          type: string
+        repository:
+          type: string
+          description: The key of the repository within `project`.
+        type:
+          type: string
+        name:
+          type: string
+        shortDescription:
+          type: string
+        deprecation:
+          description: |
+            The deprecation of the collection in `repository` (R-ANS-060), which every version of it shares; absent when it is not
+            deprecated.
+          $ref: "#/components/schemas/PackageDeprecation"
+    PackageNamespace:
+      type: object
+      additionalProperties: false
+      required: [format, name, kind, publishing]
+      properties:
+        format:
+          type: string
+        name:
+          type: string
+        kind:
+          type: string
+          enum: [namespace, scope, path]
+          x-enum-varnames: [PackageNamespaceKindNamespace, PackageNamespaceKindScope, PackageNamespaceKindPath]
+        publishing:
+          oneOf:
+            - $ref: "#/components/schemas/NamespacePublishing"
+            - type: "null"
+    NamespacePublishing:
+      type: object
+      additionalProperties: false
+      required: [repositories]
+      properties:
+        repositories:
+          type: array
+          description: The local repositories of the format whose configuration the caller may read, those with a claim first.
+          items:
+            $ref: "#/components/schemas/NamespaceRepository"
+    NamespaceRepository:
+      type: object
+      additionalProperties: false
+      required: [project, key, packageOwnership, autoClaim, claims]
+      properties:
+        project:
+          type: string
+        key:
+          type: string
+        packageOwnership:
+          type: string
+          enum: [enforce, "off"]
+          x-enum-varnames: [NamespaceRepositoryOwnershipEnforce, NamespaceRepositoryOwnershipOff]
+          description: The first publisher of a name owns it and a later version needs an owner (`enforce`), or anyone who may publish there publishes every name (`off`, R-AUTHZ-018).
+        autoClaim:
+          type: boolean
+          description: A first publish of a name no claim of the repository covers claims the name for it (R-REPO-023).
+        claims:
+          type: array
+          items:
+            $ref: "#/components/schemas/NamespaceClaim"
+    NamespaceClaim:
+      type: object
+      additionalProperties: false
+      required: [pattern, scope, source, covers]
+      properties:
+        pattern:
+          type: string
+        scope:
+          type: string
+          enum: [members, global]
+          x-enum-varnames: [NamespaceClaimScopeMembers, NamespaceClaimScopeGlobal]
+        source:
+          type: string
+          enum: [manual, auto]
+          x-enum-varnames: [NamespaceClaimSourceManual, NamespaceClaimSourceAuto]
+        covers:
+          type: string
+          enum: [all, some]
+          x-enum-varnames: [NamespaceClaimCoversAll, NamespaceClaimCoversSome]
+          description: Every name of the namespace (`all`), or some of them (`some`, a pattern of names inside it).
     RepositorySuggestions:
       type: object
       additionalProperties: false
@@ -36318,6 +36618,21 @@ components:
           items:
             type: string
           description: deprecated, unlisted, official, verified, insecure, unsigned-index.
+        keywords:
+          type: array
+          items:
+            type: string
+          description: |
+            The upstream's tags or keywords of the package (Ansible Galaxy's tags, R-ANS-047); absent where the upstream's answer has none.
+        downloads:
+          type: integer
+          format: int64
+          description: |
+            The downloads the upstream counts of the package, all versions (Galaxy's `download_count`), named apart from Quader's own
+            count; absent where the answer does not carry it (Q-ANS-129).
+        signed:
+          type: boolean
+          description: The upstream's own word that its highest version is signed (Galaxy's `is_signed`); absent where it says nothing.
         delivery:
           $ref: "#/components/schemas/DeliveryDecision"
         stored:
@@ -36474,6 +36789,21 @@ components:
           additionalProperties:
             type: string
           description: npm's dist-tags, tag to version; empty for every other format (an image's tags are its versions).
+        keywords:
+          type: array
+          items:
+            type: string
+          description: |
+            The upstream's tags or keywords of the package (Ansible Galaxy's tags, R-ANS-047); absent where the upstream's answer has none.
+        downloads:
+          type: integer
+          format: int64
+          description: |
+            The downloads the upstream counts of the package, all versions (Galaxy's `download_count`), named apart from Quader's own
+            count; absent where the answer does not carry it (Q-ANS-129).
+        signed:
+          type: boolean
+          description: The upstream's own word that its highest version is signed (Galaxy's `is_signed`); absent where it says nothing.
         delivery:
           $ref: "#/components/schemas/DeliveryDecision"
         stored:

@@ -151,6 +151,7 @@ export const GENERIC_FORMAT: FormatDescriptor = {
   settingsSchema: null,
   wiki: false,
   systemOnly: false,
+  namespaces: null,
   signatureKinds: [{ name: 'signature file', role: 'publisher' }],
 };
 
@@ -177,6 +178,7 @@ export const CLAMAV_DEFINITIONS_FORMAT: FormatDescriptor = {
   settingsSchema: null,
   wiki: false,
   systemOnly: true,
+  namespaces: null,
   signatureKinds: [],
 };
 
@@ -266,6 +268,7 @@ export const PACKAGE_FORMAT: FormatDescriptor = {
   ...GENERIC_FORMAT,
   name: 'npm',
   displayName: 'npm',
+  namespaces: { kind: 'scope', separator: '/', marker: '@', nested: false },
   classes: ['local', 'remote', 'virtual'],
   clients: [
     { id: 'npm', displayName: 'npm' },
@@ -343,6 +346,7 @@ export const NUGET_FORMAT: FormatDescriptor = {
 export const OCI_FORMAT: FormatDescriptor = {
   ...GENERIC_FORMAT,
   name: 'oci',
+  namespaces: { kind: 'path', separator: '/', marker: '', nested: true },
   signatureKinds: [
     { name: 'Notation', role: 'publisher' },
     { name: 'Sigstore bundle', role: 'publisher' },
@@ -461,6 +465,7 @@ export const ANSIBLE_SETTINGS_SCHEMA = {
 export const ANSIBLE_FORMAT: FormatDescriptor = {
   ...PACKAGE_FORMAT,
   name: 'ansible',
+  namespaces: { kind: 'namespace', separator: '.', marker: '', nested: false },
   displayName: 'Ansible Galaxy',
   clients: [{ id: 'ansible-galaxy', displayName: 'Ansible Galaxy (ansible-galaxy)' }],
   protocolBasePath: '/api/ansible/{project}/{key}/',

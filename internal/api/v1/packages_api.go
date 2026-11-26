@@ -233,6 +233,20 @@ func packageFilter(lq ListQuery) (view.Filter, error) {
 	default:
 		return f, badParam("deprecated", "must be true or false")
 	}
+	if ns := lq.First("namespace"); ns != "" {
+		prefix, err := namespaceFilter(f.Formats, ns, f.NamePrefix)
+		if err != nil {
+			return f, err
+		}
+		f.NamePrefix = prefix
+	}
+	switch raw := lq.First("signed"); raw {
+	case "", "false":
+	case "true":
+		f.Signed = true
+	default:
+		return f, badParam("signed", "must be true or false")
+	}
 	for _, p := range []struct {
 		name string
 		to   **time.Time
@@ -248,6 +262,28 @@ func packageFilter(lq ListQuery) (view.Filter, error) {
 	return f, nil
 }
 
+// namespaceFilter is the name prefix of the filter namespace (R-UI-220): the namespace of the one format asked, as its rule makes it.
+func namespaceFilter(formatNames []string, ns, namePrefix string) (string, error) {
+	if len(formatNames) != 1 {
+		return "", badParam("namespace", "needs exactly one format")
+	}
+	if namePrefix != "" {
+		return "", badParam("namespace", "cannot be combined with namePrefix")
+	}
+	if len(ns) > 256 {
+		return "", badParam("namespace", "is at most 256 characters")
+	}
+	f, ok := formats.Lookup(formatNames[0])
+	if !ok || f.Descriptor().Namespaces == nil {
+		return "", badParam("namespace", "names a format without namespaces")
+	}
+	prefix, ok := f.Descriptor().Namespaces.Prefix(strings.ToLower(ns))
+	if !ok {
+		return "", badParam("namespace", "is no namespace of the format")
+	}
+	return prefix, nil
+}
+
 // ListPackages implements GET /api/v1/packages (R-API-029).
 func (s *Server) ListPackages(w http.ResponseWriter, r *http.Request, _ gen.ListPackagesParams) {
 	ps, err := s.packageServices()
@@ -256,8 +292,8 @@ func (s *Server) ListPackages(w http.ResponseWriter, r *http.Request, _ gen.List
 		return
 	}
 	lq, err := ParseList(r, ListSpec{
-		Filters:     []string{"format", "project", "repository", "q", "namePrefix", "keyword", "createdFrom", "createdTo", "include", "deprecated"},
-		Sorts:       []string{"name", "createdAt", "updatedAt"},
+		Filters:     []string{"format", "project", "repository", "q", "namePrefix", "namespace", "signed", "keyword", "createdFrom", "createdTo", "include", "deprecated"},
+		Sorts:       []string{"name", "createdAt", "updatedAt", "relevance"},
 		DefaultSort: "name",
 	}, s.o.API.Config)
 	var f view.Filter
@@ -288,7 +324,36 @@ func (s *Server) ListPackages(w http.ResponseWriter, r *http.Request, _ gen.List
 	if includes(lq, "vulnerabilities") {
 		s.addVulnerabilityGrades(r, lq, rows[:min(len(page.Items), len(rows))], page.Items)
 	}
+	if err := s.addVerifiedBadges(ctx, ps, rows[:min(len(page.Items), len(rows))], page.Items); err != nil {
+		httpserver.Problem(w, r, err)
+		return
+	}
 	WritePage(w, r, page)
+}
+
+// addVerifiedBadges adds the verified badge of each entry's latest version (R-ANS-057, Q-ANS-122) in one statement for the page, on an
+// installation that verifies signatures; an entry whose latest version carries no verified signature gets none.
+func (s *Server) addVerifiedBadges(ctx context.Context, ps PackageServices, page []view.Package, out []gen.PackageSummary) error {
+	if sv := s.o.Signatures; !sv.Enabled || len(page) == 0 {
+		return nil
+	}
+	ids := make([]int64, 0, len(page))
+	for _, p := range page {
+		if p.LatestVersionID != 0 {
+			ids = append(ids, p.LatestVersionID)
+		}
+	}
+	got, err := ps.View.Verified(ctx, ids)
+	if err != nil {
+		return err
+	}
+	for i, p := range page {
+		if state, ok := got[p.LatestVersionID]; ok {
+			b := gen.PackageSummarySignature(state)
+			out[i].Signature = &b
+		}
+	}
+	return nil
 }
 
 // LookupPackage implements GET /api/v1/packages/lookup (R-API-029).

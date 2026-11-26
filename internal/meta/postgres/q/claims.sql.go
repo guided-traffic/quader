@@ -99,6 +99,47 @@ func (q *Queries) ListClaimingRepositories(ctx context.Context, ids []int64) ([]
 	return items, nil
 }
 
+const listClaimsOfRepositories = `-- name: ListClaimsOfRepositories :many
+SELECT repo_id, pattern, source, scope
+  FROM namespace_claims
+ WHERE repo_id = ANY($1::bigint[])
+ ORDER BY repo_id, pattern COLLATE "C"
+`
+
+type ListClaimsOfRepositoriesRow struct {
+	RepoID  int64
+	Pattern string
+	Source  string
+	Scope   string
+}
+
+// The claims of several repositories in one statement: the page of a namespace reads those of the local repositories whose
+// configuration its reader may read (R-UI-220, R-REPO-023).
+func (q *Queries) ListClaimsOfRepositories(ctx context.Context, repoIds []int64) ([]ListClaimsOfRepositoriesRow, error) {
+	rows, err := q.db.Query(ctx, listClaimsOfRepositories, repoIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListClaimsOfRepositoriesRow{}
+	for rows.Next() {
+		var i ListClaimsOfRepositoriesRow
+		if err := rows.Scan(
+			&i.RepoID,
+			&i.Pattern,
+			&i.Source,
+			&i.Scope,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listNamespaceClaims = `-- name: ListNamespaceClaims :many
 
 SELECT c.repo_id, r.format, c.pattern, c.source, c.scope

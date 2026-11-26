@@ -12,6 +12,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -203,4 +204,36 @@ type ViewDetail struct {
 	// Readme and ReadmeFile are the README text (at most 64 KiB) and the name of its file inside the archive; empty when the archive
 	// has none or it was not asked for.
 	Readme, ReadmeFile string
+}
+
+// Found is a version the package list's search found (R-ANS-057): the generic version row's id and its rank, 0 to 999.
+type Found struct {
+	ID   int64
+	Rank int
+}
+
+// ViewQuery is the to_tsquery text of a search of the package list (R-ANS-057, Q-ANS-120): the runs of a to z and 0 to 9 of the
+// lower-cased text, each a prefix and all of them required ('w1':* & 'w2':*). A word holds no operator of the tsquery syntax, so
+// nothing of a request reaches the database as an operator. "" for a text without such a run.
+func ViewQuery(text string) string {
+	var parts []string
+	var word strings.Builder
+	flush := func() {
+		if word.Len() > 0 {
+			parts = append(parts, "'"+word.String()+"':*")
+			word.Reset()
+		}
+	}
+	for _, r := range text {
+		switch {
+		case r >= 'A' && r <= 'Z':
+			word.WriteRune(r - 'A' + 'a')
+		case r >= 'a' && r <= 'z', r >= '0' && r <= '9':
+			word.WriteRune(r)
+		default:
+			flush()
+		}
+	}
+	flush()
+	return strings.Join(parts, " & ")
 }

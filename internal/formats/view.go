@@ -225,5 +225,19 @@ type ViewFind struct {
 	Keyword string
 }
 
+// ViewRanker is the optional hook of a format whose package search ranks what it finds (formats/ansible.md R-ANS-057, Q-ANS-121,
+// ADR-287): FindRanked answers what its view adapter's Find answers, each version with its rank from 0 to 999, higher for a better
+// match, so that the package list's sort relevance puts it first. A format without it ranks every match it finds 0; the core ranks a
+// package by its name in either case. [CapabilitiesOf] finds it.
+type ViewRanker interface {
+	FindRanked(ctx context.Context, ports DataPorts, f ViewFind, limit int) ([]RankedVersion, error)
+}
+
+// RankedVersion is a version a [ViewRanker] found, with its rank.
+type RankedVersion struct {
+	ID   VersionID
+	Rank int
+}
+
 // View is nil: the format has no package screens.
 func (Base) View() ViewAdapter { return nil }

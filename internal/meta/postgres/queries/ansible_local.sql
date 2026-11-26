@@ -191,17 +191,49 @@ SELECT pv.id AS version_id
  LIMIT sqlc.arg(row_limit)::int;
 
 -- name: AnsibleViewFind :many
--- The generic versions of the repositories (by key) whose description contains the text or whose tags contain the keyword.
-SELECT pv.id AS version_id
+-- The generic versions of the repositories (by key) that match, each with its rank (0 to 999): with a query, every word of it begins a
+-- word of the collection's namespace and name (weight A), of its tags (B) or of its description (C), the full-text configuration of
+-- the documentation search ('simple', R-ANS-036), ranked by ts_rank (R-ANS-057, Q-ANS-120); with a keyword, its tags hold it (rank
+-- 0). query is a to_tsquery text built of runs of a to z and 0 to 9 only ('w1':* & 'w2':*), so no operator of the tsquery syntax
+-- reaches it from a request. The vector is the expression of the index ansible_collection_versions_search (migration 00138), written
+-- here word for word, and reads the matching rows through the index first (MATERIALIZED), then joins them to the repositories asked:
+-- the vector built per row took 447 ms with 50,000 collections (the measurement in docs/developer/packages.md). The two branches are apart (UNION ALL), so
+-- the query's branch keeps the index in a generic plan; an empty query or keyword switches its branch off.
+WITH m AS MATERIALIZED (
+  -- The matching rows through the index alone, before any join: a join that led from the repositories would read every version.
+  -- The name in the collation of packages.name, so that the join below reads packages_repo_id_name_key by both columns.
+  SELECT v.repo_id, (v.name COLLATE "default") AS name, v.version,
+         least(999, floor(1000 * ts_rank((setweight(to_tsvector('simple'::regconfig, translate(v.name, '._', '  ')), 'A')
+         || setweight(jsonb_to_tsvector('simple'::regconfig,
+              CASE WHEN jsonb_typeof(v.collection_info -> 'tags') = 'array' THEN v.collection_info -> 'tags' ELSE '[]'::jsonb END, '["string"]'), 'B')
+         || setweight(to_tsvector('simple'::regconfig, COALESCE(v.collection_info ->> 'description', '')), 'C')),
+               to_tsquery('simple', sqlc.arg(query)::text))))::integer AS rank
+    FROM ansible_collection_versions v
+   WHERE sqlc.arg(query)::text <> ''
+     AND (setweight(to_tsvector('simple'::regconfig, translate(v.name, '._', '  ')), 'A')
+         || setweight(jsonb_to_tsvector('simple'::regconfig,
+              CASE WHEN jsonb_typeof(v.collection_info -> 'tags') = 'array' THEN v.collection_info -> 'tags' ELSE '[]'::jsonb END, '["string"]'), 'B')
+         || setweight(to_tsvector('simple'::regconfig, COALESCE(v.collection_info ->> 'description', '')), 'C'))
+         @@ to_tsquery('simple', sqlc.arg(query)::text)
+)
+SELECT pv.id AS version_id, m.rank
+  FROM m
+  JOIN repositories r ON r.id = m.repo_id
+  JOIN project p ON p.id = r.project_id
+  JOIN packages pk ON pk.repo_id = m.repo_id AND pk.name = m.name
+  JOIN package_versions pv ON pv.package_id = pk.id AND pv.version = m.version AND pv.trashed_at IS NULL
+ WHERE (p.key || '/' || r.key) = ANY(sqlc.arg(repos)::text[])
+UNION ALL
+SELECT pv.id, 0
   FROM ansible_collection_versions v
   JOIN repositories r ON r.id = v.repo_id
   JOIN project p ON p.id = r.project_id
   JOIN packages pk ON pk.repo_id = v.repo_id AND pk.name = v.name
   JOIN package_versions pv ON pv.package_id = pk.id AND pv.version = v.version AND pv.trashed_at IS NULL
- WHERE (p.key || '/' || r.key) = ANY(sqlc.arg(repos)::text[])
-   AND ((sqlc.arg(text)::text <> '' AND position(lower(sqlc.arg(text)::text) in lower(COALESCE(v.collection_info->>'description', ''))) > 0)
-        OR (sqlc.arg(keyword)::text <> '' AND v.collection_info->'tags' ? sqlc.arg(keyword)::text))
- ORDER BY pv.id
+ WHERE sqlc.arg(keyword)::text <> ''
+   AND (p.key || '/' || r.key) = ANY(sqlc.arg(repos)::text[])
+   AND v.collection_info -> 'tags' ? sqlc.arg(keyword)::text
+ ORDER BY 1
  LIMIT sqlc.arg(row_limit)::int;
 
 -- name: AnsibleViewStored :many

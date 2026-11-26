@@ -119,6 +119,46 @@ type Hit struct {
 	Updated                   time.Time
 	// Flags: deprecated, unlisted, official, verified, unsigned-index (Debian).
 	Flags []string
+	// Popularity is what the upstream's answer tells beside the name, for every format that has it (formats/ansible.md R-ANS-047,
+	// Q-ANS-129); the zero value tells nothing.
+	Popularity
+}
+
+// Popularity is what an upstream tells of a package beyond its name and description, optional for every format (R-ANS-047): its tags or
+// keywords, the downloads it counts (the upstream's, never Quader's) and its own word that the package is signed. Ansible Galaxy fills
+// them; npm and NuGet fill them in another package.
+type Popularity struct {
+	// Keywords are the upstream's tags or keywords; nil where its answer has none.
+	Keywords []string
+	// Downloads is the upstream's count of the package's downloads, all versions; nil where its answer does not carry it.
+	Downloads *int64
+	// Signed is the upstream's word that the package's highest version is signed; nil where it says nothing.
+	Signed *bool
+}
+
+// MaxKeywords bounds the keywords a hit or a package carries, and MaxKeywordRunes each keyword (R-CUR-008: every text from the upstream
+// is bounded plain text).
+const (
+	MaxKeywords     = 32
+	MaxKeywordRunes = 64
+)
+
+// CutKeywords bounds keywords: at most [MaxKeywords], each cut to [MaxKeywordRunes] as plain text, empty ones dropped.
+func CutKeywords(in []string) []string {
+	var out []string
+	for _, k := range in {
+		if len(out) == MaxKeywords {
+			break
+		}
+		k = CutText(k)
+		if r := []rune(k); len(r) > MaxKeywordRunes {
+			k = string(r[:MaxKeywordRunes])
+		}
+		if k != "" {
+			out = append(out, k)
+		}
+	}
+	return out
 }
 
 // SearchPage is one page of a text query.
@@ -256,7 +296,10 @@ type PackageInfo struct {
 	Found             bool
 	Name, Description string
 	// Tags are npm's dist-tags; none for OCI.
-	Tags     map[string]string
+	Tags map[string]string
+	// Popularity is what the upstream tells of the package beside it (R-ANS-047): its tags, its downloads at the upstream, its signed
+	// state.
+	Popularity
 	Versions []VersionFacts
 	Total    int
 	Cursor   Cursor

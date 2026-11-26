@@ -940,3 +940,13 @@ td.class-cell .material-icons {
     }
   }
 }
+
+// A package's name in a list's first cell with what stands beside it (R-ANS-057, R-UI-220): the name, whose namespace is a link of its
+// own, then its verified badge; they wrap between each other, never inside the name's parts.
+.name-line {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--quader-space-1) var(--quader-space-2);
+  overflow-wrap: anywhere;
+}

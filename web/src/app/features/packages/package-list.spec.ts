@@ -3,7 +3,7 @@ import { Router } from '@angular/router';
 import { PackageSummary, PackagesApi } from '../../api/packages-api';
 import { ApiError } from '../../api/problem';
 import { RepositoriesApi } from '../../api/repositories-api';
-import { FakeRepositoriesApi, GENERIC_FORMAT, PACKAGE_FORMAT } from '../../api/testing/fakes-catalog';
+import { ANSIBLE_FORMAT, FakeRepositoriesApi, GENERIC_FORMAT, PACKAGE_FORMAT } from '../../api/testing/fakes-catalog';
 import { FakePackagesApi, NPM_REPOSITORIES } from '../../api/testing/fakes-packages';
 import { BrowserStorage } from '../../core/storage';
 import { spokenText } from '../../testing/axe';
@@ -46,7 +46,11 @@ async function open(
 }
 
 const rows = (r: Opened) => [...r.root.querySelectorAll('tbody tr')];
-const names = (r: Opened) => rows(r).map((row) => text(row.querySelector('th a')!));
+/** The link of a row's package: the last link of its name, whose namespace is a link of its own (R-UI-220). */
+const packageLink = (row: Element) => row.querySelector<HTMLAnchorElement>('th quader-package-name a:last-of-type')!;
+/** The name a row's package link says: the whole name, also where its namespace is a link of its own. */
+const nameOf = (row: Element) => packageLink(row).getAttribute('aria-label') ?? text(packageLink(row));
+const names = (r: Opened) => rows(r).map((row) => nameOf(row));
 /** Opens the menu of a saved view and chooses an entry (R-UI-163). */
 async function chooseFor(r: Opened, view: string, entry: string): Promise<void> {
   r.root.querySelector<HTMLButtonElement>(`.plain-list button[aria-label="Actions for ${view}"]`)!.click();
@@ -86,7 +90,9 @@ describe('Packages list', () => {
     expect(names(r)).toHaveLength(3);
     const ui = rows(r).find((row) => text(row).includes('@team-a/ui'))!;
     const cells = [...ui.children].map((c) => text(c));
-    expect(text(ui.querySelector('th a')!)).toBe('@team-a/ui');
+    expect(nameOf(ui)).toBe('@team-a/ui');
+    // The scope links to its page in the project, the rest to the package (R-UI-220).
+    expect(ui.querySelector('th [data-testid="namespace-link"]')?.getAttribute('href')).toBe('/projects/web/packages/-/namespaces/npm/@team-a');
     expect(text(ui.querySelector('th .secondary')!)).toBe('Shared UI components');
     expect(cells[1]).toContain('npm');
     expect(cells[2]).toBe('1.4.0');
@@ -103,15 +109,26 @@ describe('Packages list', () => {
   it('R-UI-006 every row is a link to the package page; a scoped name keeps its slash as a path separator', async () => {
     const r = await open();
     const link = rows(r)
-      .map((row) => row.querySelector<HTMLAnchorElement>('th a')!)
-      .find((a) => a.textContent === '@team-a/ui')!;
+      .map((row) => packageLink(row))
+      .find((a) => (a.getAttribute('aria-label') ?? a.textContent) === '@team-a/ui')!;
     expect(link.getAttribute('href')).toBe('/projects/web/packages/npm/@team-a/ui');
+  });
+
+  it('R-UI-220 a role read through a remote is one link to its key: its display name names no namespace (R-ANS-056)', async () => {
+    const r = await open({}, (fake, repositories) => {
+      repositories.formatsResult = [...repositories.formatsResult, ANSIBLE_FORMAT];
+      fake.packages = [{ ...many(1)[0]!, name: 'geerlingguy.pip', key: 'role/16', format: 'ansible', repositories: ['web/galaxy-remote'] }];
+    });
+    const row = rows(r)[0]!;
+    expect(row.querySelector('[data-testid="namespace-link"]')).toBeNull();
+    expect(text(packageLink(row))).toBe('geerlingguy.pip');
+    expect(packageLink(row).getAttribute('href')).toBe('/projects/web/packages/ansible/role/16');
   });
 
   it('R-UI-006 a format is shown as icon and text, never as icon alone: the owner logo or the neutral glyph, and the name said once', async () => {
     const r = await open();
     const typeOf = (name: string) =>
-      rows(r).find((row) => text(row.querySelector('th a')!) === name)!.querySelector('.type-cell')!;
+      rows(r).find((row) => nameOf(row) === name)!.querySelector('.type-cell')!;
     const nuget = typeOf('Contoso.Logging');
     expect(nuget.querySelector('quader-format-icon img')?.getAttribute('src')).toBe('formats/nuget/nuget.svg');
     expect(nuget.querySelector('quader-format-icon img')?.getAttribute('alt')).toBe('');
@@ -181,7 +198,7 @@ describe('Packages list', () => {
     await settle(r.fixture);
     await applyFilters(r.fixture);
     expect(navigate).toHaveBeenLastCalledWith([], {
-      queryParams: { format: ['nuget'], repository: [], keyword: 'log', deprecated: null, period: null, from: null, to: null },
+      queryParams: { format: ['nuget'], repository: [], keyword: 'log', namespace: null, signed: null, deprecated: null, period: null, from: null, to: null },
       queryParamsHandling: 'merge',
     });
   });
@@ -202,7 +219,7 @@ describe('Packages list', () => {
     await settle(r.fixture);
     await applyFilters(r.fixture);
     expect(navigate).toHaveBeenLastCalledWith([], {
-      queryParams: { format: [], repository: [], keyword: null, deprecated: 'true', period: null, from: null, to: null },
+      queryParams: { format: [], repository: [], keyword: null, namespace: null, signed: null, deprecated: 'true', period: null, from: null, to: null },
       queryParamsHandling: 'merge',
     });
     const filtered = await open({ deprecated: 'true' }, (fake) => {
@@ -292,7 +309,7 @@ describe('Packages list', () => {
     const navigate = navigateSpy();
     button(none.root, 'Clear all filters').click();
     expect(navigate).toHaveBeenLastCalledWith([], {
-      queryParams: { format: null, repository: null, q: null, keyword: null, deprecated: null, period: null, from: null, to: null },
+      queryParams: { format: null, repository: null, q: null, keyword: null, namespace: null, signed: null, deprecated: null, period: null, from: null, to: null },
       queryParamsHandling: 'merge',
     });
     await expectAccessible(none.root);

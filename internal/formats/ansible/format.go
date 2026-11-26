@@ -123,9 +123,11 @@ func (f *Format) Descriptor() formats.Descriptor {
 			// bytes it fetched whatever the policy says (R-ANS-018), so the policies ignore and pass-through are refused.
 			ChecksumAlwaysVerified: true,
 			// Canonical paths are lower case (R-ANS-002), so a path pattern is compared in lower case (Q-AUTHZ-254).
-			LowerCasePaths:  true,
-			PatternSubject:  formats.SubjectName,
-			PackageNames:    true,
+			LowerCasePaths: true,
+			PatternSubject: formats.SubjectName,
+			PackageNames:   true,
+			// A collection's namespace, the part before the dot, has a page of its own (R-UI-220, Q-UI-1290).
+			Namespaces:      &catalog.NamespaceRule{Kind: catalog.NamespaceNamespace, Separator: "."},
 			PriorityMembers: true,
 			PinsAndClaims:   true,
 			// A local repository holds package ownership enforced until its document says otherwise (R-AUTHZ-018).

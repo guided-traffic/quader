@@ -32,9 +32,12 @@ export type PackageVersionContents = Schema<'PackageVersionContents'>;
 export type PackageFileEntry = Schema<'PackageFileEntry'>;
 export type ClientSetup = Schema<'ClientSetup'>;
 export type ClientSnippet = Schema<'ClientSnippet'>;
+export type PackageNamespace = Schema<'PackageNamespace'>;
+export type NamespaceRepository = Schema<'NamespaceRepository'>;
+export type NamespaceClaim = Schema<'NamespaceClaim'>;
 
 /** The sort fields `GET /api/v1/packages` offers (R-API-029); a leading `-` sorts descending. */
-export type PackageSort = 'name' | '-name' | 'createdAt' | '-createdAt' | 'updatedAt' | '-updatedAt';
+export type PackageSort = 'name' | '-name' | 'createdAt' | '-createdAt' | 'updatedAt' | '-updatedAt' | 'relevance' | '-relevance';
 
 /** The filters of `GET /api/v1/packages`; all optional. */
 export interface PackageFilters {
@@ -44,6 +47,10 @@ export interface PackageFilters {
   readonly repository?: readonly string[];
   readonly q?: string;
   readonly namePrefix?: string;
+  /** A namespace of the one `format` asked (R-UI-220): `acme`, `@acme`, `team/app`. */
+  readonly namespace?: string;
+  /** Only the packages whose latest version carries a verified signature (R-ANS-057). */
+  readonly signed?: boolean;
   readonly keyword?: string;
   readonly createdFrom?: string;
   readonly createdTo?: string;
@@ -128,6 +135,11 @@ export abstract class PackagesApi {
   /** The README or a Markdown file of the documentation as sanitized HTML. */
   abstract docFile(packageId: string, version: string, file: string, repository?: string): Promise<PackageDocFile>;
   /**
+   * What decides a publish into a namespace (R-UI-220): `publishing` only for a reader of a repository's configuration; rejects with
+   * 404 for a text that is no namespace of the format.
+   */
+  abstract namespace(format: string, name: string, project?: string): Promise<PackageNamespace>;
+  /**
    * What Quader read from a Debian package file of the version (R-DEB-039): its changelog, its copyright and a page of its files, or
    * that it reads them still or could not read them.
    */
@@ -188,6 +200,10 @@ export class HttpPackagesApi extends PackagesApi {
       if (e instanceof ApiError && (e.status === 404 || e.status === 403)) return null;
       throw e;
     }
+  }
+
+  override async namespace(format: string, name: string, project?: string): Promise<PackageNamespace> {
+    return (await this.client.getJson<PackageNamespace>('/api/v1/packages/namespace', { params: cleanQuery({ format, name, project }) })).body;
   }
 
   override async contents(packageId: string, version: string, query: ContentsQuery = {}): Promise<PackageVersionContents> {

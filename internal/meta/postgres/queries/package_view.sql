@@ -22,16 +22,23 @@
 -- name: PackageViewList :many
 -- One row per package (format and normalized name) with at least one visible
 -- version, aggregated over the visible versions, in keyset order. sort is name,
--- createdAt or updatedAt; the tie-breakers are name and format, in the direction of
+-- createdAt, updatedAt or relevance; the tie-breakers are name and format, in the direction of
 -- the sort. q_ids and keyword_ids are the versions whose description or keywords the
 -- format matched (a package matches when one of its visible versions is among them). The text matches the name and the display
--- name (an Ansible role's <owner>.<name> for its package role/<id>, R-ANS-056). deprecated keeps the packages whose latest
--- visible version is among deprecated_ids, the versions the formats call deprecated (R-API-085): the latest by the rule of latestOf, a
--- release before a pre-release before a version the format does not rank, the highest key first and among unranked ones the newest;
--- a row whose key is not filled yet counts as unranked. The aggregate that picks it reads nothing without the filter.
+-- name (an Ansible role's <owner>.<name> for its package role/<id>, R-ANS-056); q_ranks holds the rank the format gave each of q_ids
+-- (0 to 999, a format that does not rank gives 0). The relevance of a package (R-ANS-057, Q-ANS-121) is 3000 when its name or display
+-- name is q, 2000 when one starts with q, 1000 when one holds q, plus the highest rank of its matched versions; relevance sorts the
+-- highest first, and -relevance the lowest. deprecated keeps the packages whose latest visible version is among deprecated_ids, the
+-- versions the formats call deprecated (R-API-085); signed those whose latest visible version carries a verified signature. Both read
+-- one latest (latest_vid) by the rule of latestOf: a release before a pre-release before a version the format does not rank, the
+-- highest key first and among unranked ones the newest; a row whose key is not filled yet counts as unranked. The aggregate that picks
+-- it reads nothing while neither filter is asked (FILTER).
 -- exact_name, when set, restricts the rows to one package. Names are ordered bytewise
 -- (collation C), so the order does not depend on the database's locale and the keyset
 -- comparison of a cursor means the same on every replica.
+-- signed (R-ANS-057, Q-ANS-122): verified is the badge's rule of R-SIG-009 for verified_internal and verified_public: a valid signature
+-- of the role publisher or provenance over one of its files (or its document), attached in its repository, whose trust row in the
+-- repository's project (else the installation's) is internal or public. PackageViewVerified states the same rule for the page.
 -- The count, the times and the filters read one cheap row per visible version of the scope (vis, no subplan per row). The downloads
 -- are summed for the page's packages alone (dl, Q-API-429): of a format whose fetch is the lead file or any file of a version, by a
 -- join of the page's visible versions with the download statistics; of a format whose fetch is its document (OCI), from the files of
@@ -51,27 +58,53 @@ WITH vis AS (
      AND (sqlc.arg(exact_name)::text = '' OR (r.format = sqlc.arg(exact_format)::text AND p.name = sqlc.arg(exact_name)::text))
      AND (p.repo_id = ANY(sqlc.arg(whole)::bigint[])
           OR concat_ws(chr(31), p.repo_id::text, p.name, pv.version) = ANY(sqlc.arg(rows)::text[]))
+), qr AS (
+  -- The two lists side by side: unnest in the select list zips arrays of one length.
+  SELECT unnest(sqlc.arg(q_ids)::bigint[]) AS id, unnest(sqlc.arg(q_ranks)::integer[]) AS rank
 ), grouped AS (
   SELECT v.format, v.name, min(v.display_name)::text AS display_name,
          min(v.created_at)::timestamptz AS created_at, max(v.created_at)::timestamptz AS updated_at,
-         count(DISTINCT v.version)::bigint AS version_count
+         count(DISTINCT v.version)::bigint AS version_count,
+         (CASE WHEN sqlc.arg(q)::text = '' THEN 0
+               ELSE GREATEST((CASE WHEN lower(v.name) = lower(sqlc.arg(q)::text) THEN 3000
+                                   WHEN starts_with(lower(v.name), lower(sqlc.arg(q)::text)) THEN 2000
+                                   WHEN position(lower(sqlc.arg(q)::text) in lower(v.name)) > 0 THEN 1000
+                                   ELSE 0 END),
+                             (CASE WHEN lower(min(v.display_name)) = lower(sqlc.arg(q)::text) THEN 3000
+                                   WHEN starts_with(lower(min(v.display_name)), lower(sqlc.arg(q)::text)) THEN 2000
+                                   WHEN position(lower(sqlc.arg(q)::text) in lower(min(v.display_name))) > 0 THEN 1000
+                                   ELSE 0 END)) + COALESCE(max(qr.rank), 0) END)::bigint AS relevance,
+         (array_agg(v.vid ORDER BY CASE WHEN v.sort_key >= '\x01'::bytea AND NOT v.prerelease THEN 0
+                                        WHEN v.sort_key >= '\x01'::bytea THEN 1 ELSE 2 END,
+                                   CASE WHEN v.sort_key >= '\x01'::bytea THEN v.sort_key END DESC NULLS LAST,
+                                   v.created_at DESC, v.version DESC)
+            FILTER (WHERE sqlc.arg(signed)::boolean OR sqlc.arg(deprecated)::boolean))[1]::bigint AS latest_vid
     FROM vis v
+    LEFT JOIN qr ON qr.id = v.vid
    GROUP BY v.format, v.name
   HAVING (sqlc.arg(q)::text = '' OR position(lower(sqlc.arg(q)::text) in lower(v.name)) > 0
-          OR position(lower(sqlc.arg(q)::text) in lower(min(v.display_name))) > 0 OR bool_or(v.vid = ANY(sqlc.arg(q_ids)::bigint[])))
+          OR position(lower(sqlc.arg(q)::text) in lower(min(v.display_name))) > 0 OR bool_or(qr.id IS NOT NULL))
      AND (sqlc.arg(keyword)::text = '' OR bool_or(v.vid = ANY(sqlc.arg(keyword_ids)::bigint[])))
      AND (NOT sqlc.arg(has_from)::boolean OR min(v.created_at) >= NULLIF(sqlc.arg(created_from)::text, '')::timestamptz)
      AND (NOT sqlc.arg(has_to)::boolean OR min(v.created_at) < NULLIF(sqlc.arg(created_to)::text, '')::timestamptz)
-     AND (NOT sqlc.arg(deprecated)::boolean
-          OR (array_agg(v.vid ORDER BY CASE WHEN v.sort_key >= '\x01'::bytea AND NOT v.prerelease THEN 0
-                                            WHEN v.sort_key >= '\x01'::bytea THEN 1 ELSE 2 END,
-                                       CASE WHEN v.sort_key >= '\x01'::bytea THEN v.sort_key END DESC NULLS LAST,
-                                       v.created_at DESC, v.version DESC)
-                FILTER (WHERE sqlc.arg(deprecated)::boolean))[1] = ANY(sqlc.arg(deprecated_ids)::bigint[]))
 ), page AS (
-  SELECT g.format, g.name, g.display_name, g.created_at, g.updated_at, g.version_count
+  SELECT g.format, g.name, g.display_name, g.created_at, g.updated_at, g.version_count, g.relevance
     FROM grouped g
-   WHERE NOT sqlc.arg(has_after)::boolean
+   WHERE (NOT sqlc.arg(deprecated)::boolean OR g.latest_vid = ANY(sqlc.arg(deprecated_ids)::bigint[]))
+     AND (NOT sqlc.arg(signed)::boolean OR EXISTS (
+           SELECT 1
+             FROM package_version_listing lv
+             JOIN packages lp ON lp.id = lv.package_id
+             JOIN repositories lr ON lr.id = lp.repo_id
+             JOIN signatures s ON s.subject_sha256 = lv.document_sha256
+                               OR s.subject_sha256 IN (SELECT i.blob_sha256 FROM items i
+                                                        WHERE i.version_id = lv.id AND i.kind = 'file' AND i.trashed_at IS NULL)
+            WHERE lv.id = g.latest_vid AND s.role IN ('publisher', 'provenance') AND s.state = 'valid'
+              AND EXISTS (SELECT 1 FROM signature_attachments a WHERE a.signature_id = s.id AND a.repo_id = lp.repo_id)
+              AND (SELECT t.state FROM signature_trust t
+                    WHERE t.signature_id = s.id AND (t.project_id IS NULL OR t.project_id = lr.project_id)
+                    ORDER BY t.project_id NULLS LAST LIMIT 1) IN ('internal', 'public')))
+     AND (NOT sqlc.arg(has_after)::boolean
       OR CASE sqlc.arg(sort)::text
            WHEN 'createdAt' THEN CASE WHEN sqlc.arg(descending)::boolean
                 THEN (g.created_at, g.name, g.format) < (NULLIF(sqlc.arg(after_time)::text, '')::timestamptz, sqlc.arg(after_name)::text, sqlc.arg(after_format)::text)
@@ -79,15 +112,20 @@ WITH vis AS (
            WHEN 'updatedAt' THEN CASE WHEN sqlc.arg(descending)::boolean
                 THEN (g.updated_at, g.name, g.format) < (NULLIF(sqlc.arg(after_time)::text, '')::timestamptz, sqlc.arg(after_name)::text, sqlc.arg(after_format)::text)
                 ELSE (g.updated_at, g.name, g.format) > (NULLIF(sqlc.arg(after_time)::text, '')::timestamptz, sqlc.arg(after_name)::text, sqlc.arg(after_format)::text) END
+           WHEN 'relevance' THEN CASE WHEN sqlc.arg(descending)::boolean
+                THEN (-g.relevance, g.name, g.format) < (-sqlc.arg(after_relevance)::bigint, sqlc.arg(after_name)::text, sqlc.arg(after_format)::text)
+                ELSE (-g.relevance, g.name, g.format) > (-sqlc.arg(after_relevance)::bigint, sqlc.arg(after_name)::text, sqlc.arg(after_format)::text) END
            ELSE CASE WHEN sqlc.arg(descending)::boolean
                 THEN (g.name, g.format) < (sqlc.arg(after_name)::text, sqlc.arg(after_format)::text)
                 ELSE (g.name, g.format) > (sqlc.arg(after_name)::text, sqlc.arg(after_format)::text) END
-         END
+         END)
    ORDER BY
    (CASE WHEN sqlc.arg(sort)::text = 'createdAt' AND NOT sqlc.arg(descending)::boolean THEN g.created_at END) ASC NULLS LAST,
    (CASE WHEN sqlc.arg(sort)::text = 'createdAt' AND sqlc.arg(descending)::boolean THEN g.created_at END) DESC NULLS LAST,
    (CASE WHEN sqlc.arg(sort)::text = 'updatedAt' AND NOT sqlc.arg(descending)::boolean THEN g.updated_at END) ASC NULLS LAST,
    (CASE WHEN sqlc.arg(sort)::text = 'updatedAt' AND sqlc.arg(descending)::boolean THEN g.updated_at END) DESC NULLS LAST,
+   (CASE WHEN sqlc.arg(sort)::text = 'relevance' AND NOT sqlc.arg(descending)::boolean THEN g.relevance END) DESC NULLS LAST,
+   (CASE WHEN sqlc.arg(sort)::text = 'relevance' AND sqlc.arg(descending)::boolean THEN g.relevance END) ASC NULLS LAST,
    (CASE WHEN NOT sqlc.arg(descending)::boolean THEN g.name END) ASC NULLS LAST,
    (CASE WHEN sqlc.arg(descending)::boolean THEN g.name END) DESC NULLS LAST,
    (CASE WHEN NOT sqlc.arg(descending)::boolean THEN g.format END) ASC NULLS LAST,
@@ -146,7 +184,8 @@ WITH vis AS (
            WHERE h.format = ANY(sqlc.arg(document)::text[])) f
    GROUP BY f.format, f.name
 )
-SELECT g.format, g.name, g.display_name, g.created_at, g.updated_at, g.version_count, COALESCE(d.downloads, 0)::bigint AS downloads
+SELECT g.format, g.name, g.display_name, g.created_at, g.updated_at, g.version_count, COALESCE(d.downloads, 0)::bigint AS downloads,
+       g.relevance
   FROM page g
   LEFT JOIN dl d ON d.format = g.format AND d.name = g.name
  ORDER BY
@@ -154,6 +193,8 @@ SELECT g.format, g.name, g.display_name, g.created_at, g.updated_at, g.version_c
    (CASE WHEN sqlc.arg(sort)::text = 'createdAt' AND sqlc.arg(descending)::boolean THEN g.created_at END) DESC NULLS LAST,
    (CASE WHEN sqlc.arg(sort)::text = 'updatedAt' AND NOT sqlc.arg(descending)::boolean THEN g.updated_at END) ASC NULLS LAST,
    (CASE WHEN sqlc.arg(sort)::text = 'updatedAt' AND sqlc.arg(descending)::boolean THEN g.updated_at END) DESC NULLS LAST,
+   (CASE WHEN sqlc.arg(sort)::text = 'relevance' AND NOT sqlc.arg(descending)::boolean THEN g.relevance END) DESC NULLS LAST,
+   (CASE WHEN sqlc.arg(sort)::text = 'relevance' AND sqlc.arg(descending)::boolean THEN g.relevance END) ASC NULLS LAST,
    (CASE WHEN NOT sqlc.arg(descending)::boolean THEN g.name END) ASC NULLS LAST,
    (CASE WHEN sqlc.arg(descending)::boolean THEN g.name END) DESC NULLS LAST,
    (CASE WHEN NOT sqlc.arg(descending)::boolean THEN g.format END) ASC NULLS LAST,
@@ -813,3 +854,76 @@ SELECT p.repo_id, p.name, pv.version
    AND (sqlc.arg(exact_name)::text = '' OR p.name = sqlc.arg(exact_name)::text)
  ORDER BY p.repo_id, p.name, pv.version
  LIMIT sqlc.arg(max_rows)::int;
+
+-- name: PackageViewVerified :many
+-- The versions among the given ones (package_version_listing ids) that carry a verified signature, with the best trust: internal before
+-- public (R-ANS-057, Q-ANS-122). The rule of R-SIG-009 for verified_internal and verified_public as PackageViewList's filter signed
+-- states it: a valid signature of the role publisher or provenance over one of the version's files (or its document), attached in its
+-- repository, whose trust row in the repository's project (else the installation's) is internal or public. One statement for the page's
+-- latest versions; a version without one is not answered.
+SELECT lv.id AS version_id,
+       (CASE WHEN bool_or(x.trust = 'internal') THEN 'verified_internal' ELSE 'verified_public' END)::text AS state
+  FROM package_version_listing lv
+  JOIN packages lp ON lp.id = lv.package_id
+  JOIN repositories lr ON lr.id = lp.repo_id
+  JOIN signatures s ON s.subject_sha256 = lv.document_sha256
+                    OR s.subject_sha256 IN (SELECT i.blob_sha256 FROM items i
+                                             WHERE i.version_id = lv.id AND i.kind = 'file' AND i.trashed_at IS NULL)
+  CROSS JOIN LATERAL (SELECT t.state AS trust FROM signature_trust t
+                       WHERE t.signature_id = s.id AND (t.project_id IS NULL OR t.project_id = lr.project_id)
+                       ORDER BY t.project_id NULLS LAST LIMIT 1) x
+ WHERE lv.id = ANY(sqlc.arg(version_ids)::bigint[])
+   AND s.role IN ('publisher', 'provenance') AND s.state = 'valid'
+   AND EXISTS (SELECT 1 FROM signature_attachments a WHERE a.signature_id = s.id AND a.repo_id = lp.repo_id)
+   AND x.trust IN ('internal', 'public')
+ GROUP BY lv.id
+ ORDER BY lv.id;
+
+-- name: PackageViewLatestOfPackages :many
+-- The candidates of the latest visible version of the named package rows (repo_ids and names side by side) in the repositories of the
+-- scope: the rule of PackageViewLatest for formats whose versions are rows of package_versions (no remote OCI tags), each package row
+-- reached by its key (packages_repo_id_name_key) instead of every package of a format. The documentation search across collections
+-- reads it for the collections whose documentation matched (R-ANS-058, Q-ANS-127): the newest version of each, per repository. One
+-- index walk per package row and kind; the caller picks per row (latestOf).
+SELECT p.id AS package_id, r.format, (p.name COLLATE "C")::text AS name, p.repo_id, l.version_id, l.version, l.created_at
+  FROM (SELECT unnest(sqlc.arg(repo_ids)::bigint[]) AS repo_id, unnest(sqlc.arg(names)::text[]) AS name) k
+  JOIN packages p ON p.repo_id = k.repo_id AND p.name = k.name
+  JOIN repositories r ON r.id = p.repo_id
+  CROSS JOIN LATERAL (
+       (SELECT pv.id AS version_id, pv.version::text AS version, pv.created_at
+          FROM package_versions pv
+         WHERE pv.package_id = p.id AND pv.trashed_at IS NULL AND NOT pv.prerelease
+           AND NOT (pv.id = ANY(sqlc.arg(withheld)::bigint[]))
+           AND (p.repo_id = ANY(sqlc.arg(whole)::bigint[])
+                OR concat_ws(chr(31), p.repo_id::text, p.name, pv.version) = ANY(sqlc.arg(rows)::text[]))
+         ORDER BY pv.sort_key DESC
+         LIMIT 1)
+       UNION ALL
+       (SELECT pv.id, pv.version::text, pv.created_at
+          FROM package_versions pv
+         WHERE pv.package_id = p.id AND pv.trashed_at IS NULL AND pv.prerelease
+           AND NOT (pv.id = ANY(sqlc.arg(withheld)::bigint[]))
+           AND (p.repo_id = ANY(sqlc.arg(whole)::bigint[])
+                OR concat_ws(chr(31), p.repo_id::text, p.name, pv.version) = ANY(sqlc.arg(rows)::text[]))
+         ORDER BY pv.sort_key DESC
+         LIMIT 1)
+       UNION ALL
+       (SELECT pv.id, pv.version::text, pv.created_at
+          FROM package_versions pv
+         WHERE pv.package_id = p.id AND pv.trashed_at IS NULL AND pv.sort_key < '\x01'::bytea
+           AND NOT (pv.id = ANY(sqlc.arg(withheld)::bigint[]))
+           AND (p.repo_id = ANY(sqlc.arg(whole)::bigint[])
+                OR concat_ws(chr(31), p.repo_id::text, p.name, pv.version) = ANY(sqlc.arg(rows)::text[]))
+         ORDER BY pv.created_at DESC, (pv.version COLLATE "C") DESC
+         LIMIT 1)
+       UNION ALL
+       (SELECT pv.id, pv.version::text, pv.created_at
+          FROM package_versions pv
+         WHERE pv.package_id = p.id AND pv.trashed_at IS NULL AND pv.sort_key IS NULL
+           AND NOT (pv.id = ANY(sqlc.arg(withheld)::bigint[]))
+           AND (p.repo_id = ANY(sqlc.arg(whole)::bigint[])
+                OR concat_ws(chr(31), p.repo_id::text, p.name, pv.version) = ANY(sqlc.arg(rows)::text[])))
+  ) l
+ WHERE p.repo_id = ANY(sqlc.arg(scope)::bigint[])
+ ORDER BY p.repo_id, p.name, l.version;
+

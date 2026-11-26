@@ -260,6 +260,51 @@ func (q *Queries) AnsibleDocsAllFiles(ctx context.Context, arg AnsibleDocsAllFil
 	return items, nil
 }
 
+const ansibleDocsCandidates = `-- name: AnsibleDocsCandidates :many
+SELECT DISTINCT e.repo_id, (e.name COLLATE "C")::text AS name, (e.version COLLATE "C")::text AS version
+  FROM ansible_doc_entries e
+ WHERE e.search @@ to_tsquery('simple', $1::text)
+   AND e.repo_id = ANY($2::bigint[])
+ LIMIT $3::int
+`
+
+type AnsibleDocsCandidatesParams struct {
+	Query   string
+	RepoIds []int64
+	MaxRows int32
+}
+
+type AnsibleDocsCandidatesRow struct {
+	RepoID  int64
+	Name    string
+	Version string
+}
+
+// The first step of the documentation searched across collections (R-ANS-058, Q-ANS-127): the versions of the repositories asked that
+// hold an entry every word of the query begins a word of (its name, short description, options, return values: the search vector of
+// R-ANS-036), through the index ansible_doc_entries_search. query is a to_tsquery text of runs of a to z and 0 to 9 ('w1':* & 'w2':*).
+// The caller keeps the newest version of each collection the reader may read the wiki of, then reads their entries
+// (AnsibleDocsSearch); a version without a matching entry is never read.
+func (q *Queries) AnsibleDocsCandidates(ctx context.Context, arg AnsibleDocsCandidatesParams) ([]AnsibleDocsCandidatesRow, error) {
+	rows, err := q.db.Query(ctx, ansibleDocsCandidates, arg.Query, arg.RepoIds, arg.MaxRows)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []AnsibleDocsCandidatesRow{}
+	for rows.Next() {
+		var i AnsibleDocsCandidatesRow
+		if err := rows.Scan(&i.RepoID, &i.Name, &i.Version); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const ansibleDocsDeleteFetch = `-- name: AnsibleDocsDeleteFetch :exec
 DELETE FROM ansible_doc_fetches
  WHERE repo_id = $1::bigint AND name = $2::text AND version = $3::text
@@ -666,6 +711,113 @@ func (q *Queries) AnsibleDocsRemoteWithoutRows(ctx context.Context, arg AnsibleD
 	for rows.Next() {
 		var i AnsibleDocsRemoteWithoutRowsRow
 		if err := rows.Scan(&i.Name, &i.Version); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const ansibleDocsSearch = `-- name: AnsibleDocsSearch :many
+WITH k AS (
+  SELECT unnest($8::bigint[]) AS repo_id, unnest($9::text[]) AS name,
+         unnest($10::text[]) AS version
+), hits AS (
+  SELECT e.repo_id, e.name, e.version, e.content_type, e.content_name, e.short_description,
+         (CASE WHEN lower(e.content_name) = $11::text THEN 0
+               WHEN starts_with(lower(e.content_name), $11::text) THEN 1
+               WHEN strpos(lower(e.content_name), $11::text) > 0 THEN 2
+               ELSE 3 END)::integer AS tier
+    FROM k
+    JOIN ansible_doc_entries e ON e.repo_id = k.repo_id AND e.name = k.name AND e.version = k.version
+   WHERE e.search @@ to_tsquery('simple', $12::text)
+)
+SELECT pg.repo_id, pg.name, pg.version, pg.content_type, pg.content_name, pg.short_description, pg.tier,
+       (d.repo_id IS NOT NULL)::boolean AS deprecated, COALESCE(d.message, '')::text AS deprecation_message
+  FROM (SELECT h.repo_id, (h.name COLLATE "C")::text AS name, (h.version COLLATE "C")::text AS version,
+               (h.content_type COLLATE "C")::text AS content_type, (h.content_name COLLATE "C")::text AS content_name,
+               h.short_description, h.tier
+          FROM hits h
+         WHERE NOT $1::boolean
+            OR (h.tier, h.content_name COLLATE "C", h.name COLLATE "C", h.repo_id, h.content_type COLLATE "C")
+               > ($2::integer, $3::text COLLATE "C", $4::text COLLATE "C",
+                  $5::bigint, $6::text COLLATE "C")
+         ORDER BY h.tier, h.content_name COLLATE "C", h.name COLLATE "C", h.repo_id, h.content_type COLLATE "C"
+         LIMIT $7::int) pg
+  LEFT JOIN ansible_collection_deprecations d ON d.repo_id = pg.repo_id AND d.name = pg.name
+ ORDER BY pg.tier, pg.content_name, pg.name, pg.repo_id, pg.content_type
+`
+
+type AnsibleDocsSearchParams struct {
+	HasAfter   bool
+	AfterTier  int32
+	AfterEntry string
+	AfterName  string
+	AfterRepo  int64
+	AfterType  string
+	MaxRows    int32
+	RepoIds    []int64
+	Names      []string
+	Versions   []string
+	Text       string
+	Query      string
+}
+
+type AnsibleDocsSearchRow struct {
+	RepoID             int64
+	Name               string
+	Version            string
+	ContentType        string
+	ContentName        string
+	ShortDescription   string
+	Tier               int32
+	Deprecated         bool
+	DeprecationMessage string
+}
+
+// The documentation searched across collections (R-ANS-058, Q-ANS-125 to Q-ANS-128): the entries of the given versions (repo_ids, names
+// and versions side by side: the newest version of every collection with a match whose documentation the caller may read, which the
+// caller decided from AnsibleDocsCandidates) every word of the query begins a word of the search vector. tier ranks the name against
+// the whole text: 0 it equals the text, 1 it starts with it, 2 it holds it, 3 a match of the words elsewhere. Keyset order: tier, the
+// entry's name, the collection, the repository and the type; after_* is the last entry of the previous page. The versions' entries are
+// read through the primary key and the vector's match, so the cost grows with the entries of the versions that match. deprecated and
+// deprecation_message are the collection's deprecation in its repository (R-ANS-060), read for the page's hits by their key.
+func (q *Queries) AnsibleDocsSearch(ctx context.Context, arg AnsibleDocsSearchParams) ([]AnsibleDocsSearchRow, error) {
+	rows, err := q.db.Query(ctx, ansibleDocsSearch,
+		arg.HasAfter,
+		arg.AfterTier,
+		arg.AfterEntry,
+		arg.AfterName,
+		arg.AfterRepo,
+		arg.AfterType,
+		arg.MaxRows,
+		arg.RepoIds,
+		arg.Names,
+		arg.Versions,
+		arg.Text,
+		arg.Query,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []AnsibleDocsSearchRow{}
+	for rows.Next() {
+		var i AnsibleDocsSearchRow
+		if err := rows.Scan(
+			&i.RepoID,
+			&i.Name,
+			&i.Version,
+			&i.ContentType,
+			&i.ContentName,
+			&i.ShortDescription,
+			&i.Tier,
+			&i.Deprecated,
+			&i.DeprecationMessage,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

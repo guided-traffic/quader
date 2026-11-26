@@ -1705,6 +1705,27 @@ func (e FormatName) Valid() bool {
 	}
 }
 
+// Defines values for FormatNamespacesKind.
+const (
+	FormatNamespacesKindNamespace FormatNamespacesKind = "namespace"
+	FormatNamespacesKindPath      FormatNamespacesKind = "path"
+	FormatNamespacesKindScope     FormatNamespacesKind = "scope"
+)
+
+// Valid indicates whether the value is a known member of the FormatNamespacesKind enum.
+func (e FormatNamespacesKind) Valid() bool {
+	switch e {
+	case FormatNamespacesKindNamespace:
+		return true
+	case FormatNamespacesKindPath:
+		return true
+	case FormatNamespacesKindScope:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for GroupOrigin.
 const (
 	GroupOriginAdmin GroupOrigin = "admin"
@@ -2731,6 +2752,78 @@ func (e MirrorStatusState) Valid() bool {
 	}
 }
 
+// Defines values for NamespaceClaimCovers.
+const (
+	NamespaceClaimCoversAll  NamespaceClaimCovers = "all"
+	NamespaceClaimCoversSome NamespaceClaimCovers = "some"
+)
+
+// Valid indicates whether the value is a known member of the NamespaceClaimCovers enum.
+func (e NamespaceClaimCovers) Valid() bool {
+	switch e {
+	case NamespaceClaimCoversAll:
+		return true
+	case NamespaceClaimCoversSome:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for NamespaceClaimScope.
+const (
+	NamespaceClaimScopeGlobal  NamespaceClaimScope = "global"
+	NamespaceClaimScopeMembers NamespaceClaimScope = "members"
+)
+
+// Valid indicates whether the value is a known member of the NamespaceClaimScope enum.
+func (e NamespaceClaimScope) Valid() bool {
+	switch e {
+	case NamespaceClaimScopeGlobal:
+		return true
+	case NamespaceClaimScopeMembers:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for NamespaceClaimSource.
+const (
+	NamespaceClaimSourceAuto   NamespaceClaimSource = "auto"
+	NamespaceClaimSourceManual NamespaceClaimSource = "manual"
+)
+
+// Valid indicates whether the value is a known member of the NamespaceClaimSource enum.
+func (e NamespaceClaimSource) Valid() bool {
+	switch e {
+	case NamespaceClaimSourceAuto:
+		return true
+	case NamespaceClaimSourceManual:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for NamespaceRepositoryPackageOwnership.
+const (
+	NamespaceRepositoryOwnershipEnforce NamespaceRepositoryPackageOwnership = "enforce"
+	NamespaceRepositoryOwnershipOff     NamespaceRepositoryPackageOwnership = "off"
+)
+
+// Valid indicates whether the value is a known member of the NamespaceRepositoryPackageOwnership enum.
+func (e NamespaceRepositoryPackageOwnership) Valid() bool {
+	switch e {
+	case NamespaceRepositoryOwnershipEnforce:
+		return true
+	case NamespaceRepositoryOwnershipOff:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for NewRepositoryServiceAccountActions.
 const (
 	NewRepositoryServiceAccountActionsAnnotate  NewRepositoryServiceAccountActions = "annotate"
@@ -3091,6 +3184,27 @@ func (e PackageFileEntryKind) Valid() bool {
 	}
 }
 
+// Defines values for PackageNamespaceKind.
+const (
+	PackageNamespaceKindNamespace PackageNamespaceKind = "namespace"
+	PackageNamespaceKindPath      PackageNamespaceKind = "path"
+	PackageNamespaceKindScope     PackageNamespaceKind = "scope"
+)
+
+// Valid indicates whether the value is a known member of the PackageNamespaceKind enum.
+func (e PackageNamespaceKind) Valid() bool {
+	switch e {
+	case PackageNamespaceKindNamespace:
+		return true
+	case PackageNamespaceKindPath:
+		return true
+	case PackageNamespaceKindScope:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for PackageOwnerReason.
 const (
 	PackageOwnerReasonAdded        PackageOwnerReason = "added"
@@ -3145,6 +3259,24 @@ func (e PackageReadmeContentType) Valid() bool {
 	case PackageReadmeContentTypeTexthtml:
 		return true
 	case PackageReadmeContentTypeTextmarkdown:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PackageSummarySignature.
+const (
+	PackageSummarySignatureVerifiedInternal PackageSummarySignature = "verified_internal"
+	PackageSummarySignatureVerifiedPublic   PackageSummarySignature = "verified_public"
+)
+
+// Valid indicates whether the value is a known member of the PackageSummarySignature enum.
+func (e PackageSummarySignature) Valid() bool {
+	switch e {
+	case PackageSummarySignatureVerifiedInternal:
+		return true
+	case PackageSummarySignatureVerifiedPublic:
 		return true
 	default:
 		return false
@@ -7491,8 +7623,10 @@ const (
 	ListPackagesParamsSortCreatedAt      ListPackagesParamsSort = "createdAt"
 	ListPackagesParamsSortMinusCreatedAt ListPackagesParamsSort = "-createdAt"
 	ListPackagesParamsSortMinusName      ListPackagesParamsSort = "-name"
+	ListPackagesParamsSortMinusRelevance ListPackagesParamsSort = "-relevance"
 	ListPackagesParamsSortMinusUpdatedAt ListPackagesParamsSort = "-updatedAt"
 	ListPackagesParamsSortName           ListPackagesParamsSort = "name"
+	ListPackagesParamsSortRelevance      ListPackagesParamsSort = "relevance"
 	ListPackagesParamsSortUpdatedAt      ListPackagesParamsSort = "updatedAt"
 )
 
@@ -7505,9 +7639,13 @@ func (e ListPackagesParamsSort) Valid() bool {
 		return true
 	case ListPackagesParamsSortMinusName:
 		return true
+	case ListPackagesParamsSortMinusRelevance:
+		return true
 	case ListPackagesParamsSortMinusUpdatedAt:
 		return true
 	case ListPackagesParamsSortName:
+		return true
+	case ListPackagesParamsSortRelevance:
 		return true
 	case ListPackagesParamsSortUpdatedAt:
 		return true
@@ -8340,6 +8478,7 @@ func (e ListRepositoriesParamsView) Valid() bool {
 
 // Defines values for GetSearchSuggestionsParamsKind.
 const (
+	GetSearchSuggestionsParamsKindDocumentation  GetSearchSuggestionsParamsKind = "documentation"
 	GetSearchSuggestionsParamsKindGroup          GetSearchSuggestionsParamsKind = "group"
 	GetSearchSuggestionsParamsKindPackage        GetSearchSuggestionsParamsKind = "package"
 	GetSearchSuggestionsParamsKindProject        GetSearchSuggestionsParamsKind = "project"
@@ -8351,6 +8490,8 @@ const (
 // Valid indicates whether the value is a known member of the GetSearchSuggestionsParamsKind enum.
 func (e GetSearchSuggestionsParamsKind) Valid() bool {
 	switch e {
+	case GetSearchSuggestionsParamsKindDocumentation:
+		return true
 	case GetSearchSuggestionsParamsKindGroup:
 		return true
 	case GetSearchSuggestionsParamsKindPackage:
@@ -11011,6 +11152,44 @@ type DisableRequest struct {
 	RevokeTokens *bool `json:"revokeTokens,omitempty"`
 }
 
+// DocumentationHit An entry of a collection's documentation (R-ANS-058): its type (`module`, a plugin type, `role`), its name, its short
+// description, and the collection, the version and the repository it is the documentation of. The entry's page is the package's
+// page with `?doc=<type>/<name>` (R-ANS-049); the package's own address shows its newest version, which `version` is.
+type DocumentationHit struct {
+	// Deprecation The deprecation of the collection in `repository` (R-ANS-060), which every version of it shares; absent when it is not
+	// deprecated.
+	Deprecation *PackageDeprecation `json:"deprecation,omitempty"`
+	Format      string              `json:"format"`
+	Name        string              `json:"name"`
+
+	// Package The collection's full name (`acme.tools`).
+	Package string `json:"package"`
+
+	// PackageId The identifier of `GET /api/v1/packages/{packageId}`.
+	PackageId string `json:"packageId"`
+	Project   string `json:"project"`
+
+	// Repository The key of the repository within `project`.
+	Repository       string `json:"repository"`
+	ShortDescription string `json:"shortDescription"`
+	Type             string `json:"type"`
+	Version          string `json:"version"`
+}
+
+// DocumentationHitList defines model for DocumentationHitList.
+type DocumentationHitList struct {
+	Items      []DocumentationHit `json:"items"`
+	NextCursor *string            `json:"nextCursor"`
+}
+
+// DocumentationSuggestions defines model for DocumentationSuggestions.
+type DocumentationSuggestions struct {
+	Items []DocumentationHit `json:"items"`
+
+	// More A readable match was left out (R-API-061); never `true` because of an entry the caller may not read.
+	More bool `json:"more"`
+}
+
 // DownloadLinkCheck What a connection's link check saw on the answering replica (storage.md R-STOR-074, Q-UI-996): `not_run` (no check has
 // answered there yet), `no_answer` (the store did not answer the test link), `unexpected_answer` (it answered `status` with
 // `bytes` bytes where the check wants `expectedStatus` with the probe's `expectedBytes`), `override_ignored` (the answer carried
@@ -11460,8 +11639,13 @@ type FormatDescriptor struct {
 
 	// Mirror Whether a remote repository of this format can run in mode `mirror` (R-REPO-050): its remote adapter can discover the
 	// packages of its upstream. `false` for a format that cannot; `mode: mirror` on it answers `422 not_applicable`.
-	Mirror          bool                           `json:"mirror"`
-	Name            string                         `json:"name"`
+	Mirror bool   `json:"mirror"`
+	Name   string `json:"name"`
+
+	// Namespaces How the format's package names group into namespaces, each of which has a page (R-UI-220, Q-UI-1290): Ansible Galaxy's
+	// namespace (`acme` of `acme.tools`), npm's scope (`@acme` of `@acme/ui`), every path prefix of an OCI image (`team` and
+	// `team/app` of `team/app/image`). `null` for a format whose names have no such part (NuGet, Debian, generic files).
+	Namespaces      *FormatNamespaces              `json:"namespaces"`
 	PatternSubject  FormatDescriptorPatternSubject `json:"patternSubject"`
 	PinsAndClaims   bool                           `json:"pinsAndClaims"`
 	PriorityMembers bool                           `json:"priorityMembers"`
@@ -11525,6 +11709,19 @@ type FormatList struct {
 // this block are generated from the format registry and `TestR_ARCH_010_PerClassFormatEnums` fails on
 // any difference; no list of formats per class is kept by hand anywhere.
 type FormatName string
+
+// FormatNamespaces The rule of a format's namespaces (R-UI-220): a namespace is a prefix of a package name that ends before `separator`, starts
+// with `marker` (`@` of an npm scope, empty for none), and is the first such prefix only unless `nested` (every path prefix of an
+// image). `kind` is the word the screens use.
+type FormatNamespaces struct {
+	Kind      FormatNamespacesKind `json:"kind"`
+	Marker    string               `json:"marker"`
+	Nested    bool                 `json:"nested"`
+	Separator string               `json:"separator"`
+}
+
+// FormatNamespacesKind defines model for FormatNamespaces.Kind.
+type FormatNamespacesKind string
 
 // FormatSignatureKind defines model for FormatSignatureKind.
 type FormatSignatureKind struct {
@@ -13006,6 +13203,45 @@ type MoveRepositoryRequest struct {
 	Project string `json:"project"`
 }
 
+// NamespaceClaim defines model for NamespaceClaim.
+type NamespaceClaim struct {
+	// Covers Every name of the namespace (`all`), or some of them (`some`, a pattern of names inside it).
+	Covers  NamespaceClaimCovers `json:"covers"`
+	Pattern string               `json:"pattern"`
+	Scope   NamespaceClaimScope  `json:"scope"`
+	Source  NamespaceClaimSource `json:"source"`
+}
+
+// NamespaceClaimCovers Every name of the namespace (`all`), or some of them (`some`, a pattern of names inside it).
+type NamespaceClaimCovers string
+
+// NamespaceClaimScope defines model for NamespaceClaim.Scope.
+type NamespaceClaimScope string
+
+// NamespaceClaimSource defines model for NamespaceClaim.Source.
+type NamespaceClaimSource string
+
+// NamespacePublishing defines model for NamespacePublishing.
+type NamespacePublishing struct {
+	// Repositories The local repositories of the format whose configuration the caller may read, those with a claim first.
+	Repositories []NamespaceRepository `json:"repositories"`
+}
+
+// NamespaceRepository defines model for NamespaceRepository.
+type NamespaceRepository struct {
+	// AutoClaim A first publish of a name no claim of the repository covers claims the name for it (R-REPO-023).
+	AutoClaim bool             `json:"autoClaim"`
+	Claims    []NamespaceClaim `json:"claims"`
+	Key       string           `json:"key"`
+
+	// PackageOwnership The first publisher of a name owns it and a later version needs an owner (`enforce`), or anyone who may publish there publishes every name (`off`, R-AUTHZ-018).
+	PackageOwnership NamespaceRepositoryPackageOwnership `json:"packageOwnership"`
+	Project          string                              `json:"project"`
+}
+
+// NamespaceRepositoryPackageOwnership The first publisher of a name owns it and a later version needs an owner (`enforce`), or anyone who may publish there publishes every name (`off`, R-AUTHZ-018).
+type NamespaceRepositoryPackageOwnership string
+
 // NewBastion defines model for NewBastion.
 type NewBastion struct {
 	Description *string `json:"description,omitempty"`
@@ -13713,6 +13949,17 @@ type PackageList struct {
 	NextCursor *string          `json:"nextCursor"`
 }
 
+// PackageNamespace defines model for PackageNamespace.
+type PackageNamespace struct {
+	Format     string               `json:"format"`
+	Kind       PackageNamespaceKind `json:"kind"`
+	Name       string               `json:"name"`
+	Publishing *NamespacePublishing `json:"publishing"`
+}
+
+// PackageNamespaceKind defines model for PackageNamespace.Kind.
+type PackageNamespaceKind string
+
 // PackageOwner One owner of a name.
 type PackageOwner struct {
 	AddedAt time.Time `json:"addedAt"`
@@ -13844,6 +14091,11 @@ type PackageSummary struct {
 	// Repositories The keys of the repositories that hold a visible version.
 	Repositories []string `json:"repositories"`
 
+	// Signature The verified badge of `latestVersion` (R-SIG-009, R-SIG-035), present only when it carries a verified signature and the
+	// installation verifies signatures (R-ANS-057, Q-ANS-122): the list shows the badge of a verified version only; the version's
+	// page shows every state.
+	Signature *PackageSummarySignature `json:"signature,omitempty"`
+
 	// UpdatedAt When the latest visible version was published.
 	UpdatedAt time.Time `json:"updatedAt"`
 
@@ -13855,6 +14107,11 @@ type PackageSummary struct {
 	// them (R-VULN-038).
 	VulnerabilityGrade *VulnerabilityGrade `json:"vulnerabilityGrade,omitempty"`
 }
+
+// PackageSummarySignature The verified badge of `latestVersion` (R-SIG-009, R-SIG-035), present only when it carries a verified signature and the
+// installation verifies signatures (R-ANS-057, Q-ANS-122): the list shows the badge of a verified version only; the version's
+// page shows every state.
+type PackageSummarySignature string
 
 // PackageVersion defines model for PackageVersion.
 type PackageVersion struct {
@@ -15767,6 +16024,7 @@ type ScopeSummary struct {
 // SearchSuggestions The suggestions of `getSearchSuggestions` (R-API-060, Q-API-271): one member per kind asked, absent for a kind not
 // asked.
 type SearchSuggestions struct {
+	Documentation   *DocumentationSuggestions  `json:"documentation,omitempty"`
 	Groups          *GroupSuggestions          `json:"groups,omitempty"`
 	Packages        *PackageSuggestions        `json:"packages,omitempty"`
 	Projects        *ProjectSuggestions        `json:"projects,omitempty"`
@@ -17867,12 +18125,19 @@ type UpstreamHit struct {
 	Delivery    DeliveryDecision `json:"delivery"`
 	Description string           `json:"description"`
 
+	// Downloads The downloads the upstream counts of the package, all versions (Galaxy's `download_count`), named apart from Quader's own
+	// count; absent where the answer does not carry it (Q-ANS-129).
+	Downloads *int64 `json:"downloads,omitempty"`
+
 	// Flags deprecated, unlisted, official, verified, insecure, unsigned-index.
 	Flags []string `json:"flags"`
 
 	// Inherited The package level without the package's own rule (R-CUR-024); only to whoever may set rules.
 	Inherited *DeliveryDecision `json:"inherited,omitempty"`
-	Latest    *string           `json:"latest"`
+
+	// Keywords The upstream's tags or keywords of the package (Ansible Galaxy's tags, R-ANS-047); absent where the upstream's answer has none.
+	Keywords *[]string `json:"keywords,omitempty"`
+	Latest   *string   `json:"latest"`
 
 	// Level The package level's decision, which the package's switch shows (R-CUR-024); only to whoever may set rules.
 	Level *DeliveryDecision `json:"level,omitempty"`
@@ -17882,8 +18147,11 @@ type UpstreamHit struct {
 
 	// Request The open request entry of a subject (R-CUR-015), null for none.
 	Request *UpstreamRequestState `json:"request"`
-	Stored  UpstreamHitStored     `json:"stored"`
-	Updated *time.Time            `json:"updated"`
+
+	// Signed The upstream's own word that its highest version is signed (Galaxy's `is_signed`); absent where it says nothing.
+	Signed  *bool             `json:"signed,omitempty"`
+	Stored  UpstreamHitStored `json:"stored"`
+	Updated *time.Time        `json:"updated"`
 
 	// VersionRules The package's version rules by effect (R-CUR-024).
 	VersionRules *DeliveryRuleCounts `json:"versionRules,omitempty"`
@@ -17914,8 +18182,15 @@ type UpstreamPackage struct {
 	Description string           `json:"description"`
 	Done        bool             `json:"done"`
 
+	// Downloads The downloads the upstream counts of the package, all versions (Galaxy's `download_count`), named apart from Quader's own
+	// count; absent where the answer does not carry it (Q-ANS-129).
+	Downloads *int64 `json:"downloads,omitempty"`
+
 	// Inherited The package level without the package's own rule (R-CUR-024); only to whoever may set rules.
 	Inherited *DeliveryDecision `json:"inherited,omitempty"`
+
+	// Keywords The upstream's tags or keywords of the package (Ansible Galaxy's tags, R-ANS-047); absent where the upstream's answer has none.
+	Keywords *[]string `json:"keywords,omitempty"`
 
 	// Level The package level's decision, which the package's switch shows (R-CUR-024); only to whoever may set rules.
 	Level      *DeliveryDecision `json:"level,omitempty"`
@@ -17924,7 +18199,10 @@ type UpstreamPackage struct {
 
 	// Request The open request entry of a subject (R-CUR-015), null for none.
 	Request *UpstreamRequestState `json:"request"`
-	Stored  UpstreamPackageStored `json:"stored"`
+
+	// Signed The upstream's own word that its highest version is signed (Galaxy's `is_signed`); absent where it says nothing.
+	Signed *bool                 `json:"signed,omitempty"`
+	Stored UpstreamPackageStored `json:"stored"`
 
 	// Tags npm's dist-tags, tag to version; empty for every other format (an image's tags are its versions).
 	Tags  map[string]string `json:"tags"`
@@ -20184,10 +20462,18 @@ type ListPackagesParams struct {
 	// Repository Repeat the parameter for several repository keys.
 	Repository *[]string `form:"repository,omitempty" json:"repository,omitempty"`
 
-	// Q Case-insensitive substring of the name or the description.
+	// Q Case-insensitive substring of the name, or what the format's search matches (the description, the keywords).
 	Q          *string `form:"q,omitempty" json:"q,omitempty"`
 	NamePrefix *string `form:"namePrefix,omitempty" json:"namePrefix,omitempty"`
-	Keyword    *string `form:"keyword,omitempty" json:"keyword,omitempty"`
+
+	// Namespace A namespace of the format's names (R-UI-220, `GET /api/v1/formats` `namespaces`): an Ansible Galaxy namespace (`acme`), an
+	// npm scope (`@acme`), an OCI path prefix (`team/app`). It needs exactly one `format` that has namespaces and no `namePrefix`;
+	// otherwise `400 malformed_request`.
+	Namespace *string `form:"namespace,omitempty" json:"namespace,omitempty"`
+
+	// Signed `true`: only the packages whose latest visible version carries a verified signature (R-SIG-009, R-ANS-057).
+	Signed  *bool   `form:"signed,omitempty" json:"signed,omitempty"`
+	Keyword *string `form:"keyword,omitempty" json:"keyword,omitempty"`
 
 	// Deprecated `true` keeps the packages whose latest visible version is deprecated (R-API-085): its own deprecation or its package's
 	// (an Ansible Galaxy collection). `false` is no filter.
@@ -20223,6 +20509,17 @@ type LookupPackageParams struct {
 
 	// IfNoneMatch An ETag the client holds; a match answers `304` (R-API-012).
 	IfNoneMatch *IfNoneMatch `json:"If-None-Match,omitempty"`
+}
+
+// GetPackageNamespaceParams defines parameters for GetPackageNamespace.
+type GetPackageNamespaceParams struct {
+	Format string `form:"format" json:"format"`
+
+	// Name The namespace (`acme`, `@acme`, `team/app`).
+	Name string `form:"name" json:"name"`
+
+	// Project A project key; only that project's repositories are named.
+	Project *string `form:"project,omitempty" json:"project,omitempty"`
 }
 
 // GetPackageParams defines parameters for GetPackage.
@@ -21390,14 +21687,31 @@ type ListRoleBindingsParams struct {
 	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
 }
 
+// SearchDocumentationParams defines parameters for SearchDocumentation.
+type SearchDocumentationParams struct {
+	// Q The text, 2 to 100 characters after trimming, at most 8 terms; else `400 malformed_request`.
+	Q string `form:"q" json:"q"`
+
+	// Project A project key; only the collections of that project's repositories.
+	Project *string `form:"project,omitempty" json:"project,omitempty"`
+
+	// Limit Page size, 1 to `api.page_size_max` (R-API-010).
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Cursor The `nextCursor` of the previous page. Opaque; valid only with the filters and sort it was issued for.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+}
+
 // GetSearchSuggestionsParams defines parameters for GetSearchSuggestions.
 type GetSearchSuggestionsParams struct {
 	// Q The text. It is trimmed and must then hold 2 to 100 characters, else the answer is `400 malformed_request` with the
 	// pointer `q`; it is lower-cased and its terms are its parts between white space (R-API-062).
 	Q string `form:"q" json:"q"`
 
-	// Kind The kinds to suggest, repeated or comma-separated; `repository,package,project` when absent. An unknown kind answers
-	// `400 malformed_request`; `user`, `group` and `service_account` need `identities:read` (`403` otherwise).
+	// Kind The kinds to suggest, repeated or comma-separated; `repository,package,project` when absent. `documentation` suggests
+	// modules, plugins and roles of the newest version of the collections the caller may read, by the rule of
+	// `GET /api/v1/search/documentation` (R-ANS-058). An unknown kind answers `400 malformed_request`; `user`, `group` and
+	// `service_account` need `identities:read` (`403` otherwise).
 	Kind *[]GetSearchSuggestionsParamsKind `form:"kind,omitempty" json:"kind,omitempty"`
 
 	// Limit Suggestions per kind, 1 to 10; else `400 malformed_request`.
@@ -23501,6 +23815,9 @@ type ServerInterface interface {
 	// LookupPackage Resolve a package name
 	// (GET /api/v1/packages/lookup)
 	LookupPackage(w http.ResponseWriter, r *http.Request, params LookupPackageParams)
+	// GetPackageNamespace Who may publish into a namespace
+	// (GET /api/v1/packages/namespace)
+	GetPackageNamespace(w http.ResponseWriter, r *http.Request, params GetPackageNamespaceParams)
 	// GetPackage Read a package
 	// (GET /api/v1/packages/{packageId})
 	GetPackage(w http.ResponseWriter, r *http.Request, packageId PackageId, params GetPackageParams)
@@ -24038,6 +24355,9 @@ type ServerInterface interface {
 	// ListRoles List the system roles
 	// (GET /api/v1/roles)
 	ListRoles(w http.ResponseWriter, r *http.Request)
+	// SearchDocumentation Find modules, plugins and roles across collections
+	// (GET /api/v1/search/documentation)
+	SearchDocumentation(w http.ResponseWriter, r *http.Request, params SearchDocumentationParams)
 	// GetSearchSuggestions Suggest repositories, packages, projects, users, groups and service accounts for a text
 	// (GET /api/v1/search/suggestions)
 	GetSearchSuggestions(w http.ResponseWriter, r *http.Request, params GetSearchSuggestionsParams)
@@ -28250,6 +28570,32 @@ func (siw *ServerInterfaceWrapper) ListPackages(w http.ResponseWriter, r *http.R
 		return
 	}
 
+	// ------------- Optional query parameter "namespace" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "namespace", r.URL.Query(), &params.Namespace, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "namespace"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "namespace", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "signed" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "signed", r.URL.Query(), &params.Signed, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "signed"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "signed", Err: err})
+		}
+		return
+	}
+
 	// ------------- Optional query parameter "keyword" -------------
 
 	err = runtime.BindQueryParameterWithOptions("form", true, false, "keyword", r.URL.Query(), &params.Keyword, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
@@ -28423,6 +28769,65 @@ func (siw *ServerInterfaceWrapper) LookupPackage(w http.ResponseWriter, r *http.
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.LookupPackage(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetPackageNamespace operation middleware
+func (siw *ServerInterfaceWrapper) GetPackageNamespace(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetPackageNamespaceParams
+
+	// ------------- Required query parameter "format" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "format", r.URL.Query(), &params.Format, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "format"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "format", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "name" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "name", r.URL.Query(), &params.Name, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "name"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "name", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "project" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "project", r.URL.Query(), &params.Project, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "project"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "project", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetPackageNamespace(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -38893,6 +39298,78 @@ func (siw *ServerInterfaceWrapper) ListRoles(w http.ResponseWriter, r *http.Requ
 	handler.ServeHTTP(w, r)
 }
 
+// SearchDocumentation operation middleware
+func (siw *ServerInterfaceWrapper) SearchDocumentation(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SearchDocumentationParams
+
+	// ------------- Required query parameter "q" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "q", r.URL.Query(), &params.Q, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "q"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "q", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "project" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "project", r.URL.Query(), &params.Project, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "project"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "project", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SearchDocumentation(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetSearchSuggestions operation middleware
 func (siw *ServerInterfaceWrapper) GetSearchSuggestions(w http.ResponseWriter, r *http.Request) {
 
@@ -44292,6 +44769,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/endpoints/{endpoint}/exposure-rules/{name}", wrapper.ReplaceExposureRule)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/endpoints/{endpoint}/check-exposure", wrapper.CheckExposure)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/packages", wrapper.ListPackages)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/packages/namespace", wrapper.GetPackageNamespace)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/packages/lookup", wrapper.LookupPackage)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/packages/{packageId}", wrapper.GetPackage)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/packages/{packageId}/versions", wrapper.ListPackageVersions)
@@ -44435,6 +44913,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/collections/{collection}/versions/{version}/signatures", wrapper.AddAnsibleVersionSignature)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/collections/{collection}/versions/{version}/signatures/{fingerprint}", wrapper.RemoveAnsibleVersionSignature)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/search/suggestions", wrapper.GetSearchSuggestions)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/search/documentation", wrapper.SearchDocumentation)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/limits/profiles", wrapper.ListLimitProfiles)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/limits/profiles", wrapper.CreateLimitProfile)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/limits/profiles/{key}", wrapper.DeleteLimitProfile)

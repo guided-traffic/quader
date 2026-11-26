@@ -1,4 +1,5 @@
 import { DownloadLink } from '../../shared/download-link';
+import { NamespaceOf } from './namespace-of';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, computed, effect, inject, input, resource, signal, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
@@ -138,6 +139,7 @@ interface TabEntry {
   selector: 'quader-package-version',
   imports: [
     Loading,
+    NamespaceOf,
     TimeAgo,
     DecimalPipe,
     RouterLink,

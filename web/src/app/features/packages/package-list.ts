@@ -25,6 +25,10 @@ import { packageCommands } from './package-links';
 import { PackageMemory, SavedView } from './package-memory';
 import { PageHeader } from '../../shared/ui/page-header';
 import { TabStrip } from '../../shared/ui/tab-strip';
+import { SignatureBadge } from '../../shared/signatures/signature-badge';
+import { NamespaceRules, isNamespace, namespaceHeading } from './namespaces';
+import { PackageName } from './package-name';
+import { PackageTags } from './package-tags';
 
 type Param = string | readonly string[] | undefined;
 type ListTab = 'all' | 'recent' | 'views';
@@ -65,6 +69,9 @@ interface Chip extends ListChip {
     FilterPanel,
     FormatIconView,
     ListHead,
+    PackageName,
+    PackageTags,
+    SignatureBadge,
     TabStrip,
     TimeAgo,
   ],
@@ -76,6 +83,7 @@ export class PackageList {
   private readonly repositories = inject(RepositoriesApi);
   private readonly router = inject(Router);
   protected readonly memory = inject(PackageMemory);
+  private readonly namespaceRules = inject(NamespaceRules);
 
   /** Query parameters, bound by the router's component input binding. */
   /** Route parameter `:project` of `/projects/:project/packages` (Q-UI-129). */
@@ -86,6 +94,10 @@ export class PackageList {
   readonly keyword = input<string | undefined>();
   /** `true`: only the packages whose latest version is deprecated (R-API-085). */
   readonly deprecated = input<string | undefined>();
+  /** A namespace of the one package type chosen (R-ANS-057, R-UI-220): `acme`, `@acme`, `team/app`. */
+  readonly namespace = input<string | undefined>();
+  /** `true`: only the packages whose latest version carries a verified signature (R-ANS-057). */
+  readonly signed = input<string | undefined>();
   readonly period = input<string | undefined>();
   readonly from = input<string | undefined>();
   readonly to = input<string | undefined>();
@@ -104,6 +116,8 @@ export class PackageList {
   protected readonly panelOpen = signal(false);
   protected readonly stagedKeyword = signal('');
   protected readonly stagedDeprecated = signal(false);
+  protected readonly stagedNamespace = signal('');
+  protected readonly stagedSigned = signal(false);
   protected readonly stagedFormats = signal<readonly string[]>([]);
   protected readonly stagedRepositories = signal<readonly string[]>([]);
   protected readonly stagedPeriod = signal('');
@@ -119,14 +133,32 @@ export class PackageList {
   });
   protected readonly formatNames = computed(() => many(this.format()));
   protected readonly repositoryNames = computed(() => many(this.repository()));
+  /** The sort: the column's when one was chosen, else the best match first while a text is searched (R-ANS-057), else the name. */
   protected readonly apiSort = computed<PackageSort>(() => {
     const s = this.sort();
     const known: readonly string[] = ['name', '-name', 'createdAt', '-createdAt', 'updatedAt', '-updatedAt'];
-    return s !== undefined && known.includes(s) ? (s as PackageSort) : 'name';
+    if (s !== undefined && known.includes(s)) return s as PackageSort;
+    return this.q()?.trim() ? 'relevance' : 'name';
   });
-  protected readonly tableSort = computed<TableSort>(() => {
+  protected readonly tableSort = computed<TableSort | null>(() => {
     const s = this.apiSort();
-    return { column: s.replace('-', ''), direction: s.startsWith('-') ? 'desc' : 'asc' };
+    return s === 'relevance' ? null : { column: s.replace('-', ''), direction: s.startsWith('-') ? 'desc' : 'asc' };
+  });
+  /** The one package type chosen when it has namespaces, whose namespace the filter takes (R-UI-220). */
+  protected readonly namespaceFormat = computed(() => {
+    const f = this.formatNames();
+    return f.length === 1 && this.namespaceRules.of(f[0]!) ? f[0]! : null;
+  });
+  /** The namespace filter in force: the text of the address when it is a namespace of the one package type chosen. */
+  protected readonly namespaceFilter = computed(() => {
+    const f = this.namespaceFormat();
+    const ns = this.namespace()?.trim().toLowerCase() ?? '';
+    return f && isNamespace(this.namespaceRules.of(f), ns) ? ns : undefined;
+  });
+  /** The drawer's namespace field: shown while exactly one package type with namespaces is chosen in it. */
+  protected readonly stagedNamespaceRule = computed(() => {
+    const f = this.stagedFormats();
+    return f.length === 1 ? this.namespaceRules.of(f[0]!) : null;
   });
 
   protected readonly filters = computed<PackageFilters>(() => {
@@ -138,6 +170,8 @@ export class PackageList {
       q: this.q(),
       keyword: this.keyword(),
       ...(this.deprecated() === 'true' ? { deprecated: true } : {}),
+      namespace: this.namespaceFilter(),
+      signed: this.signed() === 'true' ? true : undefined,
       createdFrom: range.from,
       createdTo: range.to,
       sort: this.apiSort(),
@@ -151,7 +185,10 @@ export class PackageList {
         key: `format:${f}`,
         label: typeLabel,
         value: this.formatLabel(f),
-        remove: { format: this.formatNames().filter((x) => x !== f) },
+        // A namespace belongs to the one package type: it goes with it.
+        remove: this.namespaceFilter()
+          ? { format: this.formatNames().filter((x) => x !== f), namespace: null }
+          : { format: this.formatNames().filter((x) => x !== f) },
       });
     }
     const repoLabel = $localize`:@@pkg.filter.repository:Repository`;
@@ -161,6 +198,23 @@ export class PackageList {
         label: repoLabel,
         value: r,
         remove: { repository: this.repositoryNames().filter((x) => x !== r) },
+      });
+    }
+    const ns = this.namespaceFilter();
+    if (ns) {
+      out.push({
+        key: 'namespace',
+        label: $localize`:@@pkg.filter.namespace:Namespace`,
+        value: ns,
+        remove: { namespace: null },
+      });
+    }
+    if (this.signed() === 'true') {
+      out.push({
+        key: 'signed',
+        label: $localize`:@@pkg.filter.state:State`,
+        value: $localize`:@@pkg.filter.verified:Verified`,
+        remove: { signed: null },
       });
     }
     if (this.keyword()) {
@@ -275,6 +329,12 @@ export class PackageList {
     });
   }
 
+  /** The hint under the drawer's namespace field: what a namespace of the one package type chosen looks like. */
+  protected namespaceHint(): string {
+    const rule = this.stagedNamespaceRule();
+    return rule ? namespaceHeading(rule.kind, rule.kind === 'scope' ? '@acme' : rule.kind === 'path' ? 'team/app' : 'acme') : '';
+  }
+
   protected formatLabel(name: string): string {
     return (valueOf(this.formats) ?? []).find((f) => f.name === name)?.displayName ?? name;
   }
@@ -314,6 +374,8 @@ export class PackageList {
   protected restage(): void {
     this.stagedKeyword.set(this.keyword() ?? '');
     this.stagedDeprecated.set(this.deprecated() === 'true');
+    this.stagedNamespace.set(this.namespaceFilter() ?? '');
+    this.stagedSigned.set(this.signed() === 'true');
     this.stagedFormats.set(this.formatNames());
     this.stagedRepositories.set(this.repositoryNames());
     this.stagedPeriod.set(this.period() ?? '');
@@ -328,6 +390,8 @@ export class PackageList {
       repository: [...this.stagedRepositories()],
       keyword: this.stagedKeyword().trim() || null,
       deprecated: this.stagedDeprecated() ? 'true' : null,
+      namespace: (this.stagedNamespaceRule() && this.stagedNamespace().trim().toLowerCase()) || null,
+      signed: this.stagedSigned() ? 'true' : null,
       period: this.stagedPeriod() || null,
       from: custom ? this.stagedFrom() || null : null,
       to: custom ? this.stagedTo() || null : null,
@@ -336,12 +400,12 @@ export class PackageList {
 
   /** **Clear all** of the drawer: its filters go; the search text is the field's and stays. */
   protected clearFilters(): void {
-    this.navigate({ format: null, repository: null, keyword: null, deprecated: null, period: null, from: null, to: null });
+    this.navigate({ format: null, repository: null, keyword: null, namespace: null, signed: null, deprecated: null, period: null, from: null, to: null });
   }
 
   /** **Clear all filters** under a list that matches nothing: the search text goes too. */
   protected clearEverything(): void {
-    this.navigate({ format: null, repository: null, q: null, keyword: null, deprecated: null, period: null, from: null, to: null });
+    this.navigate({ format: null, repository: null, q: null, keyword: null, namespace: null, signed: null, deprecated: null, period: null, from: null, to: null });
   }
 
   protected removeChip(chip: ListChip): void {
@@ -364,6 +428,8 @@ export class PackageList {
     add('q', this.q());
     add('keyword', this.keyword());
     add('deprecated', this.deprecated());
+    add('namespace', this.namespace());
+    add('signed', this.signed());
     add('period', this.period());
     add('from', this.from());
     add('to', this.to());

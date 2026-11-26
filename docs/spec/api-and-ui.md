@@ -1604,8 +1604,17 @@ remain as their owners define them.)
 - A package is identified by format plus normalized name (npm names as stored; NuGet IDs
   case-insensitive, displayed in their original casing). The summary carries both: `name`, what a screen shows, and `key`, the
   normalized name a screen addresses the package by (an Ansible role's display name `<owner>.<name>` and its key `role/<id>`,
-  [formats/ansible.md](formats/ansible.md) R-ANS-056, Q-UI-1261); `q` matches the name, the display name and the description. Version
-  strings are percent-encoded in the path.
+  [formats/ansible.md](formats/ansible.md) R-ANS-056, Q-UI-1261). Version strings are percent-encoded in the path.
+- **Finding packages** ([formats/ansible.md](formats/ansible.md) R-ANS-057, R-UI-220). The list's `q` matches a substring of the name or
+  the display name, and what the format's search matches (an Ansible Galaxy collection or a role a remote read: every word a prefix of a
+  word of its namespace and name or owner and name, its tags or its description); `namespace` (with exactly one `format` whose names have
+  namespaces, `GET /api/v1/formats` `namespaces`, and without `namePrefix`) lists the packages of a namespace, scope or path prefix of
+  their key, so a role (key `role/<id>`) is in none; `signed=true` the packages whose latest visible version carries a verified
+  signature. `sort=relevance` puts the best match of `q` first: 3000 a name or display name equal to it, 2000 one that starts with it,
+  1000 one that holds it, plus the format's rank of a matched version (0 to 999, `formats.ViewRanker`, ADR-287); without `q` it is the
+  name's order. An entry's `signature` is the verified badge of its latest version (`verified_internal`, `verified_public`), absent
+  otherwise, one statement per page on an installation that verifies signatures. `GET /api/v1/packages/namespace?format=&name=&project=`
+  answers what decides a publish into a namespace to a reader of a repository's configuration (R-UI-220).
 - A version is visible to a caller who holds `read` on a repository containing it, by a grant, a role or the repository's
   artifacts level ([authorization.md](authorization.md) R-AUTHZ-035), with the package-name narrowing of INV-9 applied. A package is listed when at least one version is
   visible, and `latestVersion` is computed from visible versions only, so a hidden newer version
@@ -2676,7 +2685,7 @@ The owner's task T-22 (2026-11-12): one search field with live suggestions for e
 | Parameter | Meaning |
 |---|---|
 | `q` | Required. The text, trimmed: 2 to 100 characters, else `400 malformed_request` with the pointer `q` |
-| `kind` | `repository`, `package`, `project`, `user`, `group`, `service_account` (R-API-078); repeated or comma-separated; default `repository,package,project`. An unknown kind answers `400 malformed_request` |
+| `kind` | `repository`, `package`, `project`, `documentation` ([formats/ansible.md](formats/ansible.md) R-ANS-058: the modules, plugins and roles of the newest version of every collection the caller may read, whose wiki it may read), `user`, `group`, `service_account` (R-API-078); repeated or comma-separated; default `repository,package,project`. An unknown kind answers `400 malformed_request` |
 | `limit` | Suggestions per kind, 1 to 10, default 5 |
 
 ```json
@@ -3801,7 +3810,7 @@ Every screen and every object has a bookmarkable URL under `/ui/{locale}`. Filte
 selected tab live in query parameters; a version of a package is an object with a path of its own (R-UI-111).
 
 <details>
-<summary>Route table (58)</summary>
+<summary>Route table (60)</summary>
 
 | Route | Screen | Requirement |
 |---|---|---|
@@ -3812,6 +3821,8 @@ selected tab live in query parameters; a version of a package is an object with 
 | `/projects/{project}/packages/{format}/{name…}` (`?q=&sort=`; npm, NuGet, Ansible Galaxy: `?tab=&severity=&doc=&q=`) | A package: its versions; for a format that leads with its documentation its newest version | R-UI-007, R-UI-110, R-UI-218 |
 | `/projects/{project}/packages/{format}/{name…}/-/versions` (`?q=&sort=`) | The versions of a package whose format leads with its documentation | R-UI-110, R-UI-218 |
 | `/projects/{project}/packages/{format}/{name…}@{version}` (`?tab=&severity=&doc=&q=`) | A version | R-UI-111 |
+| `/projects/{project}/packages/-/namespaces/{format}/{name…}` | The page of a name in the project: an Ansible Galaxy namespace, an npm scope, an OCI path prefix, its packages and who may publish into it | R-UI-220 |
+| `/namespaces/{format}/{name…}` | The page of a name in every project | R-UI-220 |
 | `/projects/{project}/vulnerabilities` (`?repository=&severity=&status=&…`), `/projects/{project}/vulnerabilities/findings/{id}`, `/projects/{project}/vulnerabilities/advisories/{ecosystem}/{id}` | Vulnerability report of the project, finding, advisory (from M4b) | [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-022 |
 | `/projects/{project}/repositories`, `/projects/{project}/repositories/new`, `/projects/{project}/repositories/new/{format}` | Repositories of the project; a new repository: the format first, then the form of that format | R-UI-020, R-UI-021, R-UI-080 |
 | `/projects/{project}/repositories/{key}` (`?q=&sort=`) | Content of the repository; for a generic repository the root of its files | R-UI-052 |
@@ -3830,7 +3841,7 @@ selected tab live in query parameters; a version of a package is an object with 
 | `/projects/{project}/ci`, `/projects/{project}/ci/test`, `/projects/{project}/ci/mappings/new`, `/projects/{project}/ci/mappings/{mapping}` | CI identity of the project | R-UI-035, R-UI-036 |
 | `/repositories` (`?q=&project=&format=&class=&state=`) | The repositories the caller can see in every project, each row naming its project; an administrator sees every one (Q-UI-1040) | R-UI-020 |
 | `/repositories/quick-setup` | Quick setup (P1, specified, not built) | R-UI-023 |
-| `/search` (`?q=&kind=`) | Search results of the main area | R-UI-098 |
+| `/search` (`?q=&kind=`) | Search results of the main area: repositories, packages, projects and the documentation of collections | R-UI-098, R-ANS-058 |
 | `/security` (`?q=&advisory=&project=&severity=&…`), `/security/findings/{id}`, `/security/advisories/{ecosystem}/{id}` | The security dashboard over every project, its finding and advisory; for the holder of `content:metadata-read`, else not found | R-UI-158, R-UI-159, [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-022 |
 | `/security/malware` | **Malware** under Security audit: the blobs the malware scanning refuses, their repositories, the release ([malware-scanning.md](malware-scanning.md) R-MAL-025, [Q-UI-1005](#q-ui-1005--malware-and-signatures-are-entries-of-their-own-under-security-audit)) | R-MAL-025 |
 | `/security/signatures` | **Signatures** under Security audit: the invalid signatures and those of blocked signers ([signatures.md](signatures.md) R-SIG-038, Q-UI-1005) | R-UI-168, R-SIG-038 |
@@ -7179,7 +7190,8 @@ Priority: **MVP** · Covers: quader-only
   the filter; a request a newer text supersedes is cancelled; the answers of the last ten texts are reused for 30 s while the list is
   open. Below the minimum the list shows R-UI-096.
 - **Groups and order** ([Q-UI-407](#q-ui-407--the-main-areas-groups-come-first-and-the-admin-areas-last-five-in-each)).
-  Repositories, Packages, Projects, Pages; then, for an instance administrator only and after a divider, Admin pages, Users and
+  Repositories, Packages, Projects, Documentation (the entries of collections, R-ANS-058), Pages; then, for an instance administrator
+  only and after a divider, Admin pages, Users and
   Groups, each group heading and each entry marked **Admin area** (R-UI-099). Five per group, three for Pages and Admin pages; with a
   kind chosen, that group alone with ten. A group without a match is left out. A group of the main area whose answer says `more` ends
   with **All repositories for "<text>"** (packages, projects), which opens the results page on that tab (R-UI-098).
@@ -7188,7 +7200,8 @@ Priority: **MVP** · Covers: quader-only
   side-bar icon and label; a user the avatar (R-UI-002), the display name or the username, "· <username>" muted and **Disabled**
   where it is; a group the `group` icon and the name. Keys and names carry `translate="no"`.
 - **Where it leads**: a repository `/projects/<project>/repositories/<key>`; a package its page in the project of the answer's
-  repository (`/projects/<project>/packages/<format>/<name>`); a project `/projects/<key>`; a page its route; a user
+  repository (`/projects/<project>/packages/<format>/<name>`); an entry of the documentation its collection's page with
+  `?doc=<type>/<name>` (the `menu_book` icon, the entry's name, "· <type> · <collection> <version>" muted); a project `/projects/<key>`; a page its route; a user
   `/admin/users/<username>`; a group `/admin/groups/<name>`.
 - **Pages** are matched in the browser, in the UI's language, by the project rule of R-API-062 over the labels of the Places of
   R-UI-096 and of Sessions (`/profile/sessions`) and Documentation (`/help`); **Admin pages** over the labels
@@ -7241,7 +7254,7 @@ the reader did not choose.
 
 - **Header**: the `<h1>` **Search** and the description "What you may read that matches "<text>"." The top bar's field keeps the text
   while the page is open; the page has no field of its own.
-- **Tabs**: **Repositories**, **Packages**, **Projects**, without counts. `kind` chooses the tab; without it, or with `user` or
+- **Tabs**: **Repositories**, **Packages**, **Projects**, **Documentation**, without counts. `kind` chooses the tab; without it, or with `user` or
   `group`, the tab is the first group that had a suggestion when Enter was pressed, else **Repositories**. The tab is part of the
   address.
 - **A tab is the list of its kind with `q`**, 25 rows at a time with **Load more** (R-API-010): Repositories, `GET
@@ -7249,7 +7262,11 @@ the reader did not choose.
   ([Q-UI-430](#q-ui-430--the-searchs-repository-rows-are-built-from-the-parts-of-the-repository-list): the visibility icon, the key
   with its description, the project by its mark and its name, format and class; no address and no copy button, Q-UI-426);
   Packages, `GET /api/v1/packages?q=`, with the columns of Q-UI-314 and the project (its mark and name) and repository of each;
-  Projects, `GET /api/v1/projects?q=`, with the start page's columns (Q-UI-311), the project's mark before its name. A row leads to its object's page in the main area.
+  Projects, `GET /api/v1/projects?q=`, with the start page's columns (Q-UI-311), the project's mark before its name;
+  Documentation, `GET /api/v1/search/documentation?q=` ([formats/ansible.md](formats/ansible.md) R-ANS-058): the entry with its type and
+  short description, the collection (its name with its namespace as a link) and version, the project and the repository. A row leads to
+  its object's page in the main area. The packages are sorted by relevance (R-ANS-057); a package's namespace links to the page of the
+  name across every project, its tags to the search for them (R-UI-220).
 - **Empty**: "Nothing you may read matches "<text>"." on the tab. A text of fewer than two characters shows "Type at least two
   characters." and asks nothing.
 - The page has no users, groups or admin pages and no link into the admin area. It takes over the page of the stopgap that replaced
@@ -10254,6 +10271,64 @@ whose owning page defers them. None has a requirement here.
 - **Status payloads.** The system status answers show internal facts (node names, the Valkey
   primary's address, the backup target's bucket and prefix) to `system.read` holders only, and
   never credentials, ACL user names or key material (R-API-038, R-API-050).
+
+### R-UI-220 · The page of a name: a namespace, a scope or a path prefix, in every format that has one
+Priority: **P1** · Covers: quader-only
+
+The owner's decision d2 = b of W-30 (2026-11-25, [Q-UI-1290](#q-ui-1290--a-name-of-a-format-has-a-page-made-from-what-exists-in-every-format)):
+"A page made from what exists, in every format. It lists the packages and who may publish into the name (the claims). It has no
+description of its own. One screen for all formats."
+
+- **What a name is**, a fact of the format (`catalog.Facts.Namespaces`, served by `GET /api/v1/formats` as `namespaces`): an Ansible Galaxy
+  namespace (`acme` of `acme.tools`), an npm scope (`@acme` of `@acme/ui`; an unscoped name has none), every path prefix of an OCI image
+  (`team` and `team/app` of `team/app/image`). NuGet, Debian and generic files have none
+  ([Q-UI-1294](#q-ui-1294--nuget-debian-and-generic-files-have-no-name-page)). The name is the package's key, the one the rules see: an
+  Ansible role a remote read (key `role/<id>`, shown as `<owner>.<name>`, [formats/ansible.md](formats/ansible.md) R-ANS-056) has none, is
+  listed on no namespace's page, and its shown name is one link to its page.
+- **Its address** ([Q-UI-1291](#q-ui-1291--the-page-of-a-name-lives-in-the-projects-packages-and-across-every-project)):
+  `/projects/{project}/packages/-/namespaces/{format}/{name…}` in a project, `/namespaces/{format}/{name…}` across every project the reader
+  may read; both can be shared. The heading names the kind and the name: **Namespace acme**, **Scope @acme**, **Path team/app**; the head
+  links a nested path's outer levels ("Inside team") and, in a project, **In every project**.
+- **Its packages**: the package list with the filter `namespace` (R-API-029), the packages of the name the reader may read, each with its
+  description, its tags, the mark of a deprecated latest version (R-API-085), the badge of a verified latest version, its latest version and when it changed, and across projects its project.
+  Load more; read again in place while it is seen (R-UI-213).
+- **Who may publish into it** ([Q-UI-1292](#q-ui-1292--who-may-publish-is-shown-to-a-reader-of-the-configuration-in-plain-words-naming-no-principal)),
+  only to a reader of a repository's configuration (a holder of `repositories:read-config`, or an Owner of the repository's project; R-REPO-010):
+  one sentence of what decides ("Whoever may publish into a local <format> repository may publish a package whose name starts with
+  `acme.` there. Claims decide which repository a virtual repository serves such a name from."), then each local repository of the format
+  whose configuration the reader may read, those with a claim first: who may publish there (the developers, maintainers and owners among
+  the members of its project, a link, and whoever a permission policy gives the right, a link), its package ownership in a sentence, its
+  claims that cover names of the namespace (the pattern, every name or some names of it, in which virtual repositories, set by hand or by a
+  first publish), and, where no claim covers every name, whether a first publish claims the new name. `GET /api/v1/packages/namespace`
+  answers it; `publishing` is `null` for any other reader, who sees the packages only. No principal is named and no repository the reader
+  may not read the configuration of is named or counted.
+- **No object.** The page has no description, logo, link or owner of its own: the name is no entity and has no permission of its own
+  beside the claims (H-845 stands).
+- **Links to it** ([Q-UI-1293](#q-ui-1293--a-names-namespace-is-a-link-of-its-own-in-lists-hits-and-heads)): in the package list, in the
+  search's hits and in the head of a package's and a version's page, each level of a name's namespace is a link of its own
+  (`acme` · `tools`, `team` · `app` · `image`), the rest the link to the package; the package's link carries the whole name for
+  assistive technology. In a project the namespace's link stays in the project; a hit of the search, which crosses projects, leads to the
+  page across every project.
+
+| Format | The name | What the page shows | What it does not, and why |
+|---|---|---|---|
+| Ansible Galaxy | the namespace, before the dot | its collections; who may publish | Galaxy's description, avatar, links and owners: no object (d2 = b) |
+| npm | the scope, `@acme` | its packages; who may publish | the npm organisation's members: Quader's members are the access |
+| OCI | every path prefix, `team`, `team/app` | the images below it, deeper levels included; who may publish | a registry's repository description: the registry's, not the format's |
+| NuGet | none | — | an ID prefix is a reservation of nuget.org's gallery, which a claim (`Contoso.*`) already is; no part of an ID groups packages |
+| Debian | none | — | the source package groups binaries, which the package list's filter by source answers (Q-UI-1271) |
+| generic files | none | — | a folder is a path prefix, and the repository's files view shows folders already |
+
+Acceptance criteria:
+
+- `TestR_UI_220_ANamespaceSaysWhoMayPublishToAReaderOfTheConfiguration` (integration `ansiblelocal`, under 1 s): a reader of the packages
+  gets no `publishing`; an administrator gets the repository with its covering claim and its ownership; another project names none; a text
+  that is no namespace answers 404.
+- `TestR_UI_220_NamespacesOfAName` and `TestR_UI_220_HowAClaimCoversANamespace` (unit, milliseconds).
+- The web unit tests: the page in a project and across projects, the publishing in plain words, a nested path's outer levels, the links of
+  a name in the list and the hits.
+- The renders `namespace-ansible` (40 collections, a reader of the configuration), `namespace-ansible-reader`, `namespace-npm-one` (one
+  package), `namespace-oci-deep`, light and dark, 1,440, 1,024 and 390 px, the first also in German.
 
 ## Decisions
 
@@ -27323,6 +27398,66 @@ component would say "This README is shortened".
 [ansible-docs.html](../../web/src/app/features/packages/ansible-docs.html). Renders `ansible-doc-role`, `ansible-doc-role-anchor`,
 `ansible-doc-changelog`, `ansible-doc-changelog-md`.
 
+### Q-UI-1290 · A name of a format has a page made from what exists, in every format
+
+Status: **Decided by the owner** on 2026-11-25 (working paper W-30, d2 = b: "überall Favorit. Genau so umsetzen wie dort im Fav beschrieben").
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) No page, only a filter | Clicking `acme` in `acme.tools` lists acme's collections | Nothing new | Who may publish into the name has no answer |
+| (b) A page made from what exists, in every format: its packages and who may publish into the name (the claims); no description of its own; one screen for all formats (chosen) | R-UI-220 | The two questions a person has at a namespace, without a second permission model | Galaxy's namespace description, logo and links are not kept |
+| (c) A namespace as an object with a description, a logo, links and owners, for every format | A new entity | Galaxy's namespace page | A new entity with its own permissions beside the claims |
+
+**Applied in the spec:** R-UI-220, R-API-029; [formats/ansible.md](formats/ansible.md) R-ANS-057.
+
+### Q-UI-1291 · The page of a name lives in the project's packages, and across every project
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `/projects/{project}/packages/-/namespaces/{format}/{name…}` and `/namespaces/{format}/{name…}` (chosen) | One screen, two scopes | In a project the side bar and the breadcrumb stay; a hit of the search, which crosses projects, has a page that crosses them too | Two addresses |
+| (b) Only across every project | One address | Simple | A project's page would leave the project |
+| (c) Only in a project | One address | Simple | A hit of the search would land in one project of several |
+
+**Choice:** (a). No format's name holds a segment `-`, so the address never meets a package's. **Applied in the spec:** R-UI-220, R-UI-003.
+
+### Q-UI-1292 · Who may publish is shown to a reader of the configuration, in plain words, naming no principal
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The local repositories whose configuration the reader may read, each with who may publish (the project's roles and its policies as links), its package ownership, its covering claims and its automatic claims, in sentences (chosen) | What decides a publish today (R-AUTHZ-018, R-AUTHZ-026, R-REPO-023) | Exactly what decides, nothing the reader may not see | The principals a policy grants are not listed (R-AUTHZ-024 is not built, H-2151) |
+| (b) The claims alone | The owner's words "(the claims)" | Short | A claim decides where a name resolves from, not who publishes |
+| (c) Every principal with `deploy`, as person fields | — | Names the people | Needs the effective permissions of R-AUTHZ-024, not built; reveals principals to a reader of the packages |
+
+**Choice:** (a). The gate is the repository's own: `repositories:read-config` or the Owner of its project, and the endpoint's exposure.
+**Applied in the spec:** R-UI-220; H-2151, H-2152.
+
+### Q-UI-1293 · A name's namespace is a link of its own in lists, hits and heads
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Each level of the namespace a link to its page, the rest the link to the package; the package's link named by the whole name (chosen) | `quader-package-name` | The name the reader sees is the way to both; a path's levels each | Two links in one name |
+| (b) The namespace as a second line under the name | — | One link per line | Repeats the name's start |
+| (c) A link only on the package's page | — | Quiet lists | The owner's list names lists and hits |
+
+**Choice:** (a). The namespace is muted until pointed at, so the name reads as one. **Applied in the spec:** R-UI-220.
+
+### Q-UI-1294 · NuGet, Debian and generic files have no name page
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) None of the three (chosen) | NuGet's ID prefix is nuget.org's reservation, which a claim is already; Debian's grouping is the source package, which Q-UI-1271's filter answers; a generic folder is in the files view | No second view of what exists | NuGet users who know prefix reservations find no page |
+| (b) NuGet's ID before its first dot | `Contoso` of `Contoso.Logging` | A page | No rule of NuGet makes that a group: `Newtonsoft.Json` and `Newtonsoft.Json.Bson` share a prefix by choice, not by protocol |
+
+**Choice:** (a). **Revisit** if the owner wants NuGet's prefix reservations shown as such. **Applied in the spec:** R-UI-220.
+
 ## What this does not cover
 
 ### H-2143 · A remote whose documentation is not available shows no changelog on its tab
@@ -27331,6 +27466,18 @@ The tree answers the changelog in every state of the documentation (R-ANS-053), 
 state available: a remote version whose upstream documentation is pending, unavailable or none (with `ansible.fetchDocumentation` off)
 shows the state's sentence and not the changelog its cached archive holds. Live for such remote versions; the operation
 `getPackageVersionDocFile` with the name `changelog` answers it.
+
+### H-2151 · The page of a name names no principal who may publish
+
+Who may publish into a namespace is said as the project's roles and its permission policies, both links (R-UI-220); the principals a policy
+grants and the owners of each package (R-AUTHZ-018) are not listed, because the effective permissions of a coordinate (R-AUTHZ-024) are not
+built. Live for every reader of the configuration who wants the names; the policies' page answers it one policy at a time.
+
+### H-2152 · The page of a name shows the claims of the repositories whose configuration the reader may read
+
+A `global` claim of another project's repository is in effect in this project's virtual repositories (R-REPO-023) and is not named on this
+project's page of the name, since its reader may not read that repository's configuration (Q-UI-1292). The page names no claim it may not
+show and counts none. Live for a reader whose virtual repositories resolve a name from another project's claim.
 
 ### H-2050 · A busy button without a flag takes its act from the app's calls
 

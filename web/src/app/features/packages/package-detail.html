@@ -4,6 +4,8 @@
       <quader-format-icon [format]="format()" />
       <span translate="no">{{ formatName() }}</span>
     </span>
+    <!-- The name's namespace, a link to its page (R-UI-220). -->
+    <quader-namespace-of [format]="format()" [name]="name()" [project]="project()" />
     @if (pkg(); as p) {
       <span class="dot-separated muted">
         <!-- An image's count is its tags, while its table lists its images (R-UI-007, Q-UI-1130). -->

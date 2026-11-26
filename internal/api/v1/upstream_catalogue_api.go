@@ -377,10 +377,25 @@ func (s *Server) hitRows(c catalogueCall, hits []discover.Hit) ([]map[string]any
 			"flags": listOf(h.Flags), "delivery": toDeliveryDecision(d, c.repo.Delivery().Mode()), "stored": st,
 			"request": requestRow(opened[h.Name]),
 		}
+		popularity(row, h.Popularity)
 		switchFacts(c, row, h.Name)
 		out = append(out, row)
 	}
 	return out, withheld, nil
+}
+
+// popularity adds what the upstream tells beside a package, each member only where it tells it (R-ANS-047, Q-ANS-129): its tags, its
+// downloads at the upstream (named apart from Quader's own count) and its signed state.
+func popularity(row map[string]any, p discover.Popularity) {
+	if len(p.Keywords) > 0 {
+		row["keywords"] = p.Keywords
+	}
+	if p.Downloads != nil {
+		row["downloads"] = *p.Downloads
+	}
+	if p.Signed != nil {
+		row["signed"] = *p.Signed
+	}
 }
 
 // switchFacts adds what the package's switch shows and asks to the row of a package, for whoever may set rules (R-CUR-024): the
@@ -462,6 +477,7 @@ func (s *Server) packageRow(c catalogueCall, info discover.PackageInfo) (map[str
 		"request": requestRow(openOf(open, "")), "versions": rows, "total": nullTotal(info.Total),
 		"nextCursor": catalogueCursor(info.Cursor, info.Done), "done": info.Done,
 	}
+	popularity(out, info.Popularity)
 	switchFacts(c, out, name)
 	return out, nil
 }

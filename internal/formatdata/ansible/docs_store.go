@@ -402,3 +402,49 @@ func (s docsStore) RebuildRemoteDocs(ctx context.Context, repoID int64, checkpoi
 	}
 	return next, len(list) < docsReindexBatch, nil
 }
+
+// SearchDocs implements ansible.DocsStore (R-ANS-058): one statement over the entries of the versions asked.
+func (s docsStore) SearchDocs(ctx context.Context, in rows.DocSearch) ([]rows.DocHit, error) {
+	if len(in.Versions) == 0 || in.Limit <= 0 {
+		return nil, nil
+	}
+	p := q.AnsibleDocsSearchParams{
+		RepoIds: make([]int64, len(in.Versions)), Names: make([]string, len(in.Versions)), Versions: make([]string, len(in.Versions)),
+		Text: in.Text, Query: in.Query, MaxRows: int32(min(in.Limit, 1<<20)), //nolint:gosec // bounded above
+	}
+	for i, k := range in.Versions {
+		p.RepoIds[i], p.Names[i], p.Versions[i] = k.RepoID, k.Name, k.Version
+	}
+	if a := in.After; a != nil {
+		p.HasAfter, p.AfterTier, p.AfterEntry, p.AfterName, p.AfterRepo, p.AfterType = true, int32(a.Tier), a.Entry, a.Name, a.RepoID, a.Type //nolint:gosec // a tier is 0 to 3
+	}
+	var out []rows.DocHit
+	err := s.read(ctx, nil, func(qs *q.Queries) error {
+		got, err := qs.AnsibleDocsSearch(ctx, p)
+		for _, r := range got {
+			out = append(out, rows.DocHit{
+				DocVersionKey: rows.DocVersionKey{RepoID: r.RepoID, Name: r.Name, Version: r.Version},
+				Type:          r.ContentType, Entry: r.ContentName, ShortDescription: r.ShortDescription, Tier: int(r.Tier),
+				Deprecated: r.Deprecated, DeprecationMessage: r.DeprecationMessage,
+			})
+		}
+		return err
+	})
+	return out, err
+}
+
+// DocCandidates implements ansible.DocsStore (R-ANS-058): the versions with a matching entry, one statement over the search index.
+func (s docsStore) DocCandidates(ctx context.Context, repoIDs []int64, query string, limit int) ([]rows.DocVersionKey, error) {
+	if len(repoIDs) == 0 || query == "" || limit <= 0 {
+		return nil, nil
+	}
+	var out []rows.DocVersionKey
+	err := s.read(ctx, nil, func(qs *q.Queries) error {
+		got, err := qs.AnsibleDocsCandidates(ctx, q.AnsibleDocsCandidatesParams{Query: query, RepoIds: repoIDs, MaxRows: int32(min(limit, 1<<20))}) //nolint:gosec // bounded above
+		for _, r := range got {
+			out = append(out, rows.DocVersionKey{RepoID: r.RepoID, Name: r.Name, Version: r.Version})
+		}
+		return err
+	})
+	return out, err
+}

@@ -169,3 +169,31 @@ type DocsReader interface {
 type ChangelogReader interface {
 	ReadChangelog(ctx context.Context, ref ArchiveRef) (*DocChangelog, error)
 }
+
+// DocVersionKey names the documentation of one version of a collection in one repository: what the search across collections reads
+// (R-ANS-058).
+type DocVersionKey struct {
+	RepoID        int64
+	Name, Version string
+}
+
+// DocHit is an entry the search across collections found (R-ANS-058): its version, its type and name, its short description, and its tier
+// (0 the name equals the text, 1 it starts with it, 2 it holds it, 3 a match of the text's words elsewhere).
+type DocHit struct {
+	DocVersionKey
+	Type, Entry, ShortDescription string
+	Tier                          int
+	// Deprecated says that the collection is deprecated in its repository, with the message its deprecation holds ("" for none) (R-ANS-060).
+	Deprecated         bool
+	DeprecationMessage string
+}
+
+// DocSearch asks the search across collections for one page (R-ANS-058): the versions to read, the whole text lower-cased, its
+// to_tsquery text of prefix words ([ViewQuery]), the hit after which the page starts (nil for the first), and the rows to answer.
+type DocSearch struct {
+	Versions []DocVersionKey
+	Text     string
+	Query    string
+	After    *DocHit
+	Limit    int
+}

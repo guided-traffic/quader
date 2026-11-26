@@ -78,8 +78,10 @@ func (f *Format) Descriptor() formats.Descriptor {
 			DefaultNotFoundTTLSeconds: &notFoundTTL,
 			PatternSubject:            formats.SubjectName,
 			PackageNames:              true,
-			PriorityMembers:           true,
-			PinsAndClaims:             true,
+			// A scope, "@acme" of "@acme/ui", has a page of its own; an unscoped name has none (R-UI-220, Q-UI-1290).
+			Namespaces:      &catalog.NamespaceRule{Kind: catalog.NamespaceScope, Separator: "/", Marker: "@"},
+			PriorityMembers: true,
+			PinsAndClaims:   true,
 			// A local repository of npm holds package ownership enforced until its
 			// document says otherwise (R-AUTHZ-018, Q-AUTHZ-2).
 			OwnershipDefault: catalog.OwnershipEnforce,

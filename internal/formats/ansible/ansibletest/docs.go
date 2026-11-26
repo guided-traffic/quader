@@ -257,3 +257,11 @@ func (s *Store) DocChangelog(_ context.Context, repoID int64, name, version stri
 	}
 	return rows.DocChangelog{}, false, nil
 }
+
+// SearchDocs finds nothing: the search across collections is tested against PostgreSQL (R-ANS-058).
+func (s *Store) SearchDocs(context.Context, rows.DocSearch) ([]rows.DocHit, error) { return nil, nil }
+
+// DocCandidates finds nothing: the search across collections is tested against PostgreSQL (R-ANS-058).
+func (s *Store) DocCandidates(context.Context, []int64, string, int) ([]rows.DocVersionKey, error) {
+	return nil, nil
+}

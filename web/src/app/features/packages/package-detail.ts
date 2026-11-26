@@ -1,4 +1,5 @@
 import { DecimalPipe } from '@angular/common';
+import { NamespaceOf } from './namespace-of';
 import { LIVE_IDLE_MS, live, refreshResource } from '../../core/live-refresh';
 import { Component, computed, effect, inject, input, linkedSignal, resource, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
@@ -55,6 +56,7 @@ function sameVersion(a: { id: string; version: string } | undefined, b: { id: st
 @Component({
   selector: 'quader-package-detail',
   imports: [Loading, DeprecationMark,
+    NamespaceOf,
     SignatureBadge,
     DecimalPipe,
     RouterLink,

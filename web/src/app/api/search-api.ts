@@ -1,5 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { ApiClient } from './client';
+import { PageFetcher } from './pagination';
+import { cleanQuery } from './query';
 import type { operations } from './generated/schema';
 import { Schema } from './types';
 
@@ -11,6 +13,8 @@ export type ProjectSuggestion = Schema<'ProjectSuggestion'>;
 export type UserSuggestion = Schema<'UserSuggestion'>;
 export type GroupSuggestion = Schema<'GroupSuggestion'>;
 export type ServiceAccountSuggestion = Schema<'ServiceAccountSuggestion'>;
+/** An entry of a collection's documentation that the search across collections found (R-ANS-058). */
+export type DocumentationHit = Schema<'DocumentationHit'>;
 
 /** A kind of the suggestions: `user`, `group` and `service_account` need `identities:read`, else the answer is 403 (Q-API-272). */
 export type SuggestionKind = NonNullable<
@@ -33,6 +37,8 @@ export interface SuggestRequest {
 export abstract class SearchApi {
   /** `GET /api/v1/search/suggestions?q=&kind=&limit=`: one request for every kind of the filter. */
   abstract suggest(request: SuggestRequest): Promise<SearchSuggestions>;
+  /** `GET /api/v1/search/documentation?q=`: the modules, plugins and roles of the newest version of every collection (R-ANS-058). */
+  abstract documentation(q: string, project?: string): PageFetcher<DocumentationHit>;
 }
 
 @Injectable()
@@ -51,5 +57,9 @@ export class HttpSearchApi extends SearchApi {
       noRetry: true,
     });
     return response.body;
+  }
+
+  documentation(q: string, project?: string): PageFetcher<DocumentationHit> {
+    return this.client.page<DocumentationHit>('/api/v1/search/documentation', cleanQuery({ q, project }));
   }
 }

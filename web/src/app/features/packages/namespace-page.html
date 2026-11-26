@@ -1,0 +1,113 @@
+<quader-page-header [heading]="heading()" [description]="description()" [name]="true">
+  @if (parents().length > 0 || project()) {
+    <p meta class="ns-meta">
+      @if (parents().length > 0) {
+        <span class="ns-parents">
+          <ng-container i18n="@@ns.inside">Inside</ng-container>&ngsp;
+          @for (p of parents(); track p; let last = $last) {
+            <a [routerLink]="namespaceLink(p, scope())" translate="no">{{ p }}</a>@if (!last) {<span aria-hidden="true">&ngsp;›&ngsp;</span>}
+          }
+        </span>
+      }
+      @if (project()) {
+        <a class="ns-scope" [routerLink]="namespaceLink(name(), null)" data-testid="namespace-every-project" i18n="@@ns.every-project">In every project</a>
+      }
+    </p>
+  }
+</quader-page-header>
+
+<quader-data-table
+  [caption]="caption()"
+  [columns]="columns()"
+  [loaded]="list.loaded()"
+  [loading]="list.loading()"
+  loadingText="Loading the packages."
+  i18n-loadingText="@@pkg.list.loading"
+  [error]="list.error()"
+  [empty]="list.items().length === 0"
+  [emptyText]="emptyText"
+  [hasMore]="list.hasMore()"
+  (more)="list.more()"
+  (retry)="list.more()"
+>
+  @for (row of list.items(); track row.id) {
+    <tr>
+      <th scope="row" class="wrap-name">
+        <span class="name-line">
+          <quader-package-name [format]="row.format" [name]="row.name" [key]="row.key" [link]="packageLink(row)" [project]="scope()" />
+          <!-- The deprecation of the package's latest version (R-API-085) and a verified latest version's badge (R-ANS-057). -->
+          <quader-deprecation-mark [deprecation]="row.deprecation" />
+          <quader-signature-badge [state]="row.signature" />
+        </span>
+        @if (row.description) {
+          <span class="secondary" translate="no">{{ row.description }}</span>
+        }
+        <quader-package-tags [tags]="row.keywords" [project]="scope()" />
+      </th>
+      @if (!project()) {
+        <td class="project-cell"><quader-project-link [key]="placeOf(row).project" /></td>
+      }
+      <td translate="no">{{ row.latestVersion }}</td>
+      <td><quader-time-ago [at]="row.updatedAt" absolute="title" /></td>
+    </tr>
+  }
+</quader-data-table>
+
+@if (factsFailure(); as f) {
+  <quader-error-notice [error]="f" (retry)="factsFailure.retry()" />
+} @else if (facts.isLoading() && !facts.hasValue()) {
+  <quader-loading i18n="@@ns.publishing.loading">Reading who may publish into the name.</quader-loading>
+} @else if (publishing(); as pub) {
+  <!-- What decides a publish into the name, to a reader of a repository's configuration only (Q-UI-1292): the plain sentence first,
+       then each local repository with what it holds of the name. No principal is named; the project's members and policies are links. -->
+  <section class="ns-publishing" aria-labelledby="ns-publishing-heading" data-testid="namespace-publishing">
+    <h2 id="ns-publishing-heading" i18n="@@ns.publishing.heading">Who may publish into the name</h2>
+    <p class="hint" i18n="@@ns.publishing.intro">
+      Whoever may publish into a local {{ formatLabel() }} repository may publish a package whose name starts with
+      <code translate="no">{{ prefix() }}</code> there. Claims decide which repository a virtual repository serves such a name from.
+    </p>
+    @if (pub.repositories.length === 0) {
+      <p class="empty" i18n="@@ns.publishing.none">No local repository of this format whose settings you may read.</p>
+    }
+    <ul class="ns-repos plain-list">
+      @for (r of pub.repositories; track r.project + '/' + r.key) {
+        <li class="ns-repo">
+          <a class="ns-repo-name" [routerLink]="['/projects', r.project, 'repositories', r.key]" translate="no">{{ r.project }}/{{ r.key }}</a>
+          <p class="ns-line" i18n="@@ns.publishing.who">
+            Who may publish here: the developers, maintainers and owners among the
+            <a [routerLink]="['/projects', r.project, 'members']">members of {{ r.project }}</a>, and whoever a
+            <a [routerLink]="['/projects', r.project, 'policies']">permission policy</a> gives the right to publish.
+          </p>
+          <p class="ns-line">
+            @if (r.packageOwnership === 'enforce') {
+              <ng-container i18n="@@ns.publishing.enforce">Package ownership is enforced: whoever publishes a new name first owns it, and a later version needs one of its owners or the right to manage the repository.</ng-container>
+            } @else {
+              <ng-container i18n="@@ns.publishing.off">Package ownership is off: whoever may publish here may publish every name.</ng-container>
+            }
+          </p>
+          @if (r.claims.length > 0) {
+            <ul class="ns-claims">
+              @for (c of r.claims; track c.pattern) {
+                <li>
+                  <ng-container i18n="@@ns.publishing.claim">Claims</ng-container>&ngsp;<code translate="no">{{ c.pattern }}</code
+                  >&ngsp;({{ claimCovers(c) }}; {{ claimScope(c) }}; {{ claimSource(c) }})
+                </li>
+              }
+            </ul>
+          } @else {
+            <p class="ns-line secondary" i18n="@@ns.publishing.no-claim">No claim of this repository covers a name of it.</p>
+          }
+          @if (!claimsAll(r)) {
+            <p class="ns-line secondary">
+              @if (r.autoClaim) {
+                <ng-container i18n="@@ns.publishing.auto-on">A first publish of a new name claims that name for this repository.</ng-container>
+              } @else {
+                <ng-container i18n="@@ns.publishing.auto-off">A first publish claims nothing.</ng-container>
+              }
+            </p>
+          }
+        </li>
+      }
+    </ul>
+  </section>
+}

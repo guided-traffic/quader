@@ -19,7 +19,7 @@ export interface SearchEntry {
    */
   readonly id: string;
   readonly area: Area;
-  readonly kind: 'place' | 'repository' | 'package' | 'project' | 'page' | 'user' | 'group' | 'more' | 'all-projects';
+  readonly kind: 'place' | 'repository' | 'package' | 'project' | 'documentation' | 'page' | 'user' | 'group' | 'more' | 'all-projects';
   /** The name shown; matched text in it is bold while a text is typed. */
   readonly label: string;
   /** The muted part after "·": a repository's project, a package's project and repository, a project's key, a username. */
@@ -54,10 +54,14 @@ export interface SearchGroup {
   readonly entries: readonly SearchEntry[];
 }
 
-/** The kinds a filter asks for: the main area's three, and users and groups for an instance administrator under **All**. */
+/**
+ * The kinds a filter asks for: the main area's four (the documentation of collections, R-ANS-058, among them), and users and groups for
+ * an instance administrator under **All**.
+ */
 export function kindsOf(filter: SearchFilter, instanceAdmin: boolean): SuggestionKind[] {
   if (filter !== 'all') return [filter];
-  return instanceAdmin ? ['repository', 'package', 'project', 'user', 'group'] : ['repository', 'package', 'project'];
+  const main: SuggestionKind[] = ['repository', 'package', 'project', 'documentation'];
+  return instanceAdmin ? [...main, 'user', 'group'] : main;
 }
 
 /** Whether a URL is in the admin area. */
@@ -213,6 +217,7 @@ export function headings(): Record<string, string> {
     repository: $localize`:@@search.group.repositories:Repositories`,
     package: $localize`:@@search.group.packages:Packages`,
     project: $localize`:@@search.group.projects:Projects`,
+    documentation: $localize`:@@search.group.documentation:Documentation`,
     pages: $localize`:@@search.group.pages:Pages`,
     'admin-pages': $localize`:@@search.group.admin-pages:Admin pages`,
     user: $localize`:@@search.group.users:Users`,
@@ -221,13 +226,15 @@ export function headings(): Record<string, string> {
 }
 
 /** The "All … for" line of a main-area group whose answer says `more` (R-UI-097). */
-function moreEntry(kind: 'repository' | 'package' | 'project', q: string): SearchEntry {
+function moreEntry(kind: 'repository' | 'package' | 'project' | 'documentation', q: string): SearchEntry {
   const label =
     kind === 'repository'
       ? $localize`:@@search.more.repositories:All repositories for “${q}:text:”`
       : kind === 'package'
         ? $localize`:@@search.more.packages:All packages for “${q}:text:”`
-        : $localize`:@@search.more.projects:All projects for “${q}:text:”`;
+        : kind === 'documentation'
+          ? $localize`:@@search.more.documentation:All documentation for “${q}:text:”`
+          : $localize`:@@search.more.projects:All projects for “${q}:text:”`;
   return { id: `more-${kind}-${q}`, area: 'main', kind: 'more', label, icon: 'arrow_forward', literal: false, commands: ['/search'], queryParams: { q, kind } };
 }
 
@@ -244,7 +251,8 @@ export interface LiveInput {
 }
 
 /**
- * The typed list (R-UI-097, Q-UI-407): Repositories, Packages, Projects, Pages; then, for an instance administrator, Admin pages,
+ * The typed list (R-UI-097, Q-UI-407): Repositories, Packages, Projects, Documentation (R-ANS-058), Pages; then, for an
+ * instance administrator, Admin pages,
  * Users and Groups. Five per group, three for the pages, ten with a kind chosen (the server cut the answer at its `limit`); a group
  * without a match is left out; a main-area group whose answer says `more` ends with its **All … for** line.
  */
@@ -278,6 +286,23 @@ export function liveGroups(input: LiveInput): SearchGroup[] {
   if (answer.projects) {
     const rows = answer.projects.items.map((p) => projectEntry(p.key, p.displayName, 'live'));
     add('project', 'main', answer.projects.more ? [...rows, moreEntry('project', q)] : rows);
+  }
+  if (answer.documentation) {
+    // An entry of a collection's documentation (R-ANS-058): its name, the collection and version it documents, its page by `?doc=`.
+    const rows = answer.documentation.items.map(
+      (d): SearchEntry => ({
+        id: `live-d-${d.project}/${d.repository}/${d.package}/${d.type}/${d.name}`,
+        area: 'main',
+        kind: 'documentation',
+        label: d.name,
+        secondary: `${d.type} · ${d.package} ${d.version}`,
+        icon: 'menu_book',
+        literal: true,
+        commands: packageCommands(d.project, d.format, d.package),
+        queryParams: { doc: `${d.type}/${d.name}` },
+      }),
+    );
+    add('documentation', 'main', answer.documentation.more ? [...rows, moreEntry('documentation', q)] : rows);
   }
   if (input.filter === 'all') {
     add('pages', 'main', matchPlaces(input.pages, q, 3).map((p) => placeEntry(p, 'main', 'page')));
@@ -326,9 +351,9 @@ export function liveGroups(input: LiveInput): SearchGroup[] {
 }
 
 /** The tab of the results page that the first group with a suggestion names (R-UI-098). */
-export function firstKindOf(groups: readonly SearchGroup[]): 'repository' | 'package' | 'project' | null {
+export function firstKindOf(groups: readonly SearchGroup[]): 'repository' | 'package' | 'project' | 'documentation' | null {
   for (const g of groups) {
-    if (g.id === 'repository' || g.id === 'package' || g.id === 'project') return g.id;
+    if (g.id === 'repository' || g.id === 'package' || g.id === 'project' || g.id === 'documentation') return g.id;
   }
   return null;
 }

@@ -29,6 +29,11 @@ what the browser keeps.
   caller does not read at all contributes no row to any statement, so a name added to it or removed from it changes neither the
   entries nor `more` (`TestR_API_061_ASuggestionNamesOnlyWhatTheCallerMayRead`). Within a repository read in part, the names it
   holds share the bound of the package statements before they are decided (H-985).
+- An entry of a collection's documentation (the kind `documentation`, and the list `GET /api/v1/search/documentation`, R-ANS-058) comes
+  from the newest version of a collection the read scope of the package list admits, and only when the caller may read that version's
+  wiki (`Scope.MayReadWiki`, R-AUTHZ-034): the versions are decided before any entry is read, so a collection whose documentation the
+  caller may not read gives no hit, adds nothing to `more` and is counted nowhere
+  ([docs_search_api.go](../../internal/api/v1/docs_search_api.go) `readableDocs`, `TestR_ANS_058_TheDocumentationIsSearchedAcrossCollections`).
 - `hideExistence: false` changes the status of a refused read, never a listing: a repository the caller cannot read is not
   suggested, whatever its setting.
 - A repository's or a package's project is named by its key, which is part of the qualified name the caller reads; the display

@@ -298,9 +298,11 @@ type Filter struct {
 	CreatedTo   *time.Time
 	// Deprecated keeps the packages whose latest visible version is deprecated (R-API-085).
 	Deprecated bool
+	// Signed keeps a package whose latest visible version carries a verified signature (R-ANS-057, Q-ANS-122).
+	Signed bool
 }
 
-// Order is the sort of the list: name, createdAt or updatedAt.
+// Order is the sort of the list: name, createdAt, updatedAt or relevance (the best match first, R-ANS-057).
 type Order struct {
 	Sort string
 	Desc bool
@@ -309,9 +311,10 @@ type Order struct {
 // After is the position after which a page starts: the sort-key values of the last
 // package of the previous page.
 type After struct {
-	Time   time.Time
-	Name   string
-	Format string
+	Time      time.Time
+	Name      string
+	Format    string
+	Relevance int64
 }
 
 // Key returns the sort-key values of a package in the order the statement compares
@@ -323,6 +326,8 @@ func (o Order) Key(p Package) []string {
 		return []string{p.CreatedAt.UTC().Format(time.RFC3339Nano), p.Key, p.Format}
 	case "updatedAt":
 		return []string{p.UpdatedAt.UTC().Format(time.RFC3339Nano), p.Key, p.Format}
+	case "relevance":
+		return []string{strconv.FormatInt(p.Relevance, 10), p.Key, p.Format}
 	}
 	return []string{p.Key, p.Format}
 }
@@ -339,6 +344,15 @@ func (o Order) ParseAfter(key []string) (*After, error) {
 			return nil, errBadCursor
 		}
 		return &After{Time: t, Name: key[1], Format: key[2]}, nil
+	case "relevance":
+		if len(key) != 3 {
+			return nil, errBadCursor
+		}
+		r, err := strconv.ParseInt(key[0], 10, 64)
+		if err != nil {
+			return nil, errBadCursor
+		}
+		return &After{Relevance: r, Name: key[1], Format: key[2]}, nil
 	}
 	if len(key) != 2 {
 		return nil, errBadCursor
@@ -379,9 +393,10 @@ func (s *Service) List(ctx context.Context, sc Scope, f Filter, o Order, after *
 	repos := sc.reposOf(f)
 	universe := intersectOrAll(sc.Repos(), repos, f.HasRepositories)
 	var qIDs, kwIDs []int64
+	var qRanks []int32
 	var err error
 	if f.Q != "" {
-		if qIDs, err = s.find(ctx, formats, Find{Repos: sc.topo.Texts(universe), Text: f.Q}); err != nil {
+		if qIDs, qRanks, err = s.findRanked(ctx, formats, Find{Repos: sc.topo.Texts(universe), Text: f.Q}); err != nil {
 			return nil, err
 		}
 	}
@@ -404,12 +419,13 @@ func (s *Service) List(ctx context.Context, sc Scope, f Filter, o Order, after *
 		Sort: o.Sort, Descending: o.Desc, MaxRows: rows32(limit + 1),
 		Withheld: ids(withheld), Formats: keys(formats), HasRepos: f.HasRepositories, Repos: ids(repos),
 		NamePrefix: f.NamePrefix, Whole: ids(sc.whole), Rows: keys(sc.rows),
-		Q: f.Q, QIds: ids(qIDs), Keyword: f.Keyword, KeywordIds: ids(kwIDs), Deprecated: f.Deprecated, DeprecatedIds: ids(depIDs),
+		Q: f.Q, QIds: ids(qIDs), QRanks: ranks(qRanks), Keyword: f.Keyword, KeywordIds: ids(kwIDs), Signed: f.Signed,
+		Deprecated: f.Deprecated, DeprecatedIds: ids(depIDs),
 		HasFrom: f.CreatedFrom != nil, CreatedFrom: stamp(f.CreatedFrom),
 		HasTo: f.CreatedTo != nil, CreatedTo: stamp(f.CreatedTo),
 	}
 	if after != nil {
-		p.HasAfter, p.AfterName, p.AfterFormat = true, after.Name, after.Format
+		p.HasAfter, p.AfterName, p.AfterFormat, p.AfterRelevance = true, after.Name, after.Format, after.Relevance
 		p.AfterTime = stamp(&after.Time)
 	}
 	return s.packages(ctx, sc, p, withheld, f.HasRepositories, repos)
@@ -428,7 +444,7 @@ func (s *Service) Package(ctx context.Context, sc Scope, format, name string) (P
 	p := q.PackageViewListParams{
 		Sort: "name", MaxRows: 1, Withheld: ids(withheld), Formats: []string{format},
 		ExactFormat: format, ExactName: name, Whole: ids(sc.whole), Rows: keys(sc.rows),
-		Repos: []int64{}, QIds: []int64{}, KeywordIds: []int64{}, DeprecatedIds: []int64{},
+		Repos: []int64{}, QIds: []int64{}, QRanks: []int32{}, KeywordIds: []int64{}, DeprecatedIds: []int64{},
 	}
 	ps, err := s.packages(ctx, sc, p, withheld, false, nil)
 	if err != nil || len(ps) == 0 {
@@ -493,6 +509,47 @@ func (s *Service) deprecated(ctx context.Context, formats []string, repos []stri
 	return ids, nil
 }
 
+// findRanked is find with the rank of each version (R-ANS-057): an adapter that is a [Ranker] ranks its matches, every other
+// adapter's matches rank 0. The two lists are side by side, as the list statement takes them.
+func (s *Service) findRanked(ctx context.Context, formats []string, f Find) ([]int64, []int32, error) {
+	var out []int64
+	var rs []int32
+	for _, fm := range formats {
+		a, ok := s.adapters.For(fm)
+		if !ok {
+			continue
+		}
+		if r, ok := a.(Ranker); ok {
+			got, err := r.FindRanked(ctx, f, s.maxMatches)
+			if err != nil {
+				return nil, nil, err
+			}
+			for _, m := range got {
+				out, rs = append(out, m.ID), append(rs, int32(min(max(m.Rank, 0), 999))) //nolint:gosec // bounded to 0..999
+			}
+			continue
+		}
+		got, err := a.Find(ctx, f, s.maxMatches)
+		if err != nil {
+			return nil, nil, err
+		}
+		out = append(out, got...)
+		rs = append(rs, make([]int32, len(got))...)
+	}
+	if len(out) > s.maxMatches {
+		return nil, nil, tooBroad("The search term")
+	}
+	return out, rs, nil
+}
+
+// ranks turns a nil slice into an empty one, as [ids] does.
+func ranks(in []int32) []int32 {
+	if in == nil {
+		return []int32{}
+	}
+	return in
+}
+
 func (s *Service) withheld(ctx context.Context, sc Scope, formats []string, repos []int64) ([]int64, error) {
 	texts := sc.topo.Texts(repos)
 	var ids []int64
@@ -526,7 +583,7 @@ func (s *Service) packages(ctx context.Context, sc Scope, p q.PackageViewListPar
 		pkgs[i] = Package{
 			ID: ID(r.Format, r.Name), Format: r.Format, Name: r.DisplayName, Key: r.Name,
 			CreatedAt: r.CreatedAt.Time, UpdatedAt: r.UpdatedAt.Time,
-			VersionCount: r.VersionCount, DownloadCount: r.Downloads,
+			VersionCount: r.VersionCount, DownloadCount: r.Downloads, Relevance: r.Relevance,
 		}
 		keys[i] = r.Format + "\x1f" + r.Name
 	}
@@ -559,7 +616,7 @@ func (s *Service) packages(ctx context.Context, sc Scope, p q.PackageViewListPar
 			continue
 		}
 		latests[i] = latest{version: l.Version, row: l}
-		pkgs[i].LatestVersion = l.Version
+		pkgs[i].LatestVersion, pkgs[i].LatestVersionID = l.Version, l.VersionID
 		held := make([]int64, 0, len(vs))
 		for _, v := range vs {
 			held = append(held, v.RepoID)

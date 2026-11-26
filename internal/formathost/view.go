@@ -35,7 +35,7 @@ func NewViewAdapters(fs []formats.Format, ports formats.DataPorts) *ViewAdapters
 	for _, f := range fs {
 		if a := f.View(); a != nil {
 			id := string(f.Descriptor().ID)
-			b := viewBridge{a: a, ports: ports, fetch: f.Descriptor().VersionFetch, dep: formats.CapabilitiesOf(f).Deprecations}
+			b := viewBridge{a: a, ports: ports, fetch: f.Descriptor().VersionFetch, dep: formats.CapabilitiesOf(f).Deprecations, rank: formats.CapabilitiesOf(f).ViewRanker}
 			v.bridges[id] = b
 			v.by[id] = b
 			if z := formats.CapabilitiesOf(f).ViewSizer; z != nil {
@@ -83,6 +83,8 @@ type viewBridge struct {
 	fetch formats.VersionFetch
 	// dep finds the deprecated versions of a format that has them (formats.DeprecationFinder); nil for one that has none.
 	dep formats.DeprecationFinder
+	// rank is the format's ranked search (formats.ViewRanker), nil for a format whose matches all rank 0.
+	rank formats.ViewRanker
 }
 
 // Deprecated asks the format for its stored versions that are deprecated (R-API-085); a format without them has none.
@@ -177,6 +179,26 @@ func (b viewBridge) Describe(ctx context.Context, vs []view.Version, want view.F
 func (b viewBridge) Find(ctx context.Context, f view.Find, limit int) ([]int64, error) {
 	ids, err := b.a.Find(ctx, b.ports, formats.ViewFind{Repos: f.Repos, Text: f.Text, Keyword: f.Keyword}, limit)
 	return toInt64(ids), err
+}
+
+// FindRanked implements view.Ranker: the format's ranks where it ranks ([formats.ViewRanker], R-ANS-057), else every match it finds
+// ranked 0.
+func (b viewBridge) FindRanked(ctx context.Context, f view.Find, limit int) ([]view.Match, error) {
+	in := formats.ViewFind{Repos: f.Repos, Text: f.Text, Keyword: f.Keyword}
+	if b.rank != nil {
+		got, err := b.rank.FindRanked(ctx, b.ports, in, limit)
+		out := make([]view.Match, len(got))
+		for i, m := range got {
+			out[i] = view.Match{ID: int64(m.ID), Rank: m.Rank}
+		}
+		return out, err
+	}
+	ids, err := b.a.Find(ctx, b.ports, in, limit)
+	out := make([]view.Match, len(ids))
+	for i, id := range ids {
+		out[i] = view.Match{ID: int64(id)}
+	}
+	return out, err
 }
 
 func (b viewBridge) Withheld(ctx context.Context, repos []string) ([]int64, error) {

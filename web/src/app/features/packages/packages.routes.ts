@@ -45,6 +45,36 @@ export const versionsMatcher: UrlMatcher = (segments) => {
   };
 };
 
+/**
+ * `…/packages/-/namespaces/{format}/{name…}`: the page of a name in the project (R-UI-220, Q-UI-1291). No format is named `-`, so a
+ * package's address never starts with it.
+ */
+export const namespaceMatcher: UrlMatcher = (segments) => {
+  const [dash, word, format, ...rest] = segments;
+  if (dash?.path !== '-' || word?.path !== 'namespaces' || !format || rest.length === 0) return null;
+  return {
+    consumed: segments,
+    posParams: { format, name: new UrlSegment(rest.map((s) => s.path).join('/'), {}) },
+  };
+};
+
+/** `/namespaces/{format}/{name…}`: the page of a name across every project (R-UI-220, Q-UI-1291). */
+export const allNamespacesMatcher: UrlMatcher = (segments) => {
+  const [format, ...rest] = segments;
+  if (!format || rest.length === 0) return null;
+  return { consumed: segments, posParams: { format, name: new UrlSegment(rest.map((s) => s.path).join('/'), {}) } };
+};
+
+/** The routes of `/namespaces`: the page of a name across every project (R-UI-220). */
+export const NAMESPACE_ROUTES: Routes = [
+  {
+    matcher: allNamespacesMatcher,
+    title: $localize`:@@route.namespace.title:Namespace`,
+    data: { crumbParam: 'name' },
+    loadComponent: () => import('./namespace-page').then((m) => m.NamespacePage),
+  },
+];
+
 /** The address names a format whose packages lead with their documentation (R-UI-218): its first segment is the format. */
 const leadsWithDocs: CanMatchFn = (_route, segments) => leadsWithDocumentation(segments[0]?.path);
 
@@ -57,6 +87,12 @@ export const PACKAGES_ROUTES: Routes = [
     path: '',
     title: $localize`:@@route.packages.title:Packages`,
     loadComponent: () => import('./package-list').then((m) => m.PackageList),
+  },
+  {
+    matcher: namespaceMatcher,
+    title: $localize`:@@route.namespace.title:Namespace`,
+    data: { crumbParam: 'name' },
+    loadComponent: () => import('./namespace-page').then((m) => m.NamespacePage),
   },
   {
     matcher: versionsMatcher,

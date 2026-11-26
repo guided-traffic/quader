@@ -90,9 +90,11 @@ type ViewStore interface {
 	ViewSummaries(ctx context.Context, ids []int64) ([]rows.ViewSummary, error)
 	// ViewDetails reads the stored metadata of the given generic versions and, with readme, the text of their README.
 	ViewDetails(ctx context.Context, ids []int64, readme bool) ([]rows.ViewDetail, error)
-	// ViewFind returns the ids of at most limit generic versions of the repositories (by key) whose description contains text
-	// (case-insensitively) or whose tags contain keyword exactly; exactly one of the two is set.
-	ViewFind(ctx context.Context, repos []string, text, keyword string, limit int) ([]int64, error)
+	// ViewFind returns at most limit generic versions of the repositories (by key) with their rank: with query (a to_tsquery text of
+	// prefix words, rows.ViewQuery), those whose namespace, name, tags or description hold every word, ranked by the full-text
+	// configuration of the documentation search; with keyword, those whose tags contain it exactly, ranked 0 (R-ANS-057). Exactly one of
+	// the two is set.
+	ViewFind(ctx context.Context, repos []string, query, keyword string, limit int) ([]rows.Found, error)
 	// ViewStored lists the versions a local repository serves of a collection, newest first.
 	ViewStored(ctx context.Context, repoID int64, name string, limit int) ([]string, error)
 	// ViewWithheld lists the generic versions of the repositories (by key) whose number a tombstone withholds.
@@ -161,6 +163,12 @@ type DocsStore interface {
 	DocEntry(ctx context.Context, repoID int64, name, version, typ, entry string) (rows.DocEntry, bool, error)
 	// DocFile reads the README or a Markdown file; found is false for a name that is none.
 	DocFile(ctx context.Context, repoID int64, name, version, file string) (rows.DocFile, bool, error)
+	// SearchDocs answers one page of the documentation searched across collections (R-ANS-058): the entries of the versions asked that
+	// match, in the order of the tier, the entry's name, the collection, the repository and the type. One statement.
+	SearchDocs(ctx context.Context, q rows.DocSearch) ([]rows.DocHit, error)
+	// DocCandidates lists the versions of the repositories that hold an entry the query matches, through the search index, at most
+	// limit (R-ANS-058, Q-ANS-127).
+	DocCandidates(ctx context.Context, repoIDs []int64, query string, limit int) ([]rows.DocVersionKey, error)
 	// DocSet reads the whole set of a version, for the protocol document; found is false when the version has no rows.
 	DocSet(ctx context.Context, repoID int64, name, version string) (rows.DocSet, bool, error)
 	// RebuildDocs is the documentation step of the job ansible-reindex for a local repository: it reads the archive of every stored item

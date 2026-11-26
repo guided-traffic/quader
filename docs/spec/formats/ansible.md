@@ -1808,7 +1808,8 @@ R-CUR-007), from the protocol research of 2026-11-23:
 |---|---|
 | Search | `upstream`: `GET <api root>v3/plugin/ansible/search/collection-versions/?keywords=&is_highest=true&limit=50&offset=` (pulp_ansible and Galaxy NG; the public Galaxy ranks the namespace, the name, the tags and the description); an upstream that answers it with `404` has `search: none` for the cache period. The UI search `_ui/v1/search/` answered `500` and is not used. The hint under the search field ([Q-CUR-166](../remote-curation.md#q-cur-166--the-hint-under-the-upstream-search-is-a-code-the-screen-says-in-its-language)) is `galaxy`, and `galaxyNoSearch` while the search is off |
 | Levels | `namespace` → collections: the namespaces `v3/namespaces/?limit=&offset=` (the public Galaxy counts 38,639, empty ones included) and a namespace's collections from the collection index with the filter `namespace` (the mirror's listing, R-ANS-021). A namespace whose first page lists nothing is unknown when `HEAD v3/namespaces/{name}/` answers 404; a name with a character outside `[a-z0-9_]` is not asked for, and the name with an underscore for a hyphen, the rest dropped, is suggested when the Galaxy has it (`netbox-community` → `netbox_community`, [Q-CUR-165](../remote-curation.md#q-cur-165--a-level-the-upstream-does-not-have-says-so-with-the-formats-naming-rule-and-one-suggestion-built-from-it)) |
-| Lookup and versions | the collection document and its version list (`created_at`, `requires_ansible`, `marks`), read as R-ANS-017 reads them, without storing; the collection's `deprecated` |
+| Lookup and versions | the collection document and its version list (`created_at`, `requires_ansible`, `marks`), read as R-ANS-017 reads them, without storing; the collection's `deprecated` and `download_count`; the tags (`metadata.tags`) and the signed state (a non-empty `signatures`) of its highest version, from that version's document, one request more |
+| What a hit tells | a hit of the search carries the collection's tags and the Galaxy's `is_signed` of its highest version; a collection of a namespace's listing carries the Galaxy's `download_count`. The keyword search answers no download count (recorded answer of 2026-11-24, verified again 2026-11-26), so a hit of the search shows none ([Q-ANS-129](#q-ans-129--the-upstreams-tags-downloads-and-signed-state-are-optional-members-of-every-formats-catalogue)) |
 | Sizes | `perVersion`: a version list carries no size; the version document does (`artifact.size`), one request per version, read when a version's row is opened |
 | Version canon | the SemVer text as given |
 | One version's download | the collection archive the version document names (R-ANS-017); a role's archive by its id |
@@ -1819,12 +1820,21 @@ R-CUR-007), from the protocol research of 2026-11-23:
   its versions lies in the range of its allow ([remote-curation.md](../remote-curation.md) R-CUR-026).
 - **The rules** see a collection by `<ns>.<name>` and a role by the name the format gives it, as the patterns did (H-856 stands).
 - **What `ansible-galaxy` shows:** the refusal's text from the error's `detail`; a version range resolves within the delivered versions.
+- **The upstream's facts, named as the upstream's** (revised by W-30, 2026-11-26): a hit and an opened collection show the tags as text,
+  "Signed at the upstream" where the Galaxy says its highest version is signed (the Galaxy's word, a neutral badge, not Quader's
+  verification of R-SIG-035), and "N downloads at the upstream", the Galaxy's count, named apart from Quader's own downloads of a stored
+  version so that one number never stands for the other. `discover.Hit` and `discover.PackageInfo` carry them as `discover.Popularity`
+  (`Keywords`, `Downloads`, `Signed`), optional for every format: a format whose upstream tells none leaves them empty, npm and NuGet fill
+  them in another package ([ADR-287](../../decisions.md#adr-287--the-format-contract-gains-the-ranked-package-search-the-namespaces-of-a-formats-names-and-what-an-upstream-tells-beside-a-package)).
 - No rate limit of the public Galaxy was found; Red Hat's hosted hub needs its own sign-in (not verified, H-842).
 
 Acceptance criteria:
 
 - Unit (kit checks 22 and 23, milliseconds): the keyword search, the namespace level and the package call against canned answers; a
   refused version is absent from the version list and `meta.count`.
+- Unit (`TestR_ANS_047_TheCatalogueTellsTagsDownloadsAndSignedState`, milliseconds): a hit of the recorded search carries its tags and
+  `is_signed`, a namespace's collection its `download_count`, an opened collection its count and its highest version's tags and signed state.
+- Web unit: "Signed at the upstream" is a neutral badge, the count is "… downloads at the upstream", the tags are text.
 - End-to-end (the leg `ansible`, about 10 s): with one version of a stub collection allowed, `ansible-galaxy collection install ns.name`
   installs it, and `ns.name:==<refused>` prints the refusal.
 
@@ -2114,6 +2124,126 @@ Acceptance criteria:
   with the rules' reason; `role info` names the description.
 - End-to-end (the set `ansible`, one case, about 5 s): `ansible-galaxy role search pip` through a remote of the stub prints
   `geerlingguy.pip` and its description.
+
+## Finding collections as on Galaxy
+
+The owner's frame (2026-11-25): "Wir versuchen im Raum 'Ansible' die Galaxy vollständig und ebenbürdig zu ersetzen." Galaxy's own search
+(`v3/plugin/ansible/search/collection-versions/`, pulp_ansible's filter) finds collections by keywords over the namespace, the name, the tags and
+the description, filters by namespace, name, tags, `is_signed`, `is_deprecated`, `is_highest`, repository and dependency, and shows per hit
+the namespace, the name, the version, the description, the tags, `requires_ansible`, the signed and the deprecated state and the namespace's
+avatar. Requests of 2026-11-26 (three, anonymous): `keywords=docker&is_highest=true` answered 289 hits listed newest first, not by
+relevance (`community.docker` is not on the first page), `namespace=community&is_signed=false&is_deprecated=false` narrowed it to 2, and
+`order_by=-download_count` answered 400.
+
+What Quader's search does of it, element by element (R-ANS-057, R-ANS-058, R-UI-220):
+
+| Galaxy | Quader |
+|---|---|
+| Keywords over namespace, name, tags, description | The same four, every word a prefix of a word, the documentation search's configuration (Q-ANS-120) |
+| Order: newest first (the public Galaxy, verified); `ts_rank` where the client asks for it | The best match first: the name, then the rank of namespace and name, tags, description (Q-ANS-121); the columns' sorts stay |
+| Filter `namespace` | The filter `namespace`, a link on every name, and the page of the name (R-UI-220) |
+| Filter `name` | The search's text matches the name; the package's page is its address |
+| Filter `tags` | The filter `keyword`; every tag of a hit is a link that sets it (Q-ANS-123) |
+| Filter `is_signed` | The filter `signed`: a verified signature of the latest version (Q-ANS-122), stricter than the Galaxy's "has a signature" |
+| Filter `is_deprecated` | Yes: the filter Deprecated under State in the list's drawer (`deprecated=true`, R-API-085, R-ANS-060), beside `namespace` and `signed` |
+| Filter `is_highest` | Every hit is a package with its latest version |
+| Filter `repository_name` | The filter `repository`, and the project |
+| Filter `dependency` | Not built ("Used by", G5) |
+| Hit: namespace, name, version, description | The name with its namespace as a link, the latest version, the description |
+| Hit: tags | The tags, five shown and "+N" |
+| Hit: `is_signed` | The badge of a verified signature (R-SIG-035), shown only for a verified latest version |
+| Hit: `is_deprecated` | Yes: the mark Deprecated beside the name, in the package list, the search's hits and the page of a name (R-API-085, R-ANS-060) |
+| Hit: `requires_ansible` | Not shown in a hit; on the version's page |
+| Hit: the namespace's avatar | None: a namespace is no object in Quader (R-UI-220, the owner's d2 = b) |
+| — | The modules, plugins and roles of every collection's newest version (R-ANS-058, the owner's d3 = b) |
+
+### R-ANS-057 · Collections are found by namespace, tags and description, ranked, filtered by namespace and signature
+Priority: **P1** · Covers: quader-only
+
+- **The text** of the package list and of the search's tab Packages (`GET /api/v1/packages?q=`) finds a collection when every word of the text
+  (a run of letters and digits) begins a word of its namespace and name, of its tags or of its description, with the full-text configuration
+  of the documentation search (`simple`, prefix words, R-ANS-036), instead of a substring of the description; a substring of the name finds it
+  too, as for every format ([Q-ANS-120](#q-ans-120--a-collection-is-found-by-the-full-text-configuration-of-the-documentation-search)).
+- **A role a remote read** (R-ANS-056) is found by the same rule: every word begins a word of its owner and name, of its tags or of its
+  description, ranked with the same weights; a substring of its display name `<owner>.<name>` finds it too, and the relevance takes the
+  better of the name and the display name. Its key `role/<id>` has no namespace, so it is in no namespace's list and its name in a list
+  or a hit is one link to its page, addressed by the key.
+- **The rank.** `sort=relevance` puts the best match first: a name equal to the text, then one that starts with it, then one that holds it,
+  each ahead of a match elsewhere; within that the format's rank (`ts_rank` with the weights namespace and name A, tags B, description C)
+  ([Q-ANS-121](#q-ans-121--the-package-list-ranks-by-the-name-first-and-by-the-formats-rank-within-it)). The package list sorts so while a text
+  is searched and no column's sort was chosen; the search's tab Packages always.
+- **The filter `namespace`** (with exactly one `format`): the packages of a namespace (R-UI-220). The namespace of every name in a list, a hit
+  and a package's head is a link to the page of the name.
+- **The filter `signed=true`**: the packages whose latest visible version carries a verified signature, the badge's rule of R-SIG-009 for
+  `verified_internal` and `verified_public` ([Q-ANS-122](#q-ans-122--signed-is-a-verified-signature-of-the-latest-version)); every format.
+- **A hit** shows its tags (links that filter by one, [Q-ANS-123](#q-ans-123--a-hits-tags-are-links-that-filter-by-one)) and the badge of a
+  verified latest version (`signature` of `PackageSummary`, one statement per page).
+- **Deprecated** (R-ANS-060, R-API-085): the filter `deprecated=true` keeps a package whose latest visible version is deprecated, a
+  collection's by its deprecation as a whole; it stands in the drawer's State beside `signed`, and the statement picks the one latest
+  version both filters read ([Q-ANS-124](#q-ans-124--the-filter-deprecated-is-the-deprecations-and-reads-the-same-latest-as-signed)). A hit,
+  a row of the page of a name and an entry of the documentation search carry the mark Deprecated beside the collection's name.
+- **The cost** (measured once on the integration stack, 2026-11-26, `TestMeasureTheSearchOfCollections`, which runs only with
+  `QUADER_TEST_MEASURE_FIND` set): the find reads the matching versions through the expression index
+  `ansible_collection_versions_search` (migration 00138) and only then joins them to the repositories asked. A word that 1 % of the
+  collections hold: 0.4 ms with 1,000 collections, 2.5 ms with 10,000, 8.1 ms with 50,000 (447 ms with 50,000 before the index, when
+  the statement built every version's vector); the list that asks it 24, 55 and 150 ms, of which the list itself, without a text, takes
+  21, 45 and 132 ms (the list's aggregate over every visible version of the scope, R-API-029). A word that every collection holds costs in
+  proportion to its matches: 14, 153 and 391 ms for the find (the rank of each match), 88, 156 and 717 ms for the list
+  ([H-2157](#h-2157--a-word-that-nearly-every-row-holds-costs-the-search-in-proportion-to-its-matches)). The roles have no index: the
+  statement builds the vector of each role of the repositories asked, of which a remote holds only those a client looked up. The top
+  bar's suggestions do not run the find: their package statements read the name's indexes and, for a role, `packages_display_words`
+  (R-API-064, migration 00135).
+
+Acceptance criteria:
+
+- `TestR_ANS_057_CollectionsAreFoundAsOnGalaxy` (integration `ansiblelocal`, about 2 s): the namespace filter, a name before a description, a
+  prefix of a word of the description, a tag, the first page by relevance, the badge and the filter of a verified version.
+- The web unit tests: the list sends `namespace` and `signed`, sorts by relevance while a text is searched, a row's namespace and tags are links.
+
+### R-ANS-058 · The documentation is searched across collections
+Priority: **P1** · Covers: quader-only
+
+The owner's decision d3 = b of W-30 (2026-11-25, [Q-ANS-125](#q-ans-125--the-documentation-is-searchable-across-the-newest-version-of-every-collection)).
+
+- **What is found.** The modules, the plugins of every type and the roles of the **newest version** of every collection the reader may read,
+  per repository: the version the package's page opens on (R-UI-218), the highest release, else the highest pre-release. An entry is found when
+  every word of the text (a run of letters and digits) begins a word of its name, its short description, its options or its return values
+  (the search vector of R-ANS-036, read through its index); a name that only holds the text inside a word is not found
+  ([Q-ANS-127](#q-ans-127--the-search-starts-at-the-index-of-the-entries-no-new-storage)), and the name ranks the hits.
+- **The wiki gate** holds per repository and version (R-ANS-037, R-AUTHZ-034): a collection whose documentation the reader may not read is
+  left out before any entry is read, so its entries are no hit and are counted nowhere
+  ([Q-ANS-126](#q-ans-126--the-wiki-gate-is-decided-per-version-before-an-entry-is-read)).
+- **Where.** `GET /api/v1/search/documentation?q=` (a list of R-API-010), the kind `documentation` of the suggestions (R-API-060), the group
+  **Documentation** of the top bar's list and the tab **Documentation** of the results page (R-UI-097, R-UI-098). The search never leads into
+  the admin area (R-UI-099).
+- **A hit** is the entry: its type, its name, its short description, the collection and the version, the project and the repository. It
+  opens the entry's page, the package's own address with `?doc=<type>/<name>` (R-ANS-049), which shows the newest version
+  ([Q-ANS-128](#q-ans-128--a-hit-opens-the-entry-in-the-newest-version-and-the-name-ranks-first)). The hit of a collection that is
+  deprecated in its repository (R-ANS-060) carries its `deprecation`, and the mark Deprecated stands beside the collection's name, read in
+  the statement of the entries (no statement more). A role in a collection is one entry, found by the words of its entry points too; it
+  opens the role's page, its entry points and then its README (R-ANS-052). The changelog (R-ANS-053) is no entry and no hit.
+- **The order**: a name equal to the text, starting with it, holding it, then a match of the words elsewhere; within that by the entry's name,
+  the collection and the repository.
+- **The cost** ([Q-ANS-127](#q-ans-127--the-search-starts-at-the-index-of-the-entries-no-new-storage)): it starts at the index. One
+  statement finds the versions with a matching entry through `ansible_doc_entries_search` (`AnsibleDocsCandidates`), one the newest
+  version of each of their collections, each package row by its key (`PackageViewLatestOfPackages`), and one the entries of the newest
+  versions among them whose wiki the reader may read (`AnsibleDocsSearch`), besides the read scope and the withheld versions; a
+  collection without a match costs nothing, and no new storage. More than 20,000 versions with a match are too broad: the list answers
+  `400`, the suggestions none with `more`. Measured once (2026-11-26, `TestMeasureTheSearchOfCollections`): with 200,000 entries of 2,000
+  collections among 50,000, a word of 200 entries in 20 collections takes 4.5 ms for the candidates (bitmap scan of the index) and 22 ms
+  for the list, 31 to 44 ms for the suggestions of `do`, `doc` and `docker`; a word of every entry takes 31 ms for the candidates and
+  350 to 370 ms for the suggestions ([H-2157](#h-2157--a-word-that-nearly-every-row-holds-costs-the-search-in-proportion-to-its-matches)).
+  Before this design the search read the newest version of all 50,000 collections and every entry of the 2,000 with documentation: 770 ms.
+  The statement budget's test holds the count: the same statements with 10 and with 10,000 entries.
+
+Acceptance criteria:
+
+- `TestR_ANS_058_TheDocumentationIsSearchedAcrossCollections` (integration `ansiblelocal`, about 1 s): the newest version's module by name
+  first, an older version's entries no hit, a second page by the cursor, the suggestions, and a reader of the artifacts without the wiki
+  finding nothing.
+- `TestR_ANS_058_TheDocumentationSearchCostsAFixedNumberOfStatements` (integration `querybudget`, about 2 s): the same statements with 10 and
+  10,000 entries.
+- The web unit tests: the tab Documentation, its hit's address with `?doc=`, the group of the suggestions.
 
 ## Deferred
 
@@ -3713,6 +3843,130 @@ answered "not found" for a role.
 
 **Choice:** (a). **Applied in the spec:** R-ANS-047, R-ANS-056.
 
+### Q-ANS-120 · A collection is found by the full-text configuration of the documentation search
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The documentation search's configuration over namespace and name, tags and description, as an expression index (`ansible_collection_versions_search`, migration 00138, built concurrently, no row written) that the statement repeats word for word and reads first (chosen) | `simple`, prefix words, weights A, B, C | Galaxy's four fields; one configuration for both searches; 8 ms with 50,000 collections | The expression stands twice, in the migration and the statement |
+| (b) The same vector built per row | No migration | Simple | 447 ms with 50,000 collections, measured on 2026-11-26 |
+| (c) A substring of the description, as before | — | Nothing to build | No tags, no namespace, no word order, no rank, no index |
+| (d) A stored generated vector column with its index | A column of every row | One expression | A rewrite of the table for what an expression index gives |
+
+**Choice:** (a); (b) was the first build and its measurement decided it. **Revisit** when a word that most collections hold must be fast:
+then a bound of the matches ranked (H-2157). **Applied in the spec:** R-ANS-057.
+
+### Q-ANS-121 · The package list ranks by the name first and by the format's rank within it
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A sort `relevance`: 3000 a name equal to the text, 2000 one that starts with it, 1000 one that holds it, plus the format's rank 0 to 999 (chosen) | An optional `formats.ViewRanker` (ADR-287); a format without it ranks 0 | Every format ranks by the name; Ansible ranks its fields; a cursor of integers | The weights are ours |
+| (b) `ts_rank` alone | — | Galaxy's measure | A name equal to the text can rank below a description that repeats it; other formats have no rank |
+| (c) No rank, the name's order | — | Nothing to build | The owner's "finding as on Galaxy" asks for a rank |
+
+**Choice:** (a). **Rationale:** a reader who types a collection's name expects it first. **Revisit** when a format's own search (NuGet's,
+npm's) ranks by downloads. **Applied in the spec:** R-ANS-057, R-API-029.
+
+### Q-ANS-122 · Signed is a verified signature of the latest version
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The latest visible version carries a signature that verifies (`verified_internal`, `verified_public`, R-SIG-009) (chosen) | The badge's rule in SQL, the trust row of the repository's project else the installation's | The badge a hit shows and the filter say the same | Stricter than the Galaxy's `is_signed`, which counts any signature |
+| (b) Any signature of any visible version | — | Galaxy's word | A hit marked signed whose latest version is not, and an untrusted signer counted |
+| (c) Any signature of the latest version | — | Closer to Galaxy | An invalid or untrusted signature passes the filter |
+
+**Choice:** (a). **Rationale:** Quader verifies; a filter that passes what the badge calls untrusted would mislead. **Revisit** if the owner wants
+the untrusted state found too. **Applied in the spec:** R-ANS-057; H-2153.
+
+### Q-ANS-123 · A hit's tags are links that filter by one
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Links: in a project the list filtered by the tag (`keyword`), across projects the search for it; five shown, "+N" (chosen) | `PackageTags` | Galaxy's chips are a way into the search; the filter exists | A list row grows by a line |
+| (b) Text | — | Quieter | A tag the reader sees and cannot follow |
+| (c) Not shown in a hit | — | As before | The owner's list names tags in a hit |
+
+**Choice:** (a). **Revisit** when G3 puts the tags on the version page as chips: they take the same component. **Applied in the spec:** R-ANS-057.
+
+### Q-ANS-124 · The filter deprecated is the deprecation's, and reads the same latest as signed
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+First decided as "not built until a stored collection has a deprecated state"; revised the same day when that state (R-ANS-060) landed.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The filter `deprecated` of R-API-085 and `signed` read one latest visible version, picked once in the list's statement; both under State in the drawer (chosen) | `PackageViewList` | One rule of "latest" for both; a list without either reads nothing more | — |
+| (b) Each filter picks its own latest | — | Independent | Two rules that can disagree on a package's latest |
+| (c) A filter of its own for collections | — | Galaxy's word | A second filter beside the one every format has |
+
+**Choice:** (a). **Applied in the spec:** R-ANS-057, R-API-085.
+
+### Q-ANS-125 · The documentation is searchable across the newest version of every collection
+
+Status: **Decided by the owner** on 2026-11-25 (working paper W-30, d3 = b: "überall Favorit. Genau so umsetzen wie dort im Fav beschrieben").
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Inside one version, as before | — | Nothing to build | "Which collection has a module for firewalld" has no answer |
+| (b) Across the newest version of every collection the reader may read, from the global search, with the entry as the hit (chosen) | One query over rows that already have a search index; no new storage | The question an Ansible user has; more than Galaxy | — |
+| (c) Across every version | — | Older modules found | Hits repeat per version; the cost grows with history |
+
+**Applied in the spec:** R-ANS-058, R-UI-097, R-UI-098, R-API-060.
+
+### Q-ANS-126 · The wiki gate is decided per version before an entry is read
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The newest versions are read, each kept only where the reader may read its wiki, and only their entries are searched (chosen) | `ReadScope.MayReadWiki` per version, then one statement | Nothing of a hidden collection is read, found or counted | The newest versions of the scope are read once per search |
+| (b) Search, then drop the hits of a hidden wiki | — | One statement | Pages and `more` would count what is dropped |
+
+**Choice:** (a). **Applied in the spec:** R-ANS-058.
+
+### Q-ANS-127 · The search starts at the index of the entries; no new storage
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The versions with a match through `ansible_doc_entries_search` first, then the newest version of each of their collections, then the entries of those (chosen) | 5 statements; 22 ms for a rare word with 200,000 entries | A collection without a match costs nothing; the existing index | An entry is found by the start of a word only |
+| (b) The newest version of every collection first, then their entries through the primary key, each checked against the terms | The first build | Finds a name that holds the text inside a word | 770 ms with 2,000 collections of 100 entries among 50,000: every collection and every entry read |
+| (c) An index over `(repo_id, name)` and the vector together | A migration | Fewer rows for a rare word | (a) already reads few |
+
+**Choice:** (a), after the measurement of (b) on 2026-11-26; no migration. **Revisit** when a word that most entries hold must be fast
+(H-2157). **Applied in the spec:** R-ANS-058.
+
+### Q-ANS-128 · A hit opens the entry in the newest version, and the name ranks first
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The package's own address with `?doc=<type>/<name>`; a name equal to, starting with, holding the text first (chosen) | The address R-ANS-049 built | The page the hit was found in; no address of a version | — |
+| (b) The version's address with `?doc=` | — | Exact | The same version, since the hit is the newest; a longer address |
+
+**Choice:** (a). **Applied in the spec:** R-ANS-058.
+
+### Q-ANS-129 · The upstream's tags, downloads and signed state are optional members of every format's catalogue
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `discover.Popularity` in `Hit` and `PackageInfo`, each member only where the upstream's answer carries it; the count named "downloads at the upstream" (chosen) | Galaxy fills them; a search hit has no count because the search answers none | One shape for every format; no request per hit | A hit of the search shows no count while a namespace's listing does |
+| (b) One request per hit for the collection document's count | 50 requests a page | A count on every hit | The budget of the catalogue (R-CUR-008) |
+| (c) Ansible members only | — | Smaller | Another shape per format; npm and NuGet would add theirs |
+
+**Choice:** (a). **Applied in the spec:** R-ANS-047; ADR-287.
+
 ## What this does not cover
 
 ### H-2120 · A role's minimum Ansible version, platforms and licence are not shown
@@ -3745,6 +3999,32 @@ makes it real: a person who allows such a version and wonders why no client gets
 Stage: the trail above a package's and a version's page (R-UI-002), which takes the address's name: for a role it reads `role/16` while the
 title reads `geerlingguy.pip` ([api-and-ui.md](../api-and-ui.md) Q-UI-1261). The trail is built from the route alone and reads no package.
 Live for every role a remote cached. What makes it real: a person who reads the trail rather than the title.
+
+### H-2153 · The filter signed picks the latest version by the stored key
+
+The filter `signed` decides on the latest version in SQL by the stored sort key (release, else pre-release, else the newest unranked
+version), while the badge of a hit reads the view's latest version (R-ANS-057). They differ only for a version written before the background
+migration filled its key (Q-API-430), which the statement orders last. Dormant once the keys are filled.
+
+### H-2157 · A word that nearly every row holds costs the search in proportion to its matches
+
+The find of collections ranks every collection that matches, and the documentation search reads the newest version of every collection
+whose documentation matches and all their matching entries before it sorts them (R-ANS-057, R-ANS-058). With 50,000 collections a word that
+every one holds costs the find 391 ms and the list 717 ms; with 200,000 entries of 2,000 collections a word of every entry costs the
+documentation's suggestions 350 to 370 ms, where a word of 1 % of them costs 8 ms and 31 to 44 ms (measured on 2026-11-26). Live for a short or
+common word on a large mirror; the top bar's suggestions of collections do not run the find, its documentation group does.
+
+### H-2155 · A hit of the upstream's search shows no download count
+
+Galaxy's keyword search answers no `download_count`, so a hit of the tab Upstream's search shows none; a namespace's listing and an opened
+collection do ([Q-ANS-129](#q-ans-129--the-upstreams-tags-downloads-and-signed-state-are-optional-members-of-every-formats-catalogue)).
+Live for every Galaxy upstream.
+
+### H-2156 · A remote collection's newest version is searched only once its documentation was read
+
+The documentation of a remote's version is fetched when someone opens it (R-ANS-033); the search across collections reads the newest version
+of each collection and finds nothing in one whose documentation was never fetched (R-ANS-058). Live for every remote collection nobody has
+opened; a version's page fills it.
 
 ### Q-ANS-130 · A collection's deprecation carries a message for Quader's screens only
 

@@ -4,6 +4,8 @@
       <quader-format-icon [format]="format()" />
       <span translate="no">{{ formatName() }}</span>
     </span>
+    <!-- The name's namespace, a link to its page (R-UI-220). -->
+    <quader-namespace-of [format]="format()" [name]="name()" [project]="project()" />
     <quader-dist-tags [tags]="tags()" [package]="name()" [limit]="null" />
     <!-- The other tags of the image's digest (R-OCI-041), each the page of its tag; a tag the reader may not read is not named. -->
     @if (otherTags().length > 0) {

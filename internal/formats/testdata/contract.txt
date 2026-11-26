@@ -46,6 +46,7 @@ formats.Capabilities: field ServeFacts ServeFactsKeyer
 formats.Capabilities: field SignatureCoverage SignatureCoverage
 formats.Capabilities: field SourceSpeller SourceSpeller
 formats.Capabilities: field VersionPath VersionPather
+formats.Capabilities: field ViewRanker ViewRanker
 formats.Capabilities: field ViewSizer ViewSizer
 formats.Capabilities: field Vulnerability VulnerabilityAdapter
 formats.Catalogue: embedded VersionProber
@@ -378,6 +379,8 @@ formats.QueryResult: field Cached bool
 formats.QueryResult: field Collapsed bool
 formats.QueryResult: field ContentType string
 formats.QueryResult: field FetchedAt time.Time
+formats.RankedVersion: field ID VersionID
+formats.RankedVersion: field Rank int
 formats.ReadScope: method MayRead(qname.Repo, string, string) bool
 formats.ReadScope: method Shape(qname.Repo) ReadShape
 formats.ReadScope: method VersionsByPath(qname.Repo) bool
@@ -672,6 +675,7 @@ formats.ViewFields: type uint8
 formats.ViewFind: field Keyword string
 formats.ViewFind: field Repos []string
 formats.ViewFind: field Text string
+formats.ViewRanker: method FindRanked(context.Context, DataPorts, ViewFind, int) ([]RankedVersion, error)
 formats.ViewSize: field Bytes int64
 formats.ViewSize: field Partial bool
 formats.ViewSize: field Unknown bool
@@ -895,6 +899,7 @@ catalog.Facts: field DisplayName string
 catalog.Facts: field ID ID
 catalog.Facts: field Layout string
 catalog.Facts: field LowerCasePaths bool
+catalog.Facts: field Namespaces *NamespaceRule
 catalog.Facts: field OwnershipDefault string
 catalog.Facts: field PackageNames bool
 catalog.Facts: field PatternSubject PatternSubject
@@ -914,6 +919,13 @@ catalog.Facts: method PresetFor(string) (UpstreamPreset, bool)
 catalog.Facts: method Supports(Class) bool
 catalog.ID: type string
 catalog.Names: method Normalize(string) (string, bool)
+catalog.NamespaceKind: type string
+catalog.NamespaceRule: field Kind NamespaceKind
+catalog.NamespaceRule: field Marker string
+catalog.NamespaceRule: field Nested bool
+catalog.NamespaceRule: field Separator string
+catalog.NamespaceRule: method Namespaces(string) []string
+catalog.NamespaceRule: method Prefix(string) (string, bool)
 catalog.PatternSubject: type string
 catalog.PresetHost: field Pattern string
 catalog.PresetHost: field SendCredentials bool
@@ -958,6 +970,9 @@ catalog.KindSearch: value RequestKind = "search"
 catalog.KindWrite: value RequestKind = "write"
 catalog.Local: value Class = "local"
 catalog.MetadataChangedArea: value = "metadata_changed"
+catalog.NamespaceNamespace: value NamespaceKind = "namespace"
+catalog.NamespacePath: value NamespaceKind = "path"
+catalog.NamespaceScope: value NamespaceKind = "scope"
 catalog.OwnershipEnforce: value = "enforce"
 catalog.OwnershipOff: value = "off"
 catalog.RegistryRootBasePath: value = "/v2/{project}/{key}/"
@@ -1063,6 +1078,7 @@ discover.CatalogueCaps: field Sizes string
 discover.Cursor: alias json.RawMessage
 discover.Delivering: method Delivers(string, string) bool
 discover.Header: method Head(context.Context, *url.URL, string) (*Response, error)
+discover.Hit: embedded Popularity
 discover.Hit: field Description string
 discover.Hit: field Flags []string
 discover.Hit: field Latest string
@@ -1090,6 +1106,7 @@ discover.Lister: method MirrorPlan(context.Context, Upstream, string) (Plan, err
 discover.Method: method Valid() bool
 discover.Method: type string
 discover.NameRule: type string
+discover.PackageInfo: embedded Popularity
 discover.PackageInfo: field Cursor Cursor
 discover.PackageInfo: field Description string
 discover.PackageInfo: field Done bool
@@ -1113,6 +1130,9 @@ discover.PageRequest: field Since Cursor
 discover.PassKind: type string
 discover.Plan: field Items []Item
 discover.Plan: field Name string
+discover.Popularity: field Downloads *int64
+discover.Popularity: field Keywords []string
+discover.Popularity: field Signed *bool
 discover.RateLimited: embedded error
 discover.RateLimited: method RateLimitReason() string
 discover.RateLimited: method RetryAfter() (time.Duration, bool)
@@ -1164,6 +1184,8 @@ discover.ErrBadLevel: value = errors.New("discover: the level is its path joined
 discover.ErrMethodUnavailable: value = errors.New("discover: the upstream does not offer the discovery method")
 discover.ErrNotOffered: value = errors.New("discover: the upstream does not offer this catalogue call")
 discover.MaxCursorBytes: value = 4096
+discover.MaxKeywordRunes: value = 64
+discover.MaxKeywords: value = 32
 discover.MaxLevelEntries: value = 200
 discover.MaxSearchHits: value = 50
 discover.MaxTextRunes: value = 1000

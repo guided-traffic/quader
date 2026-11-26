@@ -125,6 +125,18 @@ type Alternate struct {
 	Range   string
 }
 
+// Ranker is the optional part of an [Adapter] that ranks what it finds (R-ANS-057): FindRanked answers what Find answers, each version
+// with its rank from 0 to 999. The list's relevance adds it to the rank of the package's name (Q-ANS-121).
+type Ranker interface {
+	FindRanked(ctx context.Context, f Find, limit int) ([]Match, error)
+}
+
+// Match is a version a [Ranker] found, with its rank.
+type Match struct {
+	ID   int64
+	Rank int
+}
+
 // Find is a search the adapter answers: one of Text and Keyword is set.
 type Find struct {
 	Repos   []string
@@ -154,6 +166,12 @@ type Package struct {
 	DownloadCount int64
 	// Deprecation is the deprecation of the package's latest version, which the row names (R-API-085); nil when it is not deprecated.
 	Deprecation *Deprecation
+	// Relevance is how well the package matches the list's text (R-ANS-057, Q-ANS-121): 3000 for its name, 2000 for a name that
+	// starts with the text, 1000 for one that holds it, plus the best rank its format gave a matched version; 0 without a text. The
+	// sort relevance orders by it and the cursor carries it.
+	Relevance int64
+	// LatestVersionID is the id of the version row LatestVersion was read from, the one whose signature the list's badge shows.
+	LatestVersionID int64
 }
 
 // VersionSummary is one entry of the version list.

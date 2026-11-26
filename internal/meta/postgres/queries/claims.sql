@@ -81,3 +81,11 @@ UPDATE repositories
    SET claims_version = claims_version + 1
  WHERE id = sqlc.arg(id)::bigint
 RETURNING claims_version;
+
+-- name: ListClaimsOfRepositories :many
+-- The claims of several repositories in one statement: the page of a namespace reads those of the local repositories whose
+-- configuration its reader may read (R-UI-220, R-REPO-023).
+SELECT repo_id, pattern, source, scope
+  FROM namespace_claims
+ WHERE repo_id = ANY(sqlc.arg(repo_ids)::bigint[])
+ ORDER BY repo_id, pattern COLLATE "C";

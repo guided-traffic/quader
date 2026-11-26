@@ -427,6 +427,8 @@ func (s *Server) ListFormats(w http.ResponseWriter, r *http.Request) {
 		// SystemOnly is the catalog fact Facts.SystemOnly: only the product declares a repository of the format, so no creation form
 		// offers it (R-CLAMAV-001).
 		SystemOnly bool `json:"systemOnly"`
+		// Namespaces is the catalog fact Facts.Namespaces: how the format's names group into namespaces with a page each (R-UI-220).
+		Namespaces *gen.FormatNamespaces `json:"namespaces"`
 		// SignatureKinds are the kinds of the format's signature declaration (R-SIG-002, R-SIG-022): what a version without a signature
 		// names in its details (R-SIG-009); empty for a format without signatures.
 		SignatureKinds []gen.FormatSignatureKind `json:"signatureKinds"`
@@ -457,6 +459,9 @@ func (s *Server) ListFormats(w http.ResponseWriter, r *http.Request) {
 			x.SettingsSchema = d.SettingsSchema
 		}
 		x.Mirror = mirrorFact(catalog.Default(), string(d.ID))
+		if n := d.Namespaces; n != nil {
+			x.Namespaces = &gen.FormatNamespaces{Kind: gen.FormatNamespacesKind(n.Kind), Separator: n.Separator, Marker: n.Marker, Nested: n.Nested}
+		}
 		if f, ok := formats.Lookup(string(d.ID)); ok {
 			caps := formats.CapabilitiesOf(f)
 			x.VulnerabilityScanning = caps.Vulnerability != nil || caps.ImageScanned != nil

@@ -106,13 +106,14 @@ func (remoteAdapter) Search(ctx context.Context, u discover.Upstream, q discover
 	}
 	var rows []struct {
 		CollectionVersion struct {
-			Namespace   string `json:"namespace"`
-			Name        string `json:"name"`
-			Version     string `json:"version"`
-			Description string `json:"description"`
+			Namespace   string     `json:"namespace"`
+			Name        string     `json:"name"`
+			Version     string     `json:"version"`
+			Description string     `json:"description"`
+			Tags        []namedTag `json:"tags"`
 		} `json:"collection_version"`
-		IsDeprecated bool `json:"is_deprecated"`
-		IsSigned     bool `json:"is_signed"`
+		IsDeprecated bool  `json:"is_deprecated"`
+		IsSigned     *bool `json:"is_signed"`
 	}
 	if err := json.Unmarshal(p.Data, &rows); err != nil {
 		return discover.SearchPage{}, invalidDocument("its keyword search", "the data is not a list of collection versions")
@@ -124,6 +125,8 @@ func (remoteAdapter) Search(ctx context.Context, u discover.Upstream, q discover
 			continue
 		}
 		h := discover.Hit{Name: name, Description: r.CollectionVersion.Description, Latest: r.CollectionVersion.Version}
+		// The search answer's tags and signed state, which a hit shows (R-ANS-047, Q-ANS-129); it carries no download count.
+		h.Keywords, h.Signed = tagNames(r.CollectionVersion.Tags), r.IsSigned
 		if r.IsDeprecated {
 			h.Flags = append(h.Flags, "deprecated")
 		}
@@ -136,6 +139,22 @@ func (remoteAdapter) Search(ctx context.Context, u discover.Upstream, q discover
 		out.Cursor = discover.OffsetCursor(next)
 	}
 	return out, nil
+}
+
+// namedTag is a tag as the Galaxy's search and version documents write it: {"name": "docker"}.
+type namedTag struct {
+	Name string `json:"name"`
+}
+
+// tagNames are the names of the tags, in their order; nil for none.
+func tagNames(in []namedTag) []string {
+	var out []string
+	for _, t := range in {
+		if t.Name != "" {
+			out = append(out, t.Name)
+		}
+	}
+	return out
 }
 
 // fullName is "<namespace>.<name>" when both are names of the format.
@@ -235,6 +254,7 @@ func (remoteAdapter) Children(ctx context.Context, u discover.Upstream, rq disco
 		Highest     *struct {
 			Version string `json:"version"`
 		} `json:"highest_version"`
+		Downloads *int64 `json:"download_count"`
 	}
 	if err := json.Unmarshal(p.Data, &rows); err != nil {
 		return discover.LevelPage{}, invalidDocument("a listing", "the data is not a list")
@@ -255,6 +275,8 @@ func (remoteAdapter) Children(ctx context.Context, u discover.Upstream, rq disco
 			continue
 		}
 		h := discover.Hit{Name: name, Description: r.Description}
+		// The collection index carries the upstream's download count of each collection (R-ANS-047, Q-ANS-129).
+		h.Downloads = nonNegative(r.Downloads)
 		if r.Highest != nil {
 			h.Latest = r.Highest.Version
 		}
@@ -288,14 +310,24 @@ func (remoteAdapter) Package(ctx context.Context, u discover.Upstream, name stri
 		return discover.PackageInfo{}, err
 	}
 	deprecated := false
+	var pop discover.Popularity
 	if doc, ok, err := u.Document(ctx, CollectionDocumentPath(ns, n), documentVariant); err != nil {
 		return discover.PackageInfo{}, err
 	} else if ok {
 		var c struct {
-			Deprecated bool `json:"deprecated"`
+			Deprecated bool   `json:"deprecated"`
+			Downloads  *int64 `json:"download_count"`
+			Highest    *struct {
+				Version string `json:"version"`
+			} `json:"highest_version"`
 		}
 		_ = json.Unmarshal(doc, &c) //nolint:errcheck // a collection document that does not read marks nothing
-		deprecated = c.Deprecated
+		deprecated, pop.Downloads = c.Deprecated, nonNegative(c.Downloads)
+		if c.Highest != nil {
+			if pop.Keywords, pop.Signed, err = highestFacts(ctx, u, ns, n, c.Highest.Version); err != nil {
+				return discover.PackageInfo{}, err
+			}
+		}
 	}
 	type pv struct {
 		v version.Semver
@@ -324,7 +356,7 @@ func (remoteAdapter) Package(ctx context.Context, u discover.Upstream, name stri
 	for _, p := range vs {
 		all = append(all, p.f)
 	}
-	info := discover.PackageInfo{Found: true, Name: ns + "." + n}
+	info := discover.PackageInfo{Found: true, Name: ns + "." + n, Popularity: pop}
 	info.Versions, info.Total, info.Cursor, info.Done = discover.PageVersions(all, rq)
 	return info, nil
 }
@@ -362,3 +394,49 @@ func catalogueVersions(ctx context.Context, u discover.Upstream, ns, name string
 	}
 	return list, true, nil
 }
+
+// nonNegative is a count the upstream sent, nil for none or a negative one.
+func nonNegative(n *int64) *int64 {
+	if n == nil || *n < 0 {
+		return nil
+	}
+	return n
+}
+
+// highestFacts reads the tags and the signed state of a collection's highest version from its version document (R-ANS-047, Q-ANS-129):
+// one request through the upstream the catalogue lends, from the repository's stored copy when it holds one. The tags are the
+// document's metadata.tags, the signed state whether its signatures list holds one; a version the upstream does not have, or a document
+// that does not read, tells nothing.
+func highestFacts(ctx context.Context, u discover.Upstream, ns, name, ver string) ([]string, *bool, error) {
+	if !isVersion(ver) {
+		return nil, nil, nil
+	}
+	doc, ok, err := u.Document(ctx, VersionDocumentPath(ns, name, ver), documentVariant)
+	if err != nil || !ok {
+		return nil, nil, err
+	}
+	var d struct {
+		Metadata struct {
+			Tags []string `json:"tags"`
+		} `json:"metadata"`
+		Signatures *[]json.RawMessage `json:"signatures"`
+	}
+	if !readsAs(doc, &d) {
+		return nil, nil, nil
+	}
+	var signed *bool
+	if d.Signatures != nil {
+		v := len(*d.Signatures) > 0
+		signed = &v
+	}
+	return d.Metadata.Tags, signed, nil
+}
+
+// isVersion reports whether the text is a version of the format: a highest version the Galaxy names that is none is not asked for.
+func isVersion(v string) bool {
+	_, err := version.Parse(v)
+	return err == nil
+}
+
+// readsAs reports whether the document reads into v: a document that does not tells nothing.
+func readsAs(doc []byte, v any) bool { return json.Unmarshal(doc, v) == nil }

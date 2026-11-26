@@ -1,6 +1,8 @@
 import { Provider } from '@angular/core';
 import { ApiError } from '../problem';
+import { Page, PageFetcher } from '../pagination';
 import {
+  DocumentationHit,
   GroupSuggestion,
   PackageSuggestion,
   ProjectSuggestion,
@@ -66,6 +68,22 @@ export class FakeSearchApi extends SearchApi {
     },
   ];
   groups: GroupSuggestion[] = [{ name: 'web-leads', description: 'The leads of the web team' }];
+  /** The entries of the documentation across collections (R-ANS-058). */
+  documentationHits: DocumentationHit[] = [
+    {
+      format: 'ansible',
+      packageId: 'pkg_ansibleacmetools',
+      package: 'acme.tools',
+      version: '1.2.0',
+      project: 'platform',
+      repository: 'collections',
+      type: 'module',
+      name: 'firewall_rule',
+      shortDescription: 'Manage a rule of the host firewall',
+    },
+  ];
+  /** Each text the documentation list was asked for, in order. */
+  readonly documentationQueries: string[] = [];
   serviceAccounts: ServiceAccountSuggestion[] = [
     { name: 'ci-bot', description: 'Publishes from the pipeline', project: null },
     { name: 'web/deploy', description: '', project: 'web' },
@@ -115,7 +133,21 @@ export class FakeSearchApi extends SearchApi {
     }
     if (kinds.includes('group')) out.groups = cut(this.groups.filter((g) => matches(g.name)));
     if (kinds.includes('service_account')) out.serviceAccounts = cut(this.serviceAccounts.filter((a) => matches(a.name)));
+    if (kinds.includes('documentation')) {
+      out.documentation = cut(this.documentationHits.filter((d) => matches(d.name, d.shortDescription)));
+    }
     return out;
+  }
+
+  override documentation(q: string): PageFetcher<DocumentationHit> {
+    this.documentationQueries.push(q);
+    const terms = q.trim().toLowerCase().split(/\s+/);
+    const rows = this.documentationHits.filter((d) => terms.every((t) => `${d.name} ${d.shortDescription}`.toLowerCase().includes(t)));
+    return async (cursor: string | null, limit: number): Promise<Page<DocumentationHit>> => {
+      const start = cursor ? Number(cursor) : 0;
+      const items = rows.slice(start, start + limit);
+      return { items, nextCursor: start + limit < rows.length ? String(start + limit) : null };
+    };
   }
 
   private held(signal: AbortSignal | undefined): Promise<void> {

@@ -1,0 +1,54 @@
+// The page of a name (R-UI-220): the packages, then what decides a publish into it.
+:host {
+  display: block;
+}
+
+.ns-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--quader-space-1) var(--quader-space-4);
+  margin: 0;
+  color: var(--quader-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.ns-publishing {
+  margin-block-start: var(--quader-space-6);
+  max-inline-size: 60rem;
+
+  h2 {
+    margin-block-end: var(--quader-space-2);
+  }
+
+  code {
+    overflow-wrap: anywhere;
+  }
+}
+
+.ns-repos {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: var(--quader-space-4);
+  margin-block-start: var(--quader-space-4);
+}
+
+.ns-repo {
+  padding-block-end: var(--quader-space-4);
+  border-block-end: 1px solid var(--quader-border);
+  overflow-wrap: anywhere;
+}
+
+.ns-repo-name {
+  font-weight: 600;
+}
+
+.ns-line {
+  margin: var(--quader-space-1) 0 0;
+}
+
+.ns-claims {
+  margin: var(--quader-space-1) 0 0;
+  padding-inline-start: var(--quader-space-5);
+}

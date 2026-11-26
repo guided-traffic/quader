@@ -100,7 +100,7 @@ describe('The search field (R-UI-095)', () => {
     filter.click();
     await settle(fixture);
     const items = said([...document.querySelectorAll('.search-filter-menu [role="menuitemradio"]')]);
-    expect(items).toEqual(['All', 'Repositories', 'Packages', 'Projects']);
+    expect(items).toEqual(['All', 'Repositories', 'Packages', 'Projects', 'Documentation']);
   });
 
   it('R-UI-095 R-UI-098 the results page keeps its text in the field; its kind is the tab, not the filter, so no chip shows', async () => {
@@ -122,7 +122,7 @@ describe('The search field (R-UI-095)', () => {
     root.querySelector<HTMLButtonElement>('.search-filter')!.click();
     await settle(fixture);
     const items = [...document.querySelectorAll<HTMLElement>('.search-filter-menu [role="menuitemradio"]')];
-    expect(said(items)).toEqual(['All', 'Repositories', 'Packages', 'Projects', 'Users, Admin area', 'Groups, Admin area']);
+    expect(said(items)).toEqual(['All', 'Repositories', 'Packages', 'Projects', 'Documentation', 'Users, Admin area', 'Groups, Admin area']);
     items[2]!.click();
     await settle(fixture);
     expect(text(root.querySelector('.search-chip')!)).toContain('Packages');
@@ -252,7 +252,7 @@ describe('Live suggestions (R-UI-097)', () => {
     await sleep(fixture, 50);
     expect(search.requests).toHaveLength(0);
     await answered(fixture, root);
-    expect(search.requests.map((r) => [r.q, r.kinds?.join(','), r.limit])).toEqual([['vend', 'repository,package,project', 5]]);
+    expect(search.requests.map((r) => [r.q, r.kinds?.join(','), r.limit])).toEqual([['vend', 'repository,package,project,documentation', 5]]);
     expect(groupNames(root)).toEqual(['Repositories']);
     const first = options(root)[0]!;
     expect(spokenText(first)).toBe('npm-vendor · web-frontend');

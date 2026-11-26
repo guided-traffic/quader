@@ -12,6 +12,7 @@ import {
   PackageDeprecation,
   PackageDeprecationInput,
   PackageFilters,
+  PackageNamespace,
   PackageReadme,
   PackageSummary,
   PackageVersion,
@@ -671,13 +672,15 @@ export class FakePackagesApi extends PackagesApi {
         .filter((p) => !filters.repository?.length || p.repositories.some((r) => filters.repository?.includes(r)))
         .filter((p) => !q || p.name.toLowerCase().includes(q) || (p.description ?? '').toLowerCase().includes(q))
         .filter((p) => !filters.namePrefix || p.name.startsWith(filters.namePrefix))
+        .filter((p) => !filters.namespace || namespaceHolds(p.format, p.name, filters.namespace))
+        .filter((p) => !filters.signed || !!p.signature)
         .filter((p) => !filters.keyword || p.keywords.includes(filters.keyword))
         .filter((p) => !filters.createdFrom || p.createdAt >= filters.createdFrom)
         .filter((p) => !filters.createdTo || p.createdAt < filters.createdTo)
         .filter((p) => !filters.deprecated || !!p.deprecation);
       const sort = filters.sort ?? 'name';
       const desc = sort.startsWith('-');
-      const field = sort.replace('-', '') as 'name' | 'createdAt' | 'updatedAt';
+      const field = (sort === 'relevance' || sort === '-relevance' ? 'name' : sort.replace('-', '')) as 'name' | 'createdAt' | 'updatedAt';
       return [...items].sort((a, b) => (desc ? -1 : 1) * a[field].localeCompare(b[field]));
     };
     return async (cursor, limit) => {
@@ -688,6 +691,18 @@ export class FakePackagesApi extends PackagesApi {
       }
       return pages(read())(cursor, limit);
     };
+  }
+
+  /** The answer of `namespace` by `<format>:<name>`; a namespace without one answers no publishing facts. */
+  namespaceFixtures = new Map<string, PackageNamespace>();
+  /** Each call of `namespace`: `<format>:<name>@<project>`. */
+  namespaceCalls: string[] = [];
+
+  override async namespace(format: string, name: string, project?: string): Promise<PackageNamespace> {
+    this.namespaceCalls.push(`${format}:${name}@${project ?? ''}`);
+    const kind = format === 'npm' ? 'scope' : format === 'oci' ? 'path' : format === 'ansible' ? 'namespace' : null;
+    if (!kind) throw notFound();
+    return this.namespaceFixtures.get(`${format}:${name}`) ?? { format, name, kind, publishing: null };
   }
 
   override async lookup(format: string, name: string): Promise<PackageSummary> {
@@ -1429,4 +1444,10 @@ export function providePackageFakes(): Provider[] {
     { provide: PackagesApi, useClass: FakePackagesApi },
     { provide: ClientSetupApi, useClass: FakeClientSetupApi },
   ];
+}
+
+/** Whether a name lies in a namespace of the fixtures' formats (the rule `GET /api/v1/formats` serves, R-UI-220). */
+function namespaceHolds(format: string, name: string, namespace: string): boolean {
+  const separator = format === 'ansible' ? '.' : '/';
+  return name.startsWith(namespace + separator);
 }

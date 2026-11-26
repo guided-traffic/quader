@@ -31,6 +31,8 @@ import (
 //     repositories:read-config or to an Owner of its project, as GET /api/v1/repositories decides;
 //   - a package through the read scope of GET /api/v1/packages (view.Service.Suggest);
 //   - a project by the rule of GET /api/v1/projects (projectSight.listed);
+//   - an entry of a collection's documentation by the rule of GET /api/v1/search/documentation (R-ANS-058): the newest version of every
+//     collection the caller may read whose wiki it may read;
 //   - a user, a group or a service account for a holder of identities:read, through the principal manager; these are also what
 //     the fields of the admin area that name a principal search (R-UI-150).
 
@@ -39,6 +41,7 @@ const (
 	kindRepository = "repository"
 	kindPackage    = "package"
 	kindProject    = "project"
+	kindDocs       = "documentation"
 	kindUser       = "user"
 	kindGroup      = "group"
 	kindAccount    = "service_account"
@@ -54,7 +57,7 @@ const (
 
 // suggestKinds lists every kind, in the order of the answer's members.
 func suggestKinds() []string {
-	return []string{kindRepository, kindPackage, kindProject, kindUser, kindGroup, kindAccount}
+	return []string{kindRepository, kindPackage, kindProject, kindDocs, kindUser, kindGroup, kindAccount}
 }
 
 // defaultSuggestKinds are the kinds of a request without `kind`.
@@ -180,6 +183,9 @@ func (s *Server) suggest(r *http.Request, sr suggestRequest) (gen.SearchSuggesti
 	if err == nil && sr.wants(kindProject) {
 		out.Projects, err = s.suggestProjects(r.WithContext(ctx), sr)
 	}
+	if err == nil && sr.wants(kindDocs) {
+		out.Documentation, err = s.suggestDocumentation(r.WithContext(ctx), sr)
+	}
 	if err == nil && sr.wantsIdentities() {
 		err = s.suggestIdentities(ctx, sr, &out)
 	}
@@ -197,6 +203,9 @@ func emptySuggestions(sr suggestRequest) gen.SearchSuggestions {
 	}
 	if sr.wants(kindProject) {
 		out.Projects = &gen.ProjectSuggestions{Items: []gen.ProjectSuggestion{}}
+	}
+	if sr.wants(kindDocs) {
+		out.Documentation = &gen.DocumentationSuggestions{Items: []gen.DocumentationHit{}}
 	}
 	if sr.wants(kindUser) {
 		out.Users = &gen.UserSuggestions{Items: []gen.UserSuggestion{}}

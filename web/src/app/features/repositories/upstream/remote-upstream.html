@@ -179,6 +179,8 @@
                   @if (h.description) {
                     <span class="secondary"><span class="hit-description" translate="no" [attr.title]="h.description">{{ h.description }}</span></span>
                   }
+                  <!-- What the upstream tells beside the hit (R-ANS-047): its signed state, its downloads at the upstream, its tags. -->
+                  <quader-upstream-popularity [keywords]="h.keywords" [downloads]="h.downloads" [signed]="h.signed" />
                 </span>
               </div>
             </th>

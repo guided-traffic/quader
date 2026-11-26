@@ -159,6 +159,7 @@ export class SearchField {
       { value: 'repository', label: this.heading['repository']! },
       { value: 'package', label: this.heading['package']! },
       { value: 'project', label: this.heading['project']! },
+      { value: 'documentation', label: this.heading['documentation']! },
     ];
     const admin: { value: SearchFilter; label: string }[] = this.instanceAdmin()
       ? [

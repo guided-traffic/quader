@@ -124,6 +124,16 @@ and the deploy target the grant index uses for the virtual gate (R-AUTHZ-009) ar
   another repository's claim covers the name. The settings that are not journaled are listed under
   [H-569](backup-and-restore.md#h-569--upstream-storage-and-format-settings-of-a-repository-come-back-with-a-restore).
 
+### The page of a name shows claims to a reader of the configuration only
+
+The page of a namespace, a scope or a path prefix (R-UI-220, `GET /api/v1/packages/namespace`,
+[namespace_api.go](../../internal/api/v1/namespace_api.go)) answers the claims, the package ownership and the automatic claims of a
+local repository only to a caller who may read that repository's configuration: a holder of `repositories:read-config`, or an Owner
+of its project, as `GET /api/v1/projects/{project}/repositories/{key}` decides its full document, and within what the request's
+endpoint exposes (`visibleKeys`). Any other caller gets `publishing: null` and the packages it may read through the package list. No
+principal is named, and a repository whose configuration the caller may not read is neither named nor counted, so a claim of another
+project's repository stays unseen there ([H-2152](../spec/api-and-ui.md#h-2152--the-page-of-a-name-shows-the-claims-of-the-repositories-whose-configuration-the-reader-may-read)).
+
 ## Virtual resolution: what the engine decides per caller
 
 The routing above is the same for everybody; the engine ([virtual.md](../developer/virtual.md)) adds what depends on the caller

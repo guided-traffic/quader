@@ -195,3 +195,51 @@ SELECT u.name, u.version
  WHERE u.repo_id = sqlc.arg(repo_id)::bigint AND u.name || '/' || u.version > sqlc.arg(after)::text AND d.name IS NULL
  ORDER BY u.name || '/' || u.version
  LIMIT sqlc.arg(row_limit)::integer;
+
+-- name: AnsibleDocsCandidates :many
+-- The first step of the documentation searched across collections (R-ANS-058, Q-ANS-127): the versions of the repositories asked that
+-- hold an entry every word of the query begins a word of (its name, short description, options, return values: the search vector of
+-- R-ANS-036), through the index ansible_doc_entries_search. query is a to_tsquery text of runs of a to z and 0 to 9 ('w1':* & 'w2':*).
+-- The caller keeps the newest version of each collection the reader may read the wiki of, then reads their entries
+-- (AnsibleDocsSearch); a version without a matching entry is never read.
+SELECT DISTINCT e.repo_id, (e.name COLLATE "C")::text AS name, (e.version COLLATE "C")::text AS version
+  FROM ansible_doc_entries e
+ WHERE e.search @@ to_tsquery('simple', sqlc.arg(query)::text)
+   AND e.repo_id = ANY(sqlc.arg(repo_ids)::bigint[])
+ LIMIT sqlc.arg(max_rows)::int;
+
+-- name: AnsibleDocsSearch :many
+-- The documentation searched across collections (R-ANS-058, Q-ANS-125 to Q-ANS-128): the entries of the given versions (repo_ids, names
+-- and versions side by side: the newest version of every collection with a match whose documentation the caller may read, which the
+-- caller decided from AnsibleDocsCandidates) every word of the query begins a word of the search vector. tier ranks the name against
+-- the whole text: 0 it equals the text, 1 it starts with it, 2 it holds it, 3 a match of the words elsewhere. Keyset order: tier, the
+-- entry's name, the collection, the repository and the type; after_* is the last entry of the previous page. The versions' entries are
+-- read through the primary key and the vector's match, so the cost grows with the entries of the versions that match. deprecated and
+-- deprecation_message are the collection's deprecation in its repository (R-ANS-060), read for the page's hits by their key.
+WITH k AS (
+  SELECT unnest(sqlc.arg(repo_ids)::bigint[]) AS repo_id, unnest(sqlc.arg(names)::text[]) AS name,
+         unnest(sqlc.arg(versions)::text[]) AS version
+), hits AS (
+  SELECT e.repo_id, e.name, e.version, e.content_type, e.content_name, e.short_description,
+         (CASE WHEN lower(e.content_name) = sqlc.arg(text)::text THEN 0
+               WHEN starts_with(lower(e.content_name), sqlc.arg(text)::text) THEN 1
+               WHEN strpos(lower(e.content_name), sqlc.arg(text)::text) > 0 THEN 2
+               ELSE 3 END)::integer AS tier
+    FROM k
+    JOIN ansible_doc_entries e ON e.repo_id = k.repo_id AND e.name = k.name AND e.version = k.version
+   WHERE e.search @@ to_tsquery('simple', sqlc.arg(query)::text)
+)
+SELECT pg.repo_id, pg.name, pg.version, pg.content_type, pg.content_name, pg.short_description, pg.tier,
+       (d.repo_id IS NOT NULL)::boolean AS deprecated, COALESCE(d.message, '')::text AS deprecation_message
+  FROM (SELECT h.repo_id, (h.name COLLATE "C")::text AS name, (h.version COLLATE "C")::text AS version,
+               (h.content_type COLLATE "C")::text AS content_type, (h.content_name COLLATE "C")::text AS content_name,
+               h.short_description, h.tier
+          FROM hits h
+         WHERE NOT sqlc.arg(has_after)::boolean
+            OR (h.tier, h.content_name COLLATE "C", h.name COLLATE "C", h.repo_id, h.content_type COLLATE "C")
+               > (sqlc.arg(after_tier)::integer, sqlc.arg(after_entry)::text COLLATE "C", sqlc.arg(after_name)::text COLLATE "C",
+                  sqlc.arg(after_repo)::bigint, sqlc.arg(after_type)::text COLLATE "C")
+         ORDER BY h.tier, h.content_name COLLATE "C", h.name COLLATE "C", h.repo_id, h.content_type COLLATE "C"
+         LIMIT sqlc.arg(max_rows)::int) pg
+  LEFT JOIN ansible_collection_deprecations d ON d.repo_id = pg.repo_id AND d.name = pg.name
+ ORDER BY pg.tier, pg.content_name, pg.name, pg.repo_id, pg.content_type;

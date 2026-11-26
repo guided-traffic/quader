@@ -880,6 +880,14 @@ lower(name)`, built `CONCURRENTLY`, so the search field's suggestions find a rol
 the rows whose display name is more than the name's casing (Ansible roles today) and writes no row; `name_words` stays the name's, since
 a stored generated column that took the display name would rewrite every package.
 
+## The search of Ansible Galaxy collections (00138)
+
+[00138_ansible_collection_search](../../internal/meta/postgres/migrations/00138_ansible_collection_search.sql) adds the GIN index
+`ansible_collection_versions_search` over an expression of `ansible_collection_versions`: the `simple` vector of the namespace and name
+(weight A), the tags (`jsonb_to_tsvector` of `collection_info.tags`, B) and the description (C) ([formats/ansible.md](../spec/formats/ansible.md)
+R-ANS-057, Q-ANS-120). One statement, `CREATE INDEX CONCURRENTLY` in a step run outside a transaction; no row is written. `AnsibleViewFind`
+repeats the expression word for word; a change of the one changes the other. Expand phase only.
+
 ## An image's facts (00133)
 
 [00133_oci_image_facts](../../internal/meta/postgres/migrations/00133_oci_image_facts.sql) adds three columns to `oci_manifests`

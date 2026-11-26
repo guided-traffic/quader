@@ -1,4 +1,5 @@
 import { Component, computed, effect, inject, input, output, resource, signal, untracked } from '@angular/core';
+import { UpstreamPopularity } from './upstream-popularity';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { firstValueFrom, map } from 'rxjs';
@@ -67,7 +68,20 @@ function levelOf(param: string | null): readonly string[] {
  */
 @Component({
   selector: 'quader-remote-upstream',
-  imports: [Busy, Loading, Checkbox, DataTable, DeliveryRequestsPanel, DeprecationMark, ErrorNotice, NoValue, RouterLink, Switch, UpstreamPackageView],
+  imports: [
+    Busy,
+    Loading,
+    Checkbox,
+    DataTable,
+    DeliveryRequestsPanel,
+    DeprecationMark,
+    ErrorNotice,
+    NoValue,
+    RouterLink,
+    Switch,
+    UpstreamPackageView,
+    UpstreamPopularity,
+  ],
   providers: [UpstreamActions],
   templateUrl: './remote-upstream.html',
   styleUrl: './remote-upstream.scss',

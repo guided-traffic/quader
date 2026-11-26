@@ -1041,45 +1041,82 @@ func (q *Queries) AnsibleViewDeprecated(ctx context.Context, arg AnsibleViewDepr
 }
 
 const ansibleViewFind = `-- name: AnsibleViewFind :many
-SELECT pv.id AS version_id
+WITH m AS MATERIALIZED (
+  -- The matching rows through the index alone, before any join: a join that led from the repositories would read every version.
+  -- The name in the collation of packages.name, so that the join below reads packages_repo_id_name_key by both columns.
+  SELECT v.repo_id, (v.name COLLATE "default") AS name, v.version,
+         least(999, floor(1000 * ts_rank((setweight(to_tsvector('simple'::regconfig, translate(v.name, '._', '  ')), 'A')
+         || setweight(jsonb_to_tsvector('simple'::regconfig,
+              CASE WHEN jsonb_typeof(v.collection_info -> 'tags') = 'array' THEN v.collection_info -> 'tags' ELSE '[]'::jsonb END, '["string"]'), 'B')
+         || setweight(to_tsvector('simple'::regconfig, COALESCE(v.collection_info ->> 'description', '')), 'C')),
+               to_tsquery('simple', $2::text))))::integer AS rank
+    FROM ansible_collection_versions v
+   WHERE $2::text <> ''
+     AND (setweight(to_tsvector('simple'::regconfig, translate(v.name, '._', '  ')), 'A')
+         || setweight(jsonb_to_tsvector('simple'::regconfig,
+              CASE WHEN jsonb_typeof(v.collection_info -> 'tags') = 'array' THEN v.collection_info -> 'tags' ELSE '[]'::jsonb END, '["string"]'), 'B')
+         || setweight(to_tsvector('simple'::regconfig, COALESCE(v.collection_info ->> 'description', '')), 'C'))
+         @@ to_tsquery('simple', $2::text)
+)
+SELECT pv.id AS version_id, m.rank
+  FROM m
+  JOIN repositories r ON r.id = m.repo_id
+  JOIN project p ON p.id = r.project_id
+  JOIN packages pk ON pk.repo_id = m.repo_id AND pk.name = m.name
+  JOIN package_versions pv ON pv.package_id = pk.id AND pv.version = m.version AND pv.trashed_at IS NULL
+ WHERE (p.key || '/' || r.key) = ANY($3::text[])
+UNION ALL
+SELECT pv.id, 0
   FROM ansible_collection_versions v
   JOIN repositories r ON r.id = v.repo_id
   JOIN project p ON p.id = r.project_id
   JOIN packages pk ON pk.repo_id = v.repo_id AND pk.name = v.name
   JOIN package_versions pv ON pv.package_id = pk.id AND pv.version = v.version AND pv.trashed_at IS NULL
- WHERE (p.key || '/' || r.key) = ANY($1::text[])
-   AND (($2::text <> '' AND position(lower($2::text) in lower(COALESCE(v.collection_info->>'description', ''))) > 0)
-        OR ($3::text <> '' AND v.collection_info->'tags' ? $3::text))
- ORDER BY pv.id
- LIMIT $4::int
+ WHERE $4::text <> ''
+   AND (p.key || '/' || r.key) = ANY($3::text[])
+   AND v.collection_info -> 'tags' ? $4::text
+ ORDER BY 1
+ LIMIT $1::int
 `
 
 type AnsibleViewFindParams struct {
-	Repos    []string
-	Text     string
-	Keyword  string
 	RowLimit int32
+	Query    string
+	Repos    []string
+	Keyword  string
 }
 
-// The generic versions of the repositories (by key) whose description contains the text or whose tags contain the keyword.
-func (q *Queries) AnsibleViewFind(ctx context.Context, arg AnsibleViewFindParams) ([]int64, error) {
+type AnsibleViewFindRow struct {
+	VersionID int64
+	Rank      int32
+}
+
+// The generic versions of the repositories (by key) that match, each with its rank (0 to 999): with a query, every word of it begins a
+// word of the collection's namespace and name (weight A), of its tags (B) or of its description (C), the full-text configuration of
+// the documentation search ('simple', R-ANS-036), ranked by ts_rank (R-ANS-057, Q-ANS-120); with a keyword, its tags hold it (rank
+// 0). query is a to_tsquery text built of runs of a to z and 0 to 9 only ('w1':* & 'w2':*), so no operator of the tsquery syntax
+// reaches it from a request. The vector is the expression of the index ansible_collection_versions_search (migration 00138), written
+// here word for word, and reads the matching rows through the index first (MATERIALIZED), then joins them to the repositories asked:
+// the vector built per row took 447 ms with 50,000 collections (the measurement in docs/developer/packages.md). The two branches are apart (UNION ALL), so
+// the query's branch keeps the index in a generic plan; an empty query or keyword switches its branch off.
+func (q *Queries) AnsibleViewFind(ctx context.Context, arg AnsibleViewFindParams) ([]AnsibleViewFindRow, error) {
 	rows, err := q.db.Query(ctx, ansibleViewFind,
-		arg.Repos,
-		arg.Text,
-		arg.Keyword,
 		arg.RowLimit,
+		arg.Query,
+		arg.Repos,
+		arg.Keyword,
 	)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []int64{}
+	items := []AnsibleViewFindRow{}
 	for rows.Next() {
-		var version_id int64
-		if err := rows.Scan(&version_id); err != nil {
+		var i AnsibleViewFindRow
+		if err := rows.Scan(&i.VersionID, &i.Rank); err != nil {
 			return nil, err
 		}
-		items = append(items, version_id)
+		items = append(items, i)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

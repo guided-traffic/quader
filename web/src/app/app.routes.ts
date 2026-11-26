@@ -56,6 +56,11 @@ export const routes: Routes = [
         loadChildren: () =>
           import('./features/repositories/repositories.routes').then((m) => m.REPOSITORIES_ROUTES),
       },
+      // The page of a name across every project (R-UI-220): where a hit of the search, which crosses projects, leads its namespace.
+      {
+        path: 'namespaces',
+        loadChildren: () => import('./features/packages/packages.routes').then((m) => m.NAMESPACE_ROUTES),
+      },
       // The results page of the top bar's search: a page of the main area, never of the admin area (R-UI-098, R-UI-099).
       {
         path: 'search',

@@ -3,8 +3,10 @@ import { Router } from '@angular/router';
 import { afterEach, describe, expect, it } from 'vitest';
 import { PackagesApi } from '../../api/packages-api';
 import { RepositoriesApi } from '../../api/repositories-api';
+import { SearchApi } from '../../api/search-api';
 import { FakePackagesApi } from '../../api/testing/fakes-packages';
 import { FakeRepositoriesApi, PACKAGE_FORMAT } from '../../api/testing/fakes-catalog';
+import { FakeSearchApi } from '../../api/testing/fakes-search';
 import { addressValues, expectAccessible, renderScreen, settle, text } from '../../testing/screen';
 import { SearchResults } from './search-results';
 
@@ -29,11 +31,11 @@ const selectedTab = (root: HTMLElement) => text(root.querySelector('[role="tab"]
 afterEach(() => history.replaceState(null, ''));
 
 describe('The results page of the search (R-UI-098)', () => {
-  it('R-UI-098 the heading says what it shows; the tabs are Repositories, Packages and Projects without counts; Repositories by default', async () => {
+  it('R-UI-098 the heading says what it shows; the tabs are Repositories, Packages, Projects and Documentation without counts; Repositories by default', async () => {
     const r = await open('generic');
     expect(text(r.root.querySelector('h1')!)).toBe('Search');
     expect(text(r.root)).toContain('What you may read that matches “generic”.');
-    expect([...r.root.querySelectorAll('[role="tab"]')].map((t) => text(t))).toEqual(['Repositories', 'Packages', 'Projects']);
+    expect([...r.root.querySelectorAll('[role="tab"]')].map((t) => text(t))).toEqual(['Repositories', 'Packages', 'Projects', 'Documentation']);
     expect(selectedTab(r.root)).toBe('Repositories');
     expect(r.repos.listFilters.at(-1)).toEqual({ q: 'generic' });
     await expectAccessible(r.root);
@@ -67,7 +69,8 @@ describe('The results page of the search (R-UI-098)', () => {
       }));
     });
     expect(selectedTab(r.root)).toBe('Packages');
-    expect(r.pkgs.listFilters.at(-1)).toEqual({ q: 'pkg' });
+    // The best match first (R-ANS-057).
+    expect(r.pkgs.listFilters.at(-1)).toEqual({ q: 'pkg', sort: 'relevance' });
     expect(r.root.querySelectorAll('tbody tr')).toHaveLength(25);
     const first = r.root.querySelector('tbody tr')!;
     expect(first.querySelector('th a')!.getAttribute('href')).toBe('/projects/web/packages/npm/pkg-00');
@@ -76,6 +79,44 @@ describe('The results page of the search (R-UI-098)', () => {
     more.click();
     await settle(r.fixture);
     expect(r.root.querySelectorAll('tbody tr')).toHaveLength(30);
+    await expectAccessible(r.root);
+  });
+
+  it('R-ANS-058 the tab Documentation lists the entries found across collections; an entry opens its page in its collection', async () => {
+    const r = await open('firewall', 'documentation');
+    expect(selectedTab(r.root)).toBe('Documentation');
+    const rows = [...r.root.querySelectorAll('tbody tr')];
+    expect(rows).toHaveLength(1);
+    const entry = rows[0]!.querySelector<HTMLAnchorElement>('th a')!;
+    expect(text(entry)).toBe('firewall_rule');
+    expect(entry.getAttribute('href')).toBe('/projects/platform/packages/ansible/acme.tools?doc=module%2Ffirewall_rule');
+    expect(text(rows[0]!)).toContain('Manage a rule of the host firewall');
+    expect(text(rows[0]!)).toContain('1.2.0');
+    await expectAccessible(r.root);
+  });
+
+  it('R-ANS-058 R-ANS-060 an entry of a deprecated collection has the mark beside the collection, with its message as the title', async () => {
+    const r = await open('firewall', 'documentation', (get) => {
+      const fake = get(SearchApi) as FakeSearchApi;
+      fake.documentationHits = [{ ...fake.documentationHits[0]!, deprecation: { scope: 'package', message: 'Use acme.network.' } }];
+    });
+    const mark = r.root.querySelector('tbody tr td [data-testid="deprecated-mark"]');
+    expect(mark?.getAttribute('title')).toBe('Use acme.network.');
+    await expectAccessible(r.root);
+  });
+
+  it('R-UI-220 R-ANS-057 a package hit links its namespace to the page across every project, shows its tags and a verified badge', async () => {
+    const r = await open('acme', 'package', (get) => {
+      const fake = get(PackagesApi) as FakePackagesApi;
+      fake.packages = [
+        { ...fake.packages[0]!, id: 'pkg_acme', format: 'npm', name: '@acme/ui', keywords: ['ui', 'design'], signature: 'verified_internal' },
+      ];
+    });
+    const row = r.root.querySelector('tbody tr')!;
+    expect(row.querySelector('[data-testid="namespace-link"]')!.getAttribute('href')).toBe('/namespaces/npm/@acme');
+    expect(row.querySelector('th quader-package-name a:last-of-type')!.getAttribute('aria-label')).toBe('@acme/ui');
+    expect([...row.querySelectorAll('.tag')].map((t) => t.getAttribute('href'))).toEqual(['/search?q=ui&kind=package', '/search?q=design&kind=package']);
+    expect(row.querySelector('[data-testid="signature-badge"]')?.getAttribute('data-state')).toBe('verified_internal');
     await expectAccessible(r.root);
   });
 
@@ -120,7 +161,7 @@ describe('The results page of the search (R-UI-098)', () => {
   });
 
   it('R-UI-098 R-UI-099 no link of the page leads into the admin area', async () => {
-    for (const [kind, q] of [['repository', 'web'], ['package', 'ui'], ['project', 'web']] as const) {
+    for (const [kind, q] of [['repository', 'web'], ['package', 'ui'], ['project', 'web'], ['documentation', 'firewall']] as const) {
       const r = await open(q, kind);
       expect(hrefs(r.root).length).toBeGreaterThan(0);
       expect(hrefs(r.root).filter((h) => h.startsWith('/admin'))).toEqual([]);

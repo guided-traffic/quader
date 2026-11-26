@@ -144,7 +144,7 @@ describe('The one gate of the search (R-UI-099)', () => {
       if (persona === 'ada') {
         expect(admin.map((o) => o.url)).toEqual(expect.arrayContaining(['/admin/users', '/admin/users/users-bot', '/admin/groups/users']));
         // Under the Users and Groups filters, Enter without a pick opened nothing.
-        expect(opened.filter((o) => o.how.startsWith('filter 4') || o.how.startsWith('filter 5'))).toEqual([]);
+        expect(opened.filter((o) => o.how.startsWith('filter 5') || o.how.startsWith('filter 6'))).toEqual([]);
       } else {
         expect(admin).toEqual([]);
       }

@@ -3754,10 +3754,15 @@ export interface paths {
          *     `updatedAt`) is computed from the visible versions only, so a hidden version leaks neither its
          *     number nor its existence. `format` and `repository` repeat for OR; a virtual repository
          *     expands to its members; a remote repository contributes only cached versions (an OCI remote: the tags
-         *     whose document the cache holds, R-OCI-036). `q` matches the name and the description case-insensitively, `namePrefix` the start of the name,
-         *     `keyword` one keyword exactly. `createdFrom` (inclusive) and `createdTo` (exclusive) bound
+         *     whose document the cache holds, R-OCI-036). `q` matches the name case-insensitively and what the format searches: the
+         *     description and the keywords (an Ansible Galaxy collection: every word a prefix of a word of its namespace and name, its tags
+         *     or its description, R-ANS-057), `namePrefix` the start of the name, `namespace` the packages of one namespace of the one
+         *     `format` asked (R-UI-220), `keyword` one keyword exactly, `signed=true` the packages whose latest visible version carries a
+         *     verified signature (R-ANS-057). `createdFrom` (inclusive) and `createdTo` (exclusive) bound
          *     the creation time of the first visible version. `sort` takes one field, a leading `-` sorts
-         *     descending; the default is `name`. An anonymous caller sees what a `public` level admits.
+         *     descending; the default is `name`. `relevance` puts the best match of `q` first: a name equal to it, then one that starts
+         *     with it, then one that holds it, each ahead of a match in the description, and within that the format's rank (Q-ANS-121);
+         *     without `q` it is the order of the name. An anonymous caller sees what a `public` level admits.
          *     The filter runs in SQL. A sort field or filter this document does not list answers
          *     `400 malformed_request`. `deprecated=true` keeps the packages whose latest visible version is deprecated, and each entry
          *     carries the deprecation of its latest version (R-API-085). `include=vulnerabilities` adds `vulnerabilityGrade` to each entry, for a signed-in caller of an
@@ -3766,6 +3771,34 @@ export interface paths {
          *     R-VULN-039, R-UI-052).
          */
         get: operations["listPackages"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/packages/namespace": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Who may publish into a namespace
+         * @description The page of a name (R-UI-220, Q-UI-1290 to Q-UI-1294): what decides a publish into a namespace of a format (an Ansible Galaxy
+         *     namespace, an npm scope, an OCI path prefix), made from what exists; no description, no owner, no entity of its own. Its
+         *     packages are the list `GET /api/v1/packages?format=&namespace=`. `publishing` names the local repositories of the format
+         *     (in `project` when it is given) whose configuration the caller may read: a holder of `repositories:read-config`, or an Owner
+         *     of the repository's project (R-REPO-010); for each, its package ownership, whether its first publish of a name claims it, and
+         *     its claims that cover names of the namespace (R-REPO-023, R-AUTHZ-018). A repository whose configuration the caller may not
+         *     read is not named and not counted, and no principal is named: who may publish there is the role of the project's members
+         *     (R-AUTHZ-026) and its permission policies, which the screen links to. `publishing` is `null` for a caller who may read no
+         *     such configuration. A format without namespaces, or a text that is no namespace of the format, answers `404`.
+         */
+        get: operations["getPackageNamespace"];
         put?: never;
         post?: never;
         delete?: never;
@@ -7258,6 +7291,34 @@ export interface paths {
          *     number of statements (R-API-064) and is limited by the class `read`, or `anonymous` without a credential (R-API-016).
          */
         get: operations["getSearchSuggestions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/search/documentation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Find modules, plugins and roles across collections
+         * @description The documentation searched across collections (formats/ansible.md R-ANS-058, Q-ANS-125 to Q-ANS-128): the entries (modules,
+         *     plugins of every type, roles) of the newest version of every Ansible Galaxy collection the caller may read, per repository,
+         *     whose name holds the text or each of whose terms begins a word of the entry's name, short description, options or return
+         *     values (the full-text configuration of R-ANS-036). The newest version is the one the package's page opens on (R-UI-218). The
+         *     wiki gate holds per repository (R-ANS-037): an entry of a collection whose documentation the caller may not read is no hit and
+         *     counts nowhere. The best first: a name equal to the text, then one that starts with it, then one that holds it, then a match in
+         *     the text; within that by the entry's name, the collection and the repository. A list of R-API-010 with `cursor`. It costs a
+         *     fixed number of statements whatever the number of entries (the scope's, the withheld versions, the newest versions, the
+         *     entries).
+         */
+        get: operations["searchDocumentation"];
         put?: never;
         post?: never;
         delete?: never;
@@ -11383,6 +11444,12 @@ export interface components {
              */
             systemOnly: boolean;
             /**
+             * @description How the format's package names group into namespaces, each of which has a page (R-UI-220, Q-UI-1290): Ansible Galaxy's
+             *     namespace (`acme` of `acme.tools`), npm's scope (`@acme` of `@acme/ui`), every path prefix of an OCI image (`team` and
+             *     `team/app` of `team/app/image`). `null` for a format whose names have no such part (NuGet, Debian, generic files).
+             */
+            namespaces: components["schemas"]["FormatNamespaces"] | null;
+            /**
              * @description The kinds of signature the format declares (R-SIG-002, R-SIG-022), in the format's order: what a version or a file without a
              *     signature names in its details ("Signatures this format knows: Notation, cosign.", R-SIG-009). Empty for a format that has no
              *     signatures (the ClamAV definitions). `name` is the format's own word for the kind and is not translated.
@@ -11400,6 +11467,18 @@ export interface components {
             settingsSchema: {
                 [key: string]: unknown;
             } | null;
+        };
+        /**
+         * @description The rule of a format's namespaces (R-UI-220): a namespace is a prefix of a package name that ends before `separator`, starts
+         *     with `marker` (`@` of an npm scope, empty for none), and is the first such prefix only unless `nested` (every path prefix of an
+         *     image). `kind` is the word the screens use.
+         */
+        FormatNamespaces: {
+            /** @enum {string} */
+            kind: "namespace" | "scope" | "path";
+            separator: string;
+            marker: string;
+            nested: boolean;
         };
         FormatSignatureKind: {
             /** @description The format's word for the kind ("Notation", "Sigstore bundle", "registry signature"). */
@@ -12408,6 +12487,13 @@ export interface components {
              * @description The downloads of the visible versions, summed.
              */
             downloadCount: number;
+            /**
+             * @description The verified badge of `latestVersion` (R-SIG-009, R-SIG-035), present only when it carries a verified signature and the
+             *     installation verifies signatures (R-ANS-057, Q-ANS-122): the list shows the badge of a verified version only; the version's
+             *     page shows every state.
+             * @enum {string}
+             */
+            signature?: "verified_internal" | "verified_public";
             /**
              * @description With `include=vulnerabilities` only, and only for a signed-in caller of an installation that scans (R-VULN-039): the grade
              *     of `latestVersion` over the repositories the list is filtered by (every readable one without the filter), the worst of
@@ -16732,9 +16818,78 @@ export interface components {
             repositories?: components["schemas"]["RepositorySuggestions"];
             packages?: components["schemas"]["PackageSuggestions"];
             projects?: components["schemas"]["ProjectSuggestions"];
+            documentation?: components["schemas"]["DocumentationSuggestions"];
             users?: components["schemas"]["UserSuggestions"];
             groups?: components["schemas"]["GroupSuggestions"];
             serviceAccounts?: components["schemas"]["ServiceAccountSuggestions"];
+        };
+        DocumentationSuggestions: {
+            items: components["schemas"]["DocumentationHit"][];
+            /** @description A readable match was left out (R-API-061); never `true` because of an entry the caller may not read. */
+            more: boolean;
+        };
+        DocumentationHitList: {
+            items: components["schemas"]["DocumentationHit"][];
+            nextCursor: string | null;
+        };
+        /**
+         * @description An entry of a collection's documentation (R-ANS-058): its type (`module`, a plugin type, `role`), its name, its short
+         *     description, and the collection, the version and the repository it is the documentation of. The entry's page is the package's
+         *     page with `?doc=<type>/<name>` (R-ANS-049); the package's own address shows its newest version, which `version` is.
+         */
+        DocumentationHit: {
+            format: string;
+            /** @description The identifier of `GET /api/v1/packages/{packageId}`. */
+            packageId: string;
+            /** @description The collection's full name (`acme.tools`). */
+            package: string;
+            version: string;
+            project: string;
+            /** @description The key of the repository within `project`. */
+            repository: string;
+            type: string;
+            name: string;
+            shortDescription: string;
+            /**
+             * @description The deprecation of the collection in `repository` (R-ANS-060), which every version of it shares; absent when it is not
+             *     deprecated.
+             */
+            deprecation?: components["schemas"]["PackageDeprecation"];
+        };
+        PackageNamespace: {
+            format: string;
+            name: string;
+            /** @enum {string} */
+            kind: "namespace" | "scope" | "path";
+            publishing: components["schemas"]["NamespacePublishing"] | null;
+        };
+        NamespacePublishing: {
+            /** @description The local repositories of the format whose configuration the caller may read, those with a claim first. */
+            repositories: components["schemas"]["NamespaceRepository"][];
+        };
+        NamespaceRepository: {
+            project: string;
+            key: string;
+            /**
+             * @description The first publisher of a name owns it and a later version needs an owner (`enforce`), or anyone who may publish there publishes every name (`off`, R-AUTHZ-018).
+             * @enum {string}
+             */
+            packageOwnership: "enforce" | "off";
+            /** @description A first publish of a name no claim of the repository covers claims the name for it (R-REPO-023). */
+            autoClaim: boolean;
+            claims: components["schemas"]["NamespaceClaim"][];
+        };
+        NamespaceClaim: {
+            pattern: string;
+            /** @enum {string} */
+            scope: "members" | "global";
+            /** @enum {string} */
+            source: "manual" | "auto";
+            /**
+             * @description Every name of the namespace (`all`), or some of them (`some`, a pattern of names inside it).
+             * @enum {string}
+             */
+            covers: "all" | "some";
         };
         RepositorySuggestions: {
             items: components["schemas"]["RepositorySuggestion"][];
@@ -17988,6 +18143,16 @@ export interface components {
             updated: string | null;
             /** @description deprecated, unlisted, official, verified, insecure, unsigned-index. */
             flags: string[];
+            /** @description The upstream's tags or keywords of the package (Ansible Galaxy's tags, R-ANS-047); absent where the upstream's answer has none. */
+            keywords?: string[];
+            /**
+             * Format: int64
+             * @description The downloads the upstream counts of the package, all versions (Galaxy's `download_count`), named apart from Quader's own
+             *     count; absent where the answer does not carry it (Q-ANS-129).
+             */
+            downloads?: number;
+            /** @description The upstream's own word that its highest version is signed (Galaxy's `is_signed`); absent where it says nothing. */
+            signed?: boolean;
             delivery: components["schemas"]["DeliveryDecision"];
             /** @enum {string} */
             stored: "none" | "partial";
@@ -18082,6 +18247,16 @@ export interface components {
             tags: {
                 [key: string]: string;
             };
+            /** @description The upstream's tags or keywords of the package (Ansible Galaxy's tags, R-ANS-047); absent where the upstream's answer has none. */
+            keywords?: string[];
+            /**
+             * Format: int64
+             * @description The downloads the upstream counts of the package, all versions (Galaxy's `download_count`), named apart from Quader's own
+             *     count; absent where the answer does not carry it (Q-ANS-129).
+             */
+            downloads?: number;
+            /** @description The upstream's own word that its highest version is signed (Galaxy's `is_signed`); absent where it says nothing. */
+            signed?: boolean;
             delivery: components["schemas"]["DeliveryDecision"];
             /** @enum {string} */
             stored: "none" | "partial";
@@ -23610,6 +23785,7 @@ export interface operations {
                      *           "mirror": false,
                      *           "wiki": false,
                      *           "systemOnly": false,
+                     *           "namespaces": null,
                      *           "signatureKinds": [
                      *             {
                      *               "name": "signature file",
@@ -26845,9 +27021,17 @@ export interface operations {
                 project?: string;
                 /** @description Repeat the parameter for several repository keys. */
                 repository?: string[];
-                /** @description Case-insensitive substring of the name or the description. */
+                /** @description Case-insensitive substring of the name, or what the format's search matches (the description, the keywords). */
                 q?: string;
                 namePrefix?: string;
+                /**
+                 * @description A namespace of the format's names (R-UI-220, `GET /api/v1/formats` `namespaces`): an Ansible Galaxy namespace (`acme`), an
+                 *     npm scope (`@acme`), an OCI path prefix (`team/app`). It needs exactly one `format` that has namespaces and no `namePrefix`;
+                 *     otherwise `400 malformed_request`.
+                 */
+                namespace?: string;
+                /** @description `true`: only the packages whose latest visible version carries a verified signature (R-SIG-009, R-ANS-057). */
+                signed?: boolean;
                 keyword?: string;
                 /**
                  * @description `true` keeps the packages whose latest visible version is deprecated (R-API-085): its own deprecation or its package's
@@ -26860,7 +27044,7 @@ export interface operations {
                 createdFrom?: string;
                 /** @description Exclusive upper bound of the creation time of the first visible version. */
                 createdTo?: string;
-                sort?: "name" | "-name" | "createdAt" | "-createdAt" | "updatedAt" | "-updatedAt";
+                sort?: "name" | "-name" | "createdAt" | "-createdAt" | "updatedAt" | "-updatedAt" | "relevance" | "-relevance";
                 /** @description Page size, 1 to `api.page_size_max` (R-API-010). */
                 limit?: components["parameters"]["Limit"];
                 /** @description The `nextCursor` of the previous page. Opaque; valid only with the filters and sort it was issued for. */
@@ -26910,6 +27094,63 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthenticated"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getPackageNamespace: {
+        parameters: {
+            query: {
+                format: string;
+                /** @description The namespace (`acme`, `@acme`, `team/app`). */
+                name: string;
+                /** @description A project key; only that project's repositories are named. */
+                project?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The namespace. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "format": "ansible",
+                     *       "name": "acme",
+                     *       "kind": "namespace",
+                     *       "publishing": {
+                     *         "repositories": [
+                     *           {
+                     *             "project": "platform",
+                     *             "key": "ansible-local",
+                     *             "packageOwnership": "enforce",
+                     *             "autoClaim": true,
+                     *             "claims": [
+                     *               {
+                     *                 "pattern": "acme.*",
+                     *                 "scope": "members",
+                     *                 "source": "manual",
+                     *                 "covers": "all"
+                     *               }
+                     *             ]
+                     *           }
+                     *         ]
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["PackageNamespace"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            404: components["responses"]["NotFound"];
             429: components["responses"]["TooManyRequests"];
             500: components["responses"]["Internal"];
             503: components["responses"]["Unavailable"];
@@ -33298,10 +33539,12 @@ export interface operations {
                  */
                 q: string;
                 /**
-                 * @description The kinds to suggest, repeated or comma-separated; `repository,package,project` when absent. An unknown kind answers
-                 *     `400 malformed_request`; `user`, `group` and `service_account` need `identities:read` (`403` otherwise).
+                 * @description The kinds to suggest, repeated or comma-separated; `repository,package,project` when absent. `documentation` suggests
+                 *     modules, plugins and roles of the newest version of the collections the caller may read, by the rule of
+                 *     `GET /api/v1/search/documentation` (R-ANS-058). An unknown kind answers `400 malformed_request`; `user`, `group` and
+                 *     `service_account` need `identities:read` (`403` otherwise).
                  */
-                kind?: ("repository" | "package" | "project" | "user" | "group" | "service_account")[];
+                kind?: ("repository" | "package" | "project" | "documentation" | "user" | "group" | "service_account")[];
                 /** @description Suggestions per kind, 1 to 10; else `400 malformed_request`. */
                 limit?: number;
             };
@@ -33360,6 +33603,41 @@ export interface operations {
             401: components["responses"]["Unauthenticated"];
             403: components["responses"]["Forbidden"];
             412: components["responses"]["PreconditionFailed"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    searchDocumentation: {
+        parameters: {
+            query: {
+                /** @description The text, 2 to 100 characters after trimming, at most 8 terms; else `400 malformed_request`. */
+                q: string;
+                /** @description A project key; only the collections of that project's repositories. */
+                project?: string;
+                /** @description Page size, 1 to `api.page_size_max` (R-API-010). */
+                limit?: components["parameters"]["Limit"];
+                /** @description The `nextCursor` of the previous page. Opaque; valid only with the filters and sort it was issued for. */
+                cursor?: components["parameters"]["Cursor"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of entries. */
+            200: {
+                headers: {
+                    Link: components["headers"]["Link"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentationHitList"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
             429: components["responses"]["TooManyRequests"];
             500: components["responses"]["Internal"];
             503: components["responses"]["Unavailable"];

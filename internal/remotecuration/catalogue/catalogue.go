@@ -284,6 +284,7 @@ func (e *Engine) pkg(ctx context.Context, t Target, name string, rq discover.Ver
 			return nil, err
 		}
 		p.Description = discover.CutText(p.Description)
+		p.Keywords = discover.CutKeywords(p.Keywords)
 		if len(p.Versions) > rq.Limit {
 			p.Versions = p.Versions[:rq.Limit]
 		}
@@ -506,6 +507,7 @@ func cutHits(hits []discover.Hit, limit int) []discover.Hit {
 	for i := range hits {
 		hits[i].Description = discover.CutText(hits[i].Description)
 		hits[i].Latest = cut(hits[i].Latest)
+		hits[i].Keywords = discover.CutKeywords(hits[i].Keywords)
 	}
 	return hits
 }
