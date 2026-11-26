@@ -354,6 +354,75 @@ const userChips = async (drawer: Locator): Promise<void> => {
 };
 
 /**
+ * Upload collection of an Ansible Galaxy repository (R-ANS-061): the page with the act in the toolbar of its collections, the dialog with
+ * an archive chosen, the import's log of a completed publish with its warnings (R-ANS-062), and a refusal before the archive was read with
+ * every fact of the answer (R-UI-216). The publish is answered by the walk, so the seed's repository stays as it is. The controls are found
+ * by their place, so that the German pass walks it too.
+ */
+async function* collectionUpload(page: Page): AsyncGenerator<string> {
+  const act = page.locator('quader-repository-items .files-actions button');
+  if ((await act.count()) === 0) return;
+  yield '';
+  await act.click();
+  const dialog = page.locator('quader-ansible-upload-dialog');
+  await expect(dialog.locator('.target')).toBeVisible();
+  await dialog.locator('input[type=file]').setInputFiles({
+    name: 'acme-platform_kubernetes_infrastructure-2.4.0-rc.3.tar.gz',
+    mimeType: 'application/gzip',
+    buffer: Buffer.alloc(2048),
+  });
+  yield 'upload';
+  const at = '2026-11-26T09:41:07Z';
+  const route = '**/api/v1/projects/*/repositories/*/ansible/collections';
+  await page.route(route, (r) =>
+    r.fulfill({
+      status: 201,
+      json: {
+        id: '6f1c0000-0000-4000-8000-0000000000a1',
+        state: 'completed',
+        namespace: 'acme',
+        name: 'platform_kubernetes_infrastructure',
+        version: '2.4.0-rc.3',
+        createdAt: at,
+        finishedAt: at,
+        error: null,
+        messages: [
+          { level: 'INFO', message: 'Collection acme.platform_kubernetes_infrastructure 2.4.0-rc.3 stored (sha256 d3499c41a2b7…)', time: at },
+          { level: 'WARNING', message: 'No changelog found: the collection has none of changelogs/changelog.yaml, CHANGELOG.md or CHANGELOG.rst, at its root or in docs/.', time: at },
+          { level: 'WARNING', message: 'No licence named: collection_info has neither license nor license_file.', time: at },
+        ],
+      },
+    }),
+  );
+  await dialog.locator('.dialog-actions .btn-confirm').click();
+  await expect(dialog.locator('[data-testid="ansible-upload-outcome"]')).toBeVisible();
+  yield 'completed';
+  await page.unroute(route);
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
+  await page.route(route, (r) =>
+    r.fulfill({
+      status: 409,
+      contentType: 'application/problem+json',
+      body: JSON.stringify({
+        type: '/api/v1/problems/ansible_version_exists',
+        title: 'Collection version exists',
+        status: 409,
+        code: 'ansible_version_exists',
+        detail: 'acme.platform 1.2.0 is stored with other bytes; publish the changed collection under a new version.',
+        requestId: '7f3c9a2e5b8d4f1a6c0e9b3d7a5f2c8e',
+      }),
+    }),
+  );
+  await act.click();
+  await dialog.locator('input[type=file]').setInputFiles({ name: 'acme-platform-1.2.0.tar.gz', mimeType: 'application/gzip', buffer: Buffer.alloc(1024) });
+  await dialog.locator('.dialog-actions .btn-confirm').click();
+  await expect(dialog.locator('quader-error-notice')).toBeVisible();
+  yield 'refused';
+  await page.unroute(route);
+}
+
+/**
  * The operations of a folder as its Owner uses them (R-UI-011, R-UI-012): the folder, the upload dialog with a file chosen and
  * then uploaded (the upload is answered by the walk, so the seed's folder stays as it is), New folder with a name typed, the
  * folder's menu, and the confirmation of Delete folder from it, cancelled.
@@ -3093,6 +3162,15 @@ export const screens: readonly Screen[] = [
   { id: 'repository-ansible-menu', path: `${O}/repositories/collections`, kinds: ['plain'], walk: rowCommand, de: true },
   { id: 'repository-nuget-virtual', path: `${O}/repositories/nuget`, kinds: all },
   { id: 'repository-ansible', path: `${O}/repositories/collections`, kinds: all },
+  {
+    id: 'repository-ansible-upload',
+    path: `${O}/repositories/collections`,
+    kinds: owners,
+    walk: collectionUpload,
+    notices: [{ match: /./, why: 'the refusal of a stored version, which the walk answers in the browser (R-ANS-061, R-UI-216)' }],
+    expected: [{ match: /^POST \/api\/v1\/projects\/[^/]+\/repositories\/collections\/ansible\/collections answered 409$/, why: 'the refusal the walk answers' }],
+    de: true,
+  },
   { id: 'packages', path: `${P}/packages`, kinds: all, walk: filtersOpen(packageChips) },
   { id: 'packages-other-project', path: `${O}/packages`, kinds: all, walk: filtersOpen() },
   // Finding collections as on Galaxy (R-ANS-057) and the page of a name (R-UI-220), answered in the browser (namespaces.ts): the list

@@ -15,8 +15,8 @@ rendered from it ([checklist.md there](https://github.com/guided-traffic/quader/
 requirement lists the feature in its `Covers:` line. *open*: no requirement does. For entries with priority
 *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,310 spec requirements:
-797 cover catalog features, 513 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,311 spec requirements:
+798 cover catalog features, 513 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -2181,7 +2181,7 @@ Catalog page: [formats/ansible.md](../features/formats/ansible.md) · specified 
 | PKG-ANSIBLE-001 | Ansible repositories in all three repository classes | P1 | specified | [R-ANS-001](../spec/formats/ansible.md) |
 | PKG-ANSIBLE-002 | Galaxy v3 API per repository | P1 | specified | [R-ANS-002](../spec/formats/ansible.md), [R-ANS-003](../spec/formats/ansible.md), [R-ANS-004](../spec/formats/ansible.md), [R-ANS-007](../spec/formats/ansible.md) |
 | PKG-ANSIBLE-003 | Publish collections with ansible-galaxy | P1 | specified | [R-ANS-007](../spec/formats/ansible.md), [R-ANS-008](../spec/formats/ansible.md), [R-ANS-009](../spec/formats/ansible.md), [R-ANS-024](../spec/formats/ansible.md) |
-| PKG-ANSIBLE-004 | Deploy collection archives through the UI or plain HTTP | P1 | specified | [R-ANS-008](../spec/formats/ansible.md), [R-ANS-026](../spec/formats/ansible.md) |
+| PKG-ANSIBLE-004 | Deploy collection archives through the UI or plain HTTP | P1 | specified | [R-ANS-008](../spec/formats/ansible.md), [R-ANS-026](../spec/formats/ansible.md), [R-ANS-061](../spec/formats/ansible.md) |
 | PKG-ANSIBLE-005 | Install collections | P1 | specified | [R-ANS-005](../spec/formats/ansible.md), [R-ANS-013](../spec/formats/ansible.md) |
 | PKG-ANSIBLE-006 | Collection metadata calculation and recalculation | P1 | specified | [R-ANS-002](../spec/formats/ansible.md), [R-ANS-010](../spec/formats/ansible.md), [R-ANS-011](../spec/formats/ansible.md), [R-ANS-012](../spec/formats/ansible.md) |
 | PKG-ANSIBLE-007 | Install legacy roles through remote repositories | P1 | specified | [R-ANS-014](../spec/formats/ansible.md), [R-ANS-020](../spec/formats/ansible.md), [R-ANS-056](../spec/formats/ansible.md) |

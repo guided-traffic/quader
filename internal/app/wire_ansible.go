@@ -148,3 +148,14 @@ func (a *App) ansibleStore() v1.AnsibleStore {
 	}
 	return nil
 }
+
+// routeHandoff is the format dispatcher as the management API's road into a format's route (R-ANS-061, Q-ANS-140); nil where no
+// dispatcher is composed (the shell profile), which answers the screens' publish with 503.
+func (a *App) routeHandoff() v1.RouteHandoff {
+	disp := part[formatHostArea](a.parts).disp
+	if disp == nil {
+		// A nil pointer in the interface would not be nil.
+		return nil
+	}
+	return disp
+}

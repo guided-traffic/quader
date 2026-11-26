@@ -1,8 +1,13 @@
 import { DecimalPipe } from '@angular/common';
-import { Component, computed, input } from '@angular/core';
+import { Component, computed, inject, input, resource } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { PackageVersion } from '../../api/packages-api';
+import { RepositoriesApi, refOf } from '../../api/repositories-api';
 import { repositoryCommands } from '../../core/project-links';
+import { SessionStore } from '../../core/session-store';
+import { valueOf } from '../../shared/paged-resource';
+import { QuaderDialog } from '../../shared/ui/dialog';
+import { AnsibleUploadData, AnsibleUploadDialog } from '../repositories/content/ansible-upload-dialog';
 
 /*
  * A role an Ansible Galaxy remote read (formats/ansible.md R-ANS-056): the package `role/<id>`, shown by its display name `<owner>.<name>`,
@@ -90,9 +95,13 @@ function readmeSentence(f: RoleFacts): string {
   }
 }
 
+/** The most repositories of a project the line of a role asks about: a project has a handful of Ansible Galaxy repositories. */
+const PUBLISH_TARGETS_READ = 100;
+
 /**
  * The README tab of a role when the page holds no README, and the line every role's README ends with: a role is published inside a
- * collection (the owner's choice of W-30, Q-ANS-110), with the way to the manual.
+ * collection (the owner's choice of W-30, Q-ANS-110), with the way to the manual, and, for a reader who may publish into a repository of
+ * the project, **Upload collection**, the dialog of R-ANS-061 with those repositories to choose from (Q-UI-1323).
  */
 @Component({
   selector: 'quader-ansible-role-readme-note',
@@ -109,6 +118,14 @@ function readmeSentence(f: RoleFacts): string {
         >How to publish a role</a
       >
     </p>
+    @if (targets().length > 0) {
+      <p class="role-upload">
+        <button class="btn btn-default" type="button" data-testid="role-upload" (click)="upload()">
+          <span class="material-icons" aria-hidden="true">upload</span>
+          <ng-container i18n="@@pkg.role.upload">Upload collection</ng-container>
+        </button>
+      </p>
+    }
   `,
   styles: `
     :host {
@@ -120,9 +137,40 @@ function readmeSentence(f: RoleFacts): string {
   `,
 })
 export class AnsibleRoleReadmeNote {
+  private readonly repositories = inject(RepositoriesApi);
+  private readonly session = inject(SessionStore);
+  private readonly dialog = inject(QuaderDialog);
+
   readonly facts = input.required<RoleFacts>();
   readonly hasReadme = input.required<boolean>();
+  /** The project of the page: where a collection with the role would be published. */
+  readonly project = input('');
   protected readonly sentence = computed(() => readmeSentence(this.facts()));
+
+  /**
+   * The project's Ansible Galaxy repositories this reader may publish a collection into (R-ANS-061): the local ones and the virtual ones
+   * that are not disabled, whose deploy the server allows (a virtual one without a deployment target is refused it). None for a visitor
+   * without a session; a failed read offers none.
+   */
+  private readonly targetsRead = resource({
+    params: () => (this.project() && this.session.state() === 'authenticated' ? this.project() : undefined),
+    loader: async ({ params }): Promise<readonly string[]> => {
+      try {
+        const page = await this.repositories.list({ project: params, format: 'ansible' })(null, PUBLISH_TARGETS_READ);
+        const candidates = page.items.filter((r) => r.class !== 'remote' && !r.disabled).map(refOf);
+        const allowed = await this.session.check(candidates.map((repository) => ({ repository, action: 'deploy' })));
+        return candidates.filter((_, i) => allowed[i]);
+      } catch {
+        return [];
+      }
+    },
+  });
+  protected readonly targets = computed(() => valueOf(this.targetsRead) ?? []);
+
+  protected upload(): void {
+    const data: AnsibleUploadData = { repositories: this.targets() };
+    this.dialog.open<AnsibleUploadDialog, AnsibleUploadData, boolean>(AnsibleUploadDialog, { data, width: '40rem', maxWidth: '95vw' });
+  }
 }
 
 /**

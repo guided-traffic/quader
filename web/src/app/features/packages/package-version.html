@@ -335,7 +335,7 @@
               }
               <!-- A role's README state and the way a role is published, inside a collection (R-ANS-056, Q-ANS-110). -->
               @if (role(); as r) {
-                <quader-ansible-role-readme-note [facts]="r" [hasReadme]="d.hasReadme" />
+                <quader-ansible-role-readme-note [facts]="r" [hasReadme]="d.hasReadme" [project]="project()" />
               }
             }
             @case ('values') {

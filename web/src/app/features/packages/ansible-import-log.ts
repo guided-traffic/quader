@@ -1,21 +1,21 @@
-import { DatePipe } from '@angular/common';
 import { Component, effect, inject, input, untracked } from '@angular/core';
 import { LIVE_SLOW_MS, live } from '../../core/live-refresh';
 import { AnsibleApi, AnsibleImportTask } from '../../api/ansible-api';
 import { ErrorNotice } from '../../shared/error-notice';
 import { PagedResource } from '../../shared/paged-resource';
-import { importStateText } from '../repositories/ansible-import-tasks';
+import { AnsibleImportTaskView } from './ansible-import-task';
 import { Loading } from '../../shared/ui/loading';
 import { Busy } from '../../shared/ui/busy';
 
 /**
- * The Import log tab of a version held by a local repository (R-UI-063): the import tasks of that version, newest first, each with its
- * state as a badge, its time and its messages as text, the warnings of the generator among them (R-ANS-034). It is the task of
+ * The Import log tab of a version held by a local repository (R-UI-063): the import tasks of that version, newest first, each as the
+ * dialog Upload collection shows its one (ansible-import-task.ts): its state as a badge, its time and its messages, the warnings of the
+ * import (R-ANS-062) and of the generator (R-ANS-034) among them. It is the task of
  * R-ANS-009, readable by whoever reads the repository, and not wiki content.
  */
 @Component({
   selector: 'quader-ansible-import-log',
-  imports: [Busy, Loading, DatePipe, ErrorNotice],
+  imports: [Busy, Loading, ErrorNotice, AnsibleImportTaskView],
   template: `
     @if (list.error(); as e) {
       <quader-error-notice [error]="e" (retry)="load()" />
@@ -28,23 +28,7 @@ import { Busy } from '../../shared/ui/busy';
     } @else {
       @for (task of list.items(); track task.id) {
         <section class="task" [attr.data-state]="task.state" [attr.aria-label]="label(task)">
-          <header class="task-head">
-            <span class="badge" [class.ok]="task.state === 'completed'" [class.bad]="task.state === 'failed'">
-              <span class="material-icons inline" aria-hidden="true">{{ task.state === 'completed' ? 'check_circle' : 'error' }}</span>
-              {{ stateText(task.state) }}
-            </span>
-            <time [attr.datetime]="task.createdAt">{{ task.createdAt | date: 'medium' }}</time>
-          </header>
-          @if (task.error; as error) {
-            <p class="reason" data-testid="import-log-error">{{ error.description }}</p>
-          }
-          @if (task.messages.length > 0) {
-            <ol class="messages">
-              @for (m of task.messages; track $index) {
-                <li><span class="level" translate="no">{{ m.level }}</span>&ngsp;<span lang="en" translate="no">{{ m.message }}</span></li>
-              }
-            </ol>
-          }
+          <quader-ansible-import-task [task]="task" />
         </section>
       }
       @if (list.hasMore()) {
@@ -62,22 +46,6 @@ import { Busy } from '../../shared/ui/busy';
       padding-block-end: var(--quader-space-3);
       border-block-end: 1px solid var(--quader-border);
     }
-    .task-head {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: var(--quader-space-3);
-    }
-    .reason {
-      margin-block: var(--quader-space-2) 0;
-    }
-    .messages {
-      margin: var(--quader-space-2) 0 0;
-      padding-inline-start: var(--quader-space-6);
-    }
-    .level {
-      font-weight: 600;
-    }
   `,
 })
 export class AnsibleImportLog {
@@ -90,7 +58,6 @@ export class AnsibleImportLog {
   readonly version = input.required<string>();
 
   protected readonly list = new PagedResource<AnsibleImportTask>();
-  protected readonly stateText = importStateText;
 
   constructor() {
     effect(() => {

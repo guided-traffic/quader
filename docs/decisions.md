@@ -9150,10 +9150,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 <!-- coverage-gen:begin decisions -->
 ### Q-ANS
 
-108 questions on [spec/formats/ansible.md](spec/formats/ansible.md).
+112 questions on [spec/formats/ansible.md](spec/formats/ansible.md).
 
 <details>
-<summary>Q-ANS: 108 questions</summary>
+<summary>Q-ANS: 112 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -9263,8 +9263,12 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-ANS-129](spec/formats/ansible.md#q-ans-129--the-upstreams-tags-downloads-and-signed-state-are-optional-members-of-every-formats-catalogue) | The upstream's tags, downloads and signed state are optional members of every format's catalogue | Decided by the development agent on 2026-11-26 | (a) `discover.Popularity` in `Hit` and `PackageInfo`, each member only where the upstream's answer carries it; the count named "downloads at the upstream" | [ADR-287](#adr-287--the-format-contract-gains-the-ranked-package-search-the-namespaces-of-a-formats-names-and-what-an-upstream-tells-beside-a-package) |
 | [Q-ANS-130](spec/formats/ansible.md#q-ans-130--a-collections-deprecation-carries-a-message-for-quaders-screens-only) | A collection's deprecation carries a message for Quader's screens only | Decided by the development agent on 2026-11-26 | (a) An optional message, kept with the row and shown on Quader's pages; the document carries the flag | — |
 | [Q-ANS-131](spec/formats/ansible.md#q-ans-131--a-remote-takes-its-upstreams-flag-from-the-collection-document-it-fills-a-virtual-its-first-members) | A remote takes its upstream's flag from the collection document it fills, a virtual its first member's | Decided by the development agent on 2026-11-26 | (a) The fill of a collection document records the flag in the same table, without a principal; a virtual repository's merged document takes the flag of the first member that holds the collection, the member whose versions come first (R-ANS-022) | — |
+| [Q-ANS-140](spec/formats/ansible.md#q-ans-140--the-screens-publish-is-a-management-operation-that-the-dispatcher-hands-to-the-clients-publish-route) | The screens' publish is a management operation that the dispatcher hands to the client's publish route | — | (a) A management operation whose handler hands the request to the format's route through the dispatcher (`Dispatcher.Handoff`), which returns a refusal instead of writing it in the protocol's shape | — |
+| [Q-ANS-141](spec/formats/ansible.md#q-ans-141--the-screens-publish-answers-the-import-task-and-a-refusal-in-the-management-apis-shape) | The screens' publish answers the import task, and a refusal in the management API's shape | — | (a) `201` with the task, read from the repository that holds it; a refusal before the archive was read is a problem document | — |
+| [Q-ANS-142](spec/formats/ansible.md#q-ans-142--the-name-and-the-version-come-from-the-manifest-and-the-file-name-is-not-compared) | The name and the version come from the manifest, and the file name is not compared | — | (a) The manifest alone; the file name is shown and not read | — |
 | [Q-ANS-143](spec/formats/ansible.md#q-ans-143--the-import-warns-of-what-galaxys-importer-checks-without-running-a-program-and-refuses-nothing-for-it) | The import warns of what Galaxy's importer checks without running a program, and refuses nothing for it | — | (a) Warn of the four, refuse nothing | — |
 | [Q-ANS-144](spec/formats/ansible.md#q-ans-144--a-changelog-in-docs-is-a-changelog-and-the-generator-version-is-4) | A changelog in docs/ is a changelog, and the generator version is 4 | — | (a) The finder reads docs/ too, the root's first; `docgen.Version` 4 | — |
+| [Q-ANS-145](spec/formats/ansible.md#q-ans-145--the-screens-publish-takes-no-signature-a-gated-repositorys-version-is-signed-afterwards) | The screens' publish takes no signature; a gated repository's version is signed afterwards | — | (a) The dialog takes the archive only; the version's page says it is refused until signed | — |
 
 </details>
 
@@ -12512,10 +12516,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-665 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+669 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 665 questions</summary>
+<summary>Q-UI: 669 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -13176,6 +13180,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1316](spec/api-and-ui.md#q-ui-1316--a-size-is-said-in-the-unit-a-person-reads-wherever-it-stands) | A size is said in the unit a person reads, wherever it stands | Decided by the development agent on 2026-11-26 | (a) The product's size form (binary units, one decimal) for Debian's Installed-Size and npm's unpacked size | — |
 | [Q-UI-1317](spec/api-and-ui.md#q-ui-1317--the-breadcrumb-names-a-package-by-its-name-where-its-address-holds-its-key) | The breadcrumb names a package by its name where its address holds its key | Decided by the development agent on 2026-11-26 | (a) The page tells the trail the name of the value of its address once the package has answered | — |
 | [Q-UI-1318](spec/api-and-ui.md#q-ui-1318--a-versions-downloads-and-an-images-digest-stand-under-a-cell-the-table-has) | A version's downloads and an image's digest stand under a cell the table has | Decided by the development agent on 2026-11-26 | (a) The count under **Last download** ("410 downloads"), the digest under the image's tags, its whole as its title | — |
+| [Q-UI-1320](spec/api-and-ui.md#q-ui-1320--upload-collection-stands-in-the-toolbar-of-the-collections-where-upload-files-stands) | Upload collection stands in the toolbar of the collections, where Upload files stands | Decided by the development agent on 2026-11-26 | (a), for a caller the page's batched check allows `deploy`, in a local or virtual repository that is neither disabled nor a system one. | — |
+| [Q-UI-1321](spec/api-and-ui.md#q-ui-1321--upload-collection-is-one-file-the-repository-and-the-import-log-and-reads-nothing-again) | Upload collection is one file, the repository and the import log, and reads nothing again | Decided by the development agent on 2026-11-26 | (a) The repository, one file (button and drop), **Upload**; the bar while the bytes go, a sentence while the server reads; then the task, final | — |
+| [Q-UI-1322](spec/api-and-ui.md#q-ui-1322--a-completed-upload-shows-its-import-log-and-leads-to-the-versions-page-on-a-press) | A completed upload shows its import log and leads to the version's page on a press | Decided by the development agent on 2026-11-26 | (a) The log in the dialog with **Open version** and **Close** | — |
+| [Q-UI-1323](spec/api-and-ui.md#q-ui-1323--a-roles-page-offers-upload-collection-with-the-projects-repositories-the-reader-may-publish-into) | A role's page offers Upload collection with the project's repositories the reader may publish into | Decided by the development agent on 2026-11-26 | (a) **Upload collection** below the sentence, for a reader who may publish into a local or virtual Ansible Galaxy repository of the project, the dialog with those to choose from | — |
 | [Q-UI-1330](spec/api-and-ui.md#q-ui-1330--a-generic-files-download-is-a-split-button-the-browser-download-first-the-clients-commands-behind-the-chevron) | A generic file's Download is a split button: the browser download first, the clients' commands behind the chevron | Decided by the development agent on 2026-11-26 | (a) **Download** stays the main act and saves the file; a chevron joined to it, **Download with a client**, opens the panel | — |
 | [Q-UI-1331](spec/api-and-ui.md#q-ui-1331--a-files-download-address-stands-in-the-panel-above-its-clients) | A file's download address stands in the panel, above its clients | Decided by the development agent on 2026-11-26 | (a). npm's groups are its manifest's fields in the order an install uses them, `devDependencies` last (an install of the package does not fetch them); `bundleDependencies` (or `true` for all) and `peerDependenciesMeta`'s optional peers are read by the server. | — |
 | [Q-UI-1332](spec/api-and-ui.md#q-ui-1332--the-check-of-a-download-is-the-second-line-of-each-clients-tab) | The check of a download is the second line of each client's tab | Decided by the development agent on 2026-11-26 | (a) **Keywords** first in Details, chips that open the package list filtered by the format and the keyword | — |

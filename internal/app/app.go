@@ -628,6 +628,8 @@ func (a *App) startClient() error {
 			DebKeys: a.debKeyStore(), Ansible: a.ansibleStore(), DebContents: a.debContentsStore(), Reindexers: a.reindexers(),
 			// The deprecation of a version or a package, written by its format through the format host (R-API-085).
 			Deprecation: v1.DeprecationServices{Host: func() formats.Host { return part[managementHostArea](a.parts).host }},
+			// The screens' publish of a collection runs the client's publish route (R-ANS-061).
+			Routes: a.routeHandoff(),
 			// The banner and the read-only maintenance mode (R-OPS-024, R-OPS-025).
 			SystemState: part[infra](a.parts).sys,
 			// The download limits and the usage overview (wire_limits.go).

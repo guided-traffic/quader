@@ -528,11 +528,11 @@ describe('The Documentation tab of an Ansible collection', () => {
       expect(text(r.root.querySelector('[data-testid="import-log-empty"]')!)).toContain('No import task of this version is kept');
     });
 
-    it('R-UI-063 a failed task shows its reason', async () => {
+    it('R-UI-063 a failed task shows its reason and its code', async () => {
       const r = await renderTasks([
         importTask({ version: '1.2.0', state: 'failed', error: { code: 'invalid_archive', description: 'MANIFEST.json is missing' } }),
       ]);
-      expect(text(r.root.querySelector('[data-testid="import-log-error"]')!)).toBe('MANIFEST.json is missing');
+      expect(text(r.root.querySelector('[data-testid="import-log-error"]')!)).toBe('MANIFEST.json is missing invalid_archive');
       expect(r.root.querySelector('section.task .badge')?.classList.contains('bad')).toBe(true);
     });
 

@@ -1,4 +1,8 @@
 import { PackagesApi } from '../../api/packages-api';
+import { RepositoriesApi } from '../../api/repositories-api';
+import { SessionApi } from '../../api/session-api';
+import { FakeSessionApi } from '../../api/testing/fakes';
+import { FakeRepositoriesApi } from '../../api/testing/fakes-catalog';
 import { FakePackagesApi, roleFixture } from '../../api/testing/fakes-packages';
 import { expectAccessible, inProject, renderScreen, settle, text } from '../../testing/screen';
 import { PackageVersionPage } from './package-version';
@@ -42,7 +46,32 @@ describe('The page of a role a remote read (R-ANS-056)', () => {
     const note = r.root.querySelector('[data-testid="role-publish-note"]')!;
     expect(text(note)).toContain('put it into the roles directory of a collection');
     expect(note.querySelector('a')?.getAttribute('href')).toContain('/help/user/ansible-collections#publish-a-role-put-it-into-a-collection');
+    // The project holds no Ansible Galaxy repository the reader may publish into: no upload is offered (R-ANS-061).
+    expect(r.root.querySelector('[data-testid="role-upload"]')).toBeNull();
     await expectAccessible(r.root);
+  });
+
+  it('R-ANS-061 R-ANS-056 the line of a role offers Upload collection with the project\'s repositories the reader may publish into', async () => {
+    const r = await renderScreen(
+      PackageVersionPage,
+      inProject({
+        inputs: { format: 'ansible', name: 'role/16', version: '2.0.0' },
+        setup: (get) => {
+          roleFixture(get(PackagesApi) as FakePackagesApi, 'available', {});
+          const catalog = get(RepositoriesApi) as FakeRepositoriesApi;
+          const repo = (key: string, cls: 'local' | 'remote' | 'virtual') => ({ key, project: 'web', class: cls, format: 'ansible', description: '', disabled: false });
+          catalog.repositories = [...catalog.repositories, repo('ansible-local', 'local'), repo('galaxy', 'remote'), repo('ansible', 'virtual'), repo('team-b', 'local')];
+          (get(SessionApi) as FakeSessionApi).allow = (c) => c.action !== 'deploy' || c.repository !== 'web/team-b';
+        },
+      }),
+    );
+    await settle(r.fixture);
+    const button = r.root.querySelector<HTMLButtonElement>('[data-testid="role-upload"]')!;
+    expect(text(button)).toContain('Upload collection');
+    button.click();
+    await settle(r.fixture);
+    const options = [...document.querySelectorAll<HTMLOptionElement>('quader-ansible-upload-dialog select option')].map((o) => o.value);
+    expect(options).toEqual(['web/ansible', 'web/ansible-local']);
   });
 
   it('R-ANS-056 the switch in the head lists the role\'s versions under its key, the address a lookup finds', async () => {

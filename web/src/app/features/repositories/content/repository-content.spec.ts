@@ -3,7 +3,7 @@ import { RepositoriesApi } from '../../../api/repositories-api';
 import { ApiError } from '../../../api/problem';
 import { VulnerabilitiesApi } from '../../../api/vulnerabilities-api';
 import { FakeClientSetupApi, FakePackagesApi, OCI_PACKAGE, ociFixture, ociImagesFixture } from '../../../api/testing/fakes-packages';
-import { FakeRepositoriesApi, GENERIC_FORMAT, OCI_FORMAT, PACKAGE_FORMAT } from '../../../api/testing/fakes-catalog';
+import { ANSIBLE_FORMAT, FakeRepositoriesApi, GENERIC_FORMAT, OCI_FORMAT, PACKAGE_FORMAT } from '../../../api/testing/fakes-catalog';
 import { FakeFilesApi } from '../../../api/testing/fakes-catalog';
 import { FakeVulnerabilitiesApi, sampleGrade } from '../../../api/testing/fakes-vulnerabilities';
 import { FilesApi } from '../../../api/files-api';
@@ -407,6 +407,27 @@ describe('Repository content page', () => {
     expect(r.root.querySelector<HTMLAnchorElement>('tbody a[href="/projects/web/repositories/generic-local/files/bin"]')).not.toBeNull();
     expect(generic.format).toBe('generic');
     await expectAccessible(r.root);
+  });
+
+  it('R-ANS-061 R-UI-052 an Ansible Galaxy repository offers Upload collection in its toolbar to who may deploy, and opens the dialog for it', async () => {
+    const ansible = (cls: RepoDoc['class'], deploy = true) =>
+      open({ key: `ansible-${cls}`, project: 'web', class: cls, format: 'ansible' }, ({ catalog, session }) => {
+        catalog.formatsResult = [GENERIC_FORMAT, PACKAGE_FORMAT, OCI_FORMAT, ANSIBLE_FORMAT];
+        session.allow = (c) => deploy || c.action !== 'deploy';
+      });
+    const act = (root: HTMLElement) => [...root.querySelectorAll<HTMLButtonElement>('quader-repository-items .files-actions button')];
+    for (const cls of ['local', 'virtual'] as const) {
+      const r = await ansible(cls);
+      expect(act(r.root).map((b) => text(b)), cls).toEqual(['upload Upload collection']);
+    }
+    const r = await ansible('local');
+    act(r.root)[0]!.click();
+    await settle(r.fixture);
+    expect(text(document.querySelector('quader-ansible-upload-dialog .target')!)).toBe('web/ansible-local');
+    // A reader, a remote repository and another format have none.
+    expect(act((await ansible('local', false)).root)).toEqual([]);
+    expect(act((await ansible('remote')).root)).toEqual([]);
+    expect(act((await open(NPM_REPO)).root)).toEqual([]);
   });
 
   it('R-UI-052 R-UI-144 an empty repository says how it is filled and offers the upload to who may upload; a disabled one offers nothing', async () => {

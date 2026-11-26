@@ -95,6 +95,21 @@ internal/config/ansible.go     # the ansible: section
 
 The trailing slash is optional on every path and no route redirects: a redirect would drop the `Authorization` header of some clients.
 
+## The screens' publish (R-ANS-061)
+
+**Upload collection** on a repository's page posts the archive to `publishAnsibleCollection`
+([ansible_publish.go](../../internal/api/v1/ansible_publish.go)), which hands the request to the route `ansible.collection.publish` through
+`Dispatcher.Handoff` ([handoff.go](../../internal/api/dispatch/handoff.go), Q-ANS-140): the dispatcher's `serveRoute` with a format whose
+`WriteError` keeps the refusal, so every check of the protocol path runs and a refusal comes back to the management API as an error. The
+handler reads the body as the scripted raw-body publish, answers `202` with the task's address; the operation takes the id from it and answers
+the task from the repository that holds it (`ansibleTarget` with the virtual repository's deployment target). The option `Routes` of the
+management API is the dispatcher ([wire_ansible.go](../../internal/app/wire_ansible.go) `routeHandoff`). The dialog is
+[ansible-upload-dialog.ts](../../web/src/app/features/repositories/content/ansible-upload-dialog.ts); it sends the file through the
+XHR-based client the deploy dialog uses ([upload-transfer.ts](../../web/src/app/api/upload-transfer.ts)) and shows the task with the view
+the tab Import log uses ([ansible-import-task.ts](../../web/src/app/features/packages/ansible-import-task.ts)). Tests: unit
+[handoff_test.go](../../internal/api/dispatch/handoff_test.go); integration `ansiblelocal` and `ansiblevirtual` `screen_publish_test.go`;
+the dialog's unit tests and its states (`ansible-upload.states.spec.ts`, `make ui-states`).
+
 ## Signatures a client posts (signatures.md R-SIG-031)
 
 A local version takes detached OpenPGP signatures of its `MANIFEST.json` through the management API
@@ -192,4 +207,4 @@ The remote adapter implements `FillCommitter` (the commit of a cached archive) a
 
 Built: the skeleton, the leaves, the scheme, the tables, the data port, the local, remote and virtual classes, the setup, the guide, the
 screens (the import tasks and tombstones tabs, the package details; `web/src/app/features/repositories/ansible-*.ts`), the mirror, the hub
-exchange and the end-to-end set with the two ansible-core clients ([e2e.md](e2e.md#the-ansible-tests)); the virtual and mirror rows run (H-868 narrows what they do not prove). Not built yet: the restore from the trash (H-852). The deploy dialog is not offered (Q-ANS-34).
+exchange and the end-to-end set with the two ansible-core clients ([e2e.md](e2e.md#the-ansible-tests)); the virtual and mirror rows run (H-868 narrows what they do not prove). Not built yet: the restore from the trash (H-852). The deploy dialog of the raw files is not offered (Q-ANS-34); the screens publish with **Upload collection** (R-ANS-061).

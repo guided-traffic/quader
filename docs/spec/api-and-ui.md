@@ -4422,7 +4422,9 @@ Priority: **P1** · Covers: UI-013
 
 - Opened by **Upload files** of a folder's toolbar (R-UI-011), in a local repository of the raw-files family where the caller
   holds `deploy`. npm, NuGet, OCI and Debian repositories take no raw upload (R-API-025) and offer none: their clients publish, and
-  **Set up client** says how.
+  **Set up client** says how. An Ansible Galaxy repository takes none either; its collections are published on the screen with
+  **Upload collection**, which runs the client's publish ([formats/ansible.md](formats/ansible.md) R-ANS-061), in the same place of the
+  toolbar ([Q-UI-1320](#q-ui-1320--upload-collection-stands-in-the-toolbar-of-the-collections-where-upload-files-stands)).
 - Fields: target folder (prefilled with the page's folder, relative to the root; missing folders are created), files (a drop zone plus
   a "Choose files" button, so dragging is never required), overwrite (only with `overwrite`).
 - The size limit `ui.deploy.max_upload_bytes` is checked before the upload starts; larger files are
@@ -6438,7 +6440,9 @@ Acceptance criteria:
 Priority: **P1** · Covers: quader-only
 
 The tab **Import log** is shown on a version held by a **local** repository (not for a remote or a virtual repository's remote member): the import task of that version, newest first, through `listAnsibleImportTasks` with the optional query
-parameters `package` and `version` (Q-API-262), state as a badge, the time, and the messages as text (level, message); the warnings of the generator (R-ANS-034) are among them. It is readable by whoever reads the repository, as the task is (R-ANS-009), and is
+parameters `package` and `version` (Q-API-262), state as a badge, the time, a failed task's reason and code, and the messages as text (level, message; a
+warning's and an error's level in their colour); the warnings of the import (R-ANS-062) and of the generator (R-ANS-034) are among them. The dialog
+**Upload collection** shows the task of its publish the same way (R-ANS-061). It is readable by whoever reads the repository, as the task is (R-ANS-009), and is
 **not** wiki content.
 
 The other tabs and facts the reference shows are the page's existing ones; nothing is duplicated (Q-UI-240, Q-UI-245):
@@ -27753,6 +27757,67 @@ and of an image into blocks at 1,024 px beside the side bar, which it was not be
 
 **Choice:** (a). A sort by downloads comes back as a column the day the table has room for it. **Applied in the spec:** R-UI-110,
 R-UI-222.
+### Q-UI-1320 · Upload collection stands in the toolbar of the collections, where Upload files stands
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the repository's page has **Set up client**, **Settings** and a menu in its head; a generic repository's folder has **Upload files** at the
+end of its toolbar (Q-UI-512). The owner's rule: one pattern for the reader, an act only for who may use it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) At the end of the toolbar of the collections, as **Upload files** stands at the end of a folder's (chosen) | The act beside the list it fills | One place for every format that has an upload on the screen; a later format's upload goes there too | A namespace's page, when one exists, offers it again |
+| (b) In the page's head beside **Set up client** | — | Seen first | The head holds what is the repository's, not the list's; the generic upload is not there |
+| (c) In the head's menu | — | No new button | Hidden behind a menu for the one act a publisher comes for |
+
+**Choice:** (a), for a caller the page's batched check allows `deploy`, in a local or virtual repository that is neither disabled nor a system one.
+**Applied in the spec:** R-ANS-061, R-UI-012. Code: `collectionUpload` of
+[repository-content.ts](../../web/src/app/features/repositories/content/repository-content.ts), the `action` of
+[repository-items.ts](../../web/src/app/features/repositories/content/repository-items.ts).
+
+### Q-UI-1321 · Upload collection is one file, the repository and the import log, and reads nothing again
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the owner's "simple by default" (2026-11-12) and "no view needs a reload" (R-UI-213). A publish is processed in the request, and its task is
+final when it is created (Q-ANS-8).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The repository, one file (button and drop), **Upload**; the bar while the bytes go, a sentence while the server reads; then the task, final (chosen) | The answer is the result | Nothing to wait for after the answer, so nothing is read again | A task that a later change made asynchronous would need the dialog to read it again |
+| (b) Read the task again until it is final | A loop of reads | Galaxy's console does it | The task never changes after its answer here |
+| (c) Several files at once, as **Upload files** | — | A batch | A collection is one archive, and its log is one task; several logs in one dialog read badly |
+
+**Choice:** (a). **Revisit** when the import becomes a job: the dialog then reads the task again while it is not final, as R-UI-213 asks.
+**Applied in the spec:** R-ANS-061.
+
+### Q-UI-1322 · A completed upload shows its import log and leads to the version's page on a press
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The log in the dialog with **Open version** and **Close** (chosen) | The warnings are read before the page changes | The import's warnings (R-ANS-062) are seen where they were made | One press more |
+| (b) Go to the version's page at once | — | Fast | The warnings are left behind on a tab the person may not open |
+| (c) Go to a page of the imports, as Galaxy's My imports | — | Galaxy's flow | Quader's tasks are on the version's Import log already; a page of its own would repeat it |
+
+**Choice:** (a). **Applied in the spec:** R-ANS-061.
+
+### Q-UI-1323 · A role's page offers Upload collection with the project's repositories the reader may publish into
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: a role is published inside a collection (Q-ANS-110), and its page says so with a link to the manual; the role itself is held by a remote
+repository, which takes no publish.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) **Upload collection** below the sentence, for a reader who may publish into a local or virtual Ansible Galaxy repository of the project, the dialog with those to choose from (chosen) | The sentence leads to the act | The way from "put it into a collection" to publishing it is one press | One list of the project's repositories and one batched check per page of a role |
+| (b) The manual's link alone | As built | Nothing to read | The reader looks for the repository by hand |
+
+**Choice:** (a). **Applied in the spec:** R-ANS-061. Code: `AnsibleRoleReadmeNote` of
+[ansible-role.ts](../../web/src/app/features/packages/ansible-role.ts).
+
 ### Q-UI-1340 · An upstream package's README shows its first 24 rem, and the versions follow
 
 Status: **Decided by the development agent on 2026-11-26** (W-30 G2) — selected from the options below; the owner reviews it at the

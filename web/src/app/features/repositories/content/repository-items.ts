@@ -50,6 +50,16 @@ export const GRADE_SORT_MAX = 1000;
         />
         <span class="material-icons" aria-hidden="true">search</span>
       </div>
+      @if (action(); as a) {
+        <!-- The act that fills the list from the screen (Upload collection, R-ANS-061), where a generic repository's folder has Upload
+             files: at the end of the toolbar (Q-UI-512, Q-UI-1320). -->
+        <div class="files-actions">
+          <button class="btn btn-default" type="button" (click)="act.emit()">
+            <span class="material-icons" aria-hidden="true">{{ a.icon }}</span>
+            {{ a.label }}
+          </button>
+        </div>
+      }
     </div>
 
     <quader-data-table
@@ -160,6 +170,11 @@ export class RepositoryItems {
   readonly fill = input<'publisher' | 'other' | 'none'>('other');
   /** The repository is disabled: no row offers an install or pull command (Q-UI-965). */
   readonly disabled = input(false);
+  /** The act of the toolbar the page offers this caller, null for none: its label and its icon; a press is `act` (Q-UI-1320). */
+  readonly action = input<{ readonly label: string; readonly icon: string } | null>(null);
+  readonly act = output<void>();
+  /** Counts the changes the page made itself (a collection uploaded): the list is read again on each. */
+  readonly revision = input(0);
   /** No client reaches the items: a system repository that answers no client (Q-UI-898), or a disabled one. */
   private readonly system = systemClosed(() => this.repository());
   protected readonly closed = computed(() => this.system() || this.disabled());
@@ -226,6 +241,7 @@ export class RepositoryItems {
       // The format's catalog entry can arrive after the first request: a list asked before it knew that the format is scanned
       // is asked again with the grades (R-UI-094).
       const scanned = this.scanned();
+      this.revision();
       untracked(() => {
         this.draft.set(q);
         this.open.set(new Set());

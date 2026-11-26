@@ -101,6 +101,18 @@ The collection's `galaxy.yml` names the namespace, name and version, so the comm
 - A deleted version leaves a tombstone, and its number cannot be published again (`version_tombstoned`) until an administrator clears the tombstone.
 - A first publish of a name that a remote member of a virtual repository already serves is refused unless you may manage the repository.
 
+### On the repository's page
+
+Without a client, a collection is published with **Upload collection** in the toolbar of a local or virtual repository's page, which you see
+when you may publish there. Choose the archive that `ansible-galaxy collection build` made, or drop it, and press **Upload**. Quader reads the
+namespace, the name and the version from the archive, never from the file's name, and runs every check of the command above. The dialog then
+shows the import log: the state, and the messages with their warnings. **Open version** leads to the version's page. A refusal (no permission,
+a version that exists, a namespace that belongs to other publishers, an archive that is too large) shows the reason with its details, and the file
+stays chosen.
+
+On a repository that serves only signed versions, the version is stored and readers are refused it until its signature is added; post the
+signature as [Sign a collection](#sign-a-collection) describes.
+
 The import messages include warnings that never stop a publish, as Galaxy's import log has them: *No changelog found* when the collection has
 none of `changelogs/changelog.yaml`, `CHANGELOG.md` or `CHANGELOG.rst` at its root or in `docs/`, and a warning for a missing README, a
 missing `requires_ansible` in `meta/runtime.yml` and a licence that is not named. Quader runs no ansible-lint and no ansible-doc on what you
@@ -119,7 +131,8 @@ cp -r ./my-role acme/platform/roles/agent                 # the role, under the 
 ansible-galaxy collection build acme/platform && ANSIBLE_GALAXY_SERVER_QUADER_TOKEN="${QUADER_TOKEN}" ansible-galaxy collection publish acme-platform-1.0.0.tar.gz --server quader
 ```
 
-A playbook then uses the role as `acme.platform.agent`, and the collection's documentation lists it under **Roles**.
+A playbook then uses the role as `acme.platform.agent`, and the collection's documentation lists it under **Roles**. The page of a role offers
+**Upload collection** when you may publish into an Ansible Galaxy repository of the project.
 
 ## Roles from a Galaxy
 

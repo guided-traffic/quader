@@ -22,6 +22,7 @@ import { describeSignatureProblem } from './problem-messages-signatures';
 // >>> T-24 downloads
 import { describeDownloadsProblem } from './problem-messages-downloads';
 // <<< T-24 downloads
+import { describeAnsibleProblem } from './problem-messages-ansible';
 // <<< M4b vulnerabilities
 
 export interface ProblemText {
@@ -140,7 +141,7 @@ export function describeProblem(error: ApiError): ProblemText {
     // <<< M2 ownership
     default:
       // >>> M1 ui-b
-      return accessProblem(error) ?? ciProblem(error) ?? bastionProblem(error) ?? vulnerabilityProblem(error) ?? limitsProblem(error) ?? malwareProblem(error) ?? signatureProblem(error) ?? downloadsProblem(error) ?? fallback(error);
+      return accessProblem(error) ?? ciProblem(error) ?? bastionProblem(error) ?? vulnerabilityProblem(error) ?? limitsProblem(error) ?? malwareProblem(error) ?? signatureProblem(error) ?? downloadsProblem(error) ?? ansibleProblem(error) ?? fallback(error);
       // <<< M1 ui-b
   }
 }
@@ -200,6 +201,11 @@ function downloadsProblem(error: ApiError): ProblemText | null {
   return text === null ? null : { text, known: true };
 }
 // <<< T-24 downloads
+
+function ansibleProblem(error: ApiError): ProblemText | null {
+  const text = describeAnsibleProblem(error.code);
+  return text === null ? null : { text, known: true };
+}
 
 /** The sentence of a rate limit, with its wait where the answer named one; one second is singular (Q-UI-1198). */
 function rateLimited(seconds: number | null): string {

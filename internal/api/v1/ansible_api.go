@@ -18,6 +18,8 @@ import (
 // AnsibleStore is the part of the Ansible Galaxy data port the management operations use.
 type AnsibleStore interface {
 	Tasks(ctx context.Context, repoID int64, f rows.TaskFilter, after string, limit int) ([]rows.Task, error)
+	// Task reads one task of the repository, the one the screens' publish made (R-ANS-061); found is false for an unknown id.
+	Task(ctx context.Context, repoID int64, id string) (rows.Task, bool, error)
 	Tombstones(ctx context.Context, repoID int64, after string, limit int) ([]rows.Tombstone, error)
 	ClearTombstone(ctx context.Context, repoID int64, name, version string, a rows.Audit) (bool, error)
 	// The reads of the documentation operations (R-ANS-036): rows only, never an upstream.

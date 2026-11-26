@@ -2,6 +2,7 @@ import { Provider } from '@angular/core';
 import { AnsibleApi, AnsibleImportTask, AnsibleTombstone, ImportTaskFilter } from '../ansible-api';
 import { Page, PageFetcher } from '../pagination';
 import { ApiError } from '../problem';
+import { TransferOptions } from '../upload-transfer';
 
 /*
  * The in-memory fake of the Ansible Galaxy management operations (R-UI-047 component tier). The real operations answer 501
@@ -66,6 +67,19 @@ export class FakeAnsibleApi extends AnsibleApi {
       const items = all().slice(from, from + limit);
       return { items, nextCursor: from + limit < all().length ? String(from + limit) : null };
     };
+  }
+
+  /** The answer of the next `publish`: a task, or a refusal it throws; the default is a completed task of acme.tools 1.0.0. */
+  published: AnsibleImportTask | ApiError = importTask();
+  /** The repositories each `publish` went to. */
+  publishedTo: string[] = [];
+
+  override async publish(ref: string, file: Blob, options: TransferOptions = {}): Promise<AnsibleImportTask> {
+    this.enter('publish');
+    this.publishedTo.push(ref);
+    options.onProgress?.(file.size, file.size);
+    if (this.published instanceof ApiError) throw this.published;
+    return this.published;
   }
 
   override importTasks(_ref: string, filter: ImportTaskFilter = {}): PageFetcher<AnsibleImportTask> {

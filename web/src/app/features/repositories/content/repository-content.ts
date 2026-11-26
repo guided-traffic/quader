@@ -52,6 +52,9 @@ import { RemoteUpstream } from '../upstream/remote-upstream';
 import { Loading } from '../../../shared/ui/loading';
 import { Busy } from '../../../shared/ui/busy';
 // <<< T-24 upstream
+import { QuaderDialog } from '../../../shared/ui/dialog';
+import { firstValueFrom } from 'rxjs';
+import { AnsibleUploadData, AnsibleUploadDialog } from './ansible-upload-dialog';
 
 const SORTS: readonly ItemSort[] = ['name', '-name', 'updatedAt', '-updatedAt', 'grade', '-grade'];
 
@@ -103,6 +106,7 @@ export class RepositoryContent {
   private readonly notifier = inject(Notifier);
   private readonly confirm = inject(Confirm);
   private readonly frequent = inject(FrequentPlaces);
+  private readonly dialog = inject(QuaderDialog);
   private readonly serverAddress = inject(ServerAddress);
   private readonly baseUrl = resource({ loader: () => this.serverAddress.baseUrl() });
 
@@ -416,6 +420,26 @@ export class RepositoryContent {
     if (this.disabled() || this.systemRepo()) return 'none';
     return valueOf(this.allowed)?.deploy ? 'publisher' : 'other';
   });
+
+  /**
+   * **Upload collection** in the toolbar of the collections (R-ANS-061, Q-UI-1320), where a generic repository's folder has **Upload
+   * files**: an Ansible Galaxy repository that takes a publish, local or virtual (the decision point refuses the deploy of a virtual one
+   * without a deployment target), for a caller who may deploy there; none in a disabled repository or a system one.
+   */
+  protected readonly collectionUpload = computed(() => {
+    const r = this.repository();
+    if (!r || r.format !== 'ansible' || r.class === 'remote' || this.disabled() || this.systemRepo() || !valueOf(this.allowed)?.deploy) {
+      return null;
+    }
+    return { label: $localize`:@@repo.content.upload-collection:Upload collection`, icon: 'upload' };
+  });
+
+  /** Opens Upload collection for this repository; a collection published there reads the list again (R-UI-213). */
+  protected async uploadCollection(): Promise<void> {
+    const data: AnsibleUploadData = { repositories: [this.ref()] };
+    const ref = this.dialog.open<AnsibleUploadDialog, AnsibleUploadData, boolean>(AnsibleUploadDialog, { data, width: '40rem', maxWidth: '95vw' });
+    if (await firstValueFrom(ref.closed)) this.revision.update((n) => n + 1);
+  }
 
   /** A delete that runs as a job (R-UI-042), and the folder whose list reloads when it has ended. */
   protected readonly deletion = signal<{ readonly job: JobReference; readonly path: string } | null>(null);

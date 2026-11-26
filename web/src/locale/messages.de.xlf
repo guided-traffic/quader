@@ -1032,6 +1032,51 @@
         <target>Den ausgehenden Weg dieses Repositorys legt ein Administrator von Quader fest.</target>
       </segment>
     </unit>
+    <unit id="problem.ansible_version_exists">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-ansible.ts:9</note>
+      </notes>
+      <segment>
+        <source>This version of the collection is published already, with other content. A version cannot change: build the collection with a new version.</source>
+        <target>Diese Version der Collection ist bereits mit anderem Inhalt veröffentlicht. Eine Version ändert sich nicht: Bauen Sie die Collection mit einer neuen Version.</target>
+      </segment>
+    </unit>
+    <unit id="problem.ansible_version_tombstoned">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-ansible.ts:11</note>
+      </notes>
+      <segment>
+        <source>This version of the collection was deleted, and its number is not taken again until someone who manages the repository clears its tombstone.</source>
+        <target>Diese Version der Collection wurde gelöscht; ihre Nummer wird erst wieder angenommen, wenn jemand, der das Repository verwaltet, ihren Grabstein entfernt.</target>
+      </segment>
+    </unit>
+    <unit id="problem.ansible_sha256_mismatch">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-ansible.ts:13</note>
+      </notes>
+      <segment>
+        <source>The archive that arrived is not the one that was sent. Nothing was stored; upload it again.</source>
+        <target>Das angekommene Archiv ist nicht das gesendete. Es wurde nichts gespeichert; laden Sie es erneut hoch.</target>
+      </segment>
+    </unit>
+    <unit id="problem.ansible_invalid_request">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-ansible.ts:15</note>
+      </notes>
+      <segment>
+        <source>The server could not read the upload as a collection archive.</source>
+        <target>Der Server konnte den Upload nicht als Archiv einer Collection lesen.</target>
+      </segment>
+    </unit>
+    <unit id="problem.shadows_remote_package">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-ansible.ts:17</note>
+      </notes>
+      <segment>
+        <source>A remote repository serves a package of this name to the same clients. Its first version here needs someone who manages the repository.</source>
+        <target>Ein Remote-Repository liefert denselben Clients ein Paket dieses Namens. Seine erste Version hier braucht jemanden, der das Repository verwaltet.</target>
+      </segment>
+    </unit>
     <unit id="problem.backup.hold-lost">
       <notes>
         <note category="location">src/app/core/http/problem-messages-backup.ts:10</note>
@@ -2215,8 +2260,8 @@
     </unit>
     <unit id="problem.unauthenticated">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:46</note>
-        <note category="location">src/app/core/http/problem-messages.ts:231</note>
+        <note category="location">src/app/core/http/problem-messages.ts:47</note>
+        <note category="location">src/app/core/http/problem-messages.ts:237</note>
       </notes>
       <segment>
         <source>You are not signed in, or your session has ended.</source>
@@ -2225,7 +2270,7 @@
     </unit>
     <unit id="problem.reauthentication_required">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:48</note>
+        <note category="location">src/app/core/http/problem-messages.ts:49</note>
       </notes>
       <segment>
         <source>This action needs a recent sign-in.</source>
@@ -2234,8 +2279,8 @@
     </unit>
     <unit id="problem.forbidden">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:50</note>
-        <note category="location">src/app/core/http/problem-messages.ts:233</note>
+        <note category="location">src/app/core/http/problem-messages.ts:51</note>
+        <note category="location">src/app/core/http/problem-messages.ts:239</note>
       </notes>
       <segment>
         <source>You do not have the permission for this.</source>
@@ -2244,7 +2289,7 @@
     </unit>
     <unit id="problem.csrf_failed">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:52</note>
+        <note category="location">src/app/core/http/problem-messages.ts:53</note>
       </notes>
       <segment>
         <source>The request was refused as a possible forgery. Reload the page and try again.</source>
@@ -2253,8 +2298,8 @@
     </unit>
     <unit id="problem.not_found">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:54</note>
-        <note category="location">src/app/core/http/problem-messages.ts:235</note>
+        <note category="location">src/app/core/http/problem-messages.ts:55</note>
+        <note category="location">src/app/core/http/problem-messages.ts:241</note>
       </notes>
       <segment>
         <source>This does not exist, or you may not see it.</source>
@@ -2263,7 +2308,7 @@
     </unit>
     <unit id="problem.already_exists">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:56</note>
+        <note category="location">src/app/core/http/problem-messages.ts:57</note>
       </notes>
       <segment>
         <source>An object with this key or name already exists.</source>
@@ -2272,7 +2317,7 @@
     </unit>
     <unit id="problem.conflict">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:58</note>
+        <note category="location">src/app/core/http/problem-messages.ts:59</note>
       </notes>
       <segment>
         <source>The request conflicts with the current state.</source>
@@ -2281,7 +2326,7 @@
     </unit>
     <unit id="problem.idempotency_in_progress">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:60</note>
+        <note category="location">src/app/core/http/problem-messages.ts:61</note>
       </notes>
       <segment>
         <source>The same request is still being processed. Try again in a moment.</source>
@@ -2290,7 +2335,7 @@
     </unit>
     <unit id="problem.idempotency_key_reused">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:62</note>
+        <note category="location">src/app/core/http/problem-messages.ts:63</note>
       </notes>
       <segment>
         <source>This form was already submitted with different content. Reopen it and try again.</source>
@@ -2299,7 +2344,7 @@
     </unit>
     <unit id="problem.token_already_issued">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:64</note>
+        <note category="location">src/app/core/http/problem-messages.ts:65</note>
       </notes>
       <segment>
         <source>A token was already issued for this request.</source>
@@ -2308,7 +2353,7 @@
     </unit>
     <unit id="problem.precondition_failed">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:66</note>
+        <note category="location">src/app/core/http/problem-messages.ts:67</note>
       </notes>
       <segment>
         <source>Changed by someone else since you opened it.</source>
@@ -2317,7 +2362,7 @@
     </unit>
     <unit id="problem.precondition_required">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:68</note>
+        <note category="location">src/app/core/http/problem-messages.ts:69</note>
       </notes>
       <segment>
         <source>The request did not say which version it changes. Reload the page and try again.</source>
@@ -2326,7 +2371,7 @@
     </unit>
     <unit id="problem.authz_epoch_unknown">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:70</note>
+        <note category="location">src/app/core/http/problem-messages.ts:71</note>
       </notes>
       <segment>
         <source>Your last change may not have been saved.</source>
@@ -2335,8 +2380,8 @@
     </unit>
     <unit id="problem.payload_too_large">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:72</note>
-        <note category="location">src/app/core/http/problem-messages.ts:239</note>
+        <note category="location">src/app/core/http/problem-messages.ts:73</note>
+        <note category="location">src/app/core/http/problem-messages.ts:245</note>
       </notes>
       <segment>
         <source>The request is too large.</source>
@@ -2345,7 +2390,7 @@
     </unit>
     <unit id="problem.validation_failed">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:74</note>
+        <note category="location">src/app/core/http/problem-messages.ts:75</note>
       </notes>
       <segment>
         <source>Some entries are not valid.</source>
@@ -2354,7 +2399,7 @@
     </unit>
     <unit id="problem.malformed_request">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:76</note>
+        <note category="location">src/app/core/http/problem-messages.ts:77</note>
       </notes>
       <segment>
         <source>The request could not be understood.</source>
@@ -2363,7 +2408,7 @@
     </unit>
     <unit id="problem.invalid_cursor">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:78</note>
+        <note category="location">src/app/core/http/problem-messages.ts:79</note>
       </notes>
       <segment>
         <source>The list changed while you were paging. Start again from the first page.</source>
@@ -2372,7 +2417,7 @@
     </unit>
     <unit id="problem.upstream_error">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:82</note>
+        <note category="location">src/app/core/http/problem-messages.ts:83</note>
       </notes>
       <segment>
         <source>An upstream service did not answer correctly.</source>
@@ -2381,7 +2426,7 @@
     </unit>
     <unit id="problem.unavailable">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:85</note>
+        <note category="location">src/app/core/http/problem-messages.ts:86</note>
       </notes>
       <segment>
         <source>The service is temporarily unavailable.</source>
@@ -2390,7 +2435,7 @@
     </unit>
     <unit id="problem.internal">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:87</note>
+        <note category="location">src/app/core/http/problem-messages.ts:88</note>
       </notes>
       <segment>
         <source>Something went wrong on the server.</source>
@@ -2399,7 +2444,7 @@
     </unit>
     <unit id="problem.repository_not_found">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:90</note>
+        <note category="location">src/app/core/http/problem-messages.ts:91</note>
       </notes>
       <segment>
         <source>This repository does not exist, or you may not see it.</source>
@@ -2408,7 +2453,7 @@
     </unit>
     <unit id="problem.repository_disabled">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:92</note>
+        <note category="location">src/app/core/http/problem-messages.ts:93</note>
       </notes>
       <segment>
         <source>This repository is disabled.</source>
@@ -2417,7 +2462,7 @@
     </unit>
     <unit id="problem.repository_referenced">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:94</note>
+        <note category="location">src/app/core/http/problem-messages.ts:95</note>
       </notes>
       <segment>
         <source>Other repositories still include this one.</source>
@@ -2426,7 +2471,7 @@
     </unit>
     <unit id="problem.invalid_key">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:96</note>
+        <note category="location">src/app/core/http/problem-messages.ts:97</note>
       </notes>
       <segment>
         <source>The key must have 2 to 64 characters: lower-case letters and digits, separated by a single dot or underscore, a double underscore or hyphens; it starts and ends with a letter or digit.</source>
@@ -2435,7 +2480,7 @@
     </unit>
     <unit id="problem.reserved_name">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:98</note>
+        <note category="location">src/app/core/http/problem-messages.ts:99</note>
       </notes>
       <segment>
         <source>This name is reserved.</source>
@@ -2444,7 +2489,7 @@
     </unit>
     <unit id="problem.invalid_pattern">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:100</note>
+        <note category="location">src/app/core/http/problem-messages.ts:101</note>
       </notes>
       <segment>
         <source>This pattern is not valid.</source>
@@ -2453,7 +2498,7 @@
     </unit>
     <unit id="problem.invalid_document">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:102</note>
+        <note category="location">src/app/core/http/problem-messages.ts:103</note>
       </notes>
       <segment>
         <source>The document contains a member that is unknown or misspelt.</source>
@@ -2462,7 +2507,7 @@
     </unit>
     <unit id="problem.immutable_field">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:104</note>
+        <note category="location">src/app/core/http/problem-messages.ts:105</note>
       </notes>
       <segment>
         <source>This field cannot be changed after creation.</source>
@@ -2471,7 +2516,7 @@
     </unit>
     <unit id="problem.not_applicable">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:106</note>
+        <note category="location">src/app/core/http/problem-messages.ts:107</note>
       </notes>
       <segment>
         <source>This setting does not apply to this class or format.</source>
@@ -2480,7 +2525,7 @@
     </unit>
     <unit id="problem.unsupported_class">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:108</note>
+        <note category="location">src/app/core/http/problem-messages.ts:109</note>
       </notes>
       <segment>
         <source>This format does not support the chosen class.</source>
@@ -2489,7 +2534,7 @@
     </unit>
     <unit id="problem.invalid_path">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:110</note>
+        <note category="location">src/app/core/http/problem-messages.ts:111</note>
       </notes>
       <segment>
         <source>The path is not valid: no empty, dot or double-dot segments, no backslash or control characters.</source>
@@ -2498,7 +2543,7 @@
     </unit>
     <unit id="problem.path_conflict">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:112</note>
+        <note category="location">src/app/core/http/problem-messages.ts:113</note>
       </notes>
       <segment>
         <source>A file and a folder cannot share a path.</source>
@@ -2507,7 +2552,7 @@
     </unit>
     <unit id="problem.not_admitted">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:114</note>
+        <note category="location">src/app/core/http/problem-messages.ts:115</note>
       </notes>
       <segment>
         <source>The include and exclude patterns of this repository do not admit this path.</source>
@@ -2516,7 +2561,7 @@
     </unit>
     <unit id="problem.content_unavailable">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:116</note>
+        <note category="location">src/app/core/http/problem-messages.ts:117</note>
       </notes>
       <segment>
         <source>The content is temporarily unavailable. Try again later.</source>
@@ -2525,7 +2570,7 @@
     </unit>
     <unit id="problem.endpoint_not_configured">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:118</note>
+        <note category="location">src/app/core/http/problem-messages.ts:119</note>
       </notes>
       <segment>
         <source>This endpoint is no longer configured, so its rules cannot be created or replaced.</source>
@@ -2534,7 +2579,7 @@
     </unit>
     <unit id="problem.exposure_rule_limit_reached">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:120</note>
+        <note category="location">src/app/core/http/problem-messages.ts:121</note>
       </notes>
       <segment>
         <source>This endpoint has reached the maximum number of exposure rules.</source>
@@ -2543,7 +2588,7 @@
     </unit>
     <unit id="problem.format_not_exposable">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:122</note>
+        <note category="location">src/app/core/http/problem-messages.ts:123</note>
       </notes>
       <segment>
         <source>Repositories of this format cannot be exposed through rules yet.</source>
@@ -2552,7 +2597,7 @@
     </unit>
     <unit id="problem.invalid_version_range">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:124</note>
+        <note category="location">src/app/core/http/problem-messages.ts:125</note>
       </notes>
       <segment>
         <source>The version range is not valid in the syntax of this format.</source>
@@ -2561,7 +2606,7 @@
     </unit>
     <unit id="problem.dimension_not_supported">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:126</note>
+        <note category="location">src/app/core/http/problem-messages.ts:127</note>
       </notes>
       <segment>
         <source>This format has no such filter.</source>
@@ -2570,7 +2615,7 @@
     </unit>
     <unit id="problem.invalid_audit_range">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:128</note>
+        <note category="location">src/app/core/http/problem-messages.ts:129</note>
       </notes>
       <segment>
         <source>The export needs a start and an end, at most 400 days apart.</source>
@@ -2579,7 +2624,7 @@
     </unit>
     <unit id="problem.key_ring_incompatible">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:130</note>
+        <note category="location">src/app/core/http/problem-messages.ts:131</note>
       </notes>
       <segment>
         <source>The replicas do not hold the same key IDs, so the secrets cannot be re-encrypted yet.</source>
@@ -2588,7 +2633,7 @@
     </unit>
     <unit id="problem.package_owned_by_other_owner">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:135</note>
+        <note category="location">src/app/core/http/problem-messages.ts:136</note>
       </notes>
       <segment>
         <source>This package name belongs to other owners. Ask one of them, or someone who manages the repository, to add you.</source>
@@ -2597,7 +2642,7 @@
     </unit>
     <unit id="problem.last_owner">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:137</note>
+        <note category="location">src/app/core/http/problem-messages.ts:138</note>
       </notes>
       <segment>
         <source>This is the only owner of the package. Add the new owner first, or release the name.</source>
@@ -2606,7 +2651,7 @@
     </unit>
     <unit id="problem.populate_not_permitted">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:139</note>
+        <note category="location">src/app/core/http/problem-messages.ts:140</note>
       </notes>
       <segment>
         <source>This content is not in the cache, and you may not fetch it from the upstream.</source>
@@ -2615,7 +2660,7 @@
     </unit>
     <unit id="problem.rate_limited">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:206</note>
+        <note category="location">src/app/core/http/problem-messages.ts:212</note>
       </notes>
       <segment>
         <source>Too many requests. Wait a moment and try again.</source>
@@ -2624,7 +2669,7 @@
     </unit>
     <unit id="problem.rate_limited_wait_one">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:207</note>
+        <note category="location">src/app/core/http/problem-messages.ts:213</note>
       </notes>
       <segment>
         <source>Too many requests. Try again in 1 second.</source>
@@ -2633,7 +2678,7 @@
     </unit>
     <unit id="problem.rate_limited_wait">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:208</note>
+        <note category="location">src/app/core/http/problem-messages.ts:214</note>
       </notes>
       <segment>
         <source>Too many requests. Try again in <ph id="0" equiv="seconds" disp="seconds"/> seconds.</source>
@@ -2642,7 +2687,7 @@
     </unit>
     <unit id="problem.fault">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:219</note>
+        <note category="location">src/app/core/http/problem-messages.ts:225</note>
       </notes>
       <segment>
         <source>Something went wrong in this page. Try again; if it fails again, report it with the details below.</source>
@@ -2651,7 +2696,7 @@
     </unit>
     <unit id="problem.unreadable">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:222</note>
+        <note category="location">src/app/core/http/problem-messages.ts:228</note>
       </notes>
       <segment>
         <source>The server answered, but its answer could not be read.</source>
@@ -2660,7 +2705,7 @@
     </unit>
     <unit id="problem.network">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:226</note>
+        <note category="location">src/app/core/http/problem-messages.ts:232</note>
       </notes>
       <segment>
         <source>The server could not be reached. Check your connection and try again.</source>
@@ -2669,7 +2714,7 @@
     </unit>
     <unit id="problem.request_timeout">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:237</note>
+        <note category="location">src/app/core/http/problem-messages.ts:243</note>
       </notes>
       <segment>
         <source>The server waited too long for the request.</source>
@@ -2678,7 +2723,7 @@
     </unit>
     <unit id="problem.gateway">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:244</note>
+        <note category="location">src/app/core/http/problem-messages.ts:250</note>
       </notes>
       <segment>
         <source>The server did not answer through the gateway in front of it. It may be restarting or overloaded.</source>
@@ -2687,7 +2732,7 @@
     </unit>
     <unit id="problem.not_ready">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:247</note>
+        <note category="location">src/app/core/http/problem-messages.ts:253</note>
       </notes>
       <segment>
         <source>The server is not ready to answer. It may be starting or in maintenance.</source>
@@ -2696,7 +2741,7 @@
     </unit>
     <unit id="problem.server_failed">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:249</note>
+        <note category="location">src/app/core/http/problem-messages.ts:255</note>
       </notes>
       <segment>
         <source>The server failed to answer this request.</source>
@@ -2705,7 +2750,7 @@
     </unit>
     <unit id="problem.refused">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:250</note>
+        <note category="location">src/app/core/http/problem-messages.ts:256</note>
       </notes>
       <segment>
         <source>The server refused this request.</source>
@@ -2714,7 +2759,7 @@
     </unit>
     <unit id="problem.unexpected">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:251</note>
+        <note category="location">src/app/core/http/problem-messages.ts:257</note>
       </notes>
       <segment>
         <source>The server gave an answer this page did not expect.</source>
@@ -10795,7 +10840,7 @@
         <note category="location">src/app/features/guides/guide-format.ts:159</note>
         <note category="location">src/app/features/repositories/content/repository-files.ts:231</note>
         <note category="location">src/app/features/repositories/content/repository-item-versions.ts:229</note>
-        <note category="location">src/app/features/repositories/content/repository-items.ts:216</note>
+        <note category="location">src/app/features/repositories/content/repository-items.ts:231</note>
         <note category="location">src/app/features/repositories/repository-list.ts:411</note>
         <note category="location">src/app/features/system/backups/backups-page.html:156,158</note>
         <note category="location">src/app/features/system/job-table.ts:151</note>
@@ -16498,7 +16543,7 @@
     </unit>
     <unit id="list.load-more">
       <notes>
-        <note category="location">src/app/features/packages/ansible-import-log.ts:53,54</note>
+        <note category="location">src/app/features/packages/ansible-import-log.ts:37,38</note>
         <note category="location">src/app/features/system/backups/backups-page.html:229,230</note>
         <note category="location">src/app/features/system/jobs-page.ts:106,107</note>
         <note category="location">src/app/shared/ui/data-table.ts:154,155</note>
@@ -16510,7 +16555,7 @@
     </unit>
     <unit id="docs.import-log.task">
       <notes>
-        <note category="location">src/app/features/packages/ansible-import-log.ts:108</note>
+        <note category="location">src/app/features/packages/ansible-import-log.ts:75</note>
       </notes>
       <segment>
         <source>Import of <ph id="0" equiv="collection" disp="collection"/> <ph id="1" equiv="version" disp="task.version"/></source>
@@ -16519,7 +16564,7 @@
     </unit>
     <unit id="pkg.role.readme.bare">
       <notes>
-        <note category="location">src/app/features/packages/ansible-role.ts:72</note>
+        <note category="location">src/app/features/packages/ansible-role.ts:77</note>
       </notes>
       <segment>
         <source>Quader has not read what the upstream says of this role yet. Its owner and name, its description and its README come with the role&apos;s next lookup, the first request of ansible-galaxy role install or role info.</source>
@@ -16528,7 +16573,7 @@
     </unit>
     <unit id="pkg.role.readme.queued">
       <notes>
-        <note category="location">src/app/features/packages/ansible-role.ts:76</note>
+        <note category="location">src/app/features/packages/ansible-role.ts:81</note>
       </notes>
       <segment>
         <source>Quader is fetching the README of this role from the upstream. It appears here when it arrives.</source>
@@ -16537,7 +16582,7 @@
     </unit>
     <unit id="pkg.role.readme.absent">
       <notes>
-        <note category="location">src/app/features/packages/ansible-role.ts:78</note>
+        <note category="location">src/app/features/packages/ansible-role.ts:83</note>
       </notes>
       <segment>
         <source>The upstream has no README for this role.</source>
@@ -16546,7 +16591,7 @@
     </unit>
     <unit id="pkg.role.readme.too-large">
       <notes>
-        <note category="location">src/app/features/packages/ansible-role.ts:82</note>
+        <note category="location">src/app/features/packages/ansible-role.ts:87</note>
       </notes>
       <segment>
         <source>The upstream&apos;s README of this role is larger than Quader keeps (512 KiB).</source>
@@ -16555,7 +16600,7 @@
     </unit>
     <unit id="pkg.role.readme.invalid">
       <notes>
-        <note category="location">src/app/features/packages/ansible-role.ts:84</note>
+        <note category="location">src/app/features/packages/ansible-role.ts:89</note>
       </notes>
       <segment>
         <source>The upstream answered something Quader cannot read as the README of this role.</source>
@@ -16564,7 +16609,7 @@
     </unit>
     <unit id="pkg.role.readme.failed">
       <notes>
-        <note category="location">src/app/features/packages/ansible-role.ts:86</note>
+        <note category="location">src/app/features/packages/ansible-role.ts:91</note>
       </notes>
       <segment>
         <source>Quader could not fetch the README of this role from the upstream. It asks again when a client installs the role.</source>
@@ -16573,7 +16618,7 @@
     </unit>
     <unit id="pkg.role.readme.none">
       <notes>
-        <note category="location">src/app/features/packages/ansible-role.ts:89</note>
+        <note category="location">src/app/features/packages/ansible-role.ts:94</note>
       </notes>
       <segment>
         <source>Quader has no README of this role yet: it fetches it from the upstream when a client installs the role, unless the repository fetches no documentation.</source>
@@ -16582,7 +16627,7 @@
     </unit>
     <unit id="pkg.role.publish">
       <notes>
-        <note category="location">src/app/features/packages/ansible-role.ts:106,108</note>
+        <note category="location">src/app/features/packages/ansible-role.ts:115,117</note>
       </notes>
       <segment>
         <source>Roles come to Quader from a Galaxy. To publish a role of your own, put it into the roles directory of a collection and publish the collection.</source>
@@ -16591,16 +16636,25 @@
     </unit>
     <unit id="pkg.role.publish-how">
       <notes>
-        <note category="location">src/app/features/packages/ansible-role.ts:109,113</note>
+        <note category="location">src/app/features/packages/ansible-role.ts:118,121</note>
       </notes>
       <segment>
         <source>How to publish a role</source>
         <target>So veröffentlichen Sie eine Rolle</target>
       </segment>
     </unit>
+    <unit id="pkg.role.upload">
+      <notes>
+        <note category="location">src/app/features/packages/ansible-role.ts:125,126</note>
+      </notes>
+      <segment>
+        <source>Upload collection</source>
+        <target>Collection hochladen</target>
+      </segment>
+    </unit>
     <unit id="pkg.role.heading">
       <notes>
-        <note category="location">src/app/features/packages/ansible-role.ts:137,138</note>
+        <note category="location">src/app/features/packages/ansible-role.ts:185,186</note>
       </notes>
       <segment>
         <source>Role</source>
@@ -16609,7 +16663,7 @@
     </unit>
     <unit id="pkg.role.owner">
       <notes>
-        <note category="location">src/app/features/packages/ansible-role.ts:140,141</note>
+        <note category="location">src/app/features/packages/ansible-role.ts:188,189</note>
       </notes>
       <segment>
         <source>Owner</source>
@@ -16618,7 +16672,7 @@
     </unit>
     <unit id="pkg.role.name">
       <notes>
-        <note category="location">src/app/features/packages/ansible-role.ts:142,143</note>
+        <note category="location">src/app/features/packages/ansible-role.ts:190,191</note>
       </notes>
       <segment>
         <source>Name</source>
@@ -16627,7 +16681,7 @@
     </unit>
     <unit id="pkg.role.upstream-downloads">
       <notes>
-        <note category="location">src/app/features/packages/ansible-role.ts:144,146</note>
+        <note category="location">src/app/features/packages/ansible-role.ts:192,194</note>
       </notes>
       <segment>
         <source>Downloads at the upstream</source>
@@ -16636,7 +16690,7 @@
     </unit>
     <unit id="pkg.role.not-named">
       <notes>
-        <note category="location">src/app/features/packages/ansible-role.ts:149,151</note>
+        <note category="location">src/app/features/packages/ansible-role.ts:197,199</note>
       </notes>
       <segment>
         <source>Not named by the upstream</source>
@@ -16645,7 +16699,7 @@
     </unit>
     <unit id="pkg.role.branch">
       <notes>
-        <note category="location">src/app/features/packages/ansible-role.ts:154,155</note>
+        <note category="location">src/app/features/packages/ansible-role.ts:202,203</note>
       </notes>
       <segment>
         <source>Branch</source>
@@ -16654,7 +16708,7 @@
     </unit>
     <unit id="pkg.role.dependencies">
       <notes>
-        <note category="location">src/app/features/packages/ansible-role.ts:158,159</note>
+        <note category="location">src/app/features/packages/ansible-role.ts:206,207</note>
       </notes>
       <segment>
         <source>Dependencies</source>
@@ -16663,7 +16717,7 @@
     </unit>
     <unit id="pkg.role.rules-name">
       <notes>
-        <note category="location">src/app/features/packages/ansible-role.ts:161,163</note>
+        <note category="location">src/app/features/packages/ansible-role.ts:209,211</note>
       </notes>
       <segment>
         <source>Name in rules and permissions</source>
@@ -16672,7 +16726,7 @@
     </unit>
     <unit id="pkg.role.upstream-link">
       <notes>
-        <note category="location">src/app/features/packages/ansible-role.ts:165,167</note>
+        <note category="location">src/app/features/packages/ansible-role.ts:213,215</note>
       </notes>
       <segment>
         <source>Delivery in the tab Upstream</source>
@@ -16681,7 +16735,7 @@
     </unit>
     <unit id="pkg.role.rules-note">
       <notes>
-        <note category="location">src/app/features/packages/ansible-role.ts:168,171</note>
+        <note category="location">src/app/features/packages/ansible-role.ts:216,219</note>
       </notes>
       <segment>
         <source>Delivery rules, include and exclude patterns and permissions name a role by the Galaxy&apos;s number, not by its owner and name.</source>
@@ -25126,6 +25180,187 @@
         <target>Erkennung</target>
       </segment>
     </unit>
+    <unit id="ansible.upload.title">
+      <notes>
+        <note category="location">src/app/features/repositories/content/ansible-upload-dialog.ts:38,39</note>
+      </notes>
+      <segment>
+        <source>Upload collection</source>
+        <target>Collection hochladen</target>
+      </segment>
+    </unit>
+    <unit id="ansible.upload.repository">
+      <notes>
+        <note category="location">src/app/features/repositories/content/ansible-upload-dialog.ts:42,44</note>
+        <note category="location">src/app/features/repositories/content/ansible-upload-dialog.ts:54,55</note>
+      </notes>
+      <segment>
+        <source>Repository</source>
+        <target>Repository</target>
+      </segment>
+    </unit>
+    <unit id="ansible.upload.completed">
+      <notes>
+        <note category="location">src/app/features/repositories/content/ansible-upload-dialog.ts:62</note>
+      </notes>
+      <segment>
+        <source>The collection is published:</source>
+        <target>Die Collection ist veröffentlicht:</target>
+      </segment>
+    </unit>
+    <unit id="ansible.upload.failed">
+      <notes>
+        <note category="location">src/app/features/repositories/content/ansible-upload-dialog.ts:66,68</note>
+      </notes>
+      <segment>
+        <source>The archive was not published. The import log says why.</source>
+        <target>Das Archiv wurde nicht veröffentlicht. Das Import-Protokoll nennt den Grund.</target>
+      </segment>
+    </unit>
+    <unit id="ansible.upload.log">
+      <notes>
+        <note category="location">src/app/features/repositories/content/ansible-upload-dialog.ts:69,70</note>
+      </notes>
+      <segment>
+        <source>Import log</source>
+        <target>Import-Protokoll</target>
+      </segment>
+    </unit>
+    <unit id="ansible.upload.choose-other">
+      <notes>
+        <note category="location">src/app/features/repositories/content/ansible-upload-dialog.ts:86,88</note>
+      </notes>
+      <segment>
+        <source>Choose another file</source>
+        <target>Andere Datei auswählen</target>
+      </segment>
+    </unit>
+    <unit id="ansible.upload.drop">
+      <notes>
+        <note category="location">src/app/features/repositories/content/ansible-upload-dialog.ts:89,90</note>
+      </notes>
+      <segment>
+        <source>Drop the collection&apos;s archive here, or</source>
+        <target>Archiv der Collection hierher ziehen oder</target>
+      </segment>
+    </unit>
+    <unit id="ansible.upload.choose">
+      <notes>
+        <note category="location">src/app/features/repositories/content/ansible-upload-dialog.ts:90,92</note>
+      </notes>
+      <segment>
+        <source>Choose file</source>
+        <target>Datei auswählen</target>
+      </segment>
+    </unit>
+    <unit id="ansible.upload.importing">
+      <notes>
+        <note category="location">src/app/features/repositories/content/ansible-upload-dialog.ts:106,108</note>
+      </notes>
+      <segment>
+        <source> The archive is sent. Quader reads it and runs the checks of a publish. </source>
+        <target>Das Archiv ist gesendet. Quader liest es und führt die Prüfungen einer Veröffentlichung aus.</target>
+      </segment>
+    </unit>
+    <unit id="ansible.upload.hint">
+      <notes>
+        <note category="location">src/app/features/repositories/content/ansible-upload-dialog.ts:110,112</note>
+      </notes>
+      <segment>
+        <source> The archive that ansible-galaxy collection build makes. Quader reads the namespace, the name and the version from it. </source>
+        <target>Das Archiv, das ansible-galaxy collection build erzeugt. Quader liest Namespace, Namen und Version daraus.</target>
+      </segment>
+    </unit>
+    <unit id="ansible.upload.close">
+      <notes>
+        <note category="location">src/app/features/repositories/content/ansible-upload-dialog.ts:121,122</note>
+      </notes>
+      <segment>
+        <source>Close</source>
+        <target>Schließen</target>
+      </segment>
+    </unit>
+    <unit id="ansible.upload.open">
+      <notes>
+        <note category="location">src/app/features/repositories/content/ansible-upload-dialog.ts:123,125</note>
+      </notes>
+      <segment>
+        <source>Open version</source>
+        <target>Version öffnen</target>
+      </segment>
+    </unit>
+    <unit id="ansible.upload.again">
+      <notes>
+        <note category="location">src/app/features/repositories/content/ansible-upload-dialog.ts:125,127</note>
+      </notes>
+      <segment>
+        <source>Choose another file</source>
+        <target>Andere Datei auswählen</target>
+      </segment>
+    </unit>
+    <unit id="ansible.upload.cancel">
+      <notes>
+        <note category="location">src/app/features/repositories/content/ansible-upload-dialog.ts:129,131</note>
+      </notes>
+      <segment>
+        <source>Cancel upload</source>
+        <target>Upload abbrechen</target>
+      </segment>
+    </unit>
+    <unit id="ansible.upload.cancel-dialog">
+      <notes>
+        <note category="location">src/app/features/repositories/content/ansible-upload-dialog.ts:131,134</note>
+      </notes>
+      <segment>
+        <source>Cancel</source>
+        <target>Abbrechen</target>
+      </segment>
+    </unit>
+    <unit id="ansible.upload.start">
+      <notes>
+        <note category="location">src/app/features/repositories/content/ansible-upload-dialog.ts:141,143</note>
+      </notes>
+      <segment>
+        <source> Upload </source>
+        <target>Hochladen</target>
+      </segment>
+    </unit>
+    <unit id="ansible.upload.progress">
+      <notes>
+        <note category="location">src/app/features/repositories/content/ansible-upload-dialog.ts:213</note>
+      </notes>
+      <segment>
+        <source>Upload progress</source>
+        <target>Fortschritt des Uploads</target>
+      </segment>
+    </unit>
+    <unit id="ansible.upload.announce.completed">
+      <notes>
+        <note category="location">src/app/features/repositories/content/ansible-upload-dialog.ts:291</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="name" disp="name"/> <ph id="1" equiv="version" disp="t.version"/> is published.</source>
+        <target><ph id="0" equiv="name" disp="name"/> <ph id="1" equiv="version" disp="t.version"/> ist veröffentlicht.</target>
+      </segment>
+    </unit>
+    <unit id="ansible.upload.announce.failed">
+      <notes>
+        <note category="location">src/app/features/repositories/content/ansible-upload-dialog.ts:292</note>
+      </notes>
+      <segment>
+        <source>The archive was not published.</source>
+        <target>Das Archiv wurde nicht veröffentlicht.</target>
+      </segment>
+    </unit>
+    <unit id="ansible.upload.announce.refused">
+      <notes>
+        <note category="location">src/app/features/repositories/content/ansible-upload-dialog.ts:301</note>
+      </notes>
+      <segment>
+        <source>The upload was refused.</source>
+        <target>Der Upload wurde abgelehnt.</target>
+      </segment>
+    </unit>
     <unit id="clamav.set.in-use">
       <notes>
         <note category="location">src/app/features/repositories/content/clamav-databases.ts:51</note>
@@ -25737,7 +25972,7 @@
     <unit id="repo.content.loading">
       <notes>
         <note category="location">src/app/features/repositories/content/repository-content.html:100,102</note>
-        <note category="location">src/app/features/repositories/content/repository-items.ts:62,63</note>
+        <note category="location">src/app/features/repositories/content/repository-items.ts:72,73</note>
       </notes>
       <segment>
         <source>Loading the repository&apos;s content.</source>
@@ -25764,7 +25999,7 @@
     </unit>
     <unit id="files.virtual-note">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:157,159</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:160,162</note>
       </notes>
       <segment>
         <source>A virtual repository stores only what it generates itself, such as an index; the files of its members are on their pages.</source>
@@ -25773,7 +26008,7 @@
     </unit>
     <unit id="files.raw-note">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:159,162</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:162,165</note>
       </notes>
       <segment>
         <source>The raw files of the repository, as Quader stores them.</source>
@@ -25782,7 +26017,7 @@
     </unit>
     <unit id="repo.content.folder-path">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:168,170</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:171,173</note>
       </notes>
       <segment>
         <source>Folder path</source>
@@ -25791,8 +26026,8 @@
     </unit>
     <unit id="files.root">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:172,173</note>
-        <note category="location">src/app/features/repositories/content/repository-content.html:174,176</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:175,176</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:177,179</note>
       </notes>
       <segment>
         <source>Files</source>
@@ -25801,8 +26036,8 @@
     </unit>
     <unit id="files.download">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:237,238</note>
-        <note category="location">src/app/features/repositories/content/repository-content.html:243,244</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:240,241</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:246,247</note>
       </notes>
       <segment>
         <source>Download</source>
@@ -25811,7 +26046,7 @@
     </unit>
     <unit id="files.delete">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:250,251</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:253,254</note>
       </notes>
       <segment>
         <source>Delete</source>
@@ -25820,7 +26055,7 @@
     </unit>
     <unit id="repo.deleting">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:262,263</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:265,266</note>
         <note category="location">src/app/features/repositories/repository-detail.html:587,588</note>
         <note category="location">src/app/features/repositories/repository-list.html:256,257</note>
       </notes>
@@ -25831,7 +26066,7 @@
     </unit>
     <unit id="repo.item.loading">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:290,292</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:293,295</note>
       </notes>
       <segment>
         <source>Loading the item.</source>
@@ -25840,7 +26075,7 @@
     </unit>
     <unit id="repo.loading.repository">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:297,299</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:300,302</note>
         <note category="location">src/app/features/repositories/repository-detail.html:46,47</note>
       </notes>
       <segment>
@@ -25850,7 +26085,7 @@
     </unit>
     <unit id="repo.content.sentence.remote">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:189</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:193</note>
       </notes>
       <segment>
         <source>A cache of another registry. It lists what clients have fetched through it.</source>
@@ -25859,7 +26094,7 @@
     </unit>
     <unit id="repo.content.sentence.virtual">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:191</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:195</note>
       </notes>
       <segment>
         <source>Combines other repositories behind one address. It lists what they resolve to.</source>
@@ -25868,7 +26103,7 @@
     </unit>
     <unit id="repo.content.sentence.local2">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:193</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:197</note>
       </notes>
       <segment>
         <source>Holds what is published to it.</source>
@@ -25877,7 +26112,7 @@
     </unit>
     <unit id="repo.content.files-address">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:308</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:312</note>
       </notes>
       <segment>
         <source>Address for downloads by path (curl, wget)</source>
@@ -25886,7 +26121,7 @@
     </unit>
     <unit id="repo.content.copy-files-address">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:309</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:313</note>
       </notes>
       <segment>
         <source>Copy address for downloads by path</source>
@@ -25895,7 +26130,7 @@
     </unit>
     <unit id="repo.content.more">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:322</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:326</note>
       </notes>
       <segment>
         <source>More actions</source>
@@ -25904,16 +26139,25 @@
     </unit>
     <unit id="files.trail.between">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:368</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:372</note>
       </notes>
       <segment>
         <source>Show the folders in between</source>
         <target>Die Ordner dazwischen anzeigen</target>
       </segment>
     </unit>
+    <unit id="repo.content.upload-collection">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:434</note>
+      </notes>
+      <segment>
+        <source>Upload collection</source>
+        <target>Collection hochladen</target>
+      </segment>
+    </unit>
     <unit id="files.delete.progress">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:425</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:449</note>
       </notes>
       <segment>
         <source>Deleting items</source>
@@ -25922,7 +26166,7 @@
     </unit>
     <unit id="files.copy-path">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:426</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:450</note>
       </notes>
       <segment>
         <source>Copy path</source>
@@ -25931,7 +26175,7 @@
     </unit>
     <unit id="files.delete.folder-many">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:495</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:519</note>
       </notes>
       <segment>
         <source>The folder holds more than <ph id="0" equiv="limit" disp="TYPE_TO_CONFIRM_ABOVE"/> items. They are deleted for good.</source>
@@ -25940,7 +26184,7 @@
     </unit>
     <unit id="files.delete.folder">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:496</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:520</note>
       </notes>
       <segment>
         <source>The folder holds <ph id="0" equiv="count" disp="count"/> items. They are deleted for good.</source>
@@ -25949,7 +26193,7 @@
     </unit>
     <unit id="files.delete.file">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:504</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:528</note>
       </notes>
       <segment>
         <source>The file is deleted for good.</source>
@@ -25958,7 +26202,7 @@
     </unit>
     <unit id="files.delete.title">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:507</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:531</note>
       </notes>
       <segment>
         <source>Delete <ph id="0" equiv="path" disp="path"/>?</source>
@@ -25967,7 +26211,7 @@
     </unit>
     <unit id="files.delete.confirm">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:509</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:533</note>
       </notes>
       <segment>
         <source>Delete</source>
@@ -25976,8 +26220,8 @@
     </unit>
     <unit id="files.deleted">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:517</note>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:527</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:541</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:551</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="path" disp="path"/> deleted.</source>
@@ -25986,7 +26230,7 @@
     </unit>
     <unit id="files.delete.failed">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:528</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:552</note>
       </notes>
       <segment>
         <source>The deletion failed. Some items may be gone.</source>
@@ -26450,7 +26694,7 @@
     <unit id="repo.content.col.vulnerabilities">
       <notes>
         <note category="location">src/app/features/repositories/content/repository-item-versions.ts:228</note>
-        <note category="location">src/app/features/repositories/content/repository-items.ts:207</note>
+        <note category="location">src/app/features/repositories/content/repository-items.ts:222</note>
       </notes>
       <segment>
         <source>Vulnerabilities</source>
@@ -26459,7 +26703,7 @@
     </unit>
     <unit id="repo.content.grade-sort-partial">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-items.ts:138,141</note>
+        <note category="location">src/app/features/repositories/content/repository-items.ts:148,151</note>
       </notes>
       <segment>
         <source> Sorted by grade among the first <ph id="0" equiv="INTERPOLATION" disp="{{ list.items().length }}"/> entries; the list holds more. </source>
@@ -26468,7 +26712,7 @@
     </unit>
     <unit id="repo.content.col.latest">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-items.ts:201</note>
+        <note category="location">src/app/features/repositories/content/repository-items.ts:216</note>
       </notes>
       <segment>
         <source>Latest</source>
@@ -26477,7 +26721,7 @@
     </unit>
     <unit id="repo.content.help.grade">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-items.ts:208</note>
+        <note category="location">src/app/features/repositories/content/repository-items.ts:223</note>
       </notes>
       <segment>
         <source>The grade of the latest version in this repository, from S (no known vulnerabilities) to E (more than 5 Critical); N/A when it is not checked, with the reason beside it.</source>
@@ -26486,7 +26730,7 @@
     </unit>
     <unit id="repo.content.col.updated">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-items.ts:213</note>
+        <note category="location">src/app/features/repositories/content/repository-items.ts:228</note>
       </notes>
       <segment>
         <source>Updated</source>
@@ -26495,7 +26739,7 @@
     </unit>
     <unit id="repo.content.col.downloads">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-items.ts:214</note>
+        <note category="location">src/app/features/repositories/content/repository-items.ts:229</note>
       </notes>
       <segment>
         <source>Downloads</source>
@@ -26504,7 +26748,7 @@
     </unit>
     <unit id="repo.content.open-versions">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-items.ts:270</note>
+        <note category="location">src/app/features/repositories/content/repository-items.ts:286</note>
       </notes>
       <segment>
         <source>Show the versions of <ph id="0" equiv="name" disp="p.name"/></source>

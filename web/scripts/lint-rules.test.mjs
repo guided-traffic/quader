@@ -409,7 +409,7 @@ test('R-UI-214 a template that binds a server sentence fails the rule, technical
 
 test('R-UI-214 an allowed binding passes in its own file only', () => {
   const log = '<li><span class="level" translate="no">{{ m.level }}</span>&ngsp;<span lang="en" translate="no">{{ m.message }}</span></li>';
-  assert.deepEqual(serverTextFindings('src/app/features/packages/ansible-import-log.ts', log), []);
+  assert.deepEqual(serverTextFindings('src/app/features/packages/ansible-import-task.ts', log), []);
   assert.deepEqual(serverTextFindings('src/app/features/packages/other.ts', log), [{ line: 1, expression: 'm.message' }]);
 });
 

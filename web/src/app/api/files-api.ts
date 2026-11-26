@@ -1,32 +1,9 @@
-import {
-  HttpClient,
-  HttpErrorResponse,
-  HttpEventType,
-  provideHttpClient,
-  withXhr,
-  withXsrfConfiguration,
-} from '@angular/common/http';
-import { EnvironmentInjector, Injectable, createEnvironmentInjector, inject } from '@angular/core';
-import {
-  Observable,
-  catchError,
-  filter,
-  from,
-  fromEvent,
-  lastValueFrom,
-  map,
-  switchMap,
-  takeUntil,
-  tap,
-  throwError,
-} from 'rxjs';
-import { CallFailures, apiErrorOf, callOf } from '../core/http/failure';
-import { SessionStore } from '../core/session-store';
+import { Injectable, inject } from '@angular/core';
 import { ApiClient } from './client';
-import { CSRF_COOKIE, CSRF_HEADER } from './csrf';
 import { PageFetcher } from './pagination';
 import { DeleteOutcome, JobReference, repositoryUrl } from './repositories-api';
 import { Schema } from './types';
+import { TransferOptions, UploadTransfer } from './upload-transfer';
 
 export type Item = Schema<'Item'>;
 export type Child = Schema<'Child'>;
@@ -146,10 +123,7 @@ export abstract class FilesApi {
 @Injectable()
 export class HttpFilesApi extends FilesApi {
   private readonly client = inject(ApiClient);
-  private readonly session = inject(SessionStore);
-  private readonly failures = inject(CallFailures);
-  private readonly injector = inject(EnvironmentInjector);
-  private xhr: HttpClient | null = null;
+  private readonly transfer = inject(UploadTransfer);
 
   async item(repository: string, path: string): Promise<Item> {
     return (await this.client.getJson<Item>(itemsUrl(repository, 'items'), { params: { path } }))
@@ -218,63 +192,8 @@ export class HttpFilesApi extends FilesApi {
     return this.put({}, `${contentPath(repository, path)}/`, new Blob([]), {});
   }
 
-  /**
-   * Uploads go through an XHR-based client, because the fetch backend reports no upload progress
-   * (R-UI-012). The client has no Quader interceptors of its own; it keeps the XSRF protection (the content
-   * route is a session route, so a PUT carries the CSRF token), maps a failure to `ApiError` and ends the
-   * session on a 401.
-   */
-  private put(
-    options: {
-      readonly onProgress?: (loaded: number, total: number) => void;
-      readonly signal?: AbortSignal;
-    },
-    url: string,
-    body: Blob,
-    headers: Record<string, string>,
-  ): Promise<Item> {
-    this.xhr ??= createEnvironmentInjector(
-      [
-        provideHttpClient(
-          withXhr(),
-          withXsrfConfiguration({ cookieName: CSRF_COOKIE, headerName: CSRF_HEADER }),
-        ),
-      ],
-      this.injector,
-    ).get(HttpClient);
-    const abort$: Observable<unknown> = options.signal
-      ? fromEvent(options.signal, 'abort')
-      : new Observable<never>();
-    const events$ = this.xhr
-      .put<Item>(url, body, {
-        headers,
-        observe: 'events',
-        reportProgress: true,
-        responseType: 'json',
-      })
-      .pipe(
-        tap((event) => {
-          if (event.type === HttpEventType.UploadProgress && event.total) {
-            options.onProgress?.(event.loaded, event.total);
-          }
-        }),
-        filter((event) => event.type === HttpEventType.Response),
-        map((event) => (event as { body: Item | null }).body as Item),
-        takeUntil(abort$),
-        catchError((err: unknown) => from(this.toApiError(url, err)).pipe(switchMap((e) => throwError(() => e)))),
-      );
-    return lastValueFrom(events$, { defaultValue: null }).then((item) => {
-      if (item === null) throw new DOMException('The upload was cancelled.', 'AbortError');
-      return item;
-    });
-  }
-
-  /** The upload's failure as the interceptors make one (R-UI-216): this client runs none of them. */
-  private async toApiError(url: string, err: unknown): Promise<unknown> {
-    if (!(err instanceof HttpErrorResponse)) return err;
-    const req = { method: 'PUT', urlWithParams: url };
-    const error = await apiErrorOf(req, err, { retried: false, inRow: this.failures.failed(callOf(req)) });
-    if (err.status === 401 && error.code !== 'reauthentication_required') this.session.markEnded();
-    return error;
+  /** The transfer with its progress, through the XHR-based client the collection's upload shares (R-UI-012). */
+  private put(options: TransferOptions, url: string, body: Blob, headers: Record<string, string>): Promise<Item> {
+    return this.transfer.send<Item>('PUT', url, body, headers, options);
   }
 }

@@ -142,6 +142,9 @@
       [sortParam]="order()"
       [fill]="fill()"
       [disabled]="disabled()"
+      [action]="collectionUpload()"
+      [revision]="revision()"
+      (act)="uploadCollection()"
       (filterChange)="setFilter($event)"
       (sortParamChange)="setSort($event)"
     />

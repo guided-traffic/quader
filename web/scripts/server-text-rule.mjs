@@ -40,9 +40,9 @@ export const allowed = [
     why: "the import's log as the Galaxy import API answers it to ansible-galaxy, shown as a log with its level",
   },
   {
-    file: 'src/app/features/packages/ansible-import-log.ts',
+    file: 'src/app/features/packages/ansible-import-task.ts',
     expression: 'm.message',
-    why: "the import's log as the Galaxy import API answers it to ansible-galaxy, shown as a log with its level",
+    why: "the import's log as the Galaxy import API answers it to ansible-galaxy, shown as a log with its level (the tab Import log and Upload collection)",
   },
   {
     file: 'src/app/shared/upstream-downloads/upstream-downloads-panel.html',

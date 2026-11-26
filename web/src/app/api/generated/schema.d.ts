@@ -7197,6 +7197,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/collections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002), unique within its project (Q-REPO-212). */
+                repoKey: components["parameters"]["RepoKey"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Publish a collection archive from the screen
+         * @description The screens' upload of a collection archive (R-ANS-061, Q-ANS-140): the body is the archive as `ansible-galaxy collection build`
+         *     made it, and the request is served by the handler of the client's publish (`POST v3/artifacts/collections/`, R-ANS-008) with
+         *     the caller's principal and every check of that route: the coarse `deploy` on the repository, the read-only maintenance mode,
+         *     the name and the version the archive's `MANIFEST.json` declares (never the file's name), `deploy` on that collection, the
+         *     ownership of its namespace, the shadowing check of a first version, immutability and tombstones, and the size bounds
+         *     (`ansible.max_archive_bytes`, the repository's and the system's upload limit). A virtual repository hands the archive to its
+         *     deployment target (R-ANS-024). The answer is the import task the publish made, `completed` with its messages (the warnings of
+         *     R-ANS-062 among them) or `failed` with the reason an archive that is no collection archive was refused for; a publish refused
+         *     before the archive was read (no permission, a claimed namespace, a stored or tombstoned version, too large, a wrong `sha256`)
+         *     is an error and makes no task. A remote repository and a repository of another format answer `405 not_applicable`.
+         */
+        post: operations["publishAnsibleCollection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/collections/{collection}/versions/{version}/signatures": {
         parameters: {
             query?: never;
@@ -33567,6 +33601,56 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    publishAnsibleCollection: {
+        parameters: {
+            query?: {
+                /** @description The hex SHA-256 of the archive; a body of another digest is refused with `400 ansible_sha256_mismatch` and nothing is stored. */
+                sha256?: string;
+            };
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002), unique within its project (Q-REPO-212). */
+                repoKey: components["parameters"]["RepoKey"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/gzip": string;
+            };
+        };
+        responses: {
+            /** @description The import task of the publish, final when it is answered. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnsibleImportTask"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description The repository is a remote repository or not an Ansible Galaxy repository (`not_applicable`). */
+            405: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            409: components["responses"]["Conflict"];
+            413: components["responses"]["PayloadTooLarge"];
             429: components["responses"]["TooManyRequests"];
             500: components["responses"]["Internal"];
             503: components["responses"]["Unavailable"];

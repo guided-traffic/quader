@@ -141,8 +141,10 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 		// G2).
 		// 1310 since the import warns of a missing changelog, README, requires_ansible and licence (R-ANS-062, one P1 requirement of
 		// W-30, A5).
-		if len(m.Reqs) != 1310 || count[prioMVP] != 723 || count[prioP1] != 548 || count[prioP2] != 39 {
-			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1310 (723, 548, 39)",
+		// 1311 since the import warns of a missing changelog, README, requires_ansible and licence (R-ANS-062, one P1 requirement of
+		// W-30, A5). 1310 since a collection archive is published on a repository's screen (R-ANS-061, one P1 requirement of W-30, A5).
+		if len(m.Reqs) != 1311 || count[prioMVP] != 723 || count[prioP1] != 549 || count[prioP2] != 39 {
+			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1311 (723, 549, 39)",
 				len(m.Reqs), count[prioMVP], count[prioP1], count[prioP2])
 		}
 	})

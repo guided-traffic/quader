@@ -7,7 +7,7 @@ mechanisms are the scheme `Token` of the authentication stage ([stage.go](../../
 publish ([publish.go](../../internal/formats/ansible/publish.go)), the commit and removal hooks ([hooks.go](../../internal/formats/ansible/hooks.go)), the serve
 check ([servecheck.go](../../internal/formats/ansible/servecheck.go)), the data port ([internal/formatdata/ansible](../../internal/formatdata/ansible/local_store.go)) and its
 journal replay ([journal_replay.go](../../internal/formatdata/ansible/journal_replay.go)). The requirements are
-[R-ANS-006 to R-ANS-013, R-ANS-029 and R-ANS-031](../spec/formats/ansible.md); the developer view is [ansible.md](../developer/ansible.md). The remote
+[R-ANS-006 to R-ANS-013, R-ANS-029, R-ANS-031 and R-ANS-061](../spec/formats/ansible.md); the developer view is [ansible.md](../developer/ansible.md). The remote
 and virtual classes have their own pages when they are built.
 
 ## Credentials
@@ -73,6 +73,16 @@ administrator clears its tombstone, never data or access. The replay of the clea
 
 ## What the management API adds
 
+**The screens' publish is the client's publish** (R-ANS-061, [Q-ANS-140](../spec/formats/ansible.md#q-ans-140--the-screens-publish-is-a-management-operation-that-the-dispatcher-hands-to-the-clients-publish-route)).
+`POST …/repositories/{repoKey}/ansible/collections` of the management API ([ansible_publish.go](../../internal/api/v1/ansible_publish.go)) hands its
+request to the route of `ansible-galaxy collection publish` through the dispatcher (`Dispatcher.Handoff`,
+[handoff.go](../../internal/api/dispatch/handoff.go)), which runs every check of the protocol path with the caller's principal: the coarse `deploy`, the
+read-only maintenance mode, the repository's state and format, a virtual repository's deployment target, and then the handler with the archive's
+identity, ownership, shadowing, immutability and bounds. There is no second road into the commit. A browser's session authenticates it on the management
+API, where an unsafe request needs the session's CSRF token; the session cookie is still not accepted for a write below `/api/<format>/`. The archive
+is the body as it is: the browser reads nothing of it but its name and size, and the file name is not compared with the manifest
+([Q-ANS-142](../spec/formats/ansible.md#q-ans-142--the-name-and-the-version-come-from-the-manifest-and-the-file-name-is-not-compared)).
+
 The import tasks are read with `read` on the repository, the tombstones are listed and cleared with `manage`. A task names the collection and the version and
 nothing else of the archive; its id is a random UUID. A virtual repository shows its deployment target's tasks only to a caller who may read the virtual
 repository. Tasks are deleted after `ansible.import_task_keep` by a task that touches no version.
@@ -84,6 +94,9 @@ missing. The message, at most 1,024 characters of publisher text, is kept for Qu
 audit event `package.metadata_changed`; the collection document carries the flag alone. A remote's flag is its upstream's and cannot be set.
 
 ## What this does not cover
+
+- [H-2180](../spec/formats/ansible.md#h-2180--a-signature-cannot-be-given-on-the-screen) - a signature cannot be given on the screen; a version uploaded into a gated repository is refused to readers until one is posted through the API.
+- [H-2181](../spec/formats/ansible.md#h-2181--a-refusal-of-the-archives-identity-comes-after-its-bytes-were-sent) - a refusal of the archive's identity comes after its bytes were sent.
 
 - [H-841](../spec/formats/ansible.md#h-841--collections-are-not-evaluated-for-vulnerabilities) - collections are not evaluated for vulnerabilities (no OSV ecosystem).
 - [H-843](../spec/formats/ansible.md#h-843--a-publish-inspects-the-archive-inside-the-request) - the publish inspects the archive inside the request, under the core's 30-second deadline.

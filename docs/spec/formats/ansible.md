@@ -381,7 +381,8 @@ query parameter `sha256`) for a scripted publish with `curl --data-binary`, with
    import task row and the audit event `package.published` with the principal of the token (the transaction of R-ARCH-014). The
    response is `202` with `{"task": "<repo URL>v3/imports/collections/<task id>/"}`, the task being already `completed`.
 6. **Where it goes.** A local repository takes it; a virtual repository forwards to its deploy target (R-ANS-024); a remote repository
-   answers 405 `method_not_allowed` with a detail that says remotes are read-only.
+   answers 405 `method_not_allowed` with a detail that says remotes are read-only. The screens' upload is this route, reached through the
+   management API (R-ANS-061).
 
 Limits: the archive size is bounded by the repository and the system upload limit (R-STOR-004) and by `ansible.max_archive_bytes`
 (R-ANS-031); a larger body is 413 before it is read when the length is declared.
@@ -986,8 +987,9 @@ Priority: **P1** · Covers: PKG-ANSIBLE-004
   (one client, `ansible-galaxy`, its name the panel's label, [Q-UI-1241](../api-and-ui.md#q-ui-1241--a-versions-page-has-its-command-behind-the-verbs-button-in-its-head-the-box-is-gone)).
   A collection is not checked for vulnerabilities, and the screens say why (Q-ANS-15,
   [Q-UI-1244](../api-and-ui.md#q-ui-1244--not-checked-for-vulnerabilities-says-the-reason-of-the-format)).
-- The **deploy dialog** (UI-013) is not offered for the format: `/files/` deploys nothing into a repository with a protocol of its own
-  (R-STOR-007), so the screens show `ansible-galaxy collection publish` and the raw-body publish of R-ANS-008 instead (Q-ANS-34).
+- The **deploy dialog** of the raw files (R-UI-012) is not offered for the format: `/files/` deploys nothing into a repository with a protocol of
+  its own (R-STOR-007). A collection is published on the screen with the format's own dialog **Upload collection**, which runs the client's
+  publish (R-ANS-061), beside `ansible-galaxy collection publish` and the raw-body publish of R-ANS-008 (Q-ANS-34).
 - The UI shows the import tasks of a local repository on its edit form (a lazy tab, newest first, state and messages) through the
   management operation `listAnsibleImportTasks` (a virtual repository shows the tasks of its deploy target); and, on a local repository,
   a second lazy tab with the tombstones and the action to clear one (`manage`, after a confirmation). A remote repository has neither
@@ -1758,7 +1760,7 @@ Every entry of the catalog page, with what is built, what stays and what is not 
 | PKG-ANSIBLE-001 Three classes | Built; the federated form and its signing-key selector are not (no federation, no signing) | R-ANS-001, Q-ANS-14 |
 | PKG-ANSIBLE-002 Galaxy v3 API per repository | Built: the three read operations, the discovery document, the version-list paging, the absolute addresses | R-ANS-003, R-ANS-004, R-ANS-007 |
 | PKG-ANSIBLE-003 Publish with `ansible-galaxy` | Built: multipart publish, the stored import task, publish through a virtual repository | R-ANS-008, R-ANS-009, R-ANS-024 |
-| PKG-ANSIBLE-004 Deploy through the UI or plain HTTP | Built as the raw-body publish; `/files/` and the deploy dialog take nothing into a repository with a protocol of its own (R-STOR-007) | R-ANS-008, Q-ANS-34 |
+| PKG-ANSIBLE-004 Deploy through the UI or plain HTTP | Built as the raw-body publish and the screens' **Upload collection**, which runs the client's publish; `/files/` and the raw files' deploy dialog take nothing into a repository with a protocol of its own (R-STOR-007) | R-ANS-008, R-ANS-061, Q-ANS-34, Q-ANS-140 |
 | PKG-ANSIBLE-005 Install collections | Built in all three classes | R-ANS-005, R-ANS-013 |
 | PKG-ANSIBLE-006 Metadata calculation and recalculation | Built: metadata is read at publish, the reindex rebuilds it | R-ANS-010, R-ANS-012 |
 | PKG-ANSIBLE-007 Legacy roles through remote repositories | Built by translation for the public Galaxy's roles; Git and URL roles, role publish and role import are not offered | R-ANS-014, R-ANS-020, Q-ANS-6 |
@@ -2250,6 +2252,81 @@ Acceptance criteria:
 - The web unit tests: the tab Documentation, its hit's address with `?doc=`, the group of the suggestions.
 
 ## Publishing from the screen
+
+### R-ANS-061 · A collection archive is published on a repository's screen
+Priority: **P1** · Covers: PKG-ANSIBLE-004
+
+On Galaxy and on a private hub a person uploads a collection's archive on a namespace's page and watches its import; in Quader the same is done
+on the repository's page, by the client's own publish (the owner, 2026-11-25: "die Galaxy vollständig und ebenbürdig zu ersetzen").
+
+- **The operation.** `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/collections` (`publishAnsibleCollection`) takes the
+  archive as its body (`application/gzip`, the optional `sha256` in the query) and hands the request to the route of the client's publish
+  (R-ANS-008) through the dispatcher, with the caller's principal and every check of that route
+  ([Q-ANS-140](#q-ans-140--the-screens-publish-is-a-management-operation-that-the-dispatcher-hands-to-the-clients-publish-route)): the
+  coarse `deploy` on the repository, the read-only maintenance mode, the repository's state and format, the deployment target of a virtual
+  repository (R-ANS-024), the name and the version of `MANIFEST.json` (never the file's name, [Q-ANS-142](#q-ans-142--the-name-and-the-version-come-from-the-manifest-and-the-file-name-is-not-compared)),
+  `deploy` on that collection, the ownership of its namespace, the shadowing check of a first version, immutability and tombstones, and the size
+  bounds (`ansible.max_archive_bytes`, the repository's and the system's upload limit; a declared length above them is refused before the body
+  is read).
+- **The answer** is `201` with the import task the publish made, read from the repository that holds it (the deployment target of a virtual
+  one): `completed` with its messages (the warnings of R-ANS-062 among them), or `failed` with the reason an archive that is no collection archive
+  was refused for. A publish refused before the archive was read is the management API's problem document with the code of the refusal
+  ([Q-ANS-141](#q-ans-141--the-screens-publish-answers-the-import-task-and-a-refusal-in-the-management-apis-shape)). A remote repository and a
+  repository of another format answer `405 not_applicable`; a virtual repository without a deployment target is refused `deploy` (403).
+- **The act.** **Upload collection** stands in the toolbar of the collections of a local repository and of a virtual one, where a generic
+  repository's folder has **Upload files**, for a caller the page's batched check allows `deploy` there; a reader, a remote repository, a
+  disabled one and a system one show none ([Q-UI-1320](../api-and-ui.md#q-ui-1320--upload-collection-stands-in-the-toolbar-of-the-collections-where-upload-files-stands)).
+  The line of a role's page that says a role is published inside a collection (R-ANS-056) offers it too, with the project's Ansible Galaxy
+  repositories the reader may publish into to choose from ([Q-UI-1323](../api-and-ui.md#q-ui-1323--a-roles-page-offers-upload-collection-with-the-projects-repositories-the-reader-may-publish-into)).
+- **The dialog** (`web/src/app/features/repositories/content/ansible-upload-dialog.ts`, [Q-UI-1321](../api-and-ui.md#q-ui-1321--upload-collection-is-one-file-the-repository-and-the-import-log-and-reads-nothing-again)):
+  the repository it goes into (named, or a choice when it was opened with several), one archive chosen with a button or dropped, shown by its name
+  and size, and **Upload**; nothing else in the first view. While the bytes go the button spins and a bar shows them; once they are sent the
+  dialog says that Quader reads the archive. The answer's task is shown as the tab Import log shows a task (its state, its time, a failed task's
+  reason and code, its messages with their levels), and a completed one leads to the version's page with **Open version**
+  ([Q-UI-1322](../api-and-ui.md#q-ui-1322--a-completed-upload-shows-its-import-log-and-leads-to-the-versions-page-on-a-press)). A refusal is the
+  shared error notice with every fact of the answer (R-UI-216), and the file stays chosen. The task is final when the answer comes
+  (Q-ANS-8), so the dialog reads nothing again.
+- **Untrusted.** The browser reads nothing of the archive but its name and size; the server decides everything (R-ANS-010, R-ANS-031).
+- **A repository whose signature gate is on** ([signatures.md](../signatures.md) R-SIG-061): the gate acts at download and never refuses an upload
+  (Q-SIG-79), so the version is stored and its page says that it is refused to readers until it is signed (R-SIG-074). The dialog takes no
+  signature: the client's publish carries none (`ansible-galaxy collection publish` has no option for one), and a detached signature is posted to
+  the version with the operation of R-SIG-031 ([Q-ANS-145](#q-ans-145--the-screens-publish-takes-no-signature-a-gated-repositorys-version-is-signed-afterwards),
+  [H-2180](#h-2180--a-signature-cannot-be-given-on-the-screen)).
+
+Galaxy's upload and import log, element by element, and what Quader shows of each:
+
+| Galaxy (ansible-hub-ui, read on 2026-11-26) | Quader |
+|---|---|
+| **Upload collection** on a namespace's page, for a holder of `upload_to_namespace`; **Upload new version** on a collection's page | **Upload collection** on the repository's page and a role's page, for a holder of `deploy`; Quader has no namespace page (H-845) |
+| The title "New collection" or "New version of `<ns>.<name>`" | "Upload collection" |
+| A file field "Select file", one file | One file, chosen with **Choose file** or dropped |
+| Checks in the browser: the file's type, its name `namespace-name-version`, its namespace against the page's, with "Upload anyway?" | None: the server reads the identity from `MANIFEST.json` (Q-ANS-142) |
+| A repository selector (staging or all repositories, "not filtered by permissions") | The repository named, or a choice among those the reader may publish into |
+| A bar of the bytes sent; a spinner in the file field | The bar, and the spinning **Upload** |
+| Cancel of a running upload | **Cancel upload** |
+| An error of the upload: the answer's `detail`, `title` or code, or "API error. Status code: …" | The error notice: the sentence in the reader's language, status, call, time, request ID and the server's text (R-UI-216) |
+| After the upload: the page My imports with the import console | The task in the dialog, then **Open version** |
+| The console's Status (waiting, running, completed, failed) | The state's badge, completed or failed: the task is final when it is answered (Q-ANS-8) |
+| Approval status (waiting for approval, approved, rejected) | None: a publish is visible at once (the owner's d5 = a) |
+| Version | The collection, its name and version, in the sentence above the log |
+| Error message: the code, the description and a traceback | The reason and the code; Quader keeps no traceback |
+| The messages, coloured by level | The messages with their levels, a warning's and an error's in their colour |
+| "Done" or "Failed" at the end | The sentence "The collection is published" or "The archive was not published" |
+| Follow logs, scroll to end | Not needed: the log is complete when it is shown |
+| The messages of ansible-doc and ansible-lint | None: Quader runs no program over an archive (R-ANS-034); its own checks and R-ANS-062's warnings |
+
+Acceptance criteria:
+
+- `TestR_ANS_061_TheScreensPublishRunsTheClientsPublishAndAnswersTheTask` (integration `ansiblelocal`, about 3 s with the stack's start,
+  archives under a kilobyte): the operation stores the version with the task of the client's publish and answers it with R-ANS-062's warning;
+  the event names the caller; the client downloads what the screen published; an archive that is no collection is a failed task; other bytes of
+  a stored version, a wrong `sha256`, a reader and a generic repository are refused in the management API's shape and store nothing.
+- `TestR_ANS_061_TheScreensPublishThroughAVirtualRepositoryIsItsTargetsAndItsRefusalsAreTheClients` (integration `ansiblevirtual`, about 3 s
+  with the stub): the version is stored in the deployment target and the answered task is the target's; a first publish of a name a remote
+  member serves is refused `shadows_remote_package` without manage; a virtual repository without a target is refused.
+- `TestR_ANS_061_TheHandoffRunsTheRouteWithEveryCheckAndReturnsItsRefusals` (unit, the dispatcher, milliseconds).
+- The dialog's unit tests (`ansible-upload-dialog.spec.ts`), the act on the repository's page (`repository-content.spec.ts`) and on a role's
+  page (`ansible-role.spec.ts`); the dialog's states without a stack (`ansible-upload.states.spec.ts`, `make ui-states`).
 
 ### R-ANS-062 · The import warns of a missing changelog, README, requires_ansible and licence
 Priority: **P1** · Covers: quader-only
@@ -4010,6 +4087,44 @@ Status: **Decided by the development agent** on 2026-11-26 — selected from the
 
 **Choice:** (a). **Applied in the spec:** R-ANS-047; ADR-287.
 
+### Q-ANS-140 · The screens' publish is a management operation that the dispatcher hands to the client's publish route
+
+Decided by the development agent — selected from the options below; the owner reviews it at the walkthrough. Context: the package A5 of W-30
+asked for an upload on the screen that runs the same handler as the Galaxy route with the session's principal and the same checks. The session
+cookie is accepted below `/api/<format>/` for reads only (R-AUTH-001 item 3).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A management operation whose handler hands the request to the format's route through the dispatcher (`Dispatcher.Handoff`), which returns a refusal instead of writing it in the protocol's shape (chosen) | One road: the coarse check, the maintenance mode, the repository's checks, the deploy target and the handler are the protocol path's | No check can drift between the client's and the screen's publish; the session and its CSRF token stay on the management API | The dispatcher gains a method the management API calls |
+| (b) Accept the session cookie for a `POST` below `/api/ansible/` | The dialog posts to the Galaxy route | No new operation | A browser's ambient cookie would authorize writes on a protocol path, which the stage's rule keeps out; the answer is in the Galaxy shape |
+| (c) A second handler in the management API that calls the format's `Inspect` and commit | — | Independent of the dispatcher | Two roads into the commit, whose checks would have to be kept equal by hand |
+
+**Choice:** (a). The route is found by the format's own `Match` of the client's method and path, so the operation names no route of the format.
+**Applied in the spec:** R-ANS-061.
+
+### Q-ANS-141 · The screens' publish answers the import task, and a refusal in the management API's shape
+
+Decided by the development agent — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `201` with the task, read from the repository that holds it; a refusal before the archive was read is a problem document (chosen) | The dialog has the log in the answer | One request; the error notice reads the problem as every screen does (R-UI-216) | The handler reads the task's id from the route's `202` body |
+| (b) `202` with the task's address, as the client gets it | The dialog reads the task in a second request | The client's answer unchanged | A second read of a task that is final when it is created (Q-ANS-8) |
+
+**Choice:** (a). **Applied in the spec:** R-ANS-061.
+
+### Q-ANS-142 · The name and the version come from the manifest, and the file name is not compared
+
+Decided by the development agent — selected from the options below; the owner reviews it at the walkthrough. Context: Galaxy's upload refuses a
+file name that is not `namespace-name-version` in the browser, and its importer refuses a file name that disagrees with the manifest.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The manifest alone; the file name is shown and not read (chosen) | `acme-tools-1.0.0 (1).tar.gz`, as a browser names a second download, publishes | The server decides from what it verifies (R-ANS-010); nothing of the archive is parsed in the browser | A misnamed file is not caught by its name |
+| (b) Refuse a file name that disagrees, as Galaxy | — | Galaxy's behaviour | Refuses a correct archive for a name the browser gave it; the name proves nothing |
+
+**Choice:** (a). **Applied in the spec:** R-ANS-061.
+
 ### Q-ANS-143 · The import warns of what Galaxy's importer checks without running a program, and refuses nothing for it
 
 Decided by the development agent — selected from the options below; the owner reviews it at the walkthrough. Context: the owner's task of
@@ -4040,7 +4155,34 @@ of R-ANS-062 would have named a collection whose changelog Galaxy finds.
 
 **Choice:** (a). **Applied in the spec:** R-ANS-053, R-ANS-062.
 
+### Q-ANS-145 · The screens' publish takes no signature; a gated repository's version is signed afterwards
+
+Decided by the development agent — selected from the options below; the owner reviews it at the walkthrough. Context: the signature gate of a
+repository (R-SIG-061) acts at download and never refuses an upload (Q-SIG-79); `ansible-galaxy collection publish` sends no signature; a
+detached signature of `MANIFEST.json` is posted with the operation of R-SIG-031.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The dialog takes the archive only; the version's page says it is refused until signed (chosen) | As the client publishes | The simple path stays one file; nothing of the gate is decided in the browser | A team that signs at publish posts the signature through the API (H-2180) |
+| (b) An optional field for a detached signature, posted after a completed import | — | Signing in one place | A second write after the first, a field in the first view that most never use |
+
+**Choice:** (a). **Revisit** with a screen for posting a signature to a version (H-2180). **Applied in the spec:** R-ANS-061.
+
 ## What this does not cover
+
+### H-2180 · A signature cannot be given on the screen
+
+Stage: the screens' publish (R-ANS-061) and a version's page. A detached signature is posted to a version only through the operation of
+R-SIG-031, which no screen calls, so a collection uploaded on the screen into a repository whose signature gate is on is refused to its readers
+until a CI job or a person with a token posts its signature. Live for every gated Ansible Galaxy repository. What makes it real: a team that
+publishes from the screen into a gated repository.
+
+### H-2181 · A refusal of the archive's identity comes after its bytes were sent
+
+Stage: the screens' publish and the client's (R-ANS-008, R-ANS-061). The name, the version and so the namespace's claim, a stored or tombstoned
+version and the shadowing check are known only once the archive was read, so such a refusal comes after the whole upload; only the coarse
+`deploy` on the repository and a declared length above the bounds are refused before the body is read. Live for every publish; bounded by
+`ansible.max_archive_bytes`. Galaxy's upload behaves alike.
 
 ### H-2183 · The import does not check a licence against SPDX, the sanity ignore files or the execution environment's files
 
