@@ -1071,6 +1071,14 @@ order is what a user or an operator meets first. The state is kept here.
 
 ### Tests and tools
 
+- **Open since 2026-11-26, 06:18, two gaps of the tools the blocker above showed.** (1) A journey leg keeps the logs of
+  deleted pods only (`evidence/kept-pod-logs`); a failed request's cause on a living API pod is in no artifact, so a
+  500 in a journey cannot be read from the run. The leg should keep the logs of the product's pods at its end, at
+  least when it failed. (2) The integration areas start replicas of the role `web`; a management operation is served
+  by the role `api` in the chart. The rule for a landing, from now: a package that adds a management operation or a
+  page's read that calls into a format, the blob store or an upstream runs that request against a replica of the
+  role `api` in its integration area, and the brief says so.
+
 - **Open since 2026-11-26, 03:54, measured by the builder of W30-A3, existing statements it did not change: the package list
   and the top bar's package suggestions at 50,000 packages of one format.** The list without a text takes 132 ms
   (it reads every visible version), the suggestions about 75 ms whatever the text (13 ms at 1,000, 23 ms at 10,000);
@@ -1293,6 +1301,43 @@ records the recorder that tells such a stall apart).
   that failed between 07:39 and 09:00 is no finding of the code.
 
 ### Product
+
+- **Opened on 2026-11-26, 06:18, a blocker (the pipeline red, and live on every installation with split roles, the
+  owner's included): the deprecation operation of W30-G4 answers 500 on a replica of the role `api`.** Read at 06:13:
+  `e2e (nuget)` red on the push of 04:59; the journey `TestNuGetDeprecated…` (written, not run before) failed at its
+  first step, `PUT …/packages/<id>/deprecation` → `500 internal`. The run keeps no log of a living pod, so the cause
+  was not in its artifacts. Reproduced in the integration stack: the same call to a replica started with the role
+  `api` answers 500, to the default replica (the role `web`, everything in one process) 200; with an administrator's
+  token as with a developer's. Read in code: the operation takes `a.host`, which `wireFiles` sets on every role and
+  `wireFormatHost` replaces, with the formats bound and `Writes`, only on the filling roles; on the role `api` the
+  format's code runs on the first. Mine: every integration area starts replicas of the role `web`, and no gate of a
+  landing runs a management operation on the role the chart serves it with; six packages of the night added such
+  operations or reads. Given at once to the builder of W30-G4: the cause and the fix, the guard (its integration
+  cases on a replica of the role `api`, and what makes `roles_wiring_test.go` see it), the server's log line of a
+  500 that carried no cause, and the same request against the role `api` for the other operations of the night (an
+  image's configuration and its hold, a chart's README and values, a Debian package's contents, a cached npm
+  version's README, a role's README and search, the page of a name, the documentation search, the changelog). The
+  builder of W30-A5 checks its hand-off to the protocol's route on the role `api` before it lands. With it a fifth
+  builder ran for a short time beside two that were finishing their rebases: a blocker, against the bound of four.
+  **Closed on 2026-11-26, 06:59 (Q-ARCH-1070; no migration).** The cause: the three formats' `Deprecate` ask
+  `formats.CallerVersions`, which asks the host's resolver for the caller's read scope; on the role `api` the host
+  was the serve-check host of `wireFiles`, built without a resolver, whose stub answers every call with an internal
+  error. The fix: one area `management-host` for the roles `api`, `web` and `all`; on `web` and `all` it is the
+  format host, on `api` a host built after the virtual engine the role already has, with that engine as its
+  resolver; still no remote engine and no dispatcher on `api`, so nothing there can fetch. The guard: a table of what
+  each management operation a format decides needs per role, refused at the wiring when a role lacks it
+  (`TestR_ARCH_001_AManagementOperationAFormatDecidesHasItsHostOnEveryManagementRole`), and the integration cases of
+  the deprecation in `nuget`, `npm` and `ansiblelocal` on a replica of the role `api` (set, clear, the details, the
+  lists, the filter, the suggestions). The log: the line of an internal error now carries its own detail, which the
+  answer replaces by the generic sentence, and seven places that had an error at hand and dropped it wrap it. The
+  sweep, each request against a replica of the role `api`, all green without a change: an image's configuration and
+  its hold, a chart's README and values, a Debian package's contents, a cached npm version's README, a role's page
+  and README, the changelog through a remote and of a local collection, the page of a name, the documentation
+  search. Landed alone through a second landing worktree, beside the run of W30-G3: the Go gates, lint and the whole
+  areas `nuget`, `roles`, `ansiblelocal` and `oci` green. Not verified: the journey `e2e (nuget)` on the cluster (the
+  next run shows it); whether a management read on the role `api` makes a request to an upstream (the stub's counts
+  were not asserted on those reads). W30-A5's hand-off failed the same check (503 on the role `api`) and was
+  rebuilt by its builder before its landing.
 
 - **Closed on 2026-11-26, 05:49, by W30-A3 (W-30, the owner's d2 = b and d3 = b; R-ANS-057, R-ANS-058, R-UI-220; Q-ANS-120 to
   Q-ANS-129; Q-UI-1290 to Q-UI-1294; ADR-287; gaps H-2151 to H-2153, H-2155 to H-2157; migration 00138): collections are
