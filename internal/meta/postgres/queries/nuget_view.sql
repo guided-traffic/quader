@@ -5,12 +5,13 @@
 
 -- name: NuGetViewSummaries :many
 -- The description (the summary when there is none) and the tags of the given versions, their deprecation (R-NUGET-036) and their
--- listing state.
+-- listing state, and the package types that decide the install forms of the version (R-NUGET-037).
 SELECT nv.version_id,
        COALESCE(NULLIF(btrim(nv.metadata ->> 'description'), ''), btrim(nv.metadata ->> 'summary'), '')::text AS description,
        CASE WHEN jsonb_typeof(nv.metadata -> 'tags') = 'array' THEN (nv.metadata -> 'tags')::text ELSE '[]' END::text AS tags,
        CASE WHEN jsonb_typeof(nv.metadata -> 'deprecation') = 'object' THEN (nv.metadata -> 'deprecation')::text ELSE '' END::text AS deprecation,
-       nv.listed
+       nv.listed,
+       nv.package_types
   FROM nuget_version nv
   JOIN package_versions pv ON pv.id = nv.version_id
  WHERE nv.version_id = ANY(sqlc.arg(ids)::bigint[])

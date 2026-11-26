@@ -84,6 +84,21 @@ type ViewSizer interface {
 	ViewSizes(ctx context.Context, ports DataPorts, vs []ViewVersion) (map[VersionID]ViewSize, error)
 }
 
+// ViewEmbedder is the optional part of a format whose packages embed files the screens show beside a version (formats/nuget.md
+// R-NUGET-038: NuGet's icon and licence file). ViewEmbedded reads one of them by its name, [EmbeddedIcon] or [EmbeddedLicense], out of
+// the version's stored package, within the format's bound; found is false for a version that embeds none, a stored package that does
+// not hold it and a name the format has no file of. The bytes are untrusted content of a package: the management API serves an icon
+// only as an image whose type it decides from the bytes, and a licence only as text (R-API-029).
+type ViewEmbedder interface {
+	ViewEmbedded(ctx context.Context, ports DataPorts, v ViewVersion, file string) ([]byte, bool, error)
+}
+
+// The names of the files a [ViewEmbedder] reads.
+const (
+	EmbeddedIcon    = "icon"
+	EmbeddedLicense = "license"
+)
+
 // ViewSize is the size of a version as a [ViewSizer] reports it (R-API-080, ADR-205).
 type ViewSize struct {
 	// Bytes is the size in bytes, not below zero; 0 when Unknown.

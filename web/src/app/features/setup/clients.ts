@@ -58,8 +58,59 @@ export function clientsOf(format: string): readonly ClientChoice[] {
  */
 export function clientsOfKind(format: string, kind: string | null): readonly ClientChoice[] {
   const all = clientsOf(format);
+  if (format === 'nuget') {
+    // A .NET tool and a template package are installed by the .NET CLI alone, an MSBuild project SDK is named in a project file or a
+    // file-based app (formats/nuget.md R-NUGET-037, Q-UI-1360): nuget.exe and Visual Studio offer no form of what they cannot install.
+    if (kind === 'dotnet-tool' || kind === 'template') return all.filter((c) => c.id === 'dotnet');
+    if (kind === 'msbuild-sdk') return all.filter((c) => c.id !== 'nuget');
+    return all;
+  }
   if (format !== 'oci') return all;
   return kind === 'helm-chart' ? all.filter((c) => c.id === 'helm') : all.filter((c) => c.id !== 'helm');
+}
+
+/**
+ * The name of a form of installing a package, the option of the select **Form** where a client has several (formats/nuget.md
+ * R-NUGET-037, Q-UI-1360): nuget.org's words for its tabs, a command or a product name as it is written; `null` for an id the page
+ * does not know, which the select names by its id. `clients.spec.ts` fails for every install id of a client with several forms that is
+ * not here.
+ */
+export function installFormLabel(id: string): string | null {
+  switch (id) {
+    case 'dotnet.install':
+      return 'dotnet add package';
+    case 'dotnet.install.paket':
+      return 'Paket';
+    case 'dotnet.install.script':
+      return $localize`:@@setup.form.script:Script and interactive`;
+    case 'dotnet.install.file-based-app':
+    case 'dotnet.install.sdk-file-based-app':
+      return $localize`:@@setup.form.file-based-app:File-based app`;
+    case 'dotnet.install.cake-addin':
+      return $localize`:@@setup.form.cake-addin:Cake add-in`;
+    case 'dotnet.install.cake-tool':
+      return $localize`:@@setup.form.cake-tool:Cake tool`;
+    case 'dotnet.install.cake-dotnet-tool':
+      return 'Cake';
+    case 'dotnet.install.nuke':
+      return 'NUKE';
+    case 'dotnet.install.tool-global':
+      return $localize`:@@setup.form.tool-global:Global tool`;
+    case 'dotnet.install.tool-local':
+      return $localize`:@@setup.form.tool-local:Local tool`;
+    case 'dotnet.install.template':
+      return 'dotnet new install';
+    case 'visual-studio.install.packagereference':
+      return 'PackageReference';
+    case 'visual-studio.install.pmc':
+      return $localize`:@@setup.form.pmc:Package Manager console`;
+    case 'visual-studio.install.cpm':
+      return $localize`:@@setup.form.cpm:Central Package Management`;
+    case 'visual-studio.install.sdk':
+      return $localize`:@@setup.form.sdk:Project SDK`;
+    default:
+      return null;
+  }
 }
 
 /** Who reads the page, as far as the words of a snippet depend on it (R-UI-123). */
@@ -157,6 +208,31 @@ export function snippetText(id: string, reader: SnippetReader = { anonymous: fal
       return text($localize`:@@setup.caption.nuget-config:Save next to your solution. Every package then comes through this repository.`);
     case 'visual-studio.install.packagereference':
       return text($localize`:@@setup.caption.vs-packagereference:Add to the project file inside an \`ItemGroup\`, then restore.`);
+    // The further forms of installing a library (formats/nuget.md R-NUGET-037): on Set up client each behind a fold of its name; in
+    // a version's panel each an option of the select Form, without a sentence.
+    case 'dotnet.install.paket':
+      return text($localize`:@@setup.caption.paket:Paket reads its sources from \`paket.dependencies\`: add this repository there as a \`source\`.`, $localize`:@@setup.fold.paket:With Paket`);
+    case 'dotnet.install.script':
+      return text($localize`:@@setup.caption.script:A directive of an F# script or a .NET notebook.`, $localize`:@@setup.fold.script:In a script or a notebook`);
+    case 'dotnet.install.file-based-app':
+      return text($localize`:@@setup.caption.file-based-app:The first lines of a C# file that \`dotnet run\` runs on its own, from .NET 10.`, $localize`:@@setup.fold.file-based-app:In a file-based app`);
+    case 'dotnet.install.cake-addin':
+      return text($localize`:@@setup.caption.cake:A directive of a Cake script.`, $localize`:@@setup.fold.cake-addin:As a Cake add-in`);
+    case 'dotnet.install.cake-tool':
+      return text($localize`:@@setup.caption.cake:A directive of a Cake script.`, $localize`:@@setup.fold.cake-tool:As a Cake tool`);
+    case 'visual-studio.install.pmc':
+      return text(null, $localize`:@@setup.fold.pmc:In the Package Manager console`);
+    case 'visual-studio.install.cpm':
+      return text($localize`:@@setup.caption.cpm:The version goes into \`Directory.Packages.props\`, the reference into the project file.`, $localize`:@@setup.fold.cpm:With Central Package Management`);
+    // The forms of a .NET tool, a template and an MSBuild SDK are asked with the version's kind only, in its panel.
+    case 'dotnet.install.tool-global':
+    case 'dotnet.install.tool-local':
+    case 'dotnet.install.cake-dotnet-tool':
+    case 'dotnet.install.nuke':
+    case 'dotnet.install.template':
+    case 'dotnet.install.sdk-file-based-app':
+    case 'visual-studio.install.sdk':
+      return text(null);
     case 'curl.configure.function':
       return text($localize`:@@setup.caption.curl-function:Paste into the shell or the CI script that runs curl. The token stays off curl's command line.`);
     case 'wget.configure.function':

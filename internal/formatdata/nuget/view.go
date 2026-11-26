@@ -50,6 +50,7 @@ func (s *Store) ViewSummaries(ctx context.Context, ids []int64) ([]rows.ViewSumm
 			}
 			out = append(out, rows.ViewSummary{
 				VersionID: r.VersionID, Description: r.Description, Tags: nonEmpty(tags), Listed: r.Listed, Deprecation: []byte(r.Deprecation),
+				PackageTypes: r.PackageTypes,
 			})
 		}
 		return nil
@@ -112,6 +113,33 @@ func (s *Store) ViewDetails(ctx context.Context, ids []int64, withReadme bool) (
 		out = append(out, d)
 	}
 	return out, nil
+}
+
+// ViewEmbedded reads a file the .nuspec of a version embeds ("icon", "license", "readme"), at most max bytes, out of the version's
+// stored package through EmbeddedFile, the reader of the route of the embedded files (R-NUGET-024, R-NUGET-038). found is false for a
+// version without a NuGet row or a stored package, one whose .nuspec names no such file, and one whose package does not hold it within
+// max; an object store that fails is an error.
+func (s *Store) ViewEmbedded(ctx context.Context, versionID int64, file string, max int64) ([]byte, bool, error) {
+	var found []q.NuGetViewDetailsRow
+	err := s.o.DB.InTx(ctx, func(tx meta.Tx) error {
+		qs, err := queries(tx)
+		if err != nil {
+			return err
+		}
+		found, err = qs.NuGetViewDetails(ctx, []int64{versionID})
+		return err
+	})
+	if err != nil || len(found) == 0 || s.o.Blobs == nil || len(found[0].BlobSha256) == 0 {
+		return nil, false, err
+	}
+	r := found[0]
+	path := rows.EmbeddedOf([]byte(r.Metadata)).Path(file)
+	if path == "" {
+		return nil, false, nil
+	}
+	// The object store is read after the transaction ended, as the README is.
+	b, err := s.EmbeddedFile(ctx, r.BlobSha256, r.BlobSize, path, max)
+	return b, b != nil, err
 }
 
 // readmePath is the path of the README file the metadata names, "" for none.

@@ -1815,11 +1815,15 @@ on:
 
 - The server fills the public base URL, the project key and the repository key, the package-manager endpoint URL of
   INV-6 (`/api/<format>/<projectKey>/<repoKey>/`), the scheme-less endpoint path (npm's per-registry credential key) and the caller's name.
-  With `package` and `version` the install snippets are specific to that version. For a format whose items are paths (generic),
+  With `package` and `version` the install snippets are specific to that version; a package spelled in another letter case than its
+  normalized name (a NuGet ID in its declared casing) is written as spelled ([formats/nuget.md](formats/nuget.md) Q-NUGET-161). For a format whose items are paths (generic),
   `path` and `sha256` make the install snippets a file's download and its check, and a folder's path (a trailing slash) the publish
   snippets its upload, the path percent-encoded with unreserved characters only and the name quoted for the snippet's language
   ([formats/generic.md](formats/generic.md) R-GENERIC-017, ADR-290); `path` for another format, or beside `package`, answers
   `400 malformed_request`.
+  A client may answer several install snippets, each a form of installing the package, the first the default, and `kind` (the
+  version's `kind` of R-API-029: NuGet's `dotnet-tool`, `template`, `msbuild-sdk`) selects the forms of a kind of package
+  ([formats/nuget.md](formats/nuget.md) R-NUGET-037, Q-NUGET-155); a kind no template names is a package of no kind.
 - The server never fills a token. With `credentials=placeholder` snippets contain the placeholder
   `{{token}}`, replaced in the browser (R-UI-016); with `credentials=env` they hold the
   environment-variable reference of the client's syntax (`${QUADER_TOKEN}` for npm and Yarn,
@@ -4262,6 +4266,10 @@ repository's list and in the head of the version's page; no box of a command sta
   `credentials=none` (the install command carries no credentials). A command of one line is an address field of R-UI-065
   with its joined copy button; a command of several lines is a code block with its copy button (Q-UI-320); either way a
   live region announces "Copied". The tabs list the clients of the format that the UI has instructions for (Q-UI-70).
+- A client with several forms of installing the package (NuGet's, [formats/nuget.md](formats/nuget.md) R-NUGET-037) has a select
+  **Form** above its command, the server's first form by default
+  ([Q-UI-1360](#q-ui-1360--many-forms-of-installing-a-package-the-clients-stay-the-tabs-a-select-form-stands-in-a-clients-tab)); the
+  version's `kind` (a .NET tool, a template, an MSBuild SDK) decides which clients are tabs and which forms each answers.
 - Every client's command is in the panel, the ones not chosen hidden, so the panel is as wide as its longest command (24 to 48 rem,
   never wider than the window less 16 px each side) and switching tabs moves nothing; a one-line command is read in full where there
   is room (Q-UI-455, revisits Q-UI-320). Where the row has no room for the tabs and **Set up client** (npm's four at 390 px), the
@@ -10122,12 +10130,12 @@ section **Package details**.
 | Property | Where it stands | npm | NuGet | OCI | Debian | Ansible Galaxy |
 |---|---|---|---|---|---|---|
 | Description | the head, under the name; Debian's long description first in Details | yes | yes | annotations, labels | short and long | yes |
-| Licence | the facts line; its address the licence's link | yes | expression; `licenseUrl` the link | annotation, label | the copyright file's | yes |
-| Links | one row under the facts line ([Q-UI-1313](#q-ui-1313--a-versions-links-are-one-row-under-its-facts-in-every-format)) | homepage, source, issues | homepage, source | url, documentation, source | homepage | homepage, docs site, source, issues |
-| Install script | a note under the links, where a person decides to install | `hasInstallScript` | not read ([formats/nuget.md](formats/nuget.md) H-2171) | none | not read ([formats/debian.md](formats/debian.md) H-2170) | none: an install runs nothing |
+| Licence | the facts line; its address the licence's link | yes | expression; `licenseUrl` the link; a licence file a link to its text (R-NUGET-038) | annotation, label | the copyright file's | yes |
+| Links | one row under the facts line ([Q-UI-1313](#q-ui-1313--a-versions-links-are-one-row-under-its-facts-in-every-format)) | homepage, source, issues | homepage, source, branch, commit (R-NUGET-038) | url, documentation, source | homepage | homepage, docs site, source, issues |
+| Install script | a note under the links, where a person decides to install ([Q-UI-1363](#q-ui-1363--what-a-build-a-compile-or-an-install-runs-is-said-in-the-note-of-an-install-script)) | `hasInstallScript` | build logic, analyzers, PowerShell scripts, with their files ([formats/nuget.md](formats/nuget.md) R-NUGET-039) | none | not read ([formats/debian.md](formats/debian.md) H-2170) | none: an install runs nothing |
 | Keywords | Details, first: chips to the packages of the format with the keyword ([Q-UI-1312](#q-ui-1312--keywords-and-tags-are-one-block-of-chips-that-open-the-package-list)) | `keywords` | `tags` | none | none (the source package groups) | `tags` |
 | Dependencies | Details, after the keywords: one block ([Q-UI-1311](#q-ui-1311--every-formats-dependencies-are-one-block-a-group-per-kind-in-the-formats-words)) | five fields | per target framework | a chart's | nine relation fields | one list |
-| Package details | Details, after the dependencies and an image's facts | runtimes, types, unpacked size, files, install script, publisher | title, minimum client, package types, language, copyright, release notes, licence acceptance, development dependency | annotations and labels | control fields, source package, copyright file | Ansible versions |
+| Package details | Details, after the dependencies and an image's facts | runtimes, types, unpacked size, files, install script, publisher | title, minimum client, package types, language, copyright, licence acceptance, development dependency, target frameworks as chips, the dependencies' frameworks, symbols; the release notes a section of their own (R-NUGET-038) | annotations and labels | control fields, source package, copyright file | Ansible versions |
 | Authors | Details, after Package details | yes | yes | annotation, label | (Maintainer in Package details) | yes |
 | Size | the facts line, in the unit a person reads ([Q-UI-1316](#q-ui-1316--a-size-is-said-in-the-unit-a-person-reads-wherever-it-stands)) | yes | yes | yes | yes, Installed size in Package details | yes |
 | Dates, downloads | the facts line; the table of versions ([R-UI-222](#r-ui-222--every-table-of-versions-says-each-versions-downloads-and-an-images-digest)) | yes | yes | Pushed or Fetched | yes | yes |
@@ -28124,6 +28132,73 @@ also what stops a loop. Every other failed navigation shows "This screen could n
 **Rationale:** the reader's act was a click on a link, and the least surprising answer is the page the link names; a full load costs what
 opening the address in a new tab costs. The development agent would revisit it when a screen that is open has to follow a new build too
 (H-2240).
+
+### Q-UI-1360 · Many forms of installing a package: the clients stay the tabs, a select Form stands in a client's tab
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below and by the renders at 390, 1,024 and
+1,440 px; the owner reviews it at the walkthrough.
+
+Context: [formats/nuget.md](formats/nuget.md) R-NUGET-037. nuget.org shows eight forms of a library as eight tabs; Quader's panel is a tab
+per client with **Set up client** at the row's end (Q-UI-1240), and npm's four tabs already put the button on a line of its own at 390 px.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The clients stay the tabs; where a client's answer holds several install snippets the page names as forms, a select **Form** above the command picks one, the server's first by default, kept while the panel stands (chosen) | `installFormLabel` of [clients.ts](../../web/src/app/features/setup/clients.ts) names a form; a format offers one by naming it | One command shown, the rest on demand (simple by default); three tabs fit 390 px; **Set up client** still configures the tab's client; a format with many forms adds names, not tabs | One select more to read; the forms of another client are a tab away |
+| (b) The forms as tabs, the clients' sign-in under **Set up client** | nuget.org's layout | As nuget.org | Eight tabs do not fit 1,440 px beside **Set up client**; a tab no longer names the client **Set up client** configures |
+| (c) Every form at once, one under the other | No select | Nothing hidden | Six commands in the .NET CLI's tab: a long panel for the one command most people copy |
+
+**Choice:** (a). The select's options are nuget.org's words (`dotnet add package`, Paket, Script and interactive, File-based app, Cake
+add-in, Cake tool; PackageReference, Package Manager console, Central Package Management; Global tool, Local tool, Cake, NUKE; Project
+SDK); an install snippet the page does not name as a form (Ansible's requirements file) stays on Set up client, so no other format's
+panel changes. A version's `kind` (a .NET tool, a template, an MSBuild SDK) picks the clients that install it (`clientsOfKind`) and
+asks each for its forms of the kind. On Set up client the further forms of a library stand behind folds of their name ("With Paket",
+"In a script or a notebook", "In a file-based app", "As a Cake add-in", "As a Cake tool", "In the Package Manager console", "With Central
+Package Management"). **Applied in the spec:** R-UI-009, Q-UI-1240. Code:
+[client-command.ts](../../web/src/app/features/packages/client-command.ts),
+[client-command-menu.ts](../../web/src/app/features/packages/client-command-menu.ts). Tests: `package-version.spec.ts`, `clients.spec.ts`.
+
+### Q-UI-1361 · A package's own picture stands before the heading of its version's page, and nowhere else
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: [formats/nuget.md](formats/nuget.md) R-NUGET-038: NuGet's icon. No list of the product shows a package's picture in any format
+(a list shows the format's icon).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) 40 px before the heading of the version's page, decorative (`alt=""`: the heading names the package), gone where it does not load (chosen) | A slot `picture` of the page header | nuget.org's place; no list changes for one format | A list does not show it |
+| (b) In every list as well | | nuget.org's search shows it | A request per row; every other format's rows would show the format's icon beside NuGet's pictures |
+
+**Choice:** (a). **Applied in the spec:** R-UI-111. Code: `picture` of [page-header.ts](../../web/src/app/shared/ui/page-header.ts).
+
+### Q-UI-1362 · The repository's branch and commit link only where the page knows the host's addresses
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: [formats/nuget.md](formats/nuget.md) R-NUGET-038: the `.nuspec`'s `repository` element names a URL, a branch and a commit; a host's
+address of a branch or a commit is the host's own (`/tree/` on GitHub, `/-/tree/` on GitLab, `?version=GB…` on Azure DevOps).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) An entry of the version's row of links after the source, "Branch main" and "Commit 4b7e2a9c1d3f": a link on an https address of GitHub, GitLab, Bitbucket and Azure DevOps (`dev.azure.com`, `*.visualstudio.com` with `/_git/`), the label and the value as text elsewhere; a commit by its first twelve characters, the whole as its title (chosen) | Where the source link stands (Q-UI-1313) | Every link leads where it says | A self-hosted Gitea gets text |
+| (b) GitHub's form for every host | | A link everywhere | A link that is a 404 on most other hosts |
+
+**Choice:** (a). A branch written as `refs/heads/main` is named `main`. **Applied in the spec:** R-UI-221. Code: `nugetRepository` and `revisionLinks` of
+[version-metadata.ts](../../web/src/app/features/packages/version-metadata.ts).
+
+### Q-UI-1363 · What a build, a compile or an install runs is said in the note of an install script
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: [formats/nuget.md](formats/nuget.md) R-NUGET-039, H-2171 (closed by it). npm's install script is a muted note under the links
+(Q-UI-1315).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The same note in the same place, one per kind (build logic, analyzers, PowerShell scripts) with the format's sentence and the files in the code font (chosen) | | One place for "this package runs code"; the files say what | Up to three notes for a package that has all three |
+| (b) A row of Package details | | Quiet | Behind a tab, where nobody decides (Q-UI-1315) |
+
+**Choice:** (a). **Applied in the spec:** R-UI-221.
 
 ## What this does not cover
 

@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/guided-traffic/quader/internal/qname"
 
@@ -920,6 +921,9 @@ func setupValues(p gen.GetClientSetupParams) (map[string]string, error) {
 	if p.Scope != nil {
 		values["scope"] = *p.Scope
 	}
+	if p.Kind != nil {
+		values["kind"] = *p.Kind
+	}
 	for name, v := range values {
 		switch {
 		case len(v) > maxSetupValue || strings.ContainsFunc(v, func(r rune) bool { return r < 0x20 || r == 0x7f }):
@@ -976,6 +980,26 @@ func setupFile(p gen.GetClientSetupParams, f formats.Format, pkg string) (*fileT
 	return t, nil
 }
 
+// spelled is the package an install snippet writes: the request's spelling when it differs from the normalized name only in letter
+// case, the name the screens show (a NuGet ID in its declared casing, formats/nuget.md R-NUGET-037), else the normalized name. The
+// spelling passed the format's name rule and the checks of setupValues, and is quoted like any value.
+func spelled(asked, norm string) string {
+	// ASCII letters only: a case mapping beyond them (the Kelvin sign folds to k) is not the same name to every client.
+	if asked != norm && strings.ToLower(asked) == norm && !strings.ContainsFunc(asked, func(r rune) bool { return r > unicode.MaxASCII }) {
+		return asked
+	}
+	return norm
+}
+
+// setupKind is the kind of package the install snippets are rendered for: the asked one when an install template of the format names
+// it, else "" (formats.SetupTemplate.Kind): a kind for which no snippet differs is a package of no kind.
+func setupKind(templates []formats.SetupTemplate, kind string) string {
+	if kind != "" && slices.ContainsFunc(templates, func(t formats.SetupTemplate) bool { return t.Section == "install" && t.Kind == kind }) {
+		return kind
+	}
+	return ""
+}
+
 func (s *Server) clientSetup(r *http.Request, ps PackageServices, repoKey qname.Repo, p gen.GetClientSetupParams) (gen.ClientSetup, error) {
 	ctx := r.Context()
 	creds := credPlaceholder
@@ -1024,7 +1048,7 @@ func (s *Server) clientSetup(r *http.Request, ps PackageServices, repoKey qname.
 		if !ok {
 			return gen.ClientSetup{}, badParam("package", "is not a package name of the format "+repo.Format)
 		}
-		values["package"] = norm
+		values["package"] = spelled(pkg, norm)
 		if claimingPrefix(templates, p.Client, norm) != "" {
 			// A package an install template of its own claims is written by its display name, the name its client knows (an
 			// Ansible role's "<owner>.<name>" for its package "role/<id>", R-ANS-056), when the caller may read the package.
@@ -1074,8 +1098,8 @@ func (s *Server) clientSetup(r *http.Request, ps PackageServices, repoKey qname.
 			RegistryURL: registry, ImagePrefix: imagePrefix(f, registry), Repository: repoKey.String(), Project: repoKey.Project, Key: repoKey.Key, Endpoint: acc.Subject.Endpoint,
 			RequiresAuth: requiresAuth, Bastion: bastion,
 		},
-		Package: values["package"], Version: values["version"], DisplayName: values["displayName"], Scope: scopeName, MayPublish: mayPublish,
-		File: file,
+		Package: values["package"], Version: values["version"], DisplayName: values["displayName"], Kind: setupKind(templates, values["kind"]),
+		Scope: scopeName, MayPublish: mayPublish, File: file,
 	})
 	if err != nil {
 		return gen.ClientSetup{}, errs.Wrap(err, "api.clientSetup")

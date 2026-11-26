@@ -143,8 +143,10 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 		// 1311 since the import warns of a missing changelog, README, requires_ansible and licence (R-ANS-062, one P1 requirement of
 		// W-30, A5).
 		// 1312 since a version's page lists the packages that depend on its package (R-API-086, one P1 requirement of W-30, G5).
-		if len(m.Reqs) != 1312 || count[prioMVP] != 723 || count[prioP1] != 550 || count[prioP2] != 39 {
-			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1312 (723, 550, 39)",
+		// 1315 since NuGet's install forms by package type, its icon, licence file, frameworks, symbols, revision and release notes, and
+		// what a build or an install of a package runs (R-NUGET-037 to R-NUGET-039, three P1 requirements of W-30, G6).
+		if len(m.Reqs) != 1315 || count[prioMVP] != 723 || count[prioP1] != 553 || count[prioP2] != 39 {
+			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1315 (723, 553, 39)",
 				len(m.Reqs), count[prioMVP], count[prioP1], count[prioP2])
 		}
 	})

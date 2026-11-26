@@ -237,3 +237,35 @@ tr.expansion td {
 .version-keywords {
   margin-block-end: var(--quader-space-5);
 }
+
+// The picture a package embeds (NuGet's icon, R-NUGET-038) before the heading: 40 px, the picture kept whole inside it, never wider than
+// it was drawn; on the heading's first line.
+.package-icon {
+  flex: none;
+  inline-size: 2.5rem;
+  block-size: 2.5rem;
+  object-fit: contain;
+  border-radius: var(--quader-radius-s);
+}
+
+// The files of what runs when a project uses a NuGet package (R-NUGET-039): package paths in the code font, breaking anywhere rather than
+// pushing the line out of the screen.
+.runs-files {
+  font-family: var(--quader-font-mono);
+  font-size: 0.8125rem;
+  overflow-wrap: anywhere;
+}
+
+// A NuGet version's release notes (R-NUGET-038): text with its line breaks, which the page grows by (R-UI-215).
+.release-notes {
+  margin: 0;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+// The target frameworks of a NuGet version (R-NUGET-038): badges in the value's running text, each on the middle of its line by the
+// badge's line rule (R-UI-175), wrapping as words do; a space between them, and 4 px more.
+.chips .badge {
+  margin-inline-end: var(--quader-space-1);
+}
+

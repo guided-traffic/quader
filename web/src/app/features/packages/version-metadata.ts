@@ -197,7 +197,6 @@ export function nugetFacts(m: Record<string, unknown>): [string, string][] {
     [$localize`:@@pkg.meta.package-types:Package types`, strings(m['packageTypes']).join(', ')],
     [$localize`:@@pkg.meta.language:Language`, text(m['language'])],
     [$localize`:@@pkg.meta.copyright:Copyright`, text(m['copyright'])],
-    [$localize`:@@pkg.meta.release-notes:Release notes`, text(m['releaseNotes'])],
     [
       $localize`:@@pkg.meta.license-acceptance:Licence acceptance`,
       m['requireLicenseAcceptance'] === true ? $localize`:@@pkg.meta.license-acceptance-yes:required before it is installed` : '',
@@ -208,6 +207,105 @@ export function nugetFacts(m: Record<string, unknown>): [string, string][] {
     ],
   ];
   return entries.filter((e) => e[1] !== '');
+}
+
+/**
+ * The target frameworks of a NuGet version (formats/nuget.md R-NUGET-038): those its package's folders name, and the frameworks of its
+ * dependency groups that no folder names (a meta-package has no folders), as the server read them; both empty for a version whose file
+ * list was not read.
+ */
+export function nugetFrameworks(m: Record<string, unknown>): { readonly folders: readonly string[]; readonly dependencies: readonly string[] } {
+  return { folders: strings(m['frameworks']), dependencies: strings(m['dependencyFrameworks']) };
+}
+
+/** What runs when a project uses a NuGet package (R-NUGET-039): the files of each kind, by their package paths, as the server read them. */
+export interface NugetRuns {
+  readonly build: readonly string[];
+  readonly analyzers: readonly string[];
+  readonly scripts: readonly string[];
+}
+
+export function nugetRuns(m: Record<string, unknown>): NugetRuns | null {
+  const runs = { build: strings(m['buildFiles']), analyzers: strings(m['analyzers']), scripts: strings(m['scripts']) };
+  return runs.build.length + runs.analyzers.length + runs.scripts.length > 0 ? runs : null;
+}
+
+/** A fact that may be a link: its text, its address where the page can build one, and a longer text for its title. */
+export interface LinkedFact {
+  readonly text: string;
+  readonly href: string | null;
+  readonly title: string;
+}
+
+/**
+ * The repository's branch and commit of a NuGet version (R-NUGET-038), each a link where the repository's address is an https address of
+ * a host whose addresses of a branch and a commit the page knows (GitHub, GitLab, Bitbucket, Azure DevOps); the text alone elsewhere. A
+ * branch written as a ref (`refs/heads/main`) is named by the branch; a commit by its first twelve characters.
+ */
+export function nugetRepository(m: Record<string, unknown>): { readonly branch: LinkedFact | null; readonly commit: LinkedFact | null } {
+  const base = repositoryBase(text(m['repositoryUrl']));
+  const branchText = text(m['repositoryBranch']).replace(/^refs\/heads\//, '');
+  const commitText = text(m['repositoryCommit']);
+  const link = (kind: 'tree' | 'commit', value: string): string | null => {
+    if (!base || !/^[\w./-]{1,200}$/.test(value)) return null;
+    const v = encodeURI(value);
+    switch (base.host) {
+      case 'gitlab':
+        return `${base.url}/-/${kind}/${v}`;
+      case 'bitbucket':
+        return kind === 'commit' ? `${base.url}/commits/${v}` : `${base.url}/src/${v}`;
+      case 'azure':
+        return `${base.url}?version=${kind === 'commit' ? 'GC' : 'GB'}${encodeURIComponent(value)}`;
+      default:
+        return `${base.url}/${kind}/${v}`;
+    }
+  };
+  return {
+    branch: branchText === '' ? null : { text: branchText, href: link('tree', branchText), title: text(m['repositoryBranch']) },
+    commit: commitText === '' ? null : { text: commitText.slice(0, 12), href: link('commit', commitText), title: commitText },
+  };
+}
+
+/** The https address of a repository whose branch and commit addresses the page knows, without `.git` and a trailing slash. */
+function repositoryBase(raw: string): { readonly url: string; readonly host: 'github' | 'gitlab' | 'bitbucket' | 'azure' } | null {
+  const safe = safeHttpUrl(raw);
+  if (!safe || !safe.startsWith('https://')) return null;
+  let u: URL;
+  try {
+    u = new URL(safe);
+  } catch {
+    return null;
+  }
+  if (u.search !== '' || u.hash !== '' || u.username !== '' || u.password !== '') return null;
+  const url = `${u.origin}${u.pathname.replace(/\/+$/, '').replace(/\.git$/, '')}`;
+  const host = u.hostname.toLowerCase();
+  if (host === 'github.com') return { url, host: 'github' };
+  if (host === 'bitbucket.org') return { url, host: 'bitbucket' };
+  if (host === 'dev.azure.com' || host.endsWith('.visualstudio.com')) return u.pathname.includes('/_git/') ? { url, host: 'azure' } : null;
+  if (host === 'gitlab.com' || host.startsWith('gitlab.')) return { url, host: 'gitlab' };
+  return null;
+}
+
+/**
+ * The branch and the commit as entries of a version's row of links (R-NUGET-038, Q-UI-1362): a link names its value ("Branch main",
+ * "Commit 4b7e2a9c1d3f"); one the page cannot address is its label and its value as text.
+ */
+export function revisionLinks(r: { readonly branch: LinkedFact | null; readonly commit: LinkedFact | null }): MetadataLink[] {
+  const out: MetadataLink[] = [];
+  if (r.branch) {
+    const label = $localize`:@@pkg.meta.branch:Branch`;
+    out.push(r.branch.href ? { label: `${label} ${r.branch.text}`, text: r.branch.title, href: r.branch.href } : { label, text: r.branch.text, href: null });
+  }
+  if (r.commit) {
+    const label = $localize`:@@pkg.meta.commit:Commit`;
+    out.push(r.commit.href ? { label: `${label} ${r.commit.text}`, text: r.commit.title, href: r.commit.href } : { label, text: r.commit.title, href: null });
+  }
+  return out;
+}
+
+/** The release notes of a NuGet version (R-NUGET-038), shown as text with their line breaks; '' for none. */
+export function releaseNotes(m: Record<string, unknown>): string {
+  return typeof m['releaseNotes'] === 'string' ? m['releaseNotes'].trim() : '';
 }
 
 /**

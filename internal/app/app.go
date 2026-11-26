@@ -193,6 +193,8 @@ type App struct {
 	debDescribe late[jobs.Handler]
 	// debContents is the handler of the job deb-contents, which reads a package file's data archive (wire_remote_describe.go).
 	debContents late[jobs.Handler]
+	// nugetContents is the handler of the job nuget-contents, which reads a stored package's file list (wire_remote_describe.go).
+	nugetContents late[jobs.Handler]
 	// ociDescribe is the handler of the job oci-describe (wire_remote_describe.go).
 	ociDescribe late[jobs.Handler]
 	// remoteDescribe is the task remote-describe (wire_remote_describe.go).

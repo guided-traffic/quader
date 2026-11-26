@@ -25,3 +25,23 @@
   margin: 0;
   color: var(--quader-text-muted);
 }
+
+// The select of the forms of installing the package (R-NUGET-037, Q-UI-1360): on one line with its word, as the panel's select of the
+// repository stands, as wide as its longest form; the command under it.
+.command-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--quader-space-1) var(--quader-space-2);
+  margin-block-end: var(--quader-space-2);
+  font-size: 0.875rem;
+  font-weight: 600;
+
+  .select-input {
+    flex: 0 1 auto;
+    inline-size: auto;
+    min-inline-size: 0;
+    max-inline-size: 100%;
+    font-weight: 400;
+  }
+}

@@ -8,7 +8,8 @@ import { AddressField } from '../address-field';
  * most one `btn btn-confirm`, `btn btn-default` beside it), which go under the rest where the page is narrow. Views of the same
  * object are the page's tabs, under the header; a way up to a list is the breadcrumb. A list's page may show its number of
  * entries after the heading (`count`). A picture of the page (projected with `art`, the flow on Set up client, Q-UI-800) stands at the
- * row's end and decides itself where it shows.
+ * row's end and decides itself where it shows. The object's own picture (projected with `picture`, a package's icon, R-NUGET-038) stands
+ * before the heading.
  */
 @Component({
   selector: 'quader-page-header',
@@ -17,9 +18,12 @@ import { AddressField } from '../address-field';
   template: `
     <header class="page-header-row">
       <div class="page-header-main">
-        <h1 tabindex="-1" [attr.translate]="name() ? 'no' : null"
-          >{{ heading() }}@if (count() !== null) {&ngsp;<span class="badge heading-count" translate="no">{{ count() }}</span>}</h1
-        >
+        <div class="page-header-title">
+          <ng-content select="[picture]" />
+          <h1 tabindex="-1" [attr.translate]="name() ? 'no' : null"
+            >{{ heading() }}@if (count() !== null) {&ngsp;<span class="badge heading-count" translate="no">{{ count() }}</span>}</h1
+          >
+        </div>
         @if (description()) {
           <p class="page-header-description" [attr.translate]="descriptionAsWritten() ? 'no' : null">{{ description() }}</p>
         }
@@ -57,7 +61,16 @@ import { AddressField } from '../address-field';
 
     quader-page-header h1 {
       margin: 0;
+      min-inline-size: 0;
       overflow-wrap: anywhere;
+    }
+
+    /* The heading, and before it the object's own picture where it has one (projected with \`picture\`: a package's icon, R-NUGET-038),
+       centred on the heading's first line. */
+    quader-page-header .page-header-title {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--quader-space-3);
     }
 
     /* The number of the list's entries after its noun ("Members 2", Q-UI-550): the neutral badge of a count, as a tab carries it,

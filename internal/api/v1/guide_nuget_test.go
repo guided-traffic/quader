@@ -39,7 +39,7 @@ func TestR_NUGET_026_TheSetupSnippetsOfEveryClient(t *testing.T) {
 	for id, want := range map[string]string{
 		"dotnet.configure.shell":      "dotnet nuget add source " + feed + " --name quader \\\n  --username quader --password \"${MY_TOKEN}\" --store-password-in-clear-text\n",
 		"dotnet.configure.powershell": "dotnet nuget add source " + feed + " --name quader `\n  --username quader --password \"$env:MY_TOKEN\" --store-password-in-clear-text\n",
-		"dotnet.install":              "dotnet add package acme.widgets --version 1.2.3-rc.1\n",
+		"dotnet.install":              "dotnet add package Acme.Widgets --version 1.2.3-rc.1\n",
 		"dotnet.publish.shell":        "dotnet nuget push bin/Release/Acme.Widgets.1.2.3.nupkg --source " + feed + " --api-key \"${MY_TOKEN}\"\n",
 		"dotnet.publish.powershell":   "dotnet nuget push bin/Release/Acme.Widgets.1.2.3.nupkg --source " + feed + " --api-key \"$env:MY_TOKEN\"\n",
 	} {
@@ -62,7 +62,7 @@ func TestR_NUGET_026_TheSetupSnippetsOfEveryClient(t *testing.T) {
 	nuget := setupOf(t, "/api/v1/projects/it/repositories/nuget-local/client-setup?client=nuget&credentials=env&package=Acme.Widgets&version=1.2.3")
 	for id, want := range map[string]string{
 		"nuget.configure.cmd":        "nuget sources add -Name quader -Source " + feed + " ^\n  -Username quader -Password %MY_TOKEN%\n",
-		"nuget.install":              "nuget install acme.widgets -Version 1.2.3 -Source quader -OutputDirectory packages\n",
+		"nuget.install":              "nuget install Acme.Widgets -Version 1.2.3 -Source quader -OutputDirectory packages\n",
 		"nuget.publish.cmd":          "nuget push Acme.Widgets.1.2.3.nupkg -Source " + feed + " -ApiKey %MY_TOKEN%\n",
 		"nuget.publish.powershell":   "nuget push Acme.Widgets.1.2.3.nupkg -Source " + feed + " -ApiKey \"$env:MY_TOKEN\"\n",
 		"nuget.configure.powershell": "nuget sources add -Name quader -Source " + feed + " `\n  -Username quader -Password \"$env:MY_TOKEN\"\n",
@@ -73,7 +73,7 @@ func TestR_NUGET_026_TheSetupSnippetsOfEveryClient(t *testing.T) {
 	}
 
 	vs := setupOf(t, "/api/v1/projects/it/repositories/nuget-local/client-setup?client=visual-studio&credentials=env&package=Acme.Widgets&version=1.2.3")
-	if got, _ := snippetContent(vs, "visual-studio.install.packagereference"); got != "<PackageReference Include=\"acme.widgets\" Version=\"1.2.3\" />\n" {
+	if got, _ := snippetContent(vs, "visual-studio.install.packagereference"); got != "<PackageReference Include=\"Acme.Widgets\" Version=\"1.2.3\" />\n" {
 		t.Errorf("PackageReference: %q", got)
 	}
 	if _, ok := snippetContent(vs, "visual-studio.publish"); ok || slices.ContainsFunc(vs.Snippets, func(s gen.ClientSnippet) bool { return s.Tab == "publish" }) {
@@ -82,6 +82,39 @@ func TestR_NUGET_026_TheSetupSnippetsOfEveryClient(t *testing.T) {
 	// A package that is no NuGet ID is refused, so no value reaches an XML attribute or a shell unchecked.
 	if w := get(setupServer(t, "https://quader.example.com", true), "/api/v1/projects/it/repositories/nuget-local/client-setup?client=visual-studio&package="+url.QueryEscape(`A"B`)); w.Code != 400 {
 		t.Errorf("a package that is no ID: %d", w.Code)
+	}
+}
+
+// TestR_NUGET_037_TheFormsOfAKind: a client answers every install form of the kind asked for, in its order, the version placed where
+// each form takes it; a client without a form of the kind answers none; a kind no form of the format names is a library.
+func TestR_NUGET_037_TheFormsOfAKind(t *testing.T) {
+	installs := func(query string) []string {
+		var out []string
+		for _, sn := range setupOf(t, "/api/v1/projects/it/repositories/nuget-local/client-setup?credentials=none&package=Acme.Tool&version=2.0.0&"+query).Snippets {
+			if sn.Tab == "install" {
+				out = append(out, sn.Id+" "+strings.TrimSpace(sn.Content))
+			}
+		}
+		return out
+	}
+	for query, want := range map[string][]string{
+		"client=dotnet&kind=dotnet-tool": {
+			"dotnet.install.tool-global dotnet tool install --global Acme.Tool --version 2.0.0",
+			"dotnet.install.tool-local dotnet tool install --local Acme.Tool --version 2.0.0",
+			"dotnet.install.cake-dotnet-tool #tool dotnet:?package=Acme.Tool&version=2.0.0",
+			"dotnet.install.nuke nuke :add-package Acme.Tool --version 2.0.0",
+		},
+		"client=visual-studio&kind=dotnet-tool": nil,
+		"client=dotnet&kind=template":           {"dotnet.install.template dotnet new install Acme.Tool@2.0.0"},
+		"client=dotnet&kind=image":              installs("client=dotnet"),
+	} {
+		if got := installs(query); strings.Join(got, "\n") != strings.Join(want, "\n") {
+			t.Errorf("%s:\n%s\nwant\n%s", query, strings.Join(got, "\n"), strings.Join(want, "\n"))
+		}
+	}
+	got := installs("client=dotnet")
+	if len(got) != 6 || got[2] != `dotnet.install.script #r "nuget: Acme.Tool, 2.0.0"` {
+		t.Errorf("the forms of a library: %q", got)
 	}
 }
 

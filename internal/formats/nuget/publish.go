@@ -119,6 +119,9 @@ func (in *incoming) metadataJSON() ([]byte, error) {
 	for _, t := range m.PackageTypes {
 		out.PackageTypes = append(out.PackageTypes, rows.PackageType{Name: t.Name, Version: t.Version})
 	}
+	if in.result != nil && in.result.Archive != nil {
+		out.Contents = nupkg.ContentsOf(in.result.Archive.Entries(), in.lowerID)
+	}
 	return json.Marshal(out)
 }
 

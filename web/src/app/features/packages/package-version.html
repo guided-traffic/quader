@@ -1,4 +1,9 @@
 <quader-page-header [heading]="heading()" [name]="true" [description]="description()" [descriptionAsWritten]="true">
+  <!-- The picture the package embeds (NuGet's icon, R-NUGET-038), read through this installation's API: never an address the package
+       names. Decorative: the heading names the package. -->
+  @if (icon(); as src) {
+    <img picture class="package-icon" [src]="src" alt="" width="40" height="40" data-testid="package-icon" (error)="iconError()" />
+  }
   <span meta class="pkg-meta">
     <span class="type-badge">
       <quader-format-icon [format]="format()" />
@@ -138,6 +143,14 @@
               ><span class="visually-hidden" i18n="@@pkg.meta.external">(opens another site)</span></a
             ></span
           >
+        } @else if (licenseFile(); as lf) {
+          <!-- A licence of the type file (R-NUGET-038): its text as this installation serves it, plain text in a tab of its own. -->
+          <span
+            ><a class="external-link" [href]="lf.href" target="_blank" rel="noopener" [attr.title]="lf.name" data-testid="license-file"
+              ><ng-container i18n="@@pkg.meta.license-file">License file</ng-container><span class="material-icons" aria-hidden="true">open_in_new</span
+              ><span class="visually-hidden" i18n="@@pkg.meta.new-tab">(opens in a new tab)</span></a
+            ></span
+          >
         } @else if (licenses().length > 0) {
           <span translate="no">{{ licenses().join(', ') }}</span>
         }
@@ -151,6 +164,15 @@
     @if (installScript(); as note) {
       <p class="version-note install-script" data-testid="install-script">
         <span class="material-icons inline" aria-hidden="true">terminal</span>{{ note }}
+      </p>
+    }
+    <!-- What runs when a project uses a NuGet package (R-NUGET-039): the same note in the same place, the format's own sentence and the
+         files, as text. -->
+    @for (r of runs(); track r.kind) {
+      <p class="version-note install-script" [attr.data-testid]="'runs-' + r.kind">
+        <span class="material-icons inline" aria-hidden="true">{{ r.icon }}</span>{{ r.text }}&ngsp;<span class="runs-files" translate="no">{{
+          r.files
+        }}</span>
       </p>
     }
     <!-- Why no client can install the version, where the head has no button (Q-UI-1260, Q-UI-965, Q-UI-898, Q-UI-899), and why a version of the
@@ -710,15 +732,48 @@
               @if (role(); as r) {
                 <quader-ansible-role-facts [facts]="r" [remote]="roleRemote()" />
               }
+              <!-- A NuGet version's release notes (R-NUGET-038): as text, their line breaks kept; a long one grows the page. -->
+              @if (releaseNotes(); as notes) {
+                <h2 i18n="@@pkg.meta.release-notes">Release notes</h2>
+                <p class="release-notes" translate="no" data-testid="release-notes">{{ notes }}</p>
+              }
               <!-- The facts only the format has, in one section of every format (R-UI-221): npm's runtimes, types, tarball and publisher,
-                   NuGet's, Debian's control fields with its source package and copyright file, an Ansible collection's Ansible versions, an
-                   image's annotations and labels. -->
-              @if (packageFacts().length > 0 || debSource()) {
+                   NuGet's with its frameworks and symbols, Debian's control fields with its source package and copyright
+                   file, an Ansible collection's Ansible versions, an image's annotations and labels. -->
+              @if (packageFacts().length > 0 || debSource() || frameworks().folders.length > 0 || frameworks().dependencies.length > 0 || symbols()) {
                 <h2 i18n="@@pkg.meta.facts">Package details</h2>
                 <dl class="facts" [attr.data-testid]="packageFactsId()">
                   @for (f of packageFacts(); track f[0]) {
                     <dt>{{ f[0] }}</dt>
                     <dd translate="no">{{ f[1] }}</dd>
+                  }
+                  <!-- NuGet's target frameworks as chips, the dependency groups' beside them where no folder names them (R-NUGET-038). -->
+                  @if (frameworks().folders.length > 0) {
+                    <dt i18n="@@pkg.meta.frameworks">Target frameworks</dt>
+                    <dd>
+                      <span class="chips" translate="no" data-testid="frameworks">
+                        @for (f of frameworks().folders; track f) {
+                          <span class="badge">{{ f }}</span>&ngsp;
+                        }
+                      </span>
+                    </dd>
+                  }
+                  @if (frameworks().dependencies.length > 0) {
+                    <dt i18n="@@pkg.meta.dependency-frameworks">Frameworks of the dependencies</dt>
+                    <dd>
+                      <span class="chips" translate="no" data-testid="dependency-frameworks">
+                        @for (f of frameworks().dependencies; track f) {
+                          <span class="badge">{{ f }}</span>&ngsp;
+                        }
+                      </span>
+                    </dd>
+                  }
+                  <!-- A symbol package held beside the package (R-NUGET-020): debuggers cannot read it from Quader yet (R-NUGET-021). -->
+                  @if (symbols(); as file) {
+                    <dt i18n="@@pkg.meta.symbols">Symbols</dt>
+                    <dd data-testid="symbols">
+                      <ng-container i18n="@@pkg.meta.symbols-held">Symbol package held: <code translate="no">{{ file }}</code>. Quader does not serve symbols to a debugger yet; download the file from the tab Files.</ng-container>
+                    </dd>
                   }
                   <!-- The source package lists its binaries: the package list filtered by it (R-DEB-038, Q-DEB-142). -->
                   @if (debSource(); as src) {

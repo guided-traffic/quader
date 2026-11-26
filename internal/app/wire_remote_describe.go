@@ -49,6 +49,11 @@ func (a *App) startRemoteDescribe(ctx context.Context, in infra, ports map[forma
 	if !ok {
 		return fmt.Errorf("formats: the Ansible Galaxy data port is not the PostgreSQL store")
 	}
+	nuget, ok := ports[nugetformat.ID].(*nugetdata.Store)
+	if !ok {
+		return fmt.Errorf("formats: the NuGet data port is not the PostgreSQL store")
+	}
+	a.nugetContents.set(nugetdata.ContentsHandler(nuget))
 	a.npmDescribe.set(npmdata.DescribeHandler(npm))
 	a.debDescribe.set(debdata.DescribeHandler(deb))
 	a.debContents.set(debdata.ContentsHandler(deb))
@@ -73,6 +78,9 @@ func (a *App) startRemoteDescribe(ctx context.Context, in infra, ports map[forma
 				string(npmformat.ID): npmdata.DependencySource, string(nugetformat.ID): nugetdata.DependencySource,
 				string(debformat.ID): debdata.DependencySource, string(ansibleformat.ID): ansibledata.DependencySource,
 			}}},
+			// The file lists of NuGet packages a local or a remote repository stored before the ingestion read them: the frameworks of
+			// their folders and the files that run code when a project uses them (R-NUGET-038, R-NUGET-039).
+			{Kind: nugetdata.ContentsJobKind, Port: nugetdata.ContentsPort{S: nuget}},
 		},
 	})
 	if err != nil {

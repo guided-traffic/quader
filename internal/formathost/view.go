@@ -35,7 +35,10 @@ func NewViewAdapters(fs []formats.Format, ports formats.DataPorts) *ViewAdapters
 	for _, f := range fs {
 		if a := f.View(); a != nil {
 			id := string(f.Descriptor().ID)
-			b := viewBridge{a: a, ports: ports, fetch: f.Descriptor().VersionFetch, dep: formats.CapabilitiesOf(f).Deprecations, rank: formats.CapabilitiesOf(f).ViewRanker}
+			b := viewBridge{
+				a: a, ports: ports, fetch: f.Descriptor().VersionFetch, dep: formats.CapabilitiesOf(f).Deprecations, rank: formats.CapabilitiesOf(f).ViewRanker,
+				emb: formats.CapabilitiesOf(f).ViewEmbedder,
+			}
 			v.bridges[id] = b
 			v.by[id] = b
 			if z := formats.CapabilitiesOf(f).ViewSizer; z != nil {
@@ -85,6 +88,20 @@ type viewBridge struct {
 	dep formats.DeprecationFinder
 	// rank is the format's ranked search (formats.ViewRanker), nil for a format whose matches all rank 0.
 	rank formats.ViewRanker
+	// emb reads the files a version's package embeds (formats.ViewEmbedder), nil for a format whose packages embed none.
+	emb formats.ViewEmbedder
+}
+
+var _ view.Embedder = viewBridge{}
+
+// Embedded reads a file a version's package embeds (R-NUGET-038); a format whose packages embed none has none.
+func (b viewBridge) Embedded(ctx context.Context, v view.Version, file string) ([]byte, bool, error) {
+	if b.emb == nil {
+		return nil, false, nil
+	}
+	return b.emb.ViewEmbedded(ctx, b.ports, formats.ViewVersion{
+		ID: formats.VersionID(v.ID), Repo: formats.RepoRef{Name: nameOf(v.Repo), Format: formats.ID(v.Format)}, Package: v.Package, Version: v.Version,
+	}, file)
 }
 
 // Deprecated asks the format for its stored versions that are deprecated (R-API-085); a format without them has none.

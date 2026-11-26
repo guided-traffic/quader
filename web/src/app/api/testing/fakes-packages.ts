@@ -1213,12 +1213,44 @@ function nugetSetup(repo: Repository, query: ClientSetupQuery, mayPublish: boole
   }
   add(`${query.client}.configure.nugetconfig`, 'configure', 'xml', config, 'nuget.config');
 
+  // The install forms by the kind of the package, as the server answers them (formats/nuget.md R-NUGET-037).
+  const v = withVersion || '<version>';
+  const opt = (flag: string): string => (withVersion ? ` ${flag} ${withVersion}` : '');
+  const kind = query.kind ?? '';
   if (query.client === 'dotnet') {
-    add('dotnet.install', 'install', 'shell', `dotnet add package ${pkg}${withVersion ? ` --version ${withVersion}` : ''}\n`);
+    if (kind === 'dotnet-tool') {
+      add('dotnet.install.tool-global', 'install', 'shell', `dotnet tool install --global ${pkg}${opt('--version')}\n`);
+      add('dotnet.install.tool-local', 'install', 'shell', `dotnet tool install --local ${pkg}${opt('--version')}\n`);
+      add('dotnet.install.cake-dotnet-tool', 'install', 'text', `#tool dotnet:?package=${pkg}&version=${v}\n`);
+      add('dotnet.install.nuke', 'install', 'shell', `nuke :add-package ${pkg}${opt('--version')}\n`);
+    } else if (kind === 'template') {
+      add('dotnet.install.template', 'install', 'shell', `dotnet new install ${pkg}${withVersion ? `@${withVersion}` : ''}\n`);
+    } else if (kind === 'msbuild-sdk') {
+      add('dotnet.install.sdk-file-based-app', 'install', 'text', `#:sdk ${pkg}@${v}\n`);
+    } else {
+      add('dotnet.install', 'install', 'shell', `dotnet add package ${pkg}${opt('--version')}\n`);
+      add('dotnet.install.paket', 'install', 'shell', `paket add ${pkg}${opt('--version')}\n`);
+      add('dotnet.install.script', 'install', 'text', `#r "nuget: ${pkg}, ${v}"\n`);
+      add('dotnet.install.file-based-app', 'install', 'text', `#:package ${pkg}@${v}\n`);
+      add('dotnet.install.cake-addin', 'install', 'text', `#addin nuget:?package=${pkg}&version=${v}\n`);
+      add('dotnet.install.cake-tool', 'install', 'text', `#tool nuget:?package=${pkg}&version=${v}\n`);
+    }
   } else if (query.client === 'nuget') {
-    add('nuget.install', 'install', 'shell', `nuget install ${pkg} -Source quader -OutputDirectory packages${withVersion ? ` -Version ${withVersion}` : ''}\n`);
-  } else {
+    if (kind === '') {
+      add('nuget.install', 'install', 'shell', `nuget install ${pkg} -Source quader -OutputDirectory packages${opt('-Version')}\n`);
+    }
+  } else if (kind === 'msbuild-sdk') {
+    add('visual-studio.install.sdk', 'install', 'xml', `<Sdk Name="${pkg}" Version="${v}" />\n`);
+  } else if (kind === '') {
     add('visual-studio.install.packagereference', 'install', 'xml', `<PackageReference Include="${pkg}"${withVersion ? ` Version="${withVersion}"` : ''} />\n`);
+    add('visual-studio.install.pmc', 'install', 'powershell', `NuGet\\Install-Package ${pkg}${opt('-Version')}\n`);
+    add(
+      'visual-studio.install.cpm',
+      'install',
+      'xml',
+      `<PackageVersion Include="${pkg}" Version="${v}" />\n<!-- In the project file: <PackageReference Include="${pkg}" /> -->\n`,
+      'Directory.Packages.props',
+    );
   }
 
   if (target !== null && query.client !== 'visual-studio') {

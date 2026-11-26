@@ -4,7 +4,15 @@ import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, computed, effect, inject, input, resource, signal, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
-import { PackageDeprecation, PackageDocTree, PackageVersion, PackageVersionDocs, PackagesApi } from '../../api/packages-api';
+import {
+  PackageDeprecation,
+  PackageDocTree,
+  PackageVersion,
+  PackageVersionDocs,
+  PackagesApi,
+  packageIconUrl,
+  packageLicenseUrl,
+} from '../../api/packages-api';
 import { ApiError } from '../../api/problem';
 import { SessionStore } from '../../core/session-store';
 import { asApiError } from '../../shared/paged-resource';
@@ -63,6 +71,11 @@ import {
   npmFacts,
   nugetDependencies,
   nugetFacts,
+  nugetFrameworks,
+  nugetRepository,
+  revisionLinks,
+  nugetRuns,
+  releaseNotes,
   strings,
 } from './version-metadata';
 import { DependencyList, VersionLinks } from './version-facts';
@@ -499,6 +512,62 @@ export class PackageVersionPage {
   /** The address of the licence, beside the licence on the facts line (R-UI-221). */
   protected readonly licenseHref = computed(() => licenseLink(this.metadata()));
   /**
+   * The licence file a NuGet version's package embeds (R-NUGET-038): this installation's address of its text, the licence's link on the
+   * facts line; null for a licence expression or none.
+   */
+  protected readonly licenseFile = computed(() => {
+    const d = this.detail();
+    const file = this.metadata()['licenseFile'];
+    return d && typeof file === 'string' && file !== '' ? { href: packageLicenseUrl(d.packageId, d.version), name: file } : null;
+  });
+  /**
+   * The picture the version's package embeds (NuGet's icon, R-NUGET-038), in the page's head: read through this installation's API, which
+   * serves a PNG or a JPEG only; nothing where the version has none or the image does not load.
+   */
+  protected readonly icon = computed(() => {
+    const d = this.detail();
+    return d && this.metadata()['hasIcon'] === true && this.iconFailed() !== `${d.packageId}@${d.version}` ? packageIconUrl(d.packageId, d.version) : null;
+  });
+  /** The version whose icon did not load: the head shows none for it. */
+  protected readonly iconFailed = signal<string | null>(null);
+  protected iconError(): void {
+    const d = this.detail();
+    if (d) this.iconFailed.set(`${d.packageId}@${d.version}`);
+  }
+  /** NuGet's target frameworks, the folders' and the dependency groups' beside them where they differ (R-NUGET-038). */
+  protected readonly frameworks = computed(() => (this.format() === 'nuget' ? nugetFrameworks(this.metadata()) : { folders: [], dependencies: [] }));
+  /**
+   * The symbol package the version holds (NuGet's `.snupkg`, R-NUGET-020, R-NUGET-038): its file's name, for the fact **Symbols**; null
+   * for none.
+   */
+  protected readonly symbols = computed(() => {
+    const f = this.format() === 'nuget' ? this.detail()?.files.find((x) => x.path.toLowerCase().endsWith('.snupkg')) : undefined;
+    return f ? this.fileName(f.path) : null;
+  });
+  /** The release notes of a NuGet version (R-NUGET-038): a section of their own, their line breaks kept, as text. */
+  protected readonly releaseNotes = computed(() => (this.format() === 'nuget' ? releaseNotes(this.metadata()) : ''));
+  /**
+   * What runs when a project uses a NuGet package (R-NUGET-039, H-2171): the build logic MSBuild imports into every build, the analyzers
+   * the compiler loads, the PowerShell scripts Visual Studio runs for a packages.config project; said under the links where npm's install
+   * script is said, each with the files, as text.
+   */
+  protected readonly runs = computed(() => {
+    const r = this.format() === 'nuget' ? nugetRuns(this.metadata()) : null;
+    if (!r) return [];
+    const list = (files: readonly string[]) => files.join(', ');
+    const out: { readonly kind: string; readonly icon: string; readonly text: string; readonly files: string }[] = [];
+    if (r.build.length > 0) {
+      out.push({ kind: 'build', icon: 'build', text: $localize`:@@pkg.runs.build:Adds build logic that runs in every build of a project that references it:`, files: list(r.build) });
+    }
+    if (r.analyzers.length > 0) {
+      out.push({ kind: 'analyzers', icon: 'code', text: $localize`:@@pkg.runs.analyzers:Adds analyzers or source generators that run in the compiler:`, files: list(r.analyzers) });
+    }
+    if (r.scripts.length > 0) {
+      out.push({ kind: 'scripts', icon: 'terminal', text: $localize`:@@pkg.runs.scripts:Runs PowerShell scripts when Visual Studio installs it into a packages.config project:`, files: list(r.scripts) });
+    }
+    return out;
+  });
+  /**
    * The word of the date the version arrived (Q-UI-1314): an image's is Pushed, or Fetched where only remote repositories hold it, as in
    * the repository's content; every other format's is Published.
    */
@@ -597,7 +666,9 @@ export class PackageVersionPage {
   protected readonly links = computed(() => {
     const d = this.detail();
     if (!d) return [];
-    return d.format === 'oci' ? imageLinks(d.metadata) : metadataLinks(d);
+    if (d.format === 'oci') return imageLinks(d.metadata);
+    // NuGet's repository branch and commit after its source (R-NUGET-038, Q-UI-1362): links where the page knows the host's addresses.
+    return d.format === 'nuget' ? [...metadataLinks(d), ...revisionLinks(nugetRepository(d.metadata))] : metadataLinks(d);
   });
   /** The digest, media type, artifact type and size of an OCI tag, and the platforms of an index (R-OCI-031). */
   protected readonly image = computed(() => imageFacts(this.metadata()));
@@ -641,9 +712,12 @@ export class PackageVersionPage {
     const labeled = imageFact(d.metadata, 'licenses');
     return labeled !== '' ? [labeled] : [];
   });
-  /** An OCI artifact's kind (`image`, `helm-chart`, …): the head's panel offers its kind's clients (R-OCI-042); null for other formats. */
+  /**
+   * The version's kind where its format has one: an OCI artifact's (`image`, `helm-chart`, …, R-OCI-042), a NuGet package's
+   * (`dotnet-tool`, `template`, `msbuild-sdk`, R-NUGET-037); the head's panel offers the kind's clients and forms. null for none.
+   */
   protected readonly artifactKind = computed(() => {
-    const k = this.format() === 'oci' ? this.metadata()['kind'] : undefined;
+    const k = this.metadata()['kind'];
     return typeof k === 'string' ? k : null;
   });
   /** An image's digest, the panel's pull by digest (R-OCI-041). */

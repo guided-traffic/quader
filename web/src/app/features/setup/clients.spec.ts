@@ -1,5 +1,5 @@
 import german from '../../../locale/messages.de.xlf' with { loader: 'text' };
-import { clientsOf, snippetText } from './clients';
+import { clientsOf, clientsOfKind, installFormLabel, snippetText } from './clients';
 import { RENDERED_SNIPPET_IDS } from './snippet-ids.fixture';
 
 /** A unit of the translation file: its id, the English source and the German target. */
@@ -26,6 +26,26 @@ describe('Snippet words', () => {
       expect(ids.filter((id) => snippetText(id) === null)).toEqual([]);
     });
   }
+
+  it('R-NUGET-037 every install form of a client with several has a name for the select Form, short enough for 390 px', () => {
+    for (const ids of Object.values(RENDERED_SNIPPET_IDS)) {
+      // A format offers its further install snippets as forms by naming them; Ansible's requirements file stays on Set up client.
+      const installs = ids.filter((id) => id.split('.')[1] === 'install' && installFormLabel(id) !== null);
+      for (const id of installs) expect([...(installFormLabel(id) ?? '')].length, id).toBeLessThanOrEqual(32);
+    }
+    expect(installFormLabel('visual-studio.install.pmc')).toBe('Package Manager console');
+    // Every install snippet of NuGet is a named form.
+    const nuget = Object.entries(RENDERED_SNIPPET_IDS).filter(([client]) => client.startsWith('nuget:')).flatMap(([, ids]) => ids);
+    expect(nuget.filter((id) => id.split('.')[1] === 'install' && id !== 'nuget.install' && installFormLabel(id) === null)).toEqual([]);
+  });
+
+  it('R-NUGET-037 a .NET tool and a template are installed by the .NET CLI alone, an MSBuild SDK not by nuget.exe', () => {
+    const ids = (kind: string | null) => clientsOfKind('nuget', kind).map((c) => c.id);
+    expect(ids(null)).toEqual(['dotnet', 'nuget', 'visual-studio']);
+    expect(ids('dotnet-tool')).toEqual(['dotnet']);
+    expect(ids('template')).toEqual(['dotnet']);
+    expect(ids('msbuild-sdk')).toEqual(['dotnet', 'visual-studio']);
+  });
 
   it('R-UI-121 a sentence says only what the window does not: none for an install, a short one for a file', () => {
     expect(snippetText('npm.install')?.caption).toBeNull();

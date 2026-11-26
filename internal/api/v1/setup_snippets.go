@@ -48,6 +48,8 @@ type setupInput struct {
 	// the placeholder. DisplayName is the package's display name, which an install
 	// template with a Packages prefix writes in place of Package (R-ANS-056).
 	Package, Version, DisplayName string
+	// Kind is the kind of package the install snippets are for (formats.SetupTemplate.Kind), "" for a package of no kind.
+	Kind string
 	// Scope is the scope of the scoped configure variant, without its "@"; empty for
 	// none.
 	Scope string
@@ -149,8 +151,8 @@ func renderSnippets(in setupInput) ([]snippet, error) {
 		if t.Section == "publish" && !in.MayPublish {
 			continue
 		}
-		if t.Section == "install" && t.Packages != claimed {
-			continue // an install template for other packages (formats.SetupTemplate.Packages)
+		if t.Section == "install" && (t.Packages != claimed || t.Kind != in.Kind) {
+			continue // an install template for other packages or another kind of package (formats.SetupTemplate.Packages, Kind)
 		}
 		variants := []string{""}
 		if in.Scope != "" && hasScopedVariant(t) {
@@ -366,6 +368,15 @@ func substitutePackage(content string, t formats.SetupTemplate, pkg, version str
 		return content
 	}
 	quote := quoterFor(t.Lang)
+	if strings.Contains(t.Template, formats.SetupVersionRef) {
+		// The template places the version itself (formats.SetupTemplate.VersionSpec): each placeholder becomes its quoted value, and the
+		// version's stays for the reader when the request names none.
+		content = strings.ReplaceAll(content, formats.SetupPackageRef, quote(pkg))
+		if version != "" {
+			content = strings.ReplaceAll(content, formats.SetupVersionRef, quote(version))
+		}
+		return content
+	}
 	spec := quote(pkg)
 	if version != "" {
 		if t.VersionSpec == "" {

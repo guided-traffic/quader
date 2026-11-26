@@ -15,8 +15,8 @@ rendered from it ([checklist.md there](https://github.com/guided-traffic/quader/
 requirement lists the feature in its `Covers:` line. *open*: no requirement does. For entries with priority
 *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,312 spec requirements:
-798 cover catalog features, 514 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,315 spec requirements:
+798 cover catalog features, 517 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>514 requirements</summary>
+<summary>517 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3271,6 +3271,9 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-NUGET-034 | NuGet documents on an endpoint with exposure rules | MVP | [formats/nuget.md](../spec/formats/nuget.md) |
 | R-NUGET-035 | The upstream catalogue and the delivery rules of a NuGet remote | P1 | [formats/nuget.md](../spec/formats/nuget.md) |
 | R-NUGET-036 | A version is deprecated with reasons, a message and an alternate package | P1 | [formats/nuget.md](../spec/formats/nuget.md) |
+| R-NUGET-037 | The install forms of nuget.org, by package type | P1 | [formats/nuget.md](../spec/formats/nuget.md) |
+| R-NUGET-038 | The icon, the licence file, the frameworks, the symbols, the revision and the release notes on a version's page | P1 | [formats/nuget.md](../spec/formats/nuget.md) |
+| R-NUGET-039 | What a build, a compile or an install runs of a package is said on its page | P1 | [formats/nuget.md](../spec/formats/nuget.md) |
 | R-OCI-026 | Mirror settings of an OCI remote | P1 | [formats/oci.md](../spec/formats/oci.md) |
 | R-OCI-032 | OCI on n replicas, without Valkey and during a drain | P1 | [formats/oci.md](../spec/formats/oci.md) |
 | R-OCI-033 | OCI data in backups and restores | P1 | [formats/oci.md](../spec/formats/oci.md) |

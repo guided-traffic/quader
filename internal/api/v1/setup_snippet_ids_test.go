@@ -36,20 +36,29 @@ func renderedSnippetIDs(t *testing.T, scope string, f interface {
 			continue
 		}
 		var ids []string
-		for _, cred := range []string{credPlaceholder, credNone} {
-			ss, err := renderSnippets(setupInput{
-				Templates: tpls, Client: tpl.Client, Credentials: cred, TokenEnvVar: "QUADER_TOKEN", MayPublish: true, Scope: scope,
-				Data: formats.SetupData{
-					RegistryURL: "https://quader.example.net/x/", ImagePrefix: "quader.example.net/web/x", Repository: "x", Endpoint: "default",
-					RequiresAuth: true, Username: "alice",
-				},
-			})
-			if err != nil {
-				t.Fatal(err)
+		// Every kind of package the templates name, and none (formats.SetupTemplate.Kind, R-NUGET-037).
+		kinds := []string{""}
+		for _, k := range tpls {
+			if k.Kind != "" && !slices.Contains(kinds, k.Kind) {
+				kinds = append(kinds, k.Kind)
 			}
-			for _, s := range ss {
-				if !slices.Contains(ids, s.ID) {
-					ids = append(ids, s.ID)
+		}
+		for _, cred := range []string{credPlaceholder, credNone} {
+			for _, kind := range kinds {
+				ss, err := renderSnippets(setupInput{
+					Templates: tpls, Client: tpl.Client, Credentials: cred, TokenEnvVar: "QUADER_TOKEN", MayPublish: true, Scope: scope, Kind: kind,
+					Data: formats.SetupData{
+						RegistryURL: "https://quader.example.net/x/", ImagePrefix: "quader.example.net/web/x", Repository: "x", Endpoint: "default",
+						RequiresAuth: true, Username: "alice",
+					},
+				})
+				if err != nil {
+					t.Fatal(err)
+				}
+				for _, s := range ss {
+					if !slices.Contains(ids, s.ID) {
+						ids = append(ids, s.ID)
+					}
 				}
 			}
 		}

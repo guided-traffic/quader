@@ -238,7 +238,8 @@ SELECT nv.version_id,
        COALESCE(NULLIF(btrim(nv.metadata ->> 'description'), ''), btrim(nv.metadata ->> 'summary'), '')::text AS description,
        CASE WHEN jsonb_typeof(nv.metadata -> 'tags') = 'array' THEN (nv.metadata -> 'tags')::text ELSE '[]' END::text AS tags,
        CASE WHEN jsonb_typeof(nv.metadata -> 'deprecation') = 'object' THEN (nv.metadata -> 'deprecation')::text ELSE '' END::text AS deprecation,
-       nv.listed
+       nv.listed,
+       nv.package_types
   FROM nuget_version nv
   JOIN package_versions pv ON pv.id = nv.version_id
  WHERE nv.version_id = ANY($1::bigint[])
@@ -246,11 +247,12 @@ SELECT nv.version_id,
 `
 
 type NuGetViewSummariesRow struct {
-	VersionID   int64
-	Description string
-	Tags        string
-	Deprecation string
-	Listed      bool
+	VersionID    int64
+	Description  string
+	Tags         string
+	Deprecation  string
+	Listed       bool
+	PackageTypes []string
 }
 
 // The NuGet side of the package view (R-API-029, R-EP-016): the statements behind
@@ -258,7 +260,7 @@ type NuGetViewSummariesRow struct {
 // (package_view.sql); these answer what only the NuGet tables hold. A trashed version is
 // invisible to every NuGet read (R-NUGET-005), so each statement joins package_versions.
 // The description (the summary when there is none) and the tags of the given versions, their deprecation (R-NUGET-036) and their
-// listing state.
+// listing state, and the package types that decide the install forms of the version (R-NUGET-037).
 func (q *Queries) NuGetViewSummaries(ctx context.Context, ids []int64) ([]NuGetViewSummariesRow, error) {
 	rows, err := q.db.Query(ctx, nuGetViewSummaries, ids)
 	if err != nil {
@@ -274,6 +276,7 @@ func (q *Queries) NuGetViewSummaries(ctx context.Context, ids []int64) ([]NuGetV
 			&i.Tags,
 			&i.Deprecation,
 			&i.Listed,
+			&i.PackageTypes,
 		); err != nil {
 			return nil, err
 		}

@@ -102,6 +102,28 @@ The members of `metadata`, the ordering of `Stored` and the empty `Withheld` are
 `{{if .RequiresAuth}}` and spells the token reference of the language of its template (Q-NUGET-49). To change a command, change the template, the expectation in `setup_test.go`
 (`TestR_NUGET_026_TheCommandsAreTheOnesOfTheSpecification`) and the one in [guide_nuget_test.go](../../internal/api/v1/guide_nuget_test.go), which renders it through the API with all three credential modes.
 
+**The install forms** (R-NUGET-037, Q-NUGET-155) are further install templates of a client, in the order the panel's select **Form** offers them, the
+first the default; `formats.SetupTemplate.Kind` names the kind a form is for (`KindTool` `dotnet-tool`, `KindTemplate` `template`, `KindSDK`
+`msbuild-sdk`, none for a library). The view sends the version's `kind` (`kindOf` over the declared types, in the details and in `ViewSummaries`, so a
+list's row knows it), the screen passes it as the client setup's `kind`, and `renderSnippets` keeps the client's install templates of that kind. A form
+that places the version itself writes `<version>` in its text and has no `VersionSpec`; `text` is the language of a directive (`#r`, `#:package`,
+Cake's). To add a form: a template in `setup.go`, its line in `TestR_NUGET_037_TheInstallFormsOfEveryKind`, its name in `installFormLabel` of
+[clients.ts](../../web/src/app/features/setup/clients.ts) and its sentence in `snippetText`, then `go test ./internal/api/v1 -run RenderedSnippetIds
+-update-snippet-ids`. A client without a form of a kind is not offered for it (`clientsOfKind`).
+
+**What the file list says** (R-NUGET-038, R-NUGET-039, Q-NUGET-158, Q-NUGET-159) is `nupkg.ContentsOf` over the entries `nupkg.Open` checked: the
+frameworks of the folders, the build logic MSBuild imports, the analyzers and the PowerShell scripts, at most 20 names a list. `metadataJSON` stores it as
+the member `contents` at a push and a remote's fill; the view sends `frameworks`, `dependencyFrameworks`, `buildFiles`, `analyzers` and `scripts`. A
+version stored before has no member: the task `remote-describe` queues `nuget-contents` for it (`ContentsPort` of
+[formatdata/nuget/contents.go](../../internal/formatdata/nuget/contents.go) over [nuget_contents.sql](../../internal/meta/postgres/queries/nuget_contents.sql)),
+whose `ReadContents` opens the stored package with ranged reads and writes the member once.
+
+**The icon and the licence file on the screen** (R-NUGET-038, Q-NUGET-157) are `Format.ViewEmbedded`, the optional `formats.ViewEmbedder` the host's
+view bridge asks: it reads the file the `.nuspec` names through the data port's `ViewEmbedded` (the lead item's blob, `EmbeddedFile`, at most 1 MiB).
+The management operations `GET /api/v1/packages/{packageId}/versions/{version}/icon` and `…/license`
+([package_embedded_api.go](../../internal/api/v1/package_embedded_api.go)) decide what is served: a PNG or a JPEG by its bytes, UTF-8 text, with
+`nosniff`, a sandboxing CSP and `private, no-cache`.
+
 **The guide** is `guideSections()`, one Markdown file per section in [guide/](../../internal/formats/nuget/guide) (the same template language as npm's, over `formats.GuideData`). `Guide()` returns the sections of the classes the
 descriptor lists, so the remote and virtual text is tested (`guide_test.go` renders all three classes) and reachable the day the class registers. The troubleshooting table is checked row by row against the problem
 catalog and the status each code answers with; a code of the push that the ingestion has not registered yet is accepted with its specified status (`pendingCodes` in `guide_test.go`: delete an entry

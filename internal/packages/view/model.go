@@ -43,6 +43,12 @@ const (
 	FetchDocument FetchRule = "document"
 )
 
+// Embedder is the optional part of an Adapter that reads a file a version's package embeds for the screens (formats/nuget.md
+// R-NUGET-038: an icon, a licence file): found false for none.
+type Embedder interface {
+	Embedded(ctx context.Context, v Version, file string) ([]byte, bool, error)
+}
+
 // Sizer is the optional part of an Adapter whose format has versions of a size that is not the sum of their files (an OCI tag):
 // Sizes returns the size the screens show for the versions, by id; a version absent keeps the sum of its files. The core asks an
 // adapter only when it has this method.

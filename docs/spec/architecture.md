@@ -1929,6 +1929,7 @@ type Capabilities struct {
 	ImageScanned  ImageScanned         // nil for a format whose content the image scanning does not read (R-VULN-033, ADR-190)
 	ServeFacts    ServeFactsKeyer      // nil for a format whose serve check reads nothing besides the item (Q-ARCH-291)
 	ViewSizer     ViewSizer            // nil for a format whose versions are the sum of their files (ADR-177)
+	ViewEmbedder  ViewEmbedder         // nil for a format whose packages embed no file the screens show (formats/nuget.md R-NUGET-038, ADR-293)
 	ViewRanker    ViewRanker           // nil for a format whose package search ranks every match 0 (formats/ansible.md R-ANS-057, ADR-287)
 	VersionPath   VersionPather        // nil for a format whose versions have no file of their own (Q-AUTHZ-255, ADR-174)
 	SourceSpeller SourceSpeller        // nil for a format whose items have one spelling (Q-OCI-129)
@@ -1953,6 +1954,14 @@ type SourceSpeller interface {
 // files. A format without it is never asked (ADR-177, ADR-205).
 type ViewSizer interface {
 	ViewSizes(ctx context.Context, ports DataPorts, vs []ViewVersion) (map[VersionID]ViewSize, error)
+}
+
+// ViewEmbedder is the optional interface of a Format whose packages embed files the screens show beside a version (formats/nuget.md
+// R-NUGET-038: NuGet's icon and licence file). ViewEmbedded reads one by its name, EmbeddedIcon ("icon") or EmbeddedLicense
+// ("license"), out of the version's stored package within the format's bound; found is false for a version that embeds none. The bytes
+// are untrusted: the management API serves an icon only as a PNG or a JPEG by its bytes and a licence only as UTF-8 text (ADR-293).
+type ViewEmbedder interface {
+	ViewEmbedded(ctx context.Context, ports DataPorts, v ViewVersion, file string) ([]byte, bool, error)
 }
 
 // ViewSize is the size of a version as a ViewSizer reports it (R-API-080, ADR-205).
@@ -2133,11 +2142,12 @@ type SetupTemplate struct {
 	ID       string // stable, e.g. "npm.npmrc.configure"
 	Client   string // "npm", "pnpm", "yarn", "dotnet", "nuget"
 	Section  string // "configure", "publish", "install"
-	Lang     string // "shell" (POSIX), "powershell", "cmd", "ini", "xml", "yaml": the quoting of what the API substitutes
+	Lang     string // "shell" (POSIX), "powershell", "cmd", "ini", "xml", "yaml", "text" (a directive, nothing quoted): the quoting of what the API substitutes
 	File     string // target file when the snippet is file content, e.g. ".npmrc"
 	Template string // text/template over SetupData, which has no credential field (api-and-ui.md R-API-030)
 	// VersionSpec is how an install template attaches the version after the package when the request names one,
-	// SetupVersionRef standing for it: "" is "@<version>" (npm), " --version <version>" is dotnet (Q-API-188).
+	// SetupVersionRef standing for it: "" is "@<version>" (npm), " --version <version>" is dotnet (Q-API-188). A template that writes
+	// SetupVersionRef in its own text places the version itself and has none (`#r "nuget: <package>, <version>"`, ADR-293).
 	VersionSpec string
 	// PackageExample is what an install template shows in place of SetupPackageRef when the request names no package, the
 	// example the format's other snippets write ("myapp:1.0"); "" keeps the placeholder (ADR-208).
@@ -2146,6 +2156,10 @@ type SetupTemplate struct {
 	// package: for a package a prefixed template claims, the client's unprefixed install templates are left out and the package is
 	// written by its display name (ADR-285).
 	Packages string
+	// Kind is the kind of package an install template is for, as the version's metadata names it (`kind`: NuGet's "dotnet-tool",
+	// "template", "msbuild-sdk"), "" for a package of no kind; a request that names a kind gets the client's install templates of it,
+	// none when the client has none, and several are the forms of installing the package, the first the default (ADR-293).
+	Kind string
 	// Examples are the literal values of the template the reader replaces (a file to publish, an image); the API names each
 	// one that stands in a snippet as a mark of the reader's (api-and-ui.md R-API-030, ADR-208).
 	Examples []string
@@ -2596,7 +2610,7 @@ R-ARCH-025 says which changes keep the version (Q-ARCH-280).
 **Optional behaviour.** `Format` holds what every format answers. A behaviour that only some formats have, or that
 the core cannot call yet, is an optional interface of this package, found by `CapabilitiesOf` when the format registers
 and recorded in the registry (`CapabilitiesFor`); the core never asks the format value (the architecture test allows
-that assertion in `CapabilitiesOf` alone). Today there are thirteen: `ItemsRestorer`, `RemovalLocker`, `ServeFactsKeyer` (`Capabilities.ServeFacts`, Q-ARCH-291), `ViewSizer` (`Capabilities.ViewSizer`, [ADR-177](../decisions.md#adr-177--the-format-contract-gains-the-optional-viewsizer-for-the-size-of-a-version-that-is-not-the-sum-of-its-files)) and `ViewRanker` (`Capabilities.ViewRanker`, [ADR-287](../decisions.md#adr-287--the-format-contract-gains-the-ranked-package-search-the-namespaces-of-a-formats-names-and-what-an-upstream-tells-beside-a-package)) on the format, `Discoverer`,
+that assertion in `CapabilitiesOf` alone). Today there are fourteen: `ItemsRestorer`, `RemovalLocker`, `ServeFactsKeyer` (`Capabilities.ServeFacts`, Q-ARCH-291), `ViewSizer` (`Capabilities.ViewSizer`, [ADR-177](../decisions.md#adr-177--the-format-contract-gains-the-optional-viewsizer-for-the-size-of-a-version-that-is-not-the-sum-of-its-files)), `ViewEmbedder` (`Capabilities.ViewEmbedder` with the names `EmbeddedIcon` and `EmbeddedLicense`, [ADR-293](../decisions.md#adr-293--the-format-contract-gains-the-kind-of-an-install-template-and-the-reader-of-the-files-a-package-embeds-for-the-screens)) and `ViewRanker` (`Capabilities.ViewRanker`, [ADR-287](../decisions.md#adr-287--the-format-contract-gains-the-ranked-package-search-the-namespaces-of-a-formats-names-and-what-an-upstream-tells-beside-a-package)) on the format, `Discoverer`,
 `FillInspector`, `MirrorLister`, `Authenticator`, `Revalidator`, `FactsGate` and `NameServer` (`RemoteCaps.Names`, [ADR-172](../decisions.md#adr-172--the-format-contract-gains-the-remote-name-index-and-the-serve-facts-kinds-deb_local-and-deb_remote)) on its remote adapter (`Capabilities.Remote`, Q-ARCH-267, Q-ARCH-268, Q-ARCH-284,
 [ADR-161](../decisions.md#adr-161--the-format-contract-gains-the-registry-root-the-upstream-handshake-head-revalidation-and-upload-sessions)), and
 `VulnerabilityAdapter` on the format (`Capabilities.Vulnerability`, R-VULN-009,

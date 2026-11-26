@@ -297,6 +297,9 @@ type Capabilities struct {
 	SourceSpeller SourceSpeller
 	// ViewSizer reports the size of a version that is not the sum of its files (ADR-177); nil for a format whose versions are.
 	ViewSizer ViewSizer
+	// ViewEmbedder reads a file a version's package embeds for the screens (formats/nuget.md R-NUGET-038: an icon, a licence file); nil
+	// for a format whose packages embed none.
+	ViewEmbedder ViewEmbedder
 	// ViewRanker ranks what the format's package search finds (R-ANS-057, ADR-287); nil for a format whose matches all rank 0.
 	ViewRanker ViewRanker
 	// VersionPath gives the path of the file that holds a version's content (Q-AUTHZ-255); nil for a format whose
@@ -350,6 +353,9 @@ func CapabilitiesOf(f Format) Capabilities {
 	}
 	if z, ok := f.(ViewSizer); ok {
 		c.ViewSizer = z
+	}
+	if em, ok := f.(ViewEmbedder); ok {
+		c.ViewEmbedder = em
 	}
 	if rk, ok := f.(ViewRanker); ok {
 		c.ViewRanker = rk

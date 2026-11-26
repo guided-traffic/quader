@@ -14182,8 +14182,9 @@ type PackageSummary struct {
 	Keywords []string `json:"keywords"`
 
 	// Kind What `latestVersion` is in its format's words, from the format's metadata: an OCI artifact's kind (`image`, `helm-chart`,
-	// `signature`, `sbom`, `attestation`, `other`, formats/oci.md R-OCI-041), so that a list offers the commands of its kind;
-	// absent for a format without kinds.
+	// `signature`, `sbom`, `attestation`, `other`, formats/oci.md R-OCI-041), a NuGet package's (`dotnet-tool`, `template`,
+	// `msbuild-sdk`, formats/nuget.md R-NUGET-037), so that a list offers the commands of its kind; absent for a format without
+	// kinds and for a NuGet library.
 	Kind          *string `json:"kind,omitempty"`
 	LatestVersion string  `json:"latestVersion"`
 
@@ -14258,7 +14259,12 @@ type PackageVersion struct {
 	// - NuGet (formats/nuget.md Q-NUGET-48): `id` (the declared casing), `listed`, `title`, `summary`, `releaseNotes`,
 	//   `copyright`, `language`, `minClientVersion`, `licenseUrl`, `homepage` (the project URL), `repositoryUrl`, `authors`,
 	//   `tags`, `dependencyGroups` (`targetFramework` and `dependencies` of `id` and `range`), `packageTypes`,
-	//   `requireLicenseAcceptance`, `developmentDependency`.
+	//   `requireLicenseAcceptance`, `developmentDependency`; `kind` (`dotnet-tool`, `template`, `msbuild-sdk`; absent for a
+	//   library, R-NUGET-037), `repositoryType`, `repositoryBranch`, `repositoryCommit`, `licenseFile` (the path of a licence
+	//   of the type file, served by `…/license`) and `hasIcon` (served by `…/icon`, R-NUGET-038), and what Quader read of the
+	//   package's file list (absent until it was read, R-NUGET-038, R-NUGET-039): `frameworks`, `dependencyFrameworks` (the
+	//   dependency groups' frameworks no folder names), `buildFiles`, `analyzers`, `scripts` and `contentsMore` (the names
+	//   past the bound of 20 a list).
 	// - Debian (formats/debian.md R-DEB-030, R-DEB-038): `architectures`, `coordinates` (`suite/component`), `maintainer`,
 	//   `section`, `priority`, `installedSize` (KiB, as the field), `homepage`, `source`, `multiArch`, `essential`,
 	//   `longDescription` (paragraphs with `text` and `verbatim`), `relations` (a field to its groups of alternatives with
@@ -14311,7 +14317,12 @@ type PackageVersion struct {
 //   - NuGet (formats/nuget.md Q-NUGET-48): `id` (the declared casing), `listed`, `title`, `summary`, `releaseNotes`,
 //     `copyright`, `language`, `minClientVersion`, `licenseUrl`, `homepage` (the project URL), `repositoryUrl`, `authors`,
 //     `tags`, `dependencyGroups` (`targetFramework` and `dependencies` of `id` and `range`), `packageTypes`,
-//     `requireLicenseAcceptance`, `developmentDependency`.
+//     `requireLicenseAcceptance`, `developmentDependency`; `kind` (`dotnet-tool`, `template`, `msbuild-sdk`; absent for a
+//     library, R-NUGET-037), `repositoryType`, `repositoryBranch`, `repositoryCommit`, `licenseFile` (the path of a licence
+//     of the type file, served by `…/license`) and `hasIcon` (served by `…/icon`, R-NUGET-038), and what Quader read of the
+//     package's file list (absent until it was read, R-NUGET-038, R-NUGET-039): `frameworks`, `dependencyFrameworks` (the
+//     dependency groups' frameworks no folder names), `buildFiles`, `analyzers`, `scripts` and `contentsMore` (the names
+//     past the bound of 20 a list).
 //   - Debian (formats/debian.md R-DEB-030, R-DEB-038): `architectures`, `coordinates` (`suite/component`), `maintainer`,
 //     `section`, `priority`, `installedSize` (KiB, as the field), `homepage`, `source`, `multiArch`, `essential`,
 //     `longDescription` (paragraphs with `text` and `verbatim`), `relations` (a field to its groups of alternatives with
@@ -14445,8 +14456,9 @@ type PackageVersionSummary struct {
 	DownloadCount int64 `json:"downloadCount"`
 
 	// Kind With `include=kind` only, what the version is in its format's words (the member `kind` of its details): an OCI artifact's
-	// kind (`image`, `helm-chart`, `signature`, `sbom`, `attestation`, `other`, formats/oci.md R-OCI-041); with `group=content`
-	// the kind of the entry's leading version; absent for a format without kinds.
+	// kind (`image`, `helm-chart`, `signature`, `sbom`, `attestation`, `other`, formats/oci.md R-OCI-041), a NuGet package's
+	// (`dotnet-tool`, `template`, `msbuild-sdk`, formats/nuget.md R-NUGET-037); with `group=content` the kind of the entry's
+	// leading version; absent for a format without kinds and for a NuGet library.
 	Kind *string `json:"kind,omitempty"`
 
 	// LastDownloadedAt When a client last fetched the version through one of `repositories`, by the rule of `downloadCount` (R-API-065,
@@ -20851,6 +20863,18 @@ type GetPackageVersionDocFileParams struct {
 	IfNoneMatch *IfNoneMatch `json:"If-None-Match,omitempty"`
 }
 
+// GetPackageVersionIconParams defines parameters for GetPackageVersionIcon.
+type GetPackageVersionIconParams struct {
+	// IfNoneMatch An ETag the client holds; a match answers `304` (R-API-012).
+	IfNoneMatch *IfNoneMatch `json:"If-None-Match,omitempty"`
+}
+
+// GetPackageVersionLicenseParams defines parameters for GetPackageVersionLicense.
+type GetPackageVersionLicenseParams struct {
+	// IfNoneMatch An ETag the client holds; a match answers `304` (R-API-012).
+	IfNoneMatch *IfNoneMatch `json:"If-None-Match,omitempty"`
+}
+
 // GetPackageVersionReadmeParams defines parameters for GetPackageVersionReadme.
 type GetPackageVersionReadmeParams struct {
 	// IfNoneMatch An ETag the client holds; a match answers `304` (R-API-012).
@@ -21275,6 +21299,12 @@ type GetClientSetupParams struct {
 
 	// Sha256 The SHA-256 of the file `path` names, in hexadecimal; the check of a download names it. Only with the path of a file.
 	Sha256 *string `form:"sha256,omitempty" json:"sha256,omitempty"`
+
+	// Kind The kind of package the install snippets are for, as a version's metadata names it (`kind`): NuGet's `dotnet-tool`,
+	// `template` and `msbuild-sdk` (formats/nuget.md R-NUGET-037). The client's install snippets of that kind are answered, none
+	// when it has none for the kind; without it those for a package of no kind (a NuGet library). A kind for which no snippet of
+	// the format differs (an OCI artifact's `image` or `helm-chart`) is a package of no kind.
+	Kind *string `form:"kind,omitempty" json:"kind,omitempty"`
 
 	// Scope An npm scope (`@team-a`); adds the scoped variant of the registry configuration. Only a client that has a scoped
 	// variant accepts it (the npm clients); for any other client or format it answers `400 malformed_request` whose detail names `scope`
@@ -24085,6 +24115,12 @@ type ServerInterface interface {
 	// GetPackageVersionDocFile Read the README, a Markdown file or the changelog of the documentation of a version
 	// (GET /api/v1/packages/{packageId}/versions/{version}/docs/files/{file})
 	GetPackageVersionDocFile(w http.ResponseWriter, r *http.Request, packageId PackageId, version PackageVersionPath, file string, params GetPackageVersionDocFileParams)
+	// GetPackageVersionIcon Read the icon a version's package embeds
+	// (GET /api/v1/packages/{packageId}/versions/{version}/icon)
+	GetPackageVersionIcon(w http.ResponseWriter, r *http.Request, packageId PackageId, version PackageVersionPath, params GetPackageVersionIconParams)
+	// GetPackageVersionLicense Read the licence file a version's package embeds
+	// (GET /api/v1/packages/{packageId}/versions/{version}/license)
+	GetPackageVersionLicense(w http.ResponseWriter, r *http.Request, packageId PackageId, version PackageVersionPath, params GetPackageVersionLicenseParams)
 	// GetPackageVersionReadme Read the rendered README of a version
 	// (GET /api/v1/packages/{packageId}/versions/{version}/readme)
 	GetPackageVersionReadme(w http.ResponseWriter, r *http.Request, packageId PackageId, version PackageVersionPath, params GetPackageVersionReadmeParams)
@@ -29756,6 +29792,124 @@ func (siw *ServerInterfaceWrapper) GetPackageVersionDocFile(w http.ResponseWrite
 	handler.ServeHTTP(w, r)
 }
 
+// GetPackageVersionIcon operation middleware
+func (siw *ServerInterfaceWrapper) GetPackageVersionIcon(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "packageId" -------------
+	var packageId PackageId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "packageId", r.PathValue("packageId"), &packageId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "packageId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "version" -------------
+	var version PackageVersionPath
+
+	err = runtime.BindStyledParameterWithOptions("simple", "version", r.PathValue("version"), &version, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "version", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetPackageVersionIconParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "If-None-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-None-Match")]; found {
+		var IfNoneMatch IfNoneMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-None-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-None-Match", valueList[0], &IfNoneMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-None-Match", Err: err})
+			return
+		}
+
+		params.IfNoneMatch = &IfNoneMatch
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetPackageVersionIcon(w, r, packageId, version, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetPackageVersionLicense operation middleware
+func (siw *ServerInterfaceWrapper) GetPackageVersionLicense(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "packageId" -------------
+	var packageId PackageId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "packageId", r.PathValue("packageId"), &packageId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "packageId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "version" -------------
+	var version PackageVersionPath
+
+	err = runtime.BindStyledParameterWithOptions("simple", "version", r.PathValue("version"), &version, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "version", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetPackageVersionLicenseParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "If-None-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-None-Match")]; found {
+		var IfNoneMatch IfNoneMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-None-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-None-Match", valueList[0], &IfNoneMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-None-Match", Err: err})
+			return
+		}
+
+		params.IfNoneMatch = &IfNoneMatch
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetPackageVersionLicense(w, r, packageId, version, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetPackageVersionReadme operation middleware
 func (siw *ServerInterfaceWrapper) GetPackageVersionReadme(w http.ResponseWriter, r *http.Request) {
 
@@ -33318,6 +33472,19 @@ func (siw *ServerInterfaceWrapper) GetClientSetup(w http.ResponseWriter, r *http
 			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "sha256"})
 		} else {
 			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "sha256", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "kind" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "kind", r.URL.Query(), &params.Kind, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "kind"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "kind", Err: err})
 		}
 		return
 	}
@@ -45255,6 +45422,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/packages/{packageId}/versions", wrapper.ListPackageVersions)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/packages/{packageId}/versions/{version}", wrapper.GetPackageVersion)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/packages/{packageId}/versions/{version}/readme", wrapper.GetPackageVersionReadme)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/packages/{packageId}/versions/{version}/icon", wrapper.GetPackageVersionIcon)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/packages/{packageId}/versions/{version}/license", wrapper.GetPackageVersionLicense)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/packages/{packageId}/versions/{version}/contents", wrapper.GetPackageVersionContents)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/packages/{packageId}/versions/{version}/docs", wrapper.GetPackageVersionDocs)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/packages/{packageId}/versions/{version}/docs/entries/{type}/{name}", wrapper.GetPackageVersionDocEntry)

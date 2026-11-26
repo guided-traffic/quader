@@ -31,6 +31,36 @@ type viewState struct {
 	rows    []viewRow
 	keys    map[string]int64
 	readmes map[int64]string
+	// embedded are the files a version's package holds by the name of R-NUGET-024 ("icon", "license").
+	embedded map[int64]map[string][]byte
+}
+
+// SetEmbedded gives a version the bytes of a file its package embeds ("icon", "license"), as its stored package would hold them.
+func (s *Store) SetEmbedded(versionID int64, file string, b []byte) {
+	s.view.mu.Lock()
+	defer s.view.mu.Unlock()
+	if s.view.embedded == nil {
+		s.view.embedded = map[int64]map[string][]byte{}
+	}
+	if s.view.embedded[versionID] == nil {
+		s.view.embedded[versionID] = map[string][]byte{}
+	}
+	s.view.embedded[versionID][file] = b
+}
+
+// ViewEmbedded reads a file a version's package embeds, as the PostgreSQL store does: only one its metadata names, within max.
+func (s *Store) ViewEmbedded(_ context.Context, versionID int64, file string, max int64) ([]byte, bool, error) {
+	rs := s.rowsOf([]int64{versionID})
+	if len(rs) == 0 || rows.EmbeddedOf(rs[0].in.Metadata).Path(file) == "" {
+		return nil, false, nil
+	}
+	s.view.mu.Lock()
+	defer s.view.mu.Unlock()
+	b, ok := s.view.embedded[versionID][file]
+	if !ok || int64(len(b)) > max {
+		return nil, false, nil
+	}
+	return b, true, nil
 }
 
 // record keeps a version the twin was handed; a version that is stored again replaces its row.
@@ -131,7 +161,9 @@ func (s *Store) ViewSummaries(_ context.Context, ids []int64) ([]rows.ViewSummar
 			Deprecation json.RawMessage `json:"deprecation"`
 		}
 		_ = json.Unmarshal(r.in.Metadata, &m)
-		out = append(out, rows.ViewSummary{VersionID: r.in.VersionID, Description: d, Tags: tags, Listed: r.listed, Deprecation: m.Deprecation})
+		out = append(out, rows.ViewSummary{
+			VersionID: r.in.VersionID, Description: d, Tags: tags, Listed: r.listed, Deprecation: m.Deprecation, PackageTypes: r.in.PackageTypes,
+		})
 	}
 	return out, nil
 }

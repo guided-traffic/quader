@@ -98,6 +98,8 @@ export interface ClientSetupQuery {
   readonly credentials?: 'placeholder' | 'env' | 'none';
   readonly package?: string;
   readonly version?: string;
+  /** The kind of package the install snippets are for, as a version's metadata names it (NuGet's `dotnet-tool`, R-NUGET-037). */
+  readonly kind?: string;
   readonly scope?: string;
   /** The name of a Bastion registration: the snippets are for that Bastion (R-BAS-007). */
   readonly bastion?: string;
@@ -112,6 +114,19 @@ export interface ClientSetupQuery {
 
 export function packageUrl(id: string): string {
   return `/api/v1/packages/${seg(id)}`;
+}
+
+/**
+ * The picture a version's package embeds (formats/nuget.md R-NUGET-038): an image's address of this installation, which serves only a
+ * PNG or a JPEG by its bytes and checks the reader each time; never an address the package names.
+ */
+export function packageIconUrl(id: string, version: string): string {
+  return `${packageUrl(id)}/versions/${seg(version)}/icon`;
+}
+
+/** The licence file a version's package embeds, served as text (formats/nuget.md R-NUGET-038). */
+export function packageLicenseUrl(id: string, version: string): string {
+  return `${packageUrl(id)}/versions/${seg(version)}/license`;
 }
 
 /** The deprecation of a package of a repository (`<projectKey>/<repoKey>`, R-API-085); the name is one path segment. */

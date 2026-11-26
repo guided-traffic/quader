@@ -3,10 +3,12 @@ package nuget
 import (
 	"context"
 	"encoding/json"
+	"slices"
 	"strings"
 
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/nuget/nupkg"
 	"github.com/guided-traffic/quader/internal/formats/nuget/rows"
 	"github.com/guided-traffic/quader/internal/formats/nuget/version"
 	"github.com/guided-traffic/quader/internal/formats/versionkey"
@@ -32,6 +34,23 @@ type viewPort interface {
 	ViewStored(ctx context.Context, repoID int64, lowerID string, remote bool, limit int) ([]string, error)
 	// ViewDeprecated returns the ids of at most limit versions of the repositories that carry a deprecation (R-NUGET-036).
 	ViewDeprecated(ctx context.Context, repos []string, limit int) ([]int64, error)
+	// ViewEmbedded reads a file the .nuspec of a version embeds ("icon", "license") out of its stored package, at most max bytes;
+	// found is false for none (R-NUGET-038).
+	ViewEmbedded(ctx context.Context, versionID int64, file string, max int64) ([]byte, bool, error)
+}
+
+// ViewEmbedded reads the icon or the licence file a version embeds, for the screens (R-NUGET-038): the files of R-NUGET-024, out of the
+// stored package. Which bytes are served, and as what, is the API's to decide (an icon only as PNG or JPEG by its bytes, a licence only
+// as UTF-8 text); the format hands out what the package holds within the bound.
+func (f *Format) ViewEmbedded(ctx context.Context, ports formats.DataPorts, v formats.ViewVersion, file string) ([]byte, bool, error) {
+	if file != formats.EmbeddedIcon && file != formats.EmbeddedLicense {
+		return nil, false, nil
+	}
+	p, err := portOf(ports)
+	if err != nil {
+		return nil, false, err
+	}
+	return p.ViewEmbedded(ctx, int64(v.ID), file, maxEmbedded)
 }
 
 // View returns the format's part of the package screens (R-API-029, Q-NUGET-48).
@@ -146,9 +165,14 @@ func (viewAdapter) Describe(ctx context.Context, ports formats.DataPorts, vs []f
 			return nil, err
 		}
 		for _, s := range ss {
-			out[formats.VersionID(s.VersionID)] = formats.ViewData{
+			data := formats.ViewData{
 				Description: s.Description, Keywords: s.Tags, Deprecation: deprecationOf(s.Deprecation), Unlisted: !s.Listed,
 			}
+			if k := kindOf(s.PackageTypes); k != "" {
+				// The kind a list's row asks the commands of (R-NUGET-037), as an image's kind is read (VersionFilter.WithKind).
+				data.Metadata = map[string]any{"kind": k}
+			}
+			out[formats.VersionID(s.VersionID)] = data
 		}
 		return out, nil
 	}
@@ -189,6 +213,8 @@ type metadataView struct {
 	Acceptance   json.RawMessage `json:"requireLicenseAcceptance"`
 	DevDep       json.RawMessage `json:"developmentDependency"`
 	Deprecation  json.RawMessage `json:"deprecation"`
+	Icon         json.RawMessage `json:"icon"`
+	Contents     json.RawMessage `json:"contents"`
 }
 
 // deprecationOf reads the member deprecation of a version's metadata (R-NUGET-036); nil for none, and for one that is not the
@@ -240,9 +266,14 @@ func describeMetadata(d rows.ViewDetail) (formats.ViewData, error) {
 	if s := text(m.ProjectURL); s != "" {
 		md["homepage"] = s
 	}
-	if s := repositoryURL(m.Repository); s != "" {
-		md["repositoryUrl"] = s
+	repositoryFacts(md, m.Repository)
+	licenseFile(md, m.License)
+	if text(m.Icon) != "" {
+		// The picture the package embeds (R-NUGET-038): the screen reads it through the management API, never from an address of the
+		// package's own.
+		md["hasIcon"] = true
 	}
+	contentFacts(md, m.Contents, m.Groups)
 	if a := authorList(m.Authors); len(a) > 0 {
 		md["authors"] = a
 	}
@@ -254,6 +285,9 @@ func describeMetadata(d rows.ViewDetail) (formats.ViewData, error) {
 	}
 	if t := packageTypes(m.Types); len(t) > 0 {
 		md["packageTypes"] = t
+	}
+	if k := kindOf(packageTypes(m.Types)); k != "" {
+		md["kind"] = k
 	}
 	for key, raw := range map[string]json.RawMessage{"requireLicenseAcceptance": m.Acceptance, "developmentDependency": m.DevDep} {
 		var b bool
@@ -324,14 +358,87 @@ func licenseExpression(raw json.RawMessage) []string {
 	return nil
 }
 
-func repositoryURL(raw json.RawMessage) string {
+// repositoryFacts sends the repository element (R-NUGET-038): its address as the link of the source, and its type, branch and commit as
+// they are written. The screen links the branch and the commit only where the address is an https address it can build them on.
+func repositoryFacts(md map[string]any, raw json.RawMessage) {
 	var r struct {
-		URL string `json:"url"`
+		Type   string `json:"type"`
+		URL    string `json:"url"`
+		Branch string `json:"branch"`
+		Commit string `json:"commit"`
 	}
 	if json.Unmarshal(raw, &r) != nil {
-		return ""
+		return
 	}
-	return strings.TrimSpace(r.URL)
+	for key, v := range map[string]string{"repositoryUrl": r.URL, "repositoryType": r.Type, "repositoryBranch": r.Branch, "repositoryCommit": r.Commit} {
+		if v = strings.TrimSpace(v); v != "" {
+			md[key] = v
+		}
+	}
+}
+
+// licenseFile sends the path of a licence of type file (R-NUGET-038), which the management API serves as text; a licence expression
+// is the version's licences instead.
+func licenseFile(md map[string]any, raw json.RawMessage) {
+	var l struct {
+		Type  string `json:"type"`
+		Value string `json:"value"`
+	}
+	if json.Unmarshal(raw, &l) == nil && strings.EqualFold(l.Type, "file") && strings.TrimSpace(l.Value) != "" {
+		md["licenseFile"] = strings.TrimSpace(l.Value)
+	}
+}
+
+// contentFacts sends what the file list of the package says (R-NUGET-038, R-NUGET-039): its target frameworks, the frameworks of its
+// dependency groups that its folders do not name, and the files that run code when a project uses it. A version whose file list was
+// never read sends none of them, and so no word that it has none.
+func contentFacts(md map[string]any, raw, groups json.RawMessage) {
+	var c rows.Contents
+	if len(raw) == 0 || json.Unmarshal(raw, &c) != nil || string(raw) == "null" || c.Unreadable {
+		return
+	}
+	md["frameworks"] = nonNil(c.Frameworks)
+	var other []string
+	for _, g := range dependencyGroups(groups) {
+		fw := nupkg.ShortFramework(g.TargetFramework)
+		if fw != "" && !slices.Contains(c.Frameworks, fw) && !slices.Contains(other, g.TargetFramework) {
+			other = append(other, g.TargetFramework)
+		}
+	}
+	if len(other) > 0 {
+		md["dependencyFrameworks"] = other
+	}
+	md["buildFiles"] = nonNil(c.Build)
+	md["analyzers"] = nonNil(c.Analyzers)
+	md["scripts"] = nonNil(c.Scripts)
+	if c.More > 0 {
+		md["contentsMore"] = c.More
+	}
+}
+
+func nonNil(s []string) []string {
+	if s == nil {
+		return []string{}
+	}
+	return s
+}
+
+// The kinds of package whose install forms differ (R-NUGET-037), by their declared package type: a .NET tool, a template package and
+// an MSBuild project SDK. Every other type, Dependency first, is installed as a library and has no kind.
+const (
+	KindTool     = "dotnet-tool"
+	KindTemplate = "template"
+	KindSDK      = "msbuild-sdk"
+)
+
+// kindOf is the kind of a package by its declared types, "" for a library.
+func kindOf(types []string) string {
+	for _, want := range []struct{ typ, kind string }{{"dotnettool", KindTool}, {"template", KindTemplate}, {"msbuildsdk", KindSDK}} {
+		if slices.ContainsFunc(types, func(t string) bool { return strings.EqualFold(t, want.typ) }) {
+			return want.kind
+		}
+	}
+	return ""
 }
 
 // dependencyGroup is a group of dependencies of the version details (Q-NUGET-48): the target

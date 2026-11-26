@@ -465,8 +465,7 @@ Priority: **MVP** · Covers: PKG-NUGET-005, PKG-NUGET-006, PKG-NUGET-021, FMT-01
 Every `.nupkg` that enters a NuGet repository goes through the upload pipeline of
 [storage.md](../storage.md) (R-STOR-004, R-STOR-005: admission with the repository's maximum upload
 size, spool, one-pass SHA-256, SHA-1, MD5 and SHA-512, commit). That covers protocol push
-(R-NUGET-006), upload through the management API and UI, copy and move, and remote
-cache fills. A raw deploy is not an ingestion path of NuGet (Q-NUGET-13). The NuGet plug-in adds these steps between spooling and commit:
+(R-NUGET-006), copy and move, and remote cache fills (an upload on the screen is not built, H-2233). A raw deploy is not an ingestion path of NuGet (Q-NUGET-13). The NuGet plug-in adds these steps between spooling and commit:
 
 1. Open the archive as ZIP within the archive limits below (400 on violation). Entries are read
    through the central directory only. An archive with an encrypted entry, a split or multi-disk
@@ -534,10 +533,10 @@ cache fills. A raw deploy is not an ingestion path of NuGet (Q-NUGET-13). The Nu
 - Raw deploy (R-STOR-007) into a NuGet repository answers 409 before the body is read, for every
   path and file type: `PUT /files/<projectKey>/<repoKey>/...` is accepted only by a format whose protocol base path
   is `/files/{project}/{key}/` (generic, Q-ARCH-223), and the answer names the protocol path of the repository,
-  `/api/nuget/<projectKey>/<repoKey>/` (Q-NUGET-13). A package enters through the protocol push, the upload of the management API and the
-  UI, copy and move. The derived files, which only the plug-in writes, are never a raw deploy's.
-- Upload through the management API without a target path (the UI deploy dialog,
-  [api-and-ui.md](../api-and-ui.md)): the plug-in derives the canonical path from the `.nuspec`.
+  `/api/nuget/<projectKey>/<repoKey>/` (Q-NUGET-13). A package enters through the protocol push, a remote's fill, copy and move; an upload on the
+  screen is not built (H-2233). The derived files, which only the plug-in writes, are never a raw deploy's.
+- An upload on the screen is not built ([H-2233](#h-2233--a-package-cannot-be-uploaded-on-the-screen)): the UI's
+  deploy dialog writes `/files/`, which a NuGet repository refuses (Q-NUGET-13).
 - Copy and move (R-STOR-019, P1): the plug-in hooks copy or move the NuGet side rows in the same
   transaction. A version that the target holds with other bytes, or that is tombstoned there
   (R-NUGET-006), is refused as a per-item conflict with the code `nuget_version_exists` or
@@ -568,6 +567,7 @@ Metadata extracted from the `.nuspec` into `nuget_version.metadata`:
 | `repository` | `repository` element: `type`, `url`, `branch`, `commit` | UI |
 | `dependencyGroups` | `dependencies/group` with `targetFramework` (verbatim) and each `dependency` `id` and `version` (verbatim range); a flat `dependencies` list becomes one group without `targetFramework` | registration |
 | `packageTypes` | `packageTypes/packageType` `name` and `version`; none declared means `Dependency` | search filter, symbol checks |
+| `contents` | not of the `.nuspec`: what the archive's file list says, `frameworks`, `build`, `analyzers`, `scripts` (at most 20 names each) and `more`, read at ingestion and at a remote's fill, or by the job `nuget-contents` (R-NUGET-038, R-NUGET-039) | UI |
 | `deprecation` | not of the `.nuspec`: `reasons`, `message`, `alternatePackage` (`id`, `range`), set through the management operation or taken from a remote's upstream registration (R-NUGET-036) | registration, search, UI |
 
 Storage layout. Canonical paths inside a NuGet repository, as seen through `/files/<projectKey>/<repoKey>/`;
@@ -2130,10 +2130,10 @@ repository that is not anonymously readable, in the token spelling of the templa
 `nuget.config` and in cmd, `${QUADER_TOKEN}` in a POSIX shell, `$env:QUADER_TOKEN` in PowerShell. The user name is the fixed
 `quader` (the server accepts any, R-NUGET-012). The `dotnet` snippets exist for a POSIX shell and for PowerShell, the
 `nuget.exe` snippets for cmd and PowerShell, and all three clients get the `nuget.config` below as a file; Visual Studio gets
-the `nuget.config` and the `PackageReference` of a project (`<PackageReference Include="acme.widgets" Version="1.2.3" />`) and
-nothing else, because it has no command line. A publish snippet names the repository the reader chose and carries the token
+the `nuget.config` and the `PackageReference` of a project (`<PackageReference Include="Acme.Widgets" Version="1.2.3" />`),
+its Package Manager console and Central Package Management (R-NUGET-037). A publish snippet names the repository the reader chose and carries the token
 as the API key. `dotnet add package <id> --version <version>` and `nuget install <id> -Version <version> -Source quader` are
-the install snippets; `nuget sources add` leaves the clear-text switch out because nuget.exe on Windows encrypts the password
+the first install snippets of their clients, and R-NUGET-037 adds the further forms and those of a tool, a template and an SDK; `nuget sources add` leaves the clear-text switch out because nuget.exe on Windows encrypts the password
 and the guide says that Mono, Linux and macOS need `-StorePasswordInClearText`.
 
 `nuget.config` for a repository checkout (values # example; `%QUADER_TOKEN%` is expanded from the
@@ -2782,6 +2782,121 @@ Acceptance criteria:
 - Integration (`nuget`, `TestR_NUGET_036_ALocalVersionIsDeprecatedThroughTheManagementAPIAndServed`, about one second).
 - End-to-end (the leg `nuget`, written, about 5 s, constant): `dotnet list package --deprecated` names a deprecated local version with its
   reason and alternative (`TestNuGetDeprecated_R_NUGET_036_DotnetListsTheDeprecatedPackage`).
+
+### R-NUGET-037 · The install forms of nuget.org, by package type
+Priority: **P1** · Covers: quader-only
+
+nuget.org offers a library in eight forms and installs a .NET tool, a template and an MSBuild project SDK by other commands than a
+library (its package pages, read on 2026-11-26: `Newtonsoft.Json`, `dotnet-ef`, `Microsoft.DotNet.Web.ProjectTemplates.8.0`,
+`Microsoft.Build.NoTargets`). Quader's panel of a version's commands offers the same forms, rendered by the server for the version's ID
+in its declared casing and the version shown (R-API-030: the server owns every snippet).
+
+| Kind (the version's `kind`) | Declared package type | Client tab | Forms, in the order of the select **Form**, the first the default |
+|---|---|---|---|
+| none (a library) | `Dependency`, none, any other | .NET CLI | `dotnet add package <id> --version <v>`; Paket `paket add <id> --version <v>`; Script and interactive `#r "nuget: <id>, <v>"`; File-based app `#:package <id>@<v>`; Cake add-in `#addin nuget:?package=<id>&version=<v>`; Cake tool `#tool nuget:?package=<id>&version=<v>` |
+| | | NuGet CLI | `nuget install <id> -Version <v> -Source quader -OutputDirectory packages` |
+| | | Visual Studio | PackageReference `<PackageReference Include="<id>" Version="<v>" />`; Package Manager console `NuGet\Install-Package <id> -Version <v>`; Central Package Management, `<PackageVersion Include="<id>" Version="<v>" />` as `Directory.Packages.props`'s, with the project file's `<PackageReference Include="<id>" />` as a comment under it |
+| `dotnet-tool` | `DotnetTool` | .NET CLI alone | Global tool `dotnet tool install --global <id> --version <v>`; Local tool `dotnet tool install --local <id> --version <v>`; Cake `#tool dotnet:?package=<id>&version=<v>`; NUKE `nuke :add-package <id> --version <v>` |
+| `template` | `Template` | .NET CLI alone | `dotnet new install <id>@<v>` |
+| `msbuild-sdk` | `MSBuildSdk` | .NET CLI, Visual Studio | File-based app `#:sdk <id>@<v>`; Project SDK `<Sdk Name="<id>" Version="<v>" />` |
+
+- **The kind** is read from the declared package types the ingestion stores (`nuget_version.package_types`, R-NUGET-005) and sent as the
+  member `kind` of a version's metadata and of the summaries of the lists; the client setup takes it as the parameter `kind`
+  ([Q-NUGET-155](#q-nuget-155--the-install-forms-of-a-kind-of-package-are-the-servers-chosen-by-a-kind-the-request-names)). A client
+  without a form of the kind is not offered for it: nuget.exe and Visual Studio install no tool (a PackageReference to one fails with
+  NU1212) and no template.
+- **Paket and Cake** are forms of the .NET CLI's tab, not clients of their own
+  ([Q-NUGET-156](#q-nuget-156--paket-cake-nuke-a-script-and-a-file-based-app-are-forms-of-the-net-clis-tab-not-clients-of-their-own)):
+  each runs beside the .NET SDK and reads its sources itself (Cake reads `nuget.config`; Paket reads `paket.dependencies`, which Set up
+  client does not write, [H-2232](#h-2232--paket-has-no-configure-snippet)).
+- **The ID's casing**: a command writes the ID as the screen shows it, the declared casing
+  ([Q-NUGET-161](#q-nuget-161--an-install-command-writes-the-id-in-its-declared-casing)); NuGet compares IDs without case.
+- Every form carries no credential: the source and its credential are the configure snippets' (Set up client), and no form names one.
+- **Set up client** shows the forms of a library: the first of each client under **Install**, the others behind a fold of their name,
+  each with one sentence (Paket's says that it reads `paket.dependencies`).
+
+Acceptance criteria:
+
+- Unit (`nuget`, milliseconds): every form of every kind written for `Acme.Widgets` 1.2.3, the XML forms parse
+  (`TestR_NUGET_037_TheInstallFormsOfEveryKind`); the API answers a client's forms of the kind asked for, none for a client without
+  one, a library's for a kind no form names (`TestR_NUGET_037_TheFormsOfAKind`, `internal/api/v1`); kit check 8 holds the templates.
+- Web unit: the select **Form**, a tool's panel with the .NET CLI alone (`package-version.spec.ts`), every form named
+  (`clients.spec.ts`).
+- Integration (`nuget`, on a replica of the role `api`): a tool's `kind` in the list and its forms through the client setup
+  (`TestR_NUGET_038_TheFactsAndTheEmbeddedFilesOnAReplicaOfTheRoleAPI`). No client runs the forms: they are templates (R-ARCH-010 check 8).
+
+### R-NUGET-038 · The icon, the licence file, the frameworks, the symbols, the revision and the release notes on a version's page
+Priority: **P1** · Covers: quader-only
+
+What nuget.org shows of a version and the package holds is shown on Quader's version page (the owner's rule of 2026-11-25: "wenn die dafür
+notwendigen Metainformationen vorhanden sind, soll sie von uns verwendet und dargestellt werden").
+
+- **The icon** the `.nuspec`'s `icon` names stands before the heading of the version's page, 40 px, read through the management
+  operation `GET /api/v1/packages/{packageId}/versions/{version}/icon` (`hasIcon` in the metadata says that there is one). It is read out
+  of the stored package as R-NUGET-024 reads it, at most 1 MiB, and served only as a PNG or a JPEG, a type the server decides from the
+  bytes; an SVG or anything else is a 404. The deprecated `iconUrl` is never fetched: no request leaves the reader's browser to a host a
+  package names. The answer has `nosniff`, a sandboxing CSP and `Cache-Control: private, no-cache`, so the read check decides every view
+  ([Q-NUGET-157](#q-nuget-157--the-icon-and-the-licence-file-on-the-screen-come-from-two-management-operations-under-the-read-check)).
+  No list shows a package's picture in any format, so the head alone shows it.
+- **A licence of the type `file`** (`licenseFile` in the metadata) is the licence of the facts line, a link **License file** to its text
+  through `GET /api/v1/packages/{packageId}/versions/{version}/license`: UTF-8 text, at most 1 MiB, served as `text/plain`, never rendered as
+  markup, opened in a new tab.
+- **The target frameworks** are read from the package's folders at ingestion (`lib/`, `ref/`, `build/`, `buildTransitive/`, `tools/` and
+  the third segment of `contentFiles/`), lower-cased as NuGet names a folder, and shown as chips under **Target frameworks** in Package
+  details. The frameworks of the dependency groups that no folder names (compared in the folders' short form: `.NETStandard2.0` is
+  `netstandard2.0`) stand beside them under **Frameworks of the dependencies**, so a meta-package without folders still names its
+  frameworks ([Q-NUGET-158](#q-nuget-158--the-file-list-is-read-from-the-central-directory-at-ingestion-and-by-a-job-for-a-version-stored-before)).
+- **Symbols**: a version that holds a `.snupkg` (R-NUGET-020) says **Symbols** in Package details, with the file's name and that no
+  debugger can read them from Quader yet: the symbol server (R-NUGET-021) is not built
+  ([Q-NUGET-160](#q-nuget-160--symbols-are-read-from-the-versions-files-and-the-page-says-that-no-debugger-reads-them-yet)).
+- **The repository's branch and commit** of the `.nuspec`'s `repository` element stand in the version's row of links after the source
+  ("Branch main", "Commit 4b7e2a9c1d3f"), links where the repository's address is an https address of a host whose addresses of a branch and a commit the page knows (GitHub, GitLab, Bitbucket,
+  Azure DevOps), the text elsewhere ([api-and-ui.md](../api-and-ui.md) Q-UI-1362).
+- **The release notes** are a section **Release notes** of the tab Details, as text with their line breaks, no longer a line of Package
+  details.
+- The licence acceptance and the development dependency were facts already (R-UI-221).
+
+Acceptance criteria:
+
+- Unit (`nuget`, milliseconds, byte-sized archives): the frameworks of the folders
+  (`TestR_NUGET_038_TheFrameworksOfThePackagesFolders`), the ingestion's stored facts and the view's members
+  (`TestR_NUGET_038_TheIngestionStoresWhatTheFileListSays`, `TestR_NUGET_038_DependencyFrameworksBesideTheFolders`).
+- Integration (`nuget`, about a second, on a replica of the role `api`): the members of the version's details, the icon as a PNG with
+  its headers and a 304, a caller who may not read refused, an SVG refused, the licence as text
+  (`TestR_NUGET_038_TheFactsAndTheEmbeddedFilesOnAReplicaOfTheRoleAPI`).
+- Web unit (`package-version.spec.ts`): the chips, the branch and the commit in the row of links, the symbols, the release notes as text, the licence
+  file's link, the icon and its absence after an error.
+
+### R-NUGET-039 · What a build, a compile or an install runs of a package is said on its page
+Priority: **P1** · Covers: quader-only
+
+A `.nupkg` runs code of its own where a project uses it, and its version's page says so where npm's install script is said, under the
+links, in the same note, with the format's own sentence and the files, as text:
+
+- **build logic**: `<id>.props` and `<id>.targets` in `build/`, `buildTransitive/` and `buildMultiTargeting/`, and in a framework folder of
+  the first two, the files MSBuild imports into every build of a project that references the package (directly, or through another for
+  `buildTransitive/`): "Adds build logic that runs in every build of a project that references it:";
+- **analyzers and source generators**: every `.dll` below `analyzers/`, which the compiler loads: "Adds analyzers or source generators
+  that run in the compiler:";
+- **PowerShell scripts**: `tools/init.ps1`, and `install.ps1` and `uninstall.ps1` in `tools/` or a framework folder of it, which Visual
+  Studio runs for a project that uses `packages.config`: "Runs PowerShell scripts when Visual Studio installs it into a packages.config
+  project:" ([Q-NUGET-159](#q-nuget-159--what-counts-as-build-logic-an-analyzer-and-a-script)).
+
+The file list is read once, at ingestion and at a remote's fill, from the names of the central directory the reader of R-NUGET-005 checked
+(no name that climbs, a bounded count and length); no entry is inflated and nothing is unpacked to disk. Each list keeps 20 names and
+counts the rest. It is stored as the member `contents` of `nuget_version.metadata` (jsonb; no migration). A version stored before the
+reader existed has none and shows none of these facts until the job `nuget-contents` read its stored package: the task `remote-describe`
+queues it for every live version, local or remote, whose metadata has no `contents`, in its batches and under its bounds, and the job
+opens the stored `.nupkg` with ranged reads of its end record and central directory and writes the member once
+([Q-NUGET-158](#q-nuget-158--the-file-list-is-read-from-the-central-directory-at-ingestion-and-by-a-job-for-a-version-stored-before)).
+
+Acceptance criteria:
+
+- Unit (`nuget`, milliseconds): the build logic, the analyzers and the scripts of a file list and its bound
+  (`TestR_NUGET_039_WhatRunsWhenAProjectUsesThePackage`).
+- Integration (`nuget`, under a second): a version without the member is selected, its job queued once, read and written, and nothing is
+  left (`TestR_NUGET_039_AVersionStoredBeforeTheReaderIsReadByItsJob`); the members on a replica of the role `api` (R-NUGET-038's case).
+- Web unit (`package-version.spec.ts`): the three notes with their files, none for a package that runs nothing.
 
 ## Deferred
 
@@ -5800,6 +5915,113 @@ floating range); a deprecated version is found, restored and marked. nuget.org h
 
 **Choice:** (a). **Applied in the spec:** R-NUGET-036, [api-and-ui.md](../api-and-ui.md) R-API-085.
 
+### Q-NUGET-155 · The install forms of a kind of package are the server's, chosen by a kind the request names
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-NUGET-037. A tool, a template and an MSBuild SDK are installed by other commands than a library; the server owns every snippet
+(R-API-030), and the client setup knows the package and the version, not its type.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) An install template names its kind (`SetupTemplate.Kind`); the request names the version's kind (`kind`), which the version's metadata and the list's summaries send (chosen) | The screen passes what the server told it | No read per request; a list's row knows the kind from its summary as an image's does | A caller can ask for another kind's forms (it learns commands, nothing of the package) |
+| (b) The server reads the version's type for every request that names a version | Always the stored type | The request cannot be wrong | A read of the view for every client of every panel; a request without a version has none |
+| (c) The screen picks the forms from all of them | — | — | The screen would own the snippets (R-API-030) |
+
+**Choice:** (a), [ADR-293](../../decisions.md#adr-293--the-format-contract-gains-the-kind-of-an-install-template-and-the-reader-of-the-files-a-package-embeds-for-the-screens).
+A kind no template names is a library, so an OCI artifact's kind passed by the same panel changes nothing. **Revisit** when a format's
+forms depend on more than one fact of a version.
+
+### Q-NUGET-156 · Paket, Cake, NUKE, a script and a file-based app are forms of the .NET CLI's tab, not clients of their own
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: nuget.org shows eight tabs for a library; Quader's panel has a tab per client and **Set up client** at the row's end, which
+opens the client's configuration (Q-UI-1240).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The three clients stay the tabs; each client's forms are a select **Form** in its tab; Paket, Cake and NUKE run beside the .NET SDK and are forms of its tab (chosen) | Three tabs at 390 px | The row and **Set up client** as for every format; one form shown, the others on demand | Paket's sources are not the .NET CLI's (H-2232) |
+| (b) Paket and Cake as clients with tabs of their own | Five tabs | As nuget.org | Five tabs and **Set up client** do not fit 390 px; each needs a configure snippet Quader does not have |
+| (c) The eight forms as tabs, the clients' sign-in under **Set up client** | nuget.org's tabs | As nuget.org | The tabs no longer name what **Set up client** configures; eight do not fit 1,440 px beside it |
+
+**Choice:** (a) ([api-and-ui.md](../api-and-ui.md) Q-UI-1360). **Revisit** when a Paket user asks for its configuration.
+
+### Q-NUGET-157 · The icon and the licence file on the screen come from two management operations under the read check
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-NUGET-038. The flat container serves the icon and the licence (R-NUGET-024) to clients, on the role `packages` and with a
+client's credential; the screens run on the role `api` with a session. An icon is untrusted content of an uploaded or fetched package.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `GET …/versions/{version}/icon` and `…/license` of the management API, read through an optional interface of the format (`ViewEmbedder`), the type decided from the bytes, `private, no-cache` (chosen) | The screen's own read, under the read check | Works on the role `api` (Q-ARCH-1070); the format reads, the core decides what is served | A second road to the same bytes |
+| (b) The screen links the flat container | One road | — | A session is no credential of the package routes; a remote member's address would differ |
+| (c) The upstream's `iconUrl` | — | Nothing to serve | A request from the reader's browser to a host a package names; refused by the brief |
+
+**Choice:** (a), [ADR-293](../../decisions.md#adr-293--the-format-contract-gains-the-kind-of-an-install-template-and-the-reader-of-the-files-a-package-embeds-for-the-screens).
+The bound and the reader are R-NUGET-024's (1 MiB, `nupkg.Open`). The checks of a download that R-NUGET-024 applies to the flat container
+are not applied here, as for the README of the same page ([H-2230](../../security/nuget-package-facts.md#h-2230--the-icon-and-the-licence-file-on-the-screen-are-read-without-the-checks-of-a-download)).
+**Revisit** with H-2230.
+
+### Q-NUGET-158 · The file list is read from the central directory at ingestion, and by a job for a version stored before
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-NUGET-038, R-NUGET-039. The frameworks and what runs are facts of the archive's names; the ingestion opens the archive anyway.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The ingestion and a remote's fill keep what the names say as the member `contents` of the metadata; the job `nuget-contents`, queued by the task `remote-describe`, reads it for a version stored before (chosen) | One read where the archive is open, one job per older version | No read when a page is shown; no migration (jsonb) | A version stored before shows none of the facts until its job ran |
+| (b) Read the central directory when a page is shown | Always current | Nothing stored | Ranged reads of the object store for every view, on the role `api` |
+| (c) A migration that reads every package | — | — | A migration that reads the object store; none of the kind exists |
+
+**Choice:** (a). The member lists names, at most 20 a list; the job writes it once (`NOT metadata ? 'contents'`) and marks a package its
+reader refuses today `unreadable`, so it is not selected again. **Revisit** if the facts need more than names.
+
+### Q-NUGET-159 · What counts as build logic, an analyzer and a script
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-NUGET-039. MSBuild imports only `<id>.props` and `<id>.targets` of `build/`, `buildTransitive/` and `buildMultiTargeting/`
+(and of a framework folder of the first two) by itself; other files there run only when those import them.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The files that run by themselves: the imported `<id>` files, every `.dll` below `analyzers/`, `tools/init.ps1` and the install and uninstall scripts (chosen) | The entry points | True: a package without them runs nothing there | A file the entry points import is not named |
+| (b) Every `.props`, `.targets`, `.dll` and `.ps1` of those folders | — | More names | Says that a package runs what nothing imports |
+
+**Choice:** (a). **Revisit** when a package's runner is found that this misses.
+
+### Q-NUGET-160 · Symbols are read from the version's files, and the page says that no debugger reads them yet
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-NUGET-038. A `.snupkg` is linked to its version (R-NUGET-020), so it is among the version's files; the symbol server
+(R-NUGET-021, P1) is not built and answers 501.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) **Symbols** with the file's name and the sentence that no debugger reads them from Quader yet, from the version's files (chosen) | True today | No server change; the file is downloadable from the tab Files | A debugger's address only comes with R-NUGET-021 |
+| (b) "Symbols available" with the address `<feed>/symbols/` | nuget.org's promise | — | The address answers 501 today |
+
+**Choice:** (a). **Revisit** when R-NUGET-021 ships: the fact then names the address of Visual Studio's symbol location.
+
+### Q-NUGET-161 · An install command writes the ID in its declared casing
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-NUGET-037; the plan's finding B.4 (3)-4: the header used the declared casing, the command the lower-case ID.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The API writes the package as the request spells it when that spelling differs from the normalized name only in the case of ASCII letters (chosen) | The screen sends the name it shows | One word for one thing on the page, as nuget.org; no read | A caller can choose the case (every NuGet client ignores it) |
+| (b) The lower-case ID | As before | — | Differs from the heading above it |
+
+**Choice:** (a), for every format: only NuGet's names differ from their normalized form in case. **Revisit** never; a format whose
+clients compare names with case would need its names to normalize without folding.
+
 ## What this does not cover
 
 ### H-2161 · A version cached by a restore alone shows its upstream's deprecation only after a registration read
@@ -5809,14 +6031,20 @@ flat container only, so a version that only restores fetched carries no deprecat
 package`, `dotnet add package` or a mirror pass reads its registration through the remote. Live for every remote that only restores use;
 the clients themselves see the upstream's deprecation in the registration the remote serves.
 
-### H-2171 · A package's build files and install script are not read, so its page cannot say that it runs code in a build
+### H-2232 · Paket has no configure snippet
 
-A `.nupkg` can carry MSBuild files (`build/` and `buildTransitive/` `.props` and `.targets`), which run in every build of a project
-that references it, and the legacy `tools/install.ps1`, which Visual Studio runs for a `packages.config` project. Quader reads the
-nuspec, the README and the licence file (Q-NUGET-48), not the archive's file list: the version's page cannot say, where an npm version
-says it runs an install script ([api-and-ui.md](../api-and-ui.md) R-UI-221), that this package runs code of its own. Live for every NuGet
-version, local and cached; real for an analyzer or a build tool package, where it is the point of the package. A later package (W-30 G6,
-the target frameworks from the folders) reads the file list once and names the build files in Package details.
+Stage: R-NUGET-037. Paket reads its sources from `paket.dependencies` (`source <url> username: "…" password: "%VAR%"`), not from
+`nuget.config`; Set up client offers the .NET CLI's, nuget.exe's and Visual Studio's configuration only, and Paket's form says in one
+sentence where its source goes. Live for every Paket user of a repository that needs a credential.
+
+### H-2233 · A package cannot be uploaded on the screen
+
+Stage: R-NUGET-005 names the upload through the management API and the UI as a road in; it is not built for NuGet. A package enters
+through the protocol push (`dotnet nuget push`, `nuget push`, a raw `PUT` of R-NUGET-006), a remote's fill, copy and move. The pattern
+is the upload of an Ansible Galaxy collection on the screen (a short-lived upload token of the uploader for the format's own publish route,
+R-ANS-057), which had not landed when R-NUGET-037 to R-NUGET-039 did: what it takes is that operation made to serve every format with a
+publish route, the act **Upload package** where a collection's stands, one `.nupkg` and its `.snupkg`, and NuGet's answer (status and
+message, the link to the version) as the dialog's result. Live for every person without a .NET SDK at hand.
 
 ### H-1680 · A remote shows no README and no license of a package it has not cached
 

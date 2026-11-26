@@ -17,7 +17,8 @@ type SetupTemplate struct {
 	Client string
 	// Section is "configure", "publish" or "install".
 	Section string
-	// Lang is "shell" (a POSIX shell), "powershell", "cmd", "ini", "xml" or "yaml".
+	// Lang is "shell" (a POSIX shell), "powershell", "cmd", "ini", "xml", "yaml" or "text" (a line of a script or a file that is
+	// none of them, which the API substitutes into as it is: a C# directive, a Cake directive).
 	// It fixes how the API quotes the package and the version it substitutes into an
 	// install template.
 	Lang string
@@ -47,7 +48,10 @@ type SetupTemplate struct {
 	// package, with [SetupVersionRef] standing for the quoted version. "" is
 	// "@<version>" (npm: pkg@1.2.3); dotnet writes " --version <version>". A request
 	// that names no version leaves the package alone. VersionSpec is meaningful for an
-	// install template only (kit check 8).
+	// install template only (kit check 8). An install template that writes [SetupVersionRef] in its
+	// own text places the version itself (`#r "nuget: <package>, <version>"`, a second line that names
+	// the package without it) and has no VersionSpec: the API replaces each placeholder by its quoted
+	// value, and keeps the version's placeholder when the request names no version.
 	VersionSpec string
 	// PackageExample is what an install template shows in place of
 	// [SetupPackageRef] when the request names no package: an example the reader
@@ -61,6 +65,12 @@ type SetupTemplate struct {
 	// the name the client knows it by, or by the template's PackageExample when it has none; for any other package, and
 	// when the request names none, the prefixed ones are left out.
 	Packages string
+	// Kind is the kind of package an install template is for, in the format's words: the kind its view adapter sends as the member
+	// `kind` of a version's metadata (NuGet's "dotnet-tool", "template" and "msbuild-sdk", formats/nuget.md R-NUGET-037). "" is a
+	// package of no kind (a NuGet library). A request that names a kind gets the client's install templates of that kind, none when the
+	// client has none for it; a request that names none gets those without a kind. A client may have several install templates of one
+	// kind: each is a form of installing the package (nuget.org's tabs), in the order a person meets them most, the first the default.
+	Kind string
 	// Examples are the literal values of the template that the reader replaces with
 	// their own: a file to publish, an image name, a path. The API names each one
 	// that stands in a rendered snippet, so that a screen can mark it (R-API-030);

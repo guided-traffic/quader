@@ -41,6 +41,27 @@ type Metadata struct {
 	// Deprecation is not of the .nuspec: the deprecation of the version, set through the management operation for a local version
 	// and taken from the upstream's registration for a remote's cached one (R-NUGET-036), in the registration's shape.
 	Deprecation *Deprecation `json:"deprecation,omitempty"`
+	// Contents is not of the .nuspec either: what the file list of the package says (R-NUGET-038, R-NUGET-039), read from the names
+	// of its central directory at ingestion and at a remote's fill. Absent for a version stored before the reader existed, which the
+	// task remote-describe queues for nuget-contents.
+	Contents *Contents `json:"contents,omitempty"`
+}
+
+// Contents is what the file list of a package says: the target frameworks its folders name (lower-cased, as NuGet spells a folder),
+// and the files that run code when a project uses it, by their package paths in archive order. Each list holds at most 20 names; More
+// counts the names past a bound.
+type Contents struct {
+	Frameworks []string `json:"frameworks"`
+	// Build are the .props and .targets files MSBuild imports into every build of a project that references the package.
+	Build []string `json:"build"`
+	// Analyzers are the assemblies below analyzers/: analyzers and source generators the compiler loads.
+	Analyzers []string `json:"analyzers"`
+	// Scripts are the PowerShell scripts Visual Studio runs for a packages.config project (tools/init.ps1, install.ps1, uninstall.ps1).
+	Scripts []string `json:"scripts"`
+	More    int      `json:"more,omitempty"`
+	// Unreadable says that the reader of a version stored before it refused the stored package within its bounds of today: the
+	// lists say nothing, and the screens show none of them.
+	Unreadable bool `json:"unreadable,omitempty"`
 }
 
 // Deprecation is a version's deprecation in the shape of the registration's catalog entry (R-NUGET-036): at least one reason, an

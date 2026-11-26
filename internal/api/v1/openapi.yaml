@@ -11440,6 +11440,99 @@ paths:
           $ref: "#/components/responses/Internal"
         "503":
           $ref: "#/components/responses/Unavailable"
+  /api/v1/packages/{packageId}/versions/{version}/icon:
+    parameters:
+      - $ref: "#/components/parameters/PackageId"
+      - $ref: "#/components/parameters/PackageVersionPath"
+    get:
+      operationId: getPackageVersionIcon
+      tags: [packages]
+      summary: Read the icon a version's package embeds
+      description: |
+        The picture the package of a visible version embeds (formats/nuget.md R-NUGET-038: the file the `.nuspec`'s `icon` names, at
+        most 1 MiB), read out of the stored package; the version's metadata says `hasIcon`. An icon is untrusted content of an uploaded
+        or fetched package: it is served only as a PNG or a JPEG, a type the server decides from the bytes and never from the name or
+        the package, and anything else (an SVG first) is a `404`, as are a version that embeds none, one that is not visible and a format
+        whose packages carry no icon. No address the package names (`iconUrl`) is ever fetched. The answer has `nosniff`, a CSP of
+        `default-src 'none'; sandbox`, `Content-Disposition: inline` and `Cache-Control: private, no-cache`: a browser keeps it for the
+        reader alone and asks again each time, so the read check decides every view and one reader's permission never serves another.
+        The `ETag` is a strong tag of the bytes; a matching `If-None-Match` is a `304` after the check.
+      x-quader-permission:
+        public: true
+      parameters:
+        - $ref: "#/components/parameters/IfNoneMatch"
+      responses:
+        "200":
+          description: The icon.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+        "304":
+          $ref: "#/components/responses/NotModified"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/packages/{packageId}/versions/{version}/license:
+    parameters:
+      - $ref: "#/components/parameters/PackageId"
+      - $ref: "#/components/parameters/PackageVersionPath"
+    get:
+      operationId: getPackageVersionLicense
+      tags: [packages]
+      summary: Read the licence file a version's package embeds
+      description: |
+        The licence file of a visible version whose licence is of the type `file` (formats/nuget.md R-NUGET-038: the file the
+        `.nuspec`'s `license` names, at most 1 MiB), read out of the stored package; the version's metadata names it as
+        `licenseFile`. It is served as `text/plain; charset=utf-8`, never as markup, with `nosniff`, a CSP of `default-src 'none';
+        sandbox`, `Content-Disposition: inline` and `Cache-Control: private, no-cache`. A file that is not UTF-8 text, a version without
+        a licence file, one that is not visible and a format whose packages carry none are a `404`. It is artifacts metadata, read with
+        the version (no wiki). The `ETag` is a strong tag of the bytes.
+      x-quader-permission:
+        public: true
+      parameters:
+        - $ref: "#/components/parameters/IfNoneMatch"
+      responses:
+        "200":
+          description: The licence's text.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+          content:
+            text/plain:
+              schema:
+                type: string
+        "304":
+          $ref: "#/components/responses/NotModified"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
   /api/v1/packages/{packageId}/versions/{version}/contents:
     parameters:
       - $ref: "#/components/parameters/PackageId"
@@ -11719,7 +11812,12 @@ paths:
         browser replaces; with `credentials=env` it holds the environment-variable reference of the
         client's syntax (`${QUADER_TOKEN}` for npm and Yarn, `%QUADER_TOKEN%` for `nuget.config`;
         the name is `ui.client_setup.token_env_var`); with `credentials=none` it holds no
-        authentication line. With `package` and `version` the install snippets name that version.
+        authentication line. With `package` and `version` the install snippets name that version; a
+        package spelled in another letter case than its normalized name (a NuGet ID in its declared
+        casing) is written as spelled. A client may answer several install snippets: each is a form of
+        installing the package (NuGet's .NET CLI, Paket, Cake and the directives of a script and a
+        file-based app; Visual Studio's PackageReference, Package Manager console and Central Package
+        Management), the first the default; `kind` selects the forms of a kind of package (R-NUGET-037).
         Values placed in shell commands are single-quoted unless they match
         `^[A-Za-z0-9@/._+:=-]+$`, values placed in XML are escaped. Needs `read` on the repository
         (`404` otherwise, like a missing repository); the publish snippets are present only when the
@@ -11781,6 +11879,16 @@ paths:
           schema:
             type: string
             pattern: "^[0-9a-fA-F]{64}$"
+        - name: kind
+          in: query
+          description: |
+            The kind of package the install snippets are for, as a version's metadata names it (`kind`): NuGet's `dotnet-tool`,
+            `template` and `msbuild-sdk` (formats/nuget.md R-NUGET-037). The client's install snippets of that kind are answered, none
+            when it has none for the kind; without it those for a package of no kind (a NuGet library). A kind for which no snippet of
+            the format differs (an OCI artifact's `image` or `helm-chart`) is a package of no kind.
+          schema:
+            type: string
+            pattern: "^[a-z][a-z0-9-]{0,31}$"
         - name: scope
           in: query
           description: |
@@ -28273,8 +28381,9 @@ components:
           type: string
           description: |
             What `latestVersion` is in its format's words, from the format's metadata: an OCI artifact's kind (`image`, `helm-chart`,
-            `signature`, `sbom`, `attestation`, `other`, formats/oci.md R-OCI-041), so that a list offers the commands of its kind;
-            absent for a format without kinds.
+            `signature`, `sbom`, `attestation`, `other`, formats/oci.md R-OCI-041), a NuGet package's (`dotnet-tool`, `template`,
+            `msbuild-sdk`, formats/nuget.md R-NUGET-037), so that a list offers the commands of its kind; absent for a format without
+            kinds and for a NuGet library.
         keywords:
           type: array
           items:
@@ -28463,8 +28572,9 @@ components:
           type: string
           description: |
             With `include=kind` only, what the version is in its format's words (the member `kind` of its details): an OCI artifact's
-            kind (`image`, `helm-chart`, `signature`, `sbom`, `attestation`, `other`, formats/oci.md R-OCI-041); with `group=content`
-            the kind of the entry's leading version; absent for a format without kinds.
+            kind (`image`, `helm-chart`, `signature`, `sbom`, `attestation`, `other`, formats/oci.md R-OCI-041), a NuGet package's
+            (`dotnet-tool`, `template`, `msbuild-sdk`, formats/nuget.md R-NUGET-037); with `group=content` the kind of the entry's
+            leading version; absent for a format without kinds and for a NuGet library.
         repositories:
           type: array
           description: The keys of the repositories that hold this version and that the caller may read.
@@ -28622,7 +28732,12 @@ components:
             - NuGet (formats/nuget.md Q-NUGET-48): `id` (the declared casing), `listed`, `title`, `summary`, `releaseNotes`,
               `copyright`, `language`, `minClientVersion`, `licenseUrl`, `homepage` (the project URL), `repositoryUrl`, `authors`,
               `tags`, `dependencyGroups` (`targetFramework` and `dependencies` of `id` and `range`), `packageTypes`,
-              `requireLicenseAcceptance`, `developmentDependency`.
+              `requireLicenseAcceptance`, `developmentDependency`; `kind` (`dotnet-tool`, `template`, `msbuild-sdk`; absent for a
+              library, R-NUGET-037), `repositoryType`, `repositoryBranch`, `repositoryCommit`, `licenseFile` (the path of a licence
+              of the type file, served by `…/license`) and `hasIcon` (served by `…/icon`, R-NUGET-038), and what Quader read of the
+              package's file list (absent until it was read, R-NUGET-038, R-NUGET-039): `frameworks`, `dependencyFrameworks` (the
+              dependency groups' frameworks no folder names), `buildFiles`, `analyzers`, `scripts` and `contentsMore` (the names
+              past the bound of 20 a list).
             - Debian (formats/debian.md R-DEB-030, R-DEB-038): `architectures`, `coordinates` (`suite/component`), `maintainer`,
               `section`, `priority`, `installedSize` (KiB, as the field), `homepage`, `source`, `multiArch`, `essential`,
               `longDescription` (paragraphs with `text` and `verbatim`), `relations` (a field to its groups of alternatives with

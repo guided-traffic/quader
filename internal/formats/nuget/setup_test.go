@@ -163,40 +163,64 @@ func TestR_NUGET_026_TheCommandsAreTheOnesOfTheSpecification(t *testing.T) {
 	}
 }
 
-// TestR_NUGET_026_TheInstallTemplatesTakeAVersion: dotnet and nuget.exe attach the version with their own
-// option, Visual Studio writes the Version attribute of the PackageReference, and every install template
-// places the package the API substitutes.
-func TestR_NUGET_026_TheInstallTemplatesTakeAVersion(t *testing.T) {
-	want := map[string]string{
-		"dotnet.install": " --version " + formats.SetupVersionRef, "nuget.install": " -Version " + formats.SetupVersionRef,
-		"visual-studio.packagereference.install": "\" Version=\"" + formats.SetupVersionRef,
+// TestR_NUGET_037_TheInstallFormsOfEveryKind: the install forms of nuget.org by package type, each by its client in the order
+// the panel offers them, written for Acme.Widgets 1.2.3 the way the API substitutes a template (a VersionSpec after the package,
+// or the version a template places itself); the XML forms parse, and a kind's forms are the only forms of that kind.
+func TestR_NUGET_037_TheInstallFormsOfEveryKind(t *testing.T) {
+	want := map[string][]string{
+		"": {
+			"dotnet.install: dotnet add package Acme.Widgets --version 1.2.3",
+			"dotnet.paket.install: paket add Acme.Widgets --version 1.2.3",
+			`dotnet.script.install: #r "nuget: Acme.Widgets, 1.2.3"`,
+			"dotnet.file-based-app.install: #:package Acme.Widgets@1.2.3",
+			"dotnet.cake-addin.install: #addin nuget:?package=Acme.Widgets&version=1.2.3",
+			"dotnet.cake-tool.install: #tool nuget:?package=Acme.Widgets&version=1.2.3",
+			"nuget.install: nuget install Acme.Widgets -Version 1.2.3 -Source quader -OutputDirectory packages",
+			`visual-studio.packagereference.install: <PackageReference Include="Acme.Widgets" Version="1.2.3" />`,
+			`visual-studio.pmc.install: NuGet\Install-Package Acme.Widgets -Version 1.2.3`,
+			`visual-studio.cpm.install: <PackageVersion Include="Acme.Widgets" Version="1.2.3" /> ` +
+				`<!-- In the project file: <PackageReference Include="Acme.Widgets" /> -->`,
+		},
+		KindTool: {
+			"dotnet.tool-global.install: dotnet tool install --global Acme.Widgets --version 1.2.3",
+			"dotnet.tool-local.install: dotnet tool install --local Acme.Widgets --version 1.2.3",
+			"dotnet.cake-dotnet-tool.install: #tool dotnet:?package=Acme.Widgets&version=1.2.3",
+			"dotnet.nuke.install: nuke :add-package Acme.Widgets --version 1.2.3",
+		},
+		KindTemplate: {"dotnet.template.install: dotnet new install Acme.Widgets@1.2.3"},
+		KindSDK: {
+			"dotnet.sdk-file-based-app.install: #:sdk Acme.Widgets@1.2.3",
+			`visual-studio.sdk.install: <Sdk Name="Acme.Widgets" Version="1.2.3" />`,
+		},
 	}
-	seen := 0
+	got := map[string][]string{}
 	for _, tpl := range New().SetupTemplates() {
 		if tpl.Section != "install" {
-			if tpl.VersionSpec != "" {
-				t.Errorf("%s: a VersionSpec on a %s template", tpl.ID, tpl.Section)
+			if tpl.VersionSpec != "" || tpl.Kind != "" {
+				t.Errorf("%s: a VersionSpec or a kind on a %s template", tpl.ID, tpl.Section)
 			}
 			continue
 		}
-		seen++
-		if tpl.VersionSpec != want[tpl.ID] || !strings.Contains(tpl.Template, formats.SetupPackageRef) {
-			t.Errorf("%s: VersionSpec %q, template %q", tpl.ID, tpl.VersionSpec, tpl.Template)
+		spec := tpl.VersionSpec
+		if spec == "" && !strings.Contains(tpl.Template, formats.SetupVersionRef) {
+			spec = "@" + formats.SetupVersionRef // the API's default
 		}
-		// what the API makes of it for Acme.Widgets 1.2.3
-		out := strings.ReplaceAll(tpl.Template, formats.SetupPackageRef, "Acme.Widgets"+strings.ReplaceAll(tpl.VersionSpec, formats.SetupVersionRef, "1.2.3"))
-		if tpl.Client == ClientVisualStudio {
-			var ref struct {
-				Include string `xml:"Include,attr"`
-				Version string `xml:"Version,attr"`
+		out := strings.ReplaceAll(tpl.Template, formats.SetupPackageRef, "Acme.Widgets"+strings.ReplaceAll(spec, formats.SetupVersionRef, "1.2.3"))
+		out = strings.ReplaceAll(out, formats.SetupVersionRef, "1.2.3")
+		if tpl.Lang == "xml" {
+			if err := xml.Unmarshal([]byte("<x>"+out+"</x>"), new(struct{})); err != nil {
+				t.Errorf("%s: %q is no XML: %v", tpl.ID, out, err)
 			}
-			if err := xml.Unmarshal([]byte(out), &ref); err != nil || ref.Include != "Acme.Widgets" || ref.Version != "1.2.3" {
-				t.Errorf("%s: %q gives %+v, %v", tpl.ID, out, ref, err)
-			}
+		}
+		got[tpl.Kind] = append(got[tpl.Kind], tpl.ID+": "+strings.Join(strings.Fields(out), " "))
+	}
+	for kind, forms := range want {
+		if strings.Join(got[kind], "\n") != strings.Join(forms, "\n") {
+			t.Errorf("R-NUGET-037 kind %q:\n%s\nwant\n%s", kind, strings.Join(got[kind], "\n"), strings.Join(forms, "\n"))
 		}
 	}
-	if seen != 3 {
-		t.Errorf("%d install templates, want one per client", seen)
+	if len(got) != len(want) {
+		t.Errorf("kinds %v", got)
 	}
 }
 

@@ -531,6 +531,102 @@ describe('The page of a version (R-UI-111)', () => {
       expect([...commandPanel(r)!.querySelectorAll('[role="tab"]')].map((t) => text(t))).toEqual(['.NET CLI', 'NuGet CLI', 'Visual Studio']);
       await closeCommand(r);
     });
+
+    /** Gives version 2.3.1 of the fake the members the server sends for what it read of the package. */
+    const withFacts = (extra: Record<string, unknown>, files: string[] = []) => (fake: FakePackagesApi) => {
+      for (const v of fake.versionList) {
+        if (v.version !== '2.3.1') continue;
+        v.metadata = { ...v.metadata, ...extra };
+        for (const path of files) v.files = [...v.files, { ...v.files[0]!, path }];
+      }
+    };
+
+    it('R-NUGET-037 a .NET tool offers the .NET CLI alone, its forms in the select Form, the global install first', async () => {
+      const r = await nuget({}, withFacts({ kind: 'dotnet-tool', packageTypes: ['DotnetTool'] }));
+      expect((await command(r))?.trim()).toBe('dotnet tool install --global Contoso.Logging --version 2.3.1');
+      const panel = commandPanel(r)!;
+      expect(panel.querySelectorAll('[role="tab"]')).toHaveLength(0);
+      const select = panel.querySelector<HTMLSelectElement>('.command-form select')!;
+      expect([...select.options].map((o) => o.text)).toEqual(['Global tool', 'Local tool', 'Cake', 'NUKE']);
+      select.value = 'dotnet.install.tool-local';
+      select.dispatchEvent(new Event('change'));
+      await settle(r.fixture);
+      expect((await command(r))?.trim()).toBe('dotnet tool install --local Contoso.Logging --version 2.3.1');
+      await expectAccessible(panel);
+      await closeCommand(r);
+    });
+
+    it('R-NUGET-037 a library has every form of nuget.org, by the client that runs it', async () => {
+      const r = await nuget();
+      await command(r);
+      const options = (panel: HTMLElement) =>
+        [...panel.querySelectorAll<HTMLSelectElement>('[role="tabpanel"]:not([inert]) .command-form select')].flatMap((s) => [...s.options].map((o) => o.text));
+      expect(options(commandPanel(r)!)).toEqual(['dotnet add package', 'Paket', 'Script and interactive', 'File-based app', 'Cake add-in', 'Cake tool']);
+      await closeCommand(r);
+    });
+
+    it('R-NUGET-038 Details names the frameworks, the symbols held and the release notes as text, and the links the branch and the commit', async () => {
+      const r = await nuget(
+        { tab: 'details' },
+        withFacts(
+          {
+            frameworks: ['net462', 'net8.0', 'netstandard2.0'],
+            dependencyFrameworks: ['net9.0'],
+            repositoryUrl: 'https://github.com/contoso/logging.git',
+            repositoryBranch: 'refs/heads/main',
+            repositoryCommit: '0123456789abcdef0123456789abcdef01234567',
+            releaseNotes: 'First line\nSecond line <b>not markup</b>',
+          },
+          ['contoso.logging/2.3.1/contoso.logging.2.3.1.snupkg'],
+        ),
+      );
+      expect([...r.root.querySelectorAll('[data-testid="frameworks"] .badge')].map((li) => text(li))).toEqual(['net462', 'net8.0', 'netstandard2.0']);
+      expect([...r.root.querySelectorAll('[data-testid="dependency-frameworks"] .badge')].map((li) => text(li))).toEqual(['net9.0']);
+      // The branch and the commit stand in the row of links after the source (Q-UI-1362).
+      const links = [...r.root.querySelectorAll<HTMLAnchorElement>('quader-version-links a')].map((a) => [text(a), a.getAttribute('href')]);
+      expect(links).toEqual(
+        expect.arrayContaining([
+          [expect.stringContaining('Branch main'), 'https://github.com/contoso/logging/tree/main'],
+          [expect.stringContaining('Commit 0123456789ab'), 'https://github.com/contoso/logging/commit/0123456789abcdef0123456789abcdef01234567'],
+        ]),
+      );
+      expect(text(r.root.querySelector('[data-testid="symbols"]')!)).toContain('contoso.logging.2.3.1.snupkg');
+      const notes = r.root.querySelector<HTMLElement>('[data-testid="release-notes"]')!;
+      expect(notes.textContent).toBe('First line\nSecond line <b>not markup</b>');
+      expect(notes.querySelector('b')).toBeNull();
+      expect(pairs(r).join('|')).not.toContain('Release notes');
+      await expectAccessible(r.root);
+    });
+
+    it('R-NUGET-038 a licence file is the licence\'s link, to its text on this installation, and the icon is read from it too', async () => {
+      const r = await nuget({}, withFacts({ licenseFile: 'LICENSE.txt', licenseUrl: undefined, hasIcon: true }, []));
+      const link = r.root.querySelector<HTMLAnchorElement>('[data-testid="license-file"]')!;
+      expect(link.getAttribute('href')).toBe('/api/v1/packages/pkg_01JBQ7ZZZZZZ/versions/2.3.1/license');
+      const icon = r.root.querySelector<HTMLImageElement>('[data-testid="package-icon"]')!;
+      expect(icon.getAttribute('src')).toBe('/api/v1/packages/pkg_01JBQ7ZZZZZZ/versions/2.3.1/icon');
+      expect(icon.getAttribute('alt')).toBe('');
+      icon.dispatchEvent(new Event('error'));
+      await settle(r.fixture);
+      expect(r.root.querySelector('[data-testid="package-icon"]')).toBeNull();
+    });
+
+    it('R-NUGET-039 the page says what runs when a project uses the package, under the links, with the files', async () => {
+      const r = await nuget(
+        {},
+        withFacts({
+          buildFiles: ['build/Contoso.Logging.targets', 'buildTransitive/Contoso.Logging.props'],
+          analyzers: ['analyzers/dotnet/cs/Contoso.Logging.Generators.dll'],
+          scripts: ['tools/install.ps1'],
+        }),
+      );
+      expect(text(r.root.querySelector('[data-testid="runs-build"]')!)).toContain(
+        'Adds build logic that runs in every build of a project that references it: build/Contoso.Logging.targets, buildTransitive/Contoso.Logging.props',
+      );
+      expect(text(r.root.querySelector('[data-testid="runs-analyzers"]')!)).toContain('analyzers/dotnet/cs/Contoso.Logging.Generators.dll');
+      expect(text(r.root.querySelector('[data-testid="runs-scripts"]')!)).toContain('PowerShell scripts');
+      const plain = await nuget();
+      expect(plain.root.querySelector('[data-testid^="runs-"]')).toBeNull();
+    });
   });
 
   describe('OCI', () => {

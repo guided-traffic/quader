@@ -85,11 +85,39 @@ func (f *Format) SetupTemplates() []formats.SetupTemplate {
 		{ID: "nuget.nugetconfig.configure", Client: ClientNuGet, Section: "configure", Lang: "xml", File: "nuget.config", Template: nugetConfig},
 		{ID: "visual-studio.nugetconfig.configure", Client: ClientVisualStudio, Section: "configure", Lang: "xml", File: "nuget.config", Template: nugetConfig},
 
+		// The install forms of R-NUGET-037, nuget.org's, by the client that runs them, the first of a client and a kind its default.
+		// A library (no kind): the .NET CLI, then Paket, a script or a notebook, a file-based app and a Cake script, all run beside the
+		// .NET SDK (`dotnet paket`, `dotnet fsi`, `dotnet run app.cs`, `dotnet cake`); Visual Studio's project file, its Package
+		// Manager console and Central Package Management; nuget.exe's download.
 		{ID: "dotnet.install", Client: ClientDotnet, Section: "install", Lang: "shell", Template: "dotnet add package <package>\n", VersionSpec: " --version " + formats.SetupVersionRef},
+		{ID: "dotnet.paket.install", Client: ClientDotnet, Section: "install", Lang: "shell", Template: "paket add <package>\n", VersionSpec: " --version " + formats.SetupVersionRef},
+		{ID: "dotnet.script.install", Client: ClientDotnet, Section: "install", Lang: "text", Template: "#r \"nuget: <package>, <version>\"\n"},
+		{ID: "dotnet.file-based-app.install", Client: ClientDotnet, Section: "install", Lang: "text", Template: "#:package <package>@<version>\n"},
+		{ID: "dotnet.cake-addin.install", Client: ClientDotnet, Section: "install", Lang: "text", Template: "#addin nuget:?package=<package>&version=<version>\n"},
+		{ID: "dotnet.cake-tool.install", Client: ClientDotnet, Section: "install", Lang: "text", Template: "#tool nuget:?package=<package>&version=<version>\n"},
 		{ID: "nuget.install", Client: ClientNuGet, Section: "install", Lang: "cmd", Template: "nuget install <package> -Source quader -OutputDirectory packages\n", VersionSpec: " -Version " + formats.SetupVersionRef},
 		// The version attribute closes the Include attribute: the API replaces <package> by the
 		// quoted package followed by the spec, so the spec starts with the closing quote.
 		{ID: "visual-studio.packagereference.install", Client: ClientVisualStudio, Section: "install", Lang: "xml", Template: "<PackageReference Include=\"<package>\" />\n", VersionSpec: "\" Version=\"" + formats.SetupVersionRef},
+		{ID: "visual-studio.pmc.install", Client: ClientVisualStudio, Section: "install", Lang: "powershell", Template: "NuGet\\Install-Package <package>\n", VersionSpec: " -Version " + formats.SetupVersionRef},
+		// Central Package Management: the version in Directory.Packages.props, the reference without one in the project file, which the
+		// second line names as a comment (one snippet is one file's).
+		{
+			ID: "visual-studio.cpm.install", Client: ClientVisualStudio, Section: "install", Lang: "xml", File: "Directory.Packages.props",
+			Template: "<PackageVersion Include=\"<package>\" Version=\"<version>\" />\n" +
+				"<!-- In the project file: <PackageReference Include=\"<package>\" /> -->\n",
+		},
+		// A .NET tool: installed for the user or into the repository's tool manifest, or named in a Cake or a NUKE build. A
+		// PackageReference to it is refused by the SDK (NU1212), so Visual Studio and nuget.exe offer no form of it.
+		{ID: "dotnet.tool-global.install", Client: ClientDotnet, Section: "install", Lang: "shell", Kind: KindTool, Template: "dotnet tool install --global <package>\n", VersionSpec: " --version " + formats.SetupVersionRef},
+		{ID: "dotnet.tool-local.install", Client: ClientDotnet, Section: "install", Lang: "shell", Kind: KindTool, Template: "dotnet tool install --local <package>\n", VersionSpec: " --version " + formats.SetupVersionRef},
+		{ID: "dotnet.cake-dotnet-tool.install", Client: ClientDotnet, Section: "install", Lang: "text", Kind: KindTool, Template: "#tool dotnet:?package=<package>&version=<version>\n"},
+		{ID: "dotnet.nuke.install", Client: ClientDotnet, Section: "install", Lang: "shell", Kind: KindTool, Template: "nuke :add-package <package>\n", VersionSpec: " --version " + formats.SetupVersionRef},
+		// A template package: dotnet new installs it.
+		{ID: "dotnet.template.install", Client: ClientDotnet, Section: "install", Lang: "shell", Kind: KindTemplate, Template: "dotnet new install <package>\n"},
+		// An MSBuild project SDK: named in the project file, or in a file-based app.
+		{ID: "dotnet.sdk-file-based-app.install", Client: ClientDotnet, Section: "install", Lang: "text", Kind: KindSDK, Template: "#:sdk <package>@<version>\n"},
+		{ID: "visual-studio.sdk.install", Client: ClientVisualStudio, Section: "install", Lang: "xml", Kind: KindSDK, Template: "<Sdk Name=\"<package>\" Version=\"<version>\" />\n"},
 
 		{
 			ID: "dotnet.shell.publish", Client: ClientDotnet, Section: "publish", Lang: "shell", Examples: []string{dotnetPackage},

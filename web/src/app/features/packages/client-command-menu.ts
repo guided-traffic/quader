@@ -31,7 +31,8 @@ const POSITIONS: ConnectedPosition[] = [
  * (`?client=`); under the row the chosen client's command as a read-only field with the joined copy button (`<quader-client-command>`).
  * A format with one client (APT, ansible-galaxy, curl) shows no strip of one tab: the client's name is the row's label. An OCI
  * artifact's `kind` picks its kind's clients (`clientsOfKind`, R-OCI-042: a Helm chart Helm alone, an image Docker and Podman), and an
- * image's `digest` adds the pull by digest as the second line of each tab (R-OCI-041). Where the
+ * image's `digest` adds the pull by digest as the second line of each tab (R-OCI-041). A client with several forms of installing the
+ * package (NuGet's, R-NUGET-037) has a select **Form** above its command in its tab (Q-UI-1360), so the row keeps one tab per client. Where the
  * version is held by more than one repository a client can use (the version's page), a select **Repository** stands above the row, and
  * the command and the setup follow it. A generic repository's file (`path`, formats/generic.md R-GENERIC-017) has curl, wget and
  * PowerShell, its download address above the row (`address`, Q-UI-1331) and, with its `sha256`, the check of the download as the second
@@ -160,6 +161,7 @@ const MARGIN = { start: 16, end: 0, top: 16, bottom: 16 };
           [version]="version()"
           [repository]="chosenRepository()"
           [client]="c.id"
+          [kind]="kind()"
           [path]="path()"
           [tab]="section()"
           [commandLabel]="fieldLabel(c)"
@@ -343,7 +345,10 @@ export class ClientCommandMenu {
   protected readonly margin = MARGIN;
   protected readonly panelId = `client-command-${nextId++}`;
   protected readonly open = signal(false);
-  /** The kind of an OCI artifact where it is known: a Helm chart's commands are Helm's alone (R-OCI-042). */
+  /**
+   * The kind of the version where its format has one: an OCI artifact's (a Helm chart's commands are Helm's alone, R-OCI-042), a NuGet
+   * package's (a .NET tool's and a template's are the .NET CLI's, and each client's forms are those of the kind, R-NUGET-037).
+   */
   readonly kind = input<string | null>(null);
   protected readonly clients = computed<readonly ClientChoice[]>(() => clientsOfKind(this.format(), this.kind()));
   /** The chosen tab, kept while the button stands (Q-UI-1240): the panel opens again on the client last chosen. */

@@ -11394,10 +11394,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-NUGET
 
-122 questions on [spec/formats/nuget.md](spec/formats/nuget.md).
+129 questions on [spec/formats/nuget.md](spec/formats/nuget.md).
 
 <details>
-<summary>Q-NUGET: 122 questions</summary>
+<summary>Q-NUGET: 129 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -11523,6 +11523,13 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-NUGET-140](spec/formats/nuget.md#q-nuget-140--the-deprecation-is-a-member-of-the-versions-metadata-in-the-catalog-entrys-shape) | The deprecation is a member of the version's metadata, in the catalog entry's shape | Decided by the development agent on 2026-11-26 | (a), as the plan of W-30 proposed. | — |
 | [Q-NUGET-141](spec/formats/nuget.md#q-nuget-141--a-remote-reads-a-cached-versions-deprecation-from-the-registration-it-fills) | A remote reads a cached version's deprecation from the registration it fills | Decided by the development agent on 2026-11-26 | (a) The fill of a registration index or page writes the member of the cached versions it inlines, in the fill's transaction | — |
 | [Q-NUGET-142](spec/formats/nuget.md#q-nuget-142--unlisted-and-deprecated-are-two-states-with-two-marks) | Unlisted and deprecated are two states with two marks | Decided by the development agent on 2026-11-26 | (a) Two members (`unlisted`, `deprecation`) and two marks, **Unlisted** and **Deprecated** | — |
+| [Q-NUGET-155](spec/formats/nuget.md#q-nuget-155--the-install-forms-of-a-kind-of-package-are-the-servers-chosen-by-a-kind-the-request-names) | The install forms of a kind of package are the server's, chosen by a kind the request names | Decided by the development agent on 2026-11-26 | (a), [ADR-293](#adr-293--the-format-contract-gains-the-kind-of-an-install-template-and-the-reader-of-the-files-a-package-embeds-for-the-screens). | ADR-293 |
+| [Q-NUGET-156](spec/formats/nuget.md#q-nuget-156--paket-cake-nuke-a-script-and-a-file-based-app-are-forms-of-the-net-clis-tab-not-clients-of-their-own) | Paket, Cake, NUKE, a script and a file-based app are forms of the .NET CLI's tab, not clients of their own | Decided by the development agent on 2026-11-26 | (a) ([api-and-ui.md](spec/api-and-ui.md) Q-UI-1360). | — |
+| [Q-NUGET-157](spec/formats/nuget.md#q-nuget-157--the-icon-and-the-licence-file-on-the-screen-come-from-two-management-operations-under-the-read-check) | The icon and the licence file on the screen come from two management operations under the read check | Decided by the development agent on 2026-11-26 | (a), [ADR-293](#adr-293--the-format-contract-gains-the-kind-of-an-install-template-and-the-reader-of-the-files-a-package-embeds-for-the-screens). | ADR-293 |
+| [Q-NUGET-158](spec/formats/nuget.md#q-nuget-158--the-file-list-is-read-from-the-central-directory-at-ingestion-and-by-a-job-for-a-version-stored-before) | The file list is read from the central directory at ingestion, and by a job for a version stored before | Decided by the development agent on 2026-11-26 | (a) The ingestion and a remote's fill keep what the names say as the member `contents` of the metadata; the job `nuget-contents`, queued by the task `remote-describe`, reads it for a version stored before | — |
+| [Q-NUGET-159](spec/formats/nuget.md#q-nuget-159--what-counts-as-build-logic-an-analyzer-and-a-script) | What counts as build logic, an analyzer and a script | Decided by the development agent on 2026-11-26 | (a) The files that run by themselves: the imported `<id>` files, every `.dll` below `analyzers/`, `tools/init.ps1` and the install and uninstall scripts | — |
+| [Q-NUGET-160](spec/formats/nuget.md#q-nuget-160--symbols-are-read-from-the-versions-files-and-the-page-says-that-no-debugger-reads-them-yet) | Symbols are read from the version's files, and the page says that no debugger reads them yet | Decided by the development agent on 2026-11-26 | (a) **Symbols** with the file's name and the sentence that no debugger reads them from Quader yet, from the version's files | — |
+| [Q-NUGET-161](spec/formats/nuget.md#q-nuget-161--an-install-command-writes-the-id-in-its-declared-casing) | An install command writes the ID in its declared casing | Decided by the development agent on 2026-11-26 | (a), for every format: only NuGet's names differ from their normalized form in case. | — |
 
 </details>
 
@@ -12521,10 +12528,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-673 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+677 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 673 questions</summary>
+<summary>Q-UI: 677 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -13200,6 +13207,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1340](spec/api-and-ui.md#q-ui-1340--an-upstream-packages-readme-shows-its-first-24-rem-and-the-versions-follow) | An upstream package's README shows its first 24 rem, and the versions follow | Decided by the development agent on 2026-11-26 | (a) On the package's own view, after its head: the deprecation, one line of facts, the README under its heading with its version, its first 24 rem and **Show the whole README** (the frame clips and never scrolls; a focus that enters it shows it whole), the dependencies folded, then the versions; in a row of the search the README folded | — |
 | [Q-UI-1350](spec/api-and-ui.md#q-ui-1350--used-by-stands-under-the-dependencies-in-their-block) | Used by stands under the dependencies, in their block | Decided by the development agent on 2026-11-26 | (a) A section **Used by** on the tab Details right after **Dependencies**, one line per dependent in the dependency block's look: the name a link to its version, the version, the kinds in the format's words, the range muted | — |
 | [Q-UI-1351](spec/api-and-ui.md#q-ui-1351--past-50-the-section-says-how-many-more-and-leads-to-the-projects-package-list) | Past 50, the section says how many more and leads to the project's package list | Decided by the development agent on 2026-11-26 | (a) "and N more." as text, then the link **Packages of this project that use it** to the project's list with `format` and `dependsOn` | — |
+| [Q-UI-1360](spec/api-and-ui.md#q-ui-1360--many-forms-of-installing-a-package-the-clients-stay-the-tabs-a-select-form-stands-in-a-clients-tab) | Many forms of installing a package: the clients stay the tabs, a select Form stands in a client's tab | Decided by the development agent on 2026-11-26 | (a) The clients stay the tabs; where a client's answer holds several install snippets the page names as forms, a select **Form** above the command picks one, the server's first by default, kept while the panel stands | — |
+| [Q-UI-1361](spec/api-and-ui.md#q-ui-1361--a-packages-own-picture-stands-before-the-heading-of-its-versions-page-and-nowhere-else) | A package's own picture stands before the heading of its version's page, and nowhere else | Decided by the development agent on 2026-11-26 | (a) 40 px before the heading of the version's page, decorative (`alt=""`: the heading names the package), gone where it does not load | — |
+| [Q-UI-1362](spec/api-and-ui.md#q-ui-1362--the-repositorys-branch-and-commit-link-only-where-the-page-knows-the-hosts-addresses) | The repository's branch and commit link only where the page knows the host's addresses | Decided by the development agent on 2026-11-26 | (a) An entry of the version's row of links after the source, "Branch main" and "Commit 4b7e2a9c1d3f": a link on an https address of GitHub, GitLab, Bitbucket and Azure DevOps (`dev.azure.com`, `*.visualstudio.com` with `/_git/`), the label and the value as text elsewhere; a commit by its first twelve characters, the whole as its title | — |
+| [Q-UI-1363](spec/api-and-ui.md#q-ui-1363--what-a-build-a-compile-or-an-install-runs-is-said-in-the-note-of-an-install-script) | What a build, a compile or an install runs is said in the note of an install script | Decided by the development agent on 2026-11-26 | (a) The same note in the same place, one per kind (build logic, analyzers, PowerShell scripts) with the format's sentence and the files in the code font | — |
 | [Q-UI-1370](spec/api-and-ui.md#q-ui-1370--a-link-to-a-screen-whose-script-is-gone-loads-its-address-from-the-server-and-a-failed-navigation-is-said) | A link to a screen whose script is gone loads its address from the server, and a failed navigation is said | Decided by the development agent on 2026-11-26 | (a) The router's handler of a failed navigation: a script that could not be loaded loads the link's address from the server; every other failure is a notice with what was said | — |
 
 </details>

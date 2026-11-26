@@ -15,6 +15,9 @@ type ViewSummary struct {
 	Deprecation []byte
 	// Listed is the listing state (R-NUGET-006).
 	Listed bool
+	// PackageTypes are the lowercased declared package types (nuget_version.package_types), which decide the version's kind
+	// (R-NUGET-037).
+	PackageTypes []string
 }
 
 // ViewDetail is what the version screen reads of one version.

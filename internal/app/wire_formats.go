@@ -200,6 +200,7 @@ func (a *App) registerFormatJobs(r *jobs.Registry) {
 	debdata.RegisterDescribeJob(r, a.debDescribe.handler("Debian remote describe", runLate))
 	debdata.RegisterContentsJob(r, a.debContents.handler("the reading of a Debian data archive", runLate))
 	ocidata.RegisterDescribeJob(r, a.ociDescribe.handler("OCI describe", runLate))
+	nugetdata.RegisterContentsJob(r, a.nugetContents.handler("the reading of a NuGet package's file list", runLate))
 	a.registerRemoteDescribeTask(r)
 	a.registerDownloadJobs(r)
 	sigfetch.RegisterKind(r, a.signatureFetchHandler())

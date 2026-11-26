@@ -729,7 +729,7 @@ func (r *run) setup() {
 			r.failf("setup template %q belongs to client %q, which the descriptor does not list", t.ID, t.Client)
 		case t.Section != "configure" && t.Section != "publish" && t.Section != "install":
 			r.failf("setup template %q has section %q", t.ID, t.Section)
-		case !slices.Contains([]string{"shell", "powershell", "cmd", "ini", "xml", "yaml"}, t.Lang):
+		case !slices.Contains([]string{"shell", "powershell", "cmd", "ini", "xml", "yaml", "text"}, t.Lang):
 			r.failf("setup template %q has language %q", t.ID, t.Lang)
 		}
 		r.versionSpec(t)
@@ -774,6 +774,19 @@ func (r *run) versionSpec(t formats.SetupTemplate) {
 		r.failf("setup template %q has a VersionSpec and does not place %s", t.ID, formats.SetupPackageRef)
 	case !strings.Contains(t.VersionSpec, formats.SetupVersionRef):
 		r.failf("setup template %q has a VersionSpec that does not place %s", t.ID, formats.SetupVersionRef)
+	}
+	// A template that writes the version in its own text places it itself (`#r "nuget: <package>, <version>"`): it is an install
+	// template that places the package, and a VersionSpec would place the version twice.
+	if strings.Contains(t.Template, formats.SetupVersionRef) {
+		switch {
+		case t.Section != "install" || !strings.Contains(t.Template, formats.SetupPackageRef):
+			r.failf("setup template %q writes %s and is no install template that places %s", t.ID, formats.SetupVersionRef, formats.SetupPackageRef)
+		case t.VersionSpec != "":
+			r.failf("setup template %q writes %s in its text and has a VersionSpec as well", t.ID, formats.SetupVersionRef)
+		}
+	}
+	if t.Kind != "" && t.Section != "install" {
+		r.failf("setup template %q names the kind %q and is not an install template", t.ID, t.Kind)
 	}
 	switch {
 	case t.PackageExample == "":

@@ -46,6 +46,7 @@ formats.Capabilities: field ServeFacts ServeFactsKeyer
 formats.Capabilities: field SignatureCoverage SignatureCoverage
 formats.Capabilities: field SourceSpeller SourceSpeller
 formats.Capabilities: field VersionPath VersionPather
+formats.Capabilities: field ViewEmbedder ViewEmbedder
 formats.Capabilities: field ViewRanker ViewRanker
 formats.Capabilities: field ViewSizer ViewSizer
 formats.Capabilities: field Vulnerability VulnerabilityAdapter
@@ -537,6 +538,7 @@ formats.SetupTemplate: field Client string
 formats.SetupTemplate: field Examples []string
 formats.SetupTemplate: field File string
 formats.SetupTemplate: field ID string
+formats.SetupTemplate: field Kind string
 formats.SetupTemplate: field Lang string
 formats.SetupTemplate: field PackageExample string
 formats.SetupTemplate: field Packages string
@@ -670,6 +672,7 @@ formats.ViewData: field ReadmeFile string
 formats.ViewData: field ReadmeHTML bool
 formats.ViewData: field Unlisted bool
 formats.ViewData: field WikiMetadata []string
+formats.ViewEmbedder: method ViewEmbedded(context.Context, DataPorts, ViewVersion, string) ([]byte, bool, error)
 formats.ViewFields: method Has(ViewFields) bool
 formats.ViewFields: type uint8
 formats.ViewFind: field Keyword string
@@ -766,6 +769,8 @@ formats.Delete: value = (repeated, place 4 of its group)
 formats.DeprecatePackage: value DeprecationSubject = "package"
 formats.DeprecateVersion: value DeprecationSubject = "version"
 formats.Download: value RouteKind = iota + 1 (place 0 of its group)
+formats.EmbeddedIcon: value = "icon"
+formats.EmbeddedLicense: value = "license"
 formats.ErrOffline: value = errors.New("formats: the remote repository may not contact its upstream")
 formats.FetchAnyFile: value = (repeated, place 2 of its group)
 formats.FetchDocument: value = (repeated, place 3 of its group)

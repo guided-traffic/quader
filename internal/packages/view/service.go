@@ -1643,6 +1643,22 @@ func (s *Service) ReadmeOf(ctx context.Context, sc Scope, format, name, version 
 	return Readme{Source: data.Readme, FileName: data.ReadmeFile, HTML: data.ReadmeHTML}, true, nil
 }
 
+// EmbeddedOf reads a file the package of a version embeds (formats/nuget.md R-NUGET-038: "icon", "license") from the version as the
+// scope holds it, the copy of the repository the details are read from; found false when the scope does not hold the version, its
+// format's packages embed nothing, or it embeds no such file. It is artifacts metadata, read with the version and no wiki.
+func (s *Service) EmbeddedOf(ctx context.Context, sc Scope, format, name, version, file string) ([]byte, bool, error) {
+	g, a, ok, err := s.oneVersion(ctx, sc, format, name, version, false)
+	if err != nil || !ok {
+		return nil, false, err
+	}
+	em, ok := a.(Embedder)
+	if !ok {
+		return nil, false, nil
+	}
+	pri := g.primary()
+	return em.Embedded(ctx, Version{ID: pri.VersionID, Format: format, Repo: sc.topo.Name(pri.RepoID).String(), Package: pri.Name, Version: version}, file)
+}
+
 // oneHolders are the holders of a version's package and the withheld versions of the scope, as oneVersion read them.
 type oneHolders struct {
 	hs       []q.PackageViewHoldersRow
