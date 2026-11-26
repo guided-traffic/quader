@@ -174,6 +174,8 @@ export const repositories: readonly RepoSeed[] = [
   { project: otherProject, key: 'debian', format: 'deb', class: 'remote', description: 'deb.debian.org, cached.' },
   { project: otherProject, key: 'apt', format: 'deb', class: 'virtual', members: [longDebKey] },
   { project: otherProject, key: 'nuget-internal', format: 'nuget', class: 'local', description: 'Shared .NET libraries.', visibility: { artifacts: 'public', wiki: 'public' } },
+  // Public generic files: the folders and files of the profile's Bastion (R-UI-229, publicDownloads below).
+  { project: otherProject, key: 'downloads', format: 'generic', class: 'local', description: 'Release downloads of the platform team.', visibility: { artifacts: 'public', wiki: 'public' } },
   // The advisory data of the profile, which reads it instead of the network (R-VULN-005, deploy/ui-dev/up.sh).
   { project: advisoryMirror.project, key: advisoryMirror.key, format: 'generic', class: 'local', description: 'Advisory data for the offline sync.' },
   { project: otherProject, key: 'nuget-org', format: 'nuget', class: 'remote' },
@@ -268,7 +270,7 @@ export const genericNotes = {
  * `type`: the `Content-Type` of the upload; absent sends `application/octet-stream`, `null` the type of a form's body, as wget sends
  * it, which the server stores as no type (Q-GENERIC-12): Playwright sends `application/octet-stream` for a body without a type.
  */
-export const genericFiles: readonly { repo: string; path: string; content: string; type?: string | null }[] = [
+export const genericFiles: readonly { project?: string; repo: string; path: string; content: string; type?: string | null }[] = [
   { repo: 'assets', path: `${genericNotes.folder}/${genericNotes.guessed}`, content: '# Changelog\n\n## 2.5.0\n', type: null },
   { repo: 'assets', path: `${genericNotes.folder}/${genericNotes.deployed}`, content: 'Release notes\n', type: 'text/plain; charset=utf-8' },
   { repo: 'assets', path: `${genericNotes.folder}/${genericNotes.hostile}`, content: 'a name to quote\n', type: null },
@@ -291,6 +293,24 @@ export const genericFiles: readonly { repo: string; path: string; content: strin
     content: `<svg id="${i + 1}"/>\n`,
   })),
 ];
+
+/**
+ * The public generic repository of the platform team (R-UI-229): a folder tree of a few files of bytes, which the profile's Bastion shows
+ * a visitor, a folder with a nested folder and a file with its set-up command.
+ */
+export const publicDownloads = {
+  repo: 'downloads',
+  folder: 'agent',
+  nested: 'agent/1.9.0',
+  file: 'agent/1.9.0/agent-linux-amd64.tar.gz',
+} as const;
+const publicDownloadFiles: readonly { project: string; repo: string; path: string; content: string; type?: string | null }[] = [
+  { path: 'README.txt', content: 'Release downloads of the platform team.\n', type: 'text/plain; charset=utf-8' },
+  { path: publicDownloads.file, content: 'agent 1.9.0 linux amd64' },
+  { path: 'agent/1.9.0/agent-linux-arm64.tar.gz', content: 'agent 1.9.0 linux arm64' },
+  { path: 'agent/1.9.0/SHA256SUMS', content: 'sums of agent 1.9.0\n', type: 'text/plain; charset=utf-8' },
+  { path: 'agent/2.0.0/agent-linux-amd64.tar.gz', content: 'agent 2.0.0 linux amd64' },
+].map((f) => ({ project: otherProject, repo: publicDownloads.repo, ...f }));
 
 /** Folders created empty: an empty folder's state (R-UI-010). */
 export const genericFolders: readonly { repo: string; path: string }[] = [{ repo: 'assets', path: 'drafts' }];
@@ -709,8 +729,8 @@ export async function seedContent(ctx: APIRequestContext, edge: string, token: s
   await publishNuget(ctx, auth);
   await publishDeb(ctx, auth);
   await publishCollections(ctx, auth);
-  for (const f of genericFiles) {
-    const url = `/files/${mainProject}/${f.repo}/${f.path.split('/').map(encodeURIComponent).join('/')}`;
+  for (const f of [...genericFiles, ...publicDownloadFiles]) {
+    const url = `/files/${f.project ?? mainProject}/${f.repo}/${f.path.split('/').map(encodeURIComponent).join('/')}`;
     const head = await patient(() => ctx.head(url, { headers: auth }));
     if (head.status() === 200) continue;
     const res = await patient(() =>

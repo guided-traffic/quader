@@ -1,7 +1,8 @@
 import { Page, Route, expect, request } from '@playwright/test';
 import { publicGradedPackage } from './advisories';
 import { bastionEdge, locale } from './paths';
-import { Api, ansiblePackage, expectStatus, nugetPackage, otherProject, remoteImage, remoteSource } from './seed';
+import { fileCommands } from './file-commands';
+import { Api, ansiblePackage, expectStatus, nugetPackage, otherProject, publicDownloads, remoteImage, remoteSource } from './seed';
 import type { Screen } from './screens';
 
 /**
@@ -17,6 +18,9 @@ const pkg = (p: { readonly format: string; readonly name: string }): string => `
 const ver = (p: { readonly format: string; readonly name: string }, version: string): string => `${pkg(p)}@${version}`;
 const collection = { format: 'ansible', name: `${ansiblePackage.namespace}.${ansiblePackage.name}` } as const;
 const image = { format: 'oci', name: `${remoteSource.prefix}/${remoteImage.name}` } as const;
+/** The platform team's public generic repository (seed.ts publicDownloads): its root, a nested folder and a file. */
+const downloads = `${P}/repositories/${publicDownloads.repo}`;
+
 /** A Debian package of the platform team's public repository, with its contents, changelog and copyright (docs on). */
 const debian = { format: 'deb', name: 'acme-agent', version: '1.3.0-1' } as const;
 
@@ -92,6 +96,11 @@ export const bastionScreens: readonly Screen[] = [
   { id: 'bastion-image-version', path: ver(image, remoteImage.single), kinds: ['anonymous'], de: true },
   // An Ansible collection opens on its documentation (docs on).
   { id: 'bastion-collection', path: ver(collection, ansiblePackage.versions[1]), kinds: ['anonymous'], expected: lookups, de: true },
+  // A public generic repository's folders and files (R-UI-229): its root with a folder and a file, a nested folder of files, and a file
+  // with the panel of its Download, each client's set-up command.
+  { id: 'bastion-files', path: downloads, kinds: ['anonymous'], tables: 'quader-folder-view quader-data-table', de: true },
+  { id: 'bastion-files-folder', path: `${downloads}/files/${publicDownloads.nested}`, kinds: ['anonymous'], tables: 'quader-folder-view quader-data-table', de: true },
+  { id: 'bastion-files-file', path: `${downloads}/files/${publicDownloads.file}`, kinds: ['anonymous'], walk: fileCommands, de: true },
   { id: 'bastion-imprint', path: `${B}/legal/imprint`, kinds: ['anonymous'], de: true },
   { id: 'bastion-privacy', path: `${B}/legal/privacy`, kinds: ['anonymous'], de: true },
   { id: 'bastion-stale', path: `${P}/packages`, kinds: ['anonymous'], walk: stale, de: true },
@@ -148,6 +157,9 @@ export async function awaitBastionCatalogue(admin: Api): Promise<void> {
           const found = await bastion.get(`/ui/data/v1/packages/lookup?format=${p.format}&name=${encodeURIComponent(p.name)}`);
           if (!found.ok()) missing.push(`${p.format} ${p.name}`);
         }
+        const files = await bastion.get('/ui/data/v1/files');
+        const held = files.ok() ? ((await files.json()) as { items: string[] }).items : [];
+        if (!held.includes(`${otherProject}/${publicDownloads.repo}`)) missing.push(`the files of ${otherProject}/${publicDownloads.repo}`);
         if (missing.length === 0) return;
         throw new Error(`the Bastion's catalogue lacks ${missing.join(', ')} after the builder's run`);
       }
