@@ -133,8 +133,9 @@ type State struct {
 	BaseURLMismatch   bool
 	InterfaceMismatch bool
 	// Formats is the handshake's format table (R-BAS-057, Q-BAS-170), kept until the next handshake: what the request
-	// flow needs of a format before or without a response of the main installation. Empty before the first handshake
-	// and for a main installation that names no format; Formats.Lookup then gives the defaults.
+	// flow needs of a format before or without a response of the main installation. Before the first handshake it is the
+	// table stored with the configuration ([Link.UseStoredFormats], H-2359); empty without one and for a main installation that
+	// names no format; Formats.Lookup then gives the defaults.
 	Formats iface.HandshakeFormats
 	// BoundRepository is the repository the main installation binds the Bastion's host to (R-BAS-057, Q-BAS-178),
 	// empty when it binds none.
@@ -233,6 +234,17 @@ func (l *Link) State() State {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	return l.st
+}
+
+// UseStoredFormats holds the format table stored with the configuration (settings.Holder.LoadStored) until the first
+// handshake, so that a replica started while the main installation cannot be reached answers in each format's error shape
+// and forwards the read routes with a body its formats declared (R-BAS-095, H-2359). After a handshake it changes nothing.
+func (l *Link) UseStoredFormats(f iface.HandshakeFormats) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if !l.st.Handshaken {
+		l.st.Formats = f
+	}
 }
 
 // Reachable reports whether the replica treats the main installation as reachable.
@@ -354,7 +366,7 @@ func (l *Link) handshake(ctx context.Context) {
 		// not decode (R-BAS-057).
 		if verr := hs.Formats.Validate(); verr != nil {
 			err = fmt.Errorf("%w: %w", mainclient.ErrBadAnswer, verr)
-		} else if _, verr := l.o.Configuration.Apply(ctx, hs.Configuration); verr != nil {
+		} else if _, verr := l.o.Configuration.Apply(ctx, hs.Configuration, hs.Formats); verr != nil {
 			// A configuration the Bastion's rules refuse fails the handshake as a format table does, and the replica keeps
 			// applying the one it applies (R-BAS-093). One it accepts is applied whole: the flood figures, the slots, the
 			// ceiling and the switches change together.

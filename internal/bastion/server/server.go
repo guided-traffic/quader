@@ -482,8 +482,11 @@ func (s *Server) Start(ctx context.Context) error {
 	}
 	// Before the first request and before the first handshake: the configuration this replica or another one stored, so that a
 	// replica started while the main installation is unreachable keeps the administrator's figures; without one the built-in
-	// configuration holds (Q-BAS-327). A cache backend that cannot be read costs at most its timeout and stops nothing.
-	s.configuration.LoadStored(ctx)
+	// configuration holds (Q-BAS-327). The format table stored with it gives each format its error shape and its read routes with a
+	// body until the first handshake (H-2359). A cache backend that cannot be read costs at most its timeout and stops nothing.
+	if formats, ok := s.configuration.LoadStored(ctx); ok {
+		s.link.UseStoredFormats(formats)
+	}
 	// The stored state of the public catalogue: a replica that finds one serves its pages from it, with its age, also while the
 	// main installation is unreachable (R-BAS-111). It gates nothing.
 	s.catalogue.Load(ctx)

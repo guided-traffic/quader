@@ -81,7 +81,8 @@ func TestR_BAS_099_TheBastionsOwnAnswersNameNoParty(t *testing.T) {
 		status int
 		code   string
 		detail string
-		// problem: the answer is problem details whatever the path (before the first handshake no format's shape is known, H-2359).
+		// problem: the answer is problem details whatever the path (before the first handshake, without a stored format table, no
+		// format's shape is known, H-2359).
 		problem bool
 	}{
 		{

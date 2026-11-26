@@ -890,6 +890,11 @@ writes no empty entry.
 
 ### H-2359 · Before its first handshake a Bastion answers in problem details
 
+*Closed on 2026-11-26 (the day's findings, batch B):* the stored configuration (R-BAS-093) holds the format table of the same
+handshake, and a replica that applies it at start holds that table until its first handshake (`settings.Holder.LoadStored`,
+`link.Link.UseStoredFormats`). What remains is a replica that has never stored one (its first start, an empty volume, a forged or
+refused object): it answers in problem details as below, with the right status and `Retry-After`. What it was:
+
 Stage: the Bastion's own answers (R-BAS-029, R-BAS-095). Subject: what a client prints while a replica has never reached the main
 installation, readability only. Live: the format table, and with it each format's `errorShape`, comes with the handshake; a replica that
 started while the main installation was unreachable answers its `503 unavailable` (and a write's `403 read_only`) as problem details on

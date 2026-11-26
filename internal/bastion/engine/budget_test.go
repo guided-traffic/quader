@@ -37,7 +37,7 @@ func budgetSite(t *testing.T, f iface.Figures, mode iface.LimitsMode) (*siteHarn
 	for id := range c.Limits.Place.Rules {
 		c.Limits.Place.Rules[id] = f
 	}
-	if _, err := s.link.Configuration().Apply(context.Background(), c); err != nil {
+	if _, err := s.link.Configuration().Apply(context.Background(), c, nil); err != nil {
 		t.Fatal(err)
 	}
 	s.site.artifacts["/api/npm/web/npm-all/p.tgz"] = payload(64)

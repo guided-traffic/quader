@@ -3,6 +3,7 @@ package settings
 import (
 	"context"
 	"errors"
+	"reflect"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -108,7 +109,7 @@ func TestR_BAS_093_ANewConfigurationIsAppliedWhole(t *testing.T) {
 	h := New(Options{Store: st, Metrics: m})
 	var seen []int
 	h.Watch(func(a *Applied) { seen = append(seen, a.Slots.MaxConcurrent) })
-	if _, err := h.Apply(ctx, with(1, 1)); err != nil {
+	if _, err := h.Apply(ctx, with(1, 1), nil); err != nil {
 		t.Fatal(err)
 	}
 	var mixed atomic.Int64
@@ -134,7 +135,7 @@ func TestR_BAS_093_ANewConfigurationIsAppliedWhole(t *testing.T) {
 		}()
 	}
 	for i := 2; i <= 200; i++ {
-		if _, err := h.Apply(ctx, with(int64(i), i)); err != nil {
+		if _, err := h.Apply(ctx, with(int64(i), i), nil); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -150,49 +151,71 @@ func TestR_BAS_093_ANewConfigurationIsAppliedWhole(t *testing.T) {
 		t.Fatal("quader_bastion_configuration_revision or _source does not follow")
 	}
 	writes := st.writes
-	if swapped, err := h.Apply(ctx, with(200, 200)); swapped || err != nil || st.writes != writes {
+	if swapped, err := h.Apply(ctx, with(200, 200), nil); swapped || err != nil || st.writes != writes {
 		t.Fatalf("an equal configuration: swapped %v, %v, %d writes", swapped, err, st.writes-writes)
 	}
 	bad := with(201, 201)
 	bad.Limits.Slots.AnonymousShare = 2
-	if _, err := h.Apply(ctx, bad); err == nil || h.Current().Configuration.Revision != 200 {
+	if _, err := h.Apply(ctx, bad, nil); err == nil || h.Current().Configuration.Revision != 200 {
 		t.Fatalf("a refused configuration: %v, revision %d applied", err, h.Current().Configuration.Revision)
 	}
 }
 
-// TestR_BAS_093_AReplicaStartedWithoutTheMainInstallationAppliesTheStoredConfiguration: what a replica applied is stored; a
-// replica that starts while the main installation cannot be reached applies it (Q-BAS-327), and with none, or one whose
-// signature fails, the built-in one. A handshake replaces either, and a stored configuration read after a handshake is not
-// applied.
+// TestR_BAS_093_AReplicaStartedWithoutTheMainInstallationAppliesTheStoredConfiguration: what a replica applied is stored with
+// the format table of the same handshake; a replica that starts while the main installation cannot be reached applies it
+// (Q-BAS-327) and returns the table for the link (H-2359), and with none, one whose signature fails, one Validate refuses or one
+// with a format table Validate refuses, the built-in one. A handshake replaces either, and a stored configuration read after a
+// handshake is not applied. A handshake whose format table changed stores again although its configuration did not.
 func TestR_BAS_093_AReplicaStartedWithoutTheMainInstallationAppliesTheStoredConfiguration(t *testing.T) {
+	table := iface.HandshakeFormats{{ID: "npm", RateLimitedStatus: 429, ErrorShape: iface.ErrorShapeNPM,
+		ReadWithBody: []iface.BodyRoute{{Method: "POST", Path: "/-/npm/v1/security/advisories/bulk"}}}}
 	st := &memStore{}
-	if _, err := New(Options{Store: st}).Apply(ctx, with(42, 3)); err != nil {
+	first := New(Options{Store: st})
+	if _, err := first.Apply(ctx, with(42, 3), table); err != nil {
 		t.Fatal(err)
 	}
 	restarted := New(Options{Store: st})
-	if !restarted.LoadStored(ctx) {
+	formats, ok := restarted.LoadStored(ctx)
+	if !ok {
 		t.Fatal("the stored configuration was not applied")
 	}
 	if a := restarted.Current(); a.Source != SourceStored || a.Configuration.Revision != 42 || a.Flood.Anonymous.RequestsPerSecond != 3 {
 		t.Fatalf("applied %s revision %d", a.Source, a.Configuration.Revision)
 	}
-	if _, err := restarted.Apply(ctx, with(42, 3)); err != nil || restarted.Current().Source != SourceMain {
+	if !reflect.DeepEqual(formats, table) {
+		t.Fatalf("the stored format table is %+v, want %+v", formats, table)
+	}
+	if _, err := restarted.Apply(ctx, with(42, 3), table); err != nil || restarted.Current().Source != SourceMain {
 		t.Fatalf("the first handshake of the same revision: %v, source %s", err, restarted.Current().Source)
 	}
-	if restarted.LoadStored(ctx) {
+	if _, ok := restarted.LoadStored(ctx); ok {
 		t.Fatal("a stored configuration replaced the main installation's")
 	}
+	writes := st.writes
+	if swapped, err := first.Apply(ctx, with(42, 3), nil); swapped || err != nil || st.writes != writes+1 {
+		t.Fatalf("a handshake whose format table changed: swapped %v, %v, %d writes", swapped, err, st.writes-writes)
+	}
+	if formats, ok := New(Options{Store: st}).LoadStored(ctx); !ok || len(formats) != 0 {
+		t.Fatalf("after a handshake without a table: %v, %+v", ok, formats)
+	}
+	record := func(c iface.Configuration, f iface.HandshakeFormats) []byte {
+		b, _ := iface.Marshal(stored{Configuration: c, Formats: f})
+		return b
+	}
 	for name, s := range map[string]*memStore{
-		"none":   {},
-		"forged": {payload: []byte(`{}`), err: errors.New("cache: the record's signature does not verify")},
-		"refused by Validate": {payload: func() []byte {
-			b, _ := iface.Marshal(iface.Configuration{Revision: 3})
+		"none":                {},
+		"forged":              {payload: []byte(`{}`), err: errors.New("cache: the record's signature does not verify")},
+		"refused by Validate": {payload: record(iface.Configuration{Revision: 3}, nil)},
+		"a format table Validate refuses": {payload: record(with(5, 1), iface.HandshakeFormats{{ID: "npm", RateLimitedStatus: 418,
+			ErrorShape: iface.ErrorShapeNPM}})},
+		"not a configuration": {payload: []byte(`{"configuration": {"revision": "x"}}`)},
+		"a bare configuration": {payload: func() []byte {
+			b, _ := iface.Marshal(with(6, 1))
 			return b
 		}()},
-		"not a configuration": {payload: []byte(`{"revision": "x"}`)},
 	} {
 		h := New(Options{Store: s})
-		if h.LoadStored(ctx) || h.Current().Source != SourceBuiltin {
+		if _, ok := h.LoadStored(ctx); ok || h.Current().Source != SourceBuiltin {
 			t.Errorf("%s: applied %s", name, h.Current().Source)
 		}
 	}

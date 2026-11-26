@@ -43,6 +43,11 @@ func TestR_BAS_093_ARestartDuringAnOutageAppliesTheStoredConfiguration(t *testin
 			t.Errorf("the restarted replica's metrics lack %q:\n%s", want, grepLines(body, "quader_bastion_configuration"))
 		}
 	}
+	// The format table was stored with it: npm's 503 is npm's shape before the first handshake (H-2359).
+	if status, h, b := get(t, "http://"+again.ClientAddr().String()+"/api/npm/web/npm-all/lodash"); status != 503 ||
+		h.Get("Content-Type") != "application/json" || !strings.Contains(b, `"code":"unavailable"`) {
+		t.Errorf("the restarted replica's npm answer: %d %q %s", status, h.Get("Content-Type"), b)
+	}
 
 	empty := t.TempDir()
 	fresh, logs := newLinked(t, linkedConfig(main, empty, tokenFileFor(t, empty, main.NewToken()), ""), nil)
@@ -50,5 +55,9 @@ func TestR_BAS_093_ARestartDuringAnOutageAppliesTheStoredConfiguration(t *testin
 	if body := metricsBody(t, fresh); !strings.Contains(body, `quader_bastion_configuration_source{source="builtin"} 1`) ||
 		!strings.Contains(body, `quader_bastion_main_budget{class="anonymous"} 16`) {
 		t.Errorf("a replica of an empty volume:\n%s", grepLines(body, "quader_bastion_configuration"))
+	}
+	if status, h, _ := get(t, "http://"+fresh.ClientAddr().String()+"/api/npm/web/npm-all/lodash"); status != 503 ||
+		h.Get("Content-Type") != "application/problem+json" {
+		t.Errorf("a replica of an empty volume answers npm: %d %q", status, h.Get("Content-Type"))
 	}
 }

@@ -254,7 +254,7 @@ func (s *setup) replica(t *testing.T, n int) *replica {
 			s.mutate(&f)
 		}
 		s.figures = settings.New(settings.Options{})
-		if _, err := s.figures.Apply(t.Context(), withFlood(1, f)); err != nil {
+		if _, err := s.figures.Apply(t.Context(), withFlood(1, f), nil); err != nil {
 			t.Fatal(err)
 		}
 	}

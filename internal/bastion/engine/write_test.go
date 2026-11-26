@@ -122,10 +122,6 @@ func TestR_BAS_095_ARouteThatTakesABodyIsForwardedWithTheCallersCredential(t *te
 	}
 }
 
-// TestR_BAS_095_EachShapeRenders: the one renderer of the Bastion's own answers renders each of the five shapes so that the
-// shape's reader takes the code and the detail from it, with the challenge of a 401, the methods of a 405, the wait of a 429 and
-// a 503, and no body for a HEAD. The galaxy shape's 429 is byte for byte the answer ansible-galaxy 2.17.14 was run against
-// (bastion.md R-BAS-095's table, measured 2026-11-26).
 // TestR_BAS_095_TheGalaxyShapeAnswersAGatewayFailure503: a 502 bad_gateway or 504 gateway_timeout of the Bastion answers 503 with its
 // code in the galaxy shape, which ansible-galaxy prints and does not retry into its response cache's empty entry (H-2358); every other
 // shape keeps the status.
@@ -157,6 +153,10 @@ func TestR_BAS_095_TheGalaxyShapeAnswersAGatewayFailure503(t *testing.T) {
 	}
 }
 
+// TestR_BAS_095_EachShapeRenders: the one renderer of the Bastion's own answers renders each of the five shapes so that the
+// shape's reader takes the code and the detail from it, with the challenge of a 401, the methods of a 405, the wait of a 429 and
+// a 503, and no body for a HEAD. The galaxy shape's 429 is byte for byte the answer ansible-galaxy 2.17.14 was run against
+// (bastion.md R-BAS-095's table, measured 2026-11-26).
 func TestR_BAS_095_EachShapeRenders(t *testing.T) {
 	answers := []*errs.Error{
 		errReadOnly(),

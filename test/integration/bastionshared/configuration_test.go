@@ -20,7 +20,7 @@ func TestR_BAS_093_ANewFloodFigureHoldsAcrossTheReplicasWithValkey(t *testing.T)
 	f := defaults()
 	f.Anonymous = iface.FloodClass{RequestsPerSecond: 1, Burst: 6, MissesPerMinute: 30}
 	f.Blocking.Threshold = 100000
-	if _, err := s.figures.Apply(ctx, withFlood(2, f)); err != nil {
+	if _, err := s.figures.Apply(ctx, withFlood(2, f), nil); err != nil {
 		t.Fatal(err)
 	}
 	addr := address()
@@ -48,7 +48,7 @@ func TestR_BAS_094_WithValkeyTheReplicasShareOneCeiling(t *testing.T) {
 	c := settings.Builtin()
 	c.Revision = 2
 	c.Limits.AnonymousCeiling = iface.Ceiling{RequestsPerSecond: &perSecond, Burst: &burst}
-	if _, err := s.figures.Apply(ctx, c); err != nil {
+	if _, err := s.figures.Apply(ctx, c, nil); err != nil {
 		t.Fatal(err)
 	}
 	figures := func(context.Context) *settings.Applied { return s.figures.Current() }

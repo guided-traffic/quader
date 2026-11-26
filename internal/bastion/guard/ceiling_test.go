@@ -174,7 +174,7 @@ func TestR_BAS_093_TheGuardDecidesWithTheFiguresOfTheConfiguration(t *testing.T)
 	strict.Revision = 7
 	strict.Limits.Flood.Anonymous = iface.FloodClass{RequestsPerSecond: 1, Burst: 2, MissesPerMinute: 1}
 	before := settings.With(ctx, h.Current())
-	if _, err := h.Apply(ctx, strict); err != nil {
+	if _, err := h.Apply(ctx, strict, nil); err != nil {
 		t.Fatal(err)
 	}
 	const addr = "198.51.100.4"

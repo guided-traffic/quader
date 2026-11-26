@@ -1614,7 +1614,7 @@ the texts of Q-BAS-321 and the type `about:blank` with the status phrase as the 
 chain's own refusals included (`errs.WithBastionAnswer`); the RateLimit policy names `requests`, `misses`, `failed-auth` and `blocking`
 (R-BAS-099 rows 2 to 4). *Built by E7 (interface version 8):* the codes of the table below. *Built by E15:* every answer of the
 table in the shape the format table's `errorShape` declares, through one renderer ([Q-BAS-450](#q-bas-450--every-answer-of-the-bastions-own-goes-through-one-renderer-by-the-declared-shape-and-each-shape-carries-the-code)),
-with `403 read_only` for a write; before the first handshake, when no format's shape is known, problem details (H-2359). Where the
+with `403 read_only` for a write; before the first handshake the shapes of the format table stored with the configuration (R-BAS-093), and problem details only for a replica that has none (H-2359, closed). Where the
 text below says problem details, it is the shape `problem`. *Completed by W-35's P8 on 2026-11-26 (R-BAS-114):* the table of what a
 forward relays below, each of its rows built.
 
@@ -5088,6 +5088,14 @@ of the main installation decides; the chart keeps what the installation of the p
   R-BAS-061's stored format with a cache key; a replica that starts while the main installation is unreachable applies that object when
   its signature holds, and otherwise a built-in configuration that fails closed: every switch off, the Internet preset's flood figures,
   slots and ceiling, Enforce, the throughput of Q-BAS-455. It leaves the built-in or the stored configuration at its first handshake.
+  The object holds the handshake's format table (R-BAS-057) beside the configuration, written again when either changes; a replica that
+  applies the stored configuration holds that table until its first handshake, so its own answers take each format's error shape and a
+  declared read route with a body is forwarded (R-BAS-095); a table the Bastion's rules refuse refuses the whole object. *Built on
+  2026-11-26 (the day's findings, batch B):* `settings.Holder.Apply` takes the table, `LoadStored` returns it, `link.Link.UseStoredFormats`
+  holds it, closing H-2359 of [security/bastion.md](../security/bastion.md#h-2359--before-its-first-handshake-a-bastion-answers-in-problem-details);
+  tests `TestR_BAS_093_AReplicaStartedWithoutTheMainInstallationAppliesTheStoredConfiguration` (settings),
+  `TestR_BAS_095_BeforeItsFirstHandshakeABastionAnswersInTheStoredShapes` (engine) and
+  `TestR_BAS_093_ARestartDuringAnOutageAppliesTheStoredConfiguration` (server, two starts, npm's shape before the handshake).
 - **The edge figure.** The Bastion reports its edge figure, which the chart renders into its configuration file as the chart-managed
   `bastion.edge_limit` (`requests_per_second`, `connections`, or off), with every handshake in the header `Quader-Bastion-Edge-Limit`, and
   the main installation records it with the contact (R-BAS-010). The card warns where a per-address request figure of the configuration lies

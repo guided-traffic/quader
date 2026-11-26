@@ -49,7 +49,7 @@ func TestR_BAS_097_WithValkeyTheReplicasShareOneThroughputCap(t *testing.T) {
 	c := settings.Builtin()
 	c.Revision = 2
 	c.Limits.Throughput.BytesPerSecond = &bytesPerSecond
-	if _, err := s.figures.Apply(ctx, c); err != nil {
+	if _, err := s.figures.Apply(ctx, c, nil); err != nil {
 		t.Fatal(err)
 	}
 	pa := throughput.New(throughput.Options{Bytes: a.st.Bytes, Figures: s.figures.Current, Metrics: a.m})

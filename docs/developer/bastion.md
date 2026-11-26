@@ -442,11 +442,14 @@ The flood figures, the exempt networks, the slots and the anonymous ceiling are 
   configurations. The background refresh, which outlives its request, reads the one applied when it starts.
 - **Watchers.** `Holder.Watch` calls a function after every swap under the holder's lock; the server resizes the slot budget in it
   (`SlotBudget.Resize`: new slots go to the waiters at once, fewer take nothing from a request in flight).
-- **Stored for a restart** (Q-BAS-327). After every swap the holder writes the member to the cache backend: `configuration/current.json`
+- **Stored for a restart** (Q-BAS-327). After every swap, and after a handshake whose format table changed, the holder writes the member
+  and the handshake's format table as one record `{"configuration": …, "formats": […]}` to the cache backend: `configuration/current.json`
   (with a cache key the sealed object `bc-<id>/c/current`, bound to its name), signed in the domain `configuration` where entries are signed.
   `Server.Start` calls `Holder.LoadStored` before the client listener binds: a replica that starts while the main installation is unreachable
-  applies it (source `stored`); with none, a forged one or one `Validate` refuses it keeps `settings.Builtin` (source `builtin`), the Internet
-  preset in Enforce with every switch off. The first handshake replaces either.
+  applies the configuration (source `stored`) and hands the format table to the link (`Link.UseStoredFormats`), so that its own answers
+  take each format's error shape and a declared read route with a body is forwarded (H-2359); with none, a forged one or one whose
+  configuration or format table `Validate` refuses it keeps `settings.Builtin` (source `builtin`), the Internet preset in Enforce with every
+  switch off, and no format table. The first handshake replaces either.
 - **Metrics.** `quader_bastion_configuration_revision` and `quader_bastion_configuration_source{source}`.
 - **The edge figure** is a chart-managed section of the file, `bastion.edge_limit` (`enabled`, `requests_per_second`, `connections`), which
   `mainclient.Options.EdgeLimit` sends with every handshake in `Quader-Bastion-Edge-Limit` (Q-BAS-447).
