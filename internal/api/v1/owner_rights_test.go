@@ -121,7 +121,7 @@ var ownerRightsReads = map[string]string{
 	"getRepositoryMirror": "decided through the decision point with the scope (requireMirrorReader)",
 	"getBastion": "endpoints:read or limits:read through the decision point with the scope (GetBastion, R-BAS-093); nothing of the " +
 		"caller's account",
-	"listDeliveryRules":   "decided through the decision point with the scope (requireRuleReader, R-CUR-005)",
+	"listDeliveryRules": "decided through the decision point with the scope (requireRuleReader, R-CUR-005)",
 	"getDeliveryRulesSummary": "decided through the decision point with the scope (readerOrModeWriter: a reader of the rules or a writer " +
 		"of the configuration, R-CUR-005, R-CUR-025)",
 	// >>> T-24 downloads

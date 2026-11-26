@@ -48,7 +48,7 @@ func (s *Server) bastionsReady(w http.ResponseWriter, r *http.Request) bool {
 // toBastion is a registration with every member, as a holder of endpoints:read reads it.
 func toBastion(b bastionmain.Registration) gen.Bastion {
 	out := toBastionLimits(b)
-	egress := gen.BastionEgress(bastionmain.EgressText(b.Egress))
+	egress := bastionmain.EgressText(b.Egress)
 	tokens := make([]gen.BastionTokenSummary, 0, len(b.Tokens))
 	contacts := make([]gen.BastionContact, 0, len(b.Contacts))
 	out.Description, out.Enabled, out.Egress, out.CreatedAt = &b.Description, &b.Enabled, &egress, refTo(utc(b.CreatedAt))

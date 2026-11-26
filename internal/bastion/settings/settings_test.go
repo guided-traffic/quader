@@ -167,8 +167,10 @@ func TestR_BAS_093_ANewConfigurationIsAppliedWhole(t *testing.T) {
 // with a format table Validate refuses, the built-in one. A handshake replaces either, and a stored configuration read after a
 // handshake is not applied. A handshake whose format table changed stores again although its configuration did not.
 func TestR_BAS_093_AReplicaStartedWithoutTheMainInstallationAppliesTheStoredConfiguration(t *testing.T) {
-	table := iface.HandshakeFormats{{ID: "npm", RateLimitedStatus: 429, ErrorShape: iface.ErrorShapeNPM,
-		ReadWithBody: []iface.BodyRoute{{Method: "POST", Path: "/-/npm/v1/security/advisories/bulk"}}}}
+	table := iface.HandshakeFormats{{
+		ID: "npm", RateLimitedStatus: 429, ErrorShape: iface.ErrorShapeNPM,
+		ReadWithBody: []iface.BodyRoute{{Method: "POST", Path: "/-/npm/v1/security/advisories/bulk"}},
+	}}
 	st := &memStore{}
 	first := New(Options{Store: st})
 	if _, err := first.Apply(ctx, with(42, 3), table); err != nil {
@@ -206,8 +208,10 @@ func TestR_BAS_093_AReplicaStartedWithoutTheMainInstallationAppliesTheStoredConf
 		"none":                {},
 		"forged":              {payload: []byte(`{}`), err: errors.New("cache: the record's signature does not verify")},
 		"refused by Validate": {payload: record(iface.Configuration{Revision: 3}, nil)},
-		"a format table Validate refuses": {payload: record(with(5, 1), iface.HandshakeFormats{{ID: "npm", RateLimitedStatus: 418,
-			ErrorShape: iface.ErrorShapeNPM}})},
+		"a format table Validate refuses": {payload: record(with(5, 1), iface.HandshakeFormats{{
+			ID: "npm", RateLimitedStatus: 418,
+			ErrorShape: iface.ErrorShapeNPM,
+		}})},
 		"not a configuration": {payload: []byte(`{"configuration": {"revision": "x"}}`)},
 		"a bare configuration": {payload: func() []byte {
 			b, _ := iface.Marshal(with(6, 1))
