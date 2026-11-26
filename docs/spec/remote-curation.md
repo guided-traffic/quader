@@ -948,8 +948,11 @@ Priority: **P1** · Covers: RMT-027
   ([Q-CUR-81](#q-cur-81--the-step-of-a-failure-is-the-exchanges-where-an-exchange-failed)). A run that reaches the job's 30 minutes ends
   its attempt `bound`, step `body`, code `download_timeout` ([Q-CUR-83](#q-cur-83--a-probe-without-a-version-is-a-row-named-by-its-file-a-run-that-reaches-its-timeout-is-a-bound)).
 - **A client's failed fetch** is recorded in the same table (Q-CUR-19), so the tab answers "why did my pull fail": a fetch of a client
-  that ends with a failure of the classes above writes, at most once per repository and file per replica and minute, one row of origin
-  `client` and state `failed` per repository and file, whose `occurrences` and failure the next failure updates; at most
+  that ends with a failure of the classes above writes, at most once per repository and download per replica and minute, one row of
+  origin `client` and state `failed` per repository and download, whose `occurrences` and failure (with the file that failed last) the
+  next failure updates. A download is what a person asked for ([operations-and-observability.md](operations-and-observability.md)
+  R-OPS-049): the file's name and version as the format classified it, so the layers of one image that fail are one row of the image
+  (its version empty, as a blob names no tag), the files of one version one row, and a file of no package a row of its own; at most
   `proxy.downloads.client_failures_per_repository` (1,000) such rows per repository, the oldest removed. A `404` of the upstream is not
   recorded (the negative cache holds it, R-REPO-028). The leader of a client's flight records it where the engine classifies the failure
   and where the integrity check refuses ([Q-CUR-84](#q-cur-84--a-clients-failed-fetch-is-recorded-on-the-fetchs-own-failure-once-per-flight)).
@@ -2472,15 +2475,19 @@ Q-REPO-363 (notes).
 
 ### Q-CUR-19 · A client's failed fetch is a row of the queue, aggregated and bounded
 
-Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+Status: **Decided by the development agent; revised on 2026-11-26 by the owner's rule of that day (W31)** — selected from the options below;
+the owner reviews it at the walkthrough.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) A row of origin `client` per repository and file, updated at most once a minute per replica, 1,000 per repository (chosen) | R-CUR-011 | "Why did my pull fail" is answered on the same tab, and its retry is a download ahead | A write on failures |
+| (a) A row of origin `client` per repository and download (the file's name and version), updated at most once a minute per replica, 1,000 per repository (chosen) | R-CUR-011 | "Why did my pull fail" is answered on the same tab, once per image or version, and its retry is a download ahead | A write on failures; an image's row has no version |
+| (a′) As (a), a row per file (the choice until 2026-11-26) | A row per layer | The file is the row's key | One failing pull of an image wrote a row per layer, and "Downloads · 7 failed" counted layers |
 | (b) Not recorded | The circuit's last failure and the log | No write | The tab shows what persons started only |
 
-**Choice:** (a). **Rationale:** the development agent would revisit the throttle if a failing upstream's writes show in the database's
-load.
+**Choice:** (a), revised on 2026-11-26 from a row per file by the owner's rule of that day: "Alle Downloads sind überall in Quader zu
+logischen Einheiten zusammen zu fassen. Bei OCI-images ist es das Image selbst mit allem was dazu gehört." The failure keeps the file
+it names. **Rationale:** the tab and its label count what a person asked for. The development agent would revisit the throttle if a
+failing upstream's writes show in the database's load.
 
 **Applied in the spec:** R-CUR-011.
 
@@ -4550,7 +4557,8 @@ by default.
 Status: **Decided by the development agent** — selected from the options below while building the download queue (R4); the owner reviews
 it at the walkthrough.
 
-Context: Q-CUR-19 records a client's failed fetch as a row of origin `client`, at most once per repository and file per replica and minute.
+Context: Q-CUR-19 records a client's failed fetch as a row of origin `client`, at most once per repository and download per replica and
+minute.
 Where a client's failure is known: the engine's classification of an answer or a transport error, the integrity check, and every
 collapsed waiter that receives the leader's result.
 

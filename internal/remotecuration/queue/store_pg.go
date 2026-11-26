@@ -631,7 +631,7 @@ func (s *PGStore) Gauge(ctx context.Context) (out []GaugeRow, err error) {
 }
 
 // ClientFailure implements [Maintenance].
-func (s *PGStore) ClientFailure(ctx context.Context, r Row, file string, trim int) error {
+func (s *PGStore) ClientFailure(ctx context.Context, r Row, trim int) error {
 	failure, err := jsonText(r.Failure)
 	if err != nil || failure == "" {
 		return err
@@ -642,7 +642,9 @@ func (s *PGStore) ClientFailure(ctx context.Context, r Row, file string, trim in
 			return errNotPostgres
 		}
 		qs := q.New(ptx)
-		ids, err := qs.RemoteDownloadClientFailureUpdate(ctx, q.RemoteDownloadClientFailureUpdateParams{RepoID: r.RepoID, File: file, Failure: failure})
+		ids, err := qs.RemoteDownloadClientFailureUpdate(ctx, q.RemoteDownloadClientFailureUpdateParams{
+			RepoID: r.RepoID, Name: r.Name, Version: r.Version, Failure: failure,
+		})
 		if err != nil || len(ids) > 0 {
 			return err
 		}

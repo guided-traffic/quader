@@ -192,7 +192,9 @@ func TestR_CUR_011_ARetryableFailureWaitsUntilTheAttemptsAreSpent(t *testing.T) 
 	})
 }
 
-func TestR_CUR_011_AClientsFailureIsWrittenOncePerFileAndMinute(t *testing.T) {
+// R-CUR-011, R-OPS-049: a client's failure is written once per download and minute: the second failure of one tarball and the failure of
+// a second layer of one image within the minute are throttled; a 404 is the negative cache's; a file of no name is a download of its own.
+func TestR_CUR_011_AClientsFailureIsWrittenOncePerDownloadAndMinute(t *testing.T) {
 	f := newFixture(t, DefaultSettings())
 	fail := remotecuration.Failure{Class: remotecuration.ClassUpstreamError, Step: remotecuration.StepStatus, Status: 502}
 	f.svc.ClientFailure(context.Background(), 1, "left-pad", "1.0.0", "left-pad/-/left-pad-1.0.0.tgz", fail)
@@ -201,6 +203,14 @@ func TestR_CUR_011_AClientsFailureIsWrittenOncePerFileAndMinute(t *testing.T) {
 	if len(f.store.written) != 1 {
 		t.Fatalf("%d writes, want one: the second within the minute is throttled, a 404 is the negative cache's", len(f.store.written))
 	}
+	f.svc.ClientFailure(context.Background(), 1, "library/ubuntu", "", "library/ubuntu/_blobs/sha256:01", fail)
+	f.svc.ClientFailure(context.Background(), 1, "library/ubuntu", "", "library/ubuntu/_blobs/sha256:02", fail)
+	f.svc.ClientFailure(context.Background(), 1, "", "", "dists/x/by-hash/SHA256/01", fail)
+	f.svc.ClientFailure(context.Background(), 1, "", "", "dists/x/by-hash/SHA256/02", fail)
+	if len(f.store.written) != 4 || f.store.written[1].Name != "library/ubuntu" || f.store.written[3].Name != "dists/x/by-hash/SHA256/02" {
+		t.Fatalf("an image's two layers are one write, two files of no name two: %+v", f.store.written)
+	}
+	f.store.written = f.store.written[:1]
 	if w := f.store.written[0]; w.Failure.File != "left-pad/-/left-pad-1.0.0.tgz" || w.Failure.Attempt != 1 {
 		t.Errorf("the written failure: %+v", w.Failure)
 	}

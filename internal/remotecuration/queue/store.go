@@ -127,8 +127,9 @@ type Maintenance interface {
 	Prune(ctx context.Context, doneBefore, failedBefore time.Time) (int64, error)
 	// Gauge are the rows by repository and state.
 	Gauge(ctx context.Context) ([]GaugeRow, error)
-	// ClientFailure records a client's failed fetch of a file; trim bounds the client rows of the repository.
-	ClientFailure(ctx context.Context, r Row, file string, trim int) error
+	// ClientFailure records a client's failed fetch in the row of its download (the row's name and version); trim bounds the client
+	// rows of the repository.
+	ClientFailure(ctx context.Context, r Row, trim int) error
 	// PruneLimits removes the limits that ended before now of the repositories that have no waiting or running row left.
 	PruneLimits(ctx context.Context, now time.Time) (int64, error)
 	// DueSyncs are the syncs whose next run came, at most 100, the longest due first (R-CUR-027).

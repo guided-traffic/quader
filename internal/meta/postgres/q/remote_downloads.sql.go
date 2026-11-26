@@ -427,7 +427,7 @@ type RemoteDownloadClientFailureInsertParams struct {
 	Failure string
 }
 
-// The first failure of a file a client fetched: a row of origin client, failed (Q-CUR-19).
+// The first failure of a download a client fetched: a row of origin client, failed (Q-CUR-19).
 func (q *Queries) RemoteDownloadClientFailureInsert(ctx context.Context, arg RemoteDownloadClientFailureInsertParams) error {
 	_, err := q.db.Exec(ctx, remoteDownloadClientFailureInsert,
 		arg.ID,
@@ -467,7 +467,7 @@ UPDATE remote_download
    SET occurrences = occurrences + 1, failure = $1::text::jsonb, updated_at = now(), finished_at = now()
  WHERE id = (SELECT c.id FROM remote_download c
               WHERE c.repo_id = $2::bigint AND c.origin = 'client' AND c.state = 'failed'
-                AND c.failure->>'file' = $3::text
+                AND c.name = $3::text AND c.version = $4::text
               ORDER BY c.created_at DESC LIMIT 1)
 RETURNING id::text AS id
 `
@@ -475,12 +475,19 @@ RETURNING id::text AS id
 type RemoteDownloadClientFailureUpdateParams struct {
 	Failure string
 	RepoID  int64
-	File    string
+	Name    string
+	Version string
 }
 
-// A client's failed fetch of a file that has its row already: the next failure counts and replaces the failure (Q-CUR-19).
+// A client's failed fetch of a download that has its row already, by its name and version (an image's layers are one download,
+// operations-and-observability.md R-OPS-049): the next failure counts and replaces the failure, which names the file (Q-CUR-19).
 func (q *Queries) RemoteDownloadClientFailureUpdate(ctx context.Context, arg RemoteDownloadClientFailureUpdateParams) ([]string, error) {
-	rows, err := q.db.Query(ctx, remoteDownloadClientFailureUpdate, arg.Failure, arg.RepoID, arg.File)
+	rows, err := q.db.Query(ctx, remoteDownloadClientFailureUpdate,
+		arg.Failure,
+		arg.RepoID,
+		arg.Name,
+		arg.Version,
+	)
 	if err != nil {
 		return nil, err
 	}

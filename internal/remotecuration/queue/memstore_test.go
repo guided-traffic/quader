@@ -343,7 +343,7 @@ func (m *memStore) ExpandingBulks(context.Context) ([]Bulk, error) {
 func (m *memStore) SettleBulks(context.Context) (int, error)                   { return 0, nil }
 func (m *memStore) Prune(context.Context, time.Time, time.Time) (int64, error) { return 0, nil }
 func (m *memStore) Gauge(context.Context) ([]GaugeRow, error)                  { return nil, nil }
-func (m *memStore) ClientFailure(_ context.Context, r Row, _ string, _ int) error {
+func (m *memStore) ClientFailure(_ context.Context, r Row, _ int) error {
 	m.written = append(m.written, r)
 	return nil
 }

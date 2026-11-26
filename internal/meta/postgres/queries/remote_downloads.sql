@@ -197,17 +197,18 @@ UPDATE remote_download
  WHERE bulk_id = sqlc.arg(bulk_id)::text::uuid AND state = 'waiting';
 
 -- name: RemoteDownloadClientFailureUpdate :many
--- A client's failed fetch of a file that has its row already: the next failure counts and replaces the failure (Q-CUR-19).
+-- A client's failed fetch of a download that has its row already, by its name and version (an image's layers are one download,
+-- operations-and-observability.md R-OPS-049): the next failure counts and replaces the failure, which names the file (Q-CUR-19).
 UPDATE remote_download
    SET occurrences = occurrences + 1, failure = sqlc.arg(failure)::text::jsonb, updated_at = now(), finished_at = now()
  WHERE id = (SELECT c.id FROM remote_download c
               WHERE c.repo_id = sqlc.arg(repo_id)::bigint AND c.origin = 'client' AND c.state = 'failed'
-                AND c.failure->>'file' = sqlc.arg(file)::text
+                AND c.name = sqlc.arg(name)::text AND c.version = sqlc.arg(version)::text
               ORDER BY c.created_at DESC LIMIT 1)
 RETURNING id::text AS id;
 
 -- name: RemoteDownloadClientFailureInsert :exec
--- The first failure of a file a client fetched: a row of origin client, failed (Q-CUR-19).
+-- The first failure of a download a client fetched: a row of origin client, failed (Q-CUR-19).
 INSERT INTO remote_download (id, repo_id, name, version, origin, state, attempts, max_attempts, failure, finished_at)
 VALUES (sqlc.arg(id)::text::uuid, sqlc.arg(repo_id)::bigint, sqlc.arg(name)::text, sqlc.arg(version)::text, 'client', 'failed', 1, 1,
         sqlc.arg(failure)::text::jsonb, now());
