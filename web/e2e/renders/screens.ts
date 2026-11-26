@@ -112,6 +112,7 @@ import {
   upstreamUnknownLevelWalk,
   upstreamVersions,
 } from './upstream';
+import { readmeExpected, upstreamReadmeGalaxyWalk, upstreamReadmeNpmWalk, upstreamReadmeNuGetWalk } from './upstream-docs';
 
 /**
  * Every screen of the app (web/src/app/app.routes.ts and the route files of the feature areas), with the parameters of the
@@ -3037,6 +3038,21 @@ export const screens: readonly Screen[] = [
   // An Ansible Galaxy remote's catalogue (R-ANS-047): the hits' tags and signed state, a namespace's downloads at the upstream, an opened
   // collection with its count, tags and signed state (namespaces.ts).
   { id: 'repository-ansible-upstream', path: `${O}/repositories/galaxy/upstream`, kinds: ['power'], walk: galaxyUpstream, expected: upstreamExpected, de: true, tables: upstreamVersions },
+  // What a package of the upstream tells before a version is stored (R-CUR-028), answered in the browser (upstream-docs.ts): the facts of
+  // its newest version, its README of 300 lines (its first 24 rem, then whole), folded in a row of the search, for a reader without the
+  // wiki, on a host the repository does not reach, failed and held by a rate limit; NuGet's and a Galaxy collection's, in German too.
+  {
+    id: 'repository-npm-upstream-readme',
+    path: `${P}/repositories/npmjs/upstream`,
+    kinds: ['power'],
+    walk: upstreamReadmeNpmWalk,
+    expected: [...upstreamExpected, ...readmeExpected],
+    notices: [{ match: /Internal Server Error \(500\) to the README/, why: 'the walk answers a README that failed to render its state' }],
+    de: true,
+    tables: upstreamVersions,
+  },
+  { id: 'repository-nuget-upstream-readme', path: `${O}/repositories/nuget-org/upstream`, kinds: ['power'], walk: upstreamReadmeNuGetWalk, expected: upstreamExpected, de: true, tables: upstreamVersions },
+  { id: 'repository-ansible-upstream-readme', path: `${O}/repositories/galaxy/upstream`, kinds: ['power'], walk: upstreamReadmeGalaxyWalk, expected: upstreamExpected, de: true, tables: upstreamVersions },
   { id: 'repository-oci-upstream-own', path: `${O}/repositories/${remoteCache.key}/upstream`, kinds: ['power', 'admin'], walk: upstreamOwnWalk, tables: upstreamVersions },
   { id: 'repository-npm-virtual', path: `${P}/repositories/npm`, kinds: all, de: true },
   { id: 'repository-long-key', path: `${P}/repositories/${longNpmKey}`, kinds: all },
