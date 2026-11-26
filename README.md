@@ -3904,7 +3904,8 @@ requirement of the chart is [HA and Helm](docs/spec/ha-and-helm.md).
 | `make build` | Static binary in `bin/quader` |
 | `make web` | Angular build into `internal/webui/dist/` (needs Node.js 26.13.0) |
 | `make ui-dev-up`, `make ui-dev-backend`, `make ui-dev-web`, `make ui-dev-down` | UI work with hot reload: backing containers, one Quader on the host with a sign-in provider of its own, the Angular dev server on `https://localhost:4200/ui/` ([local UI development](docs/developer/web-ui.md#local-ui-development)) |
-| `make ui-renders` | Every screen as pictures, as the three kinds of user, light and dark, at 1440, 1024 and 390 px, with a contact sheet in `.out/ui-renders/` and the layout checks of every picture ([renders](docs/developer/web-ui.md#renders-of-every-screen)); CI runs it on every push |
+| `make ui-renders` | Every screen as pictures, as the three kinds of user, light and dark, at 1440, 1024 and 390 px, with a contact sheet in `.out/ui-renders/` and the layout checks of every picture ([renders](docs/developer/web-ui.md#renders-of-every-screen)); `SHARD=i/n` renders one part, as each of the five legs of CI does on every push |
+| `make ui-renders-parts-check` | The parts of `make ui-renders SHARD=i/n`, in which CI renders the screens, against the whole pass from Playwright's lists: each screen in exactly one part; seconds, nothing rendered |
 | `make ui-layout-test` | The layout checks of the renders on their own fixture pages in Chromium, without the UI stack, in seconds |
 | `make generate`, `make generate-check` | Every `go:generate` directive; the check fails on any diff |
 | `make lint`, `make fmt` | `golangci-lint` and `go vet`; the formatters of `.golangci.yml` |

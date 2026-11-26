@@ -214,7 +214,8 @@ func TestTheGatingJobsBoundTheirDownloads(t *testing.T) {
 // states of the dialogs once, in the job ui-layout-fixtures, and every screen of the render set in the legs of ui-layout, each the
 // part SHARD=i/n with i the leg's number and n the number of legs (Q-ARCH-1071). A part is every n-th pair of screen and kind of user
 // (web/e2e/renders/paths.ts), so the legs together render each pair once exactly when the matrix numbers them 1 to n and holds nothing
-// else, since strategy.job-total counts every combination. No leg narrows its part further, no leg cancels the others, no job has a
+// else, since strategy.job-total counts every combination; ui-layout-fixtures compares the parts' lists with the whole pass's for that
+// number of legs (make ui-renders-parts-check). No leg narrows its part further, no leg cancels the others, no job has a
 // condition that skips it. Until the first stable release they hold no release back: Semantic Release needs neither job
 // (Q-ARCH-457). With the first stable release this test changes with the gate. Milliseconds.
 func TestTheUILayoutChecksRunEveryScreenAndHoldNoRelease(t *testing.T) {
@@ -276,6 +277,12 @@ func TestTheUILayoutChecksRunEveryScreenAndHoldNoRelease(t *testing.T) {
 			t.Errorf("job ui-layout runs the parts %v; want 1 to %d in order", parts, len(parts))
 			break
 		}
+	}
+
+	// The check of the parts against the whole pass runs once, for the number of legs the matrix has.
+	check := "make ui-renders-parts-check PARTS=" + strconv.Itoa(len(parts))
+	if !slices.ContainsFunc(fixtures.Steps, func(s step) bool { return strings.TrimSpace(s.Run) == check }) {
+		t.Errorf("job ui-layout-fixtures does not run %q; the matrix of ui-layout has %d legs", check, len(parts))
 	}
 
 	const render = "make ui-renders SHARD=${{ matrix.shard }}/${{ strategy.job-total }}"

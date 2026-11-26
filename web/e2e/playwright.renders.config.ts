@@ -1,5 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
-import { CHROMIUM_TEXT, authFile, edge, engine, locale } from './renders/paths';
+import { CHROMIUM_TEXT, authFile, edge, engine, locale, shard } from './renders/paths';
 
 /**
  * `make ui-renders` (docs/developer/web-ui.md#renders-of-every-screen): every screen of the UI as pictures to judge, against
@@ -12,12 +12,16 @@ import { CHROMIUM_TEXT, authFile, edge, engine, locale } from './renders/paths';
  * UI_RENDERS_WORKERS   browsers at a time, default 3 (the host is shared)
  * UI_RENDERS_LOCALE    en (default), or de: the screens marked `de`, against the dev server's German build (Q-UI-1048)
  * UI_RENDERS_ENGINE    chromium (default), firefox or webkit (Q-UI-1049); a run other than the default writes into a folder of its own
+ * UI_RENDERS_SHARD     i/n: the i-th of n parts of the screens (renders/paths.ts, Q-ARCH-1071); unset, the whole set
  */
 const device = { chromium: 'Desktop Chrome', firefox: 'Desktop Firefox', webkit: 'Desktop Safari' }[engine];
 export default defineConfig({
   testDir: './renders',
   // The checks' own fixtures run in `make ui-layout-test` (playwright.layout.config.ts), without the stack and the seed.
   testIgnore: 'layout-checks.spec.ts',
+  // A part of the screens (UI_RENDERS_SHARD) holds the screens alone: the measurements (live-cost, slow-loads) run with the whole set and
+  // their GREP, and a spec file a part leaves out shows as missing in `make ui-renders-parts-check`, never as rendered in every leg.
+  ...(shard.total > 1 ? { testMatch: 'render.spec.ts' } : {}),
   outputDir: '../../.out/ui-renders/.results',
   workers: Number(process.env['UI_RENDERS_WORKERS'] ?? 3),
   fullyParallel: true,

@@ -174,6 +174,10 @@ ui-states: ## Every dialog, its failure and its validation, the confirm shapes, 
 ui-renders: ## Render every screen as every kind of user, light and dark, at 1440, 1024 and 390 px into .out/ui-renders (after web-ci; GREP=<regex> limits the screens; SHARD=i/n renders the i-th of n parts, as a leg of CI does; deploy/ui-dev/renders.sh)
 	$(if $(SHARD),UI_RENDERS_SHARD='$(SHARD)') deploy/ui-dev/renders.sh $(if $(GREP),--grep '$(GREP)')
 
+.PHONY: ui-renders-parts-check
+ui-renders-parts-check: ## The parts of ui-renders SHARD=i/n hold every screen of the whole pass exactly once, from Playwright's lists: seconds, nothing rendered, no stack (after web-ci; PARTS=n, default 5; deploy/ui-dev/renders-parts-check.sh)
+	deploy/ui-dev/renders-parts-check.sh $(PARTS)
+
 # The release image builds the Angular bundle itself (Containerfile, stage web); no Node.js is
 # needed on the host. The build arguments read the same pins as the rest of the repository.
 # Every image make image builds carries this label (the release pipeline, build.yml, builds without it). A build that takes the

@@ -421,6 +421,7 @@ make ui-states                    # the dialogs' and the overlays' states, measu
 make ui-renders                   # every screen, into an empty .out/ui-renders
 make ui-renders GREP=repositories # the screens whose test title matches; the other pictures stay
 make ui-renders SHARD=2/5         # the second of five parts, as the second leg of CI renders it; the other pictures stay
+make ui-renders-parts-check       # the five parts against the whole pass, from Playwright's lists: seconds, nothing rendered (PARTS=n)
 UI_RENDERS_LOCALE=de make ui-renders            # the screens marked `de`, in German, into .out/ui-renders-de
 UI_RENDERS_ENGINE=firefox make ui-renders GREP=vulnerabilities  # in Firefox (or webkit), into .out/ui-renders-firefox
 make ui-dev-down                  # when done (keeps the data)
@@ -437,8 +438,12 @@ collection's version, 42 pictures instead of 126, [Q-UI-1090](../spec/api-and-ui
 **Parts.** `SHARD=i/n` (`UI_RENDERS_SHARD` of [paths.ts](../../web/e2e/renders/paths.ts)) renders every n-th pair of screen and kind
 of user, from the i-th, in the order of `render.spec.ts` (the screens of `screens.ts`, each with its kinds): the parts of one n hold
 each pair exactly once, differ by one pair at most, and a new screen joins one by its place in `screens.ts`, without a list to edit.
-A part leaves out the checks' fixtures (`make ui-layout-test` runs them, in CI the job `ui-layout-fixtures`) and keeps the pictures of
-the other parts, so parts run one after the other fill one contact sheet. The pipeline renders five parts in five legs ([Q-ARCH-1071](../spec/architecture.md#q-arch-1071--the-layout-checks-render-the-screens-in-parallel-legs-each-every-n-th-pair-of-screen-and-kind-of-user),
+A part loads `render.spec.ts` alone (the measurements run with the whole set and their `GREP`), leaves out the checks' fixtures
+(`make ui-layout-test` runs them, in CI the job `ui-layout-fixtures`) and keeps the pictures of the other parts, so parts run one after
+the other fill one contact sheet. `make ui-renders-parts-check` ([renders-parts-check.sh](../../deploy/ui-dev/renders-parts-check.sh))
+lists the tests with Playwright's `--list`, once for the whole pass and once per part, and fails on a screen in two parts or in none and on
+a spec file of `renders/` that no part loads; it renders nothing, needs no stack and takes about 5 s. The job `ui-layout-fixtures` runs it
+for the number of legs of `ui-layout`. The pipeline renders five parts in five legs ([Q-ARCH-1071](../spec/architecture.md#q-arch-1071--the-layout-checks-render-the-screens-in-parallel-legs-each-every-n-th-pair-of-screen-and-kind-of-user),
 [releasing.md](releasing.md#ci)); the German pass and another engine take the argument too.
 
 `UI_RENDERS_ENGINE=firefox` or `webkit` runs the same walk in that engine, its layout checks first in that engine; it is a look by

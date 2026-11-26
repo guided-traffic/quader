@@ -13349,7 +13349,11 @@ the legs' verdicts do not count either. The part is computed in [paths.ts](../..
 and applied where `render.spec.ts` declares its tests; a part skips the fixtures in `renders.sh` and does not empty the pictures' folder.
 `TestTheUILayoutChecksRunEveryScreenAndHoldNoRelease` ([workflows_test.go](../../internal/tools/ciworkflows/workflows_test.go)) holds that
 the matrix numbers the parts 1 to n and holds nothing else, that the one render step passes `${{ matrix.shard }}/${{ strategy.job-total }}`
-and nothing that narrows it, and that each leg uploads under a name of its own. **Rationale:** every part costs the same and stays so as
+and nothing that narrows it, that each leg uploads under a name of its own, and that `ui-layout-fixtures` runs
+`make ui-renders-parts-check PARTS=n` for the matrix's n. That check ([renders-parts-check.sh](../../deploy/ui-dev/renders-parts-check.sh))
+compares Playwright's `--list` of the whole pass with the lists of the n parts and fails on a screen in two parts or in none and on a spec
+file no part loads (a part loads `render.spec.ts` alone): about 5 s, nothing rendered, so a split that loses or doubles screens is found
+where every leg would be green. **Rationale:** every part costs the same and stays so as
 screens are added; the cost of a part is visible in the leg's time, and the remedy is one more number in the matrix.
 
 **Times** [derived: the per-pair times of run 45775689673 replayed on three browsers, the 31 pairs added since at their mean of 17.5 s; the
@@ -13361,8 +13365,11 @@ about 6 days and its 45 in about 19. A year at that rate (about 2,100 minutes mo
 rendering, more than the 24 pods of `self-hosted`: the structure holds the time of a leg, not the runner minutes of the set, which grow
 with the screens whatever the shape. **Cost:** one leg as before would take about 77 minutes of one runner for today's set (and pass its
 75); the five legs and the fixtures' job take about 114 runner minutes, about 37 more per push (+48 %): four more stacks of 7.9 minutes and
-the second job's setup. A push holds six `self-hosted` pods for about 22 minutes instead of one for 77. **Revisit** when a leg's render
-step passes 30 minutes (one more leg), and when the screens' own time per pair is the thing to cut.
+the second job's setup. A push holds six `self-hosted` pods for about 22 minutes instead of one for 77. Measured locally on 2026-11-26 (the
+development machine under the load of other builders, instance 7, the stack running): the five parts rendered 139, 139, 139, 138 and 138
+pairs, 693 together and each once, against the 693 of the whole pass's list, with 0 failures, in 14.8, 13.7, 13.6, 11.4 and 11.4 minutes
+each, the seed included. **Revisit** when a leg's render step passes 30 minutes (one more leg), and when the screens' own time per pair is
+the thing to cut.
 
 **Applied:** [release.yml](../../.github/workflows/release.yml) (`ui-layout-fixtures`, `ui-layout`); [Makefile](../../Makefile)
 (`ui-renders` `SHARD=i/n`); [renders.sh](../../deploy/ui-dev/renders.sh); [render.spec.ts](../../web/e2e/renders/render.spec.ts);

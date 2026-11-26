@@ -632,6 +632,10 @@ mean of 17.5 s; the replay of the run's own 662 pairs gives 64.7 min against the
 | **5 (chosen)** | 138 to 139 | 12.5 to 14.5 | 20.4 to 22.4 | **114** |
 | 6 | 115 to 116 | 9.7 to 14.4 | 17.6 to 22.3 | 123 |
 
+Measured [V] on the development machine on 2026-11-26 (instance 7, the stack running, other builders' load): the five parts rendered
+139, 139, 139, 138 and 138 pairs, 693 together, each once and none failed, in 14.8, 13.7, 13.6, 11.4 and 11.4 min, the seed included.
+`make ui-renders-parts-check` (the parts' lists against the whole pass's, nothing rendered) takes about 5 s and runs in the fixtures' job.
+
 Data: none added; each leg seeds the whole set (the seed is the same for every part) and renders its part's pictures. The cost per push
 is about 37 runner minutes more (+48 %), four more stacks of 7.9 min and the fixtures' job of about 6 min; the layout checks end about 22
 min after they start instead of 77. A leg grows by about 1.2 min a day at the week's rate and passes the 30 min at which a leg is added in

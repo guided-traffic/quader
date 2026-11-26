@@ -666,6 +666,13 @@ jobs:
         timeout-minutes: 10
         run: make ui-states
 
+      # The parts of the legs of ui-layout against the whole pass, from Playwright's lists alone (nothing rendered, about 5 s): a
+      # screen in two legs or in none, or a spec file no leg loads, fails here, where every leg would be green. PARTS is the number of
+      # legs of ui-layout (internal/tools/ciworkflows holds the two equal).
+      - name: Check that the legs of the screens hold every screen exactly once
+        timeout-minutes: 5
+        run: make ui-renders-parts-check PARTS=5
+
   # Every screen of the render set in parts, one leg each, against the leg's own UI development profile (deploy/ui-dev: three service
   # containers in the runner's Docker, Quader with the sign-in provider, the Angular dev server). A leg renders every n-th pair of
   # screen and kind of user (make ui-renders SHARD=i/n, n the number of legs), so a new screen lands in a leg without a list to edit
