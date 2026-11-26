@@ -23,6 +23,7 @@ import {
   probedCache,
   remoteCache,
   remoteImage,
+  remoteSource,
   repositoryServiceAccount,
   serviceAccount,
   blockedAddress,
@@ -32,7 +33,8 @@ import {
   genericNotes,
 } from './seed';
 import { fileCommands, folderUpload, rowFileCommands } from './file-commands';
-import { gradedPackage, manyVersionsPackage, zipArchive } from './advisories';
+import { gradedPackage, manyVersionsPackage, publicGradedPackage, zipArchive } from './advisories';
+import { anonymousCard, anonymousEndOfLife, anonymousFindings } from './anonymous-vulnerabilities';
 import { malwarePackage, quarantine } from './malware';
 import { malwareWaiting, scanFailedCard, scanStatesList, scanStatesPackage } from './scan-states';
 import { trivyDatabases } from './scanners';
@@ -3315,6 +3317,17 @@ export const screens: readonly Screen[] = [
   // The package page's versions, every state in a row, the column kept (Q-UI-1121).
   { id: 'package-oci-scan-states', path: pkg(P, ociPackage), kinds: ['plain'], walk: scanStatesPackage, de: true },
   // The image a remote cached (W-24): its versions, and the tags whose index it holds one platform of and none of, with their platforms.
+  // What a visitor without a session reads of the vulnerabilities of a public repository (R-UI-224): a version with open findings (one
+  // of them dismissed, which it does not see) and the advisory page its first finding links to; the same version as a plain user reads
+  // it; a version without findings; an image that is not checked yet; an image at the end of life of its OS; the repository's list and
+  // the package's versions with their grades; a collection, whose format is not checked.
+  { id: 'anonymous-version-findings', path: `${ver(O, publicGradedPackage, publicGradedPackage.version)}?tab=vulnerabilities`, kinds: ['anonymous', 'plain'], walk: anonymousFindings, expected: noSession, de: true },
+  { id: 'anonymous-version-clean', path: `${ver(O, publicGradedPackage, '2.4.0')}?tab=vulnerabilities`, kinds: ['anonymous'], walk: anonymousCard, expected: noSession },
+  { id: 'anonymous-version-image-pending', path: `${ver(O, { format: 'oci', name: `${remoteSource.prefix}/${remoteImage.name}` }, remoteImage.single)}?tab=vulnerabilities`, kinds: ['anonymous'], walk: anonymousCard, expected: noSession, de: true },
+  { id: 'anonymous-version-image-eol', path: `${ver(O, { format: 'oci', name: `${remoteSource.prefix}/${remoteImage.name}` }, remoteImage.single)}?tab=vulnerabilities`, kinds: ['anonymous'], walk: anonymousEndOfLife, expected: noSession, de: true },
+  { id: 'anonymous-version-ansible', path: `${ver(O, { format: 'ansible', name: collectionName }, ansiblePackage.versions[1])}?tab=vulnerabilities`, kinds: ['anonymous'], expected: noSession },
+  { id: 'anonymous-repository-grades', path: `${O}/repositories/npm-open-source`, kinds: ['anonymous'], expected: noSession, de: true },
+  { id: 'anonymous-package-grades', path: table(O, publicGradedPackage), kinds: ['anonymous'], expected: noSession },
   { id: 'package-oci-cache', path: pkg(O, { format: 'oci', name: remoteImage.name }), kinds: all },
   { id: 'package-version-oci-cache-partial', path: `${ver(O, { format: 'oci', name: remoteImage.name }, remoteImage.partial)}?tab=details`, kinds: all },
   { id: 'package-version-oci-cache-unknown', path: `${ver(O, { format: 'oci', name: remoteImage.name }, remoteImage.unknown)}?tab=details`, kinds: ['plain'] },

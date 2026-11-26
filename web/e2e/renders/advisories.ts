@@ -15,6 +15,8 @@ type Counts = Partial<Record<'critical' | 'high' | 'medium' | 'low' | 'none' | '
 
 /** A vendored version, the open findings its grade needs, and how many of them name a fixed version (R-VULN-040). */
 export interface VendorVersion {
+  /** The project of the repository; the main project by default. */
+  readonly project?: string;
   readonly repo: string;
   readonly name: string;
   readonly version: string;
@@ -90,6 +92,21 @@ function manyVersions(): VendorVersion[] {
 
 export const manyVersionPackages: readonly VendorVersion[] = manyVersions();
 
+/**
+ * Open-source packages in the public repository `npm-open-source` of the project platform (R-UI-224, the owner's decision of 2026-11-26):
+ * what a visitor without a session reads of the vulnerabilities of a public repository. config-merge 2.3.0 grades C with five of its nine
+ * findings fixed in 2.4.0, which grades S; the seed dismisses one of its Medium findings, which the visitor does not see, neither as a
+ * row nor in a count (publicDismissed). tar-stream-lite 1.0.4 grades D. Their records follow the others', so that no identifier moves.
+ */
+export const publicPackages: readonly VendorVersion[] = [
+  { project: 'platform', repo: 'npm-open-source', name: 'config-merge', version: '2.3.0', counts: { high: 2, medium: 3, low: 4 }, grade: 'C', fixable: 5, fixedIn: '2.4.0' },
+  { project: 'platform', repo: 'npm-open-source', name: 'config-merge', version: '2.4.0', counts: {}, grade: 'S' },
+  { project: 'platform', repo: 'npm-open-source', name: 'tar-stream-lite', version: '1.0.4', counts: { critical: 2, high: 1, unknown: 1 }, grade: 'D' },
+];
+
+/** The public package whose version page the renders of a visitor without a session open (R-UI-224). */
+export const publicGradedPackage = { format: 'npm', name: 'config-merge', version: '2.3.0' } as const;
+
 /** The versions of the many-version package that the seed fetches once, so that the column Last download has times (R-API-065). */
 export const fetchedVersions: readonly string[] = ['3.9.0', '3.7.0', '2.9.0'];
 
@@ -106,7 +123,7 @@ const NO_IMPACT = 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N';
 function records(): { id: string; body: string }[] {
   const out: { id: string; body: string }[] = [];
   let n = 0;
-  for (const p of [...vendorPackages, ...manyVersionPackages]) {
+  for (const p of [...vendorPackages, ...manyVersionPackages, ...publicPackages]) {
     let fixed = 0;
     for (const level of SEVERITY_ORDER) {
       const count = p.counts[level] ?? 0;

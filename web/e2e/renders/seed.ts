@@ -11,6 +11,8 @@ import {
   gradedPackage,
   manyVersionPackages,
   manyVersionsPackage,
+  publicGradedPackage,
+  publicPackages,
   vendorPackages,
   zipArchive,
 } from './advisories';
@@ -168,6 +170,17 @@ export const repositories: readonly RepoSeed[] = [
   { project: otherProject, key: 'nuget-org', format: 'nuget', class: 'remote' },
   { project: otherProject, key: 'nuget', format: 'nuget', class: 'virtual', members: ['nuget-internal', 'nuget-org'] },
   { project: otherProject, key: 'collections', format: 'ansible', class: 'local', description: 'Ansible collections of the platform team.', visibility: { artifacts: 'public', wiki: 'internal' } },
+  // Open-source packages everyone reads, also without a session, checked against public advisories: the vulnerabilities a visitor
+  // without a session reads (R-UI-224, advisories.ts publicPackages).
+  {
+    project: otherProject,
+    key: 'npm-open-source',
+    format: 'npm',
+    class: 'local',
+    description: 'Open-source packages of the platform team, checked against public advisories.',
+    visibility: { artifacts: 'public', wiki: 'public' },
+    vulnerabilities: { matchPublicAdvisories: 'always' },
+  },
   { project: otherProject, key: 'galaxy', format: 'ansible', class: 'remote' },
   { project: otherProject, key: 'ansible', format: 'ansible', class: 'virtual', members: ['collections', 'galaxy'] },
   { project: longProject, key: 'signed-release-artifacts', format: 'generic', class: 'local', description: 'Signed release archives of the customer portal.' },
@@ -672,9 +685,10 @@ export function npmPublishBody(edge: string, project: string, p: NpmSeed): objec
  */
 export async function seedContent(ctx: APIRequestContext, edge: string, token: string): Promise<void> {
   const auth = { Authorization: `Bearer ${token}` };
-  for (const p of [...npmPackages, ...vendorPackages, ...manyVersionPackages]) {
-    const url = `/api/npm/${mainProject}/${p.repo}/${p.name.replace('/', '%2f')}`;
-    const res = await patient(() => ctx.put(url, { data: npmPublishBody(edge, mainProject, p), headers: auth }));
+  for (const p of [...npmPackages, ...vendorPackages, ...manyVersionPackages, ...publicPackages]) {
+    const project = 'project' in p && p.project ? p.project : mainProject;
+    const url = `/api/npm/${project}/${p.repo}/${p.name.replace('/', '%2f')}`;
+    const res = await patient(() => ctx.put(url, { data: npmPublishBody(edge, project, p), headers: auth }));
     await expectStatus(res, [200, 201, 409], `npm publish ${p.name}@${p.version}`);
   }
   await fetchOnce(ctx, auth);
@@ -719,16 +733,22 @@ export async function syncAdvisories(admin: Api): Promise<void> {
   await expectStatus(run, [202, 409], 'run the advisory sync');
   const graded = (await idOf(admin, gradedPackage.name)) as string;
   const many = await idOf(admin, manyVersionsPackage.name);
+  const open = await idOf(admin, publicGradedPackage.name, `${otherProject}/npm-open-source`);
   const want = manyVersionPackages.find((v) => v.grade === 'E' && (v.fixable ?? 0) > 0)!;
-  const isGraded = async (id: string, version: string, grade: string, fixable: number): Promise<boolean> => {
+  const isGraded = async (id: string, version: string, grade: string, fixable: number | null): Promise<boolean> => {
     const res = await admin.get(`/api/v1/packages/${id}/versions/${version}/vulnerabilities`);
     if (!res.ok()) return false;
     const report = (await res.json()) as { repositories: { grade?: { grade: string; fixable?: number } }[] };
-    return report.repositories.some((r) => r.grade?.grade === grade && r.grade.fixable === fixable);
+    return report.repositories.some((r) => r.grade?.grade === grade && (fixable === null || r.grade.fixable === fixable));
   };
   for (let i = 0; i < 180; i++) {
-    if ((await isGraded(graded, gradedPackage.version, 'E', 112)) && (await isGraded(many, want.version, 'E', want.fixable ?? 0))) {
+    if (
+      (await isGraded(graded, gradedPackage.version, 'E', 112)) &&
+      (await isGraded(many, want.version, 'E', want.fixable ?? 0)) &&
+      (await isGraded(open, publicGradedPackage.version, 'C', null))
+    ) {
       spreadDetections();
+      publicDismissed();
       return;
     }
     if (i % 30 === 29) await expectStatus(await admin.post('/api/v1/system/tasks/vuln-sync-osv/run', {}), [202, 409], 'run the advisory sync again');
@@ -750,8 +770,21 @@ function spreadDetections(): void {
          WHERE package_name = '${manyVersionsPackage.name}' AND detected_at > now() - interval '1 day';`);
 }
 
-async function idOf(admin: Api, name: string): Promise<string> {
-  const list = await admin.get(`/api/v1/packages?repository=${mainProject}/npm-vendor&format=npm&q=${name}`);
+/**
+ * One Medium finding of the public package's graded version dismissed as a triager would (R-UI-224): the version page of a visitor without
+ * a session shows neither its row nor a count of it, a signed-in reader's report still lists it. Once: a second seed finds it dismissed.
+ */
+function publicDismissed(): void {
+  psql(`UPDATE vuln_finding SET status = 'dismissed', dismissal_reason = 'not_exploitable'
+         WHERE id = (SELECT f.id FROM vuln_finding f JOIN repositories r ON r.id = f.repo_id
+                      WHERE r.key = 'npm-open-source' AND f.package_name = '${publicGradedPackage.name}' AND f.version = '${publicGradedPackage.version}'
+                        AND f.severity = 'medium' AND f.status = 'needs_triage'
+                        AND NOT EXISTS (SELECT 1 FROM vuln_finding d WHERE d.repo_id = f.repo_id AND d.package_name = f.package_name AND d.status = 'dismissed')
+                      ORDER BY f.advisory_id LIMIT 1);`);
+}
+
+async function idOf(admin: Api, name: string, repository = `${mainProject}/npm-vendor`): Promise<string> {
+  const list = await admin.get(`/api/v1/packages?repository=${repository}&format=npm&q=${name}`);
   await expectStatus(list, [200], `find ${name}`);
   const item = ((await list.json()) as { items: { id: string; name: string }[] }).items.find((p) => p.name === name);
   if (!item) throw new Error(`${name} was not published`);
