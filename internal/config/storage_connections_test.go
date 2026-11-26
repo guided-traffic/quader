@@ -86,6 +86,8 @@ func TestR_STOR_050_ConnectionsInTheConfiguration(t *testing.T) {
 		{"R-STOR-030 an endpoint of another scheme", "storage:\n  connections:\n    - {bucket: a, endpoint: \"ftp://s3.example.com\"}\n", "storage.connections[0] (default): endpoint must be an absolute https URL"},
 		{"no element where a replica serves", "storage:\n  connections: []\n", "storage.connections needs one element at least"},
 		{"an element without a bucket where a replica serves", "storage:\n  connections:\n    - {id: one}\n", "storage.connections[0] (one): bucket or bucket_file is required"},
+		{"R-STOR-106 a capacity without its unit", "storage:\n  connections:\n    - {bucket: a, capacity: 5}\n", "storage.connections[0] (default): capacity \"5\" is below 1GiB"},
+		{"R-STOR-106 a negative capacity", "storage:\n  connections:\n    - {bucket: a, capacity: -1}\n", "storage.connections[0] (default): capacity \"-1\" is not a size"},
 	}
 	for _, c := range cases {
 		name := "R-STOR-050 refused: " + c.name
@@ -110,6 +112,16 @@ func TestR_STOR_050_ConnectionsInTheConfiguration(t *testing.T) {
 		}
 		if k := l.Sources["storage.connections"].Kind; k != "derived" {
 			t.Errorf("source of a list whose endpoint got its scheme = %q, want derived", k)
+		}
+	})
+	t.Run("R-STOR-106 a capacity with its unit loads, and an empty one states none", func(t *testing.T) {
+		l, err := loadConnections(t, "storage:\n  connections:\n    - {id: one, bucket: a, capacity: 5TiB}\n    - {id: two, bucket: b, capacity: \"\"}\n")
+		if err != nil {
+			t.Fatal(err)
+		}
+		cs := l.Config.Storage.Connections
+		if cs[0].CapacityBytes() != int64(5*TiB) || cs[1].CapacityBytes() != 0 {
+			t.Fatalf("capacities %d and %d", cs[0].CapacityBytes(), cs[1].CapacityBytes())
 		}
 	})
 	t.Run("R-STOR-050 QUADER_STORAGE_CONNECTIONS holds the whole list as JSON and overrides the file's list", func(t *testing.T) {

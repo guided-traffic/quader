@@ -82,6 +82,7 @@ func storageConnectionView(v summary.View) gen.StorageConnection {
 	out := gen.StorageConnection{
 		Id: v.ID, State: v.State, Bucket: v.Bucket, Prefix: v.Prefix, Encrypted: v.Encrypted, KeyedNames: v.KeyedNames,
 		FilledAt: v.FilledAt, DrainedAt: v.DrainedAt, RetiredAt: v.RetiredAt, LastFullPassAt: v.LastFullPassAt,
+		FirstSeenAt: v.FirstSeenAt.UTC(), PassStartedAt: v.PassStartedAt, EncryptedSince: v.EncryptedSince(),
 		StorageKeys: make([]gen.StorageConnectionKey, 0, len(v.Keys)),
 	}
 	out.Replicas.Configured, out.Replicas.Live, out.Replicas.CircuitOpen = v.Configured, v.LiveReplicas, v.CircuitOpen
@@ -89,11 +90,15 @@ func storageConnectionView(v summary.View) gen.StorageConnection {
 	if l := v.Local; l != nil {
 		pos, endpoint, source, drain, period := l.Position, l.Endpoint, l.CredentialSource, l.Drain, int64(l.ScrubPeriod/time.Second)
 		out.Position, out.Endpoint, out.CredentialSource, out.Drain, out.ScrubPeriodSeconds = &pos, &endpoint, &source, &drain, &period
+		if l.CapacityBytes > 0 {
+			capacity := l.CapacityBytes
+			out.CapacityBytes = &capacity
+		}
 		out.Settings = &gen.StorageConnectionSettings{
 			Region: l.Region, ForcePathStyle: l.Settings.ForcePathStyle, PayloadChecksum: l.Settings.PayloadChecksum,
 			RequestChecksumCalculation: l.Settings.RequestChecksumCalculation, ResponseChecksumValidation: l.Settings.ResponseChecksumValidation,
 			BatchDelete: l.Settings.BatchDelete, StorageClass: l.Settings.StorageClass, SseMode: l.Settings.SSEMode,
-			ScrubBytesPerSecond: l.Settings.ScrubBytesPerSecond,
+			SseKmsKeyId: l.Settings.SSEKMSKeyID, SseBucketKey: l.Settings.SSEBucketKey, ScrubBytesPerSecond: l.Settings.ScrubBytesPerSecond,
 		}
 	}
 	if c := v.Capabilities; c != nil {
@@ -113,11 +118,12 @@ func storageConnectionView(v summary.View) gen.StorageConnection {
 		out.Summary = &gen.StorageConnectionFigures{
 			Id: f.ID, ComputedAt: v.ComputedAt.UTC(), PresentCopies: f.PresentCopies, PresentBytes: f.PresentBytes, MissingCopies: f.MissingCopies,
 			CorruptCopies: f.CorruptCopies, VerifiedWithinPeriod: f.VerifiedWithinPeriod, ScrubOverdue: f.ScrubOverdue,
-			BacklogBlobs: f.BacklogBlobs, BacklogBytes: f.BacklogBytes, FillRatio: f.FillRatio, SoleCopies: f.SoleCopies,
+			BacklogBlobs: f.BacklogBlobs, BacklogBytes: f.BacklogBytes, FillRatio: f.FillRatio, SoleCopies: f.SoleCopies, SoleBytes: f.SoleBytes,
+			KeyedCopies: f.KeyedCopies,
 		}
 	}
 	for _, k := range v.Keys {
-		gk := gen.StorageConnectionKey{Id: k.ID, Generation: k.Generation, State: k.State, CreatedAt: k.CreatedAt.UTC()}
+		gk := gen.StorageConnectionKey{Id: k.ID, Generation: k.Generation, State: k.State, CreatedAt: k.CreatedAt.UTC(), RetiredAt: utcOrNil(k.RetiredAt)}
 		if k.DestroyedAt != nil {
 			gk.DestroyedAt = optionalTime(k.DestroyedAt.UTC())
 		}
@@ -142,11 +148,13 @@ func storageSummaryView(s summary.Summary) gen.StorageSummary {
 	out.Trash.Items, out.Trash.Bytes = s.Trash.Items, s.Trash.Bytes
 	out.PendingCollection.Blobs, out.PendingCollection.Bytes = s.PendingCollection.Blobs, s.PendingCollection.Bytes
 	out.Damaged.Missing, out.Damaged.Corrupt = s.Damaged.Missing, s.Damaged.Corrupt
+	out.Copies.Target, out.Copies.PerBlob = s.Copies.Target, storageCopyCounts(s.Copies.PerBlob)
+	out.Copies.BelowTarget.Blobs, out.Copies.BelowTarget.Bytes = s.Copies.BelowTarget.Blobs, s.Copies.BelowTarget.Bytes
 	for _, c := range s.Connections {
 		out.Connections = append(out.Connections, gen.StorageSummaryConnection{
 			Id: c.ID, PresentCopies: c.PresentCopies, PresentBytes: c.PresentBytes, MissingCopies: c.MissingCopies, CorruptCopies: c.CorruptCopies,
 			VerifiedWithinPeriod: c.VerifiedWithinPeriod, ScrubOverdue: c.ScrubOverdue, BacklogBlobs: c.BacklogBlobs, BacklogBytes: c.BacklogBytes,
-			FillRatio: c.FillRatio, SoleCopies: c.SoleCopies,
+			FillRatio: c.FillRatio, SoleCopies: c.SoleCopies, SoleBytes: c.SoleBytes, KeyedCopies: c.KeyedCopies,
 		})
 	}
 	for _, rp := range s.Repositories {

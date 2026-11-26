@@ -32,6 +32,10 @@ type Row struct {
 	FilledAt, DrainedAt *time.Time
 	RetiredAt           *time.Time
 	LastFullPassAt      *time.Time
+	// FirstSeenAt is when a replica first saw the connection; PassStartedAt when the reconciliation's current full pass started, nil
+	// between passes.
+	FirstSeenAt   time.Time
+	PassStartedAt *time.Time
 	// LiveReplicas counts the live replicas that report an object-store view; Configured those that have the connection in their
 	// configuration, CircuitOpen those of them with its circuit open, and Undrained whether one of them configures it without drain.
 	LiveReplicas, Configured, CircuitOpen int
@@ -44,13 +48,30 @@ type Row struct {
 }
 
 // StorageKey is a storage key of a connection by identifier (R-STOR-088, Q-API-405): never the key or its sealed value. State is
-// active, retired or destroyed; DestroyedAt is the time of a destroyed key's destruction (R-STOR-097), nil for any other.
+// active, retired or destroyed; RetiredAt is when a newer generation took its place (nil while active), DestroyedAt the time of a
+// destroyed key's destruction (R-STOR-097), nil for any other.
 type StorageKey struct {
 	ID          string
 	Generation  int
 	State       string
 	CreatedAt   time.Time
+	RetiredAt   *time.Time
 	DestroyedAt *time.Time
+}
+
+// EncryptedSince is when an encrypted connection's first storage key was created (R-STOR-106): since then every copy written to it is in
+// Quader's format. Nil for a plain connection and for an encrypted one without a key yet.
+func (r Row) EncryptedSince() *time.Time {
+	if !r.Encrypted || len(r.Keys) == 0 {
+		return nil
+	}
+	first := r.Keys[0].CreatedAt
+	for _, k := range r.Keys[1:] {
+		if k.CreatedAt.Before(first) {
+			first = k.CreatedAt
+		}
+	}
+	return &first
 }
 
 // State derives the connection's state (R-STOR-051) from what PostgreSQL knows, the same for every replica that answers: retired once
@@ -95,7 +116,7 @@ func Rows(ctx context.Context, db *postgres.DB, staleAfter time.Duration) ([]Row
 	for _, k := range keys {
 		byConn[k.ConnectionID] = append(byConn[k.ConnectionID], StorageKey{
 			ID: k.KeyID, Generation: int(k.Generation), State: k.State, CreatedAt: time.UnixMicro(k.CreatedUs).UTC(),
-			DestroyedAt: micros(k.DestroyedUs),
+			RetiredAt: micros(k.RetiredUs), DestroyedAt: micros(k.DestroyedUs),
 		})
 	}
 	out := make([]Row, 0, len(list))
@@ -103,6 +124,7 @@ func Rows(ctx context.Context, db *postgres.DB, staleAfter time.Duration) ([]Row
 		r := Row{
 			ID: l.ID, Bucket: l.Bucket, Prefix: l.Prefix, Encrypted: l.Encrypted, KeyedNames: l.KeyedNames,
 			FilledAt: micros(l.FilledUs), DrainedAt: micros(l.DrainedUs), RetiredAt: micros(l.RetiredUs), LastFullPassAt: micros(l.LastFullPassUs),
+			FirstSeenAt: time.UnixMicro(l.FirstSeenUs).UTC(), PassStartedAt: micros(l.PassStartedUs),
 			LiveReplicas: int(l.LiveReplicas), Configured: int(l.Configured), CircuitOpen: int(l.CircuitOpen), Undrained: l.Undrained,
 			Queued: l.Queued, OldestQueuedAt: micros(l.OldestQueuedUs), HoldsCopies: l.HoldsCopies, Keys: byConn[l.ID],
 		}
@@ -133,7 +155,10 @@ type Local struct {
 	CredentialSource string
 	Drain            bool
 	ScrubPeriod      time.Duration
-	Settings         Settings
+	// CapacityBytes is the element's capacity, the operator's statement of what the store may hold (R-STOR-106, Q-STOR-503); 0 when
+	// it states none. Shown, never enforced.
+	CapacityBytes int64
+	Settings      Settings
 }
 
 // Settings are the non-secret settings of an element that the admin area shows on demand (api-and-ui.md R-UI-196).
@@ -145,7 +170,11 @@ type Settings struct {
 	BatchDelete                bool
 	StorageClass               string
 	SSEMode                    string
-	ScrubBytesPerSecond        int64
+	// SSEKMSKeyID is the KMS key the store is asked to encrypt with under sse_mode kms (an identifier, no key material); SSEBucketKey
+	// whether a bucket key is asked for (R-STOR-032).
+	SSEKMSKeyID         string
+	SSEBucketKey        bool
+	ScrubBytesPerSecond int64
 }
 
 // View is one connection of the API's list: the row with its state, what the answering replica configures (Local, nil for a connection
@@ -198,18 +227,25 @@ func Views(rows []Row, local map[string]Local, latest *Summary) []View {
 // List is the API's list (R-STOR-061): the rows, the answering replica's connections and the latest summary, read at the time of the
 // request.
 func List(ctx context.Context, db *postgres.DB, staleAfter time.Duration, local map[string]Local) ([]View, error) {
+	views, _, err := ListWithLatest(ctx, db, staleAfter, local)
+	return views, err
+}
+
+// ListWithLatest is List and the latest summary it joined, without its repositories (LatestFigures), nil before the first: the storage
+// overview reads the snapshot once for both (R-STOR-107).
+func ListWithLatest(ctx context.Context, db *postgres.DB, staleAfter time.Duration, local map[string]Local) ([]View, *Summary, error) {
 	rows, err := Rows(ctx, db, staleAfter)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	s, err := Latest(ctx, db)
+	s, err := LatestFigures(ctx, db)
 	switch {
 	case errors.Is(err, ErrNone):
-		return Views(rows, local, nil), nil
+		return Views(rows, local, nil), nil, nil
 	case err != nil:
-		return nil, err
+		return nil, nil, err
 	}
-	return Views(rows, local, &s), nil
+	return Views(rows, local, &s), &s, nil
 }
 
 // LocalOf is what the replica's configuration says of each of its connections, by id.
@@ -222,11 +258,12 @@ func LocalOf(conns *blob.Connections) map[string]Local {
 		el := c.Config().WithDefaults()
 		out[c.ID()] = Local{
 			Position: c.Position(), Endpoint: el.Endpoint, Region: el.Region, CredentialSource: el.CredentialsSource, Drain: el.Drain,
-			ScrubPeriod: el.ScrubPeriod,
+			ScrubPeriod: el.ScrubPeriod, CapacityBytes: el.CapacityBytes(),
 			Settings: Settings{
 				ForcePathStyle: el.ForcePathStyle, PayloadChecksum: el.PayloadChecksum, RequestChecksumCalculation: el.RequestChecksumCalculation,
 				ResponseChecksumValidation: el.ResponseChecksumValidation, BatchDelete: el.BatchDeletes(), StorageClass: el.StorageClass,
-				SSEMode: el.SSEMode, ScrubBytesPerSecond: int64(el.ScrubBytesPerSecond),
+				SSEMode: el.SSEMode, SSEKMSKeyID: el.SSEKMSKeyID, SSEBucketKey: el.SSEBucketKey != nil && *el.SSEBucketKey,
+				ScrubBytesPerSecond: int64(el.ScrubBytesPerSecond),
 			},
 		}
 	}

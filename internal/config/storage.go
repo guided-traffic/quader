@@ -202,6 +202,7 @@ type StorageConnection struct {
 	Drain                      bool          `yaml:"drain" doc:"Takes the connection out: no upload goes to it, its blobs are copied to the others and then deleted here (R-STOR-051)."`
 	Encrypted                  bool          `yaml:"encrypted" doc:"Quader encrypts every blob of the connection in its own format and keeps the keys, so the provider sees ciphertext only (R-STOR-075); fixed once the connection holds data."`
 	KeyedNames                 *bool         `yaml:"keyed_names" doc:"Default true on an encrypted connection: object names are a keyed MAC of the digest (R-STOR-086); refused on a connection that is not encrypted; fixed once the connection holds data."`
+	Capacity                   string        `yaml:"capacity" doc:"What the store may hold, as the operator states it (example: 5TiB), at least 1GiB; empty states none. Shown against the stored bytes, never enforced (R-STOR-106)."`
 }
 
 // MaxConnections is the most connections a configuration holds (Q-STOR-247).

@@ -84,7 +84,29 @@ func init() {
 			`"status":{"enum":["missing","corrupt"]}},"required":["sha256","status"],"additionalProperties":false}`,
 	})
 	registerDownloadLinks()
+	registerBlobRechecked()
 }
+
+// >>> blob rechecked
+
+// EventStorageBlobRechecked: an administrator had every copy of a blob read whole now (POST
+// /api/v1/storage/damaged-blobs/{sha256}/recheck, storage.md R-STOR-027): the data name the digest, the content state the copies give
+// after the reads and each copy's connection and state. Transactional, written before the answer (Q-API-477); not journaled, since a
+// recheck writes no object and grants nothing.
+const EventStorageBlobRechecked = "storage.blob.rechecked"
+
+func registerBlobRechecked() {
+	Register(EventType{
+		Name: EventStorageBlobRechecked, Category: CategorySystem, Mode: Transactional,
+		Schema: `{"type":"object","properties":{"sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"},` +
+			`"contentStatus":{"enum":["ok","missing","corrupt"]},` +
+			`"copies":{"type":"array","maxItems":64,"items":{"type":"object","properties":{"connection":{"type":"string","maxLength":32},` +
+			`"state":{"enum":["present","missing","corrupt","deleting"]}},"required":["connection","state"],"additionalProperties":false}}},` +
+			`"required":["sha256","contentStatus","copies"],"additionalProperties":false}`,
+	})
+}
+
+// <<< blob rechecked
 
 // >>> storage keys destroyed
 

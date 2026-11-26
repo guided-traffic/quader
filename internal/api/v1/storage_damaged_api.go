@@ -3,16 +3,19 @@ package v1
 import (
 	"context"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"regexp"
 
 	"github.com/guided-traffic/quader/internal/api/v1/gen"
+	"github.com/guided-traffic/quader/internal/audit"
 	"github.com/guided-traffic/quader/internal/blob"
 	"github.com/guided-traffic/quader/internal/blob/scrub"
 	"github.com/guided-traffic/quader/internal/blob/summary"
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/httpserver"
+	"github.com/guided-traffic/quader/internal/meta"
 )
 
 // The list of damaged blobs and the recheck of one blob (storage.md R-STOR-027, Q-API-386, Q-STOR-267). The list reads
@@ -30,6 +33,9 @@ type StorageServices struct {
 	Connections func(ctx context.Context) ([]summary.View, error)
 	// Summary reads the latest storage summary; summary.ErrNone before the first (R-STOR-028).
 	Summary func(ctx context.Context) (summary.Summary, error)
+	// Overview reads what the storage overview is derived from (R-STOR-107): the connections' list, the latest summary (nil before the
+	// first), the folded totals and the answering replica's min_copies and download check; the handler adds the scrub task's runs.
+	Overview func(ctx context.Context) (summary.OverviewInput, error)
 }
 
 // damagedConnectionPattern is the pattern of a connection's id (storage.md R-STOR-050).
@@ -85,9 +91,10 @@ func (s *Server) ListDamagedBlobs(w http.ResponseWriter, r *http.Request, p gen.
 }
 
 // RecheckDamagedBlob implements POST /api/v1/storage/damaged-blobs/{sha256}/recheck. The caller holds settings:write
-// (declared).
+// (declared). The recheck is audited as storage.blob.rechecked in a transaction of its own before the answer (Q-API-477): an
+// answer the audit log does not hold is not given.
 func (s *Server) RecheckDamagedBlob(w http.ResponseWriter, r *http.Request, digest string) {
-	if s.o.Storage.Recheck == nil {
+	if s.o.Storage.Recheck == nil || s.o.API.Store == nil {
 		httpserver.Problem(w, r, unavailable("The recheck of a blob"))
 		return
 	}
@@ -115,7 +122,37 @@ func (s *Server) RecheckDamagedBlob(w http.ResponseWriter, r *http.Request, dige
 		})
 	}
 	out.ContentStatus = gen.DamagedBlobRecheckContentStatus(blob.DeriveContentStatus(plain))
+	if err := s.auditRecheck(r, out); err != nil {
+		httpserver.Problem(w, r, errs.Wrap(err, "api.recheckDamagedBlob"))
+		return
+	}
 	writeJSON(w, r, http.StatusOK, out)
+}
+
+// recheckCopy is one copy of the event storage.blob.rechecked: its connection and its state after the reads.
+type recheckCopy struct {
+	Connection string `json:"connection"`
+	State      string `json:"state"`
+}
+
+// auditRecheck records storage.blob.rechecked (R-STOR-027, Q-API-477, operations-and-observability.md R-OPS-014): the digest, the
+// content state the copies give and each copy's state after the reads, the caller as actor.
+func (s *Server) auditRecheck(r *http.Request, out gen.DamagedBlobRecheck) error {
+	copies := make([]recheckCopy, 0, len(out.Copies))
+	for _, c := range out.Copies {
+		copies = append(copies, recheckCopy{Connection: c.Connection, State: string(c.State)})
+	}
+	details, err := json.Marshal(map[string]any{"sha256": out.Sha256, "contentStatus": string(out.ContentStatus), "copies": copies})
+	if err != nil {
+		return err
+	}
+	ctx := r.Context()
+	return s.o.API.Store.InTx(ctx, func(tx meta.Tx) error {
+		return s.recorder().RecordTx(ctx, tx, audit.Event{
+			Type: audit.EventStorageBlobRechecked, Actor: ActorFrom(httpserver.PrincipalFrom(ctx)), Outcome: audit.Success, Source: auditSource(r),
+			Subject: audit.Subject{Kind: "blob", ID: out.Sha256}, Details: details,
+		})
+	})
 }
 
 func damagedBlobView(b scrub.DamagedBlob) gen.DamagedBlob {

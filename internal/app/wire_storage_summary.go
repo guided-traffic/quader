@@ -23,7 +23,7 @@ func (a *App) registerStorageSummary(r *jobs.Registry) {
 			if db == nil {
 				return jobs.Permanent(errors.New("storage-summary: this replica has no database"))
 			}
-			return summary.RunJob(ctx, db, summary.Options{Periods: a.scrubPeriods()}, run)
+			return summary.RunJob(ctx, db, summary.Options{Periods: a.scrubPeriods(), Targets: a.copyTargets()}, run)
 		},
 	})
 	spec := jobs.TaskSpec{Schedule: summary.DefaultSchedule}
@@ -42,6 +42,39 @@ func (a *App) scrubPeriods() map[string]time.Duration {
 		out[el.ID] = el.ScrubPeriod
 	}
 	return out
+}
+
+// copyTargets is the ids of this replica's connections without drain: the connections every blob should lie on (storage.md R-STOR-106,
+// Q-STOR-500). During a rolling update another worker may count another target (H-2421).
+func (a *App) copyTargets() []string {
+	var out []string
+	for _, el := range a.cfg.Storage.Connections {
+		if el = el.WithDefaults(); !el.Drain {
+			out = append(out, el.ID)
+		}
+	}
+	return out
+}
+
+// storageOverview is the service of GET /api/v1/storage/overview (R-STOR-107): the connections' list, the latest snapshot, the folded
+// totals and this replica's min_copies and download check, all read now; the handler derives the states.
+func (a *App) storageOverview(ctx context.Context) (summary.OverviewInput, error) {
+	db := a.database()
+	if db == nil {
+		return summary.OverviewInput{}, errors.New("the database is not open on this replica")
+	}
+	conns, _ := a.objectStores.get()
+	views, latest, err := summary.ListWithLatest(ctx, db, a.cfg.System.HeartbeatStaleAfter, summary.LocalOf(conns))
+	if err != nil {
+		return summary.OverviewInput{}, err
+	}
+	in := summary.OverviewInput{
+		Views: views, Latest: latest, MinCopies: a.cfg.Storage.Replication.MinCopies, DownloadVerify: a.cfg.Storage.Download.Verify,
+	}
+	if in.Stored, err = summary.Stored(ctx, db); err != nil {
+		return summary.OverviewInput{}, err
+	}
+	return in, nil
 }
 
 // registerSummaryGauges adds the gauges of the latest storage summary to the gauges read from PostgreSQL on every replica with the

@@ -192,3 +192,25 @@ configuration error, and with the connection not draining it stops (R-STOR-060).
 runtime credential of a connection; it adds nothing to what such a holder can do to the content itself, which is all of it. Repair: delete
 the forged marker; the next start writes it again.
 
+
+### H-2420 · The copies per blob on the storage page are up to an hour old
+
+Component: the storage summary's copies per blob, sole copies, scrub coverage and damage (storage.md R-STOR-106, R-STOR-107). Subject: an
+administrator's judgement whether the installation survives the loss of one connection. The figures come from the hourly snapshot, so a
+connection that lost its copies, or a reconciliation that caught up, shows up to an hour late; the overview names the snapshot's time
+(`figuresAt`), and its connection states and stored bytes are read at the request. Live on every installation; it misleads only in the
+hour after a change. `POST /api/v1/system/tasks/storage-summary/run` counts at once.
+
+### H-2421 · The target of the copies is one worker's configuration
+
+Component: the target of R-STOR-106 (Q-STOR-500). Subject: the blobs counted below the target. The worker that computes the summary counts
+its own connections without `drain`; during a rolling update that adds, drains or removes a connection, another worker may hold another
+list, so two snapshots an hour apart can count against two targets and the figures of one hour can be counted against a list that no
+longer holds. Live only during such a rollout; the next summary after it counts against the new list.
+
+### H-2422 · A connection's capacity is the operator's statement
+
+Component: `capacity` of a connection's element (storage.md R-STOR-050, R-STOR-106, Q-STOR-503). Subject: what the storage page says of a
+store's room. A store reports no capacity through S3, so the page shows the stored bytes against what the operator wrote; nothing checks the
+statement against the provider's quota or the bucket's real limit, and nothing refuses an upload when the use passes it. A wrong statement
+makes the page say "nearly full" too early or never. Live wherever `capacity` is set; dormant where it is empty, which states none.

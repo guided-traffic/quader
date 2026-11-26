@@ -328,6 +328,20 @@ func TestR_HA_072_AnEncryptedConnection(t *testing.T) {
 	})
 }
 
+// TestR_HA_072_TheCapacityOfAConnection: capacity passes into the element as given, and the schema refuses a value that is not a size
+// with its unit (storage.md R-STOR-106, Q-HA-505). The bound of 1GiB is the binary's.
+func TestR_HA_072_TheCapacityOfAConnection(t *testing.T) {
+	t.Run("R-STOR-106 a capacity with its unit renders into the element", func(t *testing.T) {
+		_, docs := render(t, required(), "config.storage.connections[0].capacity=5TiB")
+		if c := connectionOf(t, docs, 0); c["capacity"] != "5TiB" {
+			t.Errorf("element = %v", c)
+		}
+	})
+	for _, set := range []string{"config.storage.connections[0].capacity=5", "config.storage.connections[0].capacity=-1", "config.storage.connections[0].capacity=lots"} {
+		t.Run("R-STOR-106 the schema refuses "+set, func(t *testing.T) { renderFails(t, required(), []string{set}, "capacity") })
+	}
+}
+
 // TestR_HA_072_MovedValues: the values of the one store of before fail the render and name the keys that took their place, so an
 // upgrade with old values stops at helm and starts no pod.
 func TestR_HA_072_MovedValues(t *testing.T) {

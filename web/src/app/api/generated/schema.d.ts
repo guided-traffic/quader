@@ -670,6 +670,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/storage/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The storage overview
+         * @description The state of the stored content now, for the top of the storage page and the admin dashboard (storage.md R-STOR-107,
+         *     Q-API-475): the connections and whether they are reachable, the stored blobs, the copies per blob against the target and what
+         *     the loss of one connection would cost, which connections Quader encrypts, and the integrity checks with the scrub's coverage.
+         *     Every state is derived by the server (Q-STOR-505, Q-STOR-506), so the page and the dashboard word it alike. The connections and
+         *     `stored` are read now (the registry and the folded totals); the copies, the scrub's coverage and the damage are the latest
+         *     storage summary's, whose time is `figuresAt` (`null` before the first; H-2420). Reads PostgreSQL only and counts over no blob
+         *     or copy. No secret, no credential, no key and no address of a store appears.
+         */
+        get: operations["getStorageOverview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/storage/summary": {
         parameters: {
             query?: never;
@@ -681,7 +707,8 @@ export interface paths {
          * The storage summary
          * @description The latest result of the task `storage-summary` (operations-and-observability.md R-OPS-023, storage.md R-STOR-028): the live
          *     blobs, the logical content of the repositories, the deduplication ratio, the trash, what awaits collection, the damaged blobs,
-         *     the figures of every connection that is not retired and of every repository. The task runs hourly; `POST
+         *     the copies per blob against the target (R-STOR-106), the figures of every connection that is not retired and of every
+         *     repository. The task runs hourly; `POST
          *     /api/v1/system/tasks/storage-summary/run` starts a run. A read never computes: before the first run the answer is `404`. Sizes
          *     are bytes and ratios numbers from 0 to 1, never formatted strings. The quota of R-STOR-029 is not built and has no member
          *     (storage.md Q-STOR-370). The permission called `storage.read` in operations-and-observability.md is the capability
@@ -9910,10 +9937,38 @@ export interface components {
                 /** Format: int64 */
                 corrupt: number;
             };
+            copies: components["schemas"]["StorageCopies"];
             /** @description The figures of every connection that is not retired, by id. */
             connections: components["schemas"]["StorageSummaryConnection"][];
             /** @description Every local and remote repository and every virtual repository that holds generated items (Q-STOR-215), by project and key. */
             repositories: components["schemas"]["StorageSummaryRepository"][];
+        };
+        /**
+         * @description The copies of the installation per blob (storage.md R-STOR-106), from the latest storage summary. Bytes are the blobs' plain
+         *     bytes.
+         */
+        StorageCopies: {
+            /** @description The connections every blob should lie on, the computing worker's connections without `drain` (Q-STOR-500). */
+            target: number;
+            /**
+             * @description The live blobs by their number of present copies on the connections that are not retired (Q-STOR-502), the most copies
+             *     first; a number no blob has is left out, and a live blob without a present copy counts under `copies` 0.
+             */
+            perBlob: components["schemas"]["StorageCopyCount"][];
+            /** @description The live blobs that lack a present copy on at least one target connection, the union of their backlogs. */
+            belowTarget: {
+                /** Format: int64 */
+                blobs: number;
+                /** Format: int64 */
+                bytes: number;
+            };
+        };
+        StorageCopyCount: {
+            copies: number;
+            /** Format: int64 */
+            blobs: number;
+            /** Format: int64 */
+            bytes: number;
         };
         /** @description The figures of one connection, counted over the copies of live blobs (storage.md R-STOR-028, R-STOR-061). */
         StorageSummaryConnection: {
@@ -9956,6 +10011,16 @@ export interface components {
              * @description Live blobs whose only present copy lies on this connection (Q-STOR-371).
              */
             soleCopies: number;
+            /**
+             * Format: int64
+             * @description The plain bytes of the blobs counted by `soleCopies`, what would be unavailable without this connection (R-STOR-106).
+             */
+            soleBytes: number;
+            /**
+             * Format: int64
+             * @description Present copies that name a storage key, written in Quader's format (R-STOR-106); 0 on a plain connection.
+             */
+            keyedCopies: number;
         };
         StorageSummaryRepository: {
             project: string;
@@ -10009,9 +10074,19 @@ export interface components {
             /** @description `default`, `webIdentity` or `static` (R-STOR-031). */
             credentialSource: string | null;
             encrypted: boolean;
+            /**
+             * Format: date-time
+             * @description When an encrypted connection's first storage key was created, from when on every copy written to it is in Quader's format (R-STOR-106); `null` for a plain connection.
+             */
+            encryptedSince: string | null;
             /** @description Whether an encrypted connection names its objects by a keyed name (R-STOR-086). */
             keyedNames: boolean;
             drain: boolean | null;
+            /**
+             * Format: int64
+             * @description The `capacity` of the answering replica's element, what the operator states the store may hold (R-STOR-106, Q-STOR-503); shown, never enforced; `null` when it states none or does not configure the connection (Q-API-476).
+             */
+            capacityBytes: number | null;
             /** @description The live replicas of the registry. */
             replicas: {
                 /** @description Live replicas that have the connection in their configuration. */
@@ -10034,6 +10109,11 @@ export interface components {
             scrubPeriodSeconds: number | null;
             /**
              * Format: date-time
+             * @description When a replica first saw the connection.
+             */
+            firstSeenAt: string;
+            /**
+             * Format: date-time
              * @description The end of the first full pass without a gap (filling to active).
              */
             filledAt: string | null;
@@ -10041,6 +10121,11 @@ export interface components {
             drainedAt: string | null;
             /** Format: date-time */
             retiredAt: string | null;
+            /**
+             * Format: date-time
+             * @description When the reconciliation's current full pass started (R-STOR-056); `null` between passes.
+             */
+            passStartedAt: string | null;
             /** Format: date-time */
             lastFullPassAt: string | null;
             /** @description What the start check found (R-STOR-035); `null` before a check. */
@@ -10079,7 +10164,12 @@ export interface components {
             batchDelete: boolean;
             /** @description Empty for the bucket's default. */
             storageClass: string;
+            /** @description `none`, `s3` or `kms`: the server-side encryption the store is asked for (R-STOR-032). */
             sseMode: string;
+            /** @description The KMS key the store is asked to use under `kms`, an identifier; empty otherwise. */
+            sseKmsKeyId: string;
+            /** @description Whether a bucket key is asked for under `kms`. */
+            sseBucketKey: boolean;
             /** Format: int64 */
             scrubBytesPerSecond: number;
         };
@@ -10092,6 +10182,11 @@ export interface components {
             createdAt: string;
             /**
              * Format: date-time
+             * @description When a newer generation took the key's place; `null` while it is active.
+             */
+            retiredAt: string | null;
+            /**
+             * Format: date-time
              * @description The time of a destroyed key's destruction; `null` for any other.
              */
             destroyedAt: string | null;
@@ -10100,6 +10195,137 @@ export interface components {
              * @description The copies that name the key, from the latest storage summary; `null` before the first.
              */
             copies: number | null;
+        };
+        /** @description The state of the stored content now (storage.md R-STOR-107). Sizes are bytes, ratios numbers from 0 to 1. */
+        StorageOverview: {
+            /**
+             * Format: date-time
+             * @description When the answer was made.
+             */
+            at: string;
+            /**
+             * Format: date-time
+             * @description The time of the latest storage summary, whose figures the copies, the scrub and the damage are; `null` before the first.
+             */
+            figuresAt: string | null;
+            /** @description The connections that hold or take content (not retired, not drained), now. */
+            connections: {
+                /**
+                 * @description `unreachable` when no connection is reachable on any live replica; `degraded` when one is unreachable on some replica, one is detached, or no live replica configures any; `healthy` otherwise.
+                 * @enum {string}
+                 */
+                state: "healthy" | "degraded" | "unreachable";
+                /** @description Connections a live replica configures. */
+                configured: number;
+                /** @description Those of them whose circuit is closed on every live replica that configures them. */
+                reachable: number;
+                unreachable: components["schemas"]["StorageOverviewUnreachable"][];
+                /** @description Connections that hold copies and that no live replica configures, by id. */
+                detached: string[];
+            };
+            /** @description The live blobs and their bytes now, the folded totals (Q-STOR-504). */
+            stored: {
+                /** Format: int64 */
+                blobs: number;
+                /** Format: int64 */
+                bytes: number;
+            };
+            /** @description The copies per blob against the target (R-STOR-106). */
+            availability: {
+                /**
+                 * @description `one_store` with one target connection; `at_risk` while a blob lies on one connection only and a target connection is unreachable on a replica or its reconciliation is more than an hour behind; `catching_up` while a blob is below the target; `redundant` otherwise.
+                 * @enum {string}
+                 */
+                state: "redundant" | "catching_up" | "at_risk" | "one_store";
+                /** @description The latest summary's target; before the first, the connections a live replica configures without `drain`. */
+                target: number;
+                /** @description `storage.replication.min_copies` of the answering replica: the copies written before an upload is answered. */
+                minCopies: number;
+                perBlob: components["schemas"]["StorageCopyCount"][];
+                belowTarget: {
+                    /** Format: int64 */
+                    blobs: number;
+                    /** Format: int64 */
+                    bytes: number;
+                };
+                /** @description Per connection that holds sole copies, the most bytes first, the blobs that would be unavailable without it. */
+                loss: components["schemas"]["StorageOverviewLoss"][];
+            };
+            /** @description Which connections that hold content Quader encrypts (R-STOR-075). */
+            encryption: {
+                /**
+                 * @description `encrypted` when Quader encrypts every such connection, `partly` when some, `provider_only` when none but each asks its store for server-side encryption, `off` otherwise.
+                 * @enum {string}
+                 */
+                state: "encrypted" | "partly" | "provider_only" | "off";
+                encrypted: string[];
+                plain: string[];
+                /** @description Connections whose element in the answering replica's configuration asks the store for server-side encryption (`sse_mode` other than `none`); what the store applied is not known to this answer. */
+                providerConfigured: string[];
+                /**
+                 * Format: double
+                 * @description The encrypted connections' stored bytes over all stored bytes, from the latest summary.
+                 */
+                encryptedShare: number;
+            };
+            /** @description The checks that hold and the scrub's coverage (R-STOR-027). */
+            integrity: {
+                /**
+                 * @description `damaged` while a live blob has no whole copy, `repairing` while a copy is missing or corrupt, `behind` while copies are overdue for the scrub, `checking` while its coverage is below 1 or before the first summary, `verified` otherwise.
+                 * @enum {string}
+                 */
+                state: "verified" | "checking" | "behind" | "repairing" | "damaged";
+                /** @description `storage.download.verify` of the answering replica: a whole download is checked against the digest. */
+                downloadVerify: boolean;
+                /** @description The encrypted connections, whose every read Quader's format authenticates (R-STOR-082). */
+                authenticatedReads: string[];
+                scrub: {
+                    /**
+                     * Format: double
+                     * @description Present copies read whole within their connection's `scrub_period` over all present copies; 1 without a copy.
+                     */
+                    coverage: number;
+                    /** Format: int64 */
+                    overdue: number;
+                    /**
+                     * Format: date-time
+                     * @description When the scrub task's last run finished.
+                     */
+                    lastRunAt: string | null;
+                    /** Format: date-time */
+                    nextRunAt: string | null;
+                    running: boolean;
+                };
+                /** @description From the latest summary. */
+                damagedNow: {
+                    /**
+                     * Format: int64
+                     * @description Missing and corrupt copies.
+                     */
+                    copies: number;
+                    /**
+                     * Format: int64
+                     * @description Live blobs without a whole copy.
+                     */
+                    blobs: number;
+                };
+            };
+        };
+        /** @description A connection whose circuit is open on a live replica. */
+        StorageOverviewUnreachable: {
+            id: string;
+            /** @description Live replicas with the connection's circuit open. */
+            circuitOpen: number;
+            /** @description Live replicas that configure the connection. */
+            configured: number;
+        };
+        /** @description What would be unavailable without one connection, its sole copies' blobs and their plain bytes. */
+        StorageOverviewLoss: {
+            connection: string;
+            /** Format: int64 */
+            blobs: number;
+            /** Format: int64 */
+            bytes: number;
         };
         ObjectStoreConnectionFacts: {
             id: string;
@@ -21137,6 +21363,31 @@ export interface operations {
             401: components["responses"]["Unauthenticated"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getStorageOverview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The overview. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StorageOverview"];
+                };
+            };
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
             429: components["responses"]["TooManyRequests"];
             500: components["responses"]["Internal"];
             503: components["responses"]["Unavailable"];

@@ -661,24 +661,30 @@ walk, Q-STOR-259).
 ## The storage summary and the connections' list (R-STOR-028, R-STOR-061)
 
 [internal/blob/summary](../../internal/blob/summary/) is package F's: the task `storage-summary` that counts the stored content once an hour,
-and the read of the object-store connections for `GET /api/v1/system/storage-connections`. It is infrastructure like the store's other
+the read of the object-store connections for `GET /api/v1/system/storage-connections`, and since W-37's package P1 the copies of the
+installation (R-STOR-106) and the storage overview (R-STOR-107, [overview.go](../../internal/blob/summary/overview.go)). It is infrastructure like the store's other
 packages: sqlc statements ([storage_summary.sql](../../internal/meta/postgres/queries/storage_summary.sql)) and no domain package.
 
 **The task.** [wire_storage_summary.go](../../internal/app/wire_storage_summary.go) registers the kind and the task (queue `maintenance`,
 exclusive, three attempts, `17 * * * *` unless `maintenance.tasks.storage-summary` says otherwise, not mutating: it writes only its
-snapshot, so it runs in read-only maintenance mode too). `RunJob` calls `Compute`, which runs four statements one after the other on one connection
-at `READ COMMITTED` (R-ARCH-019), the copies before the live blobs, so an upload between them shows as a gap of the moment (Q-STOR-372):
+snapshot, so it runs in read-only maintenance mode too). The handler passes the worker's `scrub_period` per connection and its connections
+without `drain`, the target of R-STOR-106 (`copyTargets`, Q-STOR-500). `RunJob` calls `Compute`, which runs five statements one after the
+other on one connection at `READ COMMITTED` (R-ARCH-019), the copies before the live blobs, so an upload between them shows as a gap of the
+moment (Q-STOR-372):
 
 | Statement | What it reads |
 |---|---|
 | `StorageSummaryTotals` | the live blobs as `storage_usage_totals` plus the deltas the fold has not taken; the trashed items (`items_trash`); the queue's live blobs and the rows in state `deleting` (`blobs_deleting`); the damaged blobs (`blobs_damaged`) |
 | `StorageSummaryRepositories` | each repository that is not being deleted with its project, `repository_usage` plus its unfolded deltas, its packages and its untrashed versions; `Assemble` leaves out a virtual repository without items (Q-STOR-215) |
-| `StorageSummaryConnections` | one pass over the copies of live blobs per connection that is not retired: present, missing, corrupt, the stored bytes, the plain bytes, read within the period of the worker's `scrub_period` (720 h for a connection the worker does not configure), overdue by the period and `scrub.OverdueGrace`, and the sole copies (Q-STOR-371), one probe of the copies' primary key per present copy |
+| `StorageSummaryConnections` | one pass over the copies of live blobs grouped by connection that is not retired: present, missing, corrupt, the stored bytes, the plain bytes, read within the period of the worker's `scrub_period` (720 h for a connection the worker does not configure), overdue by the period and `scrub.OverdueGrace`, and the present copies that name a storage key (`keyedCopies`) |
+| `StorageSummaryCopies` | one pass over the copies of live blobs on the connections that are not retired, grouped by blob: each blob's present copies, those on the target connections and the connection of a sole copy, grouped again into a handful of rows (copies, on every target, the sole copy's connection, blobs, plain bytes). It replaced a probe of the copies' primary key per present copy (Q-STOR-501) |
 | `StorageSummaryKeyCopies` | the copies per `storage_key_id` (R-STOR-088); none on a plain connection |
 
 `Assemble` derives the logical totals (the sum of the listed repositories), `deduplicationRatio`, each repository's `shareOfLogicalBytes` and
 each connection's backlog (live blobs minus present copies, live bytes minus the plain bytes of the present copies) and `fillRatio`, ratios
-rounded to four decimals. `Save` replaces the one row of `storage_summary` (migration 00109, export class transient); the member `quota` is
+rounded to four decimals; `assembleCopies` folds the rows of `StorageSummaryCopies` into `copies.perBlob` (the live blobs minus those with a
+present copy are the blobs under 0), `copies.belowTarget` (the live blobs minus those on every target) and each connection's `soleCopies`
+and `soleBytes`. `Save` replaces the one row of `storage_summary` (migration 00109, export class transient); the member `quota` is
 not built (Q-STOR-370). The result stored with the job is `computedAt`, `durationMs`, `blobs`, `connections`, `repositories`.
 
 **The reads.** `Latest` reads the row (`ErrNone` before the first run, which `GET /api/v1/storage/summary` answers `404`); reads never compute.
@@ -702,6 +708,36 @@ maps a view in [storage_connections_api.go](../../internal/api/v1/storage_connec
 the registry's rows and two index lookups of the queue per connection, a check of one copy per connection (`blob_copies_key`), and the
 storage keys; then the snapshot's one row. The tab Storage reads it every 15 seconds while it is open (R-UI-196).
 
+**The overview.** `GET /api/v1/storage/overview` ([storage_overview_api.go](../../internal/api/v1/storage_overview_api.go)) reads the input
+through `v1.StorageServices.Overview` (`storageOverview` in [wire_storage_summary.go](../../internal/app/wire_storage_summary.go)): the list
+and the snapshot once (`ListWithLatest`), the folded totals (`Stored`, `StorageStoredNow`), and the answering replica's `min_copies` and
+`download.verify`; the handler adds the scrub task's last and next run from the task list's own read (`taskViews`) and calls
+`DeriveOverview`, a pure function that derives every tile's state by the table of R-STOR-107 (Q-STOR-505, Q-STOR-506). It counts over no
+blob or copy at the request.
+
+**Measured** once on generated rows (`hack/storage-summary-measure/`, run with
+`test/integration/locked.sh go test -count=1 -tags integration,measure -timeout 30m -run Measure -v ./hack/storage-summary-measure/`; not a
+test, it asserts nothing and runs in no pipeline): 1,000,000 live blobs of 1 to 5 KiB, 2,998,766 copy
+rows on three connections, 315,000 queued gaps, a snapshot of 1.9 MB with 10,000 repositories; PostgreSQL 18.6 of the integration stack
+(`work_mem` 4 MB) on the development machine, beside other builders' load; the median of three runs, 2026-11-26.
+
+| Statement | Median | What it does |
+|---|---|---|
+| `StorageSummaryConnections` before Q-STOR-501 | 34.1 s (26.3 s in a first run) | one probe of `blob_copies_pkey` per present copy (2,996,923 probes), an external sort of 87 MB |
+| `StorageSummaryConnections` grouped by the connection's row (a draft) | 5.8 s | sorts every copy (270 MB on disk) to group three rows |
+| `StorageSummaryConnections` grouped by `connection_id` (kept) | 1.36 s | a parallel hash aggregate of three groups, no sort |
+| `StorageSummaryCopies` joining every copy with its blob (a draft) | 7.5 s | a probe of `blobs_pkey` per copy |
+| `StorageSummaryCopies` grouped by blob, the blobs joined after (kept) | 3.41 s | sorts the copies by blob (175 MB on disk in three workers), one hash join with the blobs |
+| `StorageSummaryKeyCopies` | 0.28 s | unchanged |
+| `StorageSummaryTotals` | 1.2 ms | unchanged |
+| `StorageSummaryLatest` read and decoded (`GET /api/v1/storage/summary`) | 68 ms | the whole 1.9 MB |
+| `StorageSummaryLatestFigures` read and decoded (the list and the overview) | 2.4 ms | the snapshot without `repositories` (Q-STOR-507) |
+| `StorageConnectionsList` | 238 ms | the queue counted per connection on rows never vacuumed, so without an index-only scan; at 315,000 queued gaps it is the overview's largest read |
+| `StorageConnectionKeys`, `StorageStoredNow` | 1.3 ms, 1.2 ms | |
+
+The hourly run's statements together take about 5 s at this size, against about 34 s before. The generation took 110 s (the copy rows 93 s)
+and the whole run 5 minutes.
+
 ## Tests
 
 | Tier | Where | What it proves |
@@ -716,8 +752,9 @@ storage keys; then the snapshot's one row. The tab Storage reads it every 15 sec
 | unit | [internal/blob](../../internal/blob/sweep_test.go), [internal/api/v1](../../internal/api/v1/services_test.go) | the orphan sweep's parameters and their `422`, the refusal of a `minAge` at the bound, the shape of its result and of `copiesReleased` (R-STOR-026, R-STOR-057) |
 | unit | [internal/uploads](../../internal/uploads/connections_test.go) | sessions on their connection with two in-memory stores behind guards and the commit protocol over rows in memory: the first connection recorded, parts and tails there only, the content object there and a queue row for the second; a `503` with `Retry-After` while the connection fails and the same session finishing after it; the move of a session that has written nothing; a start while the first is not writable (R-STOR-054) |
 | integration | [test/integration/uploads](../../test/integration/uploads/uploads_test.go) | the sweep's staging step against the stack's bucket, with a clock ahead of the maximum ages (`TestR_STOR_026_TheSweepRemovesWhatNoSessionStandsForInTheBucket`) |
-| unit | [internal/blob/summary](../../internal/blob/summary/summary_test.go), [internal/api/v1](../../internal/api/v1/storage_connections_api_test.go) | the summary's figures from rows (a virtual repository without items, the ratios, the backlog and the fill, no `quota`), the states of a connection, the list's order and join, the gauges' series; the connections and the summary over HTTP against the document (order, states, figures, no secret or file path, `403`, `404`, `503`) |
-| integration | [summary_test.go](../../test/integration/blob/summary_test.go) | the task against PostgreSQL: six blobs, three connections, items, a trashed item, the queue and the registry written by SQL, no object; every figure of the summary and the list's states (about 0.8 s, one database) |
+| unit | [internal/blob/summary](../../internal/blob/summary/summary_test.go), [internal/api/v1](../../internal/api/v1/storage_connections_api_test.go) | the summary's figures from rows (a virtual repository without items, the ratios, the backlog and the fill, the copies per blob and below the target, the sole bytes, no `quota`), the states of a connection, the list's order and join, the gauges' series; the connections and the summary over HTTP against the document (order, states, figures, the additions of R-STOR-106, no secret or file path, `403`, `404`, `503`) |
+| unit | [overview_test.go](../../internal/blob/summary/overview_test.go), [storage_overview_api_test.go](../../internal/api/v1/storage_overview_api_test.go) | every state of every tile of the overview from views built in memory, its figures; the operation against the document, `403`, `503`, `500`, no address, path or secret (R-STOR-107; about 0.1 s) |
+| integration | [summary_test.go](../../test/integration/blob/summary_test.go) | the task against PostgreSQL: six blobs, three connections, items, a trashed item, the queue and the registry written by SQL, no object; every figure of the summary, the copies per blob and the list's states (about 0.4 s, one database); `TestR_STOR_106_TheCopiesInFigures`: three blobs of 1 KiB on a plain and an encrypted connection with two storage keys, the copies per blob, the sole bytes, the copies in the format, the list's additions and the folded totals (about 0.8 s, one database) |
 
 `make test` runs the unit tier, `make test-integration` the integration tier (`QUADER_TEST_BLOB_RACE_SECONDS` stretches the race test from 15 s to a soak run). The
 unit fake (`fakedb_test.go`) simulates only the table operations the commit protocol and the download path use; the real locking

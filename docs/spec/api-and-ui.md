@@ -3291,7 +3291,8 @@ of R-OPS-019 (one path per function, Q-API-9 and R-API-020):
 | POST | `/api/v1/system/tasks/storage-summary/run` | Recompute; 202 with the job (P1; built) | `admin` |
 | POST | `/api/v1/system/tasks/orphan-sweep/run`, `/api/v1/system/tasks/scrub/run` | Start an orphan sweep or an integrity scrub (P1, R-STOR-026, R-STOR-027) | `admin` |
 | GET | `/api/v1/storage/damaged-blobs` | Damaged blobs and copies (`scope=blobs`, `scope=copies`), each with its copies and referencing items (P1, R-STOR-027, Q-API-386; built) | `settings:read`, the `storage.read` of [operations-and-observability.md](operations-and-observability.md) ([storage.md](storage.md) Q-STOR-267) |
-| POST | `/api/v1/storage/damaged-blobs/{sha256}/recheck` | Read every copy of one blob whole now; a per-resource action, not a task (P1, R-STOR-027; built) | `settings:write` (`admin`) |
+| POST | `/api/v1/storage/damaged-blobs/{sha256}/recheck` | Read every copy of one blob whole now; a per-resource action, not a task, audited as `storage.blob.rechecked` (P1, R-STOR-027, Q-API-477; built) | `settings:write` (`admin`) |
+| GET | `/api/v1/storage/overview` | The state of the stored content now: connections, stored, copies against the target, encryption, integrity, each with a state derived by the server (P1, R-STOR-107, Q-API-475; built, `getStorageOverview`) | `settings:read` |
 | GET | `/api/v1/system/storage-connections`, `/api/v1/system/storage-connections/{id}` | The object-store connections with state, fill, backlog and capabilities (P1, R-STOR-061, Q-API-385, Q-API-406; built, `listStorageConnections`, `getStorageConnection`) | `settings:read` |
 | POST | `/api/v1/system/tasks/storage-reconcile/run` | Start a reconciliation run (P1, R-STOR-056; built); 202 with the job, 409 with the active one | `admin` |
 
@@ -28857,6 +28858,52 @@ row while it is not asked.
 carries a search's, a keyword's, the deprecated filter's or dependsOn's ids, as the suggestions do (R-API-064). Measured with 50,000
 packages and 5,000 dependents: 150 to 160 ms, the slowest of twelve 172 ms. **Applied in the spec:** R-API-086. Code:
 `internal/packages/view/service.go`.
+
+### Q-API-475 · The storage overview is an operation of its own
+
+Status: **Decided by the development agent** while building W-37's package P1 ([storage.md](storage.md) R-STOR-107); the owner reviews
+it.
+
+Context: the storage page's top and the admin dashboard's card show the same few states; the summary and the connections' list hold the
+figures behind them, the summary up to an hour old and the list without the installation's totals.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `GET /api/v1/storage/overview`, `settings:read`, the states and the figures of now in one answer (chosen) | One call per screen top | The dashboard reads one small answer; the states are derived once (storage.md Q-STOR-505) | One operation more |
+| (b) A member `overview` of `GET /api/v1/storage/summary` | No new path | — | The summary is the hourly snapshot and answers `404` before the first; the overview's connections are read now, which the summary never does (R-OPS-023) |
+| (c) The page and the dashboard read the list and the summary and derive | No server change | — | Two calls, the snapshot's 2 MB per refresh, and two derivations |
+
+**Choice:** (a). R-API-020's one path per function holds: the overview reads, the task `storage-summary` counts. **Applied in the
+spec:** R-API-040's table; [storage.md](storage.md) R-STOR-107; code:
+[storage_overview_api.go](../../internal/api/v1/storage_overview_api.go).
+
+### Q-API-476 · The connection list's additions are nullable for a connection the replica does not configure
+
+Status: **Decided by the development agent** while building W-37's package P1 ([storage.md](storage.md) R-STOR-106); the owner reviews
+it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `capacityBytes` and the settings' `sseKmsKeyId` and `sseBucketKey` follow `settings` (Q-API-406): the answering replica's element, `null` where it does not configure the connection or states no capacity; `firstSeenAt`, `passStartedAt`, `encryptedSince` and `retiredAt` are PostgreSQL's and the same from every replica (chosen) | The rule the list has | A client tells the installation's facts from one replica's view by the rule it knows | A capacity stated on another replica's element is not shown by this one |
+| (b) Every addition required and `0` or `""` for unknown | No `null` | — | `0` would read as a capacity of nothing |
+
+**Choice:** (a). **Applied in the spec:** [storage.md](storage.md) R-STOR-061, R-STOR-106; the API document's `StorageConnection`.
+
+### Q-API-477 · The recheck of a blob is audited before its answer
+
+Status: **Decided by the development agent** while building W-37's package P1 ([storage.md](storage.md) R-STOR-027); the owner reviews
+it.
+
+Context: the recheck reads every copy of a blob and sets their states; it was the one act of the storage operations without an audit
+event. The reads and the marks are not one transaction (they reach the object store).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `storage.blob.rechecked`, transactional, written in a transaction of its own after the reads and before the answer; when its insert fails the answer is `500` (chosen) | No answer the audit log does not hold | R-OPS-015's rule as close as an act on the store allows | The marks of a recheck whose audit insert failed stay set, unaudited, as a read's marks are |
+| (b) Asynchronous | Never fails the request | — | A dropped event loses the act |
+
+**Choice:** (a). **Applied in the spec:** [storage.md](storage.md) R-STOR-027, [operations-and-observability.md](operations-and-observability.md)
+R-OPS-014; code: `auditRecheck` in [storage_damaged_api.go](../../internal/api/v1/storage_damaged_api.go).
 
 ### Q-UI-1350 · Used by stands under the dependencies, in their block
 

@@ -2,6 +2,7 @@ package summary
 
 import (
 	"encoding/json"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -26,12 +27,42 @@ func TestR_STOR_028_TheSummaryFigures(t *testing.T) {
 			{Project: "web", Key: "deb-all", Class: "virtual", Format: "deb", Files: 2, Folders: 1, LogicalBytes: 0},
 		},
 		Connections: []q.StorageSummaryConnectionsRow{
-			{ID: "default", PresentCopies: 4, PresentBytes: 3000, PresentBlobBytes: 3000, VerifiedWithinPeriod: 3, SoleCopies: 2},
-			{ID: "secondary", PresentCopies: 2, PresentBytes: 1100, PresentBlobBytes: 1000, MissingCopies: 1, ScrubOverdue: 1},
+			{ID: "default", PresentCopies: 4, PresentBytes: 3000, PresentBlobBytes: 3000, VerifiedWithinPeriod: 3},
+			{ID: "secondary", PresentCopies: 2, PresentBytes: 1100, PresentBlobBytes: 1000, MissingCopies: 1, ScrubOverdue: 1, KeyedCopies: 2},
+		},
+		// two blobs on both connections, two on default only
+		Copies: []q.StorageSummaryCopiesRow{
+			{Copies: 1, SoleConnection: "default", Blobs: 2, Bytes: 2000},
+			{Copies: 2, OnEveryTarget: true, Blobs: 2, Bytes: 1000},
 		},
 		KeyCopies: []q.StorageSummaryKeyCopiesRow{{ConnectionID: "secondary", StorageKeyID: "sk-secondary-1-0a1b2c3d", Copies: 2}},
+		Targets:   []string{"default", "secondary"},
 	}
 	s := Assemble(in)
+
+	t.Run("R-STOR-106 the copies per blob, the blobs below the target and the sole copies with their bytes", func(t *testing.T) {
+		want := Copies{Target: 2, PerBlob: []CopyCount{{Copies: 2, Blobs: 2, Bytes: 1000}, {Copies: 1, Blobs: 2, Bytes: 2000}}, BelowTarget: Pending{Blobs: 2, Bytes: 2000}}
+		if !reflect.DeepEqual(s.Copies, want) {
+			t.Errorf("copies = %+v, want %+v", s.Copies, want)
+		}
+		if d, sec := s.Connections[0], s.Connections[1]; d.SoleCopies != 2 || d.SoleBytes != 2000 || d.KeyedCopies != 0 || sec.SoleCopies != 0 || sec.KeyedCopies != 2 {
+			t.Errorf("default = %+v, secondary = %+v", d, sec)
+		}
+	})
+	t.Run("R-STOR-106 a live blob without a present copy counts under 0 copies and below the target; without a target nothing is below it", func(t *testing.T) {
+		gap := Assemble(Input{
+			Totals:  q.StorageSummaryTotalsRow{Blobs: 3, BlobBytes: 300},
+			Copies:  []q.StorageSummaryCopiesRow{{Copies: 0, Blobs: 1, Bytes: 100}, {Copies: 1, OnEveryTarget: true, SoleConnection: "default", Blobs: 1, Bytes: 100}},
+			Targets: []string{"default"},
+		})
+		want := Copies{Target: 1, PerBlob: []CopyCount{{Copies: 1, Blobs: 1, Bytes: 100}, {Copies: 0, Blobs: 2, Bytes: 200}}, BelowTarget: Pending{Blobs: 2, Bytes: 200}}
+		if !reflect.DeepEqual(gap.Copies, want) {
+			t.Errorf("copies = %+v, want %+v", gap.Copies, want)
+		}
+		if none := Assemble(Input{Totals: q.StorageSummaryTotalsRow{Blobs: 3, BlobBytes: 300}}); none.Copies.Target != 0 || none.Copies.BelowTarget != (Pending{}) {
+			t.Errorf("no target: %+v", none.Copies)
+		}
+	})
 
 	t.Run("R-STOR-028 the logical content sums the listed repositories and a virtual one without items is left out", func(t *testing.T) {
 		if len(s.Repositories) != 3 || s.Repositories[1].Key != "generic-local" || s.Repositories[2].Key != "deb-all" {

@@ -1662,22 +1662,22 @@ func (e DownloadLinkCheckOutcome) Valid() bool {
 
 // Defines values for DownloadLinkReasonCode.
 const (
-	Encrypted       DownloadLinkReasonCode = "encrypted"
-	LinkCheckFailed DownloadLinkReasonCode = "link_check_failed"
-	NotHttps        DownloadLinkReasonCode = "not_https"
-	QuaderHost      DownloadLinkReasonCode = "quader_host"
+	DownloadLinkReasonCodeEncrypted       DownloadLinkReasonCode = "encrypted"
+	DownloadLinkReasonCodeLinkCheckFailed DownloadLinkReasonCode = "link_check_failed"
+	DownloadLinkReasonCodeNotHttps        DownloadLinkReasonCode = "not_https"
+	DownloadLinkReasonCodeQuaderHost      DownloadLinkReasonCode = "quader_host"
 )
 
 // Valid indicates whether the value is a known member of the DownloadLinkReasonCode enum.
 func (e DownloadLinkReasonCode) Valid() bool {
 	switch e {
-	case Encrypted:
+	case DownloadLinkReasonCodeEncrypted:
 		return true
-	case LinkCheckFailed:
+	case DownloadLinkReasonCodeLinkCheckFailed:
 		return true
-	case NotHttps:
+	case DownloadLinkReasonCodeNotHttps:
 		return true
-	case QuaderHost:
+	case DownloadLinkReasonCodeQuaderHost:
 		return true
 	default:
 		return false
@@ -5755,6 +5755,102 @@ func (e SnippetMarkKind) Valid() bool {
 	case SnippetMarkKindToken:
 		return true
 	case SnippetMarkKindValue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StorageOverviewAvailabilityState.
+const (
+	AtRisk     StorageOverviewAvailabilityState = "at_risk"
+	CatchingUp StorageOverviewAvailabilityState = "catching_up"
+	OneStore   StorageOverviewAvailabilityState = "one_store"
+	Redundant  StorageOverviewAvailabilityState = "redundant"
+)
+
+// Valid indicates whether the value is a known member of the StorageOverviewAvailabilityState enum.
+func (e StorageOverviewAvailabilityState) Valid() bool {
+	switch e {
+	case AtRisk:
+		return true
+	case CatchingUp:
+		return true
+	case OneStore:
+		return true
+	case Redundant:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StorageOverviewConnectionsState.
+const (
+	StorageOverviewConnectionsStateDegraded    StorageOverviewConnectionsState = "degraded"
+	StorageOverviewConnectionsStateHealthy     StorageOverviewConnectionsState = "healthy"
+	StorageOverviewConnectionsStateUnreachable StorageOverviewConnectionsState = "unreachable"
+)
+
+// Valid indicates whether the value is a known member of the StorageOverviewConnectionsState enum.
+func (e StorageOverviewConnectionsState) Valid() bool {
+	switch e {
+	case StorageOverviewConnectionsStateDegraded:
+		return true
+	case StorageOverviewConnectionsStateHealthy:
+		return true
+	case StorageOverviewConnectionsStateUnreachable:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StorageOverviewEncryptionState.
+const (
+	StorageOverviewEncryptionStateEncrypted    StorageOverviewEncryptionState = "encrypted"
+	StorageOverviewEncryptionStateOff          StorageOverviewEncryptionState = "off"
+	StorageOverviewEncryptionStatePartly       StorageOverviewEncryptionState = "partly"
+	StorageOverviewEncryptionStateProviderOnly StorageOverviewEncryptionState = "provider_only"
+)
+
+// Valid indicates whether the value is a known member of the StorageOverviewEncryptionState enum.
+func (e StorageOverviewEncryptionState) Valid() bool {
+	switch e {
+	case StorageOverviewEncryptionStateEncrypted:
+		return true
+	case StorageOverviewEncryptionStateOff:
+		return true
+	case StorageOverviewEncryptionStatePartly:
+		return true
+	case StorageOverviewEncryptionStateProviderOnly:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StorageOverviewIntegrityState.
+const (
+	Behind    StorageOverviewIntegrityState = "behind"
+	Checking  StorageOverviewIntegrityState = "checking"
+	Damaged   StorageOverviewIntegrityState = "damaged"
+	Repairing StorageOverviewIntegrityState = "repairing"
+	Verified  StorageOverviewIntegrityState = "verified"
+)
+
+// Valid indicates whether the value is a known member of the StorageOverviewIntegrityState enum.
+func (e StorageOverviewIntegrityState) Valid() bool {
+	switch e {
+	case Behind:
+		return true
+	case Checking:
+		return true
+	case Damaged:
+		return true
+	case Repairing:
+		return true
+	case Verified:
 		return true
 	default:
 		return false
@@ -18287,22 +18383,34 @@ type StorageConnection struct {
 	// Capabilities What the start check found (R-STOR-035); `null` before a check.
 	Capabilities *StorageConnectionCapabilities `json:"capabilities"`
 
+	// CapacityBytes The `capacity` of the answering replica's element, what the operator states the store may hold (R-STOR-106, Q-STOR-503); shown, never enforced; `null` when it states none or does not configure the connection (Q-API-476).
+	CapacityBytes *int64 `json:"capacityBytes"`
+
 	// CredentialSource `default`, `webIdentity` or `static` (R-STOR-031).
 	CredentialSource *string    `json:"credentialSource"`
 	Drain            *bool      `json:"drain"`
 	DrainedAt        *time.Time `json:"drainedAt"`
 	Encrypted        bool       `json:"encrypted"`
 
+	// EncryptedSince When an encrypted connection's first storage key was created, from when on every copy written to it is in Quader's format (R-STOR-106); `null` for a plain connection.
+	EncryptedSince *time.Time `json:"encryptedSince"`
+
 	// Endpoint The endpoint of the answering replica's element; empty for the AWS endpoint of its region.
 	Endpoint *string `json:"endpoint"`
 
 	// FilledAt The end of the first full pass without a gap (filling to active).
 	FilledAt *time.Time `json:"filledAt"`
-	Id       string     `json:"id"`
+
+	// FirstSeenAt When a replica first saw the connection.
+	FirstSeenAt time.Time `json:"firstSeenAt"`
+	Id          string    `json:"id"`
 
 	// KeyedNames Whether an encrypted connection names its objects by a keyed name (R-STOR-086).
 	KeyedNames     bool       `json:"keyedNames"`
 	LastFullPassAt *time.Time `json:"lastFullPassAt"`
+
+	// PassStartedAt When the reconciliation's current full pass started (R-STOR-056); `null` between passes.
+	PassStartedAt *time.Time `json:"passStartedAt"`
 
 	// Position The place in the answering replica's configuration, from 1; `null` for a connection it does not configure.
 	Position *int   `json:"position"`
@@ -18366,9 +18474,12 @@ type StorageConnectionFigures struct {
 	CorruptCopies int64     `json:"corruptCopies"`
 
 	// FillRatio `presentCopies` over the live blobs, `1` when there is no blob.
-	FillRatio     float64 `json:"fillRatio"`
-	Id            string  `json:"id"`
-	MissingCopies int64   `json:"missingCopies"`
+	FillRatio float64 `json:"fillRatio"`
+	Id        string  `json:"id"`
+
+	// KeyedCopies Present copies that name a storage key, written in Quader's format (R-STOR-106); 0 on a plain connection.
+	KeyedCopies   int64 `json:"keyedCopies"`
+	MissingCopies int64 `json:"missingCopies"`
 
 	// PresentBytes The stored bytes of the present copies.
 	PresentBytes  int64 `json:"presentBytes"`
@@ -18376,6 +18487,9 @@ type StorageConnectionFigures struct {
 
 	// ScrubOverdue Present copies not read whole within the period and a day (Q-STOR-266).
 	ScrubOverdue int64 `json:"scrubOverdue"`
+
+	// SoleBytes The plain bytes of the blobs counted by `soleCopies`, what would be unavailable without this connection (R-STOR-106).
+	SoleBytes int64 `json:"soleBytes"`
 
 	// SoleCopies Live blobs whose only present copy lies on this connection (Q-STOR-371).
 	SoleCopies int64 `json:"soleCopies"`
@@ -18395,6 +18509,9 @@ type StorageConnectionKey struct {
 	Generation  int        `json:"generation"`
 	Id          string     `json:"id"`
 
+	// RetiredAt When a newer generation took the key's place; `null` while it is active.
+	RetiredAt *time.Time `json:"retiredAt"`
+
 	// State `active` (wraps new copies), `retired` (opens what it wrapped) or `destroyed` (destroyed on command once its connection was retired; nothing opens it again, storage.md R-STOR-097).
 	State string `json:"state"`
 }
@@ -18413,10 +18530,169 @@ type StorageConnectionSettings struct {
 	RequestChecksumCalculation string `json:"requestChecksumCalculation"`
 	ResponseChecksumValidation string `json:"responseChecksumValidation"`
 	ScrubBytesPerSecond        int64  `json:"scrubBytesPerSecond"`
-	SseMode                    string `json:"sseMode"`
+
+	// SseBucketKey Whether a bucket key is asked for under `kms`.
+	SseBucketKey bool `json:"sseBucketKey"`
+
+	// SseKmsKeyId The KMS key the store is asked to use under `kms`, an identifier; empty otherwise.
+	SseKmsKeyId string `json:"sseKmsKeyId"`
+
+	// SseMode `none`, `s3` or `kms`: the server-side encryption the store is asked for (R-STOR-032).
+	SseMode string `json:"sseMode"`
 
 	// StorageClass Empty for the bucket's default.
 	StorageClass string `json:"storageClass"`
+}
+
+// StorageCopies The copies of the installation per blob (storage.md R-STOR-106), from the latest storage summary. Bytes are the blobs' plain
+// bytes.
+type StorageCopies struct {
+	// BelowTarget The live blobs that lack a present copy on at least one target connection, the union of their backlogs.
+	BelowTarget struct {
+		Blobs int64 `json:"blobs"`
+		Bytes int64 `json:"bytes"`
+	} `json:"belowTarget"`
+
+	// PerBlob The live blobs by their number of present copies on the connections that are not retired (Q-STOR-502), the most copies
+	// first; a number no blob has is left out, and a live blob without a present copy counts under `copies` 0.
+	PerBlob []StorageCopyCount `json:"perBlob"`
+
+	// Target The connections every blob should lie on, the computing worker's connections without `drain` (Q-STOR-500).
+	Target int `json:"target"`
+}
+
+// StorageCopyCount defines model for StorageCopyCount.
+type StorageCopyCount struct {
+	Blobs  int64 `json:"blobs"`
+	Bytes  int64 `json:"bytes"`
+	Copies int   `json:"copies"`
+}
+
+// StorageOverview The state of the stored content now (storage.md R-STOR-107). Sizes are bytes, ratios numbers from 0 to 1.
+type StorageOverview struct {
+	// At When the answer was made.
+	At time.Time `json:"at"`
+
+	// Availability The copies per blob against the target (R-STOR-106).
+	Availability struct {
+		BelowTarget struct {
+			Blobs int64 `json:"blobs"`
+			Bytes int64 `json:"bytes"`
+		} `json:"belowTarget"`
+
+		// Loss Per connection that holds sole copies, the most bytes first, the blobs that would be unavailable without it.
+		Loss []StorageOverviewLoss `json:"loss"`
+
+		// MinCopies `storage.replication.min_copies` of the answering replica: the copies written before an upload is answered.
+		MinCopies int                `json:"minCopies"`
+		PerBlob   []StorageCopyCount `json:"perBlob"`
+
+		// State `one_store` with one target connection; `at_risk` while a blob lies on one connection only and a target connection is unreachable on a replica or its reconciliation is more than an hour behind; `catching_up` while a blob is below the target; `redundant` otherwise.
+		State StorageOverviewAvailabilityState `json:"state"`
+
+		// Target The latest summary's target; before the first, the connections a live replica configures without `drain`.
+		Target int `json:"target"`
+	} `json:"availability"`
+
+	// Connections The connections that hold or take content (not retired, not drained), now.
+	Connections struct {
+		// Configured Connections a live replica configures.
+		Configured int `json:"configured"`
+
+		// Detached Connections that hold copies and that no live replica configures, by id.
+		Detached []string `json:"detached"`
+
+		// Reachable Those of them whose circuit is closed on every live replica that configures them.
+		Reachable int `json:"reachable"`
+
+		// State `unreachable` when no connection is reachable on any live replica; `degraded` when one is unreachable on some replica, one is detached, or no live replica configures any; `healthy` otherwise.
+		State       StorageOverviewConnectionsState `json:"state"`
+		Unreachable []StorageOverviewUnreachable    `json:"unreachable"`
+	} `json:"connections"`
+
+	// Encryption Which connections that hold content Quader encrypts (R-STOR-075).
+	Encryption struct {
+		Encrypted []string `json:"encrypted"`
+
+		// EncryptedShare The encrypted connections' stored bytes over all stored bytes, from the latest summary.
+		EncryptedShare float64  `json:"encryptedShare"`
+		Plain          []string `json:"plain"`
+
+		// ProviderConfigured Connections whose element in the answering replica's configuration asks the store for server-side encryption (`sse_mode` other than `none`); what the store applied is not known to this answer.
+		ProviderConfigured []string `json:"providerConfigured"`
+
+		// State `encrypted` when Quader encrypts every such connection, `partly` when some, `provider_only` when none but each asks its store for server-side encryption, `off` otherwise.
+		State StorageOverviewEncryptionState `json:"state"`
+	} `json:"encryption"`
+
+	// FiguresAt The time of the latest storage summary, whose figures the copies, the scrub and the damage are; `null` before the first.
+	FiguresAt *time.Time `json:"figuresAt"`
+
+	// Integrity The checks that hold and the scrub's coverage (R-STOR-027).
+	Integrity struct {
+		// AuthenticatedReads The encrypted connections, whose every read Quader's format authenticates (R-STOR-082).
+		AuthenticatedReads []string `json:"authenticatedReads"`
+
+		// DamagedNow From the latest summary.
+		DamagedNow struct {
+			// Blobs Live blobs without a whole copy.
+			Blobs int64 `json:"blobs"`
+
+			// Copies Missing and corrupt copies.
+			Copies int64 `json:"copies"`
+		} `json:"damagedNow"`
+
+		// DownloadVerify `storage.download.verify` of the answering replica: a whole download is checked against the digest.
+		DownloadVerify bool `json:"downloadVerify"`
+		Scrub          struct {
+			// Coverage Present copies read whole within their connection's `scrub_period` over all present copies; 1 without a copy.
+			Coverage float64 `json:"coverage"`
+
+			// LastRunAt When the scrub task's last run finished.
+			LastRunAt *time.Time `json:"lastRunAt"`
+			NextRunAt *time.Time `json:"nextRunAt"`
+			Overdue   int64      `json:"overdue"`
+			Running   bool       `json:"running"`
+		} `json:"scrub"`
+
+		// State `damaged` while a live blob has no whole copy, `repairing` while a copy is missing or corrupt, `behind` while copies are overdue for the scrub, `checking` while its coverage is below 1 or before the first summary, `verified` otherwise.
+		State StorageOverviewIntegrityState `json:"state"`
+	} `json:"integrity"`
+
+	// Stored The live blobs and their bytes now, the folded totals (Q-STOR-504).
+	Stored struct {
+		Blobs int64 `json:"blobs"`
+		Bytes int64 `json:"bytes"`
+	} `json:"stored"`
+}
+
+// StorageOverviewAvailabilityState `one_store` with one target connection; `at_risk` while a blob lies on one connection only and a target connection is unreachable on a replica or its reconciliation is more than an hour behind; `catching_up` while a blob is below the target; `redundant` otherwise.
+type StorageOverviewAvailabilityState string
+
+// StorageOverviewConnectionsState `unreachable` when no connection is reachable on any live replica; `degraded` when one is unreachable on some replica, one is detached, or no live replica configures any; `healthy` otherwise.
+type StorageOverviewConnectionsState string
+
+// StorageOverviewEncryptionState `encrypted` when Quader encrypts every such connection, `partly` when some, `provider_only` when none but each asks its store for server-side encryption, `off` otherwise.
+type StorageOverviewEncryptionState string
+
+// StorageOverviewIntegrityState `damaged` while a live blob has no whole copy, `repairing` while a copy is missing or corrupt, `behind` while copies are overdue for the scrub, `checking` while its coverage is below 1 or before the first summary, `verified` otherwise.
+type StorageOverviewIntegrityState string
+
+// StorageOverviewLoss What would be unavailable without one connection, its sole copies' blobs and their plain bytes.
+type StorageOverviewLoss struct {
+	Blobs      int64  `json:"blobs"`
+	Bytes      int64  `json:"bytes"`
+	Connection string `json:"connection"`
+}
+
+// StorageOverviewUnreachable A connection whose circuit is open on a live replica.
+type StorageOverviewUnreachable struct {
+	// CircuitOpen Live replicas with the connection's circuit open.
+	CircuitOpen int `json:"circuitOpen"`
+
+	// Configured Live replicas that configure the connection.
+	Configured int    `json:"configured"`
+	Id         string `json:"id"`
 }
 
 // StorageSummary The storage summary (storage.md R-STOR-028, operations-and-observability.md R-OPS-023). Sizes are bytes, ratios numbers from 0 to 1 rounded to four decimals.
@@ -18432,6 +18708,10 @@ type StorageSummary struct {
 
 	// Connections The figures of every connection that is not retired, by id.
 	Connections []StorageSummaryConnection `json:"connections"`
+
+	// Copies The copies of the installation per blob (storage.md R-STOR-106), from the latest storage summary. Bytes are the blobs' plain
+	// bytes.
+	Copies StorageCopies `json:"copies"`
 
 	// Damaged The live blobs per content state other than `ok` (R-STOR-027); blobs, not copies.
 	Damaged struct {
@@ -18476,9 +18756,12 @@ type StorageSummaryConnection struct {
 	CorruptCopies int64 `json:"corruptCopies"`
 
 	// FillRatio `presentCopies` over the live blobs, `1` when there is no blob.
-	FillRatio     float64 `json:"fillRatio"`
-	Id            string  `json:"id"`
-	MissingCopies int64   `json:"missingCopies"`
+	FillRatio float64 `json:"fillRatio"`
+	Id        string  `json:"id"`
+
+	// KeyedCopies Present copies that name a storage key, written in Quader's format (R-STOR-106); 0 on a plain connection.
+	KeyedCopies   int64 `json:"keyedCopies"`
+	MissingCopies int64 `json:"missingCopies"`
 
 	// PresentBytes The stored bytes of the present copies.
 	PresentBytes  int64 `json:"presentBytes"`
@@ -18486,6 +18769,9 @@ type StorageSummaryConnection struct {
 
 	// ScrubOverdue Present copies not read whole within the period and a day (Q-STOR-266).
 	ScrubOverdue int64 `json:"scrubOverdue"`
+
+	// SoleBytes The plain bytes of the blobs counted by `soleCopies`, what would be unavailable without this connection (R-STOR-106).
+	SoleBytes int64 `json:"soleBytes"`
 
 	// SoleCopies Live blobs whose only present copy lies on this connection (Q-STOR-371).
 	SoleCopies int64 `json:"soleCopies"`
@@ -25949,6 +26235,9 @@ type ServerInterface interface {
 	// RecheckDamagedBlob Read every copy of a blob whole now
 	// (POST /api/v1/storage/damaged-blobs/{sha256}/recheck)
 	RecheckDamagedBlob(w http.ResponseWriter, r *http.Request, sha256 string)
+	// GetStorageOverview The storage overview
+	// (GET /api/v1/storage/overview)
+	GetStorageOverview(w http.ResponseWriter, r *http.Request)
 	// GetStorageSummary The storage summary
 	// (GET /api/v1/storage/summary)
 	GetStorageSummary(w http.ResponseWriter, r *http.Request)
@@ -43617,6 +43906,20 @@ func (siw *ServerInterfaceWrapper) RecheckDamagedBlob(w http.ResponseWriter, r *
 	handler.ServeHTTP(w, r)
 }
 
+// GetStorageOverview operation middleware
+func (siw *ServerInterfaceWrapper) GetStorageOverview(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetStorageOverview(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetStorageSummary operation middleware
 func (siw *ServerInterfaceWrapper) GetStorageSummary(w http.ResponseWriter, r *http.Request) {
 
@@ -47248,6 +47551,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/system/tasks/{name}/run", wrapper.RunTask)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/storage/damaged-blobs", wrapper.ListDamagedBlobs)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/storage/damaged-blobs/{sha256}/recheck", wrapper.RecheckDamagedBlob)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/storage/overview", wrapper.GetStorageOverview)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/storage/summary", wrapper.GetStorageSummary)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/system/storage-connections", wrapper.ListStorageConnections)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/system/storage-connections/{id}", wrapper.GetStorageConnection)

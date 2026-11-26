@@ -24,28 +24,42 @@ func storageFixture() (summary.Summary, []summary.View) {
 	sum := summary.Summary{
 		ComputedAt: at, DurationMs: 412, Blobs: summary.Blobs{Count: 4, Bytes: 4096},
 		Connections: []summary.Connection{
-			{ID: "default", PresentCopies: 4, PresentBytes: 4096, FillRatio: 1, VerifiedWithinPeriod: 4},
+			{ID: "default", PresentCopies: 4, PresentBytes: 4096, FillRatio: 1, VerifiedWithinPeriod: 4, SoleCopies: 2, SoleBytes: 2048},
 			{
-				ID: "secondary", PresentCopies: 2, PresentBytes: 2048, BacklogBlobs: 2, BacklogBytes: 2048, FillRatio: 0.5,
-				KeyCopies: map[string]int64{"sk-secondary-1-0a1b2c3d": 2},
+				ID: "secondary", PresentCopies: 2, PresentBytes: 2048, BacklogBlobs: 2, BacklogBytes: 2048, FillRatio: 0.5, KeyedCopies: 2,
+				KeyCopies: map[string]int64{"sk-secondary-1-0a1b2c3d": 1, "sk-secondary-2-4e5f6a7b": 1},
 			},
+		},
+		Copies: summary.Copies{
+			Target: 2, PerBlob: []summary.CopyCount{{Copies: 2, Blobs: 2, Bytes: 2048}, {Copies: 1, Blobs: 2, Bytes: 2048}},
+			BelowTarget: summary.Pending{Blobs: 2, Bytes: 2048},
 		},
 		Repositories: []summary.Repository{{Project: "web", Key: "npm-local", Class: "local", Format: "npm", Bytes: 4096, ShareOfLogicalBytes: 1}},
 	}
 	settings := summary.Settings{PayloadChecksum: "sha256", RequestChecksumCalculation: "when_supported", ResponseChecksumValidation: "when_supported", BatchDelete: true, SSEMode: "none", ScrubBytesPerSecond: 50 << 20}
+	kms := settings
+	kms.SSEMode, kms.SSEKMSKeyID, kms.SSEBucketKey = "kms", "arn:aws:kms:eu-central-1:111122223333:alias/quader", true
+	firstSeen, pass, rotated := filled.Add(-time.Hour), at.Add(-15*time.Minute), filled.Add(24*time.Hour)
 	views := summary.Views([]summary.Row{
 		{
 			ID: "default", Bucket: "quader-blobs", Prefix: "quader", Configured: 3, LiveReplicas: 3, Undrained: true, FilledAt: &filled, HoldsCopies: true,
+			FirstSeenAt: firstSeen, PassStartedAt: &pass,
 			Capabilities: &blob.Capabilities{PayloadChecksumEnforced: true, BatchDelete: true, Metadata: true, ServerSideCopyFrom: map[string]bool{"secondary": true}},
 		},
 		{
-			ID: "secondary", Bucket: "quader-copy", Prefix: "quader", Configured: 3, LiveReplicas: 3, CircuitOpen: 1, Undrained: true, Queued: 12,
-			OldestQueuedAt: &queued, HoldsCopies: true,
-			Keys: []summary.StorageKey{{ID: "sk-secondary-1-0a1b2c3d", Generation: 1, State: "active", CreatedAt: filled}},
+			ID: "secondary", Bucket: "quader-copy", Prefix: "quader", Encrypted: true, Configured: 3, LiveReplicas: 3, CircuitOpen: 1, Undrained: true,
+			Queued: 12, OldestQueuedAt: &queued, HoldsCopies: true, FirstSeenAt: filled,
+			Keys: []summary.StorageKey{
+				{ID: "sk-secondary-1-0a1b2c3d", Generation: 1, State: "retired", CreatedAt: filled, RetiredAt: &rotated},
+				{ID: "sk-secondary-2-4e5f6a7b", Generation: 2, State: "active", CreatedAt: rotated},
+			},
 		},
 	}, map[string]summary.Local{
-		"default":   {Position: 1, Endpoint: "https://object.storage.example", CredentialSource: "static", ScrubPeriod: 720 * time.Hour, Settings: settings},
-		"secondary": {Position: 2, Endpoint: "https://s3.eu-central-1.amazonaws.com", CredentialSource: "webIdentity", ScrubPeriod: 720 * time.Hour, Settings: settings},
+		"default": {
+			Position: 1, Endpoint: "https://object.storage.example", CredentialSource: "static", ScrubPeriod: 720 * time.Hour, CapacityBytes: 5 << 40,
+			Settings: settings,
+		},
+		"secondary": {Position: 2, Endpoint: "https://s3.eu-central-1.amazonaws.com", CredentialSource: "webIdentity", ScrubPeriod: 720 * time.Hour, Settings: kms},
 	}, &sum)
 	return sum, views
 }
@@ -79,8 +93,28 @@ func TestR_STOR_061_TheConnectionsInTheAPI(t *testing.T) {
 			t.Errorf("default = %+v", d)
 		}
 		if sec.State != summary.StateFilling || sec.Summary.FillRatio != 0.5 || sec.Summary.BacklogBlobs != 2 || sec.Queue.Blobs != 12 || sec.Queue.OldestQueuedAt == nil ||
-			sec.Replicas.CircuitOpen != 1 || sec.Replicas.Configured != 3 || sec.Capabilities != nil || len(sec.StorageKeys) != 1 || *sec.StorageKeys[0].Copies != 2 ||
+			sec.Replicas.CircuitOpen != 1 || sec.Replicas.Configured != 3 || sec.Capabilities != nil || len(sec.StorageKeys) != 2 || *sec.StorageKeys[0].Copies != 1 ||
 			!sec.Summary.ComputedAt.Equal(sum.ComputedAt) {
+			t.Errorf("secondary = %+v", sec)
+		}
+	})
+
+	t.Run("R-STOR-061 R-STOR-106 the additions: first seen, the current pass, encrypted since, the capacity, the sole bytes, the keyed copies, a key's retirement and the server-side settings", func(t *testing.T) {
+		w := httpRecorder(h, http.MethodGet, "/api/v1/system/storage-connections")
+		var out gen.StorageConnectionList
+		if w.Code != http.StatusOK || json.Unmarshal(w.Body.Bytes(), &out) != nil {
+			t.Fatalf("%d %s", w.Code, w.Body.String())
+		}
+		d, sec := out.Connections[0], out.Connections[1]
+		filled := time.Date(2026, 11, 20, 8, 2, 11, 0, time.UTC)
+		if !d.FirstSeenAt.Equal(filled.Add(-time.Hour)) || d.PassStartedAt == nil || d.EncryptedSince != nil || d.CapacityBytes == nil || *d.CapacityBytes != 5<<40 ||
+			d.Summary.SoleCopies != 2 || d.Summary.SoleBytes != 2048 || d.Summary.KeyedCopies != 0 || d.Settings.SseMode != "none" || d.Settings.SseKmsKeyId != "" {
+			t.Errorf("default = %+v", d)
+		}
+		k1, k2 := sec.StorageKeys[0], sec.StorageKeys[1]
+		if sec.EncryptedSince == nil || !sec.EncryptedSince.Equal(filled) || sec.PassStartedAt != nil || sec.CapacityBytes != nil || sec.Summary.KeyedCopies != 2 ||
+			k1.RetiredAt == nil || !k1.RetiredAt.Equal(filled.Add(24*time.Hour)) || k2.RetiredAt != nil ||
+			sec.Settings.SseMode != "kms" || sec.Settings.SseKmsKeyId != "arn:aws:kms:eu-central-1:111122223333:alias/quader" || !sec.Settings.SseBucketKey {
 			t.Errorf("secondary = %+v", sec)
 		}
 	})
@@ -133,7 +167,8 @@ func TestR_STOR_061_TheConnectionsInTheAPI(t *testing.T) {
 			t.Fatalf("%d %s", w.Code, w.Body.String())
 		}
 		if out.DurationMs != 412 || len(out.Connections) != 2 || out.Connections[1].FillRatio != 0.5 || out.Repositories[0].ShareOfLogicalBytes != 1 ||
-			strings.Contains(w.Body.String(), "keyCopies") {
+			strings.Contains(w.Body.String(), "keyCopies") || out.Copies.Target != 2 || len(out.Copies.PerBlob) != 2 || out.Copies.BelowTarget.Blobs != 2 ||
+			out.Connections[0].SoleBytes != 2048 {
 			t.Errorf("summary = %s", w.Body.String())
 		}
 		none := newSetup(t, func(o *Options) {

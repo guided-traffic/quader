@@ -939,7 +939,9 @@ read login and the journal reader of every connection are rendered in their targ
 `backup.source.connections` per entry with `backupSource`, an element of the journal credentials file per connection
 ([backup-and-restore.md](backup-and-restore.md) R-BAK-030; Q-HA-396 is superseded). `encrypted` is passed through and `keyed_names` without it
 refused since package 6 of the encryption of stored content (2026-11-23, `TestR_HA_072_AnEncryptedConnection`); the value set
-`ci/connections.yaml` renders its second connection encrypted.
+`ci/connections.yaml` renders its second connection encrypted. `capacity` is passed through and checked by the schema as a size with its
+unit since W-37's package P1 ([Q-HA-505](#q-ha-505--capacity-is-a-key-of-the-element-a-size-with-the-schemas-pattern),
+`TestR_HA_072_TheCapacityOfAConnection`).
 
 - **The list** is `config.storage.connections`, passed through like every key of `config` with each element's `id` filled in and the
   `*_file` keys below; the values file holds one element with the defaults of the plain path. A list given in the values replaces it
@@ -960,6 +962,7 @@ refused since package 6 of the encryption of stored content (2026-11-23, `TestR_
           force_path_style: false
           credentials_source: default # default | webIdentity | static
           encrypted: false            # the default of storage.md R-STOR-075; true: the provider keeps ciphertext only; no Secret of the chart for it
+          capacity: ""                # empty states none; example: 5TiB, at least 1GiB; shown on the storage page, never enforced (storage.md R-STOR-106)
   secrets:
     storageConnections: []            # one entry per connection that needs a Secret; example:
     #  - connectionId: default        # matches config.storage.connections[].id
@@ -4898,6 +4901,7 @@ config:
         credentials_source: default     # default | webIdentity | static (an entry of secrets.storageConnections with existingSecret)
         role_arn: ""                    # example (webIdentity): arn:aws:iam::123456789012:role/quader-blobs
         encrypted: false                # true: Quader encrypts the connection's blobs and keeps the keys, so its provider reads ciphertext only; fixed once it holds data; keep the key ring and the export of the storage keys (storage.md R-STOR-075, R-STOR-090)
+        capacity: ""                    # what the store may hold, empty states none; example: 5TiB (at least 1GiB). Shown against the stored bytes on the storage page, never enforced (storage.md R-STOR-106)
     upload:
       max_size: 10GiB                   # must fit the spool
     gc:
@@ -13447,6 +13451,21 @@ a window below 1,000 requests, logs the p99 of each role's phase (from its first
 writes all of them into the leg's note. **Applied in the spec:** R-HA-059 ("A drain per role", the pass conditions). Measured: the
 unit test of the comparison (`TestR_HA_059_TheDrainIsHeldToTheLargerOfWarmUpAndPostDrain`) with the failing night's 115 and 269 ms;
 the post-drain p99 of a real night is shown by the next nightly, which logs it for the first time.
+
+### Q-HA-505 · Capacity is a key of the element, a size with the schema's pattern
+
+Status: **Decided by the development agent** while building W-37's package P1 ([storage.md](storage.md) R-STOR-106, Q-STOR-503); the
+owner reviews it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `capacity` in the element of `config.storage.connections`, passed through, the values file's element with `capacity: ""`; the schema allows an empty string or a whole number with a unit of `KiB` to `TiB` or `KB` to `TB`, the binary checks the bound of `1GiB` (chosen) | Where the connection is set (the owner's decision 9) | A size without its unit (`5`, a number for YAML) fails at helm, naming the key; one bound, the binary's | Two places check a capacity, each its part |
+| (b) A list of capacities by connection id beside the list | Separate from the connection | — | Two lists that must agree by id |
+| (c) No schema rule; the binary refuses at start | One check | — | A pod that does not start instead of a failing render |
+
+**Choice:** (a). **Applied in the spec:** R-HA-072; the chart's [values.yaml](../../deploy/helm/quader/values.yaml) and
+[values.schema.json](../../deploy/helm/quader/values.schema.json); test `TestR_HA_072_TheCapacityOfAConnection`
+(`test/chart/storage_test.go`).
 
 ### H-37 · A database restore revives revoked credentials and removed grants
 

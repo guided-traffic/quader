@@ -187,8 +187,10 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 		// P1 requirements of W-36, P1).
 		// 1383 since a Bastion's web interface shows a public package's documentation while docs is on (R-BAS-124 to R-BAS-126,
 		// R-UI-232, four P1 requirements of W-35, P11).
-		if len(m.Reqs) != 1383 || count[prioMVP] != 743 || count[prioP1] != 601 || count[prioP2] != 39 {
-			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1383 (743, 601, 39)",
+		// 1385 since the admin area reads the storage overview and the copies in figures (R-STOR-106, R-STOR-107, two P1
+		// requirements of W-37, P1).
+		if len(m.Reqs) != 1385 || count[prioMVP] != 743 || count[prioP1] != 603 || count[prioP2] != 39 {
+			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1385 (743, 603, 39)",
 				len(m.Reqs), count[prioMVP], count[prioP1], count[prioP2])
 		}
 	})

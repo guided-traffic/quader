@@ -2518,6 +2518,7 @@ asynchronous. "Hook" marks events that webhooks may select (R-OPS-037).
 | `system.deletions_paused` | T | — | The deletion pause was set by hand with `quader admin maintenance pause-deletions` ([ha-and-helm.md](ha-and-helm.md) R-HA-025, Q-HA-271); actor `system:admin`; none when it was already set | `reason` |
 | `system.deletions_resumed` | T | — | The deletion pause was cleared with `quader admin maintenance resume-deletions` (R-HA-025 step 7); actor `system:admin`; none when it was not set | `pausedAt`, `reason` |
 | `system.storage.connection_added` | T | — | A replica saw a connection id for the first time ([storage.md](storage.md) R-STOR-051); actor `system:replica` | `connection`, `bucket`, `prefix` |
+| `storage.blob.rechecked` | T | — | An administrator had every copy of a blob read whole now (`POST /api/v1/storage/damaged-blobs/{sha256}/recheck`, [storage.md](storage.md) R-STOR-027); written in a transaction of its own before the answer, which is `500` when the insert fails ([api-and-ui.md](api-and-ui.md) Q-API-477, [Q-OPS-473](#q-ops-473--the-recheck-of-a-blob-is-an-event-of-the-registry)) | `sha256`, `contentStatus`, `copies` (each `connection`, `state`) |
 | `storage.download_links.changed` | T | when switched off | The switch of the delivery by signed links of the object store or its details changed ([storage.md](storage.md) R-STOR-014): the store of [internal/downloadlinks](../../internal/downloadlinks/store.go) records it in the transaction of the change; the entry `{"enabled": false}` switches the delivery off again after a restore | `before`, `after` (each `enabled`, `minSize`, `linkLifeSeconds`, `publicAddresses`) |
 | `system.storage.connection_drained` | T | — | A draining connection holds no copy any more (R-STOR-056); actor `system:worker` | `connection`, `copiesDeleted` |
 | `system.storage.connection_forgotten` | T | — | `quader admin storage forget-connection` gave a connection up (R-STOR-051); actor `system:admin` | `connection`, `copiesForgotten`, `blobsMissing` |
@@ -7998,6 +7999,21 @@ name that is a UUID is no name any principal can have.
 
 **Applied in the spec:** R-OPS-017, R-OPS-056. Code: [store.go](../../internal/audit/store.go) (`args`),
 [audit.sql](../../internal/meta/postgres/queries/audit.sql), [00144_audit_change_rows.sql](../../internal/meta/postgres/migrations/00144_audit_change_rows.sql).
+
+### Q-OPS-473 · The recheck of a blob is an event of the registry
+
+Status: **Decided by the development agent** while building W-37's package P1 ([storage.md](storage.md) R-STOR-027); the owner reviews
+it.
+
+Context: the recheck was the one act of the storage operations without an event; the storage page offers it as **Check again**.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `storage.blob.rechecked` in R-OPS-014's registry, category `system`, transactional, no hook, not journaled; its data the digest, the content state after the reads and each copy's connection and state (chosen) | Who rechecked what, and what it found | The audit log answers who looked at a damaged blob and when; the data hold no path, no item and no secret | One event per click |
+| (b) Reuse `system.task_triggered` | No new type | — | A recheck is no task (R-API-020) and has no job |
+
+**Choice:** (a). Not journaled: a recheck writes no object and grants nothing, so a restore has nothing to withdraw. **Applied in the
+spec:** R-OPS-014's table; code: [events_storage.go](../../internal/audit/events_storage.go) (`registerBlobRechecked`).
 
 ## What this does not cover
 

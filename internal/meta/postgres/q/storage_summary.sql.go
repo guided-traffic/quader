@@ -12,6 +12,7 @@ import (
 
 const storageConnectionKeys = `-- name: StorageConnectionKeys :many
 SELECT k.key_id, k.connection_id, k.generation, k.state, (EXTRACT(EPOCH FROM k.created_at) * 1000000)::bigint AS created_us,
+       COALESCE((EXTRACT(EPOCH FROM k.retired_at) * 1000000)::bigint, 0)::bigint AS retired_us,
        COALESCE((EXTRACT(EPOCH FROM k.destroyed_at) * 1000000)::bigint, 0)::bigint AS destroyed_us
   FROM storage_keys k
  WHERE k.kind = 'storage'
@@ -24,11 +25,13 @@ type StorageConnectionKeysRow struct {
 	Generation   int32
 	State        string
 	CreatedUs    int64
+	RetiredUs    int64
 	DestroyedUs  int64
 }
 
 // The storage keys of every connection by identifier, generation and state (R-STOR-088, Q-API-405); never the sealed value. The times of
-// creation and of a destroyed key's destruction (R-STOR-097, 0 for any other) travel as microseconds since the epoch.
+// creation, of retirement (0 for an active key) and of a destroyed key's destruction (R-STOR-097, 0 for any other) travel as
+// microseconds since the epoch.
 func (q *Queries) StorageConnectionKeys(ctx context.Context) ([]StorageConnectionKeysRow, error) {
 	rows, err := q.db.Query(ctx, storageConnectionKeys)
 	if err != nil {
@@ -44,6 +47,7 @@ func (q *Queries) StorageConnectionKeys(ctx context.Context) ([]StorageConnectio
 			&i.Generation,
 			&i.State,
 			&i.CreatedUs,
+			&i.RetiredUs,
 			&i.DestroyedUs,
 		); err != nil {
 			return nil, err
@@ -74,6 +78,8 @@ SELECT sc.id, sc.bucket, sc.prefix, sc.encrypted, sc.keyed_names, sc.capabilitie
        COALESCE((EXTRACT(EPOCH FROM sc.drained_at) * 1000000)::bigint, 0)::bigint AS drained_us,
        COALESCE((EXTRACT(EPOCH FROM sc.retired_at) * 1000000)::bigint, 0)::bigint AS retired_us,
        COALESCE((EXTRACT(EPOCH FROM sc.last_full_pass_at) * 1000000)::bigint, 0)::bigint AS last_full_pass_us,
+       (EXTRACT(EPOCH FROM sc.first_seen_at) * 1000000)::bigint AS first_seen_us,
+       COALESCE((EXTRACT(EPOCH FROM sc.pass_started_at) * 1000000)::bigint, 0)::bigint AS pass_started_us,
        (SELECT count(*) FROM live)::int AS live_replicas,
        COALESCE(v.configured, 0)::int AS configured,
        COALESCE(v.circuit_open, 0)::int AS circuit_open,
@@ -97,6 +103,8 @@ type StorageConnectionsListRow struct {
 	DrainedUs      int64
 	RetiredUs      int64
 	LastFullPassUs int64
+	FirstSeenUs    int64
+	PassStartedUs  int64
 	LiveReplicas   int32
 	Configured     int32
 	CircuitOpen    int32
@@ -109,7 +117,8 @@ type StorageConnectionsListRow struct {
 // The connections of the API (R-STOR-061) with what PostgreSQL knows at the time of the request: the row of each connection ever seen,
 // the live replicas of the registry (heartbeat younger than stale_secs) that have it in their configuration, how many of them have its
 // circuit open and whether one of them configures it without drain; the number of live replicas that report an object-store view; the
-// queue's rows and the time of the oldest; whether it holds a copy. The times travel as microseconds since the epoch, 0 for none.
+// queue's rows and the time of the oldest; whether it holds a copy; when it was first seen and when the reconciliation's current full
+// pass started (R-STOR-061). The times travel as microseconds since the epoch, 0 for none.
 func (q *Queries) StorageConnectionsList(ctx context.Context, staleSecs float64) ([]StorageConnectionsListRow, error) {
 	rows, err := q.db.Query(ctx, storageConnectionsList, staleSecs)
 	if err != nil {
@@ -130,6 +139,8 @@ func (q *Queries) StorageConnectionsList(ctx context.Context, staleSecs float64)
 			&i.DrainedUs,
 			&i.RetiredUs,
 			&i.LastFullPassUs,
+			&i.FirstSeenUs,
+			&i.PassStartedUs,
 			&i.LiveReplicas,
 			&i.Configured,
 			&i.CircuitOpen,
@@ -148,47 +159,73 @@ func (q *Queries) StorageConnectionsList(ctx context.Context, staleSecs float64)
 	return items, nil
 }
 
+const storageStoredNow = `-- name: StorageStoredNow :one
+SELECT (COALESCE((SELECT t.blobs FROM storage_usage_totals t WHERE t.id = 1), 0)
+        + COALESCE((SELECT sum(d.blobs) FROM storage_usage_deltas d WHERE d.repo_id IS NULL), 0))::bigint AS blobs,
+       (COALESCE((SELECT t.physical_bytes FROM storage_usage_totals t WHERE t.id = 1), 0)
+        + COALESCE((SELECT sum(d.physical_bytes) FROM storage_usage_deltas d WHERE d.repo_id IS NULL), 0))::bigint AS bytes
+`
+
+type StorageStoredNowRow struct {
+	Blobs int64
+	Bytes int64
+}
+
+// The live blobs and their bytes now, for the storage overview (R-STOR-107, Q-STOR-504): the folded counter of R-STOR-003 plus the deltas
+// the fold has not taken yet, as StorageSummaryTotals reads them; one row and a short table, never a count over blobs.
+func (q *Queries) StorageStoredNow(ctx context.Context) (StorageStoredNowRow, error) {
+	row := q.db.QueryRow(ctx, storageStoredNow)
+	var i StorageStoredNowRow
+	err := row.Scan(&i.Blobs, &i.Bytes)
+	return i, err
+}
+
 const storageSummaryConnections = `-- name: StorageSummaryConnections :many
 WITH periods AS (
     -- two arrays of one length, unnested side by side
-    SELECT unnest($3::text[]) AS id, unnest($4::float8[]) AS seconds
-), copies AS (
-    SELECT c.connection_id, c.state, c.stored_size, b.size, c.verified_at, c.created_at,
-           (c.state = 'present' AND NOT EXISTS (
-               SELECT 1 FROM blob_copies o
-                WHERE o.sha256 = c.sha256 AND o.connection_id <> c.connection_id AND o.state = 'present')) AS sole
+    SELECT unnest($1::text[]) AS id, unnest($2::float8[]) AS seconds
+), per_connection AS (
+    SELECT c.connection_id,
+           count(*) FILTER (WHERE c.state = 'present') AS present_copies,
+           sum(c.stored_size) FILTER (WHERE c.state = 'present') AS present_bytes,
+           sum(b.size) FILTER (WHERE c.state = 'present') AS present_blob_bytes,
+           count(*) FILTER (WHERE c.state = 'missing') AS missing_copies,
+           count(*) FILTER (WHERE c.state = 'corrupt') AS corrupt_copies,
+           count(*) FILTER (
+               WHERE c.state = 'present'
+                 AND c.verified_at >= now() - make_interval(secs => COALESCE(p.seconds, $3::float8))
+           ) AS verified_within_period,
+           count(*) FILTER (
+               WHERE c.state = 'present'
+                 AND COALESCE(c.verified_at, c.created_at)
+                     < now() - make_interval(secs => COALESCE(p.seconds, $3::float8) + $4::float8)
+           ) AS scrub_overdue,
+           count(*) FILTER (WHERE c.state = 'present' AND c.storage_key_id IS NOT NULL) AS keyed_copies
       FROM blob_copies c
       JOIN blobs b ON b.sha256 = c.sha256 AND b.state = 'live'
+      LEFT JOIN periods p ON p.id = c.connection_id
+     GROUP BY c.connection_id
 )
 SELECT sc.id,
-       count(c.connection_id) FILTER (WHERE c.state = 'present')::bigint AS present_copies,
-       COALESCE(sum(c.stored_size) FILTER (WHERE c.state = 'present'), 0)::bigint AS present_bytes,
-       COALESCE(sum(c.size) FILTER (WHERE c.state = 'present'), 0)::bigint AS present_blob_bytes,
-       count(c.connection_id) FILTER (WHERE c.state = 'missing')::bigint AS missing_copies,
-       count(c.connection_id) FILTER (WHERE c.state = 'corrupt')::bigint AS corrupt_copies,
-       count(c.connection_id) FILTER (
-           WHERE c.state = 'present'
-             AND c.verified_at >= now() - make_interval(secs => COALESCE(p.seconds, $1::float8))
-       )::bigint AS verified_within_period,
-       count(c.connection_id) FILTER (
-           WHERE c.state = 'present'
-             AND COALESCE(c.verified_at, c.created_at)
-                 < now() - make_interval(secs => COALESCE(p.seconds, $1::float8) + $2::float8)
-       )::bigint AS scrub_overdue,
-       count(c.connection_id) FILTER (WHERE c.sole)::bigint AS sole_copies
+       COALESCE(pc.present_copies, 0)::bigint AS present_copies,
+       COALESCE(pc.present_bytes, 0)::bigint AS present_bytes,
+       COALESCE(pc.present_blob_bytes, 0)::bigint AS present_blob_bytes,
+       COALESCE(pc.missing_copies, 0)::bigint AS missing_copies,
+       COALESCE(pc.corrupt_copies, 0)::bigint AS corrupt_copies,
+       COALESCE(pc.verified_within_period, 0)::bigint AS verified_within_period,
+       COALESCE(pc.scrub_overdue, 0)::bigint AS scrub_overdue,
+       COALESCE(pc.keyed_copies, 0)::bigint AS keyed_copies
   FROM storage_connections sc
-  LEFT JOIN periods p ON p.id = sc.id
-  LEFT JOIN copies c ON c.connection_id = sc.id
+  LEFT JOIN per_connection pc ON pc.connection_id = sc.id
  WHERE sc.retired_at IS NULL
- GROUP BY sc.id, p.seconds
  ORDER BY sc.id
 `
 
 type StorageSummaryConnectionsParams struct {
-	DefaultPeriodSeconds float64
-	GraceSeconds         float64
 	Ids                  []string
 	PeriodSeconds        []float64
+	DefaultPeriodSeconds float64
+	GraceSeconds         float64
 }
 
 type StorageSummaryConnectionsRow struct {
@@ -200,20 +237,21 @@ type StorageSummaryConnectionsRow struct {
 	CorruptCopies        int64
 	VerifiedWithinPeriod int64
 	ScrubOverdue         int64
-	SoleCopies           int64
+	KeyedCopies          int64
 }
 
 // The figures of every connection that is not retired (R-STOR-028, R-STOR-061): its copies of live blobs per state, the stored bytes of
 // the present ones and the plain bytes of their blobs (the backlog's subtrahend), the present copies read whole within the connection's
-// scrub period, the overdue ones (the period and the grace, Q-STOR-266), and the sole copies, the live blobs whose only present copy
-// lies here (Q-STOR-371). The periods are the worker's configuration (ids and seconds), default_period_seconds for a connection it does
-// not configure. One pass over the copies of live blobs; a sole copy costs one probe of the primary key of blob_copies.
+// scrub period, the overdue ones (the period and the grace, Q-STOR-266), and the present copies that name a storage key (R-STOR-106).
+// The periods are the worker's configuration (ids and seconds), default_period_seconds for a connection it does not configure. One pass
+// over the copies of live blobs, grouped by their connection alone, so that a hash of a few groups takes it and nothing is sorted; the
+// connections without a copy are joined after. The sole copies are StorageSummaryCopies' (Q-STOR-501).
 func (q *Queries) StorageSummaryConnections(ctx context.Context, arg StorageSummaryConnectionsParams) ([]StorageSummaryConnectionsRow, error) {
 	rows, err := q.db.Query(ctx, storageSummaryConnections,
-		arg.DefaultPeriodSeconds,
-		arg.GraceSeconds,
 		arg.Ids,
 		arg.PeriodSeconds,
+		arg.DefaultPeriodSeconds,
+		arg.GraceSeconds,
 	)
 	if err != nil {
 		return nil, err
@@ -231,7 +269,68 @@ func (q *Queries) StorageSummaryConnections(ctx context.Context, arg StorageSumm
 			&i.CorruptCopies,
 			&i.VerifiedWithinPeriod,
 			&i.ScrubOverdue,
-			&i.SoleCopies,
+			&i.KeyedCopies,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const storageSummaryCopies = `-- name: StorageSummaryCopies :many
+WITH per_blob AS (
+    SELECT c.sha256,
+           count(*) FILTER (WHERE c.state = 'present') AS present,
+           count(*) FILTER (WHERE c.state = 'present' AND c.connection_id = ANY ($1::text[])) AS on_target,
+           min(c.connection_id) FILTER (WHERE c.state = 'present') AS first_present
+      FROM blob_copies c
+      JOIN storage_connections sc ON sc.id = c.connection_id AND sc.retired_at IS NULL
+     GROUP BY c.sha256
+)
+SELECT pb.present::int AS copies,
+       (pb.on_target >= cardinality($1::text[]))::boolean AS on_every_target,
+       (CASE WHEN pb.present = 1 THEN pb.first_present ELSE '' END)::text AS sole_connection,
+       count(*)::bigint AS blobs,
+       COALESCE(sum(b.size), 0)::bigint AS bytes
+  FROM per_blob pb
+  JOIN blobs b ON b.sha256 = pb.sha256 AND b.state = 'live'
+ GROUP BY 1, 2, 3
+ ORDER BY 1, 2, 3
+`
+
+type StorageSummaryCopiesRow struct {
+	Copies         int32
+	OnEveryTarget  bool
+	SoleConnection string
+	Blobs          int64
+	Bytes          int64
+}
+
+// The copies of the installation per blob (R-STOR-106, Q-STOR-501, Q-STOR-502): one pass over the copies of live blobs on the connections
+// that are not retired, grouped by blob, that counts each blob's present copies, those on the target connections (the computing worker's
+// connections without drain, Q-STOR-500) and, for a blob with one present copy, the connection that holds it. The result is grouped
+// again into a handful of rows: the number of present copies, whether the blob lies on every target connection, the connection of a
+// sole copy (empty for any other), and the blobs and their plain bytes. A live blob without a copy row is in no row; Assemble counts it
+// from the live blobs. The copies are grouped by blob first and the blobs joined after, once per blob; no probe per copy.
+func (q *Queries) StorageSummaryCopies(ctx context.Context, targets []string) ([]StorageSummaryCopiesRow, error) {
+	rows, err := q.db.Query(ctx, storageSummaryCopies, targets)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []StorageSummaryCopiesRow{}
+	for rows.Next() {
+		var i StorageSummaryCopiesRow
+		if err := rows.Scan(
+			&i.Copies,
+			&i.OnEveryTarget,
+			&i.SoleConnection,
+			&i.Blobs,
+			&i.Bytes,
 		); err != nil {
 			return nil, err
 		}
@@ -301,6 +400,40 @@ func (q *Queries) StorageSummaryLatest(ctx context.Context) ([]StorageSummaryLat
 	items := []StorageSummaryLatestRow{}
 	for rows.Next() {
 		var i StorageSummaryLatestRow
+		if err := rows.Scan(&i.ComputedUs, &i.DurationMs, &i.Summary); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const storageSummaryLatestFigures = `-- name: StorageSummaryLatestFigures :many
+SELECT (EXTRACT(EPOCH FROM s.computed_at) * 1000000)::bigint AS computed_us, s.duration_ms, (s.summary - 'repositories')::jsonb AS summary
+  FROM storage_summary s
+ WHERE s.id = 1
+`
+
+type StorageSummaryLatestFiguresRow struct {
+	ComputedUs int64
+	DurationMs int32
+	Summary    json.RawMessage
+}
+
+// The latest snapshot without its repositories, for the connections' list and the storage overview (R-STOR-061, R-STOR-107,
+// Q-STOR-507): the server leaves out the member that is most of the document, so that neither the wire nor the decoding carries it.
+func (q *Queries) StorageSummaryLatestFigures(ctx context.Context) ([]StorageSummaryLatestFiguresRow, error) {
+	rows, err := q.db.Query(ctx, storageSummaryLatestFigures)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []StorageSummaryLatestFiguresRow{}
+	for rows.Next() {
+		var i StorageSummaryLatestFiguresRow
 		if err := rows.Scan(&i.ComputedUs, &i.DurationMs, &i.Summary); err != nil {
 			return nil, err
 		}

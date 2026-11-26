@@ -104,6 +104,37 @@ func validateConnection(r *Report, key string, raw, c StorageConnection) {
 	if raw.KeyedNames != nil && !c.Encrypted {
 		r.Add(key, "keyed_names is a detail of an encrypted connection; on a connection that is not encrypted the content is readable anyway (R-STOR-075)")
 	}
+	if _, err := parseCapacity(c.Capacity); err != nil {
+		r.Add(key, "capacity %v (R-STOR-106)", err)
+	}
+}
+
+// minCapacity is the least capacity an element may state (R-STOR-106, Q-STOR-503): a smaller one is a size written without its unit.
+const minCapacity = GiB
+
+// parseCapacity reads an element's capacity: empty states none (0), anything else is a size of at least minCapacity.
+func parseCapacity(s string) (int64, error) {
+	if strings.TrimSpace(s) == "" {
+		return 0, nil
+	}
+	b, err := ParseByteSize(s)
+	if err != nil {
+		return 0, fmt.Errorf("%q is not a size (example: 5TiB)", s)
+	}
+	if b < minCapacity {
+		return 0, fmt.Errorf("%q is below %s; write the size with its unit (example: 5TiB), or leave capacity empty to state none", s, minCapacity)
+	}
+	return int64(b), nil
+}
+
+// CapacityBytes is the element's capacity in bytes, the operator's statement of what the store may hold (R-STOR-106, Q-STOR-503); 0
+// when it states none or the value does not pass the validation. Shown against the stored bytes, never enforced.
+func (c StorageConnection) CapacityBytes() int64 {
+	n, err := parseCapacity(c.Capacity)
+	if err != nil {
+		return 0
+	}
+	return n
 }
 
 // encryptedSegment is the plaintext of a segment of the stored format (storage.md R-STOR-076): while a connection is encrypted, a

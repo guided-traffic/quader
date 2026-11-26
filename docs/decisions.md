@@ -9751,10 +9751,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-API
 
-171 questions on [spec/api-and-ui.md](spec/api-and-ui.md) and [spec/formats/ansible.md](spec/formats/ansible.md).
+174 questions on [spec/api-and-ui.md](spec/api-and-ui.md) and [spec/formats/ansible.md](spec/formats/ansible.md).
 
 <details>
-<summary>Q-API: 171 questions</summary>
+<summary>Q-API: 174 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -9929,6 +9929,9 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-API-457](spec/api-and-ui.md#q-api-457--a-debian-package-is-used-under-the-names-it-provides-and-every-alternative-counts) | A Debian package is used under the names it provides, and every alternative counts | Decided by the development agent on 2026-11-26 | (a) Every alternative is a row; the architecture qualifier is dropped; a package is used under its own name and under the names its visible versions provide, one step | — |
 | [Q-API-458](spec/api-and-ui.md#q-api-458--a-dependent-the-reader-may-not-read-is-not-read) | A dependent the reader may not read is not read | Decided by the development agent on 2026-11-26 | (a) The repositories the reader may read are decided first (the package list's scope); the statement walks the index `(repo_id, name)` for those alone and then applies the list's row visibility | — |
 | [Q-API-459](spec/api-and-ui.md#q-api-459--the-list-filters-by-dependson-as-by-keyword-planned-for-its-values) | The list filters by dependsOn as by keyword, planned for its values | Decided by the development agent on 2026-11-26 | (a): `packages()` sets `plan_cache_mode = force_custom_plan` for the transaction of the list statement when the request carries a search's, a keyword's, the deprecated filter's or dependsOn's ids, as the suggestions do (R-API-064). | — |
+| [Q-API-475](spec/api-and-ui.md#q-api-475--the-storage-overview-is-an-operation-of-its-own) | The storage overview is an operation of its own | Decided by the development agent while building W-37's package P1 ([storage.md](spec/storage.md) R-STOR-107) | (a) `GET /api/v1/storage/overview`, `settings:read`, the states and the figures of now in one answer | — |
+| [Q-API-476](spec/api-and-ui.md#q-api-476--the-connection-lists-additions-are-nullable-for-a-connection-the-replica-does-not-configure) | The connection list's additions are nullable for a connection the replica does not configure | Decided by the development agent while building W-37's package P1 ([storage.md](spec/storage.md) R-STOR-106) | (a) `capacityBytes` and the settings' `sseKmsKeyId` and `sseBucketKey` follow `settings` (Q-API-406): the answering replica's element, `null` where it does not configure the connection or states no capacity; `firstSeenAt`, `passStartedAt`, `encryptedSince` and `retiredAt` are PostgreSQL's and the same from every replica | — |
+| [Q-API-477](spec/api-and-ui.md#q-api-477--the-recheck-of-a-blob-is-audited-before-its-answer) | The recheck of a blob is audited before its answer | Decided by the development agent while building W-37's package P1 ([storage.md](spec/storage.md) R-STOR-027) | (a) `storage.blob.rechecked`, transactional, written in a transaction of its own after the reads and before the answer; when its insert fails the answer is `500` | — |
 
 </details>
 
@@ -11467,10 +11470,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-HA
 
-265 questions on [spec/ha-and-helm.md](spec/ha-and-helm.md).
+266 questions on [spec/ha-and-helm.md](spec/ha-and-helm.md).
 
 <details>
-<summary>Q-HA: 265 questions</summary>
+<summary>Q-HA: 266 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -11739,6 +11742,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-HA-495](spec/ha-and-helm.md#q-ha-495--a-stopping-scanner-tries-its-sign-off-again-for-ten-seconds-a-replica-that-vanished-without-a-word-stays-lost-by-the-registrys-rule) | A stopping scanner tries its sign-off again for ten seconds; a replica that vanished without a word stays lost by the registry's rule | Decided by the development agent | (a), and the profile stops its scanners before quader and the malware scanner's container with `TERM`, as the kubelet does (`deploy/ui-dev/serve.sh`, `malware.sh`). | — |
 | [Q-HA-496](spec/ha-and-helm.md#q-ha-496--two-processes-of-one-name-stand-side-by-side-the-rows-key-is-the-processs-uid-and-the-profile-names-its-image-scanner-after-the-unit) | Two processes of one name stand side by side: the row's key is the process's UID, and the profile names its image scanner after the unit | Decided by the development agent | (a) The profile sets `QUADER_POD_NAME=<project>-vuln-scanner-trivy` for both processes, as the chart does | — |
 | [Q-HA-497](spec/ha-and-helm.md#q-ha-497--the-drain-per-role-holds-its-p99-to-the-larger-of-the-warm-ups-and-the-post-drain-windows) | The drain per role holds its p99 to the larger of the warm-up's and the post-drain window's | Decided by the development agent on 2026-11-26 | (a) The bound is twice the larger of the warm-up's p99 and the post-drain window's (the minute after the drain window, until the load ends); each role's phase is logged | — |
+| [Q-HA-505](spec/ha-and-helm.md#q-ha-505--capacity-is-a-key-of-the-element-a-size-with-the-schemas-pattern) | Capacity is a key of the element, a size with the schema's pattern | Decided by the development agent while building W-37's package P1 ([storage.md](spec/storage.md) R-STOR-106, Q-STOR-503) | (a) `capacity` in the element of `config.storage.connections`, passed through, the values file's element with `capacity: ""`; the schema allows an empty string or a whole number with a unit of `KiB` to `TiB` or `KB` to `TB`, the binary checks the bound of `1GiB` | — |
 
 </details>
 
@@ -12346,10 +12350,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-OPS
 
-127 questions on [spec/operations-and-observability.md](spec/operations-and-observability.md).
+128 questions on [spec/operations-and-observability.md](spec/operations-and-observability.md).
 
 <details>
-<summary>Q-OPS: 127 questions</summary>
+<summary>Q-OPS: 128 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -12480,6 +12484,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-OPS-450](spec/operations-and-observability.md#q-ops-450--a-change-of-a-format-whose-unit-is-a-file-names-its-folder) | A change of a format whose unit is a file names its folder | Decided by the development agent on 2026-11-26 | (a) The unit of a generic file's change is a folder: the folder an upload wrote it into, the folder a delete named (`<folder>/`, `/` for the root) | — |
 | [Q-OPS-451](spec/operations-and-observability.md#q-ops-451--the-filters-apply-to-a-rows-every-event-and-the-callers-name-is-part-of-its-key) | The filters apply to a row's every event, and the caller's name is part of its key | Decided by the development agent on 2026-11-26 | (a) The predecessor test and the walk apply every filter that can differ inside a key (action, prefix, category, outcome, resource, trace); the key holds the name | — |
 | [Q-OPS-452](spec/operations-and-observability.md#q-ops-452--the-filter-by-an-actors-name-is-an-index-condition) | The filter by an actor's name is an index condition | Decided by the development agent on 2026-11-26 | (a) The value is an ID when it is a UUID, a name otherwise, never both; a partial index on `(actor_name, occurred_at DESC)` | [ADR-297](#adr-297--the-audit-log-shows-a-download-as-one-row-and-keeps-one-event-per-item) |
+| [Q-OPS-473](spec/operations-and-observability.md#q-ops-473--the-recheck-of-a-blob-is-an-event-of-the-registry) | The recheck of a blob is an event of the registry | Decided by the development agent while building W-37's package P1 ([storage.md](spec/storage.md) R-STOR-027) | (a) `storage.blob.rechecked` in R-OPS-014's registry, category `system`, transactional, no hook, not journaled; its data the digest, the content state after the reads and each copy's connection and state | — |
 
 </details>
 
@@ -12993,10 +12998,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-STOR
 
-216 questions on [spec/storage.md](spec/storage.md).
+224 questions on [spec/storage.md](spec/storage.md).
 
 <details>
-<summary>Q-STOR: 216 questions</summary>
+<summary>Q-STOR: 224 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -13216,6 +13221,14 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-STOR-472](spec/storage.md#q-stor-472--the-value-is-encoded-before-the-trace-and-the-key-destroyed-before-the-insert) | The value is encoded before the trace, and the key destroyed before the insert | Decided by the builder | (a) Encode, destroy the key, write the trace, note the value for the marking | [ADR-250](#adr-250--the-handover-per-blob-to-a-bastion-a-link-and-the-data-key-of-one-released-blob-in-the-answer-to-its-forward) |
 | [Q-STOR-475](spec/storage.md#q-stor-475--the-dry-run-counts-the-files-whose-data-key-was-handed-and-the-handovers-and-names-the-audit-logs-bound) | The dry run counts the files whose data key was handed and the handovers, and names the audit log's bound | Decided by the development agent | (a) Both numbers and the bound: the files (the distinct `sha256` of the events of the connection or under one of its keys), the handovers (the events), and the day the audit log goes back to | [ADR-255](#adr-255--the-storage-keys-of-a-retired-connection-can-be-destroyed-so-that-what-stays-at-a-provider-becomes-unreadable) |
 | [Q-STOR-486](spec/storage.md#q-stor-486--a-spool-file-is-flushed-every-32-mib-while-the-body-arrives-as-every-large-local-write-is) | A spool file is flushed every 32 MiB while the body arrives, as every large local write is | Decided by the development agent | (a) The spool writes through `syncwrite.Writer`, which flushes at every 32 MiB written, whatever the size of the reads; the rest of a body after the last flush is left to the page cache | — |
+| [Q-STOR-500](spec/storage.md#q-stor-500--the-target-is-the-computing-workers-connections-without-drain) | The target is the computing worker's connections without drain | Decided by the development agent while building W-37's package P1 | (a) The worker that computes the summary counts its own connections without `drain` | — |
+| [Q-STOR-501](spec/storage.md#q-stor-501--one-pass-grouped-by-blob-replaces-the-probe-per-copy) | One pass grouped by blob replaces the probe per copy | Decided by the development agent while building W-37's package P1 | (a) A second statement grouped by blob that reduces to a handful of rows (copies, on every target, the sole copy's connection), and the per-connection pass without the probe | — |
+| [Q-STOR-502](spec/storage.md#q-stor-502--copies-per-blob-count-the-connections-that-are-not-retired) | Copies per blob count the connections that are not retired | Decided by the development agent while building W-37's package P1 | (a) Present copies on every connection that is not retired | — |
+| [Q-STOR-503](spec/storage.md#q-stor-503--capacity-is-a-statement-shown-and-never-enforced) | Capacity is a statement, shown and never enforced | Decided by the development agent while building W-37's package P1 | (a) An optional key `capacity` per element, a size of at least `1GiB`, shown and never enforced | — |
+| [Q-STOR-504](spec/storage.md#q-stor-504--the-overviews-stored-reads-the-folded-totals) | The overview's stored reads the folded totals | Decided by the development agent while building W-37's package P1 | (a) `stored` from the folded counter and its unfolded deltas, read at the request | — |
+| [Q-STOR-505](spec/storage.md#q-stor-505--the-overview-derives-every-state-server-side) | The overview derives every state server-side | Decided by the development agent while building W-37's package P1 | (a) The server answers a state per tile with the figures behind it | — |
+| [Q-STOR-506](spec/storage.md#q-stor-506--the-overviews-states) | The overview's states | Decided by the development agent while building W-37's package P1 after W-37's plan (B.14) | — | — |
+| [Q-STOR-507](spec/storage.md#q-stor-507--the-overview-and-the-connections-list-read-the-snapshot-without-its-repositories) | The overview and the connections' list read the snapshot without its repositories | Decided by the development agent while building W-37's package P1, by the measurement the plan asked for | (a) The reads that do not show the repositories ask the server for the snapshot without that member (`StorageSummaryLatestFigures`); `GET /api/v1/storage/summary` reads it whole | — |
 
 </details>
 

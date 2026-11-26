@@ -4308,6 +4308,10 @@
                 "description": "The connection's trust anchor; empty means the outbound trust store.",
                 "type": "string"
               },
+              "capacity": {
+                "description": "What the store may hold, as the operator states it (example: 5TiB), at least 1GiB; empty states none. Shown against the stored bytes, never enforced (R-STOR-106).",
+                "type": "string"
+              },
               "credentials_source": {
                 "description": "default (default), webIdentity or static (R-STOR-031).",
                 "type": "string"

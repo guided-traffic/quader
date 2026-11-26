@@ -1,17 +1,23 @@
 package v1
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/santhosh-tekuri/jsonschema/v6"
+
 	"github.com/guided-traffic/quader/internal/api/v1/gen"
+	"github.com/guided-traffic/quader/internal/audit"
 	"github.com/guided-traffic/quader/internal/blob"
 	"github.com/guided-traffic/quader/internal/blob/scrub"
+	"github.com/guided-traffic/quader/internal/meta"
 )
 
 // Tests of the list of damaged blobs and the recheck of one blob (storage.md R-STOR-027, Q-API-386) over in-memory services;
@@ -73,8 +79,10 @@ func TestR_STOR_027_TheDamagedBlobsList(t *testing.T) {
 			{Copy: blob.Copy{Connection: "secondary", State: blob.CopyCorrupt}, StateChangedAt: at},
 		},
 	}
+	store, events := &mirrorStore{}, &recordedEvents{}
 	s := newSetup(t, func(o *Options) {
 		o.API.Config = apiConfigForTest()
+		o.API.Store, o.API.Audit = store, events
 		o.Storage = f.services()
 	}, authed)
 	h := val.Handler(t, s.handler)
@@ -146,6 +154,39 @@ func TestR_STOR_027_TheDamagedBlobsList(t *testing.T) {
 		}
 	})
 
+	t.Run("R-STOR-027 the recheck is audited in a transaction before the answer, with the caller, the digest and every copy's state", func(t *testing.T) {
+		before, commits := len(events.events), store.commits
+		if w := httpRecorder(h, http.MethodPost, "/api/v1/storage/damaged-blobs/"+damagedDigest(0x1a).Hex()+"/recheck"); w.Code != http.StatusOK {
+			t.Fatalf("%d %s", w.Code, w.Body.String())
+		}
+		if len(events.events) != before+1 || store.commits != commits+1 {
+			t.Fatalf("events %d, commits %d", len(events.events)-before, store.commits-commits)
+		}
+		ev := events.events[len(events.events)-1]
+		want := `{"contentStatus":"ok","copies":[{"connection":"default","state":"present"},{"connection":"secondary","state":"corrupt"}],"sha256":"` +
+			damagedDigest(0x1a).Hex() + `"}`
+		if ev.Type != audit.EventStorageBlobRechecked || ev.Subject.Kind != "blob" || ev.Subject.ID != damagedDigest(0x1a).Hex() || ev.Actor.ID != callerUUID ||
+			string(ev.Details) != want {
+			t.Errorf("event = %+v, details %s", ev, ev.Details)
+		}
+		if err := matchesEventSchema(ev.Type, ev.Details); err != nil {
+			t.Errorf("the details do not match the registered schema: %v", err)
+		}
+		before = len(events.events)
+		if w := httpRecorder(h, http.MethodPost, "/api/v1/storage/damaged-blobs/"+damagedDigest(0x3c).Hex()+"/recheck"); w.Code != http.StatusNotFound || len(events.events) != before {
+			t.Errorf("an unknown blob is audited: %d, %d events", w.Code, len(events.events)-before)
+		}
+		failing := newSetup(t, func(o *Options) {
+			o.API.Config = apiConfigForTest()
+			o.API.Store, o.API.Audit = store, failingRecorder{}
+			o.Storage = f.services()
+		}, authed)
+		if w := httpRecorder(failing.handler, http.MethodPost, "/api/v1/storage/damaged-blobs/"+damagedDigest(0x1a).Hex()+"/recheck"); w.Code != http.StatusInternalServerError ||
+			strings.Contains(w.Body.String(), "contentStatus") {
+			t.Errorf("an answer the audit log does not hold: %d %s", w.Code, w.Body.String())
+		}
+	})
+
 	t.Run("R-STOR-027 without the services both operations answer 503", func(t *testing.T) {
 		bare := newSetup(t, func(o *Options) { o.API.Config = apiConfigForTest() }, authed)
 		if w := bare.get("/api/v1/storage/damaged-blobs"); w.Code != http.StatusServiceUnavailable {
@@ -155,6 +196,39 @@ func TestR_STOR_027_TheDamagedBlobsList(t *testing.T) {
 			t.Errorf("recheck: %d", w.Code)
 		}
 	})
+}
+
+// failingRecorder refuses every transactional event, as an audit insert that fails its transaction does.
+type failingRecorder struct{}
+
+func (failingRecorder) RecordTx(context.Context, meta.Tx, audit.Event) error {
+	return errors.New("the audit insert failed")
+}
+func (failingRecorder) Record(context.Context, audit.Event) {}
+
+// matchesEventSchema checks an event's details against the JSON Schema its type registered.
+func matchesEventSchema(name string, details []byte) error {
+	et, ok := audit.Lookup(name)
+	if !ok {
+		return errors.New("the event type is not registered")
+	}
+	doc, err := jsonschema.UnmarshalJSON(strings.NewReader(et.Schema))
+	if err != nil {
+		return err
+	}
+	c := jsonschema.NewCompiler()
+	if err := c.AddResource("quader:audit/"+name, doc); err != nil {
+		return err
+	}
+	sch, err := c.Compile("quader:audit/" + name)
+	if err != nil {
+		return err
+	}
+	v, err := jsonschema.UnmarshalJSON(bytes.NewReader(details))
+	if err != nil {
+		return err
+	}
+	return sch.Validate(v)
 }
 
 // httpRecorder sends one request without a body to h.

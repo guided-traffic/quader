@@ -2701,6 +2701,11 @@
                   },
                   "keyed_names": {
                     "type": "boolean"
+                  },
+                  "capacity": {
+                    "type": "string",
+                    "pattern": "^$|^[1-9][0-9]*(KiB|MiB|GiB|TiB|KB|MB|GB|TB)$",
+                    "description": "What the store may hold, as the operator states it (storage.md R-STOR-106, Q-HA-505): a size with its unit, at least 1GiB (the binary checks the bound); empty states none. Shown, never enforced."
                   }
                 },
                 "additionalProperties": false

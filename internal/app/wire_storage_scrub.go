@@ -110,5 +110,6 @@ func (a *App) storageAPI() v1.StorageServices {
 		},
 		Connections: a.storageConnections,
 		Summary:     a.storageSummary,
+		Overview:    a.storageOverview,
 	}
 }

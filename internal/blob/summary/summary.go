@@ -49,6 +49,8 @@ type Summary struct {
 	PendingCollection Pending `json:"pendingCollection"`
 	// Damaged counts the live blobs per content state other than ok (R-STOR-027): blobs, not copies.
 	Damaged Damaged `json:"damaged"`
+	// Copies are the copies of the installation per blob against the target (R-STOR-106).
+	Copies Copies `json:"copies"`
 	// Connections are the figures per connection that is not retired, by id (R-STOR-061).
 	Connections []Connection `json:"connections"`
 	// Repositories are the local and remote repositories and the virtual ones that hold generated items (Q-STOR-215), by project and
@@ -87,6 +89,26 @@ type Damaged struct {
 	Corrupt int64 `json:"corrupt"`
 }
 
+// Copies are the copies of the installation per blob (R-STOR-106): the target, how many blobs hold how many present copies, and the
+// blobs below the target. Bytes are the blobs' plain bytes.
+type Copies struct {
+	// Target is the number of connections every blob should lie on: the computing worker's connections without drain (Q-STOR-500).
+	Target int `json:"target"`
+	// PerBlob is the live blobs by their number of present copies on the connections that are not retired (Q-STOR-502), the most copies
+	// first; a number no blob has is left out. A live blob without a present copy counts under 0.
+	PerBlob []CopyCount `json:"perBlob"`
+	// BelowTarget is the live blobs that lack a present copy on at least one target connection: the union of the target connections'
+	// backlogs, not their sum.
+	BelowTarget Pending `json:"belowTarget"`
+}
+
+// CopyCount is the live blobs with one number of present copies.
+type CopyCount struct {
+	Copies int   `json:"copies"`
+	Blobs  int64 `json:"blobs"`
+	Bytes  int64 `json:"bytes"`
+}
+
 // Connection is the figures of one connection (R-STOR-028, R-STOR-061), counted over the copies of live blobs.
 type Connection struct {
 	ID string `json:"id"`
@@ -107,6 +129,11 @@ type Connection struct {
 	// SoleCopies counts the live blobs whose only present copy lies on this connection (Q-STOR-371): what a detached connection's
 	// removal would cost.
 	SoleCopies int64 `json:"soleCopies"`
+	// SoleBytes is the plain bytes of the blobs counted by SoleCopies: what would be unavailable without this connection (R-STOR-106).
+	SoleBytes int64 `json:"soleBytes"`
+	// KeyedCopies counts the present copies that name a storage key (R-STOR-106): on an encrypted connection every present copy, so
+	// KeyedCopies / PresentCopies is the share in Quader's format; 0 on a plain connection.
+	KeyedCopies int64 `json:"keyedCopies"`
 	// KeyCopies counts the copies per storage key that wrapped them (R-STOR-088); empty on a plain connection.
 	KeyCopies map[string]int64 `json:"keyCopies,omitempty"`
 }
@@ -132,6 +159,8 @@ type Options struct {
 	// Periods is the scrub_period of each connection of the computing worker's configuration (R-STOR-050); a connection it does not
 	// configure is judged by DefaultScrubPeriod.
 	Periods map[string]time.Duration
+	// Targets is the ids of the computing worker's connections without drain (Q-STOR-500): every blob should lie on each.
+	Targets []string
 	// Now is the clock; time.Now when nil.
 	Now func() time.Time
 }
@@ -144,13 +173,16 @@ type Input struct {
 	Totals       q.StorageSummaryTotalsRow
 	Repositories []q.StorageSummaryRepositoriesRow
 	Connections  []q.StorageSummaryConnectionsRow
+	Copies       []q.StorageSummaryCopiesRow
 	KeyCopies    []q.StorageSummaryKeyCopiesRow
+	// Targets is Options.Targets.
+	Targets []string
 }
 
 // Compute runs the statements of the summary one after the other on one connection, outside a transaction (READ COMMITTED, R-ARCH-019:
-// no snapshot is held across the statements), and assembles the result. The copies of the connections are counted first and the live
-// blobs after, so that an upload between the two can only show as a gap the reconciliation fills anyway; Assemble bounds the backlog and
-// the fill (Q-STOR-372). It writes nothing.
+// no snapshot is held across the statements), and assembles the result. The copies of the connections and per blob are counted first and
+// the live blobs after, so that an upload between the two can only show as a gap the reconciliation fills anyway; Assemble bounds the
+// backlog, the fill and the blobs without a copy (Q-STOR-372). It writes nothing.
 func Compute(ctx context.Context, db *postgres.DB, o Options) (Summary, error) {
 	now := o.Now
 	if now == nil {
@@ -166,7 +198,9 @@ func Compute(ctx context.Context, db *postgres.DB, o Options) (Summary, error) {
 	for i, id := range ids {
 		periods[i] = o.Periods[id].Seconds()
 	}
-	var rows Input
+	targets := append([]string{}, o.Targets...)
+	sort.Strings(targets)
+	rows := Input{Targets: targets}
 	err := db.Read(ctx, func(c q.DBTX) error {
 		qs := q.New(c)
 		var err error
@@ -175,6 +209,9 @@ func Compute(ctx context.Context, db *postgres.DB, o Options) (Summary, error) {
 		})
 		if err != nil {
 			return fmt.Errorf("connections: %w", err)
+		}
+		if rows.Copies, err = qs.StorageSummaryCopies(ctx, targets); err != nil {
+			return fmt.Errorf("copies per blob: %w", err)
 		}
 		if rows.KeyCopies, err = qs.StorageSummaryKeyCopies(ctx); err != nil {
 			return fmt.Errorf("storage keys: %w", err)
@@ -206,6 +243,7 @@ func Assemble(r Input) Summary {
 		Trash:             Trash{Items: r.Totals.TrashItems, Bytes: r.Totals.TrashBytes},
 		PendingCollection: Pending{Blobs: r.Totals.PendingBlobs, Bytes: r.Totals.PendingBytes},
 		Damaged:           Damaged{Missing: r.Totals.DamagedMissing, Corrupt: r.Totals.DamagedCorrupt},
+		Copies:            assembleCopies(r.Copies, len(r.Targets), r.Totals.Blobs, r.Totals.BlobBytes),
 		Connections:       []Connection{},
 		Repositories:      []Repository{},
 	}
@@ -232,6 +270,14 @@ func Assemble(r Input) Summary {
 		}
 		keys[k.ConnectionID][k.StorageKeyID] = k.Copies
 	}
+	sole := map[string]Pending{}
+	for _, c := range r.Copies {
+		if c.SoleConnection != "" {
+			p := sole[c.SoleConnection]
+			p.Blobs, p.Bytes = p.Blobs+c.Blobs, p.Bytes+c.Bytes
+			sole[c.SoleConnection] = p
+		}
+	}
 	for _, c := range r.Connections {
 		fill := 1.0
 		if s.Blobs.Count > 0 {
@@ -239,12 +285,46 @@ func Assemble(r Input) Summary {
 		}
 		s.Connections = append(s.Connections, Connection{
 			ID: c.ID, PresentCopies: c.PresentCopies, PresentBytes: c.PresentBytes, MissingCopies: c.MissingCopies, CorruptCopies: c.CorruptCopies,
-			VerifiedWithinPeriod: c.VerifiedWithinPeriod, ScrubOverdue: c.ScrubOverdue, SoleCopies: c.SoleCopies,
-			BacklogBlobs: max(s.Blobs.Count-c.PresentCopies, 0), BacklogBytes: max(s.Blobs.Bytes-c.PresentBlobBytes, 0),
+			VerifiedWithinPeriod: c.VerifiedWithinPeriod, ScrubOverdue: c.ScrubOverdue, SoleCopies: sole[c.ID].Blobs, SoleBytes: sole[c.ID].Bytes,
+			KeyedCopies: c.KeyedCopies, BacklogBlobs: max(s.Blobs.Count-c.PresentCopies, 0), BacklogBytes: max(s.Blobs.Bytes-c.PresentBlobBytes, 0),
 			FillRatio: fill, KeyCopies: keys[c.ID],
 		})
 	}
 	return s
+}
+
+// assembleCopies folds the rows of the pass per blob into the copies per blob and the blobs below the target (R-STOR-106). The rows hold
+// the blobs with a copy row; the live blobs (the folded counter, read after the pass) less those with a present copy are the blobs under
+// 0, and those less the blobs on every target connection are below the target, each bounded at 0 (Q-STOR-372). With no target nothing
+// is below it.
+func assembleCopies(rows []q.StorageSummaryCopiesRow, target int, liveBlobs, liveBytes int64) Copies {
+	byCount := map[int]CopyCount{}
+	var withCopy, onTarget Pending
+	for _, r := range rows {
+		if r.OnEveryTarget {
+			onTarget.Blobs, onTarget.Bytes = onTarget.Blobs+r.Blobs, onTarget.Bytes+r.Bytes
+		}
+		if r.Copies < 1 {
+			continue
+		}
+		n := int(r.Copies)
+		c := byCount[n]
+		c.Copies, c.Blobs, c.Bytes = n, c.Blobs+r.Blobs, c.Bytes+r.Bytes
+		byCount[n] = c
+		withCopy.Blobs, withCopy.Bytes = withCopy.Blobs+r.Blobs, withCopy.Bytes+r.Bytes
+	}
+	if none := (CopyCount{Blobs: max(liveBlobs-withCopy.Blobs, 0), Bytes: max(liveBytes-withCopy.Bytes, 0)}); none.Blobs > 0 {
+		byCount[0] = none
+	}
+	out := Copies{Target: target, PerBlob: make([]CopyCount, 0, len(byCount))}
+	for _, c := range byCount {
+		out.PerBlob = append(out.PerBlob, c)
+	}
+	sort.Slice(out.PerBlob, func(i, j int) bool { return out.PerBlob[i].Copies > out.PerBlob[j].Copies })
+	if target > 0 {
+		out.BelowTarget = Pending{Blobs: max(liveBlobs-onTarget.Blobs, 0), Bytes: max(liveBytes-onTarget.Bytes, 0)}
+	}
+	return out
 }
 
 // ratio is part / whole rounded to four decimals, or zero when whole is not positive.
@@ -286,16 +366,42 @@ func Latest(ctx context.Context, db *postgres.DB) (Summary, error) {
 	if len(rows) == 0 {
 		return Summary{}, ErrNone
 	}
+	return decodeSnapshot(rows[0].ComputedUs, rows[0].DurationMs, rows[0].Summary)
+}
+
+// LatestFigures is Latest without the repositories, which the server leaves out (Q-STOR-507): the read of the connections' list and the
+// storage overview, which use every member but that one; ErrNone before the first computation.
+func LatestFigures(ctx context.Context, db *postgres.DB) (Summary, error) {
+	var rows []q.StorageSummaryLatestFiguresRow
+	err := db.Read(ctx, func(c q.DBTX) error {
+		var err error
+		rows, err = q.New(c).StorageSummaryLatestFigures(ctx)
+		return err
+	})
+	if err != nil {
+		return Summary{}, err
+	}
+	if len(rows) == 0 {
+		return Summary{}, ErrNone
+	}
+	return decodeSnapshot(rows[0].ComputedUs, rows[0].DurationMs, rows[0].Summary)
+}
+
+// decodeSnapshot is the snapshot of a row: its JSON with the row's time and duration, every list non-nil.
+func decodeSnapshot(computedUs int64, durationMs int32, body []byte) (Summary, error) {
 	var s Summary
-	if err := json.Unmarshal(rows[0].Summary, &s); err != nil {
+	if err := json.Unmarshal(body, &s); err != nil {
 		return Summary{}, fmt.Errorf("storage summary: the stored snapshot does not decode: %w", err)
 	}
-	s.ComputedAt, s.DurationMs = time.UnixMicro(rows[0].ComputedUs).UTC(), int64(rows[0].DurationMs)
+	s.ComputedAt, s.DurationMs = time.UnixMicro(computedUs).UTC(), int64(durationMs)
 	if s.Connections == nil {
 		s.Connections = []Connection{}
 	}
 	if s.Repositories == nil {
 		s.Repositories = []Repository{}
+	}
+	if s.Copies.PerBlob == nil {
+		s.Copies.PerBlob = []CopyCount{}
 	}
 	return s, nil
 }

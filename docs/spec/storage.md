@@ -3022,7 +3022,12 @@ check moved to R-STOR-058.
   unthrottled, sets the states by what it finds, queues the repairs, and answers with the copies and the content state they give
   (permission `settings:write`, the system administrator's): a present copy that matches is stamped, one that does not is marked; a
   `missing` or `corrupt` copy that now reads whole is `present` again, one that still does not keeps its mark; it writes no object
-  (Q-STOR-267).
+  (Q-STOR-267). The recheck is audited as `storage.blob.rechecked` (`sha256`, `contentStatus`, each copy's `connection` and `state`,
+  the caller as actor) in a transaction of its own before the answer: when the audit insert fails, the answer is `500`
+  ([Q-API-477](api-and-ui.md#q-api-477--the-recheck-of-a-blob-is-audited-before-its-answer),
+  [operations-and-observability.md](operations-and-observability.md) R-OPS-014). Built with W-37's package P1:
+  [storage_damaged_api.go](../../internal/api/v1/storage_damaged_api.go) (`auditRecheck`),
+  [events_storage.go](../../internal/audit/events_storage.go).
 - **Trigger.** `POST /api/v1/system/tasks/scrub/run` with `{"connection": ""}` (optional; empty: every connection) runs the due reads; a
   connection the worker does not configure fails the job at once. Observation and stop through the job API; the job's result carries, per
   connection, `read`, `verified`, `corrupt`, `missing`, `errors`, `bytes`, `repaired`, `repairsFailed` and why its reader `ended`
@@ -3086,7 +3091,11 @@ is not built ([Q-STOR-370](#q-stor-370--the-storage-summary-has-no-member-quota-
   `READ COMMITTED` one after the other ([architecture.md](architecture.md) R-ARCH-019), the copies of the connections before the live
   blobs, so that an upload between them shows only as a gap and the backlog and the fill stay within their bounds
   ([Q-STOR-372](#q-stor-372--the-connections-list-derives-every-state-the-same-for-every-replica-and-counts-over-the-copies-of-live-blobs)).
-  The figures of the connections are one pass over the copies of live blobs.
+  The figures of the connections are one pass over the copies of live blobs grouped by connection; the copies per blob, the blobs below
+  the target and the sole copies with their bytes are a second pass grouped by blob that reduces to a handful of rows (`StorageSummaryCopies`),
+  in place of a probe of the primary key per present copy
+  ([Q-STOR-501](#q-stor-501--one-pass-grouped-by-blob-replaces-the-probe-per-copy); measured in
+  [blob-store.md](../developer/blob-store.md#the-storage-summary-and-the-connections-list-r-stor-028-r-stor-061)). Built with W-37's package P1 (R-STOR-106).
 - Figures:
 
   ```json
@@ -3099,6 +3108,8 @@ is not built ([Q-STOR-370](#q-stor-370--the-storage-summary-has-no-member-quota-
     "trash": { "items": 3210, "bytes": 9123012345 },
     "pendingCollection": { "blobs": 812, "bytes": 1029381233 },
     "damaged": { "missing": 0, "corrupt": 0 },
+    "copies": { "target": 2, "perBlob": [ { "copies": 2, "blobs": 410859, "bytes": 1880456282624 }, { "copies": 1, "blobs": 1234, "bytes": 12884901888 } ],
+                "belowTarget": { "blobs": 1234, "bytes": 12884901888 } },
     "quota": { "enabled": true, "capacityBytes": 5497558138880, "usedRatio": 0.3444, "warnPercent": 80, "limitPercent": 95 },
     "repositories": [
       { "project": "web", "key": "npm-local", "class": "local", "format": "npm", "files": 52011, "folders": 8812, "bytes": 81233920123, "packages": 812, "versions": 9120, "shareOfLogicalBytes": 0.0197 }
@@ -3116,7 +3127,8 @@ is not built ([Q-STOR-370](#q-stor-370--the-storage-summary-has-no-member-quota-
   | `trash` | Trashed items and their logical bytes (R-STOR-022). |
   | `pendingCollection` | Digests in `blob_gc_queue` plus rows in state `deleting`, with their sizes. |
   | `damaged` | Blob counts per `content_status` other than `ok` (R-STOR-027). |
-  | `connections[]` | Per connection that is not retired (R-STOR-061): `id`, `presentCopies`, `presentBytes` (stored bytes), `missingCopies`, `corruptCopies`, `verifiedWithinPeriod` (present copies read whole within the connection's `scrub_period` of the computing worker, 720 h for a connection it does not configure), `scrubOverdue` (not within the period and a day, Q-STOR-266), `backlogBlobs` and `backlogBytes` (live blobs and their plain bytes without a present copy on it), `fillRatio` (`presentCopies` / `blobs.count`, `1` when there is no blob), `soleCopies` (live blobs whose only present copy lies there, [Q-STOR-371](#q-stor-371--the-summary-counts-the-blobs-only-one-connection-holds)); counted over the copies of live blobs. The copies per storage key (R-STOR-088) are kept for the connections' list and not served here. |
+  | `copies` | The copies of the installation per blob (R-STOR-106): `target`, `perBlob[]` (`copies`, `blobs`, `bytes`) and `belowTarget` (`blobs`, `bytes`); bytes are the blobs' plain bytes. |
+  | `connections[]` | Per connection that is not retired (R-STOR-061): `id`, `presentCopies`, `presentBytes` (stored bytes), `missingCopies`, `corruptCopies`, `verifiedWithinPeriod` (present copies read whole within the connection's `scrub_period` of the computing worker, 720 h for a connection it does not configure), `scrubOverdue` (not within the period and a day, Q-STOR-266), `backlogBlobs` and `backlogBytes` (live blobs and their plain bytes without a present copy on it), `fillRatio` (`presentCopies` / `blobs.count`, `1` when there is no blob), `soleCopies` (live blobs whose only present copy lies there, [Q-STOR-371](#q-stor-371--the-summary-counts-the-blobs-only-one-connection-holds)), `soleBytes` (their plain bytes) and `keyedCopies` (present copies that name a storage key, R-STOR-106); counted over the copies of live blobs. The copies per storage key (R-STOR-088) are kept for the connections' list and not served here. |
   | `quota` | The system quota settings of R-STOR-029 and `usedRatio = blobs.bytes / capacityBytes`; `capacityBytes` and `usedRatio` are `null` when no capacity is configured. Not built: the member is absent until R-STOR-029's settings exist (Q-STOR-370). |
   | `repositories[]` | One entry per local and remote repository, and per virtual repository that holds generated items (Q-STOR-215); a virtual repository without items is not listed. `packages` and `versions` count untrashed rows. |
 
@@ -3647,6 +3659,9 @@ Priority: **P1** · Covers: STOR-011, STOR-012
   blobs encrypted (R-STOR-075, with its detail `keyed_names`), accepted since stage 2's package 3 was built on 2026-11-22.
 - **`drain: true`** takes a connection out (R-STOR-051): no upload goes to it, the reconciliation makes sure every blob it holds lies on
   the other connections, and then its copies are deleted.
+- **`capacity`** is what the operator states the store may hold, a size with its unit (`5TiB`), empty by default: a store reports no
+  capacity (R-STOR-029), so the storage page shows the stored bytes against this statement, and nothing enforces it (R-STOR-106,
+  [Q-STOR-503](#q-stor-503--capacity-is-a-statement-shown-and-never-enforced)). Built with W-37's package P1.
 - **One connection stays as simple as today.** The plain path is one element with an `id` and a bucket (and, with static keys, one
   Secret in the chart): `storage.connections: [{bucket: quader-blobs}]`, whose `id` is `default`. Every other key has its default in the field;
   the minimum of copies, the reconciliation and the scrub need no setting. An installation with one connection behaves as before this
@@ -3667,7 +3682,8 @@ Validation at start (a violation is a configuration error naming the key and the
 6. R-STOR-075's rules for `encrypted` and `keyed_names`.
 7. At least one element without `drain: true`, and `storage.replication.min_copies` between 1 and the number of elements without it.
 8. The credential rules of R-STOR-031 (`static` needs both key files) and of R-STOR-032 (`sse_mode: kms` needs `sse_kms_key_id`) per
-   element; `scrub_period` at least `24h`, `scrub_bytes_per_second` at least `1MiB`.
+   element; `scrub_period` at least `24h`, `scrub_bytes_per_second` at least `1MiB`; `capacity` empty or a size of at least `1GiB` (a
+   smaller one is a size written without its unit, R-STOR-106).
 9. The rules against the database (fixed properties, retired identifiers, the marker) are R-STOR-051's.
 
 Configuration (the element with every key; the defaults are in the fields):
@@ -3706,6 +3722,7 @@ storage:
       drain: false                        # default
       encrypted: false                    # default; true: Quader encrypts the connection's blobs (R-STOR-075)
       keyed_names: true                   # default with encrypted: true; refused with encrypted: false (R-STOR-086)
+      capacity: ""                        # default: empty = none stated; example: 5TiB; shown, never enforced (R-STOR-106)
   object_store:                           # the client of every connection (R-STOR-033 to R-STOR-035)
     http:
       max_connections: 256                # default; per connection and replica
@@ -4327,14 +4344,15 @@ facts in [facts.go](../../internal/app/facts.go); the decisions Q-STOR-372 and
         "queue": {"blobs": 0, "oldestQueuedAt": null},
         "summary": {"id": "default", "computedAt": "2026-11-22T10:17:00Z", "presentCopies": 412093, "presentBytes": 1893341184512,
                     "backlogBlobs": 0, "backlogBytes": 0, "fillRatio": 1.0, "missingCopies": 0, "corruptCopies": 0,
-                    "verifiedWithinPeriod": 401233, "scrubOverdue": 0, "soleCopies": 0},
-        "scrubPeriodSeconds": 2592000, "filledAt": "2026-11-23T08:02:11Z", "drainedAt": null, "retiredAt": null,
-        "lastFullPassAt": "2026-11-24T09:58:40Z",
+                    "verifiedWithinPeriod": 401233, "scrubOverdue": 0, "soleCopies": 0, "soleBytes": 0, "keyedCopies": 0},
+        "scrubPeriodSeconds": 2592000, "firstSeenAt": "2026-11-22T05:58:02Z", "filledAt": "2026-11-23T08:02:11Z", "drainedAt": null,
+        "retiredAt": null, "passStartedAt": "2026-11-24T10:02:00Z", "lastFullPassAt": "2026-11-24T09:58:40Z",
+        "encryptedSince": null, "capacityBytes": 5497558138880,
         "capabilities": {"payloadChecksumEnforced": true, "batchDelete": true, "metadata": true, "copyReplacesMetadata": true,
                          "serverSideCopyFrom": {}, "checkedAt": "2026-11-22T06:00:12Z"},
         "settings": {"region": "eu01", "forcePathStyle": false, "payloadChecksum": "sha256", "requestChecksumCalculation": "when_supported",
                      "responseChecksumValidation": "when_supported", "batchDelete": true, "storageClass": "", "sseMode": "none",
-                     "scrubBytesPerSecond": 52428800},
+                     "sseKmsKeyId": "", "sseBucketKey": true, "scrubBytesPerSecond": 52428800},
         "storageKeys": []
       }
     ]
@@ -4345,8 +4363,14 @@ facts in [facts.go](../../internal/app/facts.go); the decisions Q-STOR-372 and
   configure), and so are `endpoint`, `credentialSource`, `drain`, `scrubPeriodSeconds` and `settings` (the non-secret settings of its
   element that R-UI-196's fold shows; Q-API-406); `state` is R-STOR-051's, derived the same on every replica (Q-STOR-372); `summary` is
   `null` before the first storage summary and for a connection it did not count; `storageKeys[]` are R-STOR-088's, each with the copies
-  of the latest summary. The list holds every connection ever seen, retired ones too: first the answering replica's in the order of its
-  configuration, then the others by id.
+  of the latest summary and `retiredAt` (`null` while active). The list holds every connection ever seen, retired ones too: first the
+  answering replica's in the order of its configuration, then the others by id. With W-37's package P1 (R-STOR-106) each connection also
+  carries `firstSeenAt`, `passStartedAt` (the reconciliation's current full pass, `null` between passes), `encryptedSince` (the creation
+  of an encrypted connection's first storage key, `null` for a plain one), `capacityBytes` (the answering replica's `capacity`, `null`
+  when it states none or does not configure the connection,
+  [Q-API-476](api-and-ui.md#q-api-476--the-connection-lists-additions-are-nullable-for-a-connection-the-replica-does-not-configure)),
+  `summary.soleBytes` and `summary.keyedCopies`, and `settings.sseKmsKeyId` and `settings.sseBucketKey` (identifiers and switches of
+  R-STOR-032, no key material). What the store applied (`capabilities.sseApplied`) is W-37's packages P2 and P4.
 - `GET /api/v1/system/info` (R-OPS-004) replaces its object `objectStore` by `objectStore.connections[]` with `id`, `endpoint`, `bucket`,
   `prefix`, `credentialSource`, `encrypted` and `drain` per connection of the answering replica.
 - The storage summary (R-STOR-028) gains `connections[]` with the figures of `summary` above; `blobs` and `damaged` keep their meaning
@@ -5713,6 +5737,126 @@ of its kind in the nightly. The closing run does not start it: the nightly fuzze
 store; whether his in-cluster object gateway keeps the record and replaces it on a copy is what the start check establishes there once the
 release runs (R-STOR-035), not a test.
 
+## The state of the stored content
+
+The owner's two messages of 2026-11-26 (about 21:55 and 21:57): the admin area's storage page shows how many and which stores are
+connected, whether there are or were problems, whether, where and what Quader encrypts, whether the integrity of the data can be checked,
+the recent integrity problems with where and how much storage, the format's own integrity check, and the copies over several
+connections for availability, "kurz und bündig". This section holds the figures of the state now and their API (W-37's package P1); the
+history and the page are W-37's later packages. The page itself is [api-and-ui.md](api-and-ui.md)'s.
+
+### R-STOR-106 · The copies of the installation in figures
+Priority: **P1** · Covers: quader-only
+
+*Built* (W-37's package P1): [internal/blob/summary](../../internal/blob/summary/summary.go) (`assembleCopies`, `Options.Targets`,
+`Row.EncryptedSince`, `Local.CapacityBytes`), the statements `StorageSummaryCopies` and `StorageSummaryConnections` of
+[storage_summary.sql](../../internal/meta/postgres/queries/storage_summary.sql), the element's `capacity` in
+[storage_connections.go](../../internal/config/storage_connections.go), the targets in
+[wire_storage_summary.go](../../internal/app/wire_storage_summary.go).
+
+- **The target** is the number of connections every blob should lie on: the computing worker's connections without `drain`
+  ([Q-STOR-500](#q-stor-500--the-target-is-the-computing-workers-connections-without-drain)). `storage.replication.min_copies` is the
+  copies written before an upload is answered (R-STOR-053), not the target.
+- **The storage summary (R-STOR-028) counts, once an hour,**
+  - `copies.perBlob[]`: the live blobs by their number of present copies on the connections that are not retired, a detached
+    connection's included ([Q-STOR-502](#q-stor-502--copies-per-blob-count-the-connections-that-are-not-retired)), the most copies first;
+    a live blob without a present copy counts under `copies: 0`;
+  - `copies.belowTarget`: the live blobs that lack a present copy on at least one target connection, the union of the target
+    connections' backlogs and not their sum;
+  - per connection `soleBytes`, the plain bytes of its sole copies (what would be unavailable without it), and `keyedCopies`, its present
+    copies that name a storage key: on an encrypted connection `keyedCopies / presentCopies` is the share written in Quader's format,
+    normally 1.
+
+  One pass grouped by blob gives the copies per blob, the blobs on every target connection and the sole copies with their bytes
+  together ([Q-STOR-501](#q-stor-501--one-pass-grouped-by-blob-replaces-the-probe-per-copy)). Bytes are the blobs' plain bytes.
+- **The connections' list (R-STOR-061)** adds what PostgreSQL and the answering replica know: `encryptedSince`, `firstSeenAt`,
+  `passStartedAt`, `capacityBytes`, a storage key's `retiredAt` and the settings `sseKmsKeyId` and `sseBucketKey`.
+- **`capacity`** is an optional key of a connection's element (R-STOR-050), a size of at least `1GiB`, empty by default; it is the
+  operator's statement, shown against the stored bytes and never enforced
+  ([Q-STOR-503](#q-stor-503--capacity-is-a-statement-shown-and-never-enforced)). R-STOR-029's system capacity and its refusals stay their own,
+  unbuilt.
+- The figures are up to an hour old; the page says when they were counted
+  ([object-store-connections.md](../security/object-store-connections.md) H-2420). The target is one worker's configuration (H-2421);
+  the capacity is a statement nothing checks (H-2422).
+
+Acceptance criteria:
+
+- Three blobs, one on two connections (the encrypted one's copy naming a storage key), one on the first only, one without a present copy,
+  with both connections as targets: `perBlob` is 2, 1 and 0 copies of one blob each, `belowTarget` two blobs, the first connection's
+  `soleBytes` the second blob's size, the encrypted connection's `keyedCopies` 1 (integration, `test/integration/blob`,
+  `TestR_STOR_106_TheCopiesInFigures`).
+- `capacity: 5TiB` loads, an empty one states none, `capacity: 5` and `-1` are refused naming the key (unit, `internal/config`); the chart
+  renders `capacity` into the element and its schema refuses a value without its unit (chart test, `TestR_HA_072_TheCapacityOfAConnection`).
+
+### R-STOR-107 · The storage overview
+Priority: **P1** · Covers: quader-only
+
+*Built* (W-37's package P1, the state now; the period and the problems are package P4's):
+[storage_overview_api.go](../../internal/api/v1/storage_overview_api.go) over `DeriveOverview` and `Stored` of
+[overview.go](../../internal/blob/summary/overview.go), the service in [wire_storage_summary.go](../../internal/app/wire_storage_summary.go).
+
+`GET /api/v1/storage/overview` → `200` (operation `getStorageOverview`, `settings:read`): one call for the top of the storage page and the
+admin dashboard's card, an operation of its own ([Q-API-475](api-and-ui.md#q-api-475--the-storage-overview-is-an-operation-of-its-own)).
+
+```json
+{
+  "at": "2026-11-26T20:39:22Z",
+  "figuresAt": "2026-11-26T20:17:00Z",
+  "connections": {"state": "healthy", "configured": 2, "reachable": 2, "unreachable": [], "detached": []},
+  "stored": {"blobs": 412093, "bytes": 1893341184512},
+  "availability": {"state": "redundant", "target": 2, "minCopies": 1,
+                   "perBlob": [{"copies": 2, "blobs": 412093, "bytes": 1893341184512}],
+                   "belowTarget": {"blobs": 0, "bytes": 0}, "loss": []},
+  "encryption": {"state": "partly", "encrypted": ["archive"], "plain": ["default"], "providerConfigured": ["archive"], "encryptedShare": 0.5},
+  "integrity": {"state": "verified", "downloadVerify": true, "authenticatedReads": ["archive"],
+                "scrub": {"coverage": 1.0, "overdue": 0, "lastRunAt": "2026-11-26T20:07:03Z", "nextRunAt": "2026-11-26T21:07:00Z", "running": false},
+                "damagedNow": {"copies": 0, "blobs": 0}}
+}
+```
+
+*(example values)*
+
+- **Read now:** `connections` from the registry's live replicas (R-STOR-061), `stored` from the folded totals of R-STOR-003 and their
+  unfolded deltas, as the dashboard read them before ([Q-STOR-504](#q-stor-504--the-overviews-stored-reads-the-folded-totals)), the scrub
+  task's last finished run, next run and whether one runs, `minCopies` and `downloadVerify` of the answering replica. **From the latest
+  summary** (`figuresAt`, `null` before the first): the copies, the loss, the encrypted share, the scrub's coverage and the damage. No
+  count over `blobs` or `blob_copies` at request time; the snapshot is read once, without its repositories
+  ([Q-STOR-507](#q-stor-507--the-overview-and-the-connections-list-read-the-snapshot-without-its-repositories)).
+- **Which connections count:** those that hold or take content, neither retired nor drained.
+- **Every state is derived by the server** ([Q-STOR-505](#q-stor-505--the-overview-derives-every-state-server-side)), by these rules
+  ([Q-STOR-506](#q-stor-506--the-overviews-states)):
+
+  | Tile | State | When |
+  |---|---|---|
+  | `connections` | `healthy` | every connection a live replica configures is reachable on every such replica, none detached |
+  | | `degraded` | one is unreachable on some replica, or detached, or no live replica configures any |
+  | | `unreachable` | none is reachable on any live replica |
+  | `availability` | `one_store` | the target is one connection |
+  | | `at_risk` | a blob lies on one connection only, and a target connection is unreachable on a replica or its reconciliation is behind (the oldest gap older than an hour, not filling: the hour of `QuaderStorageReplicationBacklog`) |
+  | | `catching_up` | a blob is below the target or lies on one connection only; before the first summary, a gap is queued |
+  | | `redundant` | otherwise |
+  | `encryption` | `encrypted` | Quader encrypts every connection that holds content |
+  | | `partly` | some ([object-store-connections.md](../security/object-store-connections.md) H-1317) |
+  | | `provider_only` | none, and each asks its store for server-side encryption in the answering replica's configuration |
+  | | `off` | otherwise |
+  | `integrity` | `damaged` | a live blob has no whole copy |
+  | | `repairing` | a copy is missing or corrupt, every blob whole somewhere |
+  | | `behind` | copies are overdue for the scrub |
+  | | `checking` | the scrub's coverage within the period is below 1, or no summary exists yet |
+  | | `verified` | otherwise |
+
+- `encryption.providerConfigured` names what the configuration asks the stores for; what a store applied is W-37's packages P2 and P4
+  (`capabilities.sseApplied`), which then decide `provider_only` from it.
+- The member `problems` and the parameter `period` are W-37's package P4's.
+- No secret, no credential, no key, no address of a store and no signed URL appears.
+
+Acceptance criteria:
+
+- Every state of the table from views built in memory (unit, `internal/blob/summary`, `TestR_STOR_107_TheStatesOfTheOverview`); the
+  operation answers the document's shape, `stored` from the totals, `403` without `settings:read`, and no field holds an address, a path
+  or a secret (unit, `internal/api/v1`, `TestR_STOR_107_TheOverview`); the totals and the list's additions against PostgreSQL
+  (integration, `TestR_STOR_106_TheCopiesInFigures`).
+
 ## Retention and cleanup
 
 Retention policies run inside Quader's job framework and delete through the normal delete path,
@@ -6382,8 +6526,9 @@ storage:
       scrub_period: 720h                 # default
       scrub_bytes_per_second: 50MiB      # default
       drain: false                       # default
-      encrypted: false                   # default; true refused until stage 2 (R-STOR-075)
+      encrypted: false                   # default; true: Quader encrypts the connection's blobs (R-STOR-075)
       keyed_names: true                  # default with encrypted: true; refused with encrypted: false (R-STOR-086)
+      capacity: ""                       # default: empty = none stated; example: 5TiB, at least 1GiB; shown, never enforced (R-STOR-106)
   object_store:                          # every connection's client (R-STOR-033 to R-STOR-035)
     http:
       max_connections: 256               # default (proposed)
@@ -10993,6 +11138,128 @@ the cause for which the loader of the image scanner's database had been killed f
 [client.go](../../internal/importer/client.go); the Bastion's allow-list gains the leaf `internal/syncwrite`
 ([bastion.go](../../internal/archtest/bastion.go), R-BAS-001). Tests: `TestR_STOR_004_TheSpoolFlushesAnUploadWhileItArrives` (unit,
 `internal/blob`, a body of 10 bytes with a threshold of 4, under a second); the case Q-STOR-486 of `TestCopy` (unit, `internal/syncwrite`).
+
+### Q-STOR-500 · The target is the computing worker's connections without drain
+
+Status: **Decided by the development agent** while building W-37's package P1; the owner reviews it.
+
+Context: R-STOR-050 has every connection without `drain` hold every blob; the storage page shows the copies per blob against that target.
+The configuration is per replica, and during a rolling update two replicas may hold two lists.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The worker that computes the summary counts its own connections without `drain` (chosen) | One list, the one the figures were counted against | The target and `belowTarget` always agree; the summary needs no read of the registry | During a rolling update another worker may count another target for an hour (H-2421) |
+| (b) The registry's live replicas: the connections one of them configures without `drain` | The installation's view | One target for every replica | The figures and the target come from two moments; a replica that just started changes the target between two snapshots |
+| (c) `storage.replication.min_copies` | A number that exists | Nothing new | It is the copies before the answer (R-STOR-053), not the copies the reconciliation brings every blob to |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-106, R-STOR-028; code: `Options.Targets`, `copyTargets` in
+[wire_storage_summary.go](../../internal/app/wire_storage_summary.go). The overview takes the summary's target and, before the first
+summary, counts the connections a live replica configures without `drain`.
+
+### Q-STOR-501 · One pass grouped by blob replaces the probe per copy
+
+Status: **Decided by the development agent** while building W-37's package P1; the owner reviews it.
+
+Context: the summary counted a connection's sole copies with a probe of the primary key of `blob_copies` per present copy
+(Q-STOR-371). R-STOR-106 adds the copies per blob, the blobs below the target and the sole bytes, which a probe per copy cannot give.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A second statement grouped by blob that reduces to a handful of rows (copies, on every target, the sole copy's connection), and the per-connection pass without the probe (chosen) | Two sequential passes over the copies of live blobs, no probe | Every figure of R-STOR-106 from one pass; the measured times are in [blob-store.md](../developer/blob-store.md#the-storage-summary-and-the-connections-list-r-stor-028-r-stor-061) | A hash aggregate over the blobs, which needs memory or spills |
+| (b) Keep the probe and add a third statement for the histogram | Three passes | The old statement stays | The probe is the costliest part of the old pass and stays |
+| (c) One statement with grouping sets | One pass | One scan | One result of two shapes that sqlc cannot type; harder to read |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-028, R-STOR-106; code: `StorageSummaryCopies` and `StorageSummaryConnections` in
+[storage_summary.sql](../../internal/meta/postgres/queries/storage_summary.sql), `assembleCopies` in
+[summary.go](../../internal/blob/summary/summary.go).
+
+### Q-STOR-502 · Copies per blob count the connections that are not retired
+
+Status: **Decided by the development agent** while building W-37's package P1; the owner reviews it.
+
+Context: a blob's copies lie on active, filling, draining and detached connections. A detached connection's copies still serve a read on a
+replica that configures it, and R-STOR-052 counts them for the content state.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Present copies on every connection that is not retired (chosen) | Detached and draining connections count | Agrees with the content state of R-STOR-052; a blob held only by a detached connection shows as one copy, not none | A detached connection's copy is not reachable through a replica that does not configure it |
+| (b) Only the target connections | The copies that count toward the target | Simple | A blob held by a draining connection only would show as without a copy, which it is not |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-106; code: `StorageSummaryCopies`.
+
+### Q-STOR-503 · Capacity is a statement, shown and never enforced
+
+Status: **Decided by the development agent** while building W-37's package P1; the owner reviews it.
+
+Context: the owner wants the storage page to show use against capacity. A store reports no capacity (R-STOR-029); the connections are
+set in the chart (the owner's decision 9).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) An optional key `capacity` per element, a size of at least `1GiB`, shown and never enforced (chosen) | The operator states it where the connection is set | The page has a figure to show use against; nothing new is refused | The statement can be wrong (H-2422) |
+| (b) No capacity: show the use only | Nothing new | — | A bare number tells nothing about how full a store is |
+| (c) Build R-STOR-029's system quota now | Enforcement | — | A different feature with refusals of uploads, not asked for |
+
+**Choice:** (a). The bound of `1GiB` refuses a size written without its unit (`capacity: 5` is five bytes). **Applied in the spec:**
+R-STOR-050, R-STOR-106, [ha-and-helm.md](ha-and-helm.md) R-HA-072; code: `parseCapacity` in
+[storage_connections.go](../../internal/config/storage_connections.go). R-STOR-029 stays its own, unbuilt.
+
+### Q-STOR-504 · The overview's stored reads the folded totals
+
+Status: **Decided by the development agent** while building W-37's package P1; the owner reviews it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `stored` from the folded counter and its unfolded deltas, read at the request (chosen) | One row and a short table | Current; the dashboard's figure stays as current as it was | Differs from the snapshot's `blobs` for up to an hour |
+| (b) The snapshot's `blobs` | One source with the copies | The figures agree with one another | Up to an hour old on the dashboard's first screen |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-107; code: `StorageStoredNow`, `Stored`.
+
+### Q-STOR-505 · The overview derives every state server-side
+
+Status: **Decided by the development agent** while building W-37's package P1; the owner reviews it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The server answers a state per tile with the figures behind it (chosen) | One derivation in Go | The page and the dashboard cannot word one state twice; the rules are tested once | A change of a rule is a change of the server |
+| (b) The page derives the states from the figures | One more place | No server change for a wording | The dashboard and the page would derive them twice |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-107; code: `DeriveOverview` in [overview.go](../../internal/blob/summary/overview.go).
+
+### Q-STOR-506 · The overview's states
+
+Status: **Decided by the development agent** while building W-37's package P1 after W-37's plan (B.14); the owner reviews it.
+
+Context: the plan's table names the states and when each holds; three of its rows needed a reading.
+
+| Question | Reading (chosen) | Why |
+|---|---|---|
+| Which connections count for Connections, Encryption and Integrity | Those neither retired nor drained, detached included | A drained or retired connection holds nothing; a detached one still holds content in the clear or encrypted |
+| "At risk": a backlog behind, or a target unreachable, "with sole copies" | Sole copies **and** (a target unreachable on a replica **or** the oldest gap of an active target older than an hour) | Without a blob on one connection only, the loss of a connection loses nothing; a filling connection's old gap is its filling |
+| "Provider only" before the store's applied mode is known | Every counted connection asks for server-side encryption in the answering replica's configuration | P1 knows only the configuration; P4 decides it by `sseApplied` |
+| The state before the first summary | Integrity `checking`; Availability `catching_up` while a gap is queued, otherwise by the target | Nothing is known to be damaged or verified yet |
+| No live replica configures a connection | Connections `degraded` | No connection can be said to be reachable, and none to be unreachable from every replica |
+
+**Applied in the spec:** R-STOR-107's table; code: `DeriveOverview`; test `TestR_STOR_107_TheStatesOfTheOverview`.
+
+### Q-STOR-507 · The overview and the connections' list read the snapshot without its repositories
+
+Status: **Decided by the development agent** while building W-37's package P1, by the measurement the plan asked for; the owner reviews it.
+
+Context: the overview and the connections' list read the snapshot row, whose JSON holds up to 10,000 repositories. The plan set the bound:
+above 20 ms, `repositories[]` moves to a row of its own.
+
+**Measured** on generated rows ([blob-store.md](../developer/blob-store.md#the-storage-summary-and-the-connections-list-r-stor-028-r-stor-061)):
+a snapshot of 1.9 MB with 10,000 repositories reads and decodes in 68 ms (median of three; 45 to 102 ms), above the bound; the same row
+read as `summary - 'repositories'` reads and decodes in 2.4 ms.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The reads that do not show the repositories ask the server for the snapshot without that member (`StorageSummaryLatestFigures`); `GET /api/v1/storage/summary` reads it whole (chosen) | One statement more | 2.4 ms, no migration, one row stays one snapshot written in one statement | PostgreSQL still detoasts the whole value to drop the member (included in the 2.4 ms) |
+| (b) `repositories[]` in a row of its own | A second row or table | The plan's answer | A migration and two writes for a snapshot; the summary's read joins them again |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-107; code: `LatestFigures` in [summary.go](../../internal/blob/summary/summary.go),
+`ListWithLatest` in [connections.go](../../internal/blob/summary/connections.go).
 
 ## What this does not cover
 

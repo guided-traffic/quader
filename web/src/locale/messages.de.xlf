@@ -4976,9 +4976,18 @@
         <target>Signaturidentität gewechselt</target>
       </segment>
     </unit>
-    <unit id="audit.action.storage.download_links.changed">
+    <unit id="audit.action.storage.blob.rechecked">
       <notes>
         <note category="location">src/app/features/audit/audit-labels.ts:385</note>
+      </notes>
+      <segment>
+        <source>Stored content checked again</source>
+        <target>Gespeicherter Inhalt erneut geprüft</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.storage.download_links.changed">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:387</note>
       </notes>
       <segment>
         <source>Download link setting changed</source>
@@ -4987,7 +4996,7 @@
     </unit>
     <unit id="audit.action.system.backup.completed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:387</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:389</note>
       </notes>
       <segment>
         <source>Backup completed</source>
@@ -4996,7 +5005,7 @@
     </unit>
     <unit id="audit.action.system.backup.deleted">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:389</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:391</note>
       </notes>
       <segment>
         <source>Backup deleted</source>
@@ -5005,7 +5014,7 @@
     </unit>
     <unit id="audit.action.system.backup.failed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:391</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:393</note>
       </notes>
       <segment>
         <source>Backup failed</source>
@@ -5014,7 +5023,7 @@
     </unit>
     <unit id="audit.action.system.backup.target_adopted">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:393</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:395</note>
       </notes>
       <segment>
         <source>Backup target taken over</source>
@@ -5023,7 +5032,7 @@
     </unit>
     <unit id="audit.action.system.banner_changed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:395</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:397</note>
       </notes>
       <segment>
         <source>Banner changed</source>
@@ -5032,7 +5041,7 @@
     </unit>
     <unit id="audit.action.system.time_format_changed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:397</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:399</note>
       </notes>
       <segment>
         <source>Default time format changed</source>
