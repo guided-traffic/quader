@@ -310,9 +310,10 @@ wrapped line was seen (2026-11-19), so its condition to build a check is met.
 | W30-G7 · An image's facts: annotations and labels, the config, the layers, the history (W-30) | R-OCI-039 to R-OCI-041 of the plan `.dev/w30-plan.md`; with a Helm chart's facts since the owner's d4 = b; Q-UI-1250 to Q-UI-1259, R-UI-219, migration 00133 | landed and pushed on 2026-11-26 at 02:15, with the migration 00133 |
 | W30-A4 · A role read through a remote reads like a role (W-30, the owner's d1 = b) | R-ANS-056 of the plan `.dev/w30-plan.md`: owner and name, description, README, `role search`; no local publish of a role; Q-ANS-110 to Q-ANS-119, Q-UI-1260 to Q-UI-1269, H-2120 to H-2129, migration 00134 | landed and pushed on 2026-11-26 at 03:14, with the migrations 00134 and 00135 |
 | W30-G8 · A Debian package shows its relations, long description, changelog, copyright and file list (W-30) | R-DEB-038, R-DEB-039 of the plan `.dev/w30-plan.md`; the data archive read under bounds, which revises R-DEB-007; Q-DEB-140 to Q-DEB-149, Q-UI-1270 to Q-UI-1279, H-2130 to H-2139, migration 00134 | landed and pushed on 2026-11-26 at 01:25, with the migration 00132 (the OCI package takes 00133, the roles 00134) |
-| W30-A2 · The documentation generator reads fragments, a role's argument specs and the changelog (W-30) | R-ANS-051 to R-ANS-053 of the plan `.dev/w30-plan.md`; Q-ANS-96 to Q-ANS-105, Q-UI-1280 to Q-UI-1289, H-2140 to H-2149, migration 00136 | built on 2026-11-26 at about 02:40 (three commits); lands after W30-A4 with the migration 00136 |
-| W30-A3 · Finding collections, the page of a name in every format, the documentation searched across collections (W-30, the owner's d2 = b and d3 = b) | the plan's package A3 with R-ANS-057, R-ANS-058 and R-UI-220; Q-ANS-120 to Q-ANS-129, Q-UI-1290 to Q-UI-1299, H-2150 to H-2159 | in work since 2026-11-26, about 01:05 |
+| W30-A2 · The documentation generator reads fragments, a role's argument specs and the changelog (W-30) | R-ANS-051 to R-ANS-053 of the plan `.dev/w30-plan.md`; Q-ANS-96 to Q-ANS-105, Q-UI-1280 to Q-UI-1289, H-2140 to H-2149, migration 00136 | landed and pushed on 2026-11-26 at 03:54, with the migration 00136 |
+| W30-A3 · Finding collections, the page of a name in every format, the documentation searched across collections (W-30, the owner's d2 = b and d3 = b) | the plan's package A3 with R-ANS-057, R-ANS-058 and R-UI-220; Q-ANS-120 to Q-ANS-129, Q-UI-1290 to Q-UI-1299, H-2150 to H-2159 | built on 2026-11-26 at about 02:50 (three commits); sent back for the search's cost with 50,000 packages and its index, its record becomes ADR-287; lands after W30-A2 |
 | W30-G4 · "Deprecated" is a property of every format that has it (W-30) | R-API-085, R-NUGET-036, R-ANS-060 of the plan `.dev/w30-plan.md`; Q-API-440 to Q-API-449, Q-NUGET-140 to Q-NUGET-149, Q-ANS-130 to Q-ANS-139, Q-NPM-95 to Q-NPM-99, Q-UI-1300 to Q-UI-1309, ADR-286, H-2160 to H-2169 | in work since 2026-11-26, about 01:50 |
+| W30-G3 · One way to show a version's facts in every format (W-30) | the plan's package G3 with R-UI-221 and R-UI-222: an inventory of the six formats' Details and tables as they are now, then the differences closed; Q-UI-1310 to Q-UI-1319, ADR-288, H-2170 to H-2179 | in work since 2026-11-26, 03:15 |
 | W-30 planner · Ansible as an equal of Galaxy; general and specific properties per format | the owner's task of 20:39: a comparison screen by screen and answer by answer, and the table of properties per format | plan written at 21:05 (`.dev/w30-plan.md`) |
 | W30-G1 · A remote's cached version of npm and Debian carries its facts (W-30) | R-NPM-050, R-NPM-051, R-DEB-037 of the plan `.dev/w30-plan.md`; the README of an npm version from the stored tarball | landed and pushed at 23:27 |
 | G1 · The checks see overlays and clipping as a person does | an overlay is measured in the window a person has and a modal state is not pictured in a grown window; `sideways` inside dialogs and drawers; the new checks `overlay-out` (the person search's list wider than its drawer, W-12), `cut` (a text cut at the start of a wrapped line) and `separator-start` (a separator dot that starts a line); a state's own widths and schemes; the correction of Q-UI-1060 | about 5 s of fixtures, at most 60 s of the render step | landed and pushed at 14:55 (two commits; Q-UI-1170 to Q-UI-1173, H-1912 closed; its builder worked from 11:13 to 13:17; with S11 on one landing: thirteen gates, `make ui-states`, the whole English set (532 screens, 43.1 minutes) and the German pass (98 screens, 9.2 minutes) each without a failure or a finding, the new checks over every screen that landed today) |
@@ -1067,6 +1068,12 @@ order is what a user or an operator meets first. The state is kept here.
 
 ### Tests and tools
 
+- **Open since 2026-11-26, 03:54, measured by the builder of W30-A3, existing statements it did not change: the package list
+  and the top bar's package suggestions at 50,000 packages of one format.** The list without a text takes 132 ms
+  (it reads every visible version), the suggestions about 75 ms whatever the text (13 ms at 1,000, 23 ms at 10,000);
+  the cause of neither was read. A mirror of a public registry reaches such counts. For a later package on the lists'
+  cost.
+
 - **Closed on 2026-11-26, 03:14: two pipelines of the night were red by landings of mine, read at 02:43; no release was held
   (Q-ARCH-457).** (1) `e2e (vuln)` on the push of S19 (00:45): the journey
   `web/e2e/vuln/15-vulnerabilities.spec.ts` opened an npm package's own address and expected the table of its versions
@@ -1280,6 +1287,37 @@ records the recorder that tells such a stall apart).
   that failed between 07:39 and 09:00 is no finding of the code.
 
 ### Product
+
+- **Closed on 2026-11-26, 03:54, by W30-A2 (W-30; R-ANS-051 to R-ANS-053; Q-ANS-96 to Q-ANS-99; Q-UI-1280; gaps H-2140 to
+  H-2143, H-891 and H-892 narrowed, H-2102 closed; migration 00136): the documentation of a collection published
+  locally merges its own fragments and shows a role's entry points, and every collection shows its changelog.**
+  Fragments: the text attributes of `ModuleDocFragment` in `plugins/doc_fragments/*.py` are read as the literals they
+  are and merged as ansible-doc does (the module's own option wins field by field and keeps its place, the fragment's
+  are appended; notes and see-also appended; requirements the sorted union; attributes merged), held field by field
+  against the output of ansible-core 2.15.8 for a fixture; fragments of `ansible.builtin`, of another collection or
+  built in Python stay named as not merged. A role inside a collection: its argument specs from
+  `meta/argument_specs.{yml,yaml,json}` or `meta/main.*`, each entry point with its descriptions and a table of
+  options in the two-column form, anchors in the documentation site's form (`parameter-<entry>--<path>`), and
+  `O(ns.coll.role#role:entry:opt)` links to them. The changelog: `changelogs/changelog.yaml` rendered newest first
+  by antsibull's categories, else `CHANGELOG.md` through the README renderer, else `CHANGELOG.rst` as text; stored in
+  `ansible_changelogs` at a local publish and at the fill of a remote's archive; a page "Changelog" of the tree's
+  group Documentation. Nothing is executed: fragments by the existing text scanner, YAML by the strict reader (no
+  anchors, aliases, tags or merge keys; 20,000 nodes, depth 24), argument specs at most 512 KiB, a changelog read up
+  to 4 MiB and stored up to 512 KiB, cut and marked, never refused; every punctuation character of an entry escaped
+  before the renderer and sanitizer; the fuzz target feeds the same bytes in as each new input. What was published
+  or cached before: the generator's version is 3, and the task `remote-describe` queues the reindex of the
+  repositories whose rows an older generator made (the builder's first build had a start-up rule of its own, which I
+  had it fold into the task: one mechanism), so a local collection's documentation is rebuilt and a remote's
+  changelogs are read from the archives in the store, without an operator. Measured once over the 108 collections of
+  the community package 8.7.0: 104 have a changelog (99 YAML, 2 Markdown, 3 RST), every fragment written as text is
+  merged, 116 references stay unmerged (96 built in Python, 19 that ansible-doc cannot resolve either), 17 of 20
+  roles with argument specs are read (3 use YAML anchors and are refused). The landing: the landing's tree is the builder's rebased tip; the 13 gates, the dialog states, the Ansible renders on a fresh instance (47 in English, 7 in German, no layout finding) and the whole areas `ansiblelocal`, `ansibleremote`, `ansiblevirtual` and `repository` green, the count of requirements 1,299; looked at: a role's entry of a collection in light at 1,440 px (the two entry points with their tables, nested options, a default marked among the choices, links to options, the tree's page Changelog). Open: fragments of
+  `ansible.builtin` and of other collections are not merged (H-891); fragment attributes built in Python are not
+  read (H-892); argument specs with YAML anchors are refused (H-2140); a remote's role shows no entry points, Galaxy
+  sends none (H-2141); the changelog's headings are English and a collection's own section titles are not read
+  (H-2142); the tab Documentation shows no changelog for a remote version whose upstream documentation is not
+  available, although the operation answers it (H-2143). Not verified: an antsibull-generated `CHANGELOG.rst` as the
+  site renders it; the time of the task's selection on a large store; the kind journeys.
 
 - **Closed on 2026-11-26, 03:14, by W30-A4 (W-30, the owner's d1 = b; R-ANS-056; Q-ANS-110 to Q-ANS-115; Q-UI-1260, Q-UI-1261;
   ADR-285; gaps H-2120 to H-2124; migrations 00134 and 00135): a role installed through an Ansible Galaxy remote reads
