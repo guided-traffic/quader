@@ -38,7 +38,7 @@ import (
 // (security/bastion-handover.md H-1490).
 
 // HandoverSwitch answers whether the handover of a Bastion registration is on in the replica's snapshot (R-BAS-071):
-// *bastionmain.HandoverSwitches implements it.
+// *bastionmain.RegistrationSnapshot implements it.
 type HandoverSwitch interface {
 	On(bastionID string) bool
 }

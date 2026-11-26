@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"net/netip"
 	"net/url"
 	"strconv"
 	"strings"
@@ -30,10 +31,14 @@ type RecognizeOptions struct {
 	// a Bastion's forwarded headers count (server.trusted_proxies only): the address the token came from,
 	// which token.rejected names and the token's last use records (R-BAS-017). Nil names none.
 	Source func(r *http.Request) (clientAddr, userAgent string)
+	// Egress returns the networks the Bastion of a registration connects from (R-BAS-017, Q-BAS-334), from the replica's
+	// snapshot of the registrations; the stage sets Recognition.FromEgress when the address Source names lies in one of them.
+	// Nil, or no network, is a Bastion whose reports about its callers never count (Q-BAS-430).
+	Egress func(bastionID string) []netip.Prefix
 	// Forwarded re-derives, for a recognized request, what the chain resolved from the forwarded headers -
-	// the client address, the effective host and the response base URL - with the Bastions' egress addresses
-	// (bastions.trusted_proxies) trusted besides server.trusted_proxies, and returns the context the request
-	// is served with (R-BAS-017, Q-BAS-116). It runs after the token check, so the headers of a request
+	// the client address, the effective host and the response base URL - with the networks of the request's own
+	// registration (Recognition.FromEgress) trusted besides server.trusted_proxies, and returns the context the request
+	// is served with (R-BAS-017, Q-BAS-430). It runs after the token check, so the headers of a request
 	// without a valid Bastion token never count through it. Nil keeps what the chain resolved.
 	Forwarded func(r *http.Request) context.Context
 	// Problem renders an error as the problem details of the management API, whatever the path: the
@@ -85,7 +90,8 @@ const maxReplicaName = 253
 //     interface route the validated token is taken out of Authorization, so no later stage sees it; on a
 //     forwarded request Quader-Bastion-Authorization is taken out of the request the stages behind receive
 //     (nothing downstream needs it, and a remote repository must never be able to forward it). The forwarded
-//     headers are re-derived with the Bastions' egress addresses trusted ([RecognizeOptions.Forwarded]).
+//     headers are re-derived with the networks of the Bastion's own registration trusted, when the request came from one
+//     ([Recognition.FromEgress], [RecognizeOptions.Forwarded]).
 //   - The offer of a handover per blob, Quader-Bastion-Handover, is read into the Recognition of a forwarded GET
 //     ([Recognition.Offer], R-BAS-072) and taken out of every request, recognized or not, before the stages behind: the
 //     serve point decides a handover on the Recognition alone, so an ordinary caller that sends the header gets the file
@@ -142,14 +148,15 @@ func Recognize(o RecognizeOptions) func(http.Handler) http.Handler {
 			rec := Recognition{
 				Bastion: tok.Name, BastionID: tok.BastionID, TokenID: tok.TokenID, TokenExpiresAt: tok.ExpiresAt,
 				Interface: iface.InterfaceVersion, Replica: clip(r.Header.Get(iface.HeaderReplica), maxReplicaName), Route: route,
-				Probe: !route && r.Header.Get(iface.HeaderProbe) == iface.ProbeValue && r.Method != http.MethodGet && r.Method != http.MethodHead,
+				Probe:      !route && r.Header.Get(iface.HeaderProbe) == iface.ProbeValue && r.Method != http.MethodGet && r.Method != http.MethodHead,
+				FromEgress: o.fromEgress(tok.BastionID, req.ClientAddr),
 			}
 			if !route && r.Method == http.MethodGet {
 				// The offer of a handover per blob (R-BAS-072): a value the interface refuses, or more than one, is no offer.
 				rec.Offer, rec.Offered, _ = iface.HandoverOfferFrom(r.Header)
 			}
 			// The stages behind this one get a request of their own: the credential that proved the
-			// Bastion is not in it, and the forwarded headers count with the Bastion's egress trusted.
+			// Bastion is not in it, and the forwarded headers count with its registration's networks trusted.
 			ctx := WithRecognition(r.Context(), rec)
 			if o.Forwarded != nil {
 				ctx = o.Forwarded(r.WithContext(ctx))
@@ -228,6 +235,16 @@ func forwardablePath(segs []string) bool {
 		return true
 	}
 	return false
+}
+
+// fromEgress reports whether the address the request came from, as Source named it, lies in the networks of the registration
+// bastionID (Q-BAS-430).
+func (o RecognizeOptions) fromEgress(bastionID, source string) bool {
+	if o.Egress == nil {
+		return false
+	}
+	a, err := netip.ParseAddr(source)
+	return err == nil && InEgress(a, o.Egress(bastionID))
 }
 
 func (o RecognizeOptions) problem(w http.ResponseWriter, r *http.Request, err error) {

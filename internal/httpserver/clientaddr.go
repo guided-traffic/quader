@@ -126,6 +126,15 @@ func originOf(scheme, host string) string {
 	return scheme + "://" + host
 }
 
+// AlsoTrusting returns a resolver that trusts the networks extra besides the resolver's own trusted proxies and is the same in every
+// other respect: the re-derivation of one recognized Bastion request with that Bastion's networks (bastion.md R-BAS-017). The caller
+// has refused a /0 in extra; r is not changed.
+func (r *Resolver) AlsoTrusting(extra []netip.Prefix) *Resolver {
+	c := *r
+	c.trusted = append(append(make([]netip.Prefix, 0, len(r.trusted)+len(extra)), r.trusted...), extra...)
+	return &c
+}
+
 // isTrusted reports whether a is one of the trusted proxies.
 func (r *Resolver) isTrusted(a netip.Addr) bool {
 	a = a.Unmap()

@@ -1867,7 +1867,7 @@ Acceptance criteria:
 
 *As built on 2026-11-23 (package 2, plain copies):* [handover.go](../../internal/downloadlinks/handover.go) holds step 1 (the offer from
 the `Recognition`, which the recognition stage alone fills, and the registration's switch from the replica's snapshot,
-`bastionmain.HandoverSwitches`), 5, 7 and 9, and what step 11 counts; `Links.HandoverOptions` gives the serve point
+`bastionmain.RegistrationSnapshot`), 5, 7 and 9, and what step 11 counts; `Links.HandoverOptions` gives the serve point
 `ServeOptions.Handover` and `HandedOver`, which `edge.ServeItem` calls after `Admit` for a `GET` whose answer is the whole file with `200`
 ([content.go](../../internal/api/edge/content.go)), and which [ingest.go](../../internal/formathost/ingest.go) (`handoverOptions` in
 [download_links.go](../../internal/formathost/download_links.go): a route of the kind `Download`, not a system read, the gates decided)

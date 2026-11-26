@@ -298,11 +298,11 @@ func TestR_BAS_053_AWithdrawnImageIsRefusedWithinTheFeedsBound(t *testing.T) {
 // /v2/<name>/… from that repository, and a path that names a project and a key is an image name of the bound repository too, as at the
 // main installation (R-OCI-029, Q-BAS-195). The handshake names the binding. About 2 s.
 func TestR_BAS_057_ABoundHostThroughABastion(t *testing.T) {
-	// The Bastion's egress in bastions.trusted_proxies, as the manual configures it (Q-BAS-116): the re-derivation of a recognized
-	// Bastion request reads the binding of the Bastion's host.
+	// The Bastion's address among its registration's networks, as the manual sets it up (R-BAS-017, Q-BAS-334): the re-derivation of
+	// a recognized Bastion request reads the binding of the Bastion's host.
 	w := ociWorld(t, worldOptions{
 		Endpoints: `{"default":{"host_roots":{"` + baseHost + `":"` + ociLocal + `"}}}`,
-		Env:       []string{`QUADER_BASTIONS_TRUSTED_PROXIES=["127.0.0.1/32"]`},
+		Egress:    []string{"127.0.0.1/32"},
 	})
 	img := newOCIImage("bound")
 	w.pushImage("library/alpine", img, "3")

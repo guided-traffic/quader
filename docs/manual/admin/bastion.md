@@ -39,7 +39,7 @@ A Docker Engine reads Docker Hub images through a mirror at the root of a host (
 
 | Where | What |
 |---|---|
-| Main installation | A registration and a token (the next two sections); its address in `server.additional_base_urls`; the Bastion's egress address in `bastions.trusted_proxies` |
+| Main installation | A registration and a token (the next two sections); the address the Bastion connects from on its card ([The addresses a Bastion connects from](#the-addresses-a-bastion-connects-from)); its address in `server.additional_base_urls` |
 | Bastion namespace | The Secret of the token; a TLS certificate source for the listener (cert-manager or a Secret); the main installation reachable over HTTPS; a public name and certificate on the Bastion's ingress |
 | Network | The Bastion reaches the main installation's endpoint on port 443; the main installation does not reach the Bastion |
 
@@ -65,14 +65,22 @@ At most `auth.tokens.max_active_per_principal.bst` unrevoked tokens (default `3`
 
 A token that expires in less than 30 days carries the mark **Expires in …**, an expired one the mark **Expired**.
 
+## The addresses a Bastion connects from
+
+The Bastion sends the address of the real client as the only entry of `X-Forwarded-For` and `Forwarded`, and its own host as the forwarded host. The main installation believes them only for a request that carries this registration's token and comes from one of the addresses its card lists under **Addresses this Bastion connects from**; then its rate limits, its failed-sign-in throttle, its blocks and its audit trail apply to the client and not to the Bastion, and so does the check of a client's token that the Bastion asks for. The token of another Bastion from these addresses, any other request from them (another workload behind the same NAT, for example) and this Bastion's token from anywhere else cannot choose the client's address or the host links are written for.
+
+A new registration lists no address. Until you add one, every client through the Bastion counts as the Bastion's own address on the main installation: one budget and one block for all of them, and the audit log names the Bastion's address instead of the client's. The card says so in the warning colour. After the Bastion's first handshake the card names the address each replica connected from, "The last contact came from 198.51.100.21, which is not listed." *(example)*, with **Add 198.51.100.21**: one click lists it. Check the address before you add it: it is the one the main installation saw, after your own ingress, and the card would show the same line for a stolen token used from elsewhere.
+
+To edit the list by hand, each address or network has a field; **Add address** adds one, **Remove** takes one out, and **Save changes** saves the list (the permission `endpoints:write`; who may only read sees the list as text). An entry is an IPv4 or IPv6 address (`198.51.100.20`, saved as `198.51.100.20/32`) or a network in CIDR form (`198.51.100.16/28`, `2001:db8:4::/64`) *(examples)*; at most 32 entries. List a host address or a small range, never a whole network: a network covering every address (`0.0.0.0/0`, `::/0`) is refused, and so is a network written with bits beyond its prefix (`10.1.2.3/8` is refused with the hint `10.0.0.0/8`). Do **not** put the address into `server.trusted_proxies` as well: an address there is believed for every request, Bastion token or not, and the main installation logs a warning when the two overlap.
+
+Through the API the list is the member `egress` of the registration: `PATCH /api/v1/bastions/<name>` with `{"egress": ["198.51.100.20/32"]}` and the registration's `ETag` in `If-Match` replaces it, `[]` empties it; `POST /api/v1/bastions` takes it at creation. Each change is the audit event `bastion.updated` with the field `egress` and the list before and after. A change reaches every replica of the main installation within a few seconds. A restore to an earlier point brings back the list of that point.
+
 ## Settings on the main installation
 
-Two settings make the main installation treat the Bastion's requests as the callers' own and write URLs on the Bastion's host. Set them in `config` of the chart `quader`:
+One setting makes the main installation write URLs on the Bastion's host. Set it in `config` of the chart `quader`:
 
 ```yaml
 config:
-  bastions:
-    trusted_proxies: ["198.51.100.20/32"]                    # example: the address the Bastion connects from
   server:
     trusted_proxies: ["10.244.3.17", "10.244.5.9"]           # example: your own ingress pods, as before; not the Bastion
     additional_base_urls: ["https://packages.example.com"]   # example: the Bastion's config.server.base_url
@@ -80,7 +88,6 @@ config:
 
 | Setting | Why the Bastion needs it |
 |---|---|
-| `bastions.trusted_proxies` | The Bastion sends the address of the real client as the only entry of `X-Forwarded-For` and `Forwarded`, and its own host as the forwarded host. The main installation believes them only for a request that carries a valid Bastion token and comes from an address in this list; then its rate limits, its failed-sign-in throttle and its audit trail apply to the client and not to the Bastion. Any other request from that address - another workload behind the same NAT, for example - cannot choose its address or the host its links are written for. List the address the main installation sees the Bastion connect from, after your own ingress: a host address or a small range, never a whole network. Do **not** put it into `server.trusted_proxies`: an address there is believed for every request, and the main installation logs a warning at start when the two lists overlap |
 | `server.additional_base_urls` | The Bastion sends its own base URL as the forwarded host. With the URL in this list, every address the main installation renders for the Bastion, such as npm's tarball links, is on the Bastion's host. Without it the main installation answers with its own address, the Bastion detects that, treats the main installation as unreachable and serves no client a document with the wrong addresses |
 
 The entry must equal the Bastion's `config.server.base_url`: the same scheme and host, and the port if one is set. The comparison ignores a trailing slash and upper case in the scheme and host. The page **Set up client** of a repository uses the same list: they offer a Bastion as a place to install from only when its reported address is in it.
@@ -308,8 +315,8 @@ to limit it:
 
 For example, `sum by (class) (rate(quader_bastion_forwarded_bytes_total{bastion="partners"}[5m]))` on the main installation is the
 bandwidth the Bastion `partners` takes, split into anonymous and signed-in clients. Nothing limits it per Bastion yet: what bounds it is each
-client's own download limits on the main installation (they apply to a client behind a Bastion when `bastions.trusted_proxies` lists the
-Bastion's egress address) and the Bastion's budget of requests to the main installation (`bastion.main.max_concurrent`).
+client's own download limits on the main installation (they apply to a client behind a Bastion when the Bastion's card lists the address it
+connects from) and the Bastion's budget of requests to the main installation (`bastion.main.max_concurrent`).
 
 ## What the alerts mean
 
@@ -338,7 +345,7 @@ When the main installation is unreachable for a replica, the replica serves what
 
 **Disable** on the card stops the Bastion's token from working, without deleting anything. The replicas then treat the main installation as unreachable and serve from their cache within the grace period. **Enable** reverses it. **Delete** asks you to type the name, removes the registration and revokes its tokens at once; the Bastion's pods keep running until you remove them, and answer as for an unreachable main installation.
 
-A Bastion that is no longer needed is removed with `helm uninstall`, and its registration deleted here. Remove its address from `server.additional_base_urls` and `bastions.trusted_proxies` afterwards.
+A Bastion that is no longer needed is removed with `helm uninstall`, and its registration deleted here. Remove its address from `server.additional_base_urls` afterwards; the addresses it connected from went with the registration.
 
 ## What the Bastion does not do
 

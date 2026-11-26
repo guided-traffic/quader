@@ -30767,7 +30767,7 @@ components:
     Bastion:
       type: object
       description: A Bastion registration, a principal of the kind `bastion` (R-BAS-004).
-      required: [id, name, description, enabled, handover, createdAt, tokens, contacts]
+      required: [id, name, description, enabled, handover, egress, createdAt, tokens, contacts]
       properties:
         id:
           type: string
@@ -30779,6 +30779,8 @@ components:
           type: string
         enabled:
           type: boolean
+        egress:
+          $ref: "#/components/schemas/BastionEgress"
         handover:
           type: boolean
           description: |
@@ -30804,6 +30806,7 @@ components:
         description: The partner network
         enabled: true
         handover: false
+        egress: [198.51.100.20/32]
         createdAt: "2026-11-02T10:00:00Z"
         tokens:
           - id: 0192f0d1-1c2a-7c3e-8a51-6f7d2b9c4e41
@@ -30865,6 +30868,20 @@ components:
         baseUrl:
           type: string
           description: The base URL the Bastion reported; empty when it reported none.
+    BastionEgress:
+      type: array
+      maxItems: 32
+      description: |
+        The networks the Bastion connects from (R-BAS-017, R-UI-243): the main installation believes the caller's address and the
+        host a Bastion forwards, and the caller's address of its check, only on a request of this registration that comes from one
+        of them, as `server.trusted_proxies` resolves the request's address. Empty for a new registration: then every caller through
+        the Bastion counts as the Bastion's own address, with one budget and one block for all. An entry is an IPv4 or IPv6 address
+        (read as its `/32` or `/128`) or a network in CIDR form; the answer gives each with its prefix length. Refused are more than
+        32, a network listed twice, a `/0` and a network with bits set beyond its prefix (`422` with a field error at the entry).
+      items:
+        type: string
+        maxLength: 49
+      example: [198.51.100.20/32, 2001:db8:4::/64]
     NewBastion:
       type: object
       required: [name]
@@ -30875,9 +30892,12 @@ components:
         description:
           type: string
           maxLength: 1024
+        egress:
+          $ref: "#/components/schemas/BastionEgress"
       example:
         name: partners
         description: The partner network
+        egress: [198.51.100.20/32]
     BastionPatch:
       type: object
       description: The read-only members of `Bastion` are accepted and ignored.
@@ -30890,6 +30910,10 @@ components:
         handover:
           type: boolean
           description: Switches the handover per blob on or off (R-BAS-071); a `null` reads as absent and switches nothing, as for `enabled`.
+        egress:
+          allOf:
+            - $ref: "#/components/schemas/BastionEgress"
+          description: Replaces the whole list; `[]` empties it, a `null` reads as absent and changes nothing.
     NewBastionToken:
       type: object
       properties:

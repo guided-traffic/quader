@@ -8,6 +8,7 @@ import {
   FakeBastionsApi,
   inDays,
   sampleBastion,
+  sampleBastionContact,
   sampleBastionToken,
 } from '../../api/testing/fakes-bastions';
 import { helpFor } from '../../core/help-topics';
@@ -15,10 +16,11 @@ import { Navigation, areaItems } from '../../core/navigation';
 import { SessionStore } from '../../core/session-store';
 import { seriousViolations } from '../../testing/axe';
 import { DraftStore } from '../../shared/drafts';
-import { browserStorage, buttonByText, renderScreen, settle, sleep, storedText, text, type, typeAndLeave, typeInto } from '../../testing/screen';
+import { browserStorage, button, buttonByText, renderScreen, settle, sleep, storedText, text, type, typeAndLeave, typeInto } from '../../testing/screen';
 import { ADDRESS_MARKS, breakParts } from '../../shared/break-parts';
 import { BASTION_TOKEN_WARN_DAYS, tokenExpiry } from './bastion-card';
 import { handoverLines } from './bastion-handover';
+import { inNetworks, unlistedContacts } from './egress';
 import { BastionList } from './bastion-list';
 
 const overlay = (): HTMLElement => document.querySelector('.cdk-overlay-container') as HTMLElement;
@@ -575,6 +577,132 @@ describe('Direct reads from the object store on a Bastion card (R-BAS-071)', () 
     expect(toggle(root, 'partners')!.getAttribute('aria-checked')).toBe('true');
     expect(reasons(root, 'partners')).toBeNull();
     expect(root.querySelector('quader-error-notice')).toBeNull();
+  });
+});
+
+describe('The addresses a Bastion connects from (R-UI-243)', () => {
+  const section = (root: HTMLElement, name: string): HTMLElement => card(root, name).querySelector<HTMLElement>('quader-bastion-egress')!;
+  const lineText = (el: Element): string => {
+    const copy = el.cloneNode(true) as Element;
+    copy.querySelectorAll('.material-icons, button').forEach((i) => i.remove());
+    return text(copy);
+  };
+  const fields = (el: HTMLElement): HTMLInputElement[] => [...el.querySelectorAll<HTMLInputElement>('input')];
+  /** A registration with no network, whose two replicas made contact from one address and an IPv6 one. */
+  const unconfigured = () =>
+    sampleBastion({
+      egress: [],
+      contacts: [
+        sampleBastionContact({ clientAddress: '198.51.100.21' }),
+        sampleBastionContact({ replica: 'quader-bastion-7d9c-m8v2j', clientAddress: '2001:db8:4::7', contactAt: inDays(-0.02) }),
+        sampleBastionContact({ replica: 'quader-bastion-7d9c-q1w2e', clientAddress: '198.51.100.21', contactAt: inDays(-0.03) }),
+      ],
+    });
+
+  it('R-UI-243 an empty list warns, each address a replica came from is offered once, and Add sends one PATCH with the list and that address', async () => {
+    const { fixture, root, get } = await renderScreen(BastionList, {
+      setup: (g) => void ((g(BastionsApi) as FakeBastionsApi).bastions = [unconfigured()]),
+    });
+    const api = get(BastionsApi) as FakeBastionsApi;
+    const egress = section(root, 'partners');
+    expect(text(egress.querySelector('h3')!)).toBe('Addresses this Bastion connects from');
+    expect(text(egress)).toContain("The main installation believes the caller's address a Bastion forwards only from these addresses.");
+    expect(lineText(egress.querySelector('[data-testid="bastion-egress-empty"]')!)).toBe(
+      "No address is listed: every caller through this Bastion counts as the Bastion's own address at the main installation, with one budget and one block for all, and the audit log names the Bastion's address instead of the caller's.",
+    );
+    const offers = [...egress.querySelectorAll('[data-testid="bastion-egress-unlisted"]')];
+    expect(offers.map(lineText)).toEqual([
+      'The last contact came from 198.51.100.21, which is not listed.',
+      'The last contact came from 2001:db8:4::7, which is not listed.',
+    ]);
+    // The default of a new registration, the empty list, is one empty field, as wide as a host.
+    expect(fields(egress).map((f) => f.value)).toEqual(['']);
+    expect(fields(egress)[0]!.classList).toContain('field-w-name');
+    expect(fields(egress)[0]!.getAttribute('aria-label')).toBe('Address or network 1 of partners');
+    expect(button(egress, 'Save changes').disabled).toBe(true);
+    expect(await seriousViolations(root)).toEqual([]);
+
+    buttonByText(offers[0]!, 'Add 198.51.100.21').click();
+    await sleep(fixture, 100);
+    expect(api.calls).toEqual(['setEgress partners 198.51.100.21']);
+    expect(api.ifMatch).toEqual(['"1"']);
+    expect(egress.querySelector('[data-testid="bastion-egress-empty"]')).toBeNull();
+    expect([...egress.querySelectorAll('[data-testid="bastion-egress-unlisted"]')].map(lineText)).toEqual([
+      'The last contact came from 2001:db8:4::7, which is not listed.',
+    ]);
+    expect(fields(egress).map((f) => f.value)).toEqual(['198.51.100.21/32']);
+  });
+
+  it('R-UI-243 the list is edited field by field and saved with the ETag it read; a refusal stands under its field and the entries stay', async () => {
+    const { fixture, root, get } = await renderScreen(BastionList);
+    const api = get(BastionsApi) as FakeBastionsApi;
+    const egress = section(root, 'partners');
+    expect(fields(egress).map((f) => f.value)).toEqual(['198.51.100.16/28']);
+    expect(egress.querySelector('[data-testid="bastion-egress-empty"]')).toBeNull();
+    expect(egress.querySelector('[data-testid="bastion-egress-unlisted"]')).toBeNull();
+    button(egress, 'Add address').click();
+    await settle(fixture);
+    type(fields(egress)[1]!, '0.0.0.0/0');
+    await settle(fixture);
+    button(egress, 'Save changes').click();
+    await sleep(fixture, 100);
+    expect(api.calls).toEqual(['setEgress partners 198.51.100.16/28 0.0.0.0/0']);
+    expect(text(egress.querySelector('.field-error')!)).toContain('0.0.0.0/0 covers every address');
+    expect(fields(egress)[1]!.getAttribute('aria-invalid')).toBe('true');
+    expect(fields(egress).map((f) => f.value)).toEqual(['198.51.100.16/28', '0.0.0.0/0']);
+    expect(egress.querySelector('quader-error-notice')).not.toBeNull();
+
+    type(fields(egress)[1]!, '2001:db8:4::/64');
+    await settle(fixture);
+    button(egress, 'Save changes').click();
+    await sleep(fixture, 100);
+    expect(api.calls.at(-1)).toBe('setEgress partners 198.51.100.16/28 2001:db8:4::/64');
+    expect(egress.querySelector('.field-error')).toBeNull();
+    // Removing every network leaves one empty field, and the empty list is saved as [].
+    for (const b of [...egress.querySelectorAll<HTMLButtonElement>('.row button')]) b.click();
+    await settle(fixture);
+    expect(fields(egress).map((f) => f.value)).toEqual(['']);
+    button(egress, 'Save changes').click();
+    await sleep(fixture, 100);
+    expect(api.calls.at(-1)).toBe('setEgress partners ');
+    expect(egress.querySelector('[data-testid="bastion-egress-empty"]')).not.toBeNull();
+  });
+
+  it('R-UI-243 who may only read sees the networks as text and the warnings, and is offered no field and no Add', async () => {
+    const { root } = await renderScreen(BastionList, {
+      capabilities: ['endpoints:read'],
+      setup: (g) =>
+        void ((g(BastionsApi) as FakeBastionsApi).bastions = [
+          sampleBastion({ egress: ['198.51.100.16/28', '2001:db8:4::/64'], contacts: [sampleBastionContact({ clientAddress: '192.0.2.9' })] }),
+          { ...unconfigured(), id: 'b-2', name: 'standby' },
+        ]),
+    });
+    const partners = section(root, 'partners');
+    expect(text(partners.querySelector('[data-testid="bastion-egress-list"]')!)).toBe('198.51.100.16/28, 2001:db8:4::/64');
+    expect(fields(partners)).toHaveLength(0);
+    expect(lineText(partners.querySelector('[data-testid="bastion-egress-unlisted"]')!)).toBe('The last contact came from 192.0.2.9, which is not listed.');
+    expect(partners.querySelector('[data-testid="bastion-egress-unlisted"] button')).toBeNull();
+    const standby = section(root, 'standby');
+    expect(standby.querySelector('[data-testid="bastion-egress-empty"]')).not.toBeNull();
+    expect(standby.querySelector('[data-testid="bastion-egress-list"]')).toBeNull();
+    expect(await seriousViolations(root)).toEqual([]);
+  });
+
+  it('R-UI-243 an address lies in a network of its own family, an IPv4 address in IPv6 form as the IPv4 one', () => {
+    expect(inNetworks('198.51.100.20', ['198.51.100.16/28'])).toBe(true);
+    expect(inNetworks('198.51.100.32', ['198.51.100.16/28'])).toBe(false);
+    expect(inNetworks('::ffff:198.51.100.20', ['198.51.100.20/32'])).toBe(true);
+    expect(inNetworks('2001:db8:4::7', ['2001:db8:4::/64'])).toBe(true);
+    expect(inNetworks('2001:db8:5::7', ['2001:db8:4::/64'])).toBe(false);
+    expect(inNetworks('2001:0db8:0004:0000:0000:0000:0000:0007', ['2001:db8:4::7/128'])).toBe(true);
+    expect(inNetworks('198.51.100.20', ['::/0'])).toBe(false);
+    expect(inNetworks('not an address', ['0.0.0.0/1'])).toBe(false);
+    expect(
+      unlistedContacts({
+        egress: ['10.0.0.0/8'],
+        contacts: [sampleBastionContact({ clientAddress: '10.1.2.3' }), sampleBastionContact({ clientAddress: null }), sampleBastionContact({ clientAddress: '192.0.2.1' })],
+      }),
+    ).toEqual(['192.0.2.1']);
   });
 });
 

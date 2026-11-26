@@ -62,6 +62,11 @@ func (s *Server) BastionCheck(w http.ResponseWriter, r *http.Request, _ gen.Bast
 		httpserver.Problem(w, r, err)
 		return
 	}
+	if rec, _ := bastionmain.RecognitionFrom(ctx); !rec.FromEgress {
+		// The caller's address a Bastion names counts only from one of its registration's networks (R-BAS-017, Q-BAS-432): from
+		// any other address the check is decided, throttled and logged as a request from the address the Bastion came from.
+		addr = httpserver.InfoFrom(ctx).Client
+	}
 
 	subject, p, err := s.checkSubject(r, req, addr)
 	if err != nil {

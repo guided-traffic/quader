@@ -629,9 +629,18 @@ is the one door to it.
 **00110_bastion_handover** ([bastion.md](../spec/bastion.md) R-BAS-071): the column `bastion.handover` (`boolean NOT NULL DEFAULT false`),
 the switch of a registration's handover per blob, the trigger `bastion_revision` replaced so that a change of it raises the registration's
 revision (the ETag) as a new description does, and the `cluster_epoch` row of the change area `bastion_handover`. The table keeps its export
-class `data` ([tables_bastion.go](../../internal/meta/postgres/tables_bastion.go)); the statements `BastionSetHandover`, `BastionHandoverOn`
-(every replica's snapshot) and `BastionHandoverOff` (the journal's replay) are in
+class `data` ([tables_bastion.go](../../internal/meta/postgres/tables_bastion.go)); the statements `BastionSetHandover`, `BastionSnapshot`
+(every replica's snapshot, since 00145 with the networks too) and `BastionHandoverOff` (the journal's replay) are in
 [bastion_registration.sql](../../internal/meta/postgres/queries/bastion_registration.sql); no forward reads the column.
+
+**00145_bastion_egress** ([bastion.md](../spec/bastion.md) R-BAS-017, Q-BAS-334; package E13): the column `bastion.egress`
+(`cidr[] NOT NULL DEFAULT '{}'`, at most 32 entries by a check), the networks a registration's Bastion connects from, which replace the
+configuration key `bastions.trusted_proxies`; the trigger `bastion_revision` replaced so that a change of the list raises the revision; and
+the `cluster_epoch` row of the change area `bastion_egress`. Nothing of the key is carried over: every registration starts with the empty
+list. The statements read the column as `egress::text[]` (the text form of `cidr` always names the prefix length) and write it as
+`text[]::cidr[]` (`BastionInsert`, `BastionSetEgress`, `BastionGet`, `BastionList`, `BastionSnapshot`); the service validates and
+canonicalizes the entries first (`ParseEgress`, Q-BAS-431), so the cast never sees one with bits beyond its prefix. No request reads the
+column: the recognition reads every replica's snapshot. Expand phase only.
 
 ## The database's repository of the image scanning (00089)
 

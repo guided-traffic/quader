@@ -28,7 +28,7 @@ func TestR_BAS_071_TheSwitchIsPerRegistration(t *testing.T) {
 		t.Fatalf("a new registration: %s", created.Body)
 	}
 	bid := e.text(`SELECT id::text FROM principal WHERE kind = 'bastion' AND name = 'partners'`)
-	switches := bastionmain.NewHandoverSwitches(r.db, r.caches, quiet)
+	switches := bastionmain.NewRegistrationSnapshot(r.db, r.caches, quiet)
 	if err := switches.Start(context.Background()); err != nil {
 		t.Fatal(err)
 	}

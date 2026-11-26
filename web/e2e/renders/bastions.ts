@@ -28,7 +28,8 @@ function token(id: string, description: string, hint: string, createdDays: numbe
  * `partners`, off, with short values (a pod name of 31 characters, a base URL of 28, an IPv4 address), and `dmz-frankfurt-edge`, the
  * longest name of the rule but two, on, with long ones: a pod name of 63 characters (the most Kubernetes allows), a base URL of 51, an
  * IPv6 address of 39, a token that expires in 20 days beside one of a year. The tables keep one form at a width whatever they hold
- * (Q-UI-959).
+ * (Q-UI-959). The addresses each Bastion connects from (R-UI-243): `partners` lists none, `dmz-frankfurt-edge` the /64 of one replica
+ * and not the IPv4 address of the other.
  */
 function registrations(frankfurtOn: boolean): Json {
   return {
@@ -39,6 +40,8 @@ function registrations(frankfurtOn: boolean): Json {
         description: 'The DMZ of the Frankfurt data centre, for the build agents of our partners',
         enabled: true,
         handover: frankfurtOn,
+        // The /64 its IPv6 replica leaves from; the other replica came from an IPv4 address it does not list (R-UI-243).
+        egress: ['2001:db8:85a3::/64'],
         createdAt: at(-120),
         tokens: [
           token('0192f0d1-1c2a-7c3e-8a51-6f7d2b9c4e43', 'frankfurt 2027, rolled out with the release of the build agents in January', 'qdr_bst_Xw7p', 2, 365),
@@ -55,6 +58,8 @@ function registrations(frankfurtOn: boolean): Json {
         description: 'The partner network',
         enabled: true,
         handover: false,
+        // No network yet: the empty list's warning and the offer of its replica's address (R-UI-243).
+        egress: [],
         createdAt: at(-170),
         tokens: [token('0192f0d1-1c2a-7c3e-8a51-6f7d2b9c4e41', 'partners 2026', 'qdr_bst_3kQ9', 165, 200)],
         contacts: [contact('quader-bastion-7d9c5b8f6-p4r7t', '203.0.113.7', 'https://packages.example.com', 1)],

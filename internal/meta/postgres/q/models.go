@@ -358,6 +358,7 @@ type Bastion struct {
 	PrincipalID pgtype.UUID
 	Description string
 	Handover    bool
+	Egress      []netip.Prefix
 }
 
 type BastionContact struct {

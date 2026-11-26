@@ -14098,6 +14098,9 @@ export interface components {
          *       "description": "The partner network",
          *       "enabled": true,
          *       "handover": false,
+         *       "egress": [
+         *         "198.51.100.20/32"
+         *       ],
          *       "createdAt": "2026-11-02T10:00:00Z",
          *       "tokens": [
          *         {
@@ -14127,6 +14130,7 @@ export interface components {
             name: string;
             description: string;
             enabled: boolean;
+            egress: components["schemas"]["BastionEgress"];
             /**
              * @description The switch of the handover per blob (R-BAS-071): while it is on, the main installation may answer a forward of this
              *     Bastion for a large file with a short-lived signed link of the object store, so the Bastion reads the bytes from the
@@ -14166,14 +14170,31 @@ export interface components {
             baseUrl: string;
         };
         /**
+         * @description The networks the Bastion connects from (R-BAS-017, R-UI-243): the main installation believes the caller's address and the
+         *     host a Bastion forwards, and the caller's address of its check, only on a request of this registration that comes from one
+         *     of them, as `server.trusted_proxies` resolves the request's address. Empty for a new registration: then every caller through
+         *     the Bastion counts as the Bastion's own address, with one budget and one block for all. An entry is an IPv4 or IPv6 address
+         *     (read as its `/32` or `/128`) or a network in CIDR form; the answer gives each with its prefix length. Refused are more than
+         *     32, a network listed twice, a `/0` and a network with bits set beyond its prefix (`422` with a field error at the entry).
+         * @example [
+         *       "198.51.100.20/32",
+         *       "2001:db8:4::/64"
+         *     ]
+         */
+        BastionEgress: string[];
+        /**
          * @example {
          *       "name": "partners",
-         *       "description": "The partner network"
+         *       "description": "The partner network",
+         *       "egress": [
+         *         "198.51.100.20/32"
+         *       ]
          *     }
          */
         NewBastion: {
             name: string;
             description?: string;
+            egress?: components["schemas"]["BastionEgress"];
         };
         /** @description The read-only members of `Bastion` are accepted and ignored. */
         BastionPatch: {
@@ -14181,6 +14202,8 @@ export interface components {
             enabled?: boolean;
             /** @description Switches the handover per blob on or off (R-BAS-071); a `null` reads as absent and switches nothing, as for `enabled`. */
             handover?: boolean;
+            /** @description Replaces the whole list; `[]` empties it, a `null` reads as absent and changes nothing. */
+            egress?: components["schemas"]["BastionEgress"];
         };
         /**
          * @example {

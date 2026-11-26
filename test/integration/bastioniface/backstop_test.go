@@ -52,8 +52,8 @@ func TestR_BAS_014_AForwardOutsideThePackageFamiliesReachesNoRoute(t *testing.T)
 	}
 }
 
-// TestR_BAS_017_AnUnrecognizedRequestFromTheBastionsEgressForwardsNothing: the Bastion's egress is in
-// bastions.trusted_proxies, not in server.trusted_proxies (Q-BAS-116). A request from that address without a valid
+// TestR_BAS_017_AnUnrecognizedRequestFromTheBastionsEgressForwardsNothing: the Bastion's egress is among its registration's
+// networks, not in server.trusted_proxies (Q-BAS-116, Q-BAS-430). A request from that address without a valid
 // Bastion token - any workload that shares the egress - cannot choose its client address, which the rate limits,
 // the failed-credential throttle and the audit use, nor the response base URL.
 func TestR_BAS_017_AnUnrecognizedRequestFromTheBastionsEgressForwardsNothing(t *testing.T) {

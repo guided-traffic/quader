@@ -10,12 +10,15 @@
 -- name: BastionInsert :exec
 -- The subtype row of a registration whose principal row was just inserted. The kind guard (AI001) refuses a
 -- principal of another kind; the name rule is the principal check principal_bastion_name.
-INSERT INTO bastion (principal_id, description) VALUES (sqlc.arg(id)::text::uuid, sqlc.arg(description)::text);
+INSERT INTO bastion (principal_id, description, egress)
+VALUES (sqlc.arg(id)::text::uuid, sqlc.arg(description)::text, sqlc.arg(egress)::text[]::cidr[]);
 
 -- name: BastionGet :many
 -- A registration by name. revision is the ETag (R-API-012); enabled is the principal's status; handover is the switch of the
--- handover per blob (R-BAS-071, 00110).
-SELECT p.id::text AS id, p.name, (p.status = 'active')::boolean AS enabled, p.created_at, p.revision, b.description, b.handover
+-- handover per blob (R-BAS-071, 00110); egress the networks the Bastion connects from (R-BAS-017, 00145), each in the text form of
+-- cidr, which always names the prefix length.
+SELECT p.id::text AS id, p.name, (p.status = 'active')::boolean AS enabled, p.created_at, p.revision, b.description, b.handover,
+       b.egress::text[] AS egress
   FROM principal p JOIN bastion b ON b.principal_id = p.id
  WHERE p.kind = 'bastion' AND p.name = sqlc.arg(name)::text;
 
@@ -30,7 +33,8 @@ SELECT p.id::text AS id, p.name, (p.status = 'active')::boolean AS enabled, p.re
 -- name: BastionList :many
 -- Keyset order by name; there are at most bastions.max_registrations of them, so the caller may pass an empty
 -- after and a generous max_rows.
-SELECT p.id::text AS id, p.name, (p.status = 'active')::boolean AS enabled, p.created_at, p.revision, b.description, b.handover
+SELECT p.id::text AS id, p.name, (p.status = 'active')::boolean AS enabled, p.created_at, p.revision, b.description, b.handover,
+       b.egress::text[] AS egress
   FROM principal p JOIN bastion b ON b.principal_id = p.id
  WHERE p.kind = 'bastion' AND p.name > sqlc.arg(after)::text
  ORDER BY p.name
@@ -49,12 +53,20 @@ UPDATE bastion SET handover = sqlc.arg(handover)::boolean
  WHERE principal_id = sqlc.arg(id)::text::uuid AND handover <> sqlc.arg(handover)::boolean
 RETURNING principal_id::text AS id;
 
--- name: BastionHandoverOn :many
--- The registrations whose handover is on, for every replica's snapshot (R-BAS-071): at most bastions.max_registrations rows,
--- read at the start, on a change of the area bastion_handover and once a minute; never by a forward.
-SELECT b.principal_id::text AS id
+-- name: BastionSetEgress :many
+-- Replace the networks a registration's Bastion connects from (R-BAS-017, R-UI-243); the service validated and ordered them. No row
+-- when the list already is the one asked for.
+UPDATE bastion SET egress = sqlc.arg(egress)::text[]::cidr[]
+ WHERE principal_id = sqlc.arg(id)::text::uuid AND egress IS DISTINCT FROM sqlc.arg(egress)::text[]::cidr[]
+RETURNING principal_id::text AS id;
+
+-- name: BastionSnapshot :many
+-- What every replica's snapshot of the registrations holds (internal/bastionmain/snapshot.go): the switch of the handover per blob
+-- (R-BAS-071) and the networks the Bastion connects from (R-BAS-017) of each registration. At most bastions.max_registrations rows,
+-- read at the start, on a change of the area bastion_handover or bastion_egress and once a minute; never by a request.
+SELECT b.principal_id::text AS id, b.handover, b.egress::text[] AS egress
   FROM bastion b JOIN principal p ON p.id = b.principal_id
- WHERE p.kind = 'bastion' AND b.handover
+ WHERE p.kind = 'bastion'
  ORDER BY b.principal_id;
 
 -- name: BastionHandoverOff :many

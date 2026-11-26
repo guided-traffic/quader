@@ -3074,7 +3074,7 @@ to [Q-BAS-207](../spec/bastion.md#q-bas-207--the-case-runs-on-a-push-that-change
 
 | Piece | Where | What it does |
 |---|---|---|
-| The profile `oci` | `release_values` in [lib.sh](../../deploy/dev/lib.sh), [up.sh](../../deploy/dev/up.sh), [values-bastion.yaml](../../deploy/dev/values-bastion.yaml) | the `scatter` profile with `bastions.trusted_proxies` the pod range and `server.additional_base_urls` the two Service names the Bastion calls and `https://bastion-oci.quader.localhost:<edge port>`; the set's one profile switch (`ociFx`) installs it, so the case adds none |
+| The profile `oci` | `release_values` in [lib.sh](../../deploy/dev/lib.sh), [up.sh](../../deploy/dev/up.sh), [values-bastion.yaml](../../deploy/dev/values-bastion.yaml) | the `scatter` profile with `server.additional_base_urls` the two Service names the Bastion calls and `https://bastion-oci.quader.localhost:<edge port>`; the set's one profile switch (`ociFx`) installs it, so the case adds none |
 | The namespace's parts | `bastion.sh infra oci`, [oci-bastion.yaml](../../deploy/dev/oci-bastion.yaml) | the namespace `quader-bastion`, the dev CA and its trust bundle, the Issuer and the edge certificate of `bastion-oci.quader.localhost`; no Valkey, no signing key, no bucket |
 | The release | `bastion.sh install oci`, [bastion-chart-common.yaml](../../deploy/dev/bastion-chart-common.yaml) and [oci-bastion-chart.yaml](../../deploy/dev/oci-bastion-chart.yaml) | `bastion-oci`, registration `partners-oci`, token Secret `bastion-token-oci`: one replica, the volume backend on an emptyDir, no Valkey, no PodDisruptionBudget, no minimum ready time; installed by the case beside the build and push of its image, removed with `helm uninstall` at its end (`QUADER_E2E_BASTION_KEEP=1` keeps it) |
 | The Bastion's host | marker `T16 oci-clients` of [e2e.sh](../../deploy/dev/e2e.sh), [oci-clients.yaml](../../deploy/dev/oci-clients.yaml) | the client pods name the host in their host aliases (their forwarder) and trust the dev CA for `<host>:<edge port>`; the control-plane node resolves it to its forwarder (a line of `/etc/hosts`) and trusts the dev CA for it in `/etc/containerd/certs.d` |
@@ -3544,8 +3544,9 @@ flowchart LR
 `make e2e SET=bastion` (and `bastion-long`) starts the npm and the NuGet client pods (two each, outside the Bastion's namespace, with the hosts of the Bastions as host aliases of
 their forwarders), and the first test calls `basFx` ([bastion_env_test.go](../../test/e2e/bastion_env_test.go)), which does, once per run:
 
-1. `up.sh` with `QUADER_PROFILE=bastion`: the main installation with [values-bastion.yaml](../../deploy/dev/values-bastion.yaml) (`bastions.trusted_proxies` the pod range, so the
-   Bastions' forwarded client address counts, and both Bastion base URLs in `server.additional_base_urls`; R-BAS-017). The profile is returned to `default` at the end of the run, like
+1. `up.sh` with `QUADER_PROFILE=bastion`: the main installation with [values-bastion.yaml](../../deploy/dev/values-bastion.yaml) (both Bastion base URLs in `server.additional_base_urls`; R-BAS-017); the test registers each Bastion with the pod range
+   `10.244.0.0/16` as its `egress` (`basEgress` in [bastion_env_test.go](../../test/e2e/bastion_env_test.go)), so the Bastions' forwarded
+   client address counts. The profile is returned to `default` at the end of the run, like
    the scatter profile, unless `QUADER_E2E_BASTION_KEEP=1`.
 2. `deploy/dev/bastion.sh infra`: the namespace `quader-bastion` (Pod Security `restricted`), the dev CA as an Issuer and as the trust bundle, the bucket credentials copied from
    `quader-s3`, and [bastion.yaml](../../deploy/dev/bastion.yaml): the certificates of the two hosts, the signing key and Valkey password (internal-secrets-operator), the Valkey

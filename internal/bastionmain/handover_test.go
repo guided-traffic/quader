@@ -120,15 +120,19 @@ func TestR_BAS_073_NoteHandoverOnlyOnAMarkedForwardThatOffered(t *testing.T) {
 func TestR_BAS_071_TheSnapshotOfTheSwitches(t *testing.T) {
 	var mu sync.Mutex
 	rows, fail := []string{"b1"}, false
-	load := func(context.Context) ([]string, error) {
+	load := func(context.Context) ([]SnapshotRow, error) {
 		mu.Lock()
 		defer mu.Unlock()
 		if fail {
 			return nil, errors.New("the database is away")
 		}
-		return append([]string(nil), rows...), nil
+		out := []SnapshotRow{{ID: "b0"}}
+		for _, id := range rows {
+			out = append(out, SnapshotRow{ID: id, Handover: true})
+		}
+		return out, nil
 	}
-	s := newHandoverSwitches(load, nil, nil)
+	s := newRegistrationSnapshot(load, nil, nil)
 	if s.On("b1") {
 		t.Fatal("on before the first load")
 	}
@@ -159,7 +163,7 @@ func TestR_BAS_071_TheSnapshotOfTheSwitches(t *testing.T) {
 	if s.On("b1") || !s.On("b2") || checks != 1 {
 		t.Fatalf("b1 turned off: %v, checks %d", s.On("b1"), checks)
 	}
-	var nilSwitches *HandoverSwitches
+	var nilSwitches *RegistrationSnapshot
 	if nilSwitches.On("b2") {
 		t.Fatal("no snapshot hands over")
 	}

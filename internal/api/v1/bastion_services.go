@@ -46,7 +46,7 @@ type BastionServices struct {
 	// false for an unbound host (R-EP-006, R-BAS-057, Q-BAS-188). Nil binds nothing.
 	BoundRepository func(*http.Request) (qname.Repo, bool, error)
 	// Handover is the replica's snapshot of the registrations whose handover per blob is on (R-BAS-071,
-	// *bastionmain.HandoverSwitches); nil answers false in every handshake.
+	// *bastionmain.RegistrationSnapshot); nil answers false in every handshake.
 	Handover interface{ On(bastionID string) bool }
 }
 

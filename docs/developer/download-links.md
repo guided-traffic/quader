@@ -94,7 +94,7 @@ option, decided after the gates and `Admit` as a link is, and only for a recogni
 | [api/rawfiles/handler.go](../../internal/api/rawfiles/handler.go), [files/download.go](../../internal/files/download.go) | every file of `/files/` (`Stat` reports `Decided` from `RunDecided`), `Service.HandedOver`; `/files/` still never gets a client's link (`TestR_STOR_070_FilesIsNeverALink`) |
 | [api/edge/content.go](../../internal/api/edge/content.go) | `ServeOptions.Handover` before `Link`: the file's `200` with its headers and `Content-Length: 0`, the object not opened, then `HandedOver` |
 | [bastionmain/absence.go](../../internal/bastionmain/absence.go), [api/bastionmark/mark.go](../../internal/api/bastionmark/mark.go) | `NoteHandover` and `MarksHandover`; the marking writes the class `handover` and `Quader-Bastion-Handover` from the noted value |
-| [bastionmain/handover.go](../../internal/bastionmain/handover.go) | `HandoverSwitches`, the snapshot of the registrations whose handover is on, and the replay of `bastion.handover.disabled` |
+| [bastionmain/snapshot.go](../../internal/bastionmain/snapshot.go), [handover.go](../../internal/bastionmain/handover.go) | `RegistrationSnapshot`, the snapshot of the registrations (whose handover is on, and since E13 the networks each Bastion connects from), and the replay of `bastion.handover.disabled` |
 
 ## Package 3 as built
 

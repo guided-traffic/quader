@@ -310,12 +310,20 @@ func basScriptTry(args ...string) (string, error) {
 	return string(out), err
 }
 
-// registerBastion creates the registration (an existing one stays), revokes its tokens, issues one and writes it to the
-// Secret the chart reads (R-BAS-004, R-BAS-006).
+// basEgress is the network the e2e Bastions connect to the main endpoint from: their pods call it directly from the pod range of
+// whichever worker node they run on, the pod subnet of deploy/dev/kind.yaml. Each registration lists it (R-BAS-017, Q-BAS-334), so
+// the caller's address and the host a Bastion forwards count at the main installation.
+const basEgress = "10.244.0.0/16"
+
+// registerBastion creates the registration with the network its Bastion connects from (an existing one stays and is given the
+// network), revokes its tokens, issues one and writes it to the Secret the chart reads (R-BAS-004, R-BAS-006).
 func (e *basEnv) registerBastion(t testing.TB, s *basSite) {
 	t.Helper()
-	e.adm.do(http.MethodPost, "/api/v1/bastions", map[string]string{"name": s.reg, "description": "end-to-end tests, release " + s.release}).
-		want(t, "register "+s.reg, 201, 409)
+	e.adm.do(http.MethodPost, "/api/v1/bastions", map[string]any{
+		"name": s.reg, "description": "end-to-end tests, release " + s.release, "egress": []string{basEgress},
+	}).want(t, "register "+s.reg, 201, 409)
+	e.adm.do(http.MethodPatch, "/api/v1/bastions/"+s.reg, map[string]any{"egress": []string{basEgress}},
+		"Content-Type", "application/merge-patch+json", "If-Match", "*").want(t, "the network of "+s.reg, 200)
 	e.revokeAllTokens(t, s.reg)
 	s.token, s.tokenID = e.issueToken(t, s.reg, 24*3600)
 	basWriteToken(t, s)

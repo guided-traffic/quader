@@ -117,11 +117,11 @@ What the main installation does with a request that claims to come from a Bastio
 |---|---|---|
 | Recognition | A request is a Bastion's only with a valid, enabled `bst` token in `Quader-Bastion-Authorization` (a forward) or `Authorization` (an interface call, which carries no `Quader-Bastion-Authorization`); every other `Quader-Bastion-*` header is ignored. The stages behind it get a copy of the request without the Bastion token, so neither the dispatcher nor a remote repository's outbound client can pass it on. | [recognize.go](../../internal/bastionmain/recognize.go) |
 | Route-family backstop | A forward reaches only `/api/<format>/`, `/files/` and the registry root `/v2/` (R-BAS-051, whose token service, catalog and repository routes tell the marking their kind before they decide or read a body), judged on the path as the router decodes it segment by segment (`/api/%76%31/tokens` is `/api/v1/tokens`); anything else answers `404 not_found` before authentication, so a forward runs no route of the management API, the login tree or the UI with the caller's credential, and is never answered `bastion_token_invalid` for the caller's credential ([Q-BAS-115](../spec/bastion.md#q-bas-115--a-request-with-quader-bastion-authorization-is-a-forward-and-a-forward-reaches-only-the-package-families)) | [recognize.go](../../internal/bastionmain/recognize.go) |
-| Forwarded headers | The Bastion's egress is listed in `bastions.trusted_proxies`, not in `server.trusted_proxies`. Its forwarded client address and host count only for a request whose Bastion token was recognized and that came from a listed address; any other request from that address - a workload sharing the egress - cannot choose its client address (rate limits, throttle, audit) or its response base URL ([Q-BAS-116](../spec/bastion.md#q-bas-116--the-bastions-forwarded-headers-count-only-for-a-recognized-request-from-an-address-of-bastionstrusted_proxies), [H-467](../spec/bastion.md#h-467--behind-the-main-installations-own-ingress-the-forwarded-host-is-what-the-ingress-reports)) | [recognize.go](../../internal/bastionmain/recognize.go), [wire_bastion.go](../../internal/app/wire_bastion.go) |
+| Forwarded headers | Each registration lists the networks its Bastion connects from (`egress`, at most 32, no `/0`); they are not in `server.trusted_proxies`. A Bastion's forwarded client address and host count only for a request whose Bastion token was recognized and that came from its own registration's networks; a request with that token from anywhere else - another registration's network included - and every request of a registration with an empty list is the Bastion's own request, from its address, and its request line says `bastion_egress: "unlisted"`; any request without the token from a Bastion's address - a workload sharing the egress - cannot choose its client address (rate limits, throttle, audit) or its response base URL ([Q-BAS-430](../spec/bastion.md#q-bas-430--a-bastion-is-recognized-by-its-token-its-reports-about-its-callers-count-only-from-its-own-registrations-networks), [Q-BAS-116](../spec/bastion.md#q-bas-116--the-bastions-forwarded-headers-count-only-for-a-recognized-request-from-an-address-of-bastionstrusted_proxies), [H-467](../spec/bastion.md#h-467--behind-the-main-installations-own-ingress-the-forwarded-host-is-what-the-ingress-reports)). The networks are read from the replica's snapshot of the registrations, never per request. | [recognize.go](../../internal/bastionmain/recognize.go), [egress.go](../../internal/bastionmain/egress.go), [snapshot.go](../../internal/bastionmain/snapshot.go), [wire_bastion.go](../../internal/app/wire_bastion.go) |
 | Throttle of rejected Bastion tokens | The stage runs before the authentication stage, so it counts rejected `qdr_bst_` tokens against the address that sent them (a budget of its own, the size of R-AUTH-038's); the token service asks the throttle after its cache, so a throttled address is refused a token the replica does not hold without a lookup, and a known one passes ([Q-BAS-65](../spec/bastion.md#q-bas-65--the-recognition-admits-an-interface-route-on-its-own-proof-throttles-tokens-it-cannot-place-and-counts-the-bastion-in-the-read-class), H-440). `token.rejected` names the request's source; the token's last use records the Bastion's own address | [recognize.go](../../internal/bastionmain/recognize.go), [authenticator.go](../../internal/bastionmain/authenticator.go), [bastion.go](../../internal/auth/token/bastion.go) |
 | Interface routes | Admitted on the recognition alone, as the registration, which holds no grant and is not internal in the decision point ([Q-AUTHZ-320](../spec/authorization.md#q-authz-320--a-bastion-registration-is-not-internal-a-bastion-reads-for-the-caller-it-forwards-for)): the Bastion reads nothing on its own credential; the registration's requests are charged to the read class under its token ([H-438](../spec/bastion.md#h-438--the-interface-calls-of-a-bastion-share-the-read-budget-of-its-token)) | [bastion_services.go](../../internal/api/v1/bastion_services.go), [index.go](../../internal/authz/index.go) |
 | Write probe | Admitted as the anonymous caller for routing only, whatever the levels say; answered at the route match (`403 bastion_read_only` or `204`) before any decision, handler or body read ([Q-BAS-118](../spec/bastion.md#q-bas-118--a-write-probe-is-admitted-as-the-anonymous-caller-for-routing-only), [H-469](../spec/bastion.md#h-469--a-probe-admitted-for-routing-runs-any-handler-below-the-package-families-that-does-not-tell-the-marking-its-route)) | [bastion_services.go](../../internal/api/v1/bastion_services.go) |
-| Check | The caller's credential is validated by the authentication stage of the default endpoint as a direct request from the caller's address: the endpoint's token types, the failed-credential throttle and `token.rejected` apply to that address, never to the Bastion's. A subject that is not usable gets no shapes; the shapes of a usable one are decided on the caller's own subject, as at the main installation's door, with no mark of the Bastion (Q-BAS-148). No `authz.denied` is written, and the request log line stays the registration's ([Q-BAS-119](../spec/bastion.md#q-bas-119--the-check-runs-the-credential-through-a-stage-that-records-nothing-in-the-request-log)). | [bastion_check_api.go](../../internal/api/v1/bastion_check_api.go) |
+| Check | The caller's credential is validated by the authentication stage of the default endpoint as a direct request from the caller's address: the endpoint's token types, the failed-credential throttle and `token.rejected` apply to that address, never to the Bastion's. The caller's address counts only when the check came from the registration's networks; otherwise the check runs for the address it came from ([Q-BAS-432](../spec/bastion.md#q-bas-432--the-callers-address-a-check-names-counts-only-from-the-bastions-own-networks-too)). A subject that is not usable gets no shapes; the shapes of a usable one are decided on the caller's own subject, as at the main installation's door, with no mark of the Bastion (Q-BAS-148). No `authz.denied` is written, and the request log line stays the registration's ([Q-BAS-119](../spec/bastion.md#q-bas-119--the-check-runs-the-credential-through-a-stage-that-records-nothing-in-the-request-log)). | [bastion_check_api.go](../../internal/api/v1/bastion_check_api.go) |
 | Feed | Entries carry IDs and qualified repository names only. A cursor that is gone, from the future beyond the lookback or older than the audit retention, or too far behind, answers `reset`, never a truncated list. An event whose target cannot be read drops every answer. Every journaled event is either mapped or listed with the reason it narrows nothing a Bastion keeps, held to the audit registry by a test; moving a repository to another project and removing or re-roling a project member drop every permission answer ([Q-BAS-120](../spec/bastion.md#q-bas-120--unassigning-a-repository-from-a-project-drops-every-permission-answer-and-every-journaled-event-is-classified)). A restore makes the feed answer reset to a Bastion whose cursor lies before it, because the journal replay re-applies narrowings without writing audit events (R-REPO-061). A narrowed repository and a new claim end the cached answers of the repository and of the virtual repositories over it (`content`), a `global` claim every answer (`grants`), so a name that a member removal, a pattern or a claim took away is not served from a Bastion's cache for the entry's period ([Q-BAS-146](../spec/bastion.md#q-bas-146--a-content-narrowing-and-a-claim-of-scope-members-yield-a-content-entry-a-global-claim-yields-grants)). | [feed.go](../../internal/bastionmain/feed.go) |
 | Download intake | Events are recorded as `artifact.downloaded` marked `origin: bastion` with the registration's name, a time in the future at the time of receipt; a lost, expired or malformed event is counted in `bastion.downloads.dropped`. A batch is charged to its registration by its events (`bastions.downloads.events_per_second`, in units of 100); beyond it the answer is `429` and nothing is recorded ([Q-BAS-117](../spec/bastion.md#q-bas-117--download-events-are-charged-to-their-registration-by-their-count), [H-468](../spec/bastion.md#h-468--the-download-budget-is-per-registration-so-many-registrations-at-their-budget-still-fill-the-audit-buffer)). The time the Bastion reports is trusted ([H-439](../spec/bastion.md#h-439--download-events-enter-the-audit-trail-with-the-time-the-bastion-reports)). | [downloads.go](../../internal/bastionmain/downloads.go) |
 | Last contact | Written at most once a minute per replica, at most 256 rows per registration; a change of a reported value is `bastion.contact`. The values are what the Bastion says about itself, except the address, which is the one the main installation saw. | [contact.go](../../internal/bastionmain/contact.go) |
@@ -129,6 +129,37 @@ What the main installation does with a request that claims to come from a Bastio
 `Quader-Bastion-Authorization` is redacted like `Authorization` in every log, span and support bundle: the key rule of R-OPS-013 matches
 the word `authorization` in a header name (tested in [redact_bastion_test.go](../../internal/observability/redact_bastion_test.go)). No
 `Quader-Bastion-*` request header is echoed; the one header on an answer to a Bastion request is the interface version.
+
+### Who may speak as a Bastion
+
+Two proofs, held apart (built with package E13 on 2026-11-26,
+[Q-BAS-430](../spec/bastion.md#q-bas-430--a-bastion-is-recognized-by-its-token-its-reports-about-its-callers-count-only-from-its-own-registrations-networks)):
+
+```text
+                       valid bst token of X?
+                        │no                 │yes
+                        ▼                   ▼
+             an ordinary request     X's request (marking, interface routes)
+             forwarded headers by           │
+             server.trusted_proxies         ▼   came from a network of X's own egress?
+             only                     │no                          │yes
+                                      ▼                            ▼
+                        X's own request, from its      the caller's address and host X
+                        address; "unlisted" in the     forwards count, and its check's
+                        request line                   clientAddress
+```
+
+| Who | May |
+|---|---|
+| A holder of X's token, from anywhere | be X: its interface routes, its marked forwards, its handshake (the contact records the address it came from) |
+| A holder of X's token, from a network X's registration lists | also speak for X's callers: their address for the limits, the throttle, the blocks and the audit, and the host documents are rendered for |
+| Anyone else at a Bastion's address | nothing of the above; a request without the token is an ordinary request from that address |
+| A holder of `endpoints:write` | change X's networks on its card or by `PATCH` (`bastion.updated` records the lists before and after) |
+
+A token of X used from Y's network is X's request and speaks for no caller: one registration's network never lends its trust to another
+registration's token. What stays open is a network listed too widely ([H-2291](#h-2291--an-egress-list-that-no-longer-names-a-bastions-address-pools-its-callers-silently)),
+a network brought back by a restore ([H-2348](#h-2348--a-restore-brings-back-a-registrations-networks-as-they-were-at-its-point-in-time)) and a
+network also in `server.trusted_proxies` ([H-2349](#h-2349--a-bastions-network-that-servertrusted_proxies-covers-is-trusted-for-every-request-and-only-logged)).
 
 ## Where abuse is stopped
 
@@ -140,7 +171,7 @@ the word `authorization` in a header name (tested in [redact_bastion_test.go](..
 | Bastion limits | credential or not, misses, failures | per-address request rates (anonymous stricter), per-address miss budgets, the failed-authentication timeout | R-BAS-035, R-BAS-036 |
 | Concurrency budget | requests to the main installation | at most `max_concurrent` across replicas, anonymous at most a share; collapsed misses | R-BAS-025 |
 | Cache room | the stored bytes of each area, from its listings and its own commits | a fill that would take its area past `max_bytes` is not kept, and a sweep starts at once above 95 %, so a flood of distinct artifacts cannot fill the cache volume or get the pod evicted; it still evicts what others read (H-2272) | R-BAS-089 |
-| Main installation | the real client, through `bastions.trusted_proxies` for a recognized Bastion request | its own rate limits, throttle and audit, applied to the client, not to the Bastion | R-BAS-017 |
+| Main installation | the real client, through the registration's own networks (`egress`) for a recognized Bastion request | its own rate limits, throttle and audit, applied to the client, not to the Bastion; with an empty list, or from an unlisted address, to the Bastion's address for all its callers (H-2291) | R-BAS-017 |
 
 Without Valkey every counter and block holds per replica at the configured value divided by the chart's replica count (H-389).
 
@@ -399,7 +430,7 @@ have landed:
 | Budgets per subject at the Bastion | A hit is counted against the caller's budget at the Bastion's place, which narrows [H-1381](../spec/bastion.md#h-1381--the-main-installations-limits-and-blocks-do-not-reach-hits-from-per-package-answers); the subject key and the applying rule come from the main installation, which names more of each caller to the Bastion than the marking did ([H-2281](#h-2281--the-check-answer-names-each-callers-subject-key-and-rule-to-the-bastion)) | R-BAS-096, Q-BAS-328 |
 | A cap on the bytes between the two | The Bastion paces every body it reads; a Bastion that was taken over ignores its own cap ([H-2289](#h-2289--a-bastion-that-was-taken-over-ignores-its-throughput-cap)) | R-BAS-097 |
 | The Bastion reports usage and state | The main installation stores what a Bastion says it served; it is the Bastion's word ([H-2282](#h-2282--the-usage-and-the-state-a-bastion-reports-are-its-word)) | R-BAS-016, R-LIM-045 |
-| Egress addresses per registration | A Bastion token makes its forwarded client address count only from its own registration's addresses, no longer from any address of one list for all registrations | R-BAS-017, Q-BAS-334 |
+| Egress addresses per registration (built, E13) | A Bastion token makes its forwarded client address count only from its own registration's addresses, no longer from any address of one list for all registrations ([who may speak as a Bastion](#who-may-speak-as-a-bastion)) | R-BAS-017, Q-BAS-334 |
 | Nothing names the main installation | No host, base URL, request ID, rule, place, internal repository name or version in a Bastion's answers; what remains tells that an installation stands behind it, not which ([H-2294](#h-2294--a-bastions-answers-still-tell-that-an-installation-stands-behind-it)) | R-BAS-099 |
 
 ## What this does not cover
@@ -408,7 +439,7 @@ The gaps of the Bastion's mechanisms are recorded on the spec page, where the me
 that no mechanism of the Bastion holds, because the chart leaves it to the cluster operator, is recorded on this page:
 [H-522](#h-522--the-chart-restricts-no-egress-of-the-bastion-pods). The gaps of the owner's decisions of 2026-11-26 (W-34), specified and
 not built, are recorded on this page as well, each with the package whose mechanism has it: H-2280 to H-2283, H-2285, H-2289 to H-2297,
-H-2350 and H-2351;
+H-2348 to H-2351 (H-2291, H-2348 and H-2349 are E13's, built);
 those of a Bastion's budgets are on [usage-and-limits.md](usage-and-limits.md#what-this-does-not-cover) (H-2284, H-2286 to H-2288). Numbers
 marked [derived] are calculated from the defaults, not measured.
 
@@ -672,11 +703,36 @@ anonymous ceiling (R-BAS-094, R-BAS-096) and the throughput (R-BAS-097).
 
 ### H-2291 · An egress list that no longer names a Bastion's address pools its callers silently
 
-Stage: R-BAS-017, R-UI-243 (package E13). Subject: the callers of one Bastion at the main installation. Live once E13 lands, and today with
-the one list `bastions.trusted_proxies`. When a Bastion's egress address changes (a cloud NAT, a new node) or the list is empty, every caller
-through it counts at the main installation as the egress address: one anonymous budget, one failed-credential throttle, one block for all of
-them. The card warns with the address of the last contact (Q-UI-1482). A wide prefix in one registration's list lets that registration's
-token forward any client address from any address in the prefix, which is H-386's power within the prefix.
+Stage: R-BAS-017, R-UI-243 (package E13, built on 2026-11-26). Subject: the callers of one Bastion at the main installation. Live on every
+main installation with a Bastion whose registration lists no network, or none that holds the address it connects from now. When a
+Bastion's egress address changes (a cloud NAT, a new node) or the list is empty - the default of a new registration - every caller
+through it counts at the main installation as the Bastion's address: one anonymous budget, one failed-credential throttle, one block for
+all of them, and the audit log names the Bastion's address. The card warns with the address of each replica's last contact and offers to
+add it (Q-UI-1482); nothing tells an administrator who does not open the card. Narrowed by E13: the list is each registration's, so an
+address trusted for one Bastion no longer speaks for another, and a token used from outside its registration's networks chooses no
+address. What remains of a list that is too wide: a network shared by two Bastions' pods (one node range listed in two registrations)
+lets either token forward any client address from any pod of the range, and a wide prefix in one registration's list lets its token do
+so from any address in the prefix, which is H-386's power within the prefix.
+
+### H-2348 · A restore brings back a registration's networks as they were at its point in time
+
+Stage: R-BAS-017, R-HA-054 (package E13). Subject: a network an administrator removed from a registration's list. Live once a database is
+restored to a point before the removal. A change of the list is recorded (`bastion.updated` with `egressBefore` and `egressAfter`) but not
+journaled, so the replay of R-HA-054 does not remove the network again, as it switches a handover off again (R-BAS-071): after the
+restore, a request with that registration's token from the removed network forwards its caller's address again. What makes it real: a
+network removed because it was no longer the Bastion's (a released NAT address another tenant now holds) and a restore to before the
+removal; the card shows the restored list, and removing the network again closes it.
+
+### H-2349 · A Bastion's network that server.trusted_proxies covers is trusted for every request, and only logged
+
+Stage: R-BAS-017, R-ARCH-006 (package E13). Subject: every request from an address that is both in a registration's networks and in
+`server.trusted_proxies` of the default endpoint. Live where an operator lists the Bastion's address in `server.trusted_proxies` as well
+(the older setup of [Q-BAS-21](../spec/bastion.md#q-bas-21--internet-exposure-limits-blocking-failed-sign-in-timeouts-and-a-configurable-cache)).
+Its forwarded headers then count for every request from it, a Bastion token or not, as for any trusted proxy: a workload sharing the
+Bastion's egress chooses its client address and its response base URL. The replica logs the overlap once when its snapshot first holds the
+network ([Q-BAS-433](../spec/bastion.md#q-bas-433--the-networks-live-in-the-replicas-snapshot-of-the-registrations-with-a-change-area-of-their-own));
+the API cannot refuse it, since `server.trusted_proxies` is the configuration file's and the registration knows nothing of it. Removing
+the address from `server.trusted_proxies` closes it.
 
 ### H-2292 · Anonymous documents are kept for the metadata period
 

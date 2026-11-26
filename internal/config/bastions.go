@@ -1,22 +1,19 @@
 package config
 
 import (
-	"net/netip"
 	"time"
 )
 
 // Bastions configures the main installation's side of the quader Bastion (R-BAS-004, R-BAS-011, R-BAS-015,
-// R-BAS-016, R-BAS-017): how many registrations exist, whose forwarded headers count for a Bastion request, what
-// one check may ask, how the revocation feed reads the audit trail and how download events are accepted. The
-// Bastion's own configuration is BastionConfig; a Bastion reads nothing of this section.
+// R-BAS-016): how many registrations exist, what one check may ask, how the revocation feed reads the audit trail and
+// how download events are accepted. The networks a Bastion connects from, whose forwarded headers count for its
+// requests, are a member of its registration (R-BAS-017, Q-BAS-334), not of this section. The Bastion's own
+// configuration is BastionConfig; a Bastion reads nothing of this section.
 type Bastions struct {
-	MaxRegistrations int `yaml:"max_registrations" default:"16" validate:"min=1,max=256" doc:"Bastion registrations that may exist; also bounds the bastion label of the interface metrics (R-BAS-004)."`
-	// TrustedProxies are the Bastions' egress addresses (Q-BAS-116): their forwarded client address and host
-	// count only on a request whose Bastion token was recognized, so server.trusted_proxies does not list them.
-	TrustedProxies []string          `yaml:"trusted_proxies" default:"[]" doc:"Addresses or CIDRs the Bastions connect from: their forwarded client address and host count only on a request whose Bastion token was recognized (R-BAS-017). Do not list them in server.trusted_proxies. A /0 prefix is refused."`
-	Check          BastionsCheck     `yaml:"check"`
-	Feed           BastionsFeed      `yaml:"feed"`
-	Downloads      BastionsDownloads `yaml:"downloads"`
+	MaxRegistrations int               `yaml:"max_registrations" default:"16" validate:"min=1,max=256" doc:"Bastion registrations that may exist; also bounds the bastion label of the interface metrics (R-BAS-004)."`
+	Check            BastionsCheck     `yaml:"check"`
+	Feed             BastionsFeed      `yaml:"feed"`
+	Downloads        BastionsDownloads `yaml:"downloads"`
 }
 
 // BastionsCheck bounds the credential and read check (R-BAS-011).
@@ -61,7 +58,6 @@ const maxEventsWindow = 12 * time.Hour
 
 // Validate checks the cross-field rules of the section.
 func (b *Bastions) Validate(r *Report) {
-	checkTrustedProxies(r, "trusted_proxies", b.TrustedProxies)
 	d := b.Downloads
 	if d.LimiterBurst() < d.Units(d.MaxBatch) {
 		r.Add("downloads.events_burst", "(%d) must hold downloads.max_batch (%d) in units of %d events: a full batch would never fit", d.EventsBurst, d.MaxBatch, DownloadEventsPerUnit)
@@ -69,18 +65,4 @@ func (b *Bastions) Validate(r *Report) {
 	if d.EventsPerSecond > 0 && time.Duration(float64(d.EventsBurst)/d.EventsPerSecond*float64(time.Second)) > maxEventsWindow {
 		r.Add("downloads.events_burst", "divided by downloads.events_per_second is a window of more than %s", maxEventsWindow)
 	}
-}
-
-// TrustedProxyPrefixes returns bastions.trusted_proxies as prefixes, an address as its host prefix. Validate
-// refused every entry that parses as neither.
-func (b *Bastions) TrustedProxyPrefixes() []netip.Prefix {
-	var out []netip.Prefix
-	for _, e := range b.TrustedProxies {
-		if p, err := netip.ParsePrefix(e); err == nil {
-			out = append(out, p.Masked())
-		} else if a, err := netip.ParseAddr(e); err == nil {
-			out = append(out, netip.PrefixFrom(a.Unmap(), a.Unmap().BitLen()))
-		}
-	}
-	return out
 }

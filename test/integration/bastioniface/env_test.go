@@ -374,8 +374,8 @@ func (f *fakeShapes) Shapes(_ context.Context, idx *authz.Index, subject authz.S
 
 // siteOpts describe the main installation of a test.
 type siteOpts struct {
-	// trusted are server.trusted_proxies (none by default), egress bastions.trusted_proxies (the loopback
-	// addresses the tests connect from, by default) and additional server.additional_base_urls.
+	// trusted are server.trusted_proxies (none by default), egress the networks every registration's Bastion connects from
+	// (the loopback addresses the tests connect from, by default; R-BAS-017) and additional server.additional_base_urls.
 	trusted    []string
 	egress     []string
 	additional []string
@@ -616,19 +616,16 @@ func (e *env) newSite(o siteOpts) *site {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// The re-derivation of the composition root (app.bastionForwarded, Q-BAS-116): a recognized request from a
-	// listed Bastion egress is resolved again with that egress trusted.
-	bastionResolver, err := httpserver.NewResolver(append(append([]string(nil), o.trusted...), egress...), baseURL, o.additional, httpserver.WithForwardedHeader(o.forwarded))
+	// The re-derivation of the composition root (app.bastionForwarded, Q-BAS-430): a recognized request from one of its
+	// registration's networks is resolved again with those networks trusted.
+	egressPrefixes, err := bastionmain.ParseEgress("/egress", egress)
 	if err != nil {
 		t.Fatal(err)
 	}
-	egressPrefixes := (&config.Bastions{TrustedProxies: egress}).TrustedProxyPrefixes()
+	egressOf := func(string) []netip.Prefix { return egressPrefixes }
 	forwarded := func(r *http.Request) context.Context {
-		client := httpserver.InfoFrom(r.Context()).Client
-		for _, p := range egressPrefixes {
-			if client.IsValid() && p.Contains(client.Unmap()) {
-				return httpserver.WithResolved(r.Context(), bastionResolver.Resolve(r))
-			}
+		if rec, _ := bastionmain.RecognitionFrom(r.Context()); rec.FromEgress {
+			return httpserver.WithResolved(r.Context(), resolver.AlsoTrusting(egressOf(rec.BastionID)).Resolve(r))
 		}
 		return r.Context()
 	}
@@ -639,7 +636,7 @@ func (e *env) newSite(o siteOpts) *site {
 		Log: quiet, Router: router, Resolver: resolver, Replica: name, ReplicaHeader: httpserver.ReplicaAlways,
 		Authenticate: v1.BastionRouteAuth(credential, nil),
 		Bastion: bastionmain.Stages{Recognize: bastionmain.Recognize(bastionmain.RecognizeOptions{
-			Tokens: s.bastion, Metrics: s.metrics, Problem: problem, Forwarded: forwarded,
+			Tokens: s.bastion, Metrics: s.metrics, Problem: problem, Forwarded: forwarded, Egress: egressOf,
 			Throttle: func(r *http.Request) bastionmain.Throttle {
 				return auth.NewAddressThrottle(limiter, httpserver.InfoFrom(r.Context()).Client, nil, bastionmain.ThrottleScope)
 			},

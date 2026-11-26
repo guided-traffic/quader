@@ -40,7 +40,8 @@ func (s *Server) bastionsReady(w http.ResponseWriter, r *http.Request) bool {
 
 func toBastion(b bastionmain.Registration) gen.Bastion {
 	out := gen.Bastion{
-		Id: uuidOf(b.ID), Name: b.Name, Description: b.Description, Enabled: b.Enabled, Handover: b.Handover, CreatedAt: utc(b.CreatedAt),
+		Id: uuidOf(b.ID), Name: b.Name, Description: b.Description, Enabled: b.Enabled, Handover: b.Handover,
+		Egress: bastionmain.EgressText(b.Egress), CreatedAt: utc(b.CreatedAt),
 		Tokens: make([]gen.BastionTokenSummary, 0, len(b.Tokens)), Contacts: make([]gen.BastionContact, 0, len(b.Contacts)),
 	}
 	for _, t := range b.Tokens {
@@ -92,7 +93,11 @@ func (s *Server) CreateBastion(w http.ResponseWriter, r *http.Request) {
 		httpserver.Problem(w, r, err)
 		return
 	}
-	b, err := s.o.Bastions.Create(r.Context(), s.caller(r), bastionmain.NewRegistration{Name: in.Name, Description: derefString(in.Description), Source: "api"})
+	nr := bastionmain.NewRegistration{Name: in.Name, Description: derefString(in.Description), Source: "api"}
+	if in.Egress != nil {
+		nr.Egress = *in.Egress
+	}
+	b, err := s.o.Bastions.Create(r.Context(), s.caller(r), nr)
 	if err != nil {
 		failIdentity(w, r, err)
 		return
@@ -124,6 +129,7 @@ type bastionPatchBody struct {
 	Description json.RawMessage `json:"description"`
 	Enabled     json.RawMessage `json:"enabled"`
 	Handover    json.RawMessage `json:"handover"`
+	Egress      json.RawMessage `json:"egress"`
 
 	ID        json.RawMessage `json:"id"`
 	Name      json.RawMessage `json:"name"`
@@ -157,6 +163,10 @@ func (s *Server) UpdateBastion(w http.ResponseWriter, r *http.Request, name stri
 		// The switch of the handover per blob (R-BAS-071): true or false, a null switches nothing.
 		patch.Handover, err = patchEnabled(in.Handover, "/handover")
 	}
+	if err == nil {
+		// The networks the Bastion connects from (R-BAS-017): the whole list, [] empties it, a null changes nothing.
+		patch.Egress, err = patchStrings(in.Egress, "/egress")
+	}
 	if err != nil {
 		httpserver.Problem(w, r, err)
 		return
@@ -181,6 +191,21 @@ func patchEnabled(raw json.RawMessage, pointer string) (*bool, error) {
 	var v bool
 	if err := json.Unmarshal(raw, &v); err != nil {
 		return nil, malformed(pointer, "type", "the value must be true or false", err)
+	}
+	return &v, nil
+}
+
+// patchStrings reads a list of strings of a merge patch: absent and null are unchanged, any other type is refused.
+func patchStrings(raw json.RawMessage, pointer string) (*[]string, error) {
+	if raw == nil || string(bytes.TrimSpace(raw)) == "null" {
+		return nil, nil
+	}
+	var v []string
+	if err := json.Unmarshal(raw, &v); err != nil {
+		return nil, malformed(pointer, "type", "the value must be a list of strings", err)
+	}
+	if v == nil {
+		v = []string{}
 	}
 	return &v, nil
 }

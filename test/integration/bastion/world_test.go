@@ -94,6 +94,9 @@ type worldOptions struct {
 	Seed func(w *world)
 	// MainEnv is further environment of the main replica alone, made after Seed (an encrypted connection on the stack's prefix).
 	MainEnv func(w *world) []string
+	// Egress are the networks the registration partners lists as the addresses its Bastion connects from (R-BAS-017); none by
+	// default, so nothing a Bastion forwards counts.
+	Egress []string
 }
 
 func newWorld(t *testing.T, o worldOptions) *world {
@@ -180,7 +183,7 @@ func newWorld(t *testing.T, o worldOptions) *world {
 	w.main = st.Start(t, testenv.ReplicaOptions{Name: "web-1", Endpoints: o.Endpoints, Role: o.Role, Env: mainEnv})
 	w.front = newFront(t, dir, w.main.Addr("default"))
 
-	w.registerBastion("partners")
+	w.registerBastion("partners", o.Egress...)
 	return w
 }
 
@@ -259,10 +262,10 @@ func (w *world) mustAPI(method, path string, want int, body any, hdr ...string) 
 	return a
 }
 
-// registerBastion registers a Bastion and issues its token.
-func (w *world) registerBastion(name string) {
+// registerBastion registers a Bastion with the networks it connects from and issues its token.
+func (w *world) registerBastion(name string, egress ...string) {
 	w.t.Helper()
-	w.mustAPI("POST", "/api/v1/bastions", 201, map[string]any{"name": name})
+	w.mustAPI("POST", "/api/v1/bastions", 201, map[string]any{"name": name, "egress": append([]string{}, egress...)})
 	tok := w.issueBastionToken(name)
 	if name == "partners" {
 		w.bst, w.bstID = tok.token, tok.id

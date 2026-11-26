@@ -43,6 +43,11 @@ type Recognition struct {
 	// (storage.md R-STOR-095 step 1).
 	Offer   iface.HandoverOffer
 	Offered bool
+	// FromEgress is true when the request came from one of the networks its registration lists as the addresses its Bastion
+	// connects from (R-BAS-017, Q-BAS-334): the address is the one stage 5 resolved with server.trusted_proxies, before anything
+	// the Bastion forwards counts. Only then do the caller's address and host a forward carries count, and the client address of a
+	// check (Q-BAS-430, Q-BAS-432); otherwise the request is the Bastion's own, from the address it came from.
+	FromEgress bool
 }
 
 type recognitionKey struct{}

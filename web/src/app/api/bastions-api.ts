@@ -30,6 +30,8 @@ export abstract class BastionsApi {
   abstract setEnabled(name: string, enabled: boolean, etag: string): Promise<Versioned<Bastion>>;
   /** Switches the direct reads from the object store on or off (the handover per blob, R-BAS-071); a new registration has them off. */
   abstract setHandover(name: string, handover: boolean, etag: string): Promise<Versioned<Bastion>>;
+  /** Replaces the networks the Bastion connects from (R-BAS-017, R-UI-243); `[]` empties the list. */
+  abstract setEgress(name: string, egress: readonly string[], etag: string): Promise<Versioned<Bastion>>;
   /** Deletes the registration and revokes its tokens. */
   abstract delete(name: string): Promise<void>;
   /** The secret is in this answer only (R-AUTH-022). */
@@ -61,6 +63,11 @@ export class HttpBastionsApi extends BastionsApi {
 
   override async setHandover(name: string, handover: boolean, etag: string): Promise<Versioned<Bastion>> {
     const r = await this.client.patch<Bastion>(`/api/v1/bastions/${seg(name)}`, { handover }, etag);
+    return { value: r.body, etag: r.etag ?? '' };
+  }
+
+  override async setEgress(name: string, egress: readonly string[], etag: string): Promise<Versioned<Bastion>> {
+    const r = await this.client.patch<Bastion>(`/api/v1/bastions/${seg(name)}`, { egress }, etag);
     return { value: r.body, etag: r.etag ?? '' };
   }
 

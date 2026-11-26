@@ -1239,15 +1239,6 @@
           "minimum": 1,
           "type": "integer",
           "x-quader-env": "QUADER_BASTIONS_MAX_REGISTRATIONS"
-        },
-        "trusted_proxies": {
-          "default": [],
-          "description": "Addresses or CIDRs the Bastions connect from: their forwarded client address and host count only on a request whose Bastion token was recognized (R-BAS-017). Do not list them in server.trusted_proxies. A /0 prefix is refused.",
-          "items": {
-            "type": "string"
-          },
-          "type": "array",
-          "x-quader-env": "QUADER_BASTIONS_TRUSTED_PROXIES"
         }
       },
       "type": "object"

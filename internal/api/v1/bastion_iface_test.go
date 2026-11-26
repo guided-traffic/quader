@@ -90,6 +90,8 @@ type checkSetup struct {
 	setup
 	shapes *fakeShapes
 	asked  *http.Request
+	// elsewhere makes the check come from an address its registration does not list (Recognition.FromEgress false, Q-BAS-432).
+	elsewhere bool
 }
 
 func newCheckSetup(t *testing.T, authn func(*http.Request) (httpserver.Principal, error)) *checkSetup {
@@ -113,7 +115,10 @@ func newCheckSetup(t *testing.T, authn func(*http.Request) (httpserver.Principal
 	cs.setup = inner
 	h := cs.handler
 	cs.handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		r = r.WithContext(bastionmain.WithRecognition(r.Context(), bastionmain.Recognition{Bastion: "partners", BastionID: "0192f1c4-0000-7000-8000-0000000000b1", TokenID: bastionTokenID, Route: true, Interface: iface.InterfaceVersion}))
+		r = r.WithContext(bastionmain.WithRecognition(r.Context(), bastionmain.Recognition{
+			Bastion: "partners", BastionID: "0192f1c4-0000-7000-8000-0000000000b1", TokenID: bastionTokenID, Route: true, Interface: iface.InterfaceVersion,
+			FromEgress: !cs.elsewhere,
+		}))
 		h.ServeHTTP(w, r)
 	})
 	return cs
@@ -149,6 +154,27 @@ func decodeCheck(t *testing.T, w *httptest.ResponseRecorder) iface.CheckAnswer {
 		t.Fatalf("%v: %s", err, w.Body)
 	}
 	return ans
+}
+
+// TestR_BAS_017_ACheckFromAnUnlistedAddressIsDecidedForTheBastionsOwnAddress (Q-BAS-432): the caller's address a Bastion names in
+// its check counts only from one of its registration's networks; from any other address the authentication stage, its throttle
+// and token.rejected see the address the Bastion came from.
+func TestR_BAS_017_ACheckFromAnUnlistedAddressIsDecidedForTheBastionsOwnAddress(t *testing.T) {
+	cs := newCheckSetup(t, checkedCaller(nil))
+	cs.elsewhere = true
+	r := httptest.NewRequest(http.MethodPost, iface.PathCheck, strings.NewReader(`{"credential":"qdr_sat_3kQ9","clientAddress":"203.0.113.7","repositories":["it/npm-all"]}`))
+	r.Header.Set("Content-Type", "application/json")
+	r.RemoteAddr = "198.51.100.21:40000"
+	r = r.WithContext(httpserver.WithClient(r.Context(), netip.MustParseAddr("198.51.100.21")))
+	w := httptest.NewRecorder()
+	cs.handler.ServeHTTP(w, r)
+	decodeCheck(t, w)
+	if cs.asked == nil {
+		t.Fatal("the authentication stage was not asked")
+	}
+	if got := httpserver.InfoFrom(cs.asked.Context()).Client; got != netip.MustParseAddr("198.51.100.21") {
+		t.Errorf("the stage sees %v, want the Bastion's own address 198.51.100.21", got)
+	}
 }
 
 // TestR_BAS_011_ACheckRunsTheCallersCredentialThroughTheAuthenticationStage: the subject of a valid token, the

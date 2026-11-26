@@ -10436,19 +10436,26 @@ The owner's choice (a) of [bastion.md](bastion.md#q-bas-334--a-bastions-egress-a
 the help "The main installation believes the caller's address a Bastion forwards only from these addresses."
 
 - **Empty**: a line in the warning colour, "No address is listed: every caller through this Bastion counts as the Bastion's own address at
-  the main installation, with one budget and one block for all."
+  the main installation, with one budget and one block for all, and the audit log names the Bastion's address instead of the caller's."
 - **The last contact from elsewhere**
   ([Q-UI-1482](#q-ui-1482--the-egress-addresses-warn-with-the-address-of-the-last-contact-and-offer-to-add-it)): where a replica's last
   contact came from an address the list does not hold, "The last contact came from 198.51.100.21, which is not listed." with **Add
   198.51.100.21**.
 
-*Not built* (package E12, after E13). Today the egress addresses are `bastions.trusted_proxies` of the configuration file, the same for every
-registration.
+*Built (package E13, 2026-11-26)*, as the card's own section `<quader-bastion-egress>`
+([bastion-egress.ts](../../web/src/app/features/bastions/bastion-egress.ts)) after the switch of the direct reads, since E12's **Details**
+does not exist yet ([Q-UI-1483](#q-ui-1483--the-egress-warning-stands-on-the-card-in-plain-view-and-the-list-is-the-cards-own-section-until-details-exists)): the warnings, one line per address a replica's last contact came from that no listed
+network holds, each with **Add <address>**, and the list as a field per network, each `field-w-name` wide (the width of a host, which holds
+the longest IPv6 network of 43 characters), with **Remove**, **Add address** and **Save changes**; one empty field is the empty list, the
+default of a new registration ([Q-UI-1484](#q-ui-1484--the-list-is-a-field-per-network-and-a-refused-entry-keeps-what-was-typed)). A holder of `endpoints:read` alone reads the networks as a line of text
+and the warnings without **Add**. English and German. E12 moves the list into **Details** and leaves the warnings on the card.
 
 Acceptance criteria:
 
 - Vitest (about 1 s): the empty list's warning; a contact from an unlisted address offers to add it, and **Add** sends one `PATCH` with the
-  list.
+  list ([bastions.spec.ts](../../web/src/app/features/bastions/bastions.spec.ts), "The addresses a Bastion connects from (R-UI-243)": also a
+  refused `/0` under its field with the entries kept, the empty list saved as `[]`, the reader's view, and the containment of IPv4 and IPv6
+  addresses in networks).
 
 ### R-UI-225 · The installation serves its own imprint and privacy notice from the chart's Markdown
 Priority: **P1** · Covers: quader-only
@@ -29011,6 +29018,35 @@ Status: **Decided by the development agent on 2026-11-26** — selected from the
 | (b) Keep "Dateien" and "GB/day" | — | — | Wrong words |
 
 **Choice:** (a). **Applied in the spec:** R-UI-037, R-UI-178; the glossary.
+
+### Q-UI-1483 · The egress warning stands on the card in plain view, and the list is the card's own section until Details exists
+
+Status: **Decided by the development agent on 2026-11-26** (package E13) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-UI-243 puts the list into the card's **Details** (R-UI-240), which E12 builds later; the owner's rule "simple by default,
+details on demand" (CLAUDE.md), and the aim of package E13 ([developer/bastion-limits.md](../developer/bastion-limits.md)) that an administrator who registers a Bastion is led to enter its address.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The warnings (empty list, contact from an unlisted address with **Add**) always on the card; the fields in a section of the card now, in **Details** once E12 builds it (chosen) | The fault in plain view, the editing on demand later | One click after the Bastion's first handshake sets the list; nothing waits for E12 | Until E12 the fields stand open on the card |
+| (b) A field of the creation dialog | | Asked at once | No contact exists yet, so no address to offer; an expert setting in the creation flow, against the rule |
+| (c) Everything behind a disclosure now | | E12's final shape | The empty list's fault hidden behind a click |
+
+**Choice:** (a). **Applied in the spec:** R-UI-243.
+
+### Q-UI-1484 · The list is a field per network, and a refused entry keeps what was typed
+
+Status: **Decided by the development agent on 2026-11-26** (package E13) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One field per network with **Remove**, **Add address**, one **Save changes** for the list; a refusal stands under the field it points at and as a whole under the list, and the fields keep what was typed (chosen) | A list editor | A mistyped network is corrected in place; the field error names the network meant (Q-BAS-431) | Differs from R-UI-240's "the field keeps the server's value", which is about one value |
+| (b) One text area, a network per line | | Compact | The server's pointer names an entry, not a line one can find |
+| (c) Revert to the server's list on a refusal | R-UI-240's rule | | The typed list is lost with its typo |
+
+**Choice:** (a). The card's live reload (R-UI-213) sets the fields again only when the server's list changed. **Applied in the spec:** R-UI-243.
 
 ## What this does not cover
 

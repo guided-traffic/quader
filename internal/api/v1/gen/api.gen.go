@@ -9724,7 +9724,15 @@ type Bastion struct {
 	Contacts    []BastionContact `json:"contacts"`
 	CreatedAt   time.Time        `json:"createdAt"`
 	Description string           `json:"description"`
-	Enabled     bool             `json:"enabled"`
+
+	// Egress The networks the Bastion connects from (R-BAS-017, R-UI-243): the main installation believes the caller's address and the
+	// host a Bastion forwards, and the caller's address of its check, only on a request of this registration that comes from one
+	// of them, as `server.trusted_proxies` resolves the request's address. Empty for a new registration: then every caller through
+	// the Bastion counts as the Bastion's own address, with one budget and one block for all. An entry is an IPv4 or IPv6 address
+	// (read as its `/32` or `/128`) or a network in CIDR form; the answer gives each with its prefix length. Refused are more than
+	// 32, a network listed twice, a `/0` and a network with bits set beyond its prefix (`422` with a field error at the entry).
+	Egress  BastionEgress `json:"egress"`
+	Enabled bool          `json:"enabled"`
 
 	// Handover The switch of the handover per blob (R-BAS-071): while it is on, the main installation may answer a forward of this
 	// Bastion for a large file with a short-lived signed link of the object store, so the Bastion reads the bytes from the
@@ -9794,6 +9802,14 @@ type BastionDownloadsRequest struct {
 	DroppedSince *time.Time             `json:"droppedSince,omitempty"`
 	Events       []BastionDownloadEvent `json:"events"`
 }
+
+// BastionEgress The networks the Bastion connects from (R-BAS-017, R-UI-243): the main installation believes the caller's address and the
+// host a Bastion forwards, and the caller's address of its check, only on a request of this registration that comes from one
+// of them, as `server.trusted_proxies` resolves the request's address. Empty for a new registration: then every caller through
+// the Bastion counts as the Bastion's own address, with one budget and one block for all. An entry is an IPv4 or IPv6 address
+// (read as its `/32` or `/128`) or a network in CIDR form; the answer gives each with its prefix length. Refused are more than
+// 32, a network listed twice, a `/0` and a network with bits set beyond its prefix (`422` with a field error at the entry).
+type BastionEgress = []string
 
 // BastionFeedAnswer defines model for BastionFeedAnswer.
 type BastionFeedAnswer struct {
@@ -9896,7 +9912,10 @@ type BastionPackageReadRead string
 // BastionPatch The read-only members of `Bastion` are accepted and ignored.
 type BastionPatch struct {
 	Description *string `json:"description,omitempty"`
-	Enabled     *bool   `json:"enabled,omitempty"`
+
+	// Egress Replaces the whole list; `[]` empties it, a `null` reads as absent and changes nothing.
+	Egress  *BastionEgress `json:"egress,omitempty"`
+	Enabled *bool          `json:"enabled,omitempty"`
 
 	// Handover Switches the handover per blob on or off (R-BAS-071); a `null` reads as absent and switches nothing, as for `enabled`.
 	Handover *bool `json:"handover,omitempty"`
@@ -13471,7 +13490,15 @@ type NamespaceRepositoryPackageOwnership string
 // NewBastion defines model for NewBastion.
 type NewBastion struct {
 	Description *string `json:"description,omitempty"`
-	Name        string  `json:"name"`
+
+	// Egress The networks the Bastion connects from (R-BAS-017, R-UI-243): the main installation believes the caller's address and the
+	// host a Bastion forwards, and the caller's address of its check, only on a request of this registration that comes from one
+	// of them, as `server.trusted_proxies` resolves the request's address. Empty for a new registration: then every caller through
+	// the Bastion counts as the Bastion's own address, with one budget and one block for all. An entry is an IPv4 or IPv6 address
+	// (read as its `/32` or `/128`) or a network in CIDR form; the answer gives each with its prefix length. Refused are more than
+	// 32, a network listed twice, a `/0` and a network with bits set beyond its prefix (`422` with a field error at the entry).
+	Egress *BastionEgress `json:"egress,omitempty"`
+	Name   string         `json:"name"`
 }
 
 // NewBastionToken defines model for NewBastionToken.

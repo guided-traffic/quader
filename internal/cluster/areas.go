@@ -364,3 +364,16 @@ func init() {
 }
 
 // <<< bastion handover
+
+// >>> bastion egress
+
+// AreaBastionEgress carries a change of the networks a Bastion registration's Bastion connects from (bastion.md R-BAS-017,
+// Q-BAS-334): every replica reloads its snapshot of the registrations, which the recognition of a Bastion's request reads instead of
+// the database. The payload is {"bastion": "<the registration's principal ID>"}. Its cluster_epoch row is seeded by 00145_bastion_egress.
+const AreaBastionEgress = "bastion_egress"
+
+func init() {
+	RegisterArea(Area{Name: AreaBastionEgress, Owner: "R-BAS-017", Class: ChangeArea, PayloadVersion: 1})
+}
+
+// <<< bastion egress

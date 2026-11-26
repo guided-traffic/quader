@@ -39,7 +39,8 @@ func (q *Queries) BastionCountActiveTokens(ctx context.Context, id string) (int6
 }
 
 const bastionGet = `-- name: BastionGet :many
-SELECT p.id::text AS id, p.name, (p.status = 'active')::boolean AS enabled, p.created_at, p.revision, b.description, b.handover
+SELECT p.id::text AS id, p.name, (p.status = 'active')::boolean AS enabled, p.created_at, p.revision, b.description, b.handover,
+       b.egress::text[] AS egress
   FROM principal p JOIN bastion b ON b.principal_id = p.id
  WHERE p.kind = 'bastion' AND p.name = $1::text
 `
@@ -52,10 +53,12 @@ type BastionGetRow struct {
 	Revision    int64
 	Description string
 	Handover    bool
+	Egress      []string
 }
 
 // A registration by name. revision is the ETag (R-API-012); enabled is the principal's status; handover is the switch of the
-// handover per blob (R-BAS-071, 00110).
+// handover per blob (R-BAS-071, 00110); egress the networks the Bastion connects from (R-BAS-017, 00145), each in the text form of
+// cidr, which always names the prefix length.
 func (q *Queries) BastionGet(ctx context.Context, name string) ([]BastionGetRow, error) {
 	rows, err := q.db.Query(ctx, bastionGet, name)
 	if err != nil {
@@ -73,6 +76,7 @@ func (q *Queries) BastionGet(ctx context.Context, name string) ([]BastionGetRow,
 			&i.Revision,
 			&i.Description,
 			&i.Handover,
+			&i.Egress,
 		); err != nil {
 			return nil, err
 		}
@@ -112,43 +116,16 @@ func (q *Queries) BastionHandoverOff(ctx context.Context, id string) ([]string, 
 	return items, nil
 }
 
-const bastionHandoverOn = `-- name: BastionHandoverOn :many
-SELECT b.principal_id::text AS id
-  FROM bastion b JOIN principal p ON p.id = b.principal_id
- WHERE p.kind = 'bastion' AND b.handover
- ORDER BY b.principal_id
-`
-
-// The registrations whose handover is on, for every replica's snapshot (R-BAS-071): at most bastions.max_registrations rows,
-// read at the start, on a change of the area bastion_handover and once a minute; never by a forward.
-func (q *Queries) BastionHandoverOn(ctx context.Context) ([]string, error) {
-	rows, err := q.db.Query(ctx, bastionHandoverOn)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []string{}
-	for rows.Next() {
-		var id string
-		if err := rows.Scan(&id); err != nil {
-			return nil, err
-		}
-		items = append(items, id)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const bastionInsert = `-- name: BastionInsert :exec
 
-INSERT INTO bastion (principal_id, description) VALUES ($1::text::uuid, $2::text)
+INSERT INTO bastion (principal_id, description, egress)
+VALUES ($1::text::uuid, $2::text, $3::text[]::cidr[])
 `
 
 type BastionInsertParams struct {
 	ID          string
 	Description string
+	Egress      []string
 }
 
 // Queries of the Bastion registrations on the main installation (R-BAS-004, R-BAS-005; the statements of work
@@ -162,12 +139,13 @@ type BastionInsertParams struct {
 // The subtype row of a registration whose principal row was just inserted. The kind guard (AI001) refuses a
 // principal of another kind; the name rule is the principal check principal_bastion_name.
 func (q *Queries) BastionInsert(ctx context.Context, arg BastionInsertParams) error {
-	_, err := q.db.Exec(ctx, bastionInsert, arg.ID, arg.Description)
+	_, err := q.db.Exec(ctx, bastionInsert, arg.ID, arg.Description, arg.Egress)
 	return err
 }
 
 const bastionList = `-- name: BastionList :many
-SELECT p.id::text AS id, p.name, (p.status = 'active')::boolean AS enabled, p.created_at, p.revision, b.description, b.handover
+SELECT p.id::text AS id, p.name, (p.status = 'active')::boolean AS enabled, p.created_at, p.revision, b.description, b.handover,
+       b.egress::text[] AS egress
   FROM principal p JOIN bastion b ON b.principal_id = p.id
  WHERE p.kind = 'bastion' AND p.name > $1::text
  ORDER BY p.name
@@ -187,6 +165,7 @@ type BastionListRow struct {
 	Revision    int64
 	Description string
 	Handover    bool
+	Egress      []string
 }
 
 // Keyset order by name; there are at most bastions.max_registrations of them, so the caller may pass an empty
@@ -208,6 +187,7 @@ func (q *Queries) BastionList(ctx context.Context, arg BastionListParams) ([]Bas
 			&i.Revision,
 			&i.Description,
 			&i.Handover,
+			&i.Egress,
 		); err != nil {
 			return nil, err
 		}
@@ -368,6 +348,39 @@ func (q *Queries) BastionLock(ctx context.Context, name string) ([]BastionLockRo
 	return items, nil
 }
 
+const bastionSetEgress = `-- name: BastionSetEgress :many
+UPDATE bastion SET egress = $1::text[]::cidr[]
+ WHERE principal_id = $2::text::uuid AND egress IS DISTINCT FROM $1::text[]::cidr[]
+RETURNING principal_id::text AS id
+`
+
+type BastionSetEgressParams struct {
+	Egress []string
+	ID     string
+}
+
+// Replace the networks a registration's Bastion connects from (R-BAS-017, R-UI-243); the service validated and ordered them. No row
+// when the list already is the one asked for.
+func (q *Queries) BastionSetEgress(ctx context.Context, arg BastionSetEgressParams) ([]string, error) {
+	rows, err := q.db.Query(ctx, bastionSetEgress, arg.Egress, arg.ID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const bastionSetEnabled = `-- name: BastionSetEnabled :many
 UPDATE principal SET status = CASE WHEN $1::boolean THEN 'active' ELSE 'disabled' END
  WHERE id = $2::text::uuid AND kind = 'bastion'
@@ -427,6 +440,42 @@ func (q *Queries) BastionSetHandover(ctx context.Context, arg BastionSetHandover
 			return nil, err
 		}
 		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const bastionSnapshot = `-- name: BastionSnapshot :many
+SELECT b.principal_id::text AS id, b.handover, b.egress::text[] AS egress
+  FROM bastion b JOIN principal p ON p.id = b.principal_id
+ WHERE p.kind = 'bastion'
+ ORDER BY b.principal_id
+`
+
+type BastionSnapshotRow struct {
+	ID       string
+	Handover bool
+	Egress   []string
+}
+
+// What every replica's snapshot of the registrations holds (internal/bastionmain/snapshot.go): the switch of the handover per blob
+// (R-BAS-071) and the networks the Bastion connects from (R-BAS-017) of each registration. At most bastions.max_registrations rows,
+// read at the start, on a change of the area bastion_handover or bastion_egress and once a minute; never by a request.
+func (q *Queries) BastionSnapshot(ctx context.Context) ([]BastionSnapshotRow, error) {
+	rows, err := q.db.Query(ctx, bastionSnapshot)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []BastionSnapshotRow{}
+	for rows.Next() {
+		var i BastionSnapshotRow
+		if err := rows.Scan(&i.ID, &i.Handover, &i.Egress); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

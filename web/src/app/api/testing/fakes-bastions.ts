@@ -15,7 +15,8 @@ import { Versioned } from '../repositories-api';
  * In-memory fake of the Bastion registrations (R-BAS-004, R-BAS-007, R-UI-047 component tier). It
  * models what the screen depends on: the `ETag` of a change (412 for a stale tag), the name rule and
  * the duplicate (422, 409), the limit of active tokens (409 `token_limit_reached`), a token secret
- * that is returned once and never again, and the switch of the direct reads (R-BAS-071).
+ * that is returned once and never again, the switch of the direct reads (R-BAS-071) and the networks a Bastion connects from
+ * (R-BAS-017; a /0 is refused at its entry, 422, as the server refuses it).
  */
 
 const problem = (status: number, code: string, extra: Record<string, unknown> = {}): ApiError =>
@@ -62,6 +63,7 @@ export function sampleBastion(over: Partial<Bastion> = {}): Bastion {
     description: 'The partner network',
     enabled: true,
     handover: false,
+    egress: ['198.51.100.16/28'],
     createdAt: inDays(-170),
     tokens: [sampleBastionToken()],
     contacts: [
@@ -140,6 +142,7 @@ export class FakeBastionsApi extends BastionsApi {
       id: `b-${body.name}`,
       name: body.name,
       description: body.description ?? '',
+      egress: [...(body.egress ?? [])],
       createdAt: new Date().toISOString(),
       tokens: [],
       contacts: [],
@@ -168,6 +171,26 @@ export class FakeBastionsApi extends BastionsApi {
     if (etag !== this.etagOf(name)) throw problem(412, 'precondition_failed', { currentEtag: this.etagOf(name) });
     this.bumpRevision(name);
     const changed = { ...current, handover };
+    this.bastions = this.bastions.map((b) => (b.name === name ? changed : b));
+    return { value: changed, etag: this.etagOf(name) };
+  }
+
+  override async setEgress(name: string, egress: readonly string[], etag: string): Promise<Versioned<Bastion>> {
+    this.fail();
+    this.ifMatch.push(etag);
+    this.calls.push(`setEgress ${name} ${egress.join(' ')}`);
+    const current = this.find(name);
+    if (etag !== this.etagOf(name)) throw problem(412, 'precondition_failed', { currentEtag: this.etagOf(name) });
+    const wide = egress.findIndex((e) => e.endsWith('/0'));
+    if (wide >= 0) {
+      throw new ApiError(
+        422,
+        { code: 'validation_failed', errors: [{ pointer: `/egress/${wide}`, code: 'invalid_network', detail: `${egress[wide]} covers every address` }] },
+        'req-1',
+      );
+    }
+    this.bumpRevision(name);
+    const changed = { ...current, egress: egress.map((e) => (e.includes('/') ? e : `${e}/${e.includes(':') ? 128 : 32}`)) };
     this.bastions = this.bastions.map((b) => (b.name === name ? changed : b));
     return { value: changed, etag: this.etagOf(name) };
   }

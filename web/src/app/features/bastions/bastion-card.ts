@@ -17,6 +17,7 @@ import { TimeAgo } from '../../shared/ui/time-ago';
 import { DownloadLinkConnection } from '../../api/download-links-api';
 import { BastionTokenDialog, BastionTokenDialogData, BastionTokenDraft } from './bastion-dialogs';
 import { BastionHandover } from './bastion-handover';
+import { BastionEgress } from './bastion-egress';
 import { ADDRESS_MARKS, PartsText } from '../../shared/break-parts';
 import { Busy } from '../../shared/ui/busy';
 
@@ -34,7 +35,8 @@ export function tokenExpiry(token: Pick<BastionTokenSummary, 'expiresAt'>, now: 
 
 /**
  * One Bastion registration (R-BAS-007): its facts and actions, the switch of its direct reads from the object
- * store (R-BAS-071, `<quader-bastion-handover>`), the last contact of each replica and its tokens. Disable
+ * store (R-BAS-071, `<quader-bastion-handover>`), the addresses its Bastion connects from (R-UI-243, `<quader-bastion-egress>`), the
+ * last contact of each replica and its tokens. Disable
  * and enable read the registration for its `ETag` first, because the list carries none
  * (R-API-012). A token's value is shown once through `<quader-token-secret>` and lives in this card's
  * signal only (R-UI-043). Which actions show follows the capabilities of R-BAS-004: `endpoints:write`
@@ -42,7 +44,7 @@ export function tokenExpiry(token: Pick<BastionTokenSummary, 'expiresAt'>, now: 
  */
 @Component({
   selector: 'quader-bastion-card',
-  imports: [Busy, BastionHandover, DatePipe, DataTable, ErrorNotice, NoValue, PartsText, TimeAgo, TokenSecret],
+  imports: [Busy, BastionEgress, BastionHandover, DatePipe, DataTable, ErrorNotice, NoValue, PartsText, TimeAgo, TokenSecret],
   template: `
     <section class="card" [attr.aria-labelledby]="headingId()">
       <h2 [id]="headingId()" translate="no">{{ bastion().name }}</h2>
@@ -95,6 +97,8 @@ export function tokenExpiry(token: Pick<BastionTokenSummary, 'expiresAt'>, now: 
       }
 
       <quader-bastion-handover [bastion]="bastion()" [connections]="connections()" (changed)="changed.emit()" />
+
+      <quader-bastion-egress [bastion]="bastion()" (changed)="changed.emit()" />
 
       <h3 i18n="@@bastion.contacts">Last contact</h3>
       <quader-data-table

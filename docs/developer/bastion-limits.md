@@ -32,7 +32,8 @@ must follow, the identifiers it takes, and what its tests cost.
 - **Today's code** is at interface version 7: the handshake has a top-level `handover`; the Bastion's figures are chart values
   (`config.bastion.limits`, `failed_auth`, `blocking`, `main.max_concurrent`, `anonymous_share`, `queue_timeout`); a write is probed at the
   main installation (`internal/bastion/engine/probe.go`, `BastionRouteAuth` in `internal/api/v1/bastion_services.go`); the main
-  installation's egress list is `bastions.trusted_proxies` (`internal/config/bastions.go`); the limits know three places
+  installation's egress list was `bastions.trusted_proxies` (`internal/config/bastions.go`) until E13 made it each registration's `egress`;
+  the limits know three places
   (`limits.PlaceInstance`, `PlaceProject`, `PlaceRepository` in `internal/limits/model.go`).
 
 ## Work packages, in waves
@@ -48,7 +49,7 @@ At most four builders at once (rule 10 of the project plan). The waves are the o
 | 2 | E7 | the shared wire, interface version 8, with W-35's P5 | E6, E2, W-35's wire | not built |
 | 2 | E16 | nothing of the main installation in a Bastion's answers | E2 + E3 | built |
 | 2 | E14a | anonymous requests answered without the main installation | E6 | built |
-| 2 | E13 | egress addresses on the registration | E6 | not built |
+| 2 | E13 | egress addresses on the registration | E6 | built |
 | 3 | E8 | the main installation's side | E7, W32, W36, E4 | not built |
 | 3 | E9a | the configuration at the Bastion, flood protection, the anonymous ceiling | E7, E4 | not built |
 | 3 | E10 | the throughput | E7 | not built |
@@ -92,7 +93,7 @@ At most four builders at once (rule 10 of the project plan). The waves are the o
   `bastion_configuration`. The place `PlaceBastion` and its resolution in `internal/limits/index.go` and `model.go`. `PATCH
   /api/v1/bastions/{name}` with `limits:write` for `limits` and `endpoints:write` for the rest (Q-BAS-325);
   `/api/v1/bastions/{name}/limits/assignments`; the usage API's place filter. A configuration snapshot after the pattern of
-  `HandoverSwitches` ([handover.go](../../internal/bastionmain/handover.go)); the handshake member; the subject's limits in the check
+  `RegistrationSnapshot` ([snapshot.go](../../internal/bastionmain/snapshot.go)), which E13 made hold the networks too; the handshake member; the subject's limits in the check
   answer and the marking; the intake of `usage` into `usage.Buffer.Add` and of `status` into its table; `bastion.configuration.changed` in
   `feedActions` ([feed.go](../../internal/bastionmain/feed.go)).
 - **Follows** E7, W32, W36 (migration 00143) and E4 (the profiles' figures).
@@ -153,7 +154,8 @@ At most four builders at once (rule 10 of the project plan). The waves are the o
   needs a reload, one scrollbar per page, every load shows the spinner) and rule 11 (renders in both schemes, wide and narrow).
 - **Files**: `web/src/app/features/bastions/`, `limits/`, `usage/`, `api/`.
 - **Tests**: Vitest about 4 s; the renders.
-- **Identifiers**: R-UI-240 to R-UI-243, Q-UI-1480 to Q-UI-1489 (Q-UI-1480 to Q-UI-1482 decided in the specification).
+- **Identifiers**: R-UI-240 to R-UI-243, Q-UI-1480 to Q-UI-1489 (Q-UI-1480 to Q-UI-1482 decided in the specification, Q-UI-1483 and
+  Q-UI-1484 by E13, which built R-UI-243's section on the card).
 
 ### E13 · Egress addresses on the registration
 
@@ -163,6 +165,13 @@ At most four builders at once (rule 10 of the project plan). The waves are the o
 - **Follows** E6. No interface change.
 - **Tests**: unit; integration area `bastionreg` about 3 s.
 - **Identifiers**: Q-BAS-334, H-2291.
+- **Built on 2026-11-26.** Migration 00145; `ParseEgress` ([egress.go](../../internal/bastionmain/egress.go)); the snapshot of the
+  registrations holds the networks ([snapshot.go](../../internal/bastionmain/snapshot.go), the change area `bastion_egress`);
+  `Recognition.FromEgress` and `RecognizeOptions.Egress`; `bastionForwarded` over the request's own registration
+  (`Resolver.AlsoTrusting`); the check's `clientAddress` only from the networks; the member `egress` of the API; the card's section
+  `<quader-bastion-egress>` (R-UI-243, which E12 moves into **Details**); `bastions.trusted_proxies` removed, the e2e registrations set
+  the pod range. Decisions Q-BAS-430 to Q-BAS-433, Q-UI-1483 and Q-UI-1484 (taken from E12's range); gaps H-2291 (narrowed), H-2348 and
+  H-2349.
 
 ### E14a · Anonymous requests answered without the main installation
 

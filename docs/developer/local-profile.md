@@ -138,8 +138,8 @@ worker is evicted ([the drain under the full load](e2e.md#the-drain-under-the-fu
 ### The `bastion` profile
 
 `QUADER_PROFILE=bastion deploy/dev/up.sh` layers [values-bastion.yaml](../../deploy/dev/values-bastion.yaml) on the main installation for the
-Bastions of R-BAS-049: the pod range `10.244.0.0/16` as `config.bastions.trusted_proxies` (the Bastion's pods call the main endpoint from the range of
-whichever node they run on, and the main installation resolves the client address from what they send, R-BAS-017) and the Service addresses the Bastions call, `https://quader-api.quader.svc:8080` for `bastion.main.url` and `https://quader-packages.quader.svc:8080` for `bastion.main.packages_url` (a host the main installation does not serve is answered `421`, also on the interface routes), and the two base URLs
+Bastions of R-BAS-049 (the pod range `10.244.0.0/16`, from which the Bastion's pods call the main endpoint whichever node they run on, is
+each registration's `egress`, which the e2e test sets, R-BAS-017) and the Service addresses the Bastions call, `https://quader-api.quader.svc:8080` for `bastion.main.url` and `https://quader-packages.quader.svc:8080` for `bastion.main.packages_url` (a host the main installation does not serve is answered `421`, also on the interface routes), and the two base URLs
 `https://bastion-volume.quader.localhost:<edge port>` and `https://bastion-bucket.quader.localhost:<edge port>` as
 `config.server.additional_base_urls` (R-BAS-010; `up.sh` passes them because the edge port follows `QUADER_DEV_HTTP_PORT`). The Bastions themselves are not part of
 `up.sh`: `deploy/dev/bastion.sh infra` and `install <volume|bucket>` make the namespace `quader-bastion`, a Valkey of its own, the certificates and the two releases of the chart

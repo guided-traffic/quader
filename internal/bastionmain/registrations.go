@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/netip"
 	"regexp"
+	"slices"
 	"time"
 	"unicode/utf8"
 
@@ -38,7 +40,10 @@ type Registration struct {
 	Description string
 	Enabled     bool
 	// Handover is the switch of the handover per blob (R-BAS-071): off by default, never set by Create.
-	Handover  bool
+	Handover bool
+	// Egress are the networks the Bastion connects from (R-BAS-017, Q-BAS-334): only a request from one of them may forward its
+	// caller's address and host. Empty by default.
+	Egress    []netip.Prefix
 	CreatedAt time.Time
 	// Revision is the ETag of the registration (principal.revision, R-API-012).
 	Revision int64
@@ -75,6 +80,8 @@ type Contact struct {
 type NewRegistration struct {
 	Name        string
 	Description string
+	// Egress are the networks the Bastion connects from, as the API received them; [ParseEgress] validates them.
+	Egress []string
 	// Source is "api" or "admin-cli", for the audit event.
 	Source string
 }
@@ -85,6 +92,8 @@ type Patch struct {
 	Enabled     *bool
 	// Handover switches the handover per blob on or off (R-BAS-071).
 	Handover *bool
+	// Egress replaces the networks the Bastion connects from (R-BAS-017), as the API received them; nil leaves them.
+	Egress *[]string
 }
 
 // RegistrationOptions configure [NewRegistrations].
@@ -131,11 +140,15 @@ func (r *Registrations) Create(ctx context.Context, c principal.Caller, in NewRe
 	if err := checkDescription("/description", in.Description); err != nil {
 		return Registration{}, err
 	}
+	egress, err := ParseEgress("/egress", in.Egress)
+	if err != nil {
+		return Registration{}, err
+	}
 	if in.Source == "" {
 		in.Source = "api"
 	}
 	var out Registration
-	err := r.o.DB.InTx(ctx, func(tx meta.Tx) error {
+	err = r.o.DB.InTx(ctx, func(tx meta.Tx) error {
 		// The configuration lock of R-ARCH-017 serializes the creates of all replicas before the count.
 		if err := cluster.LockConfigObject(ctx, tx, cluster.ConfigBastionRegistrations); err != nil {
 			return err
@@ -156,13 +169,18 @@ func (r *Registrations) Create(ctx context.Context, c principal.Caller, in NewRe
 		if len(rows) == 0 {
 			return errs.E(errs.Conflict, errs.CodeAlreadyExists, "A Bastion registration with this name exists.")
 		}
-		if err := qs.BastionInsert(ctx, q.BastionInsertParams{ID: id, Description: in.Description}); err != nil {
+		if err := qs.BastionInsert(ctx, q.BastionInsertParams{ID: id, Description: in.Description, Egress: EgressText(egress)}); err != nil {
 			return err
+		}
+		if len(egress) > 0 {
+			if err := r.notifyEgress(tx, id); err != nil {
+				return err
+			}
 		}
 		if err := r.o.Recorder.RecordTx(ctx, tx, audit.Event{
 			Type: audit.EventBastionCreated, Outcome: audit.Success, Actor: c.Actor, Source: c.Source,
 			Subject: audit.Subject{Kind: "bastion", ID: id, Name: in.Name},
-			Details: mustJSON(map[string]any{"source": in.Source, "description": in.Description}),
+			Details: mustJSON(map[string]any{"source": in.Source, "description": in.Description, "egress": EgressText(egress)}),
 		}); err != nil {
 			return err
 		}
@@ -185,7 +203,10 @@ func load(ctx context.Context, qs *q.Queries, name string) (Registration, error)
 		return Registration{}, notFound()
 	}
 	g := rows[0]
-	out := Registration{ID: g.ID, Name: g.Name, Description: g.Description, Enabled: g.Enabled, Handover: g.Handover, CreatedAt: g.CreatedAt.Time, Revision: g.Revision}
+	out := Registration{
+		ID: g.ID, Name: g.Name, Description: g.Description, Enabled: g.Enabled, Handover: g.Handover, Egress: egressOf(g.Egress),
+		CreatedAt: g.CreatedAt.Time, Revision: g.Revision,
+	}
 	toks, err := qs.BastionListTokens(ctx, q.BastionListTokensParams{ID: g.ID})
 	if err != nil {
 		return Registration{}, err
@@ -253,8 +274,8 @@ func (r *Registrations) List(ctx context.Context) ([]Registration, error) {
 		for _, g := range rows {
 			byID[g.ID] = len(out)
 			out = append(out, Registration{
-				ID: g.ID, Name: g.Name, Description: g.Description, Enabled: g.Enabled, Handover: g.Handover, CreatedAt: g.CreatedAt.Time, Revision: g.Revision,
-				Tokens: []RegistrationToken{}, Contacts: []Contact{},
+				ID: g.ID, Name: g.Name, Description: g.Description, Enabled: g.Enabled, Handover: g.Handover, Egress: egressOf(g.Egress),
+				CreatedAt: g.CreatedAt.Time, Revision: g.Revision, Tokens: []RegistrationToken{}, Contacts: []Contact{},
 			})
 		}
 		for _, t := range toks {
@@ -281,11 +302,19 @@ func (r *Registrations) List(ctx context.Context) ([]Registration, error) {
 // because disabling revokes nothing. A new description records bastion.updated; a disable records
 // bastion.disabled with its journal entry, so a restore to a point before it disables the registration again
 // (R-HA-054, Q-BAS-145); an enable records bastion.enabled. The switch of the handover per blob records
-// bastion.handover.enabled or the journaled bastion.handover.disabled (R-BAS-071). A patch that changes nothing writes
-// nothing and records nothing.
+// bastion.handover.enabled or the journaled bastion.handover.disabled (R-BAS-071). New networks the Bastion connects from record
+// bastion.updated with the field egress and the lists before and after (R-BAS-017). A patch that changes nothing writes nothing
+// and records nothing.
 func (r *Registrations) Update(ctx context.Context, c principal.Caller, name string, p Patch, expected int64) (Registration, error) {
 	if p.Description != nil {
 		if err := checkDescription("/description", *p.Description); err != nil {
+			return Registration{}, err
+		}
+	}
+	var egress []netip.Prefix
+	if p.Egress != nil {
+		var err error
+		if egress, err = ParseEgress("/egress", *p.Egress); err != nil {
 			return Registration{}, err
 		}
 	}
@@ -345,6 +374,11 @@ func (r *Registrations) Update(ctx context.Context, c principal.Caller, name str
 				return err
 			}
 		}
+		if p.Egress != nil && !slices.Equal(egress, cur.Egress) {
+			if err := r.setEgress(ctx, tx, c, subject, cur.Egress, egress); err != nil {
+				return err
+			}
+		}
 		out, err = load(ctx, qs, name)
 		return err
 	})
@@ -376,6 +410,31 @@ func (r *Registrations) setHandover(ctx context.Context, tx meta.Tx, c principal
 		ev.Type, ev.Journal = audit.EventBastionHandoverDisabled, handoverEntry(subject.ID, subject.Name)
 	}
 	return r.o.Recorder.RecordTx(ctx, tx, ev)
+}
+
+// setEgress replaces the networks the Bastion of the registration subject connects from (R-BAS-017) inside the update's transaction:
+// the member, the change area every replica's snapshot follows, and bastion.updated with the lists before and after. A list that
+// already is the one asked for writes nothing.
+func (r *Registrations) setEgress(ctx context.Context, tx meta.Tx, c principal.Caller, subject audit.Subject, before, after []netip.Prefix) error {
+	changed, err := principal.Queries(tx).BastionSetEgress(ctx, q.BastionSetEgressParams{ID: subject.ID, Egress: EgressText(after)})
+	if err != nil || len(changed) == 0 {
+		return err
+	}
+	if err := r.notifyEgress(tx, subject.ID); err != nil {
+		return err
+	}
+	return r.o.Recorder.RecordTx(ctx, tx, audit.Event{
+		Type: audit.EventBastionUpdated, Outcome: audit.Success, Actor: c.Actor, Source: c.Source, Subject: subject,
+		Details: mustJSON(map[string]any{"fields": []string{"egress"}, "egressBefore": EgressText(before), "egressAfter": EgressText(after)}),
+	})
+}
+
+// notifyEgress announces the change area of the networks, so every replica's snapshot reads the registration again.
+func (r *Registrations) notifyEgress(tx meta.Tx, id string) error {
+	if r.o.Notifier == nil {
+		return nil
+	}
+	return r.o.Notifier.Notify(tx, cluster.AreaBastionEgress, 1, map[string]string{"bastion": id})
 }
 
 // Delete deletes a registration: its tokens are revoked first (token.revoked with the journal entry of each,
