@@ -39,7 +39,7 @@ func TestR_UI_225_TheLegalPagesAnswerEveryCallerOnApi(t *testing.T) {
 		imprint, _ := body["imprint"].(map[string]any)
 		html, _ := imprint["html"].(string)
 		if imprint["lang"] != "de" || !strings.Contains(html, "Beispiel GmbH<br/>") || strings.Contains(html, "<script") || strings.Contains(html, "alert") ||
-			!strings.Contains(html, `<a href="https://cdn.example.net/logo.png" rel="nofollow noopener noreferrer">External image: Logo</a>`) {
+			!strings.Contains(html, `<a href="https://cdn.example.net/logo.png" rel="nofollow noopener noreferrer"><span class="external-image">External image: <span class="external-image-alt">Logo</span></span></a>`) {
 			t.Errorf("%s: imprint %v", name, imprint)
 		}
 		if body["privacy"] != nil {

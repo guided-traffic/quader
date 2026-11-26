@@ -54907,7 +54907,7 @@
     </unit>
     <unit id="pkg.readme.truncated">
       <notes>
-        <note category="location">src/app/views/packages/package-readme.ts:69,72</note>
+        <note category="location">src/app/views/packages/package-readme.ts:71,74</note>
       </notes>
       <segment>
         <source> This README is shortened because it is larger than the display limit. </source>
@@ -54915,7 +54915,7 @@
     </unit>
     <unit id="pkg.readme.image-blocked">
       <notes>
-        <note category="location">src/app/views/packages/package-readme.ts:74,76</note>
+        <note category="location">src/app/views/packages/package-readme.ts:76,78</note>
       </notes>
       <segment>
         <source> One external image is shown as a link. </source>
@@ -54923,10 +54923,26 @@
     </unit>
     <unit id="pkg.readme.images-blocked">
       <notes>
-        <note category="location">src/app/views/packages/package-readme.ts:78,80</note>
+        <note category="location">src/app/views/packages/package-readme.ts:80,82</note>
       </notes>
       <segment>
         <source> <ph id="0" equiv="INTERPOLATION" disp="{{ r.externalImagesBlocked }}"/> external images are shown as links. </source>
+      </segment>
+    </unit>
+    <unit id="pkg.readme.external-image-alt">
+      <notes>
+        <note category="location">src/app/views/packages/package-readme.ts:139</note>
+      </notes>
+      <segment>
+        <source>External image: <ph id="0" equiv="alt" disp="alt"/></source>
+      </segment>
+    </unit>
+    <unit id="pkg.readme.external-image">
+      <notes>
+        <note category="location">src/app/views/packages/package-readme.ts:140</note>
+      </notes>
+      <segment>
+        <source>External image</source>
       </segment>
     </unit>
     <unit id="pkg.list.caption">

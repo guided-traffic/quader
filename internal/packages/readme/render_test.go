@@ -136,8 +136,21 @@ func TestR_UI_008_ExternalImagesPerPolicy(t *testing.T) {
 	if res.ExternalImagesBlocked != 3 {
 		t.Errorf("externalImagesBlocked = %d, want 3 (%q)", res.ExternalImagesBlocked, res.HTML)
 	}
-	if !strings.Contains(res.HTML, `>External image: build status</a>`) {
+	// The label is marked, so the UI writes it in the reader's language.
+	if !strings.Contains(res.HTML, `rel="nofollow noopener noreferrer"><span class="external-image">External image: <span class="external-image-alt">build status</span></span></a>`) {
 		t.Errorf("no link for the unlisted badge: %q", res.HTML)
+	}
+	// An image inside a link keeps only its label.
+	if !strings.Contains(res.HTML, `<a href="https://example.com" rel="nofollow noopener noreferrer"><span class="external-image">External image: <span class="external-image-alt">badge</span></span></a>`) {
+		t.Errorf("no label for the badge inside a link: %q", res.HTML)
+	}
+	// A source cannot forge the mark: the policy allows a class on code alone.
+	forged := renderer(t).Render(`<span class="external-image">x</span> <a href="https://example.com" class="external-image">y</a>`)
+	if strings.Contains(forged.HTML, "external-image") {
+		t.Errorf("a source set the mark: %q", forged.HTML)
+	}
+	if bare := renderer(t).Render(`![](https://img.shields.example/c.svg)`); !strings.Contains(bare.HTML, `<span class="external-image">External image</span></a>`) {
+		t.Errorf("an image without alternative text: %q", bare.HTML)
 	}
 	if strings.Count(res.HTML, "<img") != 1 || !strings.Contains(res.HTML, `src="https://gitlab.example.com/logo.png"`) {
 		t.Errorf("only the listed image stays: %q", res.HTML)

@@ -1,3 +1,5 @@
+import german from '../../../locale/messages.de.xlf' with { loader: 'text' };
+import { clearTranslations, loadTranslations } from '@angular/localize';
 import { PackageReadme } from '../../api/packages-api';
 import { expectAccessible, renderScreen, settle, text } from '../../testing/screen';
 import { PackageReadmeView, headingSlug } from './package-readme';
@@ -223,6 +225,30 @@ describe('README rendering', () => {
     expect(t).toContain('2 external images are shown as links.');
     const one = await show('<p>x</p>', { externalImagesBlocked: 1 });
     expect(text(one.root)).toContain('One external image is shown as a link.');
+  });
+
+  it('R-UI-008 the label of an external image the server made a link is in the reader’s language, with its alternative text', async () => {
+    const target = (id: string): string =>
+      new RegExp(`<unit id="${id}">[\\s\\S]*?<target>([\\s\\S]*?)</target>`).exec(german)![1]!.replace(/<ph [^>]*equiv="([^"]+)"[^>]*\/>/g, '{$$$1}');
+    loadTranslations({
+      'pkg.readme.external-image': target('pkg.readme.external-image'),
+      'pkg.readme.external-image-alt': target('pkg.readme.external-image-alt'),
+    });
+    try {
+      const { body, fixture } = await show(
+        '<p><a href="https://img.example/b.svg" rel="nofollow noopener noreferrer"><span class="external-image">External image: ' +
+          '<span class="external-image-alt">build status</span></span></a> <a href="https://example.com"><span class="external-image">' +
+          'External image</span></a> <span>External image: plain text of the author</span></p>',
+      );
+      const said = (): string[] => [...body.querySelectorAll('a, p > span')].map((e) => text(e));
+      expect(said()).toEqual(['Externes Bild: build status', 'Externes Bild', 'External image: plain text of the author']);
+      // A second pass over the same document (an input changed) writes the same.
+      fixture.componentRef.setInput('pageLinks', 'help/');
+      await settle(fixture);
+      expect(said()).toEqual(['Externes Bild: build status', 'Externes Bild', 'External image: plain text of the author']);
+    } finally {
+      clearTranslations();
+    }
   });
 
   it('R-UI-050 a README keeps no help/ link; the manual keeps only a plain relative path under its prefix', async () => {

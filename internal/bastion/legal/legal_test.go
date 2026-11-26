@@ -61,7 +61,7 @@ func TestR_BAS_100_ThePagesAreRenderedAtStartUnderTheReadmeSanitizer(t *testing.
 		`<a href="mailto:legal@example.com" rel="nofollow noopener noreferrer">`,
 		`<a href="https://www.example.com" rel="nofollow noopener noreferrer">example.com</a>`,
 		`<a href="http://www.example.org" rel="nofollow noopener noreferrer">plain</a>`,
-		`<a href="https://cdn.example.net/logo.png" rel="nofollow noopener noreferrer">External image: Logo</a>`,
+		`<a href="https://cdn.example.net/logo.png" rel="nofollow noopener noreferrer"><span class="external-image">External image: <span class="external-image-alt">Logo</span></span></a>`,
 		"styled",
 	} {
 		if !strings.Contains(h, kept) {

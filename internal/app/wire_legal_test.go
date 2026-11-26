@@ -21,7 +21,7 @@ func TestR_UI_225_TheMainInstallationRendersTheLegalPagesUnderItsOwnPolicy(t *te
 		t.Fatalf("en = %+v", en)
 	}
 	h := en.Imprint.HTML
-	if !strings.Contains(h, `<a href="https://img.shields.io/badge.svg" rel="nofollow noopener noreferrer">External image: Logo</a>`) ||
+	if !strings.Contains(h, `<a href="https://img.shields.io/badge.svg" rel="nofollow noopener noreferrer"><span class="external-image">External image: <span class="external-image-alt">Logo</span></span></a>`) ||
 		strings.Contains(h, "<img") || strings.Contains(h, "partners.example.com") || strings.Contains(h, "alert") {
 		t.Fatalf("html = %s", h)
 	}

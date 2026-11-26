@@ -26,7 +26,7 @@ import (
 // Version is the renderer version. It is part of the ETag of a README answer
 // (R-API-029) and is raised whenever the renderer or the sanitizer policy changes
 // what a source renders to.
-const Version = 1
+const Version = 2
 
 // The limits of R-UI-008 that are not configuration.
 const (
@@ -101,7 +101,7 @@ func New(o Options) (*Renderer, error) {
 		origins = append(origins, k)
 	}
 	sort.Strings(origins)
-	sum := sha256.Sum256([]byte("origins\n" + strings.Join(origins, "\n")))
+	sum := sha256.Sum256([]byte(fmt.Sprintf("renderer %d\norigins\n", Version) + strings.Join(origins, "\n")))
 	r.hash = hex.EncodeToString(sum[:8])
 	return r, nil
 }
@@ -135,9 +135,10 @@ func originOf(u *url.URL) string {
 	return strings.ToLower(u.Scheme) + "://" + host
 }
 
-// PolicyHash identifies what, besides the source and the version, decides the
-// rendered HTML: the list of external image origins. It is part of the ETag of a
-// README answer.
+// PolicyHash identifies what, besides the source, decides the rendered HTML: the
+// renderer version and the list of external image origins. It is part of the ETag
+// of a README answer, and a Bastion's catalogue renders every document again when
+// it changes.
 func (r *Renderer) PolicyHash() string { return r.hash }
 
 // Result is a rendered README.
@@ -416,11 +417,7 @@ func (f *finisher) image(n *xhtml.Node) {
 		delAttr(n, "srcset")
 	default:
 		f.blocked++
-		label := "External image"
-		if alt := strings.TrimSpace(attr(n, "alt")); alt != "" {
-			label += ": " + alt
-		}
-		text := &xhtml.Node{Type: xhtml.TextNode, Data: label}
+		text := externalImageLabel(strings.TrimSpace(attr(n, "alt")))
 		if insideAnchor(n) {
 			replace(n, text)
 			return
@@ -431,6 +428,29 @@ func (f *finisher) image(n *xhtml.Node) {
 		a.AppendChild(text)
 		replace(n, a)
 	}
+}
+
+// The classes of the label of a dropped image. The policy allows a class on code
+// alone, so no source can forge them; the UI writes the label in the reader's
+// language from them (R-UI-008), and a client without the UI shows the English.
+const (
+	ExternalImageClass    = "external-image"
+	ExternalImageAltClass = "external-image-alt"
+)
+
+// externalImageLabel is the label of a dropped image: "External image", and the
+// image's alternative text in a span of its own.
+func externalImageLabel(alt string) *xhtml.Node {
+	label := &xhtml.Node{Type: xhtml.ElementNode, DataAtom: atom.Span, Data: "span", Attr: []xhtml.Attribute{{Key: "class", Val: ExternalImageClass}}}
+	if alt == "" {
+		label.AppendChild(&xhtml.Node{Type: xhtml.TextNode, Data: "External image"})
+		return label
+	}
+	label.AppendChild(&xhtml.Node{Type: xhtml.TextNode, Data: "External image: "})
+	span := &xhtml.Node{Type: xhtml.ElementNode, DataAtom: atom.Span, Data: "span", Attr: []xhtml.Attribute{{Key: "class", Val: ExternalImageAltClass}}}
+	span.AppendChild(&xhtml.Node{Type: xhtml.TextNode, Data: alt})
+	label.AppendChild(span)
+	return label
 }
 
 // checkbox keeps the checkboxes of task lists and makes them read-only.

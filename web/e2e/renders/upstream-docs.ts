@@ -60,9 +60,9 @@ function versions(list: readonly string[]): Record<string, unknown>[] {
 export function longReadme(title: string): string {
   const out: string[] = [
     `<h1 id="user-content-${title}">${title}</h1>`,
-    '<p><a href="https://img.shields.io/npm/v/example.svg" rel="nofollow noopener noreferrer">External image: npm version</a> ' +
-      '<a href="https://github.com/example/actions/workflows/ci.yml/badge.svg" rel="nofollow noopener noreferrer">External image: CI</a> ' +
-      '<a href="https://codecov.io/gh/example/branch/main/graph/badge.svg" rel="nofollow noopener noreferrer">External image: coverage</a></p>',
+    '<p><a href="https://img.shields.io/npm/v/example.svg" rel="nofollow noopener noreferrer"><span class="external-image">External image: <span class="external-image-alt">npm version</span></span></a> ' +
+      '<a href="https://github.com/example/actions/workflows/ci.yml/badge.svg" rel="nofollow noopener noreferrer"><span class="external-image">External image: <span class="external-image-alt">CI</span></span></a> ' +
+      '<a href="https://codecov.io/gh/example/branch/main/graph/badge.svg" rel="nofollow noopener noreferrer"><span class="external-image">External image: <span class="external-image-alt">coverage</span></span></a></p>',
     '<p>A library that keeps a long name, a long description and documentation that goes on for a while, so that the README reaches well past the first screen.</p>',
     '<h2 id="user-content-install">Install</h2>',
     '<pre><code class="language-shell">npm install --save-exact example-package-with-a-long-name@4.17.21\n</code></pre>',

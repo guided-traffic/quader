@@ -55,7 +55,7 @@ func TestR_API_029_ReadmeIsRenderedAndSanitizedOnTheServer(t *testing.T) {
 	}
 	for _, want := range []string{
 		`<h1 id="user-content-hostile">Hostile</h1>`, `<h2 id="user-content-usage">Usage</h2>`, `href="#user-content-usage"`,
-		`src="https://img.example/x.png"`, `>External image: build status</a>`,
+		`src="https://img.example/x.png"`, `><span class="external-image">External image: <span class="external-image-alt">build status</span></span></a>`,
 		`href="https://example.com" rel="nofollow noopener noreferrer"`,
 	} {
 		if !strings.Contains(html, want) {

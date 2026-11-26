@@ -49,6 +49,8 @@ export function headingSlug(heading: string, seen: Map<string, number>): string 
  * - a link target other than a fragment, http, https or mailto is removed (the text stays); links
  *   that leave Quader carry `rel="nofollow noopener noreferrer"` and no `target`;
  * - an image whose source is neither an https address nor a path of this origin is removed;
+ * - the label the server gives an external image it made a link ("External image: <alt>", marked `external-image`) is written in
+ *   the reader's language;
  * - each heading gets the anchor `user-content-<slug>` again, so that `#user-content-…` links of a
  *   table of contents work. The server derives its heading anchors with the same rule ([headingSlug]);
  * - such a link scrolls inside the README and does not navigate, because the document's
@@ -127,6 +129,15 @@ export class PackageReadmeView {
       }
       for (const img of root.querySelectorAll('img')) {
         if (!IMAGE_SOURCE.test((img.getAttribute('src') ?? '').trim())) img.remove();
+      }
+      for (const label of root.querySelectorAll<HTMLElement>('span.external-image')) {
+        // The server's English label of a dropped image, written in the reader's language; the alternative text is kept on the
+        // label, so a second pass over the same document writes the same.
+        const alt = label.dataset['alt'] ?? label.querySelector('.external-image-alt')?.textContent?.trim() ?? '';
+        label.dataset['alt'] = alt;
+        label.textContent = alt
+          ? $localize`:@@pkg.readme.external-image-alt:External image: ${alt}:alt:`
+          : $localize`:@@pkg.readme.external-image:External image`;
       }
       for (const pre of root.querySelectorAll('pre')) pre.setAttribute('tabindex', '0');
       for (const table of root.querySelectorAll('table')) {
