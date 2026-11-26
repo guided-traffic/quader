@@ -29,8 +29,10 @@ func TestR_CUR_028_AnAddressIsALinkOnlyForHTTPAndHTTPS(t *testing.T) {
 		}
 	}
 	a := CutAbout(About{Version: "1.0.0", Links: []Link{
-		{Kind: LinkRepository, URL: "https://a.example/"}, {Kind: LinkHomepage, URL: "ftp://h.example/"},
-		{Kind: LinkHomepage, URL: "https://h.example/"}, {Kind: LinkRepository, URL: "https://b.example/"},
+		{Kind: LinkRepository, URL: "https://a.example/"},
+		{Kind: LinkHomepage, URL: "ftp://h.example/"},
+		{Kind: LinkHomepage, URL: "https://h.example/"},
+		{Kind: LinkRepository, URL: "https://b.example/"},
 	}, Dependencies: []Dependency{{Name: ""}, {Name: "x", Range: "^1"}}})
 	if len(a.Links) != 2 || a.Links[0] != (Link{LinkHomepage, "https://h.example/"}) || a.Links[1] != (Link{LinkRepository, "https://a.example/"}) ||
 		len(a.Dependencies) != 1 {
