@@ -5,9 +5,10 @@ import { RouterLink } from '@angular/router';
 const SHOWN = 5;
 
 /**
- * The tags or keywords of a package in a list, a hit or the tab Upstream (R-ANS-057, Q-ANS-123): each a small pill, in a project a link
- * to the project's package list filtered by it, across projects a link to the search for it; the tab Upstream shows them as text.
- * Five at most, the rest as "+N" with every tag in its title.
+ * The tags or keywords of a package or a version, one chip everywhere (R-ANS-057, Q-ANS-123, R-UI-221, Q-UI-1312): in a list, a hit, the
+ * tab Upstream and a version's Details. Each a small pill, in a project a link to the project's package list filtered by it (and by the
+ * format, where it is given: a keyword means something in its format), across projects a link to the search for it; the tab Upstream
+ * shows them as text. A list shows five, the rest as "+N" with every tag in its title; a version's Details shows every one.
  */
 @Component({
   selector: 'quader-package-tags',
@@ -46,13 +47,14 @@ const SHOWN = 5;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    /* A tag that is a link keeps the badge's own colours: the link colour on the badge's paper failed the contrast in the dark scheme. */
-    a.tag {
+    /* A tag that is a link keeps the badge's own colours: the link colour on the badge's paper failed the contrast in the dark scheme.
+       Inside the row, so the page's link rule (.content a, a version's Details) does not draw it as a link of running text. */
+    .tag-row a.tag {
       color: var(--badge-fg);
       text-decoration: none;
     }
-    a.tag:hover,
-    a.tag:focus-visible {
+    .tag-row a.tag:hover,
+    .tag-row a.tag:focus-visible {
       text-decoration: underline;
     }
   `,
@@ -61,10 +63,14 @@ export class PackageTags {
   readonly tags = input<readonly string[]>([]);
   /** The project whose package list a tag filters; null links to the search across projects; `false` shows text. */
   readonly project = input<string | null | false>(null);
+  /** The format whose packages a tag filters, part of the address (`?format=npm&keyword=react`); null filters every format. */
+  readonly format = input<string | null>(null);
+  /** How many are shown before "+N"; null shows every one (a version's Details, R-UI-221). */
+  readonly limit = input<number | null>(SHOWN);
 
   protected readonly label = $localize`:@@pkg.tags.label:Tags`;
-  protected readonly shown = computed(() => this.tags().slice(0, SHOWN));
-  protected readonly rest = computed(() => Math.max(0, this.tags().length - SHOWN));
+  protected readonly shown = computed(() => this.tags().slice(0, this.limit() ?? undefined));
+  protected readonly rest = computed(() => Math.max(0, this.tags().length - (this.limit() ?? this.tags().length)));
   protected readonly linked = computed(() => this.project() !== false);
   protected readonly link = computed(() => {
     const p = this.project();
@@ -72,6 +78,8 @@ export class PackageTags {
   });
 
   protected params(tag: string): Record<string, string> {
-    return typeof this.project() === 'string' ? { keyword: tag } : { q: tag, kind: 'package' };
+    const format = this.format();
+    if (typeof this.project() !== 'string') return { q: tag, kind: 'package' };
+    return format ? { format, keyword: tag } : { keyword: tag };
   }
 }

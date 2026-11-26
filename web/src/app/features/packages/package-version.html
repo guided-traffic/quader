@@ -534,7 +534,7 @@
               <!-- The general properties first, the same block in every format (R-UI-221): the keywords, then the dependencies. -->
               @if (keywords().length > 0) {
                 <h2 i18n="@@pkg.meta.keywords">Keywords</h2>
-                <quader-keyword-chips [keywords]="keywords()" [project]="project()" [format]="d.format" />
+                <quader-package-tags class="version-keywords" [tags]="keywords()" [project]="project()" [format]="d.format" [limit]="null" />
               }
               @if (dependencies().length > 0) {
                 <h2 i18n="@@pkg.meta.dependencies">Dependencies</h2>

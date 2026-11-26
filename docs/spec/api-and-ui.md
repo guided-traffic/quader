@@ -10050,8 +10050,9 @@ section **Package details**.
   version, in npm, NuGet, Debian and Ansible Galaxy), else text; its range or constraint muted after it; npm's optional peer marked
   **optional**.
 - **The keywords** (`keywords` of the version, R-API-029: npm's `keywords`, NuGet's `tags`, a collection's `tags`) are chips under
-  **Keywords**, each the package list of the project filtered by the format and the keyword; the package's table keeps them, as chips,
-  in its closed **Details**.
+  **Keywords**, each the package list of the project filtered by the format and the keyword (`…/packages?format=npm&keyword=react`), every
+  one of them; they are the chip of every list, hit and namespace page (`<quader-package-tags>`, R-ANS-057), which a list shows five of
+  and which leads to the same address; the package's table keeps them, as chips, in its closed **Details**.
 - **The links** stand in one row under the facts line in every format (homepage, documentation or the docs site, source repository, issue
   tracker), each opening the other site; an address that is not http or https is its label and the text. A licence's address is no
   link of the row: the licence on the facts line is its link.
@@ -10082,8 +10083,10 @@ stands under a cell it has ([Q-UI-1318](#q-ui-1318--a-versions-downloads-and-an-
 - **Digest**: an image's row names its manifest under its tags: the first twelve hex digits, the whole as its title, as a file's hash
   stands under its path (Q-UI-1002); its copy button is on the tag's page (Details).
 - The date's column is the format's word ([Q-UI-1314](#q-ui-1314--an-images-date-is-pushed-or-fetched-on-every-screen)).
-- Room is left for a mark beside a version's name as **Pre-release** has it: the marks of a deprecated or an unlisted version are the
-  deprecation package's (R-API-085) and not built here.
+- The marks **Deprecated** and **Unlisted** of R-API-085 stand beside a version's name as **Pre-release** does. The line under **Last
+  download** adds no width to the table: rendered with a deprecated and an unlisted NuGet version, the table is blocks at 1,024 px with
+  the line and without it, from the version's cell, which holds its marks and its signature badge on one line
+  ([H-2173](#h-2173--a-version-with-a-mark-and-a-signature-badge-puts-its-table-into-blocks-at-1024-px)).
 
 Acceptance criteria:
 
@@ -27598,7 +27601,9 @@ Status: **Decided by the development agent** on 2026-11-26 — selected from the
 | (c) Text, as before | | | No way to the packages that share one |
 
 **Choice:** (a). The word is the package list's filter's, **Keywords**, in every format. The keywords are the version's own
-(`keywords` of R-API-029), not the newest version's. A Helm chart's keywords stay among its facts: the package list cannot filter images
+(`keywords` of R-API-029), not the newest version's. The chip is the one of the package list's hits, a namespace's page and the search
+(`<quader-package-tags>` of [package-tags.ts](../../web/src/app/features/packages/package-tags.ts), R-ANS-057), with one address
+everywhere: a list's tag filters by the format of its row and the keyword too, where it filtered by the keyword alone. A Helm chart's keywords stay among its facts: the package list cannot filter images
 by them. **Applied in the spec:** R-UI-221, R-API-029.
 
 ### Q-UI-1313 · A version's links are one row under its facts in every format
@@ -27681,6 +27686,15 @@ and of an image into blocks at 1,024 px beside the side bar, which it was not be
 R-UI-222.
 
 ## What this does not cover
+
+### H-2173 · A version with a mark and a signature badge puts its table into blocks at 1,024 px
+
+Stage: the version's cell of the table of versions (R-UI-110), which keeps the version, its marks (**Pre-release**, **Deprecated**,
+**Unlisted**, R-API-085) and its signature badge on one line. Subject: a package one of whose versions carries a mark and a badge (the
+seed's NuGet package: "2.0.0-preview.1 Pre-release Invalid signature"). The cell's least width puts the table into blocks at 1,024 px
+beside the side bar, against Q-UI-969; measured on 2026-11-26 with the downloads' line under **Last download** and without it, the same.
+Live wherever signatures are checked and a version is marked. What closes it: the cell wraps between its badges, as an image's row wraps
+between its tags.
 
 ### H-2172 · An image's date word follows the version's holders, not each row
 

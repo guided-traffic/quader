@@ -382,10 +382,12 @@ function slug(text: string): string {
 }
 
 /**
- * Answers of 4xx that are a screen's normal state on every screen: a version's page looks every dependency's name up, and a name no
- * repository of the installation holds answers 404, which leaves it text (R-UI-221, Q-UI-1311).
+ * The one answer of 4xx that is a page's normal state on every screen: a version's page looks every dependency's name up
+ * (`GET /api/v1/packages/lookup` with exactly the parameters `format` and `name`, R-UI-221, Q-UI-1311), and a name no repository of
+ * the installation holds answers 404, which leaves it text. Nothing wider: another status of that call, another parameter, and a 4xx of
+ * any other call still fail the screen.
  */
-const NORMAL_ANSWERS: readonly RegExp[] = [/^GET \/api\/v1\/packages\/lookup\?format=(npm|nuget|ansible|deb)&name=\S+ answered 404$/];
+const NORMAL_ANSWERS: readonly RegExp[] = [/^GET \/api\/v1\/packages\/lookup\?format=(npm|nuget|ansible|deb)&name=[^&\s]+ answered 404$/];
 
 /** The failures of a screen: the console's errors, uncaught errors, and the app's API calls answered 4xx or 5xx. */
 function watch(page: Page, screen: Screen): { notices: string[]; list(): string[] } {

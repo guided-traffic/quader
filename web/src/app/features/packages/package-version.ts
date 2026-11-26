@@ -65,7 +65,8 @@ import {
   nugetFacts,
   strings,
 } from './version-metadata';
-import { DependencyList, KeywordChips, VersionLinks } from './version-facts';
+import { DependencyList, VersionLinks } from './version-facts';
+import { PackageTags } from './package-tags';
 import { VersionSize } from './version-size';
 import { NoValue } from '../../shared/ui/no-value';
 import { MalwareStatusView } from '../../shared/malware/malware-status';
@@ -189,7 +190,7 @@ interface TabEntry {
     CdkMenuItem,
     CdkMenuTrigger,
     DependencyList,
-    KeywordChips,
+    PackageTags,
     VersionLinks,
   ],
   templateUrl: './package-version.html',

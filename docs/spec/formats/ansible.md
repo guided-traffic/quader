@@ -3893,7 +3893,9 @@ Status: **Decided by the development agent** on 2026-11-26 — selected from the
 | (b) Text | — | Quieter | A tag the reader sees and cannot follow |
 | (c) Not shown in a hit | — | As before | The owner's list names tags in a hit |
 
-**Choice:** (a). **Revisit** when G3 puts the tags on the version page as chips: they take the same component. **Applied in the spec:** R-ANS-057.
+**Choice:** (a). G3 put the tags on the version page as chips with the same component, every one of them there, and a tag of a list
+filters by the format of its row too (`?format=ansible&keyword=…`, [api-and-ui.md](../api-and-ui.md) R-UI-221, Q-UI-1312). **Applied in the
+spec:** R-ANS-057.
 
 ### Q-ANS-124 · The filter deprecated is the deprecation's, and reads the same latest as signed
 

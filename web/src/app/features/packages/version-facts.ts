@@ -4,8 +4,8 @@ import { EXTERNAL_REL, packageCommands } from './package-links';
 import { DependencyGroup, MetadataLink } from './version-metadata';
 
 /*
- * The blocks that show a version's general properties the same way in every format (R-UI-221): its dependencies, its keywords and its
- * links. A format feeds them from its metadata (version-metadata.ts); the block, its words and its place are one.
+ * The blocks that show a version's general properties the same way in every format (R-UI-221): its dependencies and its links; its
+ * keywords are the chips of every list (package-tags.ts). A format feeds them from its metadata (version-metadata.ts); the block, its words and its place are one.
  */
 
 /**
@@ -106,70 +106,6 @@ export class DependencyList {
   protected link(name: string): string[] {
     return packageCommands(this.project(), this.format(), name);
   }
-}
-
-/**
- * A version's keywords or tags (R-UI-221, Q-UI-1312), as chips that open the package list of the project filtered by the keyword and the
- * format, where the packages that share it are. The words are a publisher's: text, never markup.
- */
-@Component({
-  selector: 'quader-keyword-chips',
-  imports: [RouterLink],
-  template: `
-    <ul class="keyword-chips" translate="no" [attr.aria-label]="label">
-      @for (k of keywords(); track k) {
-        <li>
-          <a class="keyword-chip" [routerLink]="['/projects', project(), 'packages']" [queryParams]="{ format: format(), keyword: k }">{{ k }}</a>
-        </li>
-      }
-    </ul>
-  `,
-  styles: `
-    /* A block whose bottom room meets the next heading's, so a block of another component after it (a role's facts) keeps the room. */
-    :host {
-      display: block;
-      margin-block-end: var(--quader-space-5);
-    }
-    .keyword-chips {
-      display: flex;
-      flex-wrap: wrap;
-      gap: var(--quader-space-2);
-      margin: 0;
-      padding: 0;
-      list-style: none;
-    }
-    .keyword-chip {
-      display: inline-block;
-      max-inline-size: 100%;
-      padding: 0 var(--quader-space-3);
-      overflow: hidden;
-      border: 1px solid var(--quader-border-strong);
-      border-radius: var(--quader-radius-full);
-      background: var(--quader-surface-raised);
-      color: var(--quader-on-surface);
-      font-size: 0.8125rem;
-      line-height: 1.5rem;
-      text-decoration: none;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-
-      &:hover {
-        border-color: var(--quader-link);
-        color: var(--quader-link);
-      }
-
-      &:focus-visible {
-        outline: var(--quader-focus-ring);
-        outline-offset: 2px;
-      }
-    }
-  `,
-})
-export class KeywordChips {
-  readonly keywords = input.required<readonly string[]>();
-  readonly project = input.required<string>();
-  readonly format = input.required<string>();
-  protected readonly label = $localize`:@@pkg.meta.keywords:Keywords`;
 }
 
 /**

@@ -42,7 +42,7 @@
         @if (row.description) {
           <span class="secondary" translate="no">{{ row.description }}</span>
         }
-        <quader-package-tags [tags]="row.keywords" [project]="scope()" />
+        <quader-package-tags [tags]="row.keywords" [project]="scope()" [format]="row.format" />
       </th>
       @if (!project()) {
         <td class="project-cell"><quader-project-link [key]="placeOf(row).project" /></td>

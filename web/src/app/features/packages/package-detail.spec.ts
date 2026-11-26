@@ -221,7 +221,7 @@ describe('The package page: its versions (R-UI-110)', () => {
       '/projects/web/repositories/npm-all',
     ]);
     // The keywords are the chips of a version's page (R-UI-221).
-    expect([...details.querySelectorAll('quader-keyword-chips a')].map((a) => text(a))).toEqual(['ui', 'components']);
+    expect([...details.querySelectorAll('quader-package-tags a')].map((a) => text(a))).toEqual(['ui', 'components']);
     expect(text(details)).toContain('1,832');
   });
 

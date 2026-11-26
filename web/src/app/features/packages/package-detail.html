@@ -182,7 +182,7 @@
       <!-- The keywords as on a version's page: chips to the packages that share one (R-UI-221). -->
       @if (p.keywords.length > 0) {
         <dt i18n="@@pkg.meta.keywords">Keywords</dt>
-        <dd><quader-keyword-chips [keywords]="p.keywords" [project]="project()" [format]="p.format" /></dd>
+        <dd><quader-package-tags [tags]="p.keywords" [project]="project()" [format]="p.format" [limit]="null" /></dd>
       }
       <dt i18n="@@pkg.fact.downloads">Downloads</dt>
       <dd>{{ p.downloadCount | number }}</dd>

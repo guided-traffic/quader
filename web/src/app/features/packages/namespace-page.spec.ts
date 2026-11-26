@@ -93,7 +93,8 @@ describe('The page of a name (R-UI-220)', () => {
     expect(names).toEqual(['acme.net', 'acme.tools']);
     const tools = r.root.querySelectorAll('tbody tr')[1]!;
     expect(tools.querySelector('[data-testid="signature-badge"]')?.getAttribute('data-state')).toBe('verified_public');
-    expect(tools.querySelector('.tag')?.getAttribute('href')).toBe('/projects/platform/packages?keyword=linux');
+    // The chip of every list, a version's Details' too: the package list filtered by the format and the keyword (R-UI-221).
+    expect(tools.querySelector('.tag')?.getAttribute('href')).toBe('/projects/platform/packages?format=ansible&keyword=linux');
     expect(r.root.querySelector('[data-testid="namespace-publishing"]')).toBeNull();
     expect(r.root.querySelector('[data-testid="namespace-every-project"]')?.getAttribute('href')).toBe('/namespaces/ansible/acme');
     await expectAccessible(r.root);

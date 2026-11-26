@@ -206,7 +206,7 @@ describe('The page of a version (R-UI-111)', () => {
   it('R-UI-111 R-UI-221 the Details tab lists the keywords, the dependency kinds, the Package details, the authors and the repositories', async () => {
     const r = await open({ tab: 'details' });
     // The keywords are chips to the packages of the format that share one (Q-UI-1312).
-    const chips = [...r.root.querySelectorAll<HTMLAnchorElement>('quader-keyword-chips a')];
+    const chips = [...r.root.querySelectorAll<HTMLAnchorElement>('quader-package-tags a')];
     expect(chips.map((a) => text(a))).toEqual(['ui', 'web-components']);
     expect(chips[0]?.getAttribute('href')).toBe('/projects/web/packages?format=npm&keyword=ui');
     // The dependencies: a group per field of the manifest, an optional peer marked (Q-UI-1311).
@@ -477,7 +477,7 @@ describe('The page of a version (R-UI-111)', () => {
         expect.arrayContaining(['Title Contoso Logging', 'Minimum client version 4.3.0', 'Package types Dependency']),
       );
       // The tags are the keywords; the licence's address is the licence's link on the facts line (R-UI-221).
-      expect([...r.root.querySelectorAll('quader-keyword-chips a')].map((a) => text(a))).toEqual(['logging', 'diagnostics']);
+      expect([...r.root.querySelectorAll('quader-package-tags a')].map((a) => text(a))).toEqual(['logging', 'diagnostics']);
       expect(r.root.querySelector('.facts-line a[href="https://licenses.nuget.org/MIT"]')?.textContent).toContain('MIT');
       expect(pairs(r).join('|')).not.toContain('Copyright');
       expect(text(r.root)).toContain('No dependencies.');
@@ -752,7 +752,7 @@ describe('The page of a version (R-UI-111)', () => {
     it('R-ANS-026 Details lists the Ansible versions it needs and the tags as keywords; the licences are the facts of the header', async () => {
       const r = await collection({ tab: 'details' });
       expect(facts(r)).toEqual({ 'Requires Ansible': '>=2.15.0' });
-      expect([...r.root.querySelectorAll('quader-keyword-chips a')].map((a) => text(a))).toEqual(['tools', 'linux']);
+      expect([...r.root.querySelectorAll('quader-package-tags a')].map((a) => text(a))).toEqual(['tools', 'linux']);
       expect(text(r.root.querySelector('.facts-line')!)).toContain('Apache-2.0, MIT');
       expect(text(r.root)).toContain('community.general');
       expect(r.root.querySelector<HTMLAnchorElement>('a[href="https://example.com/acme/tools/issues"]')).not.toBeNull();

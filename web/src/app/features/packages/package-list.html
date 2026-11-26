@@ -284,7 +284,7 @@
             @if (row.description) {
               <span class="secondary" translate="no">{{ row.description }}</span>
             }
-            <quader-package-tags [tags]="row.keywords" [project]="project()" />
+            <quader-package-tags [tags]="row.keywords" [project]="project()" [format]="row.format" />
           </th>
           <td>
             <span class="type-cell">

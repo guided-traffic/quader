@@ -231,3 +231,9 @@ tr.expansion td {
   overflow-wrap: anywhere;
   white-space: pre-line;
 }
+
+// The keywords of a version, the chips of every list (R-UI-221): a block whose room meets the next heading's, so a block of another
+// component after it (a role's facts) keeps the room.
+.version-keywords {
+  margin-block-end: var(--quader-space-5);
+}

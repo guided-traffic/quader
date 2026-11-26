@@ -36,7 +36,7 @@ import { DistTags } from './dist-tags';
 import { SignatureBadge } from '../../shared/signatures/signature-badge';
 import { CLAMAV_FORMAT, clamavState, stateRank, stateText } from './clamav-definitions';
 import { arrivedLabel } from '../repositories/content/content-shape';
-import { KeywordChips } from './version-facts';
+import { PackageTags } from './package-tags';
 import { ImageTags, listsByContent } from './image-tags';
 import { DeprecationMark } from '../../shared/ui/deprecation-mark';
 import { Loading } from '../../shared/ui/loading';
@@ -74,7 +74,7 @@ function sameVersion(a: { id: string; version: string } | undefined, b: { id: st
     VersionSize,
     ImageTags,
     DistTags,
-    KeywordChips,
+    PackageTags,
   ],
   templateUrl: './package-detail.html',
   styleUrl: './package-detail.scss',
