@@ -833,6 +833,9 @@ td.class-cell .material-icons {
       inline-size: var(--quader-stack-column);
       padding-inline-end: var(--quader-space-4);
       vertical-align: baseline;
+      // The name wraps even where its value keeps one line: a number's cell (`td.num`) is nowrap, and "From the upstream in the last
+      // hour" of a place's usage ran over its value at 390 px.
+      white-space: normal;
       overflow-wrap: break-word;
       color: var(--quader-text-muted);
     }

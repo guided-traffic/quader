@@ -2102,8 +2102,9 @@ async function* usageDetailWalk(page: Page): AsyncGenerator<string> {
   await page.locator('main quader-usage-history').getByRole('button', { name: 'Show as table' }).click();
   yield 'table';
   // R-UI-242: the caller also took something through the seed's Bastion, answered in the browser (the profile runs no Bastion, and no
-  // Bastion reports usage yet): By place lists the installation, the Bastion and the sum.
-  const detail = (url: URL): boolean => /\/api\/v1\/usage\/subjects\//.test(url.pathname);
+  // Bastion reports usage yet): By place lists the installation, the Bastion and the sum. The three screens of this walk read the detail
+  // from three addresses: the instance's caller, a project's caller and the own usage of the profile (Q-UI-1593).
+  const detail = (url: URL): boolean => /^\/api\/v1\/((projects\/[^/]+\/)?usage\/subjects\/|users\/me\/usage$)/.test(url.pathname);
   await page.route(detail, async (route) => {
     const res = await route.fetch();
     const body = (await res.json()) as { budgets: { place: unknown; figures: Record<string, { used?: number }> }[] };

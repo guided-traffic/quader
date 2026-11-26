@@ -72,6 +72,10 @@ function placeName(b: UsageBudget): string {
     tr.total td {
       font-weight: 600;
     }
+    /* A stacked row's column names are measured in the regular weight: the sum's names keep it, or the longest broke a line. */
+    tr.total td::before {
+      font-weight: 400;
+    }
   `,
 })
 export class UsagePlaces {

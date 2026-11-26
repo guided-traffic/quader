@@ -145,44 +145,53 @@ describe('Usage through a Bastion (R-UI-242)', () => {
     expect(navigate.mock.calls.at(-1)![1]).toMatchObject({ queryParams: { place: 'installation' }, queryParamsHandling: 'merge' });
   });
 
+  // A Bastion's budget among the caller's: 4,000 requests, 2 GB from the upstream and 30 GB of a day through partners.
+  const throughPartners = (get: <A>(token: abstract new (...args: never[]) => A) => A): void => {
+    const api = get(LimitsApi) as FakeLimitsApi;
+    const [instance] = api.detailValue.budgets;
+    api.detailValue = {
+      ...api.detailValue,
+      budgets: [
+        ...api.detailValue.budgets,
+        {
+          ...instance!,
+          place: { kind: 'bastion', bastion: 'partners' },
+          figures: {
+            ...instance!.figures,
+            requestsPerHour: { limit: 100000, used: 4000, windowSeconds: 3600 },
+            uncachedBytesPerHour: { limit: null, used: 2_000_000_000, windowSeconds: 3600 },
+            bytesPerDay: { limit: null, used: 30_000_000_000, windowSeconds: 86400 },
+          },
+        },
+      ],
+    };
+  };
+  const placeRows = (root: HTMLElement): string[][] =>
+    [...root.querySelector('quader-usage-places')!.querySelectorAll('tbody tr')].map((r) => [...r.querySelectorAll('th, td')].map((c) => text(c)));
+  const partnersRows = [
+    ['This installation', '36,000', '50 MB', '13.3 GB'],
+    ['Through partners', '4,000', '2 GB', '30 GB'],
+    ['All places', '40,000', '2.1 GB', '43.3 GB'],
+  ];
+
   it("R-UI-242 a caller's page lists the installation's consumption, each Bastion's and the sum", async () => {
-    const { root } = await renderScreen(UsageDetailPage, {
-      capabilities: ['usage:read'],
-      inputs: { kind: 'user', id: 'alice' },
-      setup: (get) => {
-        const api = get(LimitsApi) as FakeLimitsApi;
-        const [instance] = api.detailValue.budgets;
-        api.detailValue = {
-          ...api.detailValue,
-          budgets: [
-            ...api.detailValue.budgets,
-            {
-              ...instance!,
-              place: { kind: 'bastion', bastion: 'partners' },
-              figures: {
-                ...instance!.figures,
-                requestsPerHour: { limit: 100000, used: 4000, windowSeconds: 3600 },
-                uncachedBytesPerHour: { limit: null, used: 2_000_000_000, windowSeconds: 3600 },
-                bytesPerDay: { limit: null, used: 30_000_000_000, windowSeconds: 86400 },
-              },
-            },
-          ],
-        };
-      },
-    });
-    const section = root.querySelector('quader-usage-places')!;
-    const rows = [...section.querySelectorAll('tbody tr')].map((r) => [...r.querySelectorAll('th, td')].map((c) => text(c)));
-    expect(rows).toEqual([
-      ['This installation', '36,000', '50 MB', '13.3 GB'],
-      ['Through partners', '4,000', '2 GB', '30 GB'],
-      ['All places', '40,000', '2.1 GB', '43.3 GB'],
-    ]);
+    const { root } = await renderScreen(UsageDetailPage, { capabilities: ['usage:read'], inputs: { kind: 'user', id: 'alice' }, setup: throughPartners });
+    expect(placeRows(root)).toEqual(partnersRows);
   });
 
-  it("R-UI-242 a caller no Bastion counted shows no By place", async () => {
-    const { root } = await renderScreen(UsageDetailPage, { capabilities: ['usage:read'], inputs: { kind: 'user', id: 'alice' } });
-    expect(root.querySelector('quader-usage-places')).toBeNull();
-    expect(text(root)).not.toContain('By place');
+  it('R-UI-185 R-UI-242 a user sees on the own usage page what they took through each Bastion and the sum', async () => {
+    const { root } = await renderScreen(ProfileUsage, { capabilities: [], setup: throughPartners });
+    expect(placeRows(root)).toEqual(partnersRows);
+  });
+
+  it("R-UI-242 a caller no Bastion counted shows no By place, on a caller's page and on the own", async () => {
+    for (const { root } of [
+      await renderScreen(UsageDetailPage, { capabilities: ['usage:read'], inputs: { kind: 'user', id: 'alice' } }),
+      await renderScreen(ProfileUsage, { capabilities: [] }),
+    ]) {
+      expect(root.querySelector('quader-usage-places')).toBeNull();
+      expect(text(root)).not.toContain('By place');
+    }
   });
 });
 

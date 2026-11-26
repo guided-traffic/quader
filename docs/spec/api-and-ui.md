@@ -8651,7 +8651,9 @@ renders, 2026-11-18).
   block ([Q-UI-1050](#q-ui-1050--a-stacked-row-is-a-grid-of-names-and-values-one-field-a-line)). The column is never narrower than
   the longest word of the names, so a name wraps between its words and never inside one, and a list in a block of a stacked list (a
   package's versions opened in a repository's list) measures its own names
-  ([Q-UI-1068](#q-ui-1068--a-stacked-rows-column-name-wraps-between-its-words-never-inside-one)). Every name stands on its value's
+  ([Q-UI-1068](#q-ui-1068--a-stacked-rows-column-name-wraps-between-its-words-never-inside-one)). The name wraps also where its value keeps one line (a
+  number with its unit): run over its value, "From the upstream in the last hour" of **By place** (R-UI-242) stood on its figures at 390 px
+  until 2026-11-27. Every name stands on its value's
   first line; a value of two lines grows downwards ([Q-UI-762](#q-ui-762--the-cells-of-a-stacked-rows-line-stand-on-one-baseline)). A meter takes a line of its own: its column's name,
   the bar and its figure on one line, the state under the bar
   ([Q-UI-763](#q-ui-763--a-meter-in-a-stacked-row-is-a-line-of-its-own-name-bar-and-figure-on-one-line)).
@@ -9059,6 +9061,7 @@ for every signed-in user (`GET /api/v1/users/me/usage`):
 - the caller's own limits per budget key, as R-UI-184's **Limits**, with the sentence "Your limits come from <rule>." instead of the
   administrator's wording;
 - **Which limit applies** as R-UI-184, over `GET /api/v1/users/me/limits` and the repositories the user can read;
+- **By place** as R-UI-242, where a Bastion's budget is among the user's ([Q-UI-1593](#q-ui-1593--a-users-own-usage-page-shows-by-place-as-a-callers-page-does));
 - **Last 24 hours**, **By repository** and **By credential** as R-UI-184;
 - a blocked user sees the block's notice without an action;
 - in Audit mode the line "Limits are counted, not applied yet." and every state as "Would have been limited".
@@ -10425,7 +10428,8 @@ Priority: **P1** · Covers: quader-only
 
 The owner's two budgets ([usage-and-limits.md](usage-and-limits.md) Q-LIM-306): the usage overview (R-UI-183) gains the filter **Place**
 (**All**, **This installation**, and one entry per Bastion, "Through <name>"), kept in the page's address; a caller's page (R-UI-184) lists
-its consumption per place, each Bastion's beside the installation's, and the sum.
+its consumption per place, each Bastion's beside the installation's, and the sum, and so does a user's own usage page (R-UI-185,
+[Q-UI-1593](#q-ui-1593--a-users-own-usage-page-shows-by-place-as-a-callers-page-does)).
 
 *Built (package E12, 2026-11-26):* the filter **Place** in the drawer of the instance's overview
 ([usage-overview.ts](../../web/src/app/features/usage/usage-overview.ts)), the query parameter `place` (`installation` or
@@ -10434,13 +10438,14 @@ may read (`endpoints:read`), and a place the address names stays a choice withou
 ([usage-places.ts](../../web/src/app/features/usage/usage-places.ts)) where a Bastion's budget is among its budgets: **This installation**,
 one row per Bastion and **All places**, with the requests and the bytes from the upstream of the last hour and the bytes of the last
 24 hours, summed from the budgets' windows ([Q-UI-1488](#q-ui-1488--a-callers-consumption-per-place-is-read-from-its-budgets-windows)).
-English and German.
+English and German. *Since 2026-11-27 (B-1126d):* the profile's **Usage** ([profile-usage.ts](../../web/src/app/features/usage/profile-usage.ts))
+shows the same **By place** under **Your limits** (Q-UI-1593).
 
 Acceptance criteria:
 
-- Vitest (about 1 s): **Place** "Through partners" sends the filter and shows the Bastion's rows; a caller's page shows two places and the
-  sum. *As built:* "Usage through a Bastion (R-UI-242)" of [usage.spec.ts](../../web/src/app/features/usage/usage.spec.ts), three cases,
-  about 0.3 s.
+- Vitest (about 1 s): **Place** "Through partners" sends the filter and shows the Bastion's rows; a caller's page and a user's own page
+  show two places and the sum. *As built:* "Usage through a Bastion (R-UI-242)" of [usage.spec.ts](../../web/src/app/features/usage/usage.spec.ts),
+  four cases, about 0.4 s.
 
 The priority is P1: the Bastion's limits hold and the card shows its state without it (R-UI-240); this view adds who took what through
 which door.
@@ -30636,6 +30641,23 @@ R-UI-263.
 | (b) The usage meter of the download limits | | One component | Its words ("Close to the limit") and its 70 % differ |
 
 **Choice:** (a). **Applied in the spec:** R-UI-263.
+
+### Q-UI-1593 · A user's own usage page shows By place as a caller's page does
+
+Status: **Decided by the development agent on 2026-11-27** (B-1126d) — selected from the options below; the owner reviews it at the
+walkthrough. R-UI-185, R-UI-242.
+
+Context: R-UI-242 gave a caller's page (R-UI-184) **By place**, the consumption at the installation, through each Bastion and the sum. The
+profile's own **Usage** (R-UI-185) reads the same detail (`GET /api/v1/users/me/usage`), whose budgets name each Bastion that counted the
+user, and already shows each such budget under **Your limits**; the walk of the renders shared by the three screens expected **By place** on
+all of them and stopped on the profile.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The profile shows **By place** under **Your limits**, on the same condition: only where a Bastion's budget is among the user's (chosen) | The component of the caller's page | What an administrator reads of a user, the user reads of themselves; no request more; a user who never went through a Bastion sees nothing new | One section more on the page of a user who uses a Bastion |
+| (b) Only the caller's page shows it; the walk leaves the profile out | | The profile stays as it was | A user sees a Bastion's budget block but not what they took there beside the installation; the same answer reads differently by who looks |
+
+**Choice:** (a): a pattern decided at one screen holds wherever the same thing is shown. **Applied in the spec:** R-UI-185, R-UI-242.
 
 ## What this does not cover
 

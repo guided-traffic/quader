@@ -1692,7 +1692,7 @@
     <unit id="limits.notice.blocked">
       <notes>
         <note category="location">src/app/core/http/problem-messages-limits.ts:79</note>
-        <note category="location">src/app/features/usage/profile-usage.ts:162</note>
+        <note category="location">src/app/features/usage/profile-usage.ts:173</note>
       </notes>
       <segment>
         <source>Downloads are paused for you until <ph id="0" equiv="time" disp="time"/> after too many refused requests.</source>
@@ -18284,7 +18284,7 @@
     <unit id="profile.usage.heading">
       <notes>
         <note category="location">src/app/features/profile/profile.routes.ts:17</note>
-        <note category="location">src/app/features/usage/profile-usage.ts:34</note>
+        <note category="location">src/app/features/usage/profile-usage.ts:36</note>
       </notes>
       <segment>
         <source>Usage</source>
@@ -44209,7 +44209,7 @@
     </unit>
     <unit id="profile.usage.description">
       <notes>
-        <note category="location">src/app/features/usage/profile-usage.ts:34</note>
+        <note category="location">src/app/features/usage/profile-usage.ts:36</note>
       </notes>
       <segment>
         <source>What you downloaded, and the limits that apply to you.</source>
@@ -44217,7 +44217,7 @@
     </unit>
     <unit id="usage.period">
       <notes>
-        <note category="location">src/app/features/usage/profile-usage.ts:36</note>
+        <note category="location">src/app/features/usage/profile-usage.ts:38</note>
         <note category="location">src/app/features/usage/usage-detail.ts:71</note>
         <note category="location">src/app/features/usage/usage-overview.html:3</note>
       </notes>
@@ -44227,7 +44227,7 @@
     </unit>
     <unit id="profile.usage.audit">
       <notes>
-        <note category="location">src/app/features/usage/profile-usage.ts:53,55</note>
+        <note category="location">src/app/features/usage/profile-usage.ts:55,57</note>
       </notes>
       <segment>
         <source>Limits are counted, not applied yet.</source>
@@ -44235,7 +44235,7 @@
     </unit>
     <unit id="profile.usage.empty">
       <notes>
-        <note category="location">src/app/features/usage/profile-usage.ts:56,59</note>
+        <note category="location">src/app/features/usage/profile-usage.ts:58,61</note>
       </notes>
       <segment>
         <source>You have not downloaded anything in the last 24 hours.</source>
@@ -44243,15 +44243,24 @@
     </unit>
     <unit id="profile.usage.limits">
       <notes>
-        <note category="location">src/app/features/usage/profile-usage.ts:60,61</note>
+        <note category="location">src/app/features/usage/profile-usage.ts:62,63</note>
       </notes>
       <segment>
         <source>Your limits</source>
       </segment>
     </unit>
+    <unit id="usage.by-place">
+      <notes>
+        <note category="location">src/app/features/usage/profile-usage.ts:70,71</note>
+        <note category="location">src/app/features/usage/usage-detail.ts:102,103</note>
+      </notes>
+      <segment>
+        <source>By place</source>
+      </segment>
+    </unit>
     <unit id="usage.by-repository">
       <notes>
-        <note category="location">src/app/features/usage/profile-usage.ts:72,73</note>
+        <note category="location">src/app/features/usage/profile-usage.ts:82,83</note>
         <note category="location">src/app/features/usage/usage-detail.ts:112,113</note>
         <note category="location">src/app/features/usage/usage-tables.ts:26,27</note>
       </notes>
@@ -44261,7 +44270,7 @@
     </unit>
     <unit id="usage.by-credential">
       <notes>
-        <note category="location">src/app/features/usage/profile-usage.ts:77,78</note>
+        <note category="location">src/app/features/usage/profile-usage.ts:87,88</note>
         <note category="location">src/app/features/usage/usage-detail.ts:119,120</note>
         <note category="location">src/app/features/usage/usage-tables.ts:86,87</note>
       </notes>
@@ -44271,7 +44280,7 @@
     </unit>
     <unit id="usage.loading">
       <notes>
-        <note category="location">src/app/features/usage/profile-usage.ts:81,83</note>
+        <note category="location">src/app/features/usage/profile-usage.ts:91,93</note>
         <note category="location">src/app/features/usage/usage-detail.ts:124,126</note>
         <note category="location">src/app/features/usage/usage-overview.html:80,81</note>
       </notes>
@@ -44281,7 +44290,7 @@
     </unit>
     <unit id="usage.empty">
       <notes>
-        <note category="location">src/app/features/usage/profile-usage.ts:123</note>
+        <note category="location">src/app/features/usage/profile-usage.ts:134</note>
         <note category="location">src/app/features/usage/usage-detail.ts:202</note>
         <note category="location">src/app/features/usage/usage-overview.ts:215</note>
       </notes>
@@ -44376,14 +44385,6 @@
       </notes>
       <segment>
         <source>Limits</source>
-      </segment>
-    </unit>
-    <unit id="usage.by-place">
-      <notes>
-        <note category="location">src/app/features/usage/usage-detail.ts:102,103</note>
-      </notes>
-      <segment>
-        <source>By place</source>
       </segment>
     </unit>
     <unit id="usage.block.text">
@@ -44823,7 +44824,7 @@
     </unit>
     <unit id="usage.places.col-place">
       <notes>
-        <note category="location">src/app/features/usage/usage-places.ts:83</note>
+        <note category="location">src/app/features/usage/usage-places.ts:87</note>
       </notes>
       <segment>
         <source>Place</source>
@@ -44831,7 +44832,7 @@
     </unit>
     <unit id="usage.places.col-requests">
       <notes>
-        <note category="location">src/app/features/usage/usage-places.ts:84</note>
+        <note category="location">src/app/features/usage/usage-places.ts:88</note>
       </notes>
       <segment>
         <source>Requests in the last hour</source>
@@ -44839,7 +44840,7 @@
     </unit>
     <unit id="usage.places.col-uncached">
       <notes>
-        <note category="location">src/app/features/usage/usage-places.ts:85</note>
+        <note category="location">src/app/features/usage/usage-places.ts:89</note>
       </notes>
       <segment>
         <source>From the upstream in the last hour</source>
@@ -44847,7 +44848,7 @@
     </unit>
     <unit id="usage.places.col-day">
       <notes>
-        <note category="location">src/app/features/usage/usage-places.ts:86</note>
+        <note category="location">src/app/features/usage/usage-places.ts:90</note>
       </notes>
       <segment>
         <source>Bytes in the last 24 hours</source>

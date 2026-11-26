@@ -12,6 +12,7 @@ import { LimitExplain } from './limit-explain';
 import { UsageBudgets } from './usage-budgets';
 import { blockedUntil } from './usage-detail';
 import { UsageHistory } from './usage-history';
+import { UsagePlaces } from './usage-places';
 import { UsageByCredentialTable, UsageByRepositoryTable } from './usage-tables';
 import { PERIODS, periodLabel, periodPhrase } from './usage-words';
 import { Loading } from '../../shared/ui/loading';
@@ -23,13 +24,14 @@ export function nothingInDay(d: UsageDetail): boolean {
 
 /**
  * The profile's tab **Usage** (R-UI-185, Q-UI-735): every signed-in user's own limits per budget key ("Your limits come from …"),
- * which limit applies in a repository it can read, the last 24 hours, by repository and by credential. A block is shown without
- * an action; in Audit a line says that limits are counted, not applied yet.
+ * which limit applies in a repository it can read, what it took through each Bastion where one counted it (R-UI-242), the last
+ * 24 hours, by repository and by credential. A block is shown without an action; in Audit a line says that limits are counted, not
+ * applied yet.
  */
 @Component({
   selector: 'quader-profile-usage',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Loading, ErrorNotice, LimitExplain, PageHeader, ProfileNav, UsageBudgets, UsageByCredentialTable, UsageByRepositoryTable, UsageHistory],
+  imports: [Loading, ErrorNotice, LimitExplain, PageHeader, ProfileNav, UsageBudgets, UsageByCredentialTable, UsageByRepositoryTable, UsageHistory, UsagePlaces],
   template: `
     <quader-page-header heading="Usage" i18n-heading="@@profile.usage.heading" description="What you downloaded, and the limits that apply to you." i18n-description="@@profile.usage.description">
       <div actions class="period" role="group" i18n-aria-label="@@usage.period" aria-label="Period">
@@ -61,6 +63,14 @@ export function nothingInDay(d: UsageDetail): boolean {
         <quader-usage-budgets [budgets]="d.budgets" [mode]="d.mode" [own]="true" />
         <quader-limit-explain />
       </section>
+
+      <!-- What the user took through each Bastion beside the installation, and the sum (R-UI-242, Q-UI-1593); only where a Bastion counted them. -->
+      @if (throughBastion()) {
+        <section class="section" aria-labelledby="own-places">
+          <h2 id="own-places" i18n="@@usage.by-place">By place</h2>
+          <quader-usage-places [budgets]="d.budgets" />
+        </section>
+      }
 
       @if (!empty()) {
         <section class="section">
@@ -116,6 +126,7 @@ export class ProfileUsage {
     const d = this.detail();
     return d ? blockedUntil(d) : null;
   });
+  protected readonly throughBastion = computed(() => (this.detail()?.budgets ?? []).some((b) => b.place.kind === 'bastion'));
   protected readonly empty = computed(() => {
     const d = this.detail();
     return d ? nothingInDay(d) : false;

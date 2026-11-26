@@ -286,8 +286,8 @@ At most four builders at once (rule 10 of the project plan). The waves are the o
   the card, the list in **Details**); `BastionsApi.configure`, a merge patch of `switches` and `limits`; the mode's dialog of
   [limit-mode.ts](../../web/src/app/features/limits/limit-mode.ts) for a Bastion; the page `/admin/bastions/{name}/limits`
   ([bastion-limits-page.ts](../../web/src/app/features/bastions/bastion-limits-page.ts)) with `orderBastionRules` of `limit-rules.ts`; the
-  overview's **Place** and a caller's **By place** ([usage-places.ts](../../web/src/app/features/usage/usage-places.ts)). Decisions
-  Q-UI-1485 to Q-UI-1489; gaps H-2364, H-2365 (both in api-and-ui.md). With E9b's report the state line takes the cache's fill,
+  overview's **Place** and **By place** of a caller's page and of the profile's own usage ([usage-places.ts](../../web/src/app/features/usage/usage-places.ts)). Decisions
+  Q-UI-1485 to Q-UI-1489 and Q-UI-1593; gaps H-2364, H-2365 (both in api-and-ui.md). With E9b's report the state line takes the cache's fill,
   capacity and protected bytes from one replica (the bucket backend reports the whole Bastion's cache in each; *since E19* it adds up the
   replicas whose `cache.shared` is false and takes the shared one once) and names the block reasons
   of its closed list (`refusals`, `failed_auth`, `refused_requests`) in words, on the card and on **Blocks** (`blockReasonText`). A

@@ -13381,10 +13381,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-772 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+773 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 772 questions</summary>
+<summary>Q-UI: 773 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -14160,6 +14160,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1590](spec/api-and-ui.md#q-ui-1590--the-section-download-links-moves-unchanged) | The section Download links moves unchanged | Decided by the development agent on 2026-11-26 | (a) R-UI-200's section moves into a component of its own, last on the page, with its words, its checks and its measure; it hands its settings to the connections' marks Links and Bastion | — |
 | [Q-UI-1591](spec/api-and-ui.md#q-ui-1591--the-narrow-layout) | The narrow layout | Decided by the development agent on 2026-11-26 | (a) Six tiles a row, three below 80 rem, two below 40 rem; the tables become the data table's cards below 48 rem; the fold's facts stand one under the other below 36 rem | — |
 | [Q-UI-1592](spec/api-and-ui.md#q-ui-1592--the-meter-is-a-component-of-the-page) | The meter is a component of the page | Decided by the development agent on 2026-11-26 | (a) `<quader-storage-meter>`: a bar of 6 px on the text's line, the data colour, the warning or the error token, never green and never alone; the figure and the word beside it | [ADR-316](#adr-316--one-page-for-the-stored-content-the-tab-storage-of-system-status-goes) |
+| [Q-UI-1593](spec/api-and-ui.md#q-ui-1593--a-users-own-usage-page-shows-by-place-as-a-callers-page-does) | A user's own usage page shows By place as a caller's page does | Decided by the development agent on 2026-11-27 | (a): a pattern decided at one screen holds wherever the same thing is shown. | — |
 
 </details>
 
