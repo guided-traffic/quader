@@ -116,7 +116,7 @@ func TestR_OCI_040_AnImagesFactsStandOnItsPageForWhoMayReadItsConfig(t *testing.
 }
 
 // TestR_OCI_040_AnImageStoredBeforeItsFactsIsDescribedFromWhatTheRepositoryHolds: a manifest row stored before its blobs and its
-// configuration were kept (migration 00132) shows neither; the task remote-describe, which a worker queues when it starts, queues the job
+// configuration were kept (migration 00133) shows neither; the task remote-describe, which a worker queues when it starts, queues the job
 // oci-describe for it, which reads the stored manifest and then the stored configuration and completes the row without a client's
 // request (R-OCI-040, Q-OCI-271); a run over the described store queues nothing. One web replica and one worker, one push of a few
 // bytes; about 3 s.

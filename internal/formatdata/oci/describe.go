@@ -21,7 +21,7 @@ import (
 // The description of a stored manifest (formats/oci.md R-OCI-040, R-OCI-042, Q-OCI-271): the job oci-describe writes what a push writes
 // with the manifest's row, for a manifest that was stored another way. It reads only what the repository holds, never an upstream:
 //
-//   - a manifest stored before its blobs were kept (migration 00132): the manifest's own item, parsed as a push parses it, for the
+//   - a manifest stored before its blobs were kept (migration 00133): the manifest's own item, parsed as a push parses it, for the
 //     config's and the layers' descriptors and the configuration's digest;
 //   - a configuration not read yet whose blob the repository holds: a remote's manifest is stored before its config, and a mirror's
 //     download and a download ahead store the config without a client's fetch.

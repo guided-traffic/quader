@@ -22,7 +22,7 @@ URL with a password in a label). This page says how that content is read, who se
   takes (Q-OCI-272).
 - Bounds: the blob at most 1 MiB, 16 levels, 200,000 values; a kept string at most 4 KiB, cut and marked; 256 environment entries, 256
   labels, 512 history lines; 160 KiB of kept JSON, the rest counted as left out. A NUL is replaced. The row's columns carry a CHECK of
-  256 KiB (migration 00132). A blob over the bound is recorded as `too-large` without a byte of it read.
+  256 KiB (migration 00133). A blob over the bound is recorded as `too-large` without a byte of it read.
 - The facts reach the screen as text: the Angular templates bind them as text, never as HTML, and a value becomes a link only when its
   address is `https` or `http` (`safeHttpUrl`); `javascript:` or `git@…` stay text.
 

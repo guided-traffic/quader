@@ -40,7 +40,7 @@ const (
 	MaxConfigHistory = 512
 	MaxConfigArgs    = 64
 	MaxConfigKeys    = 256
-	// ConfigBudget bounds the JSON of what is kept; the column's check (00132) allows 256 KiB, and jsonb prints a separator a byte
+	// ConfigBudget bounds the JSON of what is kept; the column's check (00133) allows 256 KiB, and jsonb prints a separator a byte
 	// longer than the reader counts it.
 	ConfigBudget = 160 << 10
 

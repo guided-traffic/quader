@@ -12,7 +12,7 @@ import (
 // at a push, and the data port's job oci-describe writes them for a manifest whose configuration was stored by a fill, a mount or before
 // the rows existed. Both read the same bytes the same way.
 
-// maxBlobsJSON bounds the JSON of an image's blobs below the column's check (00132: 256 KiB).
+// maxBlobsJSON bounds the JSON of an image's blobs below the column's check (00133: 256 KiB).
 const maxBlobsJSON = 200 << 10
 
 // ImageBlobs is the JSON of the config's and the layers' descriptors of an image manifest in its order (rows.ImageBlobs), at most

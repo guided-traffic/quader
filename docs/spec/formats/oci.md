@@ -1738,7 +1738,7 @@ Acceptance criteria:
 Priority: **P1** · Covers: PKG-DOCKER-041
 
 - **The layers.** An image manifest's config and layers are kept with its row in the manifest's order, each with its digest, media type
-  and compressed size and whether it is foreign (`oci_manifests.blobs`, migration 00132), at most 1,000 layers and 200 KiB; the version's
+  and compressed size and whether it is foreign (`oci_manifests.blobs`, migration 00133), at most 1,000 layers and 200 KiB; the version's
   `metadata.blobs` maps the digest of each held image manifest (the tag's own, or each platform an index's repository holds) to
   `{config, layers, more}`. The layers are the manifest's, which every reader of the tag reads.
 - **The configuration** of an image (a config of the media type `application/vnd.oci.image.config.v1+json` or
@@ -4403,7 +4403,7 @@ mirror's pass crowd the queue `index` (then a batch per pass). **Applied in the 
 `QueueUndescribed`), `QueueConfigRead` and `PutManifest` of [store_manifests.go](../../../internal/formatdata/oci/store_manifests.go), the
 statements `OCIConfigWaiting`, `OCIDescribeTarget`, `OCIPutBlobs`, `OCIPutConfigFacts` and `OCIUndescribedManifests` of
 [oci_manifests.sql](../../../internal/meta/postgres/queries/oci_manifests.sql), migration
-[00132](../../../internal/meta/postgres/migrations/00132_oci_image_facts.sql).
+[00133](../../../internal/meta/postgres/migrations/00133_oci_image_facts.sql).
 
 ### Q-OCI-272 · An image's configuration is read by the strict reader of the manifests, within bounds of its own
 

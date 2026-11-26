@@ -891,7 +891,7 @@ integration `ocilocal` [signatures_test.go](../../test/integration/ocilocal/sign
 ## An image's facts (R-OCI-039 to R-OCI-041)
 
 An image manifest's row keeps its config and layers in the manifest's order (`oci_manifests.blobs`), the digest of an image's
-configuration (`config_digest`) and what the reader read of it (`config_facts`, migration 00132). A push reads the config from the
+configuration (`config_digest`) and what the reader read of it (`config_facts`, migration 00133). A push reads the config from the
 repository before it commits (`pushed.config`, written by `manifestInput`); a remote's fill writes the row with the configuration unread,
 and the commit of the config blob, whatever stores it (a fill, a mirror's download, a download ahead, a mount), queues the data port's
 job `oci-describe` for the manifests that wait for it (`OnCommit` → `QueueConfigRead`, one read of the partial index
