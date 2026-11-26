@@ -1,10 +1,15 @@
 package engine
 
 import (
+	"crypto/rand"
+	"encoding/base64"
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/guided-traffic/quader/internal/bastion/iface"
 	"github.com/guided-traffic/quader/internal/bastion/mainclient"
@@ -52,6 +57,68 @@ func (e *engine) stepTokenForm(q *rq) bool {
 func (e *engine) versionChallenge(q *rq) {
 	e.refuse(q, errs.E(errs.Unauthenticated, errs.CodeCredentialsRequired, "The registry needs a token; ask the token service of the challenge.",
 		errs.WithChallenge(e.registryChallenge(false))), "")
+}
+
+// The Bastion's anonymous registry token (R-BAS-094, Q-BAS-335): payload version 1 with the key ID "bastion" and only the claims
+// "a" and "exp", which iface.RegistryTokenAnonymous and iface.RegistryTokenExpiry read, and a MAC of random bytes that nobody
+// verifies. Wherever it is presented a Bastion drops it and serves the anonymous caller (Q-BAS-168), so it is worth exactly a
+// request without a credential, at every replica and every Bastion alike (Q-BAS-435); the main installation has no key of this
+// ID and refuses it.
+const (
+	anonymousTokenKeyID    = "bastion"
+	anonymousTokenLifetime = 300 * time.Second // the main installation's default oci.token_lifetime
+	anonymousTokenMACBytes = 32                // the length of an HMAC-SHA-256, so the token has the form of the main installation's
+)
+
+// anonymousToken is the token of an anonymous token request, expiring at exp.
+func anonymousToken(exp time.Time) string {
+	payload := "1:" + anonymousTokenKeyID + `:{"a":true,"exp":` + strconv.FormatInt(exp.Unix(), 10) + "}"
+	mac := make([]byte, anonymousTokenMACBytes)
+	_, _ = rand.Read(mac) // crypto/rand.Read never returns an error
+	return iface.RegistryTokenPrefix + base64.RawURLEncoding.EncodeToString([]byte(payload)) + "." + base64.RawURLEncoding.EncodeToString(mac)
+}
+
+// tokenAnswer is the body of the token service's 200 (formats/oci.md R-OCI-004 step 4): token and access_token carry the same
+// value, so a client of the Docker form and one of the OAuth 2.0 form both find it.
+type tokenAnswer struct {
+	Token       string `json:"token"`
+	AccessToken string `json:"access_token"`
+	ExpiresIn   int64  `json:"expires_in"`
+	IssuedAt    string `json:"issued_at"`
+}
+
+// anonymousTokenRequest reports whether a request to the token service is anonymous (Q-BAS-436): a GET without a credential, or a
+// POST whose form holds no password and that carries no Authorization header. An anonymous registry token presented with it is
+// no credential (Q-BAS-168). Neither scope nor service is read: the token grants nothing.
+func anonymousTokenRequest(q *rq) bool {
+	return q.core == coreToken && !q.hasAuth && (q.r.Method == http.MethodGet || q.r.Method == http.MethodPost)
+}
+
+// answerAnonymousToken answers an anonymous token request itself, without a request to the main installation (R-BAS-094,
+// Q-BAS-335), once stepCredentials has admitted the anonymous caller: while the handshake says anonymousReads, as for every
+// anonymous request (R-BAS-019). The answer is never kept and names nothing of the main installation (R-BAS-099).
+func (e *engine) answerAnonymousToken(q *rq) {
+	iat := e.now().Truncate(time.Second)
+	exp := iat.Add(anonymousTokenLifetime)
+	tok := anonymousToken(exp)
+	body, err := json.Marshal(tokenAnswer{ //nolint:gosec // G117: the answer of a token service is the token (R-OCI-004 step 4)
+		Token: tok, AccessToken: tok, ExpiresIn: int64(anonymousTokenLifetime / time.Second), IssuedAt: iat.UTC().Format(time.RFC3339),
+	})
+	if err != nil {
+		e.fail(q, err)
+		return
+	}
+	q.finish(metrics.ClassPass, metrics.ResultHit)
+	h := q.w.Header()
+	h.Set("Content-Type", "application/json")
+	h.Set("X-Content-Type-Options", "nosniff")
+	// A token answer is never stored by a cache on the way (RFC 6749 section 5.1).
+	h.Set("Cache-Control", "no-store")
+	h.Set("Pragma", "no-cache")
+	h.Set(distributionVersionHeader, distributionVersion)
+	h.Set("Content-Length", strconv.Itoa(len(body)))
+	q.w.WriteHeader(http.StatusOK)
+	_, _ = q.w.Write(body)
 }
 
 // passCore forwards a core route of the registry root with the caller's credential (R-BAS-051): the version check with

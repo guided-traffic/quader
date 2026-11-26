@@ -380,7 +380,8 @@ func (e *engine) negPut(ctx context.Context, cacheKey string, n *negEntry) {
 
 // privDoc is the last copy of a document filtered for one caller (R-BAS-023): memory only, never written to
 // the cache backend or to the shared store. Answer carries the identity and the time of the last validation,
-// so the rules of R-BAS-020 decide whether the copy may be served while the main installation is unreachable.
+// so the rules of R-BAS-020 decide whether the copy may be served while the main installation is unreachable and, for the
+// anonymous caller, within the metadata period without a request (R-BAS-094).
 type privDoc struct {
 	answers.Answer
 	Status int

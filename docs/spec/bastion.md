@@ -23,7 +23,8 @@ R-BAS-023, R-BAS-034, R-BAS-040, R-BAS-052, R-BAS-054, R-BAS-058, R-BAS-073, R-B
 H-1242, and takes the interface's version 5, so that the handover takes 6. The owner's decisions of 2026-11-26 on a Bastion's limits, its
 configuration from the main installation, the throughput between the two and a Bastion that names nothing of the main installation (W-34)
 are specified in [Limits, configuration and throughput from the main installation](#limits-configuration-and-throughput-from-the-main-installation) (R-BAS-093 to R-BAS-099,
-Q-BAS-320 to Q-BAS-339) and **not built**, except the rows of R-BAS-099 that package E16 built (Q-BAS-425 to Q-BAS-428); they revise in place R-BAS-002, R-BAS-009, R-BAS-010, R-BAS-014 to R-BAS-017, R-BAS-023,
+Q-BAS-320 to Q-BAS-339) and **not built**, except the rows of R-BAS-099 that package E16 built (Q-BAS-425 to Q-BAS-428) and the anonymous
+token and the anonymous documents of R-BAS-094 that package E14a built (Q-BAS-435 to Q-BAS-437); they revise in place R-BAS-002, R-BAS-009, R-BAS-010, R-BAS-014 to R-BAS-017, R-BAS-023,
 R-BAS-025, R-BAS-029, R-BAS-031, R-BAS-035 to R-BAS-038, R-BAS-046, R-BAS-051, R-BAS-052, R-BAS-054, R-BAS-058, R-BAS-059, R-BAS-071,
 R-BAS-074, Q-BAS-15, Q-BAS-21, Q-BAS-38, Q-BAS-43, Q-BAS-74, Q-BAS-88, Q-BAS-116, Q-BAS-118, Q-BAS-123, Q-BAS-315, H-388, H-1244, H-2272,
 H-2273 and H-2277, each with a marked sentence of what the code does until its package lands.
@@ -1282,8 +1283,10 @@ Priority: **MVP** · Covers: RMT-040
 *Revised on 2026-11-26 by the owner's [Q-BAS-326](#q-bas-326--an-anonymous-ceiling-per-bastion-and-the-one-for-one-paths-removed) (R-BAS-094):* a document the main installation marks
 `private` for the anonymous subject is the same for every anonymous caller, so it is kept once per replica in memory and reused for
 `metadata_revalidate_after` without a conditional request, under the feed's `content` entries like a shared document; it is never written
-to the cache backend. *Today, until E14a lands:* an anonymous caller's private document goes to the main installation with a conditional
-request on every use, as every caller's does.
+to the cache backend. *Built on 2026-11-26 (package E14a):* `fromAnonymousCopy` in [readflow.go](../../internal/bastion/engine/readflow.go)
+serves the anonymous caller's copy, judged by the period and the feed's entries as a cache entry is (`freshFor`, `entries.go`); a copy
+without a validator is kept as well ([Q-BAS-437](#q-bas-437--the-anonymous-callers-copy-is-kept-also-without-a-validator-and-judged-as-a-cache-entry-is)).
+A caller with a token still sends a conditional request on every use.
 
 The main installation marks a document that is the same for every caller who reads the whole repository; the Bastion shares it
 for the metadata period with each caller for whom the main installation confirmed a full read (owner,
@@ -3058,7 +3061,10 @@ repository ([Q-BAS-165](#q-bas-165--the-registry-root-is-a-path-family-of-the-ba
   `POST` with a credential is a read route with a body of the format table's `readWithBody` and is forwarded without a probe; a write
   below `/v2/` is the Bastion's own `403 read_only` in the distribution's shape and names no image prefix. *Built by E16:* the refusal
   names no image prefix and no protocol base path, for every format (R-BAS-099 row 1); `bastionmark.Options.RegistryRoot` and `MainURL`
-  are gone. *Today, until E14a and E15 land:* every token request is forwarded and a `POST` is probed first. *Built on 2026-11-22 (package B):* `forwardablePath` admits `/v2` and `/v2/…`
+  are gone. *Built by E14a:* an anonymous `GET` or `POST` of the token service is answered by the Bastion (`answerAnonymousToken` in
+  [registry.go](../../internal/bastion/engine/registry.go)); an anonymous `HEAD` is the token service's `405` there
+  ([Q-BAS-436](#q-bas-436--an-anonymous-token-request-is-one-without-a-credential-and-the-bastion-reads-neither-its-scope-nor-its-service)). *Today, until E15
+  lands:* a token request with a credential is forwarded, and a `POST` with one is probed first. *Built on 2026-11-22 (package B):* `forwardablePath` admits `/v2` and `/v2/…`
   ([recognize.go](../../internal/bastionmain/recognize.go)); the token service and the catalog call the marking's observer through
   `tellRoute` ([bastion.go](../../internal/api/registry/bastion.go)) only for the methods they answer, so a probe of any other method gets the
   route's own `405` ([Q-BAS-189](#q-bas-189--the-core-routes-below-v2-tell-the-marking-their-kind-only-for-the-methods-they-answer)); the
@@ -3130,8 +3136,9 @@ Priority: **MVP** · Covers: DIST-025
   payload version 1 (Q-BAS-185).
 - *Revised on 2026-11-26 ([Q-BAS-339](#q-bas-339--a-registry-token-reads-only-its-anonymity-its-expiry-and-its-grant)):* the three readers (`RegistryTokenAnonymous`, `RegistryTokenExpiry`,
   `RegistryTokenGrant`) read payload versions 1 and 2, and the main installation issues version 2, whose only readable claims are `a`, `exp`
-  and `g`; an anonymous caller of a Bastion receives the Bastion's own token (R-BAS-094). *Today, until E7, E14a and E17 land:* version 1,
-  every claim readable, and the anonymous token comes from the main installation's token service.
+  and `g`; an anonymous caller of a Bastion receives the Bastion's own token (R-BAS-094). *Built by E14a:* the
+  anonymous caller's token is the Bastion's. *Today, until E7 and E17 land:* the readers read version 1, and the main installation's
+  tokens carry every claim readable.
 - **Its expiry is its own.** The subject the marking and the check report for a registry token carries the registry token's expiry
   (`auth.Credential.ExpiresAt` already is that), so no answer outlives it (R-BAS-020 rule 2). A request with a registry token past its
   expiry is answered `401` with the registry's challenge and `error="invalid_token"` by the Bastion, and is not counted as a failed
@@ -4965,8 +4972,27 @@ Every way a request at the Bastion reaches the main installation, after the pack
 The planner derived for today (not measured): rows 1 to 8 are bounded by the 16 anonymous slots of a Bastion of two replicas alone, which
 at 10 ms an answer is about 1,600 requests a second at the main installation from callers spread over many addresses.
 
-*Not built* (package E9a, the ceiling and the background refresh it counts; E14a, the anonymous token and the anonymous documents; E15, the
-writes; W-35's catalogue, `/v2/_catalog`). The ceiling's default is set by the measurement E4 (R-LIM-046).
+*Built on 2026-11-26 (package E14a), rows 3 and 6 for the anonymous caller:* the anonymous token (`answerAnonymousToken` in
+[registry.go](../../internal/bastion/engine/registry.go), Q-BAS-435, Q-BAS-436) and the anonymous documents (`fromAnonymousCopy` in
+[readflow.go](../../internal/bastion/engine/readflow.go), Q-BAS-437), with no change of the interface. The Bastion's own token answers count as
+`quader_bastion_requests_total{class="pass",result="hit"}` and a kept anonymous document as `{class="private",result="hit"}`; neither is in
+`quader_bastion_main_requests_total`. What an anonymous request still causes at the main installation, path by path, as built after E14a
+(measured: rows 1, 3 and 6 in the integration case below; derived from the code: the rest):
+
+| # | Path | Per anonymous request after E14a |
+|---|---|---|
+| 1 | The forward of a miss | one per miss; a cold anonymous pull of an image of two blobs sent four forwards and nothing else (measured) |
+| 2 | A `404` not marked `absent` | one per request |
+| 3 | `pass` routes | the token service none (measured); search, npm's `-/whoami` and `/v2/_catalog` one per request |
+| 4 | The check | none per request: one per repository and answer period for all anonymous callers together |
+| 5 | The background refresh | none per request; one per kept answer and period, counted by no guard |
+| 6 | The conditional request of a private document | none per request: one per document, replica and metadata period (measured: ten reads, one request) |
+| 7 | The probe of a write | one per distinct method and path and metadata period, until E15 |
+| 8 | A read route with a body | a probe and a forward per request, until E15 (the anonymous `POST /v2/_token` none) |
+| 9 to 12 | The batches, the handshake, the feed, the handover | none per request |
+
+*Not built* (package E9a, the ceiling and the background refresh it counts; E15, the writes; W-35's catalogue, `/v2/_catalog`). The
+ceiling's default is set by the measurement E4 (R-LIM-046).
 
 Acceptance criteria:
 
@@ -4975,6 +5001,9 @@ Acceptance criteria:
   miss consumes nothing; a background refresh of an anonymous answer takes from the ceiling.
 - Integration (area `bastion`, one case, about 3 s): an anonymous `docker pull` replay through the in-process Bastion makes no token request
   at the counting double of the main installation, and an anonymous npm document read ten times within the period sends one request.
+  *As built:* `TestR_BAS_094_AnAnonymousPullAndAnAnonymousDocumentSpareTheMainInstallation` (the npm document of a local repository whose
+  artifacts are public and whose wiki is not, so that it is filtered for the anonymous caller, Q-BAS-149); the engine's unit tests
+  `TestR_BAS_094_TheBastionAnswersAnAnonymousTokenRequestItself` and `TestR_BAS_094_AnAnonymousDocumentIsKeptForTheMetadataPeriod`.
 
 ### R-BAS-095 · Writes are refused by the Bastion itself
 Priority: **MVP** · Covers: quader-only
@@ -5165,7 +5194,7 @@ The places, read in the code on 2026-11-26, and what each shows once its package
 | 5 | Headers of a forwarded answer (`replayHeader` and `neverReplayed` in `respond.go`; the Bastion's client strips only `Quader-Bastion-*`) | on a miss `Quader-Resolved-From` (the member repository of a virtual repository that served it), OCI's `Quader-Annotations-Cut`, and the main installation's `RateLimit` and `RateLimit-Policy` | an allowlist: the core's representation headers, the format's declared replay headers, `Content-Length`, `Content-Range`, `Accept-Ranges`, `Retry-After`, `WWW-Authenticate`, `Allow`, `Link`, `Docker-Distribution-Api-Version`, and `Location` under row 6; no `Quader-*` header and no RateLimit field of the main installation | E16 |
 | 6 | `Location` of a `3xx` from the main installation (passed by `replayHeader`) | whatever the main installation set; whether a route answers a forward with an absolute URL on its own host is not verified | passed only when relative or on the Bastion's own host; otherwise `502 bad_gateway`, counted | E16 |
 | 7 | Problem bodies of the main installation's refusals passed through (`errs.Write`; the limits' refusal in [errors.go](../../internal/limits/errors.go)) | the main installation's `requestId`; for a signed-in caller "Your limits: <response base URL>/ui/profile/usage", which for a forward is a path of the Bastion's host that the Bastion does not serve; the member `place` | for a recognized forward: no `requestId`, no "Your limits" sentence, no `place`; `figure`, `limit` and `retryAfterSeconds` stay | E16, the main installation's side |
-| 8 | The registry token's payload ([token.go](../../internal/auth/registrytoken/token.go); its claims are readable base64url JSON) | the endpoint's name `e`, the principal kind and ID `pk`, `p`, the underlying token's ID, type and hash `t`, `tt`, `th`, and the key ID; every anonymous caller of a Bastion receives such a token today | an anonymous caller gets the Bastion's own token (R-BAS-094); a signed-in caller payload version 2: `a`, `exp` and `g` readable, the rest sealed (Q-BAS-339) | E14a; E7 the readers; E17 |
+| 8 | The registry token's payload ([token.go](../../internal/auth/registrytoken/token.go); its claims are readable base64url JSON) | the endpoint's name `e`, the principal kind and ID `pk`, `p`, the underlying token's ID, type and hash `t`, `tt`, `th`, and the key ID; until E14a every anonymous caller of a Bastion received such a token | an anonymous caller gets the Bastion's own token (R-BAS-094); a signed-in caller payload version 2: `a`, `exp` and `g` readable, the rest sealed (Q-BAS-339) | E14a; E7 the readers; E17 |
 | 9 | Challenges: the Bastion's own (`registryChallenge` in `family.go`; `Basic realm="quader"`) and the main installation's on a forwarded `401` | the Bastion's own host; the main installation's realm is its response base URL, which for a forward is the Bastion's host (R-BAS-017) | unchanged, held by a test | E16 |
 | 10 | URLs in documents: npm's `dist.tarball`, NuGet's service index and `@id`, Galaxy's `href`, OCI's `Link` | rendered on the response base URL, which the handshake holds equal to the Bastion's (R-BAS-010); only the npm and NuGet e2e runs check it | unchanged; every format's integration replay asserts that no byte and no header names the main installation's host, another of its base URLs or `/api/v1/` | E16 |
 | 11 | Debian's `Release` fields ([settings.go](../../internal/formats/deb/settings.go)) | `Origin` from the repository's settings (default `quader`); a remote passes on its upstream's; no host | unchanged: an administrator's or an upstream's content (H-2296) | — |
@@ -5224,8 +5253,9 @@ sets it, `internal/vuln/scanner/pull.go`), so row 5 does not list it; the allowl
   and the members stay. A miss of every member of a virtual repository is the virtual engine's own `404`, which names no member. What
   the formats' handlers write of their own is not inventoried text by text (H-2295).
 
-*Not built* (packages E7, E14a, E15, E17, and W-35's catalogue, as the table says): rows 1 (the refusal at the Bastion and the code), 2
-(the codes), 8 and 14.
+*Not built* (packages E7, E15, E17, and W-35's catalogue, as the table says): rows 1 (the refusal at the Bastion and the code), 2
+(the codes), 8 for a signed-in caller and 14. Row 8 for the anonymous caller is built by E14a: its token is the Bastion's, whose payload
+names the key ID `bastion`, `a` and `exp` and nothing of the main installation (R-BAS-094).
 
 Acceptance criteria:
 
@@ -11022,6 +11052,63 @@ Galaxy read `errs.ProblemOf`); none of them knew whether the request was a forwa
 mark costs one context value per request and makes the rule a property of rendering, where it cannot be forgotten by a handler. The
 development agent would revisit it if a writer of errors is found that cannot reach the request. **Applied in the spec:** R-BAS-029,
 R-BAS-058, R-BAS-099 rows 3 and 7; [api-and-ui.md](api-and-ui.md) R-API-009 (the member `type`).
+
+### Q-BAS-435 · The anonymous token is the anonymous caller at every replica and every Bastion, and no key signs it
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: Q-BAS-335 gives the Bastion's anonymous token a MAC of random bytes that nobody verifies. The plan of E14a asked what key signs
+it so that every replica of one Bastion recognizes it and nobody else, how that key rotates, and what a token of replica A is at
+replica B. The Bastion must not hold the main installation's signing key (owner, 2026-11-26: the smaller the footprint, the better).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) No key: a token is recognized by its unverified claim `a` alone, wherever it is presented, and dropped (chosen) | Replica A's token at replica B, another Bastion's token and a forged one are each the anonymous caller | No key on an internet-facing node, nothing to share between replicas, nothing to rotate; a client that moves between replicas or Bastions keeps its token | Anyone can mint one, which gains exactly what a request without a credential gains (H-2350) |
+| (b) A key shared by the replicas of one Bastion (generated and kept in Valkey, or derived from its cache key) | A foreign or forged token is refused `401` | Only that Bastion's tokens pass | A key to keep, rotate and lose on the edge; without Valkey and a cache key no shared key exists; refusing a token that grants nothing protects nothing, and a client refused there renews it at once |
+| (c) A key derived from the Bastion token | Every replica holds the Bastion token already | Shared without Valkey | The Bastion token is the main installation's credential for this Bastion: a derivation of it on the wire of every anonymous caller, and a renewal of the Bastion token ends every anonymous token |
+
+**Choice:** (a). **Rationale:** the token carries no scope the Bastion would trust, and the Bastion drops a token that claims to be
+anonymous (Q-BAS-168), so its authenticity decides nothing; a request without any credential reaches the same answers. The main
+installation knows no key of the ID `bastion` and refuses the token there. The development agent would revisit it if the anonymous token
+ever carried something a Bastion decided on. **Applied in the spec:** R-BAS-052, R-BAS-094; [security/bastion.md](../security/bastion.md)
+H-2350.
+
+### Q-BAS-436 · An anonymous token request is one without a credential, and the Bastion reads neither its scope nor its service
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-BAS-094 answers "a `GET` or `POST /v2/_token` without a credential" at the Bastion. The token service of the main installation
+answers a `POST` without a password `400 invalid_request`, a `HEAD` `405`, a `service` of another host `400`, and more than 16 scope
+entries `400`.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A `GET` without an `Authorization` header and a `POST` whose form holds no password and that carries none are answered with the token; an anonymous registry token presented with either is no credential (Q-BAS-168); an anonymous `HEAD` answers the token service's `405` at the Bastion; scope and service are not read (chosen) | No request to the main installation for any of them | The token grants nothing, so nothing a client asks for has to be checked; a request with any credential goes to the main installation as before | A malformed anonymous request gets a token where the main installation would answer `400` |
+| (b) Mirror every `400` of the token service at the Bastion | The service check and the scope grammar at the Bastion | The same answers at both doors | Format knowledge of the token service's grammar at the Bastion, for a token that grants nothing |
+| (c) Forward what the Bastion does not answer | An anonymous `HEAD` and malformed requests go to the main installation | Nothing new at the Bastion | A one-for-one path stays open to the internet |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-051, R-BAS-094.
+
+### Q-BAS-437 · The anonymous caller's copy is kept also without a validator, and judged as a cache entry is
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-BAS-094 keeps a document the main installation filtered for the anonymous subject for the metadata period. A caller's private
+copy was kept only with an `ETag`, since a copy without a validator cannot answer a conditional request; and its validity was judged by the
+four rules of an answer, whose fourth (no answer obtained within 15 s of the start of the replica's feed history) a cache entry does not
+apply. Which documents count needs no list: a tag's manifest, an npm packument, a NuGet index, an APT `InRelease` and a Galaxy version
+list are each a document the main installation marks `shared` or `private`, and the Bastion keeps by the marking's class, never by the
+format. Blobs and other artifacts are not documents.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The anonymous copy is kept with or without an `ETag`, served while `metadata_revalidate_after` has not passed since its validation and no `content` or `grants` entry of the feed that names its repository was received after it, judged as a cache entry (`freshFor`); after it a conditional request, or a plain one without a validator (chosen) | One rule for a shared entry and the anonymous copy | A document without a validator spares the main installation as one with it; a replica that just started serves the copy within its first 15 s as it serves a shared entry; a withdrawal the feed carries ends it as it ends a shared entry | A copy without a validator costs a whole transfer after the period |
+| (b) Only with an `ETag`, as a token's copy | | Nothing new | A format whose document carries no validator keeps every anonymous request one for one |
+| (c) Judged by the four rules of an answer | | The copy is an answer about the anonymous subject | For 15 s after a replica's start every anonymous read of a private document goes to the main installation, where a shared one does not |
+
+**Choice:** (a). The period's default stays `metadata_revalidate_after`, `1m` (R-BAS-023): a narrowing the feed does not carry reaches
+anonymous callers within it, as it reaches full readers ([security/bastion.md](../security/bastion.md) H-2292, H-2351). **Applied in the
+spec:** R-BAS-023, R-BAS-094.
 
 ## What this does not cover
 

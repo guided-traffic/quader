@@ -10411,10 +10411,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-BAS
 
-272 questions on [spec/bastion.md](spec/bastion.md).
+275 questions on [spec/bastion.md](spec/bastion.md).
 
 <details>
-<summary>Q-BAS: 272 questions</summary>
+<summary>Q-BAS: 275 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10690,6 +10690,9 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-BAS-426](spec/bastion.md#q-bas-426--a-forward-reads-a-neutral-detail-for-every-failure-of-the-remote-engine-chosen-by-the-code-when-the-problem-is-rendered) | A forward reads a neutral detail for every failure of the remote engine, chosen by the code when the problem is rendered | Decided by the development agent on 2026-11-26 | (a), with "The package could not be fetched right now." for the failures and "The caller may not bring new content into the cache of this repository." for `populate_not_permitted`. | — |
 | [Q-BAS-427](spec/bastion.md#q-bas-427--a-location-on-another-host-is-answered-502-at-the-bastion-whatever-the-status) | A Location on another host is answered 502 at the Bastion, whatever the status | Decided by the development agent on 2026-11-26 | (a) `502` for any answer whose `Location` is neither relative nor on the Bastion's scheme, host and port; counted by the reason `foreign_location` | — |
 | [Q-BAS-428](spec/bastion.md#q-bas-428--a-forward-is-marked-on-the-requests-context-and-every-writer-of-an-error-renders-through-one-function) | A forward is marked on the request's context, and every writer of an error renders through one function | Decided by the development agent on 2026-11-26 | (a) The Recognize stage marks a forward's context (`errs.WithBastionForward`), a Bastion marks its own (`errs.WithBastionAnswer`), and `errs.ProblemFor(r, err, requestID)` applies the mark; every writer of an error to a request calls it; kit check 19 holds a format to it | — |
+| [Q-BAS-435](spec/bastion.md#q-bas-435--the-anonymous-token-is-the-anonymous-caller-at-every-replica-and-every-bastion-and-no-key-signs-it) | The anonymous token is the anonymous caller at every replica and every Bastion, and no key signs it | Decided by the development agent on 2026-11-26 | (a) No key: a token is recognized by its unverified claim `a` alone, wherever it is presented, and dropped | — |
+| [Q-BAS-436](spec/bastion.md#q-bas-436--an-anonymous-token-request-is-one-without-a-credential-and-the-bastion-reads-neither-its-scope-nor-its-service) | An anonymous token request is one without a credential, and the Bastion reads neither its scope nor its service | Decided by the development agent on 2026-11-26 | (a) A `GET` without an `Authorization` header and a `POST` whose form holds no password and that carries none are answered with the token; an anonymous registry token presented with either is no credential (Q-BAS-168); an anonymous `HEAD` answers the token service's `405` at the Bastion; scope and service are not read | — |
+| [Q-BAS-437](spec/bastion.md#q-bas-437--the-anonymous-callers-copy-is-kept-also-without-a-validator-and-judged-as-a-cache-entry-is) | The anonymous caller's copy is kept also without a validator, and judged as a cache entry is | Decided by the development agent on 2026-11-26 | (a) The anonymous copy is kept with or without an `ETag`, served while `metadata_revalidate_after` has not passed since its validation and no `content` or `grants` entry of the feed that names its repository was received after it, judged as a cache entry (`freshFor`); after it a conditional request, or a plain one without a validator | — |
 
 </details>
 

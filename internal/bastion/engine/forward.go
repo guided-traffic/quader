@@ -371,7 +371,7 @@ func (e *engine) onAbsent(q *rq, resp *mainclient.Response, bl *baseline) {
 }
 
 // onPrivate handles a document filtered for the caller (R-BAS-023): the caller's last copy is kept in memory,
-// validated with a conditional request on every use.
+// validated with a conditional request on every use; the anonymous caller's for the metadata period (R-BAS-094).
 func (e *engine) onPrivate(q *rq, resp *mainclient.Response, sent time.Time, bl *baseline) {
 	e.markVolatileFor(q) // the document is filtered for this caller; a full reader's fetch is shareable
 	sub := q.subject
@@ -404,7 +404,9 @@ func (e *engine) onPrivate(q *rq, resp *mainclient.Response, sent time.Time, bl 
 		e.passThroughRest(q, resp, body, rest, metrics.ClassPrivate)
 		return
 	}
-	if etag := resp.Header.Get("Etag"); etag != "" {
+	// A copy without a validator is of no use to a caller whose copy is validated on every use; the anonymous caller's is served
+	// for the metadata period without one, and fetched again after it (Q-BAS-437).
+	if etag := resp.Header.Get("Etag"); etag != "" || q.cred.anonymous {
 		d := &privDoc{Answer: answerBase(answers.URL, sent, sub, q.repo), Status: resp.Status, Header: replayHeader(resp.Header, q.facts.ReplayHeaders), Body: body, ETag: etag}
 		e.privPut(q.cred.key, q.cacheKey, d)
 	}

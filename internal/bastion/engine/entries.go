@@ -137,12 +137,19 @@ func (e *engine) fresh(ent cache.Entry) bool {
 	if ent.Kind == cache.EntryDocument {
 		after = e.cfg.Cache.MetadataRevalidateAfter
 	}
+	return e.freshFor(ent.ValidatedAt, ent.Repository, after)
+}
+
+// freshFor reports whether what was validated at validatedAt for a repository may be served without a request: the period has
+// not passed and no feed entry that names the repository (or every permission answer) was received after validatedAt - 15 s. It
+// judges a cache entry and the anonymous caller's copy of a document alike (R-BAS-023, R-BAS-094).
+func (e *engine) freshFor(validatedAt time.Time, repo string, period time.Duration) bool {
 	st := answers.State{
-		Now: e.now(), Period: after, Log: e.d.Link.Feed(),
+		Now: e.now(), Period: period, Log: e.d.Link.Feed(),
 		// The history rule belongs to answers; an entry is judged by the period and the feed entries only.
-		HistoryStart: ent.ValidatedAt.Add(-answers.SkewMargin - time.Second),
+		HistoryStart: validatedAt.Add(-answers.SkewMargin - time.Second),
 	}
-	return st.Usable(answers.Answer{Kind: answers.URL, ObtainedAt: ent.ValidatedAt, Repository: ent.Repository})
+	return st.Usable(answers.Answer{Kind: answers.URL, ObtainedAt: validatedAt, Repository: repo})
 }
 
 // withdrawn reports whether a content entry of the feed names the entry's repository and was received after

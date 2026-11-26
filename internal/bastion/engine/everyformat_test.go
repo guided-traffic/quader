@@ -245,9 +245,10 @@ func TestR_BAS_051_TheRegistryRootIsAPathFamilyOfTheBastion(t *testing.T) {
 			t.Fatalf("anonymous off: %d %v %s", w.Code, w.Header(), w.Body)
 		}
 		s.setAnonymous(true)
-		before := s.main.count(mainclient.KindForward)
-		if w := s.get("/v2/_token?service=packages.example.com"); w.Code != http.StatusOK || s.main.count(mainclient.KindForward) != before+1 {
-			t.Fatalf("anonymous on: %d", w.Code)
+		// Answered by the Bastion itself (R-BAS-094): TestR_BAS_094_TheBastionAnswersAnAnonymousTokenRequestItself.
+		before := s.main.count()
+		if w := s.get("/v2/_token?service=packages.example.com"); w.Code != http.StatusOK || s.main.count() != before {
+			t.Fatalf("anonymous on: %d, %d requests", w.Code, s.main.count()-before)
 		}
 	})
 	t.Run("no registry root in the table: nothing below /v2/ is served", func(t *testing.T) {

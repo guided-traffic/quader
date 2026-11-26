@@ -129,14 +129,33 @@ func (e *engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if q.core != "" {
-			e.passCore(q)
+			e.core(q)
 			return
 		}
 		e.read(q)
 	case http.MethodOptions:
 		e.refuse(q, errs.E(errs.MethodNotAllowed, errs.CodeMethodNotAllowed, "This address serves GET and HEAD.", errs.WithAllow(http.MethodGet, http.MethodHead)), metrics.RefusedNotServed)
 	default:
+		if anonymousTokenRequest(q) {
+			if e.stepCredentials(q) {
+				e.answerAnonymousToken(q)
+			}
+			return
+		}
 		e.write(q)
+	}
+}
+
+// core answers a read of a core route of the registry root (R-BAS-051): an anonymous token request at the Bastion itself
+// (R-BAS-094), an anonymous HEAD of the token service with the token service's own 405, every other one forwarded.
+func (e *engine) core(q *rq) {
+	switch {
+	case anonymousTokenRequest(q):
+		e.answerAnonymousToken(q)
+	case q.core == coreToken && !q.hasAuth:
+		e.refuse(q, errs.E(errs.MethodNotAllowed, errs.CodeMethodNotAllowed, "The token service answers GET and POST.", errs.WithAllow(http.MethodGet, http.MethodPost)), metrics.RefusedNotServed)
+	default:
+		e.passCore(q)
 	}
 }
 

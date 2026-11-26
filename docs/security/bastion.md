@@ -47,7 +47,9 @@ whose disagreement with the main installation could serve bytes.
   Misses cost the attacker nothing, so they are absorbed: names the main installation does not have are answered from the
   negative cache to callers who read the whole repository (R-BAS-024), anonymous requests have stricter per-address limits and a
   per-address miss budget (R-BAS-035), and anonymous misses can hold only a share of the concurrency budget towards the main
-  installation (R-BAS-025). Spread over many addresses, they still take that share (H-388).
+  installation (R-BAS-025). Spread over many addresses, they still take that share (H-388). An anonymous token request is answered by
+  the Bastion itself, and a document filtered for the anonymous caller is kept for the metadata period, so neither reaches the main
+  installation per request (R-BAS-094).
 - **With guessed or stolen tokens.** A malformed token is refused without a request (R-AUTH-022's checksum). More than 20 failed
   authentications from one address put it into a timeout in which unverified credentials are refused without a request, while
   known credentials from that address keep working (R-BAS-036). Behind the Bastion, the main installation still applies its own
@@ -339,7 +341,7 @@ registry token's shape itself as well (Q-BAS-198). The cap stays on the reposito
 | Change | What it means for trust | Held by |
 |---|---|---|
 | `/v2/…` is served at the Bastion's host root | One more path family reaches the read flow. It is classified as the main installation's router reads it (an encoded or dot segment of the family, the project or the key is refused), and the main installation's backstop admits it as a forwarded family; nothing else below the host root is served | R-BAS-051, Q-BAS-121, Q-BAS-165 |
-| The registry's token flow passes through the Bastion | A client's Quader token reaches the Bastion in the Basic header or the form of a token request, and the registry token the main installation issues passes back through it. That is the trust the Bastion already holds for every caller's credential in transit; the token's answer is never kept, collapsed or logged, and the Bastion holds no key to issue or verify a registry token | R-BAS-051, Q-BAS-166 |
+| The registry's token flow passes through the Bastion | A client's Quader token reaches the Bastion in the Basic header or the form of a token request, and the registry token the main installation issues passes back through it. That is the trust the Bastion already holds for every caller's credential in transit; the token's answer is never kept, collapsed or logged, and the Bastion holds no key to issue or verify a registry token. An anonymous token request does not pass: the Bastion answers it with a token of its own that no key signs and every Bastion drops (R-BAS-094, [H-2350](#h-2350--anyone-can-mint-an-anonymous-registry-token-of-a-bastion)) | R-BAS-051, Q-BAS-166, Q-BAS-435 |
 | A registry token is a credential the Bastion cannot verify | Its form is checked and every decision about it is the main installation's (a forward, the check presented below `/v2/`). Its read shape is capped at `partial`: the decision point does not see the grant (`authz.Subject` has no member for it, verified by `TestR_BAS_080_TheDecisionPointDoesNotSeeTheGrant`), so an uncapped `full` would let a token granted one image read every cached image of its repository from the Bastion. The cap is built at the marking and at the check, an anonymous registry token's included (`bastionmain.CapRegistryShape`) | R-BAS-052, Q-BAS-167 |
 | A token answer's marking names the token service's caller | The marking states the Quader token the token service accepted, not the anonymous caller the chain saw on `/v2/_token`, so a Bastion never takes a narrowed token for the anonymous caller from a token answer | R-BAS-051, Q-BAS-187 |
 | The check verifies a registry token on every replica | The check's stage counts its paths as served, so the answer for a registry token does not depend on the families the replica that answers the interface serves | R-BAS-052, Q-BAS-190 |
@@ -386,14 +388,14 @@ request per manifest and blob; measured on 2026-11-23, a warm pull of ten layers
 The owner's decisions of 2026-11-26 (W-34; [spec/bastion.md](../spec/bastion.md#limits-configuration-and-throughput-from-the-main-installation)
 R-BAS-093 to R-BAS-099, [ADR-300](../decisions.md#adr-300--a-bastion-is-a-place-of-the-download-limits-configured-from-the-main-installation-and-names-nothing-of-it)),
 **specified and not built**, except the rows of R-BAS-099 that package E16 built on 2026-11-26 (the texts, the problem type, the
-policy names, the header allowlist, the check of `Location`, the forward's problems at the main installation and the replays' scan); the
-build plan is [developer/bastion-limits.md](../developer/bastion-limits.md). What they change in the trust boundary once their packages
+policy names, the header allowlist, the check of `Location`, the forward's problems at the main installation and the replays' scan) and
+the anonymous token and anonymous documents of R-BAS-094 that package E14a built the same day; the build plan is [developer/bastion-limits.md](../developer/bastion-limits.md). What they change in the trust boundary once their packages
 have landed:
 
 | Change | What it means for trust | Held by |
 |---|---|---|
 | The configuration comes from the main installation | The Bastion applies what its link delivers: its figures, its switches and its place's rules are the main installation's word, as every answer already is. Whoever can answer as the main installation sets them ([H-2280](#h-2280--whoever-answers-as-the-main-installation-sets-a-bastions-limits-and-switches)); a replica that cannot reach it keeps its last configuration, stored and signed in its cache backend, or fails closed ([H-2285](#h-2285--a-replica-restarted-during-an-outage-without-its-stored-configuration-applies-the-built-in-one)) | R-BAS-093, Q-BAS-327 |
-| Less of the internet reaches the main installation | Writes are refused at the Bastion, anonymous token requests are answered there, anonymous documents are kept for the metadata period, and a ceiling bounds what all anonymous callers of a Bastion cause together; a write never reaches the main installation's routing, so Q-BAS-118's admission of probes goes | R-BAS-094, R-BAS-095 |
+| Less of the internet reaches the main installation | Writes are refused at the Bastion, anonymous token requests are answered there, anonymous documents are kept for the metadata period, and a ceiling bounds what all anonymous callers of a Bastion cause together; a write never reaches the main installation's routing, so Q-BAS-118's admission of probes goes. *Built by E14a:* the anonymous token and the anonymous documents. The Bastion issues a token without a key: it is worth a request without a credential, anyone can mint one, and the main installation refuses it ([H-2350](#h-2350--anyone-can-mint-an-anonymous-registry-token-of-a-bastion)); a withdrawal reaches a kept anonymous document through the feed ([H-2351](#h-2351--a-withdrawal-reaches-an-anonymous-callers-kept-document-within-the-feeds-bound-no-longer-at-its-next-read)) | R-BAS-094, R-BAS-095, Q-BAS-435 |
 | Budgets per subject at the Bastion | A hit is counted against the caller's budget at the Bastion's place, which narrows [H-1381](../spec/bastion.md#h-1381--the-main-installations-limits-and-blocks-do-not-reach-hits-from-per-package-answers); the subject key and the applying rule come from the main installation, which names more of each caller to the Bastion than the marking did ([H-2281](#h-2281--the-check-answer-names-each-callers-subject-key-and-rule-to-the-bastion)) | R-BAS-096, Q-BAS-328 |
 | A cap on the bytes between the two | The Bastion paces every body it reads; a Bastion that was taken over ignores its own cap ([H-2289](#h-2289--a-bastion-that-was-taken-over-ignores-its-throughput-cap)) | R-BAS-097 |
 | The Bastion reports usage and state | The main installation stores what a Bastion says it served; it is the Bastion's word ([H-2282](#h-2282--the-usage-and-the-state-a-bastion-reports-are-its-word)) | R-BAS-016, R-LIM-045 |
@@ -405,7 +407,8 @@ have landed:
 The gaps of the Bastion's mechanisms are recorded on the spec page, where the mechanisms are, and only linked here. The one gap
 that no mechanism of the Bastion holds, because the chart leaves it to the cluster operator, is recorded on this page:
 [H-522](#h-522--the-chart-restricts-no-egress-of-the-bastion-pods). The gaps of the owner's decisions of 2026-11-26 (W-34), specified and
-not built, are recorded on this page as well, each with the package whose mechanism has it: H-2280 to H-2283, H-2285 and H-2289 to H-2297;
+not built, are recorded on this page as well, each with the package whose mechanism has it: H-2280 to H-2283, H-2285, H-2289 to H-2297,
+H-2350 and H-2351;
 those of a Bastion's budgets are on [usage-and-limits.md](usage-and-limits.md#what-this-does-not-cover) (H-2284, H-2286 to H-2288). Numbers
 marked [derived] are calculated from the defaults, not measured.
 
@@ -677,12 +680,13 @@ token forward any client address from any address in the prefix, which is H-386'
 
 ### H-2292 · Anonymous documents are kept for the metadata period
 
-Stage: R-BAS-094, R-BAS-023 (package E14a). Subject: anonymous callers of a repository whose metadata changes. Live once E14a lands. A
-narrowing the feed does not carry reaches anonymous callers within `metadata_revalidate_after` (1 minute by default), as it reaches full
-readers of a shared document today
+Stage: R-BAS-094, R-BAS-023 (package E14a, built). Subject: anonymous callers of a repository whose metadata changes. Live on every
+Bastion whose main installation admits anonymous reads. A narrowing the feed does not carry reaches anonymous callers within
+`metadata_revalidate_after` (1 minute by default), as it reaches full readers of a shared document
 ([H-384](../spec/bastion.md#h-384--a-version-newly-published-appears-at-the-bastion-only-after-the-metadata-period),
-[H-385](../spec/bastion.md#h-385--a-withdrawal-the-feed-does-not-carry-reaches-the-bastion-within-the-artifact-revalidation-period)); until
-E14a an anonymous private document is revalidated on every use.
+[H-385](../spec/bastion.md#h-385--a-withdrawal-the-feed-does-not-carry-reaches-the-bastion-within-the-artifact-revalidation-period)), and
+so does a new version. Before E14a an anonymous private document was revalidated on every use. What the feed carries (an unpublish, a
+deletion, a block set in triage, a lowered visibility) ends the copy within the feed's bound ([H-2351](#h-2351--a-withdrawal-reaches-an-anonymous-callers-kept-document-within-the-feeds-bound-no-longer-at-its-next-read)).
 
 ### H-2293 · A read route with a body that a format does not declare is refused
 
@@ -725,3 +729,26 @@ Stage: R-OCI-005's payload version 2, Q-BAS-339 (package E17). Subject: a caller
 after E17: the grant `g` stays readable, so a caller learns which of the repositories and images it asked for the token service granted,
 which a pull with the token tells as well. Every other claim is sealed by E17; until then the payload names the endpoint, the principal and
 the underlying token (R-BAS-099 row 8).
+
+### H-2350 · Anyone can mint an anonymous registry token of a Bastion
+
+Stage: R-BAS-094, Q-BAS-335, Q-BAS-435 (package E14a, built). Subject: what an anonymous registry token is worth, and what the main
+installation counts of anonymous pulls. Live on every Bastion whose main installation admits anonymous reads. The token's MAC is random
+bytes that nobody verifies, so whoever writes `1:bastion:{"a":true,…}` in the registry token's form, or any token whose readable claim
+`a` is true, has one, at any Bastion; and any Bastion drops it and serves the anonymous caller (Q-BAS-168). What it gains: exactly what a
+request without a credential gains there, nothing more: the anonymous caller's answers, its limits and slots, its ceiling once E9a lands.
+At the main installation the key ID `bastion` names no key, so the token is refused `401` there. What it costs the operator: the main
+installation's `quader_oci_registry_tokens_total{outcome="anonymous"}` and its request log no longer count the anonymous pulls through a
+Bastion; the Bastion's `quader_bastion_requests_total{class="pass",result="hit"}` counts them with its other own `pass` answers. What would
+close the counting: a series of the Bastion's own for its tokens, not added because every token request already shows in the Bastion's
+request log with its path.
+
+### H-2351 · A withdrawal reaches an anonymous caller's kept document within the feed's bound, no longer at its next read
+
+Stage: R-BAS-094, R-BAS-023, Q-BAS-437 (package E14a, built). Subject: anonymous callers of a repository the main installation filters for
+them (for example one whose artifacts are public and whose wiki is not, Q-BAS-149). Live on every Bastion whose main
+installation admits anonymous reads. Before E14a the anonymous caller's document was revalidated on every use, so an unpublish, a deletion,
+a block set in triage or a lowered visibility reached it at its next read. Now the content and grants entries of the feed end the copy
+(rule 3 of R-BAS-020, `freshFor`), which reaches every replica within the feed's poll interval and one round trip, the bound of the
+revocations (R-BAS-026: within 5 s); a full reader's shared document has the same bound. A withdrawal the feed
+does not carry is H-2292's. What makes it real: an anonymous `npm install` through a Bastion within the seconds after an unpublish.

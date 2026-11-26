@@ -70,7 +70,8 @@ func isFull(shape *answerVal) bool { return shape != nil && shape.Read == iface.
 //
 //   - Step 2, allowed: the caller's shape on the repository is full, or the entry names a package and the caller's package
 //     answer on it is full, or the caller's URL answer allows the key.
-//   - Step 3: allowed, not withdrawn and fresh (or the main installation unreachable): served.
+//   - Step 3: allowed, not withdrawn and fresh (or the main installation unreachable): served. Not allowed, the anonymous
+//     caller's fresh copy of the document is served (R-BAS-094).
 //   - Step 4: no usable shape answer (and no URL answer that allows): one check for the repository and the entry's package,
 //     collapsed per credential, repository and package; then steps 2 and 3, or the conditional request.
 //   - Steps 5 and 6: everything else is the conditional request. A caller whose shape is known and partial and who has no
@@ -91,6 +92,9 @@ func (e *engine) fromEntry(q *rq, ent cache.Entry, shape, url *answerVal) bool {
 		if isFull(shape) {
 			e.refreshShape(q, shape)
 		}
+		return true
+	}
+	if e.fromAnonymousCopy(q) {
 		return true
 	}
 	if unreachable {
@@ -142,9 +146,12 @@ func (e *engine) fromNegative(q *rq, shape *answerVal) bool {
 	return true
 }
 
-// fromPrivateOrMiss handles a request without a usable entry: the caller's private copy is validated with a
-// conditional request, anything else is a miss.
+// fromPrivateOrMiss handles a request without a usable entry: the anonymous caller's fresh copy is served, the caller's
+// private copy is validated with a conditional request, anything else is a miss.
 func (e *engine) fromPrivateOrMiss(q *rq) (again bool) {
+	if e.fromAnonymousCopy(q) {
+		return false
+	}
 	if priv := e.privGet(q.cred.key, q.cacheKey); priv != nil {
 		if !e.d.Link.Reachable() {
 			if e.privUsable(priv) {
@@ -177,6 +184,23 @@ func (e *engine) serveEntry(q *rq, ent cache.Entry, result string) bool {
 	}
 	q.finish(class, result)
 	return true
+}
+
+// fromAnonymousCopy serves the anonymous caller's copy of a document without a request while it is fresh (R-BAS-094,
+// R-BAS-023): the main installation's decision for the anonymous subject is the same for every anonymous caller (R-BAS-019,
+// R-AUTHZ-029), so the copy it filtered for one of them is every anonymous caller's, and it is kept like a shared document: for
+// bastion.cache.metadata_revalidate_after since its last validation, and no longer once a content or grants entry of the feed
+// that names its repository was received after it (rule 3 of R-BAS-020), judged as a cache entry is (freshFor). It reports
+// whether it answered the request. A copy of a caller with a token is still validated on every use.
+func (e *engine) fromAnonymousCopy(q *rq) bool {
+	if !q.cred.anonymous {
+		return false
+	}
+	d := e.privGet(q.cred.key, q.cacheKey)
+	if d == nil {
+		return false
+	}
+	return e.freshFor(d.ObtainedAt, d.Repository, e.cfg.Cache.MetadataRevalidateAfter) && e.servePrivate(q, d, metrics.ResultHit)
 }
 
 // servePrivate serves the caller's private copy of a document.

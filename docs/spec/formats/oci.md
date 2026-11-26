@@ -220,8 +220,9 @@ The registry uses the token flow of the Docker registry token authentication spe
   (R-AUTHZ-016).
 - **Realm.** The realm is built from the response base URL of the endpoint the request arrived on (R-EP-003), so it is
   reachable under every host the endpoint serves; on a bound host it is that host's own `/v2/_token` (R-EP-007). Through a Bastion it
-  is the Bastion's `/v2/_token`, which forwards the token request to this token service ([bastion.md](../bastion.md#r-bas-051--the-registry-root-at-a-bastion)
-  R-BAS-051).
+  is the Bastion's `/v2/_token`, which forwards a token request with a credential to this token service ([bastion.md](../bastion.md#r-bas-051--the-registry-root-at-a-bastion)
+  R-BAS-051) and answers an anonymous one with a token of its own that every Bastion drops and this token service never sees
+  ([bastion.md](../bastion.md#r-bas-094--what-an-anonymous-request-may-cause-at-the-main-installation) R-BAS-094).
 - **Kubernetes** pulls with an image pull secret whose password is a Quader token (PKG-DOCKER-015); the kubelet's container
   runtime follows the same flow.
 

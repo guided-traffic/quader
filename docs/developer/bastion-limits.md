@@ -2,7 +2,8 @@
 
 Status: specified on 2026-11-26 (W-34; the owner's answers to the working paper of W-34 and W-35, stored at 11:51). Packages E1, E2, E3
 and E5 are **built** (the cache bounded at every commit and the bytes counted, R-BAS-089, R-BAS-090; the format's cap of the wait and the
-figures that let one normal command through, R-BAS-091, R-BAS-092, interface version 7); E6 is this page and the specification. Every other
+figures that let one normal command through, R-BAS-091, R-BAS-092, interface version 7), and so is E14a (the anonymous token and the
+anonymous documents of R-BAS-094); E6 is this page and the specification. Every other
 package is **not built**. The requirements are [bastion.md](../spec/bastion.md#limits-configuration-and-throughput-from-the-main-installation)
 R-BAS-093 to R-BAS-099 and [its wire](../spec/bastion.md#the-interface-version-8-the-shared-wire),
 [usage-and-limits.md](../spec/usage-and-limits.md#a-bastion-as-a-place) R-LIM-043 to R-LIM-046 and
@@ -45,7 +46,7 @@ At most four builders at once (rule 10 of the project plan). The waves are the o
 | 1 | E6 | this specification | — | written |
 | 2 | E7 | the shared wire, interface version 8, with W-35's P5 | E6, E2, W-35's wire | not built |
 | 2 | E16 | nothing of the main installation in a Bastion's answers | E2 + E3 | built |
-| 2 | E14a | anonymous requests answered without the main installation | E6 | not built |
+| 2 | E14a | anonymous requests answered without the main installation | E6 | built |
 | 2 | E13 | egress addresses on the registration | E6 | not built |
 | 3 | E8 | the main installation's side | E7, W32, W36, E4 | not built |
 | 3 | E9a | the configuration at the Bastion, flood protection, the anonymous ceiling | E7, E4 | not built |
@@ -167,6 +168,18 @@ At most four builders at once (rule 10 of the project plan). The waves are the o
   `exp`, which `iface.RegistryTokenAnonymous` reads today, so E14a does not wait for E7.
 - **Tests**: unit under 1 s; integration area `bastion`, one case of about 3 s.
 - **Identifiers**: Q-BAS-335, H-2292.
+- *Built on 2026-11-26.* As planned, with no interface change: `answerAnonymousToken` in
+  [registry.go](../../internal/bastion/engine/registry.go) and the dispatch of an anonymous token request in `request.go` (`core`); the
+  anonymous copy in [readflow.go](../../internal/bastion/engine/readflow.go) (`fromAnonymousCopy`), judged by `freshFor` in `entries.go`,
+  which a cache entry's `fresh` uses as well; `onPrivate` in `forward.go` keeps the anonymous copy also without an `ETag`. No metric was
+  added: the Bastion's own token answers count as `quader_bastion_requests_total{class="pass",result="hit"}` and a kept anonymous document as
+  `{class="private",result="hit"}`, neither of which is a `quader_bastion_main_requests_total`. Decisions Q-BAS-435 to Q-BAS-437 of
+  [spec/bastion.md](../spec/bastion.md#q-bas-435--the-anonymous-token-is-the-anonymous-caller-at-every-replica-and-every-bastion-and-no-key-signs-it);
+  gaps H-2350 and H-2351 of [security/bastion.md](../security/bastion.md#h-2350--anyone-can-mint-an-anonymous-registry-token-of-a-bastion).
+  Tests: the engine's `TestR_BAS_094_TheBastionAnswersAnAnonymousTokenRequestItself` and
+  `TestR_BAS_094_AnAnonymousDocumentIsKeptForTheMetadataPeriod` (about 0.05 s together, documents of bytes) and the area `bastion`'s
+  `TestR_BAS_094_AnAnonymousPullAndAnAnonymousDocumentSpareTheMainInstallation` (about 7 s with its world, an image of two blobs of 1 KiB
+  and one npm document).
 
 ### E15 · Writes refused at the Bastion
 
@@ -233,7 +246,7 @@ H-2298 and H-2299 are spare.
 | E11 | unit | none | under 0.5 s |
 | E12 | Vitest; renders | fixtures | about 4 s; renders |
 | E13 | unit; integration `bastionreg` | rows | 3 s |
-| E14a | unit; integration `bastion` | bytes | under 1 s; 3 s |
+| E14a | unit; integration `bastion` | bytes | 0.05 s; 7 s with its world (measured) |
 | E15 | unit; kit; integration `write_test` | bytes | under 1 s; 20 ms per format; falls |
 | E16 | unit; the replays' scan | existing | 1 s; about 0 s |
 | E17 | unit; existing replays | none | milliseconds |
