@@ -4,7 +4,7 @@ Status: specified on 2026-11-26 (W-34; the owner's answers to the working paper 
 and E5 are **built** (the cache bounded at every commit and the bytes counted, R-BAS-089, R-BAS-090; the format's cap of the wait and the
 figures that let one normal command through, R-BAS-091, R-BAS-092, interface version 7), and so are E16, E14a (the anonymous token and
 the anonymous documents of R-BAS-094), E13 (the addresses a Bastion connects from), E7 (the shared wire, interface version 8, with
-W-35's P5) and E15 (writes refused at the Bastion in the five error shapes, R-BAS-095); E4 is measured ([bastion.md](bastion.md#what-a-clients-command-costs-through-a-bastion-measured-2026-11-26)); E6 is this
+W-35's P5) and E15 (writes refused at the Bastion in the five error shapes, R-BAS-095) and E9a (the configuration at the Bastion, the flood protection's figures from it, the anonymous ceiling); E4 is measured ([bastion.md](bastion.md#what-a-clients-command-costs-through-a-bastion-measured-2026-11-26)); E6 is this
 page and the specification. Every other package is **not built**. The requirements are [bastion.md](../spec/bastion.md#limits-configuration-and-throughput-from-the-main-installation)
 R-BAS-093 to R-BAS-099 and [its wire](../spec/bastion.md#the-interface-version-8-the-shared-wire),
 [usage-and-limits.md](../spec/usage-and-limits.md#a-bastion-as-a-place) R-LIM-043 to R-LIM-046 and
@@ -29,8 +29,8 @@ must follow, the identifiers it takes, and what its tests cost.
   header or page. Every package that touches an answer of the Bastion keeps the integration scan of R-BAS-099 green.
 - **One raise of the interface version, 7 to 8, by E7 together with W-35's P5** (Q-BAS-322). No other package changes the wire; a member a
   package needs and the wire lacks is a change of E7's work and of the specification first.
-- **Today's code** is at interface version 8 (E7): the handshake carries `configuration`, until E8 an interim one; the Bastion's figures are chart values
-  (`config.bastion.limits`, `failed_auth`, `blocking`, `main.max_concurrent`, `anonymous_share`, `queue_timeout`); a write is refused at
+- **Today's code** is at interface version 8 (E7): the handshake carries `configuration`, until E8 an interim one, which the Bastion applies
+  whole since E9a (`settings.Holder`): the flood figures, the slots and the anonymous ceiling are no chart values any more; a write is refused at
   the Bastion itself since E15 ([write.go](../../internal/bastion/engine/write.go)), every answer of its own in the format's error shape
   ([shape.go](../../internal/bastion/engine/shape.go)); the main
   installation's egress list was `bastions.trusted_proxies` (`internal/config/bastions.go`) until E13 made it each registration's `egress`;
@@ -52,7 +52,7 @@ At most four builders at once (rule 10 of the project plan). The waves are the o
 | 2 | E14a | anonymous requests answered without the main installation | E6 | built |
 | 2 | E13 | egress addresses on the registration | E6 | built |
 | 3 | E8 | the main installation's side | E7, W32, W36, E4 | not built |
-| 3 | E9a | the configuration at the Bastion, flood protection, the anonymous ceiling | E7, E4 | not built |
+| 3 | E9a | the configuration at the Bastion, flood protection, the anonymous ceiling | E7, E4 | built |
 | 3 | E10 | the throughput | E7 | not built |
 | 3 | E15 | writes refused at the Bastion | E7 | built |
 | 4 | E9b | budgets on what the Bastion serves | E9a, E8 | not built |
@@ -133,6 +133,22 @@ At most four builders at once (rule 10 of the project plan). The waves are the o
 - **Tests**: unit about 1 s; the chart test; integration area `bastion` about 3 s (a change made through the API is applied within the
   feed's time).
 - **Identifiers**: Q-BAS-326, Q-BAS-327, H-2285.
+- *Built on 2026-11-26.* The package [internal/bastion/settings](../../internal/bastion/settings): `Holder.Apply` applies the handshake's
+  member whole and atomically (one immutable `Applied`, Q-BAS-446), a request reads it once (`settings.With`, `Holder.For`), `LoadStored`
+  and `Builtin` (Q-BAS-327), the metrics `quader_bastion_configuration_revision` and `_source`; the link hands every handshake's member to
+  it. The guard reads its figures through `Options.Figures` and has the class `gui` (`Page`, Q-LIM-307); `SlotBudget.Resize`; the ceiling
+  `guard.Ceiling`, taken in the slot budget after the slot by every request of the anonymous class, the background refresh included
+  (Q-BAS-445, `mainclient.CeilingError`, `reason="anonymous_ceiling"`); the stored object `configuration/current.json`
+  (`cache.Cache.StoreConfiguration`, signed in the domain `configuration`, sealed with a cache key) applied by `Server.Start` before the client
+  listener binds; a Valkey limiter whose figures change is replaced under its name (`cluster.LimiterSet.SetLimiter`, Q-BAS-449). The chart
+  lost `config.bastion.limits`, `failed_auth`, `blocking` and `main.max_concurrent`, `anonymous_share`, `queue_timeout` (no alias),
+  `_validate.tpl`'s edge check, and gained `edgeLimit.exemptCIDRs` and the chart-managed `bastion.edge_limit`, which every handshake reports
+  (Q-BAS-447). The defaults (Q-BAS-448): ceiling 100 a second, burst 2,000, 36,000 an hour; slots 64, 0.25 and a wait of 5 s; the reasoning
+  with what each client's cold command gets is in R-BAS-094 and R-BAS-096. Decisions Q-BAS-445 to Q-BAS-449, gaps H-2356 and H-2357.
+- *What E9a left:* the status of the reporting batch (`ReplicaStatus`, which the wire's text gave to "E8 and E9a"): no package sends it yet;
+  E12's live state needs it, and E9b's flush is where it is cheapest to add. Until E8 the interim configuration holds no ceiling and a 2 s
+  wait (H-2357), and a change reaches a Bastion with its regular handshake (the `settings` entry of the feed is E8's), so the integration
+  case takes the 5 s handshake of the harness, not 3 s. `mode`, `preset`, `place` and `throughput` are read by nothing yet (E9b, E10).
 
 ### E9b · Budgets on what the Bastion serves
 
@@ -286,7 +302,7 @@ H-2298 and H-2299 are spare.
 |---|---|---|---|
 | E7 | unit, interface guard | none | under 0.5 s |
 | E8 | unit; integration `bastionreg`, `limits` | rows | 1.5 s; 3 s; 4 s |
-| E9a | unit; chart test; integration `bastion` | none | 1 s; chart; 3 s |
+| E9a | unit; chart test; integration `bastion`, `bastionshared` | none to bytes | 1 s; chart; 9 s (two cases); 0.2 s (measured: see E9a's entry) |
 | E9b | unit; integration `bastionshared`, `bastion` | bytes | 2 s; 2 s; 5 s |
 | E10 | unit (injected clock); integration with Valkey | bytes | under 1 s; 3 s |
 | E11 | unit | none | under 0.5 s |

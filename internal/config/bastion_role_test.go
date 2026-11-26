@@ -65,9 +65,6 @@ func TestR_BAS_001_TheRoleLoadsWithTheMinimalKeysAndTheSpecDefaults(t *testing.T
 		{"answers.grace_period", b.Answers.GracePeriod, 15 * time.Minute},
 		{"answers.max_entries", b.Answers.MaxEntries, 200000},
 		{"feed.poll_interval", b.Feed.PollInterval, 2 * time.Second},
-		{"main.max_concurrent", b.Main.MaxConcurrent, 64},
-		{"main.anonymous_share", b.Main.AnonymousShare, 0.25},
-		{"main.queue_timeout", b.Main.QueueTimeout, 2 * time.Second},
 		{"main.max_forwarded_body", b.Main.MaxForwardedBody, 8 * MiB},
 		{"main.unreachable_after", b.Main.UnreachableAfter, 10 * time.Second},
 		{"main.token_reload_interval", b.Main.TokenReloadInterval, 10 * time.Second},
@@ -79,15 +76,7 @@ func TestR_BAS_001_TheRoleLoadsWithTheMinimalKeysAndTheSpecDefaults(t *testing.T
 		{"cache.volume.dir", b.Cache.Volume.Dir, "/var/cache/quader-bastion"},
 		{"cache.bucket.prefix", b.Cache.Bucket.Prefix, "quader-bastion"},
 		{"cache.bucket.credentials.source", b.Cache.Bucket.Credentials.Source, "static"},
-		{"limits.authenticated.rps", b.Limits.Authenticated.RequestsPerSecond, 200},
-		{"limits.authenticated.burst", b.Limits.Authenticated.Burst, 4000},
-		{"limits.anonymous.rps", b.Limits.Anonymous.RequestsPerSecond, 50},
-		{"limits.anonymous.burst", b.Limits.Anonymous.Burst, 1000},
-		{"limits.misses.authenticated", b.Limits.Misses.AuthenticatedPerMinute, 4000},
-		{"limits.misses.anonymous", b.Limits.Misses.AnonymousPerMinute, 1000},
-		{"failed_auth.max_failures", b.FailedAuth.MaxFailures, 20},
-		{"blocking.threshold", b.Blocking.Threshold, 3000},
-		{"blocking.max_duration", b.Blocking.MaxDuration, 24 * time.Hour},
+		{"edge_limit.enabled", b.EdgeLimit.Enabled, false},
 		{"audit.buffer_events", b.Audit.BufferEvents, 100000},
 		{"audit.spool_max_events", b.Audit.SpoolMaxEvents, 1000000},
 		{"token.warn_before", b.Token.WarnBefore, 720 * time.Hour},
@@ -163,15 +152,11 @@ func TestR_BAS_046_TheRangesOfTheSpecificationAreEnforced(t *testing.T) {
 		{"feed.poll_interval below 1s", "feed:\n    poll_interval: 500ms\n", "bastion.feed.poll_interval"},
 		{"feed.poll_interval above 10s", "feed:\n    poll_interval: 11s\n", "bastion.feed.poll_interval"},
 		{"unreachable_after under 3 polls", "feed:\n    poll_interval: 5s\n  main:\n    unreachable_after: 10s\n", "bastion.main.unreachable_after"},
-		{"anonymous_share above 1", "main:\n    anonymous_share: 1.5\n", "bastion.main.anonymous_share"},
 		{"an unknown backend", "cache:\n    backend: disk\n", "bastion.cache.backend"},
 		{"documents above the cache", "cache:\n    max_bytes: 1GiB\n", "bastion.cache.documents_max_bytes"},
 		{"the bucket backend without a bucket", "cache:\n    backend: bucket\n", "bastion.cache.bucket.bucket"},
 		{"a plain http bucket endpoint", "cache:\n    backend: bucket\n    bucket:\n      bucket: b\n      endpoint: http://s3.example.com\n", "bastion.cache.bucket.endpoint"},
-		{"anonymous limit above the authenticated one", "limits:\n    anonymous:\n      requests_per_second: 250\n", "bastion.limits.anonymous.requests_per_second"},
-		{"failed_auth.window above the limiters' 12h", "failed_auth:\n    window: 13h\n", "bastion.failed_auth.window"},
-		{"failed_auth.window below 1s", "failed_auth:\n    window: 500ms\n", "bastion.failed_auth.window"},
-		{"an exempt entry that is no address", "blocking:\n    exempt_cidrs: [nope]\n", "bastion.blocking.exempt_cidrs"},
+		{"a negative edge figure", "edge_limit:\n    requests_per_second: -1\n", "bastion.edge_limit.requests_per_second"},
 		{"a batch above the buffer", "audit:\n    buffer_events: 100\n", "bastion.audit.batch_size"},
 	}
 	for _, c := range cases {
@@ -227,6 +212,7 @@ func TestR_BAS_046_TheChartManagedKeysAreMarkedInTheSchema(t *testing.T) {
 		"server.ops_tls.inherit": true, "server.ops_tls.certificates": true,
 		"bastion.main.token_file": true, "bastion.main.ca_file": true, "bastion.signing_key_file": true,
 		"bastion.cache.volume.dir": true, "bastion.cache.bucket.ca_file": true, "bastion.replicas": true, "bastion.cache.encryption_key_file": true,
+		"bastion.edge_limit.enabled": true, "bastion.edge_limit.requests_per_second": true, "bastion.edge_limit.connections": true,
 		"bastion.cache.bucket.credentials.access_key_id_file": true, "bastion.cache.bucket.credentials.secret_access_key_file": true,
 		"valkey.username_file": true, "valkey.password_file": true, "valkey.sentinel.username_file": true, "valkey.sentinel.password_file": true, "valkey.tls.ca_file": true, "tracing.ca_file": true,
 	}
@@ -358,11 +344,26 @@ func TestR_BAS_005_ABastionTokenIsNoEndpointCredential(t *testing.T) {
 	}
 }
 
-// TestR_BAS_036_TheLongestFailedAuthWindowIsTheLongestWindowOfTheLimiter: the configuration accepts the window the
-// limiter counts and nothing beyond it, so a configured value is never counted shorter than written (Q-BAS-128).
-func TestR_BAS_036_TheLongestFailedAuthWindowIsTheLongestWindowOfTheLimiter(t *testing.T) {
-	file := strings.Replace(bastionMinimal, "bastion:\n", "bastion:\n  failed_auth:\n    window: 12h\n", 1)
-	if got := mustLoadBastion(t, file).Bastion.FailedAuth.Window; got != 12*time.Hour {
-		t.Fatalf("failed_auth.window = %s, want 12h", got)
+// TestR_BAS_093_AKeyThatMovedIntoTheConfigurationStopsStartupNamingIt: the flood figures, the failed-authentication timeout,
+// the blocking and the slots come from the registration at the main installation (R-BAS-093); a file that still sets one of
+// their keys stops startup with an error that names the key and the role, with no alias that reads it.
+func TestR_BAS_093_AKeyThatMovedIntoTheConfigurationStopsStartupNamingIt(t *testing.T) {
+	for _, c := range []struct{ patch, want string }{
+		{"limits:\n    anonymous:\n      requests_per_second: 50\n", "bastion.limits.anonymous.requests_per_second"},
+		{"limits:\n    misses:\n      anonymous_per_minute: 1000\n", "bastion.limits.misses.anonymous_per_minute"},
+		{"failed_auth:\n    window: 10m\n", "bastion.failed_auth.window"},
+		{"blocking:\n    exempt_cidrs: [198.51.100.0/24]\n", "bastion.blocking.exempt_cidrs"},
+	} {
+		msg := bastionIssues(t, strings.Replace(bastionMinimal, "bastion:\n", "bastion:\n  "+c.patch, 1))
+		if !strings.Contains(msg, c.want) || !strings.Contains(msg, "the role bastion") {
+			t.Errorf("error does not name %q and the role:\n%s", c.want, msg)
+		}
+	}
+	for _, key := range []string{"max_concurrent: 64", "anonymous_share: 0.25", "queue_timeout: 2s"} {
+		msg := bastionIssues(t, strings.Replace(bastionMinimal, "bastion:\n  main:\n", "bastion:\n  main:\n    "+key+"\n", 1))
+		want := "bastion.main." + strings.SplitN(key, ":", 2)[0]
+		if !strings.Contains(msg, want) || !strings.Contains(msg, "the role bastion") {
+			t.Errorf("error does not name %q and the role:\n%s", want, msg)
+		}
 	}
 }

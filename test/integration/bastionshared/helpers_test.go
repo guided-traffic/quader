@@ -22,7 +22,9 @@ import (
 
 	"github.com/guided-traffic/quader/internal/bastion/cache"
 	"github.com/guided-traffic/quader/internal/bastion/guard"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
 	"github.com/guided-traffic/quader/internal/bastion/metrics"
+	"github.com/guided-traffic/quader/internal/bastion/settings"
 	"github.com/guided-traffic/quader/internal/bastion/shared"
 	"github.com/guided-traffic/quader/internal/config"
 	"github.com/guided-traffic/quader/test/integration/testenv"
@@ -191,7 +193,10 @@ type setup struct {
 	unreachable bool
 	clk         *clock
 	signer      *cache.Signer
-	mutate      func(*guard.Options)
+	mutate      func(*iface.Flood)
+	// figures is the configuration both replicas' guards decide with; a test applies another one to change their figures
+	// while they run (R-BAS-093).
+	figures *settings.Holder
 }
 
 // newSetup is a Bastion of two replicas on its own key prefix.
@@ -207,17 +212,23 @@ func newSetup(t *testing.T) *setup {
 	return &setup{prefix: "it-" + randHex(4) + ".example.com", replicas: 2, clk: newClock(), signer: s}
 }
 
-// defaults are the defaults of R-BAS-035 to R-BAS-037.
-func defaults() guard.Options {
-	return guard.Options{
-		Limits: config.BastionLimits{
-			Authenticated: config.BastionLimitAuthenticated{RequestsPerSecond: 50, Burst: 200},
-			Anonymous:     config.BastionLimitAnonymous{RequestsPerSecond: 10, Burst: 40},
-			Misses:        config.BastionMisses{AuthenticatedPerMinute: 300, AnonymousPerMinute: 30},
-		},
-		FailedAuth: config.BastionFailedAuth{MaxFailures: 20, Window: 10 * time.Minute, Timeout: 15 * time.Minute},
-		Blocking:   config.BastionBlocking{Threshold: 300, Window: time.Minute, Duration: 15 * time.Minute, MaxDuration: 24 * time.Hour},
+// defaults are the flood figures the tests of R-BAS-035 to R-BAS-037 count against.
+func defaults() iface.Flood {
+	return iface.Flood{
+		Anonymous:      iface.FloodClass{RequestsPerSecond: 10, Burst: 40, MissesPerMinute: 30},
+		Authenticated:  iface.FloodClass{RequestsPerSecond: 50, Burst: 200, MissesPerMinute: 300},
+		GUI:            iface.FloodRate{RequestsPerSecond: 20, Burst: 100},
+		FailedAuth:     iface.FailedAuth{MaxFailures: 20, WindowSeconds: 600, TimeoutSeconds: 900},
+		Blocking:       iface.Blocking{Threshold: 300, WindowSeconds: 60, DurationSeconds: 900, MaxDurationSeconds: 86400},
+		ExemptNetworks: []string{},
 	}
+}
+
+// withFlood is the built-in configuration at revision rev with the flood figures f.
+func withFlood(rev int64, f iface.Flood) iface.Configuration {
+	c := settings.Builtin()
+	c.Revision, c.Limits.Flood = rev, f
+	return c
 }
 
 // replica starts replica n of the Bastion.
@@ -237,12 +248,17 @@ func (s *setup) replica(t *testing.T, n int) *replica {
 	}
 	t.Cleanup(func() { _ = closer.Close() })
 	r.st = st
-	o := defaults()
-	if s.mutate != nil {
-		s.mutate(&o)
+	if s.figures == nil {
+		f := defaults()
+		if s.mutate != nil {
+			s.mutate(&f)
+		}
+		s.figures = settings.New(settings.Options{})
+		if _, err := s.figures.Apply(t.Context(), withFlood(1, f)); err != nil {
+			t.Fatal(err)
+		}
 	}
-	o.State, o.Metrics, o.Now = st, r.m, s.clk.now
-	if r.g, err = guard.New(o); err != nil {
+	if r.g, err = guard.New(guard.Options{Figures: s.figures.For, State: st, Metrics: r.m, Now: s.clk.now}); err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = r.g.Close() })

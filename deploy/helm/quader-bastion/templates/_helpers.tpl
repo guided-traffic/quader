@@ -222,6 +222,12 @@ Secret rolls nothing.
 {{- $_ := set $cache "volume" (dict "dir" "/var/cache/quader-bastion") -}}
 {{- end -}}
 {{- $_ := set $bastion "cache" $cache -}}
+{{- /* The edge figure the replica reports with every handshake (R-BAS-093). */ -}}
+{{- if .Values.edgeLimit.enabled -}}
+{{- $_ := set $bastion "edge_limit" (dict "enabled" true "requests_per_second" (.Values.edgeLimit.requestsPerSecond | int) "connections" (.Values.edgeLimit.connections | int)) -}}
+{{- else -}}
+{{- $_ := set $bastion "edge_limit" (dict "enabled" false) -}}
+{{- end -}}
 {{- $managed := dict "bastion" $bastion -}}
 {{- if include "quader-bastion.valkeyOn" . -}}
 {{- $vk := dict -}}

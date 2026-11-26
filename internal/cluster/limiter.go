@@ -211,6 +211,31 @@ func (ls *LimiterSet) NewLimiter(name string, scope Scope, rate float64, burst i
 // live replicas that serve what the limiter guards, for example the replicas of
 // an endpoint's pool (R-EP-015). Values below 1 count as 1; nil is NewLimiter.
 func (ls *LimiterSet) NewLimiterShared(name string, scope Scope, rate float64, burst int, share func() int) *Limiter {
+	return ls.register(ls.build(name, scope, rate, burst, share), false)
+}
+
+// SetLimiter is NewLimiter for a limiter whose figures change while the replica runs (a Bastion's flood figures and its
+// anonymous ceiling come from its configuration, R-BAS-093): it registers the limiter, or replaces the one registered under
+// the name. The replacement keeps the name, so its keys and its metrics' label stay; a request that holds the old limiter
+// finishes with it. Counters of the same window go on, counters of another window start empty. It panics as NewLimiter
+// does on a bad name, scope, rate or window.
+func (ls *LimiterSet) SetLimiter(name string, scope Scope, rate float64, burst int) *Limiter {
+	return ls.register(ls.build(name, scope, rate, burst, nil), true)
+}
+
+// register adds l under its name; a second limiter of a name panics unless replace says it takes the first one's place.
+func (ls *LimiterSet) register(l *Limiter, replace bool) *Limiter {
+	ls.mu.Lock()
+	defer ls.mu.Unlock()
+	if _, dup := ls.limiters[l.name]; dup && !replace {
+		panic(fmt.Sprintf("cluster: limiter %q is registered twice", l.name))
+	}
+	ls.limiters[l.name] = l
+	return l
+}
+
+// build checks the figures of a limiter and returns it, unregistered.
+func (ls *LimiterSet) build(name string, scope Scope, rate float64, burst int, share func() int) *Limiter {
 	if !limiterNamePattern.MatchString(name) {
 		panic(fmt.Sprintf("cluster: invalid limiter name %q", name))
 	}
@@ -229,17 +254,10 @@ func (ls *LimiterSet) NewLimiterShared(name string, scope Scope, rate float64, b
 	}
 	// Whole milliseconds, so the window index is an integer.
 	w = w.Truncate(time.Millisecond)
-	l := &Limiter{
+	return &Limiter{
 		set: ls, name: name, keyName: strings.ReplaceAll(name, ".", "-"), scope: scope,
 		rate: rate, burst: burst, window: w, buckets: map[string]*bucket{}, shareFn: share,
 	}
-	ls.mu.Lock()
-	defer ls.mu.Unlock()
-	if _, dup := ls.limiters[name]; dup {
-		panic(fmt.Sprintf("cluster: limiter %q is registered twice", name))
-	}
-	ls.limiters[name] = l
-	return l
 }
 
 // share returns n, the number of live replicas of the role, at least 1.

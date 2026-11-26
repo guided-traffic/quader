@@ -68,7 +68,7 @@ func TestR_BAS_025_EveryPathClosesTheResponseBodyAndSoReleasesItsSlot(t *testing
 	st.docs["/api/npm/web/npm-all/@acme/private"] = "mine"
 
 	cfg := testConfig(t, func(c *configT) {
-		c.Bastion.Main.MaxConcurrent, c.Bastion.Replicas, c.Bastion.Main.QueueTimeout = 1, 1, 300*time.Millisecond
+		c.Bastion.Replicas = 1
 		c.Bastion.Cache.ArtifactRevalidateAfter = time.Second
 		c.Bastion.Cache.MetadataRevalidateAfter = time.Second
 	})

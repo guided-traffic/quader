@@ -561,28 +561,59 @@ func TestR_BAS_030_CacheVolumeKinds(t *testing.T) {
 	})
 }
 
-// TestR_BAS_038_EdgeLimitIsWiderThanTheBastionsOwn (R-BAS-038): edgeLimit renders HAProxy Ingress's
-// per-address limits on the Ingress and must be above the Bastion's own authenticated limit.
-func TestR_BAS_038_EdgeLimitIsWiderThanTheBastionsOwn(t *testing.T) {
-	t.Run("edgeLimit 50 with the default authenticated limit fails and names both values", func(t *testing.T) {
-		bstFails(t, bstRequired(), []string{"edgeLimit.requestsPerSecond=50"},
-			"edgeLimit.requestsPerSecond", "config.bastion.limits.authenticated.requests_per_second")
-	})
-	t.Run("the authenticated limit itself is refused, one above it passes", func(t *testing.T) {
-		bstFails(t, bstRequired(), []string{"config.bastion.limits.authenticated.requests_per_second=1000"}, "edgeLimit.requestsPerSecond")
-		a := bstIngressAnnotations(t, bstRequired(), "config.bastion.limits.authenticated.requests_per_second=999")
-		if a[hp+"limit-rps"] != "1000" {
+// TestR_BAS_093_TheKeysThatMovedIntoTheRegistrationAreRefused: the flood figures, the failed-authentication timeout, the
+// blocking with its exempt networks and the slots are members of the Bastion's registration at the main installation; the
+// chart refuses them under config, with no alias.
+func TestR_BAS_093_TheKeysThatMovedIntoTheRegistrationAreRefused(t *testing.T) {
+	for _, c := range []struct{ set, want string }{
+		{"config.bastion.limits.anonymous.requests_per_second=50", "'limits'"},
+		{"config.bastion.failed_auth.max_failures=20", "'failed_auth'"},
+		{"config.bastion.blocking.exempt_cidrs={198.51.100.0/24}", "'blocking'"},
+		{"config.bastion.main.max_concurrent=64", "'max_concurrent'"},
+		{"config.bastion.main.anonymous_share=0.25", "'anonymous_share'"},
+		{"config.bastion.main.queue_timeout=2s", "'queue_timeout'"},
+	} {
+		bstFails(t, bstRequired(), []string{c.set}, c.want, "not allowed")
+	}
+}
+
+// TestR_BAS_038_TheEdgeLimitIsRenderedAndReported (R-BAS-038, R-BAS-093): edgeLimit renders HAProxy Ingress's per-address
+// limits on the Ingress, its whitelist from edgeLimit.exemptCIDRs, and the same figure into the configuration file as the
+// chart-managed bastion.edge_limit, which every handshake reports to the main installation. The chart no longer compares it
+// with a flood figure: those come from the registration, and the card warns.
+func TestR_BAS_038_TheEdgeLimitIsRenderedAndReported(t *testing.T) {
+	edge := func(t *testing.T, files []string, sets ...string) map[string]any {
+		t.Helper()
+		_, docs := bstRender(t, files, sets...)
+		b, _ := bstConfig(t, docs)["bastion"].(map[string]any)
+		e, _ := b["edge_limit"].(map[string]any)
+		return e
+	}
+	t.Run("a figure that was refused below the old authenticated limit renders", func(t *testing.T) {
+		a := bstIngressAnnotations(t, bstRequired(), "edgeLimit.requestsPerSecond=50")
+		if a[hp+"limit-rps"] != "50" {
 			t.Errorf("annotations = %v", a)
 		}
 	})
-	t.Run("the limits are annotations, the whitelist is blocking.exempt_cidrs", func(t *testing.T) {
+	t.Run("the figure is rendered into the configuration file", func(t *testing.T) {
+		if e := edge(t, bstRequired()); e["enabled"] != true || e["requests_per_second"] != 1000 || e["connections"] != 256 {
+			t.Errorf("bastion.edge_limit = %v, want enabled with 1000 and 256", e)
+		}
+		if e := edge(t, bstRequired(), "edgeLimit.enabled=false"); e["enabled"] != false || len(e) != 1 {
+			t.Errorf("bastion.edge_limit with edgeLimit.enabled false = %v, want only enabled: false", e)
+		}
+	})
+	t.Run("bastion.edge_limit is the chart's and refused under config", func(t *testing.T) {
+		bstFails(t, bstRequired(), []string{"config.bastion.edge_limit.requests_per_second=5"}, "bastion.edge_limit")
+	})
+	t.Run("the limits are annotations, the whitelist is edgeLimit.exemptCIDRs", func(t *testing.T) {
 		a := bstIngressAnnotations(t, []string{bastionSet("persistent-routed")})
 		if a[hp+"limit-rps"] != "1000" || a[hp+"limit-connections"] != "256" || a[hp+"limit-whitelist"] != "198.51.100.0/24,203.0.113.7/32" {
 			t.Errorf("annotations = %v", a)
 		}
 		none := bstIngressAnnotations(t, bstRequired())
 		if _, ok := none[hp+"limit-whitelist"]; ok {
-			t.Error("a whitelist is rendered without exempt_cidrs")
+			t.Error("a whitelist is rendered without edgeLimit.exemptCIDRs")
 		}
 	})
 	t.Run("the values reach the annotations", func(t *testing.T) {
@@ -591,7 +622,7 @@ func TestR_BAS_038_EdgeLimitIsWiderThanTheBastionsOwn(t *testing.T) {
 			t.Errorf("annotations = %v", a)
 		}
 	})
-	t.Run("switched off, no limit annotation is rendered and the comparison is not made", func(t *testing.T) {
+	t.Run("switched off, no limit annotation is rendered", func(t *testing.T) {
 		a := bstIngressAnnotations(t, bstRequired(), "edgeLimit.enabled=false", "edgeLimit.requestsPerSecond=1")
 		for k := range a {
 			if strings.HasPrefix(k, hp+"limit-") {

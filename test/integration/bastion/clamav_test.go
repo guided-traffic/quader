@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/guided-traffic/quader/internal/app"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
 	"github.com/guided-traffic/quader/internal/config"
 	"github.com/guided-traffic/quader/internal/formatdata/clamav"
 	"github.com/guided-traffic/quader/internal/formats/catalog"
@@ -109,7 +110,7 @@ func TestR_BAS_056_TheClamAVDefinitionsThroughABastion(t *testing.T) {
 	w.setUpOlderThanTheFeed()
 
 	t.Run("freshclam's requests", func(t *testing.T) {
-		b := w.newBastion(t, bastionOptions{Settings: relaxed}).wait()
+		b := w.newBastion(t, bastionOptions{Configure: relaxed}).wait()
 		r := b.reps[0]
 		const path = "/api/clamav/upstream/clamav/daily.cvd"
 		before := built.Add(-time.Hour).Format(http.TimeFormat)
@@ -134,8 +135,11 @@ func TestR_BAS_056_TheClamAVDefinitionsThroughABastion(t *testing.T) {
 		}
 	})
 	t.Run("the Bastion's own rate limit is 503 for the format that declares it", func(t *testing.T) {
-		tight := "  limits:\n    anonymous:\n      requests_per_second: 1\n      burst: 1\n    authenticated:\n      requests_per_second: 1\n      burst: 1\n"
-		b := w.newBastion(t, bastionOptions{Settings: tight}).wait()
+		tight := func(c *iface.Configuration) {
+			c.Limits.Flood.Anonymous = iface.FloodClass{RequestsPerSecond: 1, Burst: 1, MissesPerMinute: 1000}
+			c.Limits.Flood.Authenticated = iface.FloodClass{RequestsPerSecond: 1, Burst: 1, MissesPerMinute: 4000}
+		}
+		b := w.newBastion(t, bastionOptions{Configure: tight}).wait()
 		r := b.reps[0]
 		o := callOpts{addr: "198.51.100.56"}
 		var clam, npm reply

@@ -32,6 +32,7 @@ import (
 	"github.com/guided-traffic/quader/internal/bastion/iface"
 	"github.com/guided-traffic/quader/internal/bastion/mainclient"
 	"github.com/guided-traffic/quader/internal/bastion/metrics"
+	"github.com/guided-traffic/quader/internal/bastion/settings"
 	"github.com/guided-traffic/quader/internal/config"
 )
 
@@ -102,6 +103,9 @@ type Options struct {
 	// Sink deletes answers; nil deletes nothing. The request flow, which holds the answers, sets it with
 	// [Link.SetSink] when it is built.
 	Sink AnswerSink
+	// Configuration applies the member configuration of every handshake whole (R-BAS-093); nil makes a holder that stores
+	// nothing (tests).
+	Configuration *settings.Holder
 	// Now is the clock; nil means time.Now.
 	Now func() time.Time
 }
@@ -177,6 +181,9 @@ func New(o Options) *Link {
 	if o.Feed == nil {
 		o.Feed = answers.NewFeedLog()
 	}
+	if o.Configuration == nil {
+		o.Configuration = settings.New(settings.Options{Metrics: o.Metrics, Log: o.Log})
+	}
 	if o.Config.FeedLimit <= 0 {
 		o.Config.FeedLimit = DefaultFeedLimit
 	}
@@ -216,6 +223,9 @@ func (l *Link) sink() AnswerSink {
 
 // Feed returns the feed log the link applies entries to.
 func (l *Link) Feed() *answers.FeedLog { return l.o.Feed }
+
+// Configuration returns the holder of the configuration the replica applies (R-BAS-093).
+func (l *Link) Configuration() *settings.Holder { return l.o.Configuration }
 
 // State returns a snapshot.
 func (l *Link) State() State {
@@ -324,9 +334,10 @@ func (l *Link) handshake(ctx context.Context) {
 		// not decode (R-BAS-057).
 		if verr := hs.Formats.Validate(); verr != nil {
 			err = fmt.Errorf("%w: %w", mainclient.ErrBadAnswer, verr)
-		} else if verr := hs.Configuration.Validate(); verr != nil {
-			// A configuration the Bastion's rules refuse fails the handshake as a format table does (R-BAS-093). Of its
-			// members the replica reads the switch handover; the others are read by the packages that apply them.
+		} else if _, verr := l.o.Configuration.Apply(ctx, hs.Configuration); verr != nil {
+			// A configuration the Bastion's rules refuse fails the handshake as a format table does, and the replica keeps
+			// applying the one it applies (R-BAS-093). One it accepts is applied whole: the flood figures, the slots, the
+			// ceiling and the switches change together.
 			err = fmt.Errorf("%w: %w", mainclient.ErrBadAnswer, verr)
 		}
 	}

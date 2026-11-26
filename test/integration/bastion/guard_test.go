@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/guided-traffic/quader/internal/bastion/iface"
 	"github.com/guided-traffic/quader/internal/bastion/maintest"
 )
 
@@ -25,8 +26,10 @@ func TestR_BAS_035_PerAddressLimits(t *testing.T) {
 
 	for _, v := range []variant{{"no Valkey", bastionOptions{}}, {"Valkey, two replicas", bastionOptions{Valkey: true, Replicas: 2}}} {
 		t.Run("requests/"+v.name, func(t *testing.T) {
-			v.o.Settings = "  limits:\n    anonymous:\n      requests_per_second: 2\n      burst: 6\n    authenticated:\n      requests_per_second: 2\n      burst: 8\n" +
-				"  blocking:\n    threshold: 100000\n"
+			v.o.Configure = then(noBlock, func(c *iface.Configuration) {
+				c.Limits.Flood.Anonymous = iface.FloodClass{RequestsPerSecond: 2, Burst: 6, MissesPerMinute: 1000}
+				c.Limits.Flood.Authenticated = iface.FloodClass{RequestsPerSecond: 2, Burst: 8, MissesPerMinute: 4000}
+			})
 			b := w.newBastion(t, v.o).wait()
 			for _, class := range []struct {
 				name  string
@@ -61,7 +64,9 @@ func TestR_BAS_035_PerAddressLimits(t *testing.T) {
 	}
 
 	t.Run("misses", func(t *testing.T) {
-		b := w.newBastion(t, bastionOptions{Settings: relaxed[:strings.Index(relaxed, "    misses:")] + "    misses:\n      authenticated_per_minute: 4\n      anonymous_per_minute: 3\n  blocking:\n    threshold: 100000\n"}).wait()
+		b := w.newBastion(t, bastionOptions{Configure: then(relaxed, noBlock, func(c *iface.Configuration) {
+			c.Limits.Flood.Authenticated.MissesPerMinute, c.Limits.Flood.Anonymous.MissesPerMinute = 4, 3
+		})}).wait()
 		r := b.reps[0]
 		for _, class := range []struct {
 			name, tok, addr string
@@ -109,7 +114,9 @@ func TestR_BAS_036_FailedAuthenticationTimeout(t *testing.T) {
 	w.content()
 	for _, v := range []variant{{"no Valkey", bastionOptions{}}, {"Valkey, two replicas", bastionOptions{Valkey: true, Replicas: 2}}} {
 		t.Run(v.name, func(t *testing.T) {
-			v.o.Settings = relaxed + "  failed_auth:\n    max_failures: 3\n    window: 10m\n    timeout: 15m\n  blocking:\n    threshold: 100000\n"
+			v.o.Configure = then(relaxed, noBlock, func(c *iface.Configuration) {
+				c.Limits.Flood.FailedAuth = iface.FailedAuth{MaxFailures: 3, WindowSeconds: 600, TimeoutSeconds: 900}
+			})
 			b := w.newBastion(t, v.o).wait()
 			path := tarballPath(npmAll, "@acme/sdk", "1.0.0")
 			addr, other := "198.51.100.131", "198.51.100.132"
@@ -162,7 +169,10 @@ func TestR_BAS_037_BlockingOfFloodingAddresses(t *testing.T) {
 	doc := "/api/npm/" + npmAll + "/" + escapeNPM("@acme/sdk")
 	for _, v := range []variant{{"no Valkey", bastionOptions{Replicas: 2}}, {"Valkey", bastionOptions{Valkey: true, Replicas: 2}}} {
 		t.Run(v.name, func(t *testing.T) {
-			v.o.Settings = "  limits:\n    anonymous:\n      requests_per_second: 1\n      burst: 2\n  blocking:\n    threshold: 10\n    window: 1m\n    duration: 15m\n"
+			v.o.Configure = func(c *iface.Configuration) {
+				c.Limits.Flood.Anonymous = iface.FloodClass{RequestsPerSecond: 1, Burst: 2, MissesPerMinute: 1000}
+				c.Limits.Flood.Blocking = iface.Blocking{Threshold: 10, WindowSeconds: 60, DurationSeconds: 900, MaxDurationSeconds: 86400}
+			}
 			b := w.newBastion(t, v.o).wait()
 			flood := "198.51.100.141"
 			blocked := 0

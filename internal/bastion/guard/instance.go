@@ -3,17 +3,14 @@ package guard
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
 	"net/http"
-	"net/netip"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/guided-traffic/quader/internal/bastion/metrics"
+	"github.com/guided-traffic/quader/internal/bastion/settings"
 	"github.com/guided-traffic/quader/internal/bastion/shared"
-	"github.com/guided-traffic/quader/internal/config"
 )
 
 // The names of the limiters (R-BAS-034: bastion.<name>). With Valkey they are the limiters of R-ARCH-034 and
@@ -21,6 +18,7 @@ import (
 const (
 	limiterRequestsAuthenticated = "bastion.requests_authenticated"
 	limiterRequestsAnonymous     = "bastion.requests_anonymous"
+	limiterRequestsGUI           = "bastion.requests_gui"
 	limiterMissesAuthenticated   = "bastion.misses_authenticated"
 	limiterMissesAnonymous       = "bastion.misses_anonymous"
 	limiterFailedAuth            = "bastion.failed_auth"
@@ -41,9 +39,9 @@ const gaugeInterval = 5 * time.Second
 
 // Options configure [New].
 type Options struct {
-	Limits     config.BastionLimits
-	FailedAuth config.BastionFailedAuth
-	Blocking   config.BastionBlocking
+	// Figures returns the configuration a decision is made with (R-BAS-093): the one the request read at its start, else the
+	// one the replica applies now (settings.Holder.For). nil decides with the built-in configuration (Q-BAS-327).
+	Figures func(ctx context.Context) *settings.Applied
 	// State is the shared state: local, or in Valkey (internal/bastion/shared).
 	State   *shared.State
 	Metrics *metrics.Metrics
@@ -55,10 +53,9 @@ type Options struct {
 // Instance is the guard of a replica. It implements [Guard]; Close stops the loop that keeps
 // quader_bastion_blocked_addresses current.
 type Instance struct {
-	o      Options
-	log    *slog.Logger
-	now    func() time.Time
-	exempt []netip.Prefix
+	o   Options
+	log *slog.Logger
+	now func() time.Time
 
 	// blocking serializes the decision to block an address within the process, per address, so that the
 	// refusals of a burst that cross the threshold together set one block and not several levels at once, and
@@ -72,11 +69,17 @@ type Instance struct {
 
 var _ Guard = (*Instance)(nil)
 
-// New builds the guard. An entry of bastion.blocking.exempt_cidrs that is neither an address nor a CIDR is an
-// error.
+// New builds the guard.
 func New(o Options) (*Instance, error) {
 	if o.State == nil || o.Metrics == nil {
 		return nil, errors.New("guard: State and Metrics are required")
+	}
+	if o.Figures == nil {
+		builtin, err := settings.FromConfiguration(settings.Builtin(), settings.SourceBuiltin)
+		if err != nil {
+			return nil, err
+		}
+		o.Figures = func(context.Context) *settings.Applied { return builtin }
 	}
 	g := &Instance{o: o, log: o.Log, now: o.Now, stop: make(chan struct{}), done: make(chan struct{})}
 	if g.log == nil {
@@ -85,27 +88,14 @@ func New(o Options) (*Instance, error) {
 	if g.now == nil {
 		g.now = time.Now
 	}
-	for _, c := range o.Blocking.ExemptCIDRs {
-		p, err := parseExempt(c)
-		if err != nil {
-			return nil, err
-		}
-		g.exempt = append(g.exempt, p)
-	}
 	go g.loop()
 	return g, nil
 }
 
-func parseExempt(s string) (netip.Prefix, error) {
-	s = strings.TrimSpace(s)
-	if p, err := netip.ParsePrefix(s); err == nil {
-		return p.Masked(), nil
-	}
-	a, err := netip.ParseAddr(s)
-	if err != nil {
-		return netip.Prefix{}, fmt.Errorf("guard: bastion.blocking.exempt_cidrs: %q is neither an address nor a CIDR", s)
-	}
-	return netip.PrefixFrom(a.Unmap(), a.Unmap().BitLen()), nil
+// flood returns the flood figures of a decision and whether the address key is exempt from them.
+func (g *Instance) flood(ctx context.Context, addr string) (settings.Flood, bool) {
+	a := g.o.Figures(ctx)
+	return a.Flood, a.Exempt(addr)
 }
 
 // Close stops the background loop. It may be called again.
@@ -135,26 +125,6 @@ func (g *Instance) refreshGauge(ctx context.Context) {
 	}
 }
 
-// isExempt reports whether the address key (an IPv4 address, or the /64 of an IPv6 one) is in an exempt
-// network. An IPv6 key counts by the first address of its /64.
-func (g *Instance) isExempt(key string) bool {
-	if len(g.exempt) == 0 {
-		return false
-	}
-	var a netip.Addr
-	if p, err := netip.ParsePrefix(key); err == nil {
-		a = p.Addr()
-	} else if a, err = netip.ParseAddr(key); err != nil {
-		return false
-	}
-	for _, p := range g.exempt {
-		if p.Contains(a) {
-			return true
-		}
-	}
-	return false
-}
-
 // retryAfter rounds a wait up to whole seconds, at least one (Retry-After is whole seconds).
 func retryAfter(d time.Duration) time.Duration {
 	return max((d+time.Second-1)/time.Second, 1) * time.Second
@@ -166,7 +136,7 @@ func refuse(code, reason string, after time.Duration) Verdict {
 
 // Blocked implements [Guard]. A failure of the shared state admits: the guard never refuses on its own fault.
 func (g *Instance) Blocked(ctx context.Context, addr string) Verdict {
-	if g.isExempt(addr) {
+	if _, exempt := g.flood(ctx, addr); exempt {
 		return Allow()
 	}
 	b, ok, err := g.o.State.Blocks.Blocked(ctx, addr)
@@ -180,53 +150,70 @@ func (g *Instance) Blocked(ctx context.Context, addr string) Verdict {
 
 // Request implements [Guard].
 func (g *Instance) Request(ctx context.Context, addr string, c Credentialed) Verdict {
-	if g.isExempt(addr) {
+	f, exempt := g.flood(ctx, addr)
+	if exempt {
 		return Allow()
 	}
-	name, rate := limiterRequestsAnonymous, rateOf(g.o.Limits.Anonymous.RequestsPerSecond, g.o.Limits.Anonymous.Burst)
+	name, rate := limiterRequestsAnonymous, f.Anonymous.Rate
 	if c {
-		name, rate = limiterRequestsAuthenticated, rateOf(g.o.Limits.Authenticated.RequestsPerSecond, g.o.Limits.Authenticated.Burst)
+		name, rate = limiterRequestsAuthenticated, f.Authenticated.Rate
 	}
-	ok, wait, err := g.o.State.Limiter.Allow(ctx, name, addr, rate)
+	return g.request(ctx, f, addr, name, rate)
+}
+
+// Page implements [Guard]: the class gui of the web interface's pages (Q-LIM-307).
+func (g *Instance) Page(ctx context.Context, addr string) Verdict {
+	f, exempt := g.flood(ctx, addr)
+	if exempt {
+		return Allow()
+	}
+	return g.request(ctx, f, addr, limiterRequestsGUI, f.GUI)
+}
+
+// request takes a token of the address's bucket of a class; a refusal counts toward the block threshold.
+func (g *Instance) request(ctx context.Context, f settings.Flood, addr, name string, r settings.Rate) Verdict {
+	ok, wait, err := g.o.State.Limiter.Allow(ctx, name, addr, rateOf(r))
 	if err != nil || ok {
 		return Allow()
 	}
-	g.refused(ctx, addr, metrics.RefusedRateLimited)
+	g.refused(ctx, f, addr, metrics.RefusedRateLimited)
 	return refuse(CodeRateLimited, metrics.RefusedRateLimited, wait)
 }
 
-func rateOf(perSecond, burst int) shared.Rate {
-	return shared.Rate{PerSecond: float64(perSecond), Burst: burst}
+func rateOf(r settings.Rate) shared.Rate {
+	return shared.Rate{PerSecond: float64(r.RequestsPerSecond), Burst: r.Burst}
 }
 
 // Miss implements [Guard]. The limit is a count per minute: the admitted events of the address inside the
 // sliding minute, this one included, may not exceed it. A refused miss is not counted (Q-BAS-127).
 func (g *Instance) Miss(ctx context.Context, addr string, c Credentialed) Verdict {
-	if g.isExempt(addr) {
+	f, exempt := g.flood(ctx, addr)
+	if exempt {
 		return Allow()
 	}
-	name, limit := limiterMissesAnonymous, g.o.Limits.Misses.AnonymousPerMinute
+	name, limit := limiterMissesAnonymous, f.Anonymous.MissesPerMinute
 	if c {
-		name, limit = limiterMissesAuthenticated, g.o.Limits.Misses.AuthenticatedPerMinute
+		name, limit = limiterMissesAuthenticated, f.Authenticated.MissesPerMinute
 	}
 	ok, _, err := g.o.State.Limiter.AddIfWithin(ctx, name, addr, missWindow, limit)
 	if err != nil || ok {
 		return Allow()
 	}
-	g.refused(ctx, addr, metrics.RefusedMissLimited)
+	g.refused(ctx, f, addr, metrics.RefusedMissLimited)
 	return refuse(CodeRateLimited, metrics.RefusedMissLimited, missRetryAfter)
 }
 
 // AuthTimeout implements [Guard].
 func (g *Instance) AuthTimeout(ctx context.Context, addr string) Verdict {
-	if g.isExempt(addr) {
+	f, exempt := g.flood(ctx, addr)
+	if exempt {
 		return Allow()
 	}
 	b, ok, err := g.o.State.Timeouts.Blocked(ctx, addr)
 	if err != nil || !ok {
 		return Allow()
 	}
-	g.refused(ctx, addr, metrics.RefusedAuthTimeout)
+	g.refused(ctx, f, addr, metrics.RefusedAuthTimeout)
 	return refuse(CodeAuthTimeout, metrics.RefusedAuthTimeout, b.Until.Sub(g.now()))
 }
 
@@ -234,25 +221,27 @@ func (g *Instance) AuthTimeout(ctx context.Context, addr string) Verdict {
 // timeout, so the next credential without a usable answer is the first one refused: max_failures failures are
 // answered by the main installation, the following one is not (R-BAS-036).
 func (g *Instance) FailedAuth(ctx context.Context, addr string) {
-	if g.isExempt(addr) {
+	f, exempt := g.flood(ctx, addr)
+	if exempt {
 		return
 	}
-	n, err := g.o.State.Limiter.Add(ctx, limiterFailedAuth, addr, g.o.FailedAuth.Window)
-	if err != nil || n < g.o.FailedAuth.MaxFailures {
+	fa := f.FailedAuth
+	n, err := g.o.State.Limiter.Add(ctx, limiterFailedAuth, addr, fa.Window)
+	if err != nil || n < fa.MaxFailures {
 		return
 	}
 	if _, in, _ := g.o.State.Timeouts.Blocked(ctx, addr); in {
 		return
 	}
-	_ = g.o.State.Timeouts.Set(ctx, addr, g.o.FailedAuth.Timeout, 1)
-	g.log.Info("bastion failed-authentication timeout", "address", addr, "failures", n, "duration", g.o.FailedAuth.Timeout.String())
+	_ = g.o.State.Timeouts.Set(ctx, addr, fa.Timeout, 1)
+	g.log.Info("bastion failed-authentication timeout", "address", addr, "failures", n, "duration", fa.Timeout.String())
 }
 
 // refused counts a refusal of R-BAS-035 or R-BAS-036 toward the block threshold and blocks the address that
-// collects more than bastion.blocking.threshold of them within bastion.blocking.window (R-BAS-037). The block
-// lasts bastion.blocking.duration, doubled for each earlier block within 24 h up to max_duration.
-func (g *Instance) refused(ctx context.Context, addr, reason string) {
-	b := g.o.Blocking
+// collects more than flood.blocking.threshold of them within its window (R-BAS-037). The block lasts its duration,
+// doubled for each earlier block within 24 h up to its longest.
+func (g *Instance) refused(ctx context.Context, f settings.Flood, addr, reason string) {
+	b := f.Blocking
 	n, err := g.o.State.Limiter.Add(ctx, limiterRefusals, addr, b.Window)
 	if err != nil || n <= b.Threshold {
 		return

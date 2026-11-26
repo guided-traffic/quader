@@ -18,7 +18,7 @@ import (
 
 // TestBastion_R_BAS_049_ChartRender (R-BAS-045): helm template with only the required values renders a Deployment with two
 // replicas, a PodDisruptionBudget, the Ingress with the edge-limit annotations and a NetworkPolicy, and no Secret, no Role and no
-// PersistentVolumeClaim; an edge limit at or below the Bastion's own fails and names both values.
+// PersistentVolumeClaim; a key that moved into the Bastion's registration (R-BAS-093) fails and names the key.
 func TestBastion_R_BAS_049_ChartRender(t *testing.T) {
 	chart := filepath.Join(cfg.repo, "deploy/helm/quader-bastion")
 	required := []string{
@@ -75,15 +75,13 @@ func TestBastion_R_BAS_049_ChartRender(t *testing.T) {
 			t.Errorf("the Ingress has no %s annotation: %v", k, ann)
 		}
 	}
-	// an edge limit at or below the Bastion's own limit is refused, naming both values
-	out, err = render("--set", "edgeLimit.requestsPerSecond=50")
+	// a flood figure is a member of the registration now (R-BAS-093): the chart refuses its old key, naming it
+	out, err = render("--set", "config.bastion.limits.anonymous.requests_per_second=50")
 	if err == nil {
-		t.Fatalf("helm template with edgeLimit.requestsPerSecond=50 succeeded, want a failure")
+		t.Fatalf("helm template with config.bastion.limits succeeded, want a failure")
 	}
-	for _, want := range []string{"edgeLimit.requestsPerSecond", "requests_per_second"} {
-		if !strings.Contains(out, want) {
-			t.Errorf("the failure does not name %q:\n%s", want, tail(out, 600))
-		}
+	if !strings.Contains(out, "limits") {
+		t.Errorf("the failure does not name %q:\n%s", "limits", tail(out, 600))
 	}
 }
 

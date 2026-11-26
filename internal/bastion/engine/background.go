@@ -34,7 +34,9 @@ func (e *engine) refreshShape(q *rq, shape *answerVal) {
 	cred, repo, addr, client, class := q.cred, q.repo, q.addr, q.clientText, e.budgetClass(q)
 	if !e.background(func() {
 		defer e.checks.finish(key, c, nil, nil)
-		ctx, cancel := context.WithTimeout(context.Background(), e.cfg.Main.ResponseHeaderTimeout+e.cfg.Main.QueueTimeout)
+		// The refresh waits for a slot as a request does, with the configuration applied when it starts; of an anonymous answer
+		// it takes from the anonymous ceiling as well (R-BAS-094), in the budget of its class.
+		ctx, cancel := context.WithTimeout(context.Background(), e.cfg.Main.ResponseHeaderTimeout+e.d.Link.Configuration().Current().Slots.QueueTimeout)
 		defer cancel()
 		req := iface.CheckRequest{ClientAddress: client, Repositories: []string{repo}}
 		if !cred.anonymous {

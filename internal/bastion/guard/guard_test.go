@@ -8,9 +8,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/guided-traffic/quader/internal/bastion/iface"
 	"github.com/guided-traffic/quader/internal/bastion/metrics"
+	"github.com/guided-traffic/quader/internal/bastion/settings"
 	"github.com/guided-traffic/quader/internal/bastion/shared"
-	"github.com/guided-traffic/quader/internal/config"
 )
 
 func TestR_BAS_019_AnIPv6AddressCountsAsItsSlash64(t *testing.T) {
@@ -55,46 +56,65 @@ func (c *clock) advance(d time.Duration) {
 }
 
 type rig struct {
-	g   *Instance
-	clk *clock
-	m   *metrics.Metrics
-	st  *shared.State
+	g     *Instance
+	clk   *clock
+	m     *metrics.Metrics
+	st    *shared.State
+	flood iface.Flood
 }
 
-// figures are the figures the tests of R-BAS-035 to R-BAS-037 count against: small ones, so that a test counts in milliseconds
-// (they were the defaults before R-BAS-092). The built-in defaults are held by TestR_BAS_092_TheDefaultsHoldOneNormalCommandOfEveryClient.
-func figures() Options {
-	return Options{
-		Limits: config.BastionLimits{
-			Authenticated: config.BastionLimitAuthenticated{RequestsPerSecond: 50, Burst: 200},
-			Anonymous:     config.BastionLimitAnonymous{RequestsPerSecond: 10, Burst: 40},
-			Misses:        config.BastionMisses{AuthenticatedPerMinute: 300, AnonymousPerMinute: 30},
-		},
-		FailedAuth: config.BastionFailedAuth{MaxFailures: 20, Window: 10 * time.Minute, Timeout: 15 * time.Minute},
-		Blocking: config.BastionBlocking{
-			Threshold: 300, Window: time.Minute, Duration: 15 * time.Minute, MaxDuration: 24 * time.Hour,
-		},
+// rigOptions are the guard's options and the flood figures of the configuration the rig's guard decides with.
+type rigOptions struct {
+	Options
+	Flood iface.Flood
+}
+
+// figures are the flood figures the tests of R-BAS-035 to R-BAS-037 count against: small ones, so that a test counts in
+// milliseconds (they were the defaults before R-BAS-092). The built-in defaults are held by
+// TestR_BAS_092_TheDefaultsHoldOneNormalCommandOfEveryClient.
+func figures() iface.Flood {
+	return iface.Flood{
+		Anonymous:      iface.FloodClass{RequestsPerSecond: 10, Burst: 40, MissesPerMinute: 30},
+		Authenticated:  iface.FloodClass{RequestsPerSecond: 50, Burst: 200, MissesPerMinute: 300},
+		GUI:            iface.FloodRate{RequestsPerSecond: 5, Burst: 20},
+		FailedAuth:     iface.FailedAuth{MaxFailures: 20, WindowSeconds: 600, TimeoutSeconds: 900},
+		Blocking:       iface.Blocking{Threshold: 300, WindowSeconds: 60, DurationSeconds: 900, MaxDurationSeconds: 86400},
+		ExemptNetworks: []string{},
 	}
 }
 
-func newRig(t *testing.T, replicas int, mutate func(*Options)) *rig {
+// applied is the built-in configuration with the flood figures f, as a replica applies it.
+func applied(t *testing.T, f iface.Flood) *settings.Applied {
+	t.Helper()
+	c := settings.Builtin()
+	c.Limits.Flood = f
+	a, err := settings.FromConfiguration(c, settings.SourceMain)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return a
+}
+
+func newRig(t *testing.T, replicas int, mutate func(*rigOptions)) *rig {
 	t.Helper()
 	clk := &clock{t: time.Date(2026, 11, 3, 10, 0, 0, 0, time.UTC)}
 	m, err := metrics.New(nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	o := figures()
+	o := rigOptions{Flood: figures()}
 	o.State, o.Metrics, o.Now = shared.NewLocal(replicas, clk.now), m, clk.now
 	if mutate != nil {
 		mutate(&o)
 	}
-	g, err := New(o)
+	a := applied(t, o.Flood)
+	o.Figures = func(context.Context) *settings.Applied { return a }
+	g, err := New(o.Options)
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = g.Close() })
-	return &rig{g: g, clk: clk, m: m, st: o.State}
+	return &rig{g: g, clk: clk, m: m, st: o.State, flood: o.Flood}
 }
 
 var ctx = context.Background()
@@ -187,7 +207,9 @@ func TestR_BAS_035_WithoutValkeyTheTotalOverReplicasStaysNearTheLimit(t *testing
 }
 
 func TestR_BAS_035_AnExemptAddressIsNeverLimited(t *testing.T) {
-	r := newRig(t, 1, func(o *Options) { o.Blocking.ExemptCIDRs = []string{"198.51.100.0/24", "192.0.2.9", "2001:db8:5::/48"} })
+	r := newRig(t, 1, func(o *rigOptions) {
+		o.Flood.ExemptNetworks = []string{"198.51.100.0/24", "192.0.2.9/32", "2001:db8:5::/48"}
+	})
 	for _, a := range []string{"198.51.100.77", "192.0.2.9", "2001:db8:5:1::/64"} {
 		for i := 0; i < 2000; i++ {
 			if v := r.g.Request(ctx, a, false); !v.Allowed {
@@ -200,9 +222,6 @@ func TestR_BAS_035_AnExemptAddressIsNeverLimited(t *testing.T) {
 		if !r.g.Blocked(ctx, a).Allowed {
 			t.Fatalf("exempt address %s blocked", a)
 		}
-	}
-	if _, err := New(Options{State: r.st, Metrics: r.m, Blocking: config.BastionBlocking{ExemptCIDRs: []string{"nonsense"}}}); err == nil {
-		t.Fatal("an exempt entry that is no address was accepted")
 	}
 }
 
@@ -324,7 +343,7 @@ func TestR_BAS_037_TheDurationDoublesUpToTheMaximum(t *testing.T) {
 
 func TestR_BAS_037_ABlockIsLoggedOnceWithAddressReasonDurationAndCount(t *testing.T) {
 	var lines []string
-	r := newRig(t, 1, func(o *Options) { o.Log = captureLog(&lines) })
+	r := newRig(t, 1, func(o *rigOptions) { o.Log = captureLog(&lines) })
 	for i := 0; i < 2000; i++ {
 		if r.g.Blocked(ctx, "198.51.100.9").Allowed {
 			r.g.Request(ctx, "198.51.100.9", false)
@@ -348,9 +367,9 @@ func TestR_BAS_037_ABlockIsLoggedOnceWithAddressReasonDurationAndCount(t *testin
 }
 
 func TestR_BAS_037_RefusedMissesAndTimeoutsCountTowardTheBlock(t *testing.T) {
-	r := newRig(t, 1, func(o *Options) {
-		o.Blocking.Threshold = 10
-		o.Limits.Misses.AnonymousPerMinute = 1
+	r := newRig(t, 1, func(o *rigOptions) {
+		o.Flood.Blocking.Threshold = 10
+		o.Flood.Anonymous.MissesPerMinute = 1
 	})
 	const addr = "198.51.100.9"
 	for i := 0; i < 20; i++ {
@@ -359,7 +378,7 @@ func TestR_BAS_037_RefusedMissesAndTimeoutsCountTowardTheBlock(t *testing.T) {
 	if r.g.Blocked(ctx, addr).Allowed {
 		t.Fatal("refused misses did not block the address")
 	}
-	r2 := newRig(t, 1, func(o *Options) { o.Blocking.Threshold = 5; o.FailedAuth.MaxFailures = 1 })
+	r2 := newRig(t, 1, func(o *rigOptions) { o.Flood.Blocking.Threshold = 5; o.Flood.FailedAuth.MaxFailures = 1 })
 	r2.g.FailedAuth(ctx, addr)
 	for i := 0; i < 10; i++ {
 		r2.g.AuthTimeout(ctx, addr)
@@ -403,9 +422,9 @@ func TestR_BAS_035_ASharedStateThatFailsAdmits(t *testing.T) {
 }
 
 func TestR_BAS_037_TheGaugeFollowsTheBlocks(t *testing.T) {
-	r := newRig(t, 1, func(o *Options) {
-		o.Blocking.Threshold = 1
-		o.Limits.Anonymous = config.BastionLimitAnonymous{RequestsPerSecond: 1, Burst: 1}
+	r := newRig(t, 1, func(o *rigOptions) {
+		o.Flood.Blocking.Threshold = 1
+		o.Flood.Anonymous = iface.FloodClass{RequestsPerSecond: 1, Burst: 1, MissesPerMinute: 30}
 	})
 	for i := 0; i < 10; i++ {
 		r.g.Request(ctx, "198.51.100.9", false)

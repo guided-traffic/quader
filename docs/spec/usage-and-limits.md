@@ -3881,7 +3881,9 @@ share an address, and a page never reaches the main installation.
 | (a) A class `gui` of the flood protection per address, beside `anonymous` and `authenticated`, never a miss; its bytes counted as documents of the anonymous subject (chosen) | 20 requests a second with a burst of 100 per address until W-35 measures a page | A crawler and the package API do not share a budget; a page view never takes from the ceiling, the slots or the throughput | One more figure pair |
 | (b) The anonymous class | | Nothing new | A burst of package clients and a reader of pages behind one NAT take from one budget |
 
-**Choice:** (a). **Applied in the spec:** R-LIM-046, [bastion.md](bastion.md) R-BAS-035, R-BAS-093, R-BAS-096.
+**Choice:** (a). **Applied in the spec:** R-LIM-046, [bastion.md](bastion.md) R-BAS-035, R-BAS-093, R-BAS-096. *Built at the Bastion on
+2026-11-26 (W34-E9a):* `guard.Page` with the limiter `bastion.requests_gui` and the configuration's `limits.flood.gui`; no route asks it until
+W-35's pages exist.
 
 ### Q-LIM-308 · A Bastion's usage report is bounded per batch and folds the rest into an overflow row
 

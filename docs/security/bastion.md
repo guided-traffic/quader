@@ -660,8 +660,8 @@ for the registration, the public address of every connection of the main install
 ### H-2280 · Whoever answers as the main installation sets a Bastion's limits and switches
 
 Stage: the handshake's member `configuration` (R-BAS-093; packages E7 and E9a). Subject: every figure, switch and rule a Bastion applies.
-The member travels since E7 (interface version 8); of it a replica applies only `switches.handover`, which the handshake carried before.
-Dormant until E9a lands; then live wherever an attacker can answer a Bastion's handshake: a certificate for the main installation's host
+The member travels since E7 (interface version 8), and since E9a (2026-11-26) a replica applies all of it: the flood figures, the exempt
+networks, the slots and the anonymous ceiling. Live wherever an attacker can answer a Bastion's handshake: a certificate for the main installation's host
 from a CA the Bastion trusts (the system roots or `bastion.main.ca_file`) together with a position on the path, or a main installation
 taken over. What it gains beyond today's forged answers: the web interface switched on, Unlimited figures, no ceiling and no throughput cap
 at that Bastion. What still holds: every forward is decided and charged at the real main installation, which a forged handshake does not
@@ -698,7 +698,8 @@ Readers are the holders of `endpoints:read`. What would narrow it: deleting a re
 
 ### H-2285 · A replica restarted during an outage without its stored configuration applies the built-in one
 
-Stage: R-BAS-093, Q-BAS-327 (package E9a). Subject: the figures and switches of a Bastion whose replica restarts while the main installation
+Stage: R-BAS-093, Q-BAS-327 (package E9a, built: `settings.Holder.LoadStored`, `configuration/current.json`). Subject: the figures and
+switches of a Bastion whose replica restarts while the main installation
 cannot be reached. Live with the volume backend on an ephemeral volume (the chart's default) and wherever the stored object's signature does
 not hold, during an outage of the link at the restart. The built-in configuration is the preset Internet with every switch off and Enforce:
 an administrator's figures stricter than the preset are loosened until the link returns, looser ones tightened, and the web interface is
@@ -835,7 +836,7 @@ Stage: R-BAS-094, Q-BAS-335, Q-BAS-435 (package E14a, built). Subject: what an a
 installation counts of anonymous pulls. Live on every Bastion whose main installation admits anonymous reads. The token's MAC is random
 bytes that nobody verifies, so whoever writes `1:bastion:{"a":true,…}` in the registry token's form, or any token whose readable claim
 `a` is true, has one, at any Bastion; and any Bastion drops it and serves the anonymous caller (Q-BAS-168). What it gains: exactly what a
-request without a credential gains there, nothing more: the anonymous caller's answers, its limits and slots, its ceiling once E9a lands.
+request without a credential gains there, nothing more: the anonymous caller's answers, its limits and slots, its ceiling (since E9a).
 At the main installation the key ID `bastion` names no key, so the token is refused `401` there. What it costs the operator: the main
 installation's `quader_oci_registry_tokens_total{outcome="anonymous"}` and its request log no longer count the anonymous pulls through a
 Bastion; the Bastion's `quader_bastion_requests_total{class="pass",result="hit"}` counts them with its other own `pass` answers. What would
@@ -881,3 +882,25 @@ Bastion token is, or a Bastion pod is taken over. Its holder learns which networ
 much each kind of caller may take, which helps an attacker size a flood below the figures and pick an address range that is exempt. What
 holds: a configuration names no user, group or profile (Q-BAS-320 sends each rule's effective figures, not the profiles), and the figures
 bound only what this Bastion admits; the main installation charges every forward to the caller there (Q-LIM-306).
+
+### H-2356 · The anonymous ceiling is a share per replica without Valkey, and requests in flight pass its hour
+
+Stage: R-BAS-094, Q-BAS-445 (package E9a, built: `guard.Ceiling`). Subject: the requests all anonymous callers of a Bastion cause at the main
+installation. Live on every Bastion without Valkey, and on every Bastion for the hour's figure. Without Valkey each replica holds the
+ceiling divided by `bastion.replicas` (Q-BAS-34): two replicas allow the figure together while the load is spread over both, a replica that
+takes the whole load allows half, and with autoscaling `bastion.replicas` is the maximum, so a Bastion running fewer replicas than its
+maximum allows that share of the figure; routing by path (R-BAS-033) concentrates a path's requests on one replica. While Valkey is
+unavailable a replica falls back to its share as well. The hour is read before a request and counted after its second's bucket admitted it,
+so requests decided at the same instant may each pass a full hour: at most the requests in flight on behalf of anonymous callers, the
+anonymous slots (16 by default), beyond the figure. What makes it real: an operator who sizes the ceiling from the main installation's
+capacity and runs several replicas without Valkey errs toward less, never toward more, except for the in-flight overshoot. Valkey closes
+the first; the second is the cost of counting without a script (the Bastion's Valkey user runs none).
+
+### H-2357 · Until the main installation sends a configuration of its own, a Bastion has no anonymous ceiling after its first handshake
+
+Stage: R-BAS-094, Q-BAS-352 (packages E9a, built, and E8, not built). Subject: what all anonymous callers of a Bastion together cause at the
+main installation. Live on every Bastion today: the interim configuration the main installation sends until E8 holds no ceiling and the
+slots of the chart's former defaults (a wait of 2 s), so after its first handshake a Bastion bounds an anonymous flood by its anonymous
+slots alone, as before E9a (the measurement's flood of distinct artifacts reached 12 to 18 requests and 34 to 52 MB a second at the main
+installation from 256 addresses). The built-in configuration's ceiling holds only before the first handshake. What closes it: E8, whose
+registration carries the ceiling's default (Q-BAS-448) for every Bastion.

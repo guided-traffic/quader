@@ -205,7 +205,7 @@ func TestR_BAS_051_R_BAS_053_ADockerAndAContainerdPullThroughABastion(t *testing
 	w := ociWorld(t, worldOptions{})
 	img := newOCIImage("one")
 	w.pushImage("app", img, "1", "2", "3")
-	b := w.newBastion(t, bastionOptions{Settings: relaxed}).wait()
+	b := w.newBastion(t, bastionOptions{Configure: relaxed}).wait()
 	r := b.reps[0]
 
 	m := w.front.Mark()
@@ -272,7 +272,7 @@ func TestR_BAS_053_AWithdrawnImageIsRefusedWithinTheFeedsBound(t *testing.T) {
 	w := ociWorld(t, worldOptions{})
 	img := newOCIImage("withdrawn")
 	w.pushImage("gone", img, "1")
-	b := w.newBastion(t, bastionOptions{Settings: relaxed}).wait()
+	b := w.newBastion(t, bastionOptions{Configure: relaxed}).wait()
 	r := b.reps[0]
 	direct := callOpts{header: []string{"Authorization", "Bearer " + w.full.token, "Accept", accept}}
 	byDigest := "/v2/" + ociLocal + "/gone/manifests/" + digestOf(img.manifest)
@@ -305,7 +305,7 @@ func TestR_BAS_057_ABoundHostThroughABastion(t *testing.T) {
 	})
 	img := newOCIImage("bound")
 	w.pushImage("library/alpine", img, "3")
-	b := w.newBastion(t, bastionOptions{Settings: relaxed}).wait()
+	b := w.newBastion(t, bastionOptions{Configure: relaxed}).wait()
 	r := b.reps[0]
 	direct := callOpts{header: []string{"Authorization", "Bearer " + w.full.token, "Accept", accept}}
 	got := r.do(t, "GET", "/v2/library/alpine/manifests/3", direct)
@@ -329,7 +329,7 @@ func TestR_BAS_059_AHitIsReportedWhenTheMainInstallationCountedItsFill(t *testin
 	img := newOCIImage("counted")
 	w.pushImage("app", img, "1")
 	w.publishNPM("counted-lib", "1.0.0")
-	b := w.newBastion(t, bastionOptions{Settings: relaxed}).wait()
+	b := w.newBastion(t, bastionOptions{Configure: relaxed}).wait()
 	r := b.reps[0]
 	const addr = "203.0.113.59"
 	direct := callOpts{addr: addr, header: []string{"Authorization", "Bearer " + w.full.token, "Accept", accept}}

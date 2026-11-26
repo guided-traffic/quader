@@ -5,6 +5,7 @@
 - bastion.cache.bucket.credentials.secret_access_key_file
 - bastion.cache.encryption_key_file
 - bastion.cache.volume
+- bastion.edge_limit
 - bastion.main.ca_file
 - bastion.main.token_file
 - bastion.replicas

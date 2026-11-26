@@ -3,7 +3,6 @@ package config
 import (
 	"fmt"
 	"net"
-	"net/netip"
 	"net/url"
 	"reflect"
 	"sort"
@@ -55,18 +54,20 @@ type BastionServer struct {
 	OpsTLS          ServerOpsTLS `yaml:"ops_tls" chart:"managed" doc:"TLS of the ops listener (R-BAS-044); inherits server.tls by default."`
 }
 
-// BastionSettings is the section bastion: everything the engine, the cache, the guard and the audit buffer
-// read (R-BAS-006, R-BAS-020 to R-BAS-040).
+// BastionSettings is the section bastion: what the installation of the pods sizes, which the engine, the cache and the audit
+// buffer read (R-BAS-006, R-BAS-020 to R-BAS-040). What an administrator of the main installation decides (the flood
+// protection, the slots, the anonymous ceiling, the switches) is no key of this file: it comes from the Bastion's registration
+// with every handshake (R-BAS-093), and a file that sets one of the keys it replaced stops startup naming the key.
 type BastionSettings struct {
-	Main       BastionMain       `yaml:"main"`
-	Answers    BastionAnswers    `yaml:"answers"`
-	Feed       BastionFeed       `yaml:"feed"`
-	Cache      BastionCache      `yaml:"cache"`
-	Limits     BastionLimits     `yaml:"limits"`
-	FailedAuth BastionFailedAuth `yaml:"failed_auth"`
-	Blocking   BastionBlocking   `yaml:"blocking"`
-	Audit      BastionAudit      `yaml:"audit"`
-	Token      BastionToken      `yaml:"token"`
+	Main    BastionMain    `yaml:"main"`
+	Answers BastionAnswers `yaml:"answers"`
+	Feed    BastionFeed    `yaml:"feed"`
+	Cache   BastionCache   `yaml:"cache"`
+	Audit   BastionAudit   `yaml:"audit"`
+	Token   BastionToken   `yaml:"token"`
+	// EdgeLimit is the edge figure of the ingress in front of the replicas, which the chart renders from its edgeLimit
+	// values and every handshake reports to the main installation (R-BAS-093).
+	EdgeLimit BastionEdgeLimit `yaml:"edge_limit" chart:"managed" doc:"Rendered by the chart from edgeLimit: the per-address figures of the ingress in front of the Bastion, reported to the main installation with every handshake (R-BAS-093)."`
 	// Replicas is the number of replicas the chart runs at most (replicaCount, or autoscaling.maxReplicas): the
 	// divisor of the budgets and limits without Valkey (R-BAS-025, Q-BAS-34).
 	Replicas int `yaml:"replicas" default:"1" validate:"min=1,max=1000" chart:"managed" doc:"Rendered by the chart: replicaCount, or autoscaling.maxReplicas with autoscaling (R-BAS-025)."`
@@ -82,9 +83,6 @@ type BastionMain struct {
 	CAFile                string        `yaml:"ca_file" default:"" chart:"managed" doc:"CA bundle that verifies the main installation, added to the system roots (trustedCA of the chart)."`
 	ConnectTimeout        time.Duration `yaml:"connect_timeout" default:"5s" validate:"min=100ms,max=2m"`
 	ResponseHeaderTimeout time.Duration `yaml:"response_header_timeout" default:"30s" validate:"min=1s,max=10m" doc:"How long the main installation may take to answer a request before the Bastion answers 504 gateway_timeout (R-BAS-021)."`
-	MaxConcurrent         int           `yaml:"max_concurrent" default:"64" validate:"min=1" doc:"Concurrent requests to the main installation across all replicas (R-BAS-025)."`
-	AnonymousShare        float64       `yaml:"anonymous_share" default:"0.25" validate:"min=0,max=1" doc:"The share of the budget that requests on behalf of anonymous callers may hold (R-BAS-025)."`
-	QueueTimeout          time.Duration `yaml:"queue_timeout" default:"2s" validate:"min=0s,max=1m" doc:"How long a request waits for a slot before 503 busy (R-BAS-025)."`
 	MaxForwardedBody      ByteSize      `yaml:"max_forwarded_body" default:"8MiB" validate:"min=0" doc:"Largest body the Bastion forwards on a read route that takes one, npm's bulk audit (R-BAS-014)."`
 	HandshakeInterval     time.Duration `yaml:"handshake_interval" default:"1m" validate:"min=5s,max=1h" doc:"How often the handshake is repeated (R-BAS-010)."`
 	UnreachableAfter      time.Duration `yaml:"unreachable_after" default:"10s" validate:"min=3s" doc:"No successful feed poll for this long makes the replica treat the main installation as unreachable; at least 3 x bastion.feed.poll_interval (R-BAS-027)."`
@@ -149,51 +147,14 @@ type BastionBucketCredentials struct {
 	WebIdentityTokenFile string `yaml:"web_identity_token_file" default:"" secret:"file" doc:"The projected service account token of the workload identity; set by the operator (the chart renders no volume for it)."`
 }
 
-// BastionLimits are the per-address request limits (R-BAS-035).
-type BastionLimits struct {
-	Authenticated BastionLimitAuthenticated `yaml:"authenticated" doc:"Requests with a credential, per client address."`
-	Anonymous     BastionLimitAnonymous     `yaml:"anonymous" doc:"Requests without a credential, per client address; stricter."`
-	Misses        BastionMisses             `yaml:"misses"`
-}
-
-// BastionLimitAuthenticated is the token-bucket limit (R-ARCH-034) of requests with a credential: a sustained
-// rate and a burst. The defaults are the request figures of the main installation's profile Standard (R-BAS-092,
-// usage-and-limits.md Q-LIM-59): an install of up to 4,000 packages at once, 200 a second sustained.
-type BastionLimitAuthenticated struct {
-	RequestsPerSecond int `yaml:"requests_per_second" default:"200" validate:"min=1"`
-	Burst             int `yaml:"burst" default:"4000" validate:"min=1"`
-}
-
-// BastionLimitAnonymous is the limit of requests without a credential. The defaults are the request figures of the main
-// installation's profile Anonymous (R-BAS-092): two installs of 475 packages, or ten pulls of 40 layers, at once, 50 a
-// second sustained.
-type BastionLimitAnonymous struct {
-	RequestsPerSecond int `yaml:"requests_per_second" default:"50" validate:"min=1"`
-	Burst             int `yaml:"burst" default:"1000" validate:"min=1"`
-}
-
-// BastionMisses limits the requests that need the main installation, per address and minute (R-BAS-035). On a cold
-// Bastion every request is a miss, so the defaults hold in a minute what the request burst of the class holds at once
-// (R-BAS-092, Q-BAS-313).
-type BastionMisses struct {
-	AuthenticatedPerMinute int `yaml:"authenticated_per_minute" default:"4000" validate:"min=1"`
-	AnonymousPerMinute     int `yaml:"anonymous_per_minute" default:"1000" validate:"min=1"`
-}
-
-// BastionFailedAuth is the failed-authentication timeout (R-BAS-036).
-type BastionFailedAuth struct {
-	MaxFailures int           `yaml:"max_failures" default:"20" validate:"min=1" doc:"More failed authentications than this from one address within the window start the timeout."`
-	Window      time.Duration `yaml:"window" default:"10m" validate:"min=1s,max=12h" doc:"The sliding window the failures are counted in; 1s to 12h, the range of the limiters of R-ARCH-034 (Q-BAS-128)."`
-	Timeout     time.Duration `yaml:"timeout" default:"15m" validate:"min=1s,max=24h"`
-}
-
-// BastionBlocking is the blocking of flooding addresses (R-BAS-037).
-type BastionBlocking struct {
-	Threshold   int           `yaml:"threshold" default:"3000" validate:"min=1" doc:"Refusals of R-BAS-035 and R-BAS-036 per window that block an address."`
-	Window      time.Duration `yaml:"window" default:"1m" validate:"min=1s,max=1h"`
-	Duration    time.Duration `yaml:"duration" default:"15m" validate:"min=1s,max=24h"`
-	MaxDuration time.Duration `yaml:"max_duration" default:"24h" validate:"min=1s,max=720h" doc:"Each further block within 24 h doubles the duration up to this (R-BAS-037)."`
-	ExemptCIDRs []string      `yaml:"exempt_cidrs" default:"[]" doc:"Client addresses or CIDRs that no limit, timeout or block applies to."`
+// BastionEdgeLimit is the edge figure of the ingress in front of the replicas (R-BAS-038, R-BAS-093): what HAProxy Ingress
+// admits per client address before a request reaches the Bastion. The chart renders it from edgeLimit; the replica only reports
+// it, in Quader-Bastion-Edge-Limit of every handshake, and the main installation's card warns where a per-address figure of the
+// configuration lies above it. Off (the default, and with edgeLimit.enabled false) reports "off".
+type BastionEdgeLimit struct {
+	Enabled           bool `yaml:"enabled" default:"false" doc:"Whether the ingress limits per address (edgeLimit.enabled)."`
+	RequestsPerSecond int  `yaml:"requests_per_second" default:"0" validate:"min=0" doc:"The requests a second per address the ingress admits (edgeLimit.requestsPerSecond); 0 sets none."`
+	Connections       int  `yaml:"connections" default:"0" validate:"min=0" doc:"The requests in flight per address the ingress admits (edgeLimit.connections); 0 sets none."`
 }
 
 // BastionAudit is the buffer of download events (R-BAS-039).
@@ -325,22 +286,6 @@ func (b *BastionSettings) Validate(r *Report) {
 	}
 	if c.Backend == "bucket" {
 		c.validateBucket(r)
-	}
-	l := b.Limits
-	if l.Anonymous.RequestsPerSecond > l.Authenticated.RequestsPerSecond {
-		r.Add("limits.anonymous.requests_per_second", "(%d) must not exceed limits.authenticated.requests_per_second (%d): requests without a credential are limited stricter (R-BAS-035)",
-			l.Anonymous.RequestsPerSecond, l.Authenticated.RequestsPerSecond)
-	}
-	if b.Blocking.Duration > b.Blocking.MaxDuration {
-		r.Add("blocking.duration", "(%s) must not exceed blocking.max_duration (%s)", b.Blocking.Duration, b.Blocking.MaxDuration)
-	}
-	for _, e := range b.Blocking.ExemptCIDRs {
-		if _, err := netip.ParsePrefix(e); err == nil {
-			continue
-		}
-		if _, err := netip.ParseAddr(e); err != nil {
-			r.Add("blocking.exempt_cidrs", "%q is neither an address nor a CIDR", e)
-		}
 	}
 	if b.Audit.BatchSize > b.Audit.BufferEvents {
 		r.Add("audit.batch_size", "(%d) must not exceed audit.buffer_events (%d)", b.Audit.BatchSize, b.Audit.BufferEvents)

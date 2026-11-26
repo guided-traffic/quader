@@ -179,10 +179,11 @@ internal/bastion/
 ├── metrics/          every metric of R-BAS-040, defined once; a leaf
 ├── mainclient/       the client of the main installation: HTTPClient, SlotBudget, Reloader, TokenSource, errors; token file and holder
 ├── link/             the replica's standing connection: handshake, feed poll, reachable or not, mismatch, token lifetime; Guard wraps the client
+├── settings/         the configuration the replica applies (R-BAS-093): Applied, Holder (Apply, LoadStored, For), Builtin, With/From
 ├── handover/         the link client of a handover per blob and the readers of a plain and an encrypted copy (R-BAS-074); imports blobcrypt
 ├── cache/            Backend, Entry, the HMAC Signer; the volume and bucket backends, Cache, Fill, the sweep, Fault (a test's switch)
 ├── shared/           the shared state (limiters, block list, timeouts, flight lock, sweep lease, answer records): the local form and the Valkey form
-├── guard/            Guard (R-BAS-035 to R-BAS-037): Instance, the verdicts, and the address key (an IPv6 address counts as its /64)
+├── guard/            Guard (R-BAS-035 to R-BAS-037): Instance, the verdicts, the address key (an IPv6 address counts as its /64); Ceiling (R-BAS-094)
 ├── downloads/        Buffer of download events and its Reporter (R-BAS-039)
 ├── engine/           Deps, Engine: the request flow of R-BAS-018 to R-BAS-029
 ├── server/           the process of the role: telemetry, token, TLS, listeners, health, the wiring of every component, drain
@@ -216,11 +217,12 @@ internal/bastionmain/ the main installation's seams (a domain package)
 | [metrics/metrics.go](../../internal/bastion/metrics/metrics.go) | names, label values, `Metrics`, `New`, `Names` |
 | [mainclient/mainclient.go](../../internal/bastion/mainclient/mainclient.go) | `Client`, `Forward`, `Response`, `Budget`, `Token`, `TokenSource`, `Options`, the errors |
 | [mainclient/client.go](../../internal/bastion/mainclient/client.go), [mainclient/budget.go](../../internal/bastion/mainclient/budget.go), [mainclient/reload.go](../../internal/bastion/mainclient/reload.go) | `HTTPClient` (the four operations and the forward, TLS only, the slot held until the body ends), `SlotBudget`, `Reloader` |
-| [link/link.go](../../internal/bastion/link/link.go), [link/guard.go](../../internal/bastion/link/guard.go) | `Link` (handshake, feed poll, `State`, `AnswerState`, `Watch`, `SetSink`), `Guard` (a refused token or a mismatch in any answer makes the replica unreachable) |
+| [link/link.go](../../internal/bastion/link/link.go), [link/guard.go](../../internal/bastion/link/guard.go) | `Link` (handshake, feed poll, `State`, `AnswerState`, `Watch`, `SetSink`, `Configuration`; the handshake hands its member `configuration` to `settings.Holder.Apply`), `Guard` (a refused token or a mismatch in any answer makes the replica unreachable) |
+| [settings/settings.go](../../internal/bastion/settings/settings.go), [settings/holder.go](../../internal/bastion/settings/holder.go), [settings/builtin.go](../../internal/bastion/settings/builtin.go) | the configuration a replica applies (R-BAS-093): `Applied` (the wire's member and its flood figures, slots and ceiling as the replica decides with them), `Holder` (`Apply` whole and atomically, `LoadStored`, `Current`, `For`, `Watch`), `With`/`From` (the configuration a request read at its start), `Builtin` (Q-BAS-327) and the defaults of Q-BAS-448 |
 | [mainclient/token.go](../../internal/bastion/mainclient/token.go) | `ParseToken` (prefix, length, base62, CRC), `ReadTokenFile`, `Holder` |
 | [cache/cache.go](../../internal/bastion/cache/cache.go) | the layout, `Backend`, `Entry`, `Usage` |
 | [cache/fault.go](../../internal/bastion/cache/fault.go) | `Fault`: the switch with which a test makes the storage fail (`Options.Fault`); nil in production |
-| [cache/sign.go](../../internal/bastion/cache/sign.go) | `Signer` (Sign, Verify, SignEntry, VerifyEntry), `KeyHash`, the signature domains |
+| [cache/sign.go](../../internal/bastion/cache/sign.go) | `Signer` (Sign, Verify, SignEntry, VerifyEntry), `KeyHash`, the signature domains (`configuration` for the stored configuration) |
 | [cache/layout.go](../../internal/bastion/cache/layout.go) | `layout`: `plainLayout` (R-BAS-030's names) and `sealedLayout` (R-BAS-061's keyed names below the key's tree), `WithArea`, validation of every name that becomes a path or a key |
 | [cache/core.go](../../internal/bastion/cache/core.go) | `backend`, the one implementation of `Backend` over a `store` and a `layout`: probe, spool, eviction sweep, audit spool, error counting; with a key it hands the writes and reads to sealed.go |
 | [cache/crypt.go](../../internal/bastion/cache/crypt.go) | the cache key (R-BAS-061): `openSealer` reads the file by R-ARCH-021's rules, `sealer` (storage key, identifier, name key, keyed names, the key lookup), the record's frame in front of a body (Q-BAS-212), the binding of a plaintext to its name (Q-BAS-213), what counts as a refusal |
@@ -228,13 +230,14 @@ internal/bastionmain/ the main installation's seams (a domain package)
 | [cache/foreign.go](../../internal/bastion/cache/foreign.go) | the sweep of other layouts: the plain layout and other keys' trees, in a replica's first hour and while found (Q-BAS-215) |
 | [cache/volume.go](../../internal/bastion/cache/volume.go), [cache/bucket.go](../../internal/bastion/cache/bucket.go) | the two stores: a directory, and S3 through `internal/blob/s3` |
 | [cache/verify.go](../../internal/bastion/cache/verify.go), [cache/fill.go](../../internal/bastion/cache/fill.go) | the verifying reader with its hold-back, the `Fill` spool |
-| [cache/store.go](../../internal/bastion/cache/store.go), [cache/sweep.go](../../internal/bastion/cache/sweep.go) | `Cache` (what the engine uses), `New`, `NewVolume`, `NewBucket`, `Options`; `SweepOnce`, `RunSweeper` |
+| [cache/store.go](../../internal/bastion/cache/store.go), [cache/sweep.go](../../internal/bastion/cache/sweep.go) | `Cache` (what the engine uses; `StoreConfiguration` and `LoadConfiguration`, the object `configuration/current.json` of Q-BAS-327), `New`, `NewVolume`, `NewBucket`, `Options`; `SweepOnce`, `RunSweeper` |
 | [shared/shared.go](../../internal/bastion/shared/shared.go) | `Limiter`, `BlockList`, `FlightLock`, `SweepLease`, `AnswerStore`, `State`, `NewLocal` |
 | [shared/local.go](../../internal/bastion/shared/local.go) | the local forms: token buckets, sliding-window counters, block list, flights, answers in memory, all bounded |
 | [shared/valkey.go](../../internal/bastion/shared/valkey.go) | `Open`, `New`, `Options`: the Valkey forms over `cluster.BastionStore`, the limiters of R-ARCH-034 and the FlightLock, with the local forms as the fallback; the signing of answer records |
 | [guard/guard.go](../../internal/bastion/guard/guard.go) | `Guard`, `Verdict`, `AddressKey` |
-| [guard/instance.go](../../internal/bastion/guard/instance.go) | `New`, `Options`, `Instance`: the limits, the miss limits, the timeout, the blocking |
-| [server/shared.go](../../internal/bastion/server/shared.go) | `openShared`: builds the state and the guard from the configuration and closes them |
+| [guard/instance.go](../../internal/bastion/guard/instance.go) | `New`, `Options` (`Figures`, the configuration of the decision), `Instance`: the limits of the classes anonymous, authenticated and `gui` (`Page`), the miss limits, the timeout, the blocking |
+| [guard/ceiling.go](../../internal/bastion/guard/ceiling.go) | `Ceiling`, `NewCeiling`: the anonymous ceiling of R-BAS-094 over the shared state, which the slot budget takes (`mainclient.Ceiling`) |
+| [server/shared.go](../../internal/bastion/server/shared.go) | `openShared`: builds the state and the guard (with the configuration holder's `For`) and closes them |
 | [downloads/downloads.go](../../internal/bastion/downloads/downloads.go), [downloads/reporter.go](../../internal/bastion/downloads/reporter.go) | `Buffer`; `Reporter` (the bounded buffer, batches, the spool to the cache backend, the adoption of spool files) |
 | [engine/engine.go](../../internal/bastion/engine/engine.go) | `Deps`, `Engine`, `New` (hands the link its `AnswerSink`), `Start` and `Drain` (the janitor and the background tasks), `Ready` (the cache's first check) |
 | [engine/request.go](../../internal/bastion/engine/request.go) | `ServeHTTP`, the request record `rq`, the steps of R-BAS-018 (host, block list, path, limits, credentials), the guard's verdict as a response |
@@ -255,7 +258,7 @@ internal/bastionmain/ the main installation's seams (a domain package)
 | [engine/background.go](../../internal/bastion/engine/background.go) | the background refresh of a shape answer |
 | [engine/quiet.go](../../internal/bastion/engine/quiet.go) | `WithQuietSlot`, `Quiet`: how a quiet verdict reaches the server's request log |
 | [engine/lru.go](../../internal/bastion/engine/lru.go), [engine/flight.go](../../internal/bastion/engine/flight.go) | the bounded LRU, the single-flight and the `handle` of a flight that a fill takes over |
-| [server/server.go](../../internal/bastion/server/server.go) | `Run`, `New`, `Start`, `Shutdown`; `buildDeps` and `wireLink` build and connect the components, `runLink` runs their loops |
+| [server/server.go](../../internal/bastion/server/server.go) | `Run`, `New`, `Start`, `Shutdown`; `buildDeps` and `wireLink` build and connect the components (the configuration holder over the cache, the slot budget with the ceiling, resized by the holder's watcher, the edge figure for the handshake), `Start` applies the stored configuration before the client listener binds, `runLink` runs the loops |
 | [legal/legal.go](../../internal/bastion/legal/legal.go) | `New`: the Bastion's imprint and privacy notice of its own `ui.legal`, rendered in `server.New` with the README renderer (no image origins, its `server.base_url` as its own origin) and held for its web interface; `Pages(locale)`, `ETag`; served by no route yet (R-BAS-100) |
 | [maintest/maintest.go](../../internal/bastion/maintest/maintest.go), [maintest/store.go](../../internal/bastion/maintest/store.go) | `Main`, the in-process main installation; `Faulty`, `MemSpool`; `Store`, the TLS object store of the handover's tests |
 | [roletest/roletest.go](../../internal/bastion/roletest/roletest.go) | `Run`: the scenario of the whole role for one cache backend |
@@ -311,8 +314,10 @@ owner ([Q-BAS-280](../spec/bastion.md#q-bas-280--the-wire-checks-storedsize-agai
 
 ## Shared state and the guard
 
-Package 6 built both. The server makes them in [server/shared.go](../../internal/bastion/server/shared.go) from the configuration and
-hands `engine.Deps.Shared` and `engine.Deps.Guard` over; it closes them (the Valkey client, the guard's gauge loop) at the end of the drain.
+Package 6 built both. The server makes them in [server/shared.go](../../internal/bastion/server/shared.go) and hands `engine.Deps.Shared`
+and `engine.Deps.Guard` over; it closes them (the Valkey client, the guard's gauge loop) at the end of the drain. Since W34-E9a the guard's
+figures are no keys of the configuration file but the configuration the main installation sends (R-BAS-093): the guard reads them through
+`Options.Figures`, the configuration the request read at its start ([The configuration a replica applies](#the-configuration-a-replica-applies)).
 
 **What changed in the committed interfaces (a contract change, said here on purpose).** Package 4 reads this before it calls the guard.
 
@@ -334,7 +339,7 @@ hands `engine.Deps.Shared` and `engine.Deps.Guard` over; it closes them (the Val
 | Step | Call | A refusal |
 |---|---|---|
 | 2, block list | `Blocked(addr)` | `429 address_blocked`, `Quiet`, `Retry-After` |
-| 4, limits | `Request(addr, credentialed)` | `429 rate_limited` |
+| 4, limits | `Request(addr, credentialed)`; for a page of the web interface `Page(addr)` (no route asks it before W-35's P7) | `429 rate_limited` |
 | a credential the Bastion refuses itself (R-BAS-019) | `FailedAuth(addr)` | none, the answer is the `401` |
 | before a check or a forward for a credential with no usable answer | `AuthTimeout(addr)` | `429 auth_timeout`; nothing is sent to the main installation |
 | before every request to the main installation (forward, check, conditional) | `Miss(addr, credentialed)` | `429 rate_limited` while hits keep being served |
@@ -343,7 +348,7 @@ hands `engine.Deps.Shared` and `engine.Deps.Guard` over; it closes them (the Val
 The guard decides and returns a `Verdict` (`Status`, `Code`, `RetryAfter`, `Reason`, `Quiet`); the engine renders the problem details of R-BAS-029,
 sets `Retry-After` and the `RateLimit` fields, and counts `quader_bastion_refused_total{reason=Verdict.Reason}`. The guard counts the blocks it sets
 (`quader_bastion_blocks_total`, `quader_bastion_blocked_addresses`) and logs `bastion address blocked` once per block. An error of the shared state
-admits the request (Q-BAS-94). `exempt_cidrs` are parsed at `guard.New`; a bad entry stops the start.
+admits the request (Q-BAS-94). The exempt networks are the configuration's canonical prefixes, checked by the wire's `Validate`.
 
 **The rules in one place.**
 
@@ -352,12 +357,13 @@ admits the request (Q-BAS-94). `exempt_cidrs` are parsed at `guard.New`; a bad e
   a flood of several times the limit still reaches it. This is the other reading of R-ARCH-034's window: its `Take` charges refused requests
   (right for the main installation's logins), the Bastion's `TakeUncharged` does not.
 - Request limits: a token bucket without Valkey, the sliding window of the admitted requests with it (limiters `bastion.requests_authenticated`,
-  `bastion.requests_anonymous`); the local rate and burst are divided by `bastion.replicas`.
+  `bastion.requests_anonymous`, `bastion.requests_gui`); the local rate and burst are divided by `bastion.replicas`. A figure that changes
+  while the replica runs replaces the Valkey limiter under its name (`cluster.LimiterSet.SetLimiter`, Q-BAS-449).
 - Miss limits: the count of the admitted misses of the sliding minute (limiters `bastion.misses_authenticated`, `bastion.misses_anonymous`);
   the retry delay is 15 s. The sliding estimate can admit more than the limit around a window boundary
   ([H-474](../spec/bastion.md#h-474--the-sliding-estimate-of-a-limit-admits-more-than-the-limit-in-a-minute-that-spans-a-boundary)).
-- Failed authentication (`bastion.failed_auth`): the failure that brings the count of the window to `max_failures` puts the address into the timeout
-  (`Timeouts`, `failed_auth.timeout`); the next credential without a usable answer is refused. Anonymous requests and credentials with a usable answer
+- Failed authentication (`limits.flood.failedAuth`, limiter `bastion.failed_auth`): the failure that brings the count of the window to `maxFailures`
+  puts the address into the timeout (`Timeouts`, `timeoutSeconds`); the next credential without a usable answer is refused. Anonymous requests and credentials with a usable answer
   are not the guard's to refuse.
 - Blocking (`bastion.refusals`): every refusal of a request limit, a miss limit or the timeout counts; more than `threshold` within `window` blocks the
   address for `duration`, doubled for each earlier block within 24 h, up to `max_duration`. The decision is serialized in the process **per address**
@@ -365,12 +371,12 @@ admits the request (Q-BAS-94). `exempt_cidrs` are parsed at `guard.New`; a bad e
   trips of one address's decision hold no other address back, Q-BAS-128); across replicas two blocks can race, and the later one raises the level.
 - The built-in figures (R-BAS-092) are set from the measurement of real clients of usage-and-limits.md Q-LIM-59 and are held by
   `TestR_BAS_092_TheDefaultsHoldOneNormalCommandOfEveryClient` ([defaults_test.go](../../internal/bastion/guard/defaults_test.go)), which
-  reads them through the configuration's loader and plays each measured command against a cold Bastion; the other tests of the guard count
-  against small figures of their own (`figures` in [guard_test.go](../../internal/bastion/guard/guard_test.go)) so that they run in
-  milliseconds. A change of a default changes the configuration's tag, the chart's `values.yaml` (and `make generate` for the schemas), the
-  spec's R-BAS-035, R-BAS-037, R-BAS-038, R-BAS-046 and R-BAS-092, and the manual's table under "Limits and blocking".
-- `failed_auth.window` is 1 s to 12 h, the range of the limiters; the configuration refuses a longer one (`shared.MaxWindow` and the `max=12h` of
-  [bastion_role.go](../../internal/config/bastion_role.go) are the same number, and `TestR_BAS_036_TheConfigurationAcceptsExactlyTheWindowsTheLimiterCounts` ties them).
+  reads them from the built-in configuration (`settings.Builtin`) and plays each measured command against a cold Bastion; the other tests of
+  the guard count against small figures of their own (`figures` in [guard_test.go](../../internal/bastion/guard/guard_test.go)) so that they
+  run in milliseconds. A change of a default changes [builtin.go](../../internal/bastion/settings/builtin.go), the main installation's
+  presets (E8), the spec's R-BAS-035 to R-BAS-037, R-BAS-092, R-BAS-093 and R-BAS-096, and the manual's table under "Limits and blocking".
+- A window is 1 s to 12 h, the range of the limiters (`shared.MaxWindow`); the wire refuses no longer one, the Bastion counts it as 12 h, and
+  the main installation's API (E8) is where a longer one is to be refused.
 - IPv6 counts as its /64, an IPv4-mapped address as the IPv4 address (`AddressKey`).
 
 **The local forms** ([local.go](../../internal/bastion/shared/local.go), [lru.go](../../internal/bastion/shared/lru.go)) are what runs without
@@ -387,8 +393,44 @@ the replica's share; the answers are Valkey only (the engine has its own memory)
 the state run from memory and never the replica unready; `quader_valkey_available` and `quader_ratelimit_fallback{limiter}` show it. Losing Valkey
 costs the sharing, not correctness. The keys are in [valkey.md](valkey.md#the-bastions-keys).
 
+**The anonymous ceiling** ([ceiling.go](../../internal/bastion/guard/ceiling.go), R-BAS-094, Q-BAS-445). One key, `anonymous`, for all
+anonymous callers of the Bastion, in two limiters: `bastion.ceiling_requests` (the second's bucket) and `bastion.ceiling_hour` (a count of the
+hour). The slot budget (`mainclient.SlotBudget.Acquire`) asks it for every request of the anonymous class once the request has its slot, so a
+forward, a conditional request, a check, a probe and the background refresh of an anonymous answer all count, and a request the slots refuse
+takes nothing. `Take` reads the hour's count, then takes from the bucket, then counts the hour: a refusal takes nothing from either, and
+requests decided at the same instant may pass the hour by their number (H-2356). A refusal is `mainclient.CeilingError` (it `Is` `ErrBusy`):
+the slot goes back at once, the engine answers `503 busy` with the ceiling's wait and counts `reason="anonymous_ceiling"`.
+
 **Add a limit.** A new limiter is a name `bastion.<name>` in [guard/instance.go](../../internal/bastion/guard/instance.go), a call to
-`State.Limiter.Allow` (bucket) or `Add` (count), and a row in R-BAS-035 to R-BAS-037; the name is a metric label, so it carries no address. A new
+`State.Limiter.Allow` (bucket) or `Add` (count), and a row in R-BAS-035 to R-BAS-037; the name is a metric label, so it carries no address. Its
+figures are a member of `iface.Configuration` (a wire change, E7's kind of work) read through `settings.Applied`.
+
+## The configuration a replica applies
+
+Built by W34-E9a (R-BAS-093, [Q-BAS-446](../spec/bastion.md#q-bas-446--a-configuration-is-applied-when-it-differs-and-a-request-reads-it-once)).
+The flood figures, the exempt networks, the slots and the anonymous ceiling are no keys of the configuration file: they are the member
+`configuration` of every handshake, which [settings.Holder](../../internal/bastion/settings/holder.go) applies whole.
+
+- **One value, swapped atomically.** `Holder.Apply` validates the member (`iface.Configuration.Validate`; a refusal fails the handshake and
+  changes nothing), builds an immutable `settings.Applied` (durations, parsed exempt networks, the ceiling with its burst) and stores it with
+  one `atomic.Pointer` store. A member equal to the applied one changes nothing; any other is applied, also at the same revision.
+- **A request reads it once.** `engine.newRq` puts `Holder.Current()` on the request's context (`settings.With`); the guard
+  (`Options.Figures`), the ceiling and the engine's `RateLimit-Policy` read `Holder.For(ctx)`, so a request never decides with figures of two
+  configurations. The background refresh, which outlives its request, reads the one applied when it starts.
+- **Watchers.** `Holder.Watch` calls a function after every swap under the holder's lock; the server resizes the slot budget in it
+  (`SlotBudget.Resize`: new slots go to the waiters at once, fewer take nothing from a request in flight).
+- **Stored for a restart** (Q-BAS-327). After every swap the holder writes the member to the cache backend: `configuration/current.json`
+  (with a cache key the sealed object `bc-<id>/c/current`, bound to its name), signed in the domain `configuration` where entries are signed.
+  `Server.Start` calls `Holder.LoadStored` before the client listener binds: a replica that starts while the main installation is unreachable
+  applies it (source `stored`); with none, a forged one or one `Validate` refuses it keeps `settings.Builtin` (source `builtin`), the Internet
+  preset in Enforce with every switch off. The first handshake replaces either.
+- **Metrics.** `quader_bastion_configuration_revision` and `quader_bastion_configuration_source{source}`.
+- **The edge figure** is a chart-managed section of the file, `bastion.edge_limit` (`enabled`, `requests_per_second`, `connections`), which
+  `mainclient.Options.EdgeLimit` sends with every handshake in `Quader-Bastion-Edge-Limit` (Q-BAS-447).
+- **Until E8** the main installation sends the interim configuration (Q-BAS-352): the chart's former flood figures and slots (a wait of 2 s),
+  no ceiling; an administrator changes only its switch `handover`, which a Bastion applies at its next regular handshake (the feed's
+  `settings` entry for a configuration's change is E8's). The integration suite gives a Bastion other figures on the Bastion's side of the wire
+  (`bastionOptions.Configure` in [replica_test.go](../../test/integration/bastion/replica_test.go)). A new
 shared mechanism is a typed method in `internal/cluster/valkey_bastion.go` first, then the interface in `shared.go`, its local form in `local.go` and its
 Valkey form in `valkey.go`.
 
@@ -1246,7 +1288,9 @@ The main installation's keys ([bastions.go](../../internal/config/bastions.go), 
 file [internal/config/bastion.schema.json](../../internal/config/bastion.schema.json), which the chart `quader-bastion` includes as the
 schema of its `config` value. Keys the chart renders carry `x-quader-chart-managed: true`; the chart refuses a value for them.
 `go generate ./internal/config` writes both schema files and the generated files of the chart (`values.schema.json` `config`
-property, `chart-managed-keys.yaml`; [helm-chart.md](helm-chart.md#the-bastion-chart)).
+property, `chart-managed-keys.yaml`; [helm-chart.md](helm-chart.md#the-bastion-chart)). What an administrator of the main installation decides
+(the flood protection, the slots, the anonymous ceiling, the switches) is no key of the role's tree but the handshake's configuration
+([The configuration a replica applies](#the-configuration-a-replica-applies)); a file that sets one of the keys it replaced stops the start.
 
 ## Run the role locally
 

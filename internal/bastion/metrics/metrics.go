@@ -55,6 +55,8 @@ const (
 	FillBytesTotal           = "quader_bastion_fill_bytes_total"
 	HandoverEnabled          = "quader_bastion_handover_enabled"
 	HandoverCooldown         = "quader_bastion_handover_cooldown"
+	ConfigurationRevision    = "quader_bastion_configuration_revision"
+	ConfigurationSource      = "quader_bastion_configuration_source"
 )
 
 // Label values. The sets are closed: a value outside them is a defect, never a new series.
@@ -156,6 +158,14 @@ const (
 	// RefusedForeignLocation: an answer of the main installation whose Location names another host than the Bastion's,
 	// answered 502 instead (R-BAS-099 row 6).
 	RefusedForeignLocation = "foreign_location"
+	// RefusedCeiling: an anonymous caller's request to the main installation above the Bastion's anonymous ceiling, answered
+	// 503 busy (R-BAS-094).
+	RefusedCeiling = "anonymous_ceiling"
+
+	// source of quader_bastion_configuration_source (R-BAS-093): where the configuration the replica applies came from.
+	ConfigurationFromMain    = "main"
+	ConfigurationFromStored  = "stored"
+	ConfigurationFromBuiltin = "builtin"
 
 	// reason of quader_bastion_blocks_total.
 	BlockRefusals = "refusals"
@@ -248,6 +258,10 @@ type Metrics struct {
 	FillBytes        *prometheus.CounterVec
 	HandoverEnabled  prometheus.Gauge
 	HandoverCooldown prometheus.Gauge
+	// ConfigRevision is the revision of the configuration the replica applies; ConfigSource is 1 for where that configuration
+	// came from (main, stored, builtin) and 0 for the others (R-BAS-093).
+	ConfigRevision prometheus.Gauge
+	ConfigSource   *prometheus.GaugeVec
 }
 
 // New creates the collectors and registers them on reg; a nil reg creates them unregistered. The series with
@@ -303,6 +317,8 @@ func New(reg prometheus.Registerer) (*Metrics, error) {
 		FillBytes:            counter(FillBytesTotal, "Bytes written into fills by source (main, store) and the class of the caller that started the fill (authenticated, anonymous) (R-BAS-075, R-BAS-090).", "source", "class"),
 		HandoverEnabled:      prometheus.NewGauge(prometheus.GaugeOpts{Name: HandoverEnabled, Help: "1 while the last handshake said the registration's handover is on (R-BAS-071)."}),
 		HandoverCooldown:     prometheus.NewGauge(prometheus.GaugeOpts{Name: HandoverCooldown, Help: "1 while this replica sends no offer after a failure of the object store's path (R-BAS-075)."}),
+		ConfigRevision:       prometheus.NewGauge(prometheus.GaugeOpts{Name: ConfigurationRevision, Help: "The revision of the configuration this replica applies (R-BAS-093)."}),
+		ConfigSource:         gauge(ConfigurationSource, "1 for where the configuration this replica applies came from (main, stored, builtin), 0 for the others (R-BAS-093).", "source"),
 	}
 	m.seed()
 	if reg == nil {
@@ -370,7 +386,7 @@ func (m *Metrics) seed() {
 	for _, o := range []string{OpGet, OpPut, OpDelete, OpList, OpSpool} {
 		m.CacheErrors.WithLabelValues(o)
 	}
-	for _, r := range []string{RefusedBlocked, RefusedRateLimited, RefusedMissLimited, RefusedAuthTimeout, RefusedInvalid, RefusedBusy, RefusedUnreachable, RefusedNotServed, RefusedReadOnly, RefusedForeignLocation} {
+	for _, r := range []string{RefusedBlocked, RefusedRateLimited, RefusedMissLimited, RefusedAuthTimeout, RefusedInvalid, RefusedBusy, RefusedUnreachable, RefusedNotServed, RefusedReadOnly, RefusedForeignLocation, RefusedCeiling} {
 		m.Refused.WithLabelValues(r)
 	}
 	m.Blocks.WithLabelValues(BlockRefusals)
@@ -385,6 +401,9 @@ func (m *Metrics) seed() {
 			m.FillBytes.WithLabelValues(s, c)
 		}
 	}
+	for _, s := range []string{ConfigurationFromMain, ConfigurationFromStored, ConfigurationFromBuiltin} {
+		m.ConfigSource.WithLabelValues(s)
+	}
 }
 
 func (m *Metrics) collectors() []prometheus.Collector {
@@ -395,7 +414,7 @@ func (m *Metrics) collectors() []prometheus.Collector {
 		m.TokenRemaining, m.TokenWarnBefore, m.MainTokenRefused, m.TokenReloads,
 		m.CacheBytes, m.CacheCapacity, m.CacheEvictions, m.CacheCorrupt, m.CacheErrors, m.CacheSweeps, m.CacheNoRoom,
 		m.Refused, m.Blocks, m.Blocked, m.AuditEvents, m.AuditBuffer, m.AuditDropped,
-		m.Handovers, m.FillBytes, m.HandoverEnabled, m.HandoverCooldown,
+		m.Handovers, m.FillBytes, m.HandoverEnabled, m.HandoverCooldown, m.ConfigRevision, m.ConfigSource,
 	}
 }
 
@@ -409,6 +428,6 @@ func Names() []string {
 		TokenReloadsTotal, CacheBytes, CacheCapacityBytes, CacheEvictionsTotal, CacheCorruptTotal, CacheErrorsTotal,
 		CacheSweepsTotal, CacheNoRoomTotal,
 		RefusedTotal, BlocksTotal, BlockedAddresses, AuditEventsTotal, AuditBufferEvents, AuditEventsDroppedTotal,
-		HandoversTotal, FillBytesTotal, HandoverEnabled, HandoverCooldown,
+		HandoversTotal, FillBytesTotal, HandoverEnabled, HandoverCooldown, ConfigurationRevision, ConfigurationSource,
 	}
 }

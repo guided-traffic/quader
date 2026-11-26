@@ -10,13 +10,32 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/guided-traffic/quader/internal/bastion/iface"
 )
 
 // readOnlyText is the detail of the refusal of a write through a Bastion (R-BAS-099 row 1, Q-BAS-321).
 const readOnlyText = "This address is read-only: it serves downloads and accepts no uploads."
 
-// relaxed raises the Bastion's request limits so that a loop of requests in a test is not the limit's subject.
-const relaxed = "  limits:\n    authenticated:\n      requests_per_second: 100000\n      burst: 100000\n    anonymous:\n      requests_per_second: 100000\n      burst: 100000\n    misses:\n      authenticated_per_minute: 100000\n      anonymous_per_minute: 100000\n"
+// relaxed raises the flood figures of the Bastion's configuration (R-BAS-093) so that a loop of requests in a test is not the
+// limit's subject.
+func relaxed(c *iface.Configuration) {
+	f := &c.Limits.Flood
+	f.Anonymous = iface.FloodClass{RequestsPerSecond: 100000, Burst: 100000, MissesPerMinute: 100000}
+	f.Authenticated = iface.FloodClass{RequestsPerSecond: 100000, Burst: 100000, MissesPerMinute: 100000}
+}
+
+// then applies the changes of a configuration in their order.
+func then(fs ...func(*iface.Configuration)) func(*iface.Configuration) {
+	return func(c *iface.Configuration) {
+		for _, f := range fs {
+			f(c)
+		}
+	}
+}
+
+// noBlock raises the blocking threshold, so that the refusals a test counts never block its address.
+func noBlock(c *iface.Configuration) { c.Limits.Flood.Blocking.Threshold = 100000 }
 
 // TestR_BAS_095_WritesAreRefusedAtTheBastion: an `npm publish`-shaped PUT and a `nuget push`-shaped PUT, with the publisher's token
 // and without a credential, are refused 403 read_only by the Bastion itself in the shape each format declares, naming no address
@@ -26,7 +45,7 @@ const relaxed = "  limits:\n    authenticated:\n      requests_per_second: 10000
 func TestR_BAS_095_WritesAreRefusedAtTheBastion(t *testing.T) {
 	w := newWorld(t, worldOptions{})
 	w.content()
-	b := w.newBastion(t, bastionOptions{Settings: relaxed}).wait()
+	b := w.newBastion(t, bastionOptions{Configure: relaxed}).wait()
 	r := b.reps[0]
 	published := w.st.Number(`SELECT count(*) FROM audit_event WHERE action IN ('package.published', 'npm.publish')`)
 	m := w.front.Mark()

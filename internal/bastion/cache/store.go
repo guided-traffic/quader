@@ -241,6 +241,31 @@ func (c *Cache) StoreEntry(ctx context.Context, cacheKey string, e Entry) error 
 	return c.back.PutEntry(ctx, KeyHash(cacheKey), rec)
 }
 
+// StoreConfiguration keeps the configuration a replica applied, configuration/current.json (R-BAS-093, Q-BAS-327): signed with
+// the signing key where entries are signed, and with a cache key an object of the stored format bound to its name. The bucket
+// backend's replicas share the one object; the last replica that applied a configuration wrote it.
+func (c *Cache) StoreConfiguration(ctx context.Context, payload []byte) error {
+	rec := payload
+	if c.signer != nil {
+		rec = c.signer.Sign(DomainConfiguration, fileConfiguration, payload)
+	}
+	return c.back.putConfiguration(ctx, rec)
+}
+
+// LoadConfiguration reads the stored configuration and returns its payload. A missing object is [ErrNotFound]; one whose
+// signature fails, or with a cache key one the stored format refuses, is [ErrBadSignature]: a replica then applies the built-in
+// configuration (Q-BAS-327).
+func (c *Cache) LoadConfiguration(ctx context.Context) ([]byte, error) {
+	rec, err := c.back.getConfiguration(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if c.signer == nil {
+		return rec, nil
+	}
+	return c.signer.Verify(DomainConfiguration, fileConfiguration, rec)
+}
+
 // DeleteEntry removes the entry of a cache key.
 func (c *Cache) DeleteEntry(ctx context.Context, cacheKey string) error {
 	return c.back.DeleteEntry(ctx, KeyHash(cacheKey))

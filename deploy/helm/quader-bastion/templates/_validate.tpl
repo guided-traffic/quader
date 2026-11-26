@@ -160,12 +160,9 @@ generated schema of the role bastion (docs/developer/helm-chart.md, Bastion char
 {{- end -}}
 {{- end -}}
 
-{{- /* The edge limit is wider than the Bastion's own (R-BAS-038). */ -}}
+{{- /* The edge limit (R-BAS-038). Its figure is reported to the main installation, whose card warns where a flood figure of the
+registration lies above it (R-BAS-093); the chart no longer knows those figures. */ -}}
 {{- if $v.edgeLimit.enabled -}}
-{{- $own := dig "bastion" "limits" "authenticated" "requests_per_second" 200 $cfg -}}
-{{- if le (float64 $v.edgeLimit.requestsPerSecond) (float64 $own) -}}
-{{- fail (printf "quader-bastion: edgeLimit.requestsPerSecond (%v) must be above config.bastion.limits.authenticated.requests_per_second (%v): the Bastion's own stage, which knows credentials and misses, decides first and the ingress only cuts what would overload the Bastion itself" $v.edgeLimit.requestsPerSecond $own) -}}
-{{- end -}}
 {{- if lt (int $v.edgeLimit.connections) 1 -}}
 {{- fail "quader-bastion: edgeLimit.connections must be at least 1" -}}
 {{- end -}}
@@ -250,7 +247,7 @@ generated schema of the role bastion (docs/developer/helm-chart.md, Bastion char
 {{- $cur = index $cur $first -}}
 {{- end -}}
 {{- end -}}
-{{- fail (printf "quader-bastion: config.%s is managed by the chart and must not be set (secret file paths come from the secrets values, TLS from the tls values, the replica count from replicaCount or autoscaling.maxReplicas, the cache directory is fixed)" $named) -}}
+{{- fail (printf "quader-bastion: config.%s is managed by the chart and must not be set (secret file paths come from the secrets values, TLS from the tls values, the replica count from replicaCount or autoscaling.maxReplicas, the edge figure from edgeLimit, the cache directory is fixed)" $named) -}}
 {{- end -}}
 {{- end -}}
 {{- end -}}

@@ -21,6 +21,9 @@ const (
 	dirAccess    = "access"
 	dirSpool     = "audit-spool"
 	dirProbe     = "probe"
+	// fileConfiguration is the configuration a replica applied, kept for a restart without the main installation (R-BAS-093,
+	// Q-BAS-327).
+	fileConfiguration = "configuration/current.json"
 )
 
 type areaKey struct{}
@@ -69,12 +72,15 @@ type layout interface {
 	spoolName(ms int64) string
 	// probe is the name of the probe of the first readiness check.
 	probe(id string) string
+	// configuration is the name of the stored configuration (R-BAS-093).
+	configuration() string
 }
 
 // plainLayout is the layout of R-BAS-030:
 //
 //	sha256/<h0h1>/<h2h3>/<64 hex>    documents/<h0h1>/<h2h3>/<64 hex>    entries/<k0k1>/<64 hex>.json
 //	access/<64 hex>                  audit-spool/<replica>/<unix ms>.jsonl    probe/<32 hex>
+//	configuration/current.json
 //
 // An access marker is per content address, whatever the area.
 type plainLayout struct{}
@@ -112,11 +118,13 @@ func (plainLayout) spoolName(ms int64) string { return strconv.FormatInt(ms, 10)
 
 func (plainLayout) probe(id string) string { return dirProbe + "/" + id }
 
+func (plainLayout) configuration() string { return fileConfiguration }
+
 // sealedLayout is the layout of R-BAS-061 below the tree of the cache key's identifier, every name keyed (m is a keyed
 // name of [sealer.name], 64 hex):
 //
 //	bc-<id>/a/<m0m1>/<m2m3>/<m>    bc-<id>/d/<m0m1>/<m2m3>/<m>    bc-<id>/e/<m0m1>/<m>    bc-<id>/x/<m>
-//	bc-<id>/s/<replica>/<unix ms>  bc-<id>/p/<32 hex>
+//	bc-<id>/s/<replica>/<unix ms>  bc-<id>/p/<32 hex>  bc-<id>/c/current
 //
 // The marker of an object is named by the object's m, so the area is part of it.
 type sealedLayout struct {
@@ -203,6 +211,9 @@ func (l sealedLayout) spoolDir() string { return l.root + "s/" }
 func (sealedLayout) spoolName(ms int64) string { return strconv.FormatInt(ms, 10) }
 
 func (l sealedLayout) probe(id string) string { return l.root + "p/" + id }
+
+// configuration is bc-<id>/c/current: a name of its own family, bound to it like an entry's.
+func (l sealedLayout) configuration() string { return l.root + "c/current" }
 
 // objectKey is the path of the bytes of a content address: <dir>/<h0h1>/<h2h3>/<64 hex>.
 func objectKey(area EntryKind, sha string) (string, error) {

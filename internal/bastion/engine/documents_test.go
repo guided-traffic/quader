@@ -358,12 +358,9 @@ func TestR_BAS_024_NegativeEntriesAreSharedThroughTheSharedStore(t *testing.T) {
 
 func TestR_BAS_025_MissesNeverPutMoreThanTheBudgetOntoTheMainInstallation(t *testing.T) {
 	m := &fakeMain{delay: 5 * time.Millisecond}
-	s := newSiteHarness(t, options{main: m, cfg: []func(*configT){func(c *configT) {
-		c.Bastion.Main.MaxConcurrent, c.Bastion.Replicas, c.Bastion.Main.QueueTimeout = 8, 2, 20*time.Millisecond
-	}}})
+	s := newSiteHarness(t, options{main: m, cfg: []func(*configT){func(c *configT) { c.Bastion.Replicas = 2 }}})
 	m.budget = mainclient.NewBudget(mainclient.BudgetOptions{
-		MaxConcurrent: s.cfg.Bastion.Main.MaxConcurrent, Replicas: s.cfg.Bastion.Replicas, AnonymousShare: s.cfg.Bastion.Main.AnonymousShare,
-		QueueTimeout: s.cfg.Bastion.Main.QueueTimeout, Metrics: s.m,
+		MaxConcurrent: 8, Replicas: s.cfg.Bastion.Replicas, AnonymousShare: 0.25, QueueTimeout: 20 * time.Millisecond, Metrics: s.m,
 	})
 	for i := 0; i < 500; i++ {
 		s.site.artifacts[fmt.Sprintf("/api/npm/web/npm-all/p%d.tgz", i)] = []byte("x")

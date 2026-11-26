@@ -395,6 +395,31 @@ func (b *backend) Sweep(ctx context.Context, area string, high, target int64) (i
 	return evicted, errors.Join(errs...)
 }
 
+// putConfiguration stores the configuration record (R-BAS-093), with a cache key as an object of the stored format bound to
+// its name.
+func (b *backend) putConfiguration(ctx context.Context, record []byte) error {
+	key := b.lay.configuration()
+	if b.seal != nil {
+		return b.fail(metrics.OpPut, b.putSealedBytes(ctx, key, record))
+	}
+	return b.fail(metrics.OpPut, b.s.putBytes(ctx, key, record))
+}
+
+// getConfiguration reads the configuration record. With a cache key a record the stored format refuses, or one bound to
+// another name, is [ErrBadSignature].
+func (b *backend) getConfiguration(ctx context.Context) ([]byte, error) {
+	key := b.lay.configuration()
+	if b.seal != nil {
+		data, err := b.readSealedBytes(ctx, key, maxEntryBytes)
+		if err != nil && refused(err) {
+			err = fmt.Errorf("%w: %w", ErrBadSignature, err)
+		}
+		return data, b.fail(metrics.OpGet, err)
+	}
+	data, err := readAll(ctx, b.s, key, maxEntryBytes)
+	return data, b.fail(metrics.OpGet, err)
+}
+
 // SpoolWrite implements [Backend]: audit-spool/<replica>/<unix ms>.jsonl, or with a cache key an object of the
 // stored format at s/<replica>/<unix ms> bound to its name. The name is the time of the write, raised by one
 // millisecond where two writes of this process fall in the same one.

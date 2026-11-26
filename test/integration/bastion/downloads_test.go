@@ -9,6 +9,8 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/guided-traffic/quader/internal/bastion/iface"
 )
 
 // TestR_BAS_016_R_BAS_039_DownloadsServedFromTheCacheAreAuditedAtTheMainInstallation: a cold run is recorded by
@@ -92,10 +94,12 @@ func TestR_BAS_025_TheBudgetAndCollapsedMisses(t *testing.T) {
 	}
 
 	t.Run("the budget", func(t *testing.T) {
-		// max_concurrent 2: the forwarded reads are held at the main installation until every other request has been
+		// limits.slots.maxConcurrent 2: the forwarded reads are held at the main installation until every other request has been
 		// answered, so the two slots stay taken and each further request waits out queue_timeout. Which requests are served
 		// and which are busy is decided by the held slots, not by how fast the host runs them.
-		b := w.newBastion(t, bastionOptions{Settings: relaxed, MainSettings: "    max_concurrent: 2\n    queue_timeout: 100ms\n"}).wait()
+		b := w.newBastion(t, bastionOptions{Configure: then(relaxed, func(c *iface.Configuration) {
+			c.Limits.Slots = iface.Slots{MaxConcurrent: 2, AnonymousShare: 0.25, QueueTimeoutMillis: 100}
+		})}).wait()
 		r := b.reps[0]
 		release := make(chan struct{})
 		var releaseOnce sync.Once
@@ -147,7 +151,7 @@ func TestR_BAS_025_TheBudgetAndCollapsedMisses(t *testing.T) {
 
 	for _, v := range []variant{{"volume, one replica", bastionOptions{Backend: "volume"}}, {"bucket and Valkey, two replicas", bastionOptions{Backend: "bucket", Valkey: true, Replicas: 2}}} {
 		t.Run("collapsing/"+v.name, func(t *testing.T) {
-			v.o.Settings = relaxed
+			v.o.Configure = relaxed
 			b := w.newBastion(t, v.o).wait()
 			w.front.SetGate(slow)
 			defer w.front.SetGate(nil)

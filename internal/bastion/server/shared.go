@@ -22,8 +22,7 @@ func (s *Server) openShared(signer *cache.Signer) (*shared.State, guard.Guard, e
 	}
 	s.closers = append(s.closers, c)
 	g, err := guard.New(guard.Options{
-		Limits: b.Limits, FailedAuth: b.FailedAuth, Blocking: b.Blocking,
-		State: st, Metrics: s.bm, Log: s.log.With("component", "guard"),
+		Figures: s.configuration.For, State: st, Metrics: s.bm, Log: s.log.With("component", "guard"),
 	})
 	if err != nil {
 		s.closeAll()

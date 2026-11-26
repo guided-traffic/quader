@@ -8,13 +8,14 @@ import "github.com/guided-traffic/quader/internal/bastion/iface"
 // and limits that equal what a Bastion does today, so that a Bastion that applies them changes nothing (Q-BAS-322):
 //
 //   - no budget per subject at the Bastion: one rule, InterimRule, every figure unlimited, for every kind of caller;
-//   - the flood figures, the failed-authentication timeout and the blocking of the Bastion chart's defaults today
-//     (internal/config, BastionLimits, BastionFailedAuth, BastionBlocking), no exempt network;
-//   - the slots of the chart's defaults (bastion.main.max_concurrent 64, anonymous_share 0.25, queue_timeout 2 s);
+//   - the flood figures, the failed-authentication timeout and the blocking the Bastion chart held before they became members
+//     of this configuration (R-BAS-093), no exempt network;
+//   - the slots the chart held then (max_concurrent 64, anonymous_share 0.25, queue_timeout 2 s);
 //   - no throughput cap and no anonymous ceiling (both unlimited);
 //   - the mode enforce and the preset custom, since no preset's figures are what it holds.
 //
-// Nothing of a Bastion's side reads the limits yet (E9a, E9b, E10 do); the switch handover is read (R-BAS-072).
+// A Bastion applies the whole configuration (E9a): its flood figures and slots are these; the place and the throughput are read by
+// nothing yet (E9b, E10).
 
 // InterimRule is the ID of the one rule of the interim configuration.
 const InterimRule = "interim-unlimited"

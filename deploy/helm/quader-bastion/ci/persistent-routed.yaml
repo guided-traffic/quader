@@ -6,8 +6,8 @@ config:
   bastion:
     main:
       url: https://quader.example.com
-    blocking:
-      exempt_cidrs: ["198.51.100.0/24", "203.0.113.7/32"]
+edgeLimit:
+  exemptCIDRs: ["198.51.100.0/24", "203.0.113.7/32"]
 secrets:
   mainToken:
     existingSecret: quader-bastion-token

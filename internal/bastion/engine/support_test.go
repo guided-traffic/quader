@@ -405,6 +405,8 @@ func (g *fakeGuard) Request(_ context.Context, _ string, _ guard.Credentialed) g
 	return g.request
 }
 
+func (g *fakeGuard) Page(context.Context, string) guard.Verdict { return guard.Allow() }
+
 func (g *fakeGuard) Miss(context.Context, string, guard.Credentialed) guard.Verdict {
 	g.mu.Lock()
 	defer g.mu.Unlock()

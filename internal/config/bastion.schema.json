@@ -70,50 +70,6 @@
           },
           "type": "object"
         },
-        "blocking": {
-          "additionalProperties": false,
-          "properties": {
-            "duration": {
-              "default": "15m",
-              "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
-              "type": "string",
-              "x-quader-env": "QUADER_BASTION_BLOCKING_DURATION",
-              "x-quader-type": "duration"
-            },
-            "exempt_cidrs": {
-              "default": [],
-              "description": "Client addresses or CIDRs that no limit, timeout or block applies to.",
-              "items": {
-                "type": "string"
-              },
-              "type": "array",
-              "x-quader-env": "QUADER_BASTION_BLOCKING_EXEMPT_CIDRS"
-            },
-            "max_duration": {
-              "default": "24h",
-              "description": "Each further block within 24 h doubles the duration up to this (R-BAS-037).",
-              "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
-              "type": "string",
-              "x-quader-env": "QUADER_BASTION_BLOCKING_MAX_DURATION",
-              "x-quader-type": "duration"
-            },
-            "threshold": {
-              "default": 3000,
-              "description": "Refusals of R-BAS-035 and R-BAS-036 per window that block an address.",
-              "minimum": 1,
-              "type": "integer",
-              "x-quader-env": "QUADER_BASTION_BLOCKING_THRESHOLD"
-            },
-            "window": {
-              "default": "1m",
-              "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
-              "type": "string",
-              "x-quader-env": "QUADER_BASTION_BLOCKING_WINDOW",
-              "x-quader-type": "duration"
-            }
-          },
-          "type": "object"
-        },
         "cache": {
           "additionalProperties": false,
           "properties": {
@@ -339,30 +295,31 @@
           },
           "type": "object"
         },
-        "failed_auth": {
+        "edge_limit": {
           "additionalProperties": false,
           "properties": {
-            "max_failures": {
-              "default": 20,
-              "description": "More failed authentications than this from one address within the window start the timeout.",
-              "minimum": 1,
+            "connections": {
+              "default": 0,
+              "description": "The requests in flight per address the ingress admits (edgeLimit.connections); 0 sets none.",
+              "minimum": 0,
               "type": "integer",
-              "x-quader-env": "QUADER_BASTION_FAILED_AUTH_MAX_FAILURES"
+              "x-quader-chart-managed": true,
+              "x-quader-env": "QUADER_BASTION_EDGE_LIMIT_CONNECTIONS"
             },
-            "timeout": {
-              "default": "15m",
-              "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
-              "type": "string",
-              "x-quader-env": "QUADER_BASTION_FAILED_AUTH_TIMEOUT",
-              "x-quader-type": "duration"
+            "enabled": {
+              "default": false,
+              "description": "Whether the ingress limits per address (edgeLimit.enabled).",
+              "type": "boolean",
+              "x-quader-chart-managed": true,
+              "x-quader-env": "QUADER_BASTION_EDGE_LIMIT_ENABLED"
             },
-            "window": {
-              "default": "10m",
-              "description": "The sliding window the failures are counted in; 1s to 12h, the range of the limiters of R-ARCH-034 (Q-BAS-128).",
-              "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
-              "type": "string",
-              "x-quader-env": "QUADER_BASTION_FAILED_AUTH_WINDOW",
-              "x-quader-type": "duration"
+            "requests_per_second": {
+              "default": 0,
+              "description": "The requests a second per address the ingress admits (edgeLimit.requestsPerSecond); 0 sets none.",
+              "minimum": 0,
+              "type": "integer",
+              "x-quader-chart-managed": true,
+              "x-quader-env": "QUADER_BASTION_EDGE_LIMIT_REQUESTS_PER_SECOND"
             }
           },
           "type": "object"
@@ -381,77 +338,9 @@
           },
           "type": "object"
         },
-        "limits": {
-          "additionalProperties": false,
-          "properties": {
-            "anonymous": {
-              "additionalProperties": false,
-              "properties": {
-                "burst": {
-                  "default": 1000,
-                  "minimum": 1,
-                  "type": "integer",
-                  "x-quader-env": "QUADER_BASTION_LIMITS_ANONYMOUS_BURST"
-                },
-                "requests_per_second": {
-                  "default": 50,
-                  "minimum": 1,
-                  "type": "integer",
-                  "x-quader-env": "QUADER_BASTION_LIMITS_ANONYMOUS_REQUESTS_PER_SECOND"
-                }
-              },
-              "type": "object"
-            },
-            "authenticated": {
-              "additionalProperties": false,
-              "properties": {
-                "burst": {
-                  "default": 4000,
-                  "minimum": 1,
-                  "type": "integer",
-                  "x-quader-env": "QUADER_BASTION_LIMITS_AUTHENTICATED_BURST"
-                },
-                "requests_per_second": {
-                  "default": 200,
-                  "minimum": 1,
-                  "type": "integer",
-                  "x-quader-env": "QUADER_BASTION_LIMITS_AUTHENTICATED_REQUESTS_PER_SECOND"
-                }
-              },
-              "type": "object"
-            },
-            "misses": {
-              "additionalProperties": false,
-              "properties": {
-                "anonymous_per_minute": {
-                  "default": 1000,
-                  "minimum": 1,
-                  "type": "integer",
-                  "x-quader-env": "QUADER_BASTION_LIMITS_MISSES_ANONYMOUS_PER_MINUTE"
-                },
-                "authenticated_per_minute": {
-                  "default": 4000,
-                  "minimum": 1,
-                  "type": "integer",
-                  "x-quader-env": "QUADER_BASTION_LIMITS_MISSES_AUTHENTICATED_PER_MINUTE"
-                }
-              },
-              "type": "object"
-            }
-          },
-          "type": "object"
-        },
         "main": {
           "additionalProperties": false,
           "properties": {
-            "anonymous_share": {
-              "default": 0.25,
-              "description": "The share of the budget that requests on behalf of anonymous callers may hold (R-BAS-025).",
-              "maximum": 1,
-              "minimum": 0,
-              "type": "number",
-              "x-quader-env": "QUADER_BASTION_MAIN_ANONYMOUS_SHARE"
-            },
             "ca_file": {
               "default": "",
               "description": "CA bundle that verifies the main installation, added to the system roots (trustedCA of the chart).",
@@ -474,13 +363,6 @@
               "x-quader-env": "QUADER_BASTION_MAIN_HANDSHAKE_INTERVAL",
               "x-quader-type": "duration"
             },
-            "max_concurrent": {
-              "default": 64,
-              "description": "Concurrent requests to the main installation across all replicas (R-BAS-025).",
-              "minimum": 1,
-              "type": "integer",
-              "x-quader-env": "QUADER_BASTION_MAIN_MAX_CONCURRENT"
-            },
             "max_forwarded_body": {
               "default": "8MiB",
               "description": "Largest body the Bastion forwards on a read route that takes one, npm's bulk audit (R-BAS-014).",
@@ -496,14 +378,6 @@
               "description": "The Service of the main installation's role packages, for example https://quader-packages.quader.svc:8080; the forwarded package and raw-file requests and the probes go there, everything else to url. Empty means url for both; https only (R-BAS-044).",
               "type": "string",
               "x-quader-env": "QUADER_BASTION_MAIN_PACKAGES_URL"
-            },
-            "queue_timeout": {
-              "default": "2s",
-              "description": "How long a request waits for a slot before 503 busy (R-BAS-025).",
-              "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
-              "type": "string",
-              "x-quader-env": "QUADER_BASTION_MAIN_QUEUE_TIMEOUT",
-              "x-quader-type": "duration"
             },
             "response_header_timeout": {
               "default": "30s",

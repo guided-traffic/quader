@@ -36,12 +36,14 @@ import (
 	"github.com/guided-traffic/quader/internal/bastion/cache"
 	"github.com/guided-traffic/quader/internal/bastion/downloads"
 	"github.com/guided-traffic/quader/internal/bastion/engine"
+	"github.com/guided-traffic/quader/internal/bastion/guard"
 	"github.com/guided-traffic/quader/internal/bastion/handover"
 	"github.com/guided-traffic/quader/internal/bastion/iface"
 	"github.com/guided-traffic/quader/internal/bastion/legal"
 	"github.com/guided-traffic/quader/internal/bastion/link"
 	"github.com/guided-traffic/quader/internal/bastion/mainclient"
 	bmetrics "github.com/guided-traffic/quader/internal/bastion/metrics"
+	"github.com/guided-traffic/quader/internal/bastion/settings"
 	"github.com/guided-traffic/quader/internal/buildinfo"
 	"github.com/guided-traffic/quader/internal/config"
 	"github.com/guided-traffic/quader/internal/errs"
@@ -92,6 +94,9 @@ type Server struct {
 	link     *link.Link
 	reloader *mainclient.Reloader
 	holder   *mainclient.Holder
+	// configuration is the configuration the replica applies (R-BAS-093): the built-in one at first, the stored one from
+	// Start, the main installation's from the first handshake.
+	configuration *settings.Holder
 
 	started    atomic.Bool
 	healthStop context.CancelFunc
@@ -229,23 +234,35 @@ func (s *Server) buildDeps() (engine.Deps, error) {
 		}
 	}
 	s.exportConstants()
-	st, g, err := s.openShared(signer)
-	if err != nil {
-		return engine.Deps{}, err
-	}
 	c, err := cache.New(context.Background(), b.Cache, signer, cache.Options{
 		Metrics: s.bm, Logger: s.log.With("component", "cache"), TempDir: os.TempDir(), Replicas: b.Replicas,
 	})
 	if err != nil {
 		return engine.Deps{}, fmt.Errorf("bastion.cache: %w", err)
 	}
+	// The configuration the guard, the ceiling and the slots read their figures from; the link applies every handshake's
+	// whole (R-BAS-093) and the cache backend keeps it for a restart (Q-BAS-327).
+	s.configuration = settings.New(settings.Options{Store: c, Metrics: s.bm, Log: s.log})
+	st, g, err := s.openShared(signer)
+	if err != nil {
+		return engine.Deps{}, err
+	}
+	slots := s.configuration.Current().Slots
+	budget := mainclient.NewBudget(mainclient.BudgetOptions{
+		MaxConcurrent: slots.MaxConcurrent, Replicas: b.Replicas, AnonymousShare: slots.AnonymousShare, QueueTimeout: slots.QueueTimeout,
+		Ceiling: guard.NewCeiling(st, s.configuration.For), Metrics: s.bm,
+	})
+	s.configuration.Watch(func(a *settings.Applied) {
+		budget.Resize(a.Slots.MaxConcurrent, a.Slots.AnonymousShare, a.Slots.QueueTimeout)
+	})
 	s.holder = mainclient.NewHolder(tok)
+	edge := iface.EdgeLimit{}
+	if b.EdgeLimit.Enabled {
+		edge = iface.EdgeLimit{RequestsPerSecond: b.EdgeLimit.RequestsPerSecond, Connections: b.EdgeLimit.Connections}
+	}
 	client, err := mainclient.New(mainclient.Options{
 		URL: b.Main.URL, PackagesURL: b.Main.PackagesURL, BaseURL: s.cfg.Server.BaseURL, Replica: s.instance, Release: buildinfo.Get().Version, Tokens: s.holder,
-		Budget: mainclient.NewBudget(mainclient.BudgetOptions{
-			MaxConcurrent: b.Main.MaxConcurrent, Replicas: b.Replicas, AnonymousShare: b.Main.AnonymousShare,
-			QueueTimeout: b.Main.QueueTimeout, Metrics: s.bm,
-		}),
+		Budget: budget, EdgeLimit: &edge,
 		ConnectTimeout: b.Main.ConnectTimeout, ResponseHeaderTimeout: b.Main.ResponseHeaderTimeout, CAFile: b.Main.CAFile,
 		Metrics: s.bm, Log: s.log, Tracer: s.tracer, Obs: s.metrics, TLSMetrics: s.tlsm,
 	})
@@ -279,7 +296,9 @@ func (s *Server) buildDeps() (engine.Deps, error) {
 // it). The buffer follows recordDownloads of the handshake and reports while the link is reachable.
 func (s *Server) wireLink(d *engine.Deps) {
 	b := s.cfg.Bastion
-	s.link = link.New(link.Options{Client: d.Main, Config: link.ConfigFrom(s.cfg), Metrics: s.bm, Log: s.log, Tokens: s.holder, Now: d.Now})
+	s.link = link.New(link.Options{
+		Client: d.Main, Config: link.ConfigFrom(s.cfg), Metrics: s.bm, Log: s.log, Tokens: s.holder, Configuration: s.configuration, Now: d.Now,
+	})
 	d.Main = s.link.Guard(d.Main)
 	d.Link = s.link
 	s.reloader = mainclient.NewReloader(mainclient.ReloaderOptions{
@@ -406,6 +425,10 @@ func (s *Server) Start(ctx context.Context) error {
 	if err := s.engine.Start(ectx); err != nil {
 		return fmt.Errorf("engine: %w", err)
 	}
+	// Before the first request and before the first handshake: the configuration this replica or another one stored, so that a
+	// replica started while the main installation is unreachable keeps the administrator's figures; without one the built-in
+	// configuration holds (Q-BAS-327). A cache backend that cannot be read costs at most its timeout and stops nothing.
+	s.configuration.LoadStored(ctx)
 	if err := s.client.Bind(); err != nil {
 		return err
 	}

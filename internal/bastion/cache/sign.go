@@ -19,6 +19,8 @@ const (
 	DomainEntry    Domain = "entry"
 	DomainNegative Domain = "negative"
 	DomainAnswer   Domain = "answer"
+	// DomainConfiguration is the configuration a replica stored for a restart (R-BAS-093, Q-BAS-327).
+	DomainConfiguration Domain = "configuration"
 )
 
 // MinKeyBytes is the shortest signing key accepted: the 32 random bytes of secrets.signingKey (R-BAS-032).

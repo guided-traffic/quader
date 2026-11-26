@@ -200,19 +200,21 @@ The chart's `ingress` values carry annotations of HAProxy Ingress (a request lim
 
 ## Limits and blocking
 
-A Bastion protects itself and the main installation in two stages: a coarse limit at HAProxy Ingress, and its own limits per client address, which know credentials and misses. Their defaults let one normal command of every client through, and two at once from one address, and still refuse and block an address that floods:
+A Bastion protects itself and the main installation in two stages: a coarse limit at HAProxy Ingress, and its own limits per client address, which know credentials and misses. The Bastion's own figures are no chart values: they belong to the Bastion's registration at the main installation and reach every replica with its next handshake, without a restart. A replica stores the last figures it received and uses them when it starts while the main installation cannot be reached; a replica without them starts with the strict defaults below until it reaches the main installation. Today the main installation sends these defaults for every Bastion and cannot change them yet; the edge limit is the chart's. The defaults let one normal command of every client through, and two at once from one address, and still refuse and block an address that floods:
 
-| Value | Default | What it counts per client address | What a normal command needs |
+| Figure | Default | What it counts per client address | What a normal command needs |
 |---|---|---|---|
-| `config.bastion.limits.anonymous` | `50` a second, burst `1000` | requests without a credential | an anonymous `docker pull` of an image of 40 layers: 48 requests in 0.3 s; an `npm ci` of 475 packages: 475 in 2.5 s |
-| `config.bastion.limits.authenticated` | `200` a second, burst `4000` | requests with a credential | an install of up to 4,000 packages at once |
-| `config.bastion.limits.misses.anonymous_per_minute` | `1000` | requests that need the main installation, without a credential | on an empty cache every request is one: the pull above is 48 |
-| `config.bastion.limits.misses.authenticated_per_minute` | `4000` | the same, with a credential | as above |
-| `config.bastion.blocking.threshold` | `3000` | refused requests in `blocking.window` (`1m`) before the address is blocked for `blocking.duration` (`15m`, doubling up to `24h`) | none: an address is blocked only when it sends, after its burst, at least twice the anonymous rate or 1.25 times the rate with a credential |
+| requests without a credential | `50` a second, burst `1000` | requests without a credential | an anonymous `docker pull` of an image of 40 layers: 48 requests in 0.3 s; an `npm ci` of 475 packages: 475 in 2.5 s |
+| requests with a credential | `200` a second, burst `4000` | requests with a credential | an install of up to 4,000 packages at once |
+| misses without a credential | `1000` a minute | requests that need the main installation, without a credential | on an empty cache every request is one: the pull above is 48 |
+| misses with a credential | `4000` a minute | the same, with a credential | as above |
+| blocking | `3000` refusals in a minute | refused requests before the address is blocked for 15 minutes, doubling up to 24 hours | none: an address is blocked only when it sends, after its burst, at least twice the anonymous rate or 1.25 times the rate with a credential |
 | `edgeLimit.requestsPerSecond` | `1000` | HTTP requests in the last second, also on a kept-alive connection, without a burst; refused by the ingress with `429` and no `Retry-After` | an `npm ci` is about 190 a second |
 | `edgeLimit.connections` | `256` | requests in flight at once | `npm ci` up to 15, `docker pull` 3, APT up to 10; `dotnet restore` on Linux has no bound of its own, so raise this value if a large restore through the Bastion is refused by the ingress |
 
-The figures count per client address, not per person: many people or build jobs behind one NAT share them. List such an address in `config.bastion.blocking.exempt_cidrs` to exempt it from every limit, timeout and block of the Bastion and from the ingress's limit, or raise the figures. `edgeLimit.requestsPerSecond` must stay above `config.bastion.limits.authenticated.requests_per_second`; the chart refuses it otherwise.
+The figures count per client address, not per person: many people or build jobs behind one NAT share them. Such an address can be exempted from every limit, timeout and block of the Bastion in its registration's exempt networks (once the main installation can set them), and from the ingress's limit with `edgeLimit.exemptCIDRs`. Keep `edgeLimit.requestsPerSecond` above the Bastion's figure for requests with a credential; the chart no longer checks it, and every replica reports the edge figure to the main installation.
+
+Besides the limits per address, a Bastion bounds what all anonymous clients together may cause at the main installation: by default 100 requests a second with a burst of 2,000, and 36,000 an hour, for the whole Bastion. Only requests the Bastion has to send to the main installation count (a file it serves from its cache does not); above the figure an anonymous client is answered `503` `busy` and told when to try again, while signed-in clients and everything cached are still served. The hour holds, for example, 75 cold `npm ci` of 475 packages or 36,000 `docker pull`s of a cached image. Today the main installation does not send this ceiling yet, so a Bastion holds it only until it first reaches the main installation.
 
 ### What a refused client is told
 
@@ -316,7 +318,7 @@ to limit it:
 For example, `sum by (class) (rate(quader_bastion_forwarded_bytes_total{bastion="partners"}[5m]))` on the main installation is the
 bandwidth the Bastion `partners` takes, split into anonymous and signed-in clients. Nothing limits it per Bastion yet: what bounds it is each
 client's own download limits on the main installation (they apply to a client behind a Bastion when the Bastion's card lists the address it
-connects from) and the Bastion's budget of requests to the main installation (`bastion.main.max_concurrent`).
+connects from) and the Bastion's budget of requests to the main installation (64 at once by default, a setting of its registration).
 
 ## What the alerts mean
 
@@ -334,7 +336,7 @@ When the main installation is unreachable for a replica, the replica serves what
 | `QuaderBastionTokenExpiresSoon` | warning | The token in use has less than `bastion.token.warn_before` left, for 1 hour | Renew the token as above |
 | `QuaderBastionTokenRefused` | critical | The main installation refuses the token, for 1 minute | The token was revoked, has expired, or its registration is disabled or deleted. Issue a token, put it into the Secret, and enable the registration if you disabled it |
 | `QuaderBastionFeedStale` | warning | The last successful poll of the revocation feed is older than 30 seconds, for 2 minutes | The replica may not know a recent revocation. Revoked tokens keep reading from the cache until their answers expire. Check the connection and the load of the main installation |
-| `QuaderBastionMainBudgetSaturated` | warning | Requests wait for a slot towards the main installation, for 10 minutes | The budget `bastion.main.max_concurrent` (default `64`, across all replicas) is used up, so some requests answer `503` `busy`. It happens while the cache is cold or after it was emptied. Raise the budget only after you checked what the main installation tolerates |
+| `QuaderBastionMainBudgetSaturated` | warning | Requests wait for a slot towards the main installation, for 10 minutes | The budget of requests to the main installation (default `64` at once across all replicas, a setting of the Bastion's registration) is used up, so some requests answer `503` `busy`. It happens while the cache is cold or after it was emptied. Raise the budget only after you checked what the main installation tolerates |
 | `QuaderBastionAuditEventsDropped` | warning | Download events were dropped | The buffer of download events was full, which happens while the main installation stays unreachable or cannot keep up. Those downloads are missing from the audit trail. Raise `bastion.audit.buffer_events` if outages are long |
 | `QuaderBastionCacheCorrupt` | warning | A cached object failed its check | The Bastion deleted it and fetched it again; no client received wrong bytes. Look at the disk or the bucket, and at who can write there |
 | `QuaderBastionHandoverFailing` | warning | Direct reads from the object store failed within 15 minutes and none succeeded, for 15 minutes | The Bastion gets large files through the main installation again, so nothing fails for clients, but the main installation's bandwidth is not spared. The Bastion's log names the reason in the line "a handover is replaced by the forward without the offer". Check that the Bastion's network reaches the object store's public address, that its certificate is trusted through the system roots or `trustedCA`, and that the address's host name is not the main installation's ([Direct reads from the object store](#direct-reads-from-the-object-store)); or switch the registration's direct reads off |

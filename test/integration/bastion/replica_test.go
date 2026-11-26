@@ -23,6 +23,8 @@ import (
 	"github.com/valkey-io/valkey-go"
 
 	"github.com/guided-traffic/quader/internal/bastion/engine"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/bastion/mainclient"
 	"github.com/guided-traffic/quader/internal/bastion/server"
 	"github.com/guided-traffic/quader/internal/blob/s3"
 	"github.com/guided-traffic/quader/internal/config"
@@ -67,6 +69,10 @@ type bastionOptions struct {
 	Replicas int
 	// Settings are lines below `bastion:` (indented by two spaces) that override the defaults of the harness.
 	Settings string
+	// Configure changes the configuration every handshake brings (R-BAS-093), on the Bastion's side of the wire: the flood
+	// figures, the slots and the anonymous ceiling a test needs. The suite's main installation sends its interim configuration
+	// until its side of the registration's configuration is built (E8 of docs/developer/bastion-limits.md, Q-BAS-352).
+	Configure func(*iface.Configuration)
 	// Cache are lines below `bastion.cache:` (indented by four spaces).
 	Cache string
 	// Server are lines below `server:`.
@@ -265,6 +271,9 @@ func (b *bastion) start(t *testing.T, dir string, o bastionOptions, i int) *repl
 		Loaded: loaded, Environ: []string{"QUADER_POD_NAME=" + name}, LogWriter: logs, DrainDelay: 10 * time.Millisecond,
 		Deps: func(d *engine.Deps) {
 			d.Now = b.clk.Now
+			if o.Configure != nil {
+				d.Main = configured{Client: d.Main, f: o.Configure}
+			}
 			if o.Deps != nil {
 				o.Deps(d)
 			}
@@ -300,6 +309,21 @@ func (b *bastion) wait() *bastion {
 		})
 	}
 	return b
+}
+
+// configured is the client of the main installation with the configuration of every handshake changed by f
+// (bastionOptions.Configure).
+type configured struct {
+	mainclient.Client
+	f func(*iface.Configuration)
+}
+
+func (c configured) Handshake(ctx context.Context) (iface.Handshake, error) {
+	hs, err := c.Client.Handshake(ctx)
+	if err == nil {
+		c.f(&hs.Configuration)
+	}
+	return hs, err
 }
 
 // bucketSetup prepares the bucket backend on the stack's S3 below a prefix of its own and returns the prefix

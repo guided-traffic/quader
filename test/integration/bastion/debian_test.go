@@ -114,7 +114,7 @@ func byHashPath(t *testing.T, release []byte, index string) string {
 func TestR_BAS_055_DebianThroughABastion(t *testing.T) {
 	w := debWorld(t)
 	w.uploadDeb("hello", "1.0-1")
-	b := w.newBastion(t, bastionOptions{Settings: relaxed}).wait()
+	b := w.newBastion(t, bastionOptions{Configure: relaxed}).wait()
 	r := b.reps[0]
 	o := callOpts{token: w.full.token}
 	base := "/api/deb/" + debLocal + "/"

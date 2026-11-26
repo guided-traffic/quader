@@ -91,6 +91,16 @@ var (
 	ErrBadAnswer = errors.New("mainclient: the main installation's answer is not what the interface defines")
 )
 
+// CeilingError is the refusal of a request of the anonymous class above the Bastion's anonymous ceiling (R-BAS-094): 503 busy
+// with RetryAfter, the wait until the ceiling admits a request again. It matches [ErrBusy].
+type CeilingError struct{ RetryAfter time.Duration }
+
+// Error implements error.
+func (e *CeilingError) Error() string { return "mainclient: the anonymous ceiling is reached" }
+
+// Is matches [ErrBusy].
+func (e *CeilingError) Is(target error) bool { return target == ErrBusy }
+
 // MismatchError carries the version the main installation spoke, when it said (the problem member
 // interfaceVersion, or the answer header); 0 when it did not.
 type MismatchError struct{ Main int }
@@ -229,6 +239,9 @@ type Options struct {
 	Tokens  TokenSource
 	// Budget is the slot budget; nil means no bound (tests of other packages).
 	Budget Budget
+	// EdgeLimit is bastion.edge_limit, the edge figure of the ingress in front of the replica, which every handshake reports in
+	// Quader-Bastion-Edge-Limit (R-BAS-093); nil sends no such header.
+	EdgeLimit *iface.EdgeLimit
 	// ConnectTimeout and ResponseHeaderTimeout are bastion.main.connect_timeout and response_header_timeout.
 	ConnectTimeout        time.Duration
 	ResponseHeaderTimeout time.Duration

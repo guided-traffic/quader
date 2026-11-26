@@ -36,7 +36,7 @@ func TestR_BAS_094_AnAnonymousPullAndAnAnonymousDocumentSpareTheMainInstallation
 	// grants entry): a Bastion that starts within the lookback would judge every answer of its first 15 s by it (R-BAS-020 rule 3).
 	// The set-up stands for settings older than any Bastion's history, as setUpOlderThanTheFeed's claims do.
 	w.st.Exec(`DELETE FROM audit_event WHERE action = 'authz.settings.changed'`)
-	b := w.newBastion(t, bastionOptions{Settings: relaxed}).wait()
+	b := w.newBastion(t, bastionOptions{Configure: relaxed}).wait()
 	r := b.reps[0]
 
 	m := w.front.Mark()

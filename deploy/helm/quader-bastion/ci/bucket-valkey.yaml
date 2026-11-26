@@ -14,8 +14,6 @@ config:
         endpoint: https://object.storage.eu01.onstackit.cloud
         region: eu01
         bucket: quader-bastion-partners
-    blocking:
-      exempt_cidrs: ["198.51.100.0/24"]
   valkey:
     mode: sentinel
     sentinel:
@@ -48,6 +46,8 @@ ingress:
   tls:
     - secretName: quader-bastion-public-tls
       hosts: [packages.example.com]
+edgeLimit:
+  exemptCIDRs: ["198.51.100.0/24"]
 metrics:
   serviceMonitor:
     enabled: true

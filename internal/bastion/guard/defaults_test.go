@@ -1,33 +1,16 @@
 package guard
 
 import (
-	"os"
 	"testing"
 	"time"
 
 	"github.com/guided-traffic/quader/internal/bastion/metrics"
-	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/bastion/settings"
 )
 
-// builtIn returns the guard's options at the configuration's built-in defaults, read through the loader as a Bastion reads them.
-func builtIn(t *testing.T) Options {
-	t.Helper()
-	const minimal = "server:\n  base_url: https://packages.example.com\nbastion:\n  main:\n    url: https://quader.example.com\n    token_file: /run/secrets/token/token\n"
-	l, err := config.LoadBastion(config.Options{
-		File: "/etc/quader/quader.yaml", Command: config.CommandServe,
-		ReadFile: func(name string) ([]byte, error) {
-			if name == "/etc/quader/quader.yaml" {
-				return []byte(minimal), nil
-			}
-			return nil, os.ErrNotExist
-		},
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	b := l.Config.Bastion
-	return Options{Limits: b.Limits, FailedAuth: b.FailedAuth, Blocking: b.Blocking}
-}
+// builtIn sets the rig's flood figures to the built-in configuration's (Q-BAS-327), the Internet preset's of
+// usage-and-limits.md R-LIM-046.
+func builtIn(o *rigOptions) { o.Flood = settings.Builtin().Limits.Flood }
 
 // command is one normal command of a client as the measurement of usage-and-limits.md Q-LIM-59 found it: its requests, spread
 // evenly over the time they took, each a miss on a cold Bastion.
@@ -52,10 +35,7 @@ func TestR_BAS_092_TheDefaultsHoldOneNormalCommandOfEveryClient(t *testing.T) {
 		{"ten pulls of 40 layers in a row, anonymous", 480, 3 * time.Second, false},
 	} {
 		t.Run(c.name, func(t *testing.T) {
-			r := newRig(t, 1, func(o *Options) {
-				b := builtIn(t)
-				o.Limits, o.FailedAuth, o.Blocking = b.Limits, b.FailedAuth, b.Blocking
-			})
+			r := newRig(t, 1, builtIn)
 			step := c.in / time.Duration(c.requests)
 			refused := 0
 			for range c.requests {
@@ -65,15 +45,12 @@ func TestR_BAS_092_TheDefaultsHoldOneNormalCommandOfEveryClient(t *testing.T) {
 				r.clk.advance(step)
 			}
 			if refused != 0 {
-				t.Fatalf("%d of %d requests refused at the built-in figures %+v", refused, c.requests, r.g.o.Limits)
+				t.Fatalf("%d of %d requests refused at the built-in figures %+v", refused, c.requests, r.flood)
 			}
 		})
 	}
 	t.Run("an address that sends 1,000 anonymous requests a second is refused and blocked within ten seconds", func(t *testing.T) {
-		r := newRig(t, 1, func(o *Options) {
-			b := builtIn(t)
-			o.Limits, o.FailedAuth, o.Blocking = b.Limits, b.FailedAuth, b.Blocking
-		})
+		r := newRig(t, 1, builtIn)
 		admitted := 0
 		for i := range 10_000 {
 			if v := r.g.Blocked(ctx, "203.0.113.7"); !v.Allowed {

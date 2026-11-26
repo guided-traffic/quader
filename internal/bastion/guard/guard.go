@@ -48,8 +48,11 @@ type Guard interface {
 	// Blocked is step 2 of R-BAS-018: a blocked address answers 429 address_blocked before any further work.
 	Blocked(ctx context.Context, addr string) Verdict
 	// Request is step 4: the per-address request limit of the class (R-BAS-035). A refusal counts toward the
-	// block threshold. Addresses in bastion.blocking.exempt_cidrs are never limited.
+	// block threshold. Addresses in the configuration's exempt networks are never limited.
 	Request(ctx context.Context, addr string, c Credentialed) Verdict
+	// Page is step 4 for a page of the web interface: the per-address request limit of the class gui (Q-LIM-307), which
+	// is never a miss and takes nothing from the anonymous class's budget. A refusal counts toward the block threshold.
+	Page(ctx context.Context, addr string) Verdict
 	// Miss is asked before a request to the main installation (a forward, a check, a conditional request, a
 	// probe): the per-address miss limit of the class (R-BAS-035). Hits of the same address keep being served.
 	Miss(ctx context.Context, addr string, c Credentialed) Verdict
@@ -58,8 +61,8 @@ type Guard interface {
 	// installation. A refusal counts toward the block threshold.
 	AuthTimeout(ctx context.Context, addr string) Verdict
 	// FailedAuth records a failed authentication: a credential the Bastion refuses itself or one the main
-	// installation called invalid (R-BAS-036). More than bastion.failed_auth.max_failures within the window
-	// start the timeout.
+	// installation called invalid (R-BAS-036). More than flood.failedAuth.maxFailures within the window start the
+	// timeout.
 	FailedAuth(ctx context.Context, addr string)
 }
 

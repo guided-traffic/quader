@@ -88,9 +88,6 @@ config:
       packages_url: ""                  # empty = url; example: https://quader-packages.quader.svc:8080 (the main installation's packages Service)
       connect_timeout: 5s
       response_header_timeout: 30s
-      max_concurrent: 64                # across all replicas
-      anonymous_share: 0.25
-      queue_timeout: 2s
       max_forwarded_body: 8MiB          # bodies of read routes such as npm's bulk audit
       handshake_interval: 1m
       unreachable_after: 10s            # at least 3 × feed.poll_interval
@@ -124,26 +121,6 @@ config:
         credentials:
           source: static                # static (secrets.cacheBucket) | webIdentity | default
           role_arn: ""                  # example: arn:aws:iam::123456789012:role/quader-bastion
-    limits:
-      authenticated:
-        requests_per_second: 200        # per address
-        burst: 4000
-      anonymous:
-        requests_per_second: 50         # per address
-        burst: 1000
-      misses:
-        authenticated_per_minute: 4000  # per address
-        anonymous_per_minute: 1000      # per address
-    failed_auth:
-      max_failures: 20
-      window: 10m
-      timeout: 15m
-    blocking:
-      threshold: 3000                   # refusals per window
-      window: 1m
-      duration: 15m
-      max_duration: 24h
-      exempt_cidrs: []                  # example: ["198.51.100.0/24"]
     audit:
       buffer_events: 100000             # per replica
       batch_size: 500
@@ -303,10 +280,11 @@ ingress:
     verify: true                        # the controller verifies the pods' certificate against caSecret
     caSecret: ""                        # empty = the listener's Secret (tls.existingSecret or <fullname>-tls), which must carry ca.crt
 
-edgeLimit:                              # stage 1 of the blocking; HAProxy Ingress counts HTTP requests, also on a kept-alive connection
+edgeLimit:                              # stage 1 of the blocking; HAProxy Ingress counts HTTP requests, also on a kept-alive connection; rendered into bastion.edge_limit and reported to the main installation
   enabled: true
-  requestsPerSecond: 1000               # per address, in the last second, no burst; above config.bastion.limits.authenticated.requests_per_second
+  requestsPerSecond: 1000               # per address, in the last second, no burst; keep it above the signed-in flood figure of the Bastion's registration, which the card warns about
   connections: 256                      # per address: requests in flight at once
+  exemptCIDRs: []                       # addresses the ingress does not limit (limit-whitelist); example: ["198.51.100.0/24"]
 
 # ── Network policy: ingress rules only, each rule with its port ─────────────
 # No egress value exists: the chart renders no egress rule; the Bastion pods' egress is the cluster's own policy.

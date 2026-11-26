@@ -241,6 +241,8 @@ func layerTable() []layerRule {
 		{"internal/bastion/downloads", layerDomain},
 		// The replica's standing connection to the main installation (handshake, feed, reachability).
 		{"internal/bastion/link", layerDomain},
+		// The configuration a replica applies (R-BAS-093): the handshake's member, held whole, stored for a restart.
+		{"internal/bastion/settings", layerDomain},
 		// The download limits (usage-and-limits.md): the figures, rules, resolution, counters, decisions and buffers, the usage
 		// store and the store of the settings. The remote engine (internal/proxy) charges through them.
 		{"internal/limits", layerDomain},

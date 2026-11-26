@@ -17,7 +17,8 @@ import (
 	"github.com/guided-traffic/quader/internal/bastion/maintest"
 )
 
-// slowClientsConfig is linkedConfig with a budget of 4 slots, of which anonymous callers may hold 1.
+// slowClientsConfig is linkedConfig; the main installation's configuration gives the replica a budget of 4 slots, of which
+// anonymous callers may hold 1 ([slowClientsSlots]).
 func slowClientsConfig(main *maintest.Main, dir, tokenFile string) string {
 	return fmt.Sprintf(`
 server:
@@ -34,9 +35,6 @@ bastion:
     unreachable_after: 3s
     connect_timeout: 1s
     response_header_timeout: 2s
-    max_concurrent: 4
-    anonymous_share: 0.25
-    queue_timeout: 500ms
   feed:
     poll_interval: 1s
   audit:
@@ -47,12 +45,19 @@ bastion:
 `, main.URL(), tokenFile, main.CAFile(dir), filepath.Join(dir, "cache"))
 }
 
+// slowClientsSlots are the slots the main installation's configuration gives the replica: 4, of which anonymous callers may
+// hold 1, and a wait of 500 ms (R-BAS-025, R-BAS-093).
+func slowClientsSlots(c *iface.Configuration) {
+	c.Limits.Slots = iface.Slots{MaxConcurrent: 4, AnonymousShare: 0.25, QueueTimeoutMillis: 500}
+}
+
 // bigArtifactMain is a main installation that serves one artifact of 32 MiB for every path, marked artifact
 // for the anonymous caller, with its SHA-256 as the ETag (R-STOR-012).
 func bigArtifactMain(t *testing.T) (*maintest.Main, []byte, string) {
 	t.Helper()
 	main := maintest.New(t)
 	main.SetAnonymous(true)
+	main.SetConfiguration(slowClientsSlots)
 	big := make([]byte, 32<<20)
 	for i := range big {
 		big[i] = byte(i * 7)

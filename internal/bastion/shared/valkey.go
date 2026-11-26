@@ -140,28 +140,30 @@ type limiterEntry struct {
 
 func (v *valkeyLimiter) Replicas() int { return v.replicas }
 
-// entry returns the cluster limiter of a name, creating it on first use. A name keeps its parameters: a
-// second call with others is a programming error, returned as one.
-func (v *valkeyLimiter) entry(name string, window time.Duration, rate Rate) (*cluster.Limiter, error) {
+// entry returns the cluster limiter of a name, creating it on first use. The figures of a name change with the Bastion's
+// configuration (R-BAS-093): a call with other parameters than the name holds replaces its limiter under the same name
+// (cluster.LimiterSet.SetLimiter, Q-BAS-449), so the counters of an unchanged window go on and those of another window start
+// empty.
+func (v *valkeyLimiter) entry(name string, window time.Duration, rate Rate) *cluster.Limiter {
 	v.mu.Lock()
 	defer v.mu.Unlock()
-	if e, ok := v.limiters[name]; ok {
-		if e.window != window || e.rate != rate {
-			return nil, fmt.Errorf("shared: limiter %q is already registered with other parameters", name)
-		}
-		return e.l, nil
+	if e, ok := v.limiters[name]; ok && e.window == window && e.rate == rate {
+		return e.l
 	}
 	var l *cluster.Limiter
 	if window > 0 {
 		// Only the window matters to a counter: burst over rate is the window. A burst of the window's
 		// milliseconds at a rate of 1,000 a second makes it exactly the window (a quotient of 1000 and the
 		// seconds would lose a millisecond to the rounding and misalign the windows with the clock).
-		l = v.set.NewLimiter(name, cluster.ScopeCluster, 1000, int(window.Milliseconds()))
+		l = v.set.SetLimiter(name, cluster.ScopeCluster, 1000, int(window.Milliseconds()))
 	} else {
-		l = v.set.NewLimiter(name, cluster.ScopeCluster, rate.PerSecond, rate.Burst)
+		// A bucket whose burst would take longer than the longest window of the limiters to refill holds the burst of that
+		// window: the limiters of R-ARCH-034 count in windows of at most 12 hours.
+		burst := min(rate.Burst, max(int(rate.PerSecond*MaxWindow.Seconds()), 1))
+		l = v.set.SetLimiter(name, cluster.ScopeCluster, rate.PerSecond, burst)
 	}
 	v.limiters[name] = &limiterEntry{l: l, window: window, rate: rate}
-	return l, nil
+	return l
 }
 
 func validName(name string) bool { return strings.HasPrefix(name, "bastion.") }
@@ -174,10 +176,7 @@ func (v *valkeyLimiter) Allow(ctx context.Context, name, key string, rate Rate) 
 	if rate.PerSecond <= 0 || rate.Burst < 1 {
 		return v.local.Allow(ctx, name, key, rate)
 	}
-	l, err := v.entry(name, 0, rate)
-	if err != nil {
-		return false, 0, err
-	}
+	l := v.entry(name, 0, rate)
 	verdict := l.TakeUncharged(ctx, key)
 	return verdict.Allowed, verdict.RetryAfter, nil
 }
@@ -187,10 +186,7 @@ func (v *valkeyLimiter) count(ctx context.Context, name, key string, window time
 		return 0, fmt.Errorf("shared: limiter %q must be named bastion.<name> (R-BAS-034)", name)
 	}
 	window = ClampWindow(window)
-	l, err := v.entry(name, window, Rate{})
-	if err != nil {
-		return 0, err
-	}
+	l := v.entry(name, window, Rate{})
 	n, err := l.Estimate(ctx, key, add)
 	if err == nil {
 		return n, nil
@@ -211,10 +207,7 @@ func (v *valkeyLimiter) AddIfWithin(ctx context.Context, name, key string, windo
 		return false, 0, fmt.Errorf("shared: limiter %q must be named bastion.<name> (R-BAS-034)", name)
 	}
 	window = ClampWindow(window)
-	l, err := v.entry(name, window, Rate{})
-	if err != nil {
-		return false, 0, err
-	}
+	l := v.entry(name, window, Rate{})
 	if ok, n, err := l.EstimateWithin(ctx, key, limit); err == nil {
 		return ok, n, nil
 	}

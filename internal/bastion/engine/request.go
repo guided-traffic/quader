@@ -15,6 +15,7 @@ import (
 	"github.com/guided-traffic/quader/internal/bastion/guard"
 	"github.com/guided-traffic/quader/internal/bastion/iface"
 	"github.com/guided-traffic/quader/internal/bastion/metrics"
+	"github.com/guided-traffic/quader/internal/bastion/settings"
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/httpserver"
 	"github.com/guided-traffic/quader/internal/observability"
@@ -163,6 +164,9 @@ func (e *engine) newRq(w http.ResponseWriter, r *http.Request) *rq {
 	// Every problem the Bastion answers has the type about:blank and names no party (R-BAS-029, R-BAS-099, Q-BAS-321); the
 	// client listener's chain marks its requests so too, and the engine marks them for a handler that runs without it.
 	r = r.WithContext(errs.WithBastionAnswer(r.Context()))
+	// The request reads the configuration once, at its start: every decision it makes is made with the same figures, the old
+	// ones or the new ones of a handshake that swaps them meanwhile (R-BAS-093).
+	r = r.WithContext(settings.With(r.Context(), e.d.Link.Configuration().Current()))
 	q := &rq{w: w, r: r, e: e, start: e.now(), span: trace.SpanFromContext(r.Context())}
 	q.out = &countingWriter{ResponseWriter: w, q: q, source: metrics.SourceMain}
 	q.peer, q.client = e.addresses(r)
@@ -443,7 +447,7 @@ func (e *engine) refuseVerdict(q *rq, v guard.Verdict) {
 	if facts.RateLimitedStatus == http.StatusServiceUnavailable {
 		kind = errs.Unavailable
 	}
-	name, quota, window := e.policyOf(v.Reason, q.cred.anonymous || !q.hasAuth)
+	name, quota, window := e.policyOf(q, v.Reason, q.cred.anonymous || !q.hasAuth)
 	wait := oneWait(v.RetryAfter)
 	told := facts.CapRetryAfter(wait)
 	q.limiter = name
@@ -499,24 +503,25 @@ func waitWords(d time.Duration) string {
 	return plural(m/60, "hour") + " " + plural(m%60, "minute")
 }
 
-// policyOf names the limit that refused and its quota and window in seconds, for the RateLimit-Policy field.
-func (e *engine) policyOf(reason string, anonymous bool) (name string, quota, window int) {
-	c := e.cfg
+// policyOf names the limit that refused and its quota and window in seconds, for the RateLimit-Policy field: the figures of
+// the configuration the request read (R-BAS-093).
+func (e *engine) policyOf(q *rq, reason string, anonymous bool) (name string, quota, window int) {
+	f := e.d.Link.Configuration().For(q.ctx()).Flood
 	switch reason {
 	case metrics.RefusedMissLimited:
-		quota = c.Limits.Misses.AuthenticatedPerMinute
+		quota = f.Authenticated.MissesPerMinute
 		if anonymous {
-			quota = c.Limits.Misses.AnonymousPerMinute
+			quota = f.Anonymous.MissesPerMinute
 		}
 		return "misses", quota, 60
 	case metrics.RefusedAuthTimeout:
-		return "failed-auth", c.FailedAuth.MaxFailures, int(c.FailedAuth.Window / time.Second)
+		return "failed-auth", f.FailedAuth.MaxFailures, int(f.FailedAuth.Window / time.Second)
 	case metrics.RefusedBlocked:
-		return "blocking", c.Blocking.Threshold, int(c.Blocking.Window / time.Second)
+		return "blocking", f.Blocking.Threshold, int(f.Blocking.Window / time.Second)
 	}
-	burst, rps := c.Limits.Authenticated.Burst, c.Limits.Authenticated.RequestsPerSecond
+	burst, rps := f.Authenticated.Burst, f.Authenticated.RequestsPerSecond
 	if anonymous {
-		burst, rps = c.Limits.Anonymous.Burst, c.Limits.Anonymous.RequestsPerSecond
+		burst, rps = f.Anonymous.Burst, f.Anonymous.RequestsPerSecond
 	}
 	return "requests", burst, max(1, (burst+rps-1)/rps)
 }

@@ -28,7 +28,7 @@ func (s *slowBlocks) Set(ctx context.Context, addr string, d time.Duration, leve
 // The decision to block one address does not hold another address back (Q-BAS-128): while the block of one
 // address waits on the shared state, the refusals of another address are decided.
 func TestR_BAS_037_ABlockInFlightForOneAddressDoesNotHoldAnotherBack(t *testing.T) {
-	r := newRig(t, 1, func(o *Options) { o.Blocking.Threshold = 1 })
+	r := newRig(t, 1, func(o *rigOptions) { o.Flood.Blocking.Threshold = 1 })
 	slow := &slowBlocks{BlockList: r.st.Blocks, entered: make(chan string, 2), release: make(chan struct{})}
 	r.st.Blocks = slow
 	const a, b = "198.51.100.1", "198.51.100.2"
@@ -37,7 +37,7 @@ func TestR_BAS_037_ABlockInFlightForOneAddressDoesNotHoldAnotherBack(t *testing.
 	go func() {
 		defer close(done)
 		for range 5 {
-			r.g.refused(ctx, a, "rate_limited")
+			r.g.refused(ctx, r.g.o.Figures(ctx).Flood, a, "rate_limited")
 		}
 	}()
 	if got := <-slow.entered; got != a {
@@ -48,7 +48,7 @@ func TestR_BAS_037_ABlockInFlightForOneAddressDoesNotHoldAnotherBack(t *testing.
 	go func() {
 		defer close(second)
 		for range 5 {
-			r.g.refused(ctx, b, "rate_limited")
+			r.g.refused(ctx, r.g.o.Figures(ctx).Flood, b, "rate_limited")
 		}
 	}()
 	select {
@@ -74,13 +74,13 @@ func TestR_BAS_037_ABlockInFlightForOneAddressDoesNotHoldAnotherBack(t *testing.
 
 // The refusals of one address that cross the threshold together set one block, not several levels (R-BAS-037).
 func TestR_BAS_037_ConcurrentRefusalsOfOneAddressSetOneBlock(t *testing.T) {
-	r := newRig(t, 1, func(o *Options) { o.Blocking.Threshold = 3 })
+	r := newRig(t, 1, func(o *rigOptions) { o.Flood.Blocking.Threshold = 3 })
 	var wg sync.WaitGroup
 	for range 50 {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			r.g.refused(ctx, "198.51.100.3", "rate_limited")
+			r.g.refused(ctx, r.g.o.Figures(ctx).Flood, "198.51.100.3", "rate_limited")
 		}()
 	}
 	wg.Wait()

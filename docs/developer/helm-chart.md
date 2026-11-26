@@ -939,7 +939,8 @@ HPA owns it. The NetworkPolicy holds ingress rules only, as the chart `quader`'s
 `bastion.main.token_file`, `bastion.main.ca_file` and `bastion.cache.bucket.ca_file` (the one key of `trustedCA`),
 `bastion.signing_key_file`, `bastion.cache.encryption_key_file` (`/var/run/secrets/quader/cache-key/key`, only while
 `secrets.cacheKey.existingSecret` is set, R-BAS-061), `bastion.cache.volume.dir` (`/var/cache/quader-bastion`, volume backend), the bucket credential
-files (`source: static`), `bastion.replicas`, `valkey.username_file`, `valkey.password_file`, `valkey.sentinel.username_file`, `valkey.sentinel.password_file`
+files (`source: static`), `bastion.replicas`, `bastion.edge_limit` (from `edgeLimit`: `enabled`, `requests_per_second`, `connections`, which
+the Bastion reports with every handshake, R-BAS-093), `valkey.username_file`, `valkey.password_file`, `valkey.sentinel.username_file`, `valkey.sentinel.password_file`
 (from `secrets.valkeySentinel`; the Sentinels of a Valkey that requires a password need them, found by the end-to-end run) and `valkey.tls.ca_file` (the Valkey CA,
 else the trust bundle) while Valkey is configured, and `server.tls` with the listener pair while `tls.enabled` (`server.ops_tls` keeps
 its default, which inherits it). `quader-bastion.validate` refuses a managed key under `config`. The ConfigMap `<fullname>-config` is
@@ -952,7 +953,7 @@ binary) and rolls nothing, while any change of `config` rolls the pods.
 
 | Value | Annotations |
 |---|---|
-| `edgeLimit.enabled` | `limit-rps`, `limit-connections`, `limit-whitelist` (joined `config.bastion.blocking.exempt_cidrs`, omitted while empty) |
+| `edgeLimit.enabled` | `limit-rps`, `limit-connections`, `limit-whitelist` (joined `edgeLimit.exemptCIDRs`, omitted while empty) |
 | `cacheVolume.routeByPath` | `balance-algorithm: uri path-only`, `assign-backend-server-id: "true"`, `config-backend: hash-type consistent` |
 | `tls.enabled` | `secure-backends: "true"`, `secure-sni: <fullname>.<namespace>.svc`, and with `ingress.backendTLS.verify` `secure-verify-ca-secret` (`caSecret`, else the listener's Secret) |
 
@@ -963,13 +964,14 @@ then move the constant. That the controller refuses a flood and pins a path is t
 
 **Validation.** Every row fails `helm template` and names the values: the two URLs (set, `https`), the token Secret, the signing key
 with the bucket backend or Valkey, the bucket and its credentials Secret, `cacheVolume.type: persistent` with the bucket backend,
-`routeByPath` without the volume backend or without `ingress.enabled`, `edgeLimit.requestsPerSecond` not above
-`config.bastion.limits.authenticated.requests_per_second`, `config.server.trusted_proxies` while `ingress.enabled` (behind the Ingress every
+`routeByPath` without the volume backend or without `ingress.enabled`, `edgeLimit.connections` below 1, `config.server.trusted_proxies` while `ingress.enabled` (behind the Ingress every
 request comes from the controller's pods, so without it all callers count as one address, [Q-BAS-130](../spec/bastion.md#q-bas-130--behind-the-ingress-the-chart-requires-the-trusted-proxies);
 the message names the value and says to list the controller's pod CIDRs), the spool and the volumes it lives in (below), a certificate source, the
 https ingress peer (an empty list means "anywhere"), one trust bundle key, an `ingress.annotations` key the chart renders, a name in `disabledAlerts` that
 is no alert, autoscaling bounds and metric, `highAvailability.enforce` (two replicas, a PDB, host spreading `DoNotSchedule` with
-`nodeTaintsPolicy: Honor`, no standalone Valkey, three Sentinels), and the managed keys.
+`nodeTaintsPolicy: Honor`, no standalone Valkey, three Sentinels), and the managed keys. The flood figures, the blocking and the slots are
+no values of the chart since W34-E9a: they are the Bastion's registration at the main installation (R-BAS-093), and the schema refuses
+`config.bastion.limits`, `failed_auth`, `blocking` and `main.max_concurrent`, `anonymous_share`, `queue_timeout`.
 
 **The spool and the volumes** ([Q-BAS-131](../spec/bastion.md#q-bas-131--the-bytes-of-the-fills-in-progress-are-bounded-and-the-chart-sizes-the-volumes-from-the-bound)).
 The binary bounds the bytes of the fills in progress at `config.bastion.cache.spool_max_bytes` (2 GiB); the chart makes the volumes agree.

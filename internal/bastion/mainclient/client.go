@@ -193,7 +193,12 @@ func parseClient(s string) (netip.Addr, bool) {
 // Handshake implements [Client].
 func (c *HTTPClient) Handshake(ctx context.Context) (iface.Handshake, error) {
 	var hs iface.Handshake
-	if err := c.interfaceCall(ctx, ifaceCall{kind: KindHandshake, method: http.MethodGet, path: iface.PathHandshake, out: &hs}); err != nil {
+	var contact http.Header
+	if c.o.EdgeLimit != nil {
+		// The edge figure of the ingress in front of the replica, recorded with its contact (R-BAS-093, Q-BAS-354).
+		contact = http.Header{iface.HeaderEdgeLimit: {c.o.EdgeLimit.Header()}}
+	}
+	if err := c.interfaceCall(ctx, ifaceCall{kind: KindHandshake, method: http.MethodGet, path: iface.PathHandshake, header: contact, out: &hs}); err != nil {
 		return iface.Handshake{}, err
 	}
 	if hs.InterfaceVersion != iface.InterfaceVersion {
@@ -238,6 +243,8 @@ type ifaceCall struct {
 	method string
 	path   string
 	query  url.Values
+	// header are further request headers of the call: the contact headers of the handshake.
+	header http.Header
 	in     any
 	// out is the body to decode on a 200; nil means any 2xx is success and the body is ignored.
 	out any
@@ -275,6 +282,9 @@ func (c *HTTPClient) interfaceCall(ctx context.Context, call ifaceCall) error {
 	req.Header.Set("Accept", iface.MediaType)
 	if body != nil {
 		req.Header.Set("Content-Type", iface.MediaType)
+	}
+	for k, v := range call.header {
+		req.Header[k] = v
 	}
 	c.origin.apply(req.Header, "")
 	resp, err := c.send(ctx, call.kind, req)

@@ -114,10 +114,15 @@ func errBadGateway() *errs.Error {
 // mainError maps the error of a request to the main installation to the Bastion's answer (R-BAS-021,
 // R-BAS-025, R-BAS-027, R-BAS-028).
 func (e *engine) mainError(q *rq, err error) {
+	var ceiling *mainclient.CeilingError
 	switch {
 	case q.ctx().Err() != nil:
 		// The caller went away: there is nobody to answer.
 		q.finish(metrics.ClassPass, metrics.ResultError)
+	case errors.As(err, &ceiling):
+		// Above the anonymous ceiling: 503 busy with the wait the ceiling names, which the format caps (R-BAS-094, R-BAS-091).
+		e.refuse(q, errs.E(errs.Unavailable, errs.CodeBusy, "Too many requests are waiting; try again in a moment.",
+			errs.WithRetryAfter(max(ceiling.RetryAfter, retryBusy))), metrics.RefusedCeiling)
 	case errors.Is(err, mainclient.ErrBusy):
 		e.refuse(q, errBusy(), metrics.RefusedBusy)
 	case errors.Is(err, mainclient.ErrTokenRefused), errors.Is(err, mainclient.ErrInterfaceMismatch):

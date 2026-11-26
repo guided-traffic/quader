@@ -79,6 +79,7 @@ type Main struct {
 	formats       iface.HandshakeFormats
 	bound         string
 	handover      bool
+	configure     func(*iface.Configuration)
 
 	headers map[string]http.Header
 
@@ -253,10 +254,14 @@ func (m *Main) SetBoundRepository(repo string) { m.lock(func() { m.bound = repo 
 // whether [Main.HandOver] hands anything over. Off by default, as for a new registration.
 func (m *Main) SetHandover(on bool) { m.lock(func() { m.handover = on }) }
 
+// SetConfiguration changes the configuration every following handshake sends (R-BAS-093): f receives [Configuration] with the
+// switch of the handover and may change any member; nil sends it unchanged.
+func (m *Main) SetConfiguration(f func(*iface.Configuration)) { m.lock(func() { m.configure = f }) }
+
 // Configuration is a configuration a main installation of today sends (R-BAS-093): the switch handover as given, the web
 // interface and its documentation off, one rule without a figure for every kind of caller, and the flood figures and slots
-// of the Bastion chart's defaults. It is the main installation's interim configuration in substance; this package keeps its
-// own, since a package of the Bastion imports none of the main installation's.
+// the Bastion chart held before they became members of the configuration. It is the main installation's interim configuration in
+// substance; this package keeps its own, since a package of the Bastion imports none of the main installation's.
 func Configuration(handover bool) iface.Configuration {
 	const rule = "interim-unlimited"
 	return iface.Configuration{
@@ -536,6 +541,10 @@ func (m *Main) writeJSON(w http.ResponseWriter, v any) {
 
 func (m *Main) handshake(w http.ResponseWriter, r *http.Request, rt *regToken) {
 	m.mu.Lock()
+	cfg := Configuration(m.handover)
+	if m.configure != nil {
+		m.configure(&cfg)
+	}
 	base := m.srv.URL
 	if m.honoured {
 		base = forwardedOrigin(r, m.srv.URL)
@@ -551,7 +560,7 @@ func (m *Main) handshake(w http.ResponseWriter, r *http.Request, rt *regToken) {
 		ServerTime:       m.now().UTC(),
 		Formats:          m.formats,
 		BoundRepository:  m.bound,
-		Configuration:    Configuration(m.handover),
+		Configuration:    cfg,
 	}
 	m.mu.Unlock()
 	m.writeJSON(w, hs)
