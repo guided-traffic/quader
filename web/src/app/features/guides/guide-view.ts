@@ -16,7 +16,7 @@ import { GuideSection } from '../../api/guides-api';
 import { PackageReadme } from '../../api/packages-api';
 import { CopyButton } from '../../shared/copy-button';
 import { Disclosure } from '../../shared/ui/disclosure';
-import { PackageReadmeView } from '../packages/package-readme';
+import { PackageReadmeView } from '../../views/packages/package-readme';
 
 /**
  * The explanation of a guide below its snippets (R-UI-121, R-UI-125, Q-UI-805): under the page's heading **Guide**, every section is

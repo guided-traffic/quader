@@ -8,8 +8,8 @@ import { FakeAnsibleApi, importTask } from '../../api/testing/fakes-ansible';
 import { FakePackagesApi, ansibleDocsFixture, ansibleFixture } from '../../api/testing/fakes-packages';
 import { expectAccessible, inProject, renderScreen, settle, text, type } from '../../testing/screen';
 import { PackageVersionPage } from './package-version';
-import { CONTENTS_PAGE } from './ansible-contents';
-import { SEARCH_DEBOUNCE_MS } from './ansible-docs';
+import { CONTENTS_PAGE } from '../../views/packages/ansible-contents';
+import { SEARCH_DEBOUNCE_MS } from '../../views/packages/ansible-docs';
 
 type Opened = Awaited<ReturnType<typeof open>>;
 

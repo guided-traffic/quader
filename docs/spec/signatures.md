@@ -2491,7 +2491,7 @@ In `api/openapi.yaml` under the tag `signatures`:
   download of the trusted root and the cosign command of R-SIG-052, with the identity's first URI, the predicate type and, for a file, its
   bundle's download).
 
-- **Built:** the rows of the identity (GET, the key, the certificate, the import, the discard, the removal, the retirement, the trusted root and the chain; [signing_api.go](../../internal/api/v1/signing_api.go)). Package 2: the signatures answers of R-SIG-034 list npm's registry signature of a local version with `source: "issued"` and `issuedBy` (`identity`, `subject`, `fingerprint`, and `state`, the identity's state now, so that a screen can tell a retired identity's signature that is no longer served), with `keyId` set to npm's keyid ([signatures_views.go](../../internal/api/v1/signatures_views.go)). Until the second half of the screens (R-SIG-056) gives it its own line, a version's tab **Signatures** lists such an entry as "Origin confirmed by registry" with its key, never as a publisher's signature and without a badge of its own (`entryBadgeState` answers none for `issuedBy`, Q-SIG-1; [signature-words.ts](../../web/src/app/shared/signatures/signature-words.ts)); its sentence still reads that no trust anchor knows the signer. Package 3: the attestation's route ([attestation_api.go](../../internal/api/v1/attestation_api.go)); the client setup's tab `verify` with `npm.verify.signatures` for npm's client (Q-SIG-163) and `<client>.verify.attestation` for every client of a format that attests something ([setup_verify.go](../../internal/api/v1/setup_verify.go), [Q-SIG-188](#q-sig-188--the-tab-verify-is-one-snippet-per-client-written-by-the-core)); the answers of R-SIG-034 list Quader's attestation through the same `issuedBy` mechanism, as an attestation with `source: "issued"`, its signer (`identity`, `subject`, `issuer`) and its predicate type, without a badge of its own. The second half of package 4: a receipt's entry carries the decoded predicate in `attestation` (`receivedAt`, `issuedAt`, `origin` in the shape of R-SIG-010's origin with a pipeline's claims through the same allowlist, `signatures` with their integrity states and `signaturesOmitted`, `malware` with its state, database, dates and release, `vulnerabilities` with the evaluation, grade, open findings per severity and the data's date), read from the bundle the store keeps by `statement.Read` within the statement's bounds and left out for a bundle that does not decode ([Q-SIG-234](#q-sig-234--the-predicate-is-decoded-from-the-stored-bundle-when-the-answer-is-read)), and where the job serves it in `servedAs` (`referrer`, `api`) with `servedReason` (`hides_signature`, `no_referrers_api`) for an image served through the API ([Q-SIG-233](#q-sig-233--servedas-is-a-word-and-the-reason-a-member-beside-it)); `SignatureViews` reads both from `signing_attestations` (00105) for an issued signature alone ([signatures_receipt.go](../../internal/api/v1/signatures_receipt.go)). `issuedBy` is the same for both kinds. **With this, the API of stage 2 is whole.**
+- **Built:** the rows of the identity (GET, the key, the certificate, the import, the discard, the removal, the retirement, the trusted root and the chain; [signing_api.go](../../internal/api/v1/signing_api.go)). Package 2: the signatures answers of R-SIG-034 list npm's registry signature of a local version with `source: "issued"` and `issuedBy` (`identity`, `subject`, `fingerprint`, and `state`, the identity's state now, so that a screen can tell a retired identity's signature that is no longer served), with `keyId` set to npm's keyid ([signatures_views.go](../../internal/api/v1/signatures_views.go)). Until the second half of the screens (R-SIG-056) gives it its own line, a version's tab **Signatures** lists such an entry as "Origin confirmed by registry" with its key, never as a publisher's signature and without a badge of its own (`entryBadgeState` answers none for `issuedBy`, Q-SIG-1; [signature-words.ts](../../web/src/app/views/signatures/signature-words.ts)); its sentence still reads that no trust anchor knows the signer. Package 3: the attestation's route ([attestation_api.go](../../internal/api/v1/attestation_api.go)); the client setup's tab `verify` with `npm.verify.signatures` for npm's client (Q-SIG-163) and `<client>.verify.attestation` for every client of a format that attests something ([setup_verify.go](../../internal/api/v1/setup_verify.go), [Q-SIG-188](#q-sig-188--the-tab-verify-is-one-snippet-per-client-written-by-the-core)); the answers of R-SIG-034 list Quader's attestation through the same `issuedBy` mechanism, as an attestation with `source: "issued"`, its signer (`identity`, `subject`, `issuer`) and its predicate type, without a badge of its own. The second half of package 4: a receipt's entry carries the decoded predicate in `attestation` (`receivedAt`, `issuedAt`, `origin` in the shape of R-SIG-010's origin with a pipeline's claims through the same allowlist, `signatures` with their integrity states and `signaturesOmitted`, `malware` with its state, database, dates and release, `vulnerabilities` with the evaluation, grade, open findings per severity and the data's date), read from the bundle the store keeps by `statement.Read` within the statement's bounds and left out for a bundle that does not decode ([Q-SIG-234](#q-sig-234--the-predicate-is-decoded-from-the-stored-bundle-when-the-answer-is-read)), and where the job serves it in `servedAs` (`referrer`, `api`) with `servedReason` (`hides_signature`, `no_referrers_api`) for an image served through the API ([Q-SIG-233](#q-sig-233--servedas-is-a-word-and-the-reason-a-member-beside-it)); `SignatureViews` reads both from `signing_attestations` (00105) for an issued signature alone ([signatures_receipt.go](../../internal/api/v1/signatures_receipt.go)). `issuedBy` is the same for both kinds. **With this, the API of stage 2 is whole.**
 
 Acceptance criteria:
 
@@ -2544,7 +2544,7 @@ Simple by default ([CLAUDE.md](../../CLAUDE.md#product-simple-by-default-details
   step of the client setup page, numbered after Publish where the page offers it, with one sentence for every client
   ([client-setup.html](../../web/src/app/features/setup/client-setup.html), [clients.ts](../../web/src/app/features/setup/clients.ts)).
   **The second half of package 4** ([developer/signatures.md](../developer/signatures.md#package-4-second-half-quaders-own-signatures-at-an-artifact-built)):
-  at a version, a file and an image (the shared details, [signature-report.html](../../web/src/app/shared/signatures/signature-report.html)),
+  at a version, a file and an image (the shared details, [signature-report.html](../../web/src/app/views/signatures/signature-report.html)),
   Quader's npm signature reads **Origin confirmed by registry · this installation** with its **npm key ID**, its time "by this
   installation's signing identity" and a sentence that says what it confirms, never that no trust anchor knows its signer; under
   **Attestations** (**Attestations and SBOMs** while others stand beside it, in their table) the **Receipt attestation by this
@@ -3558,12 +3558,12 @@ in the main view of a repository; a plain user sees why a download is refused wh
 Built (package 3 of stage 3): the section ([repository-signatures.ts](../../web/src/app/features/repositories/repository-signatures.ts), the order
 of R-SIG-061 in [signature-gate-order.ts](../../web/src/app/features/repositories/signature-gate-order.ts)) on every repository but a system
 one, the fetch of a remote after the gate in the same section and one save; the gate's block above the signatures of a version's tab and a
-file's section ([signature-gate.ts](../../web/src/app/shared/signatures/signature-gate.ts)); the banner, "Refused here" and no **Download** at a
+file's section ([signature-gate.ts](../../web/src/app/views/signatures/signature-gate.ts)); the banner, "Refused here" and no **Download** at a
 version and a file; **Release for this repository** and **Withdraw release** with their dialog and question
 ([gate-release-dialog.ts](../../web/src/app/shared/signatures/gate-release-dialog.ts), [gate-releases.ts](../../web/src/app/shared/signatures/gate-releases.ts));
 the refused downloads and the releases in the dashboard's view ([signature-refusals.ts](../../web/src/app/features/vulnerabilities/signature-refusals.ts));
 the impact before a removal, a switch-off, a block and project anchors switched off; the line of the client setup; the words of each reason in
-one place ([gate-words.ts](../../web/src/app/shared/signatures/gate-words.ts)). Where it deviates or adds: the section learns that the checks
+one place ([gate-words.ts](../../web/src/app/views/signatures/gate-words.ts)). Where it deviates or adds: the section learns that the checks
 are off from the preview's `409 signatures_not_enabled` and reads the preview whenever it opens, so a gate that is off shows what switching it
 on would refuse ([Q-SIG-223](#q-sig-223--the-section-reads-the-preview-when-it-opens-and-learns-from-it-that-the-checks-are-off)); an Owner's
 controls open exactly the narrowings ([Q-SIG-224](#q-sig-224--a-writer-who-may-not-weaken-gets-the-narrowings-as-controls-and-the-rest-read-only));
@@ -6566,7 +6566,7 @@ under "No signature. No signature found."
 | (b) Keep "No signature found." | | Nothing changes | Contradicts the list below it on most local npm versions |
 
 **Choice:** (a). The kinds the format knows still follow. **Applied in the spec:** R-SIG-056. Code:
-[signature-words.ts](../../web/src/app/shared/signatures/signature-words.ts) `noPublisherSignature`.
+[signature-words.ts](../../web/src/app/views/signatures/signature-words.ts) `noPublisherSignature`.
 
 ### Q-SIG-236 · The job's backlog is one quiet line of the section Signing identity
 
@@ -6605,7 +6605,7 @@ Status: **Decided by the development agent** — selected from the options below
 | (b) A row of the attestations' table | | One table | A table row has no room for a reason and a download of its own |
 | (c) Every fact of the statement in front | | Nothing hidden | A block as long as a publisher's signature for what most readers never open |
 
-**Choice:** (a). **Applied in the spec:** R-SIG-056. Code: [signature-report.html](../../web/src/app/shared/signatures/signature-report.html).
+**Choice:** (a). **Applied in the spec:** R-SIG-056. Code: [signature-report.html](../../web/src/app/views/signatures/signature-report.html).
 
 ### Q-SIG-239 · A retired identity's entries say what follows, and a retired receipt offers no download
 
@@ -6617,7 +6617,7 @@ Status: **Decided by the development agent** — selected from the options below
 | (a) The entry's sentence says that an administrator retired the identity, that it is no longer served, and that Quader signs again with the current identity; the receipt shows no **Download attestation** (chosen) | | The screen says what the wire does; no button that answers 404 | — |
 | (b) Hide a retired identity's entries | | Shorter | The window until the job signs again is invisible; the API lists them |
 
-**Choice:** (a). **Applied in the spec:** R-SIG-056. Code: [signature-words.ts](../../web/src/app/shared/signatures/signature-words.ts) `issuedSentence`.
+**Choice:** (a). **Applied in the spec:** R-SIG-056. Code: [signature-words.ts](../../web/src/app/views/signatures/signature-words.ts) `issuedSentence`.
 
 ### Q-SIG-240 · A writer's HEAD and GET of one manifest within a minute are one event
 

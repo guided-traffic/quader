@@ -2,7 +2,7 @@ import { Provider } from '@angular/core';
 import { Guide, GuideSection, GuidesApi } from '../guides-api';
 import { ApiError } from '../problem';
 import { refOf } from '../repositories-api';
-import { ANSIBLE_REPOSITORIES, FakeClientSetupApi, GENERIC_REPOSITORY, NPM_REPOSITORIES, NUGET_REPOSITORIES, OCI_REPOSITORIES } from './fakes-packages';
+import { ANSIBLE_REPOSITORIES, FakeClientSetupReads, GENERIC_REPOSITORY, NPM_REPOSITORIES, NUGET_REPOSITORIES, OCI_REPOSITORIES } from './fakes-packages';
 
 /*
  * The in-memory fake of the guide operations (R-UI-047 component tier). Its sections have the ids,
@@ -28,7 +28,7 @@ export class FakeGuidesApi extends GuidesApi {
   anonymous = false;
   /** The endpoint serves under exposure rules. */
   exposureRules = false;
-  private readonly setup = new FakeClientSetupApi();
+  private readonly setup = new FakeClientSetupReads();
 
   override async repository(key: string, client: string): Promise<Guide> {
     this.calls.push({ repository: key, client });

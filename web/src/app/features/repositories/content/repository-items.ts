@@ -11,7 +11,7 @@ import { GradeLabel } from '../../../shared/vulnerability/grade';
 import { gradeRank } from '../../../shared/vulnerability/grade-words';
 import { systemClosed } from '../../../core/system-clients';
 import { LIVE_SLOW_MS, live } from '../../../core/live-refresh';
-import { ClientCommandMenu } from '../../packages/client-command-menu';
+import { ClientCommandMenu } from '../../../views/packages/client-command-menu';
 import { packageCommands } from '../../packages/package-links';
 import { ContentShape, emptyContentText } from './content-shape';
 import { RepositoryItemVersions } from './repository-item-versions';

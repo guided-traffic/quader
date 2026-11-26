@@ -6,7 +6,7 @@ import { SessionStore } from '../../core/session-store';
 import { Confirm, ConfirmData } from '../confirm-dialog';
 import { QuaderDialog } from '../ui/dialog';
 import { GateReleaseData, GateReleaseDialog } from './gate-release-dialog';
-import { impactItems, impactQuestion } from './gate-words';
+import { impactItems, impactQuestion } from '../../views/signatures/gate-words';
 
 /**
  * The actions of a repository's gate that more than one screen offers (R-SIG-070, R-SIG-071, R-SIG-074): **Release for this repository**

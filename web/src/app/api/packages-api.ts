@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { ApiClient } from './client';
+import { ClientSetupReads, PackageReads } from './package-reads';
 import { PageFetcher } from './pagination';
 import { ApiError } from './problem';
 import { repositoryUrl } from './repositories-api';
@@ -135,41 +136,11 @@ function deprecationUrl(repository: string, name: string): string {
   return `/api/v1/projects/${seg(project ?? '')}/repositories/${seg(key ?? '')}/packages/${seg(name)}/deprecation`;
 }
 
-/** Packages across repositories (R-API-029). */
-export abstract class PackagesApi {
-  /** One page fetcher; a new filter or sort is a new fetcher (cursor binding, R-API-010). */
-  abstract list(filters: PackageFilters): PageFetcher<PackageSummary>;
-  /** Resolves a format and a name; rejects with 404 when no visible version exists. */
-  abstract lookup(format: string, name: string): Promise<PackageSummary>;
-  abstract versions(packageId: string, filters?: VersionFilters): PageFetcher<PackageVersionSummary>;
-  abstract version(packageId: string, version: string): Promise<PackageVersion>;
-  /** The sanitized README, or `null` when the version has none (404). */
-  abstract readme(packageId: string, version: string): Promise<PackageReadme | null>;
-  /**
-   * The documentation tree of a version (R-ANS-036), or `null` for a 404 or a refusal: the documentation is wiki content and a
-   * caller who may not read it is told what it is told for a version that does not exist, so the tab goes without a message (Q-UI-244).
-   */
-  abstract docs(packageId: string, version: string, query?: DocsQuery): Promise<PackageDocTree | null>;
-  /** One page of the documentation: a module, a plugin or a role. */
-  abstract docEntry(
-    packageId: string,
-    version: string,
-    type: string,
-    name: string,
-    repository?: string,
-  ): Promise<PackageDocEntry>;
-  /** The README or a Markdown file of the documentation as sanitized HTML. */
-  abstract docFile(packageId: string, version: string, file: string, repository?: string): Promise<PackageDocFile>;
-  /**
-   * What decides a publish into a namespace (R-UI-220): `publishing` only for a reader of a repository's configuration; rejects with
-   * 404 for a text that is no namespace of the format.
-   */
-  abstract namespace(format: string, name: string, project?: string): Promise<PackageNamespace>;
-  /**
-   * What Quader read from a Debian package file of the version (R-DEB-039): its changelog, its copyright and a page of its files, or
-   * that it reads them still or could not read them.
-   */
-  abstract contents(packageId: string, version: string, query?: ContentsQuery): Promise<PackageVersionContents>;
+/**
+ * Packages across repositories (R-API-029): the reads of the views (`PackageReads`, R-UI-223) and the main installation's writes of a
+ * package, the deprecation (R-API-085).
+ */
+export abstract class PackagesApi extends PackageReads {
   /**
    * Deprecates a version, or a whole package where the format deprecates packages, of a local repository (`<projectKey>/<repoKey>`),
    * or changes the message (R-API-085); answers the deprecation it holds now. The format refuses what its protocol cannot carry (422).
@@ -177,21 +148,19 @@ export abstract class PackagesApi {
   abstract setDeprecation(repository: string, name: string, input: PackageDeprecationInput): Promise<PackageDeprecation>;
   /** Clears the deprecation of a version (`version`) or of a whole package (no version). */
   abstract clearDeprecation(repository: string, name: string, version?: string): Promise<void>;
-  /**
-   * The packages that depend on a package, in the repositories the caller may read (R-API-086): at most 50, with how many there are; in
-   * `project` only that project's, as its package list.
-   */
-  abstract dependents(packageId: string, project?: string): Promise<PackageDependents>;
-}
-
-/** The client setup snippets of a repository (R-API-030). */
-export abstract class ClientSetupApi {
-  abstract get(repository: string, query: ClientSetupQuery): Promise<ClientSetup>;
 }
 
 @Injectable()
 export class HttpPackagesApi extends PackagesApi {
   private readonly client = inject(ApiClient);
+
+  override iconUrl(packageId: string, version: string): string {
+    return packageIconUrl(packageId, version);
+  }
+
+  override licenseUrl(packageId: string, version: string): string {
+    return packageLicenseUrl(packageId, version);
+  }
 
   override list(filters: PackageFilters): PageFetcher<PackageSummary> {
     return this.client.page<PackageSummary>('/api/v1/packages', cleanQuery(filters));
@@ -288,7 +257,7 @@ export class HttpPackagesApi extends PackagesApi {
 }
 
 @Injectable()
-export class HttpClientSetupApi extends ClientSetupApi {
+export class HttpClientSetupReads extends ClientSetupReads {
   private readonly client = inject(ApiClient);
 
   override async get(repository: string, query: ClientSetupQuery): Promise<ClientSetup> {

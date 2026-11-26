@@ -48,12 +48,6 @@
   }
 }
 
-// The nine columns of R-UI-006 fit a 1440 CSS px window beside the sidebar when the description is
-// cut early; its full text is the title of the cell.
-td .ellipsis {
-  max-inline-size: 16ch;
-}
-
 
 // The drawer's body scrolls; a list of repositories inside it has no scroll of its own (R-UI-215: one scroll per overlay).
 .check-list {

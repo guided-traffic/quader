@@ -268,7 +268,7 @@ token value it did not just receive from the creating call.
   rewritten the same way, every answer is checked for `qdr_(pat|sat|cit)_` before it is sent (`TestR_API_053_NoGuideHoldsAToken`), and
   kit check 8 refuses a format whose guide spells a credential in a code block. The guide tells readers never to commit a file that holds a
   token; that a downloaded file with a token can still be committed is [H-319](../spec/api-and-ui.md#h-319--a-configuration-file-that-holds-a-token-can-be-committed).
-- **README HTML is bound, not trusted.** The README component ([package-readme.ts](../../web/src/app/features/packages/package-readme.ts),
+- **README HTML is bound, not trusted.** The README component ([package-readme.ts](../../web/src/app/views/packages/package-readme.ts),
   Q-UI-71) binds server HTML with `[innerHTML]` under Angular's sanitizer and the document's Trusted Types policy, removes a link target that
   is not a fragment, `http`, `https` or `mailto`, removes an image source that is not `https` or a path of this origin, and puts
   `rel="nofollow noopener noreferrer"` on every link that leaves Quader (`package-readme.spec.ts` carries the vectors). The server-side sanitizer

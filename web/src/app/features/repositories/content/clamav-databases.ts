@@ -17,7 +17,7 @@ import {
   outdatedBadge,
   outdatedNote,
   setName,
-} from '../../packages/clamav-definitions';
+} from '../../../views/packages/clamav-definitions';
 import { packageCommands, versionCommands } from '../../packages/package-links';
 
 /** What tells that a database got a version or lost one. */

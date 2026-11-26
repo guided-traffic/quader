@@ -1,6 +1,6 @@
 import { DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { PackageTags } from '../../packages/package-tags';
+import { PackageTags } from '../../../views/packages/package-tags';
 
 /**
  * What the upstream tells beside a package on the tab Upstream (R-ANS-047, Q-ANS-129): its own word that the package is signed, the

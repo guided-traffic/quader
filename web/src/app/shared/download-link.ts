@@ -3,7 +3,7 @@ import { Router } from '@angular/router';
 import { Problem } from '../api/problem';
 import { LIMIT_REFUSALS, limitNotice } from '../core/http/problem-messages-limits';
 import { Notifier } from '../core/notifier';
-import { SessionStore } from '../core/session-store';
+import { SIGNED_IN } from '../core/signed-in';
 
 /** What the probe of a download learned: go on with the browser's download, or show the refusal. */
 export type ProbeAnswer = { readonly go: true } | { readonly go: false; readonly problem: Partial<Problem> | null; readonly retryAfter: number | null };
@@ -39,8 +39,9 @@ export async function probeDownload(href: string, signal: AbortSignal): Promise<
 
 /**
  * A download link whose refusal by the download limits shows a notice instead of a failed download (R-UI-186): a click first asks
- * for one byte; a 429 shows the refusal in words and, for a signed-in caller, **See your usage** to `/profile/usage`, and the page
- * stays as it was. Any other answer lets the link download as the browser does. A modified click (a new tab, a save) is left alone.
+ * for one byte; a 429 shows the refusal in words and, for a signed-in caller (`SIGNED_IN`), **See your usage** to `/profile/usage`, and
+ * the page stays as it was. Any other answer lets the link download as the browser does. A modified click (a new tab, a save) is left
+ * alone.
  */
 @Directive({
   selector: 'a[quaderDownload]',
@@ -49,7 +50,8 @@ export async function probeDownload(href: string, signal: AbortSignal): Promise<
 export class DownloadLink {
   private readonly el = inject<ElementRef<HTMLAnchorElement>>(ElementRef);
   private readonly notifier = inject(Notifier);
-  private readonly session = inject(SessionStore);
+  /** Whether the reader has a session; an application without sessions binds none (R-UI-223). */
+  private readonly signedIn = inject(SIGNED_IN, { optional: true });
   private readonly router = inject(Router);
   private readonly locale = inject(LOCALE_ID);
   private abort: AbortController | null = null;
@@ -85,7 +87,7 @@ export class DownloadLink {
     }
     const known = answer.problem?.code === undefined || LIMIT_REFUSALS.includes(answer.problem.code);
     const text = known ? limitNotice(answer.problem, answer.retryAfter, this.locale) : (answer.problem?.detail ?? '');
-    const action = this.session.authenticated()
+    const action = this.signedIn?.()
       ? { label: $localize`:@@limits.notice.see-usage:See your usage`, run: () => void this.router.navigateByUrl('/profile/usage') }
       : undefined;
     this.notifier.alert(text, action);

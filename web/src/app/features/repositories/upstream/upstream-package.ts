@@ -15,7 +15,7 @@ import { DataTable, TableColumn } from '../../../shared/ui/data-table';
 import { DeprecationMark } from '../../../shared/ui/deprecation-mark';
 import { Switch } from '../../../shared/ui/switch';
 import { TimeAgo } from '../../../shared/ui/time-ago';
-import { DistTags, tagsByVersion } from '../../packages/dist-tags';
+import { DistTags, tagsByVersion } from '../../../views/packages/dist-tags';
 import { formatSize } from '../../packages/format-size';
 import { versionCommands } from '../../packages/package-links';
 import { downloadStateText } from '../downloads/download-words';

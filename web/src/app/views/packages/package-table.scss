@@ -1,0 +1,17 @@
+.type-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--quader-space-2);
+
+  // The format's logo or the neutral glyph (shared/format-icon.ts); the colour reaches the glyph only.
+  quader-format-icon {
+    font-size: 1.25rem;
+    color: var(--quader-text-muted);
+  }
+}
+
+// The nine columns of R-UI-006 fit a 1440 CSS px window beside the sidebar when the description is
+// cut early; its full text is the title of the cell.
+td .ellipsis {
+  max-inline-size: 16ch;
+}

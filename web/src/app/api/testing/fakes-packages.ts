@@ -6,7 +6,6 @@ import {
   PackageDocFile,
   PackageDocTree,
   ClientSetup,
-  ClientSetupApi,
   ClientSetupQuery,
   ClientSnippet,
   PackageDependents,
@@ -21,7 +20,10 @@ import {
   PackageVersionSummary,
   PackagesApi,
   VersionFilters,
+  packageIconUrl,
+  packageLicenseUrl,
 } from '../packages-api';
+import { ClientSetupReads } from '../package-reads';
 import { DocsFixture, commonFixture, docFile, docTree } from './fakes-ansible-docs';
 import { Page, PageFetcher } from '../pagination';
 import { ApiError } from '../problem';
@@ -718,6 +720,14 @@ export class FakePackagesApi extends PackagesApi {
     return this.namespaceFixtures.get(`${format}:${name}`) ?? { format, name, kind, publishing: null };
   }
 
+  override iconUrl(packageId: string, version: string): string {
+    return packageIconUrl(packageId, version);
+  }
+
+  override licenseUrl(packageId: string, version: string): string {
+    return packageLicenseUrl(packageId, version);
+  }
+
   override async lookup(format: string, name: string): Promise<PackageSummary> {
     // The address names a package by its key where it has one (an Ansible role's role/<id>, R-ANS-056).
     const found = this.packages.find((p) => p.format === format && (p.key ?? p.name) === name) ?? this.packages.find((p) => p.format === format && p.name === name);
@@ -997,7 +1007,7 @@ export function shellQuote(value: string): string {
   return /^[A-Za-z0-9@/._+:=-]+$/.test(value) ? value : `'${value.replace(/'/g, `'\\''`)}'`;
 }
 
-export class FakeClientSetupApi extends ClientSetupApi {
+export class FakeClientSetupReads extends ClientSetupReads {
   calls: { repository: string; query: ClientSetupQuery }[] = [];
   failure: ApiError | null = null;
   /** The virtual repository without a default deployment target has no publish snippets. */
@@ -1545,7 +1555,7 @@ function curlSetup(repository: string, query: ClientSetupQuery, mayPublish: bool
 export function providePackageFakes(): Provider[] {
   return [
     { provide: PackagesApi, useClass: FakePackagesApi },
-    { provide: ClientSetupApi, useClass: FakeClientSetupApi },
+    { provide: ClientSetupReads, useClass: FakeClientSetupReads },
   ];
 }
 

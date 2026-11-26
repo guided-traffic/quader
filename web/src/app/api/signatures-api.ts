@@ -4,6 +4,7 @@ import { packageUrl } from './packages-api';
 import { PageFetcher } from './pagination';
 import { seg } from './query';
 import { repositoryUrl } from './repositories-api';
+import { SignatureReads } from './signature-reads';
 import { Schema } from './types';
 
 /** The badge's state of an artifact (R-SIG-009): four with a badge, three without. */
@@ -100,15 +101,12 @@ export function attestationUrl(repository: string, path: string): string {
 }
 
 /**
- * The operations of the signatures (R-SIG-034, tag `signatures`): what a reader sees of a version and of a file, the settings, the
- * installation's anchors and blocks for `settings:read` and their changes for `security-settings:write`, a project's anchors for its
- * members and their changes for its Owner while the switch is on, and the findings of the security dashboard.
+ * The operations of the signatures (R-SIG-034, tag `signatures`): what a reader sees of a version and of a file (`SignatureReads`, the
+ * reads of the views, R-UI-223), the settings, the installation's anchors and blocks for `settings:read` and their changes for
+ * `security-settings:write`, a project's anchors for its members and their changes for its Owner while the switch is on, and the findings
+ * of the security dashboard.
  */
-export abstract class SignaturesApi {
-  /** `GET /api/v1/packages/{packageId}/versions/{version}/signatures`: per readable repository that holds the version. */
-  abstract version(packageId: string, version: string): Promise<SignatureVersionReport>;
-  /** `GET …/repositories/{repoKey}/signatures?path=`: one stored file. */
-  abstract file(repository: string, path: string): Promise<SignatureFileReport>;
+export abstract class SignaturesApi extends SignatureReads {
   /** `GET /api/v1/signatures/settings` with its `ETag`. */
   abstract settings(): Promise<LoadedSignatureSettings>;
   /** `PATCH /api/v1/signatures/settings`: the switch for project Owners, with `If-Match`. */
@@ -144,8 +142,6 @@ export abstract class SignaturesApi {
   abstract impact(change: SignatureImpactRequest): Promise<SignatureImpact>;
   /** `GET /api/v1/signatures/refusals`, the newest refusal first, in pages (R-SIG-073). */
   abstract refusals(filters: SignatureRefusalFilters): PageFetcher<SignatureRefusal>;
-  /** `GET …/repositories/{repoKey}/signatures/releases`: the repository's releases, newest first. */
-  abstract releases(repository: string): Promise<readonly SignatureRelease[]>;
   /** `POST …/repositories/{repoKey}/signatures/releases`: releases one artifact for this repository's gate (R-SIG-070). */
   abstract release(repository: string, sha256: string, reason: string): Promise<SignatureRelease>;
   /** `DELETE …/repositories/{repoKey}/signatures/releases/{sha256}`: withdraws a release. */
@@ -157,6 +153,10 @@ const BASE = '/api/v1/signatures';
 @Injectable()
 export class HttpSignaturesApi extends SignaturesApi {
   private readonly client = inject(ApiClient);
+
+  override attestationUrl(repository: string, path: string): string {
+    return attestationUrl(repository, path);
+  }
 
   override async version(packageId: string, version: string): Promise<SignatureVersionReport> {
     return (await this.client.getJson<SignatureVersionReport>(`${packageUrl(packageId)}/versions/${seg(version)}/signatures`)).body;

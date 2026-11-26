@@ -24,6 +24,7 @@ import {
   SignatureSettings,
   SignatureVersionReport,
   SignaturesApi,
+  attestationUrl,
   versionTag,
 } from '../signatures-api';
 
@@ -333,6 +334,10 @@ export class FakeSignaturesApi extends SignaturesApi {
       this.failure = null;
       throw f;
     }
+  }
+
+  override attestationUrl(repository: string, path: string): string {
+    return attestationUrl(repository, path);
   }
 
   override async version(packageId: string, version: string): Promise<SignatureVersionReport> {

@@ -10,7 +10,7 @@ import { PackageDetail } from './package-detail';
 import { RepositoriesApi } from '../../api/repositories-api';
 import { FakeRepositoriesApi, GENERIC_FORMAT, OCI_FORMAT } from '../../api/testing/fakes-catalog';
 import { PackageMemory } from './package-memory';
-import { VERSION_PAGE } from './package-versions-model';
+import { VERSION_PAGE } from '../../views/packages/package-versions-model';
 
 type Opened = Awaited<ReturnType<typeof open>>;
 

@@ -6,6 +6,7 @@ import { ErrorNotice } from '../../shared/error-notice';
 import { asApiError } from '../../shared/paged-resource';
 import { Busy } from '../../shared/ui/busy';
 import { DIALOG_DATA, DialogClose, DialogRef, DialogTitle } from '../../shared/ui/dialog';
+import { deprecationReasonText } from '../../views/packages/version-metadata';
 
 /** NuGet's reasons of a deprecation, in the catalog entry's spelling (R-NUGET-036). */
 export const NUGET_REASONS = ['Legacy', 'CriticalBugs', 'Other'] as const;
@@ -20,18 +21,6 @@ export interface DeprecationDialogData {
   readonly repositories: readonly string[];
   /** The deprecation the version holds now, which the dialog changes; null for a new one. */
   readonly current: PackageDeprecation | null;
-}
-
-/** The words of a NuGet reason, as Visual Studio says them. */
-export function reasonText(reason: string): string {
-  switch (reason) {
-    case 'Legacy':
-      return $localize`:@@pkg.deprecate.reason.legacy:Legacy, no longer maintained`;
-    case 'CriticalBugs':
-      return $localize`:@@pkg.deprecate.reason.critical:Critical bugs`;
-    default:
-      return $localize`:@@pkg.deprecate.reason.other:Other`;
-  }
 }
 
 /**
@@ -163,7 +152,7 @@ export class DeprecationDialog {
   protected readonly nuget = this.data.format === 'nuget';
   protected readonly collection = this.data.format === 'ansible';
   protected readonly reasons = NUGET_REASONS;
-  protected readonly reasonText = reasonText;
+  protected readonly reasonText = deprecationReasonText;
 
   protected readonly repository = signal(this.data.repositories[0] ?? '');
   protected readonly message = signal(this.data.current?.message ?? '');

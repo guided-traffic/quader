@@ -246,57 +246,16 @@
       </quader-filter-category>
     </quader-filter-panel>
 
-    <quader-data-table
-      [caption]="tableCaption"
-      [columns]="columns"
+    <!-- The packages, the table every list of packages shows (R-UI-223). -->
+    <quader-package-table
+      [list]="list"
+      [project]="project()"
       [sort]="tableSort()"
-      [loaded]="list.loaded()"
-      [loading]="list.loading()"
-      loadingText="Loading the packages."
-      i18n-loadingText="@@pkg.list.loading"
-      [error]="list.error()"
-      [empty]="list.items().length === 0"
       [emptyText]="filtered() ? emptyFilteredText : emptyText"
-      [hasMore]="list.hasMore()"
+      [formatLabel]="formatLabelOf"
       (sortChange)="sortBy($event)"
-      (more)="list.more()"
       (retry)="retry()"
-    >
-      @for (row of list.items(); track row.id) {
-        <!-- What a reader chooses a package by (Q-UI-314): its name and description, format, latest version, when it
-             changed. Counts and the first publication are on the package's page. -->
-        <tr>
-          <th scope="row" class="wrap-name">
-            <!-- The name's namespace links to its page, the rest to the package by its key (R-UI-220, R-ANS-056); the deprecation of
-                 the version the row names, its latest (R-API-085, Q-UI-1300), and a verified latest version's badge beside it; the tags
-                 filter the list by one of them (R-ANS-057). -->
-            <span class="name-line">
-              <quader-package-name
-                [format]="row.format"
-                [name]="row.name"
-                [key]="row.key"
-                [link]="commands(row.format, row.key ?? row.name)"
-                [project]="project()"
-              />
-              <quader-deprecation-mark [deprecation]="row.deprecation" />
-              <quader-signature-badge [state]="row.signature" />
-            </span>
-            @if (row.description) {
-              <span class="secondary" translate="no">{{ row.description }}</span>
-            }
-            <quader-package-tags [tags]="row.keywords" [project]="project()" [format]="row.format" />
-          </th>
-          <td>
-            <span class="type-cell">
-              <quader-format-icon [format]="row.format" />
-              <span translate="no">{{ formatLabel(row.format) }}</span>
-            </span>
-          </td>
-          <td translate="no">{{ row.latestVersion }}</td>
-          <td><quader-time-ago [at]="row.updatedAt" absolute="title" /></td>
-        </tr>
-      }
-    </quader-data-table>
+    />
     @if (list.loaded() && list.items().length === 0) {
       @if (filtered()) {
         <p>

@@ -18,6 +18,7 @@ import { tabStripFindings } from './tab-strip-rule.mjs';
 import { serverTextBindings, serverTextFindings } from './server-text-rule.mjs';
 import { clearedBeforeAnswer, handMadeFailures } from './read-failure-rule.mjs';
 import { busyFindings } from './busy-rule.mjs';
+import { viewFindings } from './views-rule.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const eslint = new ESLint({ cwd: root });
@@ -466,4 +467,42 @@ test('R-UI-217 a held button that is no act passes in its own file only', () => 
   const add = '<button class="btn btn-default" type="button" [disabled]="loading() !== null" (click)="add(field)">Add</button>';
   assert.deepEqual(busyFindings('src/app/features/ci/name-picker.ts', add), []);
   assert.equal(busyFindings('src/app/features/ci/other.ts', add).length, 1);
+});
+
+test('R-UI-223 a view that imports the session, the API client, a dialog, an API class or an act behind a helper fails the rule', () => {
+  const view = 'src/app/views/packages/probe.ts';
+  const modules = {
+    'src/app/shared/signatures/gate-releases': "import { SessionStore } from '../../core/session-store';\nimport { QuaderDialog } from '../ui/dialog';\n",
+    'src/app/shared/format-size': 'export function formatSize(n: number): string {\n  return `${n}`;\n}\n',
+    'src/app/core/format-names': "import { RepositoriesApi } from '../api/repositories-api';\n",
+  };
+  const read = (m) => modules[m] ?? null;
+  const bad = [
+    "import { SessionStore } from '../../core/session-store';",
+    "import { ApiClient } from '../../api/client';",
+    "import { QuaderDialog } from '../../shared/ui/dialog';",
+    "import { PackageVersion, PackagesApi } from '../../api/packages-api';",
+    "import {\n  DeprecationDialogData,\n  reasonText,\n} from '../../features/packages/deprecation-dialog';",
+    "import { GateActions } from '../../shared/signatures/gate-releases';",
+  ];
+  assert.deepEqual(
+    bad.map((t) => viewFindings(view, t, read).length),
+    [1, 1, 1, 1, 1, 1],
+  );
+  const good = [
+    "import { PackageVersion } from '../../api/packages-api';",
+    "import { PackageReads } from '../../api/package-reads';",
+    "import type { SessionStore } from '../../core/session-store';",
+    "import { formatSize } from '../../shared/format-size';",
+    "import { FormatCatalog } from '../../core/format-names';",
+    "import { Component, inject } from '@angular/core';",
+  ];
+  assert.deepEqual(good.flatMap((t) => viewFindings(view, t, read)), []);
+});
+
+test('R-UI-223 the rule holds the files below src/app/views/ only, and not their specs', () => {
+  const t = "import { SessionStore } from '../../core/session-store';";
+  assert.equal(viewFindings('src/app/views/vulnerabilities/probe.ts', t, () => null).length, 1);
+  assert.deepEqual(viewFindings('src/app/features/packages/package-version.ts', t, () => null), []);
+  assert.deepEqual(viewFindings('src/app/views/packages/probe.spec.ts', t, () => null), []);
 });

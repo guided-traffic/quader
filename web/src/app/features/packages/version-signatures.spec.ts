@@ -5,7 +5,7 @@ import { FakeSignaturesApi, repositoryReport, signatureFinding } from '../../api
 import { expectAccessible, inProject, renderScreen, settle, text } from '../../testing/screen';
 import { SignatureFindings } from '../vulnerabilities/signature-findings';
 import { PackageVersionPage } from './package-version';
-import { versionRows } from './package-versions-model';
+import { versionRows } from '../../views/packages/package-versions-model';
 
 async function open(setup?: (pkgs: FakePackagesApi, sigs: FakeSignaturesApi) => void, tab?: string) {
   const r = await renderScreen(

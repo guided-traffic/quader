@@ -9,7 +9,7 @@ import { asApiError } from '../paged-resource';
 import { Checkbox } from '../ui/checkbox';
 import { DIALOG_DATA, DialogClose, DialogRef, DialogTitle } from '../ui/dialog';
 import { Disclosure } from '../ui/disclosure';
-import { anchorKindWords } from './signature-words';
+import { anchorKindWords } from '../../views/signatures/signature-words';
 import { Busy } from '../ui/busy';
 
 /** Where the anchor is created: the installation's (`project` null) or a project's. */

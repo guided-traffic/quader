@@ -14,10 +14,10 @@ import { DataTable, TableColumn } from '../../../shared/ui/data-table';
 import { DeprecationMark } from '../../../shared/ui/deprecation-mark';
 import { GradeLabel } from '../../../shared/vulnerability/grade';
 import { checkWaits } from '../../../shared/vulnerability/grade-words';
-import { ClientCommandMenu } from '../../packages/client-command-menu';
-import { VersionSize } from '../../packages/version-size';
+import { ClientCommandMenu } from '../../../views/packages/client-command-menu';
+import { VersionSize } from '../../../views/packages/version-size';
 import { versionCommands, versionsCommands } from '../../packages/package-links';
-import { ImageTags } from '../../packages/image-tags';
+import { ImageTags } from '../../../views/packages/image-tags';
 import { ContentShape } from './content-shape';
 
 /**

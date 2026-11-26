@@ -1,14 +1,14 @@
 import { UpstreamApi } from '../../api/upstream-api';
 import { CLAMAV_ENDPOINT, FakeUpstreamApi } from '../../api/testing/fakes-upstream';
 import { GuidesApi } from '../../api/guides-api';
-import { ClientSetupApi } from '../../api/packages-api';
+import { ClientSetupReads } from '../../api/package-reads';
 import { ApiError } from '../../api/problem';
 import { RepositoriesApi } from '../../api/repositories-api';
 import { SessionApi } from '../../api/session-api';
 import { FakeSessionApi } from '../../api/testing/fakes';
 import { FakeRepositoriesApi, GENERIC_FORMAT, NUGET_FORMAT, OCI_FORMAT, PACKAGE_FORMAT } from '../../api/testing/fakes-catalog';
 import { FakeGuidesApi } from '../../api/testing/fakes-guides';
-import { FakeClientSetupApi, GENERIC_REPOSITORY, NPM_REPOSITORIES, NUGET_REPOSITORIES, OCI_REPOSITORIES } from '../../api/testing/fakes-packages';
+import { FakeClientSetupReads, GENERIC_REPOSITORY, NPM_REPOSITORIES, NUGET_REPOSITORIES, OCI_REPOSITORIES } from '../../api/testing/fakes-packages';
 import { FakeTokensApi } from '../../api/testing/access-fakes';
 import { TokensApi } from '../../api/tokens-api';
 import { button, expectAccessible, renderScreen, settle, storedText, text, type } from '../../testing/screen';
@@ -38,14 +38,14 @@ async function open(
         (get(SessionApi) as FakeSessionApi).whoamiResult = new ApiError(401, { code: 'unauthenticated' }, null);
         (get(GuidesApi) as FakeGuidesApi).anonymous = true;
         // The server sends an anonymous caller no publish snippets (R-API-030).
-        for (const r of NPM_REPOSITORIES) (get(ClientSetupApi) as FakeClientSetupApi).readOnly.add(`${r.project}/${r.key}`);
+        for (const r of NPM_REPOSITORIES) (get(ClientSetupReads) as FakeClientSetupReads).readOnly.add(`${r.project}/${r.key}`);
       }
       options.setup?.(get as Opened['get']);
     },
   });
   return {
     ...r,
-    setup: r.get(ClientSetupApi) as FakeClientSetupApi,
+    setup: r.get(ClientSetupReads) as FakeClientSetupReads,
     guides: r.get(GuidesApi) as FakeGuidesApi,
     tokens: r.get(TokensApi) as FakeTokensApi,
   };
@@ -126,12 +126,12 @@ describe('Set up client', () => {
   });
 
   it('R-SIG-056 the step Verify follows the others while the installation has a signing identity, and is not there without one', async () => {
-    const without = await open({ project: 'web', key: 'oci-local' }, { setup: (get) => ((get(ClientSetupApi) as FakeClientSetupApi).signingIdentity = null) });
+    const without = await open({ project: 'web', key: 'oci-local' }, { setup: (get) => ((get(ClientSetupReads) as FakeClientSetupReads).signingIdentity = null) });
     expect(stepHeadings(without)).not.toContain('4Verify');
     expect(without.root.querySelector('section[aria-labelledby="step-verify"]')).toBeNull();
     const r = await open(
       { project: 'web', key: 'oci-local' },
-      { setup: (get) => ((get(ClientSetupApi) as FakeClientSetupApi).signingIdentity = 'https://quader.example.net') },
+      { setup: (get) => ((get(ClientSetupReads) as FakeClientSetupReads).signingIdentity = 'https://quader.example.net') },
     );
     expect(stepHeadings(r)).toEqual(['1Configure', '2Install', '3Publish', '4Verify']);
     const verify = snippets(r, 'verify');
@@ -145,7 +145,7 @@ describe('Set up client', () => {
   it('R-SIG-056 npm\'s step Verify starts with npm audit signatures, then the attestation\'s check', async () => {
     const r = await open(
       { project: 'web', key: 'npm-local' },
-      { setup: (get) => ((get(ClientSetupApi) as FakeClientSetupApi).signingIdentity = 'https://quader.example.net') },
+      { setup: (get) => ((get(ClientSetupReads) as FakeClientSetupReads).signingIdentity = 'https://quader.example.net') },
     );
     const verify = snippets(r, 'verify');
     expect(verify).toHaveLength(2);
@@ -476,7 +476,7 @@ describe('Set up client', () => {
   });
 
   it('R-UI-016 a failing answer is shown with a retry', async () => {
-    const r = await open({ project: 'web', key: 'npm-all' }, { setup: (get) => ((get(ClientSetupApi) as FakeClientSetupApi).failure = new ApiError(503, { code: 'unavailable' }, null)) });
+    const r = await open({ project: 'web', key: 'npm-all' }, { setup: (get) => ((get(ClientSetupReads) as FakeClientSetupReads).failure = new ApiError(503, { code: 'unavailable' }, null)) });
     expect(r.root.querySelector('quader-error-notice')).not.toBeNull();
   });
 

@@ -2,12 +2,12 @@ import { Router } from '@angular/router';
 import { vi } from 'vitest';
 import { BastionsApi } from '../../api/bastions-api';
 import { GuidesApi } from '../../api/guides-api';
-import { ClientSetupApi } from '../../api/packages-api';
+import { ClientSetupReads } from '../../api/package-reads';
 import { RepositoriesApi } from '../../api/repositories-api';
 import { FakeRepositoriesApi, GENERIC_FORMAT, PACKAGE_FORMAT } from '../../api/testing/fakes-catalog';
 import { FakeBastionsApi, sampleBastion, sampleBastionContact } from '../../api/testing/fakes-bastions';
 import { FakeGuidesApi } from '../../api/testing/fakes-guides';
-import { FakeClientSetupApi, NPM_REPOSITORIES } from '../../api/testing/fakes-packages';
+import { FakeClientSetupReads, NPM_REPOSITORIES } from '../../api/testing/fakes-packages';
 import { addressValues, expectAccessible, renderScreen, settle, text } from '../../testing/screen';
 import { ClientSetupPage } from './client-setup';
 
@@ -33,7 +33,7 @@ async function openSetup(inputs: Record<string, unknown>, capabilities?: readonl
       registrations(get);
     },
   });
-  return { ...r, setup: r.get(ClientSetupApi) as FakeClientSetupApi, guides: r.get(GuidesApi) as FakeGuidesApi };
+  return { ...r, setup: r.get(ClientSetupReads) as FakeClientSetupReads, guides: r.get(GuidesApi) as FakeGuidesApi };
 }
 
 const target = (root: HTMLElement, value: string) => root.querySelector<HTMLInputElement>(`input[name="target"][value="${value}"]`);

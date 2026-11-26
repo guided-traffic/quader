@@ -1,8 +1,9 @@
-import { ClientSetupApi, PackagesApi } from '../../../api/packages-api';
+import { PackagesApi } from '../../../api/packages-api';
+import { ClientSetupReads } from '../../../api/package-reads';
 import { RepositoriesApi } from '../../../api/repositories-api';
 import { ApiError } from '../../../api/problem';
 import { VulnerabilitiesApi } from '../../../api/vulnerabilities-api';
-import { FakeClientSetupApi, FakePackagesApi, OCI_PACKAGE, ociFixture, ociImagesFixture } from '../../../api/testing/fakes-packages';
+import { FakeClientSetupReads, FakePackagesApi, OCI_PACKAGE, ociFixture, ociImagesFixture } from '../../../api/testing/fakes-packages';
 import { ANSIBLE_FORMAT, FakeRepositoriesApi, GENERIC_FORMAT, OCI_FORMAT, PACKAGE_FORMAT } from '../../../api/testing/fakes-catalog';
 import { FakeFilesApi } from '../../../api/testing/fakes-catalog';
 import { FakeVulnerabilitiesApi, sampleGrade } from '../../../api/testing/fakes-vulnerabilities';
@@ -253,7 +254,7 @@ describe('Repository content page', () => {
 
   it('R-UI-052 a tag\'s Pull opens the commands of that tag, a tab per client, and the image row\'s Pull those of its latest tag', async () => {
     const r = await open(OCI_REPO, ({ packages }) => ociFixture(packages));
-    const setup = r.get(ClientSetupApi) as FakeClientSetupApi;
+    const setup = r.get(ClientSetupReads) as FakeClientSetupReads;
     const imageRow = [...r.root.querySelectorAll('tbody tr')].find((tr) => tr.textContent?.includes('team/app'))!;
     const latest = imageRow.querySelector<HTMLButtonElement>('quader-client-command-menu button')!;
     expect(spokenText(latest)).toBe('1.2.0: Pull');
@@ -525,7 +526,7 @@ describe('Repository content page', () => {
     expect(r.root.querySelector('quader-client-command-menu')).toBeNull();
     expect(text(r.root)).not.toContain('Pull');
     expect([...r.root.querySelectorAll('thead th')].map((th) => text(th))).not.toContain('Actions');
-    expect((r.get(ClientSetupApi) as FakeClientSetupApi).calls).toEqual([]);
+    expect((r.get(ClientSetupReads) as FakeClientSetupReads).calls).toEqual([]);
     expect(r.root.querySelector('quader-address-field')).toBeNull();
     // The consumer view has no upstream and the address for downloads by path is not offered: no tab Details.
     expect([...r.root.querySelectorAll('quader-repository-tabs a.tab-link')].map((a) => text(a))).toEqual(['Images', 'Upstream', 'Downloads']);

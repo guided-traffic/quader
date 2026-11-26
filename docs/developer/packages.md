@@ -150,7 +150,7 @@ the read and the filter are the view's.
 | `Dependencies` and `DependencySource` of [npm](../../internal/formatdata/npm/dependencies.go), [nuget](../../internal/formatdata/nuget/dependencies.go), [deb](../../internal/formatdata/deb/dependencies.go), [ansible](../../internal/formatdata/ansible/dependencies.go) | Each format's extractor over its own stored row, with the format's name rule, and the read of its rows for the task |
 | [internal/packages/view/dependents.go](../../internal/packages/view/dependents.go) | `Service.Dependents` (the repositories of the format the scope reads, the names the package provides, `PackageViewDependents`) and the filter `dependsOn` of `List` (`PackageViewDependentVersions`) |
 | [internal/api/v1/dependents_api.go](../../internal/api/v1/dependents_api.go) | `GET /api/v1/packages/{packageId}/dependents`, and the reading of `dependsOn` for the list |
-| [web/src/app/features/packages/used-by.ts](../../web/src/app/features/packages/used-by.ts) | The section **Used by** of a version's page |
+| [web/src/app/views/packages/used-by.ts](../../web/src/app/views/packages/used-by.ts) | The section **Used by** of a version's page |
 
 **Where the rows are written.** In the transaction that writes the format's own row: npm's `Store.Publish` and `DescribeCached`, NuGet's
 `Store.InsertVersion` (a push and a fill), Debian's `RecordUpload` and `DescribeCached` (from the control paragraphs of every file of the

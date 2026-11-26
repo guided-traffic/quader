@@ -5,7 +5,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { LegalPageName } from '../../api/legal-api';
 import { PackageReadme } from '../../api/packages-api';
 import { LegalStore } from '../../core/legal-store';
-import { PackageReadmeView } from '../packages/package-readme';
+import { PackageReadmeView } from '../../views/packages/package-readme';
 import { QuaderMark } from '../../shared/brand/quader-mark';
 import { PageHeader } from '../../shared/ui/page-header';
 import { Loading } from '../../shared/ui/loading';

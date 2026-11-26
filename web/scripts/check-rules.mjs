@@ -26,6 +26,8 @@
 //    code in its own words, a raw text goes through <quader-technical-details> (server-text-rule.mjs).
 //  - R-UI-216: a failed read's notice stays in place while the read is tried again: a resource's failure is failureOf, never made
 //    by hand, and a read of its own clears its notice's failure after the answer, not before (read-failure-rule.mjs).
+//  - R-UI-223: a file below src/app/views/ imports no SessionStore, no ApiClient, no QuaderDialog, no API service class and no act: the
+//    views are what a second application composes without a session (views-rule.mjs).
 //  - a test's name carries a requirement ID, never a decision's number: no `describe`, `it` or `test` title of a spec, a journey or
 //    a script's test names a `Q-…` or an `ADR-…` (test-names-rule.mjs).
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
@@ -44,6 +46,7 @@ import { tabStripFindings } from './tab-strip-rule.mjs';
 import { serverTextFindings } from './server-text-rule.mjs';
 import { clearedBeforeAnswer, handMadeFailures } from './read-failure-rule.mjs';
 import { busyFindings } from './busy-rule.mjs';
+import { viewFindings } from './views-rule.mjs';
 
 const root = join(fileURLToPath(new URL('.', import.meta.url)), '..');
 
@@ -216,6 +219,16 @@ for (const file of sources.filter((p) => /\.(ts|html|scss|css)$/.test(p) && !p.e
   for (const { line, tag, problem } of busyFindings(rel, readFileSync(file, 'utf8'))) {
     failed = true;
     console.error(`R-UI-217: ${rel}:${line}: ${problem}: ${tag}`);
+  }
+}
+
+// The views read through the abstract reads and act nowhere: a second application composes them without a session (R-UI-223).
+for (const file of sources.filter((p) => p.endsWith('.ts'))) {
+  const rel = relative(root, file).split(sep).join('/');
+  const read = (module) => (existsSync(join(root, `${module}.ts`)) ? readFileSync(join(root, `${module}.ts`), 'utf8') : null);
+  for (const { line, problem } of viewFindings(rel, readFileSync(file, 'utf8'), read)) {
+    failed = true;
+    console.error(`R-UI-223: ${rel}:${line}: ${problem}`);
   }
 }
 

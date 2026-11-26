@@ -5,7 +5,8 @@ import { Router, RouterLink } from '@angular/router';
 import { newIdempotencyKey } from '../../api/client';
 import { Bastion, BastionsApi } from '../../api/bastions-api';
 import { Guide, GuidesApi } from '../../api/guides-api';
-import { ClientSetupApi, ClientSnippet } from '../../api/packages-api';
+import { ClientSnippet } from '../../api/packages-api';
+import { ClientSetupReads } from '../../api/package-reads';
 import { ApiError } from '../../api/problem';
 import { RepositoriesApi, isConsumerView, repoRef } from '../../api/repositories-api';
 import { SignaturesApi } from '../../api/signatures-api';
@@ -103,7 +104,7 @@ type Step = 'configure' | 'install' | 'publish' | 'verify';
   host: { '[style.--quader-art-accent]': 'accent()' },
 })
 export class ClientSetupPage {
-  private readonly setupApi = inject(ClientSetupApi);
+  private readonly setupApi = inject(ClientSetupReads);
   private readonly guidesApi = inject(GuidesApi);
   private readonly repositories = inject(RepositoriesApi);
   private readonly tokens = inject(TokensApi);

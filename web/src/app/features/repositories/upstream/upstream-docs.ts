@@ -6,12 +6,11 @@ import { ErrorNotice } from '../../../shared/error-notice';
 import { asApiError } from '../../../shared/paged-resource';
 import { Disclosure } from '../../../shared/ui/disclosure';
 import { Loading } from '../../../shared/ui/loading';
-import { reasonText } from '../../packages/deprecation-dialog';
 import { EXTERNAL_REL, safeHttpUrl } from '../../packages/package-links';
-import { PackageTags } from '../../packages/package-tags';
-import { DependencyList, VersionLinks } from '../../packages/version-facts';
-import { DependencyEntry, DependencyGroup, MetadataLink } from '../../packages/version-metadata';
-import { PackageReadmeView } from '../../packages/package-readme';
+import { PackageTags } from '../../../views/packages/package-tags';
+import { DependencyList, VersionLinks } from '../../../views/packages/version-facts';
+import { DependencyEntry, DependencyGroup, MetadataLink, deprecationReasonText } from '../../../views/packages/version-metadata';
+import { PackageReadmeView } from '../../../views/packages/package-readme';
 import { aroundValue } from '../../../shared/value-list';
 import { UpstreamActions } from './upstream-actions';
 import { catalogueState, clockAfter } from './upstream-words';
@@ -138,7 +137,7 @@ export class UpstreamDocs {
     return v ? $localize`:@@upstream.docs.dependencies-of:Dependencies of ${v}:version:` : $localize`:@@pkg.meta.dependencies:Dependencies`;
   });
   protected readonly deprecation = computed(() => this.about()?.deprecation ?? null);
-  protected readonly reasons = computed(() => (this.deprecation()?.reasons ?? []).map(reasonText).join('; '));
+  protected readonly reasons = computed(() => (this.deprecation()?.reasons ?? []).map(deprecationReasonText).join('; '));
   protected readonly readmeHeading = $localize`:@@upstream.docs.readme:README`;
   /** The sentence around the host the upstream keeps the README on, which stands as a value of its own (Q-UI-1213). */
   protected readonly unreachable = computed(() =>

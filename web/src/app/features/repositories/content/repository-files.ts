@@ -15,7 +15,7 @@ import { formatSize } from '../../packages/format-size';
 import { TimeAgo } from '../../../shared/ui/time-ago';
 import { ContentShape, contentShapeOf, emptyContentText } from './content-shape';
 import { FilePermissions, NO_FILE_PERMISSIONS, iconOf, nameOf } from './file-paths';
-import { ClientCommandMenu } from '../../packages/client-command-menu';
+import { ClientCommandMenu } from '../../../views/packages/client-command-menu';
 import { FolderDialog, FolderDialogData } from './folder-dialog';
 import { UploadDialog, UploadDialogData } from './upload-dialog';
 

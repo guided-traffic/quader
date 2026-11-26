@@ -4253,7 +4253,7 @@ Priority: **MVP** · Covers: UI-010
 
 *Revised on 2026-11-25 (the owner, W-30, [Q-UI-1240](#q-ui-1240--the-panel-of-a-versions-commands-is-a-tab-per-client-and-set-up-client-at-the-rows-end),
 [Q-UI-1241](#q-ui-1241--a-versions-page-has-its-command-behind-the-verbs-button-in-its-head-the-box-is-gone)):* the panel is the
-panel of the verb's button (R-UI-052, [client-command-menu.ts](../../web/src/app/features/packages/client-command-menu.ts)), in a
+panel of the verb's button (R-UI-052, [client-command-menu.ts](../../web/src/app/views/packages/client-command-menu.ts)), in a
 repository's list and in the head of the version's page; no box of a command stands on any page.
 
 - A tab per client of the format (Docker | Podman; npm | pnpm | Yarn Berry | Yarn Classic; .NET CLI | NuGet CLI | Visual Studio; curl | wget |
@@ -4290,7 +4290,7 @@ Acceptance criteria:
 
 - Copying the npm command for `@team-a/ui@1.4.0` and running it in a project configured by the
   client setup installs that version.
-- Unit ([client-command-menu.spec.ts](../../web/src/app/features/packages/client-command-menu.spec.ts),
+- Unit ([client-command-menu.spec.ts](../../web/src/app/views/packages/client-command-menu.spec.ts),
   [package-version.spec.ts](../../web/src/app/features/packages/package-version.spec.ts), milliseconds): npm's panel has the tabs npm,
   pnpm, Yarn Berry, Yarn Classic and **Set up client** to `…/npm-local/setup?client=npm`; the tab Yarn Berry shows `yarn add
   @team-a/ui@1.4.0` and the setup with `client=yarn`, and the panel opens again on it; Debian's panel names APT and has no tablist; a
@@ -4847,7 +4847,7 @@ Acceptance criteria:
   scrolls; an unknown page and a failed read show the error with a retry; axe finds no serious or critical violation
   ([help.spec.ts](../../web/src/app/features/help/help.spec.ts), `app.routes.spec.ts` for both routes).
 - A table of the manual sits in a focusable `.readme-table` container, and wrapping twice does not nest
-  ([package-readme.spec.ts](../../web/src/app/features/packages/package-readme.spec.ts), help.spec.ts).
+  ([package-readme.spec.ts](../../web/src/app/views/packages/package-readme.spec.ts), help.spec.ts).
 
 ### R-UI-020 · Repository list
 Priority: **MVP** · Covers: UI-030, REPO-007
@@ -9953,7 +9953,7 @@ stop and no region ([data-table.spec.ts](../../web/src/app/shared/ui/data-table.
 ([sticky-when-fits.spec.ts](../../web/src/app/shared/ui/sticky-when-fits.spec.ts)); closing an audit event gives the focus back to its
 row ([audit-log.spec.ts](../../web/src/app/features/audit/audit-log.spec.ts)); a new documentation page brings its pane's top into
 view and **Back to the tree** the entry ([ansible-docs.spec.ts](../../web/src/app/features/packages/ansible-docs.spec.ts)); an opened
-command has no cap ([client-command.spec.ts](../../web/src/app/features/packages/client-command.spec.ts)).
+command has no cap ([client-command.spec.ts](../../web/src/app/views/packages/client-command.spec.ts)).
 
 ### R-UI-216 · A failure shows every fact of its answer
 Priority: **P1** · Covers: quader-only
@@ -10133,7 +10133,7 @@ regelmäßig vorhanden ist, soll auch bei uns umgesetzt werden. Schau zum Beispi
 [packages.routes.ts](../../web/src/app/features/packages/packages.routes.ts), `versionsCommands` of
 [package-links.ts](../../web/src/app/features/packages/package-links.ts),
 [package-version.ts](../../web/src/app/features/packages/package-version.ts),
-[version-switch.ts](../../web/src/app/features/packages/version-switch.ts).
+[version-switch.ts](../../web/src/app/views/packages/version-switch.ts).
 
 - **The rule.** Documentation that belongs to a format and is regularly present is what a package of that format opens on. The format
   says so with `leadsWithDocumentation` of its content shape, not a screen with the format's name: on for Ansible Galaxy (a collection's
@@ -10187,9 +10187,9 @@ dafür notwendigen Metainformationen vorhanden sind, soll sie von uns verwendet 
 one block, with the same words, at the same place, in every format that has it; a property only one format has stands in that format's
 section **Package details**.
 
-*Built*: [version-facts.ts](../../web/src/app/features/packages/version-facts.ts) (the blocks),
-[version-metadata.ts](../../web/src/app/features/packages/version-metadata.ts) (what each format feeds them),
-[package-version.html](../../web/src/app/features/packages/package-version.html); the server's members of R-API-029 (`keywords`, npm's
+*Built*: [version-facts.ts](../../web/src/app/views/packages/version-facts.ts) (the blocks),
+[version-metadata.ts](../../web/src/app/views/packages/version-metadata.ts) (what each format feeds them),
+[package-version-view.html](../../web/src/app/views/packages/package-version-view.html); the server's members of R-API-029 (`keywords`, npm's
 `fileCount`, `unpackedSize`, `hasInstallScript`, `types`, `publisher`, `bundleDependencies`, `optionalPeers`).
 
 | Property | Where it stands | npm | NuGet | OCI | Debian | Ansible Galaxy |
@@ -10230,7 +10230,7 @@ Acceptance criteria:
   keywords as chips to `…/packages?format=npm&keyword=…`, its dependencies in the groups of its fields with an optional peer marked, a
   held dependency as a link, its links in the row under the facts, the install script's note and its Package details; a NuGet version
   its groups per framework and an empty one's "No dependencies.", its licence linked to its address; a Debian version its Installed size
-  in MiB; [version-metadata.spec.ts](../../web/src/app/features/packages/version-metadata.spec.ts): each format's feeding.
+  in MiB; [version-metadata.spec.ts](../../web/src/app/views/packages/version-metadata.spec.ts): each format's feeding.
 - Unit (Go, `TestR_UI_221_NPMPackageDetailsFacts`, milliseconds): npm's members of the section; integration
   (`TestR_API_029_VersionDetails`, a changed assertion): `keywords` and the tarball's facts of a published version.
 - Rendered (rule 11): the tab Details of a package of every format whose metadata fills every block (`package-version-*-details`), in
@@ -10255,9 +10255,55 @@ stands under a cell it has ([Q-UI-1318](#q-ui-1318--a-versions-downloads-and-an-
 Acceptance criteria:
 
 - Unit ([package-detail.spec.ts](../../web/src/app/features/packages/package-detail.spec.ts),
-  [package-versions-model.spec.ts](../../web/src/app/features/packages/package-versions-model.spec.ts), milliseconds): each version's
+  [package-versions-model.spec.ts](../../web/src/app/views/packages/package-versions-model.spec.ts), milliseconds): each version's
   downloads under its last download; an image's digest under its tags, and Pushed.
 - Rendered (rule 11): the tables of an npm, a NuGet and an Ansible package, an image and a Debian package (`package-*-facts*`).
+
+### R-UI-223 · The reading parts of the package screens are views without a session and without acts
+Priority: **P1** · Covers: quader-only
+
+The owner, 2026-11-26 (W-35, his g3): the Bastion's web interface for anonymous visitors is a second, small Angular application built
+from the same components as the main installation's screens, so that an image's page at the Bastion and at the main installation are one
+piece of code and stay the same; it has no session, no sign-in, no dialog that changes anything and no call of the main installation's
+API. The reading parts of the package screens are therefore views that such an application composes, and nothing a user of the main
+installation sees changes.
+
+- **Where.** A view is a file below `web/src/app/views/` ([Q-UI-1400](#q-ui-1400--the-views-are-one-directory-below-which-a-new-formats-view-falls-by-its-place)):
+  `packages/` (the page of a version, of a package's versions, the table of a list of packages, the documentation tree and its entries,
+  an image's facts and layers, a version's facts, metadata, files, signatures, Debian contents, the ClamAV definitions, the clients'
+  commands, Used by, the README), `vulnerabilities/` (the tab Vulnerabilities and a version's findings) and `signatures/` (the badge,
+  the report, the gate's decision and their words). What is the same in every format is one view; what a format shows differently stays
+  that format's part of it.
+- **Reads.** A view reads through abstract classes of `web/src/app/api/`: `PackageReads`, `VulnerabilityReads`, `SignatureReads` and
+  `ClientSetupReads`. The main installation's `PackagesApi`, `VulnerabilitiesApi` and `SignaturesApi` extend them with their writes and
+  are bound to them; an application without the management API binds its own
+  ([Q-UI-1401](#q-ui-1401--a-view-reads-through-abstract-read-classes-which-the-main-installations-services-extend)). "Signed in" is an
+  input of a view (Q-UI-1412); the download link asks an optional `SIGNED_IN`, which the main installation binds to its session
+  ([Q-UI-1405](#q-ui-1405--the-download-link-asks-an-optional-signed-in-not-the-session)).
+- **Acts stay on the main installation's pages.** The deprecation, the import log, a role's Upload collection, the signature gate's
+  release and withdrawal, and every check of the session's permissions live in the pages that compose the views: content the page
+  projects into the head of a version and above its tabs, or a place of `views/acts.ts` that the page provides
+  ([Q-UI-1402](#q-ui-1402--a-views-acts-are-the-pages-projected-content-or-a-place-the-page-provides)). The page keeps "recently
+  opened" and the breadcrumb ([Q-UI-1404](#q-ui-1404--the-page-keeps-recently-opened-and-the-breadcrumb-the-view-tells-it-what-it-opened)).
+- **What a view keeps.** The live refresh (R-UI-213), the spinner (R-UI-217), the one scrollbar (R-UI-215) and the error notice with
+  everything the answer carried (R-UI-216) are part of what a view shows and work through its reads.
+- **The rule.** `web/scripts/views-rule.mjs`, run by `check-rules.mjs` in `make web-lint`: a file below the views imports no
+  `SessionStore`, no `ApiClient`, no `QuaderDialog`, no API service class (a name ending in `Api`), nothing of a dialog's module, and no
+  module of `features/` or `shared/` that imports one of those itself
+  ([Q-UI-1403](#q-ui-1403--the-rule-reads-a-views-imports-and-one-level-of-features-and-shared)).
+
+What the views still reach through `core/` and `shared/` (the format catalogue, the switch of the system repositories, the memory of an
+opened section, the words of a limit's refusal) are injectables an application binds itself; that the second application's bundle holds
+no session and no write is the import-graph check of its build (W-35 P9), not this rule's.
+
+Acceptance criteria:
+
+- Unit (`web/scripts/lint-rules.test.mjs`, milliseconds): the rule refuses a view that imports the session, the API client, a dialog's
+  service or module, an API service class, or an act behind a helper, and passes types, a `…Reads` class, a pure helper and `core/`; it
+  holds the files below `src/app/views/` only, not their specs.
+- The specs of every package screen pass with their expectations unchanged; a spec changed only its imports and providers.
+- Rendered (rule 11): the package, version, list, documentation and vulnerability screens of every format before and after the split,
+  both schemes, 1,440 and 390 px, compared picture by picture.
 
 ### R-UI-224 · A visitor without a session reads the open findings of a public repository
 Priority: **P1** · Covers: quader-only
@@ -11792,7 +11838,7 @@ The server writes the table-of-contents links of a README as `#user-content-<slu
 | (b) The server writes the anchors and the component keeps them | No second derivation | One rule | Angular's sanitizer removes the `id`; the component cannot keep what it never receives, unless the sanitizer is bypassed, which R-UI-008 forbids |
 | (c) The server implements JavaScript's functions and both sides test one corpus | `jsSpace`, `jsLower` and `finalSigma` in `internal/packages/readme`; the same 35-entry table in the Go test and in the component's spec | The rule is the browser's, because the browser has the last word; a difference fails a test on the side that moved | Forty lines of Go that restate parts of ECMAScript |
 
-**Choice:** (c). `readme.HeadingSlug` trims and lower-cases the way JavaScript does and replaces what JavaScript's `\s` matches by a hyphen; the table `slugCorpus` (`internal/packages/readme/render_test.go`) and `SLUG_CORPUS` (`web/src/app/features/packages/package-readme.spec.ts`) hold the same headings with the anchors that Node.js 26 produced; a change to the rule or to either table is made in both.
+**Choice:** (c). `readme.HeadingSlug` trims and lower-cases the way JavaScript does and replaces what JavaScript's `\s` matches by a hyphen; the table `slugCorpus` (`internal/packages/readme/render_test.go`) and `SLUG_CORPUS` (`web/src/app/views/packages/package-readme.spec.ts`) hold the same headings with the anchors that Node.js 26 produced; a change to the rule or to either table is made in both.
 
 **Rationale:** A table of contents whose links miss their headings is a defect users see on the first README with a non-ASCII heading. The corpus costs one table, and the Greek and Turkish corners it contains are the ones a text function of another language gets wrong. The development agent revisits this when the component stops deriving the anchors (a sanitizer that keeps `user-content-` ids).
 
@@ -12266,7 +12312,7 @@ block` element that never took the container's width.
 | (b) Widen the whole article, prose included | No cap at all | Simplest | Lines of 200 characters on a 2200 px screen are hard to follow |
 | (c) A larger fixed cap (for example 80 rem) | Only the number changes | One line of CSS | Still empty space on wide screens and still too narrow for a wide table; the number is a guess |
 
-**Choice:** (a). Rules (the layout is in [package-readme.scss](../../web/src/app/features/packages/package-readme.scss)
+**Choice:** (a). Rules (the layout is in [package-readme.scss](../../web/src/app/views/packages/package-readme.scss)
 and [help-page.scss](../../web/src/app/features/help/help-page.scss)):
 
 - The article has no `max-inline-size`; the contents column keeps its 15 rem.
@@ -13471,7 +13517,7 @@ call is served through `api`. Verified in [web/src](../../web/src/app): the uplo
 `PUT /files/{repo}/{path}` with the session cookie and the CSRF header ([files-api.ts](../../web/src/app/api/files-api.ts),
 `upload`, `createFolder`), and the Download buttons of the browse screen (since [ADR-203](../decisions.md#adr-203--browse-goes-a-repositorys-files-live-on-its-page) the file's page) and the package page navigate to the `downloadUrl`
 of the item or the version file ([repository-file.ts](../../web/src/app/features/repositories/content/repository-file.ts),
-[package-detail.html](../../web/src/app/features/packages/package-detail.html)), which is a `/files/` URL or a package
+[package-detail-view.html](../../web/src/app/views/packages/package-detail-view.html)), which is a `/files/` URL or a package
 protocol URL such as `/api/npm/npm-local/@team-a/ui/-/ui-1.4.0.tgz`. After the cut the edge sends those paths to `packages`,
 which evaluates no session cookie (R-EP-010).
 
@@ -17364,7 +17410,7 @@ sets, and a total.
 **Choice:** (a). The version report keeps its findings for the block banner, which names the finding that blocks. **Rationale:** the
 findings API already pages, filters and orders by severity with the reader's scope (R-VULN-019, R-VULN-020); the tab only asks it.
 The development agent records no revisit condition. **Applied in the spec:** R-VULN-023, R-UI-092, R-UI-094;
-[version-findings.ts](../../web/src/app/features/vulnerabilities/version-findings.ts).
+[version-findings.ts](../../web/src/app/views/vulnerabilities/version-findings.ts).
 
 ### Q-UI-380 · The report's list fits at 1440 px: the project is the link of the qualified name, and Fixed in gives way below 64 rem
 
@@ -18261,7 +18307,7 @@ was empty.
 
 **Choice:** (a). **Rationale:** the command is the page's main job after the findings, and reading it whole is part of the job.
 Revisits Q-UI-3 (the sticky side panel) and Q-UI-320 (the stacked selects at the panel's width). The development agent records no
-revisit condition. **Applied in the spec:** R-UI-009, R-UI-111; [client-command.scss](../../web/src/app/features/packages/client-command.scss).
+revisit condition. **Applied in the spec:** R-UI-009, R-UI-111; [client-command.scss](../../web/src/app/views/packages/client-command.scss).
 
 ### Q-UI-456 · The version page opens on its vulnerabilities when it is graded
 
@@ -19343,7 +19389,7 @@ agent revisits nothing here.
 **Applied in the spec:** R-UI-002, R-UI-003, R-UI-020, R-UI-050. Code: [navigation.ts](../../web/src/app/core/navigation.ts),
 [repository-list.html](../../web/src/app/features/repositories/repository-list.html),
 [repository-detail.html](../../web/src/app/features/repositories/repository-detail.html),
-[audit-log.ts](../../web/src/app/features/audit/audit-log.ts), [package-detail.html](../../web/src/app/features/packages/package-detail.html),
+[audit-log.ts](../../web/src/app/features/audit/audit-log.ts), [package-detail-view.html](../../web/src/app/views/packages/package-detail-view.html),
 [help-topics.ts](../../web/src/app/core/help-topics.ts).
 
 ### Q-UI-520 · A long name wraps beside its icon or chevron, and a filter field is as wide as a name
@@ -22105,7 +22151,7 @@ address field of Q-UI-320. Q-API-191 is superseded.
 revisits it if a snippet's language needs more than its shapes (a long script), when a library may pay for itself.
 
 **Applied in the spec:** R-UI-016, R-UI-121, R-API-030 (the languages). Code: [code-window.ts](../../web/src/app/shared/code/code-window.ts),
-[code-syntax.ts](../../web/src/app/shared/code/code-syntax.ts), [client-command-menu.ts](../../web/src/app/features/packages/client-command-menu.ts),
+[code-syntax.ts](../../web/src/app/shared/code/code-syntax.ts), [client-command-menu.ts](../../web/src/app/views/packages/client-command-menu.ts),
 [packages_api.go](../../internal/api/v1/packages_api.go) `clientSnippet`, [_tokens.scss](../../web/src/styles/_tokens.scss).
 
 ### Q-UI-802 · The server names the reader's parts of a snippet, and an image has one word
@@ -22640,7 +22686,7 @@ The development agent would revisit the guides' rows if the owner wants system r
 repository today, R-UI-190).
 
 **Applied in the spec:** R-UI-190, R-UI-192. Code: [repository-content.ts](../../web/src/app/features/repositories/content/repository-content.ts),
-[guide-format.ts](../../web/src/app/features/guides/guide-format.ts), [version-command.ts](../../web/src/app/features/packages/version-command.ts).
+[guide-format.ts](../../web/src/app/features/guides/guide-format.ts), [version-command.ts](../../web/src/app/views/packages/version-command.ts).
 
 ### Q-UI-898 · Nothing offers what a system repository refuses: no address, no download, no command
 
@@ -22678,7 +22724,7 @@ has not occurred: `RepositorySummary` and `Repository` carry no kind, only the a
 [repository-file.ts](../../web/src/app/features/repositories/content/repository-file.ts),
 [repository-files.ts](../../web/src/app/features/repositories/content/repository-files.ts),
 [repository-item-versions.ts](../../web/src/app/features/repositories/content/repository-item-versions.ts),
-[version-command.ts](../../web/src/app/features/packages/version-command.ts), [package-version.ts](../../web/src/app/features/packages/package-version.ts).
+[version-command.ts](../../web/src/app/views/packages/version-command.ts), [package-version.ts](../../web/src/app/features/packages/package-version.ts).
 
 ### Q-UI-899 · Where a download or a command is left out, one sentence names the work that reads it
 
@@ -23369,7 +23415,7 @@ asks gets the refusal with its reason, and so does the copy of a row's address i
 rows carry no verdict (`Child`). The install command of a version stays, as it does for a version a finding blocks.
 **Applied in the spec:** [malware-scanning.md](malware-scanning.md) R-MAL-024. Code:
 [repository-content.html](../../web/src/app/features/repositories/content/repository-content.html),
-[package-version.html](../../web/src/app/features/packages/package-version.html).
+[package-version-view.html](../../web/src/app/views/packages/package-version-view.html).
 
 ### Q-UI-883 · A system repository names the work it serves, and a local one has no address and no account
 
@@ -23626,7 +23672,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 **Choice:** (a). **Applied in the spec:** R-API-029, R-UI-194. Code:
 [clamav-databases.ts](../../web/src/app/features/repositories/content/clamav-databases.ts),
-[clamav-definitions.ts](../../web/src/app/features/packages/clamav-definitions.ts).
+[clamav-definitions.ts](../../web/src/app/views/packages/clamav-definitions.ts).
 
 ### Q-UI-911 · The install panel of a definitions' version leads to the client setup
 
@@ -23637,7 +23683,7 @@ Status: **Decided by the development agent** — selected from the options below
 | (a) While the switch is on: one sentence that a ClamAV installation always takes the version in use, and **Set up client** with the client `freshclam`; while off, the sentence of R-UI-193 (chosen) | No command per version | Nothing on the page suggests a version can be picked | The line itself is one click away |
 | (b) The snippet of `freshclam.conf` in the panel | The line on the page | One click less | The same line on every version's page, which reads as if it were that version's |
 
-**Choice:** (a). **Applied in the spec:** R-UI-194. Code: [version-command.ts](../../web/src/app/features/packages/version-command.ts).
+**Choice:** (a). **Applied in the spec:** R-UI-194. Code: [version-command.ts](../../web/src/app/views/packages/version-command.ts).
 
 ### Q-UI-912 · Only `daily` is outdated by its age, as ClamAV warns only about `daily`
 
@@ -23657,7 +23703,7 @@ build time as the engine's database version. No other database's age is checked.
 | (c) The set's newest build time, once above the list | One badge | — | The newest is `daily`'s anyway, and the row that is old would not carry it |
 
 **Choice:** (a). The version's page follows the same rule. **Applied in the spec:** R-UI-194; [formats/clamav.md](formats/clamav.md)
-R-CLAMAV-003. Code: [clamav-definitions.ts](../../web/src/app/features/packages/clamav-definitions.ts) `isOutdated`.
+R-CLAMAV-003. Code: [clamav-definitions.ts](../../web/src/app/views/packages/clamav-definitions.ts) `isOutdated`.
 
 ### Q-UI-913 · The updater is one more kind of scanner row, without slots, with the definitions it holds
 
@@ -23886,7 +23932,7 @@ callers (an administrator's `content:bypass`, Q-AUTHZ-162, applies to deletes on
 [repository-files.ts](../../web/src/app/features/repositories/content/repository-files.ts),
 [repository-item-versions.ts](../../web/src/app/features/repositories/content/repository-item-versions.ts), `ConsumerView` of
 [document.go](../../internal/repository/document.go); on a version's page
-[version-command.ts](../../web/src/app/features/packages/version-command.ts),
+[version-command.ts](../../web/src/app/views/packages/version-command.ts),
 [package-version.ts](../../web/src/app/features/packages/package-version.ts) and `addAvailable` of
 [packages_api.go](../../internal/api/v1/packages_api.go).
 
@@ -24242,7 +24288,7 @@ scan** and **Signature** (12 rem each) and **Download**: an OCI image's one file
 **Choice:** (a). The column **Download** of a file that offers none stays empty, as an action cell of a row without an action: no column of
 dashes (point 6 of the same finding, the trust anchors' **Remove** likewise). Since
 [Q-UI-1051](#q-ui-1051--a-versions-file-path-is-its-download) the column **Download** is gone: the path is the download. **Applied in the spec:** R-UI-111. Code:
-[package-version.html](../../web/src/app/features/packages/package-version.html),
+[package-version-view.html](../../web/src/app/views/packages/package-version-view.html),
 [anchor-table.ts](../../web/src/app/shared/signatures/anchor-table.ts).
 
 ### Q-UI-1003 · Without an updater the page names the updater and its setting, and says why no database arrives
@@ -24819,12 +24865,12 @@ and the chevron makes it GitLab's button. A section per client is GitLab's panel
 would revisit (b) of the panel if a format comes with more than four clients, so that the panel would be taller than a phone's window.
 
 **Applied in the spec:** R-UI-052 (the versions, the row of an item, the acceptance criteria), R-UI-010 and R-UI-193 (no button where no
-client is answered). Code: [client-command-menu.ts](../../web/src/app/features/packages/client-command-menu.ts),
-[client-command.ts](../../web/src/app/features/packages/client-command.ts) (one client's command, which the head of the version page
+client is answered). Code: [client-command-menu.ts](../../web/src/app/views/packages/client-command-menu.ts),
+[client-command.ts](../../web/src/app/views/packages/client-command.ts) (one client's command, which the head of the version page
 uses too since Q-UI-1241), `commandVerb` of [content-shape.ts](../../web/src/app/features/repositories/content/content-shape.ts),
 [repository-item-versions.ts](../../web/src/app/features/repositories/content/repository-item-versions.ts),
 [repository-items.ts](../../web/src/app/features/repositories/content/repository-items.ts). Tests:
-[client-command-menu.spec.ts](../../web/src/app/features/packages/client-command-menu.spec.ts) (open, the sections, the copy, Escape,
+[client-command-menu.spec.ts](../../web/src/app/views/packages/client-command-menu.spec.ts) (open, the sections, the copy, Escape,
 the button and a click outside with the focus back),
 [repository-content.spec.ts](../../web/src/app/features/repositories/content/repository-content.spec.ts) (a tag's and an image row's
 **Pull**, an npm version's **Install**, none in a system repository), the journey `08-packages`. Rendered: `repository-oci-cache-menu`,
@@ -25109,8 +25155,8 @@ qualifier is a short sentence about it; a pill that never breaks keeps every lis
 it if a verified state's words grow (a third scope), and then splits them the same way.
 
 **Applied in the spec:** R-UI-171, R-SIG-035 ([signatures.md](signatures.md)). Code:
-[signature-words.ts](../../web/src/app/shared/signatures/signature-words.ts) (`note`, `words`),
-[signature-badge.ts](../../web/src/app/shared/signatures/signature-badge.ts). Tests: "R-SIG-035 each of the four states renders its
+[signature-words.ts](../../web/src/app/views/signatures/signature-words.ts) (`note`, `words`),
+[signature-badge.ts](../../web/src/app/views/signatures/signature-badge.ts). Tests: "R-SIG-035 each of the four states renders its
 words and its shield; green only for the verified ones, red for an invalid one" and "R-SIG-035 R-UI-171 the untrusted state keeps its
 badge short and says the rest after it, as text that may wrap; a fact says the whole words" in
 [signatures.spec.ts](../../web/src/app/shared/signatures/signatures.spec.ts); the render state
@@ -25374,7 +25420,7 @@ whole. A banner above the frame is not counted in `--quader-page-height`: with a
 under the panel's edge until the page scrolls to its end.
 
 **Applied in the spec:** R-UI-027, R-UI-037, R-UI-050, R-UI-060, R-UI-215. Code: [sticky-when-fits.ts](../../web/src/app/shared/ui/sticky-when-fits.ts),
-[_browse.scss](../../web/src/styles/_browse.scss), [ansible-docs.ts](../../web/src/app/features/packages/ansible-docs.ts),
+[_browse.scss](../../web/src/styles/_browse.scss), [ansible-docs.ts](../../web/src/app/views/packages/ansible-docs.ts),
 [help-page.scss](../../web/src/app/features/help/help-page.scss), [policy-editor.scss](../../web/src/app/features/permissions/policy-editor.scss),
 [audit-log.ts](../../web/src/app/features/audit/audit-log.ts), `--quader-page-height` in [_tokens.scss](../../web/src/styles/_tokens.scss).
 
@@ -25916,11 +25962,11 @@ may name every tag of the image.
 portal/web 1.4.0:" before the first of them. The link **All N tags** under the opened item stands where the item holds more than the
 rows show: the list goes on past the ten (its cursor is set) or a row leaves a tag out; an image of three images whose rows name all
 twelve of its tags has none (Q-UI-1111's "where the item holds more", read for rows that are images). **Applied in the spec:** R-UI-052,
-R-UI-110. Code: [image-tags.ts](../../web/src/app/features/packages/image-tags.ts), `more` of
+R-UI-110. Code: [image-tags.ts](../../web/src/app/views/packages/image-tags.ts), `more` of
 [repository-item-versions.ts](../../web/src/app/features/repositories/content/repository-item-versions.ts). Tests:
 `R-UI-052 R-SIG-035 an opened image is one row per image…`, `R-UI-215 an opened image whose rows name every tag has no link…`
 ([repository-content.spec.ts](../../web/src/app/features/repositories/content/repository-content.spec.ts)), `R-UI-052 R-UI-110 a row names its
-image's other tags…` ([package-versions-model.spec.ts](../../web/src/app/features/packages/package-versions-model.spec.ts)); rendered
+image's other tags…` ([package-versions-model.spec.ts](../../web/src/app/views/packages/package-versions-model.spec.ts)); rendered
 `repository-oci`, `repository-oci-signed`, `package-oci`, `package-oci-many`.
 
 ### Q-UI-1151 · An opened item reads its versions again every 3 s while one it shows waits for its scan
@@ -26148,7 +26194,7 @@ catalogue's `tags` is empty for them, `PackageInfo.Tags` is set by npm alone).
 | (c) A column **Tags** in the versions' table | A column | Aligned | Empty in nearly every row; a fourth column that the table cannot afford at 1,024 px (Q-CUR-157) |
 
 **Choice:** (a). A name the upstream gave is never translated (`translate="no"`). **Applied in the spec:** R-UI-110, R-UI-111;
-[remote-curation.md](remote-curation.md) R-CUR-018. Code: [dist-tags.ts](../../web/src/app/features/packages/dist-tags.ts),
+[remote-curation.md](remote-curation.md) R-CUR-018. Code: [dist-tags.ts](../../web/src/app/views/packages/dist-tags.ts),
 `tags` of [upstream-package.ts](../../web/src/app/features/repositories/upstream/upstream-package.ts). Tests: `R-CUR-018 R-CUR-009 an npm
 tag stands as a badge on the row of the version it names…`
 ([remote-upstream.spec.ts](../../web/src/app/features/repositories/upstream/remote-upstream.spec.ts)), `R-UI-110 a row carries its
@@ -26175,8 +26221,8 @@ muted name.
 breaks, the name of 35 characters made the versions' table stand as blocks at 1,024 px in German, against Q-CUR-157; now it is as wide as
 its name where the cell has the room and cut where it has not. **Applied in the spec:** R-UI-110; [remote-curation.md](remote-curation.md)
 R-CUR-018. Code: `shownDistTags` and
-`TAGS_PER_ROW` of [dist-tags.ts](../../web/src/app/features/packages/dist-tags.ts). Tests: `R-UI-110 R-CUR-018 a version shows
-latest first…` ([dist-tags.spec.ts](../../web/src/app/features/packages/dist-tags.spec.ts)), the five tags of one version in
+`TAGS_PER_ROW` of [dist-tags.ts](../../web/src/app/views/packages/dist-tags.ts). Tests: `R-UI-110 R-CUR-018 a version shows
+latest first…` ([dist-tags.spec.ts](../../web/src/app/views/packages/dist-tags.spec.ts)), the five tags of one version in
 remote-upstream.spec.ts; rendered `repository-npm-remote-upstream` with eight tags, five of them on one version and one of 35
 characters.
 
@@ -26371,7 +26417,7 @@ side bar open: the file of a version a blocked signer signed stood as a block (W
 **Choice:** (a). The link carries the same probe of a download as the button did (`quaderDownload`, Q-UI-753). **Rationale:** the
 column of the word **Download** took a sixth of the list for a word that the file's name can be; the verdicts keep their columns.
 The development agent revisits (c) if a format adds a third verdict column.
-**Applied in the spec:** R-UI-111. Code: [package-version.html](../../web/src/app/features/packages/package-version.html). Tests:
+**Applied in the spec:** R-UI-111. Code: [package-version-view.html](../../web/src/app/views/packages/package-version-view.html). Tests:
 "R-UI-007 R-API-029 R-UI-111 the Files tab" in [package-version.spec.ts](../../web/src/app/features/packages/package-version.spec.ts); the render state
 `package-version-signatures-untrusted-files` holds the table at 1,024 px.
 
@@ -27594,9 +27640,9 @@ its width at every tab. The product's tabs (`<quader-tab-group>`, `@angular/aria
 **A format of one client** shows no strip of one tab: the client's short name is the row's label, on the hairline a strip stands on.
 
 **Choice:** as marked. **Applied in the spec:** R-UI-009, R-UI-052, R-UI-111, Q-UI-1066. Code:
-[client-command-menu.ts](../../web/src/app/features/packages/client-command-menu.ts), [tabs.ts](../../web/src/app/shared/ui/tabs.ts),
+[client-command-menu.ts](../../web/src/app/views/packages/client-command-menu.ts), [tabs.ts](../../web/src/app/shared/ui/tabs.ts),
 `compact` of `_controls.scss`, `tab` of [clients.ts](../../web/src/app/features/setup/clients.ts). Tests:
-[client-command-menu.spec.ts](../../web/src/app/features/packages/client-command-menu.spec.ts) (the tabs, the setup per tab, the tab
+[client-command-menu.spec.ts](../../web/src/app/views/packages/client-command-menu.spec.ts) (the tabs, the setup per tab, the tab
 kept, one client), [repository-content.spec.ts](../../web/src/app/features/repositories/content/repository-content.spec.ts) (OCI's two
 tabs, npm's four), the journey `08-packages`; rendered `repository-*-menu` with the last tab chosen, every format, English and German.
 
@@ -27629,10 +27675,10 @@ picks a client, then the place, while the place decides every command.
 a package's page, a search hit, an image's tag page (its version page) had none, and the files of a generic repository show a file's
 download address, not a client's command.
 
-**Choice:** as marked. **Applied in the spec:** R-UI-009, R-UI-111. Code: [version-command.ts](../../web/src/app/features/packages/version-command.ts)
+**Choice:** as marked. **Applied in the spec:** R-UI-009, R-UI-111. Code: [version-command.ts](../../web/src/app/views/packages/version-command.ts)
 (what the head offers, which repositories, the notes; the install panel's rules moved there), the head of
-[package-version.html](../../web/src/app/features/packages/package-version.html); `install-panel.*` and `install-command.*` are gone.
-Tests: [version-command.spec.ts](../../web/src/app/features/packages/version-command.spec.ts) (the repositories and their order, the
+[package-version-view.html](../../web/src/app/views/packages/package-version-view.html); `install-panel.*` and `install-command.*` are gone.
+Tests: [version-command.spec.ts](../../web/src/app/views/packages/version-command.spec.ts) (the repositories and their order, the
 disabled and the system notes, ClamAV, no clients), [package-version.spec.ts](../../web/src/app/features/packages/package-version.spec.ts)
 (the head's button, the picker in the panel, the notes, ClamAV's Set up client).
 
@@ -27674,7 +27720,7 @@ the tab of the address (`?tab=`), on the same page of a collection's documentati
 the documentation stays on it; without one it lands on its documentation by Q-UI-1245. The button's icon is the history mark, its accessible
 name "Version 5.4.1, switch the version"; a long version is cut with its whole as the title.
 
-**Choice:** (a). **Applied in the spec:** R-UI-218, R-UI-111. Code: [version-switch.ts](../../web/src/app/features/packages/version-switch.ts),
+**Choice:** (a). **Applied in the spec:** R-UI-218, R-UI-111. Code: [version-switch.ts](../../web/src/app/views/packages/version-switch.ts),
 `switchVersions` of [package-version.ts](../../web/src/app/features/packages/package-version.ts). Tests:
 [package-version.spec.ts](../../web/src/app/features/packages/package-version.spec.ts) (the list, the marks, the link to all, the tab
 kept). The decision to turn npm and NuGet on is the owner's (2026-11-25, R-UI-218).
@@ -27738,8 +27784,8 @@ measure of [formats/ansible.md](formats/ansible.md) R-ANS-048 to R-ANS-050, has 
 | (c) Hide the tree beside a page | More room | — | The tree is the documentation's navigation (R-UI-060) |
 
 **Choice:** (a). **Applied in the spec:** R-UI-061. Code: `optionColumns` of
-[ansible-doc-entry.ts](../../web/src/app/features/packages/ansible-doc-entry.ts) and its template. Tests: the cases of R-UI-061 in
-[ansible-doc-entry.spec.ts](../../web/src/app/features/packages/ansible-doc-entry.spec.ts); the render `ansible-doc-module` declares the
+[ansible-doc-entry.ts](../../web/src/app/views/packages/ansible-doc-entry.ts) and its template. Tests: the cases of R-UI-061 in
+[ansible-doc-entry.spec.ts](../../web/src/app/views/packages/ansible-doc-entry.spec.ts); the render `ansible-doc-module` declares the
 table (`tables` in `screens.ts`), so a table that stands as blocks from 1,024 px on is a finding.
 
 ### Q-UI-1250 · The commands of an OCI artifact are its kind's: Helm for a chart, Docker and Podman for an image
@@ -27755,9 +27801,9 @@ Status: **Decided by the development agent** on 2026-11-25 — selected from the
 
 **Choice:** (a). **Applied in the spec:** R-OCI-041, R-OCI-042. Code: `clientsOfKind` in
 [clients.ts](../../web/src/app/features/setup/clients.ts) (Helm's `tab` "Helm"), `kind` and `digest` of
-[client-command-menu.ts](../../web/src/app/features/packages/client-command-menu.ts),
-[client-command.ts](../../web/src/app/features/packages/client-command.ts) (the digest line), the head of
-[package-version.html](../../web/src/app/features/packages/package-version.html) (`artifactKind`, `imageDigest`), the menus of a repository's rows
+[client-command-menu.ts](../../web/src/app/views/packages/client-command-menu.ts),
+[client-command.ts](../../web/src/app/views/packages/client-command.ts) (the digest line), the head of
+[package-version-view.html](../../web/src/app/views/packages/package-version-view.html) (`artifactKind`, `imageDigest`), the menus of a repository's rows
 [repository-items.ts](../../web/src/app/features/repositories/content/repository-items.ts) and
 [repository-item-versions.ts](../../web/src/app/features/repositories/content/repository-item-versions.ts) (`[kind]`). The product-wide
 package list and the search offer no command and need no kind.
@@ -27775,7 +27821,7 @@ R-CUR-014), and no screen read it.
 | (b) Only the role's page says it | Narrower | — | The same defect stays for every other format |
 
 **Choice:** (a). **Applied in the spec:** R-UI-111, [remote-curation.md](remote-curation.md) R-CUR-014. Code:
-[delivery-note.ts](../../web/src/app/features/packages/delivery-note.ts), `versionCommand` of [version-command.ts](../../web/src/app/features/packages/version-command.ts).
+[delivery-note.ts](../../web/src/app/views/packages/delivery-note.ts), `versionCommand` of [version-command.ts](../../web/src/app/views/packages/version-command.ts).
 
 ### Q-UI-1261 · A package's address is its key, its title its name, and the search finds the name
 
@@ -27809,8 +27855,8 @@ later package unifies the blocks.
 German output (`GLOSSARY.md`). A field the server could not parse stands as text under its heading. The long description stands first
 in Details under "Description": its text paragraphs wrap, its verbatim lines keep their spacing (Debian Policy 5.6.13), as text. The
 links are the lookups the Ansible dependencies make, at most 60 per version. **Applied in the spec:** R-UI-111. Code:
-`debRelations`, `debLongDescription` of [version-metadata.ts](../../web/src/app/features/packages/version-metadata.ts), the Details tab
-of [package-version.html](../../web/src/app/features/packages/package-version.html).
+`debRelations`, `debLongDescription` of [version-metadata.ts](../../web/src/app/views/packages/version-metadata.ts), the Details tab
+of [package-version-view.html](../../web/src/app/views/packages/package-version-view.html).
 
 ### Q-UI-1271 · The source package of a Debian version links to the package list of its binaries
 
@@ -27840,8 +27886,8 @@ details on demand; one scrollbar per page.
 (formats/debian.md Q-DEB-143). Until the reader has run, each place says that Quader reads the package file, and the page reads the
 contents again every 3 s (R-UI-213); a file Quader could not read says so, and why, in the screen's words for the reason, to whoever
 the server tells it (a reader of the configuration), with the server's sentence under Technical details (R-UI-214). **Applied in the
-spec:** R-UI-111. Code: [deb-contents.ts](../../web/src/app/features/packages/deb-contents.ts),
-[deb-files.html](../../web/src/app/features/packages/deb-files.html). Tests: the Debian cases of
+spec:** R-UI-111. Code: [deb-contents.ts](../../web/src/app/views/packages/deb-contents.ts),
+[deb-files.html](../../web/src/app/views/packages/deb-files.html). Tests: the Debian cases of
 [package-version.spec.ts](../../web/src/app/features/packages/package-version.spec.ts); the renders `package-version-deb-docs`,
 `-changelog`, `-files`, `-many-files`, `-refused` and `-cached-files`.
 
@@ -27860,9 +27906,9 @@ component would say "This README is shortened".
 | (c) A tab per entry point | — | Short sections | Tabs inside a page whose tree is the navigation; an anchor would have to switch a tab |
 
 **Choice:** (a). **Applied in the spec:** R-UI-061, R-UI-060. Code: `parameterGroups` and `entrySections` of
-[docs-model.ts](../../web/src/app/features/packages/docs-model.ts), the template of
-[ansible-doc-entry.html](../../web/src/app/features/packages/ansible-doc-entry.html), the changelog's head in
-[ansible-docs.html](../../web/src/app/features/packages/ansible-docs.html). Renders `ansible-doc-role`, `ansible-doc-role-anchor`,
+[docs-model.ts](../../web/src/app/views/packages/docs-model.ts), the template of
+[ansible-doc-entry.html](../../web/src/app/views/packages/ansible-doc-entry.html), the changelog's head in
+[ansible-docs.html](../../web/src/app/views/packages/ansible-docs.html). Renders `ansible-doc-role`, `ansible-doc-role-anchor`,
 `ansible-doc-changelog`, `ansible-doc-changelog-md`.
 
 ### Q-UI-1290 · A name of a format has a page made from what exists, in every format
@@ -27971,7 +28017,7 @@ page had a **Download** link that saves the file through the browser, with the p
 | (c) **Download** saves, and a second button **Commands** beside it | Two buttons | Explicit | Two words for one thing; another button no other format has |
 
 **Choice:** (a). **Applied in the spec:** R-UI-010, R-GENERIC-017. Code: `split` and the projected `[mainAct]` of
-[client-command-menu.ts](../../web/src/app/features/packages/client-command-menu.ts), the file's head in
+[client-command-menu.ts](../../web/src/app/views/packages/client-command-menu.ts), the file's head in
 [repository-content.html](../../web/src/app/features/repositories/content/repository-content.html). Renders `repository-generic-file-commands-*`.
 
 ### Q-UI-1331 · A file's download address stands in the panel, above its clients
@@ -27988,7 +28034,7 @@ Status: **Decided by the development agent** on 2026-11-26 — selected from the
 package does not fetch them); `bundleDependencies` (or `true` for all) and `peerDependenciesMeta`'s optional peers are read by the server.
 The lookups that make a name a link were Ansible's and Debian's; they are every format's whose dependencies name its own packages, at
 most 60 per version. **Applied in the spec:** R-UI-221. Code: `DependencyList` of
-[version-facts.ts](../../web/src/app/features/packages/version-facts.ts).
+[version-facts.ts](../../web/src/app/views/packages/version-facts.ts).
 
 ### Q-UI-1312 · Keywords and tags are one block of chips that open the package list
 
@@ -27997,7 +28043,7 @@ most 60 per version. **Applied in the spec:** R-UI-221. Code: `DependencyList` o
 | (c) The address only inside the commands | Fewer lines | — | A person who wants the address alone copies it out of a command |
 
 **Choice:** (a). **Applied in the spec:** R-UI-010, R-GENERIC-017. Code: `address` of
-[client-command-menu.ts](../../web/src/app/features/packages/client-command-menu.ts).
+[client-command-menu.ts](../../web/src/app/views/packages/client-command-menu.ts).
 
 ### Q-UI-1332 · The check of a download is the second line of each client's tab
 
@@ -28011,7 +28057,7 @@ Status: **Decided by the development agent** on 2026-11-26 — selected from the
 
 **Choice:** (a). The word is the package list's filter's, **Keywords**, in every format. The keywords are the version's own
 (`keywords` of R-API-029), not the newest version's. The chip is the one of the package list's hits, a namespace's page and the search
-(`<quader-package-tags>` of [package-tags.ts](../../web/src/app/features/packages/package-tags.ts), R-ANS-057), with one address
+(`<quader-package-tags>` of [package-tags.ts](../../web/src/app/views/packages/package-tags.ts), R-ANS-057), with one address
 everywhere: a list's tag filters by the format of its row and the keyword too, where it filtered by the keyword alone. A Helm chart's keywords stay among its facts: the package list cannot filter images
 by them. **Applied in the spec:** R-UI-221, R-API-029.
 
@@ -28023,7 +28069,7 @@ by them. **Applied in the spec:** R-UI-221, R-API-029.
 
 **Choice:** (a). **Applied in the spec:** R-GENERIC-017. Code: the checksum templates of
 [setup.go](../../internal/formats/generic/setup.go), `sha256` and `snippetId` of the panel and of
-[client-command.ts](../../web/src/app/features/packages/client-command.ts).
+[client-command.ts](../../web/src/app/views/packages/client-command.ts).
 
 ### Q-UI-1333 · A file's media type reads as a word with the type beside it
 
@@ -28035,7 +28081,7 @@ Status: **Decided by the development agent** on 2026-11-26 — selected from the
 | (b) A block **Links** first in Details | | The addresses are shown | Behind a tab; it stood at three places |
 
 **Choice:** (a). A licence's address is the licence's link on the facts line, not a link of the row. **Applied in the spec:** R-UI-111,
-R-UI-221. Code: `VersionLinks` of [version-facts.ts](../../web/src/app/features/packages/version-facts.ts).
+R-UI-221. Code: `VersionLinks` of [version-facts.ts](../../web/src/app/views/packages/version-facts.ts).
 
 ### Q-UI-1314 · An image's date is Pushed or Fetched on every screen
 
@@ -28091,7 +28137,7 @@ Status: **Decided by the development agent** on 2026-11-26 — selected from the
 | (b) The field as written ("18432 KiB") | | As `dpkg` writes it | A number a person converts |
 
 **Choice:** (a). **Applied in the spec:** R-UI-221. Code: `debFacts`, `npmFacts` of
-[version-metadata.ts](../../web/src/app/features/packages/version-metadata.ts).
+[version-metadata.ts](../../web/src/app/views/packages/version-metadata.ts).
 
 ### Q-UI-1317 · The breadcrumb names a package by its name where its address holds its key
 
@@ -28180,7 +28226,7 @@ repository, which takes no publish.
 | (b) The manual's link alone | As built | Nothing to read | The reader looks for the repository by hand |
 
 **Choice:** (a). **Applied in the spec:** R-ANS-061. Code: `AnsibleRoleReadmeNote` of
-[ansible-role.ts](../../web/src/app/features/packages/ansible-role.ts).
+[ansible-role.ts](../../web/src/app/views/packages/ansible-role.ts).
 
 ### Q-UI-1324 · An Ansible namespace's page offers Upload collection in its head
 
@@ -28370,7 +28416,7 @@ Status: **Decided by the development agent** on 2026-11-26 — selected from the
 (R-UI-213). A name a Debian dependent asks for is written beside its kind where it is a name the package provides. An Ansible role has no
 section: collections depend on collections. The empty list claims no more than the reader may know: "No package the installation holds
 depends on it." only for a reader of every repository of the format, else "No package you may read depends on it." **Applied in the spec:**
-R-API-086. Code: `UsedBy` of [used-by.ts](../../web/src/app/features/packages/used-by.ts).
+R-API-086. Code: `UsedBy` of [used-by.ts](../../web/src/app/views/packages/used-by.ts).
 
 ### Q-UI-1351 · Past 50, the section says how many more and leads to the project's package list
 
@@ -28442,8 +28488,8 @@ panel changes. A version's `kind` (a .NET tool, a template, an MSBuild SDK) pick
 asks each for its forms of the kind. On Set up client the further forms of a library stand behind folds of their name ("With Paket",
 "In a script or a notebook", "In a file-based app", "As a Cake add-in", "As a Cake tool", "In the Package Manager console", "With Central
 Package Management"). **Applied in the spec:** R-UI-009, Q-UI-1240. Code:
-[client-command.ts](../../web/src/app/features/packages/client-command.ts),
-[client-command-menu.ts](../../web/src/app/features/packages/client-command-menu.ts). Tests: `package-version.spec.ts`, `clients.spec.ts`.
+[client-command.ts](../../web/src/app/views/packages/client-command.ts),
+[client-command-menu.ts](../../web/src/app/views/packages/client-command-menu.ts). Tests: `package-version.spec.ts`, `clients.spec.ts`.
 
 ### Q-UI-1361 · A package's own picture stands before the heading of its version's page, and nowhere else
 
@@ -28472,7 +28518,7 @@ address of a branch or a commit is the host's own (`/tree/` on GitHub, `/-/tree/
 | (b) GitHub's form for every host | | A link everywhere | A link that is a 404 on most other hosts |
 
 **Choice:** (a). A branch written as `refs/heads/main` is named `main`. **Applied in the spec:** R-UI-221. Code: `nugetRepository` and `revisionLinks` of
-[version-metadata.ts](../../web/src/app/features/packages/version-metadata.ts).
+[version-metadata.ts](../../web/src/app/views/packages/version-metadata.ts).
 
 ### Q-UI-1363 · What a build, a compile or an install runs is said in the note of an install script
 
@@ -28527,6 +28573,117 @@ image's layers in the drawer.
 
 **Applied in the spec:** R-UI-211, R-UI-212. Code: [download-words.ts](../../web/src/app/shared/upstream-downloads/download-words.ts).
 
+### Q-UI-1400 · The views are one directory, below which a new format's view falls by its place
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-UI-223. The rule needs one glob for "a view", and a view a later format adds must fall under it without a list.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `web/src/app/views/` with `packages/`, `vulnerabilities/` and `signatures/` (chosen) | The reading components move there with the helpers only they use; the pages stay in `features/` | One glob; the second application's sources are `views/`, `api/`, `shared/` and `core/`, readable at a glance | Many imports change once |
+| (b) A suffix, `*-view.ts`, wherever a file lives | Files stay in their feature's folder | Fewer moves | A helper a view uses is not held; a view among the pages is easy to miss |
+| (c) A folder `views/` in each feature | Near the pages | Short paths | Several globs; `shared/signatures` and `features/vulnerabilities` need one each |
+
+**Choice:** (a). Pure helpers that many features use (`package-links.ts`, `format-size.ts`, `format-time.ts`) stay in
+`features/packages/`; they inject nothing. **Applied in the spec:** R-UI-223. Code: [views/](../../web/src/app/views/).
+
+### Q-UI-1401 · A view reads through abstract read classes, which the main installation's services extend
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-UI-223. The views read packages, versions, documentation, contents, dependents, vulnerability reports and findings, signature
+reports and releases, and client setup snippets; the second application reads the same shapes from documents of a catalogue.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `PackageReads`, `VulnerabilityReads`, `SignatureReads`, `ClientSetupReads` in files of their own; `PackagesApi`, `VulnerabilitiesApi`, `SignaturesApi` extend them and are bound to them by `useExisting` (`provideViewReads`); the client setup was only a read and is `ClientSetupReads` itself (chosen) | A view injects the read, a page the service | One implementation per application; the fakes serve both; a read class's module holds no HTTP client | Four small files |
+| (b) Separate read services beside the API services | | | Two implementations of every read in the main installation |
+| (c) The views take everything through inputs | | No DI | The views' own reads (the documentation tree, a version's findings page by page, the commands) would move into every page |
+
+**Choice:** (a). The addresses a browser loads of a version (NuGet's icon and licence file, `iconUrl`, `licenseUrl`) and of a receipt
+attestation (`attestationUrl`) are reads too: an application that serves them elsewhere names its own. **Applied in the spec:** R-UI-223.
+Code: [package-reads.ts](../../web/src/app/api/package-reads.ts), [vulnerability-reads.ts](../../web/src/app/api/vulnerability-reads.ts),
+[signature-reads.ts](../../web/src/app/api/signature-reads.ts), [providers.ts](../../web/src/app/api/providers.ts).
+
+### Q-UI-1402 · A view's acts are the page's: projected content, or a place the page provides
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-UI-223. The acts in the package screens: the deprecation's menu in a version's head and its refusal above the tabs, the
+signature gate's release under a refused artifact's banner and in the gate's box (and the withdrawal there), a role's Upload collection
+under its README note, the tab Import log of an Ansible collection. The first two are the page's direct content; the others sit two and
+three components deep. A page of the main installation must look and behave as before, to the pixel.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The head's acts and their refusal are content the page projects (`[versionActs]`, `[versionNotices]`); a deeper act is a place of `views/acts.ts`, a token the page provides with the act's component and whether it is offered now, which the view draws with `NgComponentOutlet` (chosen) | The deprecation's menu, its dialog and the check of the session are the page's; the gate's, the role's and the import log's components are the page's | The view holds no act's code; a place that is not offered leaves no element, so `:empty` and `:last-child` read as before | Two mechanisms; an act's component repeats the few margins of the box it stands in |
+| (b) Abstract act services the view calls, with the buttons in the view | | One mechanism, no outlet | The act's buttons and words stay in the view |
+| (c) Templates the page hands down through every view between | | Exact markup | Inputs threaded through components that do not use them |
+
+**Choice:** (a). **Applied in the spec:** R-UI-223. Code: [acts.ts](../../web/src/app/views/acts.ts),
+[package-version.ts](../../web/src/app/features/packages/package-version.ts), [package-acts.ts](../../web/src/app/features/packages/package-acts.ts),
+[gate-act.ts](../../web/src/app/shared/signatures/gate-act.ts).
+
+### Q-UI-1403 · The rule reads a view's imports, and one level of features and shared
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-UI-223. "Act" is what the code has: the API service classes carry the writes, a dialog is an act, the session decides who may
+act. An act also hides behind a helper (`GateActions`, `collectionUpload`).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The names `SessionStore`, `ApiClient`, `QuaderDialog` and any name ending in `Api`, a dialog's module, and a module of `features/` or `shared/` that imports one of those itself; `import type` passes (chosen) | `views-rule.mjs` | Catches the helpers of today; milliseconds | `core/` is not looked into, nor anything two levels away |
+| (b) The whole import graph from every view | | Complete | `core/` and `shared/` reach the session through the format catalogue, the memory of an opened section and the limits' words today; the rule would fail until those are rebuilt, which is the second application's work |
+| (c) Names only | | Simplest | `GateActions` and `collectionUpload` pass |
+
+**Choice:** (a). The whole graph is the import-graph check of the second application's build (W-35 P9), over the bundle that ships.
+**Applied in the spec:** R-UI-223. Code: [views-rule.mjs](../../web/scripts/views-rule.mjs).
+
+### Q-UI-1404 · The page keeps "recently opened" and the breadcrumb; the view tells it what it opened
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-UI-223. A package's and a version's page recorded the package in "recently opened" (per principal, R-UI-007) and named it in
+the trail (Q-UI-1317); both are the main installation's shell. The page's deprecation needs the version shown.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The view emits `packageOpened` with the package and `versionShown` with the version; the page records and names (chosen) | Outputs | The view knows no shell; the page reads no resource twice | Two outputs |
+| (b) The page reads the package again | | | A request more per page |
+
+**Choice:** (a). **Applied in the spec:** R-UI-223. Code: [package-version-view.ts](../../web/src/app/views/packages/package-version-view.ts),
+[package-detail-view.ts](../../web/src/app/views/packages/package-detail-view.ts).
+
+### Q-UI-1405 · The download link asks an optional "signed in", not the session
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-UI-223, R-UI-186. A refused download offers **See your usage** to a signed-in reader. The directive is used by views and by
+the repository's content alike.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The token `SIGNED_IN` (core/signed-in.ts), asked optionally; the main installation binds it to its session in `provideViewReads` (chosen) | No import of the session | An application without sessions binds nothing and offers nothing more | One token |
+| (b) An input of the directive | | | Every link of the repository's content would pass it |
+
+**Choice:** (a). **Applied in the spec:** R-UI-223. Code: [download-link.ts](../../web/src/app/shared/download-link.ts).
+
+### Q-UI-1406 · The view of a list of packages is its table; the filters, the saved views and the recent packages are the page's
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-UI-223. A project's package list reads the project's repositories for its drawer and keeps saved views and recently opened
+packages per principal in the browser; the second application's start list filters over its own catalogue (W-35 B.8).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `<quader-package-table>`: the rows of a list the page reads, with its sort, its "Load more" and its Retry (chosen) | The table of every list of packages | What a reader chooses a package by is one piece of code | The second application writes its own head |
+| (b) The whole list as a view | | | The drawer's repositories, the saved views and "recently opened" are the main installation's |
+
+**Choice:** (a). **Applied in the spec:** R-UI-223. Code: [package-table.ts](../../web/src/app/views/packages/package-table.ts).
+
 ### Q-UI-1410 · A visitor without a session reads the findings of the version report itself
 
 Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
@@ -28541,7 +28698,7 @@ tab reads anyway carries the open findings of a visitor, at most 1,000 per repos
 | (b) Open the findings list to anonymous callers | A fourth public read | Every finding pageable | A read of the whole report's filters for every visitor, and a cost per page the owner's decision does not need |
 
 **Choice:** (a). **Rationale:** what the owner asked for, with the reads he opened. **Applied in the spec:** R-UI-224. Code:
-[version-findings.ts](../../web/src/app/features/vulnerabilities/version-findings.ts).
+[version-findings.ts](../../web/src/app/views/vulnerabilities/version-findings.ts).
 
 ### Q-UI-1411 · A visitor without a session reads a finding without its status, and reaches its advisory, not its detail
 
@@ -28571,7 +28728,7 @@ views free of the session, for a second application without one.
 | (a) The page that holds the session tells its views (`signedIn` of `<quader-package-vulnerabilities>`, `withReport` of the card, `rows` of the findings); the advisory page, the side bar and the trail ask the session (`CrumbSpec.session`) (chosen) | No view imports the session | The views stay usable without a session, as P2 needs | One input more per view |
 | (b) Every view asks the session | | Fewer inputs | P2's rule would have to undo it |
 
-**Choice:** (a). **Applied in the spec:** R-UI-224. Code: [package-vulnerabilities.ts](../../web/src/app/features/vulnerabilities/package-vulnerabilities.ts),
+**Choice:** (a). **Applied in the spec:** R-UI-224. Code: [package-vulnerabilities.ts](../../web/src/app/views/vulnerabilities/package-vulnerabilities.ts),
 [grade-card.ts](../../web/src/app/shared/vulnerability/grade-card.ts), [vulnerability-advisory.ts](../../web/src/app/features/vulnerabilities/vulnerability-advisory.ts),
 [navigation.ts](../../web/src/app/core/navigation.ts), [breadcrumbs.ts](../../web/src/app/core/breadcrumbs.ts).
 

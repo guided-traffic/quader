@@ -4,9 +4,9 @@ import { RepositoriesApi } from '../../api/repositories-api';
 import { FakeRepositoriesApi, OCI_FORMAT } from '../../api/testing/fakes-catalog';
 import { issuedNpmEntry, issuedReceiptEntry, repositoryReport, sigstoreEntry } from '../../api/testing/fakes-signatures';
 import { expectAccessible, renderScreen, text } from '../../testing/screen';
-import { SignatureBadge } from './signature-badge';
-import { SignatureReport, SignatureReportView } from './signature-report';
-import { certificateWords, entryBadgeState, knownKindsSentence, originWords, schemeWords, signatureBadge, signatureStateWord } from './signature-words';
+import { SignatureBadge } from '../../views/signatures/signature-badge';
+import { SignatureReport, SignatureReportView } from '../../views/signatures/signature-report';
+import { certificateWords, entryBadgeState, knownKindsSentence, originWords, schemeWords, signatureBadge, signatureStateWord } from '../../views/signatures/signature-words';
 
 @Component({
   selector: 'quader-badge-host',

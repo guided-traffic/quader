@@ -5,7 +5,7 @@ import { ManualApi } from '../../api/manual-api';
 import { PackageReadme } from '../../api/packages-api';
 import { ErrorNotice } from '../../shared/error-notice';
 import { failureOf, valueOf } from '../../shared/paged-resource';
-import { PackageReadmeView } from '../packages/package-readme';
+import { PackageReadmeView } from '../../views/packages/package-readme';
 import { Loading } from '../../shared/ui/loading';
 
 /**

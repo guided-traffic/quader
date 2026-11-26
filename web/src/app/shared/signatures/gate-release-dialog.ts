@@ -6,7 +6,7 @@ import { ErrorNotice } from '../error-notice';
 import { fieldErrorAt } from '../field-errors';
 import { asApiError } from '../paged-resource';
 import { DIALOG_DATA, DialogClose, DialogRef, DialogTitle } from '../ui/dialog';
-import { gateReasonSentence } from './gate-words';
+import { gateReasonSentence } from '../../views/signatures/gate-words';
 import { Busy } from '../ui/busy';
 
 /** The longest reason the API takes (R-SIG-070). */

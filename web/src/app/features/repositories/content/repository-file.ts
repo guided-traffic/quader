@@ -17,12 +17,14 @@ import { systemClosed } from '../../../core/system-clients';
 import { RouterLink } from '@angular/router';
 import { SignatureBadgeState, SignatureStatus, SignaturesApi } from '../../../api/signatures-api';
 import { filesCommands } from '../../../core/project-links';
-import { SignatureBadge } from '../../../shared/signatures/signature-badge';
-import { SignatureReport } from '../../../shared/signatures/signature-report';
-import { hasSignatureBadge, signatureStateWord } from '../../../shared/signatures/signature-words';
+import { SignatureBadge } from '../../../views/signatures/signature-badge';
+import { SignatureReport } from '../../../views/signatures/signature-report';
+import { hasSignatureBadge, signatureStateWord } from '../../../views/signatures/signature-words';
 import { SignatureGateRefusedReason } from '../../../api/signatures-api';
-import { gateReasonWord } from '../../../shared/signatures/gate-words';
-import { SignatureGate } from '../../../shared/signatures/signature-gate';
+import { gateReasonWord } from '../../../views/signatures/gate-words';
+import { SignatureGate } from '../../../views/signatures/signature-gate';
+import { GATE_ACT } from '../../../views/acts';
+import { gateActSlot } from '../../../shared/signatures/gate-act';
 import { Loading } from '../../../shared/ui/loading';
 
 /** The names of a signature beside its file in a generic repository, longest first (R-SIG-032). */
@@ -46,6 +48,8 @@ const shellQuote = (value: string): string => `'${value.replaceAll("'", "'\\''")
 @Component({
   selector: 'quader-repository-file',
   imports: [Loading, DocumentBlock, AddressField, CopyButton, Disclosure, ErrorNotice, MalwareStatusView, RouterLink, SignatureBadge, SignatureGate, SignatureReport, TimeAgo],
+  // The gate's release and withdrawal at the place the view of its decision offers them (R-SIG-070, R-UI-223).
+  providers: [{ provide: GATE_ACT, useFactory: gateActSlot }],
   template: `
     @let it = item();
     <section class="file-view" aria-labelledby="file-name">

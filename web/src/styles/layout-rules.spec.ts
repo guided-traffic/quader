@@ -6,7 +6,7 @@ import controlsScss from './_controls.scss' with { loader: 'text' };
 import listScss from './_list-screens.scss' with { loader: 'text' };
 import policyEditorScss from '../app/features/permissions/policy-editor.scss' with { loader: 'text' };
 import mainScss from './main.scss' with { loader: 'text' };
-import packageDetailScss from '../app/features/packages/package-detail.scss' with { loader: 'text' };
+import packageDetailScss from '../app/views/packages/package-detail-view.scss' with { loader: 'text' };
 
 /** The declarations of the first rule whose selector line matches, without comments. */
 function block(scss: string, selector: RegExp): string {

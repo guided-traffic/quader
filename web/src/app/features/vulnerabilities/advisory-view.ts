@@ -2,7 +2,7 @@ import { DatePipe } from '@angular/common';
 import { Component, computed, input } from '@angular/core';
 import { VulnerabilityAdvisory } from '../../api/vulnerabilities-api';
 import { PackageReadme } from '../../api/packages-api';
-import { PackageReadmeView } from '../packages/package-readme';
+import { PackageReadmeView } from '../../views/packages/package-readme';
 import { EXTERNAL_REL, safeHttpUrl } from '../packages/package-links';
 import { kindLabel } from './vuln-labels';
 import { SeverityBadge } from './vuln-parts';

@@ -1,14 +1,14 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { ApiError } from '../../api/problem';
 import { SIGNATURE_BLOCK_KINDS, SignatureBlock, SignatureBlockKind, SignatureImpact, SignaturesApi } from '../../api/signatures-api';
-import { impactItems, impactQuestion } from './gate-words';
+import { impactItems, impactQuestion } from '../../views/signatures/gate-words';
 import { Notifier } from '../../core/notifier';
 import { SelectField, SelectOption, TextField } from '../access/fields';
 import { ErrorNotice } from '../error-notice';
 import { fieldErrorAt } from '../field-errors';
 import { asApiError } from '../paged-resource';
 import { DialogClose, DialogRef, DialogTitle } from '../ui/dialog';
-import { blockKindWords } from './signature-words';
+import { blockKindWords } from '../../views/signatures/signature-words';
 import { Busy } from '../ui/busy';
 
 /**

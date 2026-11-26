@@ -1,4 +1,5 @@
 import { Provider } from '@angular/core';
+import { provideViewReads } from '../providers';
 import { LegalApi, LegalPages } from '../legal-api';
 import { LoginApi, LoginOptions } from '../login-api';
 import { ApiError } from '../problem';
@@ -514,6 +515,8 @@ export function sampleOverview(over: Partial<SystemOverview> = {}): SystemOvervi
 /** Providers that replace every interface-backed service with its in-memory fake. */
 export function provideFakeApis(): Provider[] {
   return [
+    // The views' reads bound to the fakes below, as the application binds them to its services (R-UI-223).
+    ...provideViewReads(),
     { provide: SessionApi, useClass: FakeSessionApi },
     { provide: LoginApi, useClass: FakeLoginApi },
     { provide: LegalApi, useClass: FakeLegalApi },

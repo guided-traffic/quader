@@ -6,7 +6,7 @@ import { SIGNATURE_FINDING_KINDS, SignatureFinding, SignatureFindingFilters, Sig
 import { SessionStore } from '../../core/session-store';
 import { isSystemRepository } from '../../core/upstream-project';
 import { PagedResource, valueOf } from '../../shared/paged-resource';
-import { entryKind, signaturePromise, signatureReason } from '../../shared/signatures/signature-words';
+import { entryKind, signaturePromise, signatureReason } from '../../views/signatures/signature-words';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
 import { FilterCategory, FilterPanel } from '../../shared/ui/filter-panel';
 import { ListChip, ListHead } from '../../shared/ui/list-head';

@@ -5,7 +5,7 @@ import { DataTable, TableColumn } from '../ui/data-table';
 import { NoValue } from '../ui/no-value';
 import { Switch } from '../ui/switch';
 import { TimeAgo } from '../ui/time-ago';
-import { anchorKindWords, anchorScopeWords, shortFingerprint } from './signature-words';
+import { anchorKindWords, anchorScopeWords, shortFingerprint } from '../../views/signatures/signature-words';
 import { Busy } from '../ui/busy';
 
 /** What a row of the table may offer: its switch, its removal, or nothing. */

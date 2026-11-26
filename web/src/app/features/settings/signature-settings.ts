@@ -17,7 +17,7 @@ import { AnchorDialog, AnchorDialogData } from '../../shared/signatures/anchor-d
 import { AnchorRowControls, AnchorTable } from '../../shared/signatures/anchor-table';
 import { BlockDialog } from '../../shared/signatures/block-dialog';
 import { GateActions } from '../../shared/signatures/gate-releases';
-import { blockKindWords, signaturePromise } from '../../shared/signatures/signature-words';
+import { blockKindWords, signaturePromise } from '../../views/signatures/signature-words';
 import { Checkbox } from '../../shared/ui/checkbox';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
 import { QuaderDialog } from '../../shared/ui/dialog';

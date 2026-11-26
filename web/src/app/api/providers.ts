@@ -1,4 +1,9 @@
-import { Provider } from '@angular/core';
+import { Provider, inject } from '@angular/core';
+import { SessionStore } from '../core/session-store';
+import { SIGNED_IN } from '../core/signed-in';
+import { ClientSetupReads, PackageReads } from './package-reads';
+import { SignatureReads } from './signature-reads';
+import { VulnerabilityReads } from './vulnerability-reads';
 import { HttpLegalApi, LegalApi } from './legal-api';
 import { HttpLoginApi, LoginApi } from './login-api';
 import { HttpPreferencesApi, PreferencesApi } from './preferences-api';
@@ -23,7 +28,7 @@ import { HttpTokensApi, TokensApi } from './tokens-api';
 import { HttpTechnicalTokensApi, TechnicalTokensApi } from './technical-tokens-api';
 // <<< M1 ui-b
 // >>> M2 ui-packages
-import { ClientSetupApi, HttpClientSetupApi, HttpPackagesApi, PackagesApi } from './packages-api';
+import { HttpClientSetupReads, HttpPackagesApi, PackagesApi } from './packages-api';
 import { GuidesApi, HttpGuidesApi } from './guides-api';
 import { HttpManualApi, ManualApi } from './manual-api';
 // <<< M2 ui-packages
@@ -81,11 +86,25 @@ import { HttpUpstreamDownloadsApi, UpstreamDownloadsApi } from './upstream-downl
 // <<< T-26 upstream downloads
 
 /**
+ * The reads the views take (R-UI-223), bound to the main installation's services that extend them, and whether the reader has a session.
+ * `provideApiServices` and the fakes' `provideFakeApis` both spread it, so a view reads what the page beside it reads.
+ */
+export function provideViewReads(): Provider[] {
+  return [
+    { provide: PackageReads, useExisting: PackagesApi },
+    { provide: VulnerabilityReads, useExisting: VulnerabilitiesApi },
+    { provide: SignatureReads, useExisting: SignaturesApi },
+    { provide: SIGNED_IN, useFactory: () => inject(SessionStore).authenticated },
+  ];
+}
+
+/**
  * Binds every service interface of `api/` to its HTTP implementation. Specs and component tests
  * replace the bindings with the in-memory fakes of `testing/fakes.ts` (`provideFakeApis`).
  */
 export function provideApiServices(): Provider[] {
   return [
+    ...provideViewReads(),
     { provide: SessionApi, useClass: HttpSessionApi },
     { provide: LoginApi, useClass: HttpLoginApi },
     { provide: LegalApi, useClass: HttpLegalApi },
@@ -113,7 +132,7 @@ export function provideApiServices(): Provider[] {
     // <<< M1 ui-a
     // >>> M2 ui-packages
     { provide: PackagesApi, useClass: HttpPackagesApi },
-    { provide: ClientSetupApi, useClass: HttpClientSetupApi },
+    { provide: ClientSetupReads, useClass: HttpClientSetupReads },
     { provide: GuidesApi, useClass: HttpGuidesApi },
     { provide: ManualApi, useClass: HttpManualApi },
     // <<< M2 ui-packages

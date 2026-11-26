@@ -7,7 +7,7 @@ import { SessionApi } from '../../api/session-api';
 import { FakeSessionApi } from '../../api/testing/fakes';
 import { expectAccessible, renderScreen, settle, text } from '../../testing/screen';
 import { NamespacePage } from './namespace-page';
-import { isNamespace, nameParts, namespaceCommands, namespacesOf } from './namespaces';
+import { isNamespace, nameParts, namespaceCommands, namespacesOf } from '../../views/packages/namespaces';
 import { allNamespacesMatcher, namespaceMatcher } from './packages.routes';
 import { UrlSegment, UrlSegmentGroup, Route } from '@angular/router';
 

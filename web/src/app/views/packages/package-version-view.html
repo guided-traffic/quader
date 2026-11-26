@@ -1,0 +1,794 @@
+<quader-page-header [heading]="heading()" [name]="true" [description]="description()" [descriptionAsWritten]="true">
+  <!-- The picture the package embeds (NuGet's icon, R-NUGET-038), read through this installation's API: never an address the package
+       names. Decorative: the heading names the package. -->
+  @if (icon(); as src) {
+    <img picture class="package-icon" [src]="src" alt="" width="40" height="40" data-testid="package-icon" (error)="iconError()" />
+  }
+  <span meta class="pkg-meta">
+    <span class="type-badge">
+      <quader-format-icon [format]="format()" />
+      <span translate="no">{{ formatName() }}</span>
+    </span>
+    <!-- The name's namespace, a link to its page (R-UI-220). -->
+    <quader-namespace-of [format]="format()" [name]="name()" [project]="project()" />
+    <quader-dist-tags [tags]="tags()" [package]="name()" [limit]="null" />
+    <!-- The other tags of the image's digest (R-OCI-041), each the page of its tag; a tag the reader may not read is not named. -->
+    @if (otherTags().length > 0) {
+      <span class="other-tags dot-separated" role="group" [attr.aria-label]="otherTagsLabel">
+        @for (t of otherTags(); track t) {
+          <a [routerLink]="tagLink(t)" translate="no">{{ t }}</a>
+        }
+        @if (otherTagsMore()) {
+          <span class="muted" i18n="@@pkg.ver.more-tags-unnamed">+ more</span>
+        }
+      </span>
+    }
+    @if (detail()?.prerelease) {
+      <span class="badge" i18n="@@pkg.badge.prerelease">Pre-release</span>
+    }
+    <!-- The badge of the version's signatures (R-SIG-035): it opens the tab with the details; nothing for a state without a badge. -->
+    @if (signatureBadged(); as sig) {
+      <a class="facts-signature" [routerLink]="[]" [queryParams]="{ tab: 'signatures' }" queryParamsHandling="merge"
+        ><quader-signature-badge [state]="sig.state" [stale]="sig.stale"
+      /></a>
+    }
+    <!-- A version of the ClamAV definitions says its state (R-UI-194): In use, Previous, Superseded, Files removed. -->
+    @if (clamav()?.state; as st) {
+      <span [class]="stateClass(st)">
+        @if (st === 'in_use') {
+          <span class="material-icons" aria-hidden="true">check_circle</span>
+        }
+        {{ stateText(st) }}
+      </span>
+    }
+  </span>
+  <!-- The page's acts at the right of its head (Q-UI-1241, Q-UI-1243): the switch between the versions where the format leads with its
+       documentation, then the verb's button with the clients' commands, or Set up client of the ClamAV definitions. -->
+  <ng-container actions>
+    @if (leads() && pkg(); as p) {
+      @if (shown(); as v) {
+        <quader-version-switch
+          [project]="project()"
+          [format]="format()"
+          [name]="p.key ?? p.name"
+          [shown]="v"
+          [latest]="p.latestVersion"
+          [count]="p.versionCount"
+          [versions]="switchVersions.hasValue() ? switchVersions.value() : null"
+          [loading]="switchVersions.isLoading() && !switchVersions.hasValue()"
+          [tab]="switchTab()"
+          [doc]="doc() ?? null"
+        />
+      }
+    }
+    @if (command(); as c) {
+      @if (c.kind === 'menu' && detail(); as d) {
+        <!-- A role is installed by the name the server knows it by, role/<id>, which its snippets write as <owner>.<name> (Q-ANS-114). -->
+        <quader-client-command-menu
+          size="page"
+          [format]="format()"
+          [name]="role()?.packageName || d.name"
+          [version]="d.version"
+          [repository]="c.repository"
+          [repositories]="c.repositories"
+          [verb]="verb()"
+          [kind]="artifactKind()"
+          [digest]="artifactKind() === 'image' ? imageDigest() : null"
+        />
+      } @else if (c.kind === 'clamav') {
+        <a class="btn btn-default" [routerLink]="c.setup" [queryParams]="{ client: 'freshclam' }" i18n="@@repo.content.tab.setup">Set up client</a>
+      }
+    }
+    <!-- The page's acts of the version at the end of the head (R-API-085, Q-UI-1301: the deprecation's menu); none in a view without acts. -->
+    <ng-content select="[versionActs]" />
+  </ng-container>
+</quader-page-header>
+
+@if (loadFailure(); as f) {
+  <quader-error-notice [error]="f" (retry)="loadFailure.retry()" />
+} @else if (!detail()) {
+  <quader-loading size="page" i18n="@@pkg.version.loading">Loading the version.</quader-loading>
+} @else if (detail(); as d) {
+  <section class="version-facts" aria-label="Facts of this version" i18n-aria-label="@@pkg.version.facts">
+    <p class="facts-line">
+      <span class="dot-separated">
+        @if (grade(); as g) {
+          <a class="facts-grade" [routerLink]="[]" [queryParams]="{ tab: 'vulnerabilities' }" queryParamsHandling="merge">
+            <quader-grade [grade]="g" [image]="format() === 'oci'" [format]="format()" />
+          </a>
+        }
+        <!-- An image's date is Pushed, or Fetched where only remotes hold it; every other format's Published (Q-UI-1314). -->
+        <span>{{ arrived() }}&ngsp;<quader-time-ago [at]="d.publishedAt" /></span>
+        <quader-version-size [bytes]="d.sizeBytes ?? null" [partial]="d.sizePartial" [spelled]="true" />
+        <span
+          ><ng-container i18n="@@pkg.fact.last-download">Last download</ng-container>&ngsp;@if (d.lastDownloadedAt; as at) {
+            <quader-time-ago [at]="at" />
+          } @else {
+            <span [attr.title]="neverTitle" i18n="@@pkg.fact.never">never</span>
+          }</span
+        >
+        <span i18n="@@pkg.fact.download-count">{d.downloadCount, plural, =1 {1 download} other {{{ d.downloadCount | number }} downloads}}</span>
+        <!-- The licence is a fact of every format; its address, where the version declares one, is the licence's link (R-UI-221). -->
+        @if (licenseHref(); as href) {
+          <span
+            ><a class="external-link" [href]="href" [attr.rel]="externalRel" target="_blank"
+              >@if (licenses().length > 0) {<span translate="no">{{ licenses().join(', ') }}</span>} @else {<span i18n="@@pkg.meta.license-url">License</span>}<span
+                class="material-icons"
+                aria-hidden="true"
+                >open_in_new</span
+              ><span class="visually-hidden" i18n="@@pkg.meta.external">(opens another site)</span></a
+            ></span
+          >
+        } @else if (licenseFile(); as lf) {
+          <!-- A licence of the type file (R-NUGET-038): its text as this installation serves it, plain text in a tab of its own. -->
+          <span
+            ><a class="external-link" [href]="lf.href" target="_blank" rel="noopener" [attr.title]="lf.name" data-testid="license-file"
+              ><ng-container i18n="@@pkg.meta.license-file">License file</ng-container><span class="material-icons" aria-hidden="true">open_in_new</span
+              ><span class="visually-hidden" i18n="@@pkg.meta.new-tab">(opens in a new tab)</span></a
+            ></span
+          >
+        } @else if (licenses().length > 0) {
+          <span translate="no">{{ licenses().join(', ') }}</span>
+        }
+      </span>
+    </p>
+    <!-- The version's links in one row under its facts, in every format (R-UI-221, Q-UI-1313). -->
+    @if (links().length > 0) {
+      <quader-version-links [links]="links()" />
+    }
+    <!-- A version that runs a script of its own when it is installed says so where a person decides to install it (R-UI-221). -->
+    @if (installScript(); as note) {
+      <p class="version-note install-script" data-testid="install-script">
+        <span class="material-icons inline" aria-hidden="true">terminal</span>{{ note }}
+      </p>
+    }
+    <!-- What runs when a project uses a NuGet package (R-NUGET-039): the same note in the same place, the format's own sentence and the
+         files, as text. -->
+    @for (r of runs(); track r.kind) {
+      <p class="version-note install-script" [attr.data-testid]="'runs-' + r.kind">
+        <span class="material-icons inline" aria-hidden="true">{{ r.icon }}</span>{{ r.text }}&ngsp;<span class="runs-files" translate="no">{{
+          r.files
+        }}</span>
+      </p>
+    }
+    <!-- Why no client can install the version, where the head has no button (Q-UI-1260, Q-UI-965, Q-UI-898, Q-UI-899), and why a version of the
+         ClamAV definitions has no command (R-UI-194): muted, under the facts. -->
+    @if (command(); as c) {
+      @if (c.kind === 'note') {
+        <p class="version-note" [attr.data-testid]="'install-' + c.cause">{{ c.note }}</p>
+      } @else if (c.kind === 'clamav') {
+        <p class="version-note" data-testid="install-clamav">{{ clamavNote }}</p>
+      }
+    }
+    @if (unlisted()) {
+      <p class="banner-warning" role="note">
+        <span class="material-icons inline warn" aria-hidden="true">visibility_off</span>
+        <span
+          ><strong i18n="@@pkg.unlisted">Unlisted.</strong>
+          <span i18n="@@pkg.unlisted-detail"
+            >This version is hidden from search. It is still downloaded when a project asks for exactly this version.</span
+          ></span
+        >
+      </p>
+    }
+    <!-- The scanning's report failed in a way that may pass: said as what it is, not as a version without a grade (R-UI-216). -->
+    @if (vulnerabilitiesFailure(); as f) {
+      <quader-error-notice [error]="f" (retry)="vulnerabilitiesFailure.retry()" />
+    }
+    <!-- A remote that holds the version and whose delivery rules do not deliver it, for every format (R-CUR-014, R-ANS-056). -->
+    <quader-delivery-note [version]="d" [rulesName]="role()?.packageName || name()" />
+    @if (blockedIn().length > 0) {
+      <p class="banner-warning" role="note">
+        <span class="material-icons inline warn" aria-hidden="true">block</span>
+        <span
+          ><strong i18n="@@pkg.blocked-in">Blocked in</strong>{{ ' ' }}<span translate="no">{{ blockedIn().join(', ') }}</span></span
+        >
+      </p>
+    }
+    <!-- A file the malware scan's gate refuses in a repository the reader may read (R-MAL-024, Q-UI-872); nothing for a clean or a
+         pending one. -->
+    @for (f of refusedFiles(); track f.path) {
+      <p class="banner-warning" role="note" data-testid="malware-banner">
+        <span class="material-icons inline warn" aria-hidden="true">bug_report</span>
+        @if (f.malware?.state === 'infected') {
+          <span i18n="@@pkg.malware.found"
+            >Malware found in <code translate="no">{{ fileName(f.path) }}</code> (<code translate="no">{{ f.malware.signature }}</code>). Downloads are
+            refused.</span
+          >
+        } @else if (notCheckedWhy(f.malware); as why) {
+          <!-- What passed is said in plain words (Q-UI-1204); the scanner's own name of it is on the file's fact, under Technical details. -->
+          <span i18n="@@pkg.malware.not-checked-why"
+            ><code translate="no">{{ fileName(f.path) }}</code> could not be checked for malware: {{ why }}. Downloads are refused here.</span
+          >
+        } @else {
+          <span i18n="@@pkg.malware.not-checked"
+            ><code translate="no">{{ fileName(f.path) }}</code> could not be checked for malware. Downloads are refused here.</span
+          >
+        }
+      </p>
+    }
+    <!-- An artifact a repository's signature gate refuses, in a repository the reader may read (R-SIG-074): why, in the words of the
+         client's answer (R-SIG-068), and the release for the holder of the triage right. A pending one shows nothing more. -->
+    @for (f of signatureRefusals(); track f.repository + ' ' + f.sha256) {
+      <div class="banner-warning gate-banner" role="note" data-testid="signature-banner">
+        <span class="material-icons inline warn" aria-hidden="true">gpp_bad</span>
+        <div class="gate-banner-text">
+          <p>
+            @switch (f.reason) {
+              @case ('missing') {
+                <span i18n="@@pkg.gate.banner.missing">Downloads are refused in <code translate="no">{{ f.repository }}</code>: it serves only artifacts with a verified signature, and <code translate="no">{{ f.name }}</code> has no signature of its publisher or its build.</span>
+              }
+              @case ('untrusted') {
+                <span i18n="@@pkg.gate.banner.untrusted">Downloads are refused in <code translate="no">{{ f.repository }}</code>: it serves only artifacts with a verified signature, and <code translate="no">{{ f.name }}</code> has a signature of its publisher or its build whose signer no trust anchor this repository accepts knows.</span>
+              }
+              @case ('not_chosen') {
+                <span i18n="@@pkg.gate.banner.not-chosen">Downloads are refused in <code translate="no">{{ f.repository }}</code>: it serves only artifacts with a verified signature, and <code translate="no">{{ f.name }}</code> is verified only by trust anchors this repository does not accept.</span>
+              }
+              @case ('invalid') {
+                <span i18n="@@pkg.gate.banner.invalid">Downloads are refused in <code translate="no">{{ f.repository }}</code>: it serves only artifacts with a verified signature, and <code translate="no">{{ f.name }}</code> has a signature of its publisher or its build that does not match its content.</span>
+              }
+              @case ('blocked') {
+                <span i18n="@@pkg.gate.banner.blocked">Downloads are refused in <code translate="no">{{ f.repository }}</code>: it serves only artifacts with a verified signature, and <code translate="no">{{ f.name }}</code> is signed by a signer an administrator blocked.</span>
+              }
+              @default {
+                <span i18n="@@pkg.gate.banner.not-checked">Downloads are refused in <code translate="no">{{ f.repository }}</code>: it serves only artifacts with a verified signature, and <code translate="no">{{ f.name }}</code> has a signature of its publisher or its build that Quader cannot read or could not check.</span>
+              }
+            }
+          </p>
+          <!-- The release for the holder of the triage right, the page's act (views/acts.ts). -->
+          @if (gateAct; as slot) {
+            @if (slot.offered()) {
+              <ng-container *ngComponentOutlet="slot.component; inputs: f.act" />
+            }
+          }
+        </div>
+      </div>
+    }
+    <!-- The refusal of an act of the page, whole (R-UI-216). -->
+    <ng-content select="[versionNotices]" />
+    <!-- The deprecation (R-API-085, Q-UI-1300): the word, the scope where the whole package is deprecated, the publisher's message as
+         text (never markup), NuGet's reasons and the package to use instead, a link where the reader may read it. -->
+    @if (deprecated(); as dep) {
+      <p class="banner-warning" role="note" data-testid="deprecation-banner">
+        <span class="material-icons inline warn" aria-hidden="true">warning</span>
+        <span class="deprecation-text"
+          ><strong i18n="@@pkg.deprecated">Deprecated.</strong>
+          @if (dep.scope === 'package') {
+            &ngsp;<span i18n="@@pkg.deprecated-collection">Every version of this collection is deprecated.</span>
+          }
+          @if (dep.message) {
+            &ngsp;<span class="deprecation-message" translate="no">{{ dep.message }}</span>
+          }
+          @if (reasonsText(); as reasons) {
+            &ngsp;<span><ng-container i18n="@@pkg.deprecated-reasons">Reason:</ng-container>&ngsp;{{ reasons }}.</span>
+          }
+          @if (dep.alternatePackage; as alt) {
+            &ngsp;<span
+              ><ng-container i18n="@@pkg.deprecated-alternate">Use instead:</ng-container>&ngsp;@if (alternateLink(); as link) {
+                <a [routerLink]="link" translate="no">{{ alt.name }}</a>
+              } @else {
+                <span translate="no">{{ alt.name }}</span>
+              }
+              @if (alternateRange(); as range) {
+                &ngsp;<span translate="no">{{ range }}</span>
+              }</span
+            >
+          }</span
+        >
+      </p>
+    }
+  </section>
+
+  <quader-tab-group class="version-tabs" [selectedIndex]="activeIndex()" (selectedIndexChange)="selectTab($event)">
+    @for (t of tabs(); track t.id) {
+      <quader-tab [label]="t.label" [count]="t.count ?? null">
+        <div class="tab">
+          @switch (t.id) {
+            @case ('vulnerabilities') {
+              @if (activeTab() === 'vulnerabilities') {
+                <quader-package-vulnerabilities [report]="vulnerabilityReport()" [packageName]="d.name" [image]="format() === 'oci'" [format]="format()" [severity]="severityFilter()" [signedIn]="signedIn()" />
+              }
+            }
+            @case ('documentation') {
+              @if (activeTab() === 'documentation') {
+                <quader-ansible-docs
+                  [packageId]="d.packageId"
+                  [version]="d.version"
+                  [tree]="docsTree()"
+                  [loading]="docs.isLoading()"
+                  [failure]="docsFailure()"
+                  [readmeOnly]="docsReadmeOnly()"
+                  [severalRepositories]="d.repositories.length > 1"
+                  [doc]="doc()"
+                  [q]="q()"
+                  (refresh)="docs.reload()"
+                />
+              }
+            }
+            @case ('contents') {
+              @if (activeTab() === 'contents') {
+                <quader-ansible-contents [tree]="docsTree()" [loading]="docs.isLoading()" [failure]="docsFailure()" (refresh)="docs.reload()" />
+              }
+            }
+            @case ('import-log') {
+              @if (activeTab() === 'import-log' && localRepository(); as repository) {
+                @if (importLog; as slot) {
+                  <ng-container *ngComponentOutlet="slot.component; inputs: { repository, collection: d.name, version: d.version }" />
+                }
+              }
+            }
+            @case ('readme') {
+              @if (readmeFailure(); as f) {
+                <quader-error-notice [error]="f" (retry)="readmeFailure.retry()" />
+              } @else if (readme.isLoading()) {
+                <quader-loading i18n="@@pkg.readme.loading">Loading the README.</quader-loading>
+              } @else if (role() && !d.hasReadme) {
+                <!-- A role without a README yet: the role's note below says why and when it comes (R-ANS-056, Q-ANS-111). -->
+              } @else if (!d.hasReadme || (readme.hasValue() && readme.value() === null)) {
+                <!-- A format that leads with its documentation keeps the tab where the version carries none, and says so (Q-UI-1245). -->
+                <p class="version-note" data-testid="no-readme" i18n="@@pkg.readme.none">This version has no README to show.</p>
+              } @else {
+                <quader-package-readme [readme]="readme.hasValue() ? (readme.value() ?? null) : null" />
+              }
+              <!-- A role's README state and the way a role is published, inside a collection (R-ANS-056, Q-ANS-110). -->
+              @if (role(); as r) {
+                <quader-ansible-role-readme-note [facts]="r" [hasReadme]="d.hasReadme" [project]="project()" />
+              }
+            }
+            @case ('values') {
+              <!-- A Helm chart's values.yaml as text, highlighted as YAML by the code window every snippet uses (R-OCI-042). -->
+              @if (chartValues(); as v) {
+                <quader-code-window class="chart-values" [content]="v.text" language="yaml" fileName="values.yaml" [downloadable]="false" [copyLabel]="copyValues" />
+                @if (v.cut) {
+                  <p class="hint" i18n="@@pkg.chart.values-cut">The values are longer than 64 KiB; the rest is not shown.</p>
+                }
+              }
+            }
+            @case ('files') {
+              <quader-data-table class="version-files" [caption]="tableCaptionFiles" [columns]="fileColumns()" [empty]="d.files.length === 0">
+                @for (f of d.files; track f.path) {
+                  <tr>
+                    <th scope="row" class="wrap-name">
+                      <!-- The path is the file's download, as a package's files are in the reference (Q-UI-1051): a column of its own for
+                           the word Download pushed the table into blocks at 1,024 px beside the widest signature badge. A file the malware
+                           scan's gate or a repository's signature gate refuses offers none, its fact says why (Q-UI-882, R-SIG-074); nor
+                           does a file of a system repository or of a disabled one (Q-UI-898, Q-UI-965), whose install panel says why. -->
+                      <!-- An image's file is its manifest document: named as what it is, not by the tag item's path (R-OCI-041). -->
+                      @if (image() && offersDownload(f)) {
+                        <a class="file-path" [href]="f.contentUrl" download quaderDownload [attr.title]="downloadTitle" i18n="@@pkg.file.manifest">Manifest</a>
+                      } @else if (image()) {
+                        <span class="file-path" i18n="@@pkg.file.manifest">Manifest</span>
+                      } @else if (offersDownload(f)) {
+                        <a class="file-path" [href]="f.contentUrl" download quaderDownload [attr.title]="downloadTitle" translate="no">{{ f.path }}</a>
+                      } @else {
+                        <span class="file-path" translate="no">{{ f.path }}</span>
+                      }
+                      <!-- The size and the hash under the path, each on a line of its own (Q-UI-1002): the hash's first twelve
+                           characters, the whole as its title and on its copy button, which stands on the middle of the hash's line
+                           (R-UI-175). -->
+                      <span class="secondary" [attr.title]="f.sizeBytes + ' B'">{{ size(f.sizeBytes) }}</span>
+                      <span class="secondary file-hash"
+                        ><span
+                          ><ng-container i18n="@@pkg.file.sha256">SHA-256</ng-container>&ngsp;<code translate="no" [attr.title]="f.sha256">{{
+                            shortSha(f.sha256)
+                          }}</code></span
+                        ><quader-copy-button [value]="f.sha256" [label]="copySha"
+                      /></span>
+                    </th>
+                    @if (malwareShown()) {
+                      <td class="malware-cell">
+                        @if (f.malware; as m) {
+                          <quader-malware-status [status]="m" form="line" />
+                        } @else {
+                          <quader-no-value />
+                        }
+                      </td>
+                    }
+                    @if (signatureShown()) {
+                      <td>
+                        <!-- A file a repository's gate refuses says so where its badge stands, with the reason (R-SIG-074). -->
+                        @if (f.signatures?.refused === true) {
+                          <span class="fstatus bad" data-testid="signature-refused"
+                            ><span class="fstatus-main"
+                              ><span class="material-icons" aria-hidden="true">block</span><span i18n="@@sig.gate.refused-here">Refused here</span></span
+                            ></span
+                          >&ngsp;<span class="secondary block">{{ reasonWord(f.signatures.refusedReason) }}</span>
+                        } @else if (badged(f.signatures); as sig) {
+                          <quader-signature-badge [state]="sig.state" [stale]="sig.stale" />
+                        } @else {
+                          <quader-no-value />
+                        }
+                      </td>
+                    }
+                  </tr>
+                }
+              </quader-data-table>
+              <!-- What the image is made of (R-OCI-041): per image the repository holds, its manifest, its config and its layers in the
+                   manifest's order, by digest and size. -->
+              @for (part of parts(); track part.digest) {
+                @if (part.platform !== null) {
+                  <h2 class="image-files-heading" translate="no">{{ part.platform }}</h2>
+                } @else {
+                  <h2 class="image-files-heading" i18n="@@pkg.file.image-content">Content of the image</h2>
+                }
+                <quader-data-table class="image-files" [caption]="imageFilesCaption(part.platform)" [columns]="imageFileColumns" [empty]="false">
+                  @if (part.platform !== null) {
+                    <tr>
+                      <th scope="row" i18n="@@pkg.file.manifest">Manifest</th>
+                      <td class="digest-cell">
+                        <code translate="no" [attr.title]="part.digest">{{ cut(part.digest) }}</code>
+                        <quader-copy-button [value]="part.digest" [label]="copyManifest" />
+                      </td>
+                      <td class="num nowrap">@if (part.manifestSize !== null) {<span [attr.title]="part.manifestSize + ' B'">{{ size(part.manifestSize) }}</span>} @else {<quader-no-value />}</td>
+                    </tr>
+                  }
+                  @if (part.config; as cfg) {
+                    <tr>
+                      <th scope="row" i18n="@@pkg.file.config">Config</th>
+                      <td class="digest-cell">
+                        <code translate="no" [attr.title]="cfg.digest">{{ cut(cfg.digest) }}</code>
+                        <quader-copy-button [value]="cfg.digest" [label]="copyConfig" />
+                      </td>
+                      <td class="num nowrap">@if (cfg.size !== null) {<span [attr.title]="cfg.size + ' B'">{{ size(cfg.size) }}</span>} @else {<quader-no-value />}</td>
+                    </tr>
+                  }
+                  @for (l of part.layers; track $index; let i = $index) {
+                    <tr>
+                      <th scope="row" i18n="@@pkg.file.layer">Layer {{ i + 1 }}</th>
+                      <td class="digest-cell">
+                        <code translate="no" [attr.title]="l.digest">{{ cut(l.digest) }}</code>
+                        <quader-copy-button [value]="l.digest" [label]="copyLayerOf(part.platform, i + 1)" />
+                      </td>
+                      <td class="num nowrap">@if (l.size !== null) {<span [attr.title]="l.size + ' B'">{{ size(l.size) }}</span>} @else {<quader-no-value />}</td>
+                    </tr>
+                  }
+                </quader-data-table>
+              }
+              <!-- A definition container's detached signature and its member files (R-UI-194, R-CLAMAV-003). -->
+              @if (clamav(); as c) {
+                <dl class="facts clamav-files">
+                  <dt i18n="@@clamav.signature">Detached signature</dt>
+                  <dd>
+                    @if (c.detachedSignature.present) {
+                      <span i18n="@@clamav.signature.present">Present, {{ c.detachedSignature.signatures ?? 0 }} signatures. Quader passes it on; ClamAV checks it.</span>
+                    } @else {
+                      <span i18n="@@clamav.signature.none">None</span>
+                    }
+                  </dd>
+                </dl>
+                <h2 class="clamav-members-heading">{{ membersCaption }}</h2>
+                @if (c.membersRead) {
+                  <p class="hint" i18n="@@clamav.members.hint">The signature count of the header is the total; lines of a member are not always signatures.</p>
+                  <quader-data-table class="clamav-members" [caption]="membersCaption" [columns]="membersColumns" [empty]="c.members.length === 0">
+                    @for (m of c.members; track m.name) {
+                      <tr>
+                        <th scope="row" class="wrap-name" translate="no">{{ m.name }}</th>
+                        <td class="num nowrap">@if (m.size !== null) {{{ size(m.size) }}} @else {<quader-no-value />}</td>
+                        <td class="num">@if (m.lines !== null) {{{ m.lines | number }}} @else {<quader-no-value />}</td>
+                      </tr>
+                    }
+                  </quader-data-table>
+                  @if (c.members.length > 0) {
+                    <quader-disclosure class="clamav-fold" [inline]="true" [heading]="memberDigestsHeading">
+                      <dl class="digests" translate="no">
+                        @for (m of c.members; track m.name) {
+                          <dt>{{ m.name }}</dt>
+                          <dd><code>{{ m.sha256 }}</code></dd>
+                        }
+                      </dl>
+                    </quader-disclosure>
+                  }
+                } @else if (c.state === 'files_removed') {
+                  <p class="hint" i18n="@@clamav.members.removed">The files of this version were removed; its metadata stays as history.</p>
+                } @else {
+                  <p class="hint" i18n="@@clamav.members.not-read">Members not read: the container holds more than the bounds allow.</p>
+                }
+              }
+              <!-- The files a Debian package installs, below the package files (R-DEB-039, Q-UI-1272). -->
+              @if (d.format === 'deb') {
+                @if (debContentsFailure(); as f) {
+                  <quader-error-notice [error]="f" (retry)="debContentsFailure.retry()" />
+                } @else {
+                  <quader-deb-files [packageId]="d.packageId" [version]="d.version" [contents]="debContentsValue()" />
+                }
+              }
+            }
+            @case ('signatures') {
+              @if (activeTab() === 'signatures') {
+                <quader-version-signatures
+                  [packageId]="d.packageId"
+                  [version]="d.version"
+                  [format]="d.format"
+                  [files]="d.files"
+                  [artifact]="heading()"
+                  [platforms]="imagePlatforms()"
+                  (changed)="details.reload()"
+                />
+              }
+            }
+            @case ('changelog') {
+              @if (debContentsFailure(); as f) {
+                <quader-error-notice [error]="f" (retry)="debContentsFailure.retry()" />
+              } @else {
+                <quader-deb-changelog [contents]="debContentsValue()" />
+              }
+            }
+            @case ('details') {
+              <!-- The extended description of a Debian package (R-DEB-038, Q-UI-1270): its paragraphs as written, the verbatim lines kept
+                   as they are; text, never markup. -->
+              @if (debLongDescription().length > 0) {
+                <h2 i18n="@@pkg.meta.deb-description">Description</h2>
+                <div class="deb-description" translate="no">
+                  @for (b of debLongDescription(); track $index) {
+                    @if (b.verbatim) {
+                      <pre class="deb-verbatim">{{ b.text }}</pre>
+                    } @else {
+                      <p>{{ b.text }}</p>
+                    }
+                  }
+                </div>
+              }
+              <!-- The general properties first, the same block in every format (R-UI-221): the keywords, then the dependencies. -->
+              @if (keywords().length > 0) {
+                <h2 i18n="@@pkg.meta.keywords">Keywords</h2>
+                <quader-package-tags class="version-keywords" [tags]="keywords()" [project]="project()" [format]="d.format" [limit]="null" />
+              }
+              @if (dependencies().length > 0) {
+                <h2 i18n="@@pkg.meta.dependencies">Dependencies</h2>
+                <quader-dependency-list [groups]="dependencies()" [held]="held()" [project]="project()" [format]="d.format" />
+              }
+              <!-- Who needs it, beside what it needs (R-API-086, Q-UI-1350): in every format whose versions name dependencies. -->
+              @if (usedBy()) {
+                <h2 i18n="@@pkg.used-by.heading">Used by</h2>
+                <quader-used-by [packageId]="d.packageId" [name]="packageKey()" [format]="d.format" [project]="project()" />
+              }
+              <!-- Every field of a definition container's header (R-UI-194, R-CLAMAV-003), as text, never as markup. -->
+              @if (clamav(); as c) {
+                <h2 i18n="@@clamav.details.heading">Definitions</h2>
+                <dl class="facts clamav-facts">
+                  <dt i18n="@@clamav.fact.built">Built</dt>
+                  <dd>
+                    @if (c.builtAt; as at) {
+                      <span class="built"><time [attr.datetime]="at">{{ at | date: 'medium' }}</time>@if (clamavAge(); as a) {<span class="muted">&ngsp;· {{ a }}</span>}</span>
+                      @if (clamavOutdated()) {
+                        <span class="badge warn" [attr.title]="outdatedText"><span class="material-icons" aria-hidden="true">warning</span>{{ outdatedWord }}</span>
+                      }
+                    } @else {
+                      <quader-no-value />
+                    }
+                  </dd>
+                  @if (c.buildTimeText) {
+                    <dt i18n="@@clamav.fact.build-text">Build time as written</dt>
+                    <dd translate="no">{{ c.buildTimeText }}</dd>
+                  }
+                  <dt i18n="@@clamav.fact.signatures">Signatures</dt>
+                  <dd>@if (c.signatures !== null) {{{ c.signatures | number }}} @else {<quader-no-value />}</dd>
+                  <dt i18n="@@clamav.fact.level">Functionality level</dt>
+                  <dd>
+                    @if (c.functionalityLevel !== null) {
+                      {{ c.functionalityLevel }}@if (c.functionalityLevelText) {<span class="muted">&ngsp;· {{ c.functionalityLevelText }}</span>}
+                    } @else {
+                      <quader-no-value />
+                    }
+                  </dd>
+                  <dt i18n="@@clamav.fact.builder">Builder</dt>
+                  <dd translate="no">@if (c.builder) {{{ c.builder }}} @else {<quader-no-value />}</dd>
+                  <dt i18n="@@clamav.fact.verification">Verification</dt>
+                  <dd>{{ verification() }}</dd>
+                  @if (c.filesRemovedAt; as at) {
+                    <dt i18n="@@clamav.fact.files-removed">Files removed</dt>
+                    <dd><time [attr.datetime]="at">{{ at | date: 'medium' }}</time></dd>
+                  }
+                </dl>
+                @if (c.headerMd5 || c.computedMd5) {
+                  <quader-disclosure class="clamav-fold" [inline]="true" [heading]="checksumsHeading">
+                    <dl class="digests">
+                      <dt i18n="@@clamav.fact.header-md5">MD5 in the header</dt>
+                      <dd><code translate="no">{{ c.headerMd5 || '–' }}</code></dd>
+                      <dt i18n="@@clamav.fact.computed-md5">MD5 computed by Quader</dt>
+                      <dd><code translate="no">{{ c.computedMd5 || '–' }}</code></dd>
+                    </dl>
+                  </quader-disclosure>
+                }
+              }
+              <!-- A Helm chart's facts from its Chart.yaml (R-OCI-042) and its maintainers; its dependencies are the block above. -->
+              @if (chartHeld(); as held) {
+                <h2 i18n="@@pkg.chart.heading">Chart</h2>
+                <p class="hint" data-testid="chart-held"><ng-container i18n="@@pkg.chart.held">The chart's facts and values are not shown: a download of its files would not be served to you now.</ng-container>&ngsp;{{ held }}</p>
+              }
+              @if (chart(); as c) {
+                <h2 i18n="@@pkg.chart.heading">Chart</h2>
+                <dl class="facts" data-testid="chart-facts">
+                  @for (f of c.facts; track f[0]) {
+                    <dt>{{ f[0] }}</dt>
+                    <dd translate="no">{{ f[1] }}</dd>
+                  }
+                </dl>
+                @if (c.maintainers.length > 0) {
+                  <h2 i18n="@@pkg.chart.maintainers">Maintainers</h2>
+                  <ul class="plain" translate="no">
+                    @for (m of c.maintainers; track $index) {
+                      <li>{{ m }}</li>
+                    }
+                  </ul>
+                }
+              }
+              @if (image(); as img) {
+                <h2>{{ imageHeading() }}</h2>
+                <dl class="facts">
+                  @if (kind() !== '') {
+                    <dt i18n="@@pkg.image.kind">Kind</dt>
+                    <dd [attr.title]="img.artifactType || img.mediaType">{{ kind() }}</dd>
+                  }
+                  <dt i18n="@@pkg.image.digest">Digest</dt>
+                  <dd>
+                    <code translate="no">{{ img.digest }}</code>
+                    <quader-copy-button class="on-line" [value]="img.digest" [label]="copyImageDigest" />
+                  </dd>
+                  @if (img.mediaType !== '') {
+                    <dt i18n="@@pkg.image.media-type">Media type</dt>
+                    <dd translate="no">{{ img.mediaType }}</dd>
+                  }
+                  @if (img.artifactType !== '') {
+                    <dt i18n="@@pkg.image.artifact-type">Artifact type</dt>
+                    <dd translate="no">{{ img.artifactType }}</dd>
+                  }
+                  <dt i18n="@@pkg.image.total-size">Size</dt>
+                  <dd><quader-version-size [bytes]="img.size" [partial]="img.sizePartial" /></dd>
+                </dl>
+                @if (img.platforms.length > 0) {
+                  <h2 i18n="@@pkg.image.platforms">Platforms</h2>
+                  <quader-data-table [caption]="tableCaptionPlatforms" [columns]="platformColumns" [empty]="false">
+                    @for (p of img.platforms; track $index) {
+                      <tr>
+                        <th scope="row">
+                          <!-- A platform the repository holds opens its configuration, layers and history in the row under it
+                               (R-OCI-040, details on demand); the page grows, nothing in it scrolls (R-UI-215). -->
+                          <span class="platform-cell">
+                            @if (partOf(p.digest); as part) {
+                              <button
+                                type="button"
+                                class="btn btn-tertiary btn-icon on-line"
+                                [attr.aria-expanded]="openPlatforms().has(p.digest)"
+                                [attr.aria-controls]="'platform-' + $index"
+                                [attr.aria-label]="platformOpenLabel(p.platform)"
+                                (click)="togglePlatform(p.digest)"
+                              >
+                                <span class="material-icons expand-chevron" aria-hidden="true">expand_more</span>
+                              </button>
+                            }
+                            <span translate="no">{{ p.platform }}</span>
+                          </span>
+                          @if (p.hint !== '') {
+                            <span class="visually-hidden" translate="no">{{ ' (' + p.hint + ')' }}</span>
+                          }
+                        </th>
+                        <td>
+                          <code class="ellipsis" translate="no" [attr.title]="p.digest">{{ p.digest }}</code>
+                          <quader-copy-button [value]="p.digest" [label]="p.copyLabel" />
+                        </td>
+                        @if (p.stored) {
+                          <td class="media-type" translate="no">{{ p.mediaType }}</td>
+                          @if (p.size !== null) {
+                            <td class="num" [attr.title]="p.size + ' B'">{{ size(p.size) }}</td>
+                          } @else {
+                            <td class="num"><quader-no-value /></td>
+                          }
+                        } @else {
+                          <!-- A platform no client fetched through Quader: its manifest, and with it its media type and size, is not held
+                               (Q-OCI-221). -->
+                          <td><quader-no-value /></td>
+                          <td class="num nowrap" [attr.title]="notFetchedTitle">
+                            <span class="muted" i18n="@@pkg.image.not-fetched">Not fetched</span>
+                          </td>
+                        }
+                      </tr>
+                      @if (partOf(p.digest); as part) {
+                        <tr class="expansion">
+                          <td [attr.colspan]="platformColumns.length">
+                            <div [id]="'platform-' + $index" class="collapse-region" [class.open]="openPlatforms().has(p.digest)">
+                              <div>
+                                @if (openPlatforms().has(p.digest)) {
+                                  <quader-image-details class="platform-details" [part]="part" />
+                                }
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      }
+                    }
+                  </quader-data-table>
+                } @else if (parts()[0]; as part) {
+                  <quader-disclosure class="image-details-fold" [heading]="imageDetailsHeading()">
+                    <quader-image-details [part]="part" />
+                  </quader-disclosure>
+                }
+              }
+              @if (role(); as r) {
+                <quader-ansible-role-facts [facts]="r" [remote]="roleRemote()" />
+              }
+              <!-- A NuGet version's release notes (R-NUGET-038): as text, their line breaks kept; a long one grows the page. -->
+              @if (releaseNotes(); as notes) {
+                <h2 i18n="@@pkg.meta.release-notes">Release notes</h2>
+                <p class="release-notes" translate="no" data-testid="release-notes">{{ notes }}</p>
+              }
+              <!-- The facts only the format has, in one section of every format (R-UI-221): npm's runtimes, types, tarball and publisher,
+                   NuGet's with its frameworks and symbols, Debian's control fields with its source package and copyright
+                   file, an Ansible collection's Ansible versions, an image's annotations and labels. -->
+              @if (packageFacts().length > 0 || debSource() || frameworks().folders.length > 0 || frameworks().dependencies.length > 0 || symbols()) {
+                <h2 i18n="@@pkg.meta.facts">Package details</h2>
+                <dl class="facts" [attr.data-testid]="packageFactsId()">
+                  @for (f of packageFacts(); track f[0]) {
+                    <dt>{{ f[0] }}</dt>
+                    <dd translate="no">{{ f[1] }}</dd>
+                  }
+                  <!-- NuGet's target frameworks as chips, the dependency groups' beside them where no folder names them (R-NUGET-038). -->
+                  @if (frameworks().folders.length > 0) {
+                    <dt i18n="@@pkg.meta.frameworks">Target frameworks</dt>
+                    <dd>
+                      <span class="chips" translate="no" data-testid="frameworks">
+                        @for (f of frameworks().folders; track f) {
+                          <span class="badge">{{ f }}</span>&ngsp;
+                        }
+                      </span>
+                    </dd>
+                  }
+                  @if (frameworks().dependencies.length > 0) {
+                    <dt i18n="@@pkg.meta.dependency-frameworks">Frameworks of the dependencies</dt>
+                    <dd>
+                      <span class="chips" translate="no" data-testid="dependency-frameworks">
+                        @for (f of frameworks().dependencies; track f) {
+                          <span class="badge">{{ f }}</span>&ngsp;
+                        }
+                      </span>
+                    </dd>
+                  }
+                  <!-- A symbol package held beside the package (R-NUGET-020): debuggers cannot read it from Quader yet (R-NUGET-021). -->
+                  @if (symbols(); as file) {
+                    <dt i18n="@@pkg.meta.symbols">Symbols</dt>
+                    <dd data-testid="symbols">
+                      <ng-container i18n="@@pkg.meta.symbols-held">Symbol package held: <code translate="no">{{ file }}</code>. Quader does not serve symbols to a debugger yet; download the file from the tab Files.</ng-container>
+                    </dd>
+                  }
+                  <!-- The source package lists its binaries: the package list filtered by it (R-DEB-038, Q-DEB-142). -->
+                  @if (debSource(); as src) {
+                    <dt i18n="@@pkg.meta.deb-source">Source package</dt>
+                    <dd translate="no">
+                      <a [routerLink]="sourceLink()" [queryParams]="{ format: 'deb', keyword: src.name }">{{ src.text }}</a>
+                    </dd>
+                  }
+                </dl>
+              }
+              @if (d.format === 'deb') {
+                <!-- The copyright file is a detail on demand (Q-UI-1272): closed, the licence stands on the facts line. -->
+                <quader-disclosure class="deb-copyright-fold" [inline]="true" [heading]="copyrightHeading">
+                  <quader-deb-copyright [contents]="debContentsValue()" />
+                </quader-disclosure>
+              }
+              @if (authorList().length > 0) {
+                <h2 i18n="@@pkg.meta.authors">Authors</h2>
+                <ul class="plain" translate="no">
+                  @for (a of authorList(); track a) {
+                    <li>{{ a }}</li>
+                  }
+                </ul>
+              }
+              <h2 i18n="@@pkg.repo.heading">Repositories</h2>
+              <quader-data-table [caption]="tableCaptionRepositories" [columns]="repositoryColumns()" [empty]="d.repositories.length === 0">
+                @for (r of d.repositories; track r.key) {
+                  <tr>
+                    <th scope="row" translate="no"><a [routerLink]="repositoryLink(r.key)">{{ r.key }}</a></th>
+                    <td>{{ classText(r.class) }}</td>
+                    <td>
+                      <quader-time-ago [at]="r.publishedAt" absolute="title" />
+                    </td>
+                  </tr>
+                }
+              </quader-data-table>
+            }
+          }
+        </div>
+      </quader-tab>
+    }
+  </quader-tab-group>
+}

@@ -16,7 +16,7 @@ import {
 import { ErrorNotice } from '../../shared/error-notice';
 import { PagedResource, failureOf, asApiError, valueOf } from '../../shared/paged-resource';
 import { GateActions } from '../../shared/signatures/gate-releases';
-import { gateReasonWord } from '../../shared/signatures/gate-words';
+import { gateReasonWord } from '../../views/signatures/gate-words';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
 import { Disclosure } from '../../shared/ui/disclosure';
 import { FilterCategory, FilterPanel } from '../../shared/ui/filter-panel';

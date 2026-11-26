@@ -29,7 +29,7 @@ GET /api/v1/manual, /api/v1/manual/{section}/{page} <─────────
 | [web/src/app/api/manual-api.ts](../../web/src/app/api/manual-api.ts) | `ManualApi`, `HttpManualApi` (keeps every read for the tab: the route title and the screen share one request) |
 | [web/src/app/features/help/](../../web/src/app/features/help/) | `help.routes.ts` (the page title from the page), `help-overview.ts` with `help-overview.scss`, `help-page.ts` and `.html` with `help-page.scss`, `help.spec.ts` |
 | [web/src/app/core/help-topics.ts](../../web/src/app/core/help-topics.ts) | `HELP_TOPICS` (route prefix to page) and `helpFor`, which the top bar's Documentation link uses |
-| [web/src/app/features/packages/package-readme.ts](../../web/src/app/features/packages/package-readme.ts) | The binding component; `pageLinks="help/"` keeps the manual's page links and routes them in the application |
+| [web/src/app/views/packages/package-readme.ts](../../web/src/app/views/packages/package-readme.ts) | The binding component; `pageLinks="help/"` keeps the manual's page links and routes them in the application |
 | [web/scripts/check-rules.mjs](../../web/scripts/check-rules.mjs) | Fails the lint when `HELP_TOPICS` names a page that is not a file of `docs/manual/` |
 
 ## How a page becomes HTML
@@ -50,7 +50,7 @@ plain click into `Router.navigateByUrl`; the help page scrolls to the fragment o
 [Q-UI-97](../spec/api-and-ui.md#q-ui-97--the-manuals-article-takes-the-width-of-its-column-only-the-prose-keeps-a-measure).
 The article has no fixed width; the contents column keeps 15 rem and the article takes the rest. The help page binds its
 README with the class `help-readme`, which caps the direct paragraphs, lists, quotes and headings at `110ch`
-([package-readme.scss](../../web/src/app/features/packages/package-readme.scss)); tables and code use the full width.
+([package-readme.scss](../../web/src/app/views/packages/package-readme.scss)); tables and code use the full width.
 `PackageReadmeView` wraps every table in `.readme-table` (full width, `overflow-x: auto`, `tabindex="0"`), so a table
 wider than the column scrolls inside its container. Cells break at spaces only, code in a cell stays whole, the first
 column is at least 9 rem wide. Below 52 rem of content the contents give way to the link back to the overview. The

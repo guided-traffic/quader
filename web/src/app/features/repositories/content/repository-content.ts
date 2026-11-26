@@ -1,5 +1,5 @@
 import { DownloadLink } from '../../../shared/download-link';
-import { ClientCommandMenu } from '../../packages/client-command-menu';
+import { ClientCommandMenu } from '../../../views/packages/client-command-menu';
 import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
 import { VisibilityIcon, levelName } from '../../../shared/ui/visibility-level';
 import { Component, computed, effect, inject, input, resource, signal, untracked } from '@angular/core';
@@ -24,7 +24,7 @@ import { isSystemRepository, isUpstreamProject } from '../../../core/upstream-pr
 import { systemClosed } from '../../../core/system-clients';
 import { UpstreamApi } from '../../../api/upstream-api';
 import { retiredSentence, stateBadge } from '../../upstream/upstream-words';
-import { CLAMAV_FORMAT } from '../../packages/clamav-definitions';
+import { CLAMAV_FORMAT } from '../../../views/packages/clamav-definitions';
 import { ClamavDatabases } from './clamav-databases';
 import { Confirm } from '../../../shared/confirm-dialog';
 import { CopyButton } from '../../../shared/copy-button';

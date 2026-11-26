@@ -3821,7 +3821,7 @@ the page's address is the UI's (the version page's route, its tab and its search
 grammar is what both sanitizers keep, so the converter is not the weak point. **Revisit** when the documentation is shown outside the
 version page. **Applied in the spec:** R-ANS-039, R-ANS-048. Code: `docgen.PageLink`, `keepPageLink` in
 [ansible_docs.go](../../../internal/api/v1/ansible_docs.go), `Renderer.SanitizeHTMLLinked`, `DOC_LINK` of
-[package-readme.ts](../../../web/src/app/features/packages/package-readme.ts).
+[package-readme.ts](../../../web/src/app/views/packages/package-readme.ts).
 
 ### Q-ANS-95 · Examples are highlighted by a tokenizer of the web application, not a library
 

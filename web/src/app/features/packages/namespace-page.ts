@@ -11,11 +11,11 @@ import { Loading } from '../../shared/ui/loading';
 import { PageHeader } from '../../shared/ui/page-header';
 import { ProjectLink } from '../../shared/ui/project-mark';
 import { TimeAgo } from '../../shared/ui/time-ago';
-import { SignatureBadge } from '../../shared/signatures/signature-badge';
-import { NamespaceRules, namespaceCommands, namespaceHeading, namespacesOf } from './namespaces';
+import { SignatureBadge } from '../../views/signatures/signature-badge';
+import { NamespaceRules, namespaceCommands, namespaceHeading, namespacesOf } from '../../views/packages/namespaces';
 import { packageCommands } from './package-links';
-import { PackageName } from './package-name';
-import { PackageTags } from './package-tags';
+import { PackageName } from '../../views/packages/package-name';
+import { PackageTags } from '../../views/packages/package-tags';
 import { collectionUpload } from '../repositories/content/ansible-upload-targets';
 
 /**

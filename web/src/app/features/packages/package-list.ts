@@ -16,19 +16,15 @@ import { collectAll } from '../../api/pagination';
 import { RepositoriesApi, refOf } from '../../api/repositories-api';
 import { PagedResource, valueOf } from '../../shared/paged-resource';
 import { FormatIconView } from '../../shared/format-icon';
-import { DataTable, TableColumn, TableSort } from '../../shared/ui/data-table';
-import { DeprecationMark } from '../../shared/ui/deprecation-mark';
+import { TableSort } from '../../shared/ui/data-table';
 import { FilterCategory, FilterPanel } from '../../shared/ui/filter-panel';
 import { ListChip, ListHead } from '../../shared/ui/list-head';
-import { TimeAgo } from '../../shared/ui/time-ago';
 import { packageCommands } from './package-links';
 import { PackageMemory, SavedView } from './package-memory';
 import { PageHeader } from '../../shared/ui/page-header';
 import { TabStrip } from '../../shared/ui/tab-strip';
-import { SignatureBadge } from '../../shared/signatures/signature-badge';
-import { NamespaceRules, isNamespace, namespaceHeading } from './namespaces';
-import { PackageName } from './package-name';
-import { PackageTags } from './package-tags';
+import { NamespaceRules, isNamespace, namespaceHeading } from '../../views/packages/namespaces';
+import { PackageTable } from '../../views/packages/package-table';
 
 type Param = string | readonly string[] | undefined;
 type ListTab = 'all' | 'recent' | 'views';
@@ -53,7 +49,7 @@ interface Chip extends ListChip {
  * (R-UI-003) and every change restarts the cursor walk, because a cursor is bound to its filters and
  * sort (R-API-010). Filtering and sorting happen on the server (R-API-029); the screen sorts and
  * filters nothing itself. "Recently opened" and "Saved views" are browser-storage features and
- * disappear where storage is blocked.
+ * disappear where storage is blocked. The rows are the view `<quader-package-table>` (views/packages/package-table.ts, R-UI-223).
  */
 @Component({
   selector: 'quader-package-list',
@@ -63,17 +59,12 @@ interface Chip extends ListChip {
     CdkMenuTrigger,
     PageHeader,
     RouterLink,
-    DataTable,
-    DeprecationMark,
     FilterCategory,
     FilterPanel,
     FormatIconView,
     ListHead,
-    PackageName,
-    PackageTags,
-    SignatureBadge,
+    PackageTable,
     TabStrip,
-    TimeAgo,
   ],
   templateUrl: './package-list.html',
   styleUrl: './package-list.scss',
@@ -273,32 +264,12 @@ export class PackageList {
     (valueOf(this.repositoryList) ?? []).filter((r) => r.format !== 'generic').map((r) => refOf(r)),
   );
 
-  protected readonly tableCaption = $localize`:@@pkg.list.caption:Packages`;
   protected readonly emptyText = $localize`:@@pkg.list.empty:No package has been published yet.`;
   protected readonly emptyFilteredText = $localize`:@@pkg.list.empty-filtered:No package matches the filters.`;
   protected readonly searchLabel = $localize`:@@pkg.list.search:Filter packages`;
-  /**
-   * The columns a reader chooses by (Q-UI-314). The name wraps after its hyphens and declares its least (Q-UI-308); the format,
-   * the version and the time never break and are as wide as their values (Q-UI-563). Their guessed widths summed to 46 rem, and
-   * the list stood as blocks at 1,024 px with the side bar open (R-UI-174).
-   */
-  protected readonly columns: readonly TableColumn[] = [
-    { id: 'name', label: $localize`:@@pkg.col.package:Package`, sortable: true, width: '14rem' },
-    { id: 'type', label: $localize`:@@pkg.col.format:Format`, stackLabel: false },
-    // The words of the repository page's package table (Q-UI-432): **Latest**, not **Latest version**.
-    {
-      id: 'latest',
-      label: $localize`:@@pkg.col.latest:Latest`,
-      help: $localize`:@@pkg.help.latest:The highest stable version you may see. A pre-release is shown only while no stable version exists.`,
-    },
-    {
-      id: 'updatedAt',
-      label: $localize`:@@pkg.col.updated:Updated`,
-      sortable: true,
-      help: $localize`:@@pkg.help.updated:When the latest version you may see was published.`,
-    },
-  ];
   protected commands = (format: string, name: string): string[] => packageCommands(this.project(), format, name);
+  /** A format's name for the table's rows (R-UI-006). */
+  protected readonly formatLabelOf = (name: string): string => this.formatLabel(name);
   protected readonly periods: readonly { value: CreatedPeriod; label: string }[] = [
     { value: '7', label: $localize`:@@pkg.period.7:Last 7 days` },
     { value: '30', label: $localize`:@@pkg.period.30:Last 30 days` },

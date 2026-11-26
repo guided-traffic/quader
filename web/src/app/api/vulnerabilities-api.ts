@@ -3,6 +3,7 @@ import { ApiClient } from './client';
 import { PageFetcher } from './pagination';
 import { cleanQuery, seg } from './query';
 import { Versioned } from './repositories-api';
+import { VulnerabilityReads } from './vulnerability-reads';
 import { Schema } from './types';
 
 /*
@@ -102,23 +103,22 @@ export interface TrendQuery extends ScopeFilters {
   readonly kind?: VulnerabilityKind;
 }
 
-export abstract class VulnerabilitiesApi {
-  /** One page fetcher; a new filter or sort is a new fetcher (cursor binding, R-API-010). */
-  abstract findings(filters: FindingFilters): PageFetcher<VulnerabilityFinding>;
+/**
+ * The vulnerabilities (R-VULN-013 and the dashboard's reads): the reads of the views (`VulnerabilityReads`, R-UI-223) and what only the
+ * main installation's screens ask, a finding with its triage, the summary, the trend, the sources and the export.
+ */
+export abstract class VulnerabilitiesApi extends VulnerabilityReads {
   /** The finding with the `ETag` a triage needs. */
   abstract finding(id: string): Promise<Versioned<VulnerabilityFindingDetail>>;
   /** A merge patch of one finding (R-VULN-013). */
   abstract triage(id: string, patch: VulnerabilityFindingPatch, etag: string): Promise<Versioned<VulnerabilityFindingDetail>>;
   abstract setStatus(body: VulnerabilitySetStatusRequest, idempotencyKey: string): Promise<VulnerabilitySetStatusResult>;
-  abstract advisory(ecosystem: string, id: string): Promise<VulnerabilityAdvisoryDetail>;
   abstract summary(scope: ScopeFilters): Promise<VulnerabilitySummary>;
   abstract trend(query: TrendQuery): Promise<VulnerabilityTrend>;
   /** Needs `settings:read`. */
   abstract sources(): Promise<readonly VulnerabilitySourceState[]>;
   /** The CSV document of a filter; `422 export_too_large` rejects before anything is streamed. */
   abstract exportCsv(filters: FindingFilters): Promise<string>;
-  abstract versionReport(packageId: string, version: string): Promise<VulnerabilityVersionReport>;
-  abstract packageReport(packageId: string, repository?: readonly string[]): Promise<VulnerabilityPackageReport>;
 }
 
 @Injectable()
