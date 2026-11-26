@@ -3,7 +3,6 @@ package gui
 import (
 	"bytes"
 	"compress/gzip"
-	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/xml"
@@ -87,7 +86,7 @@ type sitemapState struct {
 }
 
 // sitemaps is the set of the catalogue's current revision, built from the index when the revision changed.
-func (h *Handler) sitemaps(ctx context.Context) (*sitemapSet, error) {
+func (h *Handler) sitemaps() (*sitemapSet, error) {
 	entries, rev, err := h.o.Catalogue.Packages()
 	if err != nil {
 		return nil, err
@@ -97,7 +96,7 @@ func (h *Handler) sitemaps(ctx context.Context) (*sitemapSet, error) {
 	if h.sm.cur != nil && h.sm.cur.revision == rev {
 		return h.sm.cur, nil
 	}
-	set := &sitemapSet{revision: rev, urls: h.sitemapURLs(ctx, entries), files: map[int][]byte{}}
+	set := &sitemapSet{revision: rev, urls: h.sitemapURLs(entries), files: map[int][]byte{}}
 	h.sm.cur = set
 	return set, nil
 }
@@ -105,7 +104,7 @@ func (h *Handler) sitemaps(ctx context.Context) (*sitemapSet, error) {
 // sitemapURLs are the pages the sitemap lists (W-35's B.11), each in every language: the start, every project's list, every package's
 // page in every project that shows it, its documentation's pages (docRoutes), and the imprint and the privacy notice that have a text.
 // A version's own page is not listed: a package's page links its versions, and each is canonical to itself.
-func (h *Handler) sitemapURLs(ctx context.Context, entries []catalogue.Entry) []sitemapURL {
+func (h *Handler) sitemapURLs(entries []catalogue.Entry) []sitemapURL {
 	type page struct {
 		route   string
 		lastmod time.Time
@@ -114,6 +113,7 @@ func (h *Handler) sitemapURLs(ctx context.Context, entries []catalogue.Entry) []
 	projects := map[string]time.Time{}
 	var newest time.Time
 	var packages []page
+	docs := h.docsByPackage()
 	for _, e := range entries {
 		seen := map[string]bool{}
 		for _, repo := range e.Repositories {
@@ -126,7 +126,7 @@ func (h *Handler) sitemapURLs(ctx context.Context, entries []catalogue.Entry) []
 				projects[project] = e.UpdatedAt
 			}
 			packages = append(packages, page{pg.PackageRoute(project, e.Format, e.Name), e.UpdatedAt})
-			for _, route := range h.docRoutes(ctx, e, project) {
+			for _, route := range docRoutes(docs, e, project) {
 				packages = append(packages, page{route, e.UpdatedAt})
 			}
 		}
@@ -178,7 +178,7 @@ func (h *Handler) sitemap(w http.ResponseWriter, r *http.Request, ready bool) {
 		}
 		n = v
 	}
-	set, err := h.sitemaps(r.Context())
+	set, err := h.sitemaps()
 	if err != nil {
 		h.readerError(w, r, err)
 		return

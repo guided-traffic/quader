@@ -43,8 +43,8 @@ type Reader interface {
 	// or does not show: an index page, a package that is not public, documentation while docs is off.
 	Document(ctx context.Context, path string) (Document, bool, error)
 	// Packages is every public package in the order of the index (by name), each with only its public repositories, and a revision
-	// that is the same exactly while the index's pages, the public set and the switch docs are: what the sitemap is built from and
-	// kept by (R-BAS-122).
+	// that is the same exactly while the index's pages, the public set, the switch docs and the documentation's trees are: what the
+	// sitemap is built from and kept by (R-BAS-122, R-BAS-125).
 	Packages() ([]Entry, string, error)
 	// SearchDocs searches the documentation of every public package's newest version, as the main installation searches across
 	// collections (R-BAS-125, formats/ansible.md R-ANS-058), a page at a time.
@@ -304,6 +304,15 @@ func (c *Catalogue) Packages() ([]Entry, string, error) {
 	}
 	sort.Strings(repos)
 	_, _ = fmt.Fprintln(h, strings.Join(repos, ","), s.docs)
+	if s.docIndex != nil {
+		// The documentation's trees (R-BAS-125): a tree that changed changes the sitemap's documentation entries.
+		trees := make([]string, 0, len(s.docIndex.trees))
+		for id, sha := range s.docIndex.trees {
+			trees = append(trees, id+" "+sha)
+		}
+		sort.Strings(trees)
+		_, _ = fmt.Fprintln(h, strings.Join(trees, ","))
+	}
 	out := []Entry{}
 	if s.index != nil {
 		for _, e := range s.index.entries {

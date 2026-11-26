@@ -201,6 +201,9 @@ func TestR_BAS_121_APagesHeadAndTextComeFromTheCatalogue(t *testing.T) {
 // documents and names the sitemap, or keeps it off the host while the web interface is off; the sitemap lists the start, the
 // projects, every package in every project that shows it and the legal pages in both languages with their alternates, splits at
 // 50,000 addresses, is kept per revision of the catalogue, and is gzip to a crawler that takes it; the data are noindex.
+// docQuery is the query of the fake reader's documentation entry module/web_server's page, as its canonical address writes it.
+const docQuery = "doc=module%2Fweb_server&tab=documentation"
+
 func TestR_BAS_122_RobotsAndTheSitemapAtTheHostsRoot(t *testing.T) {
 	r := seoReader()
 	r.revision = "rev-1"
@@ -271,6 +274,8 @@ func TestR_BAS_122_RobotsAndTheSitemapAtTheHostsRoot(t *testing.T) {
 		base + "/ui/en/projects/web/packages", base + "/ui/de/projects/web/packages",
 		base + "/ui/en/projects/acme/packages/npm/@acme/ui", base + "/ui/de/projects/acme/packages/npm/@acme/ui",
 		base + "/ui/en/projects/web/packages/ansible/acme.web", base + "/ui/de/projects/web/packages/ansible/acme.web",
+		// The newest version's documentation entries while docs is on (R-BAS-125): each page's canonical address.
+		base + "/ui/en/projects/web/packages/ansible/acme.web?" + docQuery, base + "/ui/de/projects/web/packages/ansible/acme.web?" + docQuery,
 		base + "/ui/en/legal/imprint", base + "/ui/de/legal/imprint",
 	}
 	if strings.Join(locs, "\n") != strings.Join(want, "\n") {
@@ -281,9 +286,24 @@ func TestR_BAS_122_RobotsAndTheSitemapAtTheHostsRoot(t *testing.T) {
 		u.Links[2].Href != base+"/ui/projects/acme/packages/npm/@acme/ui" {
 		t.Errorf("a package's address = %+v", u)
 	}
-	if set.URLs[0].Lastmod != "2026-11-21T08:00:00Z" || set.URLs[10].Lastmod != "" {
-		t.Errorf("the start's and the imprint's lastmod = %q %q", set.URLs[0].Lastmod, set.URLs[10].Lastmod)
+	if set.URLs[0].Lastmod != "2026-11-21T08:00:00Z" || set.URLs[12].Lastmod != "" {
+		t.Errorf("the start's and the imprint's lastmod = %q %q", set.URLs[0].Lastmod, set.URLs[12].Lastmod)
 	}
+	if u := set.URLs[10]; u.Lastmod != "2026-11-21T08:00:00Z" || len(u.Links) != 3 ||
+		u.Links[1].Href != base+"/ui/de/projects/web/packages/ansible/acme.web?"+docQuery {
+		t.Errorf("a documentation entry's address = %+v", u)
+	}
+	// docs off (a new revision, as the reader's for the switch): no documentation entry, the packages' pages stay.
+	r.mu.Lock()
+	r.state.Docs, r.revision = false, "rev-1-docs-off"
+	r.mu.Unlock()
+	if body := do(h, http.MethodGet, "/sitemap/0.xml").Body.String(); strings.Contains(body, "doc=") ||
+		!strings.Contains(body, "/ui/en/projects/web/packages/ansible/acme.web</loc>") {
+		t.Errorf("the sitemap with docs off lists %s", body)
+	}
+	r.mu.Lock()
+	r.state.Docs, r.revision = true, "rev-1"
+	r.mu.Unlock()
 	for _, target := range []string{"/sitemap/1.xml", "/sitemap/00.xml", "/sitemap/-1.xml", "/sitemap/x.xml", "/sitemap/0"} {
 		if rec := do(h, http.MethodGet, target); rec.Code != 404 {
 			t.Errorf("%s = %d", target, rec.Code)

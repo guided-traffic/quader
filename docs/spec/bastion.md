@@ -6955,8 +6955,9 @@ Priority: **P1** · Covers: quader-only
 - **The sitemap** ([Q-BAS-412](#q-bas-412--the-sitemap-lists-the-start-the-projects-the-packages-and-the-legal-pages-split-at-50000-and-kept-per-revision)).
   `/sitemap.xml` is a sitemap index of the files `/sitemap/<n>.xml`, each of at most 50,000 addresses. It lists, each in both languages with
   `xhtml:link` alternates for `en`, `de` and `x-default`: the start, every project's list that holds a package, every package's page in every
-  project whose public repository holds it, its documentation pages (the hook of W-35's P11), and the imprint and the privacy notice that
-  have a text. `lastmod` is the package's `updatedAt` (a list's and the start's the newest of theirs; none for a legal page). A version's
+  project whose public repository holds it, its documentation pages (while `docs` is on, the entries of R-BAS-125's `DocEntries` in the
+  project whose repository the tree was read from, each as its page's canonical address `…?doc=<type>/<name>&tab=documentation`; W-35's
+  P11), and the imprint and the privacy notice that have a text. `lastmod` is the package's `updatedAt` (a list's and the start's the newest of theirs; none for a legal page). A version's
   own page is not listed: a package's page links its versions. The set is built from the reader's `Packages()` once per revision and every
   file is kept compressed with it; a crawler that takes `gzip` gets those bytes, `no-cache` with an ETag of the revision and the file.
   Off: `404`; not ready: `503 not_ready`.
@@ -6969,7 +6970,8 @@ Acceptance criteria:
 
 - Unit ([seo_test.go](../../internal/bastion/gui/seo_test.go), 0.14 s): `TestR_BAS_122_RobotsAndTheSitemapAtTheHostsRoot` (the rules on,
   off and undecided; the sitemap off and not ready; the data's `X-Robots-Tag`; the index and the one file with twelve addresses in their
-  order, the alternates and `lastmod`; five file names that answer `404`; gzip and `304`; 25,001 tiny packages split into two files of 50,000
+  order, the alternates and `lastmod`; a documentation entry's address while `docs` is on and none under the revision of `docs` off
+  (W-35's P11); five file names that answer `404`; gzip and `304`; 25,001 tiny packages split into two files of 50,000
   and 8 addresses under a new revision); `TestR_BAS_122_PackagesListsThePublicPackagesUnderARevision`
   ([catalogue_test.go](../../internal/bastion/catalogue/catalogue_test.go)).
 - Integration (area `bastion`, `crawlWebInterface`): `robots.txt` names the sitemap on the Bastion's base URL, the sitemap's file lists the
@@ -7086,20 +7088,24 @@ Priority: **P1** · Covers: quader-only
   with a public wiki; otherwise the list is empty, as for a reader who may read no wiki. The replica builds the index of the trees with
   each round, reading only a tree it has not parsed before; a tree it cannot read is left out and fetched again by the next round.
 - **For the sitemap.** `Reader.DocEntries` lists every entry the search could find, nothing while `docs` is off: the source of the
-  sitemap's documentation entries (W-35's B.11; the sitemap is the package P10's, which takes them as each entry's page, the
-  package's address with `?doc=<type>/<name>`, `DocHit.Doc`).
+  sitemap's documentation entries (W-35's B.11, R-BAS-122): `docRoutes` lists each entry in the project whose repository its tree was read
+  from, as its page's canonical address, the package's route with `doc=<type>/<name>` (`DocHit.Doc`) and `tab=documentation`. The
+  revision of `Reader.Packages()`, by which the sitemap is kept, includes the trees of the documentation, so a changed tree builds the
+  sitemap again.
 
 *Built on 2026-11-26 (W-35's P11):* [docs.go](../../internal/bastion/catalogue/docs.go) (`SearchDocs`, `DocEntries`, the index built in
 `sync` and `take`), `searchDocs` of [data.go](../../internal/bastion/gui/data.go), `narrowDocTree` and `docEntryMatches` of
-[docs-model.ts](../../web/src/app/views/packages/docs-model.ts), `docs` of [reads.ts](../../web/src/bastion/data/reads.ts). *Not built:*
-the sitemap's entries, which P10 adds from `DocEntries`.
+[docs-model.ts](../../web/src/app/views/packages/docs-model.ts), `docs` of [reads.ts](../../web/src/bastion/data/reads.ts),
+[crawl_docs.go](../../internal/bastion/gui/crawl_docs.go) (the sitemap's entries) and the revision of `Packages` in
+[reader.go](../../internal/bastion/catalogue/reader.go).
 
 Acceptance criteria:
 
 - Unit ([docs_test.go](../../internal/bastion/catalogue/docs_test.go), against maintest's catalogue, milliseconds):
   `TestR_BAS_125_TheDocumentationIsSearchedAcrossThePackagesNewestVersions` (the newest version's entries by every word's prefix, the name
   first, the pages by the cursor, a word inside a word and an older version's entry no hit, a project filter, a text it refuses, the
-  entries for the sitemap; a wiki that is not public and docs off find nothing).
+  entries for the sitemap, a changed tree that changes the revision of `Packages`; a wiki that is not public and docs off find nothing);
+  the sitemap's entries with docs on and off in `TestR_BAS_122_RobotsAndTheSitemapAtTheHostsRoot` (R-BAS-122).
 - Unit ([gui_test.go](../../internal/bastion/gui/gui_test.go), microseconds): `TestR_BAS_125_TheDocumentationIsSearchedInTheMainInstallationsShape`
   (the shape, the project, the parameters and limits refused, docs off empty).
 - Unit (web, [docs-model.spec.ts](../../web/src/app/views/packages/docs-model.spec.ts), milliseconds): `R-BAS-124 the browser narrows the

@@ -1,13 +1,38 @@
 package gui
 
 import (
-	"context"
+	"net/url"
 
 	"github.com/guided-traffic/quader/internal/bastion/catalogue"
+	pg "github.com/guided-traffic/quader/internal/bastion/gui/page"
 )
 
-// docRoutes are the routes of a package's documentation pages that the sitemap lists beside the package's page in a project (W-35's
-// B.11: the newest version's documentation entries while docs is on), each a route below the locale as page.Address.Route writes it,
-// with its query. This is the hook of the documentation through the web interface (W-35's P11), which fills it; until then a package
-// lists its page alone.
-func (h *Handler) docRoutes(_ context.Context, _ catalogue.Entry, _ string) []string { return nil }
+// docsByPackage are the entries of the documentation the sitemap lists (W-35's B.11, R-BAS-125): what the reader's DocEntries answers
+// (the newest version's entries of every public package while docs is on, nothing while it is off), by the package's catalogue ID.
+func (h *Handler) docsByPackage() map[string][]catalogue.DocHit {
+	hits, err := h.o.Catalogue.DocEntries()
+	if err != nil {
+		return nil
+	}
+	out := map[string][]catalogue.DocHit{}
+	for _, d := range hits {
+		out[d.PackageID] = append(out[d.PackageID], d)
+	}
+	return out
+}
+
+// docRoutes are the routes of a package's documentation pages that the sitemap lists beside the package's page in a project: each
+// entry of its newest version's documentation whose tree was read from a repository of that project, as the canonical address of its
+// page (the package's route with tab=documentation and doc=<type>/<name>, as the page's head writes it), so a search engine reads
+// one address per page.
+func docRoutes(docs map[string][]catalogue.DocHit, e catalogue.Entry, project string) []string {
+	var out []string
+	for _, d := range docs[e.ID] {
+		if d.Project != project {
+			continue
+		}
+		q := url.Values{"tab": {"documentation"}, "doc": {d.Doc()}}
+		out = append(out, pg.PackageRoute(project, e.Format, e.Name)+"?"+q.Encode())
+	}
+	return out
+}

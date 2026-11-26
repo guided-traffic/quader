@@ -192,7 +192,18 @@ func (r *reader) SearchDocs(q catalogue.DocQuery) (catalogue.DocPage, error) {
 	return p, nil
 }
 
-func (r *reader) DocEntries() ([]catalogue.DocHit, error) { return r.hits, r.served() }
+// DocEntries answers the hits while docs is on, none while it is off, as the reader's own tests hold it.
+func (r *reader) DocEntries() ([]catalogue.DocHit, error) {
+	if err := r.served(); err != nil {
+		return nil, err
+	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if !r.state.Docs {
+		return []catalogue.DocHit{}, nil
+	}
+	return append([]catalogue.DocHit{}, r.hits...), nil
+}
 
 var confirmed = time.Date(2026, 11, 26, 9, 30, 0, 0, time.UTC)
 

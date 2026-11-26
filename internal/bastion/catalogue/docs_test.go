@@ -87,6 +87,23 @@ func TestR_BAS_125_TheDocumentationIsSearchedAcrossThePackagesNewestVersions(t *
 	if all, err := r.cat.DocEntries(); err != nil || len(all) != 3 {
 		t.Errorf("the entries for the sitemap: %+v %v", all, err)
 	}
+	// A tree that changed changes the revision the sitemap is kept by (R-BAS-122), though the index stays.
+	_, before, _ := r.cat.Packages()
+	r.main.PutDocument(vpath("pkg_T1", "2.0.0", iface.CatalogueDocs), docTree(t, "acme/galaxy",
+		[4]string{"module", "host", "Is a host", "a host is"}))
+	r.tick()
+	if _, after, _ := r.cat.Packages(); after == before {
+		t.Error("a changed documentation tree keeps the sitemap's revision")
+	}
+	if all, _ := r.cat.DocEntries(); len(all) != 1 {
+		t.Errorf("the entries after the tree changed: %+v", all)
+	}
+	r.main.PutDocument(vpath("pkg_T1", "2.0.0", iface.CatalogueDocs), docTree(t, "acme/galaxy",
+		[4]string{"module", "host_check", "Checks a host", "a checks host"},
+		[4]string{"module", "host", "Is a host", "a host is"},
+		[4]string{"module", "mount", "Mounts a disk on a host", "disk host mounts on src"},
+	))
+	r.tick()
 
 	// A wiki that is not public: no hit, no entry.
 	pub.Repositories[0].Wiki = false
