@@ -154,6 +154,7 @@ func (f *Fill) Commit(ctx context.Context, sha string) error {
 		return err
 	}
 	f.c.committed(f.kind, stored)
+	f.c.forgetTouch(sha)
 	return nil
 }
 

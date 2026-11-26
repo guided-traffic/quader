@@ -327,17 +327,24 @@ type held struct {
 	base string
 	size int64
 	last time.Time
+	// protected: the object was served from the cache at least once (it has an access marker) and is among the newest of
+	// those that fit in the protected share (R-BAS-098).
+	protected bool
 }
 
-// Sweep implements [Backend] (R-BAS-031, Q-BAS-43): two listings, the area's bytes and the access markers; when
-// the area holds more than high bytes it deletes by last access, oldest first, until at most target remain. The
-// last access of an object is the later of its marker and its own time, so a fill counts as an access. Objects
-// and markers are matched by their base name, which is the content address in the plain layout and the keyed
-// name with a cache key.
-func (b *backend) Sweep(ctx context.Context, area string, high, target int64) (int, error) {
+// Sweep implements [Backend] (R-BAS-031, R-BAS-098, Q-BAS-43): two listings, the area's bytes and the access markers. The last
+// access of an object is the later of its marker and its own time, so a fill counts as an access. An object with a marker
+// was served from the cache after its fill, so it was served twice, and is protected (Q-BAS-460): the protected objects are
+// ranked by last access, newest first, and those that fit in bounds.Protect bytes keep their protection, the older ones are
+// ranked with the unprotected (Q-BAS-461). When the area holds more than bounds.High bytes the sweep deletes the unprotected
+// by last access, oldest first, then the protected, until at most bounds.Target remain; with Protect below Target it never
+// reaches a protected one. Objects and markers are matched by their base name, which is the content address in the plain
+// layout and the keyed name with a cache key. An area at or below High is listed whole as well, for its protected bytes
+// (quader_bastion_cache_protected_bytes), and nothing is deleted.
+func (b *backend) Sweep(ctx context.Context, area string, bounds SweepBounds) (SweepResult, error) {
 	kind, err := areaKind(area)
 	if err != nil {
-		return 0, err
+		return SweepResult{}, err
 	}
 	var items []held
 	var total int64
@@ -349,11 +356,9 @@ func (b *backend) Sweep(ctx context.Context, area string, high, target int64) (i
 		return nil
 	})
 	if err != nil {
-		return 0, b.fail(metrics.OpList, err)
+		return SweepResult{}, b.fail(metrics.OpList, err)
 	}
-	if total <= high {
-		return 0, nil
-	}
+	evict := total > bounds.High
 	marks := map[string]time.Time{}
 	err = b.s.list(ctx, b.lay.markerDir(), func(key string, _ int64, mod time.Time) error {
 		if name := base(key); validHash(name) {
@@ -362,23 +367,16 @@ func (b *backend) Sweep(ctx context.Context, area string, high, target int64) (i
 		return nil
 	})
 	if err != nil {
-		return 0, b.fail(metrics.OpList, err)
+		return SweepResult{}, b.fail(metrics.OpList, err)
 	}
-	for i := range items {
-		if m, ok := marks[items[i].base]; ok && m.After(items[i].last) {
-			items[i].last = m
-		}
+	protected := rankProtected(items, marks, bounds.Protect)
+	if !evict {
+		return SweepResult{Protected: protected}, nil
 	}
-	sort.Slice(items, func(i, j int) bool {
-		if !items[i].last.Equal(items[j].last) {
-			return items[i].last.Before(items[j].last)
-		}
-		return items[i].base < items[j].base
-	})
-	var evicted int
+	var res SweepResult
 	var errs []error
 	for _, it := range items {
-		if total <= target {
+		if total <= bounds.Target {
 			break
 		}
 		if err := ctx.Err(); err != nil {
@@ -390,9 +388,54 @@ func (b *backend) Sweep(ctx context.Context, area string, high, target int64) (i
 			continue
 		}
 		total -= it.size
-		evicted++
+		res.Evicted++
+		if it.protected {
+			protected -= it.size
+		}
 	}
-	return evicted, errors.Join(errs...)
+	res.Protected = protected
+	return res, errors.Join(errs...)
+}
+
+// rankProtected sets the last access of each item from its marker, marks the protected ones (R-BAS-098) and sorts the items in
+// the order of eviction: unprotected first, then protected, each oldest access first. An item with a marker is protected while
+// it is among the newest of the marked ones that together fit in limit bytes; the first that does not fit and every older one
+// are ranked with the unprotected by their last access, so the oldest protected entries give way first and a newer working set
+// takes their place (Q-BAS-461). It returns the protected bytes.
+func rankProtected(items []held, marks map[string]time.Time, limit int64) int64 {
+	var marked []int
+	for i := range items {
+		m, ok := marks[items[i].base]
+		if !ok {
+			continue
+		}
+		if m.After(items[i].last) {
+			items[i].last = m
+		}
+		marked = append(marked, i)
+	}
+	newer := func(a, b held) bool {
+		if !a.last.Equal(b.last) {
+			return a.last.After(b.last)
+		}
+		return a.base > b.base
+	}
+	sort.Slice(marked, func(i, j int) bool { return newer(items[marked[i]], items[marked[j]]) })
+	var protected int64
+	for _, i := range marked {
+		if protected+items[i].size > limit {
+			break
+		}
+		items[i].protected = true
+		protected += items[i].size
+	}
+	sort.Slice(items, func(i, j int) bool {
+		if items[i].protected != items[j].protected {
+			return !items[i].protected
+		}
+		return newer(items[j], items[i])
+	})
+	return protected
 }
 
 // putConfiguration stores the configuration record (R-BAS-093), with a cache key as an object of the stored format bound to

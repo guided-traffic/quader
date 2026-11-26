@@ -172,7 +172,7 @@ network also in `server.trusted_proxies` ([H-2349](#h-2349--a-bastions-network-t
 | Bastion block list (stage 2) | refusals per address, shared through Valkey | blocks an address that collects too many refusals, with durations doubling to 24 h; IPv6 per `/64` | R-BAS-037 |
 | Bastion limits | credential or not, misses, failures | per-address request rates (anonymous stricter), per-address miss budgets, the failed-authentication timeout | R-BAS-035, R-BAS-036 |
 | Concurrency budget | requests to the main installation | at most `max_concurrent` across replicas, anonymous at most a share; collapsed misses | R-BAS-025 |
-| Cache room | the stored bytes of each area, from its listings and its own commits | a fill that would take its area past `max_bytes` is not kept, and a sweep starts at once above 95 %, so a flood of distinct artifacts cannot fill the cache volume or get the pod evicted; it still evicts what others read (H-2272) | R-BAS-089 |
+| Cache room | the stored bytes of each area, from its listings and its own commits | a fill that would take its area past `max_bytes` is not kept, and a sweep starts at once above 95 %, so a flood of distinct artifacts cannot fill the cache volume or get the pod evicted; what was served twice is evicted after what was served once, within 80 % of an area, so single requests for distinct artifacts do not evict what others read twice (H-2272, H-2290) | R-BAS-089, R-BAS-098 |
 | Main installation | the real client, through the registration's own networks (`egress`) for a recognized Bastion request | its own rate limits, throttle and audit, applied to the client, not to the Bastion; with an empty list, or from an unlisted address, to the Bastion's address for all its callers (H-2291) | R-BAS-017 |
 
 Without Valkey every counter and block holds per replica at the configured value divided by the chart's replica count (H-389).
@@ -618,8 +618,8 @@ marked [derived] are calculated from the defaults, not measured.
 - [H-2271](../spec/bastion.md#h-2271--a-sweep-the-size-asks-for-costs-a-listing-of-the-area-at-most-one-a-second-per-replica): a sweep the
   size asks for costs a listing of the area, at most one a second per replica (live under a sustained churn; a load on the bucket);
 - [H-2272](../spec/bastion.md#h-2272--a-churn-of-distinct-artifacts-still-evicts-the-working-set-and-crosses-the-transfer-network): a churn
-  of distinct artifacts still evicts the working set and crosses the transfer network (live wherever a caller can read more distinct content
-  than the cache holds; the owner's case of W-34, whose remedies wait for his decisions);
+  of distinct artifacts crosses the transfer network (live wherever a caller can read more distinct content than the cache holds; the
+  owner's case of W-34); since E11 it no longer evicts what was served twice, unless the attacker requests each artifact twice (H-2290);
 - [H-2276](../spec/bastion.md#h-2276--the-busiest-second-of-an-npm-ci-and-the-requests-in-flight-of-a-large-dotnet-restore-are-not-measured):
   the edge's defaults are set from averages; a large `dotnet restore` on Linux may hold more requests in flight than `edgeLimit.connections`
   (live, a refusal of a legitimate client, not a weakness against a flood);
@@ -730,12 +730,28 @@ at the main installation as well, not chosen.
 
 ### H-2290 · The protected markers are neither signed nor hard to earn
 
-Stage: R-BAS-098 (package E11). Subject: what a churn of distinct artifacts evicts. Live once E11 lands. A writer of the bucket or the volume
-sets or removes markers and steers the sweep, as it steers it with access markers today
+Stage: R-BAS-098 (package E11, built 2026-11-26). Subject: what a churn of distinct artifacts evicts. Live on every Bastion. The protection
+is the access marker itself ([Q-BAS-460](../spec/bastion.md#q-bas-460--the-access-marker-is-the-protection-because-a-fill-writes-none)): a
+writer of the bucket or the volume sets or removes markers and steers the sweep, as it steered it with access markers before
 ([H-453](../spec/bastion.md#h-453--objects-and-markers-are-not-signed-a-replaced-object-is-found-only-when-it-is-read-and-markers-steer-eviction)).
 An attacker who requests each distinct artifact twice protects it: the churn costs twice the requests and twice the bytes from the cache
-[derived], within the 80 % bound, which then lets the oldest protected entries go. What bounds it beyond: the subject's budgets and the
-anonymous ceiling (R-BAS-094, R-BAS-096) and the throughput (R-BAS-097).
+[derived], within the 80 % bound, ranked by recency, so the attacker's reads displace a working set read longer ago than they are
+(`TestR_BAS_098_AnAttackerWhoReadsEveryObjectTwiceDoesNotProtectEverything` shows both sides: the attacker holds at most 80 %, and a working
+set read twice after it takes the place of its oldest). What bounds it beyond: the subject's budgets and the anonymous ceiling (R-BAS-094,
+R-BAS-096) and the throughput (R-BAS-097). What would close it: a protection that a single caller cannot earn alone, for example two serves to
+different callers, which needs a caller's identity at the cache and was not in the owner's options.
+
+### H-2362 · A refill by another replica of a shared bucket can stay unprotected for up to an hour
+
+Stage: R-BAS-098, [Q-BAS-462](../spec/bastion.md#q-bas-462--served-twice-means-filled-once-and-served-from-the-same-store-once-more) and
+[Q-BAS-464](../spec/bastion.md#q-bas-464--a-replicas-own-commit-lets-the-next-serve-write-the-marker-again). Subject: what a churn evicts on
+a Bastion with the bucket backend and several replicas. Live there, dormant on the volume backend. A replica writes an object's marker at
+most once per `access_resolution` (one hour by default) and forgets that only for its own commits. When replica B served an object, the sweep
+evicted it (it had fallen out of the protected share) and replica A filled it again, B's serves in the rest of B's hour write no marker, and
+the object is evicted like one fetched once if no other replica serves it. Two replicas that miss the same artifact at once both fill it,
+and neither fill protects it. What makes it real: a working set that had been pushed out of the protected share by more recent reads (H-2290)
+and is read again on the same replica within the hour. What would close it: the serve comparing the object's own time with its throttle
+(option (b) of Q-BAS-464).
 
 ### H-2291 · An egress list that no longer names a Bastion's address pools its callers silently
 

@@ -1698,9 +1698,9 @@ Acceptance criteria:
 Priority: **MVP** · Covers: quader-only
 
 *Revised on 2026-11-26 by the owner's [Q-BAS-333](#q-bas-333--what-was-served-twice-is-protected-in-the-cache)
-([R-BAS-098](#r-bas-098--the-cache-protects-what-was-served-twice)):* a later serve writes a protected marker beside the access marker,
-and the sweep evicts unprotected entries first, then protected ones, with at most 80 % of an area protected. *Today, until E11 lands:* the
-sweep evicts by last access alone, and a fill is an access.
+([R-BAS-098](#r-bas-098--the-cache-protects-what-was-served-twice), built 2026-11-26):* a fill writes no access marker, so an entry
+with one was served twice and is protected; the sweep evicts unprotected entries first, then protected ones, with at most 80 % of an area
+protected.
 
 - **Size.** Bytes plus documents stay below `bastion.cache.max_bytes`; documents below `documents_max_bytes`, which is their reserved
   share: artifacts are limited to `max_bytes − documents_max_bytes` ([Q-BAS-88](#q-bas-88--documents-have-a-reserved-share-and-entries-are-removed-when-read)), and that room
@@ -1708,10 +1708,12 @@ sweep evicts by last access alone, and a fill is an access.
   render it, each with a message that names the three keys and what to change (a cache of 2 GiB with the default 2 GiB of documents would refuse every fill for lack of room,
   measured 2026-11-26). A sweep runs every
   `bastion.cache.sweep_interval`, and at once when an area passes 95 % of its limit between two of them; above 95 % of a limit it deletes
-  in order of last access until 85 % remain ([Q-BAS-43](#q-bas-43--the-bucket-backend-evicts-by-listing-access-markers)). No commit takes an
+  what was served once in order of last access, then what was served twice (R-BAS-098), until 85 % remain
+  ([Q-BAS-43](#q-bas-43--the-bucket-backend-evicts-by-listing-access-markers)). No commit takes an
   area past its limit between the sweeps: [R-BAS-089](#r-bas-089--the-cache-stays-below-its-size-between-sweeps).
-- **Last access.** A served entry writes its access marker (an empty object or file named by its content address, or a touch of
-  the entry) at most once per `bastion.cache.access_resolution` per replica; the sweep orders by the markers' modification times,
+- **Last access.** An entry served from the cache writes its access marker (an empty object or file named by its content address)
+  at most once per `bastion.cache.access_resolution` per replica; a fill writes none, its object's own time is its access. The sweep
+  orders by the markers' modification times,
   read with two listings, and deletes the bytes, the entries that point at them and the markers. An entry whose bytes are gone is
   a miss and is removed when it is read; the sweep itself does not read entries (Q-BAS-88, H-452).
 - **Who sweeps.** With the volume backend every replica sweeps its own volume. With the bucket backend and Valkey one replica
@@ -1783,10 +1785,10 @@ to [Q-BAS-305](#q-bas-305--the-spool-of-fills-does-not-count-in-the-areas)
   sweep lease sweeps; another replica lists, deleting nothing, at a sweep's turn when it committed since its last listing. The bound is then
   an estimate, not a guarantee: [H-2270](#h-2270--a-replica-learns-another-replicas-writes-to-a-shared-bucket-only-at-its-own-listings).
 
-What this does not change: the order of eviction (last access, R-BAS-031) and what a fill costs the transfer network. A churn of distinct
-artifacts keeps the cache within its size and still evicts the working set
-([H-2272](#h-2272--a-churn-of-distinct-artifacts-still-evicts-the-working-set-and-crosses-the-transfer-network)); those wait for the owner's
-decisions of W-34.
+What this does not change: the order of eviction (R-BAS-031, and since E11 R-BAS-098's protection of what was served twice) and what a fill
+costs the transfer network. A churn of distinct artifacts is kept within the cache's size by this requirement; that it no longer evicts what
+was served twice is R-BAS-098's, and what it costs the network is still
+[H-2272](#h-2272--a-churn-of-distinct-artifacts-still-evicts-the-working-set-and-crosses-the-transfer-network).
 
 Acceptance criteria (unit, `internal/bastion/cache` on a temporary volume with `max_bytes` 1 MiB and objects of 64 KiB; unit,
 `internal/bastion/engine`; integration, `test/integration/bastioncache` on the stack's bucket):
@@ -2255,6 +2257,7 @@ carries an address, a token, a path or a repository's name):
 | `quader_bastion_cache_corrupt_total`, `quader_bastion_cache_errors_total` | counter | `op` for errors |
 | `quader_bastion_cache_sweeps_total` | counter | `trigger` (`interval`, `size`) |
 | `quader_bastion_cache_no_room_total` | counter | `area` (`artifacts`, `documents`) |
+| `quader_bastion_cache_protected_bytes` | gauge | `area` (`artifacts`, `documents`) |
 | `quader_bastion_refused_total` | counter | `reason` (`blocked`, `rate_limited`, `miss_limited`, `auth_timeout`, `invalid_token`, `busy`, `unreachable`, `not_served`, `read_only`, `foreign_location`, `anonymous_ceiling`) |
 | `quader_bastion_blocks_total` | counter | `reason` (`refusals`) |
 | `quader_bastion_blocked_addresses` | gauge | — |
@@ -2289,6 +2292,12 @@ carries an address, a token, a path or a repository's name):
   `interval` (its timer) or `size` (an area passed its high mark between two timed sweeps, or a fill found no room), and the fills it passed
   through unkept for want of room. A rate of `size` sweeps near one a second, or a rising `no_room`, says that fills arrive faster than the
   sweep frees room: the cache churns.
+- `quader_bastion_cache_protected_bytes` is R-BAS-098's (built 2026-11-26): the bytes of an area that were served twice and that the last
+  sweep of the replica protected, at most 80 % of the area's limit. A sweep of the timer sets it for both areas, a sweep the size started
+  for the area it swept ([Q-BAS-463](#q-bas-463--the-protected-bytes-are-counted-by-the-sweep-and-shown-by-the-replica-that-swept)). A
+  replica of a shared bucket that did not hold the sweep lease shows 0, so the release's figure is the largest of its replicas'. Near 80 %
+  of `quader_bastion_cache_capacity_bytes` it says that more was served twice than the protected share holds: the oldest of it is evicted
+  like what was served once.
 - `quader_bastion_answers` is per replica: the answers of a kind the replica holds in its memory, not the lookups. An answer leaves it
   when a use finds it past its period (R-BAS-020) or when period and grace have passed without a use (the janitor, R-BAS-026), so a
   replica that served no lookup for that long reads 0 while `quader_bastion_answers_total{result="hit"}` keeps its count; the other
@@ -5385,22 +5394,52 @@ Acceptance criteria:
 ### R-BAS-098 · The cache protects what was served twice
 Priority: **MVP** · Covers: quader-only
 
-The owner's choice (b) of [Q-BAS-333](#q-bas-333--what-was-served-twice-is-protected-in-the-cache).
+The owner's choice (b) of [Q-BAS-333](#q-bas-333--what-was-served-twice-is-protected-in-the-cache). Built on 2026-11-26 (package E11) in
+`internal/bastion/cache` ([core.go](../../internal/bastion/cache/core.go) `Sweep` and `rankProtected`,
+[sweep.go](../../internal/bastion/cache/sweep.go), [store.go](../../internal/bastion/cache/store.go) `Touch`) with the decisions
+[Q-BAS-460](#q-bas-460--the-access-marker-is-the-protection-because-a-fill-writes-none) to
+[Q-BAS-464](#q-bas-464--a-replicas-own-commit-lets-the-next-serve-write-the-marker-again).
 
-- A fill counts as the first access. Any later serve of the entry from the cache writes a "protected" marker beside the access marker
-  (`protected/<64 hex>`, at most once per `access_resolution` per replica, R-BAS-031's rule).
-- The sweep evicts unprotected entries first, oldest access first, then protected ones. At most 80 % of an area is protected; beyond that
-  the oldest protected entries lose their marker first, so a new working set can take the place of an old one.
-- The encrypted layout (R-BAS-061) keeps the same marker under its tree; R-BAS-089's admission at a commit is unchanged.
-- `quader_bastion_cache_protected_bytes{area}` shows the protected share.
-
-*Not built* (package E11). Today the sweep evicts by last access alone, and a fill is an access (R-BAS-031), so a churn of distinct
-artifacts evicts the working set (H-2272).
+- **Served twice.** A fill counts as the first access and writes no marker; its object's own time is the access. A serve of the entry from
+  the cache writes its access marker (R-BAS-031, at most once per `access_resolution` per replica). An object with an access marker was
+  therefore served twice, and the marker is its protection: no second marker is written
+  ([Q-BAS-460](#q-bas-460--the-access-marker-is-the-protection-because-a-fill-writes-none)). A commit of this replica lets the next serve of
+  the bytes write the marker again, so bytes evicted and filled again are protected at their next serve
+  ([Q-BAS-464](#q-bas-464--a-replicas-own-commit-lets-the-next-serve-write-the-marker-again)).
+- **The order.** In each sweep the protected objects of an area are ranked by last access, newest first; those that fit in 80 % of the
+  area's limit are protected, the first that does not fit and every older one are ranked with the objects served once by their last
+  access. The sweep evicts the unprotected, oldest access first, then the protected; because 80 % is below the sweep's target of 85 %, a sweep
+  never reaches a protected object ([Q-BAS-461](#q-bas-461--the-protected-share-is-a-rank-in-each-sweep-not-a-marker-taken-away)).
+- **What the bound and the order prevent.** A flood of single requests for distinct artifacts evicts only what was served once: the working
+  set stays. An attacker who requests every artifact twice protects it, but never more than 80 % of an area, ranked by recency: the rest of
+  the area (at least 5 % after a sweep, 15 % before the next) keeps what is fetched once, so a new artifact is kept at its first fetch and
+  survives the sweeps after it, and a working set that is read twice after the attack takes the place of the attacker's oldest objects.
+  What it does not prevent: such an attacker displaces a working set read longer ago than its own reads, at twice the requests and twice the
+  bytes from the cache ([H-2290](../security/bastion.md#h-2290--the-protected-markers-are-neither-signed-nor-hard-to-earn)).
+- **Across replicas** ([Q-BAS-462](#q-bas-462--served-twice-means-filled-once-and-served-from-the-same-store-once-more)). On the volume,
+  served twice means on that replica's volume (with routing by path, R-BAS-033, the replica that holds the path). On a shared bucket it means
+  filled by any replica and served from the bucket by any replica: the markers lie in the bucket, and the replica that sweeps reads all of
+  them at its listing. Two replicas that miss the same artifact at once both fill it, and neither fill protects it.
+- **Layouts.** The encrypted layout (R-BAS-061) keeps the same marker under its tree (`x/<m>`); R-BAS-089's admission at a commit is
+  unchanged; documents and artifacts are ranked each in their own area.
+- `quader_bastion_cache_protected_bytes{area}` shows the protected share
+  ([Q-BAS-463](#q-bas-463--the-protected-bytes-are-counted-by-the-sweep-and-shown-by-the-replica-that-swept)).
 
 Acceptance criteria:
 
-- Unit (`internal/bastion/cache`, under 0.5 s): with an area of 100 entries, 20 read twice and 200 distinct fills after them, the 20 stay;
-  with 90 read twice, at most 80 keep their marker after a sweep; the volume and the bucket layout and the encrypted layout alike.
+- Unit (`internal/bastion/cache`): with an area of 20 objects, 4 read twice and 40 distinct fills after them, the 4 stay and the flood's
+  last fill is kept; with 18 read twice, 16 are protected after a sweep, and the sweep evicts the two read once and the oldest of the two
+  that lost their protection; the volume and the bucket layout and the encrypted layout alike. An attacker who reads 40 objects twice
+  holds 16 protected, a new single fetch survives the sweeps after it, and a working set of 4 read twice afterwards is held and protected
+  in place of the attacker's oldest; an object filled by one replica of a bucket and served by the other is protected, one filled by both is
+  not; bytes filled again are protected at their next serve.
+
+Built: `TestR_BAS_098_*` in [protect_test.go](../../internal/bastion/cache/protect_test.go) (five tests, objects of 64 bytes, 0.9 s
+together on a machine at a load of 13 to 21, of which the encrypted layout takes 0.5 s). The planner's area of 100 entries is scaled to 20 so
+that 95, 85 and 80 % fall on whole objects and the run stays short. What each leg gains: the unit job about 1 s; no integration shard, no
+end-to-end leg; nothing grows with the number of formats. Measured once, not a test: the flood of E4 against a cache of 2 GiB turned a warm
+`npm ci` of 475 packages into 475 misses before the change and left it at 475 hits after it
+([developer/bastion.md](../developer/bastion.md#the-flood-again-with-the-protection-of-what-was-served-twice-measured-2026-11-26)).
 
 ### R-BAS-099 · A Bastion names nothing of the main installation
 Priority: **MVP** · Covers: quader-only
@@ -6898,8 +6937,10 @@ then be used when Valkey is present.
 
 **Applied in the spec:** R-BAS-030, R-BAS-031, R-BAS-032.
 
-*Revised on 2026-11-26 by the owner's [Q-BAS-333](#q-bas-333--what-was-served-twice-is-protected-in-the-cache):* the sweep lists the protected markers beside the access
-markers and evicts unprotected entries first (R-BAS-098). *Today, until E11 lands:* access markers only.
+*Revised on 2026-11-26 by the owner's [Q-BAS-333](#q-bas-333--what-was-served-twice-is-protected-in-the-cache):* the sweep evicts
+unprotected entries first (R-BAS-098, built by E11). It lists no other marker: an access marker is written only by a serve from the
+cache, so it is the protection as well (Q-BAS-460), and every sweep of the timer lists the markers, also of an area below its mark, for the
+protected bytes (Q-BAS-463).
 
 ### Q-BAS-44 · Unreachable means a failed handshake or a stale feed
 
@@ -7947,7 +7988,7 @@ entries of evicted bytes stay in the bucket until read and are not counted in th
 **Applied in the spec:** R-BAS-031.
 
 *Revised on 2026-11-26 by the owner's [Q-BAS-333](#q-bas-333--what-was-served-twice-is-protected-in-the-cache):* the documents' reserved share stays; within each area the
-sweep evicts unprotected entries before protected ones (R-BAS-098). *Today, until E11 lands:* by last access alone.
+sweep evicts unprotected entries before protected ones (R-BAS-098, built by E11).
 
 ### Q-BAS-89 · The bucket backend reaches S3 through a plain adapter and fails fast
 
@@ -11400,7 +11441,9 @@ cache of 18 GiB in about five minutes. That the cache overflowed between sweeps 
 | (c) Keep only at the second miss | | Churn never enters the cache | Every new artifact crosses the transfer network twice |
 | (d) A fixed share of the cache for anonymous fills | | Bounds anonymous churn | Public content is read by signed-in callers too |
 
-**Choice:** (b), the owner's decision. **Applied in the spec:** R-BAS-031, R-BAS-098; H-2272.
+**Choice:** (b), the owner's decision. **Applied in the spec:** R-BAS-031, R-BAS-098; H-2272. Built on 2026-11-26 (package E11) with the
+builder's [Q-BAS-460](#q-bas-460--the-access-marker-is-the-protection-because-a-fill-writes-none) to
+[Q-BAS-464](#q-bas-464--a-replicas-own-commit-lets-the-next-serve-write-the-marker-again).
 
 ### Q-BAS-334 · A Bastion's egress addresses belong to its registration
 
@@ -12275,6 +12318,91 @@ With Ansible Galaxy's 503 (Q-BAS-451) kit check 16 accepts 429 or 503 for a refu
 declaration. **Choice:** (a). **Applied in the spec:** R-BAS-058, R-BAS-095, [usage-and-limits.md](usage-and-limits.md) R-LIM-036; code:
 [shape.go](../../internal/errs/shape.go), [checks_bastion.go](../../internal/formats/formattest/checks_bastion.go),
 [checks_admission.go](../../internal/formats/formattest/checks_admission.go).
+
+### Q-BAS-460 · The access marker is the protection, because a fill writes none
+
+Status: **Decided by the development agent on 2026-11-26** (package E11) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-BAS-098 as planned wrote a second marker, `protected/<64 hex>`, at a serve from the cache. Read in the code: the engine writes the
+access marker only when it serves an entry from the cache (`entrySource` in [entries.go](../../internal/bastion/engine/entries.go) calls
+`Cache.Touch`); a fill commits the object and writes no marker, its object's own time being its access (R-BAS-031). So an object has an
+access marker exactly when it was served from the cache after its fill.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) An object with an access marker is protected; no second marker (chosen) | The sweep reads protection from the listing of markers it makes already | No write, object, listing or family more than today, on either backend and in the encrypted layout; the sweep of other layouts and the layout checks unchanged | Protection and last access are one object: a marker cannot be taken away without losing the last access (Q-BAS-461 needs neither) |
+| (b) A second marker `protected/<64 hex>` (the plan) | Written beside the access marker at a serve | Protection can be withdrawn on its own | A second write at the first serve, a third listing per sweep, a new family in both layouts and in the sweep of other layouts, for the same fact |
+
+**Choice:** (a). A fill must keep writing no marker; `TestR_BAS_098_WhatWasServedTwiceOutlivesAFloodOfDistinctFills` asserts it. **Applied
+in the spec:** R-BAS-098, R-BAS-031, Q-BAS-43; code: `Touch` in [store.go](../../internal/bastion/cache/store.go), `Sweep` in
+[core.go](../../internal/bastion/cache/core.go).
+
+### Q-BAS-461 · The protected share is a rank in each sweep, not a marker taken away
+
+Status: **Decided by the development agent on 2026-11-26** (package E11) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-BAS-098 bounds what is protected to 80 % of an area, "beyond that the oldest protected entries lose their marker first". The sweep
+lists the area and the markers anyway.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Each sweep ranks the protected by last access, newest first; those within 80 % of the limit are protected, the first that does not fit and every older one are ranked with the unprotected by their last access (chosen) | The bound is recomputed from the listing, nothing is written | No delete per demotion; the last access stays; 80 % below the target of 85 % means a sweep never evicts a protected object; deterministic for every replica that sweeps | An object out of the share keeps its marker and comes back into it when newer protected objects go |
+| (b) The sweep deletes the markers beyond 80 % | As the plan said | The state is in the store | A delete per demoted object; its last access falls back to its fill time, so it goes before what was fetched once after it |
+| (c) A demoted object goes after all the unprotected | | Kinder to what was served twice | An attacker's stale protection outlives every new single fetch: what the bound exists to stop |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-098; code: `rankProtected` in [core.go](../../internal/bastion/cache/core.go),
+`sweepProtectPercent` in [sweep.go](../../internal/bastion/cache/sweep.go).
+
+### Q-BAS-462 · Served twice means filled once and served from the same store once more
+
+Status: **Decided by the development agent on 2026-11-26** (package E11) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: the volume belongs to one replica; a bucket is shared by every replica, and each replica sees the others' writes only at its
+listings (H-2270). The markers lie in the store, so a marker written by one replica is read by the replica that sweeps.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A fill by any replica and a serve from the store by any replica (chosen) | The markers of the store decide | Nothing new: the sweeping replica reads every replica's markers in its listing; a bucket's working set is the release's | Two replicas that miss at once fill twice and protect nothing until a third request is served from the store |
+| (b) Two serves by the same replica | Per-replica memory | — | Memory per replica, lost at a restart; a release of three replicas would need six requests |
+| (c) A count of requests in Valkey | | Exact across replicas | Valkey is optional (Q-BAS-11); a round trip per request |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-098; code: the store's markers, unchanged.
+
+### Q-BAS-463 · The protected bytes are counted by the sweep and shown by the replica that swept
+
+Status: **Decided by the development agent on 2026-11-26** (package E11) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-BAS-098 names `quader_bastion_cache_protected_bytes{area}`. Before E11 a sweep listed the markers only for an area above its mark;
+a replica of a shared bucket without the sweep lease lists the areas, not the markers (R-BAS-089).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A sweep of the timer lists the markers of both areas, a sweep of the size those of the area it sweeps; the replica that swept sets the gauge, one of a bucket without the lease sets it to 0 (chosen) | One listing of the markers more per area every `sweep_interval` | The figure is the one the eviction used; a release's figure is the largest of its replicas' | A size sweep leaves the other area's figure at the last timer's |
+| (b) Every listing of the areas lists the markers too | | Every replica shows a figure | A listing more in every relisting of every replica, which the gauge alone does not justify |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-040, R-BAS-098; code: `sweep` in [sweep.go](../../internal/bastion/cache/sweep.go),
+[metrics.go](../../internal/bastion/metrics/metrics.go).
+
+### Q-BAS-464 · A replica's own commit lets the next serve write the marker again
+
+Status: **Decided by the development agent on 2026-11-26** (package E11) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: a replica writes an object's marker at most once per `access_resolution` (one hour by default) and remembers when in memory. A sweep
+deletes the marker with the object. When the same bytes are filled again within the hour, the throttle would let the next serve write no
+marker, and the refilled object would stay unprotected for up to an hour.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A commit of the replica forgets the throttle of its content address (chosen) | The first serve after this replica's refill writes the marker | One map delete per commit; nothing stored | A refill by another replica of a bucket is not seen: H-2362 |
+| (b) The serve compares the object's own time with the throttle | Writes the marker when the object is newer than the last marker | Sees every replica's refill | The time of the object reaches `Touch` through the engine's lookup; clock skew between the bucket and the replica writes extra markers |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-098; code: `forgetTouch` in [store.go](../../internal/bastion/cache/store.go), `Fill.Commit`
+in [fill.go](../../internal/bastion/cache/fill.go).
 
 ## What this does not cover
 
@@ -13199,6 +13327,14 @@ caller at the Bastion; none of them is built here.
 ([Q-BAS-333](#q-bas-333--what-was-served-twice-is-protected-in-the-cache), R-BAS-098, package E11), the throughput is capped per Bastion ([Q-BAS-331](#q-bas-331--the-maximum-throughput-is-enforced-at-the-bastion-on-every-byte-it-reads), R-BAS-097, E10), and budgets
 per subject apply at the Bastion ([usage-and-limits.md](usage-and-limits.md) Q-LIM-305, R-BAS-096, E9b). *Today, until those land:* live as
 described.
+
+*Narrowed on 2026-11-26 by E11 (R-BAS-098):* a stream of single requests for distinct artifacts no longer evicts what was served twice, as
+long as that fits in 80 % of an area; it still crosses the transfer network one fill per request, and the refills of what was served once
+before it are misses. An attacker who requests each artifact twice displaces the working set at twice the requests
+([H-2290](../security/bastion.md#h-2290--the-protected-markers-are-neither-signed-nor-hard-to-earn)). Measured with the flood of E4 run
+again ([developer/bastion.md](../developer/bastion.md#the-flood-again-with-the-protection-of-what-was-served-twice-measured-2026-11-26)): a
+warm `npm ci` of 475 packages went from 475 misses during and after the flood to 475 hits. What still waits: the throughput (E10) and the
+budgets at the Bastion (E9b).
 
 ### H-2273 · The bytes between a Bastion and the main installation are counted and not bounded
 

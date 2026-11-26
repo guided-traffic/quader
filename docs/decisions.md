@@ -10446,10 +10446,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-BAS
 
-313 questions on [spec/bastion.md](spec/bastion.md).
+318 questions on [spec/bastion.md](spec/bastion.md).
 
 <details>
-<summary>Q-BAS: 313 questions</summary>
+<summary>Q-BAS: 318 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10766,6 +10766,11 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-BAS-451](spec/bastion.md#q-bas-451--ansible-galaxy-answers-a-rate-limit-503-because-ansible-galaxy-does-not-survive-the-retry-of-a-429) | Ansible Galaxy answers a rate limit 503, because ansible-galaxy does not survive the retry of a 429 | Decided by the development agent on 2026-11-26 | (a) The format declares `RateLimitedStatus` 503, and its `WriteError` answers a rate limit 503 with its code and `Retry-After`, as the ClamAV definitions do (R-BAS-056) | — |
 | [Q-BAS-452](spec/bastion.md#q-bas-452--a-write-is-refused-before-its-credential-is-read) | A write is refused before its credential is read | Decided by the development agent on 2026-11-26 | (a) A write is refused after the path, the block list and the request limit, before its credential is read | — |
 | [Q-BAS-453](spec/bastion.md#q-bas-453--kit-check-19-reads-the-backstops-refusal-with-the-shapes-reader-and-check-16-takes-503-as-a-rate-limit) | Kit check 19 reads the backstop's refusal with the shape's reader, and check 16 takes 503 as a rate limit | Decided by the development agent on 2026-11-26 | (a) `errs.ReadShape`, what a client of each shape reads (the media type and the members it prints), used by the engine's tests on the Bastion's renderer and by the kit on `WriteError`'s rendering of the backstop's `403 read_only` for a forward: the declared shape, the read-only detail, and the code where the shape carries one | — |
+| [Q-BAS-460](spec/bastion.md#q-bas-460--the-access-marker-is-the-protection-because-a-fill-writes-none) | The access marker is the protection, because a fill writes none | Decided by the development agent on 2026-11-26 | (a) An object with an access marker is protected; no second marker | — |
+| [Q-BAS-461](spec/bastion.md#q-bas-461--the-protected-share-is-a-rank-in-each-sweep-not-a-marker-taken-away) | The protected share is a rank in each sweep, not a marker taken away | Decided by the development agent on 2026-11-26 | (a) Each sweep ranks the protected by last access, newest first; those within 80 % of the limit are protected, the first that does not fit and every older one are ranked with the unprotected by their last access | — |
+| [Q-BAS-462](spec/bastion.md#q-bas-462--served-twice-means-filled-once-and-served-from-the-same-store-once-more) | Served twice means filled once and served from the same store once more | Decided by the development agent on 2026-11-26 | (a) A fill by any replica and a serve from the store by any replica | — |
+| [Q-BAS-463](spec/bastion.md#q-bas-463--the-protected-bytes-are-counted-by-the-sweep-and-shown-by-the-replica-that-swept) | The protected bytes are counted by the sweep and shown by the replica that swept | Decided by the development agent on 2026-11-26 | (a) A sweep of the timer lists the markers of both areas, a sweep of the size those of the area it sweeps; the replica that swept sets the gauge, one of a bucket without the lease sets it to 0 | — |
+| [Q-BAS-464](spec/bastion.md#q-bas-464--a-replicas-own-commit-lets-the-next-serve-write-the-marker-again) | A replica's own commit lets the next serve write the marker again | Decided by the development agent on 2026-11-26 | (a) A commit of the replica forgets the throttle of its content address | — |
 
 </details>
 

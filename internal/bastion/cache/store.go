@@ -394,7 +394,9 @@ func (j *judgedRange) Read(p []byte) (int, error) {
 func (j *judgedRange) Close() error { return j.rc.Close() }
 
 // Touch writes the access marker of an entry's bytes, at most once per bastion.cache.access_resolution per
-// replica and content address (R-BAS-031). It is best effort: a failure is counted and not returned.
+// replica and content address (R-BAS-031). It is called for a serve from the cache only, never for a fill, so the marker
+// also says that the bytes were served twice and protects them in the sweep (R-BAS-098, Q-BAS-460). It is best effort: a
+// failure is counted and not returned.
 func (c *Cache) Touch(ctx context.Context, e Entry) {
 	now := c.now()
 	c.touchMu.Lock()
@@ -419,6 +421,14 @@ func (c *Cache) Touch(ctx context.Context, e Entry) {
 		delete(c.touched, e.SHA256)
 		c.touchMu.Unlock()
 	}
+}
+
+// forgetTouch drops the throttle of a content address this replica just committed: a sweep deletes the marker with the
+// bytes, so the next serve of the refilled bytes from the cache writes it again and protects them (Q-BAS-464).
+func (c *Cache) forgetTouch(sha string) {
+	c.touchMu.Lock()
+	delete(c.touched, sha)
+	c.touchMu.Unlock()
 }
 
 // maxTouched bounds the memory of the throttle: past it, markers older than the resolution are forgotten.

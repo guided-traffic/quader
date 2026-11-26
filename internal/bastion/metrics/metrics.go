@@ -45,6 +45,7 @@ const (
 	CacheErrorsTotal         = "quader_bastion_cache_errors_total"
 	CacheSweepsTotal         = "quader_bastion_cache_sweeps_total"
 	CacheNoRoomTotal         = "quader_bastion_cache_no_room_total"
+	CacheProtectedBytes      = "quader_bastion_cache_protected_bytes"
 	RefusedTotal             = "quader_bastion_refused_total"
 	BlocksTotal              = "quader_bastion_blocks_total"
 	BlockedAddresses         = "quader_bastion_blocked_addresses"
@@ -240,6 +241,9 @@ type Metrics struct {
 	// area because their bytes would have taken the area past its limit (R-BAS-089).
 	CacheSweeps *prometheus.CounterVec
 	CacheNoRoom *prometheus.CounterVec
+	// CacheProtected is the bytes of the objects of an area that were served twice and are evicted last, as the last sweep of
+	// this replica found them (R-BAS-098).
+	CacheProtected *prometheus.GaugeVec
 	// Refused counts the Bastion's own refusals by reason (R-BAS-029); Blocks counts blocks set; Blocked is the
 	// number of addresses blocked (R-BAS-037).
 	Refused *prometheus.CounterVec
@@ -307,6 +311,7 @@ func New(reg prometheus.Registerer) (*Metrics, error) {
 		CacheErrors:          counter(CacheErrorsTotal, "Errors of the cache backend by operation.", "op"),
 		CacheSweeps:          counter(CacheSweepsTotal, "Sweeps of the cache this replica ran, by what started them (interval, size) (R-BAS-089).", "trigger"),
 		CacheNoRoom:          counter(CacheNoRoomTotal, "Fills passed through unkept because their area had no room for them, by area (R-BAS-089).", "area"),
+		CacheProtected:       gauge(CacheProtectedBytes, "Bytes of the objects served twice that the last sweep of this replica protected, by area (R-BAS-098).", "area"),
 		Refused:              counter(RefusedTotal, "Requests the Bastion refused itself, by reason (R-BAS-029).", "reason"),
 		Blocks:               counter(BlocksTotal, "Blocks set on addresses, by reason.", "reason"),
 		Blocked:              prometheus.NewGauge(prometheus.GaugeOpts{Name: BlockedAddresses, Help: "Addresses blocked now."}),
@@ -376,6 +381,7 @@ func (m *Metrics) seed() {
 		m.CacheBytes.WithLabelValues(a)
 		m.CacheCapacity.WithLabelValues(a)
 		m.CacheNoRoom.WithLabelValues(a)
+		m.CacheProtected.WithLabelValues(a)
 	}
 	for _, tr := range []string{SweepInterval, SweepSize} {
 		m.CacheSweeps.WithLabelValues(tr)
@@ -413,7 +419,7 @@ func (m *Metrics) collectors() []prometheus.Collector {
 		m.GracePeriod, m.AnswerPeriod, m.Answers, m.AnswersTotal, m.FeedLag, m.FeedApplied, m.FeedResets,
 		m.TokenRemaining, m.TokenWarnBefore, m.MainTokenRefused, m.TokenReloads,
 		m.CacheBytes, m.CacheCapacity, m.CacheEvictions, m.CacheCorrupt, m.CacheErrors, m.CacheSweeps, m.CacheNoRoom,
-		m.Refused, m.Blocks, m.Blocked, m.AuditEvents, m.AuditBuffer, m.AuditDropped,
+		m.CacheProtected, m.Refused, m.Blocks, m.Blocked, m.AuditEvents, m.AuditBuffer, m.AuditDropped,
 		m.Handovers, m.FillBytes, m.HandoverEnabled, m.HandoverCooldown, m.ConfigRevision, m.ConfigSource,
 	}
 }
@@ -426,7 +432,7 @@ func Names() []string {
 		InterfaceVersion, GracePeriodSeconds, AnswerPeriodSeconds, Answers, AnswersTotal, FeedLagSeconds,
 		FeedEntriesAppliedTotal, FeedResetsTotal, TokenRemainingSeconds, TokenWarnBeforeSeconds, MainTokenRefused,
 		TokenReloadsTotal, CacheBytes, CacheCapacityBytes, CacheEvictionsTotal, CacheCorruptTotal, CacheErrorsTotal,
-		CacheSweepsTotal, CacheNoRoomTotal,
+		CacheSweepsTotal, CacheNoRoomTotal, CacheProtectedBytes,
 		RefusedTotal, BlocksTotal, BlockedAddresses, AuditEventsTotal, AuditBufferEvents, AuditEventsDroppedTotal,
 		HandoversTotal, FillBytesTotal, HandoverEnabled, HandoverCooldown, ConfigurationRevision, ConfigurationSource,
 	}

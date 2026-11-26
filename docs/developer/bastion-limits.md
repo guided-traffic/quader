@@ -4,7 +4,7 @@ Status: specified on 2026-11-26 (W-34; the owner's answers to the working paper 
 and E5 are **built** (the cache bounded at every commit and the bytes counted, R-BAS-089, R-BAS-090; the format's cap of the wait and the
 figures that let one normal command through, R-BAS-091, R-BAS-092, interface version 7), and so are E16, E14a (the anonymous token and
 the anonymous documents of R-BAS-094), E13 (the addresses a Bastion connects from), E7 (the shared wire, interface version 8, with
-W-35's P5) and E15 (writes refused at the Bastion in the five error shapes, R-BAS-095) and E9a (the configuration at the Bastion, the flood protection's figures from it, the anonymous ceiling); E4 is measured ([bastion.md](bastion.md#what-a-clients-command-costs-through-a-bastion-measured-2026-11-26)); E6 is this
+W-35's P5) and E15 (writes refused at the Bastion in the five error shapes, R-BAS-095) and E9a (the configuration at the Bastion, the flood protection's figures from it, the anonymous ceiling) and E11 (the cache protects what was served twice, R-BAS-098); E4 is measured ([bastion.md](bastion.md#what-a-clients-command-costs-through-a-bastion-measured-2026-11-26)); E6 is this
 page and the specification. Every other package is **not built**. The requirements are [bastion.md](../spec/bastion.md#limits-configuration-and-throughput-from-the-main-installation)
 R-BAS-093 to R-BAS-099 and [its wire](../spec/bastion.md#the-interface-version-8-the-shared-wire),
 [usage-and-limits.md](../spec/usage-and-limits.md#a-bastion-as-a-place) R-LIM-043 to R-LIM-046 and
@@ -56,7 +56,7 @@ At most four builders at once (rule 10 of the project plan). The waves are the o
 | 3 | E10 | the throughput | E7 | not built |
 | 3 | E15 | writes refused at the Bastion | E7 | built |
 | 4 | E9b | budgets on what the Bastion serves | E9a, E8 | not built |
-| 4 | E11 | the cache protects what was served twice | E1 (may take any free place from wave 2 on) | not built |
+| 4 | E11 | the cache protects what was served twice | E1 (may take any free place from wave 2 on) | built |
 | 4 | E17 | the registry token's payload version 2 | E7 | not built |
 | 4 | E12 | the screens | E8, E10, E13 | not built |
 
@@ -174,10 +174,16 @@ At most four builders at once (rule 10 of the project plan). The waves are the o
 
 ### E11 · The cache protects what was served twice
 
-- **Builds** the protected marker and the sweep's order of R-BAS-098, for the volume, the bucket and the encrypted layout.
-- **Files**: `internal/bastion/cache/core.go`, `store.go`, `layout.go`, `sweep.go`.
-- **Tests**: unit, under 0.5 s.
-- **Identifiers**: Q-BAS-333, H-2290.
+- **Built** on 2026-11-26: the sweep's order of R-BAS-098 for the volume, the bucket and the encrypted layout. The access marker is the
+  protection, because a fill writes none (Q-BAS-460); the 80 % are a rank in each sweep (Q-BAS-461); served twice on a bucket is a fill and
+  a serve from the bucket by any replicas (Q-BAS-462); `quader_bastion_cache_protected_bytes{area}` (Q-BAS-463); a replica's commit lets the
+  next serve write the marker again (Q-BAS-464). No new marker, family or listing on the stores; `layout.go` is unchanged.
+- **Files**: `internal/bastion/cache/core.go` (`Sweep`, `rankProtected`), `cache.go`, `store.go`, `fill.go`, `sweep.go`;
+  `internal/bastion/metrics/metrics.go`.
+- **Tests**: unit, `protect_test.go`, five tests, 0.9 s on a loaded machine (the encrypted layout half of it).
+- **Measured**: the flood of E4 again, before and after, with a warm `npm ci` beside it
+  ([bastion.md](bastion.md#the-flood-again-with-the-protection-of-what-was-served-twice-measured-2026-11-26)).
+- **Identifiers**: Q-BAS-333, H-2290; Q-BAS-460 to Q-BAS-464, H-2362.
 
 ### E12 · The screens
 
@@ -305,7 +311,7 @@ H-2298 and H-2299 are spare.
 | E9a | unit; chart test; integration `bastion`, `bastionshared` | none to bytes | 1 s; chart; 9 s (two cases); 0.2 s (measured: see E9a's entry) |
 | E9b | unit; integration `bastionshared`, `bastion` | bytes | 2 s; 2 s; 5 s |
 | E10 | unit (injected clock); integration with Valkey | bytes | under 1 s; 3 s |
-| E11 | unit | none | under 0.5 s |
+| E11 | unit | none | 0.9 s measured (planned under 0.5 s) |
 | E12 | Vitest; renders | fixtures | about 4 s; renders |
 | E13 | unit; integration `bastionreg` | rows | 3 s |
 | E14a | unit; integration `bastion` | bytes | 0.05 s; 7 s with its world (measured) |

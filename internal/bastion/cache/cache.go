@@ -11,6 +11,10 @@
 //	access/<64 hex>                              empty access markers; the modification time is the last access
 //	audit-spool/<replica>/<unix ms>.jsonl        events a draining replica could not send
 //
+// A fill writes no access marker; only a serve from the cache does ([Cache.Touch]). An object with a marker was therefore
+// served twice, and that marker is also its protection (R-BAS-098, Q-BAS-460): the sweep evicts what was served once before
+// what was served twice, and at most 80 % of an area is protected.
+//
 // With a cache key (bastion.cache.encryption_key_file, R-BAS-061) the layout is the sealed one of layout.go below
 // bc-<identifier>/: every object but the empty access markers is an object of the stored format of
 // internal/blob/blobcrypt, its record in front of its body, every name keyed. Nothing above the backend sees it.
@@ -106,6 +110,22 @@ type Usage struct {
 	Documents int64
 }
 
+// SweepBounds are the marks of one sweep of an area, in the bytes the store holds (R-BAS-031, R-BAS-098).
+type SweepBounds struct {
+	// High is the total above which the sweep evicts, Target what it evicts down to.
+	High, Target int64
+	// Protect is the most the protected objects may hold: the newest of the objects served twice that fit in it are evicted
+	// last; the older ones are evicted with the objects served once, by last access.
+	Protect int64
+}
+
+// SweepResult is what one sweep of an area did.
+type SweepResult struct {
+	Evicted int
+	// Protected is the bytes of the protected objects the area holds after the sweep.
+	Protected int64
+}
+
 // Backend is a cache backend. Implementations are safe for concurrent use and apply the layout above; only
 // PutObject, GetObject, HeadObject, ListObjectsV2 and DeleteObject of S3 are used by the bucket backend, no
 // versioning and no conditional write (R-BAS-030).
@@ -135,10 +155,11 @@ type Backend interface {
 	// bastion.cache.access_resolution per replica.
 	Touch(ctx context.Context, sha256 string) error
 
-	// Usage reports the bytes held. Sweep deletes in order of last access until target bytes remain
-	// when the total is above high (95 % of a limit down to 85 %, R-BAS-031) and reports what it evicted.
+	// Usage reports the bytes held. Sweep deletes the unprotected objects of an area in order of last access, then the
+	// protected ones, until bounds.Target bytes remain when the total is above bounds.High (95 % of a limit down to 85 %,
+	// R-BAS-031; the protected share of R-BAS-098), and reports what it evicted and what stays protected.
 	Usage(ctx context.Context) (Usage, error)
-	Sweep(ctx context.Context, area string, high, target int64) (evicted int, err error)
+	Sweep(ctx context.Context, area string, bounds SweepBounds) (SweepResult, error)
 
 	// The audit spool (R-BAS-039): a draining replica writes the events it could not send; any replica reads,
 	// sends and deletes a file after a 2xx.

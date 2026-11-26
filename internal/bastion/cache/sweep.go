@@ -13,6 +13,9 @@ import (
 const (
 	sweepHighPercent   = 95
 	sweepTargetPercent = 85
+	// sweepProtectPercent is the most of an area's limit that is protected (R-BAS-098): below the target, so that a sweep
+	// reaches its target by evicting what was served once and what lost its protection, never a protected object.
+	sweepProtectPercent = 80
 )
 
 // sweepJitter is the spread of the randomized interval of a bucket without Valkey: sweep_interval +- 20 %.
@@ -52,11 +55,13 @@ func (c *Cache) SweepOnce(ctx context.Context, src LeaseSource) error {
 
 // sweep is one cycle of R-BAS-031 for this replica: in the first hour after the start, and while it still finds some, it
 // deletes the objects of other layouts (R-BAS-061); it measures what the backend holds, sets the running estimate of the areas
-// from the listing (R-BAS-089), publishes quader_bastion_cache_bytes, and evicts by last access in each area above 95 % of its
-// limit down to 85 %. With the bucket backend and Valkey only the replica that holds the sweep lease runs it; another replica
-// that committed since its last listing lists the areas to set its estimate and deletes nothing. Without Valkey every replica
-// sweeps, which is safe because a sweep only deletes. With the volume backend each replica sweeps its own volume. src may be
-// nil, which is a replica without shared state. trigger says what started it (quader_bastion_cache_sweeps_total).
+// from the listing (R-BAS-089), publishes quader_bastion_cache_bytes, and evicts in each area above 95 % of its limit down to
+// 85 %, what was served once before what was served twice, with at most 80 % of the limit protected (R-BAS-098). A sweep of
+// the timer lists the markers of an area below its mark too and publishes quader_bastion_cache_protected_bytes (Q-BAS-463).
+// With the bucket backend and Valkey only the replica that holds the sweep lease runs it; another replica that committed since
+// its last listing lists the areas to set its estimate and deletes nothing, and shows no protected bytes. Without Valkey every
+// replica sweeps, which is safe because a sweep only deletes. With the volume backend each replica sweeps its own volume. src
+// may be nil, which is a replica without shared state. trigger says what started it (quader_bastion_cache_sweeps_total).
 func (c *Cache) sweep(ctx context.Context, src LeaseSource, trigger string) error {
 	if lease := sweepLease(src); c.cfg.Backend == "bucket" && lease != nil {
 		held, release, err := lease.TryAcquire(ctx, 2*c.cfg.SweepInterval)
@@ -64,6 +69,8 @@ func (c *Cache) sweep(ctx context.Context, src LeaseSource, trigger string) erro
 			c.log.Warn("the sweep lease could not be taken; sweeping without it, which is safe", "error", err)
 		} else {
 			if !held {
+				c.m.CacheProtected.WithLabelValues(metrics.AreaArtifacts).Set(0)
+				c.m.CacheProtected.WithLabelValues(metrics.AreaDocuments).Set(0)
 				return c.relist(ctx)
 			}
 			defer release()
@@ -84,16 +91,22 @@ func (c *Cache) sweep(ctx context.Context, src LeaseSource, trigger string) erro
 		limit int64
 		used  int64
 	}{{metrics.AreaArtifacts, arts, u.Artifacts}, {metrics.AreaDocuments, docs, u.Documents}} {
-		if a.used <= percent(a.limit, sweepHighPercent) {
+		above := a.used > percent(a.limit, sweepHighPercent)
+		if !above && trigger != metrics.SweepInterval {
 			continue
 		}
-		n, err := c.back.Sweep(ctx, a.area, percent(a.limit, sweepHighPercent), percent(a.limit, sweepTargetPercent))
-		c.m.CacheEvictions.WithLabelValues(metrics.EvictSize).Add(float64(n))
+		res, err := c.back.Sweep(ctx, a.area, SweepBounds{
+			High: percent(a.limit, sweepHighPercent), Target: percent(a.limit, sweepTargetPercent),
+			Protect: percent(a.limit, sweepProtectPercent),
+		})
+		c.m.CacheEvictions.WithLabelValues(metrics.EvictSize).Add(float64(res.Evicted))
 		if err != nil {
 			errs = append(errs, err)
+		} else {
+			c.m.CacheProtected.WithLabelValues(a.area).Set(float64(res.Protected))
 		}
-		if n > 0 {
-			c.log.Info("cache sweep", "area", a.area, "evicted", n, "limit", a.limit, "trigger", trigger)
+		if res.Evicted > 0 {
+			c.log.Info("cache sweep", "area", a.area, "evicted", res.Evicted, "protected_bytes", res.Protected, "limit", a.limit, "trigger", trigger)
 		}
 	}
 	_, _ = c.measure(ctx) // a failure is counted by the backend; the estimate keeps the first listing and the commits since

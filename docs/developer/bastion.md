@@ -913,6 +913,37 @@ Bastion's counters:
   installation. The scaled-down runs above give documents 256 MiB. Neither configuration starts any more: the role and the chart refuse an
   artifacts' room below one `max_object_bytes` (R-BAS-031), and `hack/bastion-measure/attack.sh` now also lowers `max_object_bytes` to 1 GiB.
 
+### The flood again, with the protection of what was served twice (measured 2026-11-26)
+
+W34-E11 ran the attack above once more, before and after its change ([R-BAS-098](../spec/bastion.md#r-bas-098--the-cache-protects-what-was-served-twice)):
+`hack/bastion-measure/attack.sh run e11-before 256 120` with the Bastion built from `56f565e9a`, then `attack.sh run e11-after 256 120`
+with the change, each on a Bastion started with an empty cache of 2 GiB (`documents_max_bytes` 256 MiB, `max_object_bytes` 1 GiB), the same
+main installation (the change's binary; E11 changes nothing on its side) on the worktree's own instance 6 of the UI development profile,
+32 anonymous connections from 256 addresses for 120 s over the 768 files of 4 MiB, and the reader's `npm ci` of 475 packages before, in about
+the flood's 50th second and after it. The npm install's working set was served twice before the flood: once by the filling `npm ci`, once by
+the one before. Load average 16 to 19 on 20 cores during both runs. The scripts needed one repair first: the main installation's
+`bastions.trusted_proxies` is gone (E13), so `run.sh main` now lists `127.0.0.1/32` as the registration's `egress`. Measured, from the request
+records of the two processes (windows widened to the whole install) and the Bastion's counters:
+
+| | Before (`56f565e9a`) | After (E11) |
+|---|---|---|
+| `npm ci` before the flood | 475 hits | 475 hits |
+| `npm ci` during the flood | 475 misses, 475 forwards, 116,241 bytes from the main installation | 475 hits, 0 to the main installation |
+| `npm ci` after the flood | 475 misses, 475 forwards, 1.0 s | 475 hits, 0 to the main installation, 0.7 s |
+| The artifact area, at most | 1.86 GB of 1.88 GB | 1.84 GB |
+| Size evictions during the flood | 3,516 | 1,255 |
+| `quader_bastion_cache_protected_bytes{artifacts}` after it | — | 116,241: the 475 tarballs, nothing of the flood |
+| The attacker got | 2,983 files (12.5 GB), no `503` | 1,726 files (7.2 GB), 221 `503` busy |
+
+- **The warm install stays warm.** Before the change the flood evicted the 475 tarballs within its first 50 s and they stayed gone (H-2272,
+  as on the first run); after it every one of the 475 was a hit during and after the flood, and none of the flood's files was protected:
+  each was asked for once in a cycle of 3 GiB through a cache of 1.75 GiB, so none was served from the cache.
+- **The attacker's figures differ between the two runs, and that is not attributed to E11.** E11 changes no admission and no request path; the
+  sweep lists the markers once more per area. The second run's fills of 4 MiB were slower (60 against 104 MB/s), which with 16 anonymous slots
+  and a queue of 2 s gives `503` busy; the machine was shared with other builders throughout. Not repeated.
+- What this does not show: an attacker who asks for each file twice (H-2290, the unit test
+  `TestR_BAS_098_AnAttackerWhoReadsEveryObjectTwiceDoesNotProtectEverything`), the bucket backend and several replicas.
+
 ### The main installation's latency per check and per conditional request
 
 Each series is 600 credential checks, sent one after the other straight to `POST /api/v1/bastion/check` with the Bastion's token and headers,
@@ -1128,7 +1159,7 @@ and `DeleteObject`; the default is the artifact area, and the wrong area is a mi
 | `LookupEntry(ctx, cacheKey)` | `ErrNotFound` is a miss: no entry, a failed signature (entry deleted, `evictions{stale}`), bytes gone (entry deleted, `evictions{missing}`), a size that differs from the entry's (counted corrupt, object deleted); any other error is the backend's: serve a miss |
 | `Open(ctx, cacheKey, entry)` | full read through the verifying reader; the last 64 KiB are released only after the SHA-256 and size matched; a mismatch returns `ErrCorrupt` from `Read`, deletes the object and the entry of the key, counts `quader_bastion_cache_corrupt_total`; a body longer than the entry is refused at once |
 | `OpenRange` | a range, not verified against the digest (H-451); with a cache key every segment of its window is authenticated and a refusal deletes the object |
-| `Touch(ctx, entry)` | the access marker, at most once per `access_resolution` per replica and content address; best effort |
+| `Touch(ctx, entry)` | the access marker, at most once per `access_resolution` per replica and content address; best effort. Called for a serve from the cache only, never by a fill: the marker is also the protection of R-BAS-098 (Q-BAS-460). A commit forgets the throttle of its address (`forgetTouch`, Q-BAS-464) |
 | `SweepOnce(ctx, src)`, `RunSweeper(ctx, src)` | the sweep of R-BAS-031 and its loop: the loop lists at start, then sweeps on its timer and whenever a fill asks (`sweeps{trigger}`); a sweep sets the running estimate from its listings, publishes `cache_bytes`, counts `evictions{size}`; `src` is a `LeaseSource` (`shared.State` is one), which offers the sweep lease only while the replicas share state, so the cache does not import `shared` |
 
 **The spool budget** ([spool.go](../../internal/bastion/cache/spool.go), [Q-BAS-131](../spec/bastion.md#q-bas-131--the-bytes-of-the-fills-in-progress-are-bounded-and-the-chart-sizes-the-volumes-from-the-bound)).
@@ -1142,9 +1173,12 @@ an object of 2 GiB never leaves its dirty pages in the pod's memory at once ([st
 
 **The sweep.** The limits are `max_bytes − documents_max_bytes` for artifacts and `documents_max_bytes` for documents
 ([Q-BAS-88](../spec/bastion.md#q-bas-88--documents-have-a-reserved-share-and-entries-are-removed-when-read)); `quader_bastion_cache_capacity_bytes{area}`
-exports them. A cycle measures both areas (one listing each); an area above 95 % of its limit is swept: it lists its bytes and `access/`
-(two listings), orders by the later of an object's marker and its own time (a refill counts as an access), and deletes oldest first until
-85 % remain, taking the markers along. The sweep does not read entries (H-452). Who runs it: the volume, every replica its own; the
+exports them. A cycle measures both areas (one listing each); an area above 95 % of its limit is swept, and on the timer every area is
+listed for its protected bytes: `backend.Sweep` lists its bytes and `access/` (two listings), takes the later of an object's marker and its
+own time as its last access (a refill counts as an access), and `rankProtected` marks the objects with a marker, which were served twice,
+newest first within 80 % of the limit (`sweepProtectPercent`, R-BAS-098, Q-BAS-461); it deletes the unprotected oldest first, then the
+protected, until 85 % remain, taking the markers along, and reports the protected bytes for `quader_bastion_cache_protected_bytes{area}`
+(Q-BAS-463). Since 80 % is below 85 %, a sweep never reaches a protected object. The sweep does not read entries (H-452). Who runs it: the volume, every replica its own; the
 bucket with Valkey (`st.Shared()`), the replica that wins `shared.SweepLease` for `2 × sweep_interval`; the bucket without Valkey, every
 replica at `sweep_interval ± 20 %`. The forms plug in through `shared.State` (the Valkey form of the server, `shared.NewLocal` in the tests).
 
