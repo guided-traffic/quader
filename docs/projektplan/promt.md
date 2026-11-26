@@ -318,8 +318,12 @@ wrapped line was seen (2026-11-19), so its condition to build a check is met.
 | W30-G9 · A generic file's commands behind the button, and a content type that says what it is (W-30) | R-GENERIC-017 of the plan `.dev/w30-plan.md`: curl, wget and PowerShell in the panel at every place a file has an act, the upload's commands, a closed list of guessed text types; Q-UI-1330 to Q-UI-1339, ADR-290, H-2190 to H-2199 | landed and pushed on 2026-11-26 at 07:40 |
 | W30-G2 · An upstream's package shows its documentation before a version of it is stored (W-30) | R-CUR-028 of the plan `.dev/w30-plan.md`: read through, not stored, per format; the facts the same answers carry; Q-CUR-260 to Q-CUR-269, Q-UI-1340 to Q-UI-1349, ADR-291, H-2200 to H-2209 | landed and pushed on 2026-11-26 at 08:29 |
 | W30-G5 · "Used by": a version's page lists the packages that depend on its package (W-30) | R-API-086 of the plan `.dev/w30-plan.md`: a side table every format fills, the read under the reader's scope, a filter `dependsOn` of the package list; Q-API-455 to Q-API-459, Q-UI-1350 to Q-UI-1359, ADR-294, H-2220 to H-2229, migration 00139 | landed and pushed on 2026-11-26 at 10:20 |
-| W30-G6 · NuGet complete (W-30) | R-NUGET-037 to R-NUGET-039 of the plan: the install forms by package type, the icon, the licence file, the frameworks, the symbols, what a build runs, and the upload on the screen after W30-A5; Q-NUGET-155 to Q-NUGET-169, Q-UI-1360 to Q-UI-1369, ADR-293, H-2230 to H-2239 | built at about 09:34 (three commits, the upload from the screen with the token operation made one for every format); lands after W30-G5 |
+| W30-G6 · NuGet complete (W-30) | R-NUGET-037 to R-NUGET-039 of the plan: the install forms by package type, the icon, the licence file, the frameworks, the symbols, what a build runs, and the upload on the screen after W30-A5; Q-NUGET-155 to Q-NUGET-169, Q-UI-1360 to Q-UI-1369, ADR-293, H-2230 to H-2239 | landed and pushed on 2026-11-26 at 11:13 |
 | W31 · A download is the unit a person asked for, in the top bar's Downloads and every other place (W-31) | R-OPS-049 to R-OPS-052 and R-UI-210 to R-UI-212 rewritten; R-OPS-053 to R-OPS-055, Q-OPS-427 to Q-OPS-436, Q-UI-1380 to Q-UI-1389, Q-CUR-270 to Q-CUR-274, H-2250 to H-2259, ADR-295, migration 00140 | in work since 2026-11-26, 09:09 |
+| W32 · The limit of parallel downloads counts transfers and says so, and the built-in figures fit a large company (W-31, the owner's decision) | R-LIM-004, R-LIM-007, R-LIM-010, R-LIM-024 rewritten; R-LIM-041, Q-LIM-293 to Q-LIM-299, Q-UI-1390 to Q-UI-1394, H-2260 to H-2264, ADR-296, migration 00141 | in work since 2026-11-26, 10:29 |
+| W33 · The audit log shows a download as one row, and keeps one event per item (W-31, the owner's second decision) | R-OPS-054, R-OPS-055, Q-OPS-437 to Q-OPS-445, Q-UI-1395 to Q-UI-1399, H-2265 to H-2269, ADR-297, migration 00142 | in work since 2026-11-26, 10:35 |
+| W34-E1 · A Bastion's cache stays below its size between sweeps, and the bytes between a Bastion and the main installation are counted (W-34, the plan's E1 and E5; no decision needed) | R-BAS-089, R-BAS-090, Q-BAS-301 to Q-BAS-309, H-2270 to H-2274, ADR-298 | in work since 2026-11-26, 11:07 |
+| W34-E2 · A Bastion's own refusals fit the clients: the format's cap of the time to wait, and request figures that let one normal command through (W-34, the plan's E2 and E3; the Bastion interface's version rises by one) | R-BAS-091, R-BAS-092, Q-BAS-310 to Q-BAS-319, H-2275 to H-2279, ADR-299 | in work since 2026-11-26, 11:07 |
 | W-30 planner · Ansible as an equal of Galaxy; general and specific properties per format | the owner's task of 20:39: a comparison screen by screen and answer by answer, and the table of properties per format | plan written at 21:05 (`.dev/w30-plan.md`) |
 | W30-G1 · A remote's cached version of npm and Debian carries its facts (W-30) | R-NPM-050, R-NPM-051, R-DEB-037 of the plan `.dev/w30-plan.md`; the README of an npm version from the stored tarball | landed and pushed at 23:27 |
 | G1 · The checks see overlays and clipping as a person does | an overlay is measured in the window a person has and a modal state is not pictured in a grown window; `sideways` inside dialogs and drawers; the new checks `overlay-out` (the person search's list wider than its drawer, W-12), `cut` (a text cut at the start of a wrapped line) and `separator-start` (a separator dot that starts a line); a state's own widths and schemes; the correction of Q-UI-1060 | about 5 s of fixtures, at most 60 s of the render step | landed and pushed at 14:55 (two commits; Q-UI-1170 to Q-UI-1173, H-1912 closed; its builder worked from 11:13 to 13:17; with S11 on one landing: thirteen gates, `make ui-states`, the whole English set (532 screens, 43.1 minutes) and the German pass (98 screens, 9.2 minutes) each without a failure or a finding, the new checks over every screen that landed today) |
@@ -1310,6 +1314,118 @@ records the recorder that tells such a stall apart).
   that failed between 07:39 and 09:00 is no finding of the code.
 
 ### Product
+
+- **Closed on 2026-11-26, 11:13, by W30-G6 (W-30; R-NUGET-037 to R-NUGET-039; Q-NUGET-155 to Q-NUGET-162; Q-UI-1360 to
+  Q-UI-1364; ADR-293; gaps H-2230, H-2232, H-2171 closed; no migration): a NuGet version offers the install forms of
+  nuget.org by package type, shows what its package carries and says what a build or an install runs, and a package
+  is uploaded on the screen.** Measured against nuget.org's pages of a library, a tool, a template and an MSBuild
+  SDK. (1) The forms: the clients stay the tabs of the panel, a client with several forms has a select **Form** above
+  its command (eight tabs do not fit beside **Set up client**); a library: `dotnet add package`, Paket, a script's
+  `#r`, a file-based app's `#:package`, Cake as add-in and as tool, `nuget install`, PackageReference,
+  `Install-Package` and Central Package Management; a tool: global, local, Cake, NUKE, on the .NET CLI's tab alone; a
+  template: `dotnet new install`; an SDK: `#:sdk` and `<Sdk …/>`; the ID in its declared casing. The server renders
+  every form, chosen by the version's kind. (2) The facts: the package's icon before the heading, a link **License
+  file**, the target frameworks as chips (from the package's folders), the symbols package with the sentence that no
+  debugger reads it yet, branch and commit as links where the page knows the host's addresses (four hosts), the
+  release notes as a section. The icon is served only as PNG or JPEG decided from its bytes, the licence only as
+  UTF-8 text, both under the read check with `nosniff`, a sandboxing policy and no fetch of the package's `iconUrl`
+  (the security page `docs/security/nuget-package-facts.md`). (3) What runs: a note under the links names build
+  logic (`.props`, `.targets`), analyzers and source generators, and PowerShell scripts, read from the archive's file
+  names at push and at a remote's fill; versions stored before are read by a job the task `remote-describe` queues.
+  (4) **Upload package** stands where **Upload collection** stands: one `.nupkg` and optionally its `.snupkg`, a bar
+  for each, then the version with **Open version** or the refusal with every fact of its answer. The token operation
+  of the collection upload became one for every format (`POST …/repositories/{repoKey}/upload-tokens`, the Ansible
+  one is gone): a format names its publish route (`ScreenPublisher`), the rules are unchanged (a session only, five
+  minutes, read and deploy on the one repository, revoked after the publish). The builder saw a token revoked on the
+  role `api` still taken by a replica of the role `packages` at once after; that lies inside the revocation bound of
+  2 s (R-AUTH-023) and is no fault. Per format, in the spec's table: several install forms, an own picture, a licence
+  file, target platforms, symbols, what an install runs, an upload on the screen. The landing: three commits picked
+  onto "used by", the count of requirements 1,315; twelve of the thirteen gates green at once, the links' check red by my own resolution of the decisions' page, which had dropped the builder's record ADR-293 (the page's records are written by hand, only its index is generated; repaired inside the commit before anything was pushed, the pick script merges the page three ways now), then green; the dialogs' states, the renders in English (182 screens) and German (18) without a layout finding, the forms' panel, the facts, the note of what runs and the upload's dialog looked at in both schemes, at 1,440 px and in German at 390 px, the integration areas nuget, ansiblelocal, ansiblevirtual, authz, packages, repository, roles, files, transfer, backup, postgres, bastionsetup and signing green. Open: the icon and the licence file on the screen skip the
+  checks of a download, as the README does (H-2230); Paket has no configure snippet (H-2232); the symbol server
+  still answers 501 (R-NUGET-021); an npm version's LICENSE file, an Ansible collection's `license_file` and a
+  namespace's avatar, a chart's icon are not shown (the table says so; not built here). Not verified: the forms under
+  real clients; Visual Studio reading the icon.
+
+- **Open since 2026-11-26, 11:02, the owner's task (W-35) and his statement of what a Bastion is: a read-only GUI at the
+  Bastion, switched on from the main installation, and documentation per repository as a second switch.** His words
+  (about 10:55): "Der kerngedanke, des Bastions ist ja, dass er dem Internet ausgesetzt wird und dafür ggf. auf einer
+  Edge-Node läuft. Traffic und Angriffe auf dem Bastion, muss nur er aushalten und wir etablieren maßnahmen unsere
+  interne Hauptinstanz über den Bastion vor überflutig zu schützen. Der Bastion bietet nach außen nur eine lesende
+  API an. Es ist so gebaut, dass es keine Schreib-API gibt die angegriffen werden kann. Der Bastion bietet aktuell
+  nur ein API und keine GUI. Das soll aber nicht so bleiben: über die Hauptinstanz kann ich die GUI vom Bastion
+  aktivieren um dem Nutzer zum Beispiel verfügbare Public-Images und die gefundenen Vulnerabilities anzuzeigen. Damit
+  wollen wir vertrauen in die ausgelieferten Images schaffen. Eine weitere, seperat zuschaltbare Option ist das
+  ausliefern von Docs pro Repo, so kann der Bastion also auch genutzt werden um Ansible-Collections auszuliefern samt
+  Docs zur Collection. Das ist aber kein Zwang. Es gibt im API (und GUI) Interface vom Bastion keine Mǒglichkeit eine
+  schreibende Operation durchzuführen. Nutzer können sich außschließlich über ein Token, PAT oder Zertifikat
+  gegenüber dem Bastion identifizieren, OIDC oder username/password ist ausgeschlossen und es exsistiert nicht mal
+  eine API dafür. Je kleiner der Footprint, desto besser!" It revises his own "no UI" (bastion.md, the options
+  table of the tokens-only decision, R-BAS-003) to a GUI without login, session or write. Read against the spec the
+  same hour, and told to him: (1) a request at a Bastion with a method other than GET and HEAD is sent to the main
+  installation today as a bodiless probe, so that its refusal has the client's protocol shape (R-BAS-014, Q-BAS-38,
+  my decision): an internet caller makes the main installation answer by it, bounded by the miss limit of its
+  address and a cache per method and path; against his first sentence, it goes into W-34's plan as a decision (the
+  Bastion refuses writes itself); (2) a client certificate is not accepted at a Bastion (Q-BAS-176, my decision):
+  his "Token, PAT oder Zertifikat" makes it a requirement; (3) the token service below `/v2/` exists at the Bastion
+  because docker's login needs it; its password is a token, a person's password is taken nowhere. Two planners work:
+  W-34 (limits per Bastion, throughput, the ways a request reaches the main installation) and W-35 (the GUI and the
+  docs: who it is for, where its data comes from, what the application is, what it shows of vulnerabilities, the
+  switches, read-only by construction). The decisions go to him as a working paper. His principles are kept in the
+  memory as the yardstick for every Bastion design. Decided by him at 11:04, the first decision (who the GUI is for: only
+  anonymous visitors; also with a certificate; also with a token; my recommendation the first): "der Bastion ist für
+  anonyme User aus dem Netz die sich über die publizierten Inhalte informieren wollen." No credential enters a
+  browser; token, PAT and certificate identify clients at the package API only.
+
+- **Open since 2026-11-26, 10:45, the owner's task (W-34): a Bastion's download limits are configured by the administrator,
+  per Bastion, and the throughput between the main installation and a Bastion has a maximum.** His words: "Die
+  Download-Limits müssen sich durch den Administrator detailiert konfigurieren lassen. Ich denke es ist auch
+  Sinnvoll, eine angepasste Konfiguration pro Bastion zuzulassen. Intern könnten die Limits deaktiviert sein und auf
+  dem Bastion könnten sie deutlich eingeschränkt sein um Missbrauch der Registry über das offene Internet zu vermeiden
+  oder zumindest abzuschwächen. Auch finde ich gut, wenn man zusätzlich den maximalen Throughput zwischen
+  Hauptinstanz und Bastion konfigurieren könnte, so könnte man vermeisten, dass ein Anfreifer von außen den Bastion
+  mit vielen unterschiedlichen Artefakten so auslastet, dass der Cache überläuft und quasi jede Anfrage über die
+  Hauptinstanz läuft und ggf. das Transfernetz sättigt." Read in the spec, not yet in code: the main installation's
+  limits are detailed already (profiles of eleven figures, rules by place and caller, Audit or Enforce); a Bastion
+  limits per client address only (requests and misses, R-BAS-035), in its chart's values, a change is a rollout;
+  what it serves from its cache is counted against no budget (named as left out on the limits page); towards the
+  main installation it has a budget of concurrent requests (R-BAS-025), no byte rate; a blob handed over as a link
+  flows from the object store, past the main installation's pods (R-BAS-070). A planner works out the state in code,
+  the threat cases, the decisions with options and the packages; the decisions go to the owner as a working paper,
+  one at a time. The planner's first plan at about 11:05 (`.dev/w34-plan.md`, not in git): ten decisions (where a Bastion's
+  limits are set; what it counts and by whom; presets and rules; one budget or two; a mode per Bastion; the
+  maximum throughput; the cache against churn; what the administrator sees; the defaults; the Bastion's egress
+  addresses) and thirteen packages. Read in code by it: a Bastion counts no byte and no parallel transfer, a hit
+  from its cache is counted nowhere; its cache grows unchecked between its sweeps of five minutes until the volume
+  is full; its own refusals send NuGet's and Galaxy's clients a time to wait above the 30 s their format takes; its
+  burst of 40 requests without a credential is below one `docker pull` of 40 layers (48 requests). Those three
+  defects and the counting of bytes need no decision and are built since 11:07 by two builders (W34-E1, W34-E2); the
+  planner revises the plan with the owner's statement of 10:55.
+
+- **Open since 2026-11-26, 10:35, the owner's decision (W-31, the second of two): the audit log shows a download as one
+  row and keeps one event per item.** With `audit.record_downloads` (off by default) `artifact.downloaded` is one
+  event per item served, with path and SHA-256: a pull of an image writes one per manifest and layer. Put to him at
+  about 10:30 with three options (store per item and group on the screen; one event per download; leave it), my
+  recommendation the first, because an audit record is evidence and stays as fine as the act was. His answer at about
+  10:33: "Option A, klarer Fall". The builder W33 groups the events of one download into one row of the audit log's
+  screen (the unit W31 named per format), the items with their hashes folded under it, stable under paging, filters,
+  the live refresh and across replicas; the stored events, the export and the single events' API stay; it sweeps every
+  other audit event written per part of one act (a push's blobs, deletes, hand-overs) and leaves refusals as single
+  rows. It builds on W31's tip, which lands before it.
+
+- **Open since 2026-11-26, 10:29, the owner's decision (W-31, the first of two the sweep of W31 left to him): the limit of
+  parallel downloads keeps counting transfers, is named so, and the built-in figures become generous.** Put to him
+  at about 10:26 with three options (count transfers and name it so; count units; both), my recommendation the
+  first. His answer at 10:27: "Option A, default darf aber großzügiger sein als 2, wir bauen hier enterprise software
+  für große firmen". Wrong in my question, corrected to him: I wrote that the limit has no default; the built-in
+  profiles hold 20 (Standard), 50 (Technical), 6 (Restricted) and 4 (Anonymous), my own estimates (R-LIM-010), and
+  every known caller gets Standard without a setting (R-LIM-012); the "2" was my example. The estimates contradict
+  the page's own sentences (twenty parallel CI jobs of one token do not fit into 50 transfers). The builder W32
+  renames the figure to parallel transfers on the screens, in the API, the problem code, the metrics, the manual and
+  the spec, says where it is set what one pull or install holds, establishes from real clients how many transfers
+  each holds at once and sets the four profiles from that, with a migration that leaves a figure an administrator
+  changed, and lists what use reaches the other estimated figures. His rule, kept in the memory: Quader is
+  enterprise software for large companies, built-in defaults are sized for them. The second decision (the audit
+  event of a download, one per item served) is put to him next.
 
 - **Closed on 2026-11-26, 10:20, by W30-G5 (W-30; R-API-086; Q-API-455 to Q-API-459; Q-UI-1350, Q-UI-1351; gaps H-2220 to
   H-2224; migration 00139): a version's page lists the packages that use its package, and the package list filters by
