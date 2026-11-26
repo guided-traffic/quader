@@ -3005,10 +3005,15 @@ The operations of GitLab CI federation ([docs/developer/ci-oidc.md](docs/develop
 | `POST /api/v1/bastions` | `createBastion` | `endpoints:write` |
 | `GET /api/v1/bastions/presets` | `listBastionPresets` | `limits:read` |
 | `GET /api/v1/bastions/{name}` | `getBastion` | authenticated; `endpoints:read` (every member) or `limits:read` (`id`, `name`, `limits`, `status`), decided in the handler |
-| `PATCH /api/v1/bastions/{name}` | `updateBastion` | `endpoints:write` · `If-Match` |
+| `PATCH /api/v1/bastions/{name}` | `updateBastion` | authenticated; `limits:write` for the member `limits`, `endpoints:write` for every other member, decided in the handler (a patch of both needs both) · `If-Match`; a change of `limits.mode` needs a recent sign-in |
 | `DELETE /api/v1/bastions/{name}` | `deleteBastion` | `endpoints:write` |
 | `POST /api/v1/bastions/{name}/tokens` | `createBastionToken` | `endpoints:write` · recent sign-in · idempotent · the secret once |
 | `DELETE /api/v1/bastions/{name}/tokens/{id}` | `revokeBastionToken` | authenticated; `endpoints:write` or `tokens:revoke`, decided in the handler |
+| `GET /api/v1/bastions/{name}/limits/assignments` | `listBastionLimitAssignments` | `limits:read` |
+| `POST /api/v1/bastions/{name}/limits/assignments` | `createBastionLimitAssignment` | `limits:write` |
+| `GET /api/v1/bastions/{name}/limits/assignments/{id}` | `getBastionLimitAssignment` | `limits:read` |
+| `PUT /api/v1/bastions/{name}/limits/assignments/{id}` | `replaceBastionLimitAssignment` | `limits:write` · `If-Match` |
+| `DELETE /api/v1/bastions/{name}/limits/assignments/{id}` | `deleteBastionLimitAssignment` | `limits:write` |
 
 **bastion**
 
