@@ -1,4 +1,4 @@
-interface version 6
+interface version 7
 const APIPrefix = "/api/"
 const APIv1Prefix = "/api/v1/"
 const BearerScheme = "Bearer"
@@ -109,6 +109,7 @@ func (HandoverKey) Present() bool
 func (HandoverKey) String() string
 func (HandoverOffer) Set(h http.Header)
 func (HandoverOffer) String() string
+func (HandshakeFormat) CapRetryAfter(d time.Duration) time.Duration
 func (HandshakeFormats) Lookup(id string) HandshakeFormat
 func (HandshakeFormats) RegistryRoot() (HandshakeFormat, bool)
 func (HandshakeFormats) Validate() error
@@ -220,6 +221,7 @@ type HandshakeFormat: field ID string `json:"id"`
 type HandshakeFormat: field RateLimitedStatus int `json:"rateLimitedStatus"`
 type HandshakeFormat: field RegistryRoot bool `json:"registryRoot"`
 type HandshakeFormat: field ReplayHeaders []string `json:"replayHeaders"`
+type HandshakeFormat: field RetryAfterMaxSeconds int `json:"retryAfterMaxSeconds"`
 type HandshakeFormats []HandshakeFormat
 type HandshakeInstallation struct
 type HandshakeInstallation: field BaseURL string `json:"baseUrl"`

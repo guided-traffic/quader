@@ -403,7 +403,9 @@ func (e *engine) admit(q *rq, v guard.Verdict) bool {
 }
 
 // refuseVerdict renders a refusal of the guard as the problem details of R-BAS-029 with Retry-After and the
-// RateLimit-Policy and RateLimit fields of R-API-016.
+// RateLimit-Policy and RateLimit fields of R-API-016. The wait is rounded once ([oneWait]); Retry-After and the RateLimit
+// field's t tell at most the longest wait the format of the request declares (R-BAS-058), and the detail names the true
+// wait, so a client of NuGet or Ansible Galaxy that is blocked for an hour comes back within 30 s and its user reads the hour.
 func (e *engine) refuseVerdict(q *rq, v guard.Verdict) {
 	if v.Quiet {
 		markQuiet(q.ctx())
@@ -414,19 +416,65 @@ func (e *engine) refuseVerdict(q *rq, v guard.Verdict) {
 	if code == "" {
 		code = iface.CodeRateLimited
 	}
+	facts := e.factsOf(q)
 	kind := errs.RateLimited
-	if e.factsOf(q).RateLimitedStatus == http.StatusServiceUnavailable {
+	if facts.RateLimitedStatus == http.StatusServiceUnavailable {
 		kind = errs.Unavailable
 	}
 	name, quota, window := e.policyOf(v.Reason, q.cred.anonymous || !q.hasAuth)
-	retry := int64((v.RetryAfter + time.Second - 1) / time.Second)
-	retry = max(retry, 1)
+	wait := oneWait(v.RetryAfter)
+	told := facts.CapRetryAfter(wait)
 	q.limiter = name
-	err := errs.E(kind, code, "Too many requests; retry after the period in the Retry-After header.",
-		errs.WithRetryAfter(v.RetryAfter),
+	err := errs.E(kind, code, refusalDetail(code, wait),
+		errs.WithRetryAfter(told),
 		errs.WithHeader("RateLimit-Policy", `"`+name+`";q=`+strconv.Itoa(quota)+";w="+strconv.Itoa(window)),
-		errs.WithHeader("RateLimit", `"`+name+`";r=0;t=`+strconv.FormatInt(retry, 10)))
+		errs.WithHeader("RateLimit", `"`+name+`";r=0;t=`+strconv.FormatInt(int64(told/time.Second), 10)))
 	e.refuse(q, err, v.Reason)
+}
+
+// oneWait rounds the wait of a refusal up once, as the main installation's refusals do (usage-and-limits.md Q-LIM-291): to
+// whole seconds below two minutes, at least one, and to whole minutes from there. The rounded wait is the one Retry-After, the
+// RateLimit field's t and the detail name, so a client that waits it is never early.
+func oneWait(d time.Duration) time.Duration {
+	s := max((d+time.Second-1)/time.Second, 1) * time.Second
+	if s < 2*time.Minute {
+		return s
+	}
+	return (s + time.Minute - 1) / time.Minute * time.Minute
+}
+
+// refusalDetail is the detail of a refusal of the guard: what refused, and the true wait in words (R-BAS-029), which a
+// format's cap of Retry-After does not shorten (R-BAS-058).
+func refusalDetail(code string, wait time.Duration) string {
+	again := "Try again in " + waitWords(wait) + "."
+	switch code {
+	case iface.CodeAddressBlocked:
+		return "Requests from this address are refused for a while after too many refused requests. " + again
+	case iface.CodeAuthTimeout:
+		return "Too many failed authentications from this address: a credential the Bastion cannot check now is refused. " + again
+	}
+	return "Too many requests from this address. " + again
+}
+
+// waitWords names a wait that oneWait rounded: "45 seconds", "14 minutes", "3 hours", "2 hours 1 minute".
+func waitWords(d time.Duration) string {
+	plural := func(n int64, unit string) string {
+		if n == 1 {
+			return "1 " + unit
+		}
+		return strconv.FormatInt(n, 10) + " " + unit + "s"
+	}
+	if d < 2*time.Minute {
+		return plural(int64(d/time.Second), "second")
+	}
+	m := int64(d / time.Minute)
+	if m < 120 {
+		return plural(m, "minute")
+	}
+	if m%60 == 0 {
+		return plural(m/60, "hour")
+	}
+	return plural(m/60, "hour") + " " + plural(m%60, "minute")
 }
 
 // policyOf names the limit that refused and its quota and window in seconds, for the RateLimit-Policy field.

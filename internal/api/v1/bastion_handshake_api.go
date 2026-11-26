@@ -81,7 +81,7 @@ func (s *Server) BastionHandshake(w http.ResponseWriter, r *http.Request, _ gen.
 
 // BastionFormatTable is the handshake's format table of the formats fs (R-BAS-057, Q-BAS-170): one entry per format with
 // routes, in the order of fs, with the facts each declares in catalog.Facts - the registry root, the headers a cached answer
-// replays besides the core's, the status of a rate limit and the bound-host prefixes. The lists are empty, never nil, so the
+// replays besides the core's, the status of a rate limit, the longest wait its clients are told and the bound-host prefixes. The lists are empty, never nil, so the
 // wire shows [] (the members are required). The composition root builds it once from formats.List(); a format without routes
 // (generic, which /files/ serves) has no family of its own at a Bastion and no entry.
 func BastionFormatTable(fs []formats.Format) iface.HandshakeFormats {
@@ -92,11 +92,12 @@ func BastionFormatTable(fs []formats.Format) iface.HandshakeFormats {
 		}
 		d := f.Descriptor()
 		out = append(out, iface.HandshakeFormat{
-			ID:                string(d.ID),
-			RegistryRoot:      d.RegistryRoot,
-			ReplayHeaders:     append([]string{}, d.Bastion.ReplayHeaders...),
-			RateLimitedStatus: d.Bastion.RateLimited(),
-			BoundPrefixes:     append([]string{}, d.BoundPrefixes()...),
+			ID:                   string(d.ID),
+			RegistryRoot:         d.RegistryRoot,
+			ReplayHeaders:        append([]string{}, d.Bastion.ReplayHeaders...),
+			RateLimitedStatus:    d.Bastion.RateLimited(),
+			RetryAfterMaxSeconds: int(d.Bastion.RetryAfterMax / time.Second),
+			BoundPrefixes:        append([]string{}, d.BoundPrefixes()...),
 		})
 	}
 	return out

@@ -137,7 +137,7 @@ func TestR_BAS_057_TheHandshakeCarriesTheFormatTable(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{`"formats":[{"id":"npm","registryRoot":false,"replayHeaders":[],"rateLimitedStatus":429,"boundPrefixes":[]}`, `"boundRepository":"web/docker-hub"`} {
+	for _, want := range []string{`"formats":[{"id":"npm","registryRoot":false,"replayHeaders":[],"rateLimitedStatus":429,"retryAfterMaxSeconds":0,"boundPrefixes":[]}`, `"boundRepository":"web/docker-hub"`} {
 		if !strings.Contains(string(b), want) {
 			t.Errorf("the handshake %s lacks %s", b, want)
 		}
@@ -162,6 +162,12 @@ func TestR_BAS_057_TheHandshakeCarriesTheFormatTable(t *testing.T) {
 	if got := back.Formats.Lookup("terraform"); got.ID != "terraform" || got.RateLimitedStatus != http.StatusTooManyRequests || len(got.ReplayHeaders) != 0 || got.RegistryRoot {
 		t.Errorf("a format the table does not name = %+v, want the defaults", got)
 	}
+	// The longest wait a format's clients are told (R-BAS-058): the format's cap, the true wait without one.
+	capped := iface.HandshakeFormat{ID: "nuget", RateLimitedStatus: 429, RetryAfterMaxSeconds: 30}
+	if capped.CapRetryAfter(15*time.Minute) != 30*time.Second || capped.CapRetryAfter(7*time.Second) != 7*time.Second ||
+		back.Formats.Lookup("terraform").CapRetryAfter(15*time.Minute) != 15*time.Minute {
+		t.Error("CapRetryAfter does not tell the format's cap, or the true wait without one")
+	}
 	if _, ok := (iface.HandshakeFormats{table[0]}).RegistryRoot(); ok {
 		t.Error("a table without the registry root names one")
 	}
@@ -171,6 +177,7 @@ func TestR_BAS_057_TheHandshakeCarriesTheFormatTable(t *testing.T) {
 		"two registry roots":               {table[1], {ID: "other", RegistryRoot: true, RateLimitedStatus: 429}},
 		"a rate-limit status of 418":       {{ID: "x", RateLimitedStatus: http.StatusTeapot}},
 		"no rate-limit status":             {{ID: "x"}},
+		"a negative longest wait":          {{ID: "x", RateLimitedStatus: 429, RetryAfterMaxSeconds: -1}},
 		"a header that is not canonical":   {{ID: "x", RateLimitedStatus: 429, ReplayHeaders: []string{"docker-content-digest"}}},
 		"a header of Quader's":             {{ID: "x", RateLimitedStatus: 429, ReplayHeaders: []string{"Quader-Bastion-Class"}}},
 		"a bound prefix without the slash": {{ID: "x", RateLimitedStatus: 429, BoundPrefixes: []string{"v2/"}}},

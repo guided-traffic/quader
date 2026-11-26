@@ -3000,6 +3000,31 @@ what was served twice, which changes what a sweep evicts.
 
 **Spec:** [bastion.md](spec/bastion.md) R-BAS-089, R-BAS-090, R-BAS-031, R-BAS-040, R-BAS-008, Q-BAS-301 to Q-BAS-307, H-2270 to H-2274.
 
+### ADR-299 · The longest wait a format's client is told is a fact of the format
+
+**Status:** Decided by the development agent on 2026-11-26 — owner review at the walkthrough
+([R-BAS-091](spec/bastion.md#r-bas-091--the-longest-wait-a-formats-client-is-told-and-the-interface-version-7),
+[Q-BAS-310](spec/bastion.md#q-bas-310--the-longest-wait-a-formats-client-is-told-is-a-fact-of-the-format-zero-tells-the-true-wait),
+[Q-BAS-311](spec/bastion.md#q-bas-311--a-refusal-of-the-bastions-guard-names-its-wait-in-words-and-rounds-it-once)). It adds to the frozen
+format contract and keeps `ContractVersion`: `catalog.BastionFacts.RetryAfterMax` and `BastionFacts.CapRetryAfter`. It raises the Bastion
+interface to version 7: `retryAfterMaxSeconds` of the handshake's format table.
+
+**Context.** NuGet's and Ansible Galaxy's `WriteError` tell a client at most 30 s, because their clients count a wait against the timeout of
+the whole command. A Bastion's own refusals (its request and miss limits, its block of 15 minutes doubling to 24 hours, its
+failed-authentication timeout) are rendered without the format's code and told those clients the whole wait (W-34, the planner's E2).
+
+**Decision.**
+- The longest wait a client of a format is told is declared in the format's Bastion facts, 0 for the true wait, whole seconds otherwise.
+  NuGet and Ansible Galaxy declare their `maxRetryAfter` of 30 s; npm, OCI, Debian and the ClamAV definitions declare none; generic has no
+  entry in the table and gets the true wait.
+- Kit check 19 holds the declaration to the format's `WriteError` for every format, so the main installation's cap and the Bastion's come
+  from the one constant of the format.
+- The handshake carries it; the Bastion caps every `Retry-After` of its own and the RateLimit field's `t` of its guard's refusals by it,
+  and its detail names the true wait, rounded once as the main installation's refusals are.
+
+**Consequences.** Main installation and Bastions are upgraded together, as for every raise of the interface. A format to come answers the
+question by what its `WriteError` tells. The main installation's RateLimit field `t` on these formats is not capped (H-2275).
+
 ## Design invariants
 
 The invariants of [spec/README.md](spec/README.md#design-invariants) are the baseline every spec
@@ -10265,10 +10290,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-BAS
 
-239 questions on [spec/bastion.md](spec/bastion.md).
+241 questions on [spec/bastion.md](spec/bastion.md).
 
 <details>
-<summary>Q-BAS: 239 questions</summary>
+<summary>Q-BAS: 241 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10511,6 +10536,8 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-BAS-305](spec/bastion.md#q-bas-305--the-spool-of-fills-does-not-count-in-the-areas) | The spool of fills does not count in the areas | Decided by the builder of W-34's package E1 (2026-11-26), a defect that needs no decision of the owner | (a) The areas count committed bytes only; the spool keeps its own bound | [ADR-298](#adr-298--a-bastions-cache-is-bounded-at-every-commit-and-the-bytes-between-a-bastion-and-the-main-installation-are-counted) |
 | [Q-BAS-306](spec/bastion.md#q-bas-306--the-main-installation-counts-the-body-bytes-the-marking-stage-writes-by-registration-and-the-callers-class) | The main installation counts the body bytes the marking stage writes, by registration and the caller's class | Decided by the builder of W-34's package E5 (2026-11-26), which needs no decision of the owner | (a) A counter of its own, `quader_bastion_forwarded_bytes_total{bastion, class}`, raised by the marking stage's writer with every body byte it passes, `class` the caller's: `anonymous` or `authenticated`, the values of the Bastion's budget | [ADR-298](#adr-298--a-bastions-cache-is-bounded-at-every-commit-and-the-bytes-between-a-bastion-and-the-main-installation-are-counted) |
 | [Q-BAS-307](spec/bastion.md#q-bas-307--the-class-of-a-fills-bytes-is-the-class-of-the-request-that-started-it) | The class of a fill's bytes is the class of the request that started it | Decided by the builder of W-34's package E5 (2026-11-26), which needs no decision of the owner | (a) The class of the request that started the fill, the class of its slot | [ADR-298](#adr-298--a-bastions-cache-is-bounded-at-every-commit-and-the-bytes-between-a-bastion-and-the-main-installation-are-counted) |
+| [Q-BAS-310](spec/bastion.md#q-bas-310--the-longest-wait-a-formats-client-is-told-is-a-fact-of-the-format-zero-tells-the-true-wait) | The longest wait a format's client is told is a fact of the format; zero tells the true wait | Decided by the development agent on 2026-11-26 | (a) A member of `catalog.BastionFacts`, 0 for the true wait; the handshake's table carries it; kit check 19 holds `WriteError` to it for every format | [ADR-299](#adr-299--the-longest-wait-a-formats-client-is-told-is-a-fact-of-the-format) |
+| [Q-BAS-311](spec/bastion.md#q-bas-311--a-refusal-of-the-bastions-guard-names-its-wait-in-words-and-rounds-it-once) | A refusal of the Bastion's guard names its wait in words and rounds it once | Decided by the development agent on 2026-11-26 | (a), in `refuseVerdict` of [request.go](../internal/bastion/engine/request.go) (`oneWait`, `refusalDetail`): a block says requests from the address are refused for a while, a failed-authentication timeout that a credential the Bastion cannot check now is refused, every other refusal that there were too many requests; each ends with "Try again in <wait>.". | [ADR-299](#adr-299--the-longest-wait-a-formats-client-is-told-is-a-fact-of-the-format) |
 
 </details>
 

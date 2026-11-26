@@ -347,6 +347,10 @@ reason in `detail`); 409 for `version_exists` and `version_tombstoned`; 413 for 
 a name, a version or an archive the format refuses; 502 and 503 for an upstream failure of a remote (`upstream_unavailable`, with the
 upstream's status in `detail` when it is safe to show).
 
+`Retry-After` on a Galaxy endpoint is at most 30 s (`maxRetryAfter` of [errors.go](../../../internal/formats/ansible/errors.go)), whatever
+the wait is: the client counts a wait against its own timeout. The detail keeps the whole wait. The format declares the cap as
+`catalog.Facts.Bastion.RetryAfterMax`, so a Bastion's own refusals on its paths tell the same ([bastion.md](../bastion.md) R-BAS-091).
+
 Acceptance criteria:
 
 - A publish with a token that has only `read` answers 403 with `errors[0].code` `permission_denied`, and `ansible-galaxy` prints that

@@ -185,6 +185,12 @@ metrics:
 
 The chart's `ingress` values carry annotations of HAProxy Ingress (a request limit per client address and a limit of connections). Another ingress controller ignores them: the Bastion's own limits and blocking still hold, the coarse limit in front of them does not. HAProxy Ingress counts per TCP peer address, so behind a load balancer that hides the client address, every client shares one budget until you switch on its proxy protocol or turn `edgeLimit.enabled` off.
 
+## Limits and blocking
+
+### What a refused client is told
+
+A request the Bastion refuses itself, because its address sent too many requests or misses, is blocked, or is in the timeout after failed sign-ins, is answered `429` (`503` on the ClamAV definitions) with `Retry-After` and a text that names the whole wait, for example "Requests from this address are refused for a while after too many refused requests. Try again in 15 minutes." `Retry-After` carries that wait, except for NuGet and Ansible Galaxy clients: they count a wait against the timeout of the whole command, so they are told at most 30 seconds, as the main installation tells them, and come back every 30 seconds until the wait is over.
+
 ## Verify
 
 1. Open **Admin area › Bastions**. Within `bastion.main.handshake_interval` (default `1m`) of the start, every replica appears in the table **Last contact** with, under its name, the client address the main installation saw, its release and its interface version, then the time of its contact (hold the pointer on it for the date and time) and the base URL it reported, which must equal the `server.base_url` you set. A replica that is missing has not completed a handshake: look at its log and at the metrics below. The token's **Last used** column shows the same moment.

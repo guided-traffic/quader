@@ -15,8 +15,8 @@ rendered from it ([checklist.md there](https://github.com/guided-traffic/quader/
 requirement lists the feature in its `Covers:` line. *open*: no requirement does. For entries with priority
 *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,321 spec requirements:
-799 cover catalog features, 522 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,322 spec requirements:
+799 cover catalog features, 523 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>522 requirements</summary>
+<summary>523 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3173,6 +3173,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-BAS-056 | The ClamAV definitions through a Bastion | MVP | [bastion.md](../spec/bastion.md) |
 | R-BAS-057 | Format facts at the Bastion: the handshake's format table and bound hosts | MVP | [bastion.md](../spec/bastion.md) |
 | R-BAS-058 | What a format owes a Bastion, and kit check 19 | MVP | [bastion.md](../spec/bastion.md) |
+| R-BAS-091 | The longest wait a format's client is told, and the interface version 7 | MVP | [bastion.md](../spec/bastion.md) |
 | R-BAS-060 | Tests of the feature and what they cost | MVP | [bastion.md](../spec/bastion.md) |
 | R-BAS-070 | The handover per blob: a link and a data key per released blob | P1 | [bastion.md](../spec/bastion.md) |
 | R-BAS-071 | The switch: per registration at the main installation, off by default | P1 | [bastion.md](../spec/bastion.md) |

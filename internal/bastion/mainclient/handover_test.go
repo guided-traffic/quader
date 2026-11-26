@@ -32,7 +32,8 @@ func TestR_BAS_073_TheClientAndTheFakeSpeakVersion6(t *testing.T) {
 	for _, on := range []bool{false, true} {
 		r.main.SetHandover(on)
 		hs, err := r.c.Handshake(ctx)
-		if err != nil || hs.Handover != on || hs.InterfaceVersion != 6 || iface.InterfaceVersion != 6 {
+		// The handover came with version 6 and stays in every later one.
+		if err != nil || hs.Handover != on || hs.InterfaceVersion != iface.InterfaceVersion || iface.InterfaceVersion < 6 {
 			t.Fatalf("handshake with the switch %v: %+v %v", on, hs, err)
 		}
 	}

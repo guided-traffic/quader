@@ -220,7 +220,9 @@ HTTP conventions for every NuGet endpoint:
   restore for minutes, before the client's last attempt. The cap holds for the refusals of the download limits too
   ([usage-and-limits.md](../usage-and-limits.md) R-LIM-020): a restore whose hourly budget is used up retries within the cap and
   fails with the 429; its reason (`download_limit_reached: The download limit of …`) is in the body, which the clients do not print
-  (Gap 1 of that page).
+  (Gap 1 of that page). The format declares the cap as `catalog.Facts.Bastion.RetryAfterMax`, so a Bastion's own refusals (its
+  limits, its block of 15 minutes to 24 hours, its failed-authentication timeout) tell a NuGet client the same 30 s
+  ([bastion.md](../bastion.md) R-BAS-091).
 - Error bodies on NuGet protocol endpoints are one line of `text/plain; charset=utf-8` in the form
   `<code>: <message>`, using the codes of the owning pages (for example `credentials_required`,
   `invalid_token`, `deny.ownership`, `no_deploy_target`). NuGet clients print status and reason

@@ -14188,6 +14188,11 @@ export interface components {
              */
             rateLimitedStatus: 429 | 503;
             /**
+             * @description The longest wait in seconds a Bastion's own refusals on the format's family tell a client, in `Retry-After` and in the RateLimit field's `t` (R-BAS-058, Q-BAS-310); `0` tells the true wait. The detail of the refusal names the true wait in either case. NuGet and Ansible Galaxy declare 30, the cap their `WriteError` applies at the main installation.
+             * @example 30
+             */
+            retryAfterMaxSeconds: number;
+            /**
              * @description The literal bound-host patterns of the format (R-EP-006), paths from the host root.
              * @example [
              *       "/v2/"

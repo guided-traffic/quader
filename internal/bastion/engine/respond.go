@@ -65,8 +65,14 @@ func (e *engine) refuse(q *rq, err *errs.Error, reason string) {
 }
 
 // problem writes one of the Bastion's own answers in the shape of the request's family: below the registry root the
-// distribution's (Q-BAS-169), everywhere else the problem details of R-BAS-029.
+// distribution's (Q-BAS-169), everywhere else the problem details of R-BAS-029. Its Retry-After is at most the longest wait
+// the format of the request tells its clients (R-BAS-058); the detail keeps the true wait.
 func (e *engine) problem(q *rq, err *errs.Error) {
+	if facts := e.factsOf(q); err.RetryAfter > 0 && facts.CapRetryAfter(err.RetryAfter) != err.RetryAfter {
+		capped := *err
+		capped.RetryAfter = facts.CapRetryAfter(err.RetryAfter)
+		err = &capped
+	}
 	if q.fam == familyRegistry {
 		writeRegistryError(q.w, q.r, err)
 		return

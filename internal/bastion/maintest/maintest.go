@@ -256,7 +256,8 @@ func (m *Main) SetHandover(on bool) { m.lock(func() { m.handover = on }) }
 // Formats is the format table a main installation of today sends, filled from the formats' catalog.Facts in the order of
 // the IDs (R-BAS-057):
 // OCI with the registry root, its four replay headers and the bound prefix /v2/; the ClamAV definitions with 503 for a
-// rate limit; npm, NuGet, Debian and Ansible Galaxy with the defaults. Generic has no routes and no entry.
+// rate limit; NuGet and Ansible Galaxy with the longest wait of 30 s their clients are told (R-BAS-058); npm and Debian with
+// the defaults. Generic has no routes and no entry.
 func Formats() iface.HandshakeFormats {
 	plain := func(id string) iface.HandshakeFormat {
 		return iface.HandshakeFormat{ID: id, ReplayHeaders: []string{}, RateLimitedStatus: http.StatusTooManyRequests, BoundPrefixes: []string{}}
@@ -266,7 +267,9 @@ func Formats() iface.HandshakeFormats {
 	oci.ReplayHeaders = []string{"Docker-Content-Digest", "Docker-Distribution-Api-Version", "Oci-Filters-Applied", "Link"}
 	clamav := plain("clamav")
 	clamav.RateLimitedStatus = http.StatusServiceUnavailable
-	return iface.HandshakeFormats{plain("ansible"), clamav, plain("deb"), plain("npm"), plain("nuget"), oci}
+	ansible, nuget := plain("ansible"), plain("nuget")
+	ansible.RetryAfterMaxSeconds, nuget.RetryAfterMaxSeconds = 30, 30
+	return iface.HandshakeFormats{ansible, clamav, plain("deb"), plain("npm"), nuget, oci}
 }
 
 // SetDelay makes every request wait before it is answered.

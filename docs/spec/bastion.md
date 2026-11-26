@@ -491,7 +491,7 @@ installation's ingress or its Service.
 - `Quader-Bastion-Authorization` is redacted like `Authorization` in every log, span and support bundle (R-OPS-013), and the
   main installation never echoes a `Quader-Bastion-*` request header.
 - The operations are in the OpenAPI document under the tag `bastion`, marked `x-quader-bastion-interface: <n>` and declared
-  `x-quader-permission: {bastion: true}`, which the shared authorization step admits on the recognition result alone
+  `x-quader-permission: {bastion: true}` (`<n>` is 7 since R-BAS-091), which the shared authorization step admits on the recognition result alone
   ([Q-BAS-52](#q-bas-52--recognition-and-marking-are-one-chain-stage-before-authentication-the-dispatcher-tells-an-observer-about-the-route));
   they are not part of the management API's v1 promise but of the interface version (R-ARCH-025).
 - Main side metrics: `quader_bastion_interface_requests_total{bastion, operation, outcome}`,
@@ -546,6 +546,10 @@ The Bastion interface has a version of its own, separate from the release number
 - **Upgrades.** A release that raises the version is announced in its release notes, and main installation and Bastions are
   upgraded together, within the grace period of the Bastions (R-BAS-027). R-ARCH-025's table holds the interface as a surface
   of its own.
+- **The raises so far**, each with the requirement that describes it: 4, the format table and the bound repository (R-BAS-057); 5, the
+  read shapes per package (R-BAS-087); 6, the handover per blob (R-BAS-073); 7, the longest wait a format's client is told,
+  `retryAfterMaxSeconds` of the format table (R-BAS-091). The version is `iface.InterfaceVersion`; the comment beside it names the
+  same list.
 
 Acceptance criteria:
 
@@ -565,7 +569,7 @@ after every reconnect, and after a feed entry of the kind `settings` (R-BAS-015)
 
 ```json
 {
-  "interfaceVersion": 3,
+  "interfaceVersion": 7,
   "bastion": {"name": "partners", "tokenId": "0192f1c4-…", "tokenExpiresAt": "2027-11-02T00:00:00Z"},
   "installation": {"baseUrl": "https://quader.example.com", "release": "0.14.0"},
   "responseBaseUrl": "https://packages.example.com",
@@ -576,7 +580,7 @@ after every reconnect, and after a feed entry of the kind `settings` (R-BAS-015)
 }
 ```
 
-*(example answer)*
+*(example answer; the members `formats` and `boundRepository` are R-BAS-057's, `handover` R-BAS-071's)*
 
 - `responseBaseUrl` is the response base URL the main installation derived for this request (R-OPS-005, R-EP-003), with the
   Bastion's forwarded host counted only when the Bastion connected from an address of `bastions.trusted_proxies` (R-BAS-017). The Bastion
@@ -1475,11 +1479,20 @@ The Bastion produces only these answers itself; every other body comes from the 
 - **A format's refusal status.** For a format whose facts name another status for a rate limit (`rateLimitedStatus` of the
   handshake, R-BAS-057; the ClamAV definitions: `503`), the Bastion's own `429` answers of that format's family are given that
   status with the same `Retry-After` and problem body (R-BAS-056).
+- **The wait of a `429`** (R-BAS-091). The wait of a refusal of R-BAS-035 to R-BAS-037 is rounded up once, to whole seconds below two
+  minutes and to whole minutes from there, as the main installation's refusals are ([usage-and-limits.md](usage-and-limits.md)
+  Q-LIM-291). The `detail` (the `message` below `/v2/`) names that wait in words ("Too many requests from this address. Try again in 15
+  minutes."); `Retry-After` and the `RateLimit` field's `t` carry it, but at most the longest wait the format of the request tells its
+  clients (`retryAfterMaxSeconds` of the handshake's format table, R-BAS-057): NuGet and Ansible Galaxy 30 s, every other format the
+  whole wait. Every other `Retry-After` of the Bastion's own (`main_unreachable` 30 s, `bastion_busy` 1 s) is held to the same cap.
 
 Acceptance criteria:
 
 - Each row has a table test case; `npm` and `dotnet restore` report the status of each, and a `401` makes both send their
   configured credentials (R-AUTH-002).
+- A blocked address, a refused request and a failed-authentication timeout of 15 minutes answer on a NuGet and an Ansible Galaxy path
+  `Retry-After: 30` and `t=30`, on an npm and an OCI path `900`, and name "15 minutes" in the detail on all four
+  (`TestR_BAS_058_TheBastionsOwnRefusalsKeepTheFormatsLongestWait`, unit, milliseconds).
 
 ## The cache
 
@@ -3148,11 +3161,12 @@ Priority: **MVP** · Covers: quader-only
 ```json
 {
   "formats": [
-    {"id": "npm", "registryRoot": false, "replayHeaders": [], "rateLimitedStatus": 429, "boundPrefixes": []},
+    {"id": "npm", "registryRoot": false, "replayHeaders": [], "rateLimitedStatus": 429, "retryAfterMaxSeconds": 0, "boundPrefixes": []},
+    {"id": "nuget", "registryRoot": false, "replayHeaders": [], "rateLimitedStatus": 429, "retryAfterMaxSeconds": 30, "boundPrefixes": []},
     {"id": "oci", "registryRoot": true,
      "replayHeaders": ["Docker-Content-Digest", "Docker-Distribution-Api-Version", "Oci-Filters-Applied", "Link"],
-     "rateLimitedStatus": 429, "boundPrefixes": ["/v2/"]},
-    {"id": "clamav", "registryRoot": false, "replayHeaders": [], "rateLimitedStatus": 503, "boundPrefixes": []}
+     "rateLimitedStatus": 429, "retryAfterMaxSeconds": 0, "boundPrefixes": ["/v2/"]},
+    {"id": "clamav", "registryRoot": false, "replayHeaders": [], "rateLimitedStatus": 503, "retryAfterMaxSeconds": 0, "boundPrefixes": []}
   ],
   "boundRepository": "web/docker-hub"
 }
@@ -3160,12 +3174,14 @@ Priority: **MVP** · Covers: quader-only
 
 *(example members, beside those of R-BAS-010)*
 
-- `replayHeaders` and `rateLimitedStatus` are `catalog.Facts.Bastion` of the format (R-BAS-058; `rateLimitedStatus` is
-  `Bastion.RateLimited()`, 429 where nothing is declared); `registryRoot` is `catalog.Facts.RegistryRoot`; `boundPrefixes` are the
+- `replayHeaders`, `rateLimitedStatus` and `retryAfterMaxSeconds` are `catalog.Facts.Bastion` of the format (R-BAS-058;
+  `rateLimitedStatus` is `Bastion.RateLimited()`, 429 where nothing is declared; `retryAfterMaxSeconds` is `Bastion.RetryAfterMax` in
+  seconds, 0 where the format tells its clients the true wait, R-BAS-091); `registryRoot` is `catalog.Facts.RegistryRoot`; `boundPrefixes` are the
   literal bound-host patterns of the format (endpoints.md R-EP-006), `catalog.Facts.BoundPrefixes()`, derived from the registry root
   ([Q-BAS-183](#q-bas-183--the-bound-host-prefixes-are-derived-from-the-registry-root-not-declared)). The interface's types are
   `iface.HandshakeFormats` and `iface.HandshakeFormat` ([wire.go](../../internal/bastion/iface/wire.go)). The
-  Bastion keeps the table until the next handshake; a format the table does not name gets the defaults (no replay headers, `429`).
+  Bastion keeps the table until the next handshake; a format the table does not name gets the defaults (no replay headers, `429`,
+  the true wait).
   A table that fails the interface's rules (`HandshakeFormats.Validate`) fails the handshake
   ([Q-BAS-199](#q-bas-199--a-format-table-the-bastion-cannot-rely-on-fails-the-handshake)).
   The Bastion knows the format of a request from its family: the format segment of `/api/<format>/`, the format whose entry says
@@ -3183,7 +3199,7 @@ Priority: **MVP** · Covers: quader-only
   in `bastions.trusted_proxies`, Q-BAS-116): the default endpoint without a host set binds by the request's own host, which for a
   forward is the main installation's (`bastionForwarded` in [wire_bastion.go](../../internal/app/wire_bastion.go); found by
   `TestR_BAS_057_ABoundHostThroughABastion` and fixed with the Bastion's side).
-- The members raise the interface to version 4 (R-BAS-009).
+- The members raise the interface to version 4 (R-BAS-009); `retryAfterMaxSeconds` raises it to version 7 (R-BAS-091).
 - *Built on 2026-11-22, the main installation's side (package B):* the table is `v1.BastionFormatTable(formats.List())`, built once by the
   composition root, one entry per format with routes in the order of the format IDs (generic, which has none, has no entry); the lists
   are empty, never null, and a replica without the table answers `"formats": []`
@@ -3222,6 +3238,7 @@ The contract a format keeps so that every Bastion serves it without a decision o
 | A document route answers a conditional request with its own validator `304` | the Bastion revalidates documents with conditional requests; a route that ignores them costs a whole transfer per revalidation | kit check 19 |
 | Every response header of a content route is a representation header of the core, a header of the core's own (a request ID, a rate-limit field), or one of `catalog.Facts.Bastion.ReplayHeaders` | a cached answer replays the representation headers and the declared ones, and drops every other | kit check 19 |
 | A rate limit of the format answers the status `catalog.Facts.Bastion.RateLimitedStatus` (429 unless declared) | the Bastion's own rate-limit refusals of the format's family take that status | kit check 19 (through `WriteError`) |
+| A rate limit of the format tells the client the wait capped by `catalog.Facts.Bastion.RetryAfterMax` (the whole wait unless declared): a wait of a second as one second, a wait of a day as the cap or as a day | the Bastion's own refusals of the format's family tell the declared wait (R-BAS-091); a cap `WriteError` applies and the facts do not declare would reach the format's clients from a Bastion uncapped | kit check 19 (through `WriteError`) |
 | A write has a writing kind or an action other than `read`; a read route that takes a body is `Volatile` with `read` | the probe of R-BAS-014 | built (R-BAS-014) |
 | `absent` comes from the core's lookups | the negative cache (R-BAS-024) | built (Q-BAS-70) |
 | Every rights decision of a content route is made through the host before its status line; a response that draws on packages other than the one it was decided for also decides a package-less read; a reader of only the response's package receives the same status, body and validators as a reader of the whole repository | a document marked `shared` for a reader of one package is served to every reader of that package in full (R-BAS-081, R-BAS-082) | kit check 21 (R-BAS-086) |
@@ -3229,10 +3246,13 @@ The contract a format keeps so that every Bastion serves it without a decision o
 - **The contract's addition** (an ADR, [ADR-238](../decisions.md#adr-238--a-bastion-serves-every-format-the-registry-root-the-formats-bastion-facts-and-the-handshakes-format-table)):
   `catalog.Facts.Bastion` of the type `catalog.BastionFacts` with `ReplayHeaders []string` (canonical header names, none of the core's
   representation or per-request headers, none with the prefix `Quader-`) and `RateLimitedStatus int` (0 is 429; 429 or 503). OCI declares
-  the four headers of R-BAS-053, the ClamAV definitions `503`; every other format of today declares nothing.
+  the four headers of R-BAS-053, the ClamAV definitions `503`. A second addition
+  ([ADR-299](../decisions.md#adr-299--the-longest-wait-a-formats-client-is-told-is-a-fact-of-the-format)): `RetryAfterMax time.Duration`
+  (0 or whole seconds) with `BastionFacts.CapRetryAfter`, the longest wait the format's clients are told (R-BAS-091). NuGet and Ansible
+  Galaxy declare 30 s, the `maxRetryAfter` of their `WriteError`; npm, OCI, Debian and the ClamAV definitions declare none.
 - **Kit check 19** (`checks_bastion.go` of the conformance kit): over every content case, the duties above marked "kit check 19"; a
   `testformat` defect each (`DownloadWithoutContentAddress`, `UndeclaredReplayHeader`, `DocumentIgnoresConditional`,
-  `RateLimitedStatusDiffers`). A route whose answers cannot meet a duty by design is listed in the fixture with its reason, as for the
+  `RateLimitedStatusDiffers`, `CapsRetryAfterUndeclared`, `DeclaresRetryAfterCap`). A route whose answers cannot meet a duty by design is listed in the fixture with its reason, as for the
   other checks. Runs in every format's `TestR_ARCH_010_Conformance`, without PostgreSQL.
 - **As built** ([Q-BAS-181](#q-bas-181--the-cores-representation-and-per-request-headers-are-two-lists-of-the-catalog-and-the-content-headers-of-r-arch-007-are-representation-headers)
   to [Q-BAS-184](#q-bas-184--kit-check-19-judges-what-a-bastion-keeps-and-a-route-is-exempt-from-two-duties-only-with-a-reason)): the core's
@@ -3251,6 +3271,52 @@ Acceptance criteria:
 - Unit (`internal/formats/formattest/testformat`): each defect fails check 19 and no other check (`TestR_BAS_058_KitCheck19`); npm,
   NuGet, OCI, Debian, Ansible Galaxy, the ClamAV definitions and generic pass it (each format's `TestR_ARCH_010_Conformance`; generic,
   which has no routes, skips it with its reason).
+
+### R-BAS-091 · The longest wait a format's client is told, and the interface version 7
+Priority: **MVP** · Covers: quader-only
+
+A client of a format is told the same longest wait by a Bastion's own refusals as by the main installation
+([Q-BAS-310](#q-bas-310--the-longest-wait-a-formats-client-is-told-is-a-fact-of-the-format-zero-tells-the-true-wait)). Found by the
+planner of the owner's task W-34: the main installation told NuGet's and Ansible Galaxy's clients at most 30 s, while a Bastion's own
+refusals (R-BAS-035 to R-BAS-037) told them the whole wait, a block's 15 minutes to 24 hours included; a NuGet client waits any
+`Retry-After` against the one `--timeout` of its command (formats/nuget.md R-NUGET-002, R-NUGET-032).
+
+- **A fact of the format.** `catalog.Facts.Bastion.RetryAfterMax` (R-BAS-058) is the longest wait the format's clients are told, in
+  `Retry-After` and in the RateLimit field's `t`: 0 tells the true wait, otherwise whole seconds. It is the cap the format's `WriteError`
+  applies at the main installation, one constant per format, and kit check 19 holds the declaration to `WriteError` for every format:
+  a rate limit of a second is told a second, a rate limit of a day the cap or a day. The handshake's format table carries it as
+  `retryAfterMaxSeconds` (R-BAS-057).
+- **What each format declares, and why:**
+
+| Format | Longest wait | From |
+|---|---|---|
+| npm | the whole wait | `WriteError` cuts nothing; npm waits what `Retry-After` says ([usage-and-limits.md](usage-and-limits.md) Q-LIM-59) and has no budget of the whole command the wait would spend |
+| NuGet | 30 s | `maxRetryAfter` of its `WriteError` (formats/nuget.md R-NUGET-002): the clients wait any `Retry-After` against the one `--timeout` of the command |
+| OCI | the whole wait | formats/oci.md R-OCI-008: `Retry-After` is never cut, a client told 60 s for a wait of six hours retries into the same refusal; docker exits at a `429` whatever it says, podman waits it |
+| Debian | the whole wait | `WriteError` cuts nothing; APT prints the status line (the manual's table of the clients); whether APT waits a `Retry-After` is not verified |
+| Ansible Galaxy | 30 s | `maxRetryAfter` of its `WriteError` (formats/ansible.md R-ANS-007): the client counts the wait against its own timeout |
+| generic (`/files/`) | the whole wait | no routes and no entry in the table, so a Bastion takes the table's default; the main installation's problem details cut nothing; `curl --retry` waits what it says |
+| ClamAV definitions | the whole wait | a rate limit is `503` (R-CLAMAV-005), which `freshclam` counts as a failed attempt without reading `Retry-After`, so the value reaches no schedule |
+
+- **At the Bastion.** The engine caps the `Retry-After` of every answer of its own by the entry of the request's format
+  (`HandshakeFormat.CapRetryAfter`), and the `t` of the RateLimit field of a refusal of its guard; the detail names the true wait (R-BAS-029).
+  A format the table does not name gets the true wait.
+- **The interface version 7.** `retryAfterMaxSeconds` is a member of `iface.HandshakeFormat`, required and never negative
+  (`HandshakeFormats.Validate`); `iface.InterfaceVersion` is 7, `testdata/interface.txt` and the OpenAPI document's
+  `BastionHandshakeFormat` and `x-quader-bastion-interface: 7` say so. Main installation and Bastions are upgraded together (R-BAS-009).
+
+Acceptance criteria:
+
+- Unit (`internal/bastion/engine`, milliseconds): a block, a request limit and a failed-authentication timeout of 15 minutes answer
+  `Retry-After: 30` and `t=30` on NuGet's and Galaxy's paths, `900` on npm's and OCI's, and "15 minutes" in every detail
+  (`TestR_BAS_058_TheBastionsOwnRefusalsKeepTheFormatsLongestWait`); the wait is rounded once (`TestR_BAS_029_ARefusalNamesOneWait`).
+- Kit (every format, milliseconds): check 19 holds `WriteError` to the declaration; the `testformat` defects `CapsRetryAfterUndeclared`
+  and `DeclaresRetryAfterCap` fail it (`TestR_BAS_058_KitCheck19`'s table in `testformat`).
+- Unit (`internal/api/v1`, `internal/bastion/iface`, `internal/formats/catalog`): the handshake's table carries 30 for NuGet and Ansible
+  Galaxy and 0 for every other format, equal to the table of `maintest` (`TestR_BAS_057_TheHandshakeCarriesTheFormatTable`); a negative
+  value fails `Validate`; Register refuses a negative cap or one of a part of a second.
+- Cost: no integration or e2e case; the kit's duty is two calls of `WriteError` per format, under a millisecond each, about 25 ms with 25
+  formats.
 
 ### R-BAS-059 · Downloads, usage and audit for every format
 Priority: **MVP** · Covers: RMT-041
@@ -9516,6 +9582,56 @@ after its caller left (H-472). The request that started the fill took the budget
 
 **Choice:** (a). **Applied in the spec:** R-BAS-090, R-BAS-040; code: `fillRun.class` in [fill.go](../../internal/bastion/engine/fill.go).
 
+### Q-BAS-310 · The longest wait a format's client is told is a fact of the format; zero tells the true wait
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Its entry in the decision log: [ADR-299](../decisions.md#adr-299--the-longest-wait-a-formats-client-is-told-is-a-fact-of-the-format).
+
+Context: the main installation tells NuGet's and Ansible Galaxy's clients at most 30 s (`maxRetryAfter` in each format's `WriteError`),
+because their clients count a wait against the timeout of the whole command. A Bastion renders its own refusals without the format's
+code and told them the whole wait: up to 24 hours for a block (W-34, the planner's finding E2, reproduced by
+`TestR_BAS_058_TheBastionsOwnRefusalsKeepTheFormatsLongestWait` on the unchanged code: `Retry-After: 900` and `t=900` on both formats'
+paths). The question is where the cap lives so that both sides apply the same one, for every format to come.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A member of `catalog.BastionFacts`, 0 for the true wait; the handshake's table carries it; kit check 19 holds `WriteError` to it for every format (chosen) | The format's constant is declared once in its descriptor and used by its `WriteError`; the Bastion reads it as data | One place per format; a format that caps without declaring, or declares without capping, fails its kit run; the Bastion stays without knowledge of a format; the format to come answers it by its `WriteError` | The interface rises to version 7 |
+| (b) As (a), with an explicit value for every format (a sentinel for "uncapped") | Every descriptor names it | Nobody can forget it | Five formats write a value that says nothing; the kit's check already shows what each format tells, so a forgotten cap fails anyway |
+| (c) The cap in the Bastion's code for the IDs `nuget` and `ansible` | Two special cases | No interface change | The Bastion learns two formats, against Q-BAS-179; a format to come is forgotten |
+| (d) The main installation caps centrally for every format, and the Bastion copies the same constant | One cap for all | Simple | OCI must not be cut (formats/oci.md R-OCI-008), and npm and podman wait honestly what they are told |
+
+**Choice:** (a). The cap is `catalog.Facts.Bastion.RetryAfterMax` and `HandshakeFormat.RetryAfterMaxSeconds`; NuGet and Ansible Galaxy declare
+their `maxRetryAfter`, every other format declares nothing. The Bastion caps every `Retry-After` of its own and the `t` of its guard's
+RateLimit field; the detail keeps the true wait (R-BAS-029, R-BAS-091). The main installation's caps and the Bastion's come from one
+place, the format's constant; the main installation's RateLimit field `t` is not capped by it
+([H-2275](#h-2275--the-main-installations-ratelimit-field-tells-a-nuget-or-galaxy-client-the-whole-wait)).
+
+**Rationale:** the format knows what its clients do with a wait, the Bastion does not; a declaration checked against the format's own
+writer is the one form that cannot drift. The development agent would revisit it when a format's clients need a floor as well as a cap.
+
+### Q-BAS-311 · A refusal of the Bastion's guard names its wait in words and rounds it once
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: with a cap of 30 s a NuGet client that is blocked for an hour comes back every 30 s; what it, and its user with `curl`, can
+read of the true wait is the body. The Bastion's detail was "Too many requests; retry after the period in the Retry-After header.", which
+under a cap sends the reader to a value that is not the wait. The main installation's refusals round once and name the wait in their
+detail ([usage-and-limits.md](usage-and-limits.md) Q-LIM-291).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The main installation's rule: round up once, to seconds below two minutes and to minutes from there; the detail names it in words, `Retry-After` and `t` carry it, capped (chosen) | "Too many requests from this address. Try again in 15 minutes." | One wait per answer, as at the main installation; the reader of a capped answer sees the truth; a client that waits is never early | A wait of 2 min 1 s is told as 3 minutes |
+| (b) A member `retryAfterSeconds` with the true wait in the problem body | Machine-readable | — | Not in the distribution's error shape below `/v2/`; no client reads it; a member of the interface's bodies more |
+| (c) Keep the detail | — | No change | Under a cap the detail points at a wrong value |
+
+**Choice:** (a), in `refuseVerdict` of [request.go](../../internal/bastion/engine/request.go) (`oneWait`, `refusalDetail`): a block says
+requests from the address are refused for a while, a failed-authentication timeout that a credential the Bastion cannot check now is
+refused, every other refusal that there were too many requests; each ends with "Try again in <wait>.".
+
+**Rationale:** the answer a person reads must carry what the capped header no longer does. The development agent would revisit it if a
+client is found that reads the problem body's members.
+
 ## What this does not cover
 
 ### H-382 · A volumetric attack on bandwidth is not absorbed by the Bastion
@@ -10437,3 +10553,15 @@ passes through unkept and a document kept from memory are read from the main ins
 `quader_bastion_bytes_served_total{source="main"}`, by no class, so the Bastion's own figures by class cover its fills only, and the main
 installation's figure is the complete one for what it sent. What makes it real: an operator who adds the Bastion's fill bytes and expects the
 main installation's figure.
+
+### H-2275 · The main installation's RateLimit field tells a NuGet or Galaxy client the whole wait
+
+Stage: stage 7 of the main installation (R-LIM-020) on a NuGet or Ansible Galaxy path. Subject: the RateLimit fields of a refusal, not
+`Retry-After`.
+
+Live wherever the download limits are in `enforce`. The main installation sets the RateLimit fields on the writer before the format's
+`WriteError` renders the refusal (`httplimit.SetPolicies`, `httplimit.SetRefusalPolicy`), and `WriteError` caps `Retry-After` alone: a
+NuGet client blocked for 15 minutes reads `Retry-After: 30` and `t=900`. A Bastion's own refusal tells `t=30` (R-BAS-091), so the two
+sides differ in `t`. No client of either format reads the RateLimit fields (formats/nuget.md R-NUGET-032 lists what the NuGet clients
+read), so nothing waits longer for it. What makes it real: a client of either format that starts to read `t`. What would close it: the
+format's `WriteError` rewriting the `t` of the fields it finds to its cap, or the stage setting them through the format's facts.

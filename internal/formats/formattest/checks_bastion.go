@@ -218,15 +218,29 @@ func revalidates(h *Host, c ContentCase, resp *Response) []string {
 	return nil
 }
 
-// rateLimitStatus is the duty of WriteError: a rate limit answers the status the format's facts declare.
+// longestBastionWait is the longest wait a Bastion's own refusal names: a block at its default max_duration (R-BAS-037).
+const longestBastionWait = 24 * time.Hour
+
+// rateLimitStatus is the duty of WriteError: a rate limit answers the status the format's facts declare, and tells the client
+// the wait capped by the longest wait they declare (RetryAfterMax, R-BAS-058): a second as a second, a day as the cap, or as a
+// day when the format declares none. A Bastion's own refusals on the format's family apply the declared cap, so a cap
+// WriteError applies and the facts do not declare would reach the format's clients from a Bastion uncapped.
 func (r *run) rateLimitStatus() {
 	want := r.d.Bastion.RateLimited()
-	rec := httptest.NewRecorder()
-	req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, DefaultBaseURL+"/", nil)
-	r.f.WriteError(rec, req, errs.E(errs.RateLimited, errs.CodeRateLimited, "Too many requests from this address. Try again in a second.",
-		errs.WithRetryAfter(time.Second)))
-	if rec.Code != want {
-		r.failf("WriteError answers a rate limit %d and catalog.Facts.Bastion says %d: a Bastion's own rate-limit refusals on the format's family take the declared status, so declare the status WriteError renders (RateLimitedStatus, 429 or 503)",
-			rec.Code, want)
+	for _, wait := range []time.Duration{time.Second, longestBastionWait} {
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, DefaultBaseURL+"/", nil)
+		r.f.WriteError(rec, req, errs.E(errs.RateLimited, errs.CodeRateLimited, "Too many requests from this address.",
+			errs.WithRetryAfter(wait)))
+		if rec.Code != want {
+			r.failf("WriteError answers a rate limit %d and catalog.Facts.Bastion says %d: a Bastion's own rate-limit refusals on the format's family take the declared status, so declare the status WriteError renders (RateLimitedStatus, 429 or 503)",
+				rec.Code, want)
+			return
+		}
+		told := strconv.FormatInt(int64(r.d.Bastion.CapRetryAfter(wait)/time.Second), 10)
+		if got := rec.Header().Get("Retry-After"); got != told {
+			r.failf("WriteError tells a rate limit of %s to wait Retry-After %q and catalog.Facts.Bastion says %s (RetryAfterMax %s): a Bastion's own refusals on the format's family tell the declared wait, so declare the cap WriteError applies, or 0 when it tells the true wait",
+				wait, got, told, r.d.Bastion.RetryAfterMax)
+		}
 	}
 }

@@ -103,6 +103,8 @@ func (f *Format) Descriptor() formats.Descriptor {
 			// document says otherwise (R-AUTHZ-018, Q-AUTHZ-2).
 			OwnershipDefault: catalog.OwnershipEnforce,
 			SettingsSchema:   settingsSchema,
+			// A Bastion's own refusals tell a NuGet client at most the wait WriteError tells it (R-NUGET-002, R-BAS-058).
+			Bastion: catalog.BastionFacts{RetryAfterMax: maxRetryAfter},
 		},
 		ContractVersion: formats.ContractVersion,
 		VersionFetch:    formats.FetchLeadFile, // the .nupkg; the .nuspec and the symbol package beside it are none (R-API-079)

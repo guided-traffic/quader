@@ -14376,7 +14376,7 @@ paths:
         and the token in use, the response base URL this request resolved to, whether anonymous requests read anything (`anonymousReads`), the download
         switch and the feed position. Records the replica's last contact at most once a minute. Not part of the management
         API's v1 promise but of the interface version (R-ARCH-025, R-BAS-009).
-      x-quader-bastion-interface: 6
+      x-quader-bastion-interface: 7
       x-quader-permission:
         bastion: true
       parameters:
@@ -14418,7 +14418,7 @@ paths:
         (`npm-all` instead of `web/npm-all`) answers `400 malformed_request`, like a body that does not read; a pair that
         breaks a rule of R-BAS-083 answers `422` with a field error at `/packages/<i>`; another interface version answers
         `400 bastion_interface_mismatch`.
-      x-quader-bastion-interface: 6
+      x-quader-bastion-interface: 7
       x-quader-permission:
         bastion: true
       parameters:
@@ -14468,7 +14468,7 @@ paths:
         `cursor` of an earlier answer or a synthetic `t:<RFC 3339>`; the answer holds every entry newer than the cursor and the
         entries within `bastions.feed.lookback` behind it, which the Bastion skips by ID. `reset: true` tells the Bastion to
         drop every answer.
-      x-quader-bastion-interface: 6
+      x-quader-bastion-interface: 7
       x-quader-permission:
         bastion: true
       parameters:
@@ -14518,7 +14518,7 @@ paths:
         asynchronous `artifact.downloaded` with `details.origin: bastion`; an event older than `bastions.downloads.max_age` is
         not recorded and counts as dropped, one in the future is recorded at the time of receipt. A non-zero `dropped` records
         `bastion.downloads.dropped`. With `audit.record_downloads: false` the answer is `204` and nothing is recorded.
-      x-quader-bastion-interface: 6
+      x-quader-bastion-interface: 7
       x-quader-permission:
         bastion: true
       parameters:
@@ -30872,7 +30872,7 @@ components:
       type: object
       additionalProperties: false
       description: A format's facts in the handshake's format table (R-BAS-057, R-BAS-058).
-      required: [id, registryRoot, replayHeaders, rateLimitedStatus, boundPrefixes]
+      required: [id, registryRoot, replayHeaders, rateLimitedStatus, retryAfterMaxSeconds, boundPrefixes]
       properties:
         id:
           type: string
@@ -30891,6 +30891,14 @@ components:
           type: integer
           enum: [429, 503]
           description: The status of a Bastion's own rate-limit refusals on the format's family.
+        retryAfterMaxSeconds:
+          type: integer
+          minimum: 0
+          description: >-
+            The longest wait in seconds a Bastion's own refusals on the format's family tell a client, in `Retry-After` and in the
+            RateLimit field's `t` (R-BAS-058, Q-BAS-310); `0` tells the true wait. The detail of the refusal names the true wait in
+            either case. NuGet and Ansible Galaxy declare 30, the cap their `WriteError` applies at the main installation.
+          example: 30
         boundPrefixes:
           type: array
           description: The literal bound-host patterns of the format (R-EP-006), paths from the host root.

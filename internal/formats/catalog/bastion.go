@@ -6,13 +6,14 @@ import (
 	"net/textproto"
 	"slices"
 	"strings"
+	"time"
 )
 
 // BastionFacts are what a Quader Bastion needs to know of a format before, or without, a response of the main installation
-// (bastion.md R-BAS-057, R-BAS-058, ADR-238): the headers a cached answer of the format replays besides the core's, and the
-// status the format answers a rate limit with. They reach every Bastion in the handshake's format table, so the Bastion's code
-// holds no knowledge of a format. The zero value is a format with no protocol header of its own that answers a rate limit 429,
-// which is what every format of today but two declares.
+// (bastion.md R-BAS-057, R-BAS-058, ADR-238, ADR-299): the headers a cached answer of the format replays besides the core's,
+// the status the format answers a rate limit with, and the longest wait its clients are told. They reach every Bastion in the
+// handshake's format table, so the Bastion's code holds no knowledge of a format. The zero value is a format with no protocol
+// header of its own that answers a rate limit 429 and tells its clients the true wait.
 type BastionFacts struct {
 	// ReplayHeaders are the response headers of the format's content routes that a cached answer replays besides the core's
 	// [RepresentationHeaders]: the protocol headers every reader of the answer may receive (OCI's Docker-Content-Digest and the
@@ -26,6 +27,22 @@ type BastionFacts struct {
 	// definitions declare 503, because freshclam puts a 429 on a cool-down of hours (formats/clamav.md R-CLAMAV-005). Kit check 19
 	// holds WriteError to it.
 	RateLimitedStatus int
+	// RetryAfterMax is the longest wait a client of the format is told, in Retry-After and in the RateLimit field's t, whatever
+	// the wait is (bastion.md R-BAS-058, Q-BAS-310): 0 tells the true wait; otherwise whole seconds, at least one. It is the cap
+	// the format's WriteError applies at the main installation, declared so that a Bastion's own refusals (its limits, its
+	// block, its failed-authentication timeout) apply the same one: NuGet and Ansible Galaxy declare 30 s, because their
+	// clients count a wait against the timeout of the whole command (formats/nuget.md R-NUGET-002). The true wait stays in the
+	// detail of the answer. Kit check 19 holds WriteError to it.
+	RetryAfterMax time.Duration
+}
+
+// CapRetryAfter returns the wait a client of the format is told for a wait of d: d, or RetryAfterMax when that is set and
+// shorter.
+func (b BastionFacts) CapRetryAfter(d time.Duration) time.Duration {
+	if b.RetryAfterMax > 0 {
+		return min(d, b.RetryAfterMax)
+	}
+	return d
 }
 
 // RateLimited returns the status of a rate limit of the format: RateLimitedStatus, or 429 when it is 0.
@@ -93,6 +110,9 @@ func checkBastion(f Facts) error {
 	case 0, http.StatusTooManyRequests, http.StatusServiceUnavailable:
 	default:
 		return fmt.Errorf("%q declares the rate-limit status %d; a rate limit answers 429 or 503 (R-BAS-058)", f.ID, f.Bastion.RateLimitedStatus)
+	}
+	if m := f.Bastion.RetryAfterMax; m < 0 || m%time.Second != 0 {
+		return fmt.Errorf("%q declares the longest wait %s; it is 0 (the true wait) or whole seconds (R-BAS-058)", f.ID, m)
 	}
 	core := slices.Concat(RepresentationHeaders(), PerRequestHeaders(), neverReplayed())
 	seen := map[string]bool{}

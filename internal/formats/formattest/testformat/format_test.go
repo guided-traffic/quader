@@ -127,10 +127,11 @@ func TestR_ARCH_010_Defects(t *testing.T) {
 			[]formattest.Check{formattest.CheckMalware, formattest.CheckBastion},
 		},
 		{
-			// Check 7 fails with it: the bare error loses the challenge of a 401 as well.
+			// Check 7 fails with it: the bare error loses the challenge of a 401 as well; check 19: it loses the Retry-After of a rate
+			// limit, so its clients are told no wait.
 			"R-MAL-016 R-MAL-029 a format whose errors lose the headers of the core error fails check 17", testformat.RendersBareErrors,
 			formattest.CheckMalware, "without Cache-Control: no-store",
-			[]formattest.Check{formattest.CheckAdmission, formattest.CheckHeaders, formattest.CheckDelivery},
+			[]formattest.Check{formattest.CheckAdmission, formattest.CheckHeaders, formattest.CheckDelivery, formattest.CheckBastion},
 		},
 		{
 			"R-AUTH-002 a format whose 401 drops the challenge the error carries fails check 7", testformat.DropsChallenge, formattest.CheckHeaders,
@@ -187,13 +188,13 @@ func failsAlone(t *testing.T, f formats.Format, fx formattest.Fixture, check for
 	}
 }
 
-// TestR_BAS_058_KitCheck19: each of the four defects of what a format owes a Bastion fails check 19 and no other check, and the
+// TestR_BAS_058_KitCheck19: each of the six defects of what a format owes a Bastion fails check 19 and no other check, and the
 // fixture's exemptions (NoBastion) hold only with a reason, for a route a Bastion keeps answers of, that a case served and that
 // needs them (Q-BAS-184). That npm, NuGet, OCI, Debian, Ansible Galaxy, the ClamAV definitions and generic pass it is each
 // format's TestR_ARCH_010_Conformance.
 //
 // A defect runs every check but check 6, whose subject (Inspect against crafted inputs of gigabytes, half a second a run under the
-// race detector) none of the four touches; TestR_ARCH_010_TheTestFormatPassesTheKit runs it on the format they vary. An exemption
+// race detector) none of the six touches; TestR_ARCH_010_TheTestFormatPassesTheKit runs it on the format they vary. An exemption
 // runs check 19 alone. The fixture is built once (sharedFixture): its crafted inputs cost most of a second to build under the race detector.
 func TestR_BAS_058_KitCheck19(t *testing.T) {
 	notInspect := slices.DeleteFunc(formattest.Checks(), func(c formattest.Check) bool { return c == formattest.CheckInspect })
@@ -207,6 +208,8 @@ func TestR_BAS_058_KitCheck19(t *testing.T) {
 		{"a document with a protocol header it does not declare", testformat.UndeclaredReplayHeader, "carries " + testformat.UndeclaredHeader},
 		{"a document that answers its own validator 200", testformat.DocumentIgnoresConditional, "answered 200 to If-None-Match"},
 		{"a format whose rate limit is not the status it declares", testformat.RateLimitedStatusDiffers, "WriteError answers a rate limit 429 and catalog.Facts.Bastion says 503"},
+		{"a format whose WriteError caps the wait it does not declare", testformat.CapsRetryAfterUndeclared, `wait Retry-After "30" and catalog.Facts.Bastion says 86400`},
+		{"a format that declares a cap its WriteError does not apply", testformat.DeclaresRetryAfterCap, `wait Retry-After "86400" and catalog.Facts.Bastion says 30`},
 	} {
 		t.Run("R-BAS-058 "+c.name+" fails check 19 and no other check", func(t *testing.T) {
 			rep := formattest.EvaluateChecks(testformat.With(c.defect), base, notInspect...)

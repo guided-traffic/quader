@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -18,6 +19,7 @@ import (
 	"github.com/guided-traffic/quader/internal/auth/registrytoken"
 	"github.com/guided-traffic/quader/internal/auth/token"
 	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/bastion/maintest"
 	"github.com/guided-traffic/quader/internal/bastionmain"
 	"github.com/guided-traffic/quader/internal/config"
 	"github.com/guided-traffic/quader/internal/formats"
@@ -68,7 +70,8 @@ func TestR_BAS_057_TheHandshakeCarriesTheFormatTable(t *testing.T) {
 		}
 		seen[id] = listed
 		d := f.Descriptor()
-		if listed && (e.RegistryRoot != d.RegistryRoot || e.RateLimitedStatus != d.Bastion.RateLimited() || e.ReplayHeaders == nil || e.BoundPrefixes == nil) {
+		if listed && (e.RegistryRoot != d.RegistryRoot || e.RateLimitedStatus != d.Bastion.RateLimited() || e.ReplayHeaders == nil || e.BoundPrefixes == nil ||
+			time.Duration(e.RetryAfterMaxSeconds)*time.Second != d.Bastion.RetryAfterMax) {
 			t.Errorf("%s: %+v", id, e)
 		}
 	}
@@ -90,9 +93,18 @@ func TestR_BAS_057_TheHandshakeCarriesTheFormatTable(t *testing.T) {
 	if root, ok := table.RegistryRoot(); !ok || root.ID != "oci" {
 		t.Errorf("registry root %+v %v", root, ok)
 	}
+	for _, id := range []string{"nuget", "ansible"} {
+		if e := table.Lookup(id); e.RetryAfterMaxSeconds != 30 {
+			t.Errorf("%s tells its clients at most %d s, want 30 (R-NUGET-002, R-BAS-058): %+v", id, e.RetryAfterMaxSeconds, e)
+		}
+	}
 	raw, _ := iface.Marshal(table)
-	if !strings.Contains(string(raw), `{"id":"npm","registryRoot":false,"replayHeaders":[],"rateLimitedStatus":429,"boundPrefixes":[]}`) {
+	if !strings.Contains(string(raw), `{"id":"npm","registryRoot":false,"replayHeaders":[],"rateLimitedStatus":429,"retryAfterMaxSeconds":0,"boundPrefixes":[]}`) {
 		t.Errorf("npm on the wire: %s", raw)
+	}
+	// The Bastion's tests read the table of maintest: it is the table of the registered formats.
+	if !reflect.DeepEqual(table, maintest.Formats()) {
+		t.Errorf("maintest.Formats() differs from the table of the registered formats:\n%+v\n%+v", maintest.Formats(), table)
 	}
 
 	val := newValidator(t)

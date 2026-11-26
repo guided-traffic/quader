@@ -171,6 +171,11 @@ const (
 	// RateLimitedStatusDiffers declares the rate-limit status 503 while WriteError answers a rate limit 429, so a Bastion's own
 	// refusals on the format's family would differ from the format's: check 19.
 	RateLimitedStatusDiffers Defect = "rate-limited-status-differs"
+	// CapsRetryAfterUndeclared tells a rate limit's client at most 30 s in WriteError without declaring the cap in
+	// catalog.Facts.Bastion.RetryAfterMax, so a Bastion's own refusals would tell its clients the whole wait: check 19.
+	CapsRetryAfterUndeclared Defect = "caps-retry-after-undeclared"
+	// DeclaresRetryAfterCap declares a cap of 30 s that WriteError does not apply: check 19.
+	DeclaresRetryAfterCap Defect = "declares-retry-after-cap"
 	// DeclaresUnservedBody declares on the tarball route that the format's client checks a digest (Route.ClientDigest) while a
 	// local repository refuses the tarball 501, as a format whose downloads only its remote class serves: no case can show that
 	// the route's downloads are the stored blob, check 20 (storage.md R-STOR-071). Its test lists the route in NoContent with
@@ -248,6 +253,11 @@ func (f Format) WriteError(w http.ResponseWriter, r *http.Request, err error) {
 		if e, ok := errs.As(err); ok && e.Kind == errs.Unauthenticated {
 			http.Error(w, e.Detail, http.StatusUnauthorized)
 			return
+		}
+	}
+	if f.has(string(CapsRetryAfterUndeclared)) {
+		if e, ok := errs.As(err); ok && e.Kind == errs.RateLimited {
+			err = errs.E(e.Kind, e.Code, e.Detail, errs.WithRetryAfter(min(e.RetryAfter, 30*time.Second)))
 		}
 	}
 	if !f.has(string(RendersBareErrors)) {
@@ -380,6 +390,9 @@ func (f Format) Descriptor() formats.Descriptor {
 	var bastion catalog.BastionFacts
 	if f.has(string(RateLimitedStatusDiffers)) {
 		bastion.RateLimitedStatus = http.StatusServiceUnavailable
+	}
+	if f.has(string(DeclaresRetryAfterCap)) {
+		bastion.RetryAfterMax = 30 * time.Second
 	}
 	return formats.Descriptor{
 		Facts: catalog.Facts{

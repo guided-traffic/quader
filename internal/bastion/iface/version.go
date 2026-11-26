@@ -16,4 +16,7 @@ package iface
 // Version 6 (R-BAS-073): the handover per blob. The header [HeaderHandover] with
 // the offer [HandoverOffer] and the value [Handover], the class [ClassHandover],
 // and the handshake's member handover.
-const InterfaceVersion = 6
+//
+// Version 7 (R-BAS-091): the format table's retryAfterMaxSeconds, the longest wait
+// the Bastion's own refusals tell a client of the format ([HandshakeFormat]).
+const InterfaceVersion = 7

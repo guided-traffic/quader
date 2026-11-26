@@ -16,7 +16,8 @@ import (
 const challenge = `Basic realm="quader"`
 
 // maxRetryAfter bounds the Retry-After of a Galaxy endpoint whatever value the owning page computes: a client counts the wait against
-// its own timeout.
+// its own timeout. The descriptor declares it as catalog.Facts.Bastion.RetryAfterMax, so a Bastion's own refusals tell the same
+// (R-BAS-058); kit check 19 holds the two equal.
 const maxRetryAfter = 30 * time.Second
 
 // noRoute is the detail of the dispatcher's 404 for a path no route accepts.

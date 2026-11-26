@@ -5,6 +5,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 )
 
 // TestR_BAS_058_RegisterHoldsTheBastionFactsToTheirRules: a format's Bastion facts are canonical header names that are neither
@@ -21,6 +22,8 @@ func TestR_BAS_058_RegisterHoldsTheBastionFactsToTheirRules(t *testing.T) {
 		says string
 	}{
 		"a status that is no rate limit":       {with("st418", BastionFacts{RateLimitedStatus: http.StatusTeapot}), "429 or 503"},
+		"a negative longest wait":              {with("neg", BastionFacts{RetryAfterMax: -time.Second}), "whole seconds"},
+		"a longest wait of a part of a second": {with("frac", BastionFacts{RetryAfterMax: 1500 * time.Millisecond}), "whole seconds"},
 		"a header that is not canonical":       {with("canon", BastionFacts{ReplayHeaders: []string{"Docker-Distribution-API-Version"}}), "Docker-Distribution-Api-Version"},
 		"a name that is no header name":        {with("token", BastionFacts{ReplayHeaders: []string{"Bad Header"}}), "no header name"},
 		"an empty name":                        {with("empty", BastionFacts{ReplayHeaders: []string{""}}), "no header name"},
@@ -69,6 +72,17 @@ func TestR_BAS_058_RegisterHoldsTheBastionFactsToTheirRules(t *testing.T) {
 			if got := c.e.Bastion.RateLimited(); got != c.want {
 				t.Errorf("%s: RateLimited() = %d, want %d", c.e.ID, got, c.want)
 			}
+		}
+	})
+	t.Run("a cap of 30 s is accepted and tells at most 30 s; no cap tells the true wait", func(t *testing.T) {
+		r := NewRegistry()
+		r.Register(with("nuget", BastionFacts{RetryAfterMax: 30 * time.Second}))
+		nuget, _ := r.Lookup("nuget")
+		if nuget.Bastion.CapRetryAfter(time.Hour) != 30*time.Second || nuget.Bastion.CapRetryAfter(5*time.Second) != 5*time.Second {
+			t.Errorf("CapRetryAfter with a cap of 30 s: %s, %s", nuget.Bastion.CapRetryAfter(time.Hour), nuget.Bastion.CapRetryAfter(5*time.Second))
+		}
+		if got := (BastionFacts{}).CapRetryAfter(24 * time.Hour); got != 24*time.Hour {
+			t.Errorf("CapRetryAfter without a cap: %s", got)
 		}
 	})
 }

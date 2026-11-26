@@ -133,6 +133,8 @@ func (f *Format) Descriptor() formats.Descriptor {
 			// A local repository holds package ownership enforced until its document says otherwise (R-AUTHZ-018).
 			OwnershipDefault: catalog.OwnershipEnforce,
 			SettingsSchema:   settingsSchema,
+			// A Bastion's own refusals tell a Galaxy client at most the wait WriteError tells it (R-ANS-007, R-BAS-058).
+			Bastion: catalog.BastionFacts{RetryAfterMax: maxRetryAfter},
 		},
 		ContractVersion: formats.ContractVersion,
 		VersionFetch:    formats.FetchLeadFile, // the collection archive (R-API-079)

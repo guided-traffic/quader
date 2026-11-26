@@ -135,6 +135,15 @@ A correction of stored data runs after the upgrade as a job on a worker, not in 
 
 [Monitoring and operations](operations.md) describes the metrics and logs to watch.
 
+## Bastions
+
+The main installation and its [Bastions](bastion.md) talk to each other only when both speak the same version of the Bastion interface. A release whose notes say that it raises this version needs the main installation and every Bastion upgraded together: a replica of either side on another version treats the other as unreachable, serves what its cache and its answers allow for the grace period (`bastion.answers.grace_period`, default `15m`) and then answers `503`, and the alert `QuaderBastionInterfaceMismatch` fires. Upgrade the main installation first and the Bastions right after it, within the grace period; the **Admin area › Bastions** screen shows the interface version each replica reports.
+
+| Interface version | What it changed |
+|---|---|
+| 7 | A Bastion's own refusals tell a NuGet or Ansible Galaxy client to wait at most 30 seconds, as the main installation does, and name the whole wait in their text. A main installation of version 7 and a Bastion of version 6 do not talk |
+| 6 | Direct reads from the object store (the handover of large files) |
+
 ## Rolling back
 
 Before the first stable release no rollback is supported. `helm rollback` runs no migration job: the migration hook runs on install and upgrade only. The schema therefore stays at the newer version, and the older pods start whenever the schema is at least the one their binary needs and no applied migration requires a newer Quader, but nothing guarantees that they work against the newer schema. To go back, restore the database backup you took before the upgrade along with the rollback; everything written to Quader since that backup is lost.

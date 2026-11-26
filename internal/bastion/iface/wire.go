@@ -89,6 +89,11 @@ type HandshakeFormat struct {
 	// RateLimitedStatus is the status of the Bastion's own rate-limit refusals on
 	// the format's family: 429 or 503 (R-BAS-056, R-BAS-058).
 	RateLimitedStatus int `json:"rateLimitedStatus"`
+	// RetryAfterMaxSeconds is the longest wait in seconds the Bastion's own refusals
+	// on the format's family tell a client, in Retry-After and in the RateLimit
+	// field's t (R-BAS-058, Q-BAS-310): 0 tells the true wait, which the detail of
+	// the answer names in either case. Always present.
+	RetryAfterMaxSeconds int `json:"retryAfterMaxSeconds"`
 	// BoundPrefixes are the literal bound-host patterns of the format (R-EP-006),
 	// paths from the host root: "/v2/" for the registry root.
 	BoundPrefixes []string `json:"boundPrefixes"`
@@ -97,8 +102,18 @@ type HandshakeFormat struct {
 // HandshakeFormats is the handshake's format table.
 type HandshakeFormats []HandshakeFormat
 
+// CapRetryAfter returns the wait a client of the format is told for a wait of d:
+// d, or RetryAfterMaxSeconds when that is set and shorter (R-BAS-058).
+func (f HandshakeFormat) CapRetryAfter(d time.Duration) time.Duration {
+	if f.RetryAfterMaxSeconds > 0 {
+		return min(d, time.Duration(f.RetryAfterMaxSeconds)*time.Second)
+	}
+	return d
+}
+
 // Lookup returns the entry of the format id, or the defaults of R-BAS-057 for a
-// format the table does not name: no replay headers and the rate-limit status 429.
+// format the table does not name: no replay headers, the rate-limit status 429
+// and the true wait.
 func (t HandshakeFormats) Lookup(id string) HandshakeFormat {
 	for _, f := range t {
 		if f.ID == id {
@@ -121,8 +136,8 @@ func (t HandshakeFormats) RegistryRoot() (HandshakeFormat, bool) {
 }
 
 // Validate checks the table as the Bastion reads it: every entry has an ID, once;
-// at most one declares the registry root; a rate-limit status is 429 or 503; a
-// replay header is a canonical header name without the prefix "Quader-"; a bound
+// at most one declares the registry root; a rate-limit status is 429 or 503; the
+// longest wait is not negative; a replay header is a canonical header name without the prefix "Quader-"; a bound
 // prefix starts with "/". The main installation's catalog holds the formats to
 // stricter rules (catalog.BastionFacts); this is what the Bastion relies on.
 func (t HandshakeFormats) Validate() error {
@@ -134,6 +149,8 @@ func (t HandshakeFormats) Validate() error {
 			return fmt.Errorf("bastion handshake: the format table names %q twice or without an ID", f.ID)
 		case f.RateLimitedStatus != http.StatusTooManyRequests && f.RateLimitedStatus != http.StatusServiceUnavailable:
 			return fmt.Errorf("bastion handshake: format %q has the rate-limit status %d", f.ID, f.RateLimitedStatus)
+		case f.RetryAfterMaxSeconds < 0:
+			return fmt.Errorf("bastion handshake: format %q has the longest wait %d s", f.ID, f.RetryAfterMaxSeconds)
 		}
 		seen[f.ID] = true
 		if f.RegistryRoot {

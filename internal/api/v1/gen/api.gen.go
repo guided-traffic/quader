@@ -9769,6 +9769,9 @@ type BastionHandshakeFormat struct {
 
 	// ReplayHeaders The response headers a cached answer of the format replays besides the core's representation headers, in canonical form.
 	ReplayHeaders []string `json:"replayHeaders"`
+
+	// RetryAfterMaxSeconds The longest wait in seconds a Bastion's own refusals on the format's family tell a client, in `Retry-After` and in the RateLimit field's `t` (R-BAS-058, Q-BAS-310); `0` tells the true wait. The detail of the refusal names the true wait in either case. NuGet and Ansible Galaxy declare 30, the cap their `WriteError` applies at the main installation.
+	RetryAfterMaxSeconds int `json:"retryAfterMaxSeconds"`
 }
 
 // BastionHandshakeFormatRateLimitedStatus The status of a Bastion's own rate-limit refusals on the format's family.

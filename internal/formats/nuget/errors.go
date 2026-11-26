@@ -46,7 +46,8 @@ const challenge = `Basic realm="quader"`
 
 // maxRetryAfter bounds the Retry-After of a NuGet protocol endpoint whatever value the owning
 // page computes (R-NUGET-002): a client counts the wait against the one timeout of its
-// command, and a longer value would spend a push's budget on waiting.
+// command, and a longer value would spend a push's budget on waiting. The descriptor declares it as
+// catalog.Facts.Bastion.RetryAfterMax, so a Bastion's own refusals tell the same (R-BAS-058); kit check 19 holds the two equal.
 const maxRetryAfter = 30 * time.Second
 
 // headerWarning is the header NuGet's clients print as a warning on any answer, an error's

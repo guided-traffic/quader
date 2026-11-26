@@ -885,6 +885,8 @@ formats.Virtual: value = catalog.Virtual
 formats.Volatile: value = (repeated, place 6 of its group)
 catalog.BastionFacts: field RateLimitedStatus int
 catalog.BastionFacts: field ReplayHeaders []string
+catalog.BastionFacts: field RetryAfterMax time.Duration
+catalog.BastionFacts: method CapRetryAfter(time.Duration) time.Duration
 catalog.BastionFacts: method RateLimited() int
 catalog.Class: method Valid() bool
 catalog.Class: type string
