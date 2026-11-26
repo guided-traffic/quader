@@ -1,0 +1,70 @@
+// What a package of the upstream tells before a version of it is stored (R-CUR-028, Q-UI-1340 to Q-UI-1342): the facts line, the README
+// and the dependencies folded. Only Quader's tokens, so both schemes follow.
+:host {
+  display: block;
+  margin-block-end: var(--quader-space-3);
+}
+
+.banner-warning,
+.about-line,
+.docs-note {
+  margin: 0 0 var(--quader-space-2);
+  overflow-wrap: anywhere;
+}
+
+// A value of the facts line (a version, a licence) keeps its dots and hyphens on one line while it fits.
+.about-line .value {
+  font-weight: 600;
+}
+
+.readme-section {
+  margin-block: var(--quader-space-3) var(--quader-space-2);
+  padding-block-start: var(--quader-space-3);
+  border-block-start: 1px solid var(--quader-border);
+}
+
+.readme-title {
+  margin: 0 0 var(--quader-space-2);
+  font-size: var(--quader-text-size);
+  font-weight: 600;
+}
+
+.readme-version {
+  font-weight: 400;
+}
+
+// The README's first 24 rem, the rest under a fade until Show the whole README (Q-UI-1340): the page keeps one scrollbar (R-UI-215), the
+// frame clips and never scrolls, and the versions stay within reach.
+.readme-frame {
+  position: relative;
+
+  &.clip {
+    max-block-size: 24rem;
+    overflow: hidden;
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset-inline: 0;
+      inset-block-end: 0;
+      block-size: 4rem;
+      background: linear-gradient(to bottom, transparent, var(--quader-surface));
+      pointer-events: none;
+    }
+  }
+}
+
+.readme-toggle {
+  margin-block-start: var(--quader-space-2);
+}
+
+.readme-fold,
+.dependencies-fold {
+  margin-block-start: var(--quader-space-2);
+}
+
+.dependency-group {
+  margin: var(--quader-space-2) 0 var(--quader-space-1);
+  font-size: var(--quader-text-size);
+  font-weight: 600;
+}

@@ -1,0 +1,133 @@
+<!-- The deprecation of the newest version, as a stored version's page says it (R-API-085): the upstream's message as text, NuGet's
+     reasons and the package to use instead. -->
+@if (deprecation(); as dep) {
+  <p class="banner-warning" role="note" data-testid="upstream-deprecation">
+    <span class="material-icons inline warn" aria-hidden="true">warning</span>
+    <span
+      ><strong i18n="@@pkg.deprecated">Deprecated.</strong>
+      @if (dep.message) {
+        &ngsp;<span class="deprecation-message" translate="no">{{ dep.message }}</span>
+      }
+      @if (reasons(); as r) {
+        &ngsp;<span><ng-container i18n="@@pkg.deprecated-reasons">Reason:</ng-container>&ngsp;{{ r }}.</span>
+      }
+      @if (dep.alternate; as alt) {
+        &ngsp;<span
+          ><ng-container i18n="@@pkg.deprecated-alternate">Use instead:</ng-container>&ngsp;<span translate="no">{{ alt }}</span>
+          @if (dep.alternateRange; as range) {
+            &ngsp;<span translate="no">{{ range }}</span>
+          }</span
+        >
+      }</span
+    >
+  </p>
+}
+
+<!-- The facts of the newest version on one line: the version they are of, the licence, the links out (R-CUR-028, Q-UI-1341). -->
+@if (about(); as a) {
+  <p class="about-line" data-testid="upstream-about">
+    <span class="dot-separated">
+      <span
+        ><ng-container i18n="@@upstream.docs.version">Version</ng-container>&ngsp;<span class="value" translate="no">{{ a.version }}</span></span
+      >
+      @if (a.license) {
+        <span
+          ><ng-container i18n="@@upstream.docs.license">License</ng-container>&ngsp;<span class="value" translate="no">{{ a.license }}</span></span
+        >
+      }
+      @for (l of links(); track l.label) {
+        <span class="external-link"
+          ><a [href]="l.href" [attr.rel]="externalRel" target="_blank">{{ l.label }}</a
+          ><span class="material-icons" aria-hidden="true">open_in_new</span
+          ><span class="visually-hidden" i18n="@@pkg.meta.external">(opens another site)</span></span
+        >
+      }
+    </span>
+  </p>
+}
+
+@if (readme()) {
+  @if (inRow()) {
+    <quader-disclosure class="readme-fold" [heading]="readmeHeading" [level]="3" data-testid="upstream-readme">
+      <ng-container *ngTemplateOutlet="body" />
+    </quader-disclosure>
+  } @else {
+    <section class="readme-section" aria-labelledby="upstream-readme-title" data-testid="upstream-readme">
+      <h3 id="upstream-readme-title" class="readme-title">
+        <ng-container i18n="@@upstream.docs.readme">README</ng-container>
+        @if (answer()?.version; as v) {
+          &ngsp;<span class="muted readme-version"><ng-container i18n="@@upstream.docs.readme-of">of</ng-container>&ngsp;<span translate="no">{{ v }}</span></span>
+        }
+      </h3>
+      <ng-container *ngTemplateOutlet="body" />
+    </section>
+  }
+} @else if (readmeFormat()) {
+  <!-- A package the reader may not read the wiki of says what a stored version without a README says (R-AUTHZ-034). -->
+  <p class="docs-note muted" data-testid="upstream-no-readme" i18n="@@pkg.readme.none">This version has no README to show.</p>
+} @else if (format() === 'oci') {
+  <p class="docs-note muted" data-testid="upstream-no-readme" i18n="@@upstream.docs.oci-none">
+    An image carries no README. Its description, licence and links are read from its manifest once a version is stored.
+  </p>
+} @else if (format() === 'deb') {
+  <p class="docs-note muted" data-testid="upstream-no-readme" i18n="@@upstream.docs.deb-later">
+    A package's long description, homepage and relations are shown once a version of it is stored.
+  </p>
+}
+
+<ng-template #body>
+  @if (loading() && !answer()) {
+    <quader-loading i18n="@@upstream.docs.loading">Reading the README from the upstream.</quader-loading>
+  } @else if (stateSentence(); as s) {
+    <p class="banner-warning" role="status" data-testid="upstream-readme-state">
+      <span class="material-icons inline warn" aria-hidden="true">warning</span><span>{{ s }}</span>
+    </p>
+  } @else if (failure(); as f) {
+    <quader-error-notice [error]="f" (retry)="retry()" />
+  } @else if (answer(); as a) {
+    @switch (a.state) {
+      @case ('available') {
+        <div class="readme-frame" [class.clip]="!whole()" (focusin)="whole.set(true)">
+          <quader-package-readme [readme]="a.readme ?? null" />
+        </div>
+        @if (clipped() || whole()) {
+          <button class="btn btn-tertiary readme-toggle" type="button" data-testid="upstream-readme-toggle" [attr.aria-expanded]="whole()" (click)="whole.set(!whole())">
+            @if (whole()) {
+              <ng-container i18n="@@upstream.docs.show-less">Show less of the README</ng-container>
+            } @else {
+              <ng-container i18n="@@upstream.docs.show-all">Show the whole README</ng-container>
+            }
+          </button>
+        }
+      }
+      @case ('unreachable') {
+        <p class="docs-note" data-testid="upstream-readme-unreachable">
+          @let s = unreachable();
+          {{ s.before }}<code translate="no">{{ a.host }}</code>{{ s.after }}
+        </p>
+      }
+      @case ('limited') {
+        <p class="banner-warning" role="status" data-testid="upstream-readme-limited">
+          <span class="material-icons inline warn" aria-hidden="true">hourglass_empty</span><span>{{ limitedSentence() }}</span>
+        </p>
+      }
+      @default {
+        <p class="docs-note muted" data-testid="upstream-no-readme" i18n="@@pkg.readme.none">This version has no README to show.</p>
+      }
+    }
+  }
+</ng-template>
+
+@if (dependencyCount() > 0) {
+  <quader-disclosure class="dependencies-fold" [heading]="dependenciesHeading()" [count]="dependencyCount()" [level]="3" data-testid="upstream-dependencies">
+    @for (g of dependencies(); track g.label) {
+      <h4 class="dependency-group">{{ g.label }}</h4>
+      <dl class="facts" translate="no">
+        @for (e of g.entries; track e[0]) {
+          <dt>{{ e[0] }}</dt>
+          <dd>{{ e[1] }}</dd>
+        }
+      </dl>
+    }
+  </quader-disclosure>
+}

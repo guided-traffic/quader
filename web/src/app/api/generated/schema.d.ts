@@ -18376,12 +18376,18 @@ export interface components {
             /**
              * @description `available` with `readme`; `none`: the upstream has no README for the version; `unreachable`: the upstream names it on
              *     `host`, which the repository does not reach (neither its upstream's host nor one of its extra hosts, cleartext from an https
-             *     upstream, or refused by the egress rules), and nothing was asked there.
+             *     upstream, or refused by the egress rules), and nothing was asked there; `limited`: the upstream's rate limit holds the
+             *     repository's queue until `until` (R-CUR-011), and the README is not asked for before then.
              * @enum {string}
              */
-            state: "available" | "none" | "unreachable";
+            state: "available" | "none" | "unreachable" | "limited";
             /** @description With `unreachable`, the host the upstream names. */
             host: string | null;
+            /**
+             * Format: date-time
+             * @description With `limited`, the time the upstream's rate limit ends.
+             */
+            until: string | null;
             readme: components["schemas"]["PackageReadme"] | null;
         };
         UpstreamVulnerabilitiesRequest: {
@@ -36255,6 +36261,7 @@ export interface operations {
                      *       "version": "1.3.0",
                      *       "state": "available",
                      *       "host": null,
+                     *       "until": null,
                      *       "readme": {
                      *         "contentType": "text/markdown",
                      *         "html": "<h1 id=\"user-content-left-pad\">left-pad</h1>",

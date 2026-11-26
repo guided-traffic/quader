@@ -22,6 +22,8 @@ import {
   UpstreamPackage,
   UpstreamSearch,
   UpstreamSearchPage,
+  UpstreamAbout,
+  UpstreamReadme,
   UpstreamVersion,
   UpstreamVulnerabilities,
 } from '../upstream-catalogue-api';
@@ -151,6 +153,44 @@ export class FakeUpstreamCatalogueApi extends UpstreamCatalogueApi {
       versions: this.notCovered ? [] : versions.map((version) => ({ version, stored: false, verdict: 'none', reason: null, advisoryId: null, enforced: true })),
     };
   }
+
+  /** The README of a package by its name (R-CUR-028); a name without one answers `none`, `readmeError` fails every call. */
+  readmes: Record<string, UpstreamReadme> = {};
+  readmeError: ApiError | null = null;
+
+  override async readme(repository: string, name: string, version: string | null): Promise<UpstreamReadme> {
+    this.calls.push(`readme ${name} ${version ?? ''}`.trimEnd());
+    if (this.readmeError) throw this.readmeError;
+    return this.readmes[name] ?? { version: version ?? '', state: 'none', host: null, until: null, readme: null };
+  }
+}
+
+/** The README of an upstream's package as the API answers it, rendered (R-CUR-028). */
+export function upstreamReadme(html: string, over: Partial<UpstreamReadme> = {}): UpstreamReadme {
+  return {
+    version: '4.17.21',
+    state: 'available',
+    host: null,
+    until: null,
+    readme: { contentType: 'text/markdown', html, truncated: false, externalImagesBlocked: 0 },
+    ...over,
+  };
+}
+
+/** The facts of a package's newest version (R-CUR-028). */
+export function upstreamAbout(over: Partial<UpstreamAbout> = {}): UpstreamAbout {
+  return {
+    version: '4.17.21',
+    license: 'MIT',
+    links: [
+      { kind: 'homepage', url: 'https://lodash.com/' },
+      { kind: 'repository', url: 'https://github.com/lodash/lodash' },
+      { kind: 'issues', url: 'https://github.com/lodash/lodash/issues' },
+    ],
+    dependencies: [],
+    deprecation: null,
+    ...over,
+  };
 }
 
 export function deliveryRule(over: Partial<DeliveryRule> = {}): DeliveryRule {

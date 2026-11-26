@@ -20,6 +20,7 @@ import { formatSize } from '../../packages/format-size';
 import { versionCommands } from '../../packages/package-links';
 import { downloadStateText } from '../downloads/download-words';
 import { UpstreamActions } from './upstream-actions';
+import { UpstreamDocs } from './upstream-docs';
 import { LIVE_FAST_MS, LIVE_IDLE_MS, live } from '../../../core/live-refresh';
 import {
   catalogueState,
@@ -56,7 +57,7 @@ export function groupedCount(n: number): string {
  */
 @Component({
   selector: 'quader-upstream-package',
-  imports: [Loading, DataTable, DeprecationMark, DistTags, ErrorNotice, RouterLink, Switch, TimeAgo, UpstreamPopularity],
+  imports: [Loading, DataTable, DeprecationMark, DistTags, ErrorNotice, RouterLink, Switch, TimeAgo, UpstreamDocs, UpstreamPopularity],
   templateUrl: './upstream-package.html',
   styleUrl: './upstream-package.scss',
 })

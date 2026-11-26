@@ -2,6 +2,7 @@ package v1
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/guided-traffic/quader/internal/api/v1/gen"
 	"github.com/guided-traffic/quader/internal/authz"
@@ -42,6 +43,22 @@ func (s *Server) GetUpstreamReadme(w http.ResponseWriter, r *http.Request, proje
 	if err == nil && !mayReadUpstreamWiki(c, p.Name) {
 		err = errs.E(errs.NotFound, errs.CodeNotFound, "The package has no README.")
 	}
+	// While the upstream's rate limit holds the repository's queue (R-CUR-011), the README waits for it as the downloads do, and says so;
+	// the package and its versions are another call and show.
+	var until time.Time
+	if err == nil {
+		until, err = s.upstreamLimitHolds(c)
+	}
+	if err == nil && !until.IsZero() {
+		w.Header().Set("Cache-Control", "no-store")
+		version := ""
+		if p.Version != nil {
+			version = *p.Version
+		}
+		at := until.UTC()
+		writeJSON(w, r, http.StatusOK, gen.UpstreamReadme{Version: version, State: gen.UpstreamReadmeLimited, Until: &at})
+		return
+	}
 	var rd discover.Readme
 	if err == nil {
 		version := ""
@@ -72,6 +89,19 @@ func (s *Server) GetUpstreamReadme(w http.ResponseWriter, r *http.Request, proje
 	}
 	w.Header().Set("Cache-Control", "no-store")
 	writeJSON(w, r, http.StatusOK, out)
+}
+
+// upstreamLimitHolds is the time until which the upstream's rate limit holds the repository's queue (R-CUR-011), zero where none holds.
+func (s *Server) upstreamLimitHolds(c catalogueCall) (time.Time, error) {
+	q := s.o.UpstreamCatalogue.Queue
+	if q == nil {
+		return time.Time{}, nil
+	}
+	l, found, err := q.Limit(c.ctx, c.t.RepoID)
+	if err != nil || !found || !l.Holds(time.Now()) {
+		return time.Time{}, err
+	}
+	return l.Until, nil
 }
 
 // aboutRow is the package answer's about (R-CUR-028): nil where the answers told nothing.

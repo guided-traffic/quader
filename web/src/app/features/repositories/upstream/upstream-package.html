@@ -94,6 +94,9 @@
     }
   </div>
 
+  <!-- What the package tells before a version is stored (R-CUR-028): the newest version's facts, its README, its dependencies. -->
+  <quader-upstream-docs [name]="name()" [about]="p.about" [readme]="p.readme === true" [inRow]="inRow()" />
+
   <div class="versions-head">
     <div class="filter-field">
       <!-- A package with npm tags is filtered by them too: typing "next" shows the version "next" names (Q-CUR-182). -->

@@ -6025,6 +6025,7 @@ func (e UpstreamQueuedState) Valid() bool {
 // Defines values for UpstreamReadmeState.
 const (
 	UpstreamReadmeAvailable   UpstreamReadmeState = "available"
+	UpstreamReadmeLimited     UpstreamReadmeState = "limited"
 	UpstreamReadmeNone        UpstreamReadmeState = "none"
 	UpstreamReadmeUnreachable UpstreamReadmeState = "unreachable"
 )
@@ -6033,6 +6034,8 @@ const (
 func (e UpstreamReadmeState) Valid() bool {
 	switch e {
 	case UpstreamReadmeAvailable:
+		return true
+	case UpstreamReadmeLimited:
 		return true
 	case UpstreamReadmeNone:
 		return true
@@ -18401,8 +18404,12 @@ type UpstreamReadme struct {
 
 	// State `available` with `readme`; `none`: the upstream has no README for the version; `unreachable`: the upstream names it on
 	// `host`, which the repository does not reach (neither its upstream's host nor one of its extra hosts, cleartext from an https
-	// upstream, or refused by the egress rules), and nothing was asked there.
+	// upstream, or refused by the egress rules), and nothing was asked there; `limited`: the upstream's rate limit holds the
+	// repository's queue until `until` (R-CUR-011), and the README is not asked for before then.
 	State UpstreamReadmeState `json:"state"`
+
+	// Until With `limited`, the time the upstream's rate limit ends.
+	Until *time.Time `json:"until"`
 
 	// Version The version the README is of.
 	Version string `json:"version"`
@@ -18410,7 +18417,8 @@ type UpstreamReadme struct {
 
 // UpstreamReadmeState `available` with `readme`; `none`: the upstream has no README for the version; `unreachable`: the upstream names it on
 // `host`, which the repository does not reach (neither its upstream's host nor one of its extra hosts, cleartext from an https
-// upstream, or refused by the egress rules), and nothing was asked there.
+// upstream, or refused by the egress rules), and nothing was asked there; `limited`: the upstream's rate limit holds the
+// repository's queue until `until` (R-CUR-011), and the README is not asked for before then.
 type UpstreamReadmeState string
 
 // UpstreamRepository A well-known repository as the admin page shows it (R-REPO-073). `state` is `null` and `inUse` a boolean for a system

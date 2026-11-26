@@ -12,6 +12,10 @@ export type UpstreamLevelPage = Schema<'UpstreamLevelPage'>;
 export type UpstreamUnknownLevel = Schema<'UpstreamUnknownLevel'>;
 /** A package looked up by its exact name with one page of its versions (R-CUR-009). */
 export type UpstreamPackage = Schema<'UpstreamPackage'>;
+/** What the lookup's answers tell of the package's newest version: licence, links, dependencies, deprecation (R-CUR-028). */
+export type UpstreamAbout = NonNullable<Schema<'UpstreamAbout'>>;
+/** The README of a package of the upstream, read through and not stored, or why there is none to show (R-CUR-028). */
+export type UpstreamReadme = Schema<'UpstreamReadme'>;
 /** A version as the upstream tells it, with the repository's state (R-CUR-009). */
 export type UpstreamVersion = Schema<'UpstreamVersion'>;
 /** The vulnerability verdicts of versions the repository has not stored (R-CUR-009, R-VULN-015). */
@@ -67,6 +71,8 @@ export abstract class UpstreamCatalogueApi {
   abstract package(repository: string, name: string, cursor: string | null, filter: string): Promise<UpstreamPackage>;
   /** `POST …/upstream/vulnerabilities`: at most {@link VERDICTS_PER_CALL} versions. */
   abstract vulnerabilities(repository: string, name: string, versions: readonly string[]): Promise<UpstreamVulnerabilities>;
+  /** `GET …/upstream/readme`: the README of the version `about.version` names, read through (R-CUR-028); a caller without the wiki 404. */
+  abstract readme(repository: string, name: string, version: string | null): Promise<UpstreamReadme>;
 }
 
 @Injectable()
@@ -100,5 +106,11 @@ export class HttpUpstreamCatalogueApi extends UpstreamCatalogueApi {
 
   async vulnerabilities(repository: string, name: string, versions: readonly string[]): Promise<UpstreamVulnerabilities> {
     return (await this.client.post<UpstreamVulnerabilities>(`${repositoryBase(repository)}/upstream/vulnerabilities`, { name, versions })).body;
+  }
+
+  async readme(repository: string, name: string, version: string | null): Promise<UpstreamReadme> {
+    const params: Record<string, string> = { name };
+    if (version) params['version'] = version;
+    return (await this.client.getJson<UpstreamReadme>(`${repositoryBase(repository)}/upstream/readme`, { params, noRetry: true })).body;
   }
 }
