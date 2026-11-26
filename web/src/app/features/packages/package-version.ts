@@ -66,6 +66,7 @@ import {
   strings,
 } from './version-metadata';
 import { DependencyList, VersionLinks } from './version-facts';
+import { UsedBy } from './used-by';
 import { PackageTags } from './package-tags';
 import { VersionSize } from './version-size';
 import { NoValue } from '../../shared/ui/no-value';
@@ -190,6 +191,7 @@ interface TabEntry {
     CdkMenuItem,
     CdkMenuTrigger,
     DependencyList,
+    UsedBy,
     PackageTags,
     VersionLinks,
   ],
@@ -456,6 +458,14 @@ export class PackageVersionPage {
         return [];
     }
   });
+  /**
+   * The section **Used by** (R-API-086): in every format whose versions name dependencies of its own packages, on a version's page; a
+   * remote's tab Upstream has none (an upstream's dependents are not this installation's to know), and an Ansible role none (a collection
+   * depends on collections).
+   */
+  protected readonly usedBy = computed(() => LINKED_DEPENDENCIES.has(this.detail()?.format ?? '') && this.role() === null);
+  /** The package's normalized name, which the filter of the package list takes; the address's name until the package has answered. */
+  protected readonly packageKey = computed(() => this.pkg()?.key ?? this.name());
   /** The keywords or tags the version declares (R-UI-221): chips to the packages that share one. */
   protected readonly keywords = computed(() => this.detail()?.keywords ?? []);
   /** A NuGet version the publisher unlisted (R-NUGET-006): it restores when pinned and is hidden from search. */

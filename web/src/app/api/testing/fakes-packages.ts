@@ -9,6 +9,7 @@ import {
   ClientSetupApi,
   ClientSetupQuery,
   ClientSnippet,
+  PackageDependents,
   PackageDeprecation,
   PackageDeprecationInput,
   PackageFilters,
@@ -875,6 +876,23 @@ export class FakePackagesApi extends PackagesApi {
     this.deprecationCalls.push(`clear ${repository} ${name}@${v ?? ''}`);
     this.throwDeprecationFailure();
     this.markDeprecation(name, v, undefined);
+  }
+
+  /** The packages that depend on a package, by its id (R-API-086); a package without an entry has none, for a reader of everything. */
+  dependentsFixtures = new Map<string, PackageDependents>();
+  /** Each call of `dependents`: `<packageId>@<project>`. */
+  dependentsCalls: string[] = [];
+  /** The refusal the next call of `dependents` throws once. */
+  dependentsFailure: ApiError | null = null;
+
+  override async dependents(packageId: string, project?: string): Promise<PackageDependents> {
+    this.dependentsCalls.push(`${packageId}@${project ?? ''}`);
+    if (this.dependentsFailure) {
+      const e = this.dependentsFailure;
+      this.dependentsFailure = null;
+      throw e;
+    }
+    return this.dependentsFixtures.get(packageId) ?? { items: [], total: 0, whole: true };
   }
 
   private throwDeprecationFailure(): void {

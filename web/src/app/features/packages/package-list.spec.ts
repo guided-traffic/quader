@@ -230,6 +230,18 @@ describe('Packages list', () => {
     expect(chipTexts(filtered.root)).toEqual(['State: Deprecated']);
   });
 
+  it('R-API-086 the list "Used by" leads to asks for the packages that depend on a name; its chip goes with the package type', async () => {
+    const r = await open({ format: 'npm', dependsOn: '@team-a/ui' });
+    expect(r.fake.listFilters.at(-1)?.dependsOn).toBe('@team-a/ui');
+    expect(chipTexts(r.root)).toEqual(['Package type: npm', 'Depends on: @team-a/ui']);
+    const navigate = navigateSpy();
+    r.root.querySelector<HTMLButtonElement>('.chip button')!.click();
+    expect(navigate).toHaveBeenLastCalledWith([], { queryParams: { format: null, dependsOn: null }, queryParamsHandling: 'merge' });
+    // Without exactly one package type a name means nothing: the filter is not asked.
+    const loose = await open({ dependsOn: 'left-pad' });
+    expect(loose.fake.listFilters.at(-1)?.dependsOn).toBeUndefined();
+  });
+
   it('R-UI-006 acceptance: with format=nuget the list shows one row; the filter is a chip beside Filters, the drawer stays closed', async () => {
     const r = await open({ format: 'nuget' });
     expect(names(r)).toEqual(['Contoso.Logging']);
@@ -309,7 +321,9 @@ describe('Packages list', () => {
     const navigate = navigateSpy();
     button(none.root, 'Clear all filters').click();
     expect(navigate).toHaveBeenLastCalledWith([], {
-      queryParams: { format: null, repository: null, q: null, keyword: null, namespace: null, signed: null, deprecated: null, period: null, from: null, to: null },
+      queryParams: {
+        format: null, repository: null, q: null, keyword: null, namespace: null, signed: null, deprecated: null, dependsOn: null, period: null, from: null, to: null,
+      },
       queryParamsHandling: 'merge',
     });
     await expectAccessible(none.root);

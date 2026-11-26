@@ -12,6 +12,8 @@ import { ar, debPackage, expectStatus, otherProject, patient, tarGz } from './se
 export const docsDeb = { format: 'deb', name: 'acme-observability-agent', version: '4.2.0-3' } as const;
 export const manyFilesDeb = { format: 'deb', name: 'acme-icon-theme', version: '2026.11-1', files: 10_050 } as const;
 export const brokenDeb = { format: 'deb', name: 'acme-legacy-tools', version: '0.9-1' } as const;
+/** A package that uses acme-observability-agent under its own name and under a name it provides (R-API-086, used-by.ts). */
+export const forwarderDeb = { format: 'deb', name: 'acme-log-forwarder', version: '1.0.0-1' } as const;
 
 /** A tar entry of a regular file, a directory (a name ending in `/`) or a symbolic link (`link`). */
 function entry(name: string, content: Buffer, link = ''): Buffer {
@@ -174,6 +176,20 @@ function brokenPackage(): Buffer {
   ]);
 }
 
+/** The package of "Used by": it depends on the agent and on a name the agent provides, and suggests a name the agent provides. */
+function forwarderPackage(): Buffer {
+  const { name, version } = forwarderDeb;
+  const fields =
+    `Package: ${name}\nVersion: ${version}\nArchitecture: all\nMaintainer: Platform engineering <platform@example.invalid>\n` +
+    'Depends: acme-observability-agent (>= 4.2.0), log-shipper\nSuggests: acme-telemetry-agent\n' +
+    'Section: admin\nPriority: optional\nDescription: forwards the agent\'s logs to a second store\n';
+  return ar([
+    ['debian-binary', Buffer.from('2.0\n')],
+    ['control.tar.gz', control(fields)],
+    ['data.tar.gz', dataTar([entry('./', Buffer.alloc(0))])],
+  ]);
+}
+
 async function until(seconds: number, what: string, ok: () => Promise<boolean>): Promise<void> {
   const deadline = Date.now() + seconds * 1000;
   while (!(await ok())) {
@@ -190,6 +206,7 @@ export async function seedDebDocs(ctx: APIRequestContext, token: string): Promis
     [`${docsDeb.name}_${docsDeb.version}_arm64.deb`, docsPackage('arm64')],
     [`${manyFilesDeb.name}_${manyFilesDeb.version}_all.deb`, manyFilesPackage()],
     [`${brokenDeb.name}_${brokenDeb.version}_amd64.deb`, brokenPackage()],
+    [`${forwarderDeb.name}_${forwarderDeb.version}_all.deb`, forwarderPackage()],
   ];
   for (const [file, data] of uploads) {
     const res = await patient(() =>

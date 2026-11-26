@@ -540,6 +540,11 @@
                 <h2 i18n="@@pkg.meta.dependencies">Dependencies</h2>
                 <quader-dependency-list [groups]="dependencies()" [held]="held()" [project]="project()" [format]="d.format" />
               }
+              <!-- Who needs it, beside what it needs (R-API-086, Q-UI-1350): in every format whose versions name dependencies. -->
+              @if (usedBy()) {
+                <h2 i18n="@@pkg.used-by.heading">Used by</h2>
+                <quader-used-by [packageId]="d.packageId" [name]="packageKey()" [format]="d.format" [project]="project()" />
+              }
               <!-- Every field of a definition container's header (R-UI-194, R-CLAMAV-003), as text, never as markup. -->
               @if (clamav(); as c) {
                 <h2 i18n="@@clamav.details.heading">Definitions</h2>

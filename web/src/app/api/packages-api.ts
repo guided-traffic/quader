@@ -35,6 +35,8 @@ export type ClientSnippet = Schema<'ClientSnippet'>;
 export type PackageNamespace = Schema<'PackageNamespace'>;
 export type NamespaceRepository = Schema<'NamespaceRepository'>;
 export type NamespaceClaim = Schema<'NamespaceClaim'>;
+export type PackageDependents = Schema<'PackageDependents'>;
+export type PackageDependent = Schema<'PackageDependent'>;
 
 /** The sort fields `GET /api/v1/packages` offers (R-API-029); a leading `-` sorts descending. */
 export type PackageSort = 'name' | '-name' | 'createdAt' | '-createdAt' | 'updatedAt' | '-updatedAt' | 'relevance' | '-relevance';
@@ -59,6 +61,8 @@ export interface PackageFilters {
   readonly include?: readonly string[];
   /** Only the packages whose latest version is deprecated (R-API-085). */
   readonly deprecated?: boolean;
+  /** Only the packages with a version that depends on this package name of the one `format` (R-API-086). */
+  readonly dependsOn?: string;
 }
 
 export interface VersionFilters {
@@ -158,6 +162,11 @@ export abstract class PackagesApi {
   abstract setDeprecation(repository: string, name: string, input: PackageDeprecationInput): Promise<PackageDeprecation>;
   /** Clears the deprecation of a version (`version`) or of a whole package (no version). */
   abstract clearDeprecation(repository: string, name: string, version?: string): Promise<void>;
+  /**
+   * The packages that depend on a package, in the repositories the caller may read (R-API-086): at most 50, with how many there are; in
+   * `project` only that project's, as its package list.
+   */
+  abstract dependents(packageId: string, project?: string): Promise<PackageDependents>;
 }
 
 /** The client setup snippets of a repository (R-API-030). */
@@ -227,6 +236,10 @@ export class HttpPackagesApi extends PackagesApi {
 
   override async clearDeprecation(repository: string, name: string, version?: string): Promise<void> {
     await this.client.delete(deprecationUrl(repository, name), { params: cleanQuery({ version }) });
+  }
+
+  override async dependents(packageId: string, project?: string): Promise<PackageDependents> {
+    return (await this.client.getJson<PackageDependents>(`${packageUrl(packageId)}/dependents`, { params: cleanQuery({ project }) })).body;
   }
 
   override async docEntry(

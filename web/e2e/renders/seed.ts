@@ -187,8 +187,19 @@ export const memberships: readonly { project: string; username: string; role: 'r
   { project: otherProject, username: kinds.power, role: 'developer' },
 ];
 
+/** An npm version the seed publishes: its repository of the main project, its manifest's dependencies, its dist-tag. */
+export interface NpmSeed {
+  readonly repo: string;
+  readonly name: string;
+  readonly version: string;
+  readonly readme?: string;
+  readonly dependencies?: Record<string, string>;
+  readonly devDependencies?: Record<string, string>;
+  readonly tag?: string;
+}
+
 /** The packages the power user publishes, through the formats' own routes. */
-export const npmPackages: readonly { repo: string; name: string; version: string; readme?: string; dependencies?: Record<string, string>; tag?: string }[] = [
+export const npmPackages: readonly NpmSeed[] = [
   {
     repo: 'npm-internal',
     name: '@acme/ui-kit',
@@ -618,13 +629,14 @@ export function tarGz(entries: readonly (readonly [string, Buffer])[]): Buffer {
 }
 
 /** The body of an npm publish, as the npm client sends it: the manifest and the tarball as an attachment. */
-function npmPublishBody(edge: string, project: string, p: (typeof npmPackages)[number]): object {
+export function npmPublishBody(edge: string, project: string, p: NpmSeed): object {
   const manifest = {
     name: p.name,
     version: p.version,
     description: `${p.name}, published by the seed of the renders`,
     license: 'MIT',
     ...(p.dependencies ? { dependencies: p.dependencies } : {}),
+    ...(p.devDependencies ? { devDependencies: p.devDependencies } : {}),
     repository: { type: 'git', url: 'https://git.example.invalid/web/ui-kit.git' },
   };
   const entries = [tarEntry('package/package.json', Buffer.from(JSON.stringify(manifest, null, 2)))];

@@ -51,6 +51,7 @@ import { downloadsWalk } from './downloads';
 import { cachedDeb, cachedNpm } from './cached';
 import { brokenDeb, debRelationLookups, docsDeb, manyFilesDeb } from './debdocs';
 import { factsCollection, factsImage, factsNpm, factsNuget } from './facts';
+import { usedByMany, usedByNone, usedByTwo } from './used-by';
 import { bareRole, blockedRole, pipRole } from './roles';
 import { accountOfferWalk, registryAccountWalk } from './upstream-accounts';
 import {
@@ -3290,6 +3291,19 @@ export const screens: readonly Screen[] = [
   { id: 'package-version-deb-details', path: `${ver(O, docsDeb, docsDeb.version)}?tab=details`, kinds: ['plain'], de: true, expected: debRelationLookups },
   { id: 'package-version-ansible-details', path: `${ver(O, factsCollection, factsCollection.version)}?tab=details`, kinds: ['plain'], de: true },
   { id: 'package-version-npm-cached-details', path: `${ver(P, cachedNpm, cachedNpm.version)}?tab=details`, kinds: ['plain'] },
+  // "Used by" (R-API-086, used-by.ts): a version used by two packages, one used by eighty (the bound and how many more), one used by none
+  // (the sentence of a reader of every repository and of one who is not); NuGet's, Debian's and Ansible Galaxy's; the list it leads to.
+  { id: 'package-version-npm-used-by', path: `${ver(P, usedByTwo, usedByTwo.version)}?tab=details`, kinds: all, de: true },
+  { id: 'package-version-npm-used-by-many', path: `${ver(P, usedByMany, usedByMany.version)}?tab=details`, kinds: ['plain'], de: true },
+  { id: 'package-version-npm-used-by-none', path: `${ver(P, usedByNone, usedByNone.version)}?tab=details`, kinds: all, de: true },
+  { id: 'package-version-nuget-used-by', path: `${ver(O, nugetPackage, nugetPackage.versions[1])}?tab=details`, kinds: ['plain'], de: true },
+  {
+    id: 'package-version-ansible-used-by',
+    path: `${ver(O, { format: 'ansible', name: `${ansiblePackage.namespace}.${ansiblePackage.name}` }, ansiblePackage.versions[1])}?tab=details`,
+    kinds: ['plain'],
+    de: true,
+  },
+  { id: 'packages-depends-on', path: `${P}/packages?format=npm&dependsOn=${encodeURIComponent(usedByMany.name)}`, kinds: ['plain'], de: true },
   { id: 'package-npm-facts-versions', path: table(P, factsNpm), kinds: ['plain'], de: true },
   { id: 'package-nuget-facts-versions', path: table(O, factsNuget), kinds: ['plain'], de: true },
   { id: 'package-ansible-facts-versions', path: table(O, factsCollection), kinds: ['plain'], de: true },

@@ -240,6 +240,46 @@ describe('The page of a version (R-UI-111)', () => {
     await expectAccessible(r.root);
   });
 
+  it('R-API-086 Used by lists the dependents beside the dependencies, each with its kind and range, and says how many more there are', async () => {
+    const r = await open({ tab: 'details' }, (fake) => {
+      fake.dependentsFixtures.set('pkg_01JBQ6V7S3K9', {
+        items: [
+          {
+            packageId: 'pkg_app',
+            format: 'npm',
+            name: '@team-a/app',
+            key: '@team-a/app',
+            version: '2.1.0',
+            relations: [
+              { kind: 'dependencies', range: '^1.4.0', via: '@team-a/ui' },
+              { kind: 'peerDependencies', range: '>=1', via: '@team-a/ui' },
+            ],
+          },
+          { packageId: 'pkg_kit', format: 'npm', name: 'kit', key: 'kit', version: '0.3.0', relations: [{ kind: 'devDependencies', range: '*', via: '@team-a/ui' }] },
+        ],
+        total: 52,
+        whole: false,
+      });
+    });
+    const headings = [...r.root.querySelectorAll('.version-tabs h2')].map((h) => text(h));
+    expect(headings.indexOf('Used by')).toBe(headings.indexOf('Dependencies') + 1);
+    const rows = [...r.root.querySelectorAll('quader-used-by li')];
+    expect(rows.map((li) => text(li))).toEqual(['@team-a/app 2.1.0 dependencies ^1.4.0 peerDependencies >=1', 'kit 0.3.0 devDependencies *']);
+    expect(rows[0]?.querySelector('a')?.getAttribute('href')).toBe('/projects/web/packages/npm/@team-a/app@2.1.0');
+    const more = r.root.querySelector('[data-testid="used-by-more"]')!;
+    expect(text(more)).toBe('and 50 more. Packages of this project that use it');
+    expect(more.querySelector('a')?.getAttribute('href')).toBe('/projects/web/packages?format=npm&dependsOn=@team-a%2Fui');
+    expect(r.fake.dependentsCalls).toEqual(['pkg_01JBQ6V7S3K9@']);
+    await expectAccessible(r.root);
+  });
+
+  it('R-API-086 Used by claims no more than the reader may know when nothing depends on the package', async () => {
+    const r = await open({ tab: 'details' }, (fake) => fake.dependentsFixtures.set('pkg_01JBQ6V7S3K9', { items: [], total: 0, whole: false }));
+    expect(text(r.root.querySelector('[data-testid="used-by-none"]')!)).toBe('No package you may read depends on it.');
+    const all = await open({ tab: 'details' });
+    expect(text(all.root.querySelector('[data-testid="used-by-none"]')!)).toBe('No package the installation holds depends on it.');
+  });
+
   it('R-UI-007 a homepage of javascript:alert(1) is shown as text and no element carries it as a link', async () => {
     const r = await open({ tab: 'details' }, (fake) => {
       for (const v of fake.versionList) {

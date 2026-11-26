@@ -27,6 +27,7 @@ import { removeCachedSources, seedCachedVersions } from './cached';
 import { seedDebDocs } from './debdocs';
 import { seedDeprecations } from './deprecations';
 import { seedFacts } from './facts';
+import { seedUsedBy } from './used-by';
 import { seedRoles } from './roles';
 
 /**
@@ -185,6 +186,7 @@ async function publishAsPowerUser(browser: Browser): Promise<void> {
       await seedDebDocs(context.request, value);
       await seedDeprecations(context.request, value);
       await seedFacts(context.request, edge, value);
+      await seedUsedBy(context.request, edge, value);
     } finally {
       await expectStatus(await api.delete(`/api/v1/tokens/${token.id}`), [204, 404], 'revoke the seed token');
     }

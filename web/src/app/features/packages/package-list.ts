@@ -98,6 +98,8 @@ export class PackageList {
   readonly namespace = input<string | undefined>();
   /** `true`: only the packages whose latest version carries a verified signature (R-ANS-057). */
   readonly signed = input<string | undefined>();
+  /** A package name of the one package type chosen: only the packages that depend on it (R-API-086), as "Used by" leads here. */
+  readonly dependsOn = input<string | undefined>();
   readonly period = input<string | undefined>();
   readonly from = input<string | undefined>();
   readonly to = input<string | undefined>();
@@ -155,6 +157,11 @@ export class PackageList {
     const ns = this.namespace()?.trim().toLowerCase() ?? '';
     return f && isNamespace(this.namespaceRules.of(f), ns) ? ns : undefined;
   });
+  /** The filter dependsOn in force: the name of the address, while exactly one package type is chosen, which the name belongs to. */
+  protected readonly dependsOnFilter = computed(() => {
+    const name = this.dependsOn()?.trim() ?? '';
+    return name !== '' && this.formatNames().length === 1 ? name : undefined;
+  });
   /** The drawer's namespace field: shown while exactly one package type with namespaces is chosen in it. */
   protected readonly stagedNamespaceRule = computed(() => {
     const f = this.stagedFormats();
@@ -172,6 +179,7 @@ export class PackageList {
       ...(this.deprecated() === 'true' ? { deprecated: true } : {}),
       namespace: this.namespaceFilter(),
       signed: this.signed() === 'true' ? true : undefined,
+      dependsOn: this.dependsOnFilter(),
       createdFrom: range.from,
       createdTo: range.to,
       sort: this.apiSort(),
@@ -186,9 +194,12 @@ export class PackageList {
         label: typeLabel,
         value: this.formatLabel(f),
         // A namespace belongs to the one package type: it goes with it.
-        remove: this.namespaceFilter()
-          ? { format: this.formatNames().filter((x) => x !== f), namespace: null }
-          : { format: this.formatNames().filter((x) => x !== f) },
+        // A namespace and a dependency belong to the one package type: they go with it.
+        remove: {
+          format: this.formatNames().filter((x) => x !== f),
+          ...(this.namespaceFilter() ? { namespace: null } : {}),
+          ...(this.dependsOnFilter() ? { dependsOn: null } : {}),
+        },
       });
     }
     const repoLabel = $localize`:@@pkg.filter.repository:Repository`;
@@ -208,6 +219,10 @@ export class PackageList {
         value: ns,
         remove: { namespace: null },
       });
+    }
+    const dep = this.dependsOnFilter();
+    if (dep) {
+      out.push({ key: 'dependsOn', label: $localize`:@@pkg.filter.depends-on:Depends on`, value: dep, remove: { dependsOn: null } });
     }
     if (this.signed() === 'true') {
       out.push({
@@ -400,12 +415,16 @@ export class PackageList {
 
   /** **Clear all** of the drawer: its filters go; the search text is the field's and stays. */
   protected clearFilters(): void {
-    this.navigate({ format: null, repository: null, keyword: null, namespace: null, signed: null, deprecated: null, period: null, from: null, to: null });
+    this.navigate({
+      format: null, repository: null, keyword: null, namespace: null, signed: null, deprecated: null, dependsOn: null, period: null, from: null, to: null,
+    });
   }
 
   /** **Clear all filters** under a list that matches nothing: the search text goes too. */
   protected clearEverything(): void {
-    this.navigate({ format: null, repository: null, q: null, keyword: null, namespace: null, signed: null, deprecated: null, period: null, from: null, to: null });
+    this.navigate({
+      format: null, repository: null, q: null, keyword: null, namespace: null, signed: null, deprecated: null, dependsOn: null, period: null, from: null, to: null,
+    });
   }
 
   protected removeChip(chip: ListChip): void {
@@ -430,6 +449,7 @@ export class PackageList {
     add('deprecated', this.deprecated());
     add('namespace', this.namespace());
     add('signed', this.signed());
+    add('dependsOn', this.dependsOn());
     add('period', this.period());
     add('from', this.from());
     add('to', this.to());
