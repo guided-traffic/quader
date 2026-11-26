@@ -19,7 +19,6 @@ import (
 	"github.com/guided-traffic/quader/internal/api/edge"
 	"github.com/guided-traffic/quader/internal/api/v1/gen"
 	"github.com/guided-traffic/quader/internal/authz"
-	"github.com/guided-traffic/quader/internal/blob"
 	"github.com/guided-traffic/quader/internal/config"
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/formats"
@@ -337,6 +336,10 @@ func (s *Server) ListPackages(w http.ResponseWriter, r *http.Request, _ gen.List
 		httpserver.Problem(w, r, err)
 		return
 	}
+	if err := s.addPackageMalware(ctx, rows[:min(len(page.Items), len(rows))], page.Items); err != nil {
+		httpserver.Problem(w, r, err)
+		return
+	}
 	WritePage(w, r, page)
 }
 
@@ -483,9 +486,14 @@ func (s *Server) ListPackageVersions(w http.ResponseWriter, r *http.Request, id 
 		httpserver.Problem(w, r, err)
 		return
 	}
-	WritePage(w, r, MapPage(page, func(v view.VersionSummary) gen.PackageVersionSummary {
+	out := MapPage(page, func(v view.VersionSummary) gen.PackageVersionSummary {
 		return versionSummaryOf(v, sigs[v.Version])
-	}))
+	})
+	if err := s.addVersionListMalware(ctx, page.Items, out.Items); err != nil {
+		httpserver.Problem(w, r, err)
+		return
+	}
+	WritePage(w, r, out)
 }
 
 // versionListQuery reads the parameters of the version list (R-API-029): the filters, the sort and group=content, the list by content
@@ -588,7 +596,7 @@ func (s *Server) GetPackageVersion(w http.ResponseWriter, r *http.Request, id ge
 		httpserver.Problem(w, r, err)
 		return
 	}
-	if err := s.addMalwareStatus(ctx, d, out.Files); err != nil {
+	if err := s.addVersionMalware(ctx, d, &out); err != nil {
 		httpserver.Problem(w, r, err)
 		return
 	}
@@ -733,38 +741,6 @@ func versionOf(base string, d view.VersionDetail) gen.PackageVersion {
 		})
 	}
 	return out
-}
-
-// addMalwareStatus adds the member malware to each file of a version (R-MAL-022, R-MAL-024): the verdicts in one statement, the
-// strictness of each holding repository from the replica's snapshot. Without the scanning the files carry no member.
-func (s *Server) addMalwareStatus(ctx context.Context, d view.VersionDetail, files []gen.PackageFile) error {
-	if len(files) == 0 {
-		return nil
-	}
-	hexes := make([]string, len(d.Files))
-	for i, f := range d.Files {
-		hexes[i] = f.SHA256
-	}
-	verdicts, err := s.malwareVerdicts(ctx, hexes)
-	if err != nil || verdicts == nil {
-		return err
-	}
-	mc, err := s.malwareContexts(ctx)
-	if err != nil {
-		return err
-	}
-	for i, f := range d.Files {
-		dg, ok := blob.ParseDigest(f.SHA256)
-		if !ok {
-			continue
-		}
-		m, err := mc.describe(f.Repo, verdicts[dg], false)
-		if err != nil {
-			return err
-		}
-		files[i].Malware = malwareStatusRep(m)
-	}
-	return nil
 }
 
 // metadataOf maps the format-specific metadata of a version to the typed member: the announcement of the documentation (`docs`,

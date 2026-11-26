@@ -28859,6 +28859,45 @@ carries a search's, a keyword's, the deprecated filter's or dependsOn's ids, as 
 packages and 5,000 dependents: 150 to 160 ms, the slowest of twelve 172 ms. **Applied in the spec:** R-API-086. Code:
 `internal/packages/view/service.go`.
 
+### Q-API-465 · A unit's malware state is its deciding part's member, with three members of the unit
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: W-36's plan (D.1) drew the member of a package and a version with its own names for the check (`checkedAt`, `signatures`), where a
+file's member says `scannedAt`, `database` and `databaseBuiltAt`.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `MalwareSummary` carries every member of `MalwareStatus`, the deciding part's, plus `files`, `currentFiles` and `decidedBy` (chosen) | One fact, one name | A screen reads a file's and a unit's state with one shape and shows one popover; the Bastion's strip moves the same names | The names are a file's, also on a package |
+| (b) The plan's names (`checkedAt`, `signatures {version, builtAt}`) | Names of the check | Read as the popover's lines | Two names for one fact, and every reader of both translates |
+
+**Choice:** (a). **Applied in the spec:** [malware-scanning.md](malware-scanning.md) R-MAL-039, `api/openapi.yaml` (`MalwareSummary`).
+
+### Q-API-466 · A folder's file carries the file's member, and an image's page lists the parts its files do not
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A file of a folder's listing carries `MalwareStatus`; a version's page carries `malwareParts`, the image's parts its `files` do not list, each with its `MalwareStatus` (chosen) | A file is a file wherever it is listed; the image's parts come with the page that shows them | One read per page; no request per part | A member that is empty for every format but OCI |
+| (b) A folder's file carries a summary of one part (the plan's D.1) | One shape for lists | — | `files: 1` and `decidedBy` itself on every row |
+| (c) The image's parts through a read of their own | — | Lean page | A request and a spinner more per page, and a statement per part or a second walk |
+
+**Choice:** (a). **Applied in the spec:** [malware-scanning.md](malware-scanning.md) R-MAL-039.
+
+### Q-API-467 · The upstream view and the download queue carry the state of the stored versions they name
+
+Status: **Decided by the development agent** on 2026-11-26 (W-36's plan, B.1 rows 15 and 17) — selected from the options below; the
+owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A row of the upstream view (`UpstreamVersion`) and of the download queue (`RemoteDownload`) carries the member of the version it names once the repository stores it; the read of the stored versions answers their ids (chosen) | The state where a person decides to download or watches a download | The read that says `stored` already finds the version; the queue adds one read of its page's names | A row of a version not stored has none |
+| (b) Only the package screens | — | Fewer answers | The person who fetched a version sees its state only after a click |
+
+**Choice:** (a). `catalogue.Stored.Versions` answers each stored version with its id in `package_version_listing`. **Applied in the
+spec:** [malware-scanning.md](malware-scanning.md) R-MAL-039.
+
 ### Q-API-475 · The storage overview is an operation of its own
 
 Status: **Decided by the development agent** while building W-37's package P1 ([storage.md](storage.md) R-STOR-107); the owner reviews

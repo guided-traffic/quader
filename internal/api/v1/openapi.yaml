@@ -15627,6 +15627,40 @@ paths:
           $ref: "#/components/responses/Internal"
         "503":
           $ref: "#/components/responses/Unavailable"
+  /api/v1/malware/signatures:
+    get:
+      operationId: getMalwareSignatures
+      tags: [malware]
+      summary: Today's signatures of the malware scan
+      description: |
+        The signature set the malware scanning checks with today, for the details of an artifact's malware state (R-MAL-040): its
+        version (`main-<n>.daily-<n>.bytecode-<n>`) and its daily's number, the daily's build time (`builtAt`), the time Quader stored
+        the set (`importedAt`), whether it is stale (`malware.database.stale_after`), the unit that checks (`malware-scanner-clamav`),
+        the ClamAV version the ready scanners state (`engine`, the newest of their reports, shown for information only, H-2404), and
+        the two bounds of how current a check is (`cycleDays`, `overdueAfterDays`, R-MAL-037). Every caller reads it, an anonymous
+        one included where the endpoint admits anonymous callers: the set is ClamAV's public one (Q-MAL-27), and the answer names
+        no host and no address of the installation (Q-MAL-132). `version`, `daily`, `builtAt` and `importedAt` are null while no
+        set is in use; `503` while the scanning is off.
+      x-quader-permission:
+        public: true
+      responses:
+        "200":
+          description: The set in use.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MalwareSignatures"
+              example: {version: main-63.daily-28201.bytecode-339, daily: 28201, builtAt: "2026-11-26T07:58:00Z",
+                importedAt: "2026-11-26T09:14:05Z", stale: false, scanner: malware-scanner-clamav, engine: "1.5.5", cycleDays: 30,
+                overdueAfterDays: 7}
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
   /api/v1/malware/settings:
     get:
       operationId: getMalwareSettings
@@ -29252,6 +29286,9 @@ components:
           type: string
         sha1:
           type: string
+        malware:
+          $ref: "#/components/schemas/MalwareStatus"
+          description: The member of a file (R-MAL-039, Q-API-466); absent for a folder, a generated file and while the scanning is off.
     ChildrenPage:
       type: object
       required: [items, nextCursor]
@@ -29639,6 +29676,9 @@ components:
           description: The normalized name, which the package's address holds.
         version:
           type: string
+        malware:
+          $ref: "#/components/schemas/MalwareSummary"
+          description: The malware state of `version` (R-MAL-039); absent while the scanning is off.
         relations:
           type: array
           items:
@@ -29701,6 +29741,11 @@ components:
           description: The keys of the repositories that hold a visible version.
           items:
             type: string
+        malware:
+          $ref: "#/components/schemas/MalwareSummary"
+          description: |
+            The malware state of `latestVersion` (R-MAL-039), in every answer while the scanning is on, as the grade's is with `include`:
+            the word and its details on demand at every list (Q-MAL-130); absent while the scanning is off.
         createdAt:
           type: string
           format: date-time
@@ -29903,6 +29948,11 @@ components:
             R-API-079), as the download statistics of R-STOR-015 record it, which a replica flushes with a delay of up to its flush
             interval; `null` when no client fetched it (a version a mirror pass stored and nobody fetched yet, a local version nobody
             downloaded).
+        malware:
+          $ref: "#/components/schemas/MalwareSummary"
+          description: |
+            The version's malware state (R-MAL-039): of the files of the row the version is described by, an image tag's of its
+            manifests, config and layers; absent while the scanning is off.
     PackageVersionList:
       type: object
       required: [items, nextCursor]
@@ -30069,6 +30119,17 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/PackageFile"
+        malware:
+          $ref: "#/components/schemas/MalwareSummary"
+          description: The version's malware state, decided by its worst part (R-MAL-039); absent while the scanning is off.
+        malwareParts:
+          type: array
+          description: |
+            The parts of an image that `files` does not list - each platform's manifest of an index, each manifest's config and layers -
+            with their member `malware` (R-MAL-039), so that the image's details show each part's state; empty for a version of any other
+            format, absent while the scanning is off.
+          items:
+            $ref: "#/components/schemas/MalwareImagePart"
         signatures:
           $ref: "#/components/schemas/SignatureStatus"
         deprecation:
@@ -32803,6 +32864,176 @@ components:
         `no_scanner`, no malware scanner is connected (none configured, or none of those that report themselves is ready); `no_database`,
         no signature set of ClamAV has been imported yet. The answer reads the two facts of the installation once, and only for a pending
         file (Q-VULN-277).
+    MalwareAge:
+      type: string
+      enum: [current, older, due, overdue]
+      x-enum-varnames: [MalwareAgeCurrent, MalwareAgeOlder, MalwareAgeDue, MalwareAgeOverdue]
+      description: |
+        How current a check is (R-MAL-037, R-MAL-039), by its scan pressure under the set in use: `current`, made with the signatures in
+        use; `older`, made with older ones and not due; `due`, its pressure reached the cycle and the scanning checks it in turn;
+        `overdue`, due for longer than `rescan_overdue_after`, so the scanning falls behind.
+    MalwareDecider:
+      type: object
+      additionalProperties: false
+      required: [sha256, path]
+      description: The part that decides a unit's word (Q-MAL-128).
+      properties:
+        sha256:
+          type: string
+          pattern: "^[0-9a-f]{64}$"
+        path:
+          type: [string, "null"]
+          description: The path of the file item of the version; null for a part an image's manifest names (a platform's manifest, a config, a layer).
+    MalwareSummary:
+      type: object
+      additionalProperties: false
+      required: [state, scannedAt, database, databaseBuiltAt, signature, part, reason, limit, limitValue, released, releasedBy, releasedAt,
+        refused, waiting, queuedSince, scanner, engine, scannerInstance, age, pressure, due, nextCheckInDays, downloadsSince, files,
+        currentFiles, decidedBy]
+      description: |
+        The member `malware` of an answer that lists or shows an artifact as one unit (R-MAL-039): a package (its newest visible version),
+        a version, an image tag, a package that depends on another (its version that does), a remote's stored version and the download
+        that names one. A unit's parts are a version's files that Quader did not generate; an image tag's are its manifest, for an index
+        each platform's manifest, and each manifest's config and layers, a part that is not stored counting as unchecked. The worst part
+        decides (Q-MAL-128), in this order: malware (infected, not released), not checkable (unscannable or failed, not released),
+        unchecked, released, then a clean check that is overdue, due, under older signatures, under the signatures in use; ties go to
+        the higher scan pressure. Every member but the last three is that part's, as `MalwareStatus` names it (Q-API-465); `refused`
+        says whether the gate refuses it in the unit's repository. Absent while the scanning is off and for a unit without a part. The
+        answer reads it in a fixed number of statements per page, never one per row (Q-MAL-129).
+      properties:
+        state:
+          $ref: "#/components/schemas/MalwareState"
+        scannedAt:
+          type: [string, "null"]
+          format: date-time
+        database:
+          type: [string, "null"]
+        databaseBuiltAt:
+          type: [string, "null"]
+          format: date-time
+        signature:
+          type: [string, "null"]
+        part:
+          type: [string, "null"]
+        reason:
+          type: [string, "null"]
+        limit:
+          oneOf:
+            - $ref: "#/components/schemas/MalwareLimit"
+            - type: "null"
+        limitValue:
+          type: [integer, "null"]
+          format: int64
+        released:
+          type: boolean
+        releasedBy:
+          type: [string, "null"]
+        releasedAt:
+          type: [string, "null"]
+          format: date-time
+        refused:
+          type: boolean
+        waiting:
+          oneOf:
+            - $ref: "#/components/schemas/MalwareWaiting"
+            - type: "null"
+        queuedSince:
+          type: [string, "null"]
+          format: date-time
+        scanner:
+          type: [string, "null"]
+          description: The unit that made the verdict, `malware-scanner-clamav` (R-MAL-036); null for a verdict that names none.
+        engine:
+          type: [string, "null"]
+          description: The ClamAV version the scanner stated in its answer (`1.5.5`), shown for information only (H-2404).
+        scannerInstance:
+          type: [string, "null"]
+          description: The replica that answered; null for a verdict that names none and in an answer to an anonymous caller (Q-MAL-131).
+        age:
+          description: How current the check is under the set in use (R-MAL-037); null without a verdict and while no set is in use.
+          oneOf:
+            - $ref: "#/components/schemas/MalwareAge"
+            - type: "null"
+        pressure:
+          type: [integer, "null"]
+          format: int64
+          description: |
+            The verdict's scan pressure in percent of `rescan_cycle` (R-MAL-037): how much newer the signatures in use are than the check's,
+            plus its demand, plus a request; due at 100. Null without a verdict, while no set is in use and for a `too_large` verdict no
+            request names.
+        due:
+          type: boolean
+          description: The pressure reached the cycle; the scanning checks it again in turn.
+        nextCheckInDays:
+          type: [integer, "null"]
+          format: int64
+          description: |
+            The whole days until the check is due, assuming the signatures in use get about one day newer each day, sooner the more the
+            file is downloaded; 0 while it is due; null when no check is expected that way (no verdict, no set in use, a stale set, a
+            `too_large` verdict no request names).
+        downloadsSince:
+          type: [integer, "null"]
+          format: int64
+          description: The blob's downloads since the check, over all its items (R-MAL-037); null without a verdict.
+        files:
+          type: integer
+          format: int64
+          description: The unit's parts.
+        currentFiles:
+          type: integer
+          format: int64
+          description: The parts checked with the signatures in use; the details say "2 of 3 under today's signatures".
+        decidedBy:
+          $ref: "#/components/schemas/MalwareDecider"
+    MalwareImagePart:
+      type: object
+      additionalProperties: false
+      required: [sha256, malware]
+      description: A part of an image its files do not list (a platform's manifest, a config, a layer) with its member `malware` (R-MAL-039).
+      properties:
+        sha256:
+          type: string
+          pattern: "^[0-9a-f]{64}$"
+        malware:
+          $ref: "#/components/schemas/MalwareStatus"
+    MalwareSignatures:
+      type: object
+      additionalProperties: false
+      required: [version, daily, builtAt, importedAt, stale, scanner, engine, cycleDays, overdueAfterDays]
+      description: Today's signatures of the malware scan (R-MAL-040).
+      properties:
+        version:
+          type: [string, "null"]
+          description: The set in use, `main-<n>.daily-<n>.bytecode-<n>`; null while none is.
+        daily:
+          type: [integer, "null"]
+          format: int64
+          description: The number of its daily, the one a reader compares ("daily 28201").
+        builtAt:
+          type: [string, "null"]
+          format: date-time
+          description: The daily's build time, the set's date (Q-MAL-41).
+        importedAt:
+          type: [string, "null"]
+          format: date-time
+          description: When Quader stored the set ("fetched").
+        stale:
+          type: boolean
+          description: The set is older than `malware.database.stale_after`, so no newer one arrives and the checks' pressure does not grow.
+        scanner:
+          type: string
+          description: The unit that checks, `malware-scanner-clamav`.
+        engine:
+          type: [string, "null"]
+          description: The newest ClamAV version the ready replicas of the scanner state in their reports; null while none reports one.
+        cycleDays:
+          type: number
+          format: double
+          description: "`rescan_cycle` in days: a check is due once its pressure reaches it."
+        overdueAfterDays:
+          type: number
+          format: double
+          description: "`rescan_overdue_after` in days: a due check is overdue after it."
     MalwareFindState:
       type: string
       enum: [infected, unscannable, failed]
@@ -32928,7 +33159,8 @@ components:
     MalwareStatus:
       type: object
       additionalProperties: false
-      required: [state, scannedAt, database, databaseBuiltAt, signature, part, reason, limit, limitValue, released, releasedBy, releasedAt, refused, waiting, queuedSince]
+      required: [state, scannedAt, database, databaseBuiltAt, signature, part, reason, limit, limitValue, released, releasedBy, releasedAt, refused, waiting, queuedSince,
+        scanner, engine, scannerInstance, age, pressure, due, nextCheckInDays, downloadsSince]
       description: |
         The member `malware` of a stored file (R-MAL-022, R-MAL-024): the verdict of its blob, the release that passes it and
         whether the gate refuses it in the file's repository now. Absent for a generated item and while the scanning is off.
@@ -32991,6 +33223,41 @@ components:
           type: [string, "null"]
           format: date-time
           description: "`waiting: queued`: when the file's row was written; null otherwise and before discovery has reached the file."
+        scanner:
+          type: [string, "null"]
+          description: The unit that made the verdict, `malware-scanner-clamav` (R-MAL-036); null for a verdict that names none.
+        engine:
+          type: [string, "null"]
+          description: The ClamAV version the scanner stated in its answer (`1.5.5`), shown for information only (H-2404).
+        scannerInstance:
+          type: [string, "null"]
+          description: The replica that answered; null for a verdict that names none and in an answer to an anonymous caller (Q-MAL-131).
+        age:
+          description: How current the check is under the set in use (R-MAL-037); null without a verdict and while no set is in use.
+          oneOf:
+            - $ref: "#/components/schemas/MalwareAge"
+            - type: "null"
+        pressure:
+          type: [integer, "null"]
+          format: int64
+          description: |
+            The verdict's scan pressure in percent of `rescan_cycle` (R-MAL-037): how much newer the signatures in use are than the check's,
+            plus its demand, plus a request; due at 100. Null without a verdict, while no set is in use and for a `too_large` verdict no
+            request names.
+        due:
+          type: boolean
+          description: The pressure reached the cycle; the scanning checks it again in turn.
+        nextCheckInDays:
+          type: [integer, "null"]
+          format: int64
+          description: |
+            The whole days until the check is due, assuming the signatures in use get about one day newer each day, sooner the more the
+            file is downloaded; 0 while it is due; null when no check is expected that way (no verdict, no set in use, a stale set, a
+            `too_large` verdict no request names).
+        downloadsSince:
+          type: [integer, "null"]
+          format: int64
+          description: The blob's downloads since the check, over all its items (R-MAL-037); null without a verdict.
     MalwareRelease:
       type: object
       additionalProperties: false
@@ -38567,6 +38834,11 @@ components:
           enum: [delivered, blocked, notAllowed, outsideRange]
           x-enum-varnames: [DownloadDeliveryDelivered, DownloadDeliveryBlocked, DownloadDeliveryNotAllowed, DownloadDeliveryOutsideRange]
           description: Whether the delivery rules deliver the version (R-CUR-009); a row that fetches what they do not deliver stores it for examination.
+        malware:
+          $ref: "#/components/schemas/MalwareSummary"
+          description: |
+            The malware state of the version the row names, once the repository holds it (R-MAL-039); absent for a row of no version or
+            of a version not stored, and while the scanning is off.
     RemoteDownloadCounts:
       type: object
       additionalProperties: false
@@ -39212,6 +39484,9 @@ components:
         inherited:
           $ref: "#/components/schemas/DeliveryDecision"
           description: The decision without the version's own rule, its package level's (R-CUR-024); only to whoever may set rules.
+        malware:
+          $ref: "#/components/schemas/MalwareSummary"
+          description: The malware state of a stored version (R-MAL-039); absent for a version the repository does not hold and while the scanning is off.
     UpstreamPackage:
       type: object
       additionalProperties: false

@@ -41,6 +41,8 @@ type Child struct {
 	Abs string `json:"-"`
 	// ID is the item's id, the position of a cursor that must not name the entry.
 	ID int64 `json:"-"`
+	// Generated says that Quader wrote the file (a Debian repository's index), which carries no malware state (R-MAL-001, R-MAL-039).
+	Generated bool `json:"-"`
 }
 
 // ChildrenPage is one page of a listing.
@@ -187,7 +189,9 @@ func (s *Store) childRows(ctx context.Context, rid int64, cq ChildrenQuery, afte
 				RepoID: rid, Path: cq.Path, After: after, Folders: cq.Folders, RowLimit: limit,
 			})
 			for _, r := range rows {
-				out = append(out, childOf(r.ID, r.Path, r.Kind, r.Size.Int64, r.Size.Valid, r.ModifiedAt.Time, r.BlobSha256, r.BlobSha1))
+				c := childOf(r.ID, r.Path, r.Kind, r.Size.Int64, r.Size.Valid, r.ModifiedAt.Time, r.BlobSha256, r.BlobSha1)
+				c.Generated = r.Generated
+				out = append(out, c)
 			}
 			return err
 		}
@@ -205,7 +209,9 @@ func (s *Store) childRows(ctx context.Context, rid int64, cq ChildrenQuery, afte
 			RepoID: rid, Lo: lo, Hi: hi, After: after, Folders: cq.Folders, MaxSlashes: slashes, RowLimit: limit,
 		})
 		for _, r := range rows {
-			out = append(out, childOf(r.ID, r.Path, r.Kind, r.Size.Int64, r.Size.Valid, r.ModifiedAt.Time, r.BlobSha256, r.BlobSha1))
+			c := childOf(r.ID, r.Path, r.Kind, r.Size.Int64, r.Size.Valid, r.ModifiedAt.Time, r.BlobSha256, r.BlobSha1)
+			c.Generated = r.Generated
+			out = append(out, c)
 		}
 		return err
 	})

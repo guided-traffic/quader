@@ -121,6 +121,10 @@ func malwareVerdict(d blob.Digest, r q.GetLiveItemRow) malware.Verdict {
 		v.Limit, v.Limits = malware.Limit(r.MalwareExceededLimit), r.MalwareLimits
 		v.Database, v.DatabaseBuiltAt = r.MalwareDbVersion, r.MalwareDbBuiltAt.Time.UTC()
 		v.ScannedAt, v.FirstFoundAt, v.Due = r.MalwareScannedAt.Time.UTC(), r.MalwareFirstFoundAt.Time.UTC(), r.MalwareDue
+		v.CreatedAt = r.MalwareCreatedAt.Time.UTC()
+		// Who checked it and its scan pressure (R-MAL-036, R-MAL-037): what the member malware of the items API says of a check (R-MAL-039).
+		v.Scanner, v.Engine, v.ScannerInstance = r.MalwareScanner, r.MalwareEngineVersion, r.MalwareScannerInstance
+		v.RankBase, v.DownloadsSince, v.Requested = r.MalwareRankBase.Time.UTC(), r.MalwareDownloadsSince, malware.Requested(r.MalwareRequested)
 	}
 	if r.MalwareReleased {
 		v.Release = &malware.Release{

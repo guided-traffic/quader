@@ -87,6 +87,13 @@ SELECT i.id, i.repo_id, i.path, i.parent_path, i.kind, i.blob_sha256, i.size, i.
        ms.scanned_at AS malware_scanned_at,
        ms.first_found_at AS malware_first_found_at,
        COALESCE(ms.due, false)::boolean AS malware_due,
+       ms.created_at AS malware_created_at,
+       COALESCE(ms.scanner, '')::text AS malware_scanner,
+       COALESCE(ms.engine_version, '')::text AS malware_engine_version,
+       COALESCE(ms.scanner_instance, '')::text AS malware_scanner_instance,
+       ms.rank_base AS malware_rank_base,
+       COALESCE(ms.downloads_since, 0)::bigint AS malware_downloads_since,
+       COALESCE(ms.requested, '')::text AS malware_requested,
        (mr.sha256 IS NOT NULL)::boolean AS malware_released,
        COALESCE(mr.reason, '')::text AS malware_release_reason,
        COALESCE(mr.state, '')::text AS malware_release_state,
@@ -335,8 +342,9 @@ DELETE FROM items WHERE id = sqlc.arg(id)::bigint;
 
 -- name: ListChildrenDirect :many
 -- The live children of a folder in path order, after a cursor. folders=false
--- leaves folders out.
-SELECT i.id, i.path, i.kind, i.size, i.modified_at, i.blob_sha256, b.sha1 AS blob_sha1
+-- leaves folders out. generated says that Quader wrote the file, which carries
+-- no malware state (malware-scanning.md R-MAL-001, R-MAL-039).
+SELECT i.id, i.path, i.kind, i.size, i.modified_at, i.blob_sha256, b.sha1 AS blob_sha1, i.generated
   FROM items i
   LEFT JOIN blobs b ON b.sha256 = i.blob_sha256
  WHERE i.repo_id = sqlc.arg(repo_id)::bigint AND i.parent_path = sqlc.arg(path)::text AND i.trashed_at IS NULL
@@ -348,7 +356,7 @@ SELECT i.id, i.path, i.kind, i.size, i.modified_at, i.blob_sha256, b.sha1 AS blo
 -- name: ListChildrenRecursive :many
 -- The live items below a folder to a depth (max_depth is the most slashes the
 -- path may hold below the folder; a negative value is no bound), in path order.
-SELECT i.id, i.path, i.kind, i.size, i.modified_at, i.blob_sha256, b.sha1 AS blob_sha1
+SELECT i.id, i.path, i.kind, i.size, i.modified_at, i.blob_sha256, b.sha1 AS blob_sha1, i.generated
   FROM items i
   LEFT JOIN blobs b ON b.sha256 = i.blob_sha256
  WHERE i.repo_id = sqlc.arg(repo_id)::bigint AND i.trashed_at IS NULL

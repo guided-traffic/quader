@@ -267,6 +267,13 @@ SELECT i.id, i.repo_id, i.path, i.parent_path, i.kind, i.blob_sha256, i.size, i.
        ms.scanned_at AS malware_scanned_at,
        ms.first_found_at AS malware_first_found_at,
        COALESCE(ms.due, false)::boolean AS malware_due,
+       ms.created_at AS malware_created_at,
+       COALESCE(ms.scanner, '')::text AS malware_scanner,
+       COALESCE(ms.engine_version, '')::text AS malware_engine_version,
+       COALESCE(ms.scanner_instance, '')::text AS malware_scanner_instance,
+       ms.rank_base AS malware_rank_base,
+       COALESCE(ms.downloads_since, 0)::bigint AS malware_downloads_since,
+       COALESCE(ms.requested, '')::text AS malware_requested,
        (mr.sha256 IS NOT NULL)::boolean AS malware_released,
        COALESCE(mr.reason, '')::text AS malware_release_reason,
        COALESCE(mr.state, '')::text AS malware_release_state,
@@ -346,72 +353,79 @@ type GetLiveItemParams struct {
 }
 
 type GetLiveItemRow struct {
-	ID                    int64
-	RepoID                int64
-	Path                  string
-	ParentPath            string
-	Kind                  string
-	BlobSha256            []byte
-	Size                  pgtype.Int8
-	MediaType             pgtype.Text
-	DeclaredSha256        []byte
-	DeclaredSha512        []byte
-	DeclaredSha1          []byte
-	DeclaredMd5           []byte
-	DeclaredMismatch      bool
-	ExplicitFolder        bool
-	Generated             bool
-	UpstreamUrl           pgtype.Text
-	CreatedAt             pgtype.Timestamptz
-	ModifiedAt            pgtype.Timestamptz
-	UpdatedAt             pgtype.Timestamptz
-	CreatedByName         string
-	ModifiedByName        string
-	BlobSha1              []byte
-	BlobMd5               []byte
-	BlobSha512            []byte
-	ContentStatus         pgtype.Text
-	VersionID             int64
-	BlockFindingID        string
-	BlockAdvisoryID       string
-	BlockKind             string
-	BlockStatus           string
-	FactKind              string
-	FactTombstoned        bool
-	FactOciManifest       bool
-	FactDebRemoteKnown    bool
-	FactDebRemoteSha256   []byte
-	FactDebRemoteSize     int64
-	FactNugetStored       bool
-	FactNugetListed       bool
-	FactNpmKnown          bool
-	FactNpmListed         bool
-	FactNpmIntegrity      string
-	FactNpmShasum         string
-	FactNpmDocStored      bool
-	FactNpmDocCurrent     bool
-	FactNpmGoneUs         int64
-	FactNpmServeRemoved   bool
-	EntryStored           bool
-	MalwareKnown          bool
-	MalwareState          string
-	MalwareReason         string
-	MalwareSignature      string
-	MalwarePart           string
-	MalwareExceededLimit  string
-	MalwareLimits         string
-	MalwareDbVersion      string
-	MalwareDbBuiltAt      pgtype.Timestamptz
-	MalwareScannedAt      pgtype.Timestamptz
-	MalwareFirstFoundAt   pgtype.Timestamptz
-	MalwareDue            bool
-	MalwareReleased       bool
-	MalwareReleaseReason  string
-	MalwareReleaseState   string
-	MalwareReleasedBy     string
-	MalwareReleasedByName string
-	MalwareReleasedAt     pgtype.Timestamptz
-	BlobCopies            string
+	ID                     int64
+	RepoID                 int64
+	Path                   string
+	ParentPath             string
+	Kind                   string
+	BlobSha256             []byte
+	Size                   pgtype.Int8
+	MediaType              pgtype.Text
+	DeclaredSha256         []byte
+	DeclaredSha512         []byte
+	DeclaredSha1           []byte
+	DeclaredMd5            []byte
+	DeclaredMismatch       bool
+	ExplicitFolder         bool
+	Generated              bool
+	UpstreamUrl            pgtype.Text
+	CreatedAt              pgtype.Timestamptz
+	ModifiedAt             pgtype.Timestamptz
+	UpdatedAt              pgtype.Timestamptz
+	CreatedByName          string
+	ModifiedByName         string
+	BlobSha1               []byte
+	BlobMd5                []byte
+	BlobSha512             []byte
+	ContentStatus          pgtype.Text
+	VersionID              int64
+	BlockFindingID         string
+	BlockAdvisoryID        string
+	BlockKind              string
+	BlockStatus            string
+	FactKind               string
+	FactTombstoned         bool
+	FactOciManifest        bool
+	FactDebRemoteKnown     bool
+	FactDebRemoteSha256    []byte
+	FactDebRemoteSize      int64
+	FactNugetStored        bool
+	FactNugetListed        bool
+	FactNpmKnown           bool
+	FactNpmListed          bool
+	FactNpmIntegrity       string
+	FactNpmShasum          string
+	FactNpmDocStored       bool
+	FactNpmDocCurrent      bool
+	FactNpmGoneUs          int64
+	FactNpmServeRemoved    bool
+	EntryStored            bool
+	MalwareKnown           bool
+	MalwareState           string
+	MalwareReason          string
+	MalwareSignature       string
+	MalwarePart            string
+	MalwareExceededLimit   string
+	MalwareLimits          string
+	MalwareDbVersion       string
+	MalwareDbBuiltAt       pgtype.Timestamptz
+	MalwareScannedAt       pgtype.Timestamptz
+	MalwareFirstFoundAt    pgtype.Timestamptz
+	MalwareDue             bool
+	MalwareCreatedAt       pgtype.Timestamptz
+	MalwareScanner         string
+	MalwareEngineVersion   string
+	MalwareScannerInstance string
+	MalwareRankBase        pgtype.Timestamptz
+	MalwareDownloadsSince  int64
+	MalwareRequested       string
+	MalwareReleased        bool
+	MalwareReleaseReason   string
+	MalwareReleaseState    string
+	MalwareReleasedBy      string
+	MalwareReleasedByName  string
+	MalwareReleasedAt      pgtype.Timestamptz
+	BlobCopies             string
 }
 
 // The statements of the files transfer and the items API (R-STOR-007, R-STOR-012,
@@ -521,6 +535,13 @@ func (q *Queries) GetLiveItem(ctx context.Context, arg GetLiveItemParams) ([]Get
 			&i.MalwareScannedAt,
 			&i.MalwareFirstFoundAt,
 			&i.MalwareDue,
+			&i.MalwareCreatedAt,
+			&i.MalwareScanner,
+			&i.MalwareEngineVersion,
+			&i.MalwareScannerInstance,
+			&i.MalwareRankBase,
+			&i.MalwareDownloadsSince,
+			&i.MalwareRequested,
 			&i.MalwareReleased,
 			&i.MalwareReleaseReason,
 			&i.MalwareReleaseState,
@@ -772,7 +793,7 @@ func (q *Queries) ItemPathByID(ctx context.Context, arg ItemPathByIDParams) ([]s
 }
 
 const listChildrenDirect = `-- name: ListChildrenDirect :many
-SELECT i.id, i.path, i.kind, i.size, i.modified_at, i.blob_sha256, b.sha1 AS blob_sha1
+SELECT i.id, i.path, i.kind, i.size, i.modified_at, i.blob_sha256, b.sha1 AS blob_sha1, i.generated
   FROM items i
   LEFT JOIN blobs b ON b.sha256 = i.blob_sha256
  WHERE i.repo_id = $1::bigint AND i.parent_path = $2::text AND i.trashed_at IS NULL
@@ -798,10 +819,12 @@ type ListChildrenDirectRow struct {
 	ModifiedAt pgtype.Timestamptz
 	BlobSha256 []byte
 	BlobSha1   []byte
+	Generated  bool
 }
 
 // The live children of a folder in path order, after a cursor. folders=false
-// leaves folders out.
+// leaves folders out. generated says that Quader wrote the file, which carries
+// no malware state (malware-scanning.md R-MAL-001, R-MAL-039).
 func (q *Queries) ListChildrenDirect(ctx context.Context, arg ListChildrenDirectParams) ([]ListChildrenDirectRow, error) {
 	rows, err := q.db.Query(ctx, listChildrenDirect,
 		arg.RepoID,
@@ -825,6 +848,7 @@ func (q *Queries) ListChildrenDirect(ctx context.Context, arg ListChildrenDirect
 			&i.ModifiedAt,
 			&i.BlobSha256,
 			&i.BlobSha1,
+			&i.Generated,
 		); err != nil {
 			return nil, err
 		}
@@ -837,7 +861,7 @@ func (q *Queries) ListChildrenDirect(ctx context.Context, arg ListChildrenDirect
 }
 
 const listChildrenRecursive = `-- name: ListChildrenRecursive :many
-SELECT i.id, i.path, i.kind, i.size, i.modified_at, i.blob_sha256, b.sha1 AS blob_sha1
+SELECT i.id, i.path, i.kind, i.size, i.modified_at, i.blob_sha256, b.sha1 AS blob_sha1, i.generated
   FROM items i
   LEFT JOIN blobs b ON b.sha256 = i.blob_sha256
  WHERE i.repo_id = $1::bigint AND i.trashed_at IS NULL
@@ -867,6 +891,7 @@ type ListChildrenRecursiveRow struct {
 	ModifiedAt pgtype.Timestamptz
 	BlobSha256 []byte
 	BlobSha1   []byte
+	Generated  bool
 }
 
 // The live items below a folder to a depth (max_depth is the most slashes the
@@ -896,6 +921,7 @@ func (q *Queries) ListChildrenRecursive(ctx context.Context, arg ListChildrenRec
 			&i.ModifiedAt,
 			&i.BlobSha256,
 			&i.BlobSha1,
+			&i.Generated,
 		); err != nil {
 			return nil, err
 		}

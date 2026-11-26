@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"maps"
 	"net/http"
 	"slices"
 	"strconv"
@@ -716,15 +717,56 @@ func (s *Server) ListRemoteDownloads(w http.ResponseWriter, r *http.Request, pro
 		next = &c
 		w.Header().Set("Link", "<"+nextURL(r, c)+`>; rel="next"`)
 	}
+	states, err := s.downloadsMalware(ctx, t, rows)
+	if err != nil {
+		httpserver.Problem(w, r, errs.Wrap(err, "api.listRemoteDownloads"))
+		return
+	}
 	items := make([]map[string]any, 0, len(rows))
-	for _, row := range rows {
-		items = append(items, s.downloadView(ctx, acc, t, row))
+	for i, row := range rows {
+		item := s.downloadView(ctx, acc, t, row)
+		if states[i] != nil {
+			item["malware"] = states[i]
+		}
+		items = append(items, item)
 	}
 	writeJSON(w, r, http.StatusOK, map[string]any{
 		"items": items, "nextCursor": next,
 		"counts": map[string]int64{"waiting": counts.Waiting, "running": counts.Running, "failed": counts.Failed, "done": counts.Done},
 		"limit":  limitView(t, limit, limited, time.Now()),
 	})
+}
+
+// storedNamesPerRead is the most names one read of the stored versions takes (catalogue.Stored's bound); a page of the default size
+// reads them once.
+const storedNamesPerRead = 500
+
+// downloadsMalware reads the malware state of the versions the page's rows name once the repository holds them (R-MAL-039), in the
+// page's order: the stored versions of the page's names in one statement, their parts in one more; nil for a row of no version or of a
+// version not stored.
+func (s *Server) downloadsMalware(ctx context.Context, t downloadTarget, rows []queue.Row) ([]*gen.MalwareSummary, error) {
+	names := make([]string, 0, len(rows))
+	for _, r := range rows {
+		if r.Version != "" && !slices.Contains(names, r.Name) {
+			names = append(names, r.Name)
+		}
+	}
+	units := make([]malwareUnit, len(rows))
+	if len(names) == 0 || s.o.RemoteDownloads.Stored == nil || s.o.Malware.Store == nil || !s.o.Malware.Config.Enabled {
+		return make([]*gen.MalwareSummary, len(rows)), nil
+	}
+	stored := map[string]map[string]int64{}
+	for chunk := range slices.Chunk(names, storedNamesPerRead) {
+		got, err := s.o.RemoteDownloads.Stored.Versions(ctx, t.ID, chunk)
+		if err != nil {
+			return nil, err
+		}
+		maps.Copy(stored, got)
+	}
+	for i, r := range rows {
+		units[i] = malwareUnit{id: stored[r.Name][r.Version], repo: t.Key}
+	}
+	return s.malwareSummaries(ctx, units)
 }
 
 // downloadCursor reads the keyset position of the list: the last row's state, creation time and ID.
@@ -1094,7 +1136,7 @@ func (s *Server) preview(ctx context.Context, t downloadTarget, in downloadReque
 		return nil, err
 	}
 	out["notVersions"] = notVersions
-	var stored map[string][]string
+	var stored map[string]map[string]int64
 	if s.o.RemoteDownloads.Stored != nil {
 		if stored, err = s.o.RemoteDownloads.Stored.Versions(ctx, t.ID, []string{info.Name}); err != nil {
 			return nil, err
@@ -1108,7 +1150,7 @@ func (s *Server) preview(ctx context.Context, t downloadTarget, in downloadReque
 		} else {
 			unknown++
 		}
-		if slices.Contains(stored[info.Name], v.Version) {
+		if _, ok := stored[info.Name][v.Version]; ok {
 			held++
 		}
 		if !s.downloadDecider().Decide(ctx, repoID, info.Name, v.Version).Delivered {

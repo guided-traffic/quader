@@ -954,10 +954,11 @@ SELECT DISTINCT d.name::text AS name
 -- the caller may not read is neither read nor counted, and its existence costs the walk nothing (Q-API-458). The visibility of each row
 -- is then the list's (whole, rows, withheld). self is the package's own name, which is no dependent of itself. total counts the
 -- dependent packages, each once, whatever max_rows returns; each answered package carries its version's relations side by side (the
--- kind as the format names it, the range as written, and the name matched: the package's or a name it provides).
+-- kind as the format names it, the range as written, and the name matched: the package's or a name it provides), and the version's row
+-- and repository, whose malware state the answer carries (malware-scanning.md R-MAL-039).
 WITH vis AS (
   SELECT d.version_id, d.name AS via, d.kind, d.range, pv.version, pv.sort_key, pv.created_at, COALESCE(pv.prerelease, false) AS prerelease,
-         (p.name COLLATE "C")::text AS name, p.display_name
+         (p.name COLLATE "C")::text AS name, p.display_name, p.repo_id
     FROM package_dependencies d
     JOIN package_versions pv ON pv.id = d.version_id AND pv.trashed_at IS NULL
     JOIN packages p ON p.id = pv.package_id
@@ -967,22 +968,22 @@ WITH vis AS (
      AND (p.repo_id = ANY(sqlc.arg(whole)::bigint[])
           OR concat_ws(chr(31), p.repo_id::text, p.name, pv.version) = ANY(sqlc.arg(rows)::text[]))
 ), newest AS (
-  SELECT DISTINCT ON (v.name) v.name, v.display_name, v.version, v.version_id
+  SELECT DISTINCT ON (v.name) v.name, v.display_name, v.version, v.version_id, v.repo_id
     FROM vis v
    ORDER BY v.name, v.prerelease, v.sort_key DESC NULLS LAST, v.created_at DESC, v.version_id DESC
 ), page AS (
-  SELECT n.name, n.display_name, n.version, n.version_id, count(*) OVER ()::bigint AS total
+  SELECT n.name, n.display_name, n.version, n.version_id, n.repo_id, count(*) OVER ()::bigint AS total
     FROM newest n
    ORDER BY n.name
    LIMIT sqlc.arg(max_rows)::int
 )
-SELECT pg.name, pg.display_name, pg.version::text AS version, pg.total,
+SELECT pg.name, pg.display_name, pg.version::text AS version, pg.version_id, pg.repo_id, pg.total,
        array_agg(v.kind::text ORDER BY v.kind, v.via, v.range)::text[] AS kinds,
        array_agg(v.range::text ORDER BY v.kind, v.via, v.range)::text[] AS ranges,
        array_agg(v.via::text ORDER BY v.kind, v.via, v.range)::text[] AS vias
   FROM page pg
   JOIN vis v ON v.version_id = pg.version_id
- GROUP BY pg.name, pg.display_name, pg.version, pg.total
+ GROUP BY pg.name, pg.display_name, pg.version, pg.version_id, pg.repo_id, pg.total
  ORDER BY pg.name;
 
 -- name: PackageViewDependentVersions :many

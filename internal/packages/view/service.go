@@ -634,7 +634,7 @@ func (s *Service) packages(ctx context.Context, sc Scope, p q.PackageViewListPar
 			continue
 		}
 		latests[i] = latest{version: l.Version, row: l}
-		pkgs[i].LatestVersion, pkgs[i].LatestVersionID = l.Version, l.VersionID
+		pkgs[i].LatestVersion, pkgs[i].LatestVersionID, pkgs[i].LatestRepo = l.Version, l.VersionID, sc.topo.Name(l.RepoID)
 		held := make([]int64, 0, len(vs))
 		for _, v := range vs {
 			held = append(held, v.RepoID)
@@ -969,6 +969,7 @@ func (s *Service) Versions(ctx context.Context, sc Scope, format, name string, f
 			Version: k.version, Prerelease: a.Prerelease(k.version), PublishedAt: g.published,
 			SizeBytes: &files, Repositories: sc.topo.Names(sc.holders(g.repoIDs())), DownloadCount: g.downloads(),
 			LastDownloadedAt: g.lastDownload(), Unranked: k.unranked,
+			VersionID: g.primary().VersionID, Repo: sc.topo.Name(g.primary().RepoID),
 		})
 	}
 	if err := s.adapterSizes(ctx, sc, a, format, groupOf, out); err != nil {
@@ -1425,7 +1426,7 @@ func (s *Service) Version(ctx context.Context, sc Scope, format, name, version s
 		PackageID: ID(format, name), Format: format, Name: pri.DisplayName, Version: version,
 		Prerelease: a.Prerelease(version), PublishedAt: g.published,
 		SizeBytes: &files, DownloadCount: g.downloads(), LastDownloadedAt: g.lastDownload(), Repo: sc.topo.Name(pri.RepoID),
-		Licenses: []string{}, Keywords: []string{}, Metadata: map[string]any{},
+		VersionID: pri.VersionID, Licenses: []string{}, Keywords: []string{}, Metadata: map[string]any{},
 	}
 	earliest := map[int64]time.Time{}
 	var held []int64

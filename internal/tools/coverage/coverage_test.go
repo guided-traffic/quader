@@ -191,8 +191,10 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 		// requirements of W-37, P1).
 		// 1388 since Quader keeps the history of damaged copies, unreachable connections and absorbed failures (R-STOR-108 to
 		// R-STOR-110, three P1 requirements of W-37, P2).
-		if len(m.Reqs) != 1388 || count[prioMVP] != 743 || count[prioP1] != 606 || count[prioP2] != 39 {
-			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1388 (743, 606, 39)",
+		// 1390 since every answer that lists or shows an artifact carries its malware state, and today's signatures can be read
+		// (R-MAL-039, R-MAL-040, two P1 requirements of W-36, P3).
+		if len(m.Reqs) != 1390 || count[prioMVP] != 743 || count[prioP1] != 608 || count[prioP2] != 39 {
+			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1390 (743, 608, 39)",
 				len(m.Reqs), count[prioMVP], count[prioP1], count[prioP2])
 		}
 	})

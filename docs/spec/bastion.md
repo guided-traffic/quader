@@ -6315,6 +6315,11 @@ A document of the catalogue is named by a path of this grammar (`iface.Catalogue
   `state`, so that a document changes only with its content: measured on 2026-11-26, every npm vulnerabilities document changed every 15
   minutes with nothing published, and 14,200 Ansible entries were 14,200 distinct documents where 1,264 were left without the time
   fields.
+- **Nor what a new signature set or a download changes of a malware state** ([malware-scanning.md](malware-scanning.md) R-MAL-039,
+  Q-MAL-133; revised on 2026-11-26 by W-36's P3): a malware member's `engine`, `scannerInstance`, `age`, `pressure`, `due`,
+  `nextCheckInDays`, `downloadsSince` and `currentFiles` are dropped from every document, and its `decidedBy` moves into the version's
+  `state` with the check's `scannedAt`, `database` and `databaseBuiltAt`: the engine and the replica are facts of the main installation's
+  infrastructure, the rest changes with every set and carries a trace of demand (Q-BAS-358).
 
 *Built on 2026-11-26 (P5 with E7):* the grammar as pure functions. *Built on 2026-11-26 (P6):* the builder's documents and its duty
 above: every time member goes into the version's state by JSON pointer (R-BAS-106, Q-BAS-359; `TestR_BAS_103_NoDocumentCarriesATimeOfItsCheck`).

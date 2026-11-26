@@ -208,7 +208,12 @@ func (s *Server) ListChildren(w http.ResponseWriter, r *http.Request, projectKey
 		httpserver.Problem(w, r, err)
 		return
 	}
-	out := Page[items.Child]{Items: page.Items}
+	reps, err := s.childrenMalware(r.Context(), repoKey, page.Items)
+	if err != nil {
+		httpserver.Problem(w, r, err)
+		return
+	}
+	out := Page[childRep]{Items: reps}
 	if page.Next != "" {
 		c := lq.EncodeCursor([]string{page.Next})
 		out.NextCursor = &c

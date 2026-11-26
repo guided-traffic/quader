@@ -15,8 +15,8 @@ rendered from it ([checklist.md there](https://github.com/guided-traffic/quader/
 requirement lists the feature in its `Covers:` line. *open*: no requirement does. For entries with priority
 *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,388 spec requirements:
-808 cover catalog features, 580 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,390 spec requirements:
+809 cover catalog features, 581 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -1309,7 +1309,7 @@ Catalog page: [security-scanning-and-curation.md](../features/security-scanning-
 | SEC-046 | File-name exclusion from indexing | Later | open | – |
 | SEC-047 | Scan status | MVP | specified | [R-MAL-002](../spec/malware-scanning.md), [R-VULN-011](../spec/vulnerability-scanning.md), [R-VULN-012](../spec/vulnerability-scanning.md), [R-VULN-037](../spec/vulnerability-scanning.md) |
 | SEC-048 | Continuous re-evaluation | MVP | specified | [R-MAL-009](../spec/malware-scanning.md), [R-MAL-037](../spec/malware-scanning.md), [R-VULN-011](../spec/vulnerability-scanning.md) |
-| SEC-049 | Scan results view | MVP | specified | [R-MAL-024](../spec/malware-scanning.md), [R-MAL-025](../spec/malware-scanning.md), [R-VULN-012](../spec/vulnerability-scanning.md), [R-VULN-020](../spec/vulnerability-scanning.md), [R-VULN-022](../spec/vulnerability-scanning.md), [R-VULN-023](../spec/vulnerability-scanning.md), [R-VULN-037](../spec/vulnerability-scanning.md) |
+| SEC-049 | Scan results view | MVP | specified | [R-MAL-024](../spec/malware-scanning.md), [R-MAL-039](../spec/malware-scanning.md), [R-MAL-025](../spec/malware-scanning.md), [R-VULN-012](../spec/vulnerability-scanning.md), [R-VULN-020](../spec/vulnerability-scanning.md), [R-VULN-022](../spec/vulnerability-scanning.md), [R-VULN-023](../spec/vulnerability-scanning.md), [R-VULN-037](../spec/vulnerability-scanning.md) |
 | SEC-050 | Scan policy model | Later | open | – |
 | SEC-051 | Security rule criteria | Later | open | – |
 | SEC-052 | License rule criteria | Later | open | – |
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>580 requirements</summary>
+<summary>581 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3381,6 +3381,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-MAL-020 | The repository's stricter-only setting | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-021 | Releasing a blob | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-023 | Admin area › Settings › Malware scanning | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
+| R-MAL-040 | Today's signatures | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-026 | Audit events, metrics and alerts | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-027 | Configuration, the chart's defaults and what the scanning costs | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-028 | Backups, restores and replicas | P1 | [malware-scanning.md](../spec/malware-scanning.md) |

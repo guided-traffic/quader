@@ -2,6 +2,8 @@ package app
 
 import (
 	"context"
+	"strconv"
+	"strings"
 
 	"github.com/guided-traffic/quader/internal/api/v1/gen"
 	"github.com/guided-traffic/quader/internal/cluster"
@@ -74,4 +76,48 @@ func (p scannerPresence) ImageScanners(ctx context.Context) (report.Presence, er
 // MalwareScanners is the answer for the malware scanner.
 func (p scannerPresence) MalwareScanners(ctx context.Context) (report.Presence, error) {
 	return p.presence(ctx, gen.ScannerKindKindClamav)
+}
+
+// MalwareEngine is the newest ClamAV version the ready, live replicas of the malware scanner state in their reports (R-MAL-040, H-2404):
+// the engine today's signatures are checked with, shown for information only; "" while none states one. One statement over
+// scanner_replica, read by GET /api/v1/malware/signatures.
+func (p scannerPresence) MalwareEngine(ctx context.Context) (string, error) {
+	db := p.a.database()
+	if db == nil {
+		return "", nil
+	}
+	var rows []cluster.ScannerReplica
+	if err := db.Read(ctx, func(c q.DBTX) (err error) {
+		rows, err = cluster.ListScannerReplicas(ctx, c, p.a.cfg.System)
+		return err
+	}); err != nil {
+		return "", err
+	}
+	newest := ""
+	for _, r := range rows {
+		if r.Kind == string(gen.ScannerKindKindClamav) && !r.Lost && r.State == "ready" && r.ToolVersion != "" && newerVersion(r.ToolVersion, newest) {
+			newest = r.ToolVersion
+		}
+	}
+	return newest, nil
+}
+
+// newerVersion reports whether the dotted version a is newer than b ("" is older than any): number by number, a part that is no number
+// compared as text.
+func newerVersion(a, b string) bool {
+	if b == "" {
+		return a != ""
+	}
+	pa, pb := strings.Split(a, "."), strings.Split(b, ".")
+	for i := 0; i < len(pa) && i < len(pb); i++ {
+		na, ea := strconv.Atoi(pa[i])
+		nb, eb := strconv.Atoi(pb[i])
+		switch {
+		case ea == nil && eb == nil && na != nb:
+			return na > nb
+		case (ea != nil || eb != nil) && pa[i] != pb[i]:
+			return pa[i] > pb[i]
+		}
+	}
+	return len(pa) > len(pb)
 }

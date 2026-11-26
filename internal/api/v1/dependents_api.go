@@ -53,6 +53,10 @@ func (s *Server) ListPackageDependents(w http.ResponseWriter, r *http.Request, i
 		}
 		out.Items = append(out.Items, e)
 	}
+	if err := s.addDependentMalware(ctx, d.Items, out.Items); err != nil {
+		httpserver.Problem(w, r, err)
+		return
+	}
 	writeJSON(w, r, http.StatusOK, out)
 }
 

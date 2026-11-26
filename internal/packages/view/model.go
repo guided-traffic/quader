@@ -176,8 +176,10 @@ type Package struct {
 	// starts with the text, 1000 for one that holds it, plus the best rank its format gave a matched version; 0 without a text. The
 	// sort relevance orders by it and the cursor carries it.
 	Relevance int64
-	// LatestVersionID is the id of the version row LatestVersion was read from, the one whose signature the list's badge shows.
+	// LatestVersionID is the id of the version row LatestVersion was read from, the one whose signature the list's badge shows;
+	// LatestRepo is the repository of that row, the one whose gate decides whether its malware state is refused (R-MAL-039).
 	LatestVersionID int64
+	LatestRepo      qname.Repo
 }
 
 // VersionSummary is one entry of the version list.
@@ -213,6 +215,11 @@ type VersionSummary struct {
 	// Deprecation and Unlisted are the version's, read from the format's summary of the repository its row was read from (R-API-085).
 	Deprecation *Deprecation
 	Unlisted    bool
+	// VersionID and Repo are the row the version is described by, the oldest visible one (the one whose files its page shows): its
+	// id in package_version_listing (a remote's image tag has the negative id of its cache entry) and its repository. The member malware
+	// of the entry is that row's (R-MAL-039).
+	VersionID int64
+	Repo      qname.Repo
 }
 
 // RepositoryEntry is a repository that holds a version.
@@ -261,8 +268,9 @@ type VersionDetail struct {
 	Repositories []RepositoryEntry
 	Files        []File
 	// Repo is the repository the files and the metadata were read from: the one
-	// that stored the version first.
-	Repo qname.Repo
+	// that stored the version first; VersionID that row's id in package_version_listing.
+	Repo      qname.Repo
+	VersionID int64
 }
 
 // Readme is the README source of a version.

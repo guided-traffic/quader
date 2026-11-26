@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"net/http"
 	"net/url"
-	"slices"
 	"strconv"
 	"time"
 
@@ -48,7 +47,8 @@ type UpstreamCatalogueServices struct {
 
 // StoredVersions reads which versions of a page's packages a repository holds (catalogue.Stored).
 type StoredVersions interface {
-	Versions(ctx context.Context, repoID int64, names []string) (map[string][]string, error)
+	// Versions answers, per name, the versions the repository holds with their ids in package_version_listing.
+	Versions(ctx context.Context, repoID int64, names []string) (map[string]map[string]int64, error)
 }
 
 // withheldNote is the sentence of the hits a reader does not see in the mode onlyAllowed (Q-CUR-14).
@@ -314,7 +314,7 @@ func (s *Server) verdicts(c catalogueCall, name string, versions []string) (map[
 	}
 	var missing []string
 	for _, v := range canon {
-		if !slices.Contains(stored[name], v) {
+		if _, held := stored[name][v]; !held {
 			missing = append(missing, v)
 		}
 	}
@@ -330,8 +330,9 @@ func (s *Server) verdicts(c catalogueCall, name string, versions []string) (map[
 	rows := make([]map[string]any, 0, len(canon))
 	for _, v := range canon {
 		row := map[string]any{"version": v, "stored": false, "verdict": "none", "reason": nil, "advisoryId": nil, "enforced": false}
+		_, held := stored[name][v]
 		switch b, ok := byVersion[v]; {
-		case slices.Contains(stored[name], v):
+		case held:
 			row["stored"], row["verdict"] = true, "stored"
 		case !covered:
 			row["verdict"] = "notCovered"
@@ -439,17 +440,21 @@ func (s *Server) packageRow(c catalogueCall, info discover.PackageInfo) (map[str
 		return nil, err
 	}
 	mode := c.repo.Delivery().Mode()
-	held := map[string]bool{}
-	for _, v := range stored[name] {
+	held := map[string]int64{}
+	for v, id := range stored[name] {
 		if cv, ok := catalog.Default().CanonicalVersion(c.repo.Format, v); ok {
-			held[cv] = true
+			held[cv] = id
 		}
-		held[v] = true
+		held[v] = id
+	}
+	states, err := s.upstreamMalware(c, info.Versions, held)
+	if err != nil {
+		return nil, err
 	}
 	rows := make([]map[string]any, 0, len(info.Versions))
-	for _, v := range info.Versions {
+	for i, v := range info.Versions {
 		st := "none"
-		if held[v.Version] {
+		if _, ok := held[v.Version]; ok {
 			st = "whole"
 		}
 		row := map[string]any{
@@ -460,6 +465,9 @@ func (s *Server) packageRow(c catalogueCall, info discover.PackageInfo) (map[str
 		}
 		if c.manager {
 			row["inherited"] = toDeliveryDecision(c.repo.Delivery().Inherited(name, v.Version), mode)
+		}
+		if states[i] != nil {
+			row["malware"] = states[i]
 		}
 		rows = append(rows, row)
 	}
@@ -486,9 +494,19 @@ func (s *Server) packageRow(c catalogueCall, info discover.PackageInfo) (map[str
 	return out, nil
 }
 
-func (s *Server) storedOf(c catalogueCall, names []string) (map[string][]string, error) {
+// upstreamMalware reads the malware state of the page's stored versions (R-MAL-039), in the page's order; nil for a version the
+// repository does not hold.
+func (s *Server) upstreamMalware(c catalogueCall, versions []discover.VersionFacts, held map[string]int64) ([]*gen.MalwareSummary, error) {
+	units := make([]malwareUnit, len(versions))
+	for i, v := range versions {
+		units[i] = malwareUnit{id: held[v.Version], repo: c.repo.Name}
+	}
+	return s.malwareSummaries(c.ctx, units)
+}
+
+func (s *Server) storedOf(c catalogueCall, names []string) (map[string]map[string]int64, error) {
 	if s.o.UpstreamCatalogue.Stored == nil {
-		return map[string][]string{}, nil
+		return map[string]map[string]int64{}, nil
 	}
 	return s.o.UpstreamCatalogue.Stored.Versions(c.ctx, c.t.RepoID, names)
 }

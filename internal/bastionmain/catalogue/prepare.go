@@ -29,6 +29,17 @@ func downloadCounters() map[string]bool {
 	return map[string]bool{"downloadCount": true, "downloads": true, "lastDownloadAt": true, "lastDownloadedAt": true}
 }
 
+// malwareInternal are the members of a malware state (MalwareStatus, MalwareSummary) a Bastion never carries (B.15, R-MAL-039): the
+// ClamAV version and the replica that checked, facts of the main installation's infrastructure, and how current the check is under the
+// set in use, its pressure, its next check, the downloads since it and the parts checked with that set, which change with every new set
+// and every download and carry a trace of demand (Q-BAS-358). The Bastion's own mark computes its class from the set and the bounds.
+func malwareInternal() map[string]bool {
+	return map[string]bool{
+		"engine": true, "scannerInstance": true, "age": true, "pressure": true, "due": true, "nextCheckInDays": true, "downloadsSince": true,
+		"currentFiles": true,
+	}
+}
+
 // triageMembers are the members of a finding that name its triage: the person, the note and the history (B.10). The anonymous
 // answer of the main installation carries none of them already (R-VULN-019 as P3 revised it); the strip holds that for every
 // document, so a later member of the same name cannot reach a Bastion.
@@ -171,17 +182,20 @@ func (rw Rewrite) value(s string) any {
 }
 
 func stripObject(o map[string]any, at string, times map[string]any, rw Rewrite) map[string]any {
-	st, counters, triage := stateTimes(), downloadCounters(), triageMembers()
+	st, counters, triage, internal := stateTimes(), downloadCounters(), triageMembers(), malwareInternal()
 	_, malwareCheck := o["scannedAt"]
+	_, malwareState := o["databaseBuiltAt"]
+	malwareState = malwareCheck && malwareState
 	for k, val := range o {
 		ptr := at + "/" + escapePointer(k)
 		switch {
-		case st[k] || (malwareCheck && (k == "database" || k == "databaseBuiltAt")):
+		// The part that decides a unit's word moves with its check: which part is worst changes as the set in use ages the checks.
+		case st[k] || (malwareCheck && (k == "database" || k == "databaseBuiltAt" || k == "decidedBy")):
 			if val != nil {
 				times[ptr] = val
 			}
 			delete(o, k)
-		case counters[k] || triage[k]:
+		case counters[k] || triage[k] || (malwareState && internal[k]):
 			delete(o, k)
 		case k == "releasedBy":
 			o[k] = nil // the principal who released a blob or a version (B.10); the member is nullable in every shape

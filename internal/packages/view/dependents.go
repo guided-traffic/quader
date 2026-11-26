@@ -5,6 +5,7 @@ import (
 	"slices"
 
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // MaxDependents bounds the dependents one read answers (R-API-086): the screen lists them and says how many more there are, which the
@@ -19,6 +20,9 @@ type Dependent struct {
 	Name    string
 	Key     string
 	Version string
+	// VersionID and Repo are the row of that version and its repository, whose malware state the entry carries (R-MAL-039).
+	VersionID int64
+	Repo      qname.Repo
 	// Relations are the version's rows: the kind as its format names it ("" for a format with one list), the range as written, and
 	// Via, the name it asks for: the package's own, or a name the package provides (Debian's Provides).
 	Relations []Relation
@@ -116,7 +120,10 @@ func (s *Service) Dependents(ctx context.Context, sc Scope, format, name, projec
 	}
 	for _, r := range rows {
 		out.Total = r.Total
-		d := Dependent{ID: ID(format, r.Name), Format: format, Name: r.DisplayName, Key: r.Name, Version: r.Version}
+		d := Dependent{
+			ID: ID(format, r.Name), Format: format, Name: r.DisplayName, Key: r.Name, Version: r.Version, VersionID: r.VersionID,
+			Repo: sc.topo.Name(r.RepoID),
+		}
 		for i := range r.Kinds {
 			if i < len(r.Ranges) && i < len(r.Vias) {
 				d.Relations = append(d.Relations, Relation{Kind: r.Kinds[i], Range: r.Ranges[i], Via: r.Vias[i]})

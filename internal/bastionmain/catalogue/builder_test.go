@@ -89,7 +89,11 @@ func (f *fakeAPI) body(base string, u *url.URL) (string, bool) {
 			"files":[{"path":"left-pad/-/left-pad-1.0.0.tgz","downloadUrl":"` + base + `/api/npm/acme/npm-local/left-pad/-/left-pad-1.0.0.tgz",
 			"contentUrl":"/api/v1/projects/acme/repositories/npm-local/content/left-pad/-/left-pad-1.0.0.tgz",
 			"upstreamUrl":"https://npm.internal.corp/left-pad.tgz",
-			"malware":{"state":"clean","scannedAt":"` + f.now + `","database":"27001","databaseBuiltAt":"` + f.now + `","releasedBy":"user:alice"}}],
+			"malware":{"state":"clean","scannedAt":"` + f.now + `","database":"27001","databaseBuiltAt":"` + f.now + `","releasedBy":"user:alice",
+				"scanner":"malware-scanner-clamav","engine":"1.5.5","scannerInstance":"quader-malware-scanner-clamav-7d9f8","age":"current",
+				"pressure":3,"due":false,"nextCheckInDays":29,"downloadsSince":4}}],
+			"malware":{"state":"clean","scannedAt":"` + f.now + `","database":"27001","databaseBuiltAt":"` + f.now + `","files":1,"currentFiles":1,
+				"decidedBy":{"sha256":"aa","path":"left-pad/-/left-pad-1.0.0.tgz"},"engine":"1.5.5","age":"current","pressure":3,"due":false},
 			"homepage":"` + mainOrigin + `/ui/en/projects/acme"}`, true
 	case v + "/readme":
 		return `{"html":"<p>See <a href=\"` + otherBase + `/api/v1/packages\">the API</a></p>"}`, true
@@ -211,7 +215,12 @@ func TestR_BAS_103_NoDocumentCarriesATimeOfItsCheck(t *testing.T) {
 		if p == "state" || strings.HasSuffix(p, "/state") {
 			continue
 		}
-		for _, k := range []string{`"scannedAt"`, `"checkedAt"`, `"syncedAt"`, `"builtAt"`, `"computedAt"`, `"databaseBuiltAt"`, `"database"`} {
+		// Nor what a malware state says of the main installation's scanners, its demand or the set in use (B.15, R-MAL-039); the part that
+		// decides a unit moves with its check.
+		for _, k := range []string{
+			`"scannedAt"`, `"checkedAt"`, `"syncedAt"`, `"builtAt"`, `"computedAt"`, `"databaseBuiltAt"`, `"database"`,
+			`"engine"`, `"scannerInstance"`, `"age"`, `"pressure"`, `"due"`, `"nextCheckInDays"`, `"downloadsSince"`, `"currentFiles"`, `"decidedBy"`,
+		} {
 			if strings.Contains(string(d), k) {
 				t.Errorf("%s carries %s: %s", p, k, d)
 			}
@@ -221,7 +230,8 @@ func TestR_BAS_103_NoDocumentCarriesATimeOfItsCheck(t *testing.T) {
 		Times map[string]map[string]any `json:"times"`
 	}
 	if err := json.Unmarshal(docs["packages/"+pkgID+"/versions/1.0.0/state"], &st); err != nil ||
-		st.Times["version"]["/files/0/malware/scannedAt"] != "2026-11-26T10:00:00Z" || st.Times["vulnerabilities"]["/grade/checkedAt"] == nil {
+		st.Times["version"]["/files/0/malware/scannedAt"] != "2026-11-26T10:00:00Z" || st.Times["vulnerabilities"]["/grade/checkedAt"] == nil ||
+		st.Times["version"]["/malware/decidedBy"] == nil {
 		t.Fatalf("the version's state: %+v %v", st, err)
 	}
 }

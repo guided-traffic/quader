@@ -218,12 +218,22 @@ func TestR_BAS_104_TheCatalogueFollowsPublishesLevelsAndTheSwitch(t *testing.T) 
 	if len(docs) < 20 {
 		t.Fatalf("only %d documents", len(docs))
 	}
+	// Nor what a malware state says of the main installation's scanners, its demand or the set in use (B.15, R-MAL-039): the engine,
+	// the replica, the class, the pressure, the next check, the downloads since and the parts checked with today's set.
+	malwareInternal := []string{`"engine":`, `"scannerInstance":`, `"age":`, `"pressure":`, `"nextCheckInDays":`, `"downloadsSince":`, `"currentFiles":`}
+	stated := 0
 	for p, raw := range docs {
-		for _, bad := range []string{"://" + mainHost, mirrorURL, "/api/v1/", "sa:publisher"} {
+		for _, bad := range append([]string{"://" + mainHost, mirrorURL, "/api/v1/", "sa:publisher"}, malwareInternal...) {
 			if bytes.Contains(raw, []byte(bad)) {
 				t.Errorf("%s names %q: %.300s", p, bad, raw)
 			}
 		}
+		if strings.HasSuffix(p, "/versions/1.0.0") && bytes.Contains(raw, []byte(`"malware":{"files":`)) {
+			stated++
+		}
+	}
+	if stated != 3 {
+		t.Errorf("R-MAL-039 %d of the three versions carry their malware state", stated)
 	}
 	var setup []byte
 	for p, raw := range docs {

@@ -9791,10 +9791,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-API
 
-174 questions on [spec/api-and-ui.md](spec/api-and-ui.md) and [spec/formats/ansible.md](spec/formats/ansible.md).
+177 questions on [spec/api-and-ui.md](spec/api-and-ui.md) and [spec/formats/ansible.md](spec/formats/ansible.md).
 
 <details>
-<summary>Q-API: 174 questions</summary>
+<summary>Q-API: 177 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -9969,6 +9969,9 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-API-457](spec/api-and-ui.md#q-api-457--a-debian-package-is-used-under-the-names-it-provides-and-every-alternative-counts) | A Debian package is used under the names it provides, and every alternative counts | Decided by the development agent on 2026-11-26 | (a) Every alternative is a row; the architecture qualifier is dropped; a package is used under its own name and under the names its visible versions provide, one step | — |
 | [Q-API-458](spec/api-and-ui.md#q-api-458--a-dependent-the-reader-may-not-read-is-not-read) | A dependent the reader may not read is not read | Decided by the development agent on 2026-11-26 | (a) The repositories the reader may read are decided first (the package list's scope); the statement walks the index `(repo_id, name)` for those alone and then applies the list's row visibility | — |
 | [Q-API-459](spec/api-and-ui.md#q-api-459--the-list-filters-by-dependson-as-by-keyword-planned-for-its-values) | The list filters by dependsOn as by keyword, planned for its values | Decided by the development agent on 2026-11-26 | (a): `packages()` sets `plan_cache_mode = force_custom_plan` for the transaction of the list statement when the request carries a search's, a keyword's, the deprecated filter's or dependsOn's ids, as the suggestions do (R-API-064). | — |
+| [Q-API-465](spec/api-and-ui.md#q-api-465--a-units-malware-state-is-its-deciding-parts-member-with-three-members-of-the-unit) | A unit's malware state is its deciding part's member, with three members of the unit | Decided by the development agent on 2026-11-26 | (a) `MalwareSummary` carries every member of `MalwareStatus`, the deciding part's, plus `files`, `currentFiles` and `decidedBy` | — |
+| [Q-API-466](spec/api-and-ui.md#q-api-466--a-folders-file-carries-the-files-member-and-an-images-page-lists-the-parts-its-files-do-not) | A folder's file carries the file's member, and an image's page lists the parts its files do not | Decided by the development agent on 2026-11-26 | (a) A file of a folder's listing carries `MalwareStatus`; a version's page carries `malwareParts`, the image's parts its `files` do not list, each with its `MalwareStatus` | — |
+| [Q-API-467](spec/api-and-ui.md#q-api-467--the-upstream-view-and-the-download-queue-carry-the-state-of-the-stored-versions-they-name) | The upstream view and the download queue carry the state of the stored versions they name | Decided by the development agent on 2026-11-26 (W-36's plan, B.1 rows 15 and 17) | (a) A row of the upstream view (`UpstreamVersion`) and of the download queue (`RemoteDownload`) carries the member of the version it names once the repository stores it; the read of the stored versions answers their ids | — |
 | [Q-API-475](spec/api-and-ui.md#q-api-475--the-storage-overview-is-an-operation-of-its-own) | The storage overview is an operation of its own | Decided by the development agent while building W-37's package P1 ([storage.md](spec/storage.md) R-STOR-107) | (a) `GET /api/v1/storage/overview`, `settings:read`, the states and the figures of now in one answer | — |
 | [Q-API-476](spec/api-and-ui.md#q-api-476--the-connection-lists-additions-are-nullable-for-a-connection-the-replica-does-not-configure) | The connection list's additions are nullable for a connection the replica does not configure | Decided by the development agent while building W-37's package P1 ([storage.md](spec/storage.md) R-STOR-106) | (a) `capacityBytes` and the settings' `sseKmsKeyId` and `sseBucketKey` follow `settings` (Q-API-406): the answering replica's element, `null` where it does not configure the connection or states no capacity; `firstSeenAt`, `passStartedAt`, `encryptedSince` and `retiredAt` are PostgreSQL's and the same from every replica | — |
 | [Q-API-477](spec/api-and-ui.md#q-api-477--the-recheck-of-a-blob-is-audited-before-its-answer) | The recheck of a blob is audited before its answer | Decided by the development agent while building W-37's package P1 ([storage.md](spec/storage.md) R-STOR-027) | (a) `storage.blob.rechecked`, transactional, written in a transaction of its own after the reads and before the answer; when its insert fails the answer is `500` | — |
@@ -11902,10 +11905,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-MAL
 
-92 questions on [spec/malware-scanning.md](spec/malware-scanning.md).
+98 questions on [spec/malware-scanning.md](spec/malware-scanning.md).
 
 <details>
-<summary>Q-MAL: 92 questions</summary>
+<summary>Q-MAL: 98 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -12001,6 +12004,12 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-MAL-117](spec/malware-scanning.md#q-mal-117--a-request-is-the-boost-of-a-whole-cycle-not-a-mark-of-due) | A request is the boost of a whole cycle, not a mark of due | Decided by the development agent | (a) An administrator's rescan, a change of the limits and the floor set `requested` and add a whole cycle to the pressure until the verdict is written again | — |
 | [Q-MAL-118](spec/malware-scanning.md#q-mal-118--the-lanes-asked-new-retry-then-the-pressure) | The lanes: asked, new, retry, then the pressure | Decided by the development agent | (a) The due lanes 0 `asked`, 1 `new`, 2 `retry` by `not_before`, then the verdicts whose pressure reached the cycle, highest first; the slot kept for `asked` stays (Q-MAL-64) | — |
 | [Q-MAL-119](spec/malware-scanning.md#q-mal-119--a-verdict-keeps-the-unit-the-engine-of-its-answer-and-the-replica) | A verdict keeps the unit, the engine of its answer and the replica | Decided by the development agent | (a) The scanner names `clamd`'s version in every answer (`engine`), asked with `VERSION` until `clamd` answers once and kept; the verdict keeps it with the unit's name and the replica from the header | [ADR-310](#adr-310--rescans-are-ranked-by-scan-pressure-with-the-floor-of-what-was-downloaded-lately) |
+| [Q-MAL-128](spec/malware-scanning.md#q-mal-128--the-worst-part-decides-a-units-word) | The worst part decides a unit's word | Decided by the development agent on 2026-11-26 (W-36's plan, B.3) | (a) The worst part decides, in a fixed order, and the details name it and count the rest | — |
+| [Q-MAL-129](spec/malware-scanning.md#q-mal-129--a-page-reads-its-malware-state-in-two-statements) | A page reads its malware state in two statements | Decided by the development agent on 2026-11-26 (W-36's plan, B.4, which named three: the versions, the images and the set in use) | (a) One statement for every format's units, the OCI walk inside it, plus one for the installation's terms | — |
+| [Q-MAL-130](spec/malware-scanning.md#q-mal-130--the-state-is-in-every-answer-while-the-scanning-is-on) | The state is in every answer while the scanning is on | Decided by the development agent on 2026-11-26 (W-36's plan, B.4) | (a) Always, while `malware.enabled` | — |
+| [Q-MAL-131](spec/malware-scanning.md#q-mal-131--the-replica-is-named-to-an-internal-caller-only) | The replica is named to an internal caller only | Decided by the development agent on 2026-11-26 | (a) `scannerInstance` for an internal subject at the main installation's own door; null for an anonymous caller, an external user and a request through a Bastion | — |
+| [Q-MAL-132](spec/malware-scanning.md#q-mal-132--todays-signatures-are-one-public-read) | Today's signatures are one public read | Decided by the development agent on 2026-11-26 (W-36's plan, D.2) | (a) `GET /api/v1/malware/signatures`, public, read once by a screen for all its marks | — |
+| [Q-MAL-133](spec/malware-scanning.md#q-mal-133--the-bastions-catalogue-keeps-none-of-what-a-new-set-or-a-download-changes) | The Bastion's catalogue keeps none of what a new set or a download changes | Decided by the development agent on 2026-11-26 (W-36's plan, B.15 and D.1) | (a) The strip drops `engine`, `scannerInstance`, `age`, `pressure`, `due`, `nextCheckInDays`, `downloadsSince` and `currentFiles` from a malware member, and moves `decidedBy` with `scannedAt`, `database` and `databaseBuiltAt` into the version's state | — |
 
 </details>
 

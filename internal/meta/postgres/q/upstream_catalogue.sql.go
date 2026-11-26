@@ -187,12 +187,12 @@ func (q *Queries) CatalogueDebSearch(ctx context.Context, arg CatalogueDebSearch
 
 const catalogueStoredVersions = `-- name: CatalogueStoredVersions :many
 
-SELECT p.name, v.version
+SELECT p.name, v.version, v.id AS version_id
   FROM packages p
   JOIN package_versions v ON v.package_id = p.id AND v.trashed_at IS NULL
  WHERE p.repo_id = $1::bigint AND p.name = ANY($2::text[])
 UNION ALL
-SELECT p.name, e.tag::text AS version
+SELECT p.name, e.tag::text AS version, (-e.id)::bigint AS version_id
   FROM packages p
   JOIN remote_cache_entries e ON e.repo_id = p.repo_id AND e.tag_name = p.name
    AND e.kind = 'metadata' AND e.variant = '' AND e.upstream_gone_at IS NULL
@@ -213,8 +213,9 @@ type CatalogueStoredVersionsParams struct {
 }
 
 type CatalogueStoredVersionsRow struct {
-	Name    string
-	Version string
+	Name      string
+	Version   string
+	VersionID int64
 }
 
 // The upstream catalogue's state of a row (remote-curation.md R-CUR-009): which versions of the packages of a page the remote repository
@@ -224,7 +225,8 @@ type CatalogueStoredVersionsRow struct {
 // each entry kept by the rules of the view oci_remote_tags (00113), written here as checks per entry from the package's side. Read
 // through the view, the planner reads every tag entry of every OCI remote before it joins the page's names (measured on 2026-11-24:
 // 1.1 s for three names among 400,000 tag entries, 1.4 ms written this way, 28 ms for 200 names of 40 tags each). A change of the
-// view's rules changes them here too, as in package_view.sql's PackageViewTagPageDesc.
+// view's rules changes them here too, as in package_view.sql's PackageViewTagPageDesc. version_id is the version's id in that view (a
+// tag's is the negative id of its entry), whose malware state the answer carries (malware-scanning.md R-MAL-039).
 func (q *Queries) CatalogueStoredVersions(ctx context.Context, arg CatalogueStoredVersionsParams) ([]CatalogueStoredVersionsRow, error) {
 	rows, err := q.db.Query(ctx, catalogueStoredVersions, arg.RepoID, arg.Names)
 	if err != nil {
@@ -234,7 +236,7 @@ func (q *Queries) CatalogueStoredVersions(ctx context.Context, arg CatalogueStor
 	items := []CatalogueStoredVersionsRow{}
 	for rows.Next() {
 		var i CatalogueStoredVersionsRow
-		if err := rows.Scan(&i.Name, &i.Version); err != nil {
+		if err := rows.Scan(&i.Name, &i.Version, &i.VersionID); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

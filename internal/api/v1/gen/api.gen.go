@@ -2617,6 +2617,30 @@ func (e MaintenanceModeMode) Valid() bool {
 	}
 }
 
+// Defines values for MalwareAge.
+const (
+	MalwareAgeCurrent MalwareAge = "current"
+	MalwareAgeDue     MalwareAge = "due"
+	MalwareAgeOlder   MalwareAge = "older"
+	MalwareAgeOverdue MalwareAge = "overdue"
+)
+
+// Valid indicates whether the value is a known member of the MalwareAge enum.
+func (e MalwareAge) Valid() bool {
+	switch e {
+	case MalwareAgeCurrent:
+		return true
+	case MalwareAgeDue:
+		return true
+	case MalwareAgeOlder:
+		return true
+	case MalwareAgeOverdue:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for MalwareDatabaseStateSource.
 const (
 	MalwareDatabaseStateSourceRepository MalwareDatabaseStateSource = "repository"
@@ -10809,8 +10833,11 @@ type CheckResultStatus string
 
 // Child defines model for Child.
 type Child struct {
-	Kind       ChildKind  `json:"kind"`
-	ModifiedAt *time.Time `json:"modifiedAt,omitempty"`
+	Kind ChildKind `json:"kind"`
+
+	// Malware The member of a file (R-MAL-039, Q-API-466); absent for a folder, a generated file and while the scanning is off.
+	Malware    *MalwareStatus `json:"malware,omitempty"`
+	ModifiedAt *time.Time     `json:"modifiedAt,omitempty"`
 
 	// Path Relative to the listed folder.
 	Path   string  `json:"path"`
@@ -13630,6 +13657,11 @@ type MaintenanceMode struct {
 // MaintenanceModeMode defines model for MaintenanceMode.Mode.
 type MaintenanceModeMode string
 
+// MalwareAge How current a check is (R-MAL-037, R-MAL-039), by its scan pressure under the set in use: `current`, made with the signatures in
+// use; `older`, made with older ones and not due; `due`, its pressure reached the cycle and the scanning checks it in turn;
+// `overdue`, due for longer than `rescan_overdue_after`, so the scanning falls behind.
+type MalwareAge string
+
 // MalwareBacklog What switching the switch on would hold or refuse (R-MAL-019).
 type MalwareBacklog struct {
 	// NotCheckable Blobs whose verdict is unscannable or failed and that no release passes; under the switch they are refused.
@@ -13701,6 +13733,13 @@ type MalwareDatabaseState struct {
 // MalwareDatabaseStateSource `malware.database.source`: `updater`, the Deployment malware-updater-freshclam (R-MAL-010); `repository`, an installation without internet whose page shows the commands of R-MAL-012.
 type MalwareDatabaseStateSource string
 
+// MalwareDecider The part that decides a unit's word (Q-MAL-128).
+type MalwareDecider struct {
+	// Path The path of the file item of the version; null for a part an image's manifest names (a platform's manifest, a config, a layer).
+	Path   *string `json:"path"`
+	Sha256 string  `json:"sha256"`
+}
+
 // MalwareFind defines model for MalwareFind.
 type MalwareFind struct {
 	Database        *string    `json:"database"`
@@ -13752,6 +13791,15 @@ type MalwareFindPage struct {
 
 // MalwareFindState defines model for MalwareFindState.
 type MalwareFindState string
+
+// MalwareImagePart A part of an image its files do not list (a platform's manifest, a config, a layer) with its member `malware` (R-MAL-039).
+type MalwareImagePart struct {
+	// Malware The member `malware` of a stored file (R-MAL-022, R-MAL-024): the verdict of its blob, the release that passes it and
+	// whether the gate refuses it in the file's repository now. Absent for a generated item and while the scanning is off.
+	// A signature is text and is never rendered as markup.
+	Malware MalwareStatus `json:"malware"`
+	Sha256  string        `json:"sha256"`
+}
 
 // MalwareLimit The bound an `unscannable` `limits_exceeded` verdict passed, by its purpose (R-MAL-008, Q-MAL-105). clamd's: `max_scan_size`
 // (what it reads of one part, archives inside included; `malware.scanner.max_scan_size`), `max_file_size` (one file inside a
@@ -13826,6 +13874,36 @@ type MalwareSettingsPatch struct {
 	OnlyChecked *bool `json:"onlyChecked,omitempty"`
 }
 
+// MalwareSignatures Today's signatures of the malware scan (R-MAL-040).
+type MalwareSignatures struct {
+	// BuiltAt The daily's build time, the set's date (Q-MAL-41).
+	BuiltAt *time.Time `json:"builtAt"`
+
+	// CycleDays `rescan_cycle` in days: a check is due once its pressure reaches it.
+	CycleDays float64 `json:"cycleDays"`
+
+	// Daily The number of its daily, the one a reader compares ("daily 28201").
+	Daily *int64 `json:"daily"`
+
+	// Engine The newest ClamAV version the ready replicas of the scanner state in their reports; null while none reports one.
+	Engine *string `json:"engine"`
+
+	// ImportedAt When Quader stored the set ("fetched").
+	ImportedAt *time.Time `json:"importedAt"`
+
+	// OverdueAfterDays `rescan_overdue_after` in days: a due check is overdue after it.
+	OverdueAfterDays float64 `json:"overdueAfterDays"`
+
+	// Scanner The unit that checks, `malware-scanner-clamav`.
+	Scanner string `json:"scanner"`
+
+	// Stale The set is older than `malware.database.stale_after`, so no newer one arrives and the checks' pressure does not grow.
+	Stale bool `json:"stale"`
+
+	// Version The set in use, `main-<n>.daily-<n>.bytecode-<n>`; null while none is.
+	Version *string `json:"version"`
+}
+
 // MalwareState The state of a blob's verdict (R-MAL-002): `pending` not checked yet (also a blob the scanning has not reached), `clean` no
 // signature matched, `infected` ClamAV named a signature, `unscannable` nothing could check it (`reason`: `too_large`,
 // `limits_exceeded`, `encrypted`), `failed` the scans that may pass did not (`reason`: the last code).
@@ -13835,11 +13913,23 @@ type MalwareState string
 // whether the gate refuses it in the file's repository now. Absent for a generated item and while the scanning is off.
 // A signature is text and is never rendered as markup.
 type MalwareStatus struct {
+	// Age How current the check is under the set in use (R-MAL-037); null without a verdict and while no set is in use.
+	Age *MalwareAge `json:"age"`
+
 	// Database The version of the signature database the verdict was made with.
 	Database *string `json:"database"`
 
 	// DatabaseBuiltAt That version's build time, shown as the database's date with **No malware found** (R-MAL-003, Q-MAL-41).
 	DatabaseBuiltAt *time.Time `json:"databaseBuiltAt"`
+
+	// DownloadsSince The blob's downloads since the check, over all its items (R-MAL-037); null without a verdict.
+	DownloadsSince *int64 `json:"downloadsSince"`
+
+	// Due The pressure reached the cycle; the scanning checks it again in turn.
+	Due bool `json:"due"`
+
+	// Engine The ClamAV version the scanner stated in its answer (`1.5.5`), shown for information only (H-2404).
+	Engine *string `json:"engine"`
 
 	// Limit The bound an `unscannable` `limits_exceeded` verdict passed; null for any other verdict and for one made before it was recorded.
 	Limit *MalwareLimit `json:"limit"`
@@ -13849,8 +13939,18 @@ type MalwareStatus struct {
 	// bound the fingerprint does not hold.
 	LimitValue *int64 `json:"limitValue"`
 
+	// NextCheckInDays The whole days until the check is due, assuming the signatures in use get about one day newer each day, sooner the more the
+	// file is downloaded; 0 while it is due; null when no check is expected that way (no verdict, no set in use, a stale set, a
+	// `too_large` verdict no request names).
+	NextCheckInDays *int64 `json:"nextCheckInDays"`
+
 	// Part The member of an archive the signature was found in, when the scanner unpacked it.
 	Part *string `json:"part"`
+
+	// Pressure The verdict's scan pressure in percent of `rescan_cycle` (R-MAL-037): how much newer the signatures in use are than the check's,
+	// plus its demand, plus a request; due at 100. Null without a verdict, while no set is in use and for a `too_large` verdict no
+	// request names.
+	Pressure *int64 `json:"pressure"`
 
 	// QueuedSince `waiting: queued`: when the file's row was written; null otherwise and before discovery has reached the file.
 	QueuedSince *time.Time `json:"queuedSince"`
@@ -13868,6 +13968,12 @@ type MalwareStatus struct {
 	ReleasedBy *string    `json:"releasedBy"`
 	ScannedAt  *time.Time `json:"scannedAt"`
 
+	// Scanner The unit that made the verdict, `malware-scanner-clamav` (R-MAL-036); null for a verdict that names none.
+	Scanner *string `json:"scanner"`
+
+	// ScannerInstance The replica that answered; null for a verdict that names none and in an answer to an anonymous caller (Q-MAL-131).
+	ScannerInstance *string `json:"scannerInstance"`
+
 	// Signature The name the scanner gave, as it gave it: the signature of an `infected` verdict, or clamd's heuristic of an `unscannable`
 	// one (`Heuristics.Limits.Exceeded.MaxScanSize`, `Heuristics.Encrypted.Zip`, Q-MAL-105).
 	Signature *string `json:"signature"`
@@ -13878,6 +13984,73 @@ type MalwareStatus struct {
 	State MalwareState `json:"state"`
 
 	// Waiting Why a `pending` file is not checked yet (R-MAL-024, Q-VULN-279); null for every other state and for a released file.
+	Waiting *MalwareWaiting `json:"waiting"`
+}
+
+// MalwareSummary The member `malware` of an answer that lists or shows an artifact as one unit (R-MAL-039): a package (its newest visible version),
+// a version, an image tag, a package that depends on another (its version that does), a remote's stored version and the download
+// that names one. A unit's parts are a version's files that Quader did not generate; an image tag's are its manifest, for an index
+// each platform's manifest, and each manifest's config and layers, a part that is not stored counting as unchecked. The worst part
+// decides (Q-MAL-128), in this order: malware (infected, not released), not checkable (unscannable or failed, not released),
+// unchecked, released, then a clean check that is overdue, due, under older signatures, under the signatures in use; ties go to
+// the higher scan pressure. Every member but the last three is that part's, as `MalwareStatus` names it (Q-API-465); `refused`
+// says whether the gate refuses it in the unit's repository. Absent while the scanning is off and for a unit without a part. The
+// answer reads it in a fixed number of statements per page, never one per row (Q-MAL-129).
+type MalwareSummary struct {
+	// Age How current the check is under the set in use (R-MAL-037); null without a verdict and while no set is in use.
+	Age *MalwareAge `json:"age"`
+
+	// CurrentFiles The parts checked with the signatures in use; the details say "2 of 3 under today's signatures".
+	CurrentFiles    int64      `json:"currentFiles"`
+	Database        *string    `json:"database"`
+	DatabaseBuiltAt *time.Time `json:"databaseBuiltAt"`
+
+	// DecidedBy The part that decides a unit's word (Q-MAL-128).
+	DecidedBy MalwareDecider `json:"decidedBy"`
+
+	// DownloadsSince The blob's downloads since the check, over all its items (R-MAL-037); null without a verdict.
+	DownloadsSince *int64 `json:"downloadsSince"`
+
+	// Due The pressure reached the cycle; the scanning checks it again in turn.
+	Due bool `json:"due"`
+
+	// Engine The ClamAV version the scanner stated in its answer (`1.5.5`), shown for information only (H-2404).
+	Engine *string `json:"engine"`
+
+	// Files The unit's parts.
+	Files      int64         `json:"files"`
+	Limit      *MalwareLimit `json:"limit"`
+	LimitValue *int64        `json:"limitValue"`
+
+	// NextCheckInDays The whole days until the check is due, assuming the signatures in use get about one day newer each day, sooner the more the
+	// file is downloaded; 0 while it is due; null when no check is expected that way (no verdict, no set in use, a stale set, a
+	// `too_large` verdict no request names).
+	NextCheckInDays *int64  `json:"nextCheckInDays"`
+	Part            *string `json:"part"`
+
+	// Pressure The verdict's scan pressure in percent of `rescan_cycle` (R-MAL-037): how much newer the signatures in use are than the check's,
+	// plus its demand, plus a request; due at 100. Null without a verdict, while no set is in use and for a `too_large` verdict no
+	// request names.
+	Pressure    *int64     `json:"pressure"`
+	QueuedSince *time.Time `json:"queuedSince"`
+	Reason      *string    `json:"reason"`
+	Refused     bool       `json:"refused"`
+	Released    bool       `json:"released"`
+	ReleasedAt  *time.Time `json:"releasedAt"`
+	ReleasedBy  *string    `json:"releasedBy"`
+	ScannedAt   *time.Time `json:"scannedAt"`
+
+	// Scanner The unit that made the verdict, `malware-scanner-clamav` (R-MAL-036); null for a verdict that names none.
+	Scanner *string `json:"scanner"`
+
+	// ScannerInstance The replica that answered; null for a verdict that names none and in an answer to an anonymous caller (Q-MAL-131).
+	ScannerInstance *string `json:"scannerInstance"`
+	Signature       *string `json:"signature"`
+
+	// State The state of a blob's verdict (R-MAL-002): `pending` not checked yet (also a blob the scanning has not reached), `clean` no
+	// signature matched, `infected` ClamAV named a signature, `unscannable` nothing could check it (`reason`: `too_large`,
+	// `limits_exceeded`, `encrypted`), `failed` the scans that may pass did not (`reason`: the last code).
+	State   MalwareState    `json:"state"`
 	Waiting *MalwareWaiting `json:"waiting"`
 }
 
@@ -14578,6 +14751,9 @@ type PackageDependent struct {
 	// Key The normalized name, which the package's address holds.
 	Key string `json:"key"`
 
+	// Malware The malware state of `version` (R-MAL-039); absent while the scanning is off.
+	Malware *MalwareSummary `json:"malware,omitempty"`
+
 	// Name The name the screens show.
 	Name      string                     `json:"name"`
 	PackageId string                     `json:"packageId"`
@@ -15166,6 +15342,10 @@ type PackageSummary struct {
 	Kind          *string `json:"kind,omitempty"`
 	LatestVersion string  `json:"latestVersion"`
 
+	// Malware The malware state of `latestVersion` (R-MAL-039), in every answer while the scanning is on, as the grade's is with `include`:
+	// the word and its details on demand at every list (Q-MAL-130); absent while the scanning is off.
+	Malware *MalwareSummary `json:"malware,omitempty"`
+
 	// Name The name as the format stores it; NuGet IDs in their original casing.
 	Name string `json:"name"`
 
@@ -15226,6 +15406,14 @@ type PackageVersion struct {
 
 	// Licenses SPDX identifiers or the license expression the package declares; empty when it declares none.
 	Licenses []string `json:"licenses"`
+
+	// Malware The version's malware state, decided by its worst part (R-MAL-039); absent while the scanning is off.
+	Malware *MalwareSummary `json:"malware,omitempty"`
+
+	// MalwareParts The parts of an image that `files` does not list - each platform's manifest of an index, each manifest's config and layers -
+	// with their member `malware` (R-MAL-039), so that the image's details show each part's state; empty for a version of any other
+	// format, absent while the scanning is off.
+	MalwareParts *[]MalwareImagePart `json:"malwareParts,omitempty"`
 
 	// Metadata Format-specific, owned by the format page; a member that does not apply is absent, and every value is text a publisher or
 	// an upstream wrote. The screens show them in the blocks of R-UI-221. A deprecation is `deprecation` of the version, not a
@@ -15444,6 +15632,10 @@ type PackageVersionSummary struct {
 	// interval; `null` when no client fetched it (a version a mirror pass stored and nobody fetched yet, a local version nobody
 	// downloaded).
 	LastDownloadedAt *time.Time `json:"lastDownloadedAt"`
+
+	// Malware The version's malware state (R-MAL-039): of the files of the row the version is described by, an image tag's of its
+	// manifests, config and layers; absent while the scanning is off.
+	Malware *MalwareSummary `json:"malware,omitempty"`
 
 	// Prerelease By the format's version rules.
 	Prerelease  bool      `json:"prerelease"`
@@ -15950,14 +16142,18 @@ type RemoteDownload struct {
 	CreatedAt time.Time           `json:"createdAt"`
 
 	// Delivery Whether the delivery rules deliver the version (R-CUR-009); a row that fetches what they do not deliver stores it for examination.
-	Delivery      RemoteDownloadDelivery `json:"delivery"`
-	Failure       *RemoteDownloadFailure `json:"failure"`
-	Files         int                    `json:"files"`
-	FinishedAt    *time.Time             `json:"finishedAt"`
-	Id            openapi_types.UUID     `json:"id"`
-	MaxAttempts   int                    `json:"maxAttempts"`
-	Name          string                 `json:"name"`
-	NextAttemptAt *time.Time             `json:"nextAttemptAt"`
+	Delivery   RemoteDownloadDelivery `json:"delivery"`
+	Failure    *RemoteDownloadFailure `json:"failure"`
+	Files      int                    `json:"files"`
+	FinishedAt *time.Time             `json:"finishedAt"`
+	Id         openapi_types.UUID     `json:"id"`
+
+	// Malware The malware state of the version the row names, once the repository holds it (R-MAL-039); absent for a row of no version or
+	// of a version not stored, and while the scanning is off.
+	Malware       *MalwareSummary `json:"malware,omitempty"`
+	MaxAttempts   int             `json:"maxAttempts"`
+	Name          string          `json:"name"`
+	NextAttemptAt *time.Time      `json:"nextAttemptAt"`
 
 	// Occurrences A client's failures of the same file, aggregated (origin client).
 	Occurrences int                  `json:"occurrences"`
@@ -20142,6 +20338,9 @@ type UpstreamVersion struct {
 
 	// Inherited The decision without the version's own rule, its package level's (R-CUR-024); only to whoever may set rules.
 	Inherited *DeliveryDecision `json:"inherited,omitempty"`
+
+	// Malware The malware state of a stored version (R-MAL-039); absent for a version the repository does not hold and while the scanning is off.
+	Malware *MalwareSummary `json:"malware,omitempty"`
 
 	// Platforms What the version is built for, in the format's words: an image's platforms (`linux/amd64`, `linux/arm/v7`), a Debian
 	// package's architectures (`amd64`, `all`, as its index names them); empty for a format without them.
@@ -25512,6 +25711,9 @@ type ServerInterface interface {
 	// UpdateMalwareSettings Switch Only checked artifacts can be downloaded on or off
 	// (PATCH /api/v1/malware/settings)
 	UpdateMalwareSettings(w http.ResponseWriter, r *http.Request, params UpdateMalwareSettingsParams)
+	// GetMalwareSignatures Today's signatures of the malware scan
+	// (GET /api/v1/malware/signatures)
+	GetMalwareSignatures(w http.ResponseWriter, r *http.Request)
 	// GetMalwareSwitch Whether the scanning is on and only checked artifacts can be downloaded
 	// (GET /api/v1/malware/switch)
 	GetMalwareSwitch(w http.ResponseWriter, r *http.Request)
@@ -30850,6 +31052,20 @@ func (siw *ServerInterfaceWrapper) UpdateMalwareSettings(w http.ResponseWriter, 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UpdateMalwareSettings(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetMalwareSignatures operation middleware
+func (siw *ServerInterfaceWrapper) GetMalwareSignatures(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetMalwareSignatures(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -47800,6 +48016,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/packages/{packageId}/vulnerabilities", wrapper.GetPackageVulnerabilities)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/vulnerabilities/rescan", wrapper.RescanRepositoryVulnerabilities)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/malware/switch", wrapper.GetMalwareSwitch)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/malware/signatures", wrapper.GetMalwareSignatures)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/malware/settings", wrapper.GetMalwareSettings)
 	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/api/v1/malware/settings", wrapper.UpdateMalwareSettings)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/malware/finds", wrapper.ListMalwareFinds)

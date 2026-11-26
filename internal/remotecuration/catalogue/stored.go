@@ -18,9 +18,11 @@ type Stored struct {
 // maxStoredNames bounds the names of one read: a page holds at most 200.
 const maxStoredNames = 500
 
-// Versions answers, per name, the versions the repository holds; a name it holds no version of is absent.
-func (s Stored) Versions(ctx context.Context, repoID int64, names []string) (map[string][]string, error) {
-	out := map[string][]string{}
+// Versions answers, per name, the versions the repository holds, each with its id in package_version_listing (a remote's image tag:
+// the negative id of its cache entry), whose malware state a row carries (malware-scanning.md R-MAL-039); a name it holds no version of
+// is absent.
+func (s Stored) Versions(ctx context.Context, repoID int64, names []string) (map[string]map[string]int64, error) {
+	out := map[string]map[string]int64{}
 	if s.Runner == nil || len(names) == 0 {
 		return out, nil
 	}
@@ -37,7 +39,10 @@ func (s Stored) Versions(ctx context.Context, repoID int64, names []string) (map
 			return err
 		}
 		for _, r := range rows {
-			out[r.Name] = append(out[r.Name], r.Version)
+			if out[r.Name] == nil {
+				out[r.Name] = map[string]int64{}
+			}
+			out[r.Name][r.Version] = r.VersionID
 		}
 		return nil
 	})

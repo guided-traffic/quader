@@ -285,7 +285,7 @@ func (s *Service) imageSummaries(ctx context.Context, sc Scope, a Adapter, forma
 		v := VersionSummary{
 			Version: e.key.version, Prerelease: a.Prerelease(e.key.version), PublishedAt: g.published, SizeBytes: &files,
 			Repositories: sc.topo.Names(sc.holders(g.repoIDs())), DownloadCount: g.downloads(), LastDownloadedAt: g.lastDownload(),
-			Unranked: e.key.unranked, Aliases: []string{},
+			Unranked: e.key.unranked, Aliases: []string{}, VersionID: g.primary().VersionID, Repo: sc.topo.Name(g.primary().RepoID),
 		}
 		if e.digest != nil {
 			d := string(e.digest)
