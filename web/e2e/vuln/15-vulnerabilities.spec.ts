@@ -221,7 +221,8 @@ test('R-VULN-023 R-VULN-022 the package page shows the finding on the affected v
     });
 
     await test.step('the versions table of the package shows the grade of each version, S on 1.0.1 only', async () => {
-      await page.goto(`/ui/en/projects/${e2eProject}/packages/npm/quader-test-cvss`);
+      // The table of a package's versions stands at `/-/versions`; the package's own address shows its newest version (R-UI-218).
+      await page.goto(`/ui/en/projects/${e2eProject}/packages/npm/quader-test-cvss/-/versions`);
       const row = (v: string) => page.getByRole('row', { name: new RegExp(`^${v.replace('.', '\\.')}`) });
       await expect(row('1.0.0').locator('quader-grade')).toBeVisible();
       await expect(row('1.0.0').locator('quader-grade')).not.toContainText('S ·');
