@@ -4496,7 +4496,7 @@
     </unit>
     <unit id="audit.action.system.deletions_paused">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:399</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:401</note>
       </notes>
       <segment>
         <source>Deletions paused</source>
@@ -4504,7 +4504,7 @@
     </unit>
     <unit id="audit.action.system.deletions_resumed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:401</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:403</note>
       </notes>
       <segment>
         <source>Deletions resumed</source>
@@ -4512,7 +4512,7 @@
     </unit>
     <unit id="audit.action.system.job.cancelled">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:403</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:405</note>
       </notes>
       <segment>
         <source>Job cancelled</source>
@@ -4520,7 +4520,7 @@
     </unit>
     <unit id="audit.action.system.maintenance_mode_changed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:405</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:407</note>
       </notes>
       <segment>
         <source>Maintenance mode changed</source>
@@ -4528,7 +4528,7 @@
     </unit>
     <unit id="audit.action.system.restore.journal_replayed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:407</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:409</note>
       </notes>
       <segment>
         <source>Revocation journal replayed after a restore</source>
@@ -4536,7 +4536,7 @@
     </unit>
     <unit id="audit.action.system.restored">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:409</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:411</note>
       </notes>
       <segment>
         <source>Installation restored</source>
@@ -4544,7 +4544,7 @@
     </unit>
     <unit id="audit.action.system.storage.blob_damaged">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:411</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:413</note>
       </notes>
       <segment>
         <source>Stored content found damaged</source>
@@ -4552,7 +4552,7 @@
     </unit>
     <unit id="audit.action.system.storage.connection_added">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:413</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:415</note>
       </notes>
       <segment>
         <source>Object-store connection seen for the first time</source>
@@ -4560,7 +4560,7 @@
     </unit>
     <unit id="audit.action.system.storage.connection_drained">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:415</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:417</note>
       </notes>
       <segment>
         <source>Object-store connection drained</source>
@@ -4568,7 +4568,7 @@
     </unit>
     <unit id="audit.action.system.storage.connection_forgotten">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:417</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:419</note>
       </notes>
       <segment>
         <source>Object-store connection forgotten</source>
@@ -4576,7 +4576,7 @@
     </unit>
     <unit id="audit.action.system.storage.key_generation_added">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:419</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:421</note>
       </notes>
       <segment>
         <source>New generation of a storage key drawn</source>
@@ -4584,7 +4584,7 @@
     </unit>
     <unit id="audit.action.system.storage.keys_destroyed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:421</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:423</note>
       </notes>
       <segment>
         <source>Storage keys of a retired connection destroyed</source>
@@ -4592,7 +4592,7 @@
     </unit>
     <unit id="audit.action.system.storage.keys_exported">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:423</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:425</note>
       </notes>
       <segment>
         <source>Storage keys exported</source>
@@ -4600,7 +4600,7 @@
     </unit>
     <unit id="audit.action.system.storage.keys_imported">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:425</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:427</note>
       </notes>
       <segment>
         <source>Storage keys imported</source>
@@ -4608,7 +4608,7 @@
     </unit>
     <unit id="audit.action.system.storage.versions_restored">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:427</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:429</note>
       </notes>
       <segment>
         <source>Deleted storage objects restored</source>
@@ -4616,7 +4616,7 @@
     </unit>
     <unit id="audit.action.system.task_triggered">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:429</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:431</note>
       </notes>
       <segment>
         <source>Maintenance task started</source>
@@ -4624,7 +4624,7 @@
     </unit>
     <unit id="audit.action.token.created">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:431</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:433</note>
       </notes>
       <segment>
         <source>Token created</source>
@@ -4632,7 +4632,7 @@
     </unit>
     <unit id="audit.action.token.expiring">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:433</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:435</note>
       </notes>
       <segment>
         <source>Token about to expire</source>
@@ -4640,7 +4640,7 @@
     </unit>
     <unit id="audit.action.token.rejected">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:435</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:437</note>
       </notes>
       <segment>
         <source>Token rejected</source>
@@ -4648,7 +4648,7 @@
     </unit>
     <unit id="audit.action.token.revoked">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:437</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:439</note>
       </notes>
       <segment>
         <source>Token revoked</source>
@@ -4656,7 +4656,7 @@
     </unit>
     <unit id="audit.action.token.rotated">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:439</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:441</note>
       </notes>
       <segment>
         <source>Token rotated</source>
@@ -4664,7 +4664,7 @@
     </unit>
     <unit id="audit.action.user.avatar.removed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:441</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:443</note>
       </notes>
       <segment>
         <source>Avatar removed</source>
@@ -4672,7 +4672,7 @@
     </unit>
     <unit id="audit.action.user.avatar.set">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:443</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:445</note>
       </notes>
       <segment>
         <source>Avatar uploaded</source>
@@ -4680,7 +4680,7 @@
     </unit>
     <unit id="audit.action.user.created">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:445</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:447</note>
       </notes>
       <segment>
         <source>User created</source>
@@ -4688,7 +4688,7 @@
     </unit>
     <unit id="audit.action.user.deleted">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:447</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:449</note>
       </notes>
       <segment>
         <source>User deleted</source>
@@ -4696,7 +4696,7 @@
     </unit>
     <unit id="audit.action.user.external_changed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:449</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:451</note>
       </notes>
       <segment>
         <source>User&apos;s external flag changed</source>
@@ -4704,7 +4704,7 @@
     </unit>
     <unit id="audit.action.user.disabled">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:451</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:453</note>
       </notes>
       <segment>
         <source>User disabled</source>
@@ -4712,7 +4712,7 @@
     </unit>
     <unit id="audit.action.user.dormancy_warning">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:453</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:455</note>
       </notes>
       <segment>
         <source>User close to dormancy</source>
@@ -4720,7 +4720,7 @@
     </unit>
     <unit id="audit.action.user.enabled">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:455</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:457</note>
       </notes>
       <segment>
         <source>User enabled</source>
@@ -4728,7 +4728,7 @@
     </unit>
     <unit id="audit.action.user.groups.claim_missing">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:457</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:459</note>
       </notes>
       <segment>
         <source>Group claim missing at sign-in</source>
@@ -4736,7 +4736,7 @@
     </unit>
     <unit id="audit.action.user.groups.claim_returned">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:459</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:461</note>
       </notes>
       <segment>
         <source>Group claim back at sign-in</source>
@@ -4744,7 +4744,7 @@
     </unit>
     <unit id="audit.action.user.groups.result_skipped">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:461</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:463</note>
       </notes>
       <segment>
         <source>Invalid group name skipped at sign-in</source>
@@ -4752,7 +4752,7 @@
     </unit>
     <unit id="audit.action.user.groups.synced">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:463</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:465</note>
       </notes>
       <segment>
         <source>Group memberships synchronised</source>
@@ -4760,7 +4760,7 @@
     </unit>
     <unit id="audit.action.user.rename_conflict">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:465</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:467</note>
       </notes>
       <segment>
         <source>User rename conflict</source>
@@ -4768,7 +4768,7 @@
     </unit>
     <unit id="audit.action.user.renamed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:467</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:469</note>
       </notes>
       <segment>
         <source>User renamed</source>
@@ -4776,7 +4776,7 @@
     </unit>
     <unit id="audit.action.user.updated">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:469</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:471</note>
       </notes>
       <segment>
         <source>User changed</source>
@@ -4784,7 +4784,7 @@
     </unit>
     <unit id="audit.action.vulnerability.advisory.kind_changed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:471</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:473</note>
       </notes>
       <segment>
         <source>Advisory kind changed</source>
@@ -4792,7 +4792,7 @@
     </unit>
     <unit id="audit.action.vulnerability.claimed_name_match">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:473</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:475</note>
       </notes>
       <segment>
         <source>Advisory matches a claimed package name</source>
@@ -4800,7 +4800,7 @@
     </unit>
     <unit id="audit.action.vulnerability.download_blocked">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:475</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:477</note>
       </notes>
       <segment>
         <source>Download blocked by a finding</source>
@@ -4808,7 +4808,7 @@
     </unit>
     <unit id="audit.action.vulnerability.finding.reopened">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:477</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:479</note>
       </notes>
       <segment>
         <source>Finding reopened</source>
@@ -4816,7 +4816,7 @@
     </unit>
     <unit id="audit.action.vulnerability.finding.status_changed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:479</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:481</note>
       </notes>
       <segment>
         <source>Finding status changed</source>
@@ -4824,7 +4824,7 @@
     </unit>
     <unit id="audit.action.vulnerability.source.failed">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:481</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:483</note>
       </notes>
       <segment>
         <source>Advisory sync failed</source>
@@ -4832,7 +4832,7 @@
     </unit>
     <unit id="audit.action.vulnerability.source.imported">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:483</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:485</note>
       </notes>
       <segment>
         <source>Advisory data imported</source>
@@ -4840,7 +4840,7 @@
     </unit>
     <unit id="audit.category.auth">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:515</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:517</note>
       </notes>
       <segment>
         <source>Authentication</source>
@@ -4848,7 +4848,7 @@
     </unit>
     <unit id="audit.category.token">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:517</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:519</note>
       </notes>
       <segment>
         <source>Tokens</source>
@@ -4856,7 +4856,7 @@
     </unit>
     <unit id="audit.category.identity">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:519</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:521</note>
       </notes>
       <segment>
         <source>Identities</source>
@@ -4864,7 +4864,7 @@
     </unit>
     <unit id="audit.category.authz">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:521</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:523</note>
       </notes>
       <segment>
         <source>Authorization</source>
@@ -4872,7 +4872,7 @@
     </unit>
     <unit id="audit.category.repository">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:523</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:525</note>
       </notes>
       <segment>
         <source>Repositories</source>
@@ -4880,7 +4880,7 @@
     </unit>
     <unit id="audit.category.content">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:525</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:527</note>
       </notes>
       <segment>
         <source>Content</source>
@@ -4888,7 +4888,7 @@
     </unit>
     <unit id="audit.category.system">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:527</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:529</note>
       </notes>
       <segment>
         <source>System</source>
@@ -4896,7 +4896,7 @@
     </unit>
     <unit id="audit.category.config">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:529</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:531</note>
       </notes>
       <segment>
         <source>Configuration</source>
@@ -4904,7 +4904,7 @@
     </unit>
     <unit id="audit.category.webhook">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:531</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:533</note>
       </notes>
       <segment>
         <source>Webhooks</source>
@@ -4912,7 +4912,7 @@
     </unit>
     <unit id="audit.outcome.success">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:540</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:542</note>
       </notes>
       <segment>
         <source>Success</source>
@@ -4920,7 +4920,7 @@
     </unit>
     <unit id="audit.outcome.failure">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:542</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:544</note>
       </notes>
       <segment>
         <source>Failure</source>
@@ -4928,7 +4928,7 @@
     </unit>
     <unit id="audit.outcome.denied">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:544</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:546</note>
       </notes>
       <segment>
         <source>Denied</source>
@@ -4936,7 +4936,7 @@
     </unit>
     <unit id="audit.outcome.warning">
       <notes>
-        <note category="location">src/app/features/audit/audit-labels.ts:546</note>
+        <note category="location">src/app/features/audit/audit-labels.ts:548</note>
       </notes>
       <segment>
         <source>Warning</source>
