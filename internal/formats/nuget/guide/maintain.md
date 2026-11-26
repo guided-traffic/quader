@@ -11,6 +11,8 @@ dotnet nuget delete Acme.Widgets 1.2.3 --source {{.RegistryURL}}v3/index.json --
 nuget delete Acme.Widgets 1.2.3 -Source {{.RegistryURL}}v3/index.json -ApiKey "${QUADER_TOKEN}" -NonInteractive
 ```
 {{end}}
+The client takes the API key only as an argument, as for a push: other users of the machine see it in the process list while the command runs.
+
 What that command does depends on the repository's `deleteMode`, which its settings page shows. With `unlist`, the default, the version is only unlisted: search and the Browse tab no longer offer it, it stays in the version list and downloadable, a project that names it keeps restoring, and the registration entry says `"listed": false`. With `delete` the version is deleted for good, its `.nupkg` answers `404`, and its number is blocked for ever (`409` `nuget_version_deleted` on a push). Deleting through the management API, the UI or a file delete always deletes for good. Unlisting a version that is unlisted already, and deleting one that was deleted, answers success again, so a repeated command does not fail.
 
 ### Relist a version
@@ -18,7 +20,7 @@ What that command does depends on the repository's `deleteMode`, which its setti
 NuGet clients have no command that lists a version again. Send the request yourself, with the deploy permission:
 
 ```shell
-curl -X POST -H "X-NuGet-ApiKey: ${QUADER_TOKEN}" {{.RegistryURL}}v3/package/acme.widgets/1.2.3
+printf 'X-NuGet-ApiKey: %s\n' "${QUADER_TOKEN}" | curl -X POST -H @- {{.RegistryURL}}v3/package/acme.widgets/1.2.3
 ```
 
 It answers `200`, also when the version is listed already, and `404` for a version that was deleted for good. Relisting changes which version a client picks for a range, so it needs the same permission and ownership as a push.

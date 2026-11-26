@@ -16844,8 +16844,8 @@
       <notes>
         <note category="location">src/app/features/packages/client-command-menu.ts:120,121</note>
         <note category="location">src/app/features/packages/client-command-menu.ts:365</note>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:65,66</note>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:321</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:68,69</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:332</note>
       </notes>
       <segment>
         <source>Download address</source>
@@ -16900,7 +16900,7 @@
     <unit id="files.copy-download-address">
       <notes>
         <note category="location">src/app/features/packages/client-command-menu.ts:366</note>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:322</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:333</note>
       </notes>
       <segment>
         <source>Copy download address</source>
@@ -19788,7 +19788,7 @@
     <unit id="sig.gate.refused-here">
       <notes>
         <note category="location">src/app/features/packages/package-version.html:396,397</note>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:121,122</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:124,125</note>
         <note category="location">src/app/shared/signatures/signature-gate.ts:73,74</note>
       </notes>
       <segment>
@@ -21008,7 +21008,7 @@
     <unit id="files.signatures.loading">
       <notes>
         <note category="location">src/app/features/packages/version-signatures.ts:49,52</note>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:168,170</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:171,173</note>
       </notes>
       <segment>
         <source>Loading the signatures.</source>
@@ -25807,7 +25807,7 @@
     <unit id="repo.deleting">
       <notes>
         <note category="location">src/app/features/repositories/content/repository-content.html:262,263</note>
-        <note category="location">src/app/features/repositories/repository-detail.html:581,582</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:587,588</note>
         <note category="location">src/app/features/repositories/repository-list.html:256,257</note>
       </notes>
       <segment>
@@ -25981,7 +25981,7 @@
     </unit>
     <unit id="files.disabled-note">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:59,60</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:62,63</note>
       </notes>
       <segment>
         <source>The repository is disabled: nobody can download this file until it is enabled again.</source>
@@ -25990,7 +25990,7 @@
     </unit>
     <unit id="files.fact.size">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:71,72</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:74,75</note>
       </notes>
       <segment>
         <source>Size</source>
@@ -25999,7 +25999,7 @@
     </unit>
     <unit id="files.fact.media">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:73,74</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:76,77</note>
       </notes>
       <segment>
         <source>Media type</source>
@@ -26008,7 +26008,7 @@
     </unit>
     <unit id="files.fact.created">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:81,83</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:84,86</note>
       </notes>
       <segment>
         <source>Created</source>
@@ -26017,8 +26017,8 @@
     </unit>
     <unit id="files.by">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:85</note>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:92</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:88</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:95</note>
       </notes>
       <segment>
         <source>by</source>
@@ -26027,7 +26027,7 @@
     </unit>
     <unit id="files.fact.modified">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:88,90</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:91,93</note>
       </notes>
       <segment>
         <source>Last changed</source>
@@ -26036,7 +26036,7 @@
     </unit>
     <unit id="files.fact.content">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:96,98</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:99,101</note>
       </notes>
       <segment>
         <source>Content</source>
@@ -26045,7 +26045,7 @@
     </unit>
     <unit id="files.content.missing">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:100,101</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:103,104</note>
       </notes>
       <segment>
         <source>The stored content is missing.</source>
@@ -26054,7 +26054,7 @@
     </unit>
     <unit id="files.content.corrupt">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:102,104</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:105,107</note>
       </notes>
       <segment>
         <source>The stored content failed its checksum.</source>
@@ -26063,7 +26063,7 @@
     </unit>
     <unit id="files.fact.malware">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:108,109</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:111,112</note>
       </notes>
       <segment>
         <source>Malware scan</source>
@@ -26072,7 +26072,7 @@
     </unit>
     <unit id="files.fact.signature">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:113,114</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:116,117</note>
       </notes>
       <segment>
         <source>Signature</source>
@@ -26081,7 +26081,7 @@
     </unit>
     <unit id="files.fact.signature-of">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:133,134</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:136,137</note>
       </notes>
       <segment>
         <source>Signature of</source>
@@ -26090,7 +26090,7 @@
     </unit>
     <unit id="files.signatures">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:150,151</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:153,154</note>
       </notes>
       <segment>
         <source>Signatures</source>
@@ -26099,7 +26099,7 @@
     </unit>
     <unit id="files.details">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:178</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:181</note>
       </notes>
       <segment>
         <source>Details</source>
@@ -26108,7 +26108,7 @@
     </unit>
     <unit id="files.details-hint">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:179,180</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:182,183</note>
       </notes>
       <segment>
         <source>Every checksum, the downloads, and the file as the API describes it.</source>
@@ -26117,7 +26117,7 @@
     </unit>
     <unit id="files.checksums">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:182,183</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:185,186</note>
       </notes>
       <segment>
         <source>Checksums</source>
@@ -26126,7 +26126,7 @@
     </unit>
     <unit id="files.stats.heading">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:194,195</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:197,198</note>
       </notes>
       <segment>
         <source>Downloads</source>
@@ -26135,7 +26135,7 @@
     </unit>
     <unit id="files.stats.downloads">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:199,200</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:202,203</note>
       </notes>
       <segment>
         <source>Downloads</source>
@@ -26144,7 +26144,7 @@
     </unit>
     <unit id="files.stats.last">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:201,203</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:204,206</note>
       </notes>
       <segment>
         <source>Last download</source>
@@ -26153,7 +26153,7 @@
     </unit>
     <unit id="files.stats.by">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:209,210</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:212,213</note>
       </notes>
       <segment>
         <source>Last downloader</source>
@@ -26162,7 +26162,7 @@
     </unit>
     <unit id="files.stats.hint">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:212,213</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:215,216</note>
       </notes>
       <segment>
         <source>Counts reach the database within a minute of a download.</source>
@@ -26171,7 +26171,7 @@
     </unit>
     <unit id="files.details.loading">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:214,216</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:217,219</note>
       </notes>
       <segment>
         <source>Loading the file&apos;s details.</source>
@@ -26180,7 +26180,7 @@
     </unit>
     <unit id="files.api.json">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:216,217</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:219,220</note>
       </notes>
       <segment>
         <source>The file as the API describes it</source>
@@ -26189,7 +26189,7 @@
     </unit>
     <unit id="files.api.curl">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:218,219</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:221,222</note>
       </notes>
       <segment>
         <source>The same request with curl</source>
@@ -26198,16 +26198,25 @@
     </unit>
     <unit id="files.api.download">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:221,222</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:224,225</note>
       </notes>
       <segment>
         <source>Download with curl</source>
         <target>Mit curl herunterladen</target>
       </segment>
     </unit>
+    <unit id="files.api.function-hint">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:229,232</note>
+      </notes>
+      <segment>
+        <source><pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code&gt;" dispEnd="&lt;/code&gt;">quader_curl</pc> is the function of Set up client of a generic repository and of the manual&apos;s Personal access tokens: it hands curl the token from <pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code&gt;" dispEnd="&lt;/code&gt;">QUADER_TOKEN</pc> on standard input, so no process list shows it. </source>
+        <target><pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code&gt;" dispEnd="&lt;/code&gt;">quader_curl</pc> ist die Funktion aus Client einrichten eines generischen Repositorys und aus der Seite Persönliche Zugriffstoken des Handbuchs: sie gibt curl das Token aus <pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code&gt;" dispEnd="&lt;/code&gt;">QUADER_TOKEN</pc> über die Standardeingabe, sodass keine Prozessliste es zeigt. </target>
+      </segment>
+    </unit>
     <unit id="files.signatures-hint-none">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:267</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:275</note>
       </notes>
       <segment>
         <source>No signature found, and who uploaded the file or where it was fetched from.</source>
@@ -26216,7 +26225,7 @@
     </unit>
     <unit id="files.signatures-hint">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:268</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:276</note>
       </notes>
       <segment>
         <source>Who signed the file, whether a trust anchor knows the signer, and who uploaded it.</source>
@@ -26225,7 +26234,7 @@
     </unit>
     <unit id="files.api.copy-json">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:295</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:303</note>
       </notes>
       <segment>
         <source>Copy the description</source>
@@ -26234,7 +26243,7 @@
     </unit>
     <unit id="files.copy-digest">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-file.ts:324</note>
+        <note category="location">src/app/features/repositories/content/repository-file.ts:335</note>
       </notes>
       <segment>
         <source>Copy <ph id="0" equiv="checksum" disp="name"/></source>
@@ -31660,9 +31669,19 @@
         <target>Dieselbe Anfrage mit curl</target>
       </segment>
     </unit>
+    <unit id="repo.api.function-hint">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-create.html:216,219</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:523,525</note>
+      </notes>
+      <segment>
+        <source><pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code&gt;" dispEnd="&lt;/code&gt;">quader_curl</pc> is the function of the manual&apos;s Personal access tokens: it hands curl the token from <pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code&gt;" dispEnd="&lt;/code&gt;">QUADER_TOKEN</pc> on standard input, so no process list shows it. </source>
+        <target><pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code&gt;" dispEnd="&lt;/code&gt;">quader_curl</pc> ist die Funktion aus der Seite Persönliche Zugriffstoken des Handbuchs: sie gibt curl das Token aus <pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code&gt;" dispEnd="&lt;/code&gt;">QUADER_TOKEN</pc> über die Standardeingabe, sodass keine Prozessliste es zeigt. </target>
+      </segment>
+    </unit>
     <unit id="repo.wizard.create">
       <notes>
-        <note category="location">src/app/features/repositories/repository-create.html:218,219</note>
+        <note category="location">src/app/features/repositories/repository-create.html:222,223</note>
       </notes>
       <segment>
         <source>Create repository</source>
@@ -31671,7 +31690,7 @@
     </unit>
     <unit id="repo.wizard.cancel">
       <notes>
-        <note category="location">src/app/features/repositories/repository-create.html:219,222</note>
+        <note category="location">src/app/features/repositories/repository-create.html:223,226</note>
       </notes>
       <segment>
         <source>Cancel</source>
@@ -31680,7 +31699,7 @@
     </unit>
     <unit id="repo.create.loading">
       <notes>
-        <note category="location">src/app/features/repositories/repository-create.html:223,225</note>
+        <note category="location">src/app/features/repositories/repository-create.html:227,229</note>
       </notes>
       <segment>
         <source>Loading the format&apos;s settings.</source>
@@ -32309,7 +32328,7 @@
     </unit>
     <unit id="repo.detail.api.nochange">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:522,524</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:528,530</note>
       </notes>
       <segment>
         <source>Change a setting to see the request that saves it.</source>
@@ -32318,7 +32337,7 @@
     </unit>
     <unit id="repo.detail.advanced">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:532,533</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:538,539</note>
       </notes>
       <segment>
         <source>Advanced</source>
@@ -32327,7 +32346,7 @@
     </unit>
     <unit id="repo.settings.advanced-hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:534,536</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:540,542</note>
       </notes>
       <segment>
         <source>Disable, move or delete this repository.</source>
@@ -32336,7 +32355,7 @@
     </unit>
     <unit id="repo.enable.heading">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:541,542</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:547,548</note>
       </notes>
       <segment>
         <source>Enable repository</source>
@@ -32345,7 +32364,7 @@
     </unit>
     <unit id="repo.enable.hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:542,543</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:548,549</note>
       </notes>
       <segment>
         <source>The repository is disabled: it serves nothing and takes no publish.</source>
@@ -32354,7 +32373,7 @@
     </unit>
     <unit id="repo.enable.confirm">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:543,545</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:549,551</note>
         <note category="location">src/app/features/repositories/repository-detail.ts:997</note>
       </notes>
       <segment>
@@ -32364,7 +32383,7 @@
     </unit>
     <unit id="repo.disable.heading">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:545,546</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:551,552</note>
       </notes>
       <segment>
         <source>Disable repository</source>
@@ -32373,7 +32392,7 @@
     </unit>
     <unit id="repo.disable.hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:546,547</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:552,553</note>
       </notes>
       <segment>
         <source>Clients can no longer download from it or publish to it; its content stays.</source>
@@ -32382,7 +32401,7 @@
     </unit>
     <unit id="repo.disable.confirm">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:547,549</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:553,555</note>
         <note category="location">src/app/features/repositories/repository-detail.ts:992</note>
       </notes>
       <segment>
@@ -32392,7 +32411,7 @@
     </unit>
     <unit id="repo.move.heading">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:552,553</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:558,559</note>
       </notes>
       <segment>
         <source>Move to another project</source>
@@ -32401,7 +32420,7 @@
     </unit>
     <unit id="repo.move.hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:554,555</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:560,561</note>
       </notes>
       <segment>
         <source> The repository keeps its key and its content; its address changes. You must be Owner of the target project too. </source>
@@ -32410,7 +32429,7 @@
     </unit>
     <unit id="repo.move.target">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:559,560</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:565,566</note>
       </notes>
       <segment>
         <source>Target project</source>
@@ -32419,7 +32438,7 @@
     </unit>
     <unit id="repo.move.action">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:565,566</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:571,572</note>
       </notes>
       <segment>
         <source> Move repository </source>
@@ -32428,7 +32447,7 @@
     </unit>
     <unit id="repo.delete.heading">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:571,572</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:577,578</note>
       </notes>
       <segment>
         <source>Delete repository</source>
@@ -32437,7 +32456,7 @@
     </unit>
     <unit id="repo.detail.delete-note">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:572,573</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:578,579</note>
       </notes>
       <segment>
         <source>Deleting the repository removes it and everything in it for good. It runs as a job, and the key stays taken until it has finished.</source>
@@ -32446,7 +32465,7 @@
     </unit>
     <unit id="repo.detail.delete">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:573,575</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:579,581</note>
       </notes>
       <segment>
         <source>Delete repository</source>
@@ -40619,7 +40638,7 @@
     <unit id="malware.settings.only-checked">
       <notes>
         <note category="location">src/app/features/settings/malware-settings.html:28,29</note>
-        <note category="location">src/app/features/settings/malware-settings.ts:280</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:281</note>
       </notes>
       <segment>
         <source>Only checked artifacts can be downloaded</source>
@@ -40755,7 +40774,7 @@
     <unit id="malware.rescan.confirm">
       <notes>
         <note category="location">src/app/features/settings/malware-settings.html:99,102</note>
-        <note category="location">src/app/features/settings/malware-settings.ts:301</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:302</note>
       </notes>
       <segment>
         <source>Scan everything again</source>
@@ -40954,7 +40973,7 @@
     </unit>
     <unit id="malware.settings.backlog-question">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:230</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:231</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="unchecked" disp="n"/> artifacts have no verdict yet and <ph id="1" equiv="notCheckable" disp="m"/> could not be checked. They will wait or be refused until they are scanned or released.</source>
@@ -40963,7 +40982,7 @@
     </unit>
     <unit id="malware.settings.confirm-title">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:240</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:241</note>
       </notes>
       <segment>
         <source>Let only checked artifacts be downloaded?</source>
@@ -40972,7 +40991,7 @@
     </unit>
     <unit id="malware.settings.confirm">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:242</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:243</note>
       </notes>
       <segment>
         <source>Switch on</source>
@@ -40981,7 +41000,7 @@
     </unit>
     <unit id="malware.settings.saved-on">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:252</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:253</note>
       </notes>
       <segment>
         <source>Only checked artifacts can be downloaded now.</source>
@@ -40990,7 +41009,7 @@
     </unit>
     <unit id="malware.settings.saved-off">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:253</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:254</note>
       </notes>
       <segment>
         <source>Artifacts that are not checked can be downloaded again.</source>
@@ -40999,7 +41018,7 @@
     </unit>
     <unit id="malware.rescan.title">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:297</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:298</note>
       </notes>
       <segment>
         <source>Scan every artifact again?</source>
@@ -41008,7 +41027,7 @@
     </unit>
     <unit id="malware.rescan.text">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:299</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:300</note>
       </notes>
       <segment>
         <source>Every verdict is scanned again with the signature database in use, after the work that waits. Each verdict stays in force until its new scan.</source>
@@ -41017,7 +41036,7 @@
     </unit>
     <unit id="malware.rescan.done">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:309</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:310</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="count" disp="n"/> verdicts are marked to be scanned again.</source>
@@ -43444,9 +43463,18 @@
         <target>In PowerShell</target>
       </segment>
     </unit>
+    <unit id="setup.caption.nuget-push-argument">
+      <notes>
+        <note category="location">src/app/features/setup/clients.ts:93</note>
+      </notes>
+      <segment>
+        <source>The API key is only an argument, which the process list shows: push where nobody else is logged in.</source>
+        <target>Der API-Schlüssel ist nur ein Argument, das die Prozessliste zeigt: pushen Sie, wo niemand sonst angemeldet ist.</target>
+      </segment>
+    </unit>
     <unit id="setup.caption.npmrc">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:96</note>
+        <note category="location">src/app/features/setup/clients.ts:97</note>
       </notes>
       <segment>
         <source>Save as `.npmrc` in your project.</source>
@@ -43455,7 +43483,7 @@
     </unit>
     <unit id="setup.caption.npmrc-home">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:98</note>
+        <note category="location">src/app/features/setup/clients.ts:99</note>
       </notes>
       <segment>
         <source>Save in your home directory: pnpm reads a token variable only there.</source>
@@ -43464,7 +43492,7 @@
     </unit>
     <unit id="setup.caption.scoped">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:104</note>
+        <note category="location">src/app/features/setup/clients.ts:105</note>
       </notes>
       <segment>
         <source>Takes only the packages of one scope from this repository.</source>
@@ -43473,7 +43501,7 @@
     </unit>
     <unit id="setup.fold.scoped">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:105</note>
+        <note category="location">src/app/features/setup/clients.ts:106</note>
       </notes>
       <segment>
         <source>For one scope only</source>
@@ -43482,7 +43510,7 @@
     </unit>
     <unit id="setup.caption.npm-cli">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:109</note>
+        <note category="location">src/app/features/setup/clients.ts:110</note>
       </notes>
       <segment>
         <source>Writes the settings into `~/.npmrc`, where your shell stores the token.</source>
@@ -43491,7 +43519,7 @@
     </unit>
     <unit id="setup.fold.npm-cli">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:110</note>
+        <note category="location">src/app/features/setup/clients.ts:111</note>
       </notes>
       <segment>
         <source>For every project</source>
@@ -43500,7 +43528,7 @@
     </unit>
     <unit id="setup.caption.yarnrc">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:113</note>
+        <note category="location">src/app/features/setup/clients.ts:114</note>
       </notes>
       <segment>
         <source>Save as `.yarnrc.yml` in your project.</source>
@@ -43509,7 +43537,7 @@
     </unit>
     <unit id="setup.caption.publish-dir">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:133</note>
+        <note category="location">src/app/features/setup/clients.ts:132</note>
       </notes>
       <segment>
         <source>Run in the directory of the package.</source>
@@ -43518,7 +43546,7 @@
     </unit>
     <unit id="setup.caption.publish-berry">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:135</note>
+        <note category="location">src/app/features/setup/clients.ts:134</note>
       </notes>
       <segment>
         <source>Add to `.yarnrc.yml`, then run `yarn npm publish`.</source>
@@ -43527,7 +43555,7 @@
     </unit>
     <unit id="setup.snippet.gitlab-generic">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:137</note>
+        <note category="location">src/app/features/setup/clients.ts:136</note>
       </notes>
       <segment>
         <source>For npm 10, pnpm 10 on npm 10 and Yarn 1. A pipeline step exchanges the job&apos;s ID token for a short-lived Quader token and revokes it again as its last step.</source>
@@ -43536,35 +43564,26 @@
     </unit>
     <unit id="setup.snippet.gitlab-native">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:139</note>
+        <note category="location">src/app/features/setup/clients.ts:138</note>
       </notes>
       <segment>
         <source>For npm 11.5.1 and later, pnpm 11 and 12 and Yarn 4. The client exchanges the job&apos;s ID token itself.</source>
         <target>Für npm 11.5.1 und neuer, pnpm 11 und 12 sowie Yarn 4. Der Client tauscht das ID-Token des Jobs selbst.</target>
       </segment>
     </unit>
-    <unit id="setup.caption.dotnet-source">
-      <notes>
-        <note category="location">src/app/features/setup/clients.ts:141</note>
-      </notes>
-      <segment>
-        <source>Adds the source to your user configuration. On Linux and macOS the token is stored there in clear text.</source>
-        <target>Fügt die Quelle Ihrer Benutzer&#xAD;konfiguration hinzu. Unter Linux und macOS steht das Token dort im Klartext.</target>
-      </segment>
-    </unit>
-    <unit id="setup.caption.nuget-source">
+    <unit id="setup.caption.nuget-source-argument">
       <notes>
         <note category="location">src/app/features/setup/clients.ts:143</note>
       </notes>
       <segment>
-        <source>Adds the source to your user configuration.</source>
-        <target>Fügt die Quelle Ihrer Benutzer&#xAD;konfiguration hinzu.</target>
+        <source>Takes the token only as an argument, which the process list shows; the nuget.config file keeps it in the variable.</source>
+        <target>Nimmt das Token nur als Argument, das die Prozessliste zeigt; die Datei nuget.config hält es in der Variable.</target>
       </segment>
     </unit>
     <unit id="setup.caption.nuget-config">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:151</note>
-        <note category="location">src/app/features/setup/clients.ts:153</note>
+        <note category="location">src/app/features/setup/clients.ts:155</note>
+        <note category="location">src/app/features/setup/clients.ts:157</note>
       </notes>
       <segment>
         <source>Save next to your solution. Every package then comes through this repository.</source>
@@ -43573,7 +43592,7 @@
     </unit>
     <unit id="setup.fold.nuget-config">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:151</note>
+        <note category="location">src/app/features/setup/clients.ts:155</note>
       </notes>
       <segment>
         <source>As a nuget.config file</source>
@@ -43582,7 +43601,7 @@
     </unit>
     <unit id="setup.caption.vs-packagereference">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:155</note>
+        <note category="location">src/app/features/setup/clients.ts:159</note>
       </notes>
       <segment>
         <source>Add to the project file inside an `ItemGroup`, then restore.</source>
@@ -43591,7 +43610,7 @@
     </unit>
     <unit id="setup.caption.curl-function">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:157</note>
+        <note category="location">src/app/features/setup/clients.ts:161</note>
       </notes>
       <segment>
         <source>Paste into the shell or the CI script that runs curl. The token stays off curl&apos;s command line.</source>
@@ -43600,7 +43619,7 @@
     </unit>
     <unit id="setup.caption.wget-function">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:159</note>
+        <note category="location">src/app/features/setup/clients.ts:163</note>
       </notes>
       <segment>
         <source>Paste into the shell or the CI script that runs wget. The token stays off wget&apos;s command line.</source>
@@ -43609,7 +43628,7 @@
     </unit>
     <unit id="setup.caption.powershell-headers">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:161</note>
+        <note category="location">src/app/features/setup/clients.ts:165</note>
       </notes>
       <segment>
         <source>Run in the PowerShell session or script that downloads. The token stays in the session, off every command line.</source>
@@ -43618,7 +43637,7 @@
     </unit>
     <unit id="setup.caption.file-checksum">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:165</note>
+        <note category="location">src/app/features/setup/clients.ts:169</note>
       </notes>
       <segment>
         <source>Checks the download against the SHA-256 on the file&apos;s page.</source>
@@ -43627,7 +43646,7 @@
     </unit>
     <unit id="setup.caption.curl-publish">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:172</note>
+        <note category="location">src/app/features/setup/clients.ts:176</note>
       </notes>
       <segment>
         <source>Replacing a file also needs the overwrite permission.</source>
@@ -43636,7 +43655,7 @@
     </unit>
     <unit id="setup.caption.oci-login-anonymous">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:179</note>
+        <note category="location">src/app/features/setup/clients.ts:183</note>
       </notes>
       <segment>
         <source>Not needed to pull: this repository can be read without signing in.</source>
@@ -43645,7 +43664,7 @@
     </unit>
     <unit id="setup.caption.oci-login">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:180</note>
+        <note category="location">src/app/features/setup/clients.ts:184</note>
       </notes>
       <segment>
         <source>Sign in once on each machine.</source>
@@ -43654,7 +43673,7 @@
     </unit>
     <unit id="setup.caption.oci-pull-secret">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:184</note>
+        <note category="location">src/app/features/setup/clients.ts:188</note>
       </notes>
       <segment>
         <source>Creates an image pull secret. Name it under `imagePullSecrets` of your pods.</source>
@@ -43663,7 +43682,7 @@
     </unit>
     <unit id="setup.fold.kubernetes">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:185</note>
+        <note category="location">src/app/features/setup/clients.ts:189</note>
       </notes>
       <segment>
         <source>For a Kubernetes cluster</source>
@@ -43672,7 +43691,7 @@
     </unit>
     <unit id="setup.caption.oci-push">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:190</note>
+        <note category="location">src/app/features/setup/clients.ts:194</note>
       </notes>
       <segment>
         <source>Name a local image below this repository, then push it.</source>
@@ -43681,7 +43700,7 @@
     </unit>
     <unit id="setup.caption.helm-push">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:192</note>
+        <note category="location">src/app/features/setup/clients.ts:196</note>
       </notes>
       <segment>
         <source>Package the chart, then push it below this repository.</source>
@@ -43690,7 +43709,7 @@
     </unit>
     <unit id="setup.caption.oci-buildx">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:194</note>
+        <note category="location">src/app/features/setup/clients.ts:198</note>
       </notes>
       <segment>
         <source>Or build for two platforms and push in one go.</source>
@@ -43699,7 +43718,7 @@
     </unit>
     <unit id="setup.caption.apt-configure">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:197</note>
+        <note category="location">src/app/features/setup/clients.ts:201</note>
       </notes>
       <segment>
         <source>Installs the signing key and adds the repository as a verified source. Run it again after a key rotation.</source>
@@ -43708,7 +43727,7 @@
     </unit>
     <unit id="setup.caption.apt-upstream">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:201</note>
+        <note category="location">src/app/features/setup/clients.ts:205</note>
       </notes>
       <segment>
         <source>Verifies against the archive&apos;s own keyring instead of a key of Quader&apos;s.</source>
@@ -43717,7 +43736,7 @@
     </unit>
     <unit id="setup.fold.apt-upstream">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:202</note>
+        <note category="location">src/app/features/setup/clients.ts:206</note>
       </notes>
       <segment>
         <source>Remote without upstream keys</source>
@@ -43726,7 +43745,7 @@
     </unit>
     <unit id="setup.caption.apt-list">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:206</note>
+        <note category="location">src/app/features/setup/clients.ts:210</note>
       </notes>
       <segment>
         <source>Install the key file as above first.</source>
@@ -43735,7 +43754,7 @@
     </unit>
     <unit id="setup.fold.apt-list">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:206</note>
+        <note category="location">src/app/features/setup/clients.ts:210</note>
       </notes>
       <segment>
         <source>As a one-line .list file</source>
@@ -43744,7 +43763,7 @@
     </unit>
     <unit id="setup.caption.apt-publish">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:208</note>
+        <note category="location">src/app/features/setup/clients.ts:212</note>
       </notes>
       <segment>
         <source>The package is in the index within moments.</source>
@@ -43753,7 +43772,7 @@
     </unit>
     <unit id="setup.caption.ansible-cfg">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:210</note>
+        <note category="location">src/app/features/setup/clients.ts:214</note>
       </notes>
       <segment>
         <source>Save next to your playbooks, or as `~/.ansible.cfg`.</source>
@@ -43762,7 +43781,7 @@
     </unit>
     <unit id="setup.caption.ansible-token-env">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:212</note>
+        <note category="location">src/app/features/setup/clients.ts:216</note>
       </notes>
       <segment>
         <source>`ansible.cfg` does not expand variables, so the token comes from this one.</source>
@@ -43771,7 +43790,7 @@
     </unit>
     <unit id="setup.fold.cmd">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:216</note>
+        <note category="location">src/app/features/setup/clients.ts:220</note>
       </notes>
       <segment>
         <source>In cmd</source>
@@ -43780,7 +43799,7 @@
     </unit>
     <unit id="setup.caption.ansible-netrc">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:219</note>
+        <note category="location">src/app/features/setup/clients.ts:223</note>
       </notes>
       <segment>
         <source>A role download falls back to `~/.netrc`. One line serves every repository on this host.</source>
@@ -43789,7 +43808,7 @@
     </unit>
     <unit id="setup.fold.roles">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:220</note>
+        <note category="location">src/app/features/setup/clients.ts:224</note>
       </notes>
       <segment>
         <source>To install roles</source>
@@ -43798,7 +43817,7 @@
     </unit>
     <unit id="setup.caption.ansible-requirements">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:225</note>
+        <note category="location">src/app/features/setup/clients.ts:229</note>
       </notes>
       <segment>
         <source>Install it with `ansible-galaxy collection install -r requirements.yml`.</source>
@@ -43807,8 +43826,8 @@
     </unit>
     <unit id="setup.fold.requirements">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:226</note>
-        <note category="location">src/app/features/setup/clients.ts:236</note>
+        <note category="location">src/app/features/setup/clients.ts:230</note>
+        <note category="location">src/app/features/setup/clients.ts:240</note>
       </notes>
       <segment>
         <source>With a requirements.yml</source>
@@ -43817,7 +43836,7 @@
     </unit>
     <unit id="setup.caption.freshclam-conf">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:229</note>
+        <note category="location">src/app/features/setup/clients.ts:233</note>
       </notes>
       <segment>
         <source>Put this line into `freshclam.conf` of each ClamAV installation. `PrivateMirror` replaces ClamAV&apos;s own network.</source>
@@ -43826,7 +43845,7 @@
     </unit>
     <unit id="setup.caption.freshclam-run">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:231</note>
+        <note category="location">src/app/features/setup/clients.ts:235</note>
       </notes>
       <segment>
         <source>Run it once: it fetches each database whole, then reports each as up to date.</source>
@@ -43835,25 +43854,25 @@
     </unit>
     <unit id="setup.caption.ansible-role-requirements">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:235</note>
+        <note category="location">src/app/features/setup/clients.ts:239</note>
       </notes>
       <segment>
         <source>Install it with `ansible-galaxy role install -r requirements.yml`.</source>
         <target>Installieren Sie sie mit `ansible-galaxy role install -r requirements.yml`.</target>
       </segment>
     </unit>
-    <unit id="setup.caption.ansible-publish">
+    <unit id="setup.caption.ansible-publish-server">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:239</note>
+        <note category="location">src/app/features/setup/clients.ts:243</note>
       </notes>
       <segment>
-        <source>Publishes an archive built with `ansible-galaxy collection build`.</source>
-        <target>Veröffentlicht ein Archiv, das mit `ansible-galaxy collection build` gebaut wurde.</target>
+        <source>Publishes an archive built with `ansible-galaxy collection build` to the server of `ansible.cfg`, with the token in its variable.</source>
+        <target>Veröffentlicht ein mit `ansible-galaxy collection build` gebautes Archiv an den Server aus `ansible.cfg`, mit dem Token in dessen Variable.</target>
       </segment>
     </unit>
     <unit id="setup.caption.verify-npm-signatures">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:241</note>
+        <note category="location">src/app/features/setup/clients.ts:245</note>
       </notes>
       <segment>
         <source>Run it in your project: checks the registry signatures of every installed package, this installation&apos;s of your own packages included.</source>
@@ -43862,7 +43881,7 @@
     </unit>
     <unit id="setup.caption.verify-attestation">
       <notes>
-        <note category="location">src/app/features/setup/clients.ts:245</note>
+        <note category="location">src/app/features/setup/clients.ts:249</note>
       </notes>
       <segment>
         <source>Checks with cosign, offline, that this installation received the artifact and what its checks found. Replace the marked values.</source>
@@ -55408,7 +55427,7 @@
     </unit>
     <unit id="vuln.sources.database-copy">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:89</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:90</note>
       </notes>
       <segment>
         <source>On a machine that reaches both</source>
@@ -55417,7 +55436,7 @@
     </unit>
     <unit id="vuln.sources.database-two-steps">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:94</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:95</note>
       </notes>
       <segment>
         <source>On two machines, one on each side</source>
@@ -55426,7 +55445,7 @@
     </unit>
     <unit id="vuln.sources.db-invalid">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:111</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:112</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="repository" disp="repository"/> is not a local or remote OCI repository.</source>
@@ -55435,7 +55454,7 @@
     </unit>
     <unit id="vuln.sources.db-off">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:113</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:114</note>
       </notes>
       <segment>
         <source>The repository <ph id="0" equiv="repository" disp="repository"/> is switched off.</source>
@@ -55444,7 +55463,7 @@
     </unit>
     <unit id="vuln.sources.db-missing">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:115</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:116</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="repository" disp="repository"/> does not hold <ph id="1" equiv="reference" disp="reference"/>.</source>
@@ -55453,7 +55472,7 @@
     </unit>
     <unit id="vuln.sources.db-upstream">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:117</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:118</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="repository" disp="repository"/> cannot reach its registry.</source>
@@ -55462,7 +55481,7 @@
     </unit>
     <unit id="vuln.sources.db-too-large">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:119</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:120</note>
       </notes>
       <segment>
         <source>The image database is larger than the limit of this installation.</source>
@@ -55471,7 +55490,7 @@
     </unit>
     <unit id="vuln.sources.db-archive">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:121</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:122</note>
       </notes>
       <segment>
         <source>The image database is damaged and was not used.</source>
@@ -55480,7 +55499,7 @@
     </unit>
     <unit id="vuln.sources.heading">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:141,142</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:142,143</note>
       </notes>
       <segment>
         <source>Advisory sources</source>
@@ -55489,7 +55508,7 @@
     </unit>
     <unit id="vuln.sources.hint">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:143,146</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:144,147</note>
       </notes>
       <segment>
         <source>Quader matches your stored versions against advisory data it keeps itself. This is where the data comes from and how fresh it is.</source>
@@ -55498,7 +55517,7 @@
     </unit>
     <unit id="vuln.sources.loading">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:159,160</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:160,161</note>
       </notes>
       <segment>
         <source>Loading the advisory sources.</source>
@@ -55507,7 +55526,7 @@
     </unit>
     <unit id="vuln.sources.database">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:172,173</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:173,174</note>
       </notes>
       <segment>
         <source>Image database</source>
@@ -55516,7 +55535,7 @@
     </unit>
     <unit id="vuln.sources.database-hint">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:173,175</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:174,176</note>
       </notes>
       <segment>
         <source>for the image scanning</source>
@@ -55525,7 +55544,7 @@
     </unit>
     <unit id="vuln.sources.state-empty">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:207,208</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:208,209</note>
       </notes>
       <segment>
         <source>Not imported yet</source>
@@ -55534,7 +55553,7 @@
     </unit>
     <unit id="vuln.sources.state-stale">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:209,210</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:210,211</note>
       </notes>
       <segment>
         <source>Stale</source>
@@ -55543,7 +55562,7 @@
     </unit>
     <unit id="vuln.sources.state-current">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:211,213</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:212,214</note>
       </notes>
       <segment>
         <source>Current</source>
@@ -55552,7 +55571,7 @@
     </unit>
     <unit id="vuln.sources.rejected-full">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:237,238</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:238,239</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="INTERPOLATION" disp="{{ s.fullRejected | number }}"/> in the last full sync</source>
@@ -55561,7 +55580,7 @@
     </unit>
     <unit id="vuln.sources.run-group">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:255</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:256</note>
       </notes>
       <segment>
         <source>Run now</source>
@@ -55570,7 +55589,7 @@
     </unit>
     <unit id="vuln.sources.run-osv">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:256,257</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:257,258</note>
       </notes>
       <segment>
         <source>Run the incremental sync now</source>
@@ -55579,7 +55598,7 @@
     </unit>
     <unit id="vuln.sources.run-full">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:257,258</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:258,259</note>
       </notes>
       <segment>
         <source>Run a full sync now</source>
@@ -55588,7 +55607,7 @@
     </unit>
     <unit id="vuln.sources.run-kev">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:258,259</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:259,260</note>
       </notes>
       <segment>
         <source>Refresh the known-exploited catalog now</source>
@@ -55597,7 +55616,7 @@
     </unit>
     <unit id="vuln.sources.run-database">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:259,261</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:260,262</note>
       </notes>
       <segment>
         <source>Fetch the image database now</source>
@@ -55606,7 +55625,7 @@
     </unit>
     <unit id="vuln.sources.osv-off">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:262,264</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:263,265</note>
       </notes>
       <segment>
         <source>OSV is off, so it cannot run. The setting <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">vulnerabilities.sources.osv.mode</pc> turns it on.</source>
@@ -55615,7 +55634,7 @@
     </unit>
     <unit id="vuln.sources.kev-off">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:265,267</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:266,268</note>
       </notes>
       <segment>
         <source>CISA KEV is off, so its catalog cannot be refreshed. The setting <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">vulnerabilities.sources.kev.mode</pc> turns it on.</source>
@@ -55624,7 +55643,7 @@
     </unit>
     <unit id="vuln.sources.database-off">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:268,270</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:269,271</note>
       </notes>
       <segment>
         <source>The image scanning is off, so its database is not fetched. The setting <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">vulnerabilities.images.enabled</pc> turns it on.</source>
@@ -55633,7 +55652,7 @@
     </unit>
     <unit id="vuln.sources.scanners">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:276,277</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:277,278</note>
       </notes>
       <segment>
         <source>Image scanners</source>
@@ -55642,7 +55661,7 @@
     </unit>
     <unit id="vuln.sources.scanners-ready">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:281,282</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:282,283</note>
       </notes>
       <segment>
         <source>{VAR_PLURAL, plural, =1 {1 ready} other {<ph id="0" equiv="INTERPOLATION"/> ready}}</source>
@@ -55651,7 +55670,7 @@
     </unit>
     <unit id="vuln.sources.scanners-busy">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:282,283</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:283,284</note>
       </notes>
       <segment>
         <source>{VAR_PLURAL, plural, =1 {1 scan running} other {<ph id="0" equiv="INTERPOLATION"/> scans running}}</source>
@@ -55660,7 +55679,7 @@
     </unit>
     <unit id="vuln.sources.scanners-database">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:284,286</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:285,287</note>
       </notes>
       <segment>
         <source>{VAR_PLURAL, plural, =0 {all on the database in use} =1 {1 not yet on the database in use} other {<ph id="0" equiv="INTERPOLATION"/> not yet on the database in use}}</source>
@@ -55669,7 +55688,7 @@
     </unit>
     <unit id="vuln.sources.mirror">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:310,311</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:311,312</note>
       </notes>
       <segment>
         <source>Load the files into the mirror</source>
@@ -55678,7 +55697,7 @@
     </unit>
     <unit id="vuln.sources.mirror-hint">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:313,315</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:314,316</note>
       </notes>
       <segment>
         <source>
@@ -55689,7 +55708,7 @@
     </unit>
     <unit id="vuln.sources.caption">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:384</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:385</note>
       </notes>
       <segment>
         <source>Advisory sources</source>
@@ -55698,7 +55717,7 @@
     </unit>
     <unit id="vuln.sources.empty">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:385</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:386</note>
       </notes>
       <segment>
         <source>There is no advisory source yet.</source>
@@ -55707,7 +55726,7 @@
     </unit>
     <unit id="vuln.sources.copy">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:386</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:387</note>
       </notes>
       <segment>
         <source>Copy the commands</source>
@@ -55716,7 +55735,7 @@
     </unit>
     <unit id="vuln.sources.database-fill">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:387</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:388</note>
       </notes>
       <segment>
         <source>Fill the repository of the image database</source>
@@ -55725,7 +55744,7 @@
     </unit>
     <unit id="vuln.sources.database-fill-hint">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:388</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:389</note>
       </notes>
       <segment>
         <source>The image database comes from a local repository of this installation, which makes no request for it. Copy the database into it with oras, from a machine that reaches both the publisher and this installation, or in two steps through a file.</source>
@@ -55734,7 +55753,7 @@
     </unit>
     <unit id="vuln.sources.col-source">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:397</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:398</note>
       </notes>
       <segment>
         <source>Source</source>
@@ -55743,7 +55762,7 @@
     </unit>
     <unit id="vuln.sources.col-mode">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:398</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:399</note>
       </notes>
       <segment>
         <source>Mode</source>
@@ -55752,7 +55771,7 @@
     </unit>
     <unit id="vuln.sources.help-mode">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:398</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:399</note>
       </notes>
       <segment>
         <source>online reads the public archive, repository reads a mirror repository, off stops the sync and keeps the data as it was. The image database always comes from the repository of this installation named here.</source>
@@ -55761,7 +55780,7 @@
     </unit>
     <unit id="vuln.sources.col-state">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:399</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:400</note>
       </notes>
       <segment>
         <source>State</source>
@@ -55770,7 +55789,7 @@
     </unit>
     <unit id="vuln.sources.help-state">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:399</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:400</note>
       </notes>
       <segment>
         <source>Stale means the last successful sync is older than the configured limit.</source>
@@ -55779,7 +55798,7 @@
     </unit>
     <unit id="vuln.sources.col-synced">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:400</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:401</note>
       </notes>
       <segment>
         <source>Last sync</source>
@@ -55788,7 +55807,7 @@
     </unit>
     <unit id="vuln.sources.col-failures">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:402</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:403</note>
       </notes>
       <segment>
         <source>Failures</source>
@@ -55797,7 +55816,7 @@
     </unit>
     <unit id="vuln.sources.help-failures">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:403</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:404</note>
       </notes>
       <segment>
         <source>The count of consecutive failed runs and the error of the last one.</source>
@@ -55806,7 +55825,7 @@
     </unit>
     <unit id="vuln.sources.col-records">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:405</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:406</note>
       </notes>
       <segment>
         <source>Records</source>
@@ -55815,7 +55834,7 @@
     </unit>
     <unit id="vuln.sources.col-rejected">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:406</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:407</note>
       </notes>
       <segment>
         <source>Rejected</source>
@@ -55824,7 +55843,7 @@
     </unit>
     <unit id="vuln.sources.help-rejected">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:406</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:407</note>
       </notes>
       <segment>
         <source>Records of the last run that were rejected: they failed validation or crossed the size or compression limit of a record. Below it, the count of the last full sync, which an incremental run does not change. A rejected record that was stored before keeps its stored copy.</source>
@@ -55833,7 +55852,7 @@
     </unit>
     <unit id="vuln.sources.col-unevaluable">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:407</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:408</note>
       </notes>
       <segment>
         <source>Unevaluable</source>
@@ -55842,7 +55861,7 @@
     </unit>
     <unit id="vuln.sources.help-unevaluable">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:407</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:408</note>
       </notes>
       <segment>
         <source>Affected ranges Quader cannot compare with a version; a version they name is not flagged by them.</source>
@@ -55851,7 +55870,7 @@
     </unit>
     <unit id="vuln.sources.col-next">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:408</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:409</note>
       </notes>
       <segment>
         <source>Next run</source>
@@ -55860,7 +55879,7 @@
     </unit>
     <unit id="vuln.sources.mode-online">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:426</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:427</note>
       </notes>
       <segment>
         <source>Online</source>
@@ -55869,7 +55888,7 @@
     </unit>
     <unit id="vuln.sources.mode-repository">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:428</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:429</note>
       </notes>
       <segment>
         <source>Mirror repository</source>
@@ -55878,7 +55897,7 @@
     </unit>
     <unit id="vuln.sources.mode-off">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:430</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:431</note>
       </notes>
       <segment>
         <source>Off</source>
@@ -55887,7 +55906,7 @@
     </unit>
     <unit id="vuln.sources.error.unknown">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:442</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:443</note>
       </notes>
       <segment>
         <source>The last run failed.</source>
@@ -55896,7 +55915,7 @@
     </unit>
     <unit id="vuln.sources.queued">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:467</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:468</note>
       </notes>
       <segment>
         <source>The run is queued. Reload the page to see its result.</source>

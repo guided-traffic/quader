@@ -212,6 +212,10 @@
       <quader-document-block [document]="requestBody()" [copyLabel]="copyBody" />
       <h3 i18n="@@repo.review.api.curl">The same request with curl</h3>
       <quader-document-block [document]="requestBody()" [text]="curl()" [copyLabel]="copyRequest" />
+      <p class="hint" i18n="@@repo.api.function-hint">
+        <code>quader_curl</code> is the function of the manual's Personal access tokens: it hands curl the token from
+        <code>QUADER_TOKEN</code> on standard input, so no process list shows it.
+      </p>
     </quader-disclosure>
 
     <div class="actions">

@@ -544,7 +544,7 @@ describe('Repository content page', () => {
     details.querySelector<HTMLButtonElement>('button[aria-expanded]')!.click();
     await settle(file.fixture);
     // The item's request stays: the management API answers it; the download by path does not.
-    const commands = [...details.querySelectorAll('pre.code-block')].map((e) => e.textContent ?? '').filter((b) => b.startsWith('curl'));
+    const commands = [...details.querySelectorAll('pre.code-block')].map((e) => e.textContent ?? '').filter((b) => b.startsWith('quader_curl'));
     expect(commands).toHaveLength(1);
     expect(commands[0]).toContain('/items?path=');
     expect(text(details)).not.toContain('Download with curl');

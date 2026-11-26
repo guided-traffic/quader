@@ -34,7 +34,7 @@ const (
 // would land in world-readable files and in logs.
 func (f *Format) SetupTemplates() []formats.SetupTemplate {
 	configure := `sudo install -d -m 0755 /etc/apt/keyrings
-{{if .RequiresAuth}}curl -fsSL -u ` + tplUser + `:"` + formats.SetupTokenRef + `" ` + tplKeyURL + ` | sudo tee ` + tplKeyFile + ` >/dev/null
+{{if .RequiresAuth}}printf 'user = "%s:%s"\n' ` + tplUser + ` "` + formats.SetupTokenRef + `" | curl -fsSL --config - ` + tplKeyURL + ` | sudo tee ` + tplKeyFile + ` >/dev/null
 {{else}}curl -fsSL ` + tplKeyURL + ` | sudo tee ` + tplKeyFile + ` >/dev/null
 {{end}}sudo tee ` + tplSources + ` >/dev/null <<'SOURCES'
 Types: deb
@@ -50,7 +50,8 @@ printf 'machine %s\nlogin %s\npassword %s\n' {{shell (slice (schemeless .Registr
 deb [signed-by=` + tplKeyFile + `] {{.RegistryURL}} ` + tplSuite + ` main
 `
 	install := "sudo apt-get update && sudo apt-get install " + formats.SetupPackageRef + "\n"
-	publish := `curl -fsS -u ` + tplUser + `:"` + formats.SetupTokenRef + `" --upload-file ./hello_1.0_amd64.deb \
+	// The token reaches curl as configuration on standard input, never as an argument (Q-UI-1336); printf is a builtin of the shell.
+	publish := `printf 'user = "%s:%s"\n' ` + tplUser + ` "` + formats.SetupTokenRef + `" | curl -fsS --config - --upload-file ./hello_1.0_amd64.deb \
   {{shell (printf "%supload/hello_1.0_amd64.deb?distribution=%s&component=main" .RegistryURL ` + tplSuiteArg + `)}}
 `
 	out := []formats.SetupTemplate{

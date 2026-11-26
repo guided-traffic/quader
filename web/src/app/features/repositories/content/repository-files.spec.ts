@@ -300,9 +300,10 @@ describe('The files of a repository', () => {
     expect(text(details)).toContain('SHA-1');
     expect(text(details)).toContain('CI job of acme/web');
     // The request of the item's description stays; the download's commands are the panel's.
-    const commands = [...details.querySelectorAll('pre.code-block')].map((e) => e.textContent ?? '').filter((b) => b.startsWith('curl'));
+    const commands = [...details.querySelectorAll('pre.code-block')].map((e) => e.textContent ?? '').filter((b) => b.startsWith('quader_curl'));
     expect(commands).toHaveLength(1);
-    for (const c of commands) expect(c).toContain('-H "Authorization: Bearer $QUADER_TOKEN"');
+    // The function hands curl the token on standard input: no command names it (Q-UI-1336).
+    for (const c of commands) expect(c).not.toContain('QUADER_TOKEN');
     // The media type in a word a person knows, the type beside it (Q-UI-1333).
     expect(text(root.querySelector('.file-facts .media-type')!)).toBe('ZIP archive application/zip');
     await expectAccessible(root);
@@ -325,7 +326,7 @@ describe('The files of a repository', () => {
       const details = root.querySelector<HTMLElement>('quader-disclosure.details')!;
       details.querySelector<HTMLButtonElement>('button[aria-expanded]')!.click();
       await settle(fixture);
-      const commands = [...details.querySelectorAll('pre.code-block')].map((e) => e.textContent ?? '').filter((b) => b.startsWith('curl'));
+      const commands = [...details.querySelectorAll('pre.code-block')].map((e) => e.textContent ?? '').filter((b) => b.startsWith('quader_curl'));
       // The item's own request stays: the management API answers it (Q-UI-898).
       expect(commands).toHaveLength(1);
       expect(commands[0]).not.toContain('-O');

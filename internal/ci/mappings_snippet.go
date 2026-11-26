@@ -278,6 +278,8 @@ func writeNuGetJob(w func(string, ...any), in snippetInput, host string, keys []
 	w("    - dotnet restore")
 	w("    - dotnet pack -c Release -o out --no-restore -p:PackageVersion=\"${CI_COMMIT_TAG#v}\"")
 	if canWrite {
+		// dotnet takes the API key only as an argument (Q-UI-1336); the job's container runs nothing of anybody else.
+		w("    # dotnet takes the API key only as an argument; the job's container shows it to nobody else.")
 		w("    - >-")
 		w("      dotnet nuget push \"out/*.nupkg\"")
 		w("      --source \"$QUADER_URL%sv3/index.json\"", protocolBase(nugetBaseTemplate, target))

@@ -28,6 +28,9 @@ import { Loading } from '../../../shared/ui/loading';
 /** The names of a signature beside its file in a generic repository, longest first (R-SIG-032). */
 const SIBLING_SUFFIXES = ['.sigstore.json', '.jws.sig', '.cose.sig', '.asc', '.sig'];
 
+/** The local name of a download: `./` before a name that starts with `-`, which curl would read as an option or standard output. */
+const savedName = (name: string): string => (name.startsWith('-') ? `./${name}` : name);
+
 /** A POSIX shell word for `value`: single quotes, with an embedded single quote closed and escaped. */
 const shellQuote = (value: string): string => `'${value.replaceAll("'", "'\\''")}'`;
 
@@ -221,6 +224,11 @@ const shellQuote = (value: string): string => `'${value.replaceAll("'", "'\\''")
           <h3 i18n="@@files.api.download">Download with curl</h3>
           <pre class="code-block" translate="no" tabindex="0">{{ downloadCurl() }}</pre>
         }
+        <!-- The function keeps the token off curl's command line, as every command with a credential does (Q-GENERIC-9, Q-UI-1336). -->
+        <p class="hint" i18n="@@files.api.function-hint">
+          <code>quader_curl</code> is the function of Set up client of a generic repository and of the manual's Personal access tokens: it
+          hands curl the token from <code>QUADER_TOKEN</code> on standard input, so no process list shows it.
+        </p>
       </quader-disclosure>
     </section>
   `,
@@ -298,13 +306,16 @@ export class RepositoryFile {
    * (`user:priya`); the reference is the title (Q-UI-1004).
    */
   protected readonly person = personName;
-  protected readonly curl = computed(() => `curl -H "Authorization: Bearer $QUADER_TOKEN" ${shellQuote(this.item().itemUrl)}`);
+  /** The item's request with the function `quader_curl`, which hands curl the token on standard input (Q-GENERIC-9, Q-UI-1336). */
+  protected readonly curl = computed(() => `quader_curl --fail ${shellQuote(this.item().itemUrl)}`);
   /** The download with curl; none for a file of a system repository, which answers it 404 (Q-UI-898). */
   protected readonly downloadCurl = computed(() => {
     const url = this.item().downloadUrl;
     // A generic file's download commands are the panel of Download, the server's for every client (R-GENERIC-017).
     if (this.format() === 'generic') return '';
-    return url && !this.system() && !this.disabled() ? `curl -L -O -H "Authorization: Bearer $QUADER_TOKEN" ${shellQuote(url)}` : '';
+    return url && !this.system() && !this.disabled()
+      ? `quader_curl --fail --location --output ${shellQuote(savedName(this.name()))} ${shellQuote(url)}`
+      : '';
   });
   /** The malware scan's or the signature gate refuses the file here: the page offers no Download, and its address stays a fact. */
   protected readonly refused = computed(() => this.item().malware?.refused === true || this.item().signatures?.refused === true);

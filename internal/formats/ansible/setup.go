@@ -70,7 +70,11 @@ roles:
 # Install it with
 #   ansible-galaxy role install -r requirements.yml
 `
-	publish := `ansible-galaxy collection publish ` + exampleArchive + ` --server {{shell .RegistryURL}} --token=` + formats.SetupTokenRef + "\n"
+	// The token reaches ansible-galaxy in the variable of the server quader of ansible.cfg, never as --token (Q-UI-1336): a variable
+	// of the command's environment is no argument the process list shows. The line that holds it is the one credentials=none drops.
+	publish := tokenEnv + `="` + formats.SetupTokenRef + `" \
+  ansible-galaxy collection publish ` + exampleArchive + ` --server quader
+`
 	return []formats.SetupTemplate{
 		{ID: "ansible-galaxy.ansible-cfg.configure", Client: ClientGalaxy, Section: "configure", Lang: "ini", File: "ansible.cfg", Template: cfg},
 		{ID: "ansible-galaxy.token-env.configure", Client: ClientGalaxy, Section: "configure", Lang: "shell", Template: envShell},

@@ -32,7 +32,8 @@ func TestR_SIG_055_TheVerifySnippetIsTheOneCosignCommandOfTheFormat(t *testing.T
 	}
 	file := verifySnippet(base, identity, setupInput{Client: "curl", Credentials: credPlaceholder, Data: formats.SetupData{Project: "web", Key: "files"}})
 	for _, want := range []string{
-		`-H "Authorization: Bearer {{token}}"`, "/api/v1/projects/web/repositories/files/attestation?path=<path>",
+		// The token reaches curl on standard input, never as an argument (Q-UI-1336).
+		`printf 'header = "Authorization: Bearer %s"\n' "{{token}}" | curl -fsS --config - -o`, "/api/v1/projects/web/repositories/files/attestation?path=<path>",
 		"cosign verify-blob-attestation", "--bundle <file>.quader.sigstore.json",
 	} {
 		if !strings.Contains(file.Content, want) {

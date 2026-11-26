@@ -462,7 +462,7 @@ describe('The creation form of a repository', () => {
     const request = text($(r, '.api-request'));
     expect(request).toContain('"value": "<the password>"');
     expect(request).not.toContain('tok-123');
-    expect(request).toContain("curl -X POST 'https://quader.example.net/api/v1/projects/web/repositories'");
+    expect(request).toContain("quader_curl --fail -X POST 'https://quader.example.net/api/v1/projects/web/repositories'");
   });
 
   it('R-UI-080 another class keeps an edited key and the description and starts the Advanced settings afresh', async () => {

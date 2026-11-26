@@ -90,6 +90,7 @@ const text = (caption: string | null, fold: string | null = null, signedIn = fal
  */
 export function snippetText(id: string, reader: SnippetReader = { anonymous: false }): SnippetText | null {
   const inPowerShell = $localize`:@@setup.fold.powershell:In PowerShell`;
+  const pushArgument = $localize`:@@setup.caption.nuget-push-argument:The API key is only an argument, which the process list shows: push where nobody else is logged in.`;
   switch (id) {
     case 'npm.configure.npmrc':
     case 'yarn-classic.configure.npmrc':
@@ -124,8 +125,6 @@ export function snippetText(id: string, reader: SnippetReader = { anonymous: fal
     case 'apt.install':
     case 'ansible-galaxy.install.collection':
     case 'ansible-galaxy.install.role':
-    case 'dotnet.publish.shell':
-    case 'nuget.publish.cmd':
       return text(null);
     case 'npm.publish':
     case 'pnpm.publish':
@@ -137,15 +136,20 @@ export function snippetText(id: string, reader: SnippetReader = { anonymous: fal
       return text($localize`:@@setup.snippet.gitlab-generic:For npm 10, pnpm 10 on npm 10 and Yarn 1. A pipeline step exchanges the job's ID token for a short-lived Quader token and revokes it again as its last step.`);
     case 'npm.publish.gitlab-ci.native':
       return text($localize`:@@setup.snippet.gitlab-native:For npm 11.5.1 and later, pnpm 11 and 12 and Yarn 4. The client exchanges the job's ID token itself.`);
+    // dotnet and nuget.exe take a source's password and a push's API key only as an argument, which other users of the machine see in
+    // the process list while the command runs: the page says so (Q-UI-1336); the nuget.config keeps the password in the variable.
     case 'dotnet.configure.shell':
-      return text($localize`:@@setup.caption.dotnet-source:Adds the source to your user configuration. On Linux and macOS the token is stored there in clear text.`);
     case 'nuget.configure.cmd':
-      return text($localize`:@@setup.caption.nuget-source:Adds the source to your user configuration.`);
+      return text($localize`:@@setup.caption.nuget-source-argument:Takes the token only as an argument, which the process list shows; the nuget.config file keeps it in the variable.`);
+    case 'dotnet.publish.shell':
+    case 'nuget.publish.cmd':
+      return text(pushArgument);
     case 'dotnet.configure.powershell':
     case 'nuget.configure.powershell':
+      return text(null, inPowerShell);
     case 'dotnet.publish.powershell':
     case 'nuget.publish.powershell':
-      return text(null, inPowerShell);
+      return text(pushArgument, inPowerShell);
     case 'dotnet.configure.nugetconfig':
     case 'nuget.configure.nugetconfig':
       return text($localize`:@@setup.caption.nuget-config:Save next to your solution. Every package then comes through this repository.`, $localize`:@@setup.fold.nuget-config:As a nuget.config file`);
@@ -236,7 +240,7 @@ export function snippetText(id: string, reader: SnippetReader = { anonymous: fal
         $localize`:@@setup.fold.requirements:With a requirements.yml`,
       );
     case 'ansible-galaxy.publish.collection':
-      return text($localize`:@@setup.caption.ansible-publish:Publishes an archive built with \`ansible-galaxy collection build\`.`);
+      return text($localize`:@@setup.caption.ansible-publish-server:Publishes an archive built with \`ansible-galaxy collection build\` to the server of \`ansible.cfg\`, with the token in its variable.`);
     case 'npm.verify.signatures':
       return text($localize`:@@setup.caption.verify-npm-signatures:Run it in your project: checks the registry signatures of every installed package, this installation's of your own packages included.`);
     default:

@@ -12478,10 +12478,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-663 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+664 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 663 questions</summary>
+<summary>Q-UI: 664 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -13148,6 +13148,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1333](spec/api-and-ui.md#q-ui-1333--a-files-media-type-reads-as-a-word-with-the-type-beside-it) | A file's media type reads as a word with the type beside it | Decided by the development agent on 2026-11-26 | (a) One row under the facts line, each link by its label, opening the other site | — |
 | [Q-UI-1334](spec/api-and-ui.md#q-ui-1334--a-folders-upload-command-is-the-chevron-of-upload-files) | A folder's upload command is the chevron of Upload files | Decided by the development agent on 2026-11-26 | (a) The content's words wherever an image's date stands: **Pushed**, or **Fetched** where only remote repositories hold the version (a version's page) or the package's newest version (its table) | — |
 | [Q-UI-1335](spec/api-and-ui.md#q-ui-1335--a-generic-files-row-has-download-with-its-panel-where-a-packages-row-has-its-verb) | A generic file's row has Download with its panel where a package's row has its verb | Decided by the development agent on 2026-11-26 | (a) A muted note with a terminal mark under the links, on every tab, and a row of npm's Package details | — |
+| [Q-UI-1336](spec/api-and-ui.md#q-ui-1336--a-command-keeps-its-credential-off-the-command-line-where-the-client-can-and-says-so-where-it-cannot) | A command keeps its credential off the command line where the client can, and says so where it cannot | Decided by the development agent on 2026-11-26 | (a) One pattern for every command: curl gets its credential on standard input (`quader_curl` where the line is a request of the management API beside its JSON; `printf … \| curl --config -` or `-H @-` where a command stands alone), another client reads it from its configuration or from a variable of its environment; a client that takes a credential only as an argument keeps it there, and the page says so beside the command | — |
 
 </details>
 

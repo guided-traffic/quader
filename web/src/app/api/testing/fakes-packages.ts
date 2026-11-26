@@ -1309,7 +1309,7 @@ function ansibleSetup(repo: Repository, query: ClientSetupQuery, mayPublish: boo
     'requirements.yml',
   );
   if (target !== null) {
-    add('ansible-galaxy.publish.collection', 'publish', 'shell', `ansible-galaxy collection publish ./acme-tools-1.0.0.tar.gz --server ${shellQuote(registryUrl)} --token=${sh}\n`);
+    add('ansible-galaxy.publish.collection', 'publish', 'shell', `ANSIBLE_GALAXY_SERVER_QUADER_TOKEN="${sh}" \\\n  ansible-galaxy collection publish ./acme-tools-1.0.0.tar.gz --server quader\n`);
   }
   return {
     repository: refOf(repo),

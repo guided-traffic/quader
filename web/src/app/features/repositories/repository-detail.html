@@ -518,6 +518,12 @@
           @for (r of requests(); track r.section) {
             <h4>{{ r.label }}</h4>
             <quader-document-block [document]="r.patch" [text]="r.curl" [copyLabel]="copyRequest" />
+            @if ($last) {
+              <p class="hint" i18n="@@repo.api.function-hint">
+                <code>quader_curl</code> is the function of the manual's Personal access tokens: it hands curl the token from
+                <code>QUADER_TOKEN</code> on standard input, so no process list shows it.
+              </p>
+            }
           } @empty {
             <p class="hint" i18n="@@repo.detail.api.nochange">Change a setting to see the request that saves it.</p>
           }

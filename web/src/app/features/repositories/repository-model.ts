@@ -289,7 +289,10 @@ export function apiAddress(baseUrl: string | null | undefined, path: string): st
   return (baseUrl ? baseUrl.replace(/\/+$/, '') : '<base URL>') + path;
 }
 
-/** The `curl` command that sends the same request (INV-17). */
+/**
+ * The `curl` command that sends the same request (INV-17), through the function `quader_curl` of the manual's Personal access tokens,
+ * which hands curl the token on standard input, so that no process list shows it (Q-GENERIC-9, Q-UI-1336).
+ */
 export function curlOf(
   method: 'POST' | 'PATCH',
   url: string,
@@ -300,8 +303,7 @@ export function curlOf(
   const headers = [`Content-Type: ${contentType}`, ...extraHeaders];
   const quoted = JSON.stringify(body, null, 2).replace(/'/g, `'\\''`);
   return [
-    `curl -X ${method} '${url}'`,
-    `  -H 'Authorization: Bearer $QUADER_TOKEN'`,
+    `quader_curl --fail -X ${method} '${url}'`,
     ...headers.map((h) => `  -H '${h}'`),
     `  --data '${quoted}'`,
   ].join(' \\\n');

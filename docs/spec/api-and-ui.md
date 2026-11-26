@@ -4361,7 +4361,8 @@ own and no tree across the repositories of a project.
   [Q-UI-1333](#q-ui-1333--a-files-media-type-reads-as-a-word-with-the-type-beside-it)), **Created**, **Last changed** (each with who, where known) and **SHA-256** (its short form, the
   full value as the title, a copy button); a missing or damaged content says so under **Content**. **Details**, closed: every checksum
   (SHA-256, SHA-512, SHA-1, MD5) with a copy button, the download statistics (**Downloads**, **Last download**, **Last downloader**,
-  read when Details opens), the item as the API describes it and the equivalent `curl` requests (INV-17). A file of a disabled
+  read when Details opens), the item as the API describes it and the equivalent `curl` requests (INV-17), which call the function `quader_curl`
+  and so never name the token ([Q-UI-1336](#q-ui-1336--a-command-keeps-its-credential-off-the-command-line-where-the-client-can-and-says-so-where-it-cannot)). A file of a disabled
   repository, which answers every download 404 (R-REPO-005), has no **Download**, no download address and no download with `curl`;
   one muted sentence says why where the address stood, and its folder's rows have no address to copy and no image or version a
   button **Pull** or **Install** ([Q-UI-965](#q-ui-965--a-disabled-repository-offers-no-download-address-or-command-and-says-why-once)). Properties (P1, R-API-026)
@@ -27775,22 +27776,59 @@ repository holds, reads Pushed. Dormant: no installation holds one image name in
 | (b) The copy button stays, the panel beside it | Two controls per row | Nothing lost | A row of a file has two acts where a package's has one |
 | (c) A split button per row | As the file's page | Saves the file from the list | A row of two joined buttons; the row has no content route to save from today |
 
-**Choice:** (a). A package format's raw files keep the copy button: their clients fetch packages, not paths (H-2190). A row carries no
+**Choice:** (a). A package format's raw files keep the copy button of the address: their clients fetch packages, not paths, and an
+address is no command. A row carries no
 verdict of the malware scan or the signature gate (`Child`), so a refused file's row offers its panel as it offered its address, and a
 client's command gets the refusal with its reason (Q-UI-882); the file's page offers no **Download** and no panel for it, and keeps its
 address as a fact. **Applied in the
 spec:** R-UI-010. Code: the row of [repository-files.ts](../../web/src/app/features/repositories/content/repository-files.ts).
 
+### Q-UI-1336 · A command keeps its credential off the command line where the client can, and says so where it cannot
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+It applies the owner's choice for curl ([formats/generic.md](formats/generic.md) Q-GENERIC-9) to every place that shows a command with a
+credential.
+
+Context: a variable the shell expands into an argument (`-H "Authorization: Bearer $QUADER_TOKEN"`, `-u quader:"$QUADER_TOKEN"`,
+`--token=…`, `--api-key "…"`) puts the token into the program's arguments, which other users of the machine read in the process list and
+a shell trace prints. curl's snippets hand it the credential as configuration on standard input instead (`quader_curl`, Q-GENERIC-9). A
+search of the web application and of the server's snippets and guides on 2026-11-26 found the places of the table below.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One pattern for every command: curl gets its credential on standard input (`quader_curl` where the line is a request of the management API beside its JSON; `printf … \| curl --config -` or `-H @-` where a command stands alone), another client reads it from its configuration or from a variable of its environment; a client that takes a credential only as an argument keeps it there, and the page says so beside the command (chosen) | The pattern of Set up client everywhere | No token in a process list where the client allows it; where it does not, the reader knows and can run the command where nobody else is logged in | printf is a builtin of sh, bash and zsh, not of every shell; the function must be defined first |
+| (b) Leave the commands as they are | — | Shorter lines | The owner's choice for curl, broken on every other page |
+| (c) Show no command where the client takes a credential only as an argument | — | Nothing leaks | NuGet's push and the source commands have no other way, and a reader needs them |
+
+**Choice:** (a). The places and what each became:
+
+| Place | Was | Is |
+|---|---|---|
+| A file's **Details**, every format: "The same request with curl" | `curl -H "Authorization: Bearer $QUADER_TOKEN" <item>` | `quader_curl --fail <item>`, with a sentence naming the function |
+| A package format's raw file, **Details**: "Download with curl" | `curl -L -O -H "Authorization: Bearer $QUADER_TOKEN" <file>` | `quader_curl --fail --location --output <name> <file>` |
+| The repository form's and settings' "as API request" (`curlOf`) | `-H 'Authorization: Bearer $QUADER_TOKEN'` (in single quotes, which no shell expands) | `quader_curl --fail -X …`, with the sentence |
+| The tab Verify of every format that Quader attests (R-SIG-056) | `curl -H "Authorization: Bearer ${QUADER_TOKEN}"` | `printf 'header = …' "${QUADER_TOKEN}" \| curl --config -` |
+| Debian: the key's download of Configure, and Publish | `curl -u quader:"${QUADER_TOKEN}"` | `printf 'user = …' quader "${QUADER_TOKEN}" \| curl --config -` |
+| Ansible Galaxy: Publish | `--server <address> --token=${QUADER_TOKEN}` | `ANSIBLE_GALAXY_SERVER_QUADER_TOKEN="${QUADER_TOKEN}" ansible-galaxy collection publish … --server quader`, the server of the `ansible.cfg` snippet |
+| The malware scan's settings: the upload of the signature files of an installation without internet | `curl -H "Authorization: Bearer ${QUADER_TOKEN}" -T` | `printf … \| curl --config - -T` |
+| The vulnerability sources: the upload of a mirrored database file | the same | the same |
+| NuGet's guide: the push with curl, the relist, the check of the sign-in | `-H "X-NuGet-ApiKey: ${QUADER_TOKEN}"`, `curl -u any:$TOKEN` | the header from standard input (`-H @-`), the user from `--config -` |
+| NuGet: `dotnet nuget add source --password`, `nuget sources add -Password`, `dotnet nuget push --api-key`, `nuget push -ApiKey`, `dotnet nuget delete --api-key` (setup, guide, the GitLab CI job of a CI identity's mapping) | the token as an argument | unchanged: **dotnet and nuget.exe take a source's password and the API key only as an argument** (neither reads them from standard input or from a variable; `setapikey` takes the key as an argument too). The page says so beside each command; for a source, the `nuget.config` snippet keeps the password in `%QUADER_TOKEN%`, and the CI job's comment says the container shows it to nobody else |
+| npm's, Yarn's, the Docker CLI's, Podman's, Helm's, APT's and ansible-galaxy's configuration, curl's, wget's and PowerShell's generic snippets, ClamAV's `freshclam.conf` and script, the CI identity's exchange and revocation | — | already the pattern: a file or a variable the client reads, standard input, or a builtin's `printf` |
+
+The token's own pages, the Bastion's pages and the CI identity's pages show no other command with a credential.
+
+**Rationale:** one rule, whatever the format. The development agent would revisit the NuGet rows when the .NET CLI reads a credential
+from the environment or standard input. **Applied in the spec:** R-API-030, R-UI-010, R-GENERIC-017; [formats/ansible.md](formats/ansible.md)
+R-ANS-025's table; code: [setup_verify.go](../../internal/api/v1/setup_verify.go), [setup_local.go](../../internal/formats/deb/setup_local.go),
+[ansible/setup.go](../../internal/formats/ansible/setup.go), the NuGet guide, [mappings_snippet.go](../../internal/ci/mappings_snippet.go),
+[repository-file.ts](../../web/src/app/features/repositories/content/repository-file.ts),
+[repository-model.ts](../../web/src/app/features/repositories/repository-model.ts),
+[malware-settings.ts](../../web/src/app/features/settings/malware-settings.ts),
+[vulnerability-sources.ts](../../web/src/app/features/vulnerabilities/vulnerability-sources.ts), the captions of
+[clients.ts](../../web/src/app/features/setup/clients.ts).
+
 ## What this does not cover
-
-### H-2190 · A package format's raw file shows its address and curl lines of its own, not the panel
-
-Component: the page of a raw file of npm, NuGet, OCI, Debian, Ansible Galaxy and ClamAV (R-UI-010). Subject: the download address as an
-address field, a quiet copy button of it in the folder's rows, and in **Details** "The same request with curl" and "Download with curl",
-each with `-H "Authorization: Bearer $QUADER_TOKEN"`, which the shell expands into an argument of curl, visible in the process list
-(Q-GENERIC-9). Live on every such page; a generic file has the panel of R-GENERIC-017 instead, and its **Details** keep "The same request
-with curl" of the management API. The client setup answers a path for a format whose items are paths only, so these pages would need the
-generic clients for every repository's `/files/` and a setup to lead to.
 
 ### H-2191 · The ClamAV endpoint's addresses stand in fields of their own
 

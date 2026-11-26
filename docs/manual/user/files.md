@@ -49,7 +49,7 @@ The files of the two system repositories of the project Upstream, `scanner-trivy
 open, cannot be downloaded at all: their pages offer no **Download**, no **Download address** and no copy button in a folder's rows,
 and say in one sentence which of Quader's work reads them ([Upstream registries](../admin/upstream-registries.md#where-the-system-repositories-show)).
 
-**Details** at the end of the page opens the rest: every checksum (**SHA-256**, **SHA-512**, **SHA-1** and **MD5**), each with a copy button; the downloads (**Downloads**, **Last download** and **Last downloader**), which reach the statistics within a minute of a download; and the file as the management API describes it, with the matching curl requests. They send the token from the environment variable `QUADER_TOKEN`: the header is in double quotes so that your shell fills in the value, and the address is in single quotes. Set the variable first, without typing the token into a shell that records its history.
+**Details** at the end of the page opens the rest: every checksum (**SHA-256**, **SHA-512**, **SHA-1** and **MD5**), each with a copy button; the downloads (**Downloads**, **Last download** and **Last downloader**), which reach the statistics within a minute of a download; and the file as the management API describes it, with the matching curl requests. They call the shell function `quader_curl` of [Personal access tokens](access-tokens.md#with-curl-and-the-management-api), which hands curl the token from the environment variable `QUADER_TOKEN` on standard input, so that no process list shows it; define it first, without typing the token into a shell that records its history.
 
 ## What you can do
 

@@ -120,12 +120,15 @@ func verifySnippet(base, identity string, in setupInput) snippet {
 	} else {
 		values = append(values, verifyPathRef, verifyFileRef)
 		route := base + "/api/v1/projects/" + url.PathEscape(in.Data.Project) + "/repositories/" + url.PathEscape(in.Data.Key) + "/attestation?path="
-		auth := ""
+		// The token reaches curl as configuration on standard input, never as an argument (Q-GENERIC-9, Q-UI-1336): printf is a
+		// builtin of the shell, so the process list shows no token.
+		fetch := "curl -fsS -o " + verifyFileRef + bundle.FileSuffix + " '" + route + verifyPathRef + "'"
 		if in.Credentials != credNone {
-			auth = `-H "Authorization: Bearer ` + formats.SetupTokenRef + `" `
+			fetch = `printf 'header = "Authorization: Bearer %s"\n' "` + formats.SetupTokenRef + `" | curl -fsS --config - -o ` +
+				verifyFileRef + bundle.FileSuffix + " '" + route + verifyPathRef + "'"
 		}
 		lines = append(lines,
-			"curl -fsS "+auth+"-o "+verifyFileRef+bundle.FileSuffix+" '"+route+verifyPathRef+"'",
+			fetch,
 			"cosign verify-blob-attestation \\",
 			"  --bundle "+verifyFileRef+bundle.FileSuffix+" \\",
 		)

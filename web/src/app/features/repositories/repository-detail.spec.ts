@@ -263,7 +263,7 @@ describe('Repository edit form', () => {
     await openSection(r.fixture, r.root, 'API');
     await settle(r.fixture);
     expect(text(r.root)).toContain(
-      "curl -X PATCH 'https://quader.example.net/api/v1/projects/web/repositories/generic-local'",
+      "quader_curl --fail -X PATCH 'https://quader.example.net/api/v1/projects/web/repositories/generic-local'",
     );
     expect(text(r.root)).not.toContain(location.origin);
   });
@@ -287,7 +287,7 @@ describe('Repository edit form', () => {
     await settle(r.fixture);
     await openSection(r.fixture, r.root, 'API');
     await settle(r.fixture);
-    expect(text(r.root)).toContain('curl -X PATCH');
+    expect(text(r.root)).toContain('quader_curl --fail -X PATCH');
     expect(text(r.root)).toContain('If-Match: "1"');
   });
 

@@ -88,8 +88,11 @@ The dependencies of a collection are resolved by the client through the same ser
 
 ```shell
 ansible-galaxy collection build                         # writes acme-tools-1.0.0.tar.gz
-ansible-galaxy collection publish acme-tools-1.0.0.tar.gz --server https://quader.example.com/api/ansible/web/ansible-local/ --token "${QUADER_TOKEN}"
+ANSIBLE_GALAXY_SERVER_QUADER_TOKEN="${QUADER_TOKEN}" \
+  ansible-galaxy collection publish acme-tools-1.0.0.tar.gz --server quader
 ```
+
+The command publishes to the server `quader` of your `ansible.cfg` (see [Configure ansible-galaxy](#configure-ansible-galaxy)) and hands ansible-galaxy the token in that server's variable, so it is no argument other users of the machine could read in the process list.
 
 The collection's `galaxy.yml` names the namespace, name and version, so the command needs no coordinates; the namespace and name have to be lower case. The command prints the import messages of the server and exits with an error when the import failed, and then the repository holds no version. You need the permission **Deploy** on the repository. On a virtual repository the publish goes to its deployment target, which has to be a local repository.
 
@@ -108,7 +111,7 @@ role into the `roles/` directory of a collection and publish the collection, as 
 ```shell
 ansible-galaxy collection init acme.platform              # a collection skeleton with a roles/ directory
 cp -r ./my-role acme/platform/roles/agent                 # the role, under the name the collection gives it
-ansible-galaxy collection build acme/platform && ansible-galaxy collection publish acme-platform-1.0.0.tar.gz --server … --token "${QUADER_TOKEN}"
+ansible-galaxy collection build acme/platform && ANSIBLE_GALAXY_SERVER_QUADER_TOKEN="${QUADER_TOKEN}" ansible-galaxy collection publish acme-platform-1.0.0.tar.gz --server quader
 ```
 
 A playbook then uses the role as `acme.platform.agent`, and the collection's documentation lists it under **Roles**.
