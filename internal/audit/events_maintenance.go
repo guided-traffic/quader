@@ -17,11 +17,14 @@ package audit
 //   - system.maintenance_mode_changed: the read-only mode was switched on or off, or its message or cache-fill switch changed; the
 //     data are the mode before and after and the message.
 //   - system.banner_changed: the banner was changed; the data name the members that changed, never the text.
+//   - system.time_format_changed: the installation's default form of a time was changed (R-UI-251); the data are the form before
+//     and after.
 
 // Names of the maintenance events, for the producers.
 const (
 	EventMaintenanceModeChanged  = "system.maintenance_mode_changed"
 	EventBannerChanged           = "system.banner_changed"
+	EventTimeFormatChanged       = "system.time_format_changed"
 	EventDeletionsPaused         = "system.deletions_paused"
 	EventDeletionsResumed        = "system.deletions_resumed"
 	EventStorageVersionsRestored = "system.storage.versions_restored"
@@ -37,6 +40,11 @@ func init() {
 		Name: EventBannerChanged, Category: CategorySystem, Mode: Transactional,
 		Schema: `{"type":"object","properties":{"changes":{"type":"array","maxItems":4,"items":{"type":"string","maxLength":16}}},` +
 			`"required":["changes"],"additionalProperties":false}`,
+	})
+	Register(EventType{
+		Name: EventTimeFormatChanged, Category: CategorySystem, Mode: Transactional,
+		Schema: `{"type":"object","properties":{"from":{"type":"string","maxLength":16},"to":{"type":"string","maxLength":16}},` +
+			`"required":["from","to"],"additionalProperties":false}`,
 	})
 	Register(EventType{
 		Name: EventDeletionsPaused, Category: CategorySystem, Mode: Transactional,

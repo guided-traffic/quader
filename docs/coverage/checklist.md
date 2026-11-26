@@ -15,8 +15,8 @@ rendered from it ([checklist.md there](https://github.com/guided-traffic/quader/
 requirement lists the feature in its `Covers:` line. *open*: no requirement does. For entries with priority
 *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,374 spec requirements:
-807 cover catalog features, 567 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,377 spec requirements:
+807 cover catalog features, 570 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>567 requirements</summary>
+<summary>570 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3117,6 +3117,9 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-UI-229 | The Bastion's pages are the main installation's views | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-230 | The Bastion's pages are rendered and their layout checked | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-231 | The Bastion's application for search engines | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-UI-250 | Every time stands in the form the reader chose, `26.11.2026 21:39:22 (Thu.)` by default | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-UI-251 | The installation's default form of a time | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-UI-252 | The spinner sits in the middle of what loads, and a page that loads does not scroll | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-220 | The page of a name: a namespace, a scope or a path prefix, in every format that has one | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-ARCH-037 | The scan listener of `packages` | P1 | [architecture.md](../spec/architecture.md) |
 | R-ARCH-003 | Go module and package layout | MVP | [architecture.md](../spec/architecture.md) |

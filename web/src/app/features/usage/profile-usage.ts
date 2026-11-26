@@ -1,4 +1,4 @@
-import { formatDate } from '@angular/common';
+import { formatTime } from '../../shared/time-format';
 import { ChangeDetectionStrategy, Component, LOCALE_ID, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { LIVE_IDLE_MS, live } from '../../core/live-refresh';
 import { Router } from '@angular/router';
@@ -159,6 +159,6 @@ export class ProfileUsage {
 
   /** "Downloads are paused for you until 10:55 after too many refused requests." (R-UI-186's words). */
   protected blockText(until: string): string {
-    return $localize`:@@limits.notice.blocked:Downloads are paused for you until ${formatDate(until, 'shortTime', this.locale)}:time: after too many refused requests.`;
+    return $localize`:@@limits.notice.blocked:Downloads are paused for you until ${formatTime(until, { part: 'time' })}:time: after too many refused requests.`;
   }
 }

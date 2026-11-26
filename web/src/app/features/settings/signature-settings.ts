@@ -1,5 +1,6 @@
 import { personName } from '../../shared/person-name';
-import { DatePipe, DecimalPipe } from '@angular/common';
+import { DecimalPipe } from '@angular/common';
+import { TimePipe } from '../../shared/time-pipe';
 import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -40,7 +41,7 @@ import { Loading } from '../../shared/ui/loading';
  */
 @Component({
   selector: 'quader-signature-settings',
-  imports: [Loading, Busy, AnchorTable, Checkbox, DataTable, DatePipe, DecimalPipe, Disclosure, ErrorNotice, Needs, PageHeader, RouterLink, SigningIdentitySection, TechnicalDetails, TimeAgo],
+  imports: [Loading, Busy, AnchorTable, Checkbox, DataTable, TimePipe, DecimalPipe, Disclosure, ErrorNotice, Needs, PageHeader, RouterLink, SigningIdentitySection, TechnicalDetails, TimeAgo],
   templateUrl: './signature-settings.html',
   styleUrl: '../../shared/access/access.scss',
   styles: `

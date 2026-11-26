@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { TimePipe } from '../../../shared/time-pipe';
 import { Component, computed, inject, input, resource } from '@angular/core';
 import { LIVE_IDLE_MS, live, refreshResource } from '../../../core/live-refresh';
 import { RouterLink } from '@angular/router';
@@ -44,7 +44,7 @@ export interface DatabaseRow {
  */
 @Component({
   selector: 'quader-clamav-databases',
-  imports: [DatePipe, DataTable, RouterLink],
+  imports: [TimePipe, DataTable, RouterLink],
   template: `
     @if (sets(); as s) {
       <p class="content-note sets">
@@ -85,7 +85,7 @@ export interface DatabaseRow {
           </td>
           <td>
             @if (r.builtAt; as at) {
-              <time [attr.datetime]="at">{{ at | date: 'medium' }}</time>
+              <time [attr.datetime]="at">{{ at | time }}</time>
             } @else {
               <span class="muted">–</span>
             }

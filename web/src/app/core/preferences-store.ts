@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { LoadedPreferences, PreferencesApi } from '../api/preferences-api';
 import { BrowserNavigation } from './browser-navigation';
 import { ReadAgain } from './read-again';
+import { TimeFormatStore } from './time-format-store';
 
 export const LOCALES = ['en', 'de'] as const;
 export type UiLocale = (typeof LOCALES)[number];
@@ -17,7 +18,7 @@ function asTheme(value: string | null): UiTheme | null {
 // <<< M1 ui-b
 
 /**
- * UI preferences (R-API-021): language and theme. The language build is chosen by the URL
+ * UI preferences (R-API-021): language, theme, the form of a time (R-UI-250, handed to `TimeFormatStore`) and the shortcuts. The language build is chosen by the URL
  * (`/ui/{locale}/`, Q-UI-5), so switching stores the preference and reloads the same route under
  * the other locale. The theme is applied through `data-theme` on the root element.
  */
@@ -27,6 +28,7 @@ export class PreferencesStore {
   private readonly document = inject(DOCUMENT);
   private readonly router = inject(Router);
   private readonly navigation = inject(BrowserNavigation);
+  private readonly times = inject(TimeFormatStore);
 
   /** The locale of the running build. */
   readonly locale: UiLocale = inject(LOCALE_ID).startsWith('de') ? 'de' : 'en';
@@ -49,6 +51,7 @@ export class PreferencesStore {
     try {
       this.loaded = await this.api.load();
       this.applyTheme(asTheme(this.loaded.preferences.theme));
+      this.times.adoptOwn(this.loaded.preferences.timeFormat);
       this._keyboardShortcuts.set(this.loaded.preferences.keyboardShortcuts);
       this.again.answered();
     } catch (e) {
@@ -69,6 +72,7 @@ export class PreferencesStore {
   adopt(saved: LoadedPreferences): void {
     this.loaded = saved;
     this.applyTheme(asTheme(saved.preferences.theme));
+    this.times.adoptOwn(saved.preferences.timeFormat);
     this._keyboardShortcuts.set(saved.preferences.keyboardShortcuts);
     const stored = saved.preferences.locale;
     if ((stored === 'en' || stored === 'de') && stored !== this.locale) {

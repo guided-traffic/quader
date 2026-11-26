@@ -1,4 +1,5 @@
-import { DatePipe, NgTemplateOutlet } from '@angular/common';
+import { NgTemplateOutlet } from '@angular/common';
+import { TimePipe } from '../../shared/time-pipe';
 import {
   Component,
   DestroyRef,
@@ -61,7 +62,7 @@ type DocPage =
 @Component({
   selector: 'quader-ansible-docs',
   imports: [Loading, 
-    DatePipe,
+    TimePipe,
     NgTemplateOutlet,
     RouterLink,
     Tree,

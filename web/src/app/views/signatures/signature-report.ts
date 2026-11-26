@@ -1,4 +1,5 @@
-import { DatePipe, formatDate } from '@angular/common';
+import { formatTime } from '../../shared/time-format';
+import { TimePipe } from '../../shared/time-pipe';
 import { ChangeDetectionStrategy, Component, LOCALE_ID, computed, inject, input, resource } from '@angular/core';
 import { SignatureReads } from '../../api/signature-reads';
 import { SignatureBadgeState, SignatureCovering, SignatureEntry, SignatureOrigin } from '../../api/signatures-api';
@@ -59,7 +60,7 @@ export interface SignatureReportView {
 @Component({
   selector: 'quader-signature-report',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DataTable, DatePipe, Disclosure, SignatureBadge, TimeAgo],
+  imports: [DataTable, TimePipe, Disclosure, SignatureBadge, TimeAgo],
   templateUrl: './signature-report.html',
   styleUrl: './signature-report.scss',
 })
@@ -132,7 +133,7 @@ export class SignatureReport {
   protected readonly size = formatSize;
 
   protected certificate(e: SignatureEntry): string {
-    return certificateWords(e, Date.now(), (iso) => formatDate(iso, 'mediumDate', this.locale));
+    return certificateWords(e, Date.now(), (iso) => formatTime(iso, { part: 'date' }));
   }
 
   /** The claims of a CI job a certificate carries, as lines (R-SIG-005): its source and ref, its run, its build configuration. */

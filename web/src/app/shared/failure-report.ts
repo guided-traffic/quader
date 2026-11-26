@@ -1,5 +1,6 @@
 import { ApiError, FailedCall, reasonPhrase } from '../api/problem';
 import { describeProblem } from '../core/http/problem-messages';
+import { formatTime } from './time-format';
 
 /**
  * What a failure notice shows and copies (R-UI-216): the sentence in the reader's language, the facts of the answer that are
@@ -56,13 +57,12 @@ export function statusText(error: ApiError): string | null {
   return reason ? `${error.status} ${reason}` : String(error.status);
 }
 
-/** The time of a failure in the reader's language, to the second: "Nov 25, 2026, 11:42:07 AM". */
+/**
+ * The time of a failure in the reader's form of a time (R-UI-250), to the second: "25.11.2026 11:42:07 (Wed.)". The copied report adds
+ * the time in ISO 8601 with its zone after it, which a ticket's reader in another zone reads alike (Q-UI-1564).
+ */
 export function timeText(at: Date, locale: string): string {
-  try {
-    return new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'medium' }).format(at);
-  } catch {
-    return at.toISOString();
-  }
+  return formatTime(at, { locale });
 }
 
 /** The server's own sentence: the problem's `detail`, else its `title`; English, as the server wrote it (R-UI-214). */

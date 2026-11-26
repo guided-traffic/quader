@@ -165,3 +165,46 @@ func (s *Server) maintenanceGate(r *http.Request, op Operation) error {
 	}
 	return s.o.SystemState.RefuseWrite(r.Context())
 }
+
+// timeFormatRequest is the body of PUT /api/v1/system/time-format; a pointer, so that a body without the member is told from one with
+// an empty text.
+type timeFormatRequest struct {
+	TimeFormat *string `json:"timeFormat"`
+}
+
+// GetSystemTimeFormat implements GET /api/v1/system/time-format (R-UI-251): public, because the sign-in page writes times in it.
+func (s *Server) GetSystemTimeFormat(w http.ResponseWriter, r *http.Request) {
+	store, err := s.systemState()
+	if err != nil {
+		httpserver.Problem(w, r, err)
+		return
+	}
+	st, err := store.Read(r.Context())
+	if err != nil {
+		httpserver.Problem(w, r, errs.Wrap(err, "api.getSystemTimeFormat"))
+		return
+	}
+	writeJSON(w, r, http.StatusOK, gen.TimeFormatSetting{TimeFormat: gen.TimeFormat(st.TimeFormat.TimeFormat)})
+}
+
+// PutSystemTimeFormat implements PUT /api/v1/system/time-format (R-UI-251); settings:write was decided by the shared step.
+func (s *Server) PutSystemTimeFormat(w http.ResponseWriter, r *http.Request) {
+	store, err := s.systemState()
+	var in timeFormatRequest
+	if err == nil {
+		err = DecodeJSON(w, r, &in, s.bodyLimit())
+	}
+	if err == nil && in.TimeFormat == nil {
+		err = errs.E(errs.Invalid, errs.CodeValidation, "The request is invalid.",
+			errs.WithFields(errs.FieldError{Pointer: "/timeFormat", Code: "required", Detail: "timeFormat is required."}))
+	}
+	var out sysstate.TimeFormat
+	if err == nil {
+		out, err = store.SetTimeFormat(r.Context(), s.sysCaller(r), *in.TimeFormat)
+	}
+	if err != nil {
+		httpserver.Problem(w, r, err)
+		return
+	}
+	writeJSON(w, r, http.StatusOK, gen.TimeFormatSetting{TimeFormat: gen.TimeFormat(out.TimeFormat)})
+}

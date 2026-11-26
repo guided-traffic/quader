@@ -5,6 +5,7 @@ import { PageVisibility } from '../core/page-visibility';
 import { settle } from '../testing/screen';
 import { seriousViolations } from '../testing/axe';
 import { ErrorNotice, retryWaitMs } from './error-notice';
+import { formatTime } from './time-format';
 
 const read = (path: string): Partial<FailedAnswer> => ({ call: { method: 'GET', path } });
 const AT = new Date('2026-11-25T10:42:07Z');
@@ -84,7 +85,7 @@ describe('the error notice (R-UI-216)', () => {
     expect(facts(notice!)).toEqual({
       Status: ['502 Bad Gateway'],
       Call: ['GET /api/v1/projects/platform/repositories/npm-local'],
-      Time: [new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'medium' }).format(AT)],
+      Time: [formatTime(AT)],
     });
     expect(notice!.querySelector('quader-technical-details')).toBeNull();
     expect(buttons(notice!)).toEqual(['Retry', 'Copy report']);

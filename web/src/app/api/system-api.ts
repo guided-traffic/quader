@@ -12,6 +12,8 @@ export type Banner = Schema<'Banner'>;
 export type BannerInput = Schema<'BannerInput'>;
 export type MaintenanceMode = Schema<'MaintenanceMode'>;
 export type MaintenanceInput = Schema<'MaintenanceInput'>;
+/** The installation's default form of a time (R-UI-251). */
+export type TimeFormatSetting = Schema<'TimeFormatSetting'>;
 /** The kinds of scanner and the scanner replicas (R-OPS-048). */
 export type ScannerList = Schema<'ScannerList'>;
 export type ScannerKind = Schema<'ScannerKind'>;
@@ -35,6 +37,10 @@ export abstract class SystemApi {
   abstract maintenance(): Promise<MaintenanceMode>;
   /** `PUT /api/v1/system/maintenance`; the answer is the mode after the change. */
   abstract setMaintenance(input: MaintenanceInput): Promise<MaintenanceMode>;
+  /** `GET /api/v1/system/time-format` (R-UI-251): public, because the sign-in page writes times in it. */
+  abstract timeFormat(): Promise<TimeFormatSetting>;
+  /** `PUT /api/v1/system/time-format`; the answer is the default after the change. */
+  abstract setTimeFormat(input: TimeFormatSetting): Promise<TimeFormatSetting>;
 }
 
 @Injectable()
@@ -71,6 +77,14 @@ export class HttpSystemApi extends SystemApi {
 
   async setMaintenance(input: MaintenanceInput): Promise<MaintenanceMode> {
     return (await this.client.putJson<MaintenanceMode>('/api/v1/system/maintenance', input)).body;
+  }
+
+  async timeFormat(): Promise<TimeFormatSetting> {
+    return (await this.client.get('/api/v1/system/time-format')).body;
+  }
+
+  async setTimeFormat(input: TimeFormatSetting): Promise<TimeFormatSetting> {
+    return (await this.client.putJson<TimeFormatSetting>('/api/v1/system/time-format', input)).body;
   }
 }
 

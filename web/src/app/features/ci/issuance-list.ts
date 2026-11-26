@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { TimePipe } from '../../shared/time-pipe';
 import { Component, WritableSignal, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { LIVE_IDLE_MS, live } from '../../core/live-refresh';
 import { DIALOG_DATA, DialogClose, DialogTitle, QuaderDialog } from '../../shared/ui/dialog';
@@ -33,7 +33,7 @@ export interface IssuanceDetailData {
  */
 @Component({
   selector: 'quader-ci-issuance-detail',
-  imports: [DatePipe, DialogTitle, DialogClose, ErrorNotice, NoValue],
+  imports: [TimePipe, DialogTitle, DialogClose, ErrorNotice, NoValue],
   template: `
     <h2 quaderDialogTitle i18n="@@ci.issuance.title">Issued token</h2>
     <div class="dialog-body" tabindex="0">
@@ -44,7 +44,7 @@ export interface IssuanceDetailData {
         <dt i18n="@@ci.issuance.state">State</dt>
         <dd>
           @if (data.issuance.revokedAt) {
-            <span class="bad"><span class="material-icons" aria-hidden="true">block</span> <ng-container i18n="@@ci.issuance.revoked">Revoked</ng-container> {{ data.issuance.revokedAt | date: 'medium' }}</span>
+            <span class="bad"><span class="material-icons" aria-hidden="true">block</span> <ng-container i18n="@@ci.issuance.revoked">Revoked</ng-container> {{ data.issuance.revokedAt | time }}</span>
           } @else if (data.issuance.active) {
             <span class="ok"><span class="material-icons" aria-hidden="true">check_circle</span> <ng-container i18n="@@ci.issuance.active">Active</ng-container></span>
           } @else if (data.issuance.state === 'removed') {
@@ -74,9 +74,9 @@ export interface IssuanceDetailData {
         <dt i18n="@@ci.issuance.user">Started by</dt>
         <dd translate="no">{{ data.issuance.userLogin ?? '–' }}</dd>
         <dt i18n="@@ci.issuance.issued">Issued</dt>
-        <dd>{{ data.issuance.issuedAt | date: 'medium' }}</dd>
+        <dd>{{ data.issuance.issuedAt | time }}</dd>
         <dt i18n="@@ci.issuance.expires">Expires</dt>
-        <dd>{{ data.issuance.expiresAt | date: 'medium' }}</dd>
+        <dd>{{ data.issuance.expiresAt | time }}</dd>
         <dt i18n="@@ci.issuance.requested-scope">Requested scope</dt>
         <dd translate="no">{{ data.issuance.requestedScope ?? '–' }}</dd>
         <dt i18n="@@ci.issuance.granted-scope">Granted scope</dt>
@@ -87,7 +87,7 @@ export interface IssuanceDetailData {
           <dt i18n="@@ci.issuance.usage">Usage</dt>
           <dd>
             <ng-container i18n="@@ci.issuance.usage-text">{{ u.requests }} requests, last used</ng-container>
-            {{ u.lastUsedAt ? (u.lastUsedAt | date: 'medium') : '–' }}
+            {{ u.lastUsedAt ? (u.lastUsedAt | time) : '–' }}
             @if (u.packagesDeployed.length > 0) {
               <div translate="no">{{ u.packagesDeployed.join(', ') }}</div>
             }
@@ -166,7 +166,7 @@ function dayStart(value: string, plusDays = 0): string | undefined {
  */
 @Component({
   selector: 'quader-ci-issuance-list',
-  imports: [Busy, DatePipe, ErrorNotice, DataTable, FilterPanel, ListHead, NoValue, SelectField, TextField],
+  imports: [Busy, TimePipe, ErrorNotice, DataTable, FilterPanel, ListHead, NoValue, SelectField, TextField],
   template: `
     <!-- The issued tokens have no search by name; the head is Filters, the filters that are set and the bulk revoke (Q-UI-420). -->
     <quader-list-head [chips]="chips()" (removeChip)="removeChip($event)" [(filtersOpen)]="panelOpen" [controls]="panel.panelId">
@@ -230,7 +230,7 @@ function dayStart(value: string, plusDays = 0): string | undefined {
         @for (i of list.items(); track i.tokenId) {
           <tr>
             <!-- A log's time is the moment itself: its date and time, one format for every log (Q-UI-431). -->
-            <th scope="row"><time [attr.datetime]="i.issuedAt">{{ i.issuedAt | date: 'medium' }}</time></th>
+            <th scope="row"><time [attr.datetime]="i.issuedAt">{{ i.issuedAt | time }}</time></th>
             @if (!project()) {
               <td translate="no">{{ i.issuer }}</td>
             }

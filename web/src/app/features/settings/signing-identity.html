@@ -13,11 +13,11 @@
     </dd>
     <dt i18n="@@signing.fact.from">Valid from</dt>
     <dd>
-      <time [attr.datetime]="i.notBefore">{{ i.notBefore | date: 'medium' }}</time>
+      <time [attr.datetime]="i.notBefore">{{ i.notBefore | time }}</time>
     </dd>
     <dt i18n="@@signing.fact.until">Valid until</dt>
     <dd data-testid="signing-validity">
-      <time [attr.datetime]="i.notAfter">{{ i.notAfter | date: 'medium' }}</time>
+      <time [attr.datetime]="i.notAfter">{{ i.notAfter | time }}</time>
       @switch (validity(i)) {
         @case ('expired') {
           &ngsp;<span class="badge bad" data-testid="signing-expired"
@@ -211,17 +211,17 @@
             </th>
             <td>{{ sourceText(p) }}</td>
             <td class="nowrap">
-              <time [attr.datetime]="p.notAfter">{{ p.notAfter | date: 'mediumDate' }}</time>
+              <time [attr.datetime]="p.notAfter">{{ p.notAfter | time: 'date' }}</time>
               @if (validity(p) === 'expired') {
                 <span class="secondary block" i18n="@@signing.expired">expired</span>
               }
             </td>
             <td class="nowrap">
               @if (p.currentAt; as from) {
-                <time [attr.datetime]="from">{{ from | date: 'mediumDate' }}</time>
+                <time [attr.datetime]="from">{{ from | time: 'date' }}</time>
               }
               @if (p.expiresAt; as to) {
-                &ngsp;–&ngsp;<time [attr.datetime]="to">{{ to | date: 'mediumDate' }}</time>
+                &ngsp;–&ngsp;<time [attr.datetime]="to">{{ to | time: 'date' }}</time>
               }
             </td>
             @if (canWrite()) {

@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import { PageHeader } from '../../shared/ui/page-header';
 import { Component, computed, inject, signal } from '@angular/core';
 import { Checkbox } from '../../shared/ui/checkbox';
@@ -18,6 +17,10 @@ import { ProfileAvatar } from './profile-avatar';
 import { ProfileNav } from './profile-nav';
 import { Busy } from '../../shared/ui/busy';
 import { Loading } from '../../shared/ui/loading';
+import { TimePipe } from '../../shared/time-pipe';
+import { timeFormatOptions } from '../../shared/time-format-options';
+import { formatTime } from '../../shared/time-format';
+import { TimeFormatStore } from '../../core/time-format-store';
 
 /**
  * Profile (R-UI-029, R-AUTH-017): identity as the identity provider delivered it (read-only fields), then the quiet sections
@@ -29,7 +32,7 @@ import { Loading } from '../../shared/ui/loading';
  */
 @Component({
   selector: 'quader-profile',
-  imports: [Loading, Busy, DatePipe, Checkbox, Disclosure, ErrorNotice, PageHeader, ProfileAvatar, ProfileNav, SelectField, TextField],
+  imports: [Loading, Busy, TimePipe, Checkbox, Disclosure, ErrorNotice, PageHeader, ProfileAvatar, ProfileNav, SelectField, TextField],
   templateUrl: './profile.html',
   styleUrl: '../../shared/access/access.scss',
   styles: `
@@ -56,16 +59,22 @@ export class Profile {
   private readonly conflicts = inject(ConflictResolver);
   private readonly notifier = inject(Notifier);
   private readonly avatars = inject(AvatarStore);
+  private readonly times = inject(TimeFormatStore);
   protected readonly session = inject(SessionStore);
 
   protected readonly user = signal<User | null>(null);
   protected readonly loadError = signal<ApiError | null>(null);
   protected readonly prefError = signal<ApiError | null>(null);
   protected readonly prefsLoaded = signal(false);
+  /** A read of the page runs. */
+  protected readonly loading = signal(true);
+  /** Nothing of the page is read yet: the whole page loads (R-UI-252). */
+  protected readonly pageLoading = computed(() => this.loading() && this.user() === null && !this.prefsLoaded());
   protected readonly saving = signal(false);
 
   protected readonly locale = signal('');
   protected readonly theme = signal('');
+  protected readonly timeFormat = signal('');
   protected readonly shortcuts = signal(false);
   private loaded: LoadedPreferences | null = null;
 
@@ -75,6 +84,20 @@ export class Profile {
     { value: 'en', label: 'English' },
     { value: 'de', label: 'Deutsch' },
   ];
+  /**
+   * The forms of a time, each with today's time as its example (R-UI-250, Q-UI-1561); the first option follows the installation's
+   * default and names it.
+   */
+  protected readonly timeFormatOptions = computed<readonly SelectOption[]>(() => {
+    const now = Date.now();
+    return [
+      {
+        value: '',
+        label: $localize`:@@profile.pref.time-format.installation:${formatTime(now, { format: this.times.installation() })}:example: — Installation default`,
+      },
+      ...timeFormatOptions(now),
+    ];
+  });
   protected readonly themeOptions: readonly SelectOption[] = [
     { value: '', label: $localize`:@@profile.pref.theme.system:Follow the system` },
     { value: 'light', label: $localize`:@@profile.pref.theme.light:Light` },
@@ -86,6 +109,7 @@ export class Profile {
   }
 
   protected async load(): Promise<void> {
+    this.loading.set(true);
     try {
       const me = await this.identity.me();
       this.loadError.set(null);
@@ -95,6 +119,7 @@ export class Profile {
       this.loadError.set(asApiError(e));
     }
     await this.loadPreferences();
+    this.loading.set(false);
   }
 
   private async loadPreferences(): Promise<void> {
@@ -111,6 +136,7 @@ export class Profile {
     this.loaded = loaded;
     this.locale.set(loaded.preferences.locale ?? '');
     this.theme.set(loaded.preferences.theme ?? '');
+    this.timeFormat.set(loaded.preferences.timeFormat ?? '');
     this.shortcuts.set(loaded.preferences.keyboardShortcuts);
     this.prefsLoaded.set(true);
   }
@@ -119,6 +145,7 @@ export class Profile {
     return {
       locale: this.locale() || null,
       theme: this.theme() || null,
+      timeFormat: this.timeFormat() || null,
       keyboardShortcuts: this.shortcuts(),
     };
   }
@@ -156,6 +183,11 @@ export class Profile {
         empty: this.localeOptions[0]!.label,
       },
       '/theme': { label: $localize`:@@profile.pref.theme:Theme`, show: option(this.themeOptions), empty: this.themeOptions[0]!.label },
+      '/timeFormat': {
+        label: $localize`:@@profile.pref.time-format:Time format`,
+        show: option(this.timeFormatOptions()),
+        empty: this.timeFormatOptions()[0]!.label,
+      },
       '/keyboardShortcuts': $localize`:@@profile.pref.shortcuts:Keyboard shortcuts with a single key, such as / for the search`,
     };
   }
@@ -166,6 +198,7 @@ export class Profile {
     const theirs = {
       locale: current.preferences.locale,
       theme: current.preferences.theme,
+      timeFormat: current.preferences.timeFormat,
       keyboardShortcuts: current.preferences.keyboardShortcuts,
     };
     const decision = await this.conflicts.resolve({ mine: this.patch(), theirs, fields: this.conflictFields() });

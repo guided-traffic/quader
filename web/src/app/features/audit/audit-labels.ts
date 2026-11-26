@@ -393,6 +393,8 @@ export function auditActionLabel(action: string): string {
       return $localize`:@@audit.action.system.backup.target_adopted:Backup target taken over`;
     case 'system.banner_changed':
       return $localize`:@@audit.action.system.banner_changed:Banner changed`;
+    case 'system.time_format_changed':
+      return $localize`:@@audit.action.system.time_format_changed:Default time format changed`;
     case 'system.deletions_paused':
       return $localize`:@@audit.action.system.deletions_paused:Deletions paused`;
     case 'system.deletions_resumed':

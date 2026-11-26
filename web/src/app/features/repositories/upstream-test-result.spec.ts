@@ -45,7 +45,7 @@ const CASES: readonly { name: string; over: Partial<UpstreamTestResult>; tone: s
       'Login address': 'https://auth.docker.io/token',
       Service: 'registry.docker.io',
       Login: 'Not asked: no credential is set.',
-      Certificate: 'CN=*.docker.com, valid until Mar 1, 2027',
+      Certificate: 'CN=*.docker.com, valid until 01.03.2027 (Mon.)',
     },
   },
   {

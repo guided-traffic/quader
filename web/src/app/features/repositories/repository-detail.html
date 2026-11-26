@@ -493,15 +493,15 @@
             }
             @if (repo.createdAt; as at) {
               <dt i18n="@@repo.detail.created">Created</dt>
-              <dd><time [attr.datetime]="at">{{ at | date: 'medium' }}</time></dd>
+              <dd><time [attr.datetime]="at">{{ at | time }}</time></dd>
             }
             @if (repo.updatedAt; as at) {
               <dt i18n="@@repo.detail.updated">Last changed</dt>
-              <dd><time [attr.datetime]="at">{{ at | date: 'medium' }}</time></dd>
+              <dd><time [attr.datetime]="at">{{ at | time }}</time></dd>
             }
             @if (repo.lastActivityAt; as at) {
               <dt i18n="@@repo.col.activity">Last activity</dt>
-              <dd><time [attr.datetime]="at">{{ at | date: 'medium' }}</time></dd>
+              <dd><time [attr.datetime]="at">{{ at | time }}</time></dd>
             }
           </dl>
         </quader-disclosure>

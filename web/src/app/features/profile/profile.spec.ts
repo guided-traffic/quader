@@ -16,6 +16,7 @@ import { SessionApi } from '../../api/session-api';
 import { buttonByText, renderScreen, settle, text, typeInto, browserStorage, storedText, sleep } from '../../testing/screen';
 import { seriousViolations } from '../../testing/axe';
 import { Profile } from './profile';
+import { timeFormat } from '../../shared/time-format';
 import { ProfileSessions } from './profile-sessions';
 import { ProfileTokens } from './profile-tokens';
 
@@ -68,10 +69,10 @@ describe('Profile (R-UI-029)', () => {
     expect(root.querySelector<HTMLInputElement>('input[name="username"]')?.readOnly).toBe(true);
   });
 
-  it('R-UI-085 the Language and Theme selects of Preferences take one field width, whatever their options say', async () => {
+  it('R-UI-085 the Language, Time format and Theme selects of Preferences take one field width, whatever their options say', async () => {
     const { root } = await renderScreen(Profile);
     const widths = [...root.querySelectorAll('quader-select-field select')].map((s) => [...s.classList].filter((c) => c.startsWith('field-w-')));
-    expect(widths).toEqual([['field-w-name'], ['field-w-name']]);
+    expect(widths).toEqual([['field-w-name'], ['field-w-name'], ['field-w-name']]);
   });
 
   it('R-AUTH-008 a missing group claim is a status notice that names the provider and the reason', async () => {
@@ -103,6 +104,45 @@ describe('Profile (R-UI-029)', () => {
     expect(prefs.stored.revision).toBe(2);
     expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
     document.documentElement.removeAttribute('data-theme');
+  });
+
+  it('R-UI-250 the time format is a preference: saved with the account, in force at once, and reset to the installation default', async () => {
+    const { fixture, root, get } = await renderScreen(Profile);
+    const prefs = get(PreferencesApi) as FakePreferencesApi;
+    const select = root.querySelector<HTMLSelectElement>('select[name="timeFormat"]')!;
+    // The installation's default first, then every form with today's time as its example.
+    expect([...select.options].map((o) => o.value)).toEqual(['', 'dmy-weekday', 'dmy', 'iso', 'dmy-slash', 'mdy', 'locale']);
+    expect(select.options[0]!.textContent).toMatch(/^\d\d\.\d\d\.\d{4} \d\d:\d\d:\d\d \(\w{3}\.\) — Installation default$/);
+    expect(select.options[3]!.textContent).toMatch(/^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d — ISO 8601$/);
+    typeInto(root, 'Time format', 'iso');
+    await settle(fixture);
+    buttonByText(root, 'Save preferences').click();
+    await settle(fixture);
+    expect(prefs.stored.timeFormat).toBe('iso');
+    expect(timeFormat()).toBe('iso');
+    // The page's own times follow at once.
+    expect(root.querySelector<HTMLInputElement>('input[name="lastLogin"]')!.value).toMatch(/^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d$/);
+    typeInto(root, 'Time format', '');
+    await settle(fixture);
+    buttonByText(root, 'Save preferences').click();
+    await settle(fixture);
+    expect(prefs.stored.timeFormat).toBeNull();
+    expect(timeFormat()).toBe('dmy-weekday');
+  });
+
+  it('R-UI-252 while nothing of the page is read, the whole page loads in its middle, and no section stands beside it', async () => {
+    const never = <T>(): Promise<T> => new Promise<T>(() => undefined);
+    const { root } = await renderScreen(Profile, {
+      loading: true,
+      setup: (get) => {
+        (get(IdentityApi) as FakeIdentityApi).me = never;
+        (get(PreferencesApi) as FakePreferencesApi).load = never;
+      },
+    });
+    const loading = root.querySelector('quader-loading');
+    expect(loading?.classList).toContain('quader-loading-page');
+    expect(text(loading!)).toBe('Loading your account.');
+    expect(root.querySelector('quader-disclosure')).toBeNull();
   });
 
   it('R-UI-042 a 412 on the preferences opens the conflict dialog and Overwrite stores mine', async () => {

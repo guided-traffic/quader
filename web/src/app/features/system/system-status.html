@@ -25,7 +25,7 @@
             >
             <span i18n="@@system.summary.lost"
               >Lost without draining: <span translate="no">{{ c.replicas.join(', ') }}</span>, last heartbeat
-              <time [attr.datetime]="c.lastSeenAt">{{ c.lastSeenAt | date: 'medium' }}</time></span
+              <time [attr.datetime]="c.lastSeenAt">{{ c.lastSeenAt | time }}</time></span
             >
           }
           @case ('degraded') {
@@ -289,7 +289,7 @@
                       </td>
                       <td>
                         <time [attr.datetime]="r.heartbeatAt">{{
-                          r.heartbeatAt | date: 'mediumTime'
+                          r.heartbeatAt | time: 'time'
                         }}</time>
                       </td>
                       <td>
@@ -417,7 +417,7 @@
         @if (v.lastPrimaryChangeAt; as t) {
           <dt i18n="@@system.valkey.last-change">Last primary change</dt>
           <dd>
-            <time [attr.datetime]="t">{{ t | date: 'medium' }}</time>
+            <time [attr.datetime]="t">{{ t | time }}</time>
           </dd>
         }
         @if (v.serverVersions.length > 0) {
@@ -566,7 +566,7 @@
         <ng-container i18n="@@system.keys.last">Last re-encryption</ng-container>:
         <span translate="no">{{ last.state }}</span>
         @if (last.finishedAt; as at) {
-          <time [attr.datetime]="at"> {{ at | date: 'medium' }}</time>
+          <time [attr.datetime]="at"> {{ at | time }}</time>
         }
       </p>
     }

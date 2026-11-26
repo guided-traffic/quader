@@ -1,5 +1,5 @@
 import { NoValue } from '../../shared/ui/no-value';
-import { DatePipe } from '@angular/common';
+import { TimePipe } from '../../shared/time-pipe';
 import { Component, DestroyRef, LOCALE_ID, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { QuaderDialog } from '../../shared/ui/dialog';
 import { firstValueFrom } from 'rxjs';
@@ -46,7 +46,7 @@ export function tokenExpiry(token: Pick<BastionTokenSummary, 'expiresAt'>, now: 
  */
 @Component({
   selector: 'quader-bastion-card',
-  imports: [Busy, BastionHandover, BastionLimits, DatePipe, DataTable, ErrorNotice, NoValue, PartsText, TimeAgo, TokenSecret],
+  imports: [Busy, BastionHandover, BastionLimits, TimePipe, DataTable, ErrorNotice, NoValue, PartsText, TimeAgo, TokenSecret],
   template: `
     <section class="card" [attr.aria-labelledby]="headingId()">
       <h2 [id]="headingId()" translate="no">{{ bastion().name }}</h2>
@@ -65,7 +65,7 @@ export function tokenExpiry(token: Pick<BastionTokenSummary, 'expiresAt'>, now: 
           <dd translate="no">{{ bastion().description }}</dd>
         }
         <dt i18n="@@bastion.created">Created</dt>
-        <dd>{{ bastion().createdAt | date: 'medium' }}</dd>
+        <dd>{{ bastion().createdAt | time }}</dd>
       </dl>
       @if (bastion().declared; as d) {
         <!-- A registration the configuration declares (R-BAS-127, Q-UI-1497): the words of an account the configuration declares. -->

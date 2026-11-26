@@ -1,4 +1,5 @@
-import { DatePipe, formatNumber } from '@angular/common';
+import { formatNumber } from '@angular/common';
+import { TimePipe } from '../../shared/time-pipe';
 import { Component, LOCALE_ID, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { Router } from '@angular/router';
 import { ApiError } from '../../api/problem';
@@ -43,7 +44,7 @@ import { Loading } from '../../shared/ui/loading';
  */
 @Component({
   selector: 'quader-project-settings',
-  imports: [Loading, Busy, PageHeader, DatePipe, ErrorNotice, Needs, Disclosure, ProjectLimitsSection, ProjectSignatureAnchors, TextField, VisibilityLevelControl],
+  imports: [Loading, Busy, PageHeader, TimePipe, ErrorNotice, Needs, Disclosure, ProjectLimitsSection, ProjectSignatureAnchors, TextField, VisibilityLevelControl],
   template: `
     <quader-page-header heading="Settings" i18n-heading="@@project.settings" />
 
@@ -150,7 +151,7 @@ import { Loading } from '../../shared/ui/loading';
             <dt i18n="@@project.storage">Storage</dt>
             <dd [attr.title]="exactBytes(p)">{{ size(p.logicalBytes) }}</dd>
             <dt i18n="@@project.updated">Last changed</dt>
-            <dd>{{ p.updatedAt | date: 'medium' }}</dd>
+            <dd>{{ p.updatedAt | time }}</dd>
           </dl>
         </quader-disclosure>
 

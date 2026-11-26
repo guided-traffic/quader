@@ -28,6 +28,27 @@ func TestR_OPS_024_RefusalCarriesTheMessageAndTheRetryHint(t *testing.T) {
 	}
 }
 
+// TestR_UI_251_TimeFormatValidation holds the installation's default form of a time: the factory default is one of the forms, the forms
+// are the UI's in its order, and an unknown form is refused at its pointer before anything is read or written.
+func TestR_UI_251_TimeFormatValidation(t *testing.T) {
+	if !ValidTimeFormat(FactoryTimeFormat) || FactoryTimeFormat != TimeFormats()[0] {
+		t.Fatalf("the factory default %q is not the first form", FactoryTimeFormat)
+	}
+	if want := "dmy-weekday dmy iso dmy-slash mdy locale"; strings.Join(TimeFormats(), " ") != want {
+		t.Errorf("the forms are %v, want %s", TimeFormats(), want)
+	}
+	for _, bad := range []string{"", "DMY", "yyyy-MM-dd"} {
+		if ValidTimeFormat(bad) {
+			t.Errorf("%q is valid", bad)
+		}
+		_, err := (&Store{}).SetTimeFormat(t.Context(), Caller{}, bad)
+		var e *errs.Error
+		if !errors.As(err, &e) || len(e.Fields) != 1 || e.Fields[0].Pointer != "/timeFormat" {
+			t.Errorf("%q: %v", bad, err)
+		}
+	}
+}
+
 func TestR_OPS_025_BannerValidation(t *testing.T) {
 	long := func(n int) string { return strings.Repeat("é", n) } // counted in characters, not bytes
 	for name, tc := range map[string]struct {

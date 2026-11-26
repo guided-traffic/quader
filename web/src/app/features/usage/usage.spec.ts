@@ -356,7 +356,7 @@ describe('What a limited caller sees (R-UI-186)', () => {
       'Your download limit of 300 GB per hour is used up. Try again in 14 minutes.',
     );
     expect(limitNotice({ code: 'caller_blocked' }, 60, 'en-US', Date.parse('2026-11-20T10:54:00'))).toMatch(
-      /^Downloads are paused for you until 10:55\sAM after too many refused requests\.$/,
+      /^Downloads are paused for you until 10:55:00 after too many refused requests\.$/,
     );
     expect(limitNotice({ code: 'too_many_parallel_transfers', figure: 'parallelTransfers', limit: 4 }, 1, 'en-US')).toBe(
       'You have 4 transfers running, the most you may have at once; each layer of an image and each package of an install is one. Try again in 1 second.',

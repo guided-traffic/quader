@@ -356,7 +356,7 @@ describe('App shell', () => {
     expect(key(other, { key: '/' }).defaultPrevented).toBe(false);
     expect(document.activeElement).toBe(other);
     // The preference off: / does nothing; Ctrl+K and ⌘K still focus the field.
-    TestBed.inject(PreferencesStore).adopt({ etag: '"2"', preferences: { locale: null, theme: null, keyboardShortcuts: false, revision: 2 } });
+    TestBed.inject(PreferencesStore).adopt({ etag: '"2"', preferences: { locale: null, theme: null, timeFormat: null, keyboardShortcuts: false, revision: 2 } });
     await settle(fixture);
     other.focus();
     document.body.focus();

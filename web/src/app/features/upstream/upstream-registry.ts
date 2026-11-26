@@ -1,4 +1,5 @@
-import { DatePipe, NgTemplateOutlet } from '@angular/common';
+import { NgTemplateOutlet } from '@angular/common';
+import { TimePipe } from '../../shared/time-pipe';
 import { failureMayPass } from '../../shared/none-on-refusal';
 import { Tooltip } from '../../shared/ui/tooltip';
 import { classHelp, isSystemOnly } from '../repositories/repository-class';
@@ -79,7 +80,7 @@ function needsAccount(e: ApiError): boolean {
   imports: [Busy, Loading, 
     AddressField,
     CodeWindow,
-    DatePipe,
+    TimePipe,
     Disclosure,
     ErrorNotice,
     FormatIconView,

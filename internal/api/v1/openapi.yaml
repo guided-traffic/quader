@@ -455,6 +455,72 @@ paths:
           $ref: "#/components/responses/Internal"
         "503":
           $ref: "#/components/responses/Unavailable"
+  /api/v1/system/time-format:
+    get:
+      operationId: getSystemTimeFormat
+      tags: [system]
+      summary: The installation's default form of a time
+      description: |
+        The form in which the UI writes a time for a reader who chose none and for a visitor without a session (R-UI-251). The
+        factory default is `dmy-weekday`, `26.11.2026 21:39:22 (Thu.)`. Served to anonymous callers, because the sign-in page shows
+        times in it; it holds no secret. Read from PostgreSQL (R-API-052).
+      x-quader-permission:
+        public: true
+      responses:
+        "200":
+          description: The default.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TimeFormatSetting"
+              example: {timeFormat: dmy-weekday}
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+    put:
+      operationId: putSystemTimeFormat
+      tags: [system]
+      summary: Set the installation's default form of a time
+      description: |
+        Replaces the default (R-UI-251). A reader's own choice (`timeFormat` of the preferences, R-API-021) wins over it. Writes
+        `system.time_format_changed`, and only when the default changed. Every replica returns the new default within
+        `cluster.epoch_poll_interval` plus 1 s. Refused in read-only maintenance mode like every other write.
+      x-quader-permission:
+        permission: settings:write
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TimeFormatSetting"
+      responses:
+        "200":
+          description: The default after the change.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TimeFormatSetting"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
   /api/v1/system/info:
     get:
       operationId: getSystemInfo
@@ -23650,6 +23716,20 @@ components:
             - $ref: "#/components/schemas/VulnerabilityDataFacts"
             - type: "null"
               description: The container memory limit; 0 when none is known.
+    TimeFormat:
+      type: string
+      enum: [dmy-weekday, dmy, iso, dmy-slash, mdy, locale]
+      description: |
+        The form of a time in the UI (R-UI-250): `dmy-weekday` `26.11.2026 21:39:22 (Thu.)`, `dmy` `26.11.2026 21:39:22`, `iso`
+        `2026-11-26 21:39:22`, `dmy-slash` `26/11/2026 21:39:22`, `mdy` `11/26/2026 9:39:22 PM`, `locale` the form of the reader's
+        language.
+    TimeFormatSetting:
+      type: object
+      required: [timeFormat]
+      additionalProperties: false
+      properties:
+        timeFormat:
+          $ref: "#/components/schemas/TimeFormat"
     Banner:
       type: object
       required: [enabled]
@@ -27221,7 +27301,7 @@ components:
     Preferences:
       type: object
       description: The caller's UI preferences (R-API-021). `revision` is the ETag number.
-      required: [locale, theme, keyboardShortcuts, revision]
+      required: [locale, theme, timeFormat, keyboardShortcuts, revision]
       properties:
         locale:
           type: [string, "null"]
@@ -27229,6 +27309,11 @@ components:
         theme:
           type: [string, "null"]
           description: "`light`, `dark` or `null` (the system decides)."
+        timeFormat:
+          type: [string, "null"]
+          description: |
+            The form of a time (R-UI-250, the values of `TimeFormat`), or `null`: the installation's default
+            (`GET /api/v1/system/time-format`, R-UI-251).
         keyboardShortcuts:
           type: boolean
           description: |
@@ -27237,7 +27322,7 @@ components:
         revision:
           type: integer
           minimum: 1
-      example: {locale: de, theme: null, keyboardShortcuts: true, revision: 2}
+      example: {locale: de, theme: null, timeFormat: null, keyboardShortcuts: true, revision: 2}
     PreferencesPatch:
       type: object
       description: "`null` resets a member to its default. `revision` is accepted and ignored."
@@ -27248,6 +27333,9 @@ components:
         theme:
           type: [string, "null"]
           description: "`light`, `dark` or `null`."
+        timeFormat:
+          type: [string, "null"]
+          description: "A value of `TimeFormat`, or `null` for the installation's default."
         keyboardShortcuts:
           type: [boolean, "null"]
     # <<< M1 login

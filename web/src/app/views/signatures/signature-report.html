@@ -14,7 +14,7 @@
         <span data-testid="signature-blocked-sentence"
           ><ng-container i18n="@@sig.sentence.blocked"
             >The signature matches the content, but an administrator blocked its signer on
-            <time [attr.datetime]="block.createdAt">{{ block.createdAt | date: 'mediumDate' }}</time>:</ng-container
+            <time [attr.datetime]="block.createdAt">{{ block.createdAt | time: 'date' }}</time>:</ng-container
           >&ngsp;<span translate="no">{{ block.reason }}</span></span
         >
       } @else {
@@ -69,7 +69,7 @@
         <li>
           <span translate="no">{{ c.suite }}</span>
           @if (c.date; as d) {
-            &ngsp;<span class="muted"><time [attr.datetime]="d">{{ d | date: 'mediumDate' }}</time></span>
+            &ngsp;<span class="muted"><time [attr.datetime]="d">{{ d | time: 'date' }}</time></span>
           }
           &ngsp;<quader-signature-badge [state]="c.state" />
           @if (c.state === 'not_checked' || c.state === 'unsupported') {
@@ -95,7 +95,7 @@
       </p>
       @if (e.trust?.block; as block) {
         <p class="sig-sentence" data-testid="signature-block">
-          <span i18n="@@sig.blocked">Blocked by an administrator on <time [attr.datetime]="block.createdAt">{{ block.createdAt | date: 'mediumDate' }}</time>:</span>&ngsp;<span translate="no">{{ block.reason }}</span>
+          <span i18n="@@sig.blocked">Blocked by an administrator on <time [attr.datetime]="block.createdAt">{{ block.createdAt | time: 'date' }}</time>:</span>&ngsp;<span translate="no">{{ block.reason }}</span>
         </p>
       } @else {
         <p class="sig-sentence">{{ entrySentence(e) }}</p>
@@ -128,7 +128,7 @@
         }
         <dt i18n="@@sig.fact.signed">Signed</dt>
         <dd>
-          <time [attr.datetime]="time(e)">{{ time(e) | date: 'medium' }}</time>&ngsp;<span class="muted">· {{ proof(e) }}</span>
+          <time [attr.datetime]="time(e)">{{ time(e) | time }}</time>&ngsp;<span class="muted">· {{ proof(e) }}</span>
         </dd>
         @if (certificate(e); as cert) {
           <dt i18n="@@sig.fact.certificate">Certificate</dt>
@@ -219,14 +219,14 @@
             <dd>
               <span translate="no">#{{ l.index }}</span>
               @if (l.integratedTime; as t) {
-                &ngsp;<span class="muted">· <time [attr.datetime]="t">{{ t | date: 'medium' }}</time></span>
+                &ngsp;<span class="muted">· <time [attr.datetime]="t">{{ t | time }}</time></span>
               }
             </dd>
           }
           @for (ts of e.timestamps; track $index) {
             <dt i18n="@@sig.tech.timestamp">Timestamp</dt>
             <dd>
-              <time [attr.datetime]="ts.time">{{ ts.time | date: 'medium' }}</time>
+              <time [attr.datetime]="ts.time">{{ ts.time | time }}</time>
               @if (ts.authority; as authority) {
                 &ngsp;<span class="muted sig-text" translate="no">· {{ authority }}</span>
               }
@@ -234,10 +234,10 @@
           }
           @if (e.claimedAt; as claimed) {
             <dt i18n="@@sig.tech.claimed">Time the signer claims</dt>
-            <dd><time [attr.datetime]="claimed">{{ claimed | date: 'medium' }}</time></dd>
+            <dd><time [attr.datetime]="claimed">{{ claimed | time }}</time></dd>
           }
           <dt i18n="@@sig.tech.received">Received by Quader</dt>
-          <dd><time [attr.datetime]="e.receivedAt">{{ e.receivedAt | date: 'medium' }}</time></dd>
+          <dd><time [attr.datetime]="e.receivedAt">{{ e.receivedAt | time }}</time></dd>
           @if (e.predicateType; as pt) {
             <dt i18n="@@sig.tech.predicate">Predicate</dt>
             <dd class="sig-text" translate="no">{{ pt }}</dd>
@@ -279,7 +279,7 @@
       <p class="sig-sentence">{{ entrySentence(e) }}</p>
       <dl class="facts">
         <dt i18n="@@sig.receipt.issued">Issued</dt>
-        <dd><time [attr.datetime]="issuedAt(e)">{{ issuedAt(e) | date: 'medium' }}</time></dd>
+        <dd><time [attr.datetime]="issuedAt(e)">{{ issuedAt(e) | time }}</time></dd>
         @if (e.attestation; as att) {
           <dt i18n="@@sig.receipt.malware">Malware scan</dt>
           <dd data-testid="signature-receipt-malware">
@@ -289,7 +289,7 @@
             }
             @if (att.malware.scannedAt; as scanned) {
               <span class="sig-line muted"
-                ><ng-container i18n="@@sig.receipt.scanned">scanned</ng-container>&ngsp;<time [attr.datetime]="scanned">{{ scanned | date: 'medium' }}</time></span
+                ><ng-container i18n="@@sig.receipt.scanned">scanned</ng-container>&ngsp;<time [attr.datetime]="scanned">{{ scanned | time }}</time></span
               >
             }
           </dd>
@@ -325,7 +325,7 @@
         <dl class="facts">
           @if (e.attestation; as att) {
             <dt i18n="@@sig.tech.received">Received by Quader</dt>
-            <dd><time [attr.datetime]="att.receivedAt">{{ att.receivedAt | date: 'medium' }}</time></dd>
+            <dd><time [attr.datetime]="att.receivedAt">{{ att.receivedAt | time }}</time></dd>
             <dt i18n="@@sig.origin">Origin</dt>
             <dd class="sig-text" translate="no">{{ originText(att.origin) }}</dd>
             @if (att.malware.database; as db) {
@@ -333,7 +333,7 @@
               <dd>
                 <code class="sig-text" translate="no">{{ db }}</code>
                 @if (att.malware.databaseBuiltAt; as built) {
-                  &ngsp;<span class="muted">· <time [attr.datetime]="built">{{ built | date: 'medium' }}</time></span>
+                  &ngsp;<span class="muted">· <time [attr.datetime]="built">{{ built | time }}</time></span>
                 }
               </dd>
             }
@@ -342,7 +342,7 @@
               {{ vulnerabilityWords(att.vulnerabilities) }}
               @if (att.vulnerabilities.dataAt; as data) {
                 <span class="sig-line muted"
-                  ><ng-container i18n="@@sig.receipt.advisories">advisories of</ng-container>&ngsp;<time [attr.datetime]="data">{{ data | date: 'medium' }}</time></span
+                  ><ng-container i18n="@@sig.receipt.advisories">advisories of</ng-container>&ngsp;<time [attr.datetime]="data">{{ data | time }}</time></span
                 >
               }
             </dd>

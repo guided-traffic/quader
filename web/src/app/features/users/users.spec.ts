@@ -118,7 +118,7 @@ describe('User detail (R-UI-024)', () => {
     const groups = [...root.querySelectorAll('quader-disclosure')].find((d) => text(d.querySelector('.heading')!).includes('Groups'))!;
     expect(groups.querySelector('.toggle')?.getAttribute('aria-expanded')).toBe('true');
     const notice = text(groups.querySelector('p[role="status"]')!);
-    expect(notice).toContain('Since Nov 4, 2026');
+    expect(notice).toMatch(/Since 0[34]\.11\.2026 \d\d:\d\d:00 \(\w{3}\.\)/);
     expect(notice).toContain('sign-ins through corp carry too many groups for the token');
     expect(notice).toContain('are removed at each of them');
     expect(await seriousViolations(root)).toEqual([]);

@@ -181,8 +181,10 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 		// six P1 requirements of W-35, P9).
 		// 1374 since search engines find a Bastion's public pages (R-BAS-121 to R-BAS-123, R-UI-231, four P1 requirements of
 		// W-35, P10).
-		if len(m.Reqs) != 1374 || count[prioMVP] != 743 || count[prioP1] != 592 || count[prioP2] != 39 {
-			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1374 (743, 592, 39)",
+		// 1377 since the form of a time is the reader's and a load stands in the middle of what loads (R-UI-250 to R-UI-252,
+		// three P1 requirements of UI-1126).
+		if len(m.Reqs) != 1377 || count[prioMVP] != 743 || count[prioP1] != 595 || count[prioP2] != 39 {
+			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1377 (743, 595, 39)",
 				len(m.Reqs), count[prioMVP], count[prioP1], count[prioP2])
 		}
 	})

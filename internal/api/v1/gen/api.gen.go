@@ -5890,6 +5890,36 @@ func (e TechnicalTokenCreatedState) Valid() bool {
 	}
 }
 
+// Defines values for TimeFormat.
+const (
+	Dmy        TimeFormat = "dmy"
+	DmySlash   TimeFormat = "dmy-slash"
+	DmyWeekday TimeFormat = "dmy-weekday"
+	Iso        TimeFormat = "iso"
+	Locale     TimeFormat = "locale"
+	Mdy        TimeFormat = "mdy"
+)
+
+// Valid indicates whether the value is a known member of the TimeFormat enum.
+func (e TimeFormat) Valid() bool {
+	switch e {
+	case Dmy:
+		return true
+	case DmySlash:
+		return true
+	case DmyWeekday:
+		return true
+	case Iso:
+		return true
+	case Locale:
+		return true
+	case Mdy:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for TokenState.
 const (
 	TokenStateActive  TokenState = "active"
@@ -15550,6 +15580,10 @@ type Preferences struct {
 
 	// Theme `light`, `dark` or `null` (the system decides).
 	Theme *string `json:"theme"`
+
+	// TimeFormat The form of a time (R-UI-250, the values of `TimeFormat`), or `null`: the installation's default
+	// (`GET /api/v1/system/time-format`, R-UI-251).
+	TimeFormat *string `json:"timeFormat"`
 }
 
 // PreferencesPatch `null` resets a member to its default. `revision` is accepted and ignored.
@@ -15561,6 +15595,9 @@ type PreferencesPatch struct {
 
 	// Theme `light`, `dark` or `null`.
 	Theme *string `json:"theme,omitempty"`
+
+	// TimeFormat A value of `TimeFormat`, or `null` for the installation's default.
+	TimeFormat *string `json:"timeFormat,omitempty"`
 }
 
 // Problem RFC 9457 problem details. The extension members are `code`, `requestId`, `errors`, `currentEtag`, `job` and `references`.
@@ -18754,6 +18791,19 @@ type TechnicalTokenSecret struct {
 
 	// Scope The ceiling a token puts on its owner's rights (R-AUTH-024). It never grants anything.
 	Scope TokenScope `json:"scope"`
+}
+
+// TimeFormat The form of a time in the UI (R-UI-250): `dmy-weekday` `26.11.2026 21:39:22 (Thu.)`, `dmy` `26.11.2026 21:39:22`, `iso`
+// `2026-11-26 21:39:22`, `dmy-slash` `26/11/2026 21:39:22`, `mdy` `11/26/2026 9:39:22 PM`, `locale` the form of the reader's
+// language.
+type TimeFormat string
+
+// TimeFormatSetting defines model for TimeFormatSetting.
+type TimeFormatSetting struct {
+	// TimeFormat The form of a time in the UI (R-UI-250): `dmy-weekday` `26.11.2026 21:39:22 (Thu.)`, `dmy` `26.11.2026 21:39:22`, `iso`
+	// `2026-11-26 21:39:22`, `dmy-slash` `26/11/2026 21:39:22`, `mdy` `11/26/2026 9:39:22 PM`, `locale` the form of the reader's
+	// language.
+	TimeFormat TimeFormat `json:"timeFormat"`
 }
 
 // Token A token as a list or an inspection shows it (R-AUTH-028). Neither the value nor its hash is part of it.
@@ -24035,6 +24085,9 @@ type PutSystemMaintenanceJSONRequestBody = MaintenanceInput
 // RunTaskJSONRequestBody defines body for RunTask for application/json ContentType.
 type RunTaskJSONRequestBody = TaskRunRequest
 
+// PutSystemTimeFormatJSONRequestBody defines body for PutSystemTimeFormat for application/json ContentType.
+type PutSystemTimeFormatJSONRequestBody = TimeFormatSetting
+
 // CreateTokenJSONRequestBody defines body for CreateToken for application/json ContentType.
 type CreateTokenJSONRequestBody = CreateTokenRequest
 
@@ -25962,6 +26015,12 @@ type ServerInterface interface {
 	// RunTask Run a maintenance task now
 	// (POST /api/v1/system/tasks/{name}/run)
 	RunTask(w http.ResponseWriter, r *http.Request, name TaskName, params RunTaskParams)
+	// GetSystemTimeFormat The installation's default form of a time
+	// (GET /api/v1/system/time-format)
+	GetSystemTimeFormat(w http.ResponseWriter, r *http.Request)
+	// PutSystemTimeFormat Set the installation's default form of a time
+	// (PUT /api/v1/system/time-format)
+	PutSystemTimeFormat(w http.ResponseWriter, r *http.Request)
 	// ListUpstreamDownloads The running downloads from the upstreams of remote repositories and the last 100 finished
 	// (GET /api/v1/system/upstream-downloads)
 	ListUpstreamDownloads(w http.ResponseWriter, r *http.Request)
@@ -44163,6 +44222,34 @@ func (siw *ServerInterfaceWrapper) RunTask(w http.ResponseWriter, r *http.Reques
 	handler.ServeHTTP(w, r)
 }
 
+// GetSystemTimeFormat operation middleware
+func (siw *ServerInterfaceWrapper) GetSystemTimeFormat(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetSystemTimeFormat(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PutSystemTimeFormat operation middleware
+func (siw *ServerInterfaceWrapper) PutSystemTimeFormat(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PutSystemTimeFormat(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListUpstreamDownloads operation middleware
 func (siw *ServerInterfaceWrapper) ListUpstreamDownloads(w http.ResponseWriter, r *http.Request) {
 
@@ -47137,6 +47224,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/system/banner", wrapper.PutSystemBanner)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/system/maintenance", wrapper.GetSystemMaintenance)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/system/maintenance", wrapper.PutSystemMaintenance)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/system/time-format", wrapper.GetSystemTimeFormat)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/system/time-format", wrapper.PutSystemTimeFormat)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/system/info", wrapper.GetSystemInfo)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/system/replicas", wrapper.ListReplicas)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/system/scanners", wrapper.ListScanners)

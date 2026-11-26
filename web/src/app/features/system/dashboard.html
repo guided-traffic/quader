@@ -56,7 +56,7 @@
             <span class="state" [class.warn]="c.level === 'warning'" [class.bad]="c.level === 'error'"
               ><span class="material-icons" aria-hidden="true">{{ c.level === 'error' ? 'error' : 'warning' }}</span
               ><ng-container i18n="@@dashboard.state.lost"
-                >Replica lost, last heartbeat {{ c.lastSeenAt | date: 'short' }}</ng-container
+                >Replica lost, last heartbeat {{ c.lastSeenAt | time }}</ng-container
               ></span
             >
           }
@@ -485,7 +485,7 @@
     </section>
   </div>
   <p class="note" i18n="@@dashboard.counted">
-    Counted {{ o.computedAt | date: 'mediumTime' }}; the counts are reused for
+    Counted {{ o.computedAt | time: 'time' }}; the counts are reused for
     {{ o.cacheSeconds }} seconds.
   </p>
 }

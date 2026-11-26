@@ -92,7 +92,7 @@
           }
         }
         @if (locked()) {
-          <br /><span class="warn"><span class="material-icons" aria-hidden="true">lock</span> <ng-container i18n="@@user.locked">Locked until</ng-container> {{ u.lockedUntil | date: 'medium' }}</span>
+          <br /><span class="warn"><span class="material-icons" aria-hidden="true">lock</span> <ng-container i18n="@@user.locked">Locked until</ng-container> {{ u.lockedUntil | time }}</span>
         }
       </dd>
       <dt i18n="@@user.admin">Administrator</dt>
@@ -104,9 +104,9 @@
         }
       </dd>
       <dt i18n="@@user.last-login">Last sign-in</dt>
-      <dd>{{ u.lastLoginAt | date: 'medium' }}</dd>
+      <dd>{{ u.lastLoginAt | time }}</dd>
       <dt i18n="@@user.created">Created</dt>
-      <dd>{{ u.createdAt | date: 'medium' }}</dd>
+      <dd>{{ u.createdAt | time }}</dd>
     </dl>
     @if (session.has('audit:read')) {
       <p><a class="btn btn-tertiary" routerLink="/admin/audit" [queryParams]="{ actor: u.username }" i18n="@@user.audit">Audit log of this user</a></p>
@@ -145,11 +145,11 @@
         <span class="material-icons" aria-hidden="true">warning</span>
         @if (missing.onMissingClaim === 'keep') {
           <ng-container i18n="@@user.claim-missing.keep">
-            Since {{ missing.since | date: 'medium' }}, sign-ins through {{ missing.provider }} carry {{ claimReason(missing.reason) }}. The groups synchronized from it are kept as they were, also any the provider has taken away since.
+            Since {{ missing.since | time }}, sign-ins through {{ missing.provider }} carry {{ claimReason(missing.reason) }}. The groups synchronized from it are kept as they were, also any the provider has taken away since.
           </ng-container>
         } @else {
           <ng-container i18n="@@user.claim-missing.clear">
-            Since {{ missing.since | date: 'medium' }}, sign-ins through {{ missing.provider }} carry {{ claimReason(missing.reason) }}. The groups synchronized from it are removed at each of them.
+            Since {{ missing.since | time }}, sign-ins through {{ missing.provider }} carry {{ claimReason(missing.reason) }}. The groups synchronized from it are removed at each of them.
           </ng-container>
         }
       </p>
@@ -229,8 +229,8 @@
         <quader-data-table [caption]="sessionsCaption" [columns]="sessionColumns" [empty]="false">
           @for (s of list; track s.id) {
             <tr>
-              <th scope="row"><time class="when" [attr.datetime]="s.createdAt">{{ s.createdAt | date: 'medium' }}</time></th>
-              <td><time class="when" [attr.datetime]="s.lastSeenAt">{{ s.lastSeenAt | date: 'medium' }}</time></td>
+              <th scope="row"><time class="when" [attr.datetime]="s.createdAt">{{ s.createdAt | time }}</time></th>
+              <td><time class="when" [attr.datetime]="s.lastSeenAt">{{ s.lastSeenAt | time }}</time></td>
               <td translate="no">{{ s.createdAddr ?? '–' }}</td>
               <td translate="no" class="wrap agent">{{ s.userAgent ?? '–' }}</td>
             </tr>

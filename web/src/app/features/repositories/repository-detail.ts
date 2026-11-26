@@ -1,4 +1,5 @@
-import { DatePipe, NgTemplateOutlet } from '@angular/common';
+import { NgTemplateOutlet } from '@angular/common';
+import { TimePipe } from '../../shared/time-pipe';
 import { DocumentBlock } from '../../shared/document-block';
 import { Component, computed, effect, inject, input, resource, signal, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
@@ -98,7 +99,7 @@ type LazySection = 'deb-keys' | 'deb-index' | 'ansible-imports' | 'ansible-tombs
     AnsibleImportTasks,
     DocumentBlock,
     AnsibleTombstones,
-    DatePipe,
+    TimePipe,
     DebIndexStatePanel,
     DebSigningKeys,
     DebUpstreamKeys,

@@ -11,9 +11,11 @@ import (
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/meta/postgres"
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/sysstate"
 )
 
-// The caller's UI preferences (R-API-021). A user who never saved any has the
+// The caller's UI preferences (R-API-021): the language, the theme, the form of a time (R-UI-250; empty for the installation's default,
+// R-UI-251) and the single-key shortcuts. A user who never saved any has the
 // defaults at revision 1 and no row; the first write inserts revision 2. The
 // revision column user_preferences.revision is the ETag (R-API-012).
 
@@ -23,13 +25,14 @@ const defaultKeyboardShortcuts = true
 
 type prefs struct {
 	locale, theme     string
+	timeFormat        string
 	keyboardShortcuts bool
 	revision          int64
 }
 
 func (p prefs) representation() gen.Preferences {
 	return gen.Preferences{
-		Locale: optString(p.locale), Theme: optString(p.theme), KeyboardShortcuts: p.keyboardShortcuts,
+		Locale: optString(p.locale), Theme: optString(p.theme), TimeFormat: optString(p.timeFormat), KeyboardShortcuts: p.keyboardShortcuts,
 		Revision: int(p.revision),
 	}
 }
@@ -44,7 +47,7 @@ func loadPreferences(ctx context.Context, db q.DBTX, userID string) (prefs, erro
 		return prefs{keyboardShortcuts: defaultKeyboardShortcuts, revision: 1}, nil
 	}
 	r := rows[0]
-	return prefs{locale: r.Locale, theme: r.Theme, keyboardShortcuts: r.KeyboardShortcuts, revision: r.Revision}, nil
+	return prefs{locale: r.Locale, theme: r.Theme, timeFormat: r.TimeFormat, keyboardShortcuts: r.KeyboardShortcuts, revision: r.Revision}, nil
 }
 
 // PreferredLocale is the locale stored in the preferences of a user, "" for none.
@@ -93,6 +96,7 @@ func (s *Server) GetPreferences(w http.ResponseWriter, r *http.Request, _ gen.Ge
 type prefsPatchBody struct {
 	Locale            json.RawMessage `json:"locale"`
 	Theme             json.RawMessage `json:"theme"`
+	TimeFormat        json.RawMessage `json:"timeFormat"`
 	KeyboardShortcuts json.RawMessage `json:"keyboardShortcuts"`
 	Revision          json.RawMessage `json:"revision"`
 }
@@ -127,6 +131,7 @@ func (in prefsPatchBody) apply(cur prefs) (prefs, error) {
 	err := errorsFirst(
 		func() error { return set(in.Locale, "/locale", &next.locale, "en", "de") },
 		func() error { return set(in.Theme, "/theme", &next.theme, "light", "dark") },
+		func() error { return set(in.TimeFormat, "/timeFormat", &next.timeFormat, sysstate.TimeFormats()...) },
 		func() error {
 			if string(in.KeyboardShortcuts) == "null" {
 				next.keyboardShortcuts = defaultKeyboardShortcuts
@@ -199,7 +204,7 @@ func (s *Server) UpdatePreferences(w http.ResponseWriter, r *http.Request, _ gen
 			return nil
 		}
 		rows, err := q.New(ptx).PreferencesUpsert(r.Context(), q.PreferencesUpsertParams{
-			UserID: uid, Locale: next.locale, Theme: next.theme, KeyboardShortcuts: next.keyboardShortcuts,
+			UserID: uid, Locale: next.locale, Theme: next.theme, TimeFormat: next.timeFormat, KeyboardShortcuts: next.keyboardShortcuts,
 			IfRevision: rev,
 		})
 		if err != nil {
@@ -213,7 +218,7 @@ func (s *Server) UpdatePreferences(w http.ResponseWriter, r *http.Request, _ gen
 			return Failed(latest.revision)
 		}
 		r0 := rows[0]
-		out = prefs{locale: r0.Locale, theme: r0.Theme, keyboardShortcuts: r0.KeyboardShortcuts, revision: r0.Revision}
+		out = prefs{locale: r0.Locale, theme: r0.Theme, timeFormat: r0.TimeFormat, keyboardShortcuts: r0.KeyboardShortcuts, revision: r0.Revision}
 		return nil
 	})
 	if err != nil {

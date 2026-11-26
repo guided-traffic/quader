@@ -31,6 +31,10 @@ import {
 import { Disclosure } from '../../shared/ui/disclosure';
 import { PageHeader } from '../../shared/ui/page-header';
 import { Busy } from '../../shared/ui/busy';
+import { TimePipe } from '../../shared/time-pipe';
+import { timeFormatLabel, timeFormatOptions } from '../../shared/time-format-options';
+import { TimeFormat, isTimeFormat } from '../../shared/time-format';
+import { TimeFormatStore } from '../../core/time-format-store';
 
 type Severity = 'info' | 'warning' | 'critical';
 
@@ -42,15 +46,16 @@ const MAINTENANCE_MESSAGE_MAX = 500;
  * General settings (R-UI-033): the public base URL and where it comes from (read only, `GET /api/v1/system/info`), the installation's
  * default project visibility, its restricted visibility levels and what is public now (R-UI-053, R-UI-140,
  * `/api/v1/settings/visibility`), the system banner
- * (R-OPS-025) and the read-only maintenance mode (R-OPS-024). The banner and the mode are two documents with a save each, so a
+ * (R-OPS-025), the default form of a time (R-UI-251, `/api/v1/system/time-format`) and the read-only maintenance mode (R-OPS-024). The banner and the mode are two documents with a save each, so a
  * change of one never carries an unsaved edit of the other. Switching the mode on asks first, because it refuses every write of every
  * user until it is switched off. After a save the notice shows on this screen at once; on every other screen it appears with the
  * next read of the banner store, within a minute (R-UI-033).
  */
 @Component({
   selector: 'quader-general-settings',
-  imports: [Busy, 
+  imports: [Busy,
     PageHeader,
+    TimePipe,
     Checkbox,
     ErrorNotice,
     Needs,
@@ -82,6 +87,20 @@ export class GeneralSettings {
   private readonly notices = inject(BannerStore);
   private readonly visibilityApi = inject(VisibilityApi);
   protected readonly session = inject(SessionStore);
+  private readonly times = inject(TimeFormatStore);
+
+  /** The stored default form of a time and the one chosen in the field (R-UI-251). */
+  protected readonly storedTimeFormat = signal<TimeFormat | null>(null);
+  protected readonly chosenTimeFormat = signal<string>('');
+  protected readonly timeFormatError = signal<ApiError | null>(null);
+  protected readonly savingTimeFormat = signal(false);
+  protected readonly timeFormatDirty = computed(() => this.storedTimeFormat() !== null && this.chosenTimeFormat() !== this.storedTimeFormat());
+  /** Each form with today's time as its example (Q-UI-1561). */
+  protected readonly timeFormatChoices: readonly SelectOption[] = timeFormatOptions();
+  protected readonly timeFormatSummary = computed(() => {
+    const f = this.storedTimeFormat();
+    return f ? timeFormatLabel(f) : '';
+  });
 
   protected readonly info = signal<SystemInfo | null>(null);
   protected readonly stored = signal<BannerModel | null>(null);
@@ -214,11 +233,17 @@ export class GeneralSettings {
   /** Reads the page; its notice's Retry reads it again, the visibility with it, and the failure stays until the answer (R-UI-216). */
   protected async load(): Promise<void> {
     try {
-      const [info, banner, mode] = await Promise.all([this.api.info(), this.api.banner(), this.api.maintenance()]);
+      const [info, banner, mode, times] = await Promise.all([
+        this.api.info(),
+        this.api.banner(),
+        this.api.maintenance(),
+        this.api.timeFormat(),
+      ]);
       this.loadError.set(null);
       this.info.set(info);
       this.adoptBanner(banner);
       this.adoptMode(mode);
+      this.adoptTimeFormat(times.timeFormat);
     } catch (e) {
       this.loadError.set(asApiError(e));
     }
@@ -265,6 +290,31 @@ export class GeneralSettings {
   protected repositoryLink(name: string): string[] {
     const [project = '', key = ''] = name.split('/');
     return ['/projects', project, 'repositories', key, 'settings'];
+  }
+
+  private adoptTimeFormat(value: string): void {
+    if (!isTimeFormat(value)) return;
+    this.storedTimeFormat.set(value);
+    this.chosenTimeFormat.set(value);
+  }
+
+  protected async saveTimeFormat(event: Event): Promise<void> {
+    event.preventDefault();
+    const chosen = this.chosenTimeFormat();
+    if (!this.timeFormatDirty() || this.savingTimeFormat() || !isTimeFormat(chosen)) return;
+    this.savingTimeFormat.set(true);
+    this.timeFormatError.set(null);
+    try {
+      const saved = await this.api.setTimeFormat({ timeFormat: chosen });
+      this.adoptTimeFormat(saved.timeFormat);
+      // The writer's own screens follow at once; every other screen with the next read of the banner store, within a minute.
+      this.times.adoptInstallation(saved.timeFormat);
+      this.notifier.status($localize`:@@general.time-format.saved:Time format saved.`);
+    } catch (e) {
+      this.timeFormatError.set(asApiError(e));
+    } finally {
+      this.savingTimeFormat.set(false);
+    }
   }
 
   private adoptBanner(b: BannerModel): void {

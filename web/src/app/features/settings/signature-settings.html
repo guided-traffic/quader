@@ -164,7 +164,7 @@
         <dt i18n="@@sig.root.fetched">Fetched</dt>
         <dd>
           @if (root.fetchedAt; as at) {
-            <time [attr.datetime]="at" [attr.title]="at | date: 'medium'">{{ at | date: 'mediumDate' }}</time>
+            <time [attr.datetime]="at" [attr.title]="at | time">{{ at | time: 'date' }}</time>
           } @else {
             –
           }

@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { TimePipe } from '../../shared/time-pipe';
 import { Component, DestroyRef, computed, effect, inject, resource, signal, viewChild } from '@angular/core';
 import { live } from '../../core/live-refresh';
 import { newIdempotencyKey } from '../../api/client';
@@ -65,7 +65,7 @@ export const PRIMARY_DISAGREEMENT_GRACE_MS = 30_000;
  */
 @Component({
   selector: 'quader-system-status',
-  imports: [Busy, Loading, DataTable, DatePipe, ErrorNotice, JobProgress, JobTable, NoValue, ScannerReplicas, TasksCard, TechnicalDetails],
+  imports: [Busy, Loading, DataTable, TimePipe, ErrorNotice, JobProgress, JobTable, NoValue, ScannerReplicas, TasksCard, TechnicalDetails],
   templateUrl: './system-status.html',
   styleUrl: './system-status.scss',
 })

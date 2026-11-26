@@ -1,5 +1,5 @@
 import { DocumentBlock } from '../../shared/document-block';
-import { DatePipe } from '@angular/common';
+import { TimePipe } from '../../shared/time-pipe';
 import {
   Component,
   ElementRef,
@@ -90,7 +90,7 @@ const PRESETS: Readonly<Record<string, number>> = {
   selector: 'quader-audit-log',
   imports: [Loading, 
     PageHeader,
-    DatePipe,
+    TimePipe,
     RouterLink,
     CopyButton,
     DocumentBlock,

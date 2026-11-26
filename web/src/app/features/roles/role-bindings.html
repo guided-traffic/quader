@@ -30,7 +30,7 @@
           @for (b of holders(r.name); track b.principal) {
             <tr>
               <th scope="row" translate="no" [attr.title]="b.principal">{{ person(b.principal) }}</th>
-              <td>{{ b.grantedAt | date: 'medium' }}</td>
+              <td>{{ b.grantedAt | time }}</td>
               <td translate="no" [attr.title]="b.grantedBy || null">{{ b.grantedBy ? person(b.grantedBy) : '' }}</td>
               <td>
                 @if (fromConfiguration(b)) {

@@ -723,6 +723,19 @@ func TestAPIOperations(t *testing.T) {
 		if want(t, rp, 200, ""); rp.json(t)["keyboardShortcuts"] != true || rp.json(t)["revision"] != float64(5) {
 			t.Fatalf("%s", rp.Body)
 		}
+		// The form of a time is stored with the row (R-UI-250, migration 00149); null takes it back to the installation's default.
+		if g := next().call(get, "/api/v1/users/me/preferences", p.Secret, nil); g.json(t)["timeFormat"] != nil {
+			t.Fatalf("a stored row without a form: %s", g.Body)
+		}
+		rp = next().call(patch, "/api/v1/users/me/preferences", p.Secret, map[string]any{"timeFormat": "iso"}, "If-Match", `"5"`)
+		if want(t, rp, 200, ""); rp.json(t)["timeFormat"] != "iso" || rp.json(t)["theme"] != "dark" || rp.json(t)["revision"] != float64(6) {
+			t.Fatalf("%s", rp.Body)
+		}
+		want(t, next().call(patch, "/api/v1/users/me/preferences", p.Secret, map[string]any{"timeFormat": "yyyy"}, "If-Match", `"6"`), 422, "validation_failed")
+		rp = next().call(patch, "/api/v1/users/me/preferences", p.Secret, map[string]any{"timeFormat": nil}, "If-Match", `"6"`)
+		if want(t, rp, 200, ""); rp.json(t)["timeFormat"] != nil || rp.json(t)["revision"] != float64(7) {
+			t.Fatalf("%s", rp.Body)
+		}
 		// A service account has no preferences.
 		s := a.serviceAccount("pref-bot")
 		sat := a.sat(s)

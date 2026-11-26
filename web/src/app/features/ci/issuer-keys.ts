@@ -1,5 +1,5 @@
 import { NoValue } from '../../shared/ui/no-value';
-import { DatePipe } from '@angular/common';
+import { TimePipe } from '../../shared/time-pipe';
 import { Component, effect, inject, input, signal, untracked } from '@angular/core';
 import { CiApi, CiKeyStatus } from '../../api/ci-api';
 import { ApiError } from '../../api/problem';
@@ -22,7 +22,7 @@ import { Loading } from '../../shared/ui/loading';
  */
 @Component({
   selector: 'quader-ci-issuer-keys',
-  imports: [Loading, Busy, DatePipe, ErrorNotice, DataTable, Needs, NoValue],
+  imports: [Loading, Busy, TimePipe, ErrorNotice, DataTable, Needs, NoValue],
   template: `
     <div class="toolbar">
       <button class="btn btn-confirm" type="button" [disabled]="busy() || !session.has('ci:write')" [quaderBusy]="busy()" aria-describedby="needs-ci-keys" (click)="refresh()" i18n="@@ci.keys.refresh">
@@ -38,16 +38,16 @@ import { Loading } from '../../shared/ui/loading';
         <dt i18n="@@ci.keys.jwks">Key set</dt>
         <dd translate="no">{{ s.jwksUri ?? '–' }}</dd>
         <dt i18n="@@ci.keys.fetched-at">Last fetch</dt>
-        <dd>{{ s.fetchedAt ? (s.fetchedAt | date: 'medium') : '–' }}</dd>
+        <dd>{{ s.fetchedAt ? (s.fetchedAt | time) : '–' }}</dd>
         <dt i18n="@@ci.keys.next">Next refresh</dt>
-        <dd>{{ s.nextRefreshAt ? (s.nextRefreshAt | date: 'medium') : '–' }}</dd>
+        <dd>{{ s.nextRefreshAt ? (s.nextRefreshAt | time) : '–' }}</dd>
         <dt i18n="@@ci.keys.last-error">Last error</dt>
         <dd>
           @if (s.lastError) {
             <!-- A sentence, not a status: the icon carries the colour and the words wrap in the fact's value (R-UI-214). -->
             <span class="material-icons inline bad" aria-hidden="true">error</span>{{ keyError(s.lastError) }}
             @if (s.lastErrorAt) {
-              <span class="muted">({{ s.lastErrorAt | date: 'medium' }})</span>
+              <span class="muted">({{ s.lastErrorAt | time }})</span>
             }
             <!-- What the fetch learned, without a click (R-UI-216, Q-UI-1227): the code, the status, the host and the line itself. -->
             @if (keyFacts(s.lastError); as f) {

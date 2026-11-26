@@ -2,6 +2,7 @@ import { reasonPhrase } from '../../api/problem';
 import { UpstreamTestResult } from '../../api/repositories-api';
 import { FAILURE_WORDS, cutNote, timeText } from '../../shared/failure-report';
 import { upstreamTestErrorText, upstreamVerdictText } from './upstream-test-words';
+import { formatTime } from '../../shared/time-format';
 
 /**
  * What a connection test learned, as the result shows it and **Copy report** copies it (R-UI-216 for a test, Q-UI-1226): every fact
@@ -118,7 +119,7 @@ export function upstreamTestFacts(r: UpstreamTestResult, at: Date, locale: strin
   }
   if (r.reachable || r.durationMs > 0) facts.push({ label: W.duration, value: `${new Intl.NumberFormat(locale).format(r.durationMs)} ms` });
   if (r.tls) {
-    const until = new Intl.DateTimeFormat(locale, { dateStyle: 'medium' }).format(new Date(r.tls.notAfter));
+    const until = formatTime(r.tls.notAfter, { part: 'date', locale });
     facts.push({
       label: W.certificate,
       value: r.tls.peerSubject,

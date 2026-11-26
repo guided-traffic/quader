@@ -360,7 +360,7 @@
           @if (r.account.removedByUpdateAt; as at) {
             <p class="banner-warning" role="note">
               <span class="material-icons inline warn" aria-hidden="true">warning</span>
-              <span i18n="@@wellknown.account.removed-by-update">The account was removed when Quader's address moved to another host on <time [attr.datetime]="at">{{ at | date: 'mediumDate' }}</time>; enter it again.</span>
+              <span i18n="@@wellknown.account.removed-by-update">The account was removed when Quader's address moved to another host on <time [attr.datetime]="at">{{ at | time: 'date' }}</time>; enter it again.</span>
             </p>
           }
           @if (accountError(); as e) {
@@ -387,12 +387,12 @@
               <dd>{{ filesText() }}</dd>
               @if (r.account.lastDownloadAt; as at) {
                 <dt i18n="@@wellknown.account.last-download">Last download</dt>
-                <dd><time [attr.datetime]="at">{{ at | date: 'medium' }}</time></dd>
+                <dd><time [attr.datetime]="at">{{ at | time }}</time></dd>
               }
               @if (r.account.lastFailure; as failed) {
                 <dt i18n="@@wellknown.account.last-failure">Last failed download</dt>
                 <dd>
-                  <time [attr.datetime]="failed.at">{{ failed.at | date: 'medium' }}</time>
+                  <time [attr.datetime]="failed.at">{{ failed.at | time }}</time>
                   @if (failed.code) {
                     &ngsp;<code translate="no">{{ failed.code }}</code>
                   }
@@ -528,11 +528,11 @@
   @if (documentValue(); as doc) {
     @if (doc.createdAt; as at) {
       <dt i18n="@@repo.detail.created">Created</dt>
-      <dd><time [attr.datetime]="at">{{ at | date: 'medium' }}</time></dd>
+      <dd><time [attr.datetime]="at">{{ at | time }}</time></dd>
     }
     @if (doc.updatedAt; as at) {
       <dt i18n="@@repo.detail.updated">Last changed</dt>
-      <dd><time [attr.datetime]="at">{{ at | date: 'medium' }}</time></dd>
+      <dd><time [attr.datetime]="at">{{ at | time }}</time></dd>
     }
   }
 </ng-template>

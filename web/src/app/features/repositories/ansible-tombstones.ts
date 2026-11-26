@@ -1,5 +1,5 @@
 import { personName } from '../../shared/person-name';
-import { DatePipe } from '@angular/common';
+import { TimePipe } from '../../shared/time-pipe';
 import { Component, effect, inject, input, signal, untracked } from '@angular/core';
 import { AnsibleApi, AnsibleTombstone } from '../../api/ansible-api';
 import { ApiError } from '../../api/problem';
@@ -17,7 +17,7 @@ import { Busy } from '../../shared/ui/busy';
  */
 @Component({
   selector: 'quader-ansible-tombstones',
-  imports: [Busy, DatePipe, DataTable, ErrorNotice],
+  imports: [Busy, TimePipe, DataTable, ErrorNotice],
   template: `
     <section class="tombstones" aria-labelledby="ansible-tombstones-heading">
       <h2 id="ansible-tombstones-heading" class="visually-hidden" i18n="@@ansible.tombstones.heading">Tombstones</h2>
@@ -45,7 +45,7 @@ import { Busy } from '../../shared/ui/busy';
             <th scope="row" translate="no">{{ t.name }}</th>
             <td translate="no">{{ t.version }}</td>
             <td><code translate="no" [attr.title]="t.sha256">{{ t.sha256.slice(0, 12) }}</code></td>
-            <td><time [attr.datetime]="t.deletedAt">{{ t.deletedAt | date: 'medium' }}</time></td>
+            <td><time [attr.datetime]="t.deletedAt">{{ t.deletedAt | time }}</time></td>
             <td translate="no" [attr.title]="t.deletedBy">{{ person(t.deletedBy) }}</td>
             <td>
               @if (canManage()) {

@@ -1,6 +1,7 @@
 import { DownloadLink } from '../../shared/download-link';
 import { NamespaceOf } from './namespace-of';
-import { DatePipe, DecimalPipe, NgComponentOutlet } from '@angular/common';
+import { DecimalPipe, NgComponentOutlet } from '@angular/common';
+import { TimePipe } from '../../shared/time-pipe';
 import { Component, computed, effect, inject, input, output, resource, signal, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { PackageDeprecation, PackageDocTree, PackageSummary, PackageVersion, PackageVersionDocs } from '../../api/packages-api';
@@ -187,7 +188,7 @@ interface TabEntry {
     SignatureBadge,
     VersionSignatures,
     Disclosure,
-    DatePipe,
+    TimePipe,
     DistTags,
     DependencyList,
     UsedBy,

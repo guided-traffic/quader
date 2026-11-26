@@ -1,5 +1,5 @@
 import { DocumentBlock } from '../../../shared/document-block';
-import { DatePipe } from '@angular/common';
+import { TimePipe } from '../../../shared/time-pipe';
 import { Component, DestroyRef, computed, effect, inject, input, resource, signal, untracked } from '@angular/core';
 import { live } from '../../../core/live-refresh';
 import { Router, RouterLink } from '@angular/router';
@@ -47,7 +47,7 @@ export const RUNS_PAGE_SIZE = 25;
  */
 @Component({
   selector: 'quader-backups-page',
-  imports: [Busy, Loading, DocumentBlock, DatePipe, RouterLink, EmptyState, ErrorNotice, FilterPanel, ListHead, NoValue, SelectField, BackupState, ManualRunPanel],
+  imports: [Busy, Loading, DocumentBlock, TimePipe, RouterLink, EmptyState, ErrorNotice, FilterPanel, ListHead, NoValue, SelectField, BackupState, ManualRunPanel],
   templateUrl: './backups-page.html',
   styleUrl: './backups-page.scss',
 })

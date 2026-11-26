@@ -6,7 +6,11 @@
 }
 
 <!-- One column like the user's page in the admin area: who you are as read-only fields at the top, then quiet sections
-     (Q-UI-333); the preferences are open, being what a user changes here. -->
+     (Q-UI-333); the preferences are open, being what a user changes here. While nothing of the page is read yet, the page's load
+     stands in the middle of the content below the tabs (R-UI-252); an error stays above it while the page tries again. -->
+@if (pageLoading()) {
+  <quader-loading size="page" i18n="@@profile.loading">Loading your account.</quader-loading>
+} @else {
 @if (user(); as u) {
   <quader-profile-avatar [seed]="u.id" />
 
@@ -17,13 +21,13 @@
     </div>
     <div class="row">
       <quader-text-field width="name" i18n-label="@@profile.email" label="Email" name="email" [value]="u.email ?? ''" [readonly]="true" />
-      <quader-text-field width="name" i18n-label="@@profile.last-login" label="Last sign-in" name="lastLogin" [value]="(u.lastLoginAt | date: 'medium') ?? ''" [readonly]="true" />
+      <quader-text-field width="name" i18n-label="@@profile.last-login" label="Last sign-in" name="lastLogin" [value]="u.lastLoginAt | time" [readonly]="true" />
     </div>
     <p class="muted" i18n="@@profile.identity-note">
       Your name and email come from the identity provider and are replaced at every sign-in.
     </p>
   </div>
-} @else if (!loadError()) {
+} @else if (loading()) {
   <quader-loading i18n="@@profile.loading">Loading your account.</quader-loading>
 }
 
@@ -32,7 +36,7 @@
     i18n-heading="@@profile.preferences"
     heading="Preferences"
     i18n-hint="@@profile.preferences-hint"
-    hint="Language, theme and keyboard shortcuts, kept with your account."
+    hint="Language, time format, theme and keyboard shortcuts, kept with your account."
     [expanded]="true"
   >
     @if (prefError(); as e) {
@@ -41,6 +45,13 @@
     @if (prefsLoaded()) {
       <form class="form-grid" (submit)="savePreferences($event)">
         <quader-select-field i18n-label="@@profile.pref.locale" label="Language" name="locale" [options]="localeOptions" [(value)]="locale" />
+        <quader-select-field
+          i18n-label="@@profile.pref.time-format"
+          label="Time format"
+          name="timeFormat"
+          [options]="timeFormatOptions()"
+          [(value)]="timeFormat"
+        />
         <quader-select-field i18n-label="@@profile.pref.theme" label="Theme" name="theme" [options]="themeOptions" [(value)]="theme" />
         <quader-checkbox [checked]="shortcuts()" (checkedChange)="shortcuts.set($event)">
           <ng-container i18n="@@profile.pref.shortcuts">Keyboard shortcuts with a single key, such as / for the search</ng-container>
@@ -118,3 +129,4 @@
     </quader-disclosure>
   }
 </div>
+}

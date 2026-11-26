@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { TimePipe } from '../../shared/time-pipe';
 import { Component, computed, inject, input, output } from '@angular/core';
 import { Job, JobState, jobCancellable } from '../../api/jobs-api';
 import { TechnicalDetails } from '../../shared/technical-details';
@@ -51,7 +51,7 @@ export function jobErrorText(code: NonNullable<Job['error']>['code']): string {
  */
 @Component({
   selector: 'quader-job-table',
-  imports: [DataTable, DatePipe, NoValue, TechnicalDetails],
+  imports: [DataTable, TimePipe, NoValue, TechnicalDetails],
   styles: `
     /* A result is read in full: it wraps in its column, at any character where it must. */
     .long {
@@ -81,7 +81,7 @@ export function jobErrorText(code: NonNullable<Job['error']>['code']): string {
             }
           </td>
           <td>
-            <time [attr.datetime]="j.enqueuedAt">{{ j.enqueuedAt | date: 'medium' }}</time>
+            <time [attr.datetime]="j.enqueuedAt">{{ j.enqueuedAt | time }}</time>
           </td>
           <td translate="no">
             @if (progressText(j); as p) {

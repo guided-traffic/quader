@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { TimePipe } from '../../shared/time-pipe';
 import { Component, effect, inject, input, untracked } from '@angular/core';
 import { LIVE_SLOW_MS, live } from '../../core/live-refresh';
 import { AnsibleApi, AnsibleImportTask } from '../../api/ansible-api';
@@ -20,7 +20,7 @@ export function importStateText(state: AnsibleImportTask['state']): string {
  */
 @Component({
   selector: 'quader-ansible-import-tasks',
-  imports: [DatePipe, DataTable, Disclosure],
+  imports: [TimePipe, DataTable, Disclosure],
   template: `
     <section class="imports" aria-labelledby="ansible-imports-heading">
       <h2 id="ansible-imports-heading" class="visually-hidden" i18n="@@ansible.imports.heading">Import tasks</h2>
@@ -56,7 +56,7 @@ export function importStateText(state: AnsibleImportTask['state']): string {
                 <p class="reason" data-testid="ansible-import-error">{{ error.description }}</p>
               }
             </td>
-            <td><time [attr.datetime]="task.createdAt">{{ task.createdAt | date: 'medium' }}</time></td>
+            <td><time [attr.datetime]="task.createdAt">{{ task.createdAt | time }}</time></td>
             <td>
               @if (task.messages.length > 0) {
                 <quader-disclosure [inline]="true" [heading]="messagesOf(task.messages.length)">

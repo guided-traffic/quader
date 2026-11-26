@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { TimePipe } from '../../shared/time-pipe';
 import { Component, inject, signal } from '@angular/core';
 import { ApiError } from '../../api/problem';
 import { SessionsApi, UserSession } from '../../api/sessions-api';
@@ -18,7 +18,7 @@ import { Busy } from '../../shared/ui/busy';
  */
 @Component({
   selector: 'quader-profile-sessions',
-  imports: [Busy, DatePipe, DataTable, ErrorNotice, PageHeader, ProfileNav],
+  imports: [Busy, TimePipe, DataTable, ErrorNotice, PageHeader, ProfileNav],
   template: `
     <quader-page-header [heading]="heading">
       @if (others() > 0) {
@@ -39,12 +39,12 @@ import { Busy } from '../../shared/ui/busy';
         @for (s of sessions(); track s.id) {
           <tr>
             <th scope="row">
-              <time [attr.datetime]="s.createdAt">{{ s.createdAt | date: 'medium' }}</time>
+              <time [attr.datetime]="s.createdAt">{{ s.createdAt | time }}</time>
               @if (s.current) {
                 <span class="badge this-session"><span class="material-icons" aria-hidden="true">computer</span><ng-container i18n="@@profile.sessions.this">This session</ng-container></span>
               }
             </th>
-            <td><time [attr.datetime]="s.lastSeenAt">{{ s.lastSeenAt | date: 'medium' }}</time></td>
+            <td><time [attr.datetime]="s.lastSeenAt">{{ s.lastSeenAt | time }}</time></td>
             <td translate="no">{{ s.createdAddr ?? '' }}</td>
             <td translate="no" class="wrap agent">{{ s.userAgent ?? '' }}</td>
             <td translate="no">{{ s.providerId ?? s.authMethod }}</td>
@@ -52,7 +52,7 @@ import { Busy } from '../../shared/ui/busy';
               @if (!s.current) {
                 <button quaderBusy class="btn btn-tertiary" type="button" (click)="end(s)">
                   <ng-container i18n="@@profile.sessions.end">End</ng-container>
-                  <span class="visually-hidden"> {{ s.createdAt | date: 'medium' }}</span>
+                  <span class="visually-hidden"> {{ s.createdAt | time }}</span>
                 </button>
               }
             </td>

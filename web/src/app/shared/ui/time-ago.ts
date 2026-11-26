@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { TimePipe } from '../time-pipe';
 import { Component, LOCALE_ID, computed, inject, input } from '@angular/core';
 import { relativeTime } from '../../features/packages/format-time';
 
@@ -23,11 +23,11 @@ export function timeAgo(iso: string, now: number = Date.now()): string {
  */
 @Component({
   selector: 'quader-time-ago',
-  imports: [DatePipe],
+  imports: [TimePipe],
   template: `@if (absolute() === 'title') {
-      <time [attr.datetime]="at()" [attr.title]="at() | date: 'medium' : zone()">{{ relative() }}</time>
+      <time [attr.datetime]="at()" [attr.title]="at() | time: 'datetime' : zone()">{{ relative() }}</time>
     } @else {
-      {{ relative() }} (<time [attr.datetime]="at()">{{ at() | date: 'medium' : zone() }}</time>)
+      {{ relative() }} (<time [attr.datetime]="at()">{{ at() | time: 'datetime' : zone() }}</time>)
     }`,
   // The date and the time are one value: a line breaks before or after it, never inside it.
   styles: `

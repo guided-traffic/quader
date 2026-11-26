@@ -1,4 +1,4 @@
-import { formatDate } from '@angular/common';
+import { formatTime } from '../../shared/time-format';
 import { Problem } from '../../api/problem';
 import { Figure } from '../../api/limits-api';
 import { limitText } from '../../features/limits/figures';
@@ -75,7 +75,7 @@ export function limitNotice(problem: Partial<Problem> | null, retryAfter: number
   const again = wait !== null && wait > 0 ? ' ' + $localize`:@@limits.notice.again:Try again in ${waitText(wait)}:wait:.` : '';
   if (code === 'caller_blocked') {
     if (wait === null) return $localize`:@@limits.notice.blocked-short:Downloads are paused for you after too many refused requests.`;
-    const time = formatDate(now + wait * 1000, 'shortTime', locale);
+    const time = formatTime(now + wait * 1000, { part: 'time', locale });
     return $localize`:@@limits.notice.blocked:Downloads are paused for you until ${time}:time: after too many refused requests.`;
   }
   const known = figure !== null && FIGURES.includes(figure) && limit !== null;

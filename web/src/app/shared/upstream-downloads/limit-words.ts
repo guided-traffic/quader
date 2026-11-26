@@ -1,3 +1,4 @@
+import { formatTime } from '../time-format';
 /**
  * The words of an upstream's rate limit that holds a download queue (remote-curation.md R-CUR-011 "An upstream's rate limit", R-CUR-018;
  * api-and-ui.md Q-UI-1100 to Q-UI-1102): the tab **Downloads** says it above its list, on a row and on a bulk's line, and the top bar's
@@ -16,14 +17,16 @@ function viewerLocale(): string {
   return (typeof $localize !== 'undefined' && $localize.locale) || 'en-US';
 }
 
-/** A time of day in the viewer's language, "08:12"; with the day where it is not the viewer's today, "26 Nov, 08:12". */
+/**
+ * A time of day in the reader's form of a time (R-UI-250), "08:12:31"; with the date where it is not the viewer's today,
+ * "27.11.2026 08:12:31 (Fri.)".
+ */
 export function clockText(iso: string, now: number = Date.now(), locale: string = viewerLocale()): string {
   const at = new Date(iso);
   if (Number.isNaN(at.getTime())) return iso;
   const today = new Date(now);
   const sameDay = at.getFullYear() === today.getFullYear() && at.getMonth() === today.getMonth() && at.getDate() === today.getDate();
-  const time: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit' };
-  return new Intl.DateTimeFormat(locale, sameDay ? time : { ...time, day: 'numeric', month: 'short' }).format(at);
+  return formatTime(at, { part: sameDay ? 'time' : 'datetime', locale });
 }
 
 /**

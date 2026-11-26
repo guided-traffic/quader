@@ -21,6 +21,7 @@ var ifMatchExempt = map[string]string{
 	// has no precondition, and a repeated write of the same values changes nothing.
 	"putSystemBanner":      "replaces the one banner document; the last write wins (R-OPS-025)",
 	"putSystemMaintenance": "sets the one maintenance mode; the last write wins and a repeat changes nothing (R-OPS-024)",
+	"putSystemTimeFormat":  "sets the one default form of a time; the last write wins and a repeat changes nothing (R-UI-251)",
 	// R-AUTHZ-026: adding an administrator binds one pair and an assignment binds a repository to a
 	// project; the version of a project covers its fields only (Q-AUTHZ-185).
 	"setProjectMember": "binds one pair (R-API-012)",

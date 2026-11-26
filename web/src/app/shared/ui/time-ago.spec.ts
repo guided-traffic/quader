@@ -40,7 +40,7 @@ describe('Time ago', () => {
     const fixture = TestBed.createComponent(Host);
     await settle(fixture);
     const root = fixture.nativeElement as HTMLElement;
-    expect(text(root)).toMatch(/^3 minutes ago \(Nov 12, 2026, \d+:57:00 [AP]M\)$/);
+    expect(text(root)).toMatch(/^3 minutes ago \(12\.11\.2026 \d\d:57:00 \(Thu\.\)\)$/);
     expect(root.querySelector('time')?.getAttribute('datetime')).toBe(before(3 * 60_000));
     await expectAccessible(root);
   });
@@ -58,7 +58,7 @@ describe('Time ago', () => {
     expect(text(root)).toBe('2 days ago');
     const time = root.querySelector('time')!;
     expect(time.getAttribute('datetime')).toBe(before(2 * 86_400_000));
-    expect(time.getAttribute('title')).toMatch(/^Nov 10, 2026, \d+:00:00\s[AP]M$/);
+    expect(time.getAttribute('title')).toMatch(/^10\.11\.2026 \d\d:00:00 \(Tue\.\)$/);
     await expectAccessible(root);
   });
 });

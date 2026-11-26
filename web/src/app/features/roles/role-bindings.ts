@@ -1,5 +1,5 @@
 import { personName } from '../../shared/person-name';
-import { DatePipe } from '@angular/common';
+import { TimePipe } from '../../shared/time-pipe';
 import { Component, computed, inject, signal } from '@angular/core';
 import { Role, RoleBinding, RoleName, RolesApi } from '../../api/authz-api';
 import { collectAll } from '../../api/pagination';
@@ -30,7 +30,7 @@ import { Busy } from '../../shared/ui/busy';
  */
 @Component({
   selector: 'quader-role-bindings',
-  imports: [Busy, Loading, DataTable, PageHeader, DatePipe, ErrorNotice, Needs, PrincipalField],
+  imports: [Busy, Loading, DataTable, PageHeader, TimePipe, ErrorNotice, Needs, PrincipalField],
   templateUrl: './role-bindings.html',
   styleUrl: '../../shared/access/access.scss',
   styles: `

@@ -3863,13 +3863,15 @@ func (q *Queries) IdentityUserMemberships(ctx context.Context, memberID string) 
 
 const preferencesGet = `-- name: PreferencesGet :many
 
-SELECT coalesce(locale, '')::text AS locale, coalesce(theme, '')::text AS theme, keyboard_shortcuts, revision
+SELECT coalesce(locale, '')::text AS locale, coalesce(theme, '')::text AS theme,
+       coalesce(time_format, '')::text AS time_format, keyboard_shortcuts, revision
   FROM user_preferences WHERE user_id = $1::text::uuid
 `
 
 type PreferencesGetRow struct {
 	Locale            string
 	Theme             string
+	TimeFormat        string
 	KeyboardShortcuts bool
 	Revision          int64
 }
@@ -3887,6 +3889,7 @@ func (q *Queries) PreferencesGet(ctx context.Context, userID string) ([]Preferen
 		if err := rows.Scan(
 			&i.Locale,
 			&i.Theme,
+			&i.TimeFormat,
 			&i.KeyboardShortcuts,
 			&i.Revision,
 		); err != nil {
@@ -3901,21 +3904,22 @@ func (q *Queries) PreferencesGet(ctx context.Context, userID string) ([]Preferen
 }
 
 const preferencesUpsert = `-- name: PreferencesUpsert :many
-INSERT INTO user_preferences AS p (user_id, locale, theme, keyboard_shortcuts, revision)
+INSERT INTO user_preferences AS p (user_id, locale, theme, time_format, keyboard_shortcuts, revision)
 VALUES ($1::text::uuid, NULLIF($2::text, ''), NULLIF($3::text, ''),
-        $4::boolean, 2)
+        NULLIF($4::text, ''), $5::boolean, 2)
 ON CONFLICT (user_id) DO UPDATE
-   SET locale = EXCLUDED.locale, theme = EXCLUDED.theme, keyboard_shortcuts = EXCLUDED.keyboard_shortcuts,
-       revision = p.revision + 1, updated_at = now()
- WHERE $5::bigint = 0 OR p.revision = $5::bigint
-RETURNING coalesce(p.locale, '')::text AS locale, coalesce(p.theme, '')::text AS theme, p.keyboard_shortcuts,
-          p.revision
+   SET locale = EXCLUDED.locale, theme = EXCLUDED.theme, time_format = EXCLUDED.time_format,
+       keyboard_shortcuts = EXCLUDED.keyboard_shortcuts, revision = p.revision + 1, updated_at = now()
+ WHERE $6::bigint = 0 OR p.revision = $6::bigint
+RETURNING coalesce(p.locale, '')::text AS locale, coalesce(p.theme, '')::text AS theme,
+          coalesce(p.time_format, '')::text AS time_format, p.keyboard_shortcuts, p.revision
 `
 
 type PreferencesUpsertParams struct {
 	UserID            string
 	Locale            string
 	Theme             string
+	TimeFormat        string
 	KeyboardShortcuts bool
 	IfRevision        int64
 }
@@ -3923,6 +3927,7 @@ type PreferencesUpsertParams struct {
 type PreferencesUpsertRow struct {
 	Locale            string
 	Theme             string
+	TimeFormat        string
 	KeyboardShortcuts bool
 	Revision          int64
 }
@@ -3935,6 +3940,7 @@ func (q *Queries) PreferencesUpsert(ctx context.Context, arg PreferencesUpsertPa
 		arg.UserID,
 		arg.Locale,
 		arg.Theme,
+		arg.TimeFormat,
 		arg.KeyboardShortcuts,
 		arg.IfRevision,
 	)
@@ -3948,6 +3954,7 @@ func (q *Queries) PreferencesUpsert(ctx context.Context, arg PreferencesUpsertPa
 		if err := rows.Scan(
 			&i.Locale,
 			&i.Theme,
+			&i.TimeFormat,
 			&i.KeyboardShortcuts,
 			&i.Revision,
 		); err != nil {

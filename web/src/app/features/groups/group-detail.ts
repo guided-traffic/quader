@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { TimePipe } from '../../shared/time-pipe';
 import { Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { Checkbox } from '../../shared/ui/checkbox';
 import { Router, RouterLink } from '@angular/router';
@@ -33,7 +33,7 @@ import { Loading } from '../../shared/ui/loading';
  */
 @Component({
   selector: 'quader-group-detail',
-  imports: [Loading, Busy, PageHeader, DatePipe, Checkbox, RouterLink, ErrorNotice, Needs, PrincipalField, QuaderAvatar, SelectField, Disclosure, TextField],
+  imports: [Loading, Busy, PageHeader, TimePipe, Checkbox, RouterLink, ErrorNotice, Needs, PrincipalField, QuaderAvatar, SelectField, Disclosure, TextField],
   templateUrl: './group-detail.html',
   styleUrl: '../../shared/access/access.scss',
   styles: `

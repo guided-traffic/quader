@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { TimePipe } from '../../shared/time-pipe';
 import { Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CiApi, CiIssuer } from '../../api/ci-api';
@@ -19,7 +19,7 @@ import { PageHeader } from '../../shared/ui/page-header';
  */
 @Component({
   selector: 'quader-ci-issuer-list',
-  imports: [PageHeader, DatePipe, RouterLink, ErrorNotice, DataTable, Needs],
+  imports: [PageHeader, TimePipe, RouterLink, ErrorNotice, DataTable, Needs],
   template: `
     <quader-page-header heading="CI identity" i18n-heading="@@ci.issuers.heading">
       <a actions class="btn btn-default" routerLink="/admin/ci/issuances" i18n="@@ci.issuers.issuances">Issued tokens</a>
@@ -73,7 +73,7 @@ import { PageHeader } from '../../shared/ui/page-header';
               <div class="muted detail">{{ keyError(i.keys!.lastError) }}</div>
             } @else if (i.keys?.fetchedAt) {
               <span class="ok"><span class="material-icons" aria-hidden="true">check_circle</span><ng-container i18n="@@ci.keys.usable">{{ i.keys!.usable }} usable</ng-container></span>
-              <div class="muted detail"><ng-container i18n="@@ci.keys.fetched">fetched</ng-container> {{ i.keys!.fetchedAt | date: 'short' }}</div>
+              <div class="muted detail"><ng-container i18n="@@ci.keys.fetched">fetched</ng-container> {{ i.keys!.fetchedAt | time }}</div>
             } @else {
               <span class="badge"><span class="material-icons" aria-hidden="true">schedule</span><ng-container i18n="@@ci.keys.none">Not fetched yet</ng-container></span>
             }

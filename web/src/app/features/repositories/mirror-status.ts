@@ -1,4 +1,5 @@
-import { DatePipe, DecimalPipe, NgTemplateOutlet } from '@angular/common';
+import { DecimalPipe, NgTemplateOutlet } from '@angular/common';
+import { TimePipe } from '../../shared/time-pipe';
 import {
   Component,
   DestroyRef,
@@ -198,7 +199,7 @@ export function mirrorErrorText(code: MirrorErrorCode): string {
  */
 @Component({
   selector: 'quader-mirror-status',
-  imports: [Busy, Loading, DatePipe, DecimalPipe, NgTemplateOutlet, CdkMenu, CdkMenuItem, CdkMenuTrigger, RouterLink, ErrorNotice, TechnicalDetails],
+  imports: [Busy, Loading, TimePipe, DecimalPipe, NgTemplateOutlet, CdkMenu, CdkMenuItem, CdkMenuTrigger, RouterLink, ErrorNotice, TechnicalDetails],
   template: `
     <section class="status" aria-labelledby="mirror-status-heading">
       <h2 id="mirror-status-heading" i18n="@@mirror.status.heading">Mirror status</h2>
@@ -324,7 +325,7 @@ export function mirrorErrorText(code: MirrorErrorCode): string {
             <dt i18n="@@mirror.pass.method">Discovery</dt>
             <dd>{{ method(p.method) }}</dd>
             <dt i18n="@@mirror.pass.started">Started</dt>
-            <dd><time [attr.datetime]="p.startedAt">{{ p.startedAt | date: 'medium' }}</time></dd>
+            <dd><time [attr.datetime]="p.startedAt">{{ p.startedAt | time }}</time></dd>
             <dt i18n="@@mirror.pass.names">Names discovered</dt>
             <dd>{{ p.namesDiscovered | number }}</dd>
             <dt i18n="@@mirror.pass.done">Packages done</dt>
@@ -366,9 +367,9 @@ export function mirrorErrorText(code: MirrorErrorCode): string {
             <dt i18n="@@mirror.pass.method">Discovery</dt>
             <dd>{{ method(l.method) }}</dd>
             <dt i18n="@@mirror.last.started">Started</dt>
-            <dd><time [attr.datetime]="l.startedAt">{{ l.startedAt | date: 'medium' }}</time></dd>
+            <dd><time [attr.datetime]="l.startedAt">{{ l.startedAt | time }}</time></dd>
             <dt i18n="@@mirror.last.finished">Finished</dt>
-            <dd><time [attr.datetime]="l.finishedAt">{{ l.finishedAt | date: 'medium' }}</time></dd>
+            <dd><time [attr.datetime]="l.finishedAt">{{ l.finishedAt | time }}</time></dd>
             <dt i18n="@@mirror.last.packages">Packages</dt>
             <dd>{{ l.packages | number }}</dd>
             <dt i18n="@@mirror.pass.failed">Packages failed</dt>
@@ -404,7 +405,7 @@ export function mirrorErrorText(code: MirrorErrorCode): string {
             @if (s.state === 'paused' || s.state === 'off' || s.state === 'unbounded') {
               <ng-container i18n="@@mirror.next.none">No pass is planned.</ng-container>
             } @else if (s.nextPassAt; as at) {
-              <time [attr.datetime]="at">{{ at | date: 'medium' }}</time>
+              <time [attr.datetime]="at">{{ at | time }}</time>
             } @else {
               <ng-container i18n="@@mirror.next.dispatch">At the next dispatch, within a minute.</ng-container>
             }
@@ -412,7 +413,7 @@ export function mirrorErrorText(code: MirrorErrorCode): string {
           <dt i18n="@@mirror.next.full">Last full pass</dt>
           <dd>
             @if (s.lastFullPassAt; as at) {
-              <time [attr.datetime]="at">{{ at | date: 'medium' }}</time>
+              <time [attr.datetime]="at">{{ at | time }}</time>
             } @else {
               –
             }
@@ -431,7 +432,7 @@ export function mirrorErrorText(code: MirrorErrorCode): string {
             <dt i18n="@@mirror.error.at">Time</dt>
             <dd>
               @if (s.errors.lastAt; as at) {
-                <time [attr.datetime]="at">{{ at | date: 'medium' }}</time>
+                <time [attr.datetime]="at">{{ at | time }}</time>
               } @else {
                 –
               }
@@ -454,7 +455,7 @@ export function mirrorErrorText(code: MirrorErrorCode): string {
             @if (s.rateLimit.lastStatus !== null) {
               HTTP {{ s.rateLimit.lastStatus }}
               @if (s.rateLimit.lastAt; as at) {
-                <ng-container i18n="@@mirror.rate.at">at</ng-container>&ngsp;<time [attr.datetime]="at">{{ at | date: 'medium' }}</time>
+                <ng-container i18n="@@mirror.rate.at">at</ng-container>&ngsp;<time [attr.datetime]="at">{{ at | time }}</time>
               }
             } @else {
               –
@@ -462,7 +463,7 @@ export function mirrorErrorText(code: MirrorErrorCode): string {
           </dd>
           @if (s.rateLimit.until; as until) {
             <dt i18n="@@mirror.rate.until">Waiting until</dt>
-            <dd><time [attr.datetime]="until">{{ until | date: 'medium' }}</time></dd>
+            <dd><time [attr.datetime]="until">{{ until | time }}</time></dd>
           }
         </dl>
 
@@ -486,7 +487,7 @@ export function mirrorErrorText(code: MirrorErrorCode): string {
                 <ng-container i18n="@@mirror.bound.reached-by">Yes, by</ng-container>&ngsp;{{ boundKind(kind) }}
               </span>
               @if (s.bound.at; as at) {
-                &ngsp;<ng-container i18n="@@mirror.rate.at">at</ng-container>&ngsp;<time [attr.datetime]="at">{{ at | date: 'medium' }}</time>
+                &ngsp;<ng-container i18n="@@mirror.rate.at">at</ng-container>&ngsp;<time [attr.datetime]="at">{{ at | time }}</time>
               }
             } @else {
               <ng-container i18n="@@mirror.bound.no">No</ng-container>

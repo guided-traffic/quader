@@ -2504,6 +2504,7 @@ asynchronous. "Hook" marks events that webhooks may select (R-OPS-037).
 | `system.config_exported` | A | — | R-OPS-032 | `kinds` |
 | `system.maintenance_mode_changed` | T | — | R-OPS-024 | `from`, `to`, `message` |
 | `system.banner_changed` | T | — | R-OPS-025 | `changes` |
+| `system.time_format_changed` | T | — | R-UI-251 | `from`, `to` |
 | `system.log_levels_changed` | T | — | R-OPS-012 | `levels`, `expires_at` |
 | `system.task_triggered` | T | — | Manual task run, garbage collection, reindex, storage-summary refresh | `task`, `job_id`, `parameters` |
 | `system.support_bundle_created`, `system.support_bundle_downloaded`, `system.support_bundle_deleted` | T | — | R-OPS-027 | `bundle_id`, `include` |
@@ -5140,7 +5141,7 @@ MVP and P1 features of the catalog pages above that this page does not specify:
 | OPS-036 to OPS-038 | P2 | Repository export and import, identity-service export ([backup-and-restore.md](backup-and-restore.md) Deferred); scheduled backups, system export and import and instance migration are MVP there (INV-19) |
 | OPS-041, OPS-042 | P2 | Advanced runtime properties and a whole-configuration descriptor; the configuration file and configuration documents replace both |
 | OPS-047, OPS-048, OPS-049 | P2 | Authentication-provider bootstrap file, identity-service configuration documents, OAuth application integrations |
-| OPS-053, OPS-054, OPS-056 | P2 | Server name and date format, custom logo, login notice |
+| OPS-053, OPS-054, OPS-056 | P2 | Server name, custom logo, login notice; the date format is built as R-UI-250 and R-UI-251 of [api-and-ui.md](api-and-ui.md) |
 | OPS-058, OPS-059 | P2 | Folder download limits, global replication blocking |
 | OPS-061 | P2 | Reverse proxy configuration generator |
 | OPS-064 | P2 | Load protection with per-activity throttling (`429`); cluster-wide rate limits per caller exist from the MVP ([architecture.md](architecture.md) R-ARCH-034) |

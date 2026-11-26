@@ -1328,11 +1328,12 @@ list `ownerRightsExempt` of `TestR_API_021_EveryAuthenticatedWriteDeclaresItsTok
 Preferences are owned here:
 
 ```json
-{"locale": "de", "theme": null, "keyboardShortcuts": true, "revision": 2}
+{"locale": "de", "theme": null, "timeFormat": null, "keyboardShortcuts": true, "revision": 2}
 ```
 
 `keyboardShortcuts` turns the UI's single-key shortcuts on and off; on by default (R-UI-095,
-[Q-API-280](#q-api-280--keyboardshortcuts-is-true-by-default-and-the-migration-sets-it-on-every-stored-row)). `locale` is `en`, `de` or `null` (browser decides); `theme` is `light`, `dark` or `null` (system). The project is not a
+[Q-API-280](#q-api-280--keyboardshortcuts-is-true-by-default-and-the-migration-sets-it-on-every-stored-row)). `locale` is `en`, `de` or `null` (browser decides); `theme` is `light`, `dark` or `null` (system); `timeFormat` is one of the forms of
+R-UI-250 (`dmy-weekday`, `dmy`, `iso`, `dmy-slash`, `mdy`, `locale`) or `null`, the installation's default (R-UI-251). The project is not a
 preference: it is the context of the screens ([Q-UI-129](#q-ui-129--the-project-is-the-context-of-the-content-chosen-from-your-projects)),
 and a member `projectFilter` in a patch is refused as an unknown member. PATCH takes a merge patch with
 `If-Match`. `user_preferences.revision` is the `ETag` and is registered with
@@ -1346,6 +1347,7 @@ CREATE TABLE user_preferences (
   user_id            uuid PRIMARY KEY REFERENCES app_user (principal_id) ON DELETE CASCADE,  -- Q-API-15
   locale             text CHECK (locale IN ('en', 'de')),
   theme              text CHECK (theme IN ('light', 'dark')),
+  time_format        text CHECK (time_format IN ('dmy-weekday', 'dmy', 'iso', 'dmy-slash', 'mdy', 'locale')),  -- R-UI-250, migration 00149
   keyboard_shortcuts boolean NOT NULL DEFAULT true,  -- Q-API-280, migration 00076
   revision           bigint  NOT NULL DEFAULT 1,
   updated_at         timestamptz NOT NULL DEFAULT now()
@@ -5350,10 +5352,11 @@ Acceptance criteria:
 Priority: **MVP** · Covers: UI-044
 
 `/admin/settings/general` (the sidebar's **Settings › General**, where `/admin/settings` leads, Q-UI-326) shows the public base URL and its source (`GET /api/v1/system/info`,
-read-only field, R-OPS-005) at the top, then the visibility (R-UI-053), the banner and the maintenance mode as sections with a **Save changes** each
+read-only field, R-OPS-005) at the top, then the visibility (R-UI-053), the installation's default form of a time (R-UI-251), the banner and the maintenance mode as sections
+with a **Save changes** each
 ([Q-UI-222](#q-ui-222--which-settings-pages-are-one-column-now-and-what-a-sections-save-button-is-called)); the maintenance section opens by
 itself while the mode is on. The banner is `/api/v1/system/banner` (enabled, severity, plain text) and the
-maintenance mode `/api/v1/system/maintenance`. Server name, date format, logo and login notice are
+maintenance mode `/api/v1/system/maintenance`. The form of a time is R-UI-250 and R-UI-251. Server name, logo and login notice are
 P2 on [operations-and-observability.md](operations-and-observability.md).
 
 Acceptance criteria:
@@ -10806,6 +10809,134 @@ Acceptance criteria:
   the findings inside `data-nosnippet`, every download of the signatures' report `nofollow`, a rendered `quaderDownload` link
   `rel="nofollow"`; the slots of `index.html`.
 
+### R-UI-250 · Every time stands in the form the reader chose, `26.11.2026 21:39:22 (Thu.)` by default
+Priority: **P1** · Covers: quader-only
+
+The owner, 2026-11-26, about 21:40: "Das Datumsformat muss einstellbar sein. Nov 26, 2026, 9:39:22 PM kann nicht unser Standard sein!
+26.11.2026 21:39:22 (Thu.) soll der Standard sein, gerne kannst du auch noch andere gängige Formate einbauen und anbieten." (His "2016" is
+a slip for 2026: his example is that minute.)
+
+- **One formatter.** Every absolute time of the web application and of the Bastion's application is written by `formatTime` of
+  [time-format.ts](../../web/src/app/shared/time-format.ts), in a template by its pipe `time`
+  ([time-pipe.ts](../../web/src/app/shared/time-pipe.ts)): `{{ at | time }}`, `{{ at | time: 'date' }}`, `{{ at | time: 'time' }}`.
+  Before it, 72 files wrote times five ways (`DatePipe`, `| date`, `formatDate`, `Intl.DateTimeFormat`, `toLocaleString`); the lint
+  rule of [time-format-rule.mjs](../../web/scripts/time-format-rule.mjs) refuses each of them outside the formatter
+  ([Q-UI-1562](#q-ui-1562--one-formatter-and-one-pipe-held-by-a-lint-rule)). A time relative to now ("4 minutes ago", Q-UI-431) stays
+  where it stood; its absolute time (in brackets or as the title) comes from the formatter.
+- **The forms** ([Q-UI-1561](#q-ui-1561--six-forms-each-offered-with-the-time-of-now-as-its-example)), in the order the choice offers them:
+
+  | Value | Date and time | Date | Time of day |
+  |---|---|---|---|
+  | `dmy-weekday` (the factory default) | `26.11.2026 21:39:22 (Thu.)`, German `(Do.)` | `26.11.2026 (Thu.)` | `21:39:22` |
+  | `dmy` | `26.11.2026 21:39:22` | `26.11.2026` | `21:39:22` |
+  | `iso` (ISO 8601) | `2026-11-26 21:39:22` | `2026-11-26` | `21:39:22` |
+  | `dmy-slash` (British) | `26/11/2026 21:39:22` | `26/11/2026` | `21:39:22` |
+  | `mdy` (American) | `11/26/2026 9:39:22 PM`; midnight `12:00:00 AM`, noon `12:00:00 PM` | `11/26/2026` | `9:39:22 PM` |
+  | `locale` (the language's own) | what `Intl` writes for the reader's language: `Nov 26, 2026, 9:39:22 PM`, `26.11.2026, 21:39:22` | `Nov 26, 2026` | `9:39:22 PM` |
+
+  The weekday is the reader's language's abbreviation with one dot. Times stand in the browser's zone, as before.
+- **Where the reader chooses**: **Preferences** on the Profile page ("Language, time format, theme and keyboard shortcuts, kept with your
+  account"), the field **Time format** beside the language: today's time in the installation's form with "— Installation default"
+  first, then each form as today's time in it and its name ("2026-11-26 21:39:22 — ISO 8601"), the example first so that a closed field
+  at 390 px, which cuts the end, still shows it. The choice is the member `timeFormat` of the preferences (R-API-021), kept with the account; it is in
+  force on every screen at once after **Save preferences**, and a reader without a choice of their own reads the installation's default
+  (R-UI-251, [Q-UI-1560](#q-ui-1560--the-form-of-a-time-is-the-readers-preference-else-the-installations-default-else-the-owners-form)).
+- **Seconds** ([Q-UI-1563](#q-ui-1563--seconds-stand-everywhere-but-on-the-usage-historys-five-minute-grid)): every time shows its
+  seconds, also where the short forms of before dropped them (a fetched key ring, a replica's last heartbeat, a block's end, a queued
+  malware scan, a grade's sentence, an upstream's limit, the clock time of a retry). The usage history's buckets and its chart's axis keep
+  hours and minutes: they lie five minutes apart.
+- **The zone** ([Q-UI-1564](#q-ui-1564--the-zone-stands-where-it-stood-and-a-copied-report-keeps-iso-8601-with-its-zone)) is written
+  where it was: the audit log's event (its **Time** and the title of a row's time, `zoned`, in UTC when the log is switched to UTC). The
+  error notice's **Time** row (R-UI-216) is in the reader's form without a zone, and its **Copy report**, which is pasted into tickets,
+  writes the time in the reader's form followed by ISO 8601 with its zone (`2026-11-26T20:39:22.000Z`), as the connection test's report
+  does.
+- **The Bastion's pages** write the factory default ([Q-UI-1565](#q-ui-1565--the-bastions-pages-write-the-factory-default)): the
+  interface between the Bastion and the main installation carries no installation default ([H-2390](#h-2390--the-bastions-pages-write-the-factory-form-of-a-time-not-the-installations-default)).
+
+*Built on 2026-11-26 (UI-1126):* the formatter and the pipe, the call sites of both applications (the pipes of 42 components and 13
+functions), the field in **Preferences**, `TimeFormatStore` ([time-format-store.ts](../../web/src/app/core/time-format-store.ts)) that
+puts the reader's choice over the installation's default, the member `timeFormat` with migration 00149, and the lint rule. English and
+German.
+
+Acceptance criteria:
+
+- Vitest ([time-format.spec.ts](../../web/src/app/shared/time-format.spec.ts), nine cases, about 50 ms): every form in both languages, a
+  date without its time and a time without its date, midnight and noon in the American form, each weekday's abbreviation in both
+  languages, the zone where it is named, nothing for no time, the form in force, the choice's examples, and the pipe following a change of
+  the form while the page stands. [profile.spec.ts](../../web/src/app/features/profile/profile.spec.ts): the preference's round trip
+  (offered, saved, in force at once, reset to the installation default).
+- Lint ([lint-rules.test.mjs](../../web/scripts/lint-rules.test.mjs), one case): each direct way of formatting a time is found, in code
+  and in a template, a number's `toLocaleString()` and a comment are not, and the formatter's own module is exempt.
+- Go (`TestR_API_021_PreferencesTimeFormat` of [preferences_test.go](../../internal/api/v1/preferences_test.go), in process, a fake
+  store): the member is read, written and reset, an unknown form is refused with its pointer. Integration (the step "R-API-021 whoami and
+  preferences" of [identity api_test.go](../../test/integration/identity/api_test.go), four requests more): the column round trip.
+
+### R-UI-251 · The installation's default form of a time
+Priority: **P1** · Covers: quader-only
+
+An administrator sets the form of a time for every reader who chose none and for a visitor without a session (the sign-in page, a public
+repository's pages): **Admin area › Settings › General**, the section **Time format** with the field **Default time format** (each form
+with today's time as its example) and **Save changes**. The factory default is the owner's form, `dmy-weekday`. A reader's own choice
+(R-UI-250) wins.
+
+- **API**: `GET /api/v1/system/time-format` (public, as the banner: the sign-in page writes times in it) answers `{"timeFormat":
+  "dmy-weekday"}`; `PUT` with the same body (`settings:write`) replaces it, writes `system.time_format_changed` (`from`, `to`) only when it
+  changed, and is refused in read-only maintenance mode. Kept in `system_state` under the key `time_format` beside the banner and the
+  mode, read through [sysstate](../../internal/sysstate/store.go) (no migration).
+- **Every screen follows within a minute** ([Q-UI-1569](#q-ui-1569--the-installations-default-is-a-public-document-read-with-the-banner)):
+  the default is read with the banner at its cadence (R-UI-033, R-UI-213); the administrator's own screens follow at once after the save.
+
+*Built on 2026-11-26 (UI-1126):* the operation ([system_state_api.go](../../internal/api/v1/system_state_api.go)), the event, the
+section of General settings ([general-settings.html](../../web/src/app/features/settings/general-settings.html)) and the read with the
+banner ([banner-store.ts](../../web/src/app/core/banner-store.ts)). The Bastion does not read it (R-UI-250, H-2390).
+
+Acceptance criteria:
+
+- Vitest ([general-settings.spec.ts](../../web/src/app/features/settings/general-settings.spec.ts)): the field shows the stored default,
+  **Save changes** sends it, and the screen writes times in it at once; a reader's own choice wins and its reset falls back to it.
+- Go ([sysstate store_test.go](../../internal/sysstate/store_test.go), unit): the factory default is the first form, and an unknown form
+  is refused with its pointer before anything is read or written. Integration (the step "R-UI-251" of `TestR_OPS_025_SystemBanner` in
+  [system_state_test.go](../../test/integration/api/system_state_test.go), on the banner's three replicas, eight requests): anonymous read
+  of the factory default, a user refused, an unknown form refused, the administrator's form on every replica, one event for two writes.
+
+### R-UI-252 · The spinner sits in the middle of what loads, and a page that loads does not scroll
+Priority: **P1** · Covers: quader-only
+
+The owner, 2026-11-26, about 21:40, at the first screen ("Loading Quader.", the spinner well below the middle, and a scrollbar on a page
+that shows nothing else) and at a page whose read answered 503 (the error box above, then "Loading your account." small at the top left
+under the tabs): "Wieso ist im Fehlerfall und allgemein beim laden der Spinner nicht in der Mitte der Seite? Wieso gibt es auf dieser Seite
+einen Scrollbalken. Kleine Schönheitsfehler, aber müssen wir fixen."
+
+- **The first screen** ([Q-UI-1567](#q-ui-1567--the-first-screen-loads-without-the-bare-columns-padding)): while the first navigation
+  runs, the spinner of the first paint (R-UI-217, Q-UI-1236) stands in the middle of the window, where `index.html` drew it, and nothing
+  scrolls. It stood in the bare screens' column, whose padding of 12 % of the window's height above it and its own height of the whole
+  window made the page taller than the window and its middle low.
+- **A page whose whole content loads** ([Q-UI-1566](#q-ui-1566--a-pages-load-fills-its-screens-host-down-to-the-legal-line)):
+  its spinner of 48 px with its sentence stands in the middle of the panel's width and in the middle of what the panel shows below the
+  page's title and tabs. An error that stays while the page tries again (R-UI-216) stands above it and moves the middle down with it. The
+  Profile page loads as a whole until its account or its preferences are read ("Loading your account."), with no section beside it.
+- **A load in a part of a page** (a table, a section, an opened row, a dialog) stays in that part with the line's spinner, or with the
+  table's in a table (`loadingText` of the data table), centred there as before.
+- **Held** by the render checks `loading-place` and `loading-scroll` ([Q-UI-1568](#q-ui-1568--the-render-checks-where-a-load-stands))
+  and the walk `page-loads` of the renders ([loading.ts](../../web/e2e/renders/loading.ts)).
+
+*Built on 2026-11-26 (UI-1126):* the rule for a page's load in [_spinner.scss](../../web/src/styles/_spinner.scss), the first screen's in
+[_shell.scss](../../web/src/styles/_shell.scss) (`main.booting`), the Profile page's load as a whole. The sweep of the 45 loads of page
+size: 41 stand at the top of their screen's or view's template and take the rule; the help page's stands in its column of the manual, the
+data table's in its table, the first paint in the window; the Bastion's application keeps its own (its files are W-35's).
+
+Acceptance criteria:
+
+- Layout fixtures ([layout-checks.spec.ts](../../web/e2e/renders/layout-checks.spec.ts), three cases in Chromium, Firefox and WebKit,
+  about 0.3 s each, with the app's own stylesheet): a page's load stands in the middle below its tabs, also under an error and inside a
+  view's host, and nothing scrolls; a load at the top left, one set at the panel's end and a page that scrolls while it loads are found,
+  an error above the load taller than the panel is not; the first paint stands in the middle of the window, and
+  a list's load in its table is no page load.
+- Renders: the screen `page-loads` (the first screen, the Profile page's first load, its load under a 503), measured by `loading-place`
+  and `loading-scroll`, and the page state of `loading-states`.
+- Vitest ([profile.spec.ts](../../web/src/app/features/profile/profile.spec.ts)): while nothing is read, the page shows its load of page
+  size and no section.
+
 ## Deferred
 
 P2, Later and Out-of-scope entries of the three catalog pages this page draws on, plus P1 entries
@@ -11005,8 +11136,8 @@ whose owning page defers them. None has a requirement here.
 - UI-057 · Global roles and project roles screens — P2 (custom roles; the fixed project roles of R-AUTHZ-026 need no
   screen of their own)
 - UI-061 · Federation monitoring screens of the older embedded synchronization mode — Later
-- Server name, date format, logo and login notice of UI-044 and UI-006 — P2 on
-  [operations-and-observability.md](operations-and-observability.md)
+- Server name, logo and login notice of UI-044 and UI-006 — P2 on
+  [operations-and-observability.md](operations-and-observability.md); the date format is built as R-UI-250 and R-UI-251
 - Out of scope: UI-055 (account portal dashboard of a hosted service), UI-059 (site launcher
   across hosted sites), UI-060 (in-product AI assistant panel)
 
@@ -29939,6 +30070,151 @@ version 9):* each report says whether its cache is the Bastion's shared bucket (
 protected bytes of the replicas whose cache is their own (the volume backend) and takes the largest shared value once (the bucket
 backend), so option (a)'s "Against" is gone (H-2364, closed).
 
+### Q-UI-1560 · The form of a time is the reader's preference, else the installation's default, else the owner's form
+
+Status: **Decided by the owner on 2026-11-26** (the form is settable, `26.11.2026 21:39:22 (Thu.)` the default, other common forms
+offered) and **by the development agent** (where it is set) — selected from the options below; the owner reviews it at the walkthrough.
+R-UI-250, R-UI-251.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A preference of the reader (`timeFormat`, R-API-021) beside the language, and a default of the installation an administrator sets; the reader's wins, the factory default is the owner's form (chosen) | | A team in one country sets its form once; a reader abroad keeps theirs; the sign-in page and a visitor read the installation's | Two places to look for "why is my time written so" |
+| (b) The installation's form alone | | One setting | A reader cannot have their own, which the owner asked ("einstellbar") for a person, not only for an installation |
+| (c) The browser's language decides, as `Intl` does | | No setting | The owner's complaint: "Nov 26, 2026, 9:39:22 PM kann nicht unser Standard sein" |
+
+**Choice:** (a). The preference is a column of `user_preferences` (migration 00149); `null` follows the installation's default.
+**Applied in the spec:** R-UI-250, R-UI-251, R-API-021.
+
+### Q-UI-1561 · Six forms, each offered with the time of now as its example
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+R-UI-250.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The owner's form, the same without the weekday, ISO 8601, the British and the American form, and the language's own (what `Intl` writes); each option the time of now in it and a short name, "2026-11-26 21:39:22 — ISO 8601", the example first because a closed select at 390 px cuts the end (chosen) | | The reader sees what they choose; the German form without the weekday and the language's own differ by one comma, which the names tell apart | Six options |
+| (b) The examples alone | | Shorter | `26.11.2026 21:39:22` and `26.11.2026, 21:39:22` cannot be told apart |
+| (c) A pattern field (`dd.MM.yyyy HH:mm:ss`) | | Any form | An expert's setting in the plain path; a typo writes nonsense on every screen |
+
+**Choice:** (a). The weekday is the language's abbreviation with one dot ("(Thu.)", "(Do.)"). A date without its time and a time of day
+without its date are the same form's parts. **Applied in the spec:** R-UI-250.
+
+### Q-UI-1562 · One formatter and one pipe, held by a lint rule
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+R-UI-250.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `formatTime` in `shared/time-format.ts` and the impure pipe `time`, which reads the form in force from a signal and formats again only when the value, the part, the zone or the form changed; a rule of `check-rules.mjs` refuses `DatePipe`, `\| date`, `formatDate`, `Intl.DateTimeFormat`, `toLocaleDateString`, `toLocaleTimeString` and a `Date`'s `toLocaleString` outside the formatter (chosen) | | A new direct use fails `make web-lint` with the file and the line; the templates are searched as the code is | A text search: a `Date` held in a variable and formatted with `toLocaleString()` is not seen, since a number's is allowed |
+| (b) A Vitest case that searches the sources | | Seconds | The same search, in a place a reader of the lint does not look |
+| (c) An ESLint rule on the syntax tree | | Sees the type of the receiver | Templates need the template parser, and the inline templates the processor: two rules for one thing |
+
+**Choice:** (a), in [time-format-rule.mjs](../../web/scripts/time-format-rule.mjs), tested by one case of
+[lint-rules.test.mjs](../../web/scripts/lint-rules.test.mjs). **Applied in the spec:** R-UI-250.
+
+### Q-UI-1563 · Seconds stand everywhere but on the usage history's five-minute grid
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+R-UI-250. The brief asked where seconds were dropped and whether they stay dropped, by width.
+
+Where seconds were dropped before: the fetched key ring of a CI issuer (`short`), a replica's last heartbeat on the dashboard (`short`),
+the end of a block in the usage pages and the limits' notice (`shortTime`), the clock time of a retry (`clockAfter`), an upstream's
+limit (`clockText`), a queued malware scan (`timeStyle: short`), a grade's sentence (`timeStyle: short`), the generated documentation's
+time (`yyyy-MM-dd HH:mm`) and the usage history's buckets and axis (`shortTime`).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Every one of them shows seconds, except the usage history's buckets and its chart's axis, which lie five minutes apart (`minutes`) (chosen) | | One form on every screen; each of them is a sentence or a fact, not a narrow column; the owner's form has seconds | A sentence grows by three characters |
+| (b) Keep each short form | | Unchanged widths | Two forms of the same moment on one screen |
+| (c) Seconds nowhere | | Short | The owner's form has them; the audit log's events lie seconds apart |
+
+**Choice:** (a). A list's column of times shows a relative time with the absolute one as its title (Q-UI-431), so no column grows; the
+audit log's row keeps the time of day alone (`time`), with its seconds. **Applied in the spec:** R-UI-250.
+
+### Q-UI-1564 · The zone stands where it stood, and a copied report keeps ISO 8601 with its zone
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+R-UI-250, R-UI-216.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The zone's name only where the screen said it before, the audit log's event and a row's title (`zoned`, UTC when the log shows UTC); **Copy report** of the error notice and of the connection test writes the reader's form followed by ISO 8601 with its zone (chosen) | | A ticket's reader in another zone reads the same moment; the screens stay short | The notice's **Time** row names no zone |
+| (b) The zone on every time | | Never ambiguous | Every time grows by a word, for readers who all sit in one zone |
+| (c) The copy in the reader's form alone | | One form | The owner's form is ambiguous across zones |
+
+**Choice:** (a). **Applied in the spec:** R-UI-250.
+
+### Q-UI-1565 · The Bastion's pages write the factory default
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+R-UI-250. The brief: the Bastion's pages take the default the main installation sends, and where that needs a member of the interface the
+part stops and the Bastion uses the factory default.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The factory default, `26.11.2026 21:39:22 (Thu.)`, until the interface carries the installation's default (chosen) | | No change of the interface between Bastion and main installation (W-35's configuration holds no display setting) | An installation with another default shows two forms, H-2390 |
+| (b) A member of the Bastion's configuration that the main installation sends | | The same form at both | A change of the interface, its version and `interface.txt`, outside this package |
+| (c) The Bastion reads `GET /api/v1/system/time-format` of the main installation | | — | The Bastion's application talks to its Bastion only (R-UI-228) |
+
+**Choice:** (a). **Applied in the spec:** R-UI-250, H-2390.
+
+### Q-UI-1566 · A page's load fills its screen's host down to the legal line
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+R-UI-252.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) While a host holds a load of page size, the host (a child of the panel `main.content`, and a view's or a framed screen's host inside it) is a column that grows to the legal line, by `:has()`; the load takes what is left, its spinner and sentence centred (chosen) | | No screen changes; the middle is the middle of what the page has left below the title, the tabs and an error; nothing scrolls; the host is a column only while the load stands | Two levels of hosts are covered: a load deeper (in a section, in a column of the manual) stays a part's, which is right for a part and wrong for a page built so later (H-2391) |
+| (b) The load positioned absolutely in the panel, from its own place to the panel's end | | One rule, no host changes | Tried first: an absolute box whose top is `auto` and whose bottom is set takes its own height and stands at the panel's end, over the legal line (the render showed it; the fixture "set into the panel's end" holds it) |
+| (c) The load measures its place in script and sets its height | | Exact at any depth | A layout read per load and per resize, for a look |
+
+**Choice:** (a), in [_spinner.scss](../../web/src/styles/_spinner.scss). The Profile page loads as a whole until its account or its
+preferences are read. **Applied in the spec:** R-UI-252.
+
+### Q-UI-1567 · The first screen loads without the bare column's padding
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+R-UI-252.
+
+The cause: until the first navigation ends, the app's copy of the first paint stood in `main.bare`, the column of the sign-in screen,
+whose padding above is `max(32 px, 12vh)`, and the first paint's own height is the whole window (`100dvh`); the panel held 12 % of the
+window more than it showed and scrolled, and the spinner's middle stood that far below the window's.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) While the first screen loads, `main` carries `booting`: no padding, and the first paint fills it as a flex item instead of the window's height (chosen) | | The app's copy stands exactly where `index.html` drew it; nothing scrolls | One class more on `main` |
+| (b) The first paint outside `main`, in the shell | | — | The router outlet's place must not move (a screen is created once) |
+
+**Choice:** (a), in [_shell.scss](../../web/src/styles/_shell.scss) and [app.html](../../web/src/app/app.html). **Applied in the
+spec:** R-UI-252.
+
+### Q-UI-1568 · The render checks where a load stands
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+R-UI-252.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `loadingPlace` of the render set, in every picture in the window's first height: a page's load has the middle of its spinner and sentence within 4 px of the middle of the panel's content width and of the area between what stands above the load (with its margin) and the legal line (`loading-place`), the first paint of the window's; while either shows, neither the panel nor the window scrolls (`loading-scroll`), unless what stands above the load is itself taller than the panel (an error of the German pass at 390 px); fixtures in the three engines and the walk `page-loads` (chosen) | | Every pictured load is measured, also the loads other walks hold (`loading-states`) | A screen's first load is measured only where a walk holds it |
+| (b) A check per screen's first load, every screen with its reads held | | Every screen | A picture per screen and width more: about 300 pictures for one rule the CSS holds alike everywhere |
+
+**Choice:** (a). **Applied in the spec:** R-UI-252.
+
+### Q-UI-1569 · The installation's default is a public document read with the banner
+
+Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
+R-UI-251.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `GET`, `PUT /api/v1/system/time-format`, public to read, `settings:write` to change, kept in `system_state` under `time_format` beside the banner and the mode; the UI reads it with the banner at its cadence (chosen) | | The sign-in page reads it; no migration; a change reaches every screen within a minute (R-UI-213); one audit event | One call more per banner read |
+| (b) A member of the banner's document | | One call | The banner is the banner; its event names its members |
+| (c) Written into `index.html` by the server | | No call | A change needs a reload, which R-UI-213 forbids |
+
+**Choice:** (a). **Applied in the spec:** R-UI-251, R-API-021's table of operations is the generated document's.
+
 ## What this does not cover
 
 ### H-2221 · A Helm chart's dependencies are not matched to the charts Quader holds
@@ -30411,3 +30687,18 @@ Enforce (`GET /api/v1/limits/mode-preview`); that read covers the main installat
 what Enforce does and shows no figures. Live for every switch of a Bastion to Enforce; what makes it real is an administrator who would
 have kept Audit after seeing the callers the Bastion would refuse. The usage overview's **Place** "Through <name>" with **Would have been
 limited** shows them by hand.
+
+### H-2390 · The Bastion's pages write the factory form of a time, not the installation's default
+
+Stage: R-UI-250, R-UI-251, Q-UI-1565. The Bastion's application writes every time as `26.11.2026 21:39:22 (Thu.)`, whatever an
+administrator set under **Settings › General**: the interface between the Bastion and the main installation carries no display setting.
+Live for every installation whose default is another form; what makes it real is a reader who compares a time of the Bastion's page with
+the main installation's. It ends with a member of the Bastion's configuration (W-35) that the Bastion's application reads.
+
+### H-2391 · A screen's first load is measured only where a walk holds it
+
+Stage: R-UI-252, Q-UI-1568. The check `loading-place` measures every load a picture shows, but a screen's first load is pictured only by
+the walk `page-loads` (the Profile page) and the page state of `loading-states` (a repository); the other 39 loads of page size are held
+by the one rule of `_spinner.scss` and not pictured. Live where a screen puts its load of page size deeper than two hosts below the panel
+(in a section or a wrapper of its own): the load then stays at its place's top; none of the 41 does today. What makes it real is a screen
+built so later.

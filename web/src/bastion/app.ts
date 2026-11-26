@@ -1,5 +1,6 @@
 import { CdkMenu, CdkMenuItemRadio, CdkMenuTrigger } from '@angular/cdk/menu';
-import { DatePipe, DOCUMENT } from '@angular/common';
+import { DOCUMENT } from '@angular/common';
+import { TimePipe } from '../app/shared/time-pipe';
 import { Component, LOCALE_ID, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
@@ -31,7 +32,7 @@ const THEME_KEY = 'quader.theme';
     CdkMenu,
     CdkMenuItemRadio,
     CdkMenuTrigger,
-    DatePipe,
+    TimePipe,
     ErrorNotice,
     Loading,
     Notices,
@@ -94,7 +95,7 @@ const THEME_KEY = 'quader.theme';
           <!-- W-35's B.2b: older than stale_after, the band says how old; it names no party. -->
           <section class="stale-band" role="status" data-nosnippet>
             <span class="material-icons icon" aria-hidden="true">schedule</span>
-            <p i18n="@@bastion.stale">This information is from {{ confirmedAt() | date: 'medium' }}. Newer information is not available right now.</p>
+            <p i18n="@@bastion.stale">This information is from {{ confirmedAt() | time }}. Newer information is not available right now.</p>
           </section>
         }
         <main id="main" tabindex="-1">

@@ -1,4 +1,4 @@
-import { formatDate } from '@angular/common';
+import { formatTime } from '../../shared/time-format';
 import { ChangeDetectionStrategy, Component, LOCALE_ID, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { LIVE_IDLE_MS, live } from '../../core/live-refresh';
 import { Router, RouterLink } from '@angular/router';
@@ -266,7 +266,7 @@ export class UsageDetailPage {
 
   /** "Blocked until 10:55 after 61 refused requests in an hour" (R-UI-184). */
   protected blockText(until: string): string {
-    const time = formatDate(until, 'shortTime', this.locale);
+    const time = formatTime(until, { part: 'time' });
     const b = this.block();
     return b
       ? $localize`:@@usage.block.text:Blocked until ${time}:time: after ${formatCount(b.refused, this.locale)}:count: refused requests in an hour`

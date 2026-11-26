@@ -118,14 +118,14 @@ describe('The details of the signatures (R-SIG-035)', () => {
       trust: { state: 'blocked', anchors: [], block: { id: 3, kind: 'fingerprint', reason: 'The key was copied.', createdAt: '2026-11-21T09:30:00Z' }, computedAt: '2026-11-21T09:31:00Z', stale: false },
     });
     const root = await report(repositoryReport({ state: 'untrusted', signatures: [blocked] }));
-    expect(text(root.querySelector('[data-testid="signature-block"]')!)).toContain('Blocked by an administrator on Nov 21, 2026: The key was copied.');
+    expect(text(root.querySelector('[data-testid="signature-block"]')!)).toContain('Blocked by an administrator on 21.11.2026 (Sat.): The key was copied.');
     expect(text(root.querySelector('[data-testid="signature-entry"] [data-testid="signature-badge"]')!)).toContain('Signed');
     expect(text(root.querySelector('[data-testid="signature-entry"] [data-testid="signature-note"]')!)).toBe('signer not trusted');
     // The badge's sentence names the block that decides it, not that no anchor knows the signer; the words after the badge end with a
     // full stop before it.
     const state = text(root.querySelector('[data-testid="signature-state"]')!);
     expect(text(root.querySelector('[data-testid="signature-state"] [data-testid="signature-note"]')!)).toBe('signer not trusted.');
-    expect(state).toContain('The signature matches the content, but an administrator blocked its signer on Nov 21, 2026: The key was copied.');
+    expect(state).toContain('The signature matches the content, but an administrator blocked its signer on 21.11.2026 (Sat.): The key was copied.');
     expect(state).not.toContain('No trust anchor knows this signer');
   });
 

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -18,10 +19,11 @@ import (
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
-// The system_state keys of this package (R-OPS-024, R-OPS-025).
+// The system_state keys of this package (R-OPS-024, R-OPS-025, R-UI-251).
 const (
 	KeyBanner      = "banner"
 	KeyMaintenance = "maintenance_mode"
+	KeyTimeFormat  = "time_format"
 )
 
 // CacheName is the registered name of the in-process copy; ChangeVersion the payload version of the change area cache that this
@@ -80,6 +82,25 @@ type Maintenance struct {
 	By                string    `json:"by,omitempty"`
 }
 
+// TimeFormats answers the forms of a time the UI offers (api-and-ui.md R-UI-250), in the order it offers them; the first is the factory
+// default, the owner's `26.11.2026 21:39:22 (Thu.)`. The preferences' timeFormat (R-API-021) takes the same values.
+func TimeFormats() []string {
+	return []string{"dmy-weekday", "dmy", "iso", "dmy-slash", "mdy", "locale"}
+}
+
+// FactoryTimeFormat is the installation's default form of a time while an administrator set none (R-UI-251).
+const FactoryTimeFormat = "dmy-weekday"
+
+// ValidTimeFormat reports whether v is one of [TimeFormats].
+func ValidTimeFormat(v string) bool {
+	return slices.Contains(TimeFormats(), v)
+}
+
+// TimeFormat is the installation's default form of a time (R-UI-251). One that was never set is the factory default.
+type TimeFormat struct {
+	TimeFormat string `json:"timeFormat"`
+}
+
 // ReadOnly reports whether writes are refused.
 func (m Maintenance) ReadOnly() bool { return m.Mode == ModeReadOnly }
 
@@ -127,10 +148,11 @@ type Caller struct {
 	Source audit.Source
 }
 
-// State is both settings as read together, the unit of the cached copy.
+// State is the settings as read together, the unit of the cached copy.
 type State struct {
 	Banner      Banner
 	Maintenance Maintenance
+	TimeFormat  TimeFormat
 }
 
 // Store reads and changes the banner and the maintenance mode.
@@ -255,7 +277,58 @@ func readState(ctx context.Context, qs *q.Queries) (State, error) {
 	if st.Maintenance.Mode == "" {
 		st.Maintenance = Maintenance{Mode: ModeNormal, CacheFill: true}
 	}
+	rows, err = qs.SystemStateRead(ctx, KeyTimeFormat)
+	if err != nil {
+		return st, err
+	}
+	if len(rows) == 1 {
+		if err := json.Unmarshal([]byte(rows[0]), &st.TimeFormat); err != nil {
+			return st, fmt.Errorf("system_state %s is not a form of a time: %w", KeyTimeFormat, err)
+		}
+	}
+	if !ValidTimeFormat(st.TimeFormat.TimeFormat) {
+		st.TimeFormat = TimeFormat{TimeFormat: FactoryTimeFormat}
+	}
 	return st, nil
+}
+
+// SetTimeFormat validates and stores the installation's default form of a time (R-UI-251), writes system.time_format_changed and
+// notes the change in one transaction. Setting the form that is stored changes nothing and writes no event.
+func (s *Store) SetTimeFormat(ctx context.Context, c Caller, format string) (TimeFormat, error) {
+	next := TimeFormat{TimeFormat: format}
+	if !ValidTimeFormat(format) {
+		return TimeFormat{}, fieldErrors([]errs.FieldError{{
+			Pointer: "/timeFormat", Code: "invalid_value", Detail: "The form is one of " + strings.Join(TimeFormats(), ", ") + ".",
+		}})
+	}
+	err := s.o.DB.InTx(ctx, func(tx meta.Tx) error {
+		qs, err := queries(tx)
+		if err != nil {
+			return err
+		}
+		cur, err := readState(ctx, qs)
+		if err != nil {
+			return err
+		}
+		if cur.TimeFormat == next {
+			return nil
+		}
+		if err := write(ctx, qs, KeyTimeFormat, next, c.Actor.ID); err != nil {
+			return err
+		}
+		if err := s.o.Notifier.Notify(tx, cluster.AreaCache, ChangeVersion, map[string]string{"kind": ChangeKind}); err != nil {
+			return err
+		}
+		return s.o.Recorder.RecordTx(ctx, tx, audit.Event{
+			Type: audit.EventTimeFormatChanged, Outcome: audit.Success, Actor: c.Actor, Source: c.Source,
+			Subject: audit.Subject{Kind: "system", Name: "time_format"},
+			Details: mustJSON(map[string]any{"from": cur.TimeFormat.TimeFormat, "to": next.TimeFormat}),
+		})
+	})
+	if err != nil {
+		return TimeFormat{}, err
+	}
+	return next, nil
 }
 
 // BannerInput is the request of [Store.SetBanner].

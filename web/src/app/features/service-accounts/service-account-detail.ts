@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { TimePipe } from '../../shared/time-pipe';
 import { Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { IdentityApi, RepositoryAction, ServiceAccount } from '../../api/identity-api';
@@ -30,7 +30,7 @@ import { Loading } from '../../shared/ui/loading';
  */
 @Component({
   selector: 'quader-service-account-detail',
-  imports: [Loading, Busy, AccountRights, PageHeader, DatePipe, ErrorNotice, Needs, PrincipalRoles, Disclosure, RouterLink, TextField, TechnicalTokens],
+  imports: [Loading, Busy, AccountRights, PageHeader, TimePipe, ErrorNotice, Needs, PrincipalRoles, Disclosure, RouterLink, TextField, TechnicalTokens],
   template: `
     <quader-page-header [heading]="name()" [name]="true">
       <span meta class="badge" i18n="@@sa.heading">Service account</span>
@@ -95,7 +95,7 @@ import { Loading } from '../../shared/ui/loading';
               </dd>
             }
             <dt i18n="@@sa.created">Created</dt>
-            <dd>{{ a.createdAt | date: 'medium' }}</dd>
+            <dd>{{ a.createdAt | time }}</dd>
           </dl>
         </quader-disclosure>
 

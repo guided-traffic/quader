@@ -1,5 +1,5 @@
 import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
-import { DatePipe } from '@angular/common';
+import { TimePipe } from '../../shared/time-pipe';
 import { Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { DebApi, DebSigningKey, DebSigningKeyState } from '../../api/deb-api';
 import { ApiError } from '../../api/problem';
@@ -72,7 +72,7 @@ export function keyErrorText(error: ApiError): string | null {
  */
 @Component({
   selector: 'quader-deb-signing-keys',
-  imports: [Busy, Loading, CdkMenu, CdkMenuItem, CdkMenuTrigger, DatePipe, CopyButton, DataTable, Disclosure, ErrorNotice],
+  imports: [Busy, Loading, CdkMenu, CdkMenuItem, CdkMenuTrigger, TimePipe, CopyButton, DataTable, Disclosure, ErrorNotice],
   template: `
     <section class="keys" aria-labelledby="deb-keys-heading">
       <h2 id="deb-keys-heading" class="visually-hidden" i18n="@@deb.keys.heading">Signing keys</h2>
@@ -105,7 +105,7 @@ export function keyErrorText(error: ApiError): string | null {
         }
         @if (next(); as n) {
           <p class="hint" role="note" data-testid="deb-overlap">
-            <span i18n="@@deb.keys.overlap">Both keys sign since</span>&ngsp;<time [attr.datetime]="n.createdAt">{{ n.createdAt | date: 'medium' }}</time>.&ngsp;<span i18n="@@deb.keys.overlap-hint">Quader cannot know which clients replaced their key file. A client that holds only the old key fails to update after the promotion.</span>
+            <span i18n="@@deb.keys.overlap">Both keys sign since</span>&ngsp;<time [attr.datetime]="n.createdAt">{{ n.createdAt | time }}</time>.&ngsp;<span i18n="@@deb.keys.overlap-hint">Quader cannot know which clients replaced their key file. A client that holds only the old key fails to update after the promotion.</span>
           </p>
         }
 
@@ -126,10 +126,10 @@ export function keyErrorText(error: ApiError): string | null {
               </td>
               <td translate="no">{{ typeText(k) }}</td>
               <td>{{ k.origin === 'imported' ? importedText : generatedText }}</td>
-              <td><time [attr.datetime]="k.keyCreatedAt">{{ k.keyCreatedAt | date: 'medium' }}</time></td>
+              <td><time [attr.datetime]="k.keyCreatedAt">{{ k.keyCreatedAt | time }}</time></td>
               <td>
                 @if (since(k); as at) {
-                  <time [attr.datetime]="at">{{ at | date: 'medium' }}</time>
+                  <time [attr.datetime]="at">{{ at | time }}</time>
                 } @else {
                   –
                 }

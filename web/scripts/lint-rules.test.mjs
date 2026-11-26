@@ -20,6 +20,7 @@ import { clearedBeforeAnswer, handMadeFailures } from './read-failure-rule.mjs';
 import { busyFindings } from './busy-rule.mjs';
 import { viewFindings } from './views-rule.mjs';
 import { bastionBundleFindings } from './bastion-bundle-rule.mjs';
+import { TIME_FORMATTER, directTimeFormatting } from './time-format-rule.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const eslint = new ESLint({ cwd: root });
@@ -549,4 +550,26 @@ test('R-UI-228 the Bastion bundle check names the client, the session, a screen 
     ),
   );
   assert.deepEqual(bastionBundleFindings(clean), []);
+});
+
+test('R-UI-250 a time formatted beside the one formatter fails the lint, in the code and in a template', () => {
+  const bad = [
+    "<td>{{ at | date: 'medium' }}</td>",
+    "<time>{{ at|date }}</time>",
+    "import { DatePipe } from '@angular/common';",
+    "const t = formatDate(at, 'shortTime', locale);",
+    "const f = new Intl.DateTimeFormat(locale, { dateStyle: 'medium' });",
+    'const d = at.toLocaleDateString();',
+    'const d = new Date(at).toLocaleString();',
+  ];
+  for (const line of bad) assert.equal(directTimeFormatting('src/app/features/probe/probe.ts', line).length, 1, line);
+  const good = [
+    "<td>{{ at | time }}</td>",
+    "const t = formatTime(at, { part: 'time' });",
+    'const n = count.toLocaleString();',
+    '// no DatePipe here, nor | date',
+    ' * Intl.DateTimeFormat is the formatter\'s own.',
+  ];
+  for (const line of good) assert.deepEqual(directTimeFormatting('src/app/features/probe/probe.ts', line), [], line);
+  assert.deepEqual(directTimeFormatting(TIME_FORMATTER, "const f = new Intl.DateTimeFormat('en-US');"), []);
 });

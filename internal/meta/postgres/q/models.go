@@ -2132,6 +2132,7 @@ type UserPreference struct {
 	KeyboardShortcuts bool
 	Revision          int64
 	UpdatedAt         pgtype.Timestamptz
+	TimeFormat        pgtype.Text
 }
 
 type VirtualDeployTarget struct {

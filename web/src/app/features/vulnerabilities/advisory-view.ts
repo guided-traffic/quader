@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { TimePipe } from '../../shared/time-pipe';
 import { Component, computed, input } from '@angular/core';
 import { VulnerabilityAdvisory } from '../../api/vulnerabilities-api';
 import { PackageReadme } from '../../api/packages-api';
@@ -45,7 +45,7 @@ export function referenceLinks(advisory: Pick<VulnerabilityAdvisory, 'references
 @Component({
   selector: 'quader-advisory',
   preserveWhitespaces: true,
-  imports: [DatePipe, PackageReadmeView, SeverityBadge],
+  imports: [TimePipe, PackageReadmeView, SeverityBadge],
   template: `
     @let a = advisory();
     <section class="advisory" [attr.aria-label]="a.id">
@@ -82,17 +82,17 @@ export function referenceLinks(advisory: Pick<VulnerabilityAdvisory, 'references
         @if (a.published) {
           <dt i18n="@@vuln.adv.published">Published</dt>
           <dd>
-            <time [attr.datetime]="a.published">{{ a.published | date: 'medium' }}</time>
+            <time [attr.datetime]="a.published">{{ a.published | time }}</time>
           </dd>
         }
         <dt i18n="@@vuln.adv.modified">Modified</dt>
         <dd>
-          <time [attr.datetime]="a.modified">{{ a.modified | date: 'medium' }}</time>
+          <time [attr.datetime]="a.modified">{{ a.modified | time }}</time>
         </dd>
         @if (a.withdrawn) {
           <dt i18n="@@vuln.adv.withdrawn">Withdrawn</dt>
           <dd>
-            <time [attr.datetime]="a.withdrawn">{{ a.withdrawn | date: 'medium' }}</time>
+            <time [attr.datetime]="a.withdrawn">{{ a.withdrawn | time }}</time>
           </dd>
         }
         <dt i18n="@@vuln.adv.fixed">Fixed in</dt>

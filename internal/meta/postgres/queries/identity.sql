@@ -897,22 +897,23 @@ HAVING (mp.kind, mp.name) > (sqlc.arg(after_kind)::text, sqlc.arg(after_name)::t
 -- User preferences (R-API-021) ----------------------------------------------------
 
 -- name: PreferencesGet :many
-SELECT coalesce(locale, '')::text AS locale, coalesce(theme, '')::text AS theme, keyboard_shortcuts, revision
+SELECT coalesce(locale, '')::text AS locale, coalesce(theme, '')::text AS theme,
+       coalesce(time_format, '')::text AS time_format, keyboard_shortcuts, revision
   FROM user_preferences WHERE user_id = sqlc.arg(user_id)::text::uuid;
 
 -- name: PreferencesUpsert :many
 -- A user without a row has the defaults at revision 1; the first write inserts
 -- revision 2. if_revision is 0 for "no condition" (If-Match: *); a row that exists
 -- is updated only when its revision matches, so a concurrent write is a 412.
-INSERT INTO user_preferences AS p (user_id, locale, theme, keyboard_shortcuts, revision)
+INSERT INTO user_preferences AS p (user_id, locale, theme, time_format, keyboard_shortcuts, revision)
 VALUES (sqlc.arg(user_id)::text::uuid, NULLIF(sqlc.arg(locale)::text, ''), NULLIF(sqlc.arg(theme)::text, ''),
-        sqlc.arg(keyboard_shortcuts)::boolean, 2)
+        NULLIF(sqlc.arg(time_format)::text, ''), sqlc.arg(keyboard_shortcuts)::boolean, 2)
 ON CONFLICT (user_id) DO UPDATE
-   SET locale = EXCLUDED.locale, theme = EXCLUDED.theme, keyboard_shortcuts = EXCLUDED.keyboard_shortcuts,
-       revision = p.revision + 1, updated_at = now()
+   SET locale = EXCLUDED.locale, theme = EXCLUDED.theme, time_format = EXCLUDED.time_format,
+       keyboard_shortcuts = EXCLUDED.keyboard_shortcuts, revision = p.revision + 1, updated_at = now()
  WHERE sqlc.arg(if_revision)::bigint = 0 OR p.revision = sqlc.arg(if_revision)::bigint
-RETURNING coalesce(p.locale, '')::text AS locale, coalesce(p.theme, '')::text AS theme, p.keyboard_shortcuts,
-          p.revision;
+RETURNING coalesce(p.locale, '')::text AS locale, coalesce(p.theme, '')::text AS theme,
+          coalesce(p.time_format, '')::text AS time_format, p.keyboard_shortcuts, p.revision;
 
 -- Project service accounts (R-AUTHZ-026, Q-AUTHZ-169) ----------------------------
 

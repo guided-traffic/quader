@@ -211,6 +211,7 @@ export const REGISTERED_AUDIT_ACTIONS: readonly string[] = [
   'system.storage.keys_imported',
   'system.storage.versions_restored',
   'system.task_triggered',
+  'system.time_format_changed',
   'technicaltoken.created',
   'technicaltoken.deleted',
   'technicaltoken.updated',

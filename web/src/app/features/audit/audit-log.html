@@ -297,7 +297,7 @@
                                 (click)="open(it.id)"
                               >
                                 <!-- The clock time to the second: the items of one download lie seconds apart, which a relative time does not tell. -->
-                                <time [attr.datetime]="it.occurredAt" [attr.title]="it.occurredAt | date: 'long' : timeZone()">{{ it.occurredAt | date: 'mediumTime' : timeZone() }}</time>
+                                <time [attr.datetime]="it.occurredAt" [attr.title]="it.occurredAt | time: 'zoned' : timeZone()">{{ it.occurredAt | time: 'time' : timeZone() }}</time>
                               </button>
                             </td>
                             <th scope="row" class="wrap-name item-path">
@@ -358,7 +358,7 @@
           <dt i18n="@@audit.col.time">Time</dt>
           <dd>
             <time [attr.datetime]="e.occurredAt">{{
-              e.occurredAt | date: 'long' : timeZone()
+              e.occurredAt | time: 'zoned' : timeZone()
             }}</time>
           </dd>
           <dt i18n="@@audit.col.action">Action</dt>

@@ -3,6 +3,7 @@ import { Banner, MaintenanceMode, SystemApi } from '../api/system-api';
 import { LegalStore } from './legal-store';
 import { PageVisibility } from './page-visibility';
 import { SessionStore } from './session-store';
+import { TimeFormatStore } from './time-format-store';
 
 /** The banner and the mode are read again this often, so a saved change shows on every screen within a minute (R-UI-033). */
 export const BANNER_POLL_MS = 30_000;
@@ -27,6 +28,7 @@ export class BannerStore {
   private readonly session = inject(SessionStore);
   private readonly visibility = inject(PageVisibility);
   private readonly legal = inject(LegalStore);
+  private readonly times = inject(TimeFormatStore);
 
   private readonly _banner = signal<Banner | null>(null);
   private readonly _maintenance = signal<MaintenanceMode | null>(null);
@@ -82,10 +84,11 @@ export class BannerStore {
 
   /**
    * Reads both now; the settings screen calls it after a save, so the writer sees its own notice without waiting. The imprint and
-   * the privacy notice of the footer ride on the same reads (R-UI-226): one cadence for what every screen shows of the installation.
+   * the privacy notice of the footer ride on the same reads (R-UI-226), and so does the installation's default form of a time (R-UI-251):
+   * one cadence for what every screen shows of the installation.
    */
   async refresh(): Promise<void> {
-    await Promise.all([this.readBanner(), this.readMaintenance(), this.legal.refresh()]);
+    await Promise.all([this.readBanner(), this.readMaintenance(), this.legal.refresh(), this.times.refresh()]);
   }
 
   /** Replaces what is shown with what a save answered. */

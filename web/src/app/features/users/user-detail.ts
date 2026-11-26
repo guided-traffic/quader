@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { TimePipe } from '../../shared/time-pipe';
 import { Component, computed, effect, inject, input, signal, untracked, viewChild } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { IdentityApi, User, UserGroupMembership, UserPatch } from '../../api/identity-api';
@@ -35,7 +35,7 @@ import { Loading } from '../../shared/ui/loading';
  */
 @Component({
   selector: 'quader-user-detail',
-  imports: [Loading, Busy, PageHeader, DataTable, DatePipe, RouterLink, Checkbox, ErrorNotice, Needs, PrincipalField, PrincipalRoles, Disclosure, TextField, TokenManager, QuaderAvatar],
+  imports: [Loading, Busy, PageHeader, DataTable, TimePipe, RouterLink, Checkbox, ErrorNotice, Needs, PrincipalField, PrincipalRoles, Disclosure, TextField, TokenManager, QuaderAvatar],
   templateUrl: './user-detail.html',
   styleUrl: '../../shared/access/access.scss',
   styles: `

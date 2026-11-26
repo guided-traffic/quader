@@ -554,7 +554,7 @@
                   <dt i18n="@@clamav.fact.built">Built</dt>
                   <dd>
                     @if (c.builtAt; as at) {
-                      <span class="built"><time [attr.datetime]="at">{{ at | date: 'medium' }}</time>@if (clamavAge(); as a) {<span class="muted">&ngsp;· {{ a }}</span>}</span>
+                      <span class="built"><time [attr.datetime]="at">{{ at | time }}</time>@if (clamavAge(); as a) {<span class="muted">&ngsp;· {{ a }}</span>}</span>
                       @if (clamavOutdated()) {
                         <span class="badge warn" [attr.title]="outdatedText"><span class="material-icons" aria-hidden="true">warning</span>{{ outdatedWord }}</span>
                       }
@@ -582,7 +582,7 @@
                   <dd>{{ verification() }}</dd>
                   @if (c.filesRemovedAt; as at) {
                     <dt i18n="@@clamav.fact.files-removed">Files removed</dt>
-                    <dd><time [attr.datetime]="at">{{ at | date: 'medium' }}</time></dd>
+                    <dd><time [attr.datetime]="at">{{ at | time }}</time></dd>
                   }
                 </dl>
                 @if (c.headerMd5 || c.computedMd5) {

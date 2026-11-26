@@ -1346,6 +1346,15 @@ from the `h1` to the end of step 2, code excluded, as the power user, measured o
   cancels or stands in the rule's `allowed` with its reason; no stylesheet has a `@keyframes` that rotates. It reads text: a section that
   shows nothing while it loads, an act whose button is not held, a flag of another name and a sentence built in code pass it
   ([H-2051](../spec/api-and-ui.md#h-2051--the-rule-of-the-spinner-reads-text)).
+- **Every time goes through the one formatter** ([time-format-rule.mjs](../../web/scripts/time-format-rule.mjs), run by
+  `check-rules.mjs`, tested in `lint-rules.test.mjs`, R-UI-250,
+  [Q-UI-1562](../spec/api-and-ui.md#q-ui-1562--one-formatter-and-one-pipe-held-by-a-lint-rule)): no `DatePipe`, `| date`,
+  `formatDate`, `Intl.DateTimeFormat`, `toLocaleDateString`, `toLocaleTimeString` or a `Date`'s `toLocaleString` outside
+  [time-format.ts](../../web/src/app/shared/time-format.ts). A template writes `{{ at | time }}` (`'date'`, `'time'`, `'zoned'` with a
+  zone, `'minutes'` for a chart's axis; [time-pipe.ts](../../web/src/app/shared/time-pipe.ts)), code calls `formatTime(at, { part })`.
+  The form in force is the signal `timeFormat`, which `TimeFormatStore` ([time-format-store.ts](../../web/src/app/core/time-format-store.ts))
+  sets from the reader's preference over the installation's default (R-UI-251); a test that sets it resets it to `FACTORY_TIME_FORMAT`.
+  A spec that expects a time writes the owner's form (`26.11.2026 21:39:22 (Thu.)`) with the hours as `\d\d`, since CI runs in UTC.
 - **The views act nowhere** ([views-rule.mjs](../../web/scripts/views-rule.mjs), run by `check-rules.mjs`, tested in
   `lint-rules.test.mjs`, R-UI-223, [Q-UI-1403](../spec/api-and-ui.md#q-ui-1403--the-rule-reads-a-views-imports-and-one-level-of-features-and-shared)):
   a file below `src/app/views/` imports no session, API client, dialog, API service class or act behind a helper
@@ -1520,6 +1529,15 @@ dialog's line and the repository page's first load, at 1,440 and 390 px, light a
 [testing/screen.ts](../../web/src/app/testing/screen.ts)); `quiet()` of [testing/states.ts](../../web/src/app/testing/states.ts) does not
 wait for an animation without end. A picture shows the spinner standing still, its first stone lit
 ([H-2053](../spec/api-and-ui.md#h-2053--the-renders-picture-the-spinner-standing-still)).
+
+**Where a load stands** ([R-UI-252](../spec/api-and-ui.md#r-ui-252--the-spinner-sits-in-the-middle-of-what-loads-and-a-page-that-loads-does-not-scroll)):
+a `quader-loading size="page"` at the top of a screen's template (or of a view's inside its page) fills what the page leaves below its
+title, its tabs and an error that stays, down to the legal line, by one rule of `_spinner.scss`: while it stands, its host (and the host
+above, two levels at most) is a growing column (`:has()`), and the load is centred in it. A screen only puts it at the top of its
+template, under its header, as before; a load in a section or a wrapper of its own stays a part's. While the first screen loads, `main` carries `booting` (`_shell.scss`) and the first paint fills the window without
+the bare column's padding. The render check `loading-place` and `loading-scroll` (`loadingPlace` of
+[layout.ts](../../web/e2e/renders/layout.ts)) measures every pictured load, and the walk `page-loads` pictures the first screen, the
+Profile page's first load and its load under a 503.
 
 **What every screen shows while its reads are slow** is a measurement, not a check: `UI_RENDERS_SLOW_LOADS=2000 make ui-renders GREP='slow
 loads'` ([slow-loads.spec.ts](../../web/e2e/renders/slow-loads.spec.ts)) opens every screen of the render set without a walk as the first

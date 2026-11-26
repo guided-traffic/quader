@@ -1,6 +1,7 @@
 import { ApiError } from '../../../api/problem';
 import { notScannedText } from '../content/content-shape';
 import { DeliveryDecision, UpstreamCatalogue, UpstreamVerdict } from '../../../api/upstream-catalogue-api';
+import { formatTime } from '../../../shared/time-format';
 
 /** The delivery mode of a remote repository (R-CUR-001). */
 export type DeliveryMode = UpstreamCatalogue['mode'];
@@ -289,10 +290,9 @@ export function sectionExample(format: string): string {
   }
 }
 
-/** The time `seconds` from now in the viewer's language, hours and minutes: "10:42". */
+/** The time of day `seconds` from now in the reader's form of a time (R-UI-250): "10:42:07". */
 export function clockAfter(seconds: number, now: number = Date.now()): string {
-  const locale = (typeof $localize !== 'undefined' && $localize.locale) || 'en-US';
-  return new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit' }).format(new Date(now + seconds * 1000));
+  return formatTime(now + seconds * 1000, { part: 'time' });
 }
 
 /**

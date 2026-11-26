@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { TimePipe } from '../../shared/time-pipe';
 import { Component, DestroyRef, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { LIVE_SLOW_MS, live } from '../../core/live-refresh';
 import { RouterLink } from '@angular/router';
@@ -67,7 +67,7 @@ export function behindBy(suite: DebSuiteState): number {
  */
 @Component({
   selector: 'quader-deb-index-state',
-  imports: [Busy, Loading, DatePipe, RouterLink, DataTable, ErrorNotice],
+  imports: [Busy, Loading, TimePipe, RouterLink, DataTable, ErrorNotice],
   template: `
     <section class="index" aria-labelledby="deb-index-heading">
       <h2 id="deb-index-heading" class="visually-hidden" i18n="@@deb.index.heading">Index state</h2>
@@ -102,7 +102,7 @@ export function behindBy(suite: DebSuiteState): number {
               <td class="num">{{ suite.generation }}</td>
               <td>
                 @if (suite.releaseDate; as at) {
-                  <time [attr.datetime]="at">{{ at | date: 'medium' }}</time>
+                  <time [attr.datetime]="at">{{ at | time }}</time>
                 } @else {
                   –
                 }

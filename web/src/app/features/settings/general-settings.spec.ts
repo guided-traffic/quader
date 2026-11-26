@@ -4,6 +4,8 @@ import { FakeSystemApi } from '../../api/testing/fakes';
 import { BannerStore } from '../../core/banner-store';
 import { button, buttonByText, expectAccessible, renderScreen, settle, text, typeInto } from '../../testing/screen';
 import { GeneralSettings } from './general-settings';
+import { TimeFormatStore } from '../../core/time-format-store';
+import { timeFormat } from '../../shared/time-format';
 
 const overlay = (): HTMLElement => document.querySelector('.cdk-overlay-container') as HTMLElement;
 
@@ -42,6 +44,29 @@ describe('General settings (R-UI-033)', () => {
     expect(text(root)).toContain('Banner');
     expect(text(root.querySelector('[data-testid="mode-state"]')!)).toContain('Normal mode');
     await expectAccessible(root);
+  });
+
+  it("R-UI-251 an administrator sets the installation's time format, which every reader without a choice of their own reads at once", async () => {
+    const { fixture, root, api, get } = await render();
+    const times = get(TimeFormatStore);
+    times.adoptOwn(null);
+    const select = root.querySelector<HTMLSelectElement>('select[name="timeFormat"]')!;
+    expect(select.value).toBe('dmy-weekday');
+    const saveTimes = button(root, /^\s*Save changes\s+\(time format\)\s*$/);
+    expect(saveTimes.disabled).toBe(true);
+    typeInto(root, 'Default time format', 'mdy');
+    await settle(fixture);
+    saveTimes.click();
+    await settle(fixture);
+    expect(api.timeFormatWrites).toEqual([{ timeFormat: 'mdy' }]);
+    expect(timeFormat()).toBe('mdy');
+    // A reader's own choice wins over the installation's.
+    times.adoptOwn('iso');
+    expect(timeFormat()).toBe('iso');
+    times.adoptOwn(null);
+    expect(timeFormat()).toBe('mdy');
+    times.adoptInstallation('dmy-weekday');
+    expect(timeFormat()).toBe('dmy-weekday');
   });
 
   it('R-UI-033 names a base URL that was derived from the request as development only', async () => {

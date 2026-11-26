@@ -32,6 +32,7 @@ import { NavState } from './core/nav-state';
 import { RecentRepositories } from './core/recent-repositories';
 import { ProjectMark } from './shared/ui/project-mark';
 import { PreferencesStore, UiTheme } from './core/preferences-store';
+import { TimeFormatStore } from './core/time-format-store';
 import { SessionStore } from './core/session-store';
 import { Banner } from './shared/banner';
 import { ErrorNotice } from './shared/error-notice';
@@ -103,6 +104,7 @@ export class App {
   protected readonly avatars = inject(AvatarStore);
   protected readonly navigation = inject(Navigation);
   protected readonly preferences = inject(PreferencesStore);
+  private readonly times = inject(TimeFormatStore);
   protected readonly navState = inject(NavState);
   protected readonly breadcrumbs = inject(Breadcrumbs);
   protected readonly recent = inject(RecentRepositories);
@@ -186,9 +188,11 @@ export class App {
     effect(() => {
       if (this.layout.pinned()) untracked(() => this.drawerOpen.set(false));
     });
-    // Load the preferences (theme) once a session exists.
+    // Load the preferences (theme, the form of a time) once a session exists; without one the installation's form of a time holds
+    // (R-UI-251), so a sign-out leaves no reader's choice behind.
     effect(() => {
       if (this.session.authenticated()) untracked(() => void this.preferences.load());
+      else untracked(() => this.times.adoptOwn(null));
     });
     // The uploaded avatar is not part of `whoami` (R-UI-051): read the user record once per signed-in principal.
     effect(() => {

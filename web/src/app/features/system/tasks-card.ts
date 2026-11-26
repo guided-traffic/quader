@@ -1,5 +1,5 @@
 import { NoValue } from '../../shared/ui/no-value';
-import { DatePipe } from '@angular/common';
+import { TimePipe } from '../../shared/time-pipe';
 import { Component, computed, inject, resource, signal } from '@angular/core';
 import { newIdempotencyKey } from '../../api/client';
 import { ApiError } from '../../api/problem';
@@ -22,7 +22,7 @@ import { Busy } from '../../shared/ui/busy';
  */
 @Component({
   selector: 'quader-tasks-card',
-  imports: [Busy, Loading, DataTable, DatePipe, ErrorNotice, JobProgress, NoValue],
+  imports: [Busy, Loading, DataTable, TimePipe, ErrorNotice, JobProgress, NoValue],
   template: `
     <section class="card" aria-labelledby="card-tasks">
       <div class="head">
@@ -50,7 +50,7 @@ import { Busy } from '../../shared/ui/busy';
                 </td>
                 <td>
                   @if (t.nextRunAt; as at) {
-                    <time [attr.datetime]="at">{{ at | date: 'medium' }}</time>
+                    <time [attr.datetime]="at">{{ at | time }}</time>
                   } @else if (t.schedule === null) {
                     <span i18n="@@tasks.manual">manual only</span>
                   } @else {
@@ -61,7 +61,7 @@ import { Busy } from '../../shared/ui/busy';
                   @if (t.lastRun; as r) {
                     {{ stateText(r.outcome) }}
                     @if (r.finishedAt; as at) {
-                      <time [attr.datetime]="at"> {{ at | date: 'medium' }}</time>
+                      <time [attr.datetime]="at"> {{ at | time }}</time>
                     }
                   } @else {
                     <quader-no-value />

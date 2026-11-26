@@ -118,6 +118,31 @@ func TestR_OPS_025_SystemBanner(t *testing.T) {
 			t.Errorf("a disabled banner keeps its text: %v", b)
 		}
 	})
+
+	t.Run("R-UI-251 the installation's form of a time: the owner's form until an administrator sets another, read by anyone on every replica", func(t *testing.T) {
+		const path = "/api/v1/system/time-format"
+		if a := send(t, c, "GET", path, nil); a.Status != 200 || a.JSON(t)["timeFormat"] != "dmy-weekday" {
+			t.Fatalf("anonymous, never set: %d %s", a.Status, a.Body)
+		}
+		if a := send(t, c, "PUT", path, map[string]any{"timeFormat": "iso"}, alice...); a.Status != 403 {
+			t.Errorf("alice: %d %s", a.Status, a.Body)
+		}
+		if a := send(t, c, "PUT", path, map[string]any{"timeFormat": "yyyy"}, admin...); a.Status != 422 {
+			t.Errorf("an unknown form: %d %s", a.Status, a.Body)
+		}
+		if a := send(t, c, "PUT", path, map[string]any{"timeFormat": "iso"}, admin...); a.Status != 200 || a.JSON(t)["timeFormat"] != "iso" {
+			t.Fatalf("%d %s", a.Status, a.Body)
+		}
+		everyReplica(c, func(i int) {
+			if a := send(t, c, "GET", path, nil); a.JSON(t)["timeFormat"] != "iso" {
+				t.Errorf("replica %d: %s", i, a.Body)
+			}
+		})
+		send(t, c, "PUT", path, map[string]any{"timeFormat": "iso"}, admin...)
+		if got := e.stack.Text(`SELECT count(*)::text || ' ' || max(details->>'from') || ' ' || max(details->>'to') FROM audit_event WHERE action = 'system.time_format_changed'`); got != "1 dmy-weekday iso" {
+			t.Errorf("events: %s", got)
+		}
+	})
 }
 
 func TestR_OPS_024_ReadOnlyMaintenanceMode(t *testing.T) {

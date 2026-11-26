@@ -1,4 +1,5 @@
-import { DatePipe, NgTemplateOutlet } from '@angular/common';
+import { NgTemplateOutlet } from '@angular/common';
+import { TimePipe } from '../time-pipe';
 import { Component, computed, input } from '@angular/core';
 import { ScannerList, ScannerReplica } from '../../api/system-api';
 import { DataTable, TableColumn } from '../ui/data-table';
@@ -43,7 +44,7 @@ export function scannerReasonText(reason: string): string | null {
  */
 @Component({
   selector: 'quader-scanner-replicas',
-  imports: [DataTable, DatePipe, Disclosure, NgTemplateOutlet, NoValue, TimeAgo],
+  imports: [DataTable, TimePipe, Disclosure, NgTemplateOutlet, NoValue, TimeAgo],
   template: `
     @if (group(); as g) {
       @if (g.rows.length > 0) {
@@ -65,7 +66,7 @@ export function scannerReasonText(reason: string): string | null {
                 </td>
                 <td><quader-time-ago [at]="r.stateSince" absolute="title" /></td>
                 <td>
-                  <time [attr.datetime]="r.heartbeatAt">{{ r.heartbeatAt | date: 'mediumTime' }}</time>
+                  <time [attr.datetime]="r.heartbeatAt">{{ r.heartbeatAt | time: 'time' }}</time>
                 </td>
                 <!-- The tool, and under it the database an image scanner's pod detects with (Q-UI-915): the tool and its data in one cell,
                      so that the table keeps its columns at 1440 px. -->
@@ -153,7 +154,7 @@ export function scannerReasonText(reason: string): string | null {
                           ><ng-container i18n="@@scanners.updater.daily">daily built</ng-container>&ngsp;<quader-time-ago [at]="built" absolute="title"
                         /></span>
                       } @else {
-                        <span class="secondary"><time [attr.datetime]="built" [attr.title]="built | date: 'medium'">{{ built | date: 'mediumDate' }}</time></span>
+                        <span class="secondary"><time [attr.datetime]="built" [attr.title]="built | time">{{ built | time: 'date' }}</time></span>
                       }
                     }
                   </span>

@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { TimePipe } from '../../shared/time-pipe';
 import { Component, input } from '@angular/core';
 import { AnsibleImportTask } from '../../api/ansible-api';
 import { importStateText } from '../repositories/ansible-import-tasks';
@@ -11,7 +11,7 @@ import { importStateText } from '../repositories/ansible-import-tasks';
  */
 @Component({
   selector: 'quader-ansible-import-task',
-  imports: [DatePipe],
+  imports: [TimePipe],
   template: `
     @let t = task();
     <header class="task-head">
@@ -19,7 +19,7 @@ import { importStateText } from '../repositories/ansible-import-tasks';
         <span class="material-icons inline" aria-hidden="true">{{ t.state === 'completed' ? 'check_circle' : 'error' }}</span>
         {{ stateText(t.state) }}
       </span>
-      <time [attr.datetime]="t.createdAt">{{ t.createdAt | date: 'medium' }}</time>
+      <time [attr.datetime]="t.createdAt">{{ t.createdAt | time }}</time>
     </header>
     @if (t.error; as error) {
       <p class="reason" data-testid="import-log-error">

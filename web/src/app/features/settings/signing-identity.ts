@@ -1,5 +1,6 @@
 import { personName } from '../../shared/person-name';
-import { DatePipe, DecimalPipe, NgTemplateOutlet } from '@angular/common';
+import { DecimalPipe, NgTemplateOutlet } from '@angular/common';
+import { TimePipe } from '../../shared/time-pipe';
 import { Component, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { ApiError } from '../../api/problem';
@@ -53,7 +54,7 @@ import { Loading } from '../../shared/ui/loading';
  */
 @Component({
   selector: 'quader-signing-identity',
-  imports: [Loading, Busy, CodeWindow, CopyButton, DataTable, DatePipe, DecimalPipe, Disclosure, ErrorNotice, NgTemplateOutlet, TimeAgo],
+  imports: [Loading, Busy, CodeWindow, CopyButton, DataTable, TimePipe, DecimalPipe, Disclosure, ErrorNotice, NgTemplateOutlet, TimeAgo],
   templateUrl: './signing-identity.html',
   styleUrl: '../../shared/access/access.scss',
   styles: `

@@ -58,7 +58,7 @@ describe('The scanner replicas (R-OPS-048)', () => {
     expect(headers).toEqual(['Name', 'State', 'Tool', 'Signature database', 'Slots']);
     const rows = [...root.querySelectorAll('tbody tr')].map((tr) => text(tr));
     expect(rows[0]).toContain('main-62.daily-27841.bytecode-339');
-    expect(rows[0]).toContain('Nov 21, 2026');
+    expect(rows[0]).toContain('21.11.2026 (Sat.)');
     expect(rows[0]).toContain('1 of 2');
     expect(rows[1]).toContain('0 of 2');
     await expectAccessible(root);

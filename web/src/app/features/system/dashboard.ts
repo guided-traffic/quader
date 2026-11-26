@@ -1,4 +1,5 @@
-import { DatePipe, DecimalPipe, NgTemplateOutlet } from '@angular/common';
+import { DecimalPipe, NgTemplateOutlet } from '@angular/common';
+import { TimePipe } from '../../shared/time-pipe';
 import { Component, computed, inject, resource, signal } from '@angular/core';
 import { live } from '../../core/live-refresh';
 import { RouterLink } from '@angular/router';
@@ -27,7 +28,7 @@ import { Loading } from '../../shared/ui/loading';
  */
 @Component({
   selector: 'quader-dashboard',
-  imports: [Loading, PageHeader, DatePipe, DecimalPipe, NgTemplateOutlet, RouterLink, ErrorNotice, TimeAgo],
+  imports: [Loading, PageHeader, TimePipe, DecimalPipe, NgTemplateOutlet, RouterLink, ErrorNotice, TimeAgo],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
 })

@@ -94,6 +94,39 @@
     <quader-error-notice [error]="e" (retry)="loadVisibility()" />
   }
 
+  @if (storedTimeFormat()) {
+    <!-- The form of a time for every reader who chose none and for a visitor without a session (R-UI-251). -->
+    <quader-disclosure i18n-heading="@@general.time-format" heading="Time format" [hint]="timeFormatSummary()">
+      <form (submit)="saveTimeFormat($event)" novalidate>
+        @if (timeFormatError(); as e) {
+          <quader-error-notice [error]="e" />
+        }
+        <fieldset class="form-grid" [disabled]="!canWrite()">
+          <legend class="visually-hidden" i18n="@@general.time-format.legend">Time format settings</legend>
+          <quader-select-field
+            i18n-label="@@general.time-format.default"
+            label="Default time format"
+            name="timeFormat"
+            [options]="timeFormatChoices"
+            [(value)]="chosenTimeFormat"
+          />
+        </fieldset>
+        <p class="muted" i18n="@@general.time-format.note">
+          Every user who chose no time format of their own reads times in this one, and so does the sign-in page. A user's choice in
+          their preferences wins.
+        </p>
+        @if (canWrite()) {
+          <div class="row-actions">
+            <button class="btn btn-confirm" type="submit" [disabled]="savingTimeFormat() || !timeFormatDirty()" [quaderBusy]="savingTimeFormat()">
+              <ng-container i18n="@@general.save-changes">Save changes</ng-container>
+              <span class="visually-hidden" i18n="@@general.time-format.save-for"> (time format)</span>
+            </button>
+          </div>
+        }
+      </form>
+    </quader-disclosure>
+  }
+
   @if (stored(); as s) {
     <quader-disclosure
       i18n-heading="@@general.banner"
@@ -184,7 +217,7 @@
             <ng-container i18n="@@general.mode.state-on">Read-only mode is on.</ng-container>
           </span>&ngsp;
           @if (m.since) {
-            <ng-container i18n="@@general.mode.since">Since</ng-container>&ngsp;<time [attr.datetime]="m.since">{{ m.since }}</time>
+            <ng-container i18n="@@general.mode.since">Since</ng-container>&ngsp;<time [attr.datetime]="m.since">{{ m.since | time }}</time>
           }
           @if (m.by) {
             <ng-container i18n="@@general.mode.by">by</ng-container>&ngsp;<span translate="no" [attr.title]="m.by">{{ person(m.by) }}</span>.

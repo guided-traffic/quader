@@ -1,6 +1,6 @@
 import { Disclosure } from '../ui/disclosure';
 import { Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
-import { DatePipe } from '@angular/common';
+import { TimePipe } from '../time-pipe';
 import { RouterLink } from '@angular/router';
 import { RoleBinding, RoleName, RolesApi } from '../../api/authz-api';
 import { collectAll } from '../../api/pagination';
@@ -32,7 +32,7 @@ export const ROLE_NAMES: readonly RoleName[] = [
  */
 @Component({
   selector: 'quader-principal-roles',
-  imports: [Busy, DatePipe, RouterLink, ErrorNotice, SelectField, Disclosure],
+  imports: [Busy, TimePipe, RouterLink, ErrorNotice, SelectField, Disclosure],
   template: `
     <quader-disclosure
       i18n-heading="@@principal-roles.heading"
@@ -63,7 +63,7 @@ export const ROLE_NAMES: readonly RoleName[] = [
                 @for (b of bindings(); track b.role) {
                   <tr>
                     <th scope="row" translate="no">{{ b.role }}</th>
-                    <td>{{ b.grantedAt | date: 'medium' }}</td>
+                    <td>{{ b.grantedAt | time }}</td>
                     @if (canWrite()) {
                       <td class="actions">
                         <button quaderBusy class="btn btn-tertiary"

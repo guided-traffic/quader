@@ -116,6 +116,10 @@ The language is part of the page address (`/ui/en/` or `/ui/de/`), so a bookmark
 
 To change the colours, select **Theme** in the top bar and choose **Follow the system**, **Light** or **Dark**. When you are signed in, Quader saves the choice with your preferences and applies it at your next sign-in, also in another browser. You can set both on your profile too: **Profile and tokens**, then **Profile**, section **Preferences**, then **Save preferences**.
 
+### Time format
+
+Quader writes a date and a time as `26.11.2026 21:39:22 (Thu.)` unless you, or your administrator for everyone, chose another form: day, month and year with dots, the time of day with seconds, and the weekday in your language (`(Do.)` in German). To choose your own, open **Profile and tokens**, then **Profile**, section **Preferences**, choose a **Time format** and select **Save preferences**. Every form shows the current time as its example: **With the weekday** (`26.11.2026 21:39:22 (Thu.)`), **Without the weekday** (`26.11.2026 21:39:22`), **ISO 8601** (`2026-11-26 21:39:22`), **British** (`26/11/2026 21:39:22`), **American** (`11/26/2026 9:39:22 PM`) and **Your language's own** (`Nov 26, 2026, 9:39:22 PM` in English). **Installation default** follows the form your administrator set. Times stand in your browser's time zone; the audit log can show them in UTC. A report you copy from an error box adds the time in ISO 8601 with its zone, so that whoever reads your ticket reads the same moment.
+
 ## Your avatar
 
 Until you upload a picture, Quader shows a generated robot for you, the same one on every device. To use your own picture:

@@ -1,4 +1,4 @@
-import { formatDate } from '@angular/common';
+import { formatTime } from '../../shared/time-format';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -441,7 +441,7 @@ export class UsageHistory {
   }
 
   protected time(iso: string): string {
-    return formatDate(iso, 'shortTime', this.locale);
+    return formatTime(iso, { part: 'minutes' });
   }
 
   protected count(n: number): string {

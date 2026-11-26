@@ -9,7 +9,7 @@
       <span>
         <ng-container i18n="@@backups.restored"
           >This installation was restored from backup <code translate="no">{{ r.backupId }}</code> (snapshot of
-          <time [attr.datetime]="r.snapshotAt">{{ r.snapshotAt | date: 'medium' }}</time>).</ng-container
+          <time [attr.datetime]="r.snapshotAt">{{ r.snapshotAt | time }}</time>).</ng-container
         >
         <ng-container i18n="@@backups.restored-docs"
           >Restoring is a Helm operation on an empty installation; this screen offers no restore action.</ng-container
@@ -26,7 +26,7 @@
         <dt i18n="@@backups.status.last-success">Last success</dt>
         <dd>
           @if (s.lastSuccessAt; as at) {
-            <time [attr.datetime]="at">{{ at | date: 'medium' }}</time>
+            <time [attr.datetime]="at">{{ at | time }}</time>
             (<ng-container i18n="@@backups.status.age">{{ lastSuccessAge() }} ago</ng-container>)
             @if (s.overdue) {
               <span class="badge warn">
@@ -46,7 +46,7 @@
         @if (s.lastFailure; as failure) {
           <dt i18n="@@backups.status.last-failure">Last failure</dt>
           <dd>
-            <time [attr.datetime]="failure.at">{{ failure.at | date: 'medium' }}</time>
+            <time [attr.datetime]="failure.at">{{ failure.at | time }}</time>
             <span class="badge bad">
               <span class="material-icons" aria-hidden="true">error</span>
               <ng-container i18n="@@backups.status.failed">Failed</ng-container>
@@ -98,7 +98,7 @@
             <dd translate="no">{{ run.pod }}</dd>
           }
           <dt i18n="@@backups.active.started">Started</dt>
-          <dd><time [attr.datetime]="running.startedAt">{{ running.startedAt | date: 'medium' }}</time></dd>
+          <dd><time [attr.datetime]="running.startedAt">{{ running.startedAt | time }}</time></dd>
         </dl>
       </section>
     }
@@ -160,7 +160,7 @@
               @for (r of runs.items(); track r.id) {
                 <tr>
                   <th scope="row">
-                    <time [attr.datetime]="r.startedAt">{{ r.startedAt | date: 'medium' }}</time>
+                    <time [attr.datetime]="r.startedAt">{{ r.startedAt | time }}</time>
                   </th>
                   <td>{{ operationText(r.operation) }}</td>
                   <td translate="no">{{ r.pod }}</td>
@@ -174,7 +174,7 @@
                   </td>
                   <td>
                     @if (r.snapshotAt) {
-                      <time [attr.datetime]="r.snapshotAt">{{ r.snapshotAt | date: 'medium' }}</time>
+                      <time [attr.datetime]="r.snapshotAt">{{ r.snapshotAt | time }}</time>
                     } @else {
                       <quader-no-value />
                     }
@@ -262,10 +262,10 @@
           <dt i18n="@@backups.detail.target">Target</dt>
           <dd translate="no">{{ run.target }}</dd>
           <dt i18n="@@backups.detail.heartbeat">Last heartbeat</dt>
-          <dd><time [attr.datetime]="run.heartbeatAt">{{ run.heartbeatAt | date: 'medium' }}</time></dd>
+          <dd><time [attr.datetime]="run.heartbeatAt">{{ run.heartbeatAt | time }}</time></dd>
           @if (run.finishedAt; as end) {
             <dt i18n="@@backups.detail.finished">Finished</dt>
-            <dd><time [attr.datetime]="end">{{ end | date: 'medium' }}</time></dd>
+            <dd><time [attr.datetime]="end">{{ end | time }}</time></dd>
           }
         </dl>
         @if (run.error; as error) {
@@ -302,7 +302,7 @@
       <p>
         <ng-container i18n="@@backups.stored.as-of"
           >As recorded by run <code translate="no">{{ stored.runId }}</code> at
-          <time [attr.datetime]="stored.asOf">{{ stored.asOf | date: 'medium' }}</time>.</ng-container
+          <time [attr.datetime]="stored.asOf">{{ stored.asOf | time }}</time>.</ng-container
         >
         <ng-container i18n="@@backups.stored.note"
           >Backups written or removed outside Quader appear after the next run; <code translate="no">quader backup list</code> reads
@@ -333,7 +333,7 @@
               @for (b of stored.items; track b.backupId) {
                 <tr>
                   <th scope="row" translate="no">{{ b.backupId }}</th>
-                  <td><time [attr.datetime]="b.snapshotAt">{{ b.snapshotAt | date: 'medium' }}</time></td>
+                  <td><time [attr.datetime]="b.snapshotAt">{{ b.snapshotAt | time }}</time></td>
                   <td translate="no">{{ b.quaderVersion }}</td>
                   <td translate="no">{{ b.schemaStep }}</td>
                   <td class="num" translate="no">{{ formatSize(b.databaseBytes) }}</td>

@@ -23,6 +23,7 @@ import {
   ReplicaRuntime,
   ScannerList,
   ScannerReplica,
+  TimeFormatSetting,
   SystemApi,
   SystemInfo,
   SystemOverview,
@@ -189,6 +190,7 @@ export class FakePreferencesApi extends PreferencesApi {
   stored: Preferences = {
     locale: null,
     theme: null,
+    timeFormat: null,
     keyboardShortcuts: true,
     revision: 1,
   };
@@ -445,6 +447,22 @@ export class FakeSystemApi extends SystemApi {
       ...(input.message ? { message: input.message } : {}),
     };
     return structuredClone(this.bannerResult);
+  }
+
+  /** The stored default form of a time (R-UI-251), which the setter replaces as the API does. */
+  timeFormatResult: TimeFormatSetting | ApiError = { timeFormat: 'dmy-weekday' };
+  timeFormatWrites: TimeFormatSetting[] = [];
+
+  override async timeFormat(): Promise<TimeFormatSetting> {
+    if (this.timeFormatResult instanceof ApiError) throw this.timeFormatResult;
+    return structuredClone(this.timeFormatResult);
+  }
+
+  override async setTimeFormat(input: TimeFormatSetting): Promise<TimeFormatSetting> {
+    this.timeFormatWrites.push(structuredClone(input));
+    if (this.writeError) throw this.writeError;
+    this.timeFormatResult = { timeFormat: input.timeFormat };
+    return structuredClone(this.timeFormatResult);
   }
 
   override async maintenance(): Promise<MaintenanceMode> {
