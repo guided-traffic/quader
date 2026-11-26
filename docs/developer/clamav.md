@@ -26,7 +26,7 @@ product declares and the malware scanning's database task writes in process. The
   ([Q-CLAMAV-17](../spec/formats/clamav.md#q-clamav-17--a-commit-without-its-metadata-is-refused)).
 - **The cleanup keeps the version row.** `OnItemsRemoved` marks the side row `files_removed_at` and leaves the version row, so the
   package screens list the version as history ([Q-CLAMAV-15](../spec/formats/clamav.md#q-clamav-15--the-version-row-stays-as-history-when-its-files-go));
-  the database task deletes the history once `malware.rescan.cycle` has passed (`DeleteHistory`).
+  the database task deletes the history once the rescan cycle of the installation's settings has passed (`DeleteHistory`, R-MAL-037).
 - **The endpoint serves what the side rows mark in use.** `<db>.cvd` serves the container of the version whose row says `in_use`
   ([handlers.go](../../internal/formats/clamav/handlers.go)); the database task marks the rows in the transaction that records the set in
   use and in a put-back (`MarkSets`, through `database.PGRow`).
@@ -86,10 +86,11 @@ The task `malware-sync-db` ([task.go](../../internal/malware/database/task.go), 
    (ClamAV's key unless a test sets its own; `signature_invalid` otherwise), the members are read (`cvd.ReadMembers`, 1,000 entries and
    2 GiB). A detached signature is at most 64 KiB and starts with `#clamsign-1.0`. Only when every new file passed are they committed,
    each with its `rows.Container` or `rows.Signature`.
-3. **The record.** `PGRow.Record` makes the set the version in use, marks the format's rows of both sets (`MarkSets`), marks the recent
-   rescans and records `malware.database.imported`, in one transaction.
+3. **The record.** `PGRow.Record` makes the set the version in use, marks the format's rows of both sets (`MarkSets`), requests the rescans of
+   what was downloaded lately (the floor of R-MAL-009), wakes the job `malware-scan` and records `malware.database.imported`, in one
+   transaction.
 4. **The cleanup.** Every version that neither the set in use nor the one before it names loses its folder (`items.Store.Delete`); the
-   history rows whose files went longer than `malware.rescan.cycle` ago are deleted (`DeleteHistory`). After a put-back
+   history rows whose files went longer than the rescan cycle ago are deleted (`DeleteHistory`). After a put-back
    (`DatabaseRefused`) the cleanup keeps the version put back and the refused one, until the next set (Q-MAL-102).
 
 ## The legacy signature

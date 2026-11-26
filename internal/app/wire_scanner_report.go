@@ -4,8 +4,6 @@ import (
 	"context"
 	"crypto/tls"
 	"net/http"
-	"sync/atomic"
-	"time"
 
 	"github.com/google/uuid"
 
@@ -83,16 +81,11 @@ func (a *App) startScannerReport(ctx context.Context) error {
 	return a.startComponent(ctx, &scannerReporter{unit: unit, r: r})
 }
 
-// clamdVersionTimeout bounds the question for clamd's version: clamd answers no command while it loads a database (Q-MAL-89), and the
-// report goes without the version then.
-const clamdVersionTimeout = time.Second
-
 // scannerStatus is what a scanner reports of itself: the state of its readiness and the reason of the check that fails, the version of
 // its tool, the signature database clamd scans with or the newest database the image scanner's pod holds with its build time
 // (Q-OPS-225), and its slots; the updater the set its directory holds with the daily's build time and no slots (Q-OPS-224). clamd's
-// version is asked until it answers once and kept: a pod's clamd does not change its version.
+// version is the malware scanner's own, asked until clamd answers it once and kept, the one its answers name (R-MAL-036).
 func (a *App) scannerStatus(s scannerArea) func(context.Context) scanreport.Status {
-	var clamd atomic.Pointer[string]
 	return func(ctx context.Context) scanreport.Status {
 		snap := a.health.Snapshot()
 		st := scanreport.Status{State: string(snap.State), Reason: failingReason(snap)}
@@ -102,17 +95,7 @@ func (a *App) scannerStatus(s scannerArea) func(context.Context) scanreport.Stat
 		}
 		if s.malware != nil {
 			st.InUse, st.Total, st.Database = s.malware.Busy(), s.malware.Slots(), s.malware.DatabaseLoaded()
-			if v := clamd.Load(); v != nil {
-				st.ToolVersion = *v
-			} else {
-				cctx, cancel := context.WithTimeout(ctx, clamdVersionTimeout)
-				line, err := s.malware.ClamdVersion(cctx)
-				cancel()
-				if v := scanreport.ToolVersionOfClamd(line); err == nil && v != "" {
-					clamd.Store(&v)
-					st.ToolVersion = v
-				}
-			}
+			st.ToolVersion = s.malware.Engine(ctx)
 			return st
 		}
 		st.InUse, st.Total = s.svc.Busy(), s.svc.Slots()

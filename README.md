@@ -2422,10 +2422,6 @@ malware:
   run_slice: 10m                        # default
   max_attempts: 5                       # default; then the blob is failed, refused under the switch
   read_timeout: 10m                     # default; 1m to 1h: the malware scanner's read of one blob and the blob token's lifetime
-  rescan:
-    recent: 168h                        # default; downloaded within: scanned again within a day of a new database
-    cycle: 720h                         # default; every verdict at least this often (H-1111)
-    cycle_batch: 10000                  # default
   scanner:                              # the worker's call (R-MAL-005) and the malware scanner's own bounds (R-MAL-007, R-MAL-008)
     url: ""                             # example: https://quader-malware-scanner-clamav.quader.svc:8080 (the chart sets it); empty: the job makes no call
     server_name: ""                     # the chart sets <fullname>-malware-scanner-clamav.<namespace>.svc
@@ -2455,8 +2451,19 @@ malware:
 ```
 
 Whatever the source, every set is kept in `upstream/clamav`: the set in use and the one before it with their files, older versions as
-metadata without files for `malware.rescan.cycle` (R-MAL-034). A container from the updater is stored only after its archive's MD5 and
+metadata without files for the rescan cycle (R-MAL-034). A container from the updater is stored only after its archive's MD5 and
 its header's signature verified against ClamAV's public key (R-MAL-033).
+
+When a verdict is made again is no configuration key but a setting of the installation, in the database (R-MAL-037): the rows of
+`malware_settings` that the settings' API changes, with these defaults *(the defaults of migration 00150)*:
+
+| Setting | Default | What it means |
+|---|---|---|
+| `rescan_cycle` | 30 days | a verdict nobody downloads is checked again once the signatures in use are this much newer than its check (1 to 365 days) |
+| `rescan_shortest` | 1 day | the most downloaded content is checked again at the earliest once the signatures are this much newer (1 hour to the cycle) |
+| `rescan_demand_step` | 6 days | each doubling of the downloads since a check brings the next one forward by this much (0 to the cycle; 0 switches demand off) |
+| `rescan_overdue_after` | 7 days | a check due for longer counts as overdue (1 hour to 365 days) |
+| `rescan_recent_within` | 7 days | whatever was downloaded within it is checked again at every new set of signatures (0 to 365 days; 0 switches it off, Q-MAL-9) |
 
 ```yaml
 malware:                                # repository document member, every class of every format

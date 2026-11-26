@@ -6014,10 +6014,11 @@ export interface paths {
         put?: never;
         /**
          * Scan every verdict again
-         * @description Marks every verdict, or those of the blobs one repository holds, due at the lowest priority (`cycle`), and wakes the job
-         *     `malware-scan` (R-MAL-022, R-MAL-009). A verdict stays in force until its rescan; a row that waits already keeps its higher
-         *     priority. Answers `202` with the job, which may be the job that already waits. `409 malware_not_enabled` while
-         *     `malware.enabled` is false.
+         * @description Requests a rescan of every verdict, or of those of the blobs one repository holds, and wakes the job `malware-scan`
+         *     (R-MAL-022, R-MAL-037): each requested verdict's scan pressure gains a whole cycle, so it is due at once, behind the downloads
+         *     that wait and new content, the requested ones worked by the rest of their pressure; a `too_large` verdict included. A verdict
+         *     stays in force until its rescan; a row that waits already in a due lane is scanned anyway. Answers `202` with the job, which may
+         *     be the job that already waits. `409 malware_not_enabled` while `malware.enabled` is false.
          */
         post: operations["rescanMalware"];
         delete?: never;
@@ -15497,7 +15498,7 @@ export interface components {
             job: components["schemas"]["JobReference"];
             /**
              * Format: int64
-             * @description The verdicts the rescan looked at.
+             * @description The verdicts the rescan looked at; the ones not due in a lane already are requested.
              */
             marked: number;
         };

@@ -201,8 +201,8 @@ func marks(vs []rows.DBVersion) []string {
 }
 
 // DeleteHistory deletes, in tx, the version rows (and their side rows) whose files the cleanup removed before the time, and raises the
-// revision of their packages: the end of the history, malware.rescan.cycle after the files went (R-MAL-034). It returns the number of
-// versions it deleted.
+// revision of their packages: the end of the history, the rescan cycle of the installation's settings after the files went (R-MAL-034).
+// It returns the number of versions it deleted.
 func (s *Store) DeleteHistory(ctx context.Context, tx meta.Tx, repoID int64, before time.Time) (int, error) {
 	qs, err := txQueries(tx)
 	if err != nil {

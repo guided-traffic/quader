@@ -15,8 +15,8 @@ rendered from it ([checklist.md there](https://github.com/guided-traffic/quader/
 requirement lists the feature in its `Covers:` line. *open*: no requirement does. For entries with priority
 *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,377 spec requirements:
-807 cover catalog features, 570 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,379 spec requirements:
+808 cover catalog features, 571 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -1308,7 +1308,7 @@ Catalog page: [security-scanning-and-curation.md](../features/security-scanning-
 | SEC-045 | Scan data retention | Later | open | – |
 | SEC-046 | File-name exclusion from indexing | Later | open | – |
 | SEC-047 | Scan status | MVP | specified | [R-MAL-002](../spec/malware-scanning.md), [R-VULN-011](../spec/vulnerability-scanning.md), [R-VULN-012](../spec/vulnerability-scanning.md), [R-VULN-037](../spec/vulnerability-scanning.md) |
-| SEC-048 | Continuous re-evaluation | MVP | specified | [R-MAL-009](../spec/malware-scanning.md), [R-VULN-011](../spec/vulnerability-scanning.md) |
+| SEC-048 | Continuous re-evaluation | MVP | specified | [R-MAL-009](../spec/malware-scanning.md), [R-MAL-037](../spec/malware-scanning.md), [R-VULN-011](../spec/vulnerability-scanning.md) |
 | SEC-049 | Scan results view | MVP | specified | [R-MAL-024](../spec/malware-scanning.md), [R-MAL-025](../spec/malware-scanning.md), [R-VULN-012](../spec/vulnerability-scanning.md), [R-VULN-020](../spec/vulnerability-scanning.md), [R-VULN-022](../spec/vulnerability-scanning.md), [R-VULN-023](../spec/vulnerability-scanning.md), [R-VULN-037](../spec/vulnerability-scanning.md) |
 | SEC-050 | Scan policy model | Later | open | – |
 | SEC-051 | Security rule criteria | Later | open | – |
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>570 requirements</summary>
+<summary>571 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3362,6 +3362,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-MAL-003 | The name and the promise | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-035 | Every stored file is checked at once after any fill, in order under load | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-005 | The call from the worker to the malware scanner | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
+| R-MAL-036 | A verdict names the scanner, its engine and its replica | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-006 | The scanner's read of a blob: the route on the scan listener and its token | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-007 | The malware scanner: what it unpacks and what it hands to `clamd` | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-008 | Limits | P1 | [malware-scanning.md](../spec/malware-scanning.md) |

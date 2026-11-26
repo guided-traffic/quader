@@ -91,6 +91,10 @@ func (a *App) wireFiles(ctx context.Context, in infra, repo repositoryArea, id i
 	}
 	log := a.log.With("component", "files")
 	stats := items.NewStats(in.db, a.cfg.Storage.Stats.FlushInterval, log)
+	if mw.store != nil && a.cfg.Malware.Enabled {
+		// Each flush adds its downloads to the scan pressure of their blobs, in its transaction (malware-scanning.md R-MAL-037).
+		stats.AfterFlush(mw.demand)
+	}
 	activity := repository.NewActivity(in.db, 0, log)
 	store, err := items.New(items.Options{
 		Runner: in.db, Blobs: in.blobs, Recorder: in.rec, Jobs: in.queue,

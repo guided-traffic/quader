@@ -448,8 +448,18 @@ there for whoever may open it. With `malware.enabled: false` the side bar has no
 | Section | What it shows |
 |---|---|
 | **Downloads** | **Only checked artifacts can be downloaded**, off by default. On, a download is served only when the scan found no malware or an auditor released the bytes: content that is not checked yet waits up to `malware.download_wait` (25 seconds) for its scan and is then refused with `503` and `Retry-After`; content nothing could check (too large, a scan limit reached inside it, encrypted, the scans failed) is refused until an auditor releases it. When content waits or cannot be checked, **Save changes** asks first and names how much. Who changed the switch last, and when |
-| **Scanning** | **Not checked yet** and **Could not be checked**: what the switch would hold or refuse now. **Scanners**: the ready scanners and the scans they run now, as the replicas below report them and read again every half minute, or **None ready**; under it, closed, **Replicas of malware-scanner-clamav (n)**: each pod with its state and why it is not ready, its ClamAV version, the signature database it scans with and its date, and its slots in use, or a sentence why there is none. **Scan everything again** marks every verdict to be scanned again at the lowest priority, after the work that waits; each verdict stays in force until its new scan |
+| **Scanning** | **Not checked yet** and **Could not be checked**: what the switch would hold or refuse now. **Scanners**: the ready scanners and the scans they run now, as the replicas below report them and read again every half minute, or **None ready**; under it, closed, **Replicas of malware-scanner-clamav (n)**: each pod with its state and why it is not ready, its ClamAV version, the signature database it scans with and its date, and its slots in use, or a sentence why there is none. **Scan everything again** asks for every verdict to be scanned again, behind the downloads that wait and the new content; each verdict stays in force until its new scan |
 | **Signature database** | The version in use, its date with **Current** or **Stale** (older than `malware.database.stale_after`, 48 hours; scanning goes on with it), when Quader stored it, and the repository that keeps it (`upstream/clamav`, on its page of the upstream registries). A failed update names what failed and how often in a row, and folds the task's own message with its code under **Technical details**. Until the first version is in use, nothing is scanned |
+
+**When an artifact is checked again.** Every artifact is checked when it is stored. Afterwards each check has a *scan pressure*: how
+much newer the signatures in use are than the ones it was checked with, plus a bonus for how often it was downloaded since, and its check
+is repeated once the pressure reaches the rescan cycle, highest pressure first, behind downloads that wait and new content. With the
+defaults: an artifact nobody downloads is checked again once the signatures are 30 days newer; each doubling of its downloads
+brings that 6 days forward, down to one day, so the most downloaded artifacts are checked again with nearly every new set of signatures;
+whatever was downloaded in the last 7 days is checked again at every new set; a check due for more than 7 days counts as overdue. These
+are settings of the installation (`rescan_cycle`, `rescan_shortest`, `rescan_demand_step`, `rescan_recent_within`, `rescan_overdue_after`
+of `malware_settings`); a change of the scan limits, and **Scan everything again**, make the checks they name due at once. A new ClamAV
+version adds no pressure of its own: press **Scan everything again** after raising it when every artifact should be checked by it.
 
 **A failed update** of the signature database is one of:
 
@@ -492,7 +502,7 @@ The updater checks for new signatures every two hours and keeps working with wha
 on with the database in use, and after 48 hours `QuaderMalwareDatabaseStale` fires. The worker asks it every 30 minutes and takes only what
 it does not hold yet; a restarted updater first copies the database in use from Quader, so it fetches only what is newer from ClamAV's
 network. `upstream/clamav` keeps the files of the database in use and of the one before it; older versions are listed as **Files removed**
-for 30 days (`malware.rescan.cycle`) and then go. Until the first version is stored no alert fires and
+for the rescan cycle (30 days by default) and then go. Until the first version is stored no alert fires and
 no failure is recorded: the updater's row on the System page and the empty **Signature database** on this page are what show it.
 
 **A repository's own setting.** A repository's settings have a closed section **Malware scan** with **Only checked artifacts can be

@@ -3296,6 +3296,45 @@ binary); no head at all (every page "Package – Quader", nothing for a crawler 
 **Revisit condition:** a search engine that no longer renders scripts' pages differently from their text, or a format whose pages need a
 member of its own metadata in the head.
 
+### ADR-310 · Rescans are ranked by scan pressure, with the floor of what was downloaded lately
+
+**Status:** Decided by the owner's words of 2026-11-26 ("Wenn der Scan eines Artefakts sehr lange her ist, soll dass zu einer Art Scan-Druck
+auf dem Artefakt führen. Der Scan-Druck soll in der Scan-Queue für eine Art ranking sorgen. … Auch Downloads eines Artefakts, soll zu
+Scandruck führen: 'Artefakte die eine hohe Nachfrage haben, werden heufiger gescannt.'"); the form by the development agent
+([Q-MAL-112](spec/malware-scanning.md#q-mal-112--the-floor-of-what-was-downloaded-lately-stays) to
+[Q-MAL-119](spec/malware-scanning.md#q-mal-119--a-verdict-keeps-the-unit-the-engine-of-its-answer-and-the-replica),
+[R-MAL-036](spec/malware-scanning.md#r-mal-036--a-verdict-names-the-scanner-its-engine-and-its-replica),
+[R-MAL-037](spec/malware-scanning.md#r-mal-037--scan-pressure-ranks-the-rescans)). It builds W-36's P1.
+
+**Context.** The rescans were two classes ([Q-MAL-9](spec/malware-scanning.md#q-mal-9--scanning-again-after-a-signature-update)): what
+was downloaded within 7 days at every new database, everything else once its verdict was 30 days old, oldest first, from a mark per run
+that read every clean verdict without an index. A verdict did not keep who made it, and nothing counted demand per blob.
+
+**Decision.**
+- A verdict keeps the unit that made it, `clamd`'s version as the scanner's answer states it, and the replica (migration 00150).
+- Its scan pressure in days is how much newer the signatures in use are than its own (the dailies' build times), plus a bonus of
+  `demand_step × log2(1 + downloads since the check)` capped at `cycle − shortest`, plus a whole cycle while a rescan, a change of the limits
+  or the floor requests it; it is due at `cycle`.
+- The part that changes with time is the same for every verdict, so the order is a stored rank under one partial index; one SQL function
+  computes it, and the verdict, the statistics' flush, a request and a re-rank after a change of the settings write it.
+- The job's lanes are asked, new and retry, then the pressure, highest first, by an index walk.
+- The settings are five columns of `malware_settings` with defaults (30 days, 1 day, 6 days, 7 days overdue, 7 days of the floor); the
+  configuration keys `malware.rescan.*` go.
+- The owner's guarantee of Q-MAL-9 stays as a floor: whatever was downloaded within `rescan_recent_within` is requested at every new set,
+  in the transaction that records it; 0 switches it off.
+
+**Consequences.** No rescan runs under unchanged signatures for demand alone; the hottest content is checked at about every new daily,
+cold content once a cycle of newer signatures; the walk costs an index scan whatever the number of verdicts; every flush of the download
+statistics runs one statement more. A new engine adds no pressure (H-2401), and an administrator can stretch the cycle to a year
+(H-2400).
+
+**Alternatives considered.** Time since the check plus a weight per version behind (counts the same quantity twice); a decaying download
+rate (no stored order); a "next check at" time (the demand's cap moves it anyway); the pressure without the floor (reads the owner's words
+as reversing his earlier choice, which they do not say).
+
+**Revisit condition:** measured scan times or statement costs at an installation's size that the defaults do not carry (W-36's
+measurement), or the owner's word on the floor.
+
 ## Design invariants
 
 The invariants of [spec/README.md](spec/README.md#design-invariants) are the baseline every spec
@@ -11810,10 +11849,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-MAL
 
-84 questions on [spec/malware-scanning.md](spec/malware-scanning.md).
+92 questions on [spec/malware-scanning.md](spec/malware-scanning.md).
 
 <details>
-<summary>Q-MAL: 84 questions</summary>
+<summary>Q-MAL: 92 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -11825,7 +11864,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-MAL-6](spec/malware-scanning.md#q-mal-6--where-clamav-runs) | Where ClamAV runs | Decided by the owner on 2026-11-20 | (b) A Deployment of its own of the role `scanner`, with a container `clamd` of the official image beside it | [ADR-221](#adr-221--the-malware-scanner-is-a-kind-of-the-role-scanner-with-clamd-beside-it-and-reads-one-blob-by-its-digest) |
 | [Q-MAL-7](spec/malware-scanning.md#q-mal-7--how-the-scanner-reads-a-blob) | How the scanner reads a blob | Decided by the owner on 2026-11-20 | (a) A route of the scan listener that names no format, `GET /scan/v1/blobs/sha256:<hex>`, with a token for one digest, read only, minutes, never fill | [ADR-221](#adr-221--the-malware-scanner-is-a-kind-of-the-role-scanner-with-clamd-beside-it-and-reads-one-blob-by-its-digest) |
 | [Q-MAL-8](spec/malware-scanning.md#q-mal-8--how-quader-caches-the-clamav-database) | How Quader caches the ClamAV database | Decided by the owner on 2026-11-20 | (b) `freshclam` beside the worker, each version stored in `upstream/scanner-clamav` (a system repository, generic, local, private), the scanners load from there | [ADR-222](#adr-222--freshclam-fetches-the-clamav-database-and-quader-keeps-it-in-upstreamscanner-clamav) |
-| [Q-MAL-9](spec/malware-scanning.md#q-mal-9--scanning-again-after-a-signature-update) | Scanning again after a signature update | Decided by the owner on 2026-11-20 | (c) At entry; within a day of a new database what was downloaded lately; everything on a cycle of 30 days at the lowest priority | [ADR-220](#adr-220--every-downloaded-artifact-is-scanned-for-malware-and-one-switch-lets-only-checked-artifacts-through) |
+| [Q-MAL-9](spec/malware-scanning.md#q-mal-9--scanning-again-after-a-signature-update) | Scanning again after a signature update | Decided by the owner on 2026-11-20 | (c) At entry; within a day of a new database what was downloaded lately; everything on a cycle of 30 days at the lowest priority | [ADR-220](#adr-220--every-downloaded-artifact-is-scanned-for-malware-and-one-switch-lets-only-checked-artifacts-through), [ADR-310](#adr-310--rescans-are-ranked-by-scan-pressure-with-the-floor-of-what-was-downloaded-lately) |
 | [Q-MAL-10](spec/malware-scanning.md#q-mal-10--limits) | Limits | Decided by the owner on 2026-11-20 | (b) Limits toward ClamAV's ceiling of 2 GB; the scanner unpacks outer containers itself; a `max_size` above which an artifact is `unscannable: too_large` | [ADR-221](#adr-221--the-malware-scanner-is-a-kind-of-the-role-scanner-with-clamd-beside-it-and-reads-one-blob-by-its-digest) |
 | [Q-MAL-11](spec/malware-scanning.md#q-mal-11--oci) | OCI | Decided by the owner on 2026-11-20 | option (a), as recommended: the gate on blobs, the vulnerability gate stays on manifests, the two scans independent. | [ADR-220](#adr-220--every-downloaded-artifact-is-scanned-for-malware-and-one-switch-lets-only-checked-artifacts-through) |
 | [Q-MAL-12](spec/malware-scanning.md#q-mal-12--what-a-bastion-and-a-virtual-repository-do-with-it) | What a Bastion and a virtual repository do with it | Decided by the owner on 2026-11-20 | option (a), as recommended: a refusal ends resolution, the OCI walk is corrected, a later find reaches the Bastions as a feed entry, and the window of up to ten minutes after switching on is stated as a gap. | [ADR-220](#adr-220--every-downloaded-artifact-is-scanned-for-malware-and-one-switch-lets-only-checked-artifacts-through) |
@@ -11901,6 +11940,14 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-MAL-108](spec/malware-scanning.md#q-mal-108--a-verdict-of-before-is-named-by-its-next-scan-not-by-the-migration) | A verdict of before is named by its next scan, not by the migration | Decided by the development agent | (a) Migration 00128 adds the columns and writes no row; a `limits_exceeded` verdict of before names its bound at its next scan: the cycle of 30 days, a change of the limits, or **Scan everything again** (R-MAL-022); until then the screens say the reason without a bound | — |
 | [Q-MAL-110](spec/malware-scanning.md#q-mal-110--the-settings-page-counts-the-scanners-from-the-rows-they-report) | The settings page counts the scanners from the rows they report | Decided by the development agent | (a) The summary counts the rows: the live ready replicas and the slots they report in use; the job's table goes | — |
 | [Q-MAL-111](spec/malware-scanning.md#q-mal-111--a-remote-images-tag-lists-the-manifest-document-it-names-as-its-file) | A remote image's tag lists the manifest document it names as its file | Decided by the development agent | (a) The version's files of a remote tag are the live item `<name>/_manifests/sha256:<digest>` of the document it names | — |
+| [Q-MAL-112](spec/malware-scanning.md#q-mal-112--the-floor-of-what-was-downloaded-lately-stays) | The floor of what was downloaded lately stays | Decided by the development agent | (a) The floor stays as a setting `rescan_recent_within` (7 days, 0 switches it off): whatever was downloaded within it is requested at every new set in use; the pressure orders everything else and the order within the floor | [ADR-310](#adr-310--rescans-are-ranked-by-scan-pressure-with-the-floor-of-what-was-downloaded-lately) |
+| [Q-MAL-113](spec/malware-scanning.md#q-mal-113--scan-pressure-is-the-signature-gap-plus-a-capped-demand-bonus-plus-a-request) | Scan pressure is the signature gap plus a capped demand bonus plus a request | Decided by the development agent | (a), with the defaults of Q-MAL-116. | [ADR-310](#adr-310--rescans-are-ranked-by-scan-pressure-with-the-floor-of-what-was-downloaded-lately) |
+| [Q-MAL-114](spec/malware-scanning.md#q-mal-114--demand-is-the-downloads-since-the-check-added-by-the-statistics-flush) | Demand is the downloads since the check, added by the statistics' flush | Decided by the development agent | (a) `downloads_since` per verdict, summed over the blob's items, added by the flush in its transaction through a hook of `items.Stats`, the rows locked in digest order; reset by the verdict | — |
+| [Q-MAL-115](spec/malware-scanning.md#q-mal-115--a-stored-rank-under-one-partial-index-kept-by-its-writers) | A stored rank under one partial index, kept by its writers | Decided by the development agent | (a) The column `rank` = bonus − days(rank_base) + boost, computed by the one SQL function `malware_rank` with the terms of the view `malware_rank_terms`, under the index `malware_scan_pressure`; written by the verdict, the flush, a request and a re-rank after a change of the settings | — |
+| [Q-MAL-116](spec/malware-scanning.md#q-mal-116--the-rescan-settings-are-the-installations-with-generous-defaults) | The rescan settings are the installation's, with generous defaults | Decided by the development agent | (a) Five columns of `malware_settings` (`rescan_cycle` 30 days, `rescan_shortest` 1 day, `rescan_demand_step` 6 days, `rescan_overdue_after` 7 days, `rescan_recent_within` 7 days), bounded by the table's checks; the keys `malware.rescan.*` go without an alias | — |
+| [Q-MAL-117](spec/malware-scanning.md#q-mal-117--a-request-is-the-boost-of-a-whole-cycle-not-a-mark-of-due) | A request is the boost of a whole cycle, not a mark of due | Decided by the development agent | (a) An administrator's rescan, a change of the limits and the floor set `requested` and add a whole cycle to the pressure until the verdict is written again | — |
+| [Q-MAL-118](spec/malware-scanning.md#q-mal-118--the-lanes-asked-new-retry-then-the-pressure) | The lanes: asked, new, retry, then the pressure | Decided by the development agent | (a) The due lanes 0 `asked`, 1 `new`, 2 `retry` by `not_before`, then the verdicts whose pressure reached the cycle, highest first; the slot kept for `asked` stays (Q-MAL-64) | — |
+| [Q-MAL-119](spec/malware-scanning.md#q-mal-119--a-verdict-keeps-the-unit-the-engine-of-its-answer-and-the-replica) | A verdict keeps the unit, the engine of its answer and the replica | Decided by the development agent | (a) The scanner names `clamd`'s version in every answer (`engine`), asked with `VERSION` until `clamd` answers once and kept; the verdict keeps it with the unit's name and the replica from the header | [ADR-310](#adr-310--rescans-are-ranked-by-scan-pressure-with-the-floor-of-what-was-downloaded-lately) |
 
 </details>
 

@@ -13699,7 +13699,7 @@ type MalwareRescanRequest struct {
 type MalwareRescanResult struct {
 	Job JobReference `json:"job"`
 
-	// Marked The verdicts the rescan looked at.
+	// Marked The verdicts the rescan looked at; the ones not due in a lane already are requested.
 	Marked int64 `json:"marked"`
 }
 

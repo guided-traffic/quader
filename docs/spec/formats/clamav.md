@@ -714,7 +714,9 @@ the owner's goal that Quader is the company's central endpoint for ClamAV.
 
 ### Q-CLAMAV-15 · The version row stays as history when its files go
 
-Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Amended on
+2026-11-26: the history ends after the installation's rescan cycle `rescan_cycle` ([malware-scanning.md](../malware-scanning.md) R-MAL-037),
+not after the key `malware.rescan.cycle`.
 
 Context: R-MAL-034 keeps a version's metadata after the cleanup removed its files, and R-UI-194 lists such a version as **Files removed** on
 the repository's package screens, which list the generic version rows.

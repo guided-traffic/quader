@@ -979,6 +979,16 @@ type MalwareDatabase struct {
 	UpdatedAt     pgtype.Timestamptz
 }
 
+type MalwareRankTerm struct {
+	StepDays     int32
+	CapDays      int32
+	CycleDays    int32
+	OverdueDays  int32
+	RecentWithin pgtype.Interval
+	DueRank      int32
+	OverdueRank  int32
+}
+
 type MalwareRelease struct {
 	Sha256        []byte
 	Reason        string
@@ -991,33 +1001,45 @@ type MalwareRelease struct {
 }
 
 type MalwareScan struct {
-	Sha256        []byte
-	State         string
-	Reason        pgtype.Text
-	Signature     pgtype.Text
-	Part          pgtype.Text
-	DbVersion     pgtype.Text
-	DbBuiltAt     pgtype.Timestamptz
-	Limits        pgtype.Text
-	HolderRepoID  int64
-	Size          int64
-	Due           bool
-	Priority      int16
-	Attempts      int32
-	NotBefore     pgtype.Timestamptz
-	AskedAt       pgtype.Timestamptz
-	FirstFoundAt  pgtype.Timestamptz
-	ScannedAt     pgtype.Timestamptz
-	CreatedAt     pgtype.Timestamptz
-	ExceededLimit pgtype.Text
+	Sha256          []byte
+	State           string
+	Reason          pgtype.Text
+	Signature       pgtype.Text
+	Part            pgtype.Text
+	DbVersion       pgtype.Text
+	DbBuiltAt       pgtype.Timestamptz
+	Limits          pgtype.Text
+	HolderRepoID    int64
+	Size            int64
+	Due             bool
+	Priority        int16
+	Attempts        int32
+	NotBefore       pgtype.Timestamptz
+	AskedAt         pgtype.Timestamptz
+	FirstFoundAt    pgtype.Timestamptz
+	ScannedAt       pgtype.Timestamptz
+	CreatedAt       pgtype.Timestamptz
+	ExceededLimit   pgtype.Text
+	Scanner         pgtype.Text
+	EngineVersion   pgtype.Text
+	ScannerInstance pgtype.Text
+	RankBase        pgtype.Timestamptz
+	DownloadsSince  int64
+	Requested       pgtype.Text
+	Rank            float64
 }
 
 type MalwareSetting struct {
-	ID          bool
-	OnlyChecked bool
-	Version     int64
-	UpdatedAt   pgtype.Timestamptz
-	UpdatedBy   pgtype.UUID
+	ID                 bool
+	OnlyChecked        bool
+	Version            int64
+	UpdatedAt          pgtype.Timestamptz
+	UpdatedBy          pgtype.UUID
+	RescanCycle        pgtype.Interval
+	RescanShortest     pgtype.Interval
+	RescanDemandStep   pgtype.Interval
+	RescanOverdueAfter pgtype.Interval
+	RescanRecentWithin pgtype.Interval
 }
 
 type MirrorPending struct {

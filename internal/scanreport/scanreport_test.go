@@ -139,14 +139,6 @@ func TestR_OPS_048_DecodeIsStrictAndBounded(t *testing.T) {
 	if !ValidUID("8a0b5f8e-3c1d-4f2a-9b7e-1c2d3e4f5a6b") || ValidUID("8A0B5F8E-3C1D-4F2A-9B7E-1C2D3E4F5A6B") || ValidUID("x") || ValidUID("../x") {
 		t.Error("ValidUID admits only a lower-case UUID")
 	}
-	if v := ToolVersionOfClamd("ClamAV 1.5.5/27841/Fri Nov 20 06:00:00 2026\n"); v != "1.5.5" {
-		t.Errorf("clamd's version = %q", v)
-	}
-	for _, line := range []string{"", "PONG", "ClamAV <script>/1/x", "clamav 1.5.5/1/x"} {
-		if v := ToolVersionOfClamd(line); v != "" {
-			t.Errorf("%q: %q", line, v)
-		}
-	}
 }
 
 // R-OPS-048: the reporter puts the report at once and every interval, says draining at once after Drain, and signs off with DELETE.

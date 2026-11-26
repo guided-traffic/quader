@@ -255,7 +255,7 @@ the alert and the report banner agree (R-VULN-004). It is a duration parsed by q
     severity: warning
   annotations:
     summary: A stored file has waited more than an hour for its malware scan.
-    description: The malware scanners do not keep up with what is stored, or calls are put off (R-MAL-004, R-MAL-026). quader_malware_backlog shows the due rows by priority; raise malwareScannerClamav.replicaCount or config.malware.scanner.slots, or look at the codes of quader_malware_scans_total.
+    description: The malware scanners do not keep up with what is stored, or calls are put off (R-MAL-004, R-MAL-026). quader_malware_backlog shows the due rows by lane; raise malwareScannerClamav.replicaCount or config.malware.scanner.slots, or look at the codes of quader_malware_scans_total.
 {{- end }}
 {{- if include "quader.signaturesOn" . }}
 - alert: QuaderSignatureInvalid

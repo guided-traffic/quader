@@ -2676,7 +2676,7 @@
         },
         "max_attempts": {
           "default": 5,
-          "description": "Attempts at a scan that ends for a reason that may pass (blob_missing, timeout, scan_failed, scanner_lost); after the last the blob is failed, refused under the switch, and scanned again in the cycle (R-MAL-005).",
+          "description": "Attempts at a scan that ends for a reason that may pass (blob_missing, timeout, scan_failed, scanner_lost); after the last the blob is failed, refused under the switch, and scanned again once its scan pressure reaches the cycle of the rescan settings (R-MAL-005, R-MAL-037).",
           "maximum": 100,
           "minimum": 1,
           "type": "integer",
@@ -2707,36 +2707,6 @@
           "type": "string",
           "x-quader-env": "QUADER_MALWARE_READ_TIMEOUT",
           "x-quader-type": "duration"
-        },
-        "rescan": {
-          "additionalProperties": false,
-          "properties": {
-            "cycle": {
-              "default": "720h",
-              "description": "Every verdict older than this is scanned again at the lowest priority, while nothing else is due (R-MAL-009); a cold blob is checked against signatures up to this old (H-1111).",
-              "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
-              "type": "string",
-              "x-quader-env": "QUADER_MALWARE_RESCAN_CYCLE",
-              "x-quader-type": "duration"
-            },
-            "cycle_batch": {
-              "default": 10000,
-              "description": "Verdicts one run of the job marks for the cycle, oldest first (R-MAL-009).",
-              "maximum": 1000000,
-              "minimum": 1,
-              "type": "integer",
-              "x-quader-env": "QUADER_MALWARE_RESCAN_CYCLE_BATCH"
-            },
-            "recent": {
-              "default": "168h",
-              "description": "Content downloaded within this span is scanned again within a day of a new signature database, at the priority recent (R-MAL-009).",
-              "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
-              "type": "string",
-              "x-quader-env": "QUADER_MALWARE_RESCAN_RECENT",
-              "x-quader-type": "duration"
-            }
-          },
-          "type": "object"
         },
         "run_slice": {
           "default": "10m",

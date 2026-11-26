@@ -29,6 +29,8 @@ type Stats struct {
 
 	mu      sync.Mutex
 	pending map[int64]*statEntry
+	// after is the hook of AfterFlush, nil for none.
+	after func(ctx context.Context, tx meta.Tx, flushed []Flushed) error
 
 	stop chan struct{}
 	done chan struct{}
@@ -52,6 +54,24 @@ func NewStats(run meta.Runner, interval time.Duration, log *slog.Logger) *Stats 
 	return &Stats{
 		run: run, interval: interval, log: log, now: time.Now,
 		pending: map[int64]*statEntry{}, stop: make(chan struct{}), done: make(chan struct{}),
+	}
+}
+
+// Flushed is one item's downloads in one flush.
+type Flushed struct {
+	ItemID, N int64
+}
+
+// AfterFlush sets the hook a flush calls in its transaction after it wrote
+// the counts, with each item's downloads of the batch in item id order: the
+// malware scanning adds them to the demand of the items' blobs
+// (malware-scanning.md R-MAL-037), so that the download path runs no statement
+// for it and the package of the items knows no statement of the scanning. A
+// hook that fails fails the flush, whose batch is kept for the next one. Set it
+// before Start.
+func (s *Stats) AfterFlush(fn func(ctx context.Context, tx meta.Tx, flushed []Flushed) error) {
+	if s != nil {
+		s.after = fn
 	}
 }
 
@@ -135,8 +155,14 @@ func (s *Stats) Flush(ctx context.Context) error {
 			if err != nil {
 				return err
 			}
-			_, err = qs.UpsertDownloadStats(ctx, string(raw))
-			return err
+			if _, err := qs.UpsertDownloadStats(ctx, string(raw)); err != nil || s.after == nil {
+				return err
+			}
+			flushed := make([]Flushed, len(ids))
+			for i, id := range ids {
+				flushed[i] = Flushed{ItemID: id, N: batch[id].n}
+			}
+			return s.after(ctx, tx, flushed)
 		})
 	}
 	if err != nil {

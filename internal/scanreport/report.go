@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"io"
 	"regexp"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -171,17 +170,3 @@ func (r Report) validateCommon() error {
 }
 
 func bounded(s string, n int) bool { return s != "" && len(s) <= n }
-
-// ToolVersionOfClamd reads the version of ClamAV from clamd's answer to VERSION, "ClamAV <version>/<daily>/<date>"; "" for an answer of
-// another form.
-func ToolVersionOfClamd(line string) string {
-	rest, ok := strings.CutPrefix(strings.TrimSpace(line), "ClamAV ")
-	if !ok {
-		return ""
-	}
-	v, _, _ := strings.Cut(rest, "/")
-	if !bounded(v, 64) || !version.MatchString(v) {
-		return ""
-	}
-	return v
-}
