@@ -27753,6 +27753,28 @@ and of an image into blocks at 1,024 px beside the side bar, which it was not be
 
 **Choice:** (a). A sort by downloads comes back as a column the day the table has room for it. **Applied in the spec:** R-UI-110,
 R-UI-222.
+### Q-UI-1340 · An upstream package's README shows its first 24 rem, and the versions follow
+
+Status: **Decided by the development agent on 2026-11-26** (W-30 G2) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-CUR-028 puts an upstream package's README on the tab Upstream. The owner's example is Galaxy's page, which shows the newest
+version's documentation first; the tab's own reader wants the version rows and their switches, and a README of 300 lines must not push them
+out of reach, with one scrollbar per page (R-UI-215).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) On the package's own view, after its head: the deprecation, one line of facts, the README under its heading with its version, its first 24 rem and **Show the whole README** (the frame clips and never scrolls; a focus that enters it shows it whole), the dependencies folded, then the versions; in a row of the search the README folded (chosen) | The documentation first; the switches one short scroll below | The owner's order, and a decider who only switches finds the rows as before | The README is clipped where it is long |
+| (b) Tabs README and Versions inside the opened package | — | Each whole | A click before every switch; two tab strips on the tab Upstream |
+| (c) A README in a box that scrolls | — | — | A second scrollbar (R-UI-215) |
+| (d) The README after the versions | — | The switches stay first | The documentation behind a table of up to 100 rows |
+
+**Choice:** (a). The facts line names the version they are of, the licence and the links out (the words of a stored version's
+**Links**: Homepage, Source repository, Issue tracker, Documentation, License); the dependencies take the blocks of a stored version
+(Dependencies, Peer dependencies, Optional dependencies, and NuGet's per target framework), folded under "Dependencies of <version>"
+with their count. A reader who may not read the wiki reads "This version has no README to show." as for a stored version; OCI and Debian
+say in one line what comes with a stored version. **Applied in the spec:** R-CUR-028. Code:
+[upstream-docs.ts](../../web/src/app/features/repositories/upstream/upstream-docs.ts).
 
 ## What this does not cover
 
@@ -28189,11 +28211,12 @@ sentence with `aroundValue` and the template sets the value as `<code translate=
 
 ### H-2080 · A remote package's README is shown only once a version is stored
 
-The README of an npm or a NuGet version is read from what Quader stores: the version's tarball or manifest for npm, the file the nuspec
-names inside the stored package for NuGet. A remote repository's package whose versions no client has fetched yet is listed under
-**Upstream** (R-CUR-018) and has no version page, so the README its upstream offers (npm's packument `readme`, NuGet's README of
-`ReadmeUriTemplate`) is not shown before a version is stored. Not built: a read of the upstream's README for a package that is not
-stored.
+Closed on 2026-11-26 by [R-CUR-028](remote-curation.md#r-cur-028--an-opened-package-of-the-tab-upstream-shows-its-documentation-and-the-facts-of-its-newest-version-read-through-and-not-stored):
+a package of the tab **Upstream** that no client fetched yet shows its upstream's README read through and not stored (npm's package
+document's `readme`, NuGet's README of `ReadmeUriTemplate`, the Galaxy's docs-blob and a role's content), with the facts of its newest
+version. Its version page still comes with the first stored version; what remains of the gap is
+[H-2200](remote-curation.md#h-2200--a-debian-package-of-the-upstream-shows-no-long-description-homepage-or-relations) to
+[H-2203](remote-curation.md#h-2203--a-collections-readme-reads-its-whole-docs-blob) of remote-curation.md.
 
 ### H-2081 · Documentation that belongs to OCI, Debian and generic files is not shown as documentation
 

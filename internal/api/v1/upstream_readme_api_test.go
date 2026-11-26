@@ -27,8 +27,10 @@ func TestR_CUR_028_TheFactsOfAnUpstreamPackageAreTheSchemas(t *testing.T) {
 	if aboutRow(discover.About{}) != nil {
 		t.Fatal("R-CUR-028 facts that tell nothing are not null")
 	}
-	b, err := json.Marshal(aboutRow(discover.About{Version: "1.0.0", Dependencies: []discover.Dependency{{Name: "x"}},
-		Deprecation: &discover.Deprecation{Reasons: []string{"Legacy"}}}))
+	b, err := json.Marshal(aboutRow(discover.About{
+		Version: "1.0.0", Dependencies: []discover.Dependency{{Name: "x"}},
+		Deprecation: &discover.Deprecation{Reasons: []string{"Legacy"}},
+	}))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -1657,6 +1657,10 @@ search field, a code the screen says in its language ([Q-CUR-166](../remote-cura
 | GitHub (`ghcr`) | `none` (hint `ghcr`) | none: its listing needs a GitHub token with `read:packages`, which a registry credential is not | `tags/list` — sizes `unknown` |
 | GitLab (`gitlab`; catalogue host `gitlab.com`, no credential) | `none` (hint `gitlab`) | `project` → images: `GET /api/v4/projects/{url-encoded path}/registry/repositories` for a public project; a group's listing needs a token and is not offered; its `404 Project Not Found` is an unknown project (Q-CUR-165) | `tags/list`; a tag's `total_size` from the project API when its row is opened — sizes `perVersion` |
 
+- **Documentation** ([R-CUR-028](../remote-curation.md#r-cur-028--an-opened-package-of-the-tab-upstream-shows-its-documentation-and-the-facts-of-its-newest-version-read-through-and-not-stored), [Q-CUR-263](../remote-curation.md#q-cur-263--an-image-shows-no-readme-and-nothing-is-fetched-for-one)): none.
+  An image carries no README, and the catalogue reads no manifest of an image it lists (the tag lists and the operators' APIs only), so
+  its annotations (the description, the licence, the source) are not read before a version is stored, where R-OCI-039 shows them; a
+  Helm chart's README lives in the chart's layer and is not fetched. The tab says so in one line.
 - **The order of the tags** is the format's on every upstream ([remote-curation.md](../remote-curation.md)
   [Q-CUR-180](../remote-curation.md#q-cur-180--docker-hubs-and-quays-tags-are-listed-in-the-tag-order)): versions by the tag order, newest
   first, then the tags that are no version, newest first by the upstream's time (`last_updated`, `last_modified`) and else by their bytes.

@@ -2008,7 +2008,8 @@ Packages may embed an icon, a license file and a README
   version is `…/<id>/-/versions`. A version without one opens on its first tab with content and its README tab says that there is none
   to show; the nuspec's `description` is not a document to read
   ([Q-UI-1245](../api-and-ui.md#q-ui-1245--a-version-without-documentation-opens-on-its-first-tab-with-content-and-its-readme-tab-says-so)).
-  The README of a remote's package that no client fetched yet is not shown (H-2080 of api-and-ui.md).
+  The README of a remote's package that no client fetched yet is read through on the tab **Upstream**, not stored
+  ([R-CUR-028](../remote-curation.md#r-cur-028--an-opened-package-of-the-tab-upstream-shows-its-documentation-and-the-facts-of-its-newest-version-read-through-and-not-stored)).
 
 - The files the `.nuspec` names in `icon`, `license` (type `file`) and `readme` are read out of the stored `.nupkg` when a client
   asks for one, through the one reader of a stored package (`nupkg.Open`, the reader the package view's README uses), with ranged
@@ -2722,6 +2723,7 @@ the protocol research of 2026-11-23:
 | Levels | none: IDs are flat ("NuGet IDs have no levels; search for a prefix with `id:`."). Dotted prefixes and nuget.org's reserved prefixes are a naming rule, not a listing |
 | Lookup and versions | the registration index and its pages (`listed`, `published`, `deprecation`, `vulnerabilities`) with the flat container's version list, which names unlisted versions too (`unlisted` flag); the stored documents when the remote holds them |
 | Sizes | `unknown`: nuget.org's registrations carry no `packageSize`; only a catalog leaf does, one request per version, which the catalogue does not send |
+| Documentation ([R-CUR-028](../remote-curation.md#r-cur-028--an-opened-package-of-the-tab-upstream-shows-its-documentation-and-the-facts-of-its-newest-version-read-through-and-not-stored)) | the facts of the newest registration leaf the lookup reads (`licenseExpression`, else `licenseUrl` as a link; `projectUrl`; `tags`; the `dependencyGroups` per target framework; `deprecation` with its reasons, message and alternate package), and the README at the address `ReadmeUriTemplate/6.13.0` of the service index names (`{lower_id}`, `{lower_version}`; nuget.org's flat container `…/{id}/{version}/readme`): one request, at most 1 MiB, `404` a version without one; a feed that announces no template has none. The address is asked only on a host the repository reaches (the upstream's, an `extraHosts` entry; `formats.UnreachedHost`) |
 | Version canon | the URL form of R-NUGET-003, the identity of a version (`1.0` and `1.0.0.0` are `1.0.0`, `1.0.0-Beta` is `1.0.0-beta`), so a rule on `1.0.0` meets a request for `1.0` ([Q-CUR-3](../remote-curation.md#q-cur-3--one-rule-model-the-narrowest-decides-a-block-wins-at-equal-width-exact-versions-only)) |
 | One version's download | the `.nupkg` |
 

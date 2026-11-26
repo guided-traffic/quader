@@ -36,7 +36,9 @@ func (d *documents) Document(_ context.Context, path, _ string) ([]byte, bool, e
 	return b, ok, nil
 }
 
-func (*documents) Artifact(context.Context, string, int64) ([]byte, bool, error) { return nil, false, nil }
+func (*documents) Artifact(context.Context, string, int64) ([]byte, bool, error) {
+	return nil, false, nil
+}
 
 // refusedAddress stands for the engine's cause of a refusal, which names the address it did not ask.
 type refusedAddress string

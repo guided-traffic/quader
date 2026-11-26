@@ -15,8 +15,8 @@ rendered from it ([checklist.md there](https://github.com/guided-traffic/quader/
 requirement lists the feature in its `Covers:` line. *open*: no requirement does. For entries with priority
 *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,308 spec requirements:
-797 cover catalog features, 511 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,309 spec requirements:
+797 cover catalog features, 512 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>511 requirements</summary>
+<summary>512 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3347,6 +3347,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-CUR-021 | Replicas, Valkey, drains, backups and restores | P1 | [remote-curation.md](../spec/remote-curation.md) |
 | R-CUR-022 | Tests and what they cost | P1 | [remote-curation.md](../spec/remote-curation.md) |
 | R-CUR-023 | Formats that come later | P1 | [remote-curation.md](../spec/remote-curation.md) |
+| R-CUR-028 | An opened package of the tab Upstream shows its documentation and the facts of its newest version, read through and not stored | P1 | [remote-curation.md](../spec/remote-curation.md) |
 | R-REPO-060 | Move a repository to another project | MVP | [repositories-and-proxy.md](../spec/repositories-and-proxy.md) |
 | R-REPO-061 | Narrowings of a repository in the revocation journal | MVP | [repositories-and-proxy.md](../spec/repositories-and-proxy.md) |
 | R-REPO-066 | The project `upstream` and the repositories the product declares in it | MVP | [repositories-and-proxy.md](../spec/repositories-and-proxy.md) |

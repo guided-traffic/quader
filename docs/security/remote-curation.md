@@ -77,6 +77,28 @@ who can make Quader download how much, and what is kept of content that no clien
   installation's address on the internet, and is never kept (Q-CUR-174). The limit, its times and its last answer are shown to every
   reader of the queue, as a row's failure is ([H-1883](#h-1883--a-reader-of-the-queue-sees-how-much-of-the-upstreams-quota-is-left)).
 
+## An upstream's README, read through
+
+What the tab Upstream shows of a package that is not stored (R-CUR-028): the facts of its newest version and its README.
+
+- **Content.** The README is the upstream's: Markdown goes through the README renderer and its sanitizer, an upstream's HTML (the
+  Galaxy's docs-blob, a role's content) through the sanitizer as it is (R-UI-008, R-ANS-039), on the server; the screen binds the result
+  as a stored README's, where Angular's sanitizer and the Trusted Types policy are further layers. An external image becomes a link, so
+  no request leaves the reader's browser for the upstream or a host it names, except the origins an operator lists in
+  `ui.readme.external_image_origins`, as for every README. The facts are plain text; an address is a link only for http and https and
+  leaves Quader with `rel="nofollow noopener noreferrer"`.
+- **Hosts.** The README is asked through the catalogue's lent upstream: the upstream's host, an `extraHosts` entry or a declared
+  catalogue host, never from https to cleartext, within the egress rules (R-CUR-008). An address the upstream names that the repository
+  does not reach (NuGet's `ReadmeUriTemplate` on another host) is not asked; the screen names the host. A redirect of the request is
+  followed as a discovery request's is ([H-525](egress.md#h-525--a-redirect-of-a-discovery-request-is-followed-to-any-host-the-egress-policy-admits)).
+- **The wiki.** The README is wiki content (R-AUTHZ-034): the handler asks the wiki of the repository for the package before anything is
+  sent, and a reader who may not read it gets the `404` of a package without one; the facts, which are no wiki content, show to every
+  reader of the tab. The delivery rules decide what is delivered, not what is read: a blocked package shows its README to who may
+  decide on it (Q-CUR-267).
+- **Nothing is stored.** No cache entry, no item, no row, no audit event; the README's text is kept in the catalogue's per-replica cache for
+  its period, at most 1 MiB each within its 32 MiB, and served only to a reader the handler let through. It spends the catalogue's budget
+  like every request, and waits while the upstream's rate limit holds the queue.
+
 ## What an upstream's rate limit holds back
 
 - A rate-limit answer longer than 10 s ends a run of the queue and holds the repository's queue until the upstream's time, or the queue's

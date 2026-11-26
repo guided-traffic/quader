@@ -10453,10 +10453,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-CUR
 
-128 questions on [spec/remote-curation.md](spec/remote-curation.md).
+136 questions on [spec/remote-curation.md](spec/remote-curation.md).
 
 <details>
-<summary>Q-CUR: 128 questions</summary>
+<summary>Q-CUR: 136 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10588,6 +10588,14 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-CUR-248](spec/remote-curation.md#q-cur-248--a-sync-is-not-edited-one-sync-per-subject) | A sync is not edited; one sync per subject | Decided by the development agent | a sync is paused, resumed, run and removed; to change its bounds it is removed and set up again from the preview, which shows what the new one would fetch. | — |
 | [Q-CUR-249](spec/remote-curation.md#q-cur-249--syncs-are-data-a-retired-repository-keeps-them-and-they-do-not-run) | Syncs are data; a retired repository keeps them and they do not run | Decided by the development agent | (a) Export class `data`; the purge of a retired well-known repository keeps them with its row, as it keeps the rules (Q-CUR-111); a retired repository's sync looks `disabled` | — |
 | [Q-CUR-250](spec/remote-curation.md#q-cur-250--the-tab-downloads-lists-the-syncs-over-the-bulks-the-bulk-dialog-offers-once-and-keep-in-sync) | The tab Downloads lists the syncs over the bulks; the bulk dialog offers Once and Keep in sync | Decided by the development agent | (a) The preview of a bulk offers **Once** and **Keep in sync**; the tab Downloads shows **Kept in sync** above **Bulk downloads** once the repository has a sync, with a row menu; the interval, the pause and the bound are a closed section of the settings | — |
+| [Q-CUR-260](spec/remote-curation.md#q-cur-260--the-readme-is-a-call-of-its-own-the-facts-ride-on-the-lookup) | The README is a call of its own; the facts ride on the lookup | Decided by the development agent | (a) The facts of the newest version on the lookup's answer, the README a call of its own after the wiki check | [ADR-291](#adr-291--an-upstreams-package-shows-the-facts-its-lookup-read-and-its-readme-read-through-by-one-optional-call-of-the-catalogue) |
+| [Q-CUR-261](spec/remote-curation.md#q-cur-261--the-readme-is-of-the-version-the-facts-name) | The README is of the version the facts name | Decided by the development agent | (a); without a version the format finds its newest (one more request). | — |
+| [Q-CUR-262](spec/remote-curation.md#q-cur-262--debian-shows-the-short-description-the-parse-keeps-and-no-more) | Debian shows the short description the parse keeps, and no more | Decided by the development agent | (a) The short description of the newest version's rows, which `deb_remote_entries.description` holds; the tab says that the long description, the homepage and the relations come with a stored version | — |
+| [Q-CUR-263](spec/remote-curation.md#q-cur-263--an-image-shows-no-readme-and-nothing-is-fetched-for-one) | An image shows no README, and nothing is fetched for one | Decided by the development agent | (a), as the task says: nothing fetched for it beyond what the catalogue reads, and it reads no manifest. | — |
+| [Q-CUR-264](spec/remote-curation.md#q-cur-264--npms-readme-is-handed-over-by-the-lookup) | npm's README is handed over by the lookup | Decided by the development agent | (a) The lookup, which reads the full package document, sets `PackageInfo.Readme`; the engine keeps it in its cache under the README call's key and drops it from the package | — |
+| [Q-CUR-265](spec/remote-curation.md#q-cur-265--a-readme-on-a-host-the-repository-does-not-reach-is-an-answer-not-a-failure) | A README on a host the repository does not reach is an answer, not a failure | Decided by the development agent | (a) The lent upstream refuses the address before anything is sent (`foreign_host_denied`, `insecure_redirect`, `egress_denied`); the format answers `Unreachable` with the host (`formats.UnreachedHost`), and the screen says where the README is | — |
+| [Q-CUR-266](spec/remote-curation.md#q-cur-266--the-wiki-check-of-the-readme-is-the-handlers) | The wiki check of the README is the handler's | Decided by the development agent | (a) The handler asks the wiki for the package in the question form before the engine sends anything; refused: `404`, and the package answer's `readme: false` | — |
+| [Q-CUR-267](spec/remote-curation.md#q-cur-267--a-package-the-rules-block-still-shows-its-documentation) | A package the rules block still shows its documentation | Decided by the development agent | (a): delivery rules decide what is delivered, not what is read about. | — |
 
 </details>
 
@@ -12502,10 +12510,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-664 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+665 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 664 questions</summary>
+<summary>Q-UI: 665 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -13173,6 +13181,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1334](spec/api-and-ui.md#q-ui-1334--a-folders-upload-command-is-the-chevron-of-upload-files) | A folder's upload command is the chevron of Upload files | Decided by the development agent on 2026-11-26 | (a) The content's words wherever an image's date stands: **Pushed**, or **Fetched** where only remote repositories hold the version (a version's page) or the package's newest version (its table) | — |
 | [Q-UI-1335](spec/api-and-ui.md#q-ui-1335--a-generic-files-row-has-download-with-its-panel-where-a-packages-row-has-its-verb) | A generic file's row has Download with its panel where a package's row has its verb | Decided by the development agent on 2026-11-26 | (a) A muted note with a terminal mark under the links, on every tab, and a row of npm's Package details | — |
 | [Q-UI-1336](spec/api-and-ui.md#q-ui-1336--a-command-keeps-its-credential-off-the-command-line-where-the-client-can-and-says-so-where-it-cannot) | A command keeps its credential off the command line where the client can, and says so where it cannot | Decided by the development agent on 2026-11-26 | (a) One pattern for every command: curl gets its credential on standard input (`quader_curl` where the line is a request of the management API beside its JSON; `printf … \| curl --config -` or `-H @-` where a command stands alone), another client reads it from its configuration or from a variable of its environment; a client that takes a credential only as an argument keeps it there, and the page says so beside the command | — |
+| [Q-UI-1340](spec/api-and-ui.md#q-ui-1340--an-upstream-packages-readme-shows-its-first-24-rem-and-the-versions-follow) | An upstream package's README shows its first 24 rem, and the versions follow | Decided by the development agent on 2026-11-26 | (a) On the package's own view, after its head: the deprecation, one line of facts, the README under its heading with its version, its first 24 rem and **Show the whole README** (the frame clips and never scrolls; a focus that enters it shows it whole), the dependencies folded, then the versions; in a row of the search the README folded | — |
 
 </details>
 

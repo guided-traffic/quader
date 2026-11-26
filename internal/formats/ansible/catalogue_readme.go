@@ -45,8 +45,10 @@ func aboutOfVersion(doc []byte, ver string) discover.About {
 		a.License = m.LicenseFile
 	}
 	for _, l := range []discover.Link{
-		{Kind: discover.LinkHomepage, URL: m.Homepage}, {Kind: discover.LinkRepository, URL: m.Repository},
-		{Kind: discover.LinkIssues, URL: m.Issues}, {Kind: discover.LinkDocumentation, URL: m.Documentation},
+		{Kind: discover.LinkHomepage, URL: m.Homepage},
+		{Kind: discover.LinkRepository, URL: m.Repository},
+		{Kind: discover.LinkIssues, URL: m.Issues},
+		{Kind: discover.LinkDocumentation, URL: m.Documentation},
 	} {
 		if l.URL != "" {
 			a.Links = append(a.Links, l)

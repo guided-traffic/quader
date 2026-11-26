@@ -542,6 +542,8 @@ Priority: **P1** · Covers: ART-044
       Total                   int
       Cursor                  Cursor
       Done                    bool
+      About                   About   // the newest version's facts the answers hold (R-CUR-028)
+      Readme                  *Readme // a README the lookup read anyway (npm), handed to the README call
   }
   ```
 
@@ -611,7 +613,7 @@ Priority: **P1** · Covers: ART-044
   `429` with its `Retry-After` and is not retried within the call.
 - **Short caching.** Answers are kept per replica in an in-process cache of `proxy.catalogue.cache_bytes` (32 MiB) for
   `proxy.catalogue.cache_ttl` (300 s; npm's search answers `max-age=300`), keyed by repository, upstream URL, call and arguments. What
-  is kept is the parsed page (names, facts), never a document's bytes. Quader's own state of a row (R-CUR-009) is added at answer time
+  is kept is the parsed page (names, facts), never a document's bytes; a README of R-CUR-028 is kept as its text, at most 1 MiB. Quader's own state of a row (R-CUR-009) is added at answer time
   and never cached. A page that found nothing (a package not found, a search without a hit, a level without an entry) is kept only when a
   request of the call reached the upstream: a format that answers from what Quader holds of the upstream (Debian's parsed indexes,
   R-DEB-036) finds a package as soon as its index is parsed, and asking its rows again costs no upstream request (Q-CUR-164).
@@ -646,6 +648,7 @@ Below `/api/v1/projects/{projectKey}/repositories/{repoKey}` (tag `remote-curati
 | `upstream/search?q=&namesOnly=&level=&cursor=&limit=` | a page of hits; `400 catalogue_not_offered` where the capability is `none` |
 | `upstream/levels?level=&cursor=&limit=` | a page of a level (`level` is the path joined by `/`, each part URL-encoded); `unknown` when the upstream does not have it: `upstream` (the preset's display name, else the URL's host), `rule`, `forbidden`, `suggestion` (Q-CUR-165) |
 | `upstream/package?name=&cursor=&limit=&filter=` | the package and a page of its versions; `filter` keeps the versions whose text or whose tag's name holds it, over the whole list ([Q-CUR-182](#q-cur-182--the-version-filter-of-the-catalogue-finds-a-version-by-the-name-of-its-tag)); `404 catalogue_not_found` when the upstream does not have it |
+| `upstream/readme?name=&version=` | the README of a version of the package, read through and not stored, rendered and sanitized, or why there is none (`none`, `unreachable` with the host, `limited` with `until`); asked after the wiki check, `404` for a reader who may not read the wiki; `400 catalogue_not_offered` for a format whose packages carry none ([R-CUR-028](#r-cur-028--an-opened-package-of-the-tab-upstream-shows-its-documentation-and-the-facts-of-its-newest-version-read-through-and-not-stored)) |
 | `upstream/vulnerabilities` (`POST`, `{"name", "versions": [≤ 50]}`) | the vulnerability verdict of each version that is not stored, computed as the miss gate computes it (`Evaluator.EvaluateMiss`, nothing written, [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-015); a format the vulnerability scanning does not cover answers `"notCovered": true` (R-CUR-014) |
 
 - **Quader's state on every row.** A hit, a package and a version carry, beside the upstream's facts, what this repository makes of them:
@@ -1561,7 +1564,7 @@ Priority: **P1** · Covers: SEC-032
 | `quader_remote_download_failures_total` | `repo`, `class` | failed attempts |
 | `quader_remote_download_sync_runs_total` | `repo`, `outcome` | looks at due syncs and **Run now** (`started`, `overlapped`, `limited`, `bounded`, `disabled`, `paused`; R-CUR-027) |
 | `quader_remote_download_syncs` | `repo`, `state` | syncs by state, `active` or `paused` (gauge, read by the dispatch task every minute) |
-| `quader_remote_catalogue_requests_total` | `repo`, `call`, `outcome` | catalogue calls (`ok`, `cached`, `budget`, `upstream_error`, `not_offered`, `too_large`, `shape`) |
+| `quader_remote_catalogue_requests_total` | `repo`, `call`, `outcome` | catalogue calls (`caps`, `search`, `levels`, `package`, `readme` of R-CUR-028) by outcome (`ok`, `cached`, `budget`, `upstream_error`, `not_offered`, `too_large`, `shape`) |
 | `quader_remote_catalogue_seconds` | `call` | duration of a catalogue call (histogram) |
 | `quader_remote_delivery_requests_open` | `repo` | open request entries (gauge; specified, not built) |
 
@@ -1989,6 +1992,85 @@ Acceptance criteria:
   the first run, the interval's words, a package not delivered and one kept in sync already; the section's states, its menu, its live
   reads and a failed read.
 
+### R-CUR-028 · An opened package of the tab Upstream shows its documentation and the facts of its newest version, read through and not stored
+Priority: **P1** · Covers: quader-only
+
+The owner's rule of 2026-11-25 (working paper W-30, G2): "wenn die dafür notwendigen Metainformationen vorhanden sind, soll sie von uns
+verwendet und dargestellt werden. Das gilt immer: Doku die mit zum Format gehört und regelmäßig vorhanden ist, soll auch bei uns umgesetzt
+werden." A person who decides on the tab **Upstream** whether to allow, block or download a package reads its documentation first.
+
+- **The facts of the newest version** (`discover.About` on `PackageInfo`, the package answer's `about`): the version they are of, the
+  licence, the links (homepage, source repository, issue tracker, documentation, a licence's address), the dependencies with their ranges
+  and groups, and the deprecation with its message, reasons and the package to use instead. They are what the answers the lookup reads
+  anyway hold, so no format sends a request for them
+  ([Q-CUR-260](#q-cur-260--the-readme-is-a-call-of-its-own-the-facts-ride-on-the-lookup)); the keywords ride on the package's
+  `keywords` of R-ANS-047. They are no wiki content (R-AUTHZ-034): every reader of the tab sees them. Every text is bounded plain text
+  (`discover.CutAbout`); an address is kept only as an absolute http or https address without a credential (npm's git forms read as the
+  https address of the same host and path, `discover.WebAddress`), at most 2,048 bytes, at most 200 dependencies.
+- **The README**, read through and not stored (R-CUR-008): `GET …/upstream/readme?name=&version=` (`discover.Documented.Readme`, an optional
+  call of a format's catalogue that the engine finds by assertion, ADR-291), for the version the facts name:
+
+  | Format | What is shown | From which answer | Requests and bytes | Not possible, and why |
+  |---|---|---|---|---|
+  | npm | the README (Markdown); the facts of the version `latest` names; the keywords | the full package document the lookup reads; its top-level `readme` is the latest version's | none beyond the lookup: the lookup hands the README to the catalogue's cache ([Q-CUR-264](#q-cur-264--npms-readme-is-handed-over-by-the-lookup)); the document is bounded by `proxy.catalogue.max_document_bytes` | the README of an older version (the registry keeps the latest's only) |
+  | NuGet | the README (Markdown); the newest registration leaf's licence, project address, tags, dependencies per target framework and deprecation | the registration the lookup reads; the README at the address `ReadmeUriTemplate/6.13.0` of the service index names | one request for the README, at most 1 MiB (`discover.MaxReadmeBytes`); the service index is read from the store where the remote holds it | a feed that announces no template has no README to show; a README on a host the repository does not reach is not asked |
+  | Ansible Galaxy | a collection's README (the HTML the Galaxy rendered, sanitized as R-ANS-039); the highest version's licence, links and dependencies; the collection's deprecation | the highest version's document the lookup reads for its tags (R-ANS-047); its `docs-blob/` | one request for the docs-blob, at most its 16 MiB bound, read whole for its `collection_readme` (H-2203); a role: one request of its content document | the documentation tree of a version not stored (its plugins' pages come with the stored version, R-ANS-035) |
+  | Debian | the short description of the newest version's rows | the parsed indexes (no request) | none | the long description, the homepage and the relations: the parse of the indexes does not keep them ([Q-CUR-262](#q-cur-262--debian-shows-the-short-description-the-parse-keeps-and-no-more), H-2200) |
+  | OCI | nothing beyond today's | — | none | an image carries no README; the catalogue reads no manifest of an image it lists, so the annotations are not read; a chart's README lives in its layer and is not fetched ([Q-CUR-263](#q-cur-263--an-image-shows-no-readme-and-nothing-is-fetched-for-one)) |
+
+- **Rules of the read-through.**
+  - *Security.* Everything is an upstream's content: Markdown goes through the README renderer and its sanitizer (R-UI-008), an
+    upstream's HTML through the sanitizer as it is (R-ANS-039); an external image is a link ("N external images are shown as links"),
+    except the operator's `ui.readme.external_image_origins`, as for a stored README; a link is a link only for http and https and leaves
+    Quader with `rel="nofollow noopener noreferrer"`. No request leaves the reader's browser for the upstream: the server reads it.
+  - *Hosts.* The README is asked through the catalogue's lent upstream like every request of the catalogue: only on the upstream's host, an
+    `extraHosts` entry or a declared catalogue host, never from https to cleartext, within the egress rules. An address an upstream names
+    (NuGet's template) that the repository does not reach is not asked: the answer is `state: unreachable` with the host, and the screen
+    says that the upstream keeps the README on a host the repository does not reach
+    ([Q-CUR-265](#q-cur-265--a-readme-on-a-host-the-repository-does-not-reach-is-an-answer-not-a-failure)). The Galaxy's docs-blob and a
+    role's content are read at the address the remote derives for the document as a fill does (R-ANS-035, R-ANS-056).
+  - *Bounds.* At most 1 MiB of a README is read (`discover.MaxReadmeBytes`) and the renderer cuts at `ui.readme.max_source_bytes`; a call
+    takes at most `proxy.catalogue.timeout`. A failure answers every fact its answer carried (R-UI-216) and never fails the package's view:
+    the package and its versions are another call and show.
+  - *Nothing is stored.* No cache entry, no item, no row, no audit event of a fetch; the README is kept in the catalogue's per-replica cache
+    for `proxy.catalogue.cache_ttl` like a page (R-CUR-008), within `proxy.catalogue.cache_bytes`.
+  - *The wiki.* The README is wiki content (R-AUTHZ-034): the handler asks the wiki of the repository for the package (the question form,
+    nothing audited) before anything is sent, and the package answer's `readme` says whether to ask. A reader who may not read the wiki
+    gets `readme: false`, the README call's `404`, and the sentence a stored version without a README shows
+    ([Q-CUR-266](#q-cur-266--the-wiki-check-of-the-readme-is-the-handlers)).
+  - *Rate limits.* The README spends the catalogue's budget (R-CUR-008) and an upstream's rate-limit answer is the call's `429` with its
+    `Retry-After`; while the upstream's limit holds the repository's queue (R-CUR-011), the README is not asked and answers `state: limited`
+    with `until`. The screen says either and asks again at the time; the versions show.
+  - *The log.* A failure's address goes through the scrubber of logged addresses (R-OPS-013 rule 7); no credential reaches an answer.
+- **Delivery rules decide what is delivered, not what is read about**
+  ([Q-CUR-267](#q-cur-267--a-package-the-rules-block-still-shows-its-documentation)): a package the rules block or do not allow shows its
+  facts and its README to whoever may open the tab and read the wiki, since they decide on it.
+- **Where it stands** ([Q-UI-1340](api-and-ui.md#q-ui-1340--an-upstream-packages-readme-shows-its-first-24-rem-and-the-versions-follow)):
+  on the opened package, after its head (the description, the switch and the range line), the deprecation, one line of facts, the README
+  under its heading with the version it is of, its first 24 rem shown and **Show the whole README** (the frame clips and never scrolls,
+  R-UI-215), the dependencies folded, then the versions. Opened in a row of the search results, the README is folded too. OCI and Debian
+  say in one line what is shown once a version is stored.
+
+Acceptance criteria:
+
+- Unit (kit check 22, `internal/formats/formattest`, milliseconds per format, canned answers of bytes to kilobytes): a format whose
+  catalogue implements `discover.Documented` answers the README of the version the lookup's facts name within two reads of the upstream,
+  and the facts name the case's licence; npm (the document with and without `readme`), NuGet (nuget.org with the template, a feed without
+  it), Ansible Galaxy (the docs-blob of osism.sonic 2.0.1, no collection document).
+- Unit (`internal/remotecuration/catalogue`, `TestR_CUR_028_TheReadmeCall`, milliseconds): a README the lookup handed over costs no
+  request and is not on the package; an asked one is read once within the period and cut at the bound; an unreachable host, a failure
+  (not kept) and a format without READMEs; the budget.
+- Unit (`internal/formats/nuget`, `TestR_CUR_028_TheReadmeOfANuGetPackageIsAskedWhereTheTemplateNamesIt`; `internal/formats/ansible`,
+  `TestR_CUR_028_AGalaxysFactsAndReadmes`; `internal/mirror/discover`, `TestR_CUR_028_AnAddressIsALinkOnlyForHTTPAndHTTPS`;
+  `internal/api/v1`, `TestR_CUR_028_TheFactsOfAnUpstreamPackageAreTheSchemas`; microseconds): the template's address, a 404, a host the
+  repository does not reach (nothing asked), a template that is no web address; a Galaxy's facts and a role's README; the links' rule.
+- Integration (area `npm`, `TestR_CUR_028_AnUpstreamPackageShowsItsReadmeReadThroughAndNotStored`, about 2 s, the stub's corpus): the
+  lookup answers the facts and `readme: true`; the README answers at no further request of the stub and stores nothing; a reader of the
+  artifacts without the wiki gets the facts, `readme: false` and `404`, and the stub is not asked for it.
+- Web unit (`upstream-docs.spec.ts`, about 1 s): the facts line, a link only for http and https, the README read once per package and
+  version, folded in a row, a reader without the wiki, an unreachable host, a rate limit, a failure, the budget, OCI and Debian.
+- Renders (`repository-npm-upstream-readme`, `repository-nuget-upstream-readme`, `repository-ansible-upstream-readme`, in German too).
+
 ## Changes to other pages
 
 Made in the same change as this page, each named in a decision block below or on its page:
@@ -2016,6 +2098,9 @@ Made in the same change as this page, each named in a decision block below or on
 - [bastion.md](bastion.md): R-BAS-015 (the new journaled event).
 - [operations-and-observability.md](operations-and-observability.md) R-OPS-049 (2026-11-24, T-26): a row's run hands its id, origin,
   version and starter to the engine, so that the overview of downloads from upstreams names the row and its starter.
+- R-CUR-028 (2026-11-26, W-30 G2): the catalogue tables of R-NPM-049, R-NUGET-035, R-ANS-047 and R-DEB-036 gain the row
+  Documentation and R-OCI-038 a paragraph; [api-and-ui.md](api-and-ui.md) closes H-2080 and records Q-UI-1340; ADR-291 in
+  [decisions.md](../decisions.md); [architecture.md](architecture.md) R-ARCH-008 names `discover.Documented` and `formats.UnreachedHost`.
 - The format pages: R-NPM-037, R-NPM-049, R-NUGET-016, R-NUGET-035, R-OCI-017, R-OCI-038, R-DEB-036, R-ANS-017, R-ANS-047, and the
   sections "Mirror discovery" and the mirror settings (R-OCI-026, R-DEB-024, R-ANS-021), whose include patterns become
   `remote.mirror.include`.
@@ -3957,6 +4042,107 @@ R-CUR-027. Code: [download-preview-dialog.ts](../../web/src/app/features/reposit
 [repository-syncs.ts](../../web/src/app/features/repositories/repository-syncs.ts), `syncIntervalSentence` in
 [download-words.ts](../../web/src/app/features/repositories/downloads/download-words.ts).
 
+### Q-CUR-260 · The README is a call of its own; the facts ride on the lookup
+
+Status: **Decided by the development agent** (2026-11-26, W-30 G2) — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The facts of the newest version on the lookup's answer, the README a call of its own after the wiki check (chosen) | `PackageInfo.About`; `GET …/upstream/readme` | The facts are every reader's and cost no request; the README is the wiki's, may cost one, and its failure, its limit or a host the repository does not reach is said apart from the versions | Two calls for an opened package |
+| (b) The README on the lookup's answer | one call | One call | Every page of versions and every keystroke of the version filter would read the README again (the lookup is cached per page and filter); its failure would fail the versions; the wiki check would decide a member of an artifacts answer |
+| (c) Both in a call of their own | — | — | The facts, which cost nothing, would wait for the README |
+
+**Choice:** (a). The plan put both on `PackageInfo` (`Readme`, `ReadmeFormat`); the code showed that the lookup is cached per page and
+filter, which would repeat the README's request, so it is a call of its own. **Applied in the spec:** R-CUR-028. Code:
+[about.go](../../internal/mirror/discover/about.go), `Engine.Readme` in
+[catalogue.go](../../internal/remotecuration/catalogue/catalogue.go),
+[upstream_readme_api.go](../../internal/api/v1/upstream_readme_api.go).
+
+### Q-CUR-261 · The README is of the version the facts name
+
+Status: **Decided by the development agent** (2026-11-26, W-30 G2) — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The screen asks the README of `about.version`: npm's `latest`, NuGet's newest registration leaf, the Galaxy's highest version (chosen) | the version is a parameter | One request: NuGet's and the Galaxy's addresses need the version, which the lookup knows; the README and the facts are of one version | A README of an older version is not offered on the tab |
+| (b) The format finds the newest itself | — | No parameter | A second request (the Galaxy's collection document, NuGet's index) |
+
+**Choice:** (a); without a version the format finds its newest (one more request). Browsing back through the versions' READMEs on the
+tab is not built (H-2201). **Applied in the spec:** R-CUR-028.
+
+### Q-CUR-262 · Debian shows the short description the parse keeps, and no more
+
+Status: **Decided by the development agent** (2026-11-26, W-30 G2) — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The short description of the newest version's rows, which `deb_remote_entries.description` holds; the tab says that the long description, the homepage and the relations come with a stored version (chosen) | one column more in the catalogue's query | No request, no migration, nothing stored | The plan's "long description of the index paragraph" is not shown |
+| (b) Keep the long description, `Homepage` and the relations at the parse (inline ones of `Packages`, and `Translation-en` into `deb_remote_descriptions`) | a migration and the parse of `Translation-en` (Q-CUR-62) | Shown before a version is stored | A change of what a remote stores, larger than the README: the Debian package's (G8) or the parse's own work |
+| (c) Read the index file again for the paragraph | — | — | Megabytes per opened package, or a request where the remote stored the index by its hash |
+
+**Choice:** (a). The plan said "no request: the index is read"; the code reads the index and keeps of each paragraph only the name,
+version, architecture, path, digest, size, `Provides`, the short description and `Description-md5`; `deb_remote_descriptions` exists and
+is not written (Q-CUR-62). **Applied in the spec:** R-CUR-028, R-DEB-036. Gap: H-2200.
+
+### Q-CUR-263 · An image shows no README, and nothing is fetched for one
+
+Status: **Decided by the development agent** (2026-11-26, W-30 G2) — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Nothing beyond today's; one line says that an image carries no README and that its description, licence and links come with a stored version (chosen) | — | The catalogue reads tag lists and the operators' APIs, no manifest | — |
+| (b) Read a tag's manifest for its annotations | a request per opened image | The description and the links before a version is stored | A pull the registry counts (Docker Hub's limit) for every opened image, and an index's annotations are not its images' |
+
+**Choice:** (a), as the task says: nothing fetched for it beyond what the catalogue reads, and it reads no manifest. A Helm chart's
+README lives in its layer and is not fetched. **Applied in the spec:** R-CUR-028, R-OCI-038.
+
+### Q-CUR-264 · npm's README is handed over by the lookup
+
+Status: **Decided by the development agent** (2026-11-26, W-30 G2) — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The lookup, which reads the full package document, sets `PackageInfo.Readme`; the engine keeps it in its cache under the README call's key and drops it from the package (chosen) | — | No second read of a document of up to megabytes | The README of a lookup served from the cache after the README's entry was evicted costs one read |
+| (b) The README call reads the document again | — | Simple | A second request for every opened npm package |
+
+**Choice:** (a). **Applied in the spec:** R-CUR-028, R-CUR-008.
+
+### Q-CUR-265 · A README on a host the repository does not reach is an answer, not a failure
+
+Status: **Decided by the development agent** (2026-11-26, W-30 G2) — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The lent upstream refuses the address before anything is sent (`foreign_host_denied`, `insecure_redirect`, `egress_denied`); the format answers `Unreachable` with the host (`formats.UnreachedHost`), and the screen says where the README is (chosen) | — | The reader learns why there is none and what an administrator would add (an `extraHosts` entry) | — |
+| (b) The refusal as an error | — | — | A notice that reads as a fault for an upstream that is configured as intended |
+
+**Choice:** (a). The check is the one of every catalogue request and of a fill's redirects and `remote_url_map`: the upstream's host, an
+`extraHosts` entry, a declared catalogue host, never from https to cleartext, the egress rules at connect time. A refused address costs
+one unit of the catalogue's budget, as every refused catalogue request does (H-2202). **Applied in the spec:** R-CUR-028.
+
+### Q-CUR-266 · The wiki check of the README is the handler's
+
+Status: **Decided by the development agent** (2026-11-26, W-30 G2) — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The handler asks the wiki for the package in the question form before the engine sends anything; refused: `404`, and the package answer's `readme: false` (chosen) | — | No upstream request for a reader who may not read it; no audit event of a refused question | The operation carries no `x-quader-part`, which marks the public GETs (Q-API-260) |
+| (b) `x-quader-part: wiki` | — | Declarative | The extension is refused on an operation that is not public, and the catalogue's operations are for signed-in readers (Q-CUR-14) |
+
+**Choice:** (a). **Applied in the spec:** R-CUR-028.
+
+### Q-CUR-267 · A package the rules block still shows its documentation
+
+Status: **Decided by the development agent** (2026-11-26, W-30 G2) — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The facts and the README of a package show whatever its delivery (chosen) | — | The person who allows or blocks it reads what it is first; a request for it is asked with knowledge | — |
+| (b) Hide the README of a blocked package | — | — | The decider loses what the decision needs; the README is no artifact a client gets |
+
+**Choice:** (a): delivery rules decide what is delivered, not what is read about. The wiki check still holds. **Applied in the spec:**
+R-CUR-028.
+
 ### Q-CUR-200 · A switch shows the decision and writes a rule only where it departs from what is inherited
 
 Status: **Decided by the owner on 2026-11-25 (working paper W-28, d1 = b)**, the development agent's favourite of three.
@@ -4698,6 +4884,8 @@ more expensively than its plan.
   [H-2034](#h-2034--a-dispatch-without-the-remote-engine-does-not-see-that-a-repository-is-offline): the gaps of the downloads kept in
   sync (R-CUR-027).
 
+- [H-2200](#h-2200--a-debian-package-of-the-upstream-shows-no-long-description-homepage-or-relations) to
+  [H-2203](#h-2203--a-collections-readme-reads-its-whole-docs-blob): what the tab Upstream shows of a package not stored (R-CUR-028).
 - [H-2022](#h-2022--a-switchs-row-shows-the-servers-answer-for-at-most-30-s-while-the-catalogue-lags): a row shows a switch's answer
   for at most 30 s while the catalogue's read of the replica's snapshot does not agree with it yet.
 - [H-2023](#h-2023--the-summary-counts-against-the-replicas-snapshot-allow-stored-against-the-stored-rules): the dialog's count and
@@ -4776,3 +4964,28 @@ format's preset says that its vendor documents a higher limit with one (`Account
 upstream that lifts its limit for an account, or of an address that is no preset's, says why the queue stands and not that a credential
 would let it go on. What makes it real: an upstream whose anonymous limit holds a bulk for hours and whose preset does not carry the
 fact.
+
+### H-2200 · A Debian package of the upstream shows no long description, homepage or relations
+
+Component: the catalogue of a Debian remote (R-CUR-028, Q-CUR-262). Subject: a reader of the tab Upstream. Live. The parse of the indexes
+keeps the short description and not the long one, the `Homepage` or the relations; `deb_remote_descriptions` is not written (Q-CUR-62).
+The tab says that they are shown once a version is stored. What closes it: the parse keeps them (a migration, and the parse of
+`Translation-en`).
+
+### H-2201 · The tab Upstream shows the README of the newest version only
+
+Component: the tab Upstream (R-CUR-028, Q-CUR-261). Subject: a reader who wants an older version's README before it is stored. Live. NuGet
+and the Galaxy serve a README per version and the API takes the version; the screen asks the version the facts name. npm's registry keeps
+the latest version's README only.
+
+### H-2202 · A README address the repository does not reach costs a unit of the budget
+
+Component: the catalogue's lent upstream (R-CUR-008, Q-CUR-265). Subject: the repository's and the person's catalogue budget. Live. The
+lent upstream spends the unit before the client refuses the host, as for every catalogue request; nothing is sent. What makes it real: a
+NuGet feed whose template names another host, opened many times within the cache period (the answer is cached for its period).
+
+### H-2203 · A collection's README reads its whole docs-blob
+
+Component: the Ansible Galaxy catalogue (R-CUR-028). Subject: the catalogue's budget of bytes and the replica's memory. Live. The Galaxy
+serves the README of a version only inside its `docs-blob/`, which carries the documentation of every plugin (210 KiB for osism.sonic
+2.0.1, several MiB for the largest collections); it is read whole up to its 16 MiB bound, and only the README is kept.

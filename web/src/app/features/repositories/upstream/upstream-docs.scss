@@ -58,9 +58,10 @@
   margin-block-start: var(--quader-space-2);
 }
 
+// The folds bring their own rule and padding (quader-disclosure).
 .readme-fold,
 .dependencies-fold {
-  margin-block-start: var(--quader-space-2);
+  margin-block-start: 0;
 }
 
 .dependency-group {

@@ -57,6 +57,15 @@ what this repository delivers of it.
   version that is not stored the vulnerability verdict Quader knows without downloading it (npm and NuGet), for a stored version a link
   to its page with the malware, vulnerability and signature verdicts.
   Above the versions stands only what the package's row does not show already: the rule that decided its state, if a rule did.
+- **Before you allow or download a package, read about it.** An npm, NuGet or Ansible Galaxy package that is not stored yet shows what
+  its registry says of its newest version: whether it is deprecated, the version, its licence and its links (homepage, source
+  repository, issue tracker), its **README**, and its **Dependencies** folded under the README. Quader reads the README from the
+  registry when you open the package and keeps nothing of it; a long README shows its beginning and **Show the whole README** the rest.
+  Opened from a search, the README is folded: open it with its arrow. Where the registry keeps the README on a host the repository does
+  not reach, the tab says which host; while the registry limits how often Quader may ask it, the tab says until when, and reads the
+  README then. You see the README if you may read the repository's documentation; otherwise the package says that it has none to show.
+  A Debian package shows its short description, and its long description, homepage and relations once a version of it is stored; an
+  image has no README.
 - When the registry cannot be asked, the tab says why: "The upstream is assumed offline until 10:42; Quader retries then.", "The
   upstream catalogue's budget is used up; try again in 40 s.", or that a package's document is too large to read for browsing.
 

@@ -36,10 +36,13 @@
         >
       }
       @for (l of links(); track l.label) {
-        <span class="external-link"
-          ><a [href]="l.href" [attr.rel]="externalRel" target="_blank">{{ l.label }}</a
-          ><span class="material-icons" aria-hidden="true">open_in_new</span
-          ><span class="visually-hidden" i18n="@@pkg.meta.external">(opens another site)</span></span
+        <!-- The part of the line carries the dot; the link and its mark stay one unit inside it (.external-link is a flex box). -->
+        <span
+          ><span class="external-link"
+            ><a [href]="l.href" [attr.rel]="externalRel" target="_blank">{{ l.label }}</a
+            ><span class="material-icons" aria-hidden="true">open_in_new</span
+            ><span class="visually-hidden" i18n="@@pkg.meta.external">(opens another site)</span></span
+          ></span
         >
       }
     </span>

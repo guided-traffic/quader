@@ -184,13 +184,13 @@ export async function* upstreamReadmeNpmWalk(p: Page): AsyncGenerator<string> {
   yield 'readme';
   await p.locator(`${tab} [data-testid="upstream-readme-toggle"]`).click();
   await expect(p.locator(`${tab} [data-testid="upstream-readme-toggle"]`)).toHaveAttribute('aria-expanded', 'true');
-  await p.locator(`${tab} [data-testid="upstream-dependencies"] button[aria-expanded]`).click();
+  await p.locator(`${tab} [data-testid="upstream-dependencies"] button.toggle`).click();
   yield 'readme-whole';
   await open(p, '?q=lodash');
   await p.locator(`${tab} button[aria-controls="up-lodash"]`).click();
   await expect(p.locator(`${tab} quader-upstream-package [data-testid="upstream-readme"]`)).toBeVisible();
   yield 'readme-row';
-  await p.locator(`${tab} quader-upstream-package [data-testid="upstream-readme"] button[aria-expanded]`).click();
+  await p.locator(`${tab} quader-upstream-package [data-testid="upstream-readme"] button.toggle`).click();
   await expect(p.locator(`${tab} quader-upstream-package [data-testid="upstream-readme"] quader-package-readme .readme`)).toBeVisible();
   yield 'readme-row-open';
   await answer(p, npmAnswers({ readme: false, about: { ...npmAbout, deprecation: { message: 'Use the native methods of the platform instead.', reasons: [], alternate: null, alternateRange: null } } }));
