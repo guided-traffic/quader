@@ -125,9 +125,14 @@ func (s *Store) ReadContents(ctx context.Context, repoID int64, pkg string) erro
 	return nil
 }
 
-// fill copies what the reader kept into the row.
+// fill copies what the reader kept into the row. The file list is a JSON array whatever it holds: a package that installs nothing but
+// directories (a metapackage) keeps no entry, and nil would be the JSON null that deb_contents refuses.
 func fill(row *q.DebPutContentsParams, c *debfile.Contents) error {
-	files, err := json.Marshal(c.Files)
+	list := c.Files
+	if list == nil {
+		list = []debfile.File{}
+	}
+	files, err := json.Marshal(list)
 	if err != nil {
 		return err
 	}

@@ -1543,7 +1543,9 @@ they are shown wherever they are present. This revises R-DEB-007, which never re
     in the order they first appear), which the package API answers as `licenses`;
   - **the file list**: the path, the declared size of a regular file, the kind (`file`, `link`, `hardlink`, `special`) and a link's
     target as text, for every entry that is not a directory, in the archive's order; the first 10,000 entries and at most 1 MiB of
-    names are kept, and every entry is counted;
+    names are kept, and every entry is counted (a package of 10,050 files shows 10,000 of them and the total 10,050; only the walk's
+    bound of 200,000 entries refuses the archive); a package that installs nothing but directories has an empty list, never a
+    failed reading;
   - a package whose `usr/share/doc/<package>` is a symbolic link to another package's directory (packages of one source do this) has
     no changelog or copyright of its own; the link's target is kept and named.
 - **The bounds** (R-ARCH-028, Q-DEB-141): at most 2 GiB inflated in all, 200,000 entries walked, 2 minutes per file, a dictionary
@@ -1587,6 +1589,8 @@ Acceptance criteria:
   not followed; a store that fails is no refusal (`TestR_DEB_039_TheReaderStopsAtItsBounds`, `TestR_DEB_039_WhatIsKeptIsBounded`,
   `TestR_DEB_039_AStoreThatFailsIsTriedAgain`, unit). The xz block reader refuses a block that declares a 4 GiB dictionary before
   it decodes it (`TestR_DEB_039_TheXZBlockReaderBoundsTheDictionary`, unit).
+- The row the job writes holds the file list as an array for a package of no file but a directory, of exactly 10,000 files and of
+  10,001, which keeps 10,000 and counts 10,001 (`TestR_DEB_039_TheFileListIsAnArrayAtEveryCount`, unit).
 - An uploaded package's contents answer its changelog, its copyright with the licence (which is the version's licence too) and its file
   list, filtered; a reader without the wiki gets the file list without the changelog and the copyright; a package whose data archive
   is no tar is stored and served, its contents are `unavailable`, and the reason reaches an administrator and not a writer; with the
