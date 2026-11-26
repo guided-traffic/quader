@@ -18,7 +18,14 @@ import (
 // through the real serving path (Q-ARCH-328): n slow downloads of one size are
 // held in their writes, and the heap in use, the goroutine stacks and the
 // resident set are read against the idle replica. The replica has memory to
-// spare and a tight GOGC, so the heap in use is close to the live heap.
+// spare and runs with GOGC=1, so the heap in use is the live heap within 1 %:
+// the garbage a collection leaves until the next one is up to GOGC percent of
+// the heap, and with the 10 % that stood here before it was as large as the
+// check's whole margin (the idle replica holds about 50 MiB, the held downloads
+// about 55 MiB more, so up to 10 MiB of garbage, 100 KiB per download): runs
+// 45884484258 and 45891257094 of Test and Release read 706 and 705 KiB of heap
+// and stacks per download, where a held download allocates 563 KiB of heap and
+// 75 KiB of stacks (both sizes, measured at GOGC=1 on 2026-11-26).
 func TestHeldDownloadCost(t *testing.T) {
 	in := newInstall(t)
 	const n = 100
@@ -30,7 +37,7 @@ func TestHeldDownloadCost(t *testing.T) {
 		name := fmt.Sprintf("f%d.bin", size)
 		t.Run(fmt.Sprintf("R-ARCH-005 %d KiB held downloads", size>>10), func(t *testing.T) {
 			// A replica of its own per size, so the pooled buffers of another size are not counted.
-			r := in.start(t, fmt.Sprintf("cost%d", size>>10), fmt.Sprintf("QUADER_RUNTIME_MEMORY_LIMIT_BYTES=%d", 8<<30), "GOGC=10",
+			r := in.start(t, fmt.Sprintf("cost%d", size>>10), fmt.Sprintf("QUADER_RUNTIME_MEMORY_LIMIT_BYTES=%d", 8<<30), "GOGC=1",
 				"QUADER_CACHE_RENDITION_BYTES=0", "QUADER_PROXY_METADATA_CACHE_BYTES=0", "QUADER_PROXY_MERGED_METADATA_CACHE_BYTES=0",
 				"QUADER_PROXY_QUERY_CACHE_BYTES=0")
 			in.deploy(t, r, name, size)
