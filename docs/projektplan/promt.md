@@ -307,11 +307,12 @@ wrapped line was seen (2026-11-19), so its condition to build a check is met.
 | S18 · No signed address in a log or a record | my finding of 19:23 (section 8, Product): the upstream log writes redirect targets with their signatures | landed and pushed at 20:40 |
 | S19 · The command behind its button on a version's page, clients as tabs, a collection opens in its documentation (W-30) | the owner's task of 20:39 (section 8, Product): every format's version page, the panel of the command, the target of a collection's name, the sentence why a format is not checked for vulnerabilities | landed and pushed on 2026-11-26 at 00:45 |
 | W30-A1 · A collection's documentation reads like the documentation site (W-30) | R-ANS-048 to R-ANS-050 of the plan `.dev/w30-plan.md`: anchors and links, a plugin's configuration, the page's contents, highlighted examples | landed and pushed at 23:55 |
-| W30-G7 · An image's facts: annotations and labels, the config, the layers, the history (W-30) | R-OCI-039 to R-OCI-041 of the plan `.dev/w30-plan.md`; with a Helm chart's facts since the owner's d4 = b; Q-UI-1250 to Q-UI-1259, R-UI-219, migration 00132 | built at about 23:58 (five commits); sent back at about 00:00 for the stored images, the gates' decision on a configuration and a chart's row menu, then its UI moves onto S19 |
-| W30-A4 · A role read through a remote reads like a role (W-30, the owner's d1 = b) | R-ANS-056 of the plan `.dev/w30-plan.md`: owner and name, description, README, `role search`; no local publish of a role; Q-ANS-110 to Q-ANS-119, Q-UI-1260 to Q-UI-1269, H-2120 to H-2129, migration 00133 | in work since 23:18 |
+| W30-G7 · An image's facts: annotations and labels, the config, the layers, the history (W-30) | R-OCI-039 to R-OCI-041 of the plan `.dev/w30-plan.md`; with a Helm chart's facts since the owner's d4 = b; Q-UI-1250 to Q-UI-1259, R-UI-219, migration 00133 | landed and pushed on 2026-11-26 at 02:15, with the migration 00133 |
+| W30-A4 · A role read through a remote reads like a role (W-30, the owner's d1 = b) | R-ANS-056 of the plan `.dev/w30-plan.md`: owner and name, description, README, `role search`; no local publish of a role; Q-ANS-110 to Q-ANS-119, Q-UI-1260 to Q-UI-1269, H-2120 to H-2129, migration 00134 | built on 2026-11-26 at about 01:45 (seven commits, the migration 00134); lands after W30-G7, with its decision record renumbered |
 | W30-G8 · A Debian package shows its relations, long description, changelog, copyright and file list (W-30) | R-DEB-038, R-DEB-039 of the plan `.dev/w30-plan.md`; the data archive read under bounds, which revises R-DEB-007; Q-DEB-140 to Q-DEB-149, Q-UI-1270 to Q-UI-1279, H-2130 to H-2139, migration 00134 | landed and pushed on 2026-11-26 at 01:25, with the migration 00132 (the OCI package takes 00133, the roles 00134) |
 | W30-A2 · The documentation generator reads fragments, a role's argument specs and the changelog (W-30) | R-ANS-051 to R-ANS-053 of the plan `.dev/w30-plan.md`; Q-ANS-96 to Q-ANS-105, Q-UI-1280 to Q-UI-1289, H-2140 to H-2149, migration 00135 | in work since 2026-11-26, about 00:29 |
 | W30-A3 · Finding collections, the page of a name in every format, the documentation searched across collections (W-30, the owner's d2 = b and d3 = b) | the plan's package A3 with R-ANS-057, R-ANS-058 and R-UI-220; Q-ANS-120 to Q-ANS-129, Q-UI-1290 to Q-UI-1299, H-2150 to H-2159 | in work since 2026-11-26, about 01:05 |
+| W30-G4 · "Deprecated" is a property of every format that has it (W-30) | R-API-085, R-NUGET-036, R-ANS-060 of the plan `.dev/w30-plan.md`; Q-API-440 to Q-API-449, Q-NUGET-140 to Q-NUGET-149, Q-ANS-130 to Q-ANS-139, Q-NPM-95 to Q-NPM-99, Q-UI-1300 to Q-UI-1309, ADR-286, H-2160 to H-2169 | in work since 2026-11-26, about 01:50 |
 | W-30 planner · Ansible as an equal of Galaxy; general and specific properties per format | the owner's task of 20:39: a comparison screen by screen and answer by answer, and the table of properties per format | plan written at 21:05 (`.dev/w30-plan.md`) |
 | W30-G1 · A remote's cached version of npm and Debian carries its facts (W-30) | R-NPM-050, R-NPM-051, R-DEB-037 of the plan `.dev/w30-plan.md`; the README of an npm version from the stored tarball | landed and pushed at 23:27 |
 | G1 · The checks see overlays and clipping as a person does | an overlay is measured in the window a person has and a modal state is not pictured in a grown window; `sideways` inside dialogs and drawers; the new checks `overlay-out` (the person search's list wider than its drawer, W-12), `cut` (a text cut at the start of a wrapped line) and `separator-start` (a separator dot that starts a line); a state's own widths and schemes; the correction of Q-UI-1060 | about 5 s of fixtures, at most 60 s of the render step | landed and pushed at 14:55 (two commits; Q-UI-1170 to Q-UI-1173, H-1912 closed; its builder worked from 11:13 to 13:17; with S11 on one landing: thirteen gates, `make ui-states`, the whole English set (532 screens, 43.1 minutes) and the German pass (98 screens, 9.2 minutes) each without a failure or a finding, the new checks over every screen that landed today) |
@@ -1264,6 +1265,40 @@ records the recorder that tells such a stall apart).
   that failed between 07:39 and 09:00 is no finding of the code.
 
 ### Product
+
+- **Closed on 2026-11-26, 02:15, by W30-G7 (W-30; R-OCI-039 to R-OCI-042; Q-OCI-271 to Q-OCI-276; Q-UI-1250; ADR-284; gaps
+  H-2110, H-2115, H-2117 to H-2119; migration 00133): an image shows what `docker inspect`, `docker history` and a
+  registry's tag page tell about it, and a Helm chart in an OCI repository reads as a chart.** The owner's rule of
+  2026-11-25 and his d4 = b. An image: the description, the licence and the links from the annotations of the tag's
+  manifest, then of its first platform, then that platform's config labels (an annotation wins; a link only for http
+  and https); per platform, opened from its row, the configuration (user, working directory, entrypoint and command
+  in exec form, ports, volumes, stop signal, health check, the environment and the labels as tables), the layers in
+  order with media type and compressed size, and the history, oldest first, never cut; the other tags of the digest
+  in the page's head; a pull by digest as the second line of each client's tab in the panel; the tab Files names the
+  manifest, each platform's manifest, config and layers by digest and size; the kind of artifact is a word with the
+  media type beside it. The config is read by the manifests' strict reader under bounds (1 MiB, 16 levels, 256
+  environment entries, 256 labels, 512 history lines). A chart: its Chart.yaml from the config blob, its README and
+  `values.yaml` read on demand from the chart's package by the bounded tar reader (nothing on disk, no link followed,
+  the chart's root only, 64 KiB a file), the README first, a tab Values, the banner for a deprecated chart, and in the
+  panel Helm alone (`helm pull`, `helm install oci://… --version`, **Set up client** with `helm registry login
+  <host>`); no Helm repository format. Who sees the environment and the labels: only a caller who may read the config
+  blob's path, and not while a gate would refuse that blob to this caller (the malware gate, a vulnerability block, a
+  delivery rule, the signature gate): the page asks the one function that decides the serving (`decide` of the serve
+  gate, asked without recording) and says that the content is held and why; never in a list, a search hit, an event
+  or a log. Sent back once before the landing, for four points: (1) the facts are written wherever a config blob is
+  stored (a client's fetch, the mirror, a download ahead), by a job `oci-describe` the blob's commit queues, and what
+  was stored before is described by the task `remote-describe` (its fourth entry, the same bounds), for local and
+  remote repositories, without a request to an upstream; an image whose config the repository does not hold says "The
+  image's configuration is read when the image is pulled through this repository."; (2) the gates' decision above (the
+  first build showed a configuration whose blob a gate would refuse); (3) a chart's row in a list offered `docker
+  pull`: the rows carry the kind now; (4) left open on purpose: a deprecated chart is marked on its page only
+  (H-2117, W30-G4). The landing: the landing's tree is the builder's rebased tip; the 13 gates, the dialog states, the OCI renders on a fresh instance (101 in English, 19 in German, no layout finding) and the whole areas `oci`, `ociremote`, `ocilocal`, `repository` and `files` green, the count of requirements 1,295; looked at: an image's Details in light at 1,440 px (the description, the other tags in the head, the platforms' table, the package's details and links from the annotations) and a chart's page (the README first, the tab Values). Open: the search does not find an image by its description (H-2110); a
+  chart's README and values are read from its package at every view (H-2115); a chart's README, being wiki content,
+  shows while a gate refuses its package (H-2118); a writer of a repository with the signature gate sees an unsigned
+  image's configuration held although the pull serves it to them, since the page decides as `/files/` does, which
+  has no writer pass: it errs toward showing less (H-2119). Not verified: a real `docker` or `helm` client against
+  this; a real Docker Hub image's config through a remote; the time to describe 1,800 stored images (computed from the
+  bounds as 25 to 40 minutes, not measured).
 
 - **Closed on 2026-11-26, 01:25, by W30-G8 (W-30; R-DEB-038, R-DEB-039; Q-DEB-140 to Q-DEB-145; Q-UI-1270 to Q-UI-1272; gaps
   H-2130 to H-2137; migration 00132): a Debian package shows what Debian tells about it: its relations, its long
