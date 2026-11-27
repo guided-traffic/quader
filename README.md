@@ -2656,7 +2656,8 @@ rights because the operation acts on the caller's own account (`x-quader-owner-r
 first tag, in the order of the document's `tags`. `TestR_API_008_TheReadmeListsEveryOperationWithItsPermission`
 ([readme_operations_test.go](internal/api/v1/readme_operations_test.go)) holds the table to the document: each operation once, under its
 family, with its `operationId`, a permission column that begins with its declaration, and the two marks exactly where the document
-sets them; what follows the declaration in a row is written by hand.
+sets them; what follows the declaration in a row is written by hand. `TestR_API_008_NoOtherReadmeTableListsAnOperation` keeps every
+operation in this one table.
 
 "or Owner of the project" and "or a member of the project" are the second way in of a declaration with `project: path.projectKey` and `projectRole: owner` or `reader` (R-AUTHZ-026, Q-AUTHZ-207): the shared step admits the holder of the capability, or a member of the project the path names whose role is at least the declared one; the Owner's administration needs a session or a token with `admin: true`, through any other token an Owner counts as a Maintainer. A project the caller is no member of answers `404` like a missing one, a role below the declared one `403`. The repository-content operations declare their action on `path.projectKey`/`path.repoKey` and are decided with the roles, the policies and the token scope.
 
@@ -2667,18 +2668,18 @@ sets them; what follows the declaration in a row is written by hand.
 
 | Method and path | Operation | Permission |
 |---|---|---|
-| `GET /api/v1/system/ping` | `getPing` | public |
-| `GET /api/v1/system/version` | `getVersion` | authenticated, public with `system.public_version` |
+| `GET /api/v1/system/ping` | `getPing` | public; answers on the client port |
+| `GET /api/v1/system/version` | `getVersion` | authenticated, public with `system.public_version`; the version and the revision |
 | `GET /api/v1/system/banner` | `getSystemBanner` | public; the system banner |
 | `PUT /api/v1/system/banner` | `putSystemBanner` | `settings:write`; set the system banner |
 | `GET /api/v1/system/maintenance` | `getSystemMaintenance` | authenticated; the maintenance mode |
 | `PUT /api/v1/system/maintenance` | `putSystemMaintenance` | `settings:write`; switch the maintenance mode |
 | `GET /api/v1/system/time-format` | `getSystemTimeFormat` | public; the installation's default form of a time |
 | `PUT /api/v1/system/time-format` | `putSystemTimeFormat` | `settings:write`; set the installation's default form of a time |
-| `GET /api/v1/system/info` | `getSystemInfo` | `settings:read` |
-| `GET /api/v1/system/replicas` | `listReplicas` | `settings:read` |
-| `GET /api/v1/system/scanners` | `listScanners` | `settings:read` |
-| `GET /api/v1/system/migrations` | `getMigrationStatus` | `settings:read` |
+| `GET /api/v1/system/info` | `getSystemInfo` | `settings:read`; anonymous on the default endpoint only with `system.bootstrap_anonymous_read` ([Q-AUTHZ-71](docs/spec/authorization.md#q-authz-71--the-bootstrap-bridge-opens-two-operations-not-a-capability)); the installation's facts: version, base URL, replicas per role, database and schema versions, Valkey facts, the answering replica's object-store connections in their order (`objectStore.connections[]`: id, endpoint, bucket, prefix, credential source, `encrypted`, `drain`), and `vulnerabilityData` (the enforcement mode and the state of each advisory source; never affects readiness) |
+| `GET /api/v1/system/replicas` | `listReplicas` | `settings:read`; anonymous as `info`; the replica registry: name, instance, node, version, revision, roles, state, checks, degraded checks, leases and the Valkey view of each replica |
+| `GET /api/v1/system/scanners` | `listScanners` | `settings:read`; the kinds of scanner, each with whether its pods report here, and every scanner pod that reported itself through the scan listener: kind (from its certificate), name, node, version, state and reason, since when, heartbeat, the tool's version, slots and ClamAV's database ([R-OPS-048](docs/spec/operations-and-observability.md)) |
+| `GET /api/v1/system/migrations` | `getMigrationStatus` | `settings:read`; never anonymous; the migration report: schema version and compatibility floor, the answering replica's binary, pending steps with what the contract guard checks, applied steps, background data migrations with their states; the report of `quader migrate status` |
 | `GET /api/v1/system/overview` | `getSystemOverview` | `settings:read` |
 | `GET /api/v1/system/upstream-downloads` | `listUpstreamDownloads` | `content:metadata-read`; the running downloads from the upstreams of remote repositories and the last 100 finished |
 | `GET /api/v1/system/upstream-downloads/summary` | `getUpstreamDownloadSummary` | `content:metadata-read`; how many downloads from upstreams run now |
@@ -2686,9 +2687,9 @@ sets them; what follows the declaration in a row is written by hand.
 | `GET /api/v1/system/storage-connections/{id}` | `getStorageConnection` | `settings:read`; one connection as the list shows it; `404` for an id never seen |
 | `GET /api/v1/system/encryption` | `getEncryptionStatus` | `settings:read` |
 | `GET /api/v1/legal` | `getLegal` | public; read the imprint and the privacy notice |
-| `GET /api/v1/system/backups` | `listBackupRuns` | `settings:read`; filters `operation`, `state`, `trigger`, `startedFrom`, `startedTo`; cursor paging, `includeTotal` |
-| `GET /api/v1/system/backups/summary` | `getBackupSummary` | `settings:read` |
-| `GET /api/v1/system/backups/{runId}` | `getBackupRun` | `settings:read` |
+| `GET /api/v1/system/backups` | `listBackupRuns` | `settings:read`; the runs of the backup job (`create`, `delete`, `verify`) from `backup_run`, newest first: state, trigger, pod, progress, result, error and `leaseExpired` for a run whose process is gone; what the runs recorded, not the live target: the replicas hold no target credential; filters `operation`, `state`, `trigger`, `startedFrom`, `startedTo`; cursor paging, `includeTotal` |
+| `GET /api/v1/system/backups/summary` | `getBackupSummary` | `settings:read`; `expectedIntervalSeconds`, `lastSuccessAt`, `overdue` (the last success older than 1.5 times the interval, the condition of `QuaderBackupStale`), `lastFailure`, `active`, `target`, `retention`, `storedBackups` (from the newest run that listed the target), `restoredFrom`, `manualRun` (the `kubectl` command of a manual run) |
+| `GET /api/v1/system/backups/{runId}` | `getBackupRun` | `settings:read`; one run |
 
 **meta**
 
@@ -2696,7 +2697,7 @@ sets them; what follows the declaration in a row is written by hand.
 |---|---|---|
 | `GET /api/v1/openapi.json` | `getOpenApiJson` | public |
 | `GET /api/v1/openapi.yaml` | `getOpenApiYaml` | public |
-| `GET /api/v1/problems/{code}` | `getProblemType` | public |
+| `GET /api/v1/problems/{code}` | `getProblemType` | public; the description of a problem code |
 
 **audit**
 
@@ -3299,19 +3300,7 @@ The operations of the delivery by signed links of the object store ([docs/develo
 The OpenAPI 3.1 document is [api/openapi.yaml](api/openapi.yaml); the binary serves it at `/api/v1/openapi.json` and
 `/api/v1/openapi.yaml`.
 
-| Method and path | Purpose | Access in M0 |
-|---|---|---|
-| `GET /api/v1/system/ping` | Answers on the client port | as declared in [api/openapi.yaml](api/openapi.yaml) |
-| `GET /api/v1/system/version` | Version and revision | public only with `system.public_version: true`, otherwise as declared |
-| `GET /api/v1/system/info` | Installation facts: version, base URL, replicas per role, database and schema versions, Valkey facts, the answering replica's object-store connections in their order (`objectStore.connections[]`: id, endpoint, bucket, prefix, credential source, `encrypted`, `drain`), and `vulnerabilityData` (the enforcement mode and the state of each advisory source; never affects readiness) | the capability `settings:read` ([R-AUTHZ-010](docs/spec/authorization.md)); anonymous on the default endpoint only with `system.bootstrap_anonymous_read` |
-| `GET /api/v1/system/replicas` | Replica registry: name, instance, node, version, revision, roles, state, checks, degraded checks, leases and the Valkey view of each replica | the same as `info` |
-| `GET /api/v1/system/scanners` | The kinds of scanner, each with whether its pods report here, and every scanner pod that reported itself through the scan listener: kind (from its certificate), name, node, version, state and reason, since when, heartbeat, the tool's version, slots and ClamAV's database ([R-OPS-048](docs/spec/operations-and-observability.md)) | the same as `info` |
-| `GET /api/v1/system/storage-connections` | Every object-store connection with its state, the replicas that configure it and those with its circuit open, the reconciliation's queue, its capabilities, its storage keys by identifier, the answering replica's settings and the latest storage summary's figures ([R-STOR-061](docs/spec/storage.md)) | `settings:read` |
-| `GET /api/v1/system/migrations` | Migration report: schema version and compatibility floor, the answering replica's binary, pending steps with what the contract guard checks, applied steps, background data migrations with their states; the report of `quader migrate status` | `settings:read`; never anonymous |
-| `GET /api/v1/system/backups` | The runs of the backup job (`create`, `delete`, `verify`) from `backup_run`, newest first: state, trigger, pod, progress, result, error and `leaseExpired` for a run whose process is gone. What the runs recorded, not the live target: the replicas hold no target credential | `settings:read` |
-| `GET /api/v1/system/backups/summary` | `expectedIntervalSeconds`, `lastSuccessAt`, `overdue` (the last success older than 1.5 times the interval, the condition of `QuaderBackupStale`), `lastFailure`, `active`, `target`, `retention`, `storedBackups` (from the newest run that listed the target), `restoredFrom`, `manualRun` (the `kubectl` command of a manual run) | `settings:read` |
-| `GET /api/v1/system/backups/{runId}` | One run | `settings:read` |
-| `GET /api/v1/problems/{code}` | Description of a problem code | as declared |
+The system operations (`/api/v1/system/…`) are the rows of the family **system**, the description of a problem code (`GET /api/v1/problems/{code}`) a row of the family **meta**, of the table of every operation above, held to the document like every other row.
 
 Errors are `application/problem+json` (RFC 9457): `type` is `/api/v1/problems/<code>`, `code` is the stable identifier,
 `requestId` equals `X-Request-Id`, and `errors` lists the fields of a `422`. A request that cannot be parsed answers

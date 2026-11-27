@@ -433,7 +433,9 @@ Acceptance criteria:
   (`TestR_API_008_TheReadmeListsEveryOperationWithItsPermission`, unit, [readme_operations_test.go](../../internal/api/v1/readme_operations_test.go)).
   The table is checked, not generated: its rows say what the document does not declare (filters, the answer's codes, the
   body), which a generator would drop. On 2026-11-27 it missed 169 of 436 operations and named a permission for the two reads
-  of a project that are public.
+  of a project that are public. No other table of the README lists an operation of the management API: the section "System API" had a second one
+  that missed rows and named an anonymous read of the scanners the bridge does not open; its rows are the table's since 2026-11-27
+  (`TestR_API_008_NoOtherReadmeTableListsAnOperation`).
 
 ### R-API-009 · Errors as problem details
 Priority: **MVP** · Covers: API-001, ADMAPI-002

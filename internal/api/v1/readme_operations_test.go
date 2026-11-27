@@ -199,3 +199,26 @@ func TestR_API_008_TheReadmeListsEveryOperationWithItsPermission(t *testing.T) {
 		t.Errorf("the README's families are %v, want them in the order of the document's tags: %v", families, order)
 	}
 }
+
+// TestR_API_008_NoOtherReadmeTableListsAnOperation: a row of the management API stands only in the checked block. A second table
+// beside it (the section "System API" had one) went without rows the document declares (GET /api/v1/system/storage-connections/{id},
+// 2026-11-27) and said what the document does not (an anonymous read of the scanners), and no check saw it.
+func TestR_API_008_NoOtherReadmeTableListsAnOperation(t *testing.T) {
+	raw, err := os.ReadFile("../../../README.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(raw)
+	start := strings.Index(text, "<summary>Every operation with its permission")
+	if start < 0 {
+		t.Fatal("the README has no block of every operation")
+	}
+	end := strings.Index(text[start:], "</details>")
+	if end < 0 {
+		t.Fatal("the block of every operation does not end")
+	}
+	outside := text[:start] + text[start+end:]
+	for _, m := range regexp.MustCompile("(?m)^\\| `[A-Z]+ /api/v1/[^`]*`").FindAllString(outside, -1) {
+		t.Errorf("the README lists %s outside the block of every operation", m)
+	}
+}
