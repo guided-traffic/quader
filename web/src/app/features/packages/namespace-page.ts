@@ -1,4 +1,6 @@
 import { Component, computed, effect, inject, input, resource, untracked } from '@angular/core';
+import { MalwareMark, malwareColumn, malwareShown } from '../../shared/malware/malware-mark';
+import { MalwareSignaturesStore } from '../../core/malware-signatures';
 import { RouterLink } from '@angular/router';
 import { NamespaceClaim, NamespaceRepository, PackageSummary, PackagesApi } from '../../api/packages-api';
 import { LIVE_IDLE_MS, live } from '../../core/live-refresh';
@@ -27,7 +29,7 @@ import { collectionUpload } from '../repositories/content/ansible-upload-targets
  */
 @Component({
   selector: 'quader-namespace-page',
-  imports: [DataTable, DeprecationMark, ErrorNotice, Loading, PackageName, PackageTags, PageHeader, ProjectLink, RouterLink, SignatureBadge, TimeAgo],
+  imports: [DataTable, DeprecationMark, ErrorNotice, Loading, MalwareMark, PackageName, PackageTags, PageHeader, ProjectLink, RouterLink, SignatureBadge, TimeAgo],
   templateUrl: './namespace-page.html',
   styleUrl: './namespace-page.scss',
 })
@@ -70,6 +72,9 @@ export class NamespacePage {
    */
   protected readonly upload = collectionUpload(() => (this.format() === 'ansible' ? (this.project() ?? null) : undefined));
 
+  private readonly malwareMarks = inject(MalwareSignaturesStore);
+  /** The rows carry the malware state of their newest version (R-MAL-039): the column **Malware scan** (R-UI-255). */
+  protected readonly malware = computed(() => malwareShown(this.malwareMarks, this.list.items()));
   protected readonly columns = computed<readonly TableColumn[]>(() => [
     { id: 'name', label: $localize`:@@pkg.col.package:Package`, width: '16rem', prefer: true },
     ...(this.project() ? [] : [{ id: 'project', label: $localize`:@@projects.col.project:Project`, width: '10rem' }]),
@@ -78,6 +83,7 @@ export class NamespacePage {
       label: $localize`:@@pkg.col.latest:Latest`,
       help: $localize`:@@pkg.help.latest:The highest stable version you may see. A pre-release is shown only while no stable version exists.`,
     },
+    ...(this.malware() ? [malwareColumn('package')] : []),
     {
       id: 'updatedAt',
       label: $localize`:@@pkg.col.updated:Updated`,

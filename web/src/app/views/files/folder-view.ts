@@ -1,4 +1,6 @@
 import { Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
+import { MalwareMark, malwareColumn, malwareShown } from '../../shared/malware/malware-mark';
+import { MalwareSignaturesStore } from '../../core/malware-signatures';
 import { RouterLink } from '@angular/router';
 import { Child, FileReads } from '../../api/file-reads';
 import { filesCommands } from '../../core/project-links';
@@ -27,7 +29,7 @@ export const FILES_PAGE = 200;
  */
 @Component({
   selector: 'quader-folder-view',
-  imports: [ClientCommandMenu, TimeAgo, RouterLink, CopyButton, DataTable],
+  imports: [ClientCommandMenu, TimeAgo, RouterLink, CopyButton, DataTable, MalwareMark],
   template: `
     <div class="toolbar files-toolbar">
       <div class="filter">
@@ -81,6 +83,14 @@ export const FILES_PAGE = 200;
               –
             }
           </td>
+          <!-- A file's malware scan in one word, its details on demand (R-UI-255); a folder has none. -->
+          @if (malware()) {
+            <td>
+              @if (c.kind === 'file' && c.malware; as m) {
+                <quader-malware-mark [malware]="m" [digest]="c.sha256 ?? null" />
+              }
+            </td>
+          }
           <td>
             @if (c.modifiedAt; as at) {
               <quader-time-ago [at]="at" absolute="title" />
@@ -164,9 +174,13 @@ export class FolderView {
    * as wide as their values (Q-UI-563). Their guessed widths kept 120 px empty beside them while a long file name stood in three
    * lines at 1,024 px (2026-11-18).
    */
+  private readonly malwareMarks = inject(MalwareSignaturesStore);
+  /** The files carry their malware state (R-MAL-039): the column **Malware scan** (R-UI-255); a folder's cell stays empty. */
+  protected readonly malware = computed(() => malwareShown(this.malwareMarks, this.list.items()));
   protected readonly columns = computed<readonly TableColumn[]>(() => [
     { id: 'name', label: $localize`:@@repo.content.col.name:Name`, width: '12rem' },
     { id: 'size', label: $localize`:@@repo.content.col.size:Size`, numeric: true },
+    ...(this.malware() ? [malwareColumn('file')] : []),
     { id: 'modified', label: $localize`:@@repo.content.col.modified:Last change` },
     // A system repository's files and a disabled repository's have no address to copy, so the column would stay empty (Q-UI-898,
     // Q-UI-965).

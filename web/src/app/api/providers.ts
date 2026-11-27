@@ -68,7 +68,8 @@ import { HttpLimitsApi, LimitsApi } from './limits-api';
 import { HttpUpstreamApi, UpstreamApi } from './upstream-api';
 // <<< upstream
 // >>> malware
-import { HttpMalwareApi, MalwareApi } from './malware-api';
+import { HttpMalwareApi, MalwareApi, malwareSignaturesRead } from './malware-api';
+import { MALWARE_SIGNATURES_READ } from '../core/malware-signatures';
 // <<< malware
 // >>> download-links
 import { DownloadLinksApi, HttpDownloadLinksApi } from './download-links-api';
@@ -184,6 +185,7 @@ export function provideApiServices(): Provider[] {
     // <<< upstream
     // >>> malware
     { provide: MalwareApi, useClass: HttpMalwareApi },
+    { provide: MALWARE_SIGNATURES_READ, useFactory: malwareSignaturesRead },
     // <<< malware
     // >>> download-links
     { provide: DownloadLinksApi, useClass: HttpDownloadLinksApi },

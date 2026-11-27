@@ -9754,6 +9754,7 @@ shows state the server changes without the viewer's own act reads it again by it
   | The ClamAV databases | 60 s: the list of databases; the versions and the set when it changed | the updater |
   | Vulnerabilities (summary, trend, findings), Advisory sources | 60 s | a scan, a sync |
   | Malware finds | 30 s | a scan |
+  | Today's signatures of the malware scan, one read for every mark on the screen and only while one is shown ([R-UI-255](#r-ui-255--every-artifact-shows-its-malware-state-in-one-word), [Q-UI-1515](#q-ui-1515--todays-signatures-are-read-once-for-every-mark-and-only-while-one-is-shown)) | 60 s | the updater's new set |
   | Signature findings, refused downloads | 60 s | a check, a refused download |
   | Packages, Repositories (lists) | 60 s | a push, a size, a disabled repository |
   | Audit log | 30 s, the range moved to now | every act |
@@ -10936,6 +10937,87 @@ Acceptance criteria:
   and `loading-scroll`, and the page state of `loading-states`.
 - Vitest ([profile.spec.ts](../../web/src/app/features/profile/profile.spec.ts)): while nothing is read, the page shows its load of page
   size and no section.
+
+### R-UI-255 · Every artifact shows its malware state in one word
+Priority: **P1** · Covers: SEC-049
+
+The owner, 2026-11-26, 21:10: "Ich will pro Artefakt direkt erkennen, ob es untersucht wurde und Virenfrei war. Dazu vielleicht einen
+Farbcode der verrät wie lange der Scan her ist." And: "Diese ganzen Informationen bitte aber als Hover über einem Button oder Text bzgl.
+des Scanners … vielleicht besser mit kurzem Text damit der Zustand mit einem Wort transportiert werden kann. Als abrufbare Info hätte ich
+gerne, wie lange dieser Scan her ist, welchen Stand der Malware Scanner zu diesem Zeitpunkt hatte (v3.4.5 vom XX.11.2026) und welchen Stand
+es heute von diesem Scanner gibt? Welche Version hat der Stand heute und wann haben wir diese heruntergeladen?"
+
+- **The mark** (`<quader-malware-mark>`, [malware-mark.ts](../../web/src/app/shared/malware/malware-mark.ts)): the state in one word
+  ([Q-UI-1510](#q-ui-1510--one-word-per-state-checked-malware-not-checkable-unchecked-released)), **Checked**, **Malware**, **Not
+  checkable**, **Unchecked** or **Released**, with a glyph before it, as a button whose details open on demand (R-UI-256). The word comes
+  from the member `malware` of the answer (R-MAL-039): a file's verdict, or a unit's, decided by its worst stored part (Q-MAL-128).
+- **How current a check is** ([Q-UI-1511](#q-ui-1511--the-tone-and-the-glyph-of-checked-say-how-current-the-check-is)): **Checked** is
+  green with a shield (`verified_user`) only under today's signatures (`age` `current`); in the text's colour with a clock (`history`)
+  under older signatures and while its recheck is due; amber with a shield and a question mark (`gpp_maybe`) once the recheck is
+  overdue. **Malware** is red, **Not checkable** amber, **Unchecked** neutral and amber where the installation lacks a scanner or
+  signatures (Q-UI-1214), **Released** neutral. The colour is never alone: the word, the glyph's shape and the accessible name ("Malware
+  scan: Checked, under older signatures. Details") carry the state.
+- **Where it stands** (every place that lists or shows an artifact, in every format;
+  [Q-UI-1513](#q-ui-1513--a-column-malware-scan-in-every-list-of-artifacts-its-help-said-for-the-lists-rows),
+  [Q-UI-1516](#q-ui-1516--a-versions-page-shows-the-mark-beside-its-grade-its-files-and-each-image-part-the-file-page-keeps-its-sentence)):
+  a column **Malware scan** in the package lists (a project's packages, a namespace's, the search's packages, a repository's packages or
+  images), each with its newest version's mark; in the version lists (a package's versions or image tags, a repository's opened row, a
+  remote's stored versions in the tab Upstream, the tab Downloads for a row that names a stored version); in a folder of files (a file's
+  row; a folder has none); on a version's page beside its grade, in its **Files** tab per file and in an image's parts per manifest,
+  config and layer; at the end of each line of **Used by**; and on a file's page as its fact **Malware scan**, with the sentence it had.
+  A list shows the column while its answer carries the member, which it does while the scanning is on (Q-MAL-130); the ClamAV
+  definitions, a `.deb`'s files and an upstream's search hits carry none (R-MAL-001, nothing stored).
+- **Plain users** see the word and its details; there is nothing to set (CLAUDE.md, "simple by default").
+- **The Bastion's application** shows no column and no mark in its lists, its version header and its image parts until W-36's P8
+  builds its mark ([Q-UI-1518](#q-ui-1518--the-bastions-lists-show-no-mark-until-its-own-is-built)).
+
+*Built on 2026-11-27 (W-36 P4):* the mark and its words ([malware-mark.ts](../../web/src/app/shared/malware/malware-mark.ts)), today's
+signatures ([malware-signatures.ts](../../web/src/app/core/malware-signatures.ts)), the file's fact
+([malware-status.ts](../../web/src/app/shared/malware/malware-status.ts)), and the places: `package-table.ts`, `search-results.ts`,
+`namespace-page`, `repository-items.ts`, `repository-item-versions.ts`, `package-detail-view`, `package-version-view`, `used-by.ts`,
+`folder-view.ts`, `file-view.ts`, `upstream-package`, `remote-downloads`. English and German.
+
+Acceptance criteria:
+
+- Vitest ([malware-mark.spec.ts](../../web/src/app/shared/malware/malware-mark.spec.ts), nine cases, about 0.4 s): each state and each
+  class gives its word, tone, glyph and accessible name, and no word is "Checking"; the mark is a button with its glyph hidden; the details
+  of a clean, an infected, a pending and a released file, of a version of three files, of a package, of an image with parts not stored
+  and of an index with its platforms; every absolute time in the reader's form; the replica only where the answer names it; a list of
+  packages has the column only while its rows carry the member, and a row without one an empty cell; three marks share one read of
+  today's signatures. [malware-status.spec.ts](../../web/src/app/shared/malware/malware-status.spec.ts): the file's
+  fact is its mark and its sentence.
+- Renders, looked at and never committed: the package list, a repository's packages, a versions table with image tags, a version's
+  header, files and an image's parts, a folder, a file's page and the details open on each kind (clean and current, clean and older,
+  overdue, malware, unchecked, released, an image with platforms not stored), both schemes, 390, 1,024 and 1,440 px, English and
+  German.
+
+### R-UI-256 · Details on demand open on hover, focus and touch
+Priority: **P1** · Covers: quader-only
+
+The owner's "als Hover über einem Button oder Text" for every reader: with a mouse, with the keyboard and on a touch screen.
+
+- **One directive** (`quaderDetailPopover`, [detail-popover.ts](../../web/src/app/shared/ui/detail-popover.ts),
+  [Q-UI-1512](#q-ui-1512--details-on-demand-are-a-buttons-card-that-opens-on-hover-focus-and-tap)) on a `<button>`: its card opens
+  under it (above it where the window has no room below), in the overlay, on hover after 300 ms, at once on the keyboard's focus, and on
+  a tap or a click. It stays while the pointer is on the button or the card (WCAG 1.4.13: hoverable, persistent); a click or a tap keeps
+  it until the next; Escape closes it and gives the focus back, and so do a tap outside it and the focus leaving both. The button says
+  `aria-expanded` and, while open, `aria-controls` with the card's id.
+- **The card** is the menu's surface, at most 28 rem wide and never wider or taller than the window less its gutters (a card that would
+  be taller scrolls in itself, the one case of a second scrollbar); it is placed again when it grows; its content is a template
+  of the button's host, so its facts come with the host's data, it needs no request and shows no spinner (R-UI-217 does not apply).
+- `quaderTooltip` stays for a sentence of plain text; the details of a mark are lines of facts, a disclosure and a target the keyboard
+  reaches.
+
+*Built on 2026-11-27 (W-36 P4):* [detail-popover.ts](../../web/src/app/shared/ui/detail-popover.ts), first used by the malware mark
+(R-UI-255).
+
+Acceptance criteria:
+
+- Vitest ([detail-popover.spec.ts](../../web/src/app/shared/ui/detail-popover.spec.ts), four cases, about 1 s): hover opens after the
+  pause and not before, the card keeps it open and leaving both closes it, with `aria-expanded` and `aria-controls`; the keyboard's
+  focus opens it at once and Escape closes it with the focus back; a pointer's focus does not open it, its tap does and keeps it after
+  the pointer leaves, a press inside the card keeps it, a second tap and a tap outside close it; the focus moving elsewhere closes it.
+- Not verified locally: a tap on a real phone; the renders emulate it with a click.
 
 ### R-UI-262 · Admin area › Settings › Storage is one page of the stored content
 Priority: **P1** · Covers: quader-only
@@ -23820,7 +23902,9 @@ Status: **Decided by the development agent** — selected from the options below
 | (a) A fact **Malware scan** in the version's Files tab and on a repository's file page, and a banner on the version's page only when a file is refused (chosen) | The verdict is per file | A plain user sees why a download is refused where the file is; nothing is shown for the normal case but the fact | A fact more per file |
 | (b) A badge in every list of packages | Visible everywhere | — | Lists of packages are per version, a verdict per file; most rows would say "No malware found" |
 
-**Choice:** (a). **Applied in the spec:** [malware-scanning.md](malware-scanning.md) R-MAL-024.
+**Choice:** (a). **Applied in the spec:** [malware-scanning.md](malware-scanning.md) R-MAL-024. **Superseded by the owner on 2026-11-26**
+("Ich will pro Artefakt direkt erkennen, ob es untersucht wurde und Virenfrei war"): every place that lists or shows an artifact shows
+its state ([R-UI-255](#r-ui-255--every-artifact-shows-its-malware-state-in-one-word)).
 
 ### Q-UI-873 · The dashboard's two views are a strip of links that each view places under its own header
 
@@ -23886,7 +23970,9 @@ the word as the first line, in the status's colour, with the detail under it, as
 the render's check found it. The dashboard's list tells the two kinds of "could not be checked" apart, because its filter does: **Not
 checkable** (`unscannable`) and **Scan failed** (`failed`). A version's **Files** tab has the column **Malware scan** while the answer
 carries the member, so a version of an installation without the scanning has none. In German a release is "zum Download zulassen",
-its noun "Zulassung", withdrawing it "zurückziehen", a find "Malware-Befund", as the glossary has them ("freigeben" renders exposure). **Applied in the spec:** [malware-scanning.md](malware-scanning.md) R-MAL-024, R-MAL-025. Code:
+its noun "Zulassung", withdrawing it "zurückziehen", a find "Malware-Befund", as the glossary has them ("freigeben" renders exposure). *Amended on 2026-11-27 (W-36 P4):* the lists and the Files tab show one word per state, **Checked**, **Malware**, **Not checkable**,
+**Unchecked**, **Released**, with the glyphs of [Q-UI-1511](#q-ui-1511--the-tone-and-the-glyph-of-checked-say-how-current-the-check-is) and
+the details on demand ([Q-UI-1510](#q-ui-1510--one-word-per-state-checked-malware-not-checkable-unchecked-released)); **Checking** is gone. **Applied in the spec:** [malware-scanning.md](malware-scanning.md) R-MAL-024, R-MAL-025. Code:
 [malware-status.ts](../../web/src/app/shared/malware/malware-status.ts), [malware-words.ts](../../web/src/app/shared/malware/malware-words.ts).
 
 ### Q-UI-877 · A find is named by its first file, and its row's one action is Release or Withdraw release
@@ -30356,6 +30442,140 @@ rate and the callers limited are each replica's own.
 version 9):* each report says whether its cache is the Bastion's shared bucket (`cache.shared`); the line adds the fill, capacity and
 protected bytes of the replicas whose cache is their own (the volume backend) and takes the largest shared value once (the bucket
 backend), so option (a)'s "Against" is gone (H-2364, closed).
+
+### Q-UI-1510 · One word per state: Checked, Malware, Not checkable, Unchecked, Released
+
+Status: **Decided by the development agent on 2026-11-27** (W-36's plan, B.2, built) — selected from the options below; the owner
+reviews it at the walkthrough. R-UI-255. It amends Q-UI-876's words for the lists.
+
+Context: the owner, 2026-11-26: "vielleicht besser mit kurzem Text damit der Zustand mit einem Wort transportiert werden kann".
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One word per state: **Checked**, **Malware**, **Not checkable**, **Unchecked**, **Released** (German **Geprüft**, **Malware**, **Nicht prüfbar**, **Ungeprüft**, **Zugelassen**); how current a check is goes into the tone, the glyph, the accessible name and the details (chosen) | | The owner's "mit einem Wort"; fits a narrow column of every list; pairs with the switch's "Only checked artifacts …" | The age needs another carrier than the word (Q-UI-1511) |
+| (b) The sentences of the file's fact (**No malware found**, **Could not be checked**, **Queued**) in every list | | Known words | Three or four words in a list's cell; a waiting file's three words of why |
+| (c) An icon alone | | Smallest | An icon alone says nothing to a screen reader, and the owner doubts it |
+
+**Choice:** (a). **Checking** goes: a list cannot tell a scan in flight, and **Unchecked** is what the gate means by not checked. **No
+malware found** stays the first line of a clean check's details and a file's sentence (R-MAL-003: never "safe"). The receipts of
+R-SIG-051 keep their sentence's words; a pending one there is "Not checked yet". **Applied in the spec:** R-UI-255, R-MAL-003, R-MAL-024.
+
+### Q-UI-1511 · The tone and the glyph of Checked say how current the check is
+
+Status: **Decided by the development agent on 2026-11-27** (W-36's plan, B.5, built) — selected from the options below; the owner
+reviews it at the walkthrough. R-UI-255.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) By the member's `age`, the class of the scan pressure (R-MAL-037): `current` green with `verified_user`; `older` and `due` in the text's colour with `history`; `overdue` amber with `gpp_maybe` (chosen) | | One story on the screen and in the queue; green only for the positive status (Q-UI-96); each colour has a shape of its own | A due check is not coloured: it is done within minutes while the scanning keeps up |
+| (b) By the time since the scan | | "wie lange der Scan her ist" literally | A hot artifact checked two days ago reads like a cold one the queue treats otherwise |
+| (c) Two classes, today's signatures or older | | Simplest | No sign that the scanning falls behind |
+
+**Choice:** (a). The other states keep their tone whatever their age: **Malware** red with `bug_report`, **Not checkable** amber with
+`help_outline`, **Unchecked** neutral with `hourglass_empty` and amber with `link_off` or `cloud_off` where the installation lacks a
+scanner or signatures (Q-UI-1214), **Released** neutral with `lock_open`. The tones are the status tokens of both schemes, no new colour.
+The accessible name carries the class: "Malware scan: Checked, under older signatures. Details". **Applied in the spec:** R-UI-255.
+
+### Q-UI-1512 · Details on demand are a button's card that opens on hover, focus and tap
+
+Status: **Decided by the development agent on 2026-11-27** (W-36's plan, B.6, built) — selected from the options below; the owner
+reviews it at the walkthrough. R-UI-256.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The word is a `<button>`; a directive (`quaderDetailPopover`) opens a card in the CDK overlay on hover after 300 ms, at once on the keyboard's focus, and on a tap or click, which keeps it open; Escape, a tap outside and the focus leaving close it; `aria-expanded`, `aria-controls` (chosen) | | The owner's "Hover über einem Button oder Text", the same on touch and with the keyboard (WCAG 1.4.13); reusable for the grade (W-36 P7) | A new directive |
+| (b) The existing `quaderTooltip` | | Exists | Plain text, 200 px; no tap; a span is out of a keyboard's reach |
+| (c) A `title` attribute | | Nothing to build | No touch, no keyboard, no structure |
+
+**Choice:** (a). A pointer's focus opens nothing by itself: its click decides, so a click after a hover keeps the card instead of closing
+it. The card is the menu's surface, at most 28 rem and never wider than the window less 16 px a side. **Applied in the spec:** R-UI-256.
+
+### Q-UI-1513 · A column Malware scan in every list of artifacts, its help said for the list's rows
+
+Status: **Decided by the development agent on 2026-11-27** — selected from the options below; the owner reviews it at the walkthrough.
+R-UI-255, by the owner's rule of Q-UI-1500.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A column **Malware scan** after the version (a package list) or before the time (a version list, a folder), shown while the rows carry the member; its help says what it means for that list's every row: "Whether the files of the newest version were checked …" for packages, "… of the version …" for versions, "Whether the file was checked …" for files, each ending "Open the word for the details." (chosen) | | Each list's help is true of each of its rows (Q-UI-1500); a list of an installation without the scanning has no column | Three texts |
+| (b) One help for every list ("…; for a package, its newest version") | | One text | A help that names a kind of row the list does not hold |
+| (c) The mark inside the name's cell | | No column | A second line under the name, and no header to explain it |
+
+**Choice:** (a). **Used by** is a list of lines, not a table: the mark ends each line. A row whose answer carries no member has an empty
+cell, never a word it was not given. **Applied in the spec:** R-UI-255.
+
+### Q-UI-1514 · What the details say, and the times in them
+
+Status: **Decided by the development agent on 2026-11-27** (W-36's plan, B.6) — selected from the options below; the owner reviews it at
+the walkthrough. R-UI-255.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A unit's line (its newest version, its files or parts and how many are under today's signatures, the deciding part, the parts or platforms not stored), the verdict in a line of its own, then pairs: **Checked** (relative, with the date and time), **Scanner** (`malware-scanner-clamav · ClamAV 1.5.5`), **Signatures then** and **Signatures today** (the daily's number and its date; today's with "fetched" and its date and time), **How current** and **Next check**; the whole sets, the replica, the digest and clamd's text under **Technical details** (chosen) | | Every question of the owner's has its line ("wie lange", "welcher Stand … (v3.4.5 vom …)", "welchen Stand heute", "wann heruntergeladen"); the plain reader stops after the verdict | Seven lines |
+| (b) The plan's sentences ("Checked 3 days ago (…)") one per line | | Reads as prose | Labels repeated inside each sentence; harder to scan at 390 px |
+
+**Choice:** (a). A signature set's date is the date alone (its daily's build day, "of 24.11.2026 (Tue.)"); when Quader fetched it and when
+the check ran are the date and the time, in the reader's form (R-UI-250). The ClamAV version of today stands only when it differs from the
+check's. The replica stands only where the answer names it (Q-MAL-131). A check that never ran shows no **Checked**, **How current** or
+**Next check**. The card is never taller than the window less its gutters; on a short phone with its Technical details opened it scrolls
+in itself rather than stand past the window's edge (the render check `overlay-out` found that at 390 px). The scan pressure and the
+downloads since the check stay the administrator's (W-36 P6): the plain reader has "Next check". **Applied in the spec:** R-UI-255.
+
+### Q-UI-1515 · Today's signatures are read once for every mark and only while one is shown
+
+Status: **Decided by the development agent on 2026-11-27** (W-36's plan, B.6, D.2) — selected from the options below; the owner reviews it
+at the walkthrough. R-UI-255, R-UI-213.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A store (`MalwareSignaturesStore`) that every mark attaches to: the first mark reads `GET /api/v1/malware/signatures`, the store reads again every 60 s while a mark is shown and the window is seen, and not at all on a screen without one (chosen) | | One request for a hundred marks; no read on the other screens; a new set shows within a minute | A store more |
+| (b) Today's set in every list answer | | No request | Every list answer carries the same object, and the API is P3's |
+| (c) Each mark reads it when its details open | | Lazy | A spinner in a card that otherwise needs none (R-UI-217), and a request per opening |
+
+**Choice:** (a). A failed read leaves the last answer, waits longer (`live`), and the details leave the line out until one answers.
+**Applied in the spec:** R-UI-255, R-UI-213.
+
+### Q-UI-1516 · A version's page shows the mark beside its grade, its files and each image part; the file page keeps its sentence
+
+Status: **Decided by the development agent on 2026-11-27** (W-36's plan, B.1) — selected from the options below; the owner reviews it at
+the walkthrough. R-UI-255, R-MAL-024.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The version's facts line: "Malware scan" and the version's mark after the grade; the tab **Files**: the mark alone in each file's cell, its sentence in the details; the tab **Details** of an image: a column **Malware scan** per manifest, config and layer from the version's `malwareParts`; a file's page: the mark, then the sentence it had (chosen) | | The unit at its head, each part where it is listed; a file's page keeps the sentence a refused download points at | The Files tab's reason moves into the details |
+| (b) The Files tab keeps the sentence under the mark | | All at once | The cell grows to three lines per file and the table into blocks at 1,024 px |
+
+**Choice:** (a). The banner of a refused file above the tabs stays (R-MAL-024). **Applied in the spec:** R-UI-255, R-MAL-024.
+
+### Q-UI-1517 · An index's platforms are counted from the index on the version's page
+
+Status: **Decided by the development agent on 2026-11-27** — selected from the options below; the owner reviews it at the walkthrough.
+R-UI-255, Q-MAL-134.
+
+Context: `partsNotStored` counts what Quader knows of and does not hold; for an index whose platform a remote never fetched, that
+platform's config and layers are not known, so the count is not one of platforms.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) On the version's page the details say "3 of 10 platforms stored", counted from the index's platforms; in a list, where the index is not read, "2 parts are not stored" from `partsNotStored` (chosen) | | Each count is exact where it is said | Two wordings |
+| (b) `partsNotStored` everywhere | | One wording | "1 part not stored" for a platform of thirty layers |
+
+**Choice:** (a). **Applied in the spec:** R-UI-255.
+
+### Q-UI-1518 · The Bastion's lists show no mark until its own is built
+
+Status: **Decided by the development agent on 2026-11-27** — selected from the options below; the owner reviews it at the walkthrough.
+R-UI-255; W-36's P8 builds the Bastion's mark (B.15).
+
+Context: the Bastion's application reuses the package table, the folder view and the version's page; its catalogue keeps the word but not
+what a new set changes (Q-MAL-133), and it has no `GET /api/v1/malware/signatures`.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The new places (a list's column, a version's header, an image's parts, **Used by**) show only where the application has the malware API; the Bastion's keeps what it showed (a version's files, a file's page), now as the mark without today's set (chosen) | | No half-built screen at the Bastion before P8 decides what a visitor sees | The Bastion shows the word at two places and not at the others until P8 |
+| (b) The marks everywhere at once | | One rule | A class computed from members the Bastion strips (R-MAL-039) |
+
+**Choice:** (a). **Applied in the spec:** R-UI-255.
 
 ### Q-UI-1560 · The form of a time is the reader's preference, else the installation's default, else the owner's form
 

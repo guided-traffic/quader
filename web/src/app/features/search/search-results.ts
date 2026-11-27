@@ -22,6 +22,8 @@ import { packageCommands } from '../packages/package-links';
 import { projectRoleLabel } from '../projects/project-roles';
 import { classIcon, classLabel, classTip, shownClass } from '../repositories/repository-class';
 import { Tooltip } from '../../shared/ui/tooltip';
+import { MalwareMark, malwareColumn, malwareShown } from '../../shared/malware/malware-mark';
+import { MalwareSignaturesStore } from '../../core/malware-signatures';
 
 /** The tabs of the page, in their order (R-UI-098). */
 export const RESULT_KINDS = ['repository', 'package', 'project', 'documentation'] as const;
@@ -42,6 +44,7 @@ const PAGE = 25;
 @Component({
   selector: 'quader-search-results',
   imports: [
+    MalwareMark,
     RouterLink,
     DataTable,
     DeprecationMark,
@@ -122,7 +125,7 @@ const PAGE = 25;
         <ng-template quaderTabContent>
           <quader-data-table
             [caption]="labels.package"
-            [columns]="packageColumns"
+            [columns]="packageColumns()"
             [loaded]="tooShort() || packages.loaded()"
             [loading]="packages.loading()"
             loadingText="Searching."
@@ -161,6 +164,14 @@ const PAGE = 25;
                   >
                 </td>
                 <td translate="no">{{ row.latestVersion }}</td>
+                <!-- The newest version's malware scan in one word, its details on demand (R-UI-255). -->
+                @if (malware()) {
+                  <td>
+                    @if (row.malware; as m) {
+                      <quader-malware-mark [malware]="m" kind="package" [newest]="row.latestVersion" [image]="row.format === 'oci'" />
+                    }
+                  </td>
+                }
                 <td><quader-time-ago [at]="row.updatedAt" absolute="title" /></td>
               </tr>
             }
@@ -340,7 +351,10 @@ export class SearchResults {
     },
   ];
   /** What a reader chooses a package by (Q-UI-314), with where it is: the project and the repository that hold it. */
-  protected readonly packageColumns: readonly TableColumn[] = [
+  private readonly malwareMarks = inject(MalwareSignaturesStore);
+  /** The hits carry the malware state of their newest version (R-MAL-039): the column **Malware scan** (R-UI-255). */
+  protected readonly malware = computed(() => malwareShown(this.malwareMarks, this.packages.items()));
+  protected readonly packageColumns = computed<readonly TableColumn[]>(() => [
     { id: 'name', label: $localize`:@@pkg.col.package:Package`, width: '14rem', prefer: true },
     { id: 'project', label: $localize`:@@projects.col.project:Project`, width: '11rem' },
     { id: 'repository', label: $localize`:@@repo.col.repository:Repository`, width: '8rem' },
@@ -351,13 +365,14 @@ export class SearchResults {
       help: $localize`:@@pkg.help.latest:The highest stable version you may see. A pre-release is shown only while no stable version exists.`,
       width: '8rem',
     },
+    ...(this.malware() ? [malwareColumn('package')] : []),
     {
       id: 'updatedAt',
       label: $localize`:@@pkg.col.updated:Updated`,
       help: $localize`:@@pkg.help.updated:When the latest version you may see was published.`,
       width: '7rem',
     },
-  ];
+  ]);
   /** What a reader chooses an entry of the documentation by (R-ANS-058): the entry, the collection it documents, where it is. */
   protected readonly documentationColumns: readonly TableColumn[] = [
     { id: 'entry', label: $localize`:@@search.col.entry:Entry`, width: '14rem', prefer: true },

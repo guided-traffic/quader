@@ -27,17 +27,38 @@ Select a file's name to open its page. It shows:
 
 ### The malware scan's states
 
-Quader compares the bytes of every file a client can download with ClamAV's signatures of known malware. The fact **Malware scan**
-says what that found; a file Quader writes itself (a Debian index) has none.
+Quader compares the bytes of every file a client can download with ClamAV's signatures of known malware. Wherever an artifact is
+listed or shown, its state stands in one word in the column **Malware scan**: in the lists of packages (for each package its newest
+version), of versions and image tags, of a folder's files, on a version's page beside its grade, in its **Files** tab, for each part of an
+image, and on a file's page, where a sentence follows the word. A file Quader writes itself (a Debian index) has none, nor does a folder.
 
-| State | What it means | Downloads |
+| Word | What it means | Downloads |
 |---|---|---|
-| **No malware found**, with the date of the ClamAV database | No signature matched. A signature scan does not find malware that no signature describes yet | Served |
-| **Queued** | The file is not checked yet and waits for its scan, since the time named; it is checked in turn | Served, or, where only checked artifacts can be downloaded, the download waits for the scan for up to 25 seconds |
-| **No scanner**, **No signatures** | The file cannot be checked now: no malware scanner is connected, or no ClamAV signature database has been imported yet. It is checked once an administrator provides it | As **Queued** |
-| **Malware found**, with the signature and, inside an archive, the file it was found in | A signature matched | Refused |
-| **Could not be checked**, with the reason: too large, a limit of the scanner was passed (named, with its value where it has one, such as "the scanner's limit for the data it reads from one file (2.0 GiB) was passed"), encrypted, or every scan failed; under **Technical details** the scanner's own name of what tripped and the file inside the bytes it was in | Nothing could check the bytes. An instance auditor can look at them and release them ([Security dashboard](security-dashboard.md#could-not-be-checked)) | Served, or refused where only checked artifacts can be downloaded |
-| **Released**, by whom and when | An instance auditor released these bytes after looking at them | Served |
+| **Checked** | The scan found no signature it knows. A signature scan does not find malware that no signature describes yet. The colour and the symbol say how current the check is: green with a shield under today's signatures; in the text's colour with a clock under older signatures, and while a new check is due; amber with a shield and a question mark when the new check is overdue | Served |
+| **Unchecked** | The file is not checked yet and waits for its scan; it is checked in turn. Amber when it cannot be checked now: no malware scanner is connected, or no ClamAV signature database has been imported yet, which an administrator provides | Served, or, where only checked artifacts can be downloaded, the download waits for the scan for up to 25 seconds |
+| **Malware** | A signature matched | Refused |
+| **Not checkable** | Nothing could check the bytes: too large, a limit of the scanner was passed (named, with its value where it has one, such as "the scanner's limit for the data it reads from one file (2.0 GiB) was passed"), encrypted, or every scan failed. An instance auditor can look at them and release them ([Security dashboard](security-dashboard.md#could-not-be-checked)) | Served, or refused where only checked artifacts can be downloaded |
+| **Released** | An instance auditor released these bytes after looking at them | Served |
+
+A package, a version or an image tag holds several files or parts; its word is that of the one that fares worst, in this order: Malware,
+Not checkable, Unchecked, Released, then Checked with an overdue, a due, an older and a current check. A part of an image that a remote
+repository never fetched is not stored, so it was never served and never checked, and it does not decide the word.
+
+**The details.** Point at the word, move to it with the keyboard, or tap it, and its details open; Escape or a tap elsewhere closes
+them. They say:
+
+- for a package, a version or an image: its newest version, how many files or parts it has and how many of them are checked under today's
+  signatures, which file decides the word, and how many parts or platforms are not stored;
+- what the scan found: **No malware found**, the signature that matched and the file inside an archive it was in, why it could not be
+  checked, why it waits, or who released it and when; and whether downloads are refused here;
+- **Checked**: how long ago, with the date and time;
+- **Scanner**: the unit that checked it, `malware-scanner-clamav`, and its ClamAV version;
+- **Signatures then**: the daily signature file the check was made with, by its number, and its date;
+- **Signatures today**: the daily file Quader checks with today, its date and when Quader fetched it;
+- **How current**: under today's signatures, under signatures a number of days older, a new check due, or overdue;
+- **Next check**: in about how many days, sooner the more the file is downloaded; due now; or when newer signatures arrive;
+- under **Technical details**: the whole names of both signature sets, the scanner's replica (for a signed-in user of the installation),
+  the scanner's own name of what tripped and the file's SHA-256.
 
 **Downloads are refused.** after the state says that the file cannot be downloaded from this repository now; the page then offers no
 **Download**, and a version's **Files** tab none in the file's row. The download address stays: a client that asks gets the refusal and

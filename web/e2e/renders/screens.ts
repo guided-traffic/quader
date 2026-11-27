@@ -37,6 +37,7 @@ import { gradedPackage, manyVersionsPackage, publicGradedPackage, zipArchive } f
 import { anonymousCard, anonymousEndOfLife, anonymousFindings } from './anonymous-vulnerabilities';
 import { bastionScreens } from './bastion-gui';
 import { malwarePackage, quarantine } from './malware';
+import { markedFile, markedFolder, markedList, markedVersion } from './malware-marks';
 import { malwareWaiting, scanFailedCard, scanStatesList, scanStatesPackage } from './scan-states';
 import { trivyDatabases } from './scanners';
 import { signedFile, signedImage, signedVersions } from './signatures';
@@ -1399,20 +1400,22 @@ async function* malwareVersions(page: Page): AsyncGenerator<string> {
     ['2.5.0-next.1', 'pending'],
   ] as const) {
     await page.goto(`${ver(P, malwarePackage, version)}?tab=files`);
-    await expect(page.locator('main quader-malware-status').first()).toBeVisible();
+    await expect(page.locator('main .malware-cell [data-testid="malware-mark"]').first()).toBeVisible();
     yield state;
   }
 }
 
 /**
  * A version whose tarball holds a Go program past clamd's scan-size limit (Q-MAL-105): the banner and the cell as they open, then the
- * cell's Technical details unfolded. By place, not by words: the German pass walks it too.
+ * cell's mark opened (R-UI-256) with its Technical details unfolded. By place, not by words: the German pass walks it too.
  */
 async function* malwareLimitVersion(page: Page): AsyncGenerator<string> {
   await expect(page.locator('main [data-testid="malware-banner"]')).toBeVisible();
   yield '';
-  await page.locator('main quader-malware-status quader-technical-details button').first().click();
-  await expect(page.locator('main quader-malware-status [data-testid="technical-details"]').first()).toBeVisible();
+  await page.locator('main .malware-cell [data-testid="malware-mark"]').first().click();
+  const card = page.locator('.cdk-overlay-container [data-testid="malware-details"]');
+  await card.locator('quader-technical-details button').first().click();
+  await expect(card.locator('[data-testid="technical-details"]').first()).toBeVisible();
   yield 'details';
 }
 
@@ -3555,6 +3558,24 @@ export const screens: readonly Screen[] = [
     walk: malwareFiles,
     de: true,
   },
+  // The malware mark at every place that lists or shows an artifact (R-UI-255), with its details opened by a tap or the keyboard
+  // (R-UI-256): a project's packages, a repository's, a package's versions and an image's tags, a version's header, files and image parts,
+  // a remote's index with a platform it never fetched, a folder with every state, a file's page.
+  { id: 'malware-marks-packages', path: `${P}/packages?q=acme`, kinds: ['plain'], walk: markedList('[data-state="malware"]'), de: true },
+  { id: 'malware-marks-repository', path: `${P}/repositories/${malwarePackage.repo}`, kinds: ['plain'], walk: markedList('[data-state="malware"]'), de: true },
+  { id: 'malware-marks-versions', path: table(P, malwarePackage), kinds: ['plain'], walk: markedList('[data-age="current"]'), de: true },
+  { id: 'malware-marks-image-tags', path: pkg(P, ociPackage), kinds: ['plain'], walk: markedList(), de: true },
+  { id: 'malware-marks-version', path: ver(P, malwarePackage, '2.2.0'), kinds: ['plain'], walk: markedVersion, de: true },
+  { id: 'malware-marks-image', path: ver(P, { format: 'oci', name: factsImages.index }, factsImages.tags[0]), kinds: ['plain'], walk: markedVersion, de: true },
+  {
+    id: 'malware-marks-image-partial',
+    path: ver(O, { format: 'oci', name: remoteImage.name }, remoteImage.partial),
+    kinds: ['plain'],
+    walk: markedVersion,
+    de: true,
+  },
+  { id: 'malware-marks-folder', path: `${P}/repositories/assets/files/${quarantine}`, kinds: ['plain'], walk: markedFolder, de: true },
+  { id: 'malware-marks-file', path: `${P}/repositories/assets/files/${quarantine}/design-system-2.8.0.tar.gz`, kinds: ['plain'], walk: markedFile, de: true },
   { id: 'package-version-malware', path: `${ver(P, malwarePackage, '2.3.0')}?tab=files`, kinds: ['plain'], walk: malwareVersions, tables: 'quader-data-table.version-files' },
   // A version whose Go program passed the scan-size limit (Q-MAL-105, Q-MAL-106): the banner names the limit, the cell its value and,
   // unfolded, the scanner's own name of it and the member; in German too.

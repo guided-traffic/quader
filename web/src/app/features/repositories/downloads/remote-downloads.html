@@ -342,6 +342,14 @@
           }
         }
       </td>
+      <!-- The malware scan of the stored version the row names, in one word, its details on demand (R-UI-255, Q-API-467). -->
+      @if (malware()) {
+        <td>
+          @if (r.malware; as m) {
+            <quader-malware-mark [malware]="m" kind="version" [image]="image()" />
+          }
+        </td>
+      }
       <!-- The progress, the attempt and a done row's outcome: the first of them on the row's line, the others under it. The state's
            badge stands alone in its cell, so the cell's first line is the badge's (R-UI-172). -->
       <td class="keep">

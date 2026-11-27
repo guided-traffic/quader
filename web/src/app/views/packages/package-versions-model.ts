@@ -1,3 +1,4 @@
+import { MalwareSummary } from '../../api/malware-api';
 import { PackageDeprecation, PackageVersionSummary } from '../../api/packages-api';
 import { SignatureStatus } from '../../api/signatures-api';
 import { VulnerabilityGrade } from '../../api/vulnerabilities-api';
@@ -48,6 +49,8 @@ export interface VersionRow {
   readonly deprecation: PackageDeprecation | null;
   /** The format hides it from its search and serves it by its number (NuGet, R-NUGET-006). */
   readonly unlisted: boolean;
+  /** Its malware state, its worst stored part's (R-MAL-039); null while the scanning is off. */
+  readonly malware: MalwareSummary | null;
 }
 
 /** The sortable columns, by the name the address carries (`?sort=-published`). */
@@ -88,6 +91,7 @@ export function versionRows(
     aliasesMore: v.aliasesMore ?? false,
     deprecation: v.deprecation ?? null,
     unlisted: v.unlisted ?? false,
+    malware: v.malware ?? null,
   }));
 }
 

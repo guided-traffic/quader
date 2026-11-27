@@ -962,8 +962,8 @@ describe('The page of a version (R-UI-111)', () => {
       };
       const r = await open({ tab: 'files' }, (fake) => pending(fake, 'pending'));
       const reads = vi.spyOn(r.fake, 'version');
-      const malwareCell = () => text(r.root.querySelector('quader-malware-status')!);
-      expect(malwareCell()).toContain('Queued');
+      const malwareCell = () => r.root.querySelector('.malware-cell [data-testid="malware-mark"]')!.getAttribute('data-state');
+      expect(malwareCell()).toBe('unchecked');
       const tab = r.root.querySelector('[role="tab"][aria-selected="true"]');
       vi.advanceTimersByTime(3_000);
       await settle(r.fixture);
@@ -972,7 +972,7 @@ describe('The page of a version (R-UI-111)', () => {
       vi.advanceTimersByTime(3_000);
       await settle(r.fixture);
       expect(reads).toHaveBeenCalledTimes(2);
-      expect(malwareCell()).toContain('No malware found');
+      expect(malwareCell()).toBe('checked');
       // In place: the same tab element, still the open one.
       expect(r.root.querySelector('[role="tab"][aria-selected="true"]')).toBe(tab);
       vi.advanceTimersByTime(3_000);

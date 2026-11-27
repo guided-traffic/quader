@@ -8,6 +8,8 @@ import { PagedResource } from '../../../shared/paged-resource';
 import { DataTable, TableColumn, TableSort } from '../../../shared/ui/data-table';
 import { DeprecationMark } from '../../../shared/ui/deprecation-mark';
 import { GradeLabel } from '../../../shared/vulnerability/grade';
+import { MalwareMark, malwareColumn, malwareShown } from '../../../shared/malware/malware-mark';
+import { MalwareSignaturesStore } from '../../../core/malware-signatures';
 import { gradeRank } from '../../../shared/vulnerability/grade-words';
 import { systemClosed } from '../../../core/system-clients';
 import { LIVE_SLOW_MS, live } from '../../../core/live-refresh';
@@ -36,7 +38,7 @@ export const GRADE_SORT_MAX = 1000;
  */
 @Component({
   selector: 'quader-repository-items',
-  imports: [TimeAgo, DecimalPipe, RouterLink, DataTable, DeprecationMark, GradeLabel, RepositoryItemVersions, ClientCommandMenu],
+  imports: [TimeAgo, DecimalPipe, RouterLink, DataTable, DeprecationMark, GradeLabel, MalwareMark, RepositoryItemVersions, ClientCommandMenu],
   template: `
     <div class="toolbar">
       <div class="filter">
@@ -108,6 +110,13 @@ export const GRADE_SORT_MAX = 1000;
             <td>
               @if (p.vulnerabilityGrade; as g) {
                 <quader-grade [grade]="g" [image]="p.format === 'oci'" [format]="p.format" />
+              }
+            </td>
+          }
+          @if (malware()) {
+            <td>
+              @if (p.malware; as m) {
+                <quader-malware-mark [malware]="m" kind="package" [newest]="p.latestVersion" [image]="p.format === 'oci'" />
               }
             </td>
           }
@@ -198,6 +207,9 @@ export class RepositoryItems {
   protected readonly emptyText = computed(() => emptyContentText(this.shape(), this.fill()));
   /** The answer carries grades: a signed-in caller of an installation that scans, for a format it scans (Q-VULN-158, Q-UI-377). */
   protected readonly graded = computed(() => this.scanned() && this.list.items().some((p) => p.vulnerabilityGrade !== undefined));
+  private readonly malwareMarks = inject(MalwareSignaturesStore);
+  /** The rows carry the malware state of their newest version (R-MAL-039): the column **Malware scan** (R-UI-255). */
+  protected readonly malware = computed(() => malwareShown(this.malwareMarks, this.list.items()));
   protected readonly gradeSorted = computed(() => this.sortParam().replace('-', '') === 'grade');
   /** The rows in the order asked: the server's, or by grade (R-VULN-038), then by name. */
   protected readonly rows = computed<readonly PackageSummary[]>(() => {
@@ -224,6 +236,7 @@ export class RepositoryItems {
         sortable: true,
       });
     }
+    if (this.malware()) columns.push(malwareColumn('package'));
     columns.push(
       { id: 'updatedAt', label: $localize`:@@repo.content.col.updated:Updated`, sortable: true },
       { id: 'downloads', label: $localize`:@@repo.content.col.downloads:Downloads`, numeric: true },

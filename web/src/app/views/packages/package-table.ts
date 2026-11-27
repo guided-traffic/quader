@@ -1,4 +1,4 @@
-import { Component, input, output } from '@angular/core';
+import { Component, computed, inject, input, output } from '@angular/core';
 import { PackageSummary } from '../../api/packages-api';
 import { FormatIconView } from '../../shared/format-icon';
 import { PagedResource } from '../../shared/paged-resource';
@@ -6,6 +6,8 @@ import { SignatureBadge } from '../signatures/signature-badge';
 import { DataTable, TableColumn, TableSort } from '../../shared/ui/data-table';
 import { DeprecationMark } from '../../shared/ui/deprecation-mark';
 import { TimeAgo } from '../../shared/ui/time-ago';
+import { MalwareMark, malwareColumn, malwareShown } from '../../shared/malware/malware-mark';
+import { MalwareSignaturesStore } from '../../core/malware-signatures';
 import { packageCommands } from '../../features/packages/package-links';
 import { PackageName } from './package-name';
 import { PackageTags } from './package-tags';
@@ -16,11 +18,11 @@ import { PackageTags } from './package-tags';
  */
 @Component({
   selector: 'quader-package-table',
-  imports: [DataTable, DeprecationMark, FormatIconView, PackageName, PackageTags, SignatureBadge, TimeAgo],
+  imports: [DataTable, DeprecationMark, FormatIconView, MalwareMark, PackageName, PackageTags, SignatureBadge, TimeAgo],
   template: `
     <quader-data-table
       [caption]="tableCaption"
-      [columns]="columns"
+      [columns]="columns()"
       [sort]="sort()"
       [loaded]="list().loaded()"
       [loading]="list().loading()"
@@ -66,6 +68,14 @@ import { PackageTags } from './package-tags';
             </span>
           </td>
           <td translate="no">{{ row.latestVersion }}</td>
+          <!-- The newest version's malware scan in one word, its details on demand (R-UI-255). -->
+          @if (malware()) {
+            <td>
+              @if (row.malware; as m) {
+                <quader-malware-mark [malware]="m" kind="package" [newest]="row.latestVersion" [image]="row.format === 'oci'" />
+              }
+            </td>
+          }
           <td><quader-time-ago [at]="row.updatedAt" absolute="title" /></td>
         </tr>
       }
@@ -95,7 +105,10 @@ export class PackageTable {
    * the version and the time never break and are as wide as their values (Q-UI-563). Their guessed widths summed to 46 rem, and
    * the list stood as blocks at 1,024 px with the side bar open (R-UI-174).
    */
-  protected readonly columns: readonly TableColumn[] = [
+  private readonly malwareMarks = inject(MalwareSignaturesStore);
+  /** The rows carry the malware state of their newest version (R-MAL-039): the column **Malware scan** (R-UI-255). */
+  protected readonly malware = computed(() => malwareShown(this.malwareMarks, this.list().items()));
+  protected readonly columns = computed<readonly TableColumn[]>(() => [
     { id: 'name', label: $localize`:@@pkg.col.package:Package`, sortable: true, width: '14rem' },
     { id: 'type', label: $localize`:@@pkg.col.format:Format`, stackLabel: false },
     // The words of the repository page's package table (Q-UI-432): **Latest**, not **Latest version**.
@@ -104,12 +117,13 @@ export class PackageTable {
       label: $localize`:@@pkg.col.latest:Latest`,
       help: $localize`:@@pkg.help.latest:The highest stable version you may see. A pre-release is shown only while no stable version exists.`,
     },
+    ...(this.malware() ? [malwareColumn('package')] : []),
     {
       id: 'updatedAt',
       label: $localize`:@@pkg.col.updated:Updated`,
       sortable: true,
       help: $localize`:@@pkg.help.updated:When the latest version you may see was published.`,
     },
-  ];
+  ]);
   protected commands = (format: string, name: string): string[] => packageCommands(this.project(), format, name);
 }

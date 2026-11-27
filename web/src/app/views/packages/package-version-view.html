@@ -98,6 +98,16 @@
             <span data-nosnippet><quader-grade [grade]="g" [image]="format() === 'oci'" [format]="format()" /></span>
           </a>
         }
+        <!-- The version's malware scan in one word beside its grade, its details on demand (R-UI-255): its worst stored part decides. -->
+        @if (versionMalware(); as m) {
+          <span class="facts-malware"
+            ><ng-container i18n="@@pkg.fact.malware">Malware scan</ng-container>&ngsp;<quader-malware-mark
+              [malware]="m"
+              kind="version"
+              [image]="format() === 'oci'"
+              [platforms]="storedPlatforms()"
+          /></span>
+        }
         <!-- An image's date is Pushed, or Fetched where only remotes hold it; every other format's Published (Q-UI-1314). -->
         <span>{{ arrived() }}&ngsp;<quader-time-ago [at]="d.publishedAt" /></span>
         <quader-version-size [bytes]="d.sizeBytes ?? null" [partial]="d.sizePartial" [spelled]="true" />
@@ -383,7 +393,7 @@
                     @if (malwareShown()) {
                       <td class="malware-cell">
                         @if (f.malware; as m) {
-                          <quader-malware-status [status]="m" form="line" />
+                          <quader-malware-mark [malware]="m" [digest]="f.sha256" />
                         } @else {
                           <quader-no-value />
                         }
@@ -416,7 +426,7 @@
                 } @else {
                   <h2 class="image-files-heading" i18n="@@pkg.file.image-content">Content of the image</h2>
                 }
-                <quader-data-table class="image-files" [caption]="imageFilesCaption(part.platform)" [columns]="imageFileColumns" [empty]="false">
+                <quader-data-table class="image-files" [caption]="imageFilesCaption(part.platform)" [columns]="imageFileColumns()" [empty]="false">
                   @if (part.platform !== null) {
                     <tr>
                       <th scope="row" i18n="@@pkg.file.manifest">Manifest</th>
@@ -425,6 +435,9 @@
                         <quader-copy-button [value]="part.digest" [label]="copyManifest" />
                       </td>
                       <td class="num nowrap">@if (part.manifestSize !== null) {<span [attr.title]="part.manifestSize + ' B'">{{ size(part.manifestSize) }}</span>} @else {<quader-no-value />}</td>
+                      @if (partsMalwareShown()) {
+                        <td><ng-container *ngTemplateOutlet="partMark; context: { $implicit: part.digest }" /></td>
+                      }
                     </tr>
                   }
                   @if (part.config; as cfg) {
@@ -435,6 +448,9 @@
                         <quader-copy-button [value]="cfg.digest" [label]="copyConfig" />
                       </td>
                       <td class="num nowrap">@if (cfg.size !== null) {<span [attr.title]="cfg.size + ' B'">{{ size(cfg.size) }}</span>} @else {<quader-no-value />}</td>
+                      @if (partsMalwareShown()) {
+                        <td><ng-container *ngTemplateOutlet="partMark; context: { $implicit: cfg.digest }" /></td>
+                      }
                     </tr>
                   }
                   @for (l of part.layers; track $index; let i = $index) {
@@ -445,10 +461,21 @@
                         <quader-copy-button [value]="l.digest" [label]="copyLayerOf(part.platform, i + 1)" />
                       </td>
                       <td class="num nowrap">@if (l.size !== null) {<span [attr.title]="l.size + ' B'">{{ size(l.size) }}</span>} @else {<quader-no-value />}</td>
+                      @if (partsMalwareShown()) {
+                        <td><ng-container *ngTemplateOutlet="partMark; context: { $implicit: l.digest }" /></td>
+                      }
                     </tr>
                   }
                 </quader-data-table>
               }
+              <!-- A part's mark (R-UI-255): its own verdict, from the version's file or the parts its files do not list (R-MAL-039). -->
+              <ng-template #partMark let-digest>
+                @if (partMalware(digest); as pm) {
+                  <quader-malware-mark [malware]="pm" [digest]="digest" />
+                } @else {
+                  <quader-no-value />
+                }
+              </ng-template>
               <!-- A definition container's detached signature and its member files (R-UI-194, R-CLAMAV-003). -->
               @if (clamav(); as c) {
                 <dl class="facts clamav-files">

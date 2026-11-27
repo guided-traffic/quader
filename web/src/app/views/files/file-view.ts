@@ -102,7 +102,7 @@ const SIBLING_SUFFIXES = ['.sigstore.json', '.jws.sig', '.cose.sig', '.asc', '.s
         <!-- The malware scan's verdict of the file's bytes (R-MAL-024, Q-UI-872); absent for a generated file and while the scanning is off. -->
         @if (it.malware; as m) {
           <dt i18n="@@files.fact.malware">Malware scan</dt>
-          <dd data-testid="malware-fact"><quader-malware-status [status]="m" /></dd>
+          <dd data-testid="malware-fact"><quader-malware-status [status]="m" [digest]="it.digests?.sha256 ?? null" /></dd>
         }
         <!-- The badge of the file's signatures, or the word of a state without one (R-SIG-035); absent while the signatures are off. -->
         @if (it.signatures; as sig) {

@@ -123,6 +123,15 @@
               }
             </td>
           }
+          @if (malwareShown()) {
+            <td>
+              @if (v.malware; as m) {
+                <quader-malware-mark [malware]="m" kind="version" [image]="format() === 'oci'" />
+              } @else {
+                <quader-no-value />
+              }
+            </td>
+          }
           <td class="time">
             <quader-time-ago [at]="v.publishedAt" absolute="title" />
           </td>

@@ -1,4 +1,6 @@
 import { Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
+import { MalwareMark, malwareColumn, malwareShown } from '../../../shared/malware/malware-mark';
+import { MalwareSignaturesStore } from '../../../core/malware-signatures';
 import { UpstreamPopularity } from './upstream-popularity';
 import { RouterLink } from '@angular/router';
 import { ApiError } from '../../../api/problem';
@@ -57,7 +59,7 @@ export function groupedCount(n: number): string {
  */
 @Component({
   selector: 'quader-upstream-package',
-  imports: [Loading, DataTable, DeprecationMark, DistTags, ErrorNotice, RouterLink, Switch, TimeAgo, UpstreamDocs, UpstreamPopularity],
+  imports: [Loading, DataTable, DeprecationMark, DistTags, ErrorNotice, MalwareMark, RouterLink, Switch, TimeAgo, UpstreamDocs, UpstreamPopularity],
   templateUrl: './upstream-package.html',
   styleUrl: './upstream-package.scss',
 })
@@ -139,7 +141,11 @@ export class UpstreamPackageView {
     { id: 'version', label: this.versionLabel() },
     { id: 'delivery', label: $localize`:@@upstream.col.delivery:Delivery` },
     { id: 'cache', label: $localize`:@@upstream.col.cache:Cache` },
+    ...(this.malware() ? [malwareColumn('version')] : []),
   ]);
+  private readonly malwareMarks = inject(MalwareSignaturesStore);
+  /** The stored versions carry their malware state (R-MAL-039, Q-API-467): the column **Malware scan** (R-UI-255). */
+  protected readonly malware = computed(() => malwareShown(this.malwareMarks, this.versions()));
 
   /** A download of a version shown waits or runs: the versions are read every few seconds until it has ended (R-UI-213). */
   protected readonly downloading = computed(() => this.versions().some((v) => v.queued !== null));

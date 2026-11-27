@@ -7,6 +7,8 @@ import { ErrorNotice } from '../../shared/error-notice';
 import { failureOf, valueOf } from '../../shared/paged-resource';
 import { Loading } from '../../shared/ui/loading';
 import { versionCommands } from '../../features/packages/package-links';
+import { MalwareMark } from '../../shared/malware/malware-mark';
+import { MalwareSignaturesStore } from '../../core/malware-signatures';
 
 /** A part of a relation as the section writes it: the kind in the format's word, the name asked for where it is another, the range. */
 export interface RelationPart {
@@ -38,7 +40,7 @@ export function relationsOf(p: PackageDependent, name: string): RelationPart[][]
  */
 @Component({
   selector: 'quader-used-by',
-  imports: [ErrorNotice, Loading, RouterLink],
+  imports: [ErrorNotice, Loading, MalwareMark, RouterLink],
   template: `
     @if (failure(); as f) {
       <quader-error-notice [error]="f" (retry)="failure.retry()" />
@@ -69,6 +71,10 @@ export function relationsOf(p: PackageDependent, name: string): RelationPart[][]
                   </span>
                 }
               </span>
+              <!-- The dependent version's malware scan in one word, its details on demand (R-UI-255). -->
+              @if (marks && p.malware; as m) {
+                &ngsp;<quader-malware-mark class="dependent-malware" [malware]="m" kind="version" [image]="p.format === 'oci'" />
+              }
             </li>
           }
         </ul>
@@ -117,6 +123,9 @@ export function relationsOf(p: PackageDependent, name: string): RelationPart[][]
     .relation {
       white-space: nowrap;
     }
+    .dependent-malware {
+      margin-inline-start: var(--quader-space-2);
+    }
     .dependency-none,
     .used-by-more {
       margin: var(--quader-space-1) 0 0;
@@ -128,6 +137,8 @@ export function relationsOf(p: PackageDependent, name: string): RelationPart[][]
 })
 export class UsedBy {
   private readonly api = inject(PackageReads);
+  /** The dependents carry their malware state in the main installation's web (R-MAL-039); the Bastion's are W-36's P8. */
+  protected readonly marks = inject(MalwareSignaturesStore).available;
 
   readonly packageId = input.required<string>();
   /** The package's normalized name: the filter of the package list, and the name a relation that asks for it needs not repeat. */

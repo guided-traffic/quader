@@ -1,4 +1,6 @@
 import { Component, computed, effect, inject, input, output, resource, signal, untracked } from '@angular/core';
+import { MalwareMark, malwareColumn, malwareShown } from '../../../shared/malware/malware-mark';
+import { MalwareSignaturesStore } from '../../../core/malware-signatures';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { map } from 'rxjs';
@@ -79,7 +81,7 @@ type FilterState = (typeof FILTER_STATES)[number];
  */
 @Component({
   selector: 'quader-remote-downloads',
-  imports: [Busy, Loading, DataTable, DownloadSyncs, ErrorNotice, NoValue, RouterLink, TechnicalDetails, TimeAgo],
+  imports: [Busy, Loading, DataTable, DownloadSyncs, ErrorNotice, MalwareMark, NoValue, RouterLink, TechnicalDetails, TimeAgo],
   templateUrl: './remote-downloads.html',
   styleUrl: './remote-downloads.scss',
 })
@@ -98,6 +100,8 @@ export class RemoteDownloads {
    * view does not, and then the default, `read`, is asked.
    */
   readonly fillAction = input<'read' | 'deploy'>('read');
+  /** The repository holds images: a mark counts an image's parts, not files (R-UI-255). */
+  readonly image = input(false);
   /**
    * The name of the upstream preset the remote's address is (Docker Hub), for a bulk's failure in words; null names the upstream
    * plainly. Only the full document has the address.
@@ -134,6 +138,9 @@ export class RemoteDownloads {
   protected readonly filtered = computed(() => this.state() !== null || this.failure() !== null || this.name() !== null);
 
   protected readonly rows = signal<readonly RemoteDownload[]>([]);
+  private readonly malwareMarks = inject(MalwareSignaturesStore);
+  /** The rows that name a stored version carry its malware state (R-MAL-039, Q-API-467): the column **Malware scan** (R-UI-255). */
+  protected readonly malware = computed(() => malwareShown(this.malwareMarks, this.rows()));
   protected readonly counts = signal<RemoteDownloadCounts | null>(null);
   /** The upstream's rate limit of the queue as the list answered it last (R-CUR-012, Q-CUR-175); null for none. */
   protected readonly limit = signal<RemoteDownloadLimit | null>(null);
@@ -280,6 +287,7 @@ export class RemoteDownloads {
     { id: 'subject', label: $localize`:@@downloads.col.subject:Package`, width: '14rem' },
     { id: 'origin', label: $localize`:@@downloads.col.origin:Origin` },
     { id: 'state', label: $localize`:@@downloads.col.state:State` },
+    ...(this.malware() ? [malwareColumn('version')] : []),
     { id: 'progress', label: $localize`:@@downloads.col.progress:Progress` },
     { id: 'failure', label: $localize`:@@downloads.col.failure:Failure`, width: '14rem' },
     ...(this.hasActions() ? [{ id: 'actions', label: $localize`:@@downloads.col.actions:Actions`, hideLabel: true }] : []),

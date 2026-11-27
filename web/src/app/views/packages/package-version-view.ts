@@ -1,6 +1,6 @@
 import { DownloadLink } from '../../shared/download-link';
 import { NamespaceOf } from './namespace-of';
-import { DecimalPipe, NgComponentOutlet } from '@angular/common';
+import { DecimalPipe, NgComponentOutlet, NgTemplateOutlet } from '@angular/common';
 import { TimePipe } from '../../shared/time-pipe';
 import { Component, computed, effect, inject, input, output, resource, signal, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
@@ -69,9 +69,10 @@ import { UsedBy } from './used-by';
 import { PackageTags } from './package-tags';
 import { VersionSize } from './version-size';
 import { NoValue } from '../../shared/ui/no-value';
-import { MalwareStatusView } from '../../shared/malware/malware-status';
+import { MalwareMark, malwareColumn } from '../../shared/malware/malware-mark';
+import { MalwareSignaturesStore } from '../../core/malware-signatures';
 import { malwareReasonText } from '../../shared/malware/malware-words';
-import { MalwareStatus } from '../../api/malware-api';
+import { MalwareStatus, MalwareSummary } from '../../api/malware-api';
 import { SignatureGateRefusedReason, SignatureGateReason, SignatureStatus } from '../../api/signatures-api';
 import { contentPath, repositoryOfContent } from '../../api/refs';
 import { GATE_ACT, GateActInputs, VERSION_IMPORT_LOG } from '../acts';
@@ -184,7 +185,8 @@ interface TabEntry {
     VersionSize,
     NoValue,
     DownloadLink,
-    MalwareStatusView,
+    MalwareMark,
+    NgTemplateOutlet,
     SignatureBadge,
     VersionSignatures,
     Disclosure,
@@ -850,6 +852,40 @@ export class PackageVersionView {
    * scanning is on; a generated file has none.
    */
   protected readonly malwareShown = computed(() => (this.detail()?.files ?? []).some((f) => f.malware !== undefined));
+  /** The version's member `malware`, its worst stored part's (R-MAL-039): the mark beside its grade (R-UI-255). */
+  protected readonly versionMalware = computed<MalwareSummary | null>(() => (this.malwareMarks.available ? (this.detail()?.malware ?? null) : null));
+  /** Today's signatures for the marks; absent in the Bastion's application, whose header and parts carry no mark yet (W-36 P8). */
+  private readonly malwareMarks = inject(MalwareSignaturesStore);
+  /**
+   * An image index's platforms, stored of named (Q-MAL-134): the details say "3 of 10 platforms stored", counted from the index's
+   * platforms and not from `partsNotStored`, which cannot count the configs and layers of a platform never fetched. Null for an image
+   * of one platform and every other format.
+   */
+  protected readonly storedPlatforms = computed(() => {
+    const platforms = this.image()?.platforms ?? [];
+    if (platforms.length === 0) return null;
+    return { stored: platforms.filter((p) => p.stored).length, total: platforms.length };
+  });
+  /**
+   * The verdict of each of an image's parts by its digest (R-MAL-039): its files' (the tag's manifest document) and the parts its files
+   * do not list (`malwareParts`: each platform's manifest, each config and each layer). A part not stored reads unchecked (Q-MAL-134).
+   */
+  private readonly partVerdicts = computed(() => {
+    const d = this.detail();
+    const out = new Map<string, MalwareStatus>();
+    for (const f of d?.files ?? []) if (f.malware) out.set(f.sha256, f.malware);
+    for (const p of d?.malwareParts ?? []) out.set(p.sha256, p.malware);
+    return out;
+  });
+  /** A part's verdict by its digest, `sha256:<hex>` or the bare hex; null where the answer has none. */
+  protected partMalware(digest: string): MalwareStatus | null {
+    const hex = digest.slice(digest.indexOf(':') + 1);
+    return this.partVerdicts().get(hex) ?? null;
+  }
+  /** The image's parts have a column of marks while the answer carries their verdicts. */
+  protected readonly partsMalwareShown = computed(
+    () => this.malwareMarks.available && this.partVerdicts().size > 0 && this.detail()?.malwareParts !== undefined,
+  );
   /** The files the gate refuses now, each with a banner above the tabs (R-MAL-024). */
   protected readonly refusedFiles = computed(() => (this.detail()?.files ?? []).filter((f) => f.malware?.refused === true));
   /**
@@ -929,7 +965,7 @@ export class PackageVersionView {
     // its path, the hash as its first twelve characters with the whole as its title and its copy button; the malware scan and the
     // signature keep their columns. Blocks only at 390 px.
     { id: 'path', label: $localize`:@@pkg.file.path:File`, width: '12rem' },
-    ...(this.malwareShown() ? [{ id: 'malware', label: $localize`:@@pkg.file.malware:Malware scan`, width: '9rem' }] : []),
+    ...(this.malwareShown() ? [malwareColumn('file')] : []),
     ...(this.signatureShown() ? [{ id: 'signature', label: $localize`:@@pkg.file.signature:Signature`, width: '9rem' }] : []),
   ]);
   /**
@@ -973,11 +1009,12 @@ export class PackageVersionView {
     { id: 'size', label: $localize`:@@pkg.image.size:Size`, numeric: true },
   ];
   protected readonly tableCaptionPlatforms = $localize`:@@pkg.image.platforms-caption:Platforms of this image index`;
-  protected readonly imageFileColumns: readonly TableColumn[] = [
+  protected readonly imageFileColumns = computed<readonly TableColumn[]>(() => [
     { id: 'part', label: $localize`:@@pkg.file.part:Part`, width: '6rem' },
     { id: 'digest', label: $localize`:@@pkg.image.digest:Digest`, prefer: true },
     { id: 'size', label: $localize`:@@pkg.image.size:Size`, numeric: true, width: '6rem' },
-  ];
+    ...(this.partsMalwareShown() ? [malwareColumn('file')] : []),
+  ]);
   protected imageFilesCaption(platform: string | null): string {
     return platform === null
       ? $localize`:@@pkg.file.image-caption:Manifest, config and layers of the image`

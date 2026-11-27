@@ -45,7 +45,9 @@ three kinds of user they serve are [R-UI-067](../spec/api-and-ui.md#r-ui-067--th
 Take the first of these that fits, in this order:
 
 1. A shared control: `<quader-text-field>`, `<quader-select-field>`, `<quader-checkbox>`, `<quader-switch>`, `<quader-tab-group>`,
-   `<quader-data-table>`, `<quader-avatar>`, `QuaderDialog`, the `[quaderTooltip]` directive ([web/src/app/shared/](../../web/src/app/shared/)).
+   `<quader-data-table>`, `<quader-avatar>`, `QuaderDialog`, the `[quaderTooltip]` directive for a sentence of plain text, the
+   `[quaderDetailPopover]` directive on a `<button>` for details on demand in lines (hover, focus and tap, R-UI-256)
+   ([web/src/app/shared/](../../web/src/app/shared/)).
 2. A class of [_controls.scss](../../web/src/styles/_controls.scss): `btn`, `text-input`, `select-input`, `badge`, `tab-nav`,
    `menu`. The table in [design-language.md](design-language.md#controls) lists each with its markup.
 3. A component style that uses only the `--quader-*` tokens of [_tokens.scss](../../web/src/styles/_tokens.scss).

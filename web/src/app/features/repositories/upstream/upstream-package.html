@@ -209,6 +209,14 @@
             <div class="verdict-line"><span [class.bad]="blockedVerdict(v)">{{ verdict }}</span></div>
           }
         </td>
+        <!-- A stored version's malware scan in one word, its details on demand (R-UI-255); a version not stored has none. -->
+        @if (malware()) {
+          <td>
+            @if (v.malware; as m) {
+              <quader-malware-mark [malware]="m" kind="version" [image]="actions.format() === 'oci'" />
+            }
+          </td>
+        }
       </tr>
     }
   </quader-data-table>

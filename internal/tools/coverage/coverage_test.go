@@ -199,8 +199,10 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 		// of W-36, P2).
 		// 1396 since what the scan controller and the coverage show, and the rescan settings, are read and set through the API
 		// (R-MAL-041, one P1 requirement of W-36, P5).
-		if len(m.Reqs) != 1396 || count[prioMVP] != 743 || count[prioP1] != 614 || count[prioP2] != 39 {
-			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1396 (743, 614, 39)",
+		// 1398 since every artifact shows its malware state in one word with its details on demand (R-UI-255, R-UI-256, two P1
+		// requirements of W-36, P4).
+		if len(m.Reqs) != 1398 || count[prioMVP] != 743 || count[prioP1] != 616 || count[prioP2] != 39 {
+			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1398 (743, 616, 39)",
 				len(m.Reqs), count[prioMVP], count[prioP1], count[prioP2])
 		}
 	})

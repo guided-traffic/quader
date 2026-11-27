@@ -13,6 +13,8 @@ import { PagedResource } from '../../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../../shared/ui/data-table';
 import { DeprecationMark } from '../../../shared/ui/deprecation-mark';
 import { GradeLabel } from '../../../shared/vulnerability/grade';
+import { MalwareMark, malwareColumn, malwareShown } from '../../../shared/malware/malware-mark';
+import { MalwareSignaturesStore } from '../../../core/malware-signatures';
 import { checkWaits } from '../../../shared/vulnerability/grade-words';
 import { ClientCommandMenu } from '../../../views/packages/client-command-menu';
 import { VersionSize } from '../../../views/packages/version-size';
@@ -42,7 +44,7 @@ export const OPENED_OTHER_TAGS = 4;
  */
 @Component({
   selector: 'quader-repository-item-versions',
-  imports: [TimeAgo, RouterLink, CopyButton, DataTable, DeprecationMark, GradeLabel, ClientCommandMenu, VersionSize, ImageTags],
+  imports: [TimeAgo, RouterLink, CopyButton, DataTable, DeprecationMark, GradeLabel, MalwareMark, ClientCommandMenu, VersionSize, ImageTags],
   template: `
     <quader-data-table
       [caption]="caption()"
@@ -94,6 +96,13 @@ export const OPENED_OTHER_TAGS = 4;
           <td>
             <quader-time-ago [at]="v.publishedAt" absolute="title" />
           </td>
+          @if (malwareCells()) {
+            <td>
+              @if (v.malware; as m) {
+                <quader-malware-mark [malware]="m" kind="version" [image]="pkg().format === 'oci'" />
+              }
+            </td>
+          }
           @if (scanned()) {
             <td>
               @if (gradeOf(v.version); as g) {
@@ -169,6 +178,9 @@ export class RepositoryItemVersions {
   readonly shape = input.required<ContentShape>();
   /** The list carries grades: the column of grades is shown (Q-UI-377). */
   readonly scanned = input(false);
+  private readonly malwareMarks = inject(MalwareSignaturesStore);
+  /** The versions carry their malware state (R-MAL-039): the column **Malware scan** (R-UI-255). */
+  protected readonly malwareCells = computed(() => malwareShown(this.malwareMarks, this.versions.items()));
 
   protected readonly versions = new PagedResource<PackageVersionSummary>(OPENED_VERSIONS);
   private readonly locale = inject(LOCALE_ID);
@@ -225,6 +237,7 @@ export class RepositoryItemVersions {
       { id: 'size', label: $localize`:@@repo.content.col.size:Size`, numeric: true },
       { id: 'published', label: s.publishedLabel },
     );
+    if (this.malwareCells()) columns.push(malwareColumn('version'));
     if (this.scanned()) columns.push({ id: 'vulnerabilities', label: $localize`:@@repo.content.col.vulnerabilities:Vulnerabilities` });
     if (!this.closed()) columns.push({ id: 'actions', label: $localize`:@@repo.col.actions:Actions`, hideLabel: true });
     return columns;

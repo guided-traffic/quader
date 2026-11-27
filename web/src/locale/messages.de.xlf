@@ -333,7 +333,7 @@
       <notes>
         <note category="location">src/app/app.routes.ts:86</note>
         <note category="location">src/app/app.routes.ts:87</note>
-        <note category="location">src/app/features/search/search-results.ts:314</note>
+        <note category="location">src/app/features/search/search-results.ts:325</note>
       </notes>
       <segment>
         <source>Search</source>
@@ -12528,14 +12528,14 @@
       <notes>
         <note category="location">src/app/features/endpoints/endpoint-detail.ts:112</note>
         <note category="location">src/app/features/guides/guide-format.ts:159</note>
-        <note category="location">src/app/features/repositories/content/repository-item-versions.ts:229</note>
-        <note category="location">src/app/features/repositories/content/repository-items.ts:231</note>
+        <note category="location">src/app/features/repositories/content/repository-item-versions.ts:242</note>
+        <note category="location">src/app/features/repositories/content/repository-items.ts:244</note>
         <note category="location">src/app/features/repositories/repository-list.ts:411</note>
         <note category="location">src/app/features/settings/storage/damaged-blobs.ts:119</note>
         <note category="location">src/app/features/system/backups/backups-page.html:156,158</note>
         <note category="location">src/app/features/system/job-table.ts:151</note>
         <note category="location">src/app/features/system/tasks-card.ts:123</note>
-        <note category="location">src/app/views/files/folder-view.ts:173</note>
+        <note category="location">src/app/views/files/folder-view.ts:187</note>
       </notes>
       <segment>
         <source>Actions</source>
@@ -14391,9 +14391,9 @@
       <notes>
         <note category="location">src/app/features/guides/guide-format.ts:156</note>
         <note category="location">src/app/features/repositories/repository-list.ts:393</note>
-        <note category="location">src/app/features/search/search-results.ts:332</note>
-        <note category="location">src/app/features/search/search-results.ts:346</note>
-        <note category="location">src/app/features/search/search-results.ts:366</note>
+        <note category="location">src/app/features/search/search-results.ts:343</note>
+        <note category="location">src/app/features/search/search-results.ts:360</note>
+        <note category="location">src/app/features/search/search-results.ts:381</note>
       </notes>
       <segment>
         <source>Repository</source>
@@ -14422,7 +14422,7 @@
         <note category="location">src/app/features/repositories/repository-list.html:69</note>
         <note category="location">src/app/features/repositories/repository-list.ts:329</note>
         <note category="location">src/app/features/repositories/repository-list.ts:400</note>
-        <note category="location">src/app/features/search/search-results.ts:337</note>
+        <note category="location">src/app/features/search/search-results.ts:348</note>
       </notes>
       <segment>
         <source>Class</source>
@@ -17786,7 +17786,7 @@
     <unit id="pkg.list.loading">
       <notes>
         <note category="location">src/app/features/packages/namespace-page.html:33,34</note>
-        <note category="location">src/app/views/packages/package-table.ts:27,28</note>
+        <note category="location">src/app/views/packages/package-table.ts:29,30</note>
       </notes>
       <segment>
         <source>Loading the packages.</source>
@@ -17795,7 +17795,7 @@
     </unit>
     <unit id="ns.publishing.loading">
       <notes>
-        <note category="location">src/app/features/packages/namespace-page.html:68,69</note>
+        <note category="location">src/app/features/packages/namespace-page.html:76,77</note>
       </notes>
       <segment>
         <source>Reading who may publish into the name.</source>
@@ -17804,7 +17804,7 @@
     </unit>
     <unit id="ns.publishing.heading">
       <notes>
-        <note category="location">src/app/features/packages/namespace-page.html:73,74</note>
+        <note category="location">src/app/features/packages/namespace-page.html:81,82</note>
       </notes>
       <segment>
         <source>Who may publish into the name</source>
@@ -17813,7 +17813,7 @@
     </unit>
     <unit id="ns.publishing.intro">
       <notes>
-        <note category="location">src/app/features/packages/namespace-page.html:75,78</note>
+        <note category="location">src/app/features/packages/namespace-page.html:83,86</note>
       </notes>
       <segment>
         <source> Whoever may publish into a local <ph id="0" equiv="INTERPOLATION" disp="{{ formatLabel() }}"/> repository may publish a package whose name starts with <pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="2" equiv="INTERPOLATION_1" disp="{{ prefix() }}"/></pc> there. Claims decide which repository a virtual repository serves such a name from. </source>
@@ -17822,7 +17822,7 @@
     </unit>
     <unit id="ns.publishing.none">
       <notes>
-        <note category="location">src/app/features/packages/namespace-page.html:79,81</note>
+        <note category="location">src/app/features/packages/namespace-page.html:87,89</note>
       </notes>
       <segment>
         <source>No local repository of this format whose settings you may read.</source>
@@ -17831,7 +17831,7 @@
     </unit>
     <unit id="ns.publishing.who">
       <notes>
-        <note category="location">src/app/features/packages/namespace-page.html:86,89</note>
+        <note category="location">src/app/features/packages/namespace-page.html:94,97</note>
       </notes>
       <segment>
         <source> Who may publish here: the developers, maintainers and owners among the <pc id="0" equivStart="START_LINK" equivEnd="CLOSE_LINK" type="link" dispStart="&lt;a [routerLink]=&quot;[&apos;/projects&apos;, r.project, &apos;members&apos;]&quot;&gt;" dispEnd="&lt;/a&gt;">members of <ph id="1" equiv="INTERPOLATION" disp="{{ r.project }}"/></pc>, and whoever a <pc id="2" equivStart="START_LINK_1" equivEnd="CLOSE_LINK" type="link" dispStart="&lt;a [routerLink]=&quot;[&apos;/projects&apos;, r.project, &apos;policies&apos;]&quot;&gt;" dispEnd="&lt;/a&gt;">permission policy</pc> gives the right to publish. </source>
@@ -17840,7 +17840,7 @@
     </unit>
     <unit id="ns.publishing.enforce">
       <notes>
-        <note category="location">src/app/features/packages/namespace-page.html:92,93</note>
+        <note category="location">src/app/features/packages/namespace-page.html:100,101</note>
       </notes>
       <segment>
         <source>Package ownership is enforced: whoever publishes a new name first owns it, and a later version needs one of its owners or the right to manage the repository.</source>
@@ -17849,7 +17849,7 @@
     </unit>
     <unit id="ns.publishing.off">
       <notes>
-        <note category="location">src/app/features/packages/namespace-page.html:94,96</note>
+        <note category="location">src/app/features/packages/namespace-page.html:102,104</note>
       </notes>
       <segment>
         <source>Package ownership is off: whoever may publish here may publish every name.</source>
@@ -17858,7 +17858,7 @@
     </unit>
     <unit id="ns.publishing.claim">
       <notes>
-        <note category="location">src/app/features/packages/namespace-page.html:101</note>
+        <note category="location">src/app/features/packages/namespace-page.html:109</note>
       </notes>
       <segment>
         <source>Claims</source>
@@ -17867,7 +17867,7 @@
     </unit>
     <unit id="ns.publishing.no-claim">
       <notes>
-        <note category="location">src/app/features/packages/namespace-page.html:107,109</note>
+        <note category="location">src/app/features/packages/namespace-page.html:115,117</note>
       </notes>
       <segment>
         <source>No claim of this repository covers a name of it.</source>
@@ -17876,7 +17876,7 @@
     </unit>
     <unit id="ns.publishing.auto-on">
       <notes>
-        <note category="location">src/app/features/packages/namespace-page.html:112,113</note>
+        <note category="location">src/app/features/packages/namespace-page.html:120,121</note>
       </notes>
       <segment>
         <source>A first publish of a new name claims that name for this repository.</source>
@@ -17885,7 +17885,7 @@
     </unit>
     <unit id="ns.publishing.auto-off">
       <notes>
-        <note category="location">src/app/features/packages/namespace-page.html:114,116</note>
+        <note category="location">src/app/features/packages/namespace-page.html:122,124</note>
       </notes>
       <segment>
         <source>A first publish claims nothing.</source>
@@ -17894,7 +17894,7 @@
     </unit>
     <unit id="ns.description.project">
       <notes>
-        <note category="location">src/app/features/packages/namespace-page.ts:59</note>
+        <note category="location">src/app/features/packages/namespace-page.ts:61</note>
       </notes>
       <segment>
         <source>The <ph id="0" equiv="format" disp="this.formatLabel()"/> packages of the name in <ph id="1" equiv="project" disp="where"/> that you may read.</source>
@@ -17903,7 +17903,7 @@
     </unit>
     <unit id="ns.description.all">
       <notes>
-        <note category="location">src/app/features/packages/namespace-page.ts:60</note>
+        <note category="location">src/app/features/packages/namespace-page.ts:62</note>
       </notes>
       <segment>
         <source>The <ph id="0" equiv="format" disp="this.formatLabel()"/> packages of the name in every project that you may read.</source>
@@ -17912,9 +17912,9 @@
     </unit>
     <unit id="pkg.col.package">
       <notes>
-        <note category="location">src/app/features/packages/namespace-page.ts:74</note>
-        <note category="location">src/app/features/search/search-results.ts:344</note>
-        <note category="location">src/app/views/packages/package-table.ts:99</note>
+        <note category="location">src/app/features/packages/namespace-page.ts:79</note>
+        <note category="location">src/app/features/search/search-results.ts:358</note>
+        <note category="location">src/app/views/packages/package-table.ts:112</note>
       </notes>
       <segment>
         <source>Package</source>
@@ -17923,12 +17923,12 @@
     </unit>
     <unit id="projects.col.project">
       <notes>
-        <note category="location">src/app/features/packages/namespace-page.ts:75</note>
+        <note category="location">src/app/features/packages/namespace-page.ts:80</note>
         <note category="location">src/app/features/projects/projects-home.ts:224</note>
-        <note category="location">src/app/features/search/search-results.ts:333</note>
-        <note category="location">src/app/features/search/search-results.ts:345</note>
-        <note category="location">src/app/features/search/search-results.ts:365</note>
-        <note category="location">src/app/features/search/search-results.ts:370</note>
+        <note category="location">src/app/features/search/search-results.ts:344</note>
+        <note category="location">src/app/features/search/search-results.ts:359</note>
+        <note category="location">src/app/features/search/search-results.ts:380</note>
+        <note category="location">src/app/features/search/search-results.ts:385</note>
       </notes>
       <segment>
         <source>Project</source>
@@ -17937,9 +17937,9 @@
     </unit>
     <unit id="pkg.col.latest">
       <notes>
-        <note category="location">src/app/features/packages/namespace-page.ts:78</note>
-        <note category="location">src/app/features/search/search-results.ts:350</note>
-        <note category="location">src/app/views/packages/package-table.ts:104</note>
+        <note category="location">src/app/features/packages/namespace-page.ts:83</note>
+        <note category="location">src/app/features/search/search-results.ts:364</note>
+        <note category="location">src/app/views/packages/package-table.ts:117</note>
       </notes>
       <segment>
         <source>Latest</source>
@@ -17948,9 +17948,9 @@
     </unit>
     <unit id="pkg.help.latest">
       <notes>
-        <note category="location">src/app/features/packages/namespace-page.ts:79</note>
-        <note category="location">src/app/features/search/search-results.ts:351</note>
-        <note category="location">src/app/views/packages/package-table.ts:105</note>
+        <note category="location">src/app/features/packages/namespace-page.ts:84</note>
+        <note category="location">src/app/features/search/search-results.ts:365</note>
+        <note category="location">src/app/views/packages/package-table.ts:118</note>
       </notes>
       <segment>
         <source>The highest stable version you may see. A pre-release is shown only while no stable version exists.</source>
@@ -17959,9 +17959,9 @@
     </unit>
     <unit id="pkg.col.updated">
       <notes>
-        <note category="location">src/app/features/packages/namespace-page.ts:83</note>
-        <note category="location">src/app/features/search/search-results.ts:356</note>
-        <note category="location">src/app/views/packages/package-table.ts:109</note>
+        <note category="location">src/app/features/packages/namespace-page.ts:89</note>
+        <note category="location">src/app/features/search/search-results.ts:371</note>
+        <note category="location">src/app/views/packages/package-table.ts:123</note>
       </notes>
       <segment>
         <source>Updated</source>
@@ -17970,9 +17970,9 @@
     </unit>
     <unit id="pkg.help.updated">
       <notes>
-        <note category="location">src/app/features/packages/namespace-page.ts:84</note>
-        <note category="location">src/app/features/search/search-results.ts:357</note>
-        <note category="location">src/app/views/packages/package-table.ts:111</note>
+        <note category="location">src/app/features/packages/namespace-page.ts:90</note>
+        <note category="location">src/app/features/search/search-results.ts:372</note>
+        <note category="location">src/app/views/packages/package-table.ts:125</note>
       </notes>
       <segment>
         <source>When the latest version you may see was published.</source>
@@ -17981,7 +17981,7 @@
     </unit>
     <unit id="ns.list.empty">
       <notes>
-        <note category="location">src/app/features/packages/namespace-page.ts:88</note>
+        <note category="location">src/app/features/packages/namespace-page.ts:94</note>
       </notes>
       <segment>
         <source>No package of this name that you may read.</source>
@@ -17990,7 +17990,7 @@
     </unit>
     <unit id="ns.claim.global">
       <notes>
-        <note category="location">src/app/features/packages/namespace-page.ts:125</note>
+        <note category="location">src/app/features/packages/namespace-page.ts:131</note>
       </notes>
       <segment>
         <source>in every virtual repository of the format</source>
@@ -17999,7 +17999,7 @@
     </unit>
     <unit id="ns.claim.members">
       <notes>
-        <note category="location">src/app/features/packages/namespace-page.ts:126</note>
+        <note category="location">src/app/features/packages/namespace-page.ts:132</note>
       </notes>
       <segment>
         <source>in the virtual repositories that contain this repository</source>
@@ -18008,7 +18008,7 @@
     </unit>
     <unit id="ns.claim.all">
       <notes>
-        <note category="location">src/app/features/packages/namespace-page.ts:131</note>
+        <note category="location">src/app/features/packages/namespace-page.ts:137</note>
       </notes>
       <segment>
         <source>every name of it</source>
@@ -18017,7 +18017,7 @@
     </unit>
     <unit id="ns.claim.some">
       <notes>
-        <note category="location">src/app/features/packages/namespace-page.ts:132</note>
+        <note category="location">src/app/features/packages/namespace-page.ts:138</note>
       </notes>
       <segment>
         <source>some names of it</source>
@@ -18026,7 +18026,7 @@
     </unit>
     <unit id="ns.claim.manual">
       <notes>
-        <note category="location">src/app/features/packages/namespace-page.ts:136</note>
+        <note category="location">src/app/features/packages/namespace-page.ts:142</note>
       </notes>
       <segment>
         <source>set by hand</source>
@@ -18035,7 +18035,7 @@
     </unit>
     <unit id="ns.claim.auto">
       <notes>
-        <note category="location">src/app/features/packages/namespace-page.ts:136</note>
+        <note category="location">src/app/features/packages/namespace-page.ts:142</note>
       </notes>
       <segment>
         <source>claimed by a first publish</source>
@@ -21806,7 +21806,7 @@
     <unit id="projects.built-in">
       <notes>
         <note category="location">src/app/features/projects/projects-home.ts:80,82</note>
-        <note category="location">src/app/features/search/search-results.ts:195,197</note>
+        <note category="location">src/app/features/search/search-results.ts:206,208</note>
       </notes>
       <segment>
         <source>Built-in</source>
@@ -21897,7 +21897,7 @@
     <unit id="projects-home.col.description">
       <notes>
         <note category="location">src/app/features/projects/projects-home.ts:226</note>
-        <note category="location">src/app/features/search/search-results.ts:371</note>
+        <note category="location">src/app/features/search/search-results.ts:386</note>
       </notes>
       <segment>
         <source>Description</source>
@@ -21907,7 +21907,7 @@
     <unit id="projects.col.visibility">
       <notes>
         <note category="location">src/app/features/projects/projects-home.ts:227</note>
-        <note category="location">src/app/features/search/search-results.ts:372</note>
+        <note category="location">src/app/features/search/search-results.ts:387</note>
         <note category="location">src/app/features/upstream/upstream-registries.ts:299</note>
         <note category="location">src/app/features/upstream/upstream-registries.ts:317</note>
       </notes>
@@ -21919,7 +21919,7 @@
     <unit id="projects.col.role">
       <notes>
         <note category="location">src/app/features/projects/projects-home.ts:230</note>
-        <note category="location">src/app/features/search/search-results.ts:375</note>
+        <note category="location">src/app/features/search/search-results.ts:390</note>
       </notes>
       <segment>
         <source>Your role</source>
@@ -21929,7 +21929,7 @@
     <unit id="projects.help.role">
       <notes>
         <note category="location">src/app/features/projects/projects-home.ts:231</note>
-        <note category="location">src/app/features/search/search-results.ts:376</note>
+        <note category="location">src/app/features/search/search-results.ts:391</note>
       </notes>
       <segment>
         <source>Your role in the project; a dash when you see it through a system role and are no member.</source>
@@ -21948,7 +21948,7 @@
     <unit id="projects.col.repositories">
       <notes>
         <note category="location">src/app/features/projects/projects-home.ts:235</note>
-        <note category="location">src/app/features/search/search-results.ts:379</note>
+        <note category="location">src/app/features/search/search-results.ts:394</note>
       </notes>
       <segment>
         <source>Repositories</source>
@@ -21958,7 +21958,7 @@
     <unit id="projects.col.members">
       <notes>
         <note category="location">src/app/features/projects/projects-home.ts:236</note>
-        <note category="location">src/app/features/search/search-results.ts:380</note>
+        <note category="location">src/app/features/search/search-results.ts:395</note>
       </notes>
       <segment>
         <source>Members</source>
@@ -23529,7 +23529,7 @@
     <unit id="repo.content.loading">
       <notes>
         <note category="location">src/app/features/repositories/content/repository-content.html:100,102</note>
-        <note category="location">src/app/features/repositories/content/repository-items.ts:72,73</note>
+        <note category="location">src/app/features/repositories/content/repository-items.ts:74,75</note>
       </notes>
       <segment>
         <source>Loading the repository&apos;s content.</source>
@@ -23921,7 +23921,7 @@
     </unit>
     <unit id="repo.versions.loading">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-item-versions.ts:52,53</note>
+        <note category="location">src/app/features/repositories/content/repository-item-versions.ts:54,55</note>
       </notes>
       <segment>
         <source>Loading the versions.</source>
@@ -23930,7 +23930,7 @@
     </unit>
     <unit id="repo.content.prerelease">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-item-versions.ts:77,79</note>
+        <note category="location">src/app/features/repositories/content/repository-item-versions.ts:79,81</note>
       </notes>
       <segment>
         <source>Pre-release</source>
@@ -23939,7 +23939,7 @@
     </unit>
     <unit id="repo.content.copy-digest">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-item-versions.ts:198</note>
+        <note category="location">src/app/features/repositories/content/repository-item-versions.ts:210</note>
       </notes>
       <segment>
         <source>Copy digest</source>
@@ -23948,7 +23948,7 @@
     </unit>
     <unit id="repo.content.col.digest">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-item-versions.ts:223</note>
+        <note category="location">src/app/features/repositories/content/repository-item-versions.ts:235</note>
       </notes>
       <segment>
         <source>Digest</source>
@@ -23957,8 +23957,8 @@
     </unit>
     <unit id="repo.content.col.size">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-item-versions.ts:225</note>
-        <note category="location">src/app/views/files/folder-view.ts:169</note>
+        <note category="location">src/app/features/repositories/content/repository-item-versions.ts:237</note>
+        <note category="location">src/app/views/files/folder-view.ts:182</note>
       </notes>
       <segment>
         <source>Size</source>
@@ -23967,8 +23967,8 @@
     </unit>
     <unit id="repo.content.col.vulnerabilities">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-item-versions.ts:228</note>
-        <note category="location">src/app/features/repositories/content/repository-items.ts:222</note>
+        <note category="location">src/app/features/repositories/content/repository-item-versions.ts:241</note>
+        <note category="location">src/app/features/repositories/content/repository-items.ts:234</note>
       </notes>
       <segment>
         <source>Vulnerabilities</source>
@@ -23977,7 +23977,7 @@
     </unit>
     <unit id="repo.content.grade-sort-partial">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-items.ts:148,151</note>
+        <note category="location">src/app/features/repositories/content/repository-items.ts:157,160</note>
       </notes>
       <segment>
         <source> Sorted by grade among the first <ph id="0" equiv="INTERPOLATION" disp="{{ list.items().length }}"/> entries; the list holds more. </source>
@@ -23986,7 +23986,7 @@
     </unit>
     <unit id="repo.content.col.latest">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-items.ts:216</note>
+        <note category="location">src/app/features/repositories/content/repository-items.ts:228</note>
       </notes>
       <segment>
         <source>Latest</source>
@@ -23995,7 +23995,7 @@
     </unit>
     <unit id="repo.content.help.grade">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-items.ts:223</note>
+        <note category="location">src/app/features/repositories/content/repository-items.ts:235</note>
       </notes>
       <segment>
         <source>The grade of the latest version in this repository, from S (no known vulnerabilities) to E (more than 5 Critical); N/A when it is not checked, with the reason beside it.</source>
@@ -24004,7 +24004,7 @@
     </unit>
     <unit id="repo.content.col.updated">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-items.ts:228</note>
+        <note category="location">src/app/features/repositories/content/repository-items.ts:241</note>
       </notes>
       <segment>
         <source>Updated</source>
@@ -24013,7 +24013,7 @@
     </unit>
     <unit id="repo.content.col.downloads">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-items.ts:229</note>
+        <note category="location">src/app/features/repositories/content/repository-items.ts:242</note>
       </notes>
       <segment>
         <source>Downloads</source>
@@ -24022,7 +24022,7 @@
     </unit>
     <unit id="repo.content.open-versions">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-items.ts:286</note>
+        <note category="location">src/app/features/repositories/content/repository-items.ts:299</note>
       </notes>
       <segment>
         <source>Show the versions of <ph id="0" equiv="name" disp="p.name"/></source>
@@ -25622,8 +25622,8 @@
     <unit id="downloads.col.actions">
       <notes>
         <note category="location">src/app/features/repositories/downloads/download-syncs.ts:137</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:285</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:295</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:293</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:303</note>
       </notes>
       <segment>
         <source>Actions</source>
@@ -26713,7 +26713,7 @@
     <unit id="downloads.failure.address">
       <notes>
         <note category="location">src/app/features/repositories/downloads/remote-downloads.html:39,40</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:420,421</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:428,429</note>
       </notes>
       <segment>
         <source>Address</source>
@@ -26723,7 +26723,7 @@
     <unit id="downloads.failure.query-removed">
       <notes>
         <note category="location">src/app/features/repositories/downloads/remote-downloads.html:40,42</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:421,423</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:429,431</note>
       </notes>
       <segment>
         <source>(shown without its query, which can carry a credential)</source>
@@ -26733,7 +26733,7 @@
     <unit id="downloads.failure.headers">
       <notes>
         <note category="location">src/app/features/repositories/downloads/remote-downloads.html:43,44</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:432,433</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:440,441</note>
       </notes>
       <segment>
         <source>Headers of the limit</source>
@@ -26743,7 +26743,7 @@
     <unit id="downloads.failure.excerpt">
       <notes>
         <note category="location">src/app/features/repositories/downloads/remote-downloads.html:52,53</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:441,442</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:449,450</note>
       </notes>
       <segment>
         <source>The start of the upstream&apos;s answer</source>
@@ -26891,7 +26891,7 @@
     <unit id="downloads.bulk.start-again">
       <notes>
         <note category="location">src/app/features/repositories/downloads/remote-downloads.html:223,225</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:644</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:652</note>
       </notes>
       <segment>
         <source>Start again</source>
@@ -26945,7 +26945,7 @@
     </unit>
     <unit id="downloads.next-attempt">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:360</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:368</note>
       </notes>
       <segment>
         <source>next</source>
@@ -26954,7 +26954,7 @@
     </unit>
     <unit id="downloads.progress.refused">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:367</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:375</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="INTERPOLATION" disp="{{ r.refused }}"/> refused by a gate</source>
@@ -26963,7 +26963,7 @@
     </unit>
     <unit id="downloads.failure.title">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:403</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:411</note>
       </notes>
       <segment>
         <source>Failure of attempt <ph id="0" equiv="INTERPOLATION" disp="{{ f.attempt }}"/></source>
@@ -26972,7 +26972,7 @@
     </unit>
     <unit id="downloads.failure.class">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:409,410</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:417,418</note>
       </notes>
       <segment>
         <source>Class</source>
@@ -26981,7 +26981,7 @@
     </unit>
     <unit id="downloads.failure.step">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:411,412</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:419,420</note>
       </notes>
       <segment>
         <source>Step</source>
@@ -26990,7 +26990,7 @@
     </unit>
     <unit id="downloads.failure.code">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:413,414</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:421,422</note>
       </notes>
       <segment>
         <source>Code</source>
@@ -26999,7 +26999,7 @@
     </unit>
     <unit id="downloads.failure.file">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:416,417</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:424,425</note>
       </notes>
       <segment>
         <source>File</source>
@@ -27008,7 +27008,7 @@
     </unit>
     <unit id="downloads.failure.status">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:424,425</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:432,433</note>
       </notes>
       <segment>
         <source>Upstream status</source>
@@ -27017,7 +27017,7 @@
     </unit>
     <unit id="downloads.failure.retry-after">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:428,429</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:436,437</note>
       </notes>
       <segment>
         <source>Retry-After</source>
@@ -27026,7 +27026,7 @@
     </unit>
     <unit id="downloads.failure.seconds">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:429,430</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:437,438</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="INTERPOLATION" disp="{{ f.retryAfter }}"/> s</source>
@@ -27035,8 +27035,8 @@
     </unit>
     <unit id="downloads.fact.started-by">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:447,448</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:450,451</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:455,456</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:458,459</note>
       </notes>
       <segment>
         <source>Started by</source>
@@ -27045,7 +27045,7 @@
     </unit>
     <unit id="downloads.fact.started-by-you">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:449</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:457</note>
       </notes>
       <segment>
         <source>You</source>
@@ -27054,7 +27054,7 @@
     </unit>
     <unit id="downloads.fact.queued">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:453,454</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:461,462</note>
       </notes>
       <segment>
         <source>Queued</source>
@@ -27063,7 +27063,7 @@
     </unit>
     <unit id="downloads.fact.started">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:456,457</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:464,465</note>
       </notes>
       <segment>
         <source>Started</source>
@@ -27072,7 +27072,7 @@
     </unit>
     <unit id="downloads.fact.finished">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:460,461</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:468,469</note>
       </notes>
       <segment>
         <source>Finished</source>
@@ -27081,7 +27081,7 @@
     </unit>
     <unit id="downloads.fact.files">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:464,465</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:472,473</note>
       </notes>
       <segment>
         <source>Files</source>
@@ -27090,7 +27090,7 @@
     </unit>
     <unit id="downloads.fact.files-value">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:465,466</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:473,474</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="INTERPOLATION" disp="{{ r.files }}"/> named, <ph id="1" equiv="INTERPOLATION_1" disp="{{ r.stored }}"/> stored, <ph id="2" equiv="INTERPOLATION_2" disp="{{ r.present }}"/> already stored, <ph id="3" equiv="INTERPOLATION_3" disp="{{ r.refused }}"/> refused</source>
@@ -27099,7 +27099,7 @@
     </unit>
     <unit id="downloads.fact.bytes">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:468,469</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:476,477</note>
       </notes>
       <segment>
         <source>Stored</source>
@@ -27108,7 +27108,7 @@
     </unit>
     <unit id="downloads.bulks.caption">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:204</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:211</note>
       </notes>
       <segment>
         <source>Bulk downloads of this repository, newest first</source>
@@ -27117,7 +27117,7 @@
     </unit>
     <unit id="downloads.caption">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:268</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:275</note>
       </notes>
       <segment>
         <source>Downloads of this repository, running and waiting first</source>
@@ -27126,7 +27126,7 @@
     </unit>
     <unit id="downloads.empty">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:269</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:276</note>
       </notes>
       <segment>
         <source>There is no download yet.</source>
@@ -27135,7 +27135,7 @@
     </unit>
     <unit id="downloads.empty-filtered">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:270</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:277</note>
       </notes>
       <segment>
         <source>No download matches.</source>
@@ -27144,7 +27144,7 @@
     </unit>
     <unit id="downloads.filter.state">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:271</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:278</note>
       </notes>
       <segment>
         <source>State</source>
@@ -27153,7 +27153,7 @@
     </unit>
     <unit id="downloads.col.subject">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:280</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:287</note>
       </notes>
       <segment>
         <source>Package</source>
@@ -27162,7 +27162,7 @@
     </unit>
     <unit id="downloads.col.origin">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:281</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:288</note>
       </notes>
       <segment>
         <source>Origin</source>
@@ -27171,8 +27171,8 @@
     </unit>
     <unit id="downloads.col.state">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:282</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:292</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:289</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:300</note>
       </notes>
       <segment>
         <source>State</source>
@@ -27181,7 +27181,7 @@
     </unit>
     <unit id="downloads.col.progress">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:283</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:291</note>
       </notes>
       <segment>
         <source>Progress</source>
@@ -27190,8 +27190,8 @@
     </unit>
     <unit id="downloads.col.failure">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:284</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:294</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:292</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:302</note>
       </notes>
       <segment>
         <source>Failure</source>
@@ -27200,7 +27200,7 @@
     </unit>
     <unit id="downloads.bulks.col.bulk">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:291</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:299</note>
       </notes>
       <segment>
         <source>Bulk download</source>
@@ -27209,7 +27209,7 @@
     </unit>
     <unit id="downloads.bulks.col.versions">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:293</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:301</note>
       </notes>
       <segment>
         <source>Versions</source>
@@ -27218,7 +27218,7 @@
     </unit>
     <unit id="downloads.row.open">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:483</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:491</note>
       </notes>
       <segment>
         <source>Details of <ph id="0" equiv="subject" disp="downloadSubject(r)"/></source>
@@ -27227,7 +27227,7 @@
     </unit>
     <unit id="downloads.origin.you">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:490</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:498</note>
       </notes>
       <segment>
         <source>You</source>
@@ -27236,7 +27236,7 @@
     </unit>
     <unit id="downloads.attempt">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:536</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:544</note>
       </notes>
       <segment>
         <source>Attempt <ph id="0" equiv="attempt" disp="r.attempts"/> of <ph id="1" equiv="max" disp="r.maxAttempts"/></source>
@@ -27245,7 +27245,7 @@
     </unit>
     <unit id="downloads.progress.files">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:543</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:551</note>
       </notes>
       <segment>
         <source>Files: <ph id="0" equiv="done" disp="done"/> of <ph id="1" equiv="files" disp="r.files"/></source>
@@ -27254,7 +27254,7 @@
     </unit>
     <unit id="downloads.retried">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:576</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:584</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="subject" disp="downloadSubject(r)"/> waits for its download again.</source>
@@ -27263,7 +27263,7 @@
     </unit>
     <unit id="downloads.cancelled">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:577</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:585</note>
       </notes>
       <segment>
         <source>The download of <ph id="0" equiv="subject" disp="downloadSubject(r)"/> is cancelled.</source>
@@ -27272,7 +27272,7 @@
     </unit>
     <unit id="downloads.retry">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:592</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:600</note>
       </notes>
       <segment>
         <source>Retry</source>
@@ -27281,8 +27281,8 @@
     </unit>
     <unit id="downloads.cancel">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:592</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:645</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:600</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:653</note>
       </notes>
       <segment>
         <source>Cancel</source>
@@ -27291,7 +27291,7 @@
     </unit>
     <unit id="downloads.retried-all">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:610</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:618</note>
       </notes>
       <segment>
         <source>Failed downloads that wait again: <ph id="0" equiv="count" disp="n"/>.</source>
@@ -27300,7 +27300,7 @@
     </unit>
     <unit id="downloads.bulk.cancelled">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:659</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:667</note>
       </notes>
       <segment>
         <source>The bulk download of <ph id="0" equiv="subject" disp="b.subject"/> is cancelled.</source>
@@ -27309,7 +27309,7 @@
     </unit>
     <unit id="downloads.bulk.started-again">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:663</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:671</note>
       </notes>
       <segment>
         <source>The bulk download of <ph id="0" equiv="subject" disp="b.subject"/> starts again: Quader reads its versions from the upstream.</source>
@@ -27318,7 +27318,7 @@
     </unit>
     <unit id="downloads.bulk.failed-versions-of">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:696</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:704</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="upstream" disp="name"/>&apos;s version list could not be read</source>
@@ -27327,7 +27327,7 @@
     </unit>
     <unit id="downloads.bulk.failed-versions">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:697</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:705</note>
       </notes>
       <segment>
         <source>The upstream&apos;s version list could not be read</source>
@@ -27336,7 +27336,7 @@
     </unit>
     <unit id="downloads.bulk.failed-section-of">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:700</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:708</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="upstream" disp="name"/>&apos;s list of the sub-section could not be read</source>
@@ -27345,7 +27345,7 @@
     </unit>
     <unit id="downloads.bulk.failed-section">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:701</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:709</note>
       </notes>
       <segment>
         <source>The upstream&apos;s list of the sub-section could not be read</source>
@@ -27354,7 +27354,7 @@
     </unit>
     <unit id="downloads.bulk.open">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:712</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:720</note>
       </notes>
       <segment>
         <source>The downloads of the bulk: <ph id="0" equiv="title" disp="this.bulkTitle(b)"/></source>
@@ -27363,7 +27363,7 @@
     </unit>
     <unit id="downloads.bulk.package">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:718</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:726</note>
       </notes>
       <segment>
         <source>Every version of <ph id="0" equiv="subject" disp="b.subject"/></source>
@@ -27372,7 +27372,7 @@
     </unit>
     <unit id="downloads.bulk.section">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:719</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:727</note>
       </notes>
       <segment>
         <source>The sub-section <ph id="0" equiv="subject" disp="b.subject"/></source>
@@ -27381,7 +27381,7 @@
     </unit>
     <unit id="downloads.bulk.state.expanding">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:743</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:751</note>
       </notes>
       <segment>
         <source>Finding versions</source>
@@ -27390,7 +27390,7 @@
     </unit>
     <unit id="downloads.bulk.state.queued">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:745</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:753</note>
       </notes>
       <segment>
         <source>Queued</source>
@@ -27399,7 +27399,7 @@
     </unit>
     <unit id="downloads.bulk.state.done">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:747</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:755</note>
       </notes>
       <segment>
         <source>Done</source>
@@ -27408,7 +27408,7 @@
     </unit>
     <unit id="downloads.bulk.state.bounded">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:749</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:757</note>
       </notes>
       <segment>
         <source>Stopped at a bound</source>
@@ -27417,7 +27417,7 @@
     </unit>
     <unit id="downloads.bulk.state.cancelled">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:751</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:759</note>
       </notes>
       <segment>
         <source>Cancelled</source>
@@ -27426,7 +27426,7 @@
     </unit>
     <unit id="downloads.bulk.state.failed">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:753</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:761</note>
       </notes>
       <segment>
         <source>Failed</source>
@@ -27435,7 +27435,7 @@
     </unit>
     <unit id="downloads.bulks.versions">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:759</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:767</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="queued" disp="b.versionsQueued"/> of <ph id="1" equiv="found" disp="b.versionsFound"/> queued</source>
@@ -27444,7 +27444,7 @@
     </unit>
     <unit id="downloads.bulk.counts">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:763</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:771</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="queued" disp="b.versionsQueued"/> of <ph id="1" equiv="found" disp="b.versionsFound"/> versions found are queued</source>
@@ -27453,7 +27453,7 @@
     </unit>
     <unit id="downloads.bulk.bounds">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:774</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:782</note>
       </notes>
       <segment>
         <source>At most <ph id="0" equiv="versions" disp="b.bounds.maxVersions"/> versions and <ph id="1" equiv="bytes" disp="bytes"/>, pre-releases included</source>
@@ -27462,7 +27462,7 @@
     </unit>
     <unit id="downloads.bulk.bounds-no-pre">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:775</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:783</note>
       </notes>
       <segment>
         <source>At most <ph id="0" equiv="versions" disp="b.bounds.maxVersions"/> versions and <ph id="1" equiv="bytes" disp="bytes"/>, without pre-releases</source>
@@ -29522,7 +29522,7 @@
         <note category="location">src/app/features/repositories/repository-list.html:56</note>
         <note category="location">src/app/features/repositories/repository-list.ts:327</note>
         <note category="location">src/app/features/repositories/repository-list.ts:397</note>
-        <note category="location">src/app/features/search/search-results.ts:334</note>
+        <note category="location">src/app/features/search/search-results.ts:345</note>
       </notes>
       <segment>
         <source>Format</source>
@@ -30823,7 +30823,7 @@
     <unit id="repo.help.class">
       <notes>
         <note category="location">src/app/features/repositories/repository-list.ts:401</note>
-        <note category="location">src/app/features/search/search-results.ts:338</note>
+        <note category="location">src/app/features/search/search-results.ts:349</note>
       </notes>
       <segment>
         <source>Local repositories hold what you upload, remote repositories fetch and cache from another registry, virtual repositories combine other repositories behind one address.</source>
@@ -33929,7 +33929,7 @@
     <unit id="pkg.deprecated">
       <notes>
         <note category="location">src/app/features/repositories/upstream/upstream-docs.html:7,8</note>
-        <note category="location">src/app/views/packages/package-version-view.html:257,258</note>
+        <note category="location">src/app/views/packages/package-version-view.html:267,268</note>
       </notes>
       <segment>
         <source>Deprecated.</source>
@@ -33939,7 +33939,7 @@
     <unit id="pkg.deprecated-reasons">
       <notes>
         <note category="location">src/app/features/repositories/upstream/upstream-docs.html:12,13</note>
-        <note category="location">src/app/views/packages/package-version-view.html:265</note>
+        <note category="location">src/app/views/packages/package-version-view.html:275</note>
       </notes>
       <segment>
         <source>Reason:</source>
@@ -33949,7 +33949,7 @@
     <unit id="pkg.deprecated-alternate">
       <notes>
         <note category="location">src/app/features/repositories/upstream/upstream-docs.html:16</note>
-        <note category="location">src/app/views/packages/package-version-view.html:269</note>
+        <note category="location">src/app/views/packages/package-version-view.html:279</note>
       </notes>
       <segment>
         <source>Use instead:</source>
@@ -33968,7 +33968,7 @@
     <unit id="pkg.meta.license-url">
       <notes>
         <note category="location">src/app/features/repositories/upstream/upstream-docs.html:37,38</note>
-        <note category="location">src/app/views/packages/package-version-view.html:118,119</note>
+        <note category="location">src/app/views/packages/package-version-view.html:128,129</note>
       </notes>
       <segment>
         <source>License</source>
@@ -33979,7 +33979,7 @@
       <notes>
         <note category="location">src/app/features/repositories/upstream/upstream-docs.html:41,43</note>
         <note category="location">src/app/views/packages/ansible-doc-entry.html:389,391</note>
-        <note category="location">src/app/views/packages/package-version-view.html:122,124</note>
+        <note category="location">src/app/views/packages/package-version-view.html:132,134</note>
         <note category="location">src/app/views/packages/version-facts.ts:124,126</note>
       </notes>
       <segment>
@@ -34019,7 +34019,7 @@
       <notes>
         <note category="location">src/app/features/repositories/upstream/upstream-docs.html:77,78</note>
         <note category="location">src/app/features/repositories/upstream/upstream-docs.html:125,129</note>
-        <note category="location">src/app/views/packages/package-version-view.html:334,336</note>
+        <note category="location">src/app/views/packages/package-version-view.html:344,346</note>
       </notes>
       <segment>
         <source>This version has no README to show.</source>
@@ -34146,7 +34146,7 @@
     <unit id="pkg.meta.dependencies">
       <notes>
         <note category="location">src/app/features/repositories/upstream/upstream-docs.ts:137</note>
-        <note category="location">src/app/views/packages/package-version-view.html:542,543</note>
+        <note category="location">src/app/views/packages/package-version-view.html:569,570</note>
       </notes>
       <segment>
         <source>Dependencies</source>
@@ -34291,7 +34291,7 @@
     </unit>
     <unit id="upstream.package.loading">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.html:216,218</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.html:224,226</note>
       </notes>
       <segment>
         <source>Reading the package from the upstream.</source>
@@ -34300,7 +34300,7 @@
     </unit>
     <unit id="upstream.rule.own-line">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:108</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:110</note>
       </notes>
       <segment>
         <source>Rule: this version</source>
@@ -34309,7 +34309,7 @@
     </unit>
     <unit id="upstream.rule.package-range-line">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:113</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:115</note>
       </notes>
       <segment>
         <source>Rule: the package&apos;s range</source>
@@ -34318,7 +34318,7 @@
     </unit>
     <unit id="upstream.rule.package-line">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:114</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:116</note>
       </notes>
       <segment>
         <source>Rule: the package</source>
@@ -34327,7 +34327,7 @@
     </unit>
     <unit id="upstream.versions.empty">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:131</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:133</note>
       </notes>
       <segment>
         <source>The upstream lists no version of this package.</source>
@@ -34336,7 +34336,7 @@
     </unit>
     <unit id="upstream.versions.empty-filtered">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:132</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:134</note>
       </notes>
       <segment>
         <source>No version matches.</source>
@@ -34345,7 +34345,7 @@
     </unit>
     <unit id="upstream.col.delivery">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:140</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:142</note>
       </notes>
       <segment>
         <source>Delivery</source>
@@ -34354,7 +34354,7 @@
     </unit>
     <unit id="upstream.col.cache">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:141</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:143</note>
       </notes>
       <segment>
         <source>Cache</source>
@@ -34363,7 +34363,7 @@
     </unit>
     <unit id="upstream.versions.showing">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:271</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:277</note>
       </notes>
       <segment>
         <source>Showing <ph id="0" equiv="shown" disp="groupedCount(n)"/> of <ph id="1" equiv="total" disp="groupedCount(p.total)"/></source>
@@ -34372,7 +34372,7 @@
     </unit>
     <unit id="upstream.act.download">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:306</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:312</note>
       </notes>
       <segment>
         <source>Download</source>
@@ -34381,7 +34381,7 @@
     </unit>
     <unit id="upstream.act.examine">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:308</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:314</note>
       </notes>
       <segment>
         <source>Download for examination</source>
@@ -34390,7 +34390,7 @@
     </unit>
     <unit id="upstream.act.discard">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:310</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:316</note>
       </notes>
       <segment>
         <source>Discard</source>
@@ -34399,7 +34399,7 @@
     </unit>
     <unit id="upstream.rule.this-package">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:360</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:366</note>
       </notes>
       <segment>
         <source>Rule: this package</source>
@@ -34408,7 +34408,7 @@
     </unit>
     <unit id="upstream.preview.title-package">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:372</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:378</note>
       </notes>
       <segment>
         <source>Every version of <ph id="0" equiv="name" disp="name"/></source>
@@ -36055,7 +36055,7 @@
     <unit id="search.group.repositories">
       <notes>
         <note category="location">src/app/features/search/search-model.ts:217</note>
-        <note category="location">src/app/features/search/search-results.ts:316</note>
+        <note category="location">src/app/features/search/search-results.ts:327</note>
       </notes>
       <segment>
         <source>Repositories</source>
@@ -36065,7 +36065,7 @@
     <unit id="search.group.packages">
       <notes>
         <note category="location">src/app/features/search/search-model.ts:218</note>
-        <note category="location">src/app/features/search/search-results.ts:317</note>
+        <note category="location">src/app/features/search/search-results.ts:328</note>
       </notes>
       <segment>
         <source>Packages</source>
@@ -36075,7 +36075,7 @@
     <unit id="search.group.projects">
       <notes>
         <note category="location">src/app/features/search/search-model.ts:219</note>
-        <note category="location">src/app/features/search/search-results.ts:318</note>
+        <note category="location">src/app/features/search/search-results.ts:329</note>
       </notes>
       <segment>
         <source>Projects</source>
@@ -36085,7 +36085,7 @@
     <unit id="search.group.documentation">
       <notes>
         <note category="location">src/app/features/search/search-model.ts:220</note>
-        <note category="location">src/app/features/search/search-results.ts:319</note>
+        <note category="location">src/app/features/search/search-results.ts:330</note>
       </notes>
       <segment>
         <source>Documentation</source>
@@ -36166,10 +36166,10 @@
     </unit>
     <unit id="search.results.loading">
       <notes>
-        <note category="location">src/app/features/search/search-results.ts:75,76</note>
-        <note category="location">src/app/features/search/search-results.ts:128,129</note>
-        <note category="location">src/app/features/search/search-results.ts:177,178</note>
-        <note category="location">src/app/features/search/search-results.ts:240,241</note>
+        <note category="location">src/app/features/search/search-results.ts:78,79</note>
+        <note category="location">src/app/features/search/search-results.ts:131,132</note>
+        <note category="location">src/app/features/search/search-results.ts:188,189</note>
+        <note category="location">src/app/features/search/search-results.ts:251,252</note>
       </notes>
       <segment>
         <source>Searching.</source>
@@ -36178,7 +36178,7 @@
     </unit>
     <unit id="search.results.description">
       <notes>
-        <note category="location">src/app/features/search/search-results.ts:322</note>
+        <note category="location">src/app/features/search/search-results.ts:333</note>
       </notes>
       <segment>
         <source>What you may read that matches “<ph id="0" equiv="text" disp="this.term()"/>”.</source>
@@ -36187,7 +36187,7 @@
     </unit>
     <unit id="search.results.too-short">
       <notes>
-        <note category="location">src/app/features/search/search-results.ts:326</note>
+        <note category="location">src/app/features/search/search-results.ts:337</note>
       </notes>
       <segment>
         <source>Type at least two characters.</source>
@@ -36196,7 +36196,7 @@
     </unit>
     <unit id="search.results.none">
       <notes>
-        <note category="location">src/app/features/search/search-results.ts:327</note>
+        <note category="location">src/app/features/search/search-results.ts:338</note>
       </notes>
       <segment>
         <source>Nothing you may read matches “<ph id="0" equiv="text" disp="this.term()"/>”.</source>
@@ -36205,8 +36205,8 @@
     </unit>
     <unit id="pkg.col.format">
       <notes>
-        <note category="location">src/app/features/search/search-results.ts:347</note>
-        <note category="location">src/app/views/packages/package-table.ts:100</note>
+        <note category="location">src/app/features/search/search-results.ts:361</note>
+        <note category="location">src/app/views/packages/package-table.ts:113</note>
       </notes>
       <segment>
         <source>Format</source>
@@ -36215,7 +36215,7 @@
     </unit>
     <unit id="search.col.entry">
       <notes>
-        <note category="location">src/app/features/search/search-results.ts:363</note>
+        <note category="location">src/app/features/search/search-results.ts:378</note>
       </notes>
       <segment>
         <source>Entry</source>
@@ -36224,7 +36224,7 @@
     </unit>
     <unit id="search.col.collection">
       <notes>
-        <note category="location">src/app/features/search/search-results.ts:364</note>
+        <note category="location">src/app/features/search/search-results.ts:379</note>
       </notes>
       <segment>
         <source>Collection</source>
@@ -52051,7 +52051,6 @@
     <unit id="malware.database-of">
       <notes>
         <note category="location">src/app/features/vulnerabilities/malware-finds.html:113</note>
-        <note category="location">src/app/shared/malware/malware-status.ts:58</note>
       </notes>
       <segment>
         <source>ClamAV database of</source>
@@ -52061,7 +52060,6 @@
     <unit id="malware.state.released">
       <notes>
         <note category="location">src/app/features/vulnerabilities/malware-finds.html:123,125</note>
-        <note category="location">src/app/shared/malware/malware-status.ts:132</note>
       </notes>
       <segment>
         <source>Released</source>
@@ -52072,7 +52070,7 @@
       <notes>
         <note category="location">src/app/features/vulnerabilities/malware-finds.html:126</note>
         <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:114</note>
-        <note category="location">src/app/shared/malware/malware-status.ts:45,46</note>
+        <note category="location">src/app/shared/malware/malware-status.ts:29,30</note>
       </notes>
       <segment>
         <source>by <ph id="0" equiv="INTERPOLATION" disp="{{ principal(r.releasedBy) }}"/></source>
@@ -52083,7 +52081,8 @@
       <notes>
         <note category="location">src/app/features/vulnerabilities/malware-finds.html:149</note>
         <note category="location">src/app/features/vulnerabilities/malware-release-dialog.ts:46</note>
-        <note category="location">src/app/shared/malware/malware-status.ts:91</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:345</note>
+        <note category="location">src/app/shared/malware/malware-status.ts:79</note>
       </notes>
       <segment>
         <source>In</source>
@@ -56664,27 +56663,535 @@
         <target>seine Antwort trägt kein <ph id="0" equiv="header" disp="header"/> statt „<ph id="1" equiv="expected" disp="expected"/>“</target>
       </segment>
     </unit>
-    <unit id="malware.released-signature">
+    <unit id="malware.mark.age.current">
       <notes>
-        <note category="location">src/app/shared/malware/malware-status.ts:50</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:58</note>
       </notes>
       <segment>
-        <source>found:</source>
-        <target>gefunden:</target>
+        <source>under today&apos;s signatures</source>
+        <target>unter den heutigen Signaturen</target>
+      </segment>
+    </unit>
+    <unit id="malware.mark.age.older">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:60</note>
+      </notes>
+      <segment>
+        <source>under older signatures</source>
+        <target>unter älteren Signaturen</target>
+      </segment>
+    </unit>
+    <unit id="malware.mark.age.due">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:62</note>
+      </notes>
+      <segment>
+        <source>recheck due</source>
+        <target>Nachprüfung fällig</target>
+      </segment>
+    </unit>
+    <unit id="malware.mark.age.overdue">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:64</note>
+      </notes>
+      <segment>
+        <source>recheck overdue</source>
+        <target>Nachprüfung überfällig</target>
+      </segment>
+    </unit>
+    <unit id="malware.mark.released">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:80</note>
+      </notes>
+      <segment>
+        <source>Released</source>
+        <target>Zugelassen</target>
+      </segment>
+    </unit>
+    <unit id="malware.mark.malware">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:82</note>
+      </notes>
+      <segment>
+        <source>Malware</source>
+        <target>Malware</target>
+      </segment>
+    </unit>
+    <unit id="malware.mark.not-checkable">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:84</note>
+      </notes>
+      <segment>
+        <source>Not checkable</source>
+        <target>Nicht prüfbar</target>
+      </segment>
+    </unit>
+    <unit id="malware.mark.unchecked">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:86</note>
+      </notes>
+      <segment>
+        <source>Unchecked</source>
+        <target>Ungeprüft</target>
+      </segment>
+    </unit>
+    <unit id="malware.mark.phrase.no-scanner">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:88</note>
+      </notes>
+      <segment>
+        <source>no scanner is connected</source>
+        <target>kein Scanner verbunden</target>
+      </segment>
+    </unit>
+    <unit id="malware.mark.phrase.no-database">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:91</note>
+      </notes>
+      <segment>
+        <source>no signatures yet</source>
+        <target>noch keine Signaturen</target>
+      </segment>
+    </unit>
+    <unit id="malware.mark.checked">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:96</note>
+      </notes>
+      <segment>
+        <source>Checked</source>
+        <target>Geprüft</target>
+      </segment>
+    </unit>
+    <unit id="malware.mark.name">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:113</note>
+      </notes>
+      <segment>
+        <source>Malware scan: <ph id="0" equiv="word" disp="look.word"/>. Details</source>
+        <target>Malware-Scan: <ph id="0" equiv="word" disp="look.word"/>. Details</target>
+      </segment>
+    </unit>
+    <unit id="malware.mark.name-phrase">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:114</note>
+      </notes>
+      <segment>
+        <source>Malware scan: <ph id="0" equiv="word" disp="look.word"/>, <ph id="1" equiv="phrase" disp="look.phrase"/>. Details</source>
+        <target>Malware-Scan: <ph id="0" equiv="word" disp="look.word"/>, <ph id="1" equiv="phrase" disp="look.phrase"/>. Details</target>
+      </segment>
+    </unit>
+    <unit id="malware.col.help.package">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:138</note>
+      </notes>
+      <segment>
+        <source>Whether the files of the newest version were checked for malware, and how current the check is. Open the word for the details.</source>
+        <target>Ob die Dateien der neuesten Version auf Malware geprüft wurden und wie aktuell die Prüfung ist. Öffnen Sie das Wort für die Details.</target>
+      </segment>
+    </unit>
+    <unit id="malware.col.help.version">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:140</note>
+      </notes>
+      <segment>
+        <source>Whether the files of the version were checked for malware, and how current the check is. Open the word for the details.</source>
+        <target>Ob die Dateien der Version auf Malware geprüft wurden und wie aktuell die Prüfung ist. Öffnen Sie das Wort für die Details.</target>
+      </segment>
+    </unit>
+    <unit id="malware.col.help.file">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:141</note>
+      </notes>
+      <segment>
+        <source>Whether the file was checked for malware, and how current the check is. Open the word for the details.</source>
+        <target>Ob die Datei auf Malware geprüft wurde und wie aktuell die Prüfung ist. Öffnen Sie das Wort für die Details.</target>
+      </segment>
+    </unit>
+    <unit id="malware.col">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:142</note>
+      </notes>
+      <segment>
+        <source>Malware scan</source>
+        <target>Malware-Scan</target>
+      </segment>
+    </unit>
+    <unit id="malware.details.newest">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:195,196</note>
+      </notes>
+      <segment>
+        <source>Newest version <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ newest() }}"/></pc></source>
+        <target>Neueste Version <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ newest() }}"/></pc></target>
+      </segment>
+    </unit>
+    <unit id="malware.details.parts">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:199,201</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, other {<ph id="0" equiv="INTERPOLATION"/> parts}}</source>
+        <target>{VAR_PLURAL, plural, =1 {1 Teil} other {<ph id="0" equiv="INTERPOLATION"/> Teile}}</target>
+      </segment>
+    </unit>
+    <unit id="malware.details.files">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:201,202</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, other {<ph id="0" equiv="INTERPOLATION"/> files}}</source>
+        <target>{VAR_PLURAL, plural, =1 {1 Datei} other {<ph id="0" equiv="INTERPOLATION"/> Dateien}}</target>
+      </segment>
+    </unit>
+    <unit id="malware.details.current-count">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:203,205</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =0 {none under today&apos;s signatures} =1 {1 of them under today&apos;s signatures} other {<ph id="0" equiv="INTERPOLATION"/> of them under today&apos;s signatures}}</source>
+        <target>{VAR_PLURAL, plural, =0 {keine unter den heutigen Signaturen} =1 {1 davon unter den heutigen Signaturen} other {<ph id="0" equiv="INTERPOLATION"/> davon unter den heutigen Signaturen}}</target>
+      </segment>
+    </unit>
+    <unit id="malware.details.decided-by">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:206,207</note>
+      </notes>
+      <segment>
+        <source>decided by <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ d }}"/></pc></source>
+        <target>entschieden durch <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ d }}"/></pc></target>
+      </segment>
+    </unit>
+    <unit id="malware.details.platforms-stored">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:213,214</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="INTERPOLATION" disp="{{ p.stored }}"/> of <ph id="1" equiv="INTERPOLATION_1" disp="{{ p.total }}"/> platforms stored. The others were never fetched, so never served and never checked.</source>
+        <target><ph id="0" equiv="INTERPOLATION" disp="{{ p.stored }}"/> von <ph id="1" equiv="INTERPOLATION_1" disp="{{ p.total }}"/> Plattformen gespeichert. Die übrigen wurden nie abgerufen, also nie ausgeliefert und nie geprüft.</target>
+      </segment>
+    </unit>
+    <unit id="malware.details.parts-not-stored">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:215,220</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {1 part is not stored: never fetched, so never served and never checked.} other {<ph id="0" equiv="INTERPOLATION"/> parts are not stored: never fetched, so never served and never checked.}}</source>
+        <target>{VAR_PLURAL, plural, =1 {1 Teil ist nicht gespeichert: nie abgerufen, also nie ausgeliefert und nie geprüft.} other {<ph id="0" equiv="INTERPOLATION"/> Teile sind nicht gespeichert: nie abgerufen, also nie ausgeliefert und nie geprüft.}}</target>
+      </segment>
+    </unit>
+    <unit id="malware.details.released">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:222,223</note>
+      </notes>
+      <segment>
+        <source>Released by <ph id="0" equiv="INTERPOLATION" disp="{{ releasedBy() }}"/></source>
+        <target>Zugelassen von <ph id="0" equiv="INTERPOLATION" disp="{{ releasedBy() }}"/></target>
+      </segment>
+    </unit>
+    <unit id="malware.details.released-found">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:226</note>
+      </notes>
+      <segment>
+        <source>Malware found:</source>
+        <target>Malware gefunden:</target>
+      </segment>
+    </unit>
+    <unit id="malware.details.released-not-checkable">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:229,230</note>
+      </notes>
+      <segment>
+        <source>Could not be checked:</source>
+        <target>Konnte nicht geprüft werden:</target>
+      </segment>
+    </unit>
+    <unit id="malware.details.clean">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:234,236</note>
+        <note category="location">src/app/shared/malware/malware-status.ts:48,50</note>
+      </notes>
+      <segment>
+        <source>No malware found</source>
+        <target>Keine Malware gefunden</target>
+      </segment>
+    </unit>
+    <unit id="malware.details.infected">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:237</note>
+      </notes>
+      <segment>
+        <source>Malware found:</source>
+        <target>Malware gefunden:</target>
       </segment>
     </unit>
     <unit id="malware.in-part">
       <notes>
-        <note category="location">src/app/shared/malware/malware-status.ts:67</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:239</note>
+        <note category="location">src/app/shared/malware/malware-status.ts:55</note>
       </notes>
       <segment>
         <source>in</source>
         <target>in</target>
       </segment>
     </unit>
+    <unit id="malware.details.not-checkable">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:243,244</note>
+      </notes>
+      <segment>
+        <source>Could not be checked:</source>
+        <target>Konnte nicht geprüft werden:</target>
+      </segment>
+    </unit>
+    <unit id="malware.details.unchecked">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:246,247</note>
+      </notes>
+      <segment>
+        <source>Not checked yet:</source>
+        <target>Noch nicht geprüft:</target>
+      </segment>
+    </unit>
+    <unit id="malware.details.refused">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:252,254</note>
+      </notes>
+      <segment>
+        <source>Downloads are refused here.</source>
+        <target>Downloads werden hier abgelehnt.</target>
+      </segment>
+    </unit>
+    <unit id="malware.details.when">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:256,257</note>
+      </notes>
+      <segment>
+        <source>Checked</source>
+        <target>Geprüft</target>
+      </segment>
+    </unit>
+    <unit id="malware.details.scanner">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:260,262</note>
+      </notes>
+      <segment>
+        <source>Scanner</source>
+        <target>Scanner</target>
+      </segment>
+    </unit>
+    <unit id="malware.details.then">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:269,271</note>
+      </notes>
+      <segment>
+        <source>Signatures then</source>
+        <target>Signaturen damals</target>
+      </segment>
+    </unit>
+    <unit id="malware.details.daily">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:272,273</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:286,287</note>
+      </notes>
+      <segment>
+        <source>daily <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ d }}"/></pc></source>
+        <target>daily <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ d }}"/></pc></target>
+      </segment>
+    </unit>
+    <unit id="malware.details.of">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:277,278</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:291,292</note>
+      </notes>
+      <segment>
+        <source>of <pc id="0" equivStart="START_TAG_TIME" equivEnd="CLOSE_TAG_TIME" type="other" dispStart="&lt;time class=&quot;nowrap&quot; [attr.datetime]=&quot;at&quot;&gt;" dispEnd="&lt;/time&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ at | time: &apos;date&apos; }}"/></pc></source>
+        <target>vom <pc id="0" equivStart="START_TAG_TIME" equivEnd="CLOSE_TAG_TIME" type="other" dispStart="&lt;time class=&quot;nowrap&quot; [attr.datetime]=&quot;at&quot;&gt;" dispEnd="&lt;/time&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ at | time: &apos;date&apos; }}"/></pc></target>
+      </segment>
+    </unit>
+    <unit id="malware.details.today">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:283,285</note>
+      </notes>
+      <segment>
+        <source>Signatures today</source>
+        <target>Signaturen heute</target>
+      </segment>
+    </unit>
+    <unit id="malware.details.fetched">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:292,293</note>
+      </notes>
+      <segment>
+        <source>, fetched <pc id="0" equivStart="START_TAG_TIME" equivEnd="CLOSE_TAG_TIME" type="other" dispStart="&lt;time class=&quot;nowrap&quot; [attr.datetime]=&quot;at&quot;&gt;" dispEnd="&lt;/time&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ at | time }}"/></pc></source>
+        <target>, heruntergeladen am <pc id="0" equivStart="START_TAG_TIME" equivEnd="CLOSE_TAG_TIME" type="other" dispStart="&lt;time class=&quot;nowrap&quot; [attr.datetime]=&quot;at&quot;&gt;" dispEnd="&lt;/time&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ at | time }}"/></pc></target>
+      </segment>
+    </unit>
+    <unit id="malware.details.stale">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:297,299</note>
+      </notes>
+      <segment>
+        <source>No newer signatures have arrived for a while.</source>
+        <target>Seit einiger Zeit sind keine neueren Signaturen eingetroffen.</target>
+      </segment>
+    </unit>
+    <unit id="malware.details.current">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:303,305</note>
+      </notes>
+      <segment>
+        <source>How current</source>
+        <target>Wie aktuell</target>
+      </segment>
+    </unit>
+    <unit id="malware.details.age.current">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:307,309</note>
+      </notes>
+      <segment>
+        <source>Under today&apos;s signatures</source>
+        <target>Unter den heutigen Signaturen</target>
+      </segment>
+    </unit>
+    <unit id="malware.details.age.older-days">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:311,313</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {Under signatures 1 day older} other {Under signatures <ph id="0" equiv="INTERPOLATION"/> days older}}</source>
+        <target>{VAR_PLURAL, plural, =1 {Unter 1 Tag älteren Signaturen} other {Unter <ph id="0" equiv="INTERPOLATION"/> Tage älteren Signaturen}}</target>
+      </segment>
+    </unit>
+    <unit id="malware.details.age.older">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:313,315</note>
+      </notes>
+      <segment>
+        <source>Under older signatures</source>
+        <target>Unter älteren Signaturen</target>
+      </segment>
+    </unit>
+    <unit id="malware.details.age.due">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:317,319</note>
+      </notes>
+      <segment>
+        <source>Recheck due</source>
+        <target>Nachprüfung fällig</target>
+      </segment>
+    </unit>
+    <unit id="malware.details.age.overdue">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:320,323</note>
+      </notes>
+      <segment>
+        <source>Recheck overdue</source>
+        <target>Nachprüfung überfällig</target>
+      </segment>
+    </unit>
+    <unit id="malware.details.next">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:324,326</note>
+      </notes>
+      <segment>
+        <source>Next check</source>
+        <target>Nächste Prüfung</target>
+      </segment>
+    </unit>
+    <unit id="malware.details.next.now">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:327,328</note>
+      </notes>
+      <segment>
+        <source>Due now</source>
+        <target>Jetzt fällig</target>
+      </segment>
+    </unit>
+    <unit id="malware.details.next.days">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:330,332</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {In about a day, sooner the more it is downloaded} other {In about <ph id="0" equiv="INTERPOLATION"/> days, sooner the more it is downloaded}}</source>
+        <target>{VAR_PLURAL, plural, =1 {In etwa einem Tag, früher, je öfter es heruntergeladen wird} other {In etwa <ph id="0" equiv="INTERPOLATION"/> Tagen, früher, je öfter es heruntergeladen wird}}</target>
+      </segment>
+    </unit>
+    <unit id="malware.details.next.newer">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:333,335</note>
+      </notes>
+      <segment>
+        <source>When newer signatures arrive</source>
+        <target>Wenn neuere Signaturen eintreffen</target>
+      </segment>
+    </unit>
+    <unit id="malware.details.tech.then">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:348,349</note>
+      </notes>
+      <segment>
+        <source>Set then</source>
+        <target>Satz damals</target>
+      </segment>
+    </unit>
+    <unit id="malware.details.tech.today">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:352,353</note>
+      </notes>
+      <segment>
+        <source>Set today</source>
+        <target>Satz heute</target>
+      </segment>
+    </unit>
+    <unit id="malware.details.tech.replica">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:356,357</note>
+      </notes>
+      <segment>
+        <source>Replica</source>
+        <target>Replikat</target>
+      </segment>
+    </unit>
+    <unit id="malware.details.tech.digest">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:360,361</note>
+      </notes>
+      <segment>
+        <source>Digest</source>
+        <target>Digest</target>
+      </segment>
+    </unit>
+    <unit id="malware.details.nothing-stored">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:511</note>
+      </notes>
+      <segment>
+        <source>nothing of it is stored, so nothing of it was served.</source>
+        <target>nichts davon ist gespeichert, also wurde nichts davon ausgeliefert.</target>
+      </segment>
+    </unit>
+    <unit id="malware.released-signature">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-status.ts:34</note>
+      </notes>
+      <segment>
+        <source>found:</source>
+        <target>gefunden:</target>
+      </segment>
+    </unit>
+    <unit id="malware.clean-with-database">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-status.ts:42,43</note>
+      </notes>
+      <segment>
+        <source>No malware found with the ClamAV database of</source>
+        <target>Keine Malware gefunden mit der ClamAV-Datenbank vom</target>
+      </segment>
+    </unit>
     <unit id="malware.refused">
       <notes>
-        <note category="location">src/app/shared/malware/malware-status.ts:80,82</note>
+        <note category="location">src/app/shared/malware/malware-status.ts:68,70</note>
       </notes>
       <segment>
         <source>Downloads are refused.</source>
@@ -56702,7 +57209,7 @@
     </unit>
     <unit id="malware.state.clean">
       <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:20</note>
+        <note category="location">src/app/shared/malware/malware-words.ts:23</note>
       </notes>
       <segment>
         <source>No malware found</source>
@@ -56711,8 +57218,8 @@
     </unit>
     <unit id="malware.state.infected">
       <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:22</note>
-        <note category="location">src/app/shared/malware/malware-words.ts:65</note>
+        <note category="location">src/app/shared/malware/malware-words.ts:25</note>
+        <note category="location">src/app/shared/malware/malware-words.ts:53</note>
       </notes>
       <segment>
         <source>Malware found</source>
@@ -56721,7 +57228,7 @@
     </unit>
     <unit id="malware.state.not-checked">
       <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:25</note>
+        <note category="location">src/app/shared/malware/malware-words.ts:28</note>
       </notes>
       <segment>
         <source>Could not be checked</source>
@@ -56730,43 +57237,16 @@
     </unit>
     <unit id="malware.state.pending">
       <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:27</note>
+        <note category="location">src/app/shared/malware/malware-words.ts:30</note>
       </notes>
       <segment>
-        <source>Checking</source>
-        <target>Wird geprüft</target>
-      </segment>
-    </unit>
-    <unit id="malware.waiting.word.no-scanner">
-      <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:38</note>
-      </notes>
-      <segment>
-        <source>No scanner</source>
-        <target>Kein Scanner</target>
-      </segment>
-    </unit>
-    <unit id="malware.waiting.word.no-database">
-      <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:40</note>
-      </notes>
-      <segment>
-        <source>No signatures</source>
-        <target>Keine Signaturen</target>
-      </segment>
-    </unit>
-    <unit id="malware.waiting.word.queued">
-      <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:42</note>
-      </notes>
-      <segment>
-        <source>Queued</source>
-        <target>Wartet</target>
+        <source>Not checked yet</source>
+        <target>Noch nicht geprüft</target>
       </segment>
     </unit>
     <unit id="malware.waiting.no-scanner">
       <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:50</note>
+        <note category="location">src/app/shared/malware/malware-words.ts:38</note>
       </notes>
       <segment>
         <source>No malware scanner is connected, so it cannot be checked now. It is checked once one is.</source>
@@ -56775,7 +57255,7 @@
     </unit>
     <unit id="malware.waiting.no-database">
       <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:52</note>
+        <note category="location">src/app/shared/malware/malware-words.ts:40</note>
       </notes>
       <segment>
         <source>No ClamAV signature database has been imported yet, so it cannot be checked now. It is checked once one is there.</source>
@@ -56784,7 +57264,7 @@
     </unit>
     <unit id="malware.waiting.queued">
       <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:54</note>
+        <note category="location">src/app/shared/malware/malware-words.ts:42</note>
       </notes>
       <segment>
         <source>Waits for its malware scan, which runs in turn.</source>
@@ -56793,7 +57273,7 @@
     </unit>
     <unit id="malware.waiting.queued-since">
       <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:56</note>
+        <note category="location">src/app/shared/malware/malware-words.ts:44</note>
       </notes>
       <segment>
         <source>Waits for its malware scan since <ph id="0" equiv="time" disp="at"/>, which runs in turn.</source>
@@ -56802,7 +57282,7 @@
     </unit>
     <unit id="malware.find.unscannable">
       <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:67</note>
+        <note category="location">src/app/shared/malware/malware-words.ts:55</note>
       </notes>
       <segment>
         <source>Not checkable</source>
@@ -56811,7 +57291,7 @@
     </unit>
     <unit id="malware.find.failed">
       <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:69</note>
+        <note category="location">src/app/shared/malware/malware-words.ts:57</note>
       </notes>
       <segment>
         <source>Scan failed</source>
@@ -56820,7 +57300,7 @@
     </unit>
     <unit id="malware.limit.max-scan-size">
       <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:81</note>
+        <note category="location">src/app/shared/malware/malware-words.ts:69</note>
       </notes>
       <segment>
         <source>the data it reads from one file</source>
@@ -56829,7 +57309,7 @@
     </unit>
     <unit id="malware.limit.max-file-size">
       <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:83</note>
+        <note category="location">src/app/shared/malware/malware-words.ts:71</note>
       </notes>
       <segment>
         <source>the size of a file inside an archive</source>
@@ -56838,7 +57318,7 @@
     </unit>
     <unit id="malware.limit.max-stream-length">
       <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:85</note>
+        <note category="location">src/app/shared/malware/malware-words.ts:73</note>
       </notes>
       <segment>
         <source>the size of one file handed to it</source>
@@ -56847,7 +57327,7 @@
     </unit>
     <unit id="malware.limit.max-recursion">
       <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:87</note>
+        <note category="location">src/app/shared/malware/malware-words.ts:75</note>
       </notes>
       <segment>
         <source>how deeply archives nest inside each other</source>
@@ -56856,7 +57336,7 @@
     </unit>
     <unit id="malware.limit.max-files">
       <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:89</note>
+        <note category="location">src/app/shared/malware/malware-words.ts:77</note>
       </notes>
       <segment>
         <source>the number of files in one archive</source>
@@ -56865,7 +57345,7 @@
     </unit>
     <unit id="malware.limit.max-scan-time">
       <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:91</note>
+        <note category="location">src/app/shared/malware/malware-words.ts:79</note>
       </notes>
       <segment>
         <source>the time it spends on one file</source>
@@ -56874,7 +57354,7 @@
     </unit>
     <unit id="malware.limit.mail-structure">
       <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:93</note>
+        <note category="location">src/app/shared/malware/malware-words.ts:81</note>
       </notes>
       <segment>
         <source>the structure of a mail message</source>
@@ -56883,7 +57363,7 @@
     </unit>
     <unit id="malware.limit.max-uncompressed-size">
       <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:95</note>
+        <note category="location">src/app/shared/malware/malware-words.ts:83</note>
       </notes>
       <segment>
         <source>the data it unpacks itself</source>
@@ -56892,7 +57372,7 @@
     </unit>
     <unit id="malware.limit.max-entries">
       <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:97</note>
+        <note category="location">src/app/shared/malware/malware-words.ts:85</note>
       </notes>
       <segment>
         <source>the number of files it unpacks itself</source>
@@ -56901,7 +57381,7 @@
     </unit>
     <unit id="malware.limit.unpack-depth">
       <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:99</note>
+        <note category="location">src/app/shared/malware/malware-words.ts:87</note>
       </notes>
       <segment>
         <source>the layers it unpacks itself</source>
@@ -56910,7 +57390,7 @@
     </unit>
     <unit id="malware.limit.unreadable">
       <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:119</note>
+        <note category="location">src/app/shared/malware/malware-words.ts:107</note>
       </notes>
       <segment>
         <source>a compressed stream or an archive inside it cannot be read</source>
@@ -56919,7 +57399,7 @@
     </unit>
     <unit id="malware.limit.other">
       <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:121</note>
+        <note category="location">src/app/shared/malware/malware-words.ts:109</note>
       </notes>
       <segment>
         <source>one of the scanner&apos;s limits was passed</source>
@@ -56928,7 +57408,7 @@
     </unit>
     <unit id="malware.limit.passed">
       <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:124</note>
+        <note category="location">src/app/shared/malware/malware-words.ts:112</note>
       </notes>
       <segment>
         <source>the scanner&apos;s limit for <ph id="0" equiv="limit" disp="subject"/> was passed</source>
@@ -56937,7 +57417,7 @@
     </unit>
     <unit id="malware.limit.passed-value">
       <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:125</note>
+        <note category="location">src/app/shared/malware/malware-words.ts:113</note>
       </notes>
       <segment>
         <source>the scanner&apos;s limit for <ph id="0" equiv="limit" disp="subject"/> (<ph id="1" equiv="value" disp="v"/>) was passed</source>
@@ -56946,7 +57426,7 @@
     </unit>
     <unit id="malware.limit.go-false-alarm">
       <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:134</note>
+        <note category="location">src/app/shared/malware/malware-words.ts:122</note>
       </notes>
       <segment>
         <source>A program written in Go can pass this limit without holding an archive: a known false alarm of the scanner.</source>
@@ -56955,7 +57435,7 @@
     </unit>
     <unit id="malware.reason.too-large">
       <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:144</note>
+        <note category="location">src/app/shared/malware/malware-words.ts:132</note>
       </notes>
       <segment>
         <source>too large to scan</source>
@@ -56964,7 +57444,7 @@
     </unit>
     <unit id="malware.reason.limits">
       <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:147</note>
+        <note category="location">src/app/shared/malware/malware-words.ts:135</note>
       </notes>
       <segment>
         <source>a scan limit was reached inside it</source>
@@ -56973,7 +57453,7 @@
     </unit>
     <unit id="malware.reason.encrypted">
       <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:149</note>
+        <note category="location">src/app/shared/malware/malware-words.ts:137</note>
       </notes>
       <segment>
         <source>an encrypted archive or document</source>
@@ -56982,7 +57462,7 @@
     </unit>
     <unit id="malware.reason.failed-code">
       <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:153</note>
+        <note category="location">src/app/shared/malware/malware-words.ts:141</note>
       </notes>
       <segment>
         <source>every scan failed (<ph id="0" equiv="code" disp="reason"/>)</source>
@@ -56991,7 +57471,7 @@
     </unit>
     <unit id="malware.reason.failed">
       <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:154</note>
+        <note category="location">src/app/shared/malware/malware-words.ts:142</note>
       </notes>
       <segment>
         <source>every scan failed</source>
@@ -59999,7 +60479,7 @@
     <unit id="sig.gate.refused-here">
       <notes>
         <note category="location">src/app/views/files/file-view.ts:117,118</note>
-        <note category="location">src/app/views/packages/package-version-view.html:398,399</note>
+        <note category="location">src/app/views/packages/package-version-view.html:408,409</note>
         <note category="location">src/app/views/signatures/signature-gate.ts:75,76</note>
       </notes>
       <segment>
@@ -60148,8 +60628,8 @@
     </unit>
     <unit id="repo.content.filter-files">
       <notes>
-        <note category="location">src/app/views/files/folder-view.ts:40,41</note>
-        <note category="location">src/app/views/files/folder-view.ts:42,44</note>
+        <note category="location">src/app/views/files/folder-view.ts:42,43</note>
+        <note category="location">src/app/views/files/folder-view.ts:44,46</note>
       </notes>
       <segment>
         <source>Filter files</source>
@@ -60158,7 +60638,7 @@
     </unit>
     <unit id="files.filter-partial">
       <notes>
-        <note category="location">src/app/views/files/folder-view.ts:52,55</note>
+        <note category="location">src/app/views/files/folder-view.ts:54,57</note>
       </notes>
       <segment>
         <source> The filter searches the <ph id="0" equiv="INTERPOLATION" disp="{{ list.items().length }}"/> entries loaded so far. Load more to search the rest. </source>
@@ -60167,7 +60647,7 @@
     </unit>
     <unit id="files.loading">
       <notes>
-        <note category="location">src/app/views/files/folder-view.ts:60,61</note>
+        <note category="location">src/app/views/files/folder-view.ts:62,63</note>
       </notes>
       <segment>
         <source>Loading the files.</source>
@@ -60176,7 +60656,7 @@
     </unit>
     <unit id="repo.content.files-empty-filtered">
       <notes>
-        <note category="location">src/app/views/files/folder-view.ts:157</note>
+        <note category="location">src/app/views/files/folder-view.ts:167</note>
       </notes>
       <segment>
         <source>No file matches the filter.</source>
@@ -60185,7 +60665,7 @@
     </unit>
     <unit id="files.folder-empty">
       <notes>
-        <note category="location">src/app/views/files/folder-view.ts:158</note>
+        <note category="location">src/app/views/files/folder-view.ts:168</note>
       </notes>
       <segment>
         <source>This folder is empty.</source>
@@ -60194,7 +60674,7 @@
     </unit>
     <unit id="files.empty-upload">
       <notes>
-        <note category="location">src/app/views/files/folder-view.ts:159</note>
+        <note category="location">src/app/views/files/folder-view.ts:169</note>
       </notes>
       <segment>
         <source>This repository holds no files yet. Upload files here or with your client.</source>
@@ -60203,7 +60683,7 @@
     </unit>
     <unit id="repo.content.col.name">
       <notes>
-        <note category="location">src/app/views/files/folder-view.ts:168</note>
+        <note category="location">src/app/views/files/folder-view.ts:181</note>
       </notes>
       <segment>
         <source>Name</source>
@@ -60212,7 +60692,7 @@
     </unit>
     <unit id="repo.content.col.modified">
       <notes>
-        <note category="location">src/app/views/files/folder-view.ts:170</note>
+        <note category="location">src/app/views/files/folder-view.ts:184</note>
       </notes>
       <segment>
         <source>Last change</source>
@@ -60221,7 +60701,7 @@
     </unit>
     <unit id="files.copy-url-of">
       <notes>
-        <note category="location">src/app/views/files/folder-view.ts:222</note>
+        <note category="location">src/app/views/files/folder-view.ts:236</note>
       </notes>
       <segment>
         <source>Copy the download address of <ph id="0" equiv="name" disp="c.path"/></source>
@@ -61984,7 +62464,7 @@
     <unit id="pkg.layers.heading">
       <notes>
         <note category="location">src/app/views/packages/image-details.ts:107,108</note>
-        <note category="location">src/app/views/packages/package-version-view.ts:735</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:737</note>
       </notes>
       <segment>
         <source>Layers</source>
@@ -62057,7 +62537,7 @@
     <unit id="pkg.layers.copy">
       <notes>
         <note category="location">src/app/views/packages/image-details.ts:251</note>
-        <note category="location">src/app/views/packages/package-version-view.ts:746</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:748</note>
       </notes>
       <segment>
         <source>Copy the digest of layer <ph id="0" equiv="number" disp="n"/></source>
@@ -62094,9 +62574,9 @@
     <unit id="pkg.image.digest">
       <notes>
         <note category="location">src/app/views/packages/image-details.ts:259</note>
-        <note category="location">src/app/views/packages/package-version-view.html:628,630</note>
-        <note category="location">src/app/views/packages/package-version-view.ts:971</note>
-        <note category="location">src/app/views/packages/package-version-view.ts:978</note>
+        <note category="location">src/app/views/packages/package-version-view.html:655,657</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:1007</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:1014</note>
       </notes>
       <segment>
         <source>Digest</source>
@@ -62106,8 +62586,8 @@
     <unit id="pkg.image.media-type">
       <notes>
         <note category="location">src/app/views/packages/image-details.ts:260</note>
-        <note category="location">src/app/views/packages/package-version-view.html:634,635</note>
-        <note category="location">src/app/views/packages/package-version-view.ts:972</note>
+        <note category="location">src/app/views/packages/package-version-view.html:661,662</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:1008</note>
       </notes>
       <segment>
         <source>Media type</source>
@@ -62118,8 +62598,8 @@
       <notes>
         <note category="location">src/app/views/packages/image-details.ts:261</note>
         <note category="location">src/app/views/packages/image-details.ts:266</note>
-        <note category="location">src/app/views/packages/package-version-view.ts:973</note>
-        <note category="location">src/app/views/packages/package-version-view.ts:979</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:1009</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:1015</note>
       </notes>
       <segment>
         <source>Size</source>
@@ -62708,7 +63188,7 @@
     </unit>
     <unit id="pkg.ver.never">
       <notes>
-        <note category="location">src/app/views/packages/package-detail-view.html:134,136</note>
+        <note category="location">src/app/views/packages/package-detail-view.html:143,145</note>
       </notes>
       <segment>
         <source>Never</source>
@@ -62717,7 +63197,7 @@
     </unit>
     <unit id="pkg.ver.download-count">
       <notes>
-        <note category="location">src/app/views/packages/package-detail-view.html:138,139</note>
+        <note category="location">src/app/views/packages/package-detail-view.html:147,148</note>
       </notes>
       <segment>
         <source>{VAR_PLURAL, plural, =1 {1 download} other {<ph id="0" equiv="INTERPOLATION"/> downloads}}</source>
@@ -62726,7 +63206,7 @@
     </unit>
     <unit id="pkg.ansible-docs-link">
       <notes>
-        <note category="location">src/app/views/packages/package-detail-view.html:157,159</note>
+        <note category="location">src/app/views/packages/package-detail-view.html:166,168</note>
       </notes>
       <segment>
         <source>Documentation of <ph id="0" equiv="INTERPOLATION" disp="{{ p.latestVersion }}"/></source>
@@ -62735,7 +63215,7 @@
     </unit>
     <unit id="pkg.readme-of">
       <notes>
-        <note category="location">src/app/views/packages/package-detail-view.html:168</note>
+        <note category="location">src/app/views/packages/package-detail-view.html:177</note>
       </notes>
       <segment>
         <source>of</source>
@@ -62744,7 +63224,7 @@
     </unit>
     <unit id="pkg.fact.repositories">
       <notes>
-        <note category="location">src/app/views/packages/package-detail-view.html:177,179</note>
+        <note category="location">src/app/views/packages/package-detail-view.html:186,188</note>
       </notes>
       <segment>
         <source>Repositories</source>
@@ -62753,8 +63233,8 @@
     </unit>
     <unit id="pkg.meta.keywords">
       <notes>
-        <note category="location">src/app/views/packages/package-detail-view.html:187,188</note>
-        <note category="location">src/app/views/packages/package-version-view.html:538,539</note>
+        <note category="location">src/app/views/packages/package-detail-view.html:196,197</note>
+        <note category="location">src/app/views/packages/package-version-view.html:565,566</note>
       </notes>
       <segment>
         <source>Keywords</source>
@@ -62763,7 +63243,7 @@
     </unit>
     <unit id="pkg.fact.downloads">
       <notes>
-        <note category="location">src/app/views/packages/package-detail-view.html:191,192</note>
+        <note category="location">src/app/views/packages/package-detail-view.html:200,201</note>
       </notes>
       <segment>
         <source>Downloads</source>
@@ -62772,7 +63252,7 @@
     </unit>
     <unit id="pkg.fact.first-published">
       <notes>
-        <note category="location">src/app/views/packages/package-detail-view.html:194,195</note>
+        <note category="location">src/app/views/packages/package-detail-view.html:203,204</note>
       </notes>
       <segment>
         <source>First published</source>
@@ -62781,7 +63261,7 @@
     </unit>
     <unit id="pkg.ver.tag">
       <notes>
-        <note category="location">src/app/views/packages/package-detail-view.ts:219</note>
+        <note category="location">src/app/views/packages/package-detail-view.ts:227</note>
       </notes>
       <segment>
         <source>Tag</source>
@@ -62790,7 +63270,7 @@
     </unit>
     <unit id="pkg.ver.version">
       <notes>
-        <note category="location">src/app/views/packages/package-detail-view.ts:219</note>
+        <note category="location">src/app/views/packages/package-detail-view.ts:227</note>
       </notes>
       <segment>
         <source>Version</source>
@@ -62799,7 +63279,7 @@
     </unit>
     <unit id="pkg.ver.size">
       <notes>
-        <note category="location">src/app/views/packages/package-detail-view.ts:222</note>
+        <note category="location">src/app/views/packages/package-detail-view.ts:230</note>
       </notes>
       <segment>
         <source>Size</source>
@@ -62808,7 +63288,7 @@
     </unit>
     <unit id="pkg.ver.vulnerabilities">
       <notes>
-        <note category="location">src/app/views/packages/package-detail-view.ts:224</note>
+        <note category="location">src/app/views/packages/package-detail-view.ts:232</note>
       </notes>
       <segment>
         <source>Vulnerabilities</source>
@@ -62817,7 +63297,7 @@
     </unit>
     <unit id="pkg.ver.last-download">
       <notes>
-        <note category="location">src/app/views/packages/package-detail-view.ts:231</note>
+        <note category="location">src/app/views/packages/package-detail-view.ts:240</note>
       </notes>
       <segment>
         <source>Last download</source>
@@ -62826,7 +63306,7 @@
     </unit>
     <unit id="pkg.help.last-download">
       <notes>
-        <note category="location">src/app/views/packages/package-detail-view.ts:232</note>
+        <note category="location">src/app/views/packages/package-detail-view.ts:241</note>
       </notes>
       <segment>
         <source>When a client last downloaded this version through Quader. Never for a version nobody downloaded yet, such as one a mirror pass fetched.</source>
@@ -62835,7 +63315,7 @@
     </unit>
     <unit id="pkg.ver.repositories">
       <notes>
-        <note category="location">src/app/views/packages/package-detail-view.ts:237</note>
+        <note category="location">src/app/views/packages/package-detail-view.ts:246</note>
       </notes>
       <segment>
         <source>Repositories</source>
@@ -62844,7 +63324,7 @@
     </unit>
     <unit id="pkg.ver.images">
       <notes>
-        <note category="location">src/app/views/packages/package-detail-view.ts:250</note>
+        <note category="location">src/app/views/packages/package-detail-view.ts:259</note>
       </notes>
       <segment>
         <source>Images</source>
@@ -62853,7 +63333,7 @@
     </unit>
     <unit id="pkg.ver.caption">
       <notes>
-        <note category="location">src/app/views/packages/package-detail-view.ts:251</note>
+        <note category="location">src/app/views/packages/package-detail-view.ts:260</note>
       </notes>
       <segment>
         <source>Versions</source>
@@ -62862,7 +63342,7 @@
     </unit>
     <unit id="pkg.ver.filter-tags">
       <notes>
-        <note category="location">src/app/views/packages/package-detail-view.ts:253</note>
+        <note category="location">src/app/views/packages/package-detail-view.ts:262</note>
       </notes>
       <segment>
         <source>Filter tags</source>
@@ -62871,7 +63351,7 @@
     </unit>
     <unit id="pkg.ver.filter">
       <notes>
-        <note category="location">src/app/views/packages/package-detail-view.ts:253</note>
+        <note category="location">src/app/views/packages/package-detail-view.ts:262</note>
       </notes>
       <segment>
         <source>Filter versions</source>
@@ -62880,7 +63360,7 @@
     </unit>
     <unit id="pkg.details">
       <notes>
-        <note category="location">src/app/views/packages/package-detail-view.ts:255</note>
+        <note category="location">src/app/views/packages/package-detail-view.ts:264</note>
       </notes>
       <segment>
         <source>Details</source>
@@ -62889,7 +63369,7 @@
     </unit>
     <unit id="pkg.details-hint">
       <notes>
-        <note category="location">src/app/views/packages/package-detail-view.ts:258</note>
+        <note category="location">src/app/views/packages/package-detail-view.ts:267</note>
       </notes>
       <segment>
         <source>The repositories that hold the package, its keywords and its downloads.</source>
@@ -62898,7 +63378,7 @@
     </unit>
     <unit id="pkg.details-hint-no-downloads">
       <notes>
-        <note category="location">src/app/views/packages/package-detail-view.ts:259</note>
+        <note category="location">src/app/views/packages/package-detail-view.ts:268</note>
       </notes>
       <segment>
         <source>The repositories that hold the package and its keywords.</source>
@@ -62907,7 +63387,7 @@
     </unit>
     <unit id="pkg.ver.none-matching-tags">
       <notes>
-        <note category="location">src/app/views/packages/package-detail-view.ts:263</note>
+        <note category="location">src/app/views/packages/package-detail-view.ts:272</note>
       </notes>
       <segment>
         <source>No image has a tag that matches “<ph id="0" equiv="text" disp="this.draft().trim()"/>”.</source>
@@ -62916,7 +63396,7 @@
     </unit>
     <unit id="pkg.ver.none-matching">
       <notes>
-        <note category="location">src/app/views/packages/package-detail-view.ts:264</note>
+        <note category="location">src/app/views/packages/package-detail-view.ts:273</note>
       </notes>
       <segment>
         <source>No version matches “<ph id="0" equiv="text" disp="this.draft().trim()"/>”.</source>
@@ -62925,8 +63405,8 @@
     </unit>
     <unit id="pkg.ver.never-title">
       <notes>
-        <note category="location">src/app/views/packages/package-detail-view.ts:267</note>
-        <note category="location">src/app/views/packages/package-version-view.ts:987</note>
+        <note category="location">src/app/views/packages/package-detail-view.ts:276</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:1024</note>
       </notes>
       <segment>
         <source>No client has downloaded this version through Quader yet.</source>
@@ -62980,7 +63460,7 @@
     </unit>
     <unit id="pkg.list.caption">
       <notes>
-        <note category="location">src/app/views/packages/package-table.ts:92</note>
+        <note category="location">src/app/views/packages/package-table.ts:102</note>
       </notes>
       <segment>
         <source>Packages</source>
@@ -63014,9 +63494,18 @@
         <target>Fakten dieser Version</target>
       </segment>
     </unit>
+    <unit id="pkg.fact.malware">
+      <notes>
+        <note category="location">src/app/views/packages/package-version-view.html:104</note>
+      </notes>
+      <segment>
+        <source>Malware scan</source>
+        <target>Malware-Scan</target>
+      </segment>
+    </unit>
     <unit id="pkg.fact.last-download">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:106</note>
+        <note category="location">src/app/views/packages/package-version-view.html:116</note>
       </notes>
       <segment>
         <source>Last download</source>
@@ -63025,7 +63514,7 @@
     </unit>
     <unit id="pkg.fact.never">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:109,111</note>
+        <note category="location">src/app/views/packages/package-version-view.html:119,121</note>
       </notes>
       <segment>
         <source>never</source>
@@ -63034,7 +63523,7 @@
     </unit>
     <unit id="pkg.fact.download-count">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:112,114</note>
+        <note category="location">src/app/views/packages/package-version-view.html:122,124</note>
       </notes>
       <segment>
         <source>{VAR_PLURAL, plural, =1 {1 download} other {<ph id="0" equiv="INTERPOLATION"/> downloads}}</source>
@@ -63043,7 +63532,7 @@
     </unit>
     <unit id="pkg.meta.license-file">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:129</note>
+        <note category="location">src/app/views/packages/package-version-view.html:139</note>
       </notes>
       <segment>
         <source>License file</source>
@@ -63052,7 +63541,7 @@
     </unit>
     <unit id="pkg.meta.new-tab">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:130,132</note>
+        <note category="location">src/app/views/packages/package-version-view.html:140,142</note>
       </notes>
       <segment>
         <source>(opens in a new tab)</source>
@@ -63061,7 +63550,7 @@
     </unit>
     <unit id="pkg.unlisted">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:170</note>
+        <note category="location">src/app/views/packages/package-version-view.html:180</note>
       </notes>
       <segment>
         <source>Unlisted.</source>
@@ -63070,7 +63559,7 @@
     </unit>
     <unit id="pkg.unlisted-detail">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:171,173</note>
+        <note category="location">src/app/views/packages/package-version-view.html:181,183</note>
       </notes>
       <segment>
         <source>This version is hidden from search. It is still downloaded when a project asks for exactly this version.</source>
@@ -63079,7 +63568,7 @@
     </unit>
     <unit id="pkg.blocked-in">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:186</note>
+        <note category="location">src/app/views/packages/package-version-view.html:196</note>
       </notes>
       <segment>
         <source>Blocked in</source>
@@ -63088,7 +63577,7 @@
     </unit>
     <unit id="pkg.malware.found">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:197,198</note>
+        <note category="location">src/app/views/packages/package-version-view.html:207,208</note>
       </notes>
       <segment>
         <source>Malware found in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ fileName(f.path) }}"/></pc> (<pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.malware.signature }}"/></pc>). Downloads are refused.</source>
@@ -63097,7 +63586,7 @@
     </unit>
     <unit id="pkg.malware.not-checked-why">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:203,205</note>
+        <note category="location">src/app/views/packages/package-version-view.html:213,215</note>
       </notes>
       <segment>
         <source><pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ fileName(f.path) }}"/></pc> could not be checked for malware: <ph id="2" equiv="INTERPOLATION_1" disp="{{ why }}"/>. Downloads are refused here.</source>
@@ -63106,7 +63595,7 @@
     </unit>
     <unit id="pkg.malware.not-checked">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:207,208</note>
+        <note category="location">src/app/views/packages/package-version-view.html:217,218</note>
       </notes>
       <segment>
         <source><pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ fileName(f.path) }}"/></pc> could not be checked for malware. Downloads are refused here.</source>
@@ -63115,7 +63604,7 @@
     </unit>
     <unit id="pkg.gate.banner.missing">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:221,222</note>
+        <note category="location">src/app/views/packages/package-version-view.html:231,232</note>
       </notes>
       <segment>
         <source>Downloads are refused in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>: it serves only artifacts with a verified signature, and <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> has no signature of its publisher or its build.</source>
@@ -63124,7 +63613,7 @@
     </unit>
     <unit id="pkg.gate.banner.untrusted">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:224,225</note>
+        <note category="location">src/app/views/packages/package-version-view.html:234,235</note>
       </notes>
       <segment>
         <source>Downloads are refused in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>: it serves only artifacts with a verified signature, and <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> has a signature of its publisher or its build whose signer no trust anchor this repository accepts knows.</source>
@@ -63133,7 +63622,7 @@
     </unit>
     <unit id="pkg.gate.banner.not-chosen">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:227,228</note>
+        <note category="location">src/app/views/packages/package-version-view.html:237,238</note>
       </notes>
       <segment>
         <source>Downloads are refused in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>: it serves only artifacts with a verified signature, and <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> is verified only by trust anchors this repository does not accept.</source>
@@ -63142,7 +63631,7 @@
     </unit>
     <unit id="pkg.gate.banner.invalid">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:230,231</note>
+        <note category="location">src/app/views/packages/package-version-view.html:240,241</note>
       </notes>
       <segment>
         <source>Downloads are refused in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>: it serves only artifacts with a verified signature, and <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> has a signature of its publisher or its build that does not match its content.</source>
@@ -63151,7 +63640,7 @@
     </unit>
     <unit id="pkg.gate.banner.blocked">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:233,234</note>
+        <note category="location">src/app/views/packages/package-version-view.html:243,244</note>
       </notes>
       <segment>
         <source>Downloads are refused in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>: it serves only artifacts with a verified signature, and <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> is signed by a signer an administrator blocked.</source>
@@ -63160,7 +63649,7 @@
     </unit>
     <unit id="pkg.gate.banner.not-checked">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:236,237</note>
+        <note category="location">src/app/views/packages/package-version-view.html:246,247</note>
       </notes>
       <segment>
         <source>Downloads are refused in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>: it serves only artifacts with a verified signature, and <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> has a signature of its publisher or its build that Quader cannot read or could not check.</source>
@@ -63169,7 +63658,7 @@
     </unit>
     <unit id="pkg.deprecated-collection">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:259,261</note>
+        <note category="location">src/app/views/packages/package-version-view.html:269,271</note>
       </notes>
       <segment>
         <source>Every version of this collection is deprecated.</source>
@@ -63178,7 +63667,7 @@
     </unit>
     <unit id="pkg.readme.loading">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:329,330</note>
+        <note category="location">src/app/views/packages/package-version-view.html:339,340</note>
       </notes>
       <segment>
         <source>Loading the README.</source>
@@ -63187,7 +63676,7 @@
     </unit>
     <unit id="pkg.chart.values-cut">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:348,350</note>
+        <note category="location">src/app/views/packages/package-version-view.html:358,360</note>
       </notes>
       <segment>
         <source>The values are longer than 64 KiB; the rest is not shown.</source>
@@ -63196,9 +63685,9 @@
     </unit>
     <unit id="pkg.file.manifest">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:363,364</note>
-        <note category="location">src/app/views/packages/package-version-view.html:365,366</note>
-        <note category="location">src/app/views/packages/package-version-view.html:422,423</note>
+        <note category="location">src/app/views/packages/package-version-view.html:373,374</note>
+        <note category="location">src/app/views/packages/package-version-view.html:375,376</note>
+        <note category="location">src/app/views/packages/package-version-view.html:432,433</note>
       </notes>
       <segment>
         <source>Manifest</source>
@@ -63207,7 +63696,7 @@
     </unit>
     <unit id="pkg.file.sha256">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:377</note>
+        <note category="location">src/app/views/packages/package-version-view.html:387</note>
       </notes>
       <segment>
         <source>SHA-256</source>
@@ -63216,7 +63705,7 @@
     </unit>
     <unit id="pkg.file.image-content">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:417,419</note>
+        <note category="location">src/app/views/packages/package-version-view.html:427,429</note>
       </notes>
       <segment>
         <source>Content of the image</source>
@@ -63225,7 +63714,7 @@
     </unit>
     <unit id="pkg.file.config">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:432,433</note>
+        <note category="location">src/app/views/packages/package-version-view.html:445,446</note>
       </notes>
       <segment>
         <source>Config</source>
@@ -63234,7 +63723,7 @@
     </unit>
     <unit id="pkg.file.layer">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:442,443</note>
+        <note category="location">src/app/views/packages/package-version-view.html:458,459</note>
       </notes>
       <segment>
         <source>Layer <ph id="0" equiv="INTERPOLATION" disp="{{ i + 1 }}"/></source>
@@ -63243,7 +63732,7 @@
     </unit>
     <unit id="clamav.signature">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:455,457</note>
+        <note category="location">src/app/views/packages/package-version-view.html:482,484</note>
       </notes>
       <segment>
         <source>Detached signature</source>
@@ -63252,7 +63741,7 @@
     </unit>
     <unit id="clamav.signature.present">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:458,459</note>
+        <note category="location">src/app/views/packages/package-version-view.html:485,486</note>
       </notes>
       <segment>
         <source>Present, <ph id="0" equiv="INTERPOLATION" disp="{{ c.detachedSignature.signatures ?? 0 }}"/> signatures. Quader passes it on; ClamAV checks it.</source>
@@ -63261,7 +63750,7 @@
     </unit>
     <unit id="clamav.signature.none">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:460,462</note>
+        <note category="location">src/app/views/packages/package-version-view.html:487,489</note>
       </notes>
       <segment>
         <source>None</source>
@@ -63270,7 +63759,7 @@
     </unit>
     <unit id="clamav.members.hint">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:466,467</note>
+        <note category="location">src/app/views/packages/package-version-view.html:493,494</note>
       </notes>
       <segment>
         <source>The signature count of the header is the total; lines of a member are not always signatures.</source>
@@ -63279,7 +63768,7 @@
     </unit>
     <unit id="clamav.members.removed">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:487,489</note>
+        <note category="location">src/app/views/packages/package-version-view.html:514,516</note>
       </notes>
       <segment>
         <source>The files of this version were removed; its metadata stays as history.</source>
@@ -63288,7 +63777,7 @@
     </unit>
     <unit id="clamav.members.not-read">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:489,491</note>
+        <note category="location">src/app/views/packages/package-version-view.html:516,518</note>
       </notes>
       <segment>
         <source>Members not read: the container holds more than the bounds allow.</source>
@@ -63297,7 +63786,7 @@
     </unit>
     <unit id="pkg.meta.deb-description">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:525,526</note>
+        <note category="location">src/app/views/packages/package-version-view.html:552,553</note>
       </notes>
       <segment>
         <source>Description</source>
@@ -63306,7 +63795,7 @@
     </unit>
     <unit id="pkg.used-by.heading">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:547,548</note>
+        <note category="location">src/app/views/packages/package-version-view.html:574,575</note>
       </notes>
       <segment>
         <source>Used by</source>
@@ -63315,7 +63804,7 @@
     </unit>
     <unit id="clamav.details.heading">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:552,553</note>
+        <note category="location">src/app/views/packages/package-version-view.html:579,580</note>
       </notes>
       <segment>
         <source>Definitions</source>
@@ -63324,7 +63813,7 @@
     </unit>
     <unit id="clamav.fact.built">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:554,556</note>
+        <note category="location">src/app/views/packages/package-version-view.html:581,583</note>
       </notes>
       <segment>
         <source>Built</source>
@@ -63333,7 +63822,7 @@
     </unit>
     <unit id="clamav.fact.build-text">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:566,567</note>
+        <note category="location">src/app/views/packages/package-version-view.html:593,594</note>
       </notes>
       <segment>
         <source>Build time as written</source>
@@ -63342,7 +63831,7 @@
     </unit>
     <unit id="clamav.fact.signatures">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:569,570</note>
+        <note category="location">src/app/views/packages/package-version-view.html:596,597</note>
       </notes>
       <segment>
         <source>Signatures</source>
@@ -63351,7 +63840,7 @@
     </unit>
     <unit id="clamav.fact.level">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:571,573</note>
+        <note category="location">src/app/views/packages/package-version-view.html:598,600</note>
       </notes>
       <segment>
         <source>Functionality level</source>
@@ -63360,7 +63849,7 @@
     </unit>
     <unit id="clamav.fact.builder">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:579,580</note>
+        <note category="location">src/app/views/packages/package-version-view.html:606,607</note>
       </notes>
       <segment>
         <source>Builder</source>
@@ -63369,7 +63858,7 @@
     </unit>
     <unit id="clamav.fact.verification">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:581,582</note>
+        <note category="location">src/app/views/packages/package-version-view.html:608,609</note>
       </notes>
       <segment>
         <source>Verification</source>
@@ -63378,7 +63867,7 @@
     </unit>
     <unit id="clamav.fact.files-removed">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:584,585</note>
+        <note category="location">src/app/views/packages/package-version-view.html:611,612</note>
       </notes>
       <segment>
         <source>Files removed</source>
@@ -63387,7 +63876,7 @@
     </unit>
     <unit id="clamav.fact.header-md5">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:591,592</note>
+        <note category="location">src/app/views/packages/package-version-view.html:618,619</note>
       </notes>
       <segment>
         <source>MD5 in the header</source>
@@ -63396,7 +63885,7 @@
     </unit>
     <unit id="clamav.fact.computed-md5">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:593,594</note>
+        <note category="location">src/app/views/packages/package-version-view.html:620,621</note>
       </notes>
       <segment>
         <source>MD5 computed by Quader</source>
@@ -63405,8 +63894,8 @@
     </unit>
     <unit id="pkg.chart.heading">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:601,602</note>
-        <note category="location">src/app/views/packages/package-version-view.html:605,606</note>
+        <note category="location">src/app/views/packages/package-version-view.html:628,629</note>
+        <note category="location">src/app/views/packages/package-version-view.html:632,633</note>
       </notes>
       <segment>
         <source>Chart</source>
@@ -63415,7 +63904,7 @@
     </unit>
     <unit id="pkg.chart.held">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:602</note>
+        <note category="location">src/app/views/packages/package-version-view.html:629</note>
       </notes>
       <segment>
         <source>The chart&apos;s facts and values are not shown: a download of its files would not be served to you now.</source>
@@ -63424,7 +63913,7 @@
     </unit>
     <unit id="pkg.chart.maintainers">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:613,614</note>
+        <note category="location">src/app/views/packages/package-version-view.html:640,641</note>
       </notes>
       <segment>
         <source>Maintainers</source>
@@ -63433,7 +63922,7 @@
     </unit>
     <unit id="pkg.image.kind">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:625,626</note>
+        <note category="location">src/app/views/packages/package-version-view.html:652,653</note>
       </notes>
       <segment>
         <source>Kind</source>
@@ -63442,7 +63931,7 @@
     </unit>
     <unit id="pkg.image.artifact-type">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:638,639</note>
+        <note category="location">src/app/views/packages/package-version-view.html:665,666</note>
       </notes>
       <segment>
         <source>Artifact type</source>
@@ -63451,7 +63940,7 @@
     </unit>
     <unit id="pkg.image.total-size">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:641,642</note>
+        <note category="location">src/app/views/packages/package-version-view.html:668,669</note>
       </notes>
       <segment>
         <source>Size</source>
@@ -63460,7 +63949,7 @@
     </unit>
     <unit id="pkg.image.platforms">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:645,646</note>
+        <note category="location">src/app/views/packages/package-version-view.html:672,673</note>
       </notes>
       <segment>
         <source>Platforms</source>
@@ -63469,7 +63958,7 @@
     </unit>
     <unit id="pkg.image.not-fetched">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:687,688</note>
+        <note category="location">src/app/views/packages/package-version-view.html:714,715</note>
       </notes>
       <segment>
         <source>Not fetched</source>
@@ -63478,7 +63967,7 @@
     </unit>
     <unit id="pkg.meta.release-notes">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:717,718</note>
+        <note category="location">src/app/views/packages/package-version-view.html:744,745</note>
       </notes>
       <segment>
         <source>Release notes</source>
@@ -63487,7 +63976,7 @@
     </unit>
     <unit id="pkg.meta.facts">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:724,725</note>
+        <note category="location">src/app/views/packages/package-version-view.html:751,752</note>
       </notes>
       <segment>
         <source>Package details</source>
@@ -63496,7 +63985,7 @@
     </unit>
     <unit id="pkg.meta.frameworks">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:732,734</note>
+        <note category="location">src/app/views/packages/package-version-view.html:759,761</note>
       </notes>
       <segment>
         <source>Target frameworks</source>
@@ -63505,7 +63994,7 @@
     </unit>
     <unit id="pkg.meta.dependency-frameworks">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:742,744</note>
+        <note category="location">src/app/views/packages/package-version-view.html:769,771</note>
       </notes>
       <segment>
         <source>Frameworks of the dependencies</source>
@@ -63514,7 +64003,7 @@
     </unit>
     <unit id="pkg.meta.symbols">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:753,754</note>
+        <note category="location">src/app/views/packages/package-version-view.html:780,781</note>
       </notes>
       <segment>
         <source>Symbols</source>
@@ -63523,7 +64012,7 @@
     </unit>
     <unit id="pkg.meta.symbols-held">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:755,756</note>
+        <note category="location">src/app/views/packages/package-version-view.html:782,783</note>
       </notes>
       <segment>
         <source>Symbol package held: <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ file }}"/></pc>. Quader does not serve symbols to a debugger yet; download the file from the tab Files.</source>
@@ -63532,7 +64021,7 @@
     </unit>
     <unit id="pkg.meta.deb-source">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:760,761</note>
+        <note category="location">src/app/views/packages/package-version-view.html:787,788</note>
       </notes>
       <segment>
         <source>Source package</source>
@@ -63541,7 +64030,7 @@
     </unit>
     <unit id="pkg.meta.authors">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:774,775</note>
+        <note category="location">src/app/views/packages/package-version-view.html:801,802</note>
       </notes>
       <segment>
         <source>Authors</source>
@@ -63550,7 +64039,7 @@
     </unit>
     <unit id="pkg.repo.heading">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:781,782</note>
+        <note category="location">src/app/views/packages/package-version-view.html:808,809</note>
       </notes>
       <segment>
         <source>Repositories</source>
@@ -63559,7 +64048,7 @@
     </unit>
     <unit id="pkg.tab.vulnerabilities">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:336</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:338</note>
       </notes>
       <segment>
         <source>Vulnerabilities</source>
@@ -63568,7 +64057,7 @@
     </unit>
     <unit id="pkg.tab.readme">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:344</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:346</note>
       </notes>
       <segment>
         <source>README</source>
@@ -63577,7 +64066,7 @@
     </unit>
     <unit id="pkg.tab.documentation">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:349</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:351</note>
       </notes>
       <segment>
         <source>Documentation</source>
@@ -63586,7 +64075,7 @@
     </unit>
     <unit id="pkg.tab.contents">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:354</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:356</note>
       </notes>
       <segment>
         <source>Contents</source>
@@ -63595,7 +64084,7 @@
     </unit>
     <unit id="pkg.tab.values">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:361</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:363</note>
       </notes>
       <segment>
         <source>Values</source>
@@ -63604,7 +64093,7 @@
     </unit>
     <unit id="pkg.tab.files">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:362</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:364</note>
       </notes>
       <segment>
         <source>Files</source>
@@ -63613,7 +64102,7 @@
     </unit>
     <unit id="pkg.tab.signatures">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:364</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:366</note>
       </notes>
       <segment>
         <source>Signatures</source>
@@ -63622,7 +64111,7 @@
     </unit>
     <unit id="pkg.tab.details">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:365</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:367</note>
       </notes>
       <segment>
         <source>Details</source>
@@ -63631,7 +64120,7 @@
     </unit>
     <unit id="pkg.tab.changelog">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:367</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:369</note>
       </notes>
       <segment>
         <source>Changelog</source>
@@ -63640,7 +64129,7 @@
     </unit>
     <unit id="pkg.tab.import-log">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:369</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:371</note>
       </notes>
       <segment>
         <source>Import log</source>
@@ -63649,7 +64138,7 @@
     </unit>
     <unit id="pkg.runs.build">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:583</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:585</note>
       </notes>
       <segment>
         <source>Adds build logic that runs in every build of a project that references it:</source>
@@ -63658,7 +64147,7 @@
     </unit>
     <unit id="pkg.runs.analyzers">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:586</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:588</note>
       </notes>
       <segment>
         <source>Adds analyzers or source generators that run in the compiler:</source>
@@ -63667,7 +64156,7 @@
     </unit>
     <unit id="pkg.runs.scripts">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:589</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:591</note>
       </notes>
       <segment>
         <source>Runs PowerShell scripts when Visual Studio installs it into a packages.config project:</source>
@@ -63676,7 +64165,7 @@
     </unit>
     <unit id="pkg.meta.deb-copyright-file">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:604</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:606</note>
       </notes>
       <segment>
         <source>Copyright file</source>
@@ -63685,7 +64174,7 @@
     </unit>
     <unit id="pkg.chart.copy-values">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:613</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:615</note>
       </notes>
       <segment>
         <source>Copy values.yaml</source>
@@ -63694,7 +64183,7 @@
     </unit>
     <unit id="pkg.image.other-tags">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:704</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:706</note>
       </notes>
       <segment>
         <source>Other tags of this image</source>
@@ -63703,7 +64192,7 @@
     </unit>
     <unit id="pkg.image.open-platform">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:731</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:733</note>
       </notes>
       <segment>
         <source>Configuration and layers of <ph id="0" equiv="platform" disp="platform"/></source>
@@ -63712,7 +64201,7 @@
     </unit>
     <unit id="pkg.image.details">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:735</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:737</note>
       </notes>
       <segment>
         <source>Configuration, layers and history</source>
@@ -63721,7 +64210,7 @@
     </unit>
     <unit id="pkg.image.heading">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:739</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:741</note>
       </notes>
       <segment>
         <source>Image</source>
@@ -63730,7 +64219,7 @@
     </unit>
     <unit id="pkg.image.artifact-heading">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:739</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:741</note>
       </notes>
       <segment>
         <source>Artifact</source>
@@ -63739,7 +64228,7 @@
     </unit>
     <unit id="pkg.file.copy-manifest">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:742</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:744</note>
       </notes>
       <segment>
         <source>Copy the manifest&apos;s digest</source>
@@ -63748,7 +64237,7 @@
     </unit>
     <unit id="pkg.file.copy-config">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:743</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:745</note>
       </notes>
       <segment>
         <source>Copy the config&apos;s digest</source>
@@ -63757,7 +64246,7 @@
     </unit>
     <unit id="pkg.file.copy-platform-layer">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:747</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:749</note>
       </notes>
       <segment>
         <source>Copy the digest of layer <ph id="0" equiv="number" disp="n"/> of <ph id="1" equiv="platform" disp="platform"/></source>
@@ -63766,7 +64255,7 @@
     </unit>
     <unit id="clamav.member.name">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:773</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:775</note>
       </notes>
       <segment>
         <source>Name</source>
@@ -63775,7 +64264,7 @@
     </unit>
     <unit id="pkg.file.size">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:774</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:776</note>
       </notes>
       <segment>
         <source>Size</source>
@@ -63784,7 +64273,7 @@
     </unit>
     <unit id="clamav.member.lines">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:777</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:779</note>
       </notes>
       <segment>
         <source>Lines</source>
@@ -63793,7 +64282,7 @@
     </unit>
     <unit id="clamav.member.lines-help">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:779</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:781</note>
       </notes>
       <segment>
         <source>The member&apos;s lines that are neither empty nor a comment.</source>
@@ -63802,7 +64291,7 @@
     </unit>
     <unit id="clamav.members">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:782</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:784</note>
       </notes>
       <segment>
         <source>Members</source>
@@ -63811,7 +64300,7 @@
     </unit>
     <unit id="clamav.checksums">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:783</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:785</note>
       </notes>
       <segment>
         <source>Checksums of the archive</source>
@@ -63820,7 +64309,7 @@
     </unit>
     <unit id="clamav.member.digests">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:784</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:786</note>
       </notes>
       <segment>
         <source>SHA-256 of each member</source>
@@ -63829,25 +64318,16 @@
     </unit>
     <unit id="pkg.file.path">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:931</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:967</note>
       </notes>
       <segment>
         <source>File</source>
         <target>Datei</target>
       </segment>
     </unit>
-    <unit id="pkg.file.malware">
-      <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:932</note>
-      </notes>
-      <segment>
-        <source>Malware scan</source>
-        <target>Malware-Prüfung</target>
-      </segment>
-    </unit>
     <unit id="pkg.file.signature">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:933</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:969</note>
       </notes>
       <segment>
         <source>Signature</source>
@@ -63856,7 +64336,7 @@
     </unit>
     <unit id="pkg.file.download-link">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:963</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:999</note>
       </notes>
       <segment>
         <source>Download</source>
@@ -63865,7 +64345,7 @@
     </unit>
     <unit id="pkg.repo.repository">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:965</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:1001</note>
       </notes>
       <segment>
         <source>Repository</source>
@@ -63874,7 +64354,7 @@
     </unit>
     <unit id="pkg.repo.class">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:966</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:1002</note>
       </notes>
       <segment>
         <source>Class</source>
@@ -63883,7 +64363,7 @@
     </unit>
     <unit id="pkg.image.platform">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:970</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:1006</note>
       </notes>
       <segment>
         <source>Platform</source>
@@ -63892,7 +64372,7 @@
     </unit>
     <unit id="pkg.image.platforms-caption">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:975</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:1011</note>
       </notes>
       <segment>
         <source>Platforms of this image index</source>
@@ -63901,7 +64381,7 @@
     </unit>
     <unit id="pkg.file.part">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:977</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:1013</note>
       </notes>
       <segment>
         <source>Part</source>
@@ -63910,7 +64390,7 @@
     </unit>
     <unit id="pkg.file.image-caption">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:983</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:1020</note>
       </notes>
       <segment>
         <source>Manifest, config and layers of the image</source>
@@ -63919,7 +64399,7 @@
     </unit>
     <unit id="pkg.file.platform-caption">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:984</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:1021</note>
       </notes>
       <segment>
         <source>Manifest, config and layers of <ph id="0" equiv="platform" disp="platform"/></source>
@@ -63928,7 +64408,7 @@
     </unit>
     <unit id="pkg.image.not-fetched-title">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:986</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:1023</note>
       </notes>
       <segment>
         <source>No client has fetched this platform through Quader yet, so its manifest and its size are not held.</source>
@@ -63937,7 +64417,7 @@
     </unit>
     <unit id="pkg.image.copy-digest">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:988</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:1025</note>
       </notes>
       <segment>
         <source>Copy digest</source>
@@ -63946,7 +64426,7 @@
     </unit>
     <unit id="pkg.file.caption">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:989</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:1026</note>
       </notes>
       <segment>
         <source>Files of this version</source>
@@ -63955,7 +64435,7 @@
     </unit>
     <unit id="pkg.repo.caption">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:990</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:1027</note>
       </notes>
       <segment>
         <source>Repositories that hold this version</source>
@@ -63964,7 +64444,7 @@
     </unit>
     <unit id="pkg.file.copy-sha">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:991</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:1028</note>
       </notes>
       <segment>
         <source>Copy SHA-256</source>
@@ -63973,7 +64453,7 @@
     </unit>
     <unit id="pkg.used-by.list">
       <notes>
-        <note category="location">src/app/views/packages/used-by.ts:81,83</note>
+        <note category="location">src/app/views/packages/used-by.ts:87,89</note>
       </notes>
       <segment>
         <source>Packages of this project that use it</source>
@@ -63982,7 +64462,7 @@
     </unit>
     <unit id="pkg.used-by.loading">
       <notes>
-        <note category="location">src/app/views/packages/used-by.ts:88,91</note>
+        <note category="location">src/app/views/packages/used-by.ts:94,97</note>
       </notes>
       <segment>
         <source>Loading the packages that use it.</source>
@@ -63991,7 +64471,7 @@
     </unit>
     <unit id="pkg.used-by.none-whole">
       <notes>
-        <note category="location">src/app/views/packages/used-by.ts:150</note>
+        <note category="location">src/app/views/packages/used-by.ts:161</note>
       </notes>
       <segment>
         <source>No package the installation holds depends on it.</source>
@@ -64000,7 +64480,7 @@
     </unit>
     <unit id="pkg.used-by.none-readable">
       <notes>
-        <note category="location">src/app/views/packages/used-by.ts:151</note>
+        <note category="location">src/app/views/packages/used-by.ts:162</note>
       </notes>
       <segment>
         <source>No package you may read depends on it.</source>
@@ -64009,7 +64489,7 @@
     </unit>
     <unit id="pkg.used-by.more">
       <notes>
-        <note category="location">src/app/views/packages/used-by.ts:175</note>
+        <note category="location">src/app/views/packages/used-by.ts:186</note>
       </notes>
       <segment>
         <source>and <ph id="0" equiv="count" disp="count"/> more.</source>

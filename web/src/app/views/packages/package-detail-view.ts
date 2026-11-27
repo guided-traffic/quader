@@ -40,6 +40,9 @@ import { PackageTags } from './package-tags';
 import { ImageTags, listsByContent } from './image-tags';
 import { DeprecationMark } from '../../shared/ui/deprecation-mark';
 import { Loading } from '../../shared/ui/loading';
+import { NoValue } from '../../shared/ui/no-value';
+import { MalwareMark, malwareColumn, malwareShown } from '../../shared/malware/malware-mark';
+import { MalwareSignaturesStore } from '../../core/malware-signatures';
 
 /**
  * A package's page is its versions (R-UI-007, R-UI-110, the owner's walk of 2026-11-18): the name, the format and the
@@ -62,6 +65,8 @@ function sameVersion(a: { id: string; version: string } | undefined, b: { id: st
 @Component({
   selector: 'quader-package-detail-view',
   imports: [Loading, DeprecationMark,
+    MalwareMark,
+    NoValue,
     NamespaceOf,
     SignatureBadge,
     DecimalPipe,
@@ -172,6 +177,9 @@ export class PackageDetailView {
    * Q-UI-377), which the page says once. A version that is not checked for any other cause says why in its cell (R-VULN-039, Q-UI-1121):
    * an image that waits for its scan, a repository whose scanning is off, an internal name.
    */
+  private readonly malwareMarks = inject(MalwareSignaturesStore);
+  /** The versions carry their malware state (R-MAL-039): the column **Malware scan** (R-UI-255). */
+  protected readonly malwareShown = computed(() => malwareShown(this.malwareMarks, this.rows()));
   protected readonly graded = computed(() => [...this.grades().values()].some((g) => g.state !== 'format_not_scanned'));
 
   protected readonly rows = computed(() =>
@@ -223,6 +231,7 @@ export class PackageDetailView {
     ...(this.graded()
       ? [{ id: 'vulnerabilities', label: $localize`:@@pkg.ver.vulnerabilities:Vulnerabilities`, sortable: true }]
       : []),
+    ...(this.malwareShown() ? [malwareColumn('version')] : []),
     { id: 'published', label: this.arrived(), sortable: true },
     ...(this.downloads()
       ? [

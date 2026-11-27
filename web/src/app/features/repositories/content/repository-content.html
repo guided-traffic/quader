@@ -101,7 +101,7 @@
     }
   } @else if (view() === 'downloads') {
     @if (remoteTabs()) {
-      <quader-remote-downloads [repository]="ref()" [fillAction]="fillAction()" [upstreamName]="upstreamName()" (countsChange)="queueCounts.set($event)" />
+      <quader-remote-downloads [repository]="ref()" [image]="shape().digest" [fillAction]="fillAction()" [upstreamName]="upstreamName()" (countsChange)="queueCounts.set($event)" />
     }
   } @else if (view() === 'upstream') {
     <!-- >>> T-24 upstream -->

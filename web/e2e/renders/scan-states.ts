@@ -172,7 +172,7 @@ export async function* malwareWaiting(page: Page): AsyncGenerator<string> {
       await route.fulfill({ response: res, body: JSON.stringify(body) });
     });
     await page.reload();
-    await expect(page.locator('main quader-malware-status').first()).toBeVisible();
+    await expect(page.locator('main .malware-cell [data-testid="malware-mark"]').first()).toBeVisible();
     yield name;
   }
   await page.unroute(url);
