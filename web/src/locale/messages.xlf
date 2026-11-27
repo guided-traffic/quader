@@ -40079,7 +40079,7 @@
         <note category="location">src/app/features/settings/vulnerability-settings.html:16,17</note>
       </notes>
       <segment>
-        <source>The image scanning is off in this installation: <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">vulnerabilities.images.enabled</pc> is false in the configuration. No image is scanned for vulnerabilities.</source>
+        <source>The image scanning is off in this installation: <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">config.vulnerabilities.images.enabled</pc> is false in the Helm configuration. No image is scanned for vulnerabilities.</source>
       </segment>
     </unit>
     <unit id="vuln.settings.blocker.no-database">
