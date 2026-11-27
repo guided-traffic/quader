@@ -13450,10 +13450,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-856 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+859 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 856 questions</summary>
+<summary>Q-UI: 859 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -14313,6 +14313,9 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1650](spec/api-and-ui.md#q-ui-1650--a-bastions-pages-show-the-way-from-the-start-each-page-binding-its-steps) | A Bastion's pages show the way from the start, each page binding its steps | Decided by the development agent on 2026-11-27 | (b) The main installation's `nav.breadcrumbs` above the page, its steps the crawler text's, each page binding its own (`BastionTrail`); a page's steps leave with it | — |
 | [Q-UI-1651](spec/api-and-ui.md#q-ui-1651--a-bastion-with-hidden-repositories-shows-each-project-as-its-packages) | A Bastion with hidden repositories shows each project as its packages | Decided by the development agent on 2026-11-27 | (a) The project is its packages; a repository's address is "Page not found" but a generic one's files; the gate's banner says "the repository" in place of the key, once per artifact and reason | — |
 | [Q-UI-1652](spec/api-and-ui.md#q-ui-1652--set-up-clients-picture-ends-at-the-applications-own-mark) | Set up client's picture ends at the application's own mark | Decided by the development agent on 2026-11-27 | (a) An input `mark` of the picture: a mark's stones on the wall's place and height, the parcels on its top; the Bastion passes its tower | — |
+| [Q-UI-1653](spec/api-and-ui.md#q-ui-1653--the-server-stores-no-phrase-it-makes-up-the-screen-words-the-thing-from-a-fact-of-the-api) | The server stores no phrase it makes up; the screen words the thing from a fact of the API | Decided by the development agent | (a) None of them is stored; the screen words the thing from `createdVia`, `declared`, the name or the roles | — |
+| [Q-UI-1654](spec/api-and-ui.md#q-ui-1654--the-last-places-of-r-ui-270-the-helm-configurations-trust-anchor-the-last-project-owner-and-the-boxes-that-said-why-they-are-off) | The last places of R-UI-270: the Helm configuration's trust anchor, the last project Owner, and the boxes that said why they are off | Decided by the development agent on 2026-11-27 | — | — |
+| [Q-UI-1655](spec/api-and-ui.md#q-ui-1655--a-downloads-repository-and-unit-in-the-audit-log-count-their-longest-piece-in-the-logs-least-width) | A download's repository and unit in the audit log count their longest piece in the log's least width | Decided by the development agent on 2026-11-27 | (b) `break-word` on the download row's pieces, the version or tag (a digest) kept on `anywhere` | — |
 
 </details>
 
