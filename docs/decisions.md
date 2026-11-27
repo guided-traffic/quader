@@ -14260,10 +14260,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-VULN
 
-209 questions on [spec/vulnerability-scanning.md](spec/vulnerability-scanning.md).
+211 questions on [spec/vulnerability-scanning.md](spec/vulnerability-scanning.md).
 
 <details>
-<summary>Q-VULN: 209 questions</summary>
+<summary>Q-VULN: 211 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -14476,6 +14476,8 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-VULN-295](spec/vulnerability-scanning.md#q-vuln-295--a-packages-sources-are-the-products-words) | A package's sources are the product's words | Decided by the development agent on 2026-11-27 | (a) The screens' words: "GitHub Advisory Database and OpenSSF malicious-packages, through osv.dev" | — |
 | [Q-VULN-296](spec/vulnerability-scanning.md#q-vuln-296--a-bastions-documents-carry-no-database-and-no-analysers-version-of-a-grade) | A Bastion's documents carry no database and no analyser's version of a grade | Decided by the development agent on 2026-11-27 | (a) The strip moves a grade's `database` out with its check's time, as a scan's (`scannedAt`), and drops `scannerVersion` everywhere, as a malware state's `engine` | — |
 | [Q-VULN-297](spec/vulnerability-scanning.md#q-vuln-297--how-current-a-scan-is-is-the-screens-comparison-in-words) | How current a scan is, is the screens' comparison in words | Decided by the development agent on 2026-11-27 | (a) The screens compare the digests and the build times and say it in words: "Under today's database", "Under a database 6 days older" | — |
+| [Q-VULN-298](spec/vulnerability-scanning.md#q-vuln-298--the-image-scanning-has-its-own-page-in-the-admin-area-and-no-database-is-said-only-while-none-is-in-use) | The image scanning has its own page in the admin area, and No database is said only while none is in use | Decided by the owner on 2026-11-27 | (a) A page **Settings › Vulnerability scanning** beside **Malware scanning**, built as it: the blocker at the top, **Scanning** with the counts, reasons, the last failure and the scanners, **Vulnerability database** with **Import now**; one new read, the rest from the reads that exist; (a) A page **Settings › Vulnerability scanning** beside **Malware scanning**, built as it: the blocker at the top, **Scanning** with the counts, reasons, the last failure and the scanners, **Vulnerability database** with **Import now**; one new read, the rest from the reads that exist | — |
+| [Q-VULN-299](spec/vulnerability-scanning.md#q-vuln-299--the-loader-says-once-why-it-detects-nothing) | The loader says once why it detects nothing | Decided by the owner on 2026-11-27 | (a), at level info: nothing is wrong with the pod. | — |
 
 </details>
 <!-- coverage-gen:end decisions -->

@@ -16,6 +16,7 @@ import {
   VulnerabilityFindingDetail,
   VulnerabilityFindingPatch,
   VulnerabilityGrade,
+  VulnerabilityImageScans,
   VulnerabilityPackageReport,
   VulnerabilitySetStatusRequest,
   VulnerabilitySetStatusResult,
@@ -473,6 +474,15 @@ export class FakeVulnerabilitiesApi extends VulnerabilitiesApi {
     return this.databaseToday;
   }
 
+  /** What the image scanning does now (R-VULN-053): sampleImageScans() unless a test sets it. */
+  imageScanState: VulnerabilityImageScans = sampleImageScans();
+
+  override async imageScans(): Promise<VulnerabilityImageScans> {
+    this.fail();
+    this.calls.push('imageScans');
+    return this.imageScanState;
+  }
+
   override async sources(): Promise<readonly VulnerabilitySourceState[]> {
     this.fail();
     this.calls.push('sources');
@@ -536,6 +546,34 @@ export function sampleDatabase(over: Partial<VulnerabilitySourceState> = {}): Vu
     source: 'trivy', ecosystem: 'OCI', mode: 'repository', repository: 'upstream/scanner-trivy', reference: 'aquasec/trivy-db:2',
     repositoryClass: 'remote', records: 1, unevaluable: 0, ...over,
   });
+}
+
+/** The image scanning at work (R-VULN-053): 77 waiting, 11 of them for a free scanner, two in a call, 3 failed over the limits. */
+export function sampleImageScans(over: Partial<VulnerabilityImageScans> = {}): VulnerabilityImageScans {
+  return {
+    enabled: true,
+    waiting: 77,
+    scanning: 2,
+    scanned: 1204,
+    outdated: 0,
+    failed: 3,
+    reasons: [
+      { state: 'failed', code: 'image_too_large', count: 3 },
+      { state: 'waiting', code: '', count: 66 },
+      { state: 'waiting', code: 'scanner_busy', count: 11 },
+    ],
+    oldestWaitingAt: ago(0.05),
+    lastFailure: {
+      repository: 'team-a/images',
+      image: 'base/debian',
+      digest: 'sha256:5a0c0b8e6c1f4d2a9e7b3c6d8f0a1b2c3d4e5f60718293a4b5c6d7e8f9012345',
+      code: 'image_too_large',
+      detail: 'the image is 12884901888 bytes, more than vulnerabilities.images.max_image_size',
+      attempts: 1,
+      at: ago(0.02),
+    },
+    ...over,
+  };
 }
 
 export function severityCounts(over: Partial<VulnerabilitySeverityCounts> = {}): VulnerabilitySeverityCounts {

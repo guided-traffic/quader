@@ -196,7 +196,15 @@ export const NAV_AREAS: readonly NavArea[] = [
                 feature: 'malware',
               },
               // <<< malware
-              // The fourth page of the group (R-SIG-036): every holder of settings:read reads it, the security settings' writers change it.
+              // Beside it, the image scanning's page (R-VULN-053, Q-VULN-298): shown to every holder of settings:read, also while the image
+              // scanning is off, which the page says.
+              {
+                route: '/admin/settings/vulnerabilities',
+                icon: 'radar',
+                label: $localize`:@@nav.settings.vulnerabilities:Vulnerability scanning`,
+                capability: 'settings:read',
+              },
+              // The next page of the group (R-SIG-036): every holder of settings:read reads it, the security settings' writers change it.
               { route: '/admin/settings/signatures', icon: 'verified', label: $localize`:@@nav.settings.signatures:Signatures`, capability: 'settings:read' },
               // >>> download-links
               // The fifth page of the group (R-UI-200, Q-UI-950): the storage settings, with the switch of the signed links.

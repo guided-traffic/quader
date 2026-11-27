@@ -39,6 +39,8 @@ export type VulnerabilityGrade = Schema<'VulnerabilityGrade'>;
 export type VulnerabilityCheckState = Schema<'VulnerabilityCheckState'>;
 export type VulnerabilityDatabase = Schema<'VulnerabilityDatabase'>;
 export type VulnerabilityDatabaseRef = Schema<'VulnerabilityDatabaseRef'>;
+export type VulnerabilityImageScans = Schema<'VulnerabilityImageScans'>;
+export type VulnerabilityImageScanFailure = Schema<'VulnerabilityImageScanFailure'>;
 
 export const SEVERITIES: readonly VulnerabilitySeverity[] = ['critical', 'high', 'medium', 'low', 'none', 'unknown'];
 export const STATUSES: readonly VulnerabilityStatus[] = ['needs_triage', 'confirmed', 'blocked', 'dismissed', 'resolved'];
@@ -123,6 +125,8 @@ export abstract class VulnerabilitiesApi extends VulnerabilityReads {
   abstract exportCsv(filters: FindingFilters): Promise<string>;
   /** `GET /api/v1/vulnerabilities/database`: public, every grade of a screen shares one read (R-VULN-052, R-UI-091). */
   abstract database(): Promise<VulnerabilityDatabase>;
+  /** `GET /api/v1/vulnerabilities/image-scans`: what the image scanning does now, for its page of the admin area (R-VULN-053); needs `settings:read`. */
+  abstract imageScans(): Promise<VulnerabilityImageScans>;
 }
 
 /** The read of today's vulnerability database the grades share (`VULNERABILITY_DATABASE_READ`), bound to the application's API. */
@@ -184,6 +188,10 @@ export class HttpVulnerabilitiesApi extends VulnerabilitiesApi {
 
   override async database(): Promise<VulnerabilityDatabase> {
     return (await this.client.getJson<VulnerabilityDatabase>('/api/v1/vulnerabilities/database')).body;
+  }
+
+  override async imageScans(): Promise<VulnerabilityImageScans> {
+    return (await this.client.getJson<VulnerabilityImageScans>('/api/v1/vulnerabilities/image-scans')).body;
   }
 
   override async versionReport(packageId: string, version: string): Promise<VulnerabilityVersionReport> {

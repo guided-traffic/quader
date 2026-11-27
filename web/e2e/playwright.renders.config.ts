@@ -31,7 +31,8 @@ export default defineConfig({
   timeout: 300_000,
   expect: { timeout: 15_000 },
   globalSetup: './renders/setup.ts',
-  globalTeardown: './renders/sheet.ts',
+  // The contact sheet, then the instance's vulnerability database back (teardown.ts, R-VULN-053).
+  globalTeardown: './renders/teardown.ts',
   reporter: [['list']],
   use: {
     baseURL: edge,

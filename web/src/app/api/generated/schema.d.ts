@@ -5910,6 +5910,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/vulnerabilities/image-scans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * What the image scanning does now
+         * @description The image scanning's state for its page of the admin area (R-VULN-053): how many manifests of active repositories wait for their
+         *     scan, are in a call of the scanner now, are scanned (and how many of those against another database than the one in use) and
+         *     failed; the codes of the waiting rows (why a row was put off: `scanner_busy`, `database_loading`, …) and of the failed rows, each
+         *     with its count; when the row that waits longest was queued; and the failed scan that failed last with everything it carried. Its
+         *     repository and image are named to a caller with `content:metadata-read`; every other caller reads its manifest's digest only.
+         *     `enabled` is false, with every count 0, while the image scanning is off. Two statements whatever the number of rows.
+         */
+        get: operations["getVulnerabilityImageScans"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/vulnerabilities/claimed-name-matches": {
         parameters: {
             query?: never;
@@ -18121,12 +18146,80 @@ export interface components {
             /** @description The last confirmation is older than `vulnerabilities.stale_after`. */
             stale: boolean;
         };
+        /** @description What the image scanning does now (R-VULN-053). */
+        VulnerabilityImageScans: {
+            /** @description The image scanning is on (`vulnerabilities.enabled` and `vulnerabilities.images.enabled`). */
+            enabled: boolean;
+            /**
+             * Format: int64
+             * @description Manifests without a detection under the database in use, for which no call runs now.
+             */
+            waiting: number;
+            /**
+             * Format: int64
+             * @description Manifests in a call of the scanner now (taken within the call's bound, Q-VULN-276).
+             */
+            scanning: number;
+            /**
+             * Format: int64
+             * @description Manifests with a detection.
+             */
+            scanned: number;
+            /**
+             * Format: int64
+             * @description Of the scanned manifests, those detected against another database than the one in use; they are detected again in turn and keep their findings meanwhile.
+             */
+            outdated: number;
+            /**
+             * Format: int64
+             * @description Manifests whose last scan failed (R-VULN-034).
+             */
+            failed: number;
+            /** @description The codes of the waiting rows (why a row was put off; "" for a row never put off) and of the failed rows, each with its count, the most first. */
+            reasons: components["schemas"]["VulnerabilityImageScanReason"][];
+            /**
+             * Format: date-time
+             * @description When the manifest that waits longest was queued; null when none waits.
+             */
+            oldestWaitingAt: string | null;
+            /** @description The failed scan that failed last; null when none failed. */
+            lastFailure: components["schemas"]["VulnerabilityImageScanFailure"] | null;
+        };
+        /** @description A code of waiting or failed image scans with their count (R-VULN-053). */
+        VulnerabilityImageScanReason: {
+            /** @enum {string} */
+            state: "waiting" | "failed";
+            /** @description The code of R-VULN-034; empty for waiting rows that were never put off. */
+            code: string;
+            /** Format: int64 */
+            count: number;
+        };
+        /** @description A failed image scan with everything it carried (R-VULN-053). */
+        VulnerabilityImageScanFailure: {
+            /** @description The repository's qualified name; only to a caller with `content:metadata-read`. */
+            repository?: string;
+            /** @description The image's name in its repository; only to a caller with `content:metadata-read`. */
+            image?: string;
+            /** @description The manifest's digest, `sha256:<hex>`. */
+            digest: string;
+            /** @description The code of R-VULN-034. */
+            code: string;
+            /** @description The failure's own text, in English, at most 1,024 characters. */
+            detail: string;
+            /** @description The attempts the scan has made since its last success. */
+            attempts: number;
+            /**
+             * Format: date-time
+             * @description When it failed; null for a scan that failed before the time was recorded.
+             */
+            at: string | null;
+        };
         /**
          * @description Whether a version is checked for vulnerabilities and, when it is not, why and what comes (R-VULN-039, Q-VULN-274): the one state
          *     every list cell, the version page's card and the security screens say, in the reader's language. `checked`: evaluated, the grade
          *     says the rest. Waits and is checked without anyone's act: `queued` (an image waits for its scan), `scanning` (a call of the scanner
          *     for it runs now, Q-VULN-276). Cannot be checked now: `no_scanner` (no scanner of images is connected, Q-VULN-277), `no_database` (no
-         *     vulnerability database for images has been imported), `no_advisory_data` (a package's ecosystem's advisory data is incomplete). The
+         *     vulnerability database for images is in use and the image waits for one, Q-VULN-298), `no_advisory_data` (a package's ecosystem's advisory data is incomplete). The
          *     scan failed (`stateCode` has the code): `scan_failed` (it is tried again), `over_limits` (a bound of the scanning; an operator raises
          *     it), `unreadable` (a release that reads it). Not checked by setting or by what it is: `off_installation` (the installation's scanning,
          *     or for an image its image scanning, is off), `off_repository` (the repository's), `not_matched` (the repository's
@@ -33621,6 +33714,68 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthenticated"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getVulnerabilityImageScans: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The image scanning's state. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "enabled": true,
+                     *       "waiting": 77,
+                     *       "scanning": 2,
+                     *       "scanned": 1204,
+                     *       "outdated": 0,
+                     *       "failed": 3,
+                     *       "reasons": [
+                     *         {
+                     *           "state": "waiting",
+                     *           "code": "",
+                     *           "count": 66
+                     *         },
+                     *         {
+                     *           "state": "waiting",
+                     *           "code": "scanner_busy",
+                     *           "count": 11
+                     *         },
+                     *         {
+                     *           "state": "failed",
+                     *           "code": "image_too_large",
+                     *           "count": 3
+                     *         }
+                     *       ],
+                     *       "oldestWaitingAt": "2026-11-27T06:12:40Z",
+                     *       "lastFailure": {
+                     *         "repository": "team-a/images",
+                     *         "image": "base/debian",
+                     *         "digest": "sha256:5a0c0b8e6c1f4d2a9e7b3c6d8f0a1b2c3d4e5f60718293a4b5c6d7e8f9012345",
+                     *         "code": "image_too_large",
+                     *         "detail": "the image is 12884901888 bytes, more than vulnerabilities.images.max_image_size",
+                     *         "attempts": 1,
+                     *         "at": "2026-11-27T07:58:02Z"
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["VulnerabilityImageScans"];
+                };
+            };
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
             429: components["responses"]["TooManyRequests"];
             500: components["responses"]["Internal"];
             503: components["responses"]["Unavailable"];

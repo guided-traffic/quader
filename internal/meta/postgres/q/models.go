@@ -2369,6 +2369,7 @@ type VulnImageScan struct {
 	StartedAt   pgtype.Timestamptz
 	DbBuiltAt   pgtype.Timestamptz
 	ToolVersion pgtype.Text
+	FailedAt    pgtype.Timestamptz
 }
 
 type VulnKev struct {

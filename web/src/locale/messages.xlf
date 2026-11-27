@@ -2522,7 +2522,7 @@
     <unit id="nav.repositories">
       <notes>
         <note category="location">src/app/core/navigation.ts:87</note>
-        <note category="location">src/app/core/navigation.ts:245</note>
+        <note category="location">src/app/core/navigation.ts:253</note>
         <note category="location">src/app/features/search/search-model.ts:104</note>
       </notes>
       <segment>
@@ -2612,7 +2612,7 @@
     <unit id="nav.service-accounts">
       <notes>
         <note category="location">src/app/core/navigation.ts:145</note>
-        <note category="location">src/app/core/navigation.ts:234</note>
+        <note category="location">src/app/core/navigation.ts:242</note>
       </notes>
       <segment>
         <source>Service accounts</source>
@@ -2629,7 +2629,7 @@
     <unit id="nav.usage">
       <notes>
         <note category="location">src/app/core/navigation.ts:149</note>
-        <note category="location">src/app/core/navigation.ts:238</note>
+        <note category="location">src/app/core/navigation.ts:246</note>
       </notes>
       <segment>
         <source>Usage</source>
@@ -2646,7 +2646,7 @@
     <unit id="nav.ci">
       <notes>
         <note category="location">src/app/core/navigation.ts:153</note>
-        <note category="location">src/app/core/navigation.ts:241</note>
+        <note category="location">src/app/core/navigation.ts:249</note>
       </notes>
       <segment>
         <source>CI identity</source>
@@ -2663,7 +2663,7 @@
     <unit id="nav.permissions">
       <notes>
         <note category="location">src/app/core/navigation.ts:163</note>
-        <note category="location">src/app/core/navigation.ts:231</note>
+        <note category="location">src/app/core/navigation.ts:239</note>
       </notes>
       <segment>
         <source>Permission policies</source>
@@ -2741,9 +2741,17 @@
         <source>Malware scanning</source>
       </segment>
     </unit>
+    <unit id="nav.settings.vulnerabilities">
+      <notes>
+        <note category="location">src/app/core/navigation.ts:204</note>
+      </notes>
+      <segment>
+        <source>Vulnerability scanning</source>
+      </segment>
+    </unit>
     <unit id="nav.settings.signatures">
       <notes>
-        <note category="location">src/app/core/navigation.ts:200</note>
+        <note category="location">src/app/core/navigation.ts:208</note>
       </notes>
       <segment>
         <source>Signatures</source>
@@ -2751,7 +2759,7 @@
     </unit>
     <unit id="nav.settings.storage">
       <notes>
-        <note category="location">src/app/core/navigation.ts:203</note>
+        <note category="location">src/app/core/navigation.ts:211</note>
       </notes>
       <segment>
         <source>Storage</source>
@@ -2759,7 +2767,7 @@
     </unit>
     <unit id="nav.project.members">
       <notes>
-        <note category="location">src/app/core/navigation.ts:229</note>
+        <note category="location">src/app/core/navigation.ts:237</note>
       </notes>
       <segment>
         <source>Members</source>
@@ -2767,7 +2775,7 @@
     </unit>
     <unit id="nav.packages">
       <notes>
-        <note category="location">src/app/core/navigation.ts:247</note>
+        <note category="location">src/app/core/navigation.ts:255</note>
         <note category="location">src/app/features/projects/project-context.routes.ts:30</note>
       </notes>
       <segment>
@@ -2776,7 +2784,7 @@
     </unit>
     <unit id="nav.vulnerabilities">
       <notes>
-        <note category="location">src/app/core/navigation.ts:253</note>
+        <note category="location">src/app/core/navigation.ts:261</note>
       </notes>
       <segment>
         <source>Vulnerabilities</source>
@@ -2784,7 +2792,7 @@
     </unit>
     <unit id="nav.section.project-access">
       <notes>
-        <note category="location">src/app/core/navigation.ts:262</note>
+        <note category="location">src/app/core/navigation.ts:270</note>
       </notes>
       <segment>
         <source>Access</source>
@@ -2792,7 +2800,7 @@
     </unit>
     <unit id="nav.project.settings">
       <notes>
-        <note category="location">src/app/core/navigation.ts:268</note>
+        <note category="location">src/app/core/navigation.ts:276</note>
       </notes>
       <segment>
         <source>Settings</source>
@@ -35178,7 +35186,7 @@
     </unit>
     <unit id="route.settings.general.title">
       <notes>
-        <note category="location">src/app/features/settings/settings.routes.ts:13</note>
+        <note category="location">src/app/features/settings/settings.routes.ts:14</note>
       </notes>
       <segment>
         <source>General settings</source>
@@ -35186,7 +35194,7 @@
     </unit>
     <unit id="route.settings.auth.title">
       <notes>
-        <note category="location">src/app/features/settings/settings.routes.ts:18</note>
+        <note category="location">src/app/features/settings/settings.routes.ts:19</note>
       </notes>
       <segment>
         <source>Authentication settings</source>
@@ -35194,15 +35202,23 @@
     </unit>
     <unit id="route.settings.malware.title">
       <notes>
-        <note category="location">src/app/features/settings/settings.routes.ts:23</note>
+        <note category="location">src/app/features/settings/settings.routes.ts:24</note>
       </notes>
       <segment>
         <source>Malware scanning</source>
       </segment>
     </unit>
+    <unit id="route.settings.vulnerabilities.title">
+      <notes>
+        <note category="location">src/app/features/settings/settings.routes.ts:30</note>
+      </notes>
+      <segment>
+        <source>Vulnerability scanning</source>
+      </segment>
+    </unit>
     <unit id="route.settings.signatures.title">
       <notes>
-        <note category="location">src/app/features/settings/settings.routes.ts:29</note>
+        <note category="location">src/app/features/settings/settings.routes.ts:36</note>
       </notes>
       <segment>
         <source>Signatures</source>
@@ -35210,7 +35226,7 @@
     </unit>
     <unit id="route.settings.storage.title">
       <notes>
-        <note category="location">src/app/features/settings/settings.routes.ts:35</note>
+        <note category="location">src/app/features/settings/settings.routes.ts:42</note>
       </notes>
       <segment>
         <source>Storage settings</source>
@@ -40056,6 +40072,375 @@
       </notes>
       <segment>
         <source>Stored</source>
+      </segment>
+    </unit>
+    <unit id="vuln.settings.heading">
+      <notes>
+        <note category="location">src/app/features/settings/vulnerability-settings.html:1</note>
+      </notes>
+      <segment>
+        <source>Vulnerability scanning</source>
+      </segment>
+    </unit>
+    <unit id="vuln.settings.blocker.off">
+      <notes>
+        <note category="location">src/app/features/settings/vulnerability-settings.html:16,17</note>
+      </notes>
+      <segment>
+        <source>The image scanning is off in this installation: <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">vulnerabilities.images.enabled</pc> is false in the configuration. No image is scanned for vulnerabilities.</source>
+      </segment>
+    </unit>
+    <unit id="vuln.settings.blocker.no-database">
+      <notes>
+        <note category="location">src/app/features/settings/vulnerability-settings.html:26,29</note>
+      </notes>
+      <segment>
+        <source> No vulnerability database is in use, so no image is scanned: images wait and read <pc id="0" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">No database</pc>. The task <pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">vuln-sync-trivy-db</pc> imports it every six hours; <pc id="2" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">Import now</pc> imports it at once. </source>
+      </segment>
+    </unit>
+    <unit id="vuln.settings.import-now">
+      <notes>
+        <note category="location">src/app/features/settings/vulnerability-settings.html:31,33</note>
+        <note category="location">src/app/features/settings/vulnerability-settings.html:252,254</note>
+      </notes>
+      <segment>
+        <source>Import now</source>
+      </segment>
+    </unit>
+    <unit id="vuln.settings.blocker.no-scanner">
+      <notes>
+        <note category="location">src/app/features/settings/vulnerability-settings.html:42,43</note>
+      </notes>
+      <segment>
+        <source>No replica of <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">vuln-scanner-trivy</pc> is ready, so the images wait for their scan. Check its pods under</source>
+      </segment>
+    </unit>
+    <unit id="vuln.settings.blocker.system">
+      <notes>
+        <note category="location">src/app/features/settings/vulnerability-settings.html:43,46</note>
+      </notes>
+      <segment>
+        <source>System status</source>
+      </segment>
+    </unit>
+    <unit id="vuln.settings.blocker.loading">
+      <notes>
+        <note category="location">src/app/features/settings/vulnerability-settings.html:51,54</note>
+      </notes>
+      <segment>
+        <source>Every ready replica of <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">vuln-scanner-trivy</pc> is still loading the database in use, so the images wait. A pod loads a new database in under a minute; one that takes longer says why in the log of its container <pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">database</pc>.</source>
+      </segment>
+    </unit>
+    <unit id="vuln.settings.scanning">
+      <notes>
+        <note category="location">src/app/features/settings/vulnerability-settings.html:64,65</note>
+      </notes>
+      <segment>
+        <source>Scanning</source>
+      </segment>
+    </unit>
+    <unit id="vuln.settings.waiting">
+      <notes>
+        <note category="location">src/app/features/settings/vulnerability-settings.html:66,68</note>
+      </notes>
+      <segment>
+        <source>Waiting</source>
+      </segment>
+    </unit>
+    <unit id="vuln.settings.oldest">
+      <notes>
+        <note category="location">src/app/features/settings/vulnerability-settings.html:70</note>
+      </notes>
+      <segment>
+        <source>the oldest queued</source>
+      </segment>
+    </unit>
+    <unit id="vuln.settings.scanning-now">
+      <notes>
+        <note category="location">src/app/features/settings/vulnerability-settings.html:73,74</note>
+      </notes>
+      <segment>
+        <source>Being scanned</source>
+      </segment>
+    </unit>
+    <unit id="vuln.settings.scanned">
+      <notes>
+        <note category="location">src/app/features/settings/vulnerability-settings.html:75,77</note>
+      </notes>
+      <segment>
+        <source>Scanned</source>
+      </segment>
+    </unit>
+    <unit id="vuln.settings.outdated">
+      <notes>
+        <note category="location">src/app/features/settings/vulnerability-settings.html:80,81</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="INTERPOLATION" disp="{{ s.outdated | number }}"/> of them under an older database, scanned again in turn</source>
+      </segment>
+    </unit>
+    <unit id="vuln.settings.failed">
+      <notes>
+        <note category="location">src/app/features/settings/vulnerability-settings.html:85,86</note>
+      </notes>
+      <segment>
+        <source>Failed</source>
+      </segment>
+    </unit>
+    <unit id="vuln.settings.why-waiting">
+      <notes>
+        <note category="location">src/app/features/settings/vulnerability-settings.html:90,91</note>
+      </notes>
+      <segment>
+        <source>Why they wait</source>
+      </segment>
+    </unit>
+    <unit id="vuln.settings.why-failed">
+      <notes>
+        <note category="location">src/app/features/settings/vulnerability-settings.html:103,104</note>
+      </notes>
+      <segment>
+        <source>Why they failed</source>
+      </segment>
+    </unit>
+    <unit id="vuln.settings.last-failure">
+      <notes>
+        <note category="location">src/app/features/settings/vulnerability-settings.html:117,118</note>
+      </notes>
+      <segment>
+        <source>Last failure</source>
+      </segment>
+    </unit>
+    <unit id="vuln.settings.failure.image">
+      <notes>
+        <note category="location">src/app/features/settings/vulnerability-settings.html:120,122</note>
+      </notes>
+      <segment>
+        <source>Image</source>
+      </segment>
+    </unit>
+    <unit id="vuln.settings.failure.in">
+      <notes>
+        <note category="location">src/app/features/settings/vulnerability-settings.html:123</note>
+      </notes>
+      <segment>
+        <source>in</source>
+      </segment>
+    </unit>
+    <unit id="vuln.settings.failure.manifest">
+      <notes>
+        <note category="location">src/app/features/settings/vulnerability-settings.html:129,130</note>
+      </notes>
+      <segment>
+        <source>Manifest</source>
+      </segment>
+    </unit>
+    <unit id="vuln.settings.failure.why">
+      <notes>
+        <note category="location">src/app/features/settings/vulnerability-settings.html:132</note>
+      </notes>
+      <segment>
+        <source>Why</source>
+      </segment>
+    </unit>
+    <unit id="vuln.settings.failure.attempts">
+      <notes>
+        <note category="location">src/app/features/settings/vulnerability-settings.html:133,134</note>
+      </notes>
+      <segment>
+        <source>Attempts</source>
+      </segment>
+    </unit>
+    <unit id="vuln.settings.failure.when">
+      <notes>
+        <note category="location">src/app/features/settings/vulnerability-settings.html:136,137</note>
+      </notes>
+      <segment>
+        <source>When</source>
+      </segment>
+    </unit>
+    <unit id="vuln.settings.scanners">
+      <notes>
+        <note category="location">src/app/features/settings/vulnerability-settings.html:146,147</note>
+      </notes>
+      <segment>
+        <source>Image scanners</source>
+      </segment>
+    </unit>
+    <unit id="vuln.sources.scanners-ready">
+      <notes>
+        <note category="location">src/app/features/settings/vulnerability-settings.html:149,150</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {1 ready} other {<ph id="0" equiv="INTERPOLATION"/> ready}}</source>
+      </segment>
+    </unit>
+    <unit id="vuln.sources.scanners-busy">
+      <notes>
+        <note category="location">src/app/features/settings/vulnerability-settings.html:151,152</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {1 scan running} other {<ph id="0" equiv="INTERPOLATION"/> scans running}}</source>
+      </segment>
+    </unit>
+    <unit id="vuln.sources.scanners-database">
+      <notes>
+        <note category="location">src/app/features/settings/vulnerability-settings.html:153,155</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =0 {all on the database in use} =1 {1 not yet on the database in use} other {<ph id="0" equiv="INTERPOLATION"/> not yet on the database in use}}</source>
+      </segment>
+    </unit>
+    <unit id="vuln.settings.database">
+      <notes>
+        <note category="location">src/app/features/settings/vulnerability-settings.html:164,165</note>
+      </notes>
+      <segment>
+        <source>Vulnerability database</source>
+      </segment>
+    </unit>
+    <unit id="vuln.settings.db.error.when">
+      <notes>
+        <note category="location">src/app/features/settings/vulnerability-settings.html:172,173</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {Failed once,} other {Failed <ph id="0" equiv="INTERPOLATION"/> times in a row,}}</source>
+      </segment>
+    </unit>
+    <unit id="vuln.settings.db.error.last">
+      <notes>
+        <note category="location">src/app/features/settings/vulnerability-settings.html:173,174</note>
+      </notes>
+      <segment>
+        <source>last</source>
+      </segment>
+    </unit>
+    <unit id="vuln.settings.db.in-use">
+      <notes>
+        <note category="location">src/app/features/settings/vulnerability-settings.html:184,186</note>
+      </notes>
+      <segment>
+        <source>In use</source>
+      </segment>
+    </unit>
+    <unit id="vuln.settings.db.none">
+      <notes>
+        <note category="location">src/app/features/settings/vulnerability-settings.html:190,191</note>
+      </notes>
+      <segment>
+        <source>None yet</source>
+      </segment>
+    </unit>
+    <unit id="vuln.settings.db.built">
+      <notes>
+        <note category="location">src/app/features/settings/vulnerability-settings.html:195,197</note>
+      </notes>
+      <segment>
+        <source>Built</source>
+      </segment>
+    </unit>
+    <unit id="vuln.settings.db.stale">
+      <notes>
+        <note category="location">src/app/features/settings/vulnerability-settings.html:199,200</note>
+      </notes>
+      <segment>
+        <source>Stale</source>
+      </segment>
+    </unit>
+    <unit id="vuln.settings.db.current">
+      <notes>
+        <note category="location">src/app/features/settings/vulnerability-settings.html:201,202</note>
+      </notes>
+      <segment>
+        <source>Current</source>
+      </segment>
+    </unit>
+    <unit id="vuln.settings.db.imported">
+      <notes>
+        <note category="location">src/app/features/settings/vulnerability-settings.html:206,207</note>
+      </notes>
+      <segment>
+        <source>Imported</source>
+      </segment>
+    </unit>
+    <unit id="vuln.settings.db.confirmed">
+      <notes>
+        <note category="location">src/app/features/settings/vulnerability-settings.html:210,211</note>
+      </notes>
+      <segment>
+        <source>Last confirmed</source>
+      </segment>
+    </unit>
+    <unit id="vuln.settings.db.next">
+      <notes>
+        <note category="location">src/app/features/settings/vulnerability-settings.html:213,215</note>
+      </notes>
+      <segment>
+        <source>Next import</source>
+      </segment>
+    </unit>
+    <unit id="vuln.settings.db.no-schedule">
+      <notes>
+        <note category="location">src/app/features/settings/vulnerability-settings.html:218,221</note>
+      </notes>
+      <segment>
+        <source>Not scheduled</source>
+      </segment>
+    </unit>
+    <unit id="vuln.settings.db.repository">
+      <notes>
+        <note category="location">src/app/features/settings/vulnerability-settings.html:222,224</note>
+      </notes>
+      <segment>
+        <source>Repository</source>
+      </segment>
+    </unit>
+    <unit id="vuln.settings.db.stale-note">
+      <notes>
+        <note category="location">src/app/features/settings/vulnerability-settings.html:237,239</note>
+      </notes>
+      <segment>
+        <source> The last confirmation of the database is older than <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">vulnerabilities.stale_after</pc>. Scanning goes on with it; a newer one arrives with the next import that succeeds. </source>
+      </segment>
+    </unit>
+    <unit id="vuln.settings.db.local">
+      <notes>
+        <note category="location">src/app/features/settings/vulnerability-settings.html:246,248</note>
+      </notes>
+      <segment>
+        <source> The database comes from a local repository of this installation, which you fill yourself: the commands are under <pc id="0" equivStart="START_LINK" equivEnd="CLOSE_LINK" type="link" dispStart="&lt;a routerLink=&quot;/admin/advisory-sources&quot;&gt;" dispEnd="&lt;/a&gt;">Advisory sources</pc>. </source>
+      </segment>
+    </unit>
+    <unit id="vuln.settings.db.loading">
+      <notes>
+        <note category="location">src/app/features/settings/vulnerability-settings.html:256,258</note>
+      </notes>
+      <segment>
+        <source>Loading the database.</source>
+      </segment>
+    </unit>
+    <unit id="vuln.settings.loading">
+      <notes>
+        <note category="location">src/app/features/settings/vulnerability-settings.html:262,264</note>
+      </notes>
+      <segment>
+        <source>Loading the vulnerability scanning.</source>
+      </segment>
+    </unit>
+    <unit id="vuln.settings.db.error.other">
+      <notes>
+        <note category="location">src/app/features/settings/vulnerability-settings.ts:223</note>
+      </notes>
+      <segment>
+        <source>The last import of the database failed.</source>
+      </segment>
+    </unit>
+    <unit id="vuln.settings.import-queued">
+      <notes>
+        <note category="location">src/app/features/settings/vulnerability-settings.ts:249</note>
+      </notes>
+      <segment>
+        <source>The import of the database is queued. This page shows its result.</source>
       </segment>
     </unit>
     <unit id="setup.unknown-guide">
@@ -50627,7 +51012,7 @@
     </unit>
     <unit id="vuln.sources.database-copy">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:91</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:88</note>
       </notes>
       <segment>
         <source>On a machine that reaches both</source>
@@ -50635,7 +51020,7 @@
     </unit>
     <unit id="vuln.sources.database-two-steps">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:96</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:93</note>
       </notes>
       <segment>
         <source>On two machines, one on each side</source>
@@ -50643,7 +51028,7 @@
     </unit>
     <unit id="vuln.sources.db-invalid">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:113</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:110</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="repository" disp="repository"/> is not a local or remote OCI repository.</source>
@@ -50651,7 +51036,7 @@
     </unit>
     <unit id="vuln.sources.db-off">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:115</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:112</note>
       </notes>
       <segment>
         <source>The repository <ph id="0" equiv="repository" disp="repository"/> is switched off.</source>
@@ -50659,7 +51044,7 @@
     </unit>
     <unit id="vuln.sources.db-missing">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:117</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:114</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="repository" disp="repository"/> does not hold <ph id="1" equiv="reference" disp="reference"/>.</source>
@@ -50667,7 +51052,7 @@
     </unit>
     <unit id="vuln.sources.db-upstream">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:119</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:116</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="repository" disp="repository"/> cannot reach its registry.</source>
@@ -50675,7 +51060,7 @@
     </unit>
     <unit id="vuln.sources.db-too-large">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:121</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:118</note>
       </notes>
       <segment>
         <source>The image database is larger than the limit of this installation.</source>
@@ -50683,7 +51068,7 @@
     </unit>
     <unit id="vuln.sources.db-archive">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:123</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:120</note>
       </notes>
       <segment>
         <source>The image database is damaged and was not used.</source>
@@ -50691,7 +51076,7 @@
     </unit>
     <unit id="vuln.sources.heading">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:143,144</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:140,141</note>
       </notes>
       <segment>
         <source>Advisory sources</source>
@@ -50699,7 +51084,7 @@
     </unit>
     <unit id="vuln.sources.hint">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:145,148</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:142,145</note>
       </notes>
       <segment>
         <source>Quader matches your stored versions against advisory data it keeps itself. This is where the data comes from and how fresh it is.</source>
@@ -50707,7 +51092,7 @@
     </unit>
     <unit id="vuln.sources.loading">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:161,162</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:158,159</note>
       </notes>
       <segment>
         <source>Loading the advisory sources.</source>
@@ -50715,7 +51100,7 @@
     </unit>
     <unit id="vuln.sources.database">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:174,175</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:171,172</note>
       </notes>
       <segment>
         <source>Image database</source>
@@ -50723,7 +51108,7 @@
     </unit>
     <unit id="vuln.sources.database-hint">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:175,177</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:172,174</note>
       </notes>
       <segment>
         <source>for the image scanning</source>
@@ -50731,7 +51116,7 @@
     </unit>
     <unit id="vuln.sources.database-only">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:203,205</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:200,202</note>
       </notes>
       <segment>
         <source>The image database comes from this repository alone.</source>
@@ -50739,7 +51124,7 @@
     </unit>
     <unit id="vuln.sources.state-empty">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:211,212</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:208,209</note>
       </notes>
       <segment>
         <source>Not imported yet</source>
@@ -50747,7 +51132,7 @@
     </unit>
     <unit id="vuln.sources.state-stale">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:213,214</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:210,211</note>
       </notes>
       <segment>
         <source>Stale</source>
@@ -50755,7 +51140,7 @@
     </unit>
     <unit id="vuln.sources.state-current">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:215,217</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:212,214</note>
       </notes>
       <segment>
         <source>Current</source>
@@ -50763,7 +51148,7 @@
     </unit>
     <unit id="vuln.sources.rejected-full">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:241,242</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:238,239</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="INTERPOLATION" disp="{{ s.fullRejected | number }}"/> in the last full sync</source>
@@ -50771,7 +51156,7 @@
     </unit>
     <unit id="vuln.sources.run-group">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:259</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:256</note>
       </notes>
       <segment>
         <source>Run now</source>
@@ -50779,7 +51164,7 @@
     </unit>
     <unit id="vuln.sources.run-osv">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:260,261</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:257,258</note>
       </notes>
       <segment>
         <source>Run the incremental sync now</source>
@@ -50787,7 +51172,7 @@
     </unit>
     <unit id="vuln.sources.run-full">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:261,262</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:258,259</note>
       </notes>
       <segment>
         <source>Run a full sync now</source>
@@ -50795,7 +51180,7 @@
     </unit>
     <unit id="vuln.sources.run-kev">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:262,263</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:259,260</note>
       </notes>
       <segment>
         <source>Refresh the known-exploited catalog now</source>
@@ -50803,7 +51188,7 @@
     </unit>
     <unit id="vuln.sources.run-database">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:263,265</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:260,262</note>
       </notes>
       <segment>
         <source>Fetch the image database now</source>
@@ -50811,7 +51196,7 @@
     </unit>
     <unit id="vuln.sources.osv-off">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:266,268</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:263,265</note>
       </notes>
       <segment>
         <source>OSV is off, so it cannot run. The setting <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">vulnerabilities.sources.osv.mode</pc> turns it on.</source>
@@ -50819,7 +51204,7 @@
     </unit>
     <unit id="vuln.sources.kev-off">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:269,271</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:266,268</note>
       </notes>
       <segment>
         <source>CISA KEV is off, so its catalog cannot be refreshed. The setting <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">vulnerabilities.sources.kev.mode</pc> turns it on.</source>
@@ -50827,47 +51212,31 @@
     </unit>
     <unit id="vuln.sources.database-off">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:272,274</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:269,271</note>
       </notes>
       <segment>
         <source>The image scanning is off, so its database is not fetched. The setting <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">vulnerabilities.images.enabled</pc> turns it on.</source>
       </segment>
     </unit>
-    <unit id="vuln.sources.scanners">
+    <unit id="vuln.sources.image-scanning-link">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:280,281</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:276,277</note>
       </notes>
       <segment>
-        <source>Image scanners</source>
+        <source>The image scanners, what they scan now and the database they scan with are under</source>
       </segment>
     </unit>
-    <unit id="vuln.sources.scanners-ready">
+    <unit id="vuln.sources.image-scanning-page">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:285,286</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:277,280</note>
       </notes>
       <segment>
-        <source>{VAR_PLURAL, plural, =1 {1 ready} other {<ph id="0" equiv="INTERPOLATION"/> ready}}</source>
-      </segment>
-    </unit>
-    <unit id="vuln.sources.scanners-busy">
-      <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:286,287</note>
-      </notes>
-      <segment>
-        <source>{VAR_PLURAL, plural, =1 {1 scan running} other {<ph id="0" equiv="INTERPOLATION"/> scans running}}</source>
-      </segment>
-    </unit>
-    <unit id="vuln.sources.scanners-database">
-      <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:288,290</note>
-      </notes>
-      <segment>
-        <source>{VAR_PLURAL, plural, =0 {all on the database in use} =1 {1 not yet on the database in use} other {<ph id="0" equiv="INTERPOLATION"/> not yet on the database in use}}</source>
+        <source>Settings › Vulnerability scanning</source>
       </segment>
     </unit>
     <unit id="vuln.sources.mirror">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:314,315</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:296,297</note>
       </notes>
       <segment>
         <source>Load the files into the mirror</source>
@@ -50875,7 +51244,7 @@
     </unit>
     <unit id="vuln.sources.mirror-hint">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:318,320</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:300,302</note>
       </notes>
       <segment>
         <source>
@@ -50885,7 +51254,7 @@
     </unit>
     <unit id="vuln.sources.caption">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:389</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:358</note>
       </notes>
       <segment>
         <source>Advisory sources</source>
@@ -50893,7 +51262,7 @@
     </unit>
     <unit id="vuln.sources.empty">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:390</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:359</note>
       </notes>
       <segment>
         <source>There is no advisory source yet.</source>
@@ -50901,7 +51270,7 @@
     </unit>
     <unit id="vuln.sources.copy">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:391</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:360</note>
       </notes>
       <segment>
         <source>Copy the commands</source>
@@ -50909,7 +51278,7 @@
     </unit>
     <unit id="vuln.sources.database-fill">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:392</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:361</note>
       </notes>
       <segment>
         <source>Fill the repository of the image database</source>
@@ -50917,7 +51286,7 @@
     </unit>
     <unit id="vuln.sources.database-fill-hint">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:393</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:362</note>
       </notes>
       <segment>
         <source>The image database comes from a local repository of this installation, which makes no request for it. Copy the database into it with oras, from a machine that reaches both the publisher and this installation, or in two steps through a file.</source>
@@ -50925,7 +51294,7 @@
     </unit>
     <unit id="vuln.sources.col-source">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:402</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:371</note>
       </notes>
       <segment>
         <source>Source</source>
@@ -50933,7 +51302,7 @@
     </unit>
     <unit id="vuln.sources.col-mode">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:403</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:372</note>
       </notes>
       <segment>
         <source>Mode</source>
@@ -50941,7 +51310,7 @@
     </unit>
     <unit id="vuln.sources.help-mode">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:403</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:372</note>
       </notes>
       <segment>
         <source>online reads the public archive, repository reads a mirror repository, off stops the sync and keeps the data as it was.</source>
@@ -50949,7 +51318,7 @@
     </unit>
     <unit id="vuln.sources.col-state">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:404</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:373</note>
       </notes>
       <segment>
         <source>State</source>
@@ -50957,7 +51326,7 @@
     </unit>
     <unit id="vuln.sources.help-state">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:404</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:373</note>
       </notes>
       <segment>
         <source>Stale means the last successful sync is older than the configured limit.</source>
@@ -50965,7 +51334,7 @@
     </unit>
     <unit id="vuln.sources.col-synced">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:405</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:374</note>
       </notes>
       <segment>
         <source>Last sync</source>
@@ -50973,7 +51342,7 @@
     </unit>
     <unit id="vuln.sources.col-failures">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:407</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:376</note>
       </notes>
       <segment>
         <source>Failures</source>
@@ -50981,7 +51350,7 @@
     </unit>
     <unit id="vuln.sources.help-failures">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:408</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:377</note>
       </notes>
       <segment>
         <source>The count of consecutive failed runs and the error of the last one.</source>
@@ -50989,7 +51358,7 @@
     </unit>
     <unit id="vuln.sources.col-records">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:410</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:379</note>
       </notes>
       <segment>
         <source>Records</source>
@@ -50997,7 +51366,7 @@
     </unit>
     <unit id="vuln.sources.col-rejected">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:411</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:380</note>
       </notes>
       <segment>
         <source>Rejected</source>
@@ -51005,7 +51374,7 @@
     </unit>
     <unit id="vuln.sources.help-rejected">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:411</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:380</note>
       </notes>
       <segment>
         <source>Records of the last run that were rejected: they failed validation or crossed the size or compression limit of a record. Below it, the count of the last full sync, which an incremental run does not change. A rejected record that was stored before keeps its stored copy.</source>
@@ -51013,7 +51382,7 @@
     </unit>
     <unit id="vuln.sources.col-unevaluable">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:412</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:381</note>
       </notes>
       <segment>
         <source>Unevaluable</source>
@@ -51021,7 +51390,7 @@
     </unit>
     <unit id="vuln.sources.help-unevaluable">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:412</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:381</note>
       </notes>
       <segment>
         <source>Affected ranges Quader cannot compare with a version; a version they name is not flagged by them.</source>
@@ -51029,7 +51398,7 @@
     </unit>
     <unit id="vuln.sources.col-next">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:413</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:382</note>
       </notes>
       <segment>
         <source>Next run</source>
@@ -51037,7 +51406,7 @@
     </unit>
     <unit id="vuln.sources.mode-online">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:431</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:400</note>
       </notes>
       <segment>
         <source>Online</source>
@@ -51045,7 +51414,7 @@
     </unit>
     <unit id="vuln.sources.mode-repository">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:433</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:402</note>
       </notes>
       <segment>
         <source>Mirror repository</source>
@@ -51053,7 +51422,7 @@
     </unit>
     <unit id="vuln.sources.mode-off">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:435</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:404</note>
       </notes>
       <segment>
         <source>Off</source>
@@ -51061,7 +51430,7 @@
     </unit>
     <unit id="vuln.sources.error.unknown">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:447</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:416</note>
       </notes>
       <segment>
         <source>The last run failed.</source>
@@ -51069,7 +51438,7 @@
     </unit>
     <unit id="vuln.sources.queued">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:472</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:441</note>
       </notes>
       <segment>
         <source>The run is queued. Reload the page to see its result.</source>
@@ -53393,7 +53762,7 @@
     </unit>
     <unit id="scanners.col.pod-database">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:373</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:378</note>
       </notes>
       <segment>
         <source>Database</source>
@@ -53401,7 +53770,7 @@
     </unit>
     <unit id="scanners.col.pod-database-help">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:374</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:379</note>
       </notes>
       <segment>
         <source>The advisory database the pod detects with. Database in use: the one Quader uses now, with how long ago it was built. Older database: the pod is still loading the one in use, which takes under a minute, or its container database cannot load it; that container&apos;s log says why. No database yet: the pod&apos;s first load has not finished.</source>
@@ -53409,7 +53778,7 @@
     </unit>
     <unit id="scanners.caption">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:378</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:383</note>
       </notes>
       <segment>
         <source>Replicas of <ph id="0" equiv="deployment" disp="d"/></source>
@@ -53417,7 +53786,7 @@
     </unit>
     <unit id="scanners.fold">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:384</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:389</note>
       </notes>
       <segment>
         <source>Replicas of <ph id="0" equiv="deployment" disp="d"/> (<ph id="1" equiv="count" disp="n"/>)</source>
@@ -53425,8 +53794,8 @@
     </unit>
     <unit id="scanners.col.name">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:396</note>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:413</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:401</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:418</note>
       </notes>
       <segment>
         <source>Name</source>
@@ -53434,7 +53803,7 @@
     </unit>
     <unit id="scanners.col.node">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:397</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:402</note>
       </notes>
       <segment>
         <source>Node</source>
@@ -53442,7 +53811,7 @@
     </unit>
     <unit id="scanners.col.version">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:398</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:403</note>
       </notes>
       <segment>
         <source>Version</source>
@@ -53450,8 +53819,8 @@
     </unit>
     <unit id="scanners.col.state">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:399</note>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:414</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:404</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:419</note>
       </notes>
       <segment>
         <source>State</source>
@@ -53459,7 +53828,7 @@
     </unit>
     <unit id="scanners.col.since">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:402</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:407</note>
       </notes>
       <segment>
         <source>State changed</source>
@@ -53467,7 +53836,7 @@
     </unit>
     <unit id="scanners.col.since-help">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:403</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:408</note>
       </notes>
       <segment>
         <source>When the replica entered the state it shows, or the reason beside it changed.</source>
@@ -53475,7 +53844,7 @@
     </unit>
     <unit id="scanners.col.heartbeat">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:405</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:410</note>
       </notes>
       <segment>
         <source>Heartbeat</source>
@@ -53483,9 +53852,9 @@
     </unit>
     <unit id="scanners.col.tool">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:407</note>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:408</note>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:415</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:412</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:413</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:420</note>
       </notes>
       <segment>
         <source>Tool</source>
@@ -53493,7 +53862,7 @@
     </unit>
     <unit id="scanners.col.updater-database">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:421</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:426</note>
       </notes>
       <segment>
         <source>Definitions it holds</source>
@@ -53501,7 +53870,7 @@
     </unit>
     <unit id="scanners.col.database">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:422</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:427</note>
       </notes>
       <segment>
         <source>Signature database</source>
@@ -53509,7 +53878,7 @@
     </unit>
     <unit id="scanners.col.slots">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:429</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:434</note>
       </notes>
       <segment>
         <source>Slots</source>
@@ -53517,7 +53886,7 @@
     </unit>
     <unit id="scanners.col.slots-help">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:431</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:436</note>
       </notes>
       <segment>
         <source>The scans the replica runs now, of the scans it runs at a time.</source>
@@ -53525,7 +53894,7 @@
     </unit>
     <unit id="scanners.col.calls">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:439</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:444</note>
       </notes>
       <segment>
         <source>Working on</source>
@@ -53533,7 +53902,7 @@
     </unit>
     <unit id="scanners.col.calls-help">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:440</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:445</note>
       </notes>
       <segment>
         <source>What the replica checks now, by its own report, and for how long.</source>
@@ -55249,7 +55618,7 @@
     </unit>
     <unit id="vuln.details.scanned">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-details.ts:47,48</note>
+        <note category="location">src/app/shared/vulnerability/grade-details.ts:59,60</note>
       </notes>
       <segment>
         <source>Scanned</source>
@@ -55257,7 +55626,7 @@
     </unit>
     <unit id="vuln.details.scanner">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-details.ts:50,52</note>
+        <note category="location">src/app/shared/vulnerability/grade-details.ts:62,64</note>
       </notes>
       <segment>
         <source>Scanner</source>
@@ -55265,7 +55634,7 @@
     </unit>
     <unit id="vuln.details.then">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-details.ts:59,61</note>
+        <note category="location">src/app/shared/vulnerability/grade-details.ts:71,73</note>
       </notes>
       <segment>
         <source>Database then</source>
@@ -55273,8 +55642,8 @@
     </unit>
     <unit id="vuln.details.built">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-details.ts:62,63</note>
-        <note category="location">src/app/shared/vulnerability/grade-details.ts:73,74</note>
+        <note category="location">src/app/shared/vulnerability/grade-details.ts:74,75</note>
+        <note category="location">src/app/shared/vulnerability/grade-details.ts:85,86</note>
       </notes>
       <segment>
         <source>built <pc id="0" equivStart="START_TAG_TIME" equivEnd="CLOSE_TAG_TIME" type="other" dispStart="&lt;time class=&quot;nowrap&quot; [attr.datetime]=&quot;b&quot;&gt;" dispEnd="&lt;/time&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ b | time: &apos;date&apos; }}"/></pc></source>
@@ -55282,7 +55651,7 @@
     </unit>
     <unit id="vuln.details.today">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-details.ts:70,72</note>
+        <note category="location">src/app/shared/vulnerability/grade-details.ts:82,84</note>
       </notes>
       <segment>
         <source>Database today</source>
@@ -55290,7 +55659,7 @@
     </unit>
     <unit id="vuln.details.fetched">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-details.ts:76,77</note>
+        <note category="location">src/app/shared/vulnerability/grade-details.ts:88,89</note>
       </notes>
       <segment>
         <source>, fetched <pc id="0" equivStart="START_TAG_TIME" equivEnd="CLOSE_TAG_TIME" type="other" dispStart="&lt;time class=&quot;nowrap&quot; [attr.datetime]=&quot;s&quot;&gt;" dispEnd="&lt;/time&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ s | time }}"/></pc></source>
@@ -55298,7 +55667,7 @@
     </unit>
     <unit id="vuln.details.stale">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-details.ts:78,80</note>
+        <note category="location">src/app/shared/vulnerability/grade-details.ts:90,92</note>
       </notes>
       <segment>
         <source>No newer database has arrived for a while.</source>
@@ -55306,7 +55675,7 @@
     </unit>
     <unit id="vuln.details.current">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-details.ts:84,86</note>
+        <note category="location">src/app/shared/vulnerability/grade-details.ts:96,98</note>
       </notes>
       <segment>
         <source>How current</source>
@@ -55314,7 +55683,7 @@
     </unit>
     <unit id="vuln.details.age.current">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-details.ts:87,88</note>
+        <note category="location">src/app/shared/vulnerability/grade-details.ts:99,100</note>
       </notes>
       <segment>
         <source>Under today&apos;s database</source>
@@ -55322,7 +55691,7 @@
     </unit>
     <unit id="vuln.details.age.older-days">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-details.ts:89,91</note>
+        <note category="location">src/app/shared/vulnerability/grade-details.ts:101,103</note>
       </notes>
       <segment>
         <source>{VAR_PLURAL, plural, =1 {Under a database 1 day older} other {Under a database <ph id="0" equiv="INTERPOLATION"/> days older}}</source>
@@ -55330,7 +55699,7 @@
     </unit>
     <unit id="vuln.details.age.older">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-details.ts:91,93</note>
+        <note category="location">src/app/shared/vulnerability/grade-details.ts:103,105</note>
       </notes>
       <segment>
         <source>Under an older database</source>
@@ -55338,7 +55707,7 @@
     </unit>
     <unit id="vuln.details.tech.then">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-details.ts:100,101</note>
+        <note category="location">src/app/shared/vulnerability/grade-details.ts:112,113</note>
       </notes>
       <segment>
         <source>Database then</source>
@@ -55346,7 +55715,7 @@
     </unit>
     <unit id="vuln.details.tech.today">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-details.ts:104,105</note>
+        <note category="location">src/app/shared/vulnerability/grade-details.ts:116,117</note>
       </notes>
       <segment>
         <source>Database today</source>
@@ -55354,7 +55723,7 @@
     </unit>
     <unit id="vuln.details.advisories">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-details.ts:111,112</note>
+        <note category="location">src/app/shared/vulnerability/grade-details.ts:123,124</note>
       </notes>
       <segment>
         <source>Checked against the advisories of <pc id="0" equivStart="START_TAG_TIME" equivEnd="CLOSE_TAG_TIME" type="other" dispStart="&lt;time class=&quot;nowrap&quot; [attr.datetime]=&quot;at&quot;&gt;" dispEnd="&lt;/time&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ at | time }}"/></pc>.</source>
@@ -55362,7 +55731,7 @@
     </unit>
     <unit id="vuln.details.sources">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-details.ts:113,114</note>
+        <note category="location">src/app/shared/vulnerability/grade-details.ts:125,126</note>
       </notes>
       <segment>
         <source>Sources</source>
@@ -55370,7 +55739,7 @@
     </unit>
     <unit id="vuln.details.sources.osv">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-details.ts:114,117</note>
+        <note category="location">src/app/shared/vulnerability/grade-details.ts:126,129</note>
       </notes>
       <segment>
         <source>GitHub Advisory Database and OpenSSF malicious-packages, through osv.dev</source>
@@ -55378,15 +55747,23 @@
     </unit>
     <unit id="vuln.details.findings">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-details.ts:123,126</note>
+        <note category="location">src/app/shared/vulnerability/grade-details.ts:135,138</note>
       </notes>
       <segment>
         <source>Show the findings</source>
       </segment>
     </unit>
+    <unit id="vuln.details.scanning-page">
+      <notes>
+        <note category="location">src/app/shared/vulnerability/grade-details.ts:142,146</note>
+      </notes>
+      <segment>
+        <source>Vulnerability scanning in the admin area</source>
+      </segment>
+    </unit>
     <unit id="vuln.grade.critical">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:66</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:67</note>
       </notes>
       <segment>
         <source>Critical</source>
@@ -55394,7 +55771,7 @@
     </unit>
     <unit id="vuln.grade.high">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:68</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:69</note>
       </notes>
       <segment>
         <source>High</source>
@@ -55402,7 +55779,7 @@
     </unit>
     <unit id="vuln.grade.medium">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:70</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:71</note>
       </notes>
       <segment>
         <source>Medium</source>
@@ -55410,7 +55787,7 @@
     </unit>
     <unit id="vuln.grade.low-or-unknown">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:77</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:78</note>
       </notes>
       <segment>
         <source>Low or Unknown</source>
@@ -55418,7 +55795,7 @@
     </unit>
     <unit id="vuln.grade.unknown">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:78</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:79</note>
       </notes>
       <segment>
         <source>Unknown</source>
@@ -55426,7 +55803,7 @@
     </unit>
     <unit id="vuln.grade.low">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:79</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:80</note>
       </notes>
       <segment>
         <source>Low</source>
@@ -55434,9 +55811,9 @@
     </unit>
     <unit id="vuln.grade.text.eosl">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:93</note>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:115</note>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:297</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:94</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:116</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:306</note>
       </notes>
       <segment>
         <source>OS end of life</source>
@@ -55444,7 +55821,7 @@
     </unit>
     <unit id="vuln.grade.text.clean">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:95</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:96</note>
       </notes>
       <segment>
         <source>no known vulnerabilities</source>
@@ -55452,7 +55829,7 @@
     </unit>
     <unit id="pkg.grade.no-findings">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:116</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:117</note>
       </notes>
       <segment>
         <source>no findings</source>
@@ -55460,7 +55837,7 @@
     </unit>
     <unit id="pkg.grade.one-finding">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:120</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:121</note>
       </notes>
       <segment>
         <source>1 finding</source>
@@ -55468,7 +55845,7 @@
     </unit>
     <unit id="pkg.grade.findings">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:121</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:122</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="count" disp="n.format(total)"/> findings</source>
@@ -55476,7 +55853,7 @@
     </unit>
     <unit id="pkg.grade.fixable">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:122</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:123</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="count" disp="n.format(g.fixable)"/> fixable</source>
@@ -55484,7 +55861,7 @@
     </unit>
     <unit id="vuln.grade.rule.s-image">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:138</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:139</note>
       </notes>
       <segment>
         <source>No known vulnerabilities, and the OS is supported</source>
@@ -55492,7 +55869,7 @@
     </unit>
     <unit id="vuln.grade.rule.s">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:139</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:140</note>
       </notes>
       <segment>
         <source>No known vulnerabilities</source>
@@ -55500,7 +55877,7 @@
     </unit>
     <unit id="vuln.grade.rule.a">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:141</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:142</note>
       </notes>
       <segment>
         <source>Only Low or Unknown, at most <ph id="0" equiv="max" disp="GRADE_A_MAX_LOW"/></source>
@@ -55508,7 +55885,7 @@
     </unit>
     <unit id="vuln.grade.rule.b-medium">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:144</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:145</note>
       </notes>
       <segment>
         <source>Medium found, no High or Critical</source>
@@ -55516,7 +55893,7 @@
     </unit>
     <unit id="vuln.grade.rule.b-low">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:145</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:146</note>
       </notes>
       <segment>
         <source>More than <ph id="0" equiv="max" disp="GRADE_A_MAX_LOW"/> Low or Unknown</source>
@@ -55524,7 +55901,7 @@
     </unit>
     <unit id="vuln.grade.rule.c-eosl">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:148</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:149</note>
       </notes>
       <segment>
         <source>OS end of life: no more security updates, the scan may miss vulnerabilities</source>
@@ -55532,7 +55909,7 @@
     </unit>
     <unit id="vuln.grade.rule.c">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:149</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:150</note>
       </notes>
       <segment>
         <source>High found, no Critical</source>
@@ -55540,7 +55917,7 @@
     </unit>
     <unit id="vuln.grade.rule.d">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:151</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:152</note>
       </notes>
       <segment>
         <source>1 to <ph id="0" equiv="max" disp="GRADE_D_MAX_CRITICAL"/> Critical</source>
@@ -55548,7 +55925,7 @@
     </unit>
     <unit id="vuln.grade.rule.e">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:153</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:154</note>
       </notes>
       <segment>
         <source>More than <ph id="0" equiv="max" disp="GRADE_D_MAX_CRITICAL"/> Critical</source>
@@ -55556,7 +55933,7 @@
     </unit>
     <unit id="vuln.check.word.checked">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:166</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:167</note>
       </notes>
       <segment>
         <source>Checked</source>
@@ -55564,7 +55941,7 @@
     </unit>
     <unit id="vuln.check.word.queued">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:168</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:169</note>
       </notes>
       <segment>
         <source>Queued</source>
@@ -55572,7 +55949,7 @@
     </unit>
     <unit id="vuln.check.word.scanning">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:170</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:171</note>
       </notes>
       <segment>
         <source>Scanning</source>
@@ -55580,7 +55957,7 @@
     </unit>
     <unit id="vuln.check.word.no-scanner">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:172</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:173</note>
       </notes>
       <segment>
         <source>No scanner</source>
@@ -55588,7 +55965,7 @@
     </unit>
     <unit id="vuln.check.word.no-database">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:174</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:175</note>
       </notes>
       <segment>
         <source>No database</source>
@@ -55596,7 +55973,7 @@
     </unit>
     <unit id="vuln.check.word.no-advisory-data">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:176</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:177</note>
       </notes>
       <segment>
         <source>No advisory data</source>
@@ -55604,7 +55981,7 @@
     </unit>
     <unit id="vuln.check.word.failed">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:180</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:181</note>
       </notes>
       <segment>
         <source>Scan failed</source>
@@ -55612,7 +55989,7 @@
     </unit>
     <unit id="vuln.check.word.off">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:184</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:185</note>
       </notes>
       <segment>
         <source>Scanning off</source>
@@ -55620,7 +55997,7 @@
     </unit>
     <unit id="vuln.check.word.unknown-upstream">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:186</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:187</note>
       </notes>
       <segment>
         <source>Not matched</source>
@@ -55628,7 +56005,7 @@
     </unit>
     <unit id="vuln.check.word.internal">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:188</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:189</note>
       </notes>
       <segment>
         <source>Internal</source>
@@ -55636,7 +56013,7 @@
     </unit>
     <unit id="vuln.check.word.not-an-image">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:190</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:191</note>
       </notes>
       <segment>
         <source>Not an image</source>
@@ -55644,7 +56021,7 @@
     </unit>
     <unit id="vuln.check.word.pending">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:193</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:194</note>
       </notes>
       <segment>
         <source>Not checked yet</source>
@@ -55652,7 +56029,7 @@
     </unit>
     <unit id="vuln.check.word.not-checked">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:195</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:196</note>
       </notes>
       <segment>
         <source>Not checked</source>
@@ -55660,7 +56037,7 @@
     </unit>
     <unit id="vuln.check.word.not-scanned">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:197</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:198</note>
       </notes>
       <segment>
         <source>Not scanned</source>
@@ -55668,7 +56045,7 @@
     </unit>
     <unit id="vuln.check.checked">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:240</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:246</note>
       </notes>
       <segment>
         <source>Checked for vulnerabilities</source>
@@ -55676,7 +56053,7 @@
     </unit>
     <unit id="vuln.check.queued-since">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:243</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:249</note>
       </notes>
       <segment>
         <source>Waits for its vulnerability scan since <ph id="0" equiv="time" disp="since"/>. It is scanned in turn, without anyone having to act.</source>
@@ -55684,15 +56061,23 @@
     </unit>
     <unit id="vuln.check.queued">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:244</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:250</note>
       </notes>
       <segment>
         <source>Waits for its vulnerability scan. It is scanned in turn, without anyone having to act.</source>
       </segment>
     </unit>
+    <unit id="vuln.check.queued-reason">
+      <notes>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:252</note>
+      </notes>
+      <segment>
+        <source>Last attempt: <ph id="0" equiv="reason" disp="reason"/>.</source>
+      </segment>
+    </unit>
     <unit id="vuln.check.scanning-since">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:247</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:256</note>
       </notes>
       <segment>
         <source>Being scanned for vulnerabilities, since <ph id="0" equiv="time" disp="since"/>.</source>
@@ -55700,7 +56085,7 @@
     </unit>
     <unit id="vuln.check.scanning">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:248</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:257</note>
       </notes>
       <segment>
         <source>Being scanned for vulnerabilities.</source>
@@ -55708,7 +56093,7 @@
     </unit>
     <unit id="vuln.check.no-scanner">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:250</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:259</note>
       </notes>
       <segment>
         <source>No vulnerability scanner is connected, so it cannot be scanned now. It is scanned once one is.</source>
@@ -55716,15 +56101,15 @@
     </unit>
     <unit id="vuln.check.no-database">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:252</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:261</note>
       </notes>
       <segment>
-        <source>No vulnerability database for images has been imported yet, so it cannot be scanned now. It is scanned once the database is there.</source>
+        <source>No vulnerability database for images is in use, so it cannot be scanned now. It is scanned once one is imported.</source>
       </segment>
     </unit>
     <unit id="vuln.check.no-advisory-data">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:254</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:263</note>
       </notes>
       <segment>
         <source>The advisory data of its ecosystem has not been imported yet. It is checked once the data is there.</source>
@@ -55732,7 +56117,7 @@
     </unit>
     <unit id="vuln.check.scan-failed">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:256</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:265</note>
       </notes>
       <segment>
         <source>The scan did not finish and is tried again.</source>
@@ -55740,7 +56125,7 @@
     </unit>
     <unit id="vuln.check.over-limits">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:258</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:267</note>
       </notes>
       <segment>
         <source>The image exceeds the limits of the scan. It is scanned once an administrator raises them.</source>
@@ -55748,7 +56133,7 @@
     </unit>
     <unit id="vuln.check.unreadable">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:260</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:269</note>
       </notes>
       <segment>
         <source>The scan could not read the image. It is scanned again by a release of Quader that reads it.</source>
@@ -55756,7 +56141,7 @@
     </unit>
     <unit id="vuln.check.off-installation">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:262</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:271</note>
       </notes>
       <segment>
         <source>Vulnerability scanning is switched off for this installation.</source>
@@ -55764,7 +56149,7 @@
     </unit>
     <unit id="vuln.check.off-repository">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:264</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:273</note>
       </notes>
       <segment>
         <source>Vulnerability scanning is switched off for this repository.</source>
@@ -55772,7 +56157,7 @@
     </unit>
     <unit id="vuln.check.not-matched">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:266</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:275</note>
       </notes>
       <segment>
         <source>This repository is set not to match public advisories.</source>
@@ -55780,7 +56165,7 @@
     </unit>
     <unit id="vuln.check.unknown-upstream">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:268</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:277</note>
       </notes>
       <segment>
         <source>Its upstream is not a known public registry, so public advisories are not matched. The repository&apos;s settings can match them.</source>
@@ -55788,7 +56173,7 @@
     </unit>
     <unit id="vuln.check.internal">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:270</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:279</note>
       </notes>
       <segment>
         <source>An internal name: public advisories do not apply.</source>
@@ -55796,7 +56181,7 @@
     </unit>
     <unit id="vuln.check.not-an-image">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:272</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:281</note>
       </notes>
       <segment>
         <source>Not a container image: this kind of artifact is not scanned for vulnerabilities.</source>
@@ -55804,7 +56189,7 @@
     </unit>
     <unit id="vuln.check.pending">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:274</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:283</note>
       </notes>
       <segment>
         <source>This version has not been checked for vulnerabilities yet.</source>
@@ -55812,7 +56197,7 @@
     </unit>
     <unit id="vuln.check.not-checked">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:276</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:285</note>
       </notes>
       <segment>
         <source>This version is not checked for vulnerabilities.</source>
@@ -55820,7 +56205,7 @@
     </unit>
     <unit id="vuln.check.format-not-scanned">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:279</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:288</note>
       </notes>
       <segment>
         <source>Packages of this type are not scanned for vulnerabilities.</source>
@@ -55828,7 +56213,7 @@
     </unit>
     <unit id="vuln.grade.count.critical">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:291</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:300</note>
         <note category="location">src/app/shared/vulnerability/severity-bar.ts:26</note>
       </notes>
       <segment>
@@ -55837,7 +56222,7 @@
     </unit>
     <unit id="vuln.grade.count.high">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:292</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:301</note>
         <note category="location">src/app/shared/vulnerability/severity-bar.ts:28</note>
       </notes>
       <segment>
@@ -55846,7 +56231,7 @@
     </unit>
     <unit id="vuln.grade.count.medium">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:293</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:302</note>
         <note category="location">src/app/shared/vulnerability/severity-bar.ts:30</note>
       </notes>
       <segment>
@@ -55855,7 +56240,7 @@
     </unit>
     <unit id="vuln.grade.count.low">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:294</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:303</note>
         <note category="location">src/app/shared/vulnerability/severity-bar.ts:32</note>
       </notes>
       <segment>
@@ -55864,7 +56249,7 @@
     </unit>
     <unit id="vuln.grade.count.unknown">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:295</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:304</note>
         <note category="location">src/app/shared/vulnerability/severity-bar.ts:34</note>
       </notes>
       <segment>
@@ -55873,7 +56258,7 @@
     </unit>
     <unit id="vuln.col.help.package">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:317</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:326</note>
       </notes>
       <segment>
         <source>The grade of the latest version in this repository, from S (no known vulnerabilities) to E (more than 5 Critical); N/A when it is not checked, with the reason beside it. Open the grade for when, by what and against which data it was checked.</source>
@@ -55881,10 +56266,154 @@
     </unit>
     <unit id="vuln.col.help.version">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:318</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:327</note>
       </notes>
       <segment>
         <source>The grade of the version, from S (no known vulnerabilities) to E (more than 5 Critical); N/A when it is not checked, with the reason beside it. Open the grade for when, by what and against which data it was checked.</source>
+      </segment>
+    </unit>
+    <unit id="vuln.scan-code.queued">
+      <notes>
+        <note category="location">src/app/shared/vulnerability/scan-codes.ts:10</note>
+      </notes>
+      <segment>
+        <source>Waits for its turn</source>
+      </segment>
+    </unit>
+    <unit id="vuln.scan-code.scanner-busy">
+      <notes>
+        <note category="location">src/app/shared/vulnerability/scan-codes.ts:12</note>
+      </notes>
+      <segment>
+        <source>Every scanner was busy</source>
+      </segment>
+    </unit>
+    <unit id="vuln.scan-code.scanner-draining">
+      <notes>
+        <note category="location">src/app/shared/vulnerability/scan-codes.ts:14</note>
+      </notes>
+      <segment>
+        <source>The scanner was shutting down</source>
+      </segment>
+    </unit>
+    <unit id="vuln.scan-code.database-loading">
+      <notes>
+        <note category="location">src/app/shared/vulnerability/scan-codes.ts:16</note>
+      </notes>
+      <segment>
+        <source>The scanners are still loading the database</source>
+      </segment>
+    </unit>
+    <unit id="vuln.scan-code.blobs-pending">
+      <notes>
+        <note category="location">src/app/shared/vulnerability/scan-codes.ts:18</note>
+      </notes>
+      <segment>
+        <source>The image&apos;s layers are still arriving</source>
+      </segment>
+    </unit>
+    <unit id="vuln.scan-code.spool-too-small">
+      <notes>
+        <note category="location">src/app/shared/vulnerability/scan-codes.ts:20</note>
+      </notes>
+      <segment>
+        <source>The worker had no room for the image</source>
+      </segment>
+    </unit>
+    <unit id="vuln.scan-code.repository-disabled">
+      <notes>
+        <note category="location">src/app/shared/vulnerability/scan-codes.ts:22</note>
+      </notes>
+      <segment>
+        <source>Its repository is switched off</source>
+      </segment>
+    </unit>
+    <unit id="vuln.scan-code.scanner-unavailable">
+      <notes>
+        <note category="location">src/app/shared/vulnerability/scan-codes.ts:25</note>
+      </notes>
+      <segment>
+        <source>No scanner could be reached</source>
+      </segment>
+    </unit>
+    <unit id="vuln.scan-code.registry-unavailable">
+      <notes>
+        <note category="location">src/app/shared/vulnerability/scan-codes.ts:27</note>
+      </notes>
+      <segment>
+        <source>The scanner could not reach the scan listener</source>
+      </segment>
+    </unit>
+    <unit id="vuln.scan-code.pull-refused">
+      <notes>
+        <note category="location">src/app/shared/vulnerability/scan-codes.ts:29</note>
+      </notes>
+      <segment>
+        <source>The scan listener refused the scanner&apos;s pull</source>
+      </segment>
+    </unit>
+    <unit id="vuln.scan-code.image-too-large">
+      <notes>
+        <note category="location">src/app/shared/vulnerability/scan-codes.ts:32</note>
+      </notes>
+      <segment>
+        <source>The image is larger than the scan&apos;s limit</source>
+      </segment>
+    </unit>
+    <unit id="vuln.scan-code.too-many-layers">
+      <notes>
+        <note category="location">src/app/shared/vulnerability/scan-codes.ts:34</note>
+      </notes>
+      <segment>
+        <source>The image has more layers than the scan&apos;s limit</source>
+      </segment>
+    </unit>
+    <unit id="vuln.scan-code.unpacked-limit">
+      <notes>
+        <note category="location">src/app/shared/vulnerability/scan-codes.ts:37</note>
+      </notes>
+      <segment>
+        <source>A layer unpacks beyond the scan&apos;s limit</source>
+      </segment>
+    </unit>
+    <unit id="vuln.scan-code.timeout">
+      <notes>
+        <note category="location">src/app/shared/vulnerability/scan-codes.ts:39</note>
+      </notes>
+      <segment>
+        <source>The scan took longer than its limit</source>
+      </segment>
+    </unit>
+    <unit id="vuln.scan-code.layer-missing">
+      <notes>
+        <note category="location">src/app/shared/vulnerability/scan-codes.ts:41</note>
+      </notes>
+      <segment>
+        <source>A layer of the image is not stored</source>
+      </segment>
+    </unit>
+    <unit id="vuln.scan-code.unreadable">
+      <notes>
+        <note category="location">src/app/shared/vulnerability/scan-codes.ts:44</note>
+      </notes>
+      <segment>
+        <source>The scanner cannot read the image</source>
+      </segment>
+    </unit>
+    <unit id="vuln.scan-code.analyser-failed">
+      <notes>
+        <note category="location">src/app/shared/vulnerability/scan-codes.ts:46</note>
+      </notes>
+      <segment>
+        <source>The analyser failed</source>
+      </segment>
+    </unit>
+    <unit id="vuln.scan-code.scanner-lost">
+      <notes>
+        <note category="location">src/app/shared/vulnerability/scan-codes.ts:48</note>
+      </notes>
+      <segment>
+        <source>The scanner went away during the scan</source>
       </segment>
     </unit>
     <unit id="vuln.bar.name">

@@ -14,6 +14,7 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 
 	"github.com/guided-traffic/quader/internal/api/v1/gen"
+	"github.com/guided-traffic/quader/internal/authz"
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/httpserver"
 	"github.com/guided-traffic/quader/internal/jobs"
@@ -75,6 +76,45 @@ func (s *Server) GetVulnerabilityDatabase(w http.ResponseWriter, r *http.Request
 	out := gen.VulnerabilityDatabase{Scanner: vuln.UnitScannerTrivy, BuiltAt: today.Database.BuiltAt, SyncedAt: today.SyncedAt, Stale: today.Stale}
 	if today.Database.Digest != "" {
 		out.Digest = &today.Database.Digest
+	}
+	writeJSON(w, r, http.StatusOK, out)
+}
+
+// GetVulnerabilityImageScans implements GET /api/v1/vulnerabilities/image-scans (R-VULN-053, settings:read): what the image scanning does
+// now, for its page of the admin area. The last failure's repository and image are named to a holder of content:metadata-read, as the
+// malware controller's queue names its files (Q-API-468); every other caller reads the manifest's digest. enabled false with every count
+// 0 while the image scanning is off.
+func (s *Server) GetVulnerabilityImageScans(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	rep, err := s.vulnReport()
+	if err != nil {
+		httpserver.Problem(w, r, err)
+		return
+	}
+	out := gen.VulnerabilityImageScans{Enabled: rep.ImageScanning(), Reasons: []gen.VulnerabilityImageScanReason{}}
+	if !out.Enabled {
+		writeJSON(w, r, http.StatusOK, out)
+		return
+	}
+	st, err := rep.ImageScans(ctx)
+	var names bool
+	if err == nil && st.LastFailure != nil {
+		names, err = Holds(ctx, s.o.Access, string(authz.ContentMetadataRead))
+	}
+	if err != nil {
+		httpserver.Problem(w, r, err)
+		return
+	}
+	out.Waiting, out.Scanning, out.Scanned, out.Outdated, out.Failed = st.Waiting, st.Scanning, st.Scanned, st.Outdated, st.Failed
+	out.OldestWaitingAt = st.OldestWaiting
+	for _, x := range st.Reasons {
+		out.Reasons = append(out.Reasons, gen.VulnerabilityImageScanReason{State: gen.VulnerabilityImageScanReasonState(x.State), Code: x.Code, Count: x.N})
+	}
+	if f := st.LastFailure; f != nil {
+		out.LastFailure = &gen.VulnerabilityImageScanFailure{Digest: f.Digest, Code: f.Code, Detail: f.Detail, Attempts: f.Attempts, At: f.At}
+		if names {
+			out.LastFailure.Repository, out.LastFailure.Image = &f.Repository, &f.Name
+		}
 	}
 	writeJSON(w, r, http.StatusOK, out)
 }

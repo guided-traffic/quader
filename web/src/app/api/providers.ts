@@ -47,7 +47,7 @@ import { BastionsApi, HttpBastionsApi } from './bastions-api';
 // <<< M5b bastion
 // >>> M4b vulnerabilities
 import { HttpVulnerabilitiesApi, VulnerabilitiesApi, vulnerabilityDatabaseRead } from './vulnerabilities-api';
-import { VULNERABILITY_DATABASE_READ } from '../core/vulnerability-database';
+import { IMAGE_SCANNING_PAGE, VULNERABILITY_DATABASE_READ } from '../core/vulnerability-database';
 // <<< M4b vulnerabilities
 // >>> G2 backups
 import { BackupsApi, HttpBackupsApi } from './backups-api';
@@ -165,6 +165,14 @@ export function provideApiServices(): Provider[] {
     // >>> M4b vulnerabilities
     { provide: VulnerabilitiesApi, useClass: HttpVulnerabilitiesApi },
     { provide: VULNERABILITY_DATABASE_READ, useFactory: vulnerabilityDatabaseRead },
+    // The grade details lead a reader of the settings to the image scanning's page (R-VULN-053); the Bastion binds none.
+    {
+      provide: IMAGE_SCANNING_PAGE,
+      useFactory: (): (() => boolean) => {
+        const session = inject(SessionStore);
+        return () => session.has('settings:read');
+      },
+    },
     // <<< M4b vulnerabilities
     // >>> G2 backups
     { provide: BackupsApi, useClass: HttpBackupsApi },

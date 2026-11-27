@@ -57,6 +57,7 @@ export const HELP_TOPICS: readonly (readonly [route: string, topic: HelpTopic])[
   // >>> malware
   ['/admin/settings/malware', { section: 'admin', page: 'operations' }],
   // <<< malware
+  ['/admin/settings/vulnerabilities', { section: 'admin', page: 'operations' }],
   ['/admin/settings/signatures', { section: 'admin', page: 'signatures' }],
   // >>> download-links
   ['/admin/settings/storage', { section: 'admin', page: 'download-links' }],

@@ -353,7 +353,7 @@ const vulnImageFailed = `-- name: VulnImageFailed :exec
 UPDATE vuln_image_scan
    SET state = 'failed', attempts = attempts + 1, not_before = now() + make_interval(secs => $1::float8),
        error_code = $2::text, error_detail = left($3::text, 1024),
-       judged = NULLIF($4::text, ''), started_at = NULL
+       judged = NULLIF($4::text, ''), started_at = NULL, failed_at = now()
  WHERE repo_id = $5::bigint AND name = $6::text AND digest = $7
 `
 
@@ -369,7 +369,7 @@ type VulnImageFailedParams struct {
 
 // A scan that did not finish: the state says so, so that nobody reads the absence of findings as clean. A row that had a detection keeps
 // it. A failure that may pass is due again after the back-off (judged empty); a terminal one names what it was judged under and is due
-// again when that changes (Q-VULN-270).
+// again when that changes (Q-VULN-270). failed_at is when, for the last failure the image scanning's page names (R-VULN-053).
 func (q *Queries) VulnImageFailed(ctx context.Context, arg VulnImageFailedParams) error {
 	_, err := q.db.Exec(ctx, vulnImageFailed,
 		arg.BackoffSeconds,
@@ -703,6 +703,60 @@ func (q *Queries) VulnImageKnownExploited(ctx context.Context, ids []string) ([]
 	return items, nil
 }
 
+const vulnImageLastFailure = `-- name: VulnImageLastFailure :many
+SELECT p.key::text AS project_key, r.key::text AS repo_key, s.name::text AS name, s.digest AS digest,
+       COALESCE(s.error_code, '')::text AS code, COALESCE(s.error_detail, '')::text AS detail, s.attempts::int AS attempts,
+       COALESCE((EXTRACT(EPOCH FROM s.failed_at) * 1000000)::bigint, 0)::bigint AS failed_us
+  FROM vuln_image_scan s
+  JOIN repositories r ON r.id = s.repo_id
+  JOIN project p ON p.id = r.project_id
+ WHERE s.state = 'failed' AND r.lifecycle = 'active'
+ ORDER BY s.failed_at DESC NULLS LAST, s.repo_id, s.name, s.digest
+ LIMIT 1
+`
+
+type VulnImageLastFailureRow struct {
+	ProjectKey string
+	RepoKey    string
+	Name       string
+	Digest     []byte
+	Code       string
+	Detail     string
+	Attempts   int32
+	FailedUs   int64
+}
+
+// The failed scan that failed last, with everything it carried (R-VULN-053): its repository, image and manifest, its code and text, its
+// attempts and when. A row that failed before failed_at was recorded comes after every row that has one.
+func (q *Queries) VulnImageLastFailure(ctx context.Context) ([]VulnImageLastFailureRow, error) {
+	rows, err := q.db.Query(ctx, vulnImageLastFailure)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []VulnImageLastFailureRow{}
+	for rows.Next() {
+		var i VulnImageLastFailureRow
+		if err := rows.Scan(
+			&i.ProjectKey,
+			&i.RepoKey,
+			&i.Name,
+			&i.Digest,
+			&i.Code,
+			&i.Detail,
+			&i.Attempts,
+			&i.FailedUs,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const vulnImageManifests = `-- name: VulnImageManifests :many
 WITH tagged AS (
     SELECT p.repo_id, p.name, i.blob_sha256 AS digest, ''::text AS platform
@@ -994,6 +1048,64 @@ func (q *Queries) VulnImageSBOMPut(ctx context.Context, arg VulnImageSBOMPutPara
 		arg.Packages,
 	)
 	return err
+}
+
+const vulnImageScanStates = `-- name: VulnImageScanStates :many
+SELECT s.state::text AS state, COALESCE(s.error_code, '')::text AS code,
+       (s.state = 'pending' AND s.started_at IS NOT NULL
+        AND s.started_at > now() - make_interval(secs => $1::float8))::boolean AS running,
+       (s.state = 'scanned' AND s.db_digest IS DISTINCT FROM $2::text)::boolean AS outdated,
+       count(*)::bigint AS n,
+       (EXTRACT(EPOCH FROM min(s.created_at)) * 1000000)::bigint AS oldest_us
+  FROM vuln_image_scan s
+  JOIN repositories r ON r.id = s.repo_id
+ WHERE r.lifecycle = 'active'
+ GROUP BY 1, 2, 3, 4
+`
+
+type VulnImageScanStatesParams struct {
+	BoundSeconds float64
+	DbDigest     string
+}
+
+type VulnImageScanStatesRow struct {
+	State    string
+	Code     string
+	Running  bool
+	Outdated bool
+	N        int64
+	OldestUs int64
+}
+
+// The image scanning's state for its page of the admin area (R-VULN-053, Q-VULN-298): the scan rows of active repositories by state,
+// by the code a row carries (why a waiting row was put off, why a failed one failed), by whether a waiting row's call runs now (taken
+// within the call's bound, Q-VULN-276) and by whether a scanned row was detected against another database than the one in use; with the
+// earliest time a row of the group was queued. One pass over the table, grouped: no row is named.
+func (q *Queries) VulnImageScanStates(ctx context.Context, arg VulnImageScanStatesParams) ([]VulnImageScanStatesRow, error) {
+	rows, err := q.db.Query(ctx, vulnImageScanStates, arg.BoundSeconds, arg.DbDigest)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []VulnImageScanStatesRow{}
+	for rows.Next() {
+		var i VulnImageScanStatesRow
+		if err := rows.Scan(
+			&i.State,
+			&i.Code,
+			&i.Running,
+			&i.Outdated,
+			&i.N,
+			&i.OldestUs,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const vulnImageScanned = `-- name: VulnImageScanned :exec

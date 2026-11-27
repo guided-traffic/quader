@@ -104,12 +104,41 @@ UPDATE vuln_image_scan
 -- name: VulnImageFailed :exec
 -- A scan that did not finish: the state says so, so that nobody reads the absence of findings as clean. A row that had a detection keeps
 -- it. A failure that may pass is due again after the back-off (judged empty); a terminal one names what it was judged under and is due
--- again when that changes (Q-VULN-270).
+-- again when that changes (Q-VULN-270). failed_at is when, for the last failure the image scanning's page names (R-VULN-053).
 UPDATE vuln_image_scan
    SET state = 'failed', attempts = attempts + 1, not_before = now() + make_interval(secs => sqlc.arg(backoff_seconds)::float8),
        error_code = sqlc.arg(error_code)::text, error_detail = left(sqlc.arg(error_detail)::text, 1024),
-       judged = NULLIF(sqlc.arg(judged)::text, ''), started_at = NULL
+       judged = NULLIF(sqlc.arg(judged)::text, ''), started_at = NULL, failed_at = now()
  WHERE repo_id = sqlc.arg(repo_id)::bigint AND name = sqlc.arg(name)::text AND digest = sqlc.arg(digest);
+
+-- name: VulnImageScanStates :many
+-- The image scanning's state for its page of the admin area (R-VULN-053, Q-VULN-298): the scan rows of active repositories by state,
+-- by the code a row carries (why a waiting row was put off, why a failed one failed), by whether a waiting row's call runs now (taken
+-- within the call's bound, Q-VULN-276) and by whether a scanned row was detected against another database than the one in use; with the
+-- earliest time a row of the group was queued. One pass over the table, grouped: no row is named.
+SELECT s.state::text AS state, COALESCE(s.error_code, '')::text AS code,
+       (s.state = 'pending' AND s.started_at IS NOT NULL
+        AND s.started_at > now() - make_interval(secs => sqlc.arg(bound_seconds)::float8))::boolean AS running,
+       (s.state = 'scanned' AND s.db_digest IS DISTINCT FROM sqlc.arg(db_digest)::text)::boolean AS outdated,
+       count(*)::bigint AS n,
+       (EXTRACT(EPOCH FROM min(s.created_at)) * 1000000)::bigint AS oldest_us
+  FROM vuln_image_scan s
+  JOIN repositories r ON r.id = s.repo_id
+ WHERE r.lifecycle = 'active'
+ GROUP BY 1, 2, 3, 4;
+
+-- name: VulnImageLastFailure :many
+-- The failed scan that failed last, with everything it carried (R-VULN-053): its repository, image and manifest, its code and text, its
+-- attempts and when. A row that failed before failed_at was recorded comes after every row that has one.
+SELECT p.key::text AS project_key, r.key::text AS repo_key, s.name::text AS name, s.digest AS digest,
+       COALESCE(s.error_code, '')::text AS code, COALESCE(s.error_detail, '')::text AS detail, s.attempts::int AS attempts,
+       COALESCE((EXTRACT(EPOCH FROM s.failed_at) * 1000000)::bigint, 0)::bigint AS failed_us
+  FROM vuln_image_scan s
+  JOIN repositories r ON r.id = s.repo_id
+  JOIN project p ON p.id = r.project_id
+ WHERE s.state = 'failed' AND r.lifecycle = 'active'
+ ORDER BY s.failed_at DESC NULLS LAST, s.repo_id, s.name, s.digest
+ LIMIT 1;
 
 -- name: VulnImageDeferred :exec
 -- A scan that did not start because the spool of the worker had no room (Q-VULN-145): the row stays pending with the reason, is due again

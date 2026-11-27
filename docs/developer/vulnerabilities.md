@@ -92,7 +92,9 @@ the cause `imageMissing` reads from its scan rows; it is the cause of a block. W
 is the grade's `state` (R-VULN-039, Q-VULN-274), one derivation in [report/check.go](../../internal/vuln/report/check.go): `coverOf`
 decides the repository's cause from facts `coverage` reads (the format, the installation's and the repository's switch, the scope, the
 data), and `imageCheck` the state of an image's scan per manifest from the rows of `VulnImageGradeScans` and `VulnImageManifests`
-(`created_at`, `started_at`, `error_code`, `judged`, and the `kind` of a tag's own manifest). Whether a scanner is connected is
+(`created_at`, `started_at`, `error_code`, `judged`, and the `kind` of a tag's own manifest). While no database is in use the base is `no_database`, and
+`imageCheck` still reads the rows: a failure says its class, a call that runs `scanning`, another artifact `not_an_image`, and only what
+waits for the database stays `no_database` (Q-VULN-298). Whether a scanner is connected is
 `Options.Scanners`, the App's `scannerPresence` ([scanner_presence.go](../../internal/app/scanner_presence.go)), asked through
 `presenceOnce` at most once per answer and only for a waiting image. The job marks a batch with `Images.Started` before its calls, and
 every record of a result clears the mark. The screens say the state with `checkWord` and `checkSentence`
@@ -912,7 +914,8 @@ API):
 
 | Part | File | What it does |
 |---|---|---|
-| The loader | [internal/vuln/dbloader](../../internal/vuln/dbloader/loader.go) | The loop, the listing, the layer, the budget, the two databases (newest is loaded last, `imagescan.LoadedAt`, Q-VULN-213), the replacement when only one fits, the leftovers at start. A round that fails logs one warning ("the image scanner's database could not be loaded; the loader asks again") and is tried at the next poll. That is every 5 s while the pod holds no database, as the malware scanner's loader asks before its first version ([malware/database/loader.go](../../internal/malware/database/loader.go)), and every 30 s once it holds one (R-VULN-049). This is the intended rate: a pod whose scan listener cannot be reached during a rollout logs twelve lines a minute until its first load, two a minute after |
+| The loader | [internal/vuln/dbloader](../../internal/vuln/dbloader/loader.go) | The loop, the listing, the layer, the budget, the two databases (newest is loaded last, `imagescan.LoadedAt`, Q-VULN-213), the replacement when only one fits, the leftovers at start. A round that fails logs one warning ("the image scanner's database could not be loaded; the loader asks again") and is tried at the next poll. A round whose listing names no database logs one line at info (`the installation names no vulnerability database in use yet`) at the
+first round of such a stretch and again only after a listing named one (`Loader.toldNone`, Q-VULN-299). That is every 5 s while the pod holds no database, as the malware scanner's loader asks before its first version ([malware/database/loader.go](../../internal/malware/database/loader.go)), and every 30 s once it holds one (R-VULN-049). This is the intended rate: a pod whose scan listener cannot be reached during a rollout logs twelve lines a minute until its first load, two a minute after |
 | Its wiring | [wire_vuln_loader.go](../../internal/app/wire_vuln_loader.go) | The kind `trivy-db`: the area with the loader alone, the pod's pair and CA on the link to the scan listener, its readiness (the pair) and no report |
 | The routes | [scanlisten/trivydb.go](../../internal/api/scanlisten/trivydb.go), [wire_vuln_scanlisten.go](../../internal/app/wire_vuln_scanlisten.go) | `GET /scan/v1/trivy-database[/<digest>]`: the principal `system:vuln-scanner-trivy` of the image scanner's certificate (`trivyDatabasePeer`); the layer of the digest in use only, hashed while it is sent; no usage record |
 | The configuration | [process.go](../../internal/config/process.go), [scanner_role.go](../../internal/config/scanner_role.go), [vulnerabilities_database.go](../../internal/config/vulnerabilities_database.go) | `process.scanner_kind: trivy-db` reads `process`, `server`, `health`, `log`, `metrics`, `runtime`, `vulnerabilities.images.registry` and `.database`; `database.dir` and `database.dir_budget` |
@@ -984,6 +987,18 @@ file system, no capability, no new privileges and the runtime's seccomp profile,
 Quader image into the four kind nodes took 41 s for the image without the analyser (`up.sh`, under a load of about 60) and 85.7 s for the
 image with it (`kind load docker-image`, under a load of 35 to 52), so a leg that loads the image alone gains tens of seconds on this machine;
 the runners were not measured.
+
+### The image scanning's page (R-VULN-053)
+
+`GET /api/v1/vulnerabilities/image-scans` ([vulnerabilities_views_api.go](../../internal/api/v1/vulnerabilities_views_api.go)
+`GetVulnerabilityImageScans`) answers what the image scanning does now from `report.Service.ImageScans`
+([image_scans.go](../../internal/vuln/report/image_scans.go)): two statements of `store.Images.ScanStates`
+([image_states.go](../../internal/vuln/store/image_states.go)), `VulnImageScanStates` (the rows of active repositories grouped by state,
+code, whether a pending row's call runs within `Config.ScanCallBound` and whether a scanned row's `db_digest` is not the database in use,
+with the earliest `created_at` of each group) and `VulnImageLastFailure` (the row with the latest `failed_at`, which `VulnImageFailed` sets
+since migration 00156). The repository and the image of the last failure go only to a holder of `content:metadata-read`. The page,
+[vulnerability-settings.ts](../../web/src/app/features/settings/vulnerability-settings.ts), reads it beside the sources, today's database
+and the scanners; [web-ui.md](web-ui.md) has its row.
 
 ## Tests that pass now
 

@@ -75,6 +75,9 @@ type Loader struct {
 	pending int64
 	// loaded is the digest of the newest database the loader completed or found, "" before.
 	loaded string
+	// toldNone says that the loader logged that no database is in use, at the first round that found none; the listing that names one
+	// clears it, so that the log says it once per stretch without a database and not at every round.
+	toldNone bool
 }
 
 // New returns the loader. It removes what an interrupted load left in Dir, and counts the complete databases it finds there against the
@@ -192,8 +195,9 @@ func (l *Loader) Once(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	l.noneInUse(listing.Digest == "")
 	if listing.Digest == "" {
-		return nil // no database has been imported yet
+		return nil
 	}
 	if !imagescan.ValidDigest(listing.Digest) {
 		return fmt.Errorf("the scan listener names the database %q, which is no sha256 digest", cut(listing.Digest, 80))
@@ -208,6 +212,20 @@ func (l *Loader) Once(ctx context.Context) error {
 	lctx, cancel := context.WithTimeout(ctx, l.o.Timeout)
 	defer cancel()
 	return l.load(lctx, listing.Digest)
+}
+
+// noneInUse logs, once per stretch of rounds whose listing names no database, that the installation has none in use, so that a pod's log
+// says why it detects nothing: the main installation has not recorded one (its task vuln-sync-trivy-db has not run, or failed). A listing
+// that names one ends the stretch; the next that names none logs again.
+func (l *Loader) noneInUse(none bool) {
+	l.mu.Lock()
+	tell := none && !l.toldNone
+	l.toldNone = none
+	l.mu.Unlock()
+	if tell {
+		l.o.Log.Info("the installation names no vulnerability database in use yet, so this pod detects nothing; the loader asks again until the task vuln-sync-trivy-db of the installation records one",
+			"every", l.o.PollBefore.String())
+	}
 }
 
 // load makes the directory hold the database digest. The databases older than the newest go first; a database that does not fit beside

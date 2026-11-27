@@ -392,6 +392,38 @@ The scanning needs the `worker` role: the sync of the advisory data and the eval
 
 A name in `disabledAlerts` that is no alert of the chart fails the install. If you set `stale_after` only through an environment variable (`extraEnv`), set it in `config.vulnerabilities.stale_after` as well, or the alert keeps the 24-hour default.
 
+### The image scanning's page
+
+**Admin area › Settings › Vulnerability scanning** (`/admin/settings/vulnerabilities`), beside **Malware scanning** and built as it, is
+shown to whoever holds `settings:read`, also while the image scanning is off, which it then says. An auditor reads it all; **Import now**
+needs `settings:write`. The page reads itself again every 30 seconds, every 3 seconds while a scan runs or an import was asked for.
+
+**At the top**, when something stops the scanning, one sentence says what and what to do, the first that holds:
+
+| Sentence | Cause | What to do |
+|---|---|---|
+| **The image scanning is off in this installation** | `vulnerabilities.images.enabled` is `false` | Set it to `true` if you want images scanned |
+| **No vulnerability database is in use, so no image is scanned** | The task `vuln-sync-trivy-db` has not recorded a database yet, or it failed (the section **Vulnerability database** says why); images wait and read **No database** | **Import now**, beside the sentence, runs the task at once; it runs every six hours by itself |
+| **No replica of vuln-scanner-trivy is ready** | No scanner pod is ready, or none has reported itself | Look at its pods under **System status** and `kubectl describe pod` |
+| **Every ready replica of vuln-scanner-trivy is still loading the database in use** | After every new database each pod loads it, under a minute | Wait; a pod that takes longer says why in `kubectl logs <pod> -c database` |
+
+| Section | What it shows |
+|---|---|
+| **Scanning** | **Waiting** (the images without a detection under the database in use, with the age of the one that waits longest), **Being scanned** (in a call of a scanner now), **Scanned** (and how many of them under an older database, which are scanned again in turn and keep their findings meanwhile) and **Failed**. **Why they wait** and **Why they failed**: each reason with how many images it holds, in words with its code (`scanner_busy`: every scanner was busy, `database_loading`: the scanners are still loading the database, `blobs_pending`: the layers are still arriving, `image_too_large`, `timeout`, …). **Last failure**: the image and its repository (for whoever reads content metadata; the digest only for everyone else), its manifest, why, the attempts and when, and the scanner's own text under **Technical details**. **Image scanners**: how many pods are ready, how many scans run and whether every ready pod holds the database in use, and in a closed fold **Replicas of vuln-scanner-trivy (n)** each pod with its state, its Trivy version, the database it holds and its slots |
+| **Vulnerability database** | **In use**: the database's digest (whole under **Technical details**), or **None yet**; **Built** with **Current** or **Stale**; **Imported** (when the run recorded it) and **Last confirmed** (when a run last found it current); **Next import** from the task's schedule; the **Repository** it comes from with its image and tag. A failed import names what failed, how often in a row and when, its text folded under **Technical details**. **Import now** runs the task `vuln-sync-trivy-db` |
+
+**Pods.** **Database in use** in a pod's row is the database of this section, with how long ago it was built; **Older database** means
+the pod is still loading the one in use, which takes it under a minute after every new database, or its container `database` cannot load
+it; **No database yet** means its first load has not finished. While the installation has no database in use, the container `database`
+of each pod logs that once (`the installation names no vulnerability database in use yet`) and again only after a database came and went.
+A pod that stops reporting is shown as lost, and the [System page](#system-status) lists the same pods beside the other replicas. The
+development role `all` runs no scanner and scans no image, which the section says instead of a list.
+
+**An image's state.** An image's grade reads **No database** only while no database is in use and the image waits for one; an image
+whose scan failed says so (**Scan failed**) and one in a call **Scanning**, with or without a database. A queued image says in its details
+why its last attempt was put off ("Last attempt: Every scanner was busy."), and for whoever holds `settings:read` the details lead to this
+page.
+
 **The analyser's image.** The image scanning runs in the pods of `<fullname>-vuln-scanner-trivy`. The Quader image carries no analyser:
 each scanner pod starts with an init container `trivy` that copies the analyser from its own image, `trivy.image` (by default
 `docker.io/aquasec/trivy:0.76.2` by its digest), into a volume the scanner reads but cannot change, and ends. A node that has not run a

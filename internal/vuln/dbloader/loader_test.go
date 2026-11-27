@@ -8,6 +8,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -261,6 +262,46 @@ func TestR_VULN_049_ALayerThatIsNotItsDigestLeavesNothing(t *testing.T) {
 	newLoader(t, l, dir, 1<<20)
 	if got := entries(t, dir); len(got) != 1 || got[0] != hexOf(digestOf(escape)) {
 		t.Fatalf("after a restart the directory holds %v", got)
+	}
+}
+
+// R-VULN-049, Q-VULN-299: a loader whose listing names no database says so once in its log, at the first round of a stretch without one,
+// and again only after the listing named one and then none again, so that a pod's log says why it detects nothing without a line every
+// five seconds. Unit, milliseconds, one layer of a few hundred bytes.
+func TestR_VULN_049_TheLoaderSaysOnceWhyItWaits(t *testing.T) {
+	ctx := context.Background()
+	l := &listener{}
+	var logged bytes.Buffer
+	srv := httptest.NewServer(l)
+	t.Cleanup(srv.Close)
+	ld, err := New(Options{Listener: Listener{URL: srv.URL}, Dir: t.TempDir(), Budget: 1 << 20, HTTP: srv.Client(), Log: slog.New(slog.NewTextHandler(&logged, nil))})
+	if err != nil {
+		t.Fatal(err)
+	}
+	waits := func() int { return strings.Count(logged.String(), "names no vulnerability database in use") }
+	for range 3 {
+		if err := ld.Once(ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if n := waits(); n != 1 {
+		t.Fatalf("%d lines in three rounds without a database, want 1:\n%s", n, logged.String())
+	}
+	a := archive(t, "2026-11-27T07:00:00Z", 100)
+	l.use(digestOf(a), a)
+	if err := ld.Once(ctx); err != nil {
+		t.Fatal(err)
+	}
+	l.mu.Lock()
+	l.inUse = ""
+	l.mu.Unlock()
+	for range 2 {
+		if err := ld.Once(ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if n := waits(); n != 2 {
+		t.Fatalf("%d lines after the database went, want 2:\n%s", n, logged.String())
 	}
 }
 

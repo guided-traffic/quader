@@ -2,7 +2,8 @@ import { Routes } from '@angular/router';
 
 /**
  * The group Settings of the admin area (Q-UI-326): General (R-UI-033) first, where `/admin/settings` leads, then Authentication
- * (R-UI-031), then Malware scanning (R-MAL-023, Q-UI-870), whose entry the side bar shows while the scanning is on, Signatures
+ * (R-UI-031), then Malware scanning (R-MAL-023, Q-UI-870), whose entry the side bar shows while the scanning is on, Vulnerability
+ * scanning (R-VULN-053), Signatures
  * (R-SIG-036) and Storage (R-UI-262, with its section Download links of R-UI-200). The other P1 pages join the group when they are
  * built.
  */
@@ -22,6 +23,12 @@ export const SETTINGS_ROUTES: Routes = [
     path: 'malware',
     title: $localize`:@@route.settings.malware.title:Malware scanning`,
     loadComponent: () => import('./malware-settings').then((m) => m.MalwareSettingsPage),
+  },
+  {
+    // Beside the malware scanning's page, built as it (R-VULN-053, Q-VULN-298): the image scanning's scanners, state and database.
+    path: 'vulnerabilities',
+    title: $localize`:@@route.settings.vulnerabilities.title:Vulnerability scanning`,
+    loadComponent: () => import('./vulnerability-settings').then((m) => m.VulnerabilitySettingsPage),
   },
   {
     // The fourth page of the group (R-SIG-036): the trust anchors, the switch for project Owners, blocks and the public root.

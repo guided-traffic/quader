@@ -292,6 +292,11 @@ export function scannerReasonText(reason: string): string | null {
       align-items: flex-start;
       column-gap: var(--quader-space-2);
     }
+    // In a row that stands as a block (390 px) the age stands under the badge, as under the tool on the System page: beside it the German
+    // "Datenbank in Verwendung" and "erstellt vor 5 Stunden" reached 81 px past the panel (R-VULN-053's renders).
+    .quader-data-table.stacked .database-state {
+      flex-direction: column;
+    }
     td.tool-cell .database-state {
       flex-direction: column;
       margin-block-start: var(--quader-space-1);

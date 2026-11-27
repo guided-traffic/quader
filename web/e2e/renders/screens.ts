@@ -42,6 +42,7 @@ import { controllerAtWork, controllerIdle, coverageCounted, scannersWithCalls } 
 import { markedFile, markedFolder, markedList, markedVersion } from './malware-marks';
 import { malwareWaiting, scanFailedCard, scanStatesList, scanStatesPackage } from './scan-states';
 import { trivyDatabases } from './scanners';
+import { gradeDetailsWaiting, vulnScanningSettings } from './vuln-scanning';
 import { signedFile, signedImage, signedVersions } from './signatures';
 import { issuedFile, issuedImage, issuedVersion } from './receipts';
 import { signingAnswer } from './signing';
@@ -690,44 +691,19 @@ async function* explained(page: Page): AsyncGenerator<string> {
 }
 
 /**
- * The advisory sources as they open; with the fold of the image scanners' replicas open (R-OPS-048, Q-UI-897), as seeded (no pod holds
- * a database yet), with the pods in each state of the database they hold and with every pod on the database in use (Q-UI-915); where the
- * image database comes from a local repository, with the fold of the commands that fill it open (R-VULN-045, Q-UI-890), which the
- * database's default repository, a remote, does not have; and without a replica, the profile's own answer: its role all runs no image
- * scanner.
+ * The advisory sources as they open, with the line that leads to the image scanning's page, which holds its scanners now (R-VULN-053);
+ * where the image database comes from a local repository, with the fold of the commands that fill it open (R-VULN-045, Q-UI-890), which
+ * the database's default repository, a remote, does not have.
  */
 async function* databaseCommandsOpen(page: Page): AsyncGenerator<string> {
+  await expect(page.locator('main [data-testid="image-scanning-link"]')).toBeVisible();
   yield '';
-  const scanners = page.locator('main [data-testid="image-scanners"] quader-disclosure button.inline-toggle');
-  const openScanners = async (): Promise<void> => {
-    await expect(scanners).toHaveAttribute('aria-expanded', 'false');
-    await scanners.click();
-    await expect(scanners).toHaveAttribute('aria-expanded', 'true');
-  };
-  await openScanners();
-  yield 'scanners';
-  const url = '**/api/v1/system/scanners';
-  await answerWith(page, url, trivyDatabases('mixed'));
-  await openScanners();
-  await expect(page.locator('main [data-testid="image-scanners"] td.database-cell')).toHaveCount(4);
-  yield 'scanners-databases';
-  await answerWith(page, url, trivyDatabases('current'));
-  await expect(page.locator('main [data-testid="image-scanners-summary"]')).toContainText('all on the database in use');
-  await openScanners();
-  yield 'scanners-current';
-  await page.unroute(url);
-  await page.reload();
-  await page.waitForLoadState('networkidle');
   const closed = page.locator('main quader-vulnerability-sources > quader-disclosure button[aria-expanded="false"]');
   if ((await closed.count()) > 0) {
     await closed.first().click();
     await expect(page.locator('main quader-vulnerability-sources > quader-disclosure button[aria-expanded="true"]')).toHaveCount(1);
     yield 'commands';
   }
-  await answerWith(page, url, (b) => ({ ...b, items: [] }));
-  await expect(page.locator('main [data-testid="scanners-none-trivy"]')).toBeVisible();
-  yield 'scanners-none';
-  await page.unroute(url);
 }
 
 /**
@@ -3437,6 +3413,8 @@ export const screens: readonly Screen[] = [
   { id: 'grade-details-versions', path: pkg(P, ociPackage), kinds: ['plain'], walk: gradeDetailsVersions, de: true },
   { id: 'grade-details-image', path: ver(P, ociPackage, '1.4.0'), kinds: ['plain'], walk: gradeDetailsVersion(true), de: true },
   { id: 'grade-details-package', path: ver(P, gradedPackage, gradedPackage.version), kinds: ['plain'], walk: gradeDetailsVersion(false), de: true },
+  // An image that waits or failed, as the administrator: its details say why and lead to Settings › Vulnerability scanning (R-VULN-053).
+  { id: 'grade-details-waiting', path: ver(P, ociPackage, '1.4.0'), kinds: admins, walk: gradeDetailsWaiting, de: true },
   // An image's head with its other tags and the panel's pull by digest; a chart's with Helm alone (R-OCI-041, R-OCI-042).
   { id: 'package-version-oci-facts-head', path: ver(P, { format: 'oci', name: factsImages.index }, factsImages.tags[0]), kinds: ['plain'], walk: versionHead, de: true },
   { id: 'package-version-oci-chart-head', path: ver(P, { format: 'oci', name: factsImages.chart }, '0.3.0'), kinds: ['plain'], walk: versionHead, de: true },
@@ -4022,7 +4000,7 @@ export const screens: readonly Screen[] = [
   // then the log of one pull's events. In the German pass too: the action's words stand whole at 1,440, 1,024 and 390 px (Q-UI-1490).
   { id: 'admin-audit-rows', path: '/ui/admin/audit', kinds: admins, walk: auditRows, tables: 'quader-audit-log quader-data-table', de: true },
   { id: 'admin-advisory-sources', path: '/ui/admin/advisory-sources', kinds: admins, walk: databaseCommandsOpen },
-  // The auditor reads the sources and the image scanners (settings:read, R-OPS-048).
+  // The auditor reads the sources (settings:read).
   { id: 'admin-advisory-sources-read', path: '/ui/admin/advisory-sources', kinds: ['auditor'] },
   { id: 'admin-system', path: '/ui/admin/system', kinds: admins, walk: systemScanners },
   // The auditor reads the replicas and the scanner replicas (settings:read, R-OPS-048).
@@ -4035,6 +4013,9 @@ export const screens: readonly Screen[] = [
   // The malware scanning's page (R-MAL-023): every state of the administrator's, and the auditor's read-only page with the link to the finds.
   { id: 'admin-settings-malware', path: '/ui/admin/settings/malware', kinds: admins, walk: malwareSettings, de: true },
   { id: 'admin-settings-malware-read', path: '/ui/admin/settings/malware', kinds: ['auditor'] },
+  // The image scanning's page beside it (R-VULN-053): every state of the administrator's, and the auditor's read without Import now.
+  { id: 'admin-settings-vulnerabilities', path: '/ui/admin/settings/vulnerabilities', kinds: admins, walk: vulnScanningSettings, de: true },
+  { id: 'admin-settings-vulnerabilities-read', path: '/ui/admin/settings/vulnerabilities', kinds: ['auditor'], walk: vulnScanningSettings },
   { id: 'admin-settings-signatures', path: '/ui/admin/settings/signatures', kinds: admins, walk: signatureSettings, tables: 'quader-data-table' },
   // >>> download-links
   { id: 'admin-settings-storage', path: '/ui/admin/settings/storage', kinds: admins, walk: storagePage, de: true },

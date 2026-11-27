@@ -90,7 +90,13 @@ func TestR_VULN_039_AnImageSaysTheStateOfItsScan(t *testing.T) {
 		{"over the limits before a retry", vuln.CheckChecked, []ImageState{retried, tooLarge}, PresenceReady, Check{State: vuln.CheckOverLimits, Code: "image_too_large"}},
 		{"unreadable", vuln.CheckChecked, []ImageState{unreadable, scanned}, PresenceNone, Check{State: vuln.CheckUnreadable, Code: "layer_format"}},
 		{"another artifact than an image", vuln.CheckChecked, []ImageState{chart}, PresenceNone, Check{State: vuln.CheckNotAnImage}},
-		{"the repository's cause stands", vuln.CheckNoDatabase, []ImageState{queued}, PresenceNone, Check{State: vuln.CheckNoDatabase}},
+		// R-VULN-053, Q-VULN-298: without a database in use, "No database" only for what waits for one; a failure, a call that runs and
+		// another artifact say their own state.
+		{"without a database a waiting image waits for it", vuln.CheckNoDatabase, []ImageState{queued, busy}, PresenceNone, Check{State: vuln.CheckNoDatabase}},
+		{"without a database a scanned image waits for it", vuln.CheckNoDatabase, []ImageState{scanned}, PresenceReady, Check{State: vuln.CheckNoDatabase}},
+		{"without a database a failure says its class", vuln.CheckNoDatabase, []ImageState{queued, tooLarge}, PresenceReady, Check{State: vuln.CheckOverLimits, Code: "image_too_large"}},
+		{"without a database an analysis that runs is scanning", vuln.CheckNoDatabase, []ImageState{running}, PresenceReady, Check{State: vuln.CheckScanning, Since: running.StartedAt}},
+		{"without a database another artifact is no image", vuln.CheckNoDatabase, []ImageState{chart}, PresenceNone, Check{State: vuln.CheckNotAnImage}},
 		{"the switch stands", vuln.CheckOffRepository, []ImageState{retried}, PresenceReady, Check{State: vuln.CheckOffRepository}},
 	} {
 		got := imageCheck(tc.base, tc.images, tc.presence, now, bound)

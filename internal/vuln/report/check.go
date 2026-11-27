@@ -137,8 +137,18 @@ func failedRank(c vuln.CheckState) int {
 //     queued since the earliest of its manifests was queued;
 //   - every manifest scanned makes it checked.
 //
-// Any other base is the repository's cause and stands as it is.
+// While no database is in use (base CheckNoDatabase) the rows still say what does not wait for one (Q-VULN-298): a failed manifest makes
+// the version failed and a call that runs makes it scanning (the scanner analyses without a database, Q-VULN-168), and another artifact
+// than an image is no image; everything else is no database, the one cause it waits for. Any other base is the repository's cause and
+// stands as it is.
 func imageCheck(base vuln.CheckState, images []ImageState, presence Presence, now time.Time, bound time.Duration) Check {
+	if base == vuln.CheckNoDatabase {
+		switch c := imageCheck(vuln.CheckChecked, images, presence, now, bound); {
+		case failedRank(c.State) > 0, c.State == vuln.CheckScanning, c.State == vuln.CheckNotAnImage:
+			return c
+		}
+		return Check{State: base}
+	}
 	if base != vuln.CheckChecked {
 		return Check{State: base}
 	}

@@ -7921,6 +7921,24 @@ func (e VulnerabilityGradeGrade) Valid() bool {
 	}
 }
 
+// Defines values for VulnerabilityImageScanReasonState.
+const (
+	VulnerabilityImageScanReasonStateFailed  VulnerabilityImageScanReasonState = "failed"
+	VulnerabilityImageScanReasonStateWaiting VulnerabilityImageScanReasonState = "waiting"
+)
+
+// Valid indicates whether the value is a known member of the VulnerabilityImageScanReasonState enum.
+func (e VulnerabilityImageScanReasonState) Valid() bool {
+	switch e {
+	case VulnerabilityImageScanReasonStateFailed:
+		return true
+	case VulnerabilityImageScanReasonStateWaiting:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for VulnerabilityImageStateState.
 const (
 	VulnerabilityImageStateStateFailed  VulnerabilityImageStateState = "failed"
@@ -22138,7 +22156,7 @@ type VulnerabilityBlockReason string
 // every list cell, the version page's card and the security screens say, in the reader's language. `checked`: evaluated, the grade
 // says the rest. Waits and is checked without anyone's act: `queued` (an image waits for its scan), `scanning` (a call of the scanner
 // for it runs now, Q-VULN-276). Cannot be checked now: `no_scanner` (no scanner of images is connected, Q-VULN-277), `no_database` (no
-// vulnerability database for images has been imported), `no_advisory_data` (a package's ecosystem's advisory data is incomplete). The
+// vulnerability database for images is in use and the image waits for one, Q-VULN-298), `no_advisory_data` (a package's ecosystem's advisory data is incomplete). The
 // scan failed (`stateCode` has the code): `scan_failed` (it is tried again), `over_limits` (a bound of the scanning; an operator raises
 // it), `unreadable` (a release that reads it). Not checked by setting or by what it is: `off_installation` (the installation's scanning,
 // or for an image its image scanning, is off), `off_repository` (the repository's), `not_matched` (the repository's
@@ -22379,7 +22397,7 @@ type VulnerabilityGrade struct {
 	// every list cell, the version page's card and the security screens say, in the reader's language. `checked`: evaluated, the grade
 	// says the rest. Waits and is checked without anyone's act: `queued` (an image waits for its scan), `scanning` (a call of the scanner
 	// for it runs now, Q-VULN-276). Cannot be checked now: `no_scanner` (no scanner of images is connected, Q-VULN-277), `no_database` (no
-	// vulnerability database for images has been imported), `no_advisory_data` (a package's ecosystem's advisory data is incomplete). The
+	// vulnerability database for images is in use and the image waits for one, Q-VULN-298), `no_advisory_data` (a package's ecosystem's advisory data is incomplete). The
 	// scan failed (`stateCode` has the code): `scan_failed` (it is tried again), `over_limits` (a bound of the scanning; an operator raises
 	// it), `unreadable` (a release that reads it). Not checked by setting or by what it is: `off_installation` (the installation's scanning,
 	// or for an image its image scanning, is off), `off_repository` (the repository's), `not_matched` (the repository's
@@ -22415,6 +22433,71 @@ type VulnerabilityImageComponent struct {
 	// Type The ecosystem of the package as the analyser names it, for example apk, deb, npm or gobinary.
 	Type    string `json:"type"`
 	Version string `json:"version"`
+}
+
+// VulnerabilityImageScanFailure A failed image scan with everything it carried (R-VULN-053).
+type VulnerabilityImageScanFailure struct {
+	// At When it failed; null for a scan that failed before the time was recorded.
+	At *time.Time `json:"at"`
+
+	// Attempts The attempts the scan has made since its last success.
+	Attempts int `json:"attempts"`
+
+	// Code The code of R-VULN-034.
+	Code string `json:"code"`
+
+	// Detail The failure's own text, in English, at most 1,024 characters.
+	Detail string `json:"detail"`
+
+	// Digest The manifest's digest, `sha256:<hex>`.
+	Digest string `json:"digest"`
+
+	// Image The image's name in its repository; only to a caller with `content:metadata-read`.
+	Image *string `json:"image,omitempty"`
+
+	// Repository The repository's qualified name; only to a caller with `content:metadata-read`.
+	Repository *string `json:"repository,omitempty"`
+}
+
+// VulnerabilityImageScanReason A code of waiting or failed image scans with their count (R-VULN-053).
+type VulnerabilityImageScanReason struct {
+	// Code The code of R-VULN-034; empty for waiting rows that were never put off.
+	Code  string                            `json:"code"`
+	Count int64                             `json:"count"`
+	State VulnerabilityImageScanReasonState `json:"state"`
+}
+
+// VulnerabilityImageScanReasonState defines model for VulnerabilityImageScanReason.State.
+type VulnerabilityImageScanReasonState string
+
+// VulnerabilityImageScans What the image scanning does now (R-VULN-053).
+type VulnerabilityImageScans struct {
+	// Enabled The image scanning is on (`vulnerabilities.enabled` and `vulnerabilities.images.enabled`).
+	Enabled bool `json:"enabled"`
+
+	// Failed Manifests whose last scan failed (R-VULN-034).
+	Failed int64 `json:"failed"`
+
+	// LastFailure The failed scan that failed last; null when none failed.
+	LastFailure *VulnerabilityImageScanFailure `json:"lastFailure"`
+
+	// OldestWaitingAt When the manifest that waits longest was queued; null when none waits.
+	OldestWaitingAt *time.Time `json:"oldestWaitingAt"`
+
+	// Outdated Of the scanned manifests, those detected against another database than the one in use; they are detected again in turn and keep their findings meanwhile.
+	Outdated int64 `json:"outdated"`
+
+	// Reasons The codes of the waiting rows (why a row was put off; "" for a row never put off) and of the failed rows, each with its count, the most first.
+	Reasons []VulnerabilityImageScanReason `json:"reasons"`
+
+	// Scanned Manifests with a detection.
+	Scanned int64 `json:"scanned"`
+
+	// Scanning Manifests in a call of the scanner now (taken within the call's bound, Q-VULN-276).
+	Scanning int64 `json:"scanning"`
+
+	// Waiting Manifests without a detection under the database in use, for which no call runs now.
+	Waiting int64 `json:"waiting"`
 }
 
 // VulnerabilityImageState One manifest of an image version, and how far it has been scanned (R-VULN-034).
@@ -27980,6 +28063,9 @@ type ServerInterface interface {
 	// UpdateVulnerabilityFinding Triage one finding
 	// (PATCH /api/v1/vulnerabilities/findings/{id})
 	UpdateVulnerabilityFinding(w http.ResponseWriter, r *http.Request, id string, params UpdateVulnerabilityFindingParams)
+	// GetVulnerabilityImageScans What the image scanning does now
+	// (GET /api/v1/vulnerabilities/image-scans)
+	GetVulnerabilityImageScans(w http.ResponseWriter, r *http.Request)
 	// ListVulnerabilitySources The advisory sources and their state
 	// (GET /api/v1/vulnerabilities/sources)
 	ListVulnerabilitySources(w http.ResponseWriter, r *http.Request)
@@ -49043,6 +49129,20 @@ func (siw *ServerInterfaceWrapper) UpdateVulnerabilityFinding(w http.ResponseWri
 	handler.ServeHTTP(w, r)
 }
 
+// GetVulnerabilityImageScans operation middleware
+func (siw *ServerInterfaceWrapper) GetVulnerabilityImageScans(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetVulnerabilityImageScans(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListVulnerabilitySources operation middleware
 func (siw *ServerInterfaceWrapper) ListVulnerabilitySources(w http.ResponseWriter, r *http.Request) {
 
@@ -49613,6 +49713,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/vulnerabilities/trend", wrapper.GetVulnerabilityTrend)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/vulnerabilities/sources", wrapper.ListVulnerabilitySources)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/vulnerabilities/database", wrapper.GetVulnerabilityDatabase)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/vulnerabilities/image-scans", wrapper.GetVulnerabilityImageScans)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/vulnerabilities/claimed-name-matches", wrapper.ListClaimedNameMatches)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/packages/{packageId}/versions/{version}/vulnerabilities", wrapper.GetPackageVersionVulnerabilities)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/packages/{packageId}/vulnerabilities", wrapper.GetPackageVulnerabilities)

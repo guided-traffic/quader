@@ -84,6 +84,8 @@ type ImageReader interface {
 	GradeScans(ctx context.Context, repos []int64, pairs []store.NameVersion) ([]store.TagManifest, error)
 	// DB reads the database in use, today's (R-VULN-052); found is false before a run recorded one.
 	DB(ctx context.Context) (db store.ImageDB, found bool, err error)
+	// ScanStates reads the scan rows by group and the last failure, for the image scanning's page (R-VULN-053).
+	ScanStates(ctx context.Context, dbDigest string, bound time.Duration) ([]store.ImageScanGroup, *store.ImageScanFailure, error)
 }
 
 // Service is the report.

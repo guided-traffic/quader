@@ -427,21 +427,6 @@
   }
 }
 
-// The image scanners of the advisory sources (R-OPS-048, Q-UI-897): a section of its own under the run buttons, the summary and the
-// fold of the replicas, as the malware scanning's page has them.
-.image-scanners {
-  margin-block: var(--quader-space-5);
-
-  h2 {
-    margin-block: 0 var(--quader-space-2);
-    font: var(--quader-type-title-small);
-  }
-
-  p {
-    margin-block: 0 var(--quader-space-2);
-  }
-}
-
 .secondary-inline {
   margin-inline-start: var(--quader-space-2);
   color: var(--quader-text-muted);
