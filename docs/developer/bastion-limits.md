@@ -304,7 +304,9 @@ At most four builders at once (rule 10 of the project plan). The waves are the o
   raw `input` labelled by the row, the meter under it) and **Now** (`stateParts` with the read rate only where no maximum is set). The
   preset's sentences (`presetSentence`) and the card's block reasons (`blockReasons`) are gone; `blockReasonText` stays for **Blocks**.
   **Details** carries its note, its groups' help beside their headings (`bastion-limit-details.ts`) and the addresses' help beside
-  theirs.
+  theirs, and at its end the card's **Created** (`[details-end]`). The card (`bastion-card.ts`, Q-UI-1622, Q-UI-1623, Q-UI-1629) has a
+  head with the state, the mark **Helm configuration** (a lock and the words) and the actions, and ends with the closed sections **Replicas** and **Tokens**,
+  whose line is `contactHealth` and `tokenHealth` of `bastion-state.ts` (`tokenExpiry` and `BASTION_TOKEN_WARN_DAYS` moved there too).
 
 ### E13 · Egress addresses on the registration
 

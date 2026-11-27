@@ -36,7 +36,7 @@ let nextDisclosureId = 1;
           &ngsp;<span class="badge heading-count" translate="no">{{ count() }}</span>
         }
         @if (note()) {
-          <span class="note" [class.warn]="noteTone() === 'warn'"
+          <span class="note" [class.warning]="noteTone() === 'warn'"
             >@if (noteTone() === 'warn') {<span class="material-icons" aria-hidden="true">warning</span>}{{ note() }}</span
           >
         }
@@ -119,11 +119,12 @@ let nextDisclosureId = 1;
       text-align: start;
     }
     /* A note that is a warning (a section's line that needs action, R-UI-267): the warning's colour with its icon before it, on the
-       middle of the note's first line (R-UI-175). */
-    .note.warn {
+       middle of the note's first line (R-UI-175). Not .warn: a span with .warn and an icon is drawn as a status badge
+       (_controls.scss), a pill of one line that cut a section's warning at 390 px. */
+    .note.warning {
       color: var(--quader-status-warn);
     }
-    .note.warn > .material-icons {
+    .note.warning > .material-icons {
       margin-block: calc((var(--quader-line) - 1rem) / 2);
       margin-inline-end: var(--quader-space-1);
       font-size: 1rem;

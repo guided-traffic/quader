@@ -76,8 +76,10 @@ function token(id: string, description: string, hint: string, createdDays: numbe
  * IPv6 address of 39, a token that expires in 20 days beside one of a year. The tables keep one form at a width whatever they hold
  * (Q-UI-959). The addresses each Bastion connects from (R-UI-243): `partners` lists none, `dmz-frankfurt-edge` the /64 of one replica
  * and not the IPv4 address of the other. `dmz-hamburg` is registered and never contacted: no token, no replica, its web interface off.
+ * The sections Replicas and Tokens (Q-UI-1622, Q-UI-1623): `dmz-frankfurt-edge` runs two versions and has a token expiring in 20 days,
+ * `partners` one in 21, so their sections warn and open by themselves; `dmz-munich` is healthy, every section closed and one line.
  */
-function registrations(frankfurtOn: boolean): Json {
+function registrations(frankfurtOn: boolean): { items: Json[] } {
   return {
     items: [
       {
@@ -117,7 +119,12 @@ function registrations(frankfurtOn: boolean): Json {
         ],
         contacts: [
           contact('quader-bastion-dmz-frankfurt-edge-partners-eu1-6f8b9c7d4f-x2k4q', '2001:0db8:85a3:0000:0000:8a2e:0370:7334', 'https://packages.dmz-frankfurt.partners.example.com', 1, { edgeLimit: 'rps=60; connections=256', catalogueKept: false }),
-          contact('quader-bastion-dmz-frankfurt-edge-partners-eu1-6f8b9c7d4f-m8v2j', '198.51.100.21', 'https://packages.dmz-frankfurt.partners.example.com', 2, { edgeLimit: 'rps=60; connections=256', catalogueKept: false }),
+          // A replica still on the release before (Q-UI-1622): the section Replicas warns and opens by itself.
+          contact('quader-bastion-dmz-frankfurt-edge-partners-eu1-6f8b9c7d4f-m8v2j', '198.51.100.21', 'https://packages.dmz-frankfurt.partners.example.com', 2, {
+            edgeLimit: 'rps=60; connections=256',
+            catalogueKept: false,
+            release: '0.41.3',
+          }),
         ],
       },
       {
@@ -137,9 +144,11 @@ function registrations(frankfurtOn: boolean): Json {
         status: [],
         egress: ['10.252.0.0/16'],
         createdAt: at(-170),
+        // The declared token as the server stored it (its phrase); the screen names it itself (Q-UI-1629). The issued one expires in
+        // three weeks: the section Tokens warns and opens by itself (Q-UI-1623).
         tokens: [
           { ...token('0192f0d1-1c2a-7c3e-8a51-6f7d2b9c4e44', 'Bastion partners (declared in the configuration)', 'qdr_bst_Lm4c', 2, 0), expiresAt: null, declared: true },
-          token('0192f0d1-1c2a-7c3e-8a51-6f7d2b9c4e41', 'partners 2026', 'qdr_bst_3kQ9', 165, 200),
+          token('0192f0d1-1c2a-7c3e-8a51-6f7d2b9c4e41', 'partners 2026', 'qdr_bst_3kQ9', 165, 21),
         ],
         contacts: [contact('quader-bastion-7d9c5b8f6-p4r7t', '203.0.113.7', 'https://packages.example.com', 1)],
       },
@@ -159,6 +168,23 @@ function registrations(frankfurtOn: boolean): Json {
         createdAt: at(-0.01),
         tokens: [],
         contacts: [],
+      },
+      {
+        id: '0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a43',
+        name: 'dmz-munich',
+        description: 'The DMZ of the Munich office',
+        enabled: true,
+        declared: null,
+        // Healthy (W-39's 2.2): one replica a minute ago, its address listed, a token a year away, the web interface built, the direct
+        // reads off, Internet in Enforce at 200 MB/s: every section closed and one line.
+        switches: { handover: false, gui: true, docs: true },
+        catalogue: { outcome: 'built', reason: null, checkedAt: at(-3 / 1440), builtAt: at(-60 / 1440) },
+        limits: limits(),
+        status: [report('quader-bastion-dmz-munich-5c7d9f8b6-q7w3n', [], { limited: 0, throughput: { limited: false, bytesPerSecondByClass: { anonymous: 9_000_000, signedIn: 32_000_000, catalogue: 0 } } })],
+        egress: ['192.0.2.64/28'],
+        createdAt: at(-60),
+        tokens: [token('0192f0d1-1c2a-7c3e-8a51-6f7d2b9c4e45', 'munich 2027', 'qdr_bst_Q2vn', 30, 365)],
+        contacts: [contact('quader-bastion-dmz-munich-5c7d9f8b6-q7w3n', '192.0.2.70', 'https://packages.dmz-munich.example.com', 1, { edgeLimit: 'rps=1000; connections=256' })],
       },
     ],
   };
@@ -318,14 +344,15 @@ async function answerLimits(page: Page): Promise<void> {
   );
   await page.reload();
   await page.waitForLoadState('networkidle');
-  await expect(page.locator('main quader-bastion-card')).toHaveCount(3);
+  await expect(page.locator('main quader-bastion-card')).toHaveCount(registrations(false).items.length);
 }
 
 /**
  * The section **Limits** of a card (R-UI-240), in both languages, so every locator is the markup's, never a word: `dmz-frankfurt-edge`
  * Custom in Audit at 150 MB/s with the state of two replicas, the edge warning, the catalogue's sentence and the egress offer, and
  * `partners` as a new registration; then the details of `dmz-frankfurt-edge` opened, the preset's dialog of `partners` naming what
- * Partner network replaces, and the mode's dialog of `dmz-frankfurt-edge`, each cancelled. Nothing is saved.
+ * Partner network replaces, and the mode's dialog of `dmz-frankfurt-edge`, each cancelled; then the section Replicas of
+ * `dmz-frankfurt-edge`, which its warning opened, and the help sign of its direct reads tapped. Nothing is saved.
  */
 export async function* bastionLimits(page: Page): AsyncGenerator<string> {
   await answerLimits(page);
@@ -355,6 +382,19 @@ export async function* bastionLimits(page: Page): AsyncGenerator<string> {
     await mode.locator('.dialog-actions button').first().click();
     await expect(mode).toHaveCount(0);
   }
+  // The replicas on two versions opened their section by itself (Q-UI-1622): its table in the card, the warning as its line.
+  const replicas = frankfurt.locator('[data-testid="bastion-replicas"]');
+  await expect(replicas.locator('button[aria-expanded]')).toHaveAttribute('aria-expanded', 'true');
+  await replicas.scrollIntoViewIfNeeded();
+  yield 'replicas-open';
+  // A help sign tapped (R-UI-267): the direct reads' sentence pinned in its bubble, inside the window at every width.
+  const sign = frankfurt.locator('[data-testid="bastion-handover-row"] button.help-sign');
+  await sign.scrollIntoViewIfNeeded();
+  await sign.click();
+  await expect(page.locator('.cdk-overlay-container quader-tooltip')).toBeVisible();
+  yield 'help';
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.cdk-overlay-container quader-tooltip')).toHaveCount(0);
   await page.unroute('**/api/v1/bastions');
   await page.unroute('**/api/v1/bastions/partners/limits/assignments**');
 }
@@ -384,7 +424,7 @@ async function answer(page: Page, frankfurtOn: boolean, connections: readonly Js
   });
   await page.reload();
   await page.waitForLoadState('networkidle');
-  await expect(page.locator('main quader-bastion-card')).toHaveCount(3);
+  await expect(page.locator('main quader-bastion-card')).toHaveCount(registrations(false).items.length);
 }
 
 /**

@@ -114,11 +114,11 @@ describe('Disclosure', () => {
     await settle(fixture);
     const root = fixture.nativeElement as HTMLElement;
     const [warn, muted] = [...root.querySelectorAll<HTMLElement>('h3 button .note')];
-    expect(warn!.classList).toContain('warn');
+    expect(warn!.classList).toContain('warning');
     expect(warn!.querySelector('.material-icons')?.textContent).toBe('warning');
     expect(warn!.querySelector('.material-icons')?.getAttribute('aria-hidden')).toBe('true');
     expect(warn!.textContent).toBe('warningThe replicas run different versions: 0.42.0, 0.41.3.');
-    expect(muted!.classList).not.toContain('warn');
+    expect(muted!.classList).not.toContain('warning');
     expect(muted!.querySelector('.material-icons')).toBeNull();
     await expectAccessible(root);
   });

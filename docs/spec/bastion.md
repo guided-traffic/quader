@@ -473,7 +473,15 @@ Priority: **MVP** · Covers: quader-only
   the last contact is a table of **Replica**, **Time** and **Reported base URL**, with the client address, the release and the interface
   version under the replica's name; the tokens a table of **Token** (the hint and the creation under the description), **Expires**,
   **Last used** and **Revoke**; every time relative with its date and time as its title. Both keep this form at every width of a card
-  but the narrow one, where their rows stack, whatever their values.
+  but the narrow one, where their rows stack, whatever their values. *Amended on 2026-11-27 (W-39,
+  [api-and-ui.md](api-and-ui.md#q-ui-1622--a-bastions-replicas-are-one-line-it-warns-when-the-bastion-is-silent-or-its-replicas-disagree)
+  Q-UI-1622, [Q-UI-1623](api-and-ui.md#q-ui-1623--a-bastions-tokens-are-one-line-the-mark-says-expires-soon-without-a-number)):* the
+  two tables stand last on the card in the closed sections **Replicas** and **Tokens**, each with its count and one line ("Last contact 1
+  minute ago · version 0.42.0", "The next expires in 12 months"), which turns into a warning and opens the section by itself when no
+  replica made contact in 5 minutes while the registration is enabled, when the replicas heard in that time run more than one version or
+  report more than one base URL, or when a token expires within 30 days or has expired; the interface version is no longer shown (every
+  recorded contact shares it: a handshake with another one is refused); the column **Time** is **Last contact**; the warning mark is
+  **Expires soon**, without a number beside the cell's relative time.
 - **Client setup.** `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/client-setup` ([api-and-ui.md](api-and-ui.md) R-API-030) accepts
   `bastion=<name>`: the snippets are rendered on the base URL the Bastion reported at its last handshake, provided it is an
   entry of `server.additional_base_urls` (else `409 bastion_base_url_unknown`, also while it has reported none; a name that is no
@@ -7445,7 +7453,11 @@ The chart renders the map from `bastions.declared` of its values, a list of `{na
   to [Q-UI-1499](api-and-ui.md#q-ui-1499--the-declared-token-reads-never-under-expires-and-in-the-configuration-under-its-name-with-no-revoke)): the
   registration carries `declared: {since, secretName}` (null otherwise; the Secret's name as the configuration of the replica that answers
   names it) and each token `declared`; `expiresAt` is null for the declared token. A `PATCH` that changes `description` or `egress` of a
-  declared registration, the revocation of its declared token and its deletion answer `409 managed_by_config`.
+  declared registration, the revocation of its declared token and its deletion answer `409 managed_by_config`. *Amended on 2026-11-27
+  (W-39, [Q-UI-1629](api-and-ui.md#q-ui-1629--a-declared-bastion-registration-shows-a-badge-helm-configuration-with-its-help)):* the
+  card's head carries the mark **Helm configuration** (a lock and the words) with its help ("Its description, its addresses and one token are set in
+  bastions.declared of the Helm configuration and changed there. To delete the Bastion, remove it there first."); the declared token is
+  named "Token of the Helm configuration" by the screen, whatever description the server stored, with "Secret <name>" beside its hint.
 - **A restore** ([backup-and-restore.md](backup-and-restore.md)) brings the registration back as it was at the restore point, mark and
   declared token included; the journal's replay revokes a declared token that a rotation revoked after that point. The restore Job applies
   no declaration: a value stored after the point is missing, and the Bastion is refused, until the next `quader migrate` (the upgrade that

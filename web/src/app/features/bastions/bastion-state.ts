@@ -1,5 +1,5 @@
 import { formatNumber } from '@angular/common';
-import { Bastion } from '../../api/bastions-api';
+import { Bastion, BastionTokenSummary } from '../../api/bastions-api';
 import { formatCount } from '../limits/figures';
 
 /** How long a replica's report counts as its state now (R-UI-240): an older one is no report. */
@@ -212,4 +212,72 @@ export function newestContact(contacts: Bastion['contacts']): Bastion['contacts'
   let newest: Bastion['contacts'][number] | null = null;
   for (const c of contacts) if (!newest || Date.parse(c.contactAt) > Date.parse(newest.contactAt)) newest = c;
   return newest;
+}
+
+/** A token that expires within this many days carries the warning mark and turns the section **Tokens** into a warning (R-BAS-007). */
+export const BASTION_TOKEN_WARN_DAYS = 30;
+
+const DAY_MS = 86_400_000;
+
+/** The state of a token against `now`: expired, expiring within the warning window, or fine. */
+export function tokenExpiry(token: Pick<BastionTokenSummary, 'expiresAt'>, now: number): 'expired' | 'soon' | 'ok' {
+  // The declared token does not expire (R-BAS-127).
+  if (!token.expiresAt) return 'ok';
+  const left = Date.parse(token.expiresAt) - now;
+  if (left <= 0) return 'expired';
+  return left < BASTION_TOKEN_WARN_DAYS * DAY_MS ? 'soon' : 'ok';
+}
+
+/**
+ * What the section **Replicas** says (R-UI-240, Q-UI-1622): `none` before a contact; `silent` when no replica made contact in the last
+ * five minutes (`REPORT_FRESH_MS`), since the newest contact, a warning only while the registration is enabled; otherwise `current` with
+ * the replicas heard in the last five minutes, the newest contact and its version, the versions those replicas run (newest contact's
+ * first, each once) and whether they report more than one base URL. A replica not heard beside current ones is no warning: every
+ * rollout leaves its old pods' contacts for 30 days.
+ */
+export type ContactHealth =
+  | { readonly kind: 'none' }
+  | { readonly kind: 'silent'; readonly since: string; readonly warn: boolean }
+  | {
+      readonly kind: 'current';
+      readonly count: number;
+      readonly last: string;
+      readonly release: string;
+      readonly releases: readonly string[];
+      readonly baseUrls: boolean;
+    };
+
+export function contactHealth(bastion: Pick<Bastion, 'contacts' | 'enabled'>, now: number): ContactHealth {
+  const newest = newestContact(bastion.contacts);
+  if (!newest) return { kind: 'none' };
+  const current = bastion.contacts
+    .filter((c) => now - Date.parse(c.contactAt) <= REPORT_FRESH_MS)
+    .sort((a, b) => Date.parse(b.contactAt) - Date.parse(a.contactAt));
+  if (current.length === 0) return { kind: 'silent', since: newest.contactAt, warn: bastion.enabled };
+  const releases = [...new Set(current.map((c) => c.release))];
+  const baseUrls = new Set(current.map((c) => c.baseUrl).filter((u) => u !== '')).size > 1;
+  return { kind: 'current', count: current.length, last: newest.contactAt, release: newest.release, releases, baseUrls };
+}
+
+/**
+ * What the section **Tokens** says (R-UI-240, Q-UI-1623): `none` without a token; `expired` with the first token whose expiry lies
+ * before now; `soon` with the token that expires first within `BASTION_TOKEN_WARN_DAYS`; otherwise `ok` with the earliest expiry, or
+ * null where no token expires.
+ */
+export type TokenHealth =
+  | { readonly kind: 'none' }
+  | { readonly kind: 'expired'; readonly token: BastionTokenSummary }
+  | { readonly kind: 'soon'; readonly token: BastionTokenSummary }
+  | { readonly kind: 'ok'; readonly next: string | null };
+
+export function tokenHealth(bastion: Pick<Bastion, 'tokens'>, now: number): TokenHealth {
+  if (bastion.tokens.length === 0) return { kind: 'none' };
+  const expired = bastion.tokens.find((t) => tokenExpiry(t, now) === 'expired');
+  if (expired) return { kind: 'expired', token: expired };
+  const expiring = bastion.tokens
+    .filter((t) => t.expiresAt !== null)
+    .sort((a, b) => Date.parse(a.expiresAt!) - Date.parse(b.expiresAt!));
+  const first = expiring[0];
+  if (first && tokenExpiry(first, now) === 'soon') return { kind: 'soon', token: first };
+  return { kind: 'ok', next: first?.expiresAt ?? null };
 }

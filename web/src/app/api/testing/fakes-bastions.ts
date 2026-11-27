@@ -76,7 +76,7 @@ export function sampleBastionToken(over: Partial<BastionTokenSummary> = {}): Bas
 export function sampleBastionContact(over: Partial<BastionContact> = {}): BastionContact {
   return {
     replica: 'quader-bastion-7d9c-x2k4q',
-    contactAt: inDays(-0.01),
+    contactAt: inDays(-1 / 1440),
     clientAddress: '198.51.100.20',
     release: '0.15.0',
     interfaceVersion: 1,
@@ -127,7 +127,7 @@ export function sampleBastion(over: Partial<Bastion> = {}): Bastion {
     tokens: [sampleBastionToken()],
     contacts: [
       sampleBastionContact(),
-      sampleBastionContact({ replica: 'quader-bastion-7d9c-m8v2j', clientAddress: '198.51.100.21', contactAt: inDays(-0.02) }),
+      sampleBastionContact({ replica: 'quader-bastion-7d9c-m8v2j', clientAddress: '198.51.100.21', contactAt: inDays(-2 / 1440) }),
     ],
     ...over,
   };

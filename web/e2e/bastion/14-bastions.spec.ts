@@ -1,8 +1,9 @@
 import { expect, expectAccessible, signInLocal, test, unique } from '../support';
 
-// R-BAS-007 journey "Bastions" (R-BAS-049): an administrator opens Admin area > Bastions, sees the last contact of the
-// replicas of the e2e Bastion, registers a Bastion, issues a token that expires in 20 days, copies it once, and sees the
-// warning mark on the token afterwards. The token's value is never shown again.
+// R-BAS-007 journey "Bastions" (R-BAS-049): an administrator opens Admin area > Bastions, opens the section Replicas of the e2e
+// Bastion and sees the last contact of its replicas, registers a Bastion, issues a token that expires in 20 days, copies it once,
+// and sees the section Tokens open by itself with the warning and the mark on the token afterwards. The token's value is never shown
+// again.
 
 const registration = process.env['QUADER_E2E_BASTION_REGISTRATION'];
 
@@ -21,7 +22,11 @@ test('R-BAS-007 the Bastions screen shows the last contact of the replicas, issu
   // the Bastion of the e2e cluster: both replicas have made contact
   const e2e = page.getByRole('region', { name: registration, exact: true });
   await expect(e2e).toBeVisible();
-  const contacts = e2e.locator('quader-data-table').first();
+  // the section Replicas is one line while the replicas agree (Q-UI-1622): open it for the table
+  const replicas = e2e.locator('[data-testid="bastion-replicas"] button[aria-expanded]');
+  if ((await replicas.getAttribute('aria-expanded')) !== 'true') await replicas.click();
+  await expect(replicas).toHaveAttribute('aria-expanded', 'true');
+  const contacts = e2e.locator('[data-testid="bastion-replicas"] quader-data-table');
   // the table also lists replicas of earlier pods of the release (the main installation keeps their last contact): the live ones are in it
   for (const replica of (process.env['QUADER_E2E_BASTION_REPLICAS'] ?? '').split(',').filter((r) => r !== '')) {
     await expect(contacts).toContainText(replica);
@@ -57,13 +62,16 @@ test('R-BAS-007 the Bastions screen shows the last contact of the replicas, issu
     await secret.getByRole('button', { name: 'I have copied it' }).click();
     await expect(secret).toBeHidden();
 
-    // after a reload the list never shows the value, and the token that expires in 20 days carries the warning mark
+    // after a reload the list never shows the value, and the token that expires in 20 days opens the section Tokens by itself with
+    // the warning line and carries the mark Expires soon (Q-UI-1623)
     await page.reload();
     await expect(page.getByText(value)).toHaveCount(0);
     const again = page.getByRole('region', { name, exact: true });
-    const row = again.getByRole('row', { name: /expires in 20 days|qdr_bst_/ }).last();
-    await expect(row).toContainText('Expires in');
-    await expect(row).toContainText(/(19|20) days/);
+    const tokens = again.locator('[data-testid="bastion-tokens"]');
+    await expect(tokens.locator('button[aria-expanded]')).toHaveAttribute('aria-expanded', 'true');
+    await expect(tokens.locator('button[aria-expanded]')).toContainText('“expires in 20 days” expires in');
+    const row = tokens.getByRole('row', { name: /expires in 20 days|qdr_bst_/ }).last();
+    await expect(row).toContainText('Expires soon');
     await expectAccessible(page, 'Bastions, a token with the warning mark');
   } finally {
     await admin.delete(`/api/v1/bastions/${name}`);

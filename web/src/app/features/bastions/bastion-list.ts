@@ -19,7 +19,7 @@ import { Loading } from '../../shared/ui/loading';
 
 /**
  * Administration → Bastions (R-BAS-007): the registrations of the Quader Bastions in front of this
- * installation, each as a card with the last contact of every replica, its tokens and the actions
+ * installation, under the header's one sentence (Q-UI-1627), each as a card with its settings, its replicas, its tokens and the actions
  * (R-BAS-004). There are at most `bastions.max_registrations` registrations, so the list is one page
  * and the screen holds all of them. A registration the caller may not change shows no action; the
  * API decides in any case (R-UI-005). While a registration's direct reads from the object store are
@@ -29,13 +29,16 @@ import { Loading } from '../../shared/ui/loading';
   selector: 'quader-bastion-list',
   imports: [Loading, EmptyState, PageHeader, BastionCard, ErrorNotice, Needs],
   template: `
-    <quader-page-header heading="Bastions" i18n-heading="@@bastions.heading">
+    <!-- One sentence under the heading (Q-UI-569, Q-UI-1627): the manual says how to register one. -->
+    <quader-page-header
+      heading="Bastions"
+      i18n-heading="@@bastions.heading"
+      description="A read-only cache of this installation for clients outside your network."
+      i18n-description="@@bastions.description"
+    >
       <button actions class="btn btn-confirm" type="button" [disabled]="!canWrite()" aria-describedby="needs-bastions" (click)="add()" i18n="@@bastions.add">New Bastion</button>
     </quader-page-header>
     <quader-needs id="needs-bastions" capability="endpoints:write" />
-    <p i18n="@@bastions.hint">
-      A Bastion is a read-only cache of this installation for clients outside your network. Register it here, issue the token its chart reads, and check that every replica has made contact.
-    </p>
 
     @if (error(); as e) {
       <quader-error-notice [error]="e" (retry)="load()" />

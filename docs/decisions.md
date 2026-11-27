@@ -13426,10 +13426,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-828 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+832 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 828 questions</summary>
+<summary>Q-UI: 832 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -14259,8 +14259,12 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1619](spec/api-and-ui.md#q-ui-1619--what-stays-visible-beside-a-setting) | What stays visible beside a setting | Decided by the development agent on 2026-11-27 | (a) Behind the sign: what the setting does. Visible, one line each: the input's format (needed while typing), what becomes public or leaves for the DMZ, a refusal, a warning, the next step of a new object | — |
 | [Q-UI-1620](spec/api-and-ui.md#q-ui-1620--a-bastions-card-reads-head-main-settings-limits-details-replicas-tokens) | A Bastion's card reads head, main settings, Limits, Details, Replicas, Tokens | Decided by the development agent on 2026-11-27 | (a) Head (name, state, actions, description), the three switches, **Limits** with its rows, **Details**, **Replicas**, **Tokens** | — |
 | [Q-UI-1621](spec/api-and-ui.md#q-ui-1621--a-bastions-main-settings-are-rows-of-name-and-control-a-reader-reads-the-word) | A Bastion's main settings are rows of name and control; a reader reads the word | Decided by the development agent on 2026-11-27 | (a) `<quader-setting>` rows: the name (with its sign) in a column of 16 rem, the control beside it, one column below 40 rem of content; a reader sees **On** or **Off**, the preset's name, the mode, "150 MB/s" | — |
+| [Q-UI-1622](spec/api-and-ui.md#q-ui-1622--a-bastions-replicas-are-one-line-it-warns-when-the-bastion-is-silent-or-its-replicas-disagree) | A Bastion's replicas are one line; it warns when the Bastion is silent or its replicas disagree | Decided by the development agent on 2026-11-27 | (a). "Another address" is the base URL; a client address outside the registration's list is the offer under **Limits** (R-UI-243). | — |
+| [Q-UI-1623](spec/api-and-ui.md#q-ui-1623--a-bastions-tokens-are-one-line-the-mark-says-expires-soon-without-a-number) | A Bastion's tokens are one line; the mark says "Expires soon" without a number | Decided by the development agent on 2026-11-27 | (a) A closed section **Tokens** with the count and "The next expires in 12 months" or "None expires"; a warning with the section opened when a token expires within 30 days or has expired; the mark in the row "Expires soon" beside its relative time; the declared token named "Token of the Helm configuration" with its Secret under it | — |
 | [Q-UI-1624](spec/api-and-ui.md#q-ui-1624--every-warning-of-a-bastions-card-is-one-line-under-what-it-concerns) | Every warning of a Bastion's card is one line under what it concerns | Decided by the development agent on 2026-11-27 | (a) The texts of W-39's section 2.7, each warning under its row or at the head of **Limits**, the reason of a stop with the key named as its path in the Helm configuration; the documentation-idle line, the block reasons and the repeated read rate cut; the empty addresses warning only after a contact that no offer covers | — |
 | [Q-UI-1625](spec/api-and-ui.md#q-ui-1625--helm-configuration-one-wording-the-key-as-its-path-in-the-charts-values) | "Helm configuration", one wording, the key as its path in the chart's values | Decided by the development agent on 2026-11-27 | (a) Every screen and server text that marks a fixed value says "Helm configuration" / "Helm-Konfiguration" and names the key as the chart's values have it (`config.server.base_url`, `endpoints.default.auth.anonymous`, `bastions.declared`); the "configuration file" variants go | — |
+| [Q-UI-1627](spec/api-and-ui.md#q-ui-1627--the-bastions-pages-paragraph-becomes-the-headers-one-sentence) | The Bastions page's paragraph becomes the header's one sentence | Decided by the development agent on 2026-11-27 | (a): "A read-only cache of this installation for clients outside your network." | — |
+| [Q-UI-1629](spec/api-and-ui.md#q-ui-1629--a-declared-bastion-registration-shows-a-badge-helm-configuration-with-its-help) | A declared Bastion registration shows a badge "Helm configuration" with its help | Decided by the development agent on 2026-11-27 | (a), built as a lock and the words "Helm configuration" in the muted colour beside the state, not as a pill: the help sign explains the name before it (R-UI-267), and beside a badge's word, which is no name, the layout check found the sign apart from its text at 390 px. | — |
 
 </details>
 

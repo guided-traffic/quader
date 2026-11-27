@@ -10383,6 +10383,12 @@ demand ([Q-UI-1480](#q-ui-1480--a-bastions-card-shows-the-preset-the-mode-and-th
 Info-Zeichen", "sortiere neu", "Haupt-Settings"):* the card reads top to bottom
 ([Q-UI-1620](#q-ui-1620--a-bastions-card-reads-head-main-settings-limits-details-replicas-tokens)):
 
+- **Head**: the name, the state (**Enabled** or **Disabled**), for a registration of the Helm configuration the mark **Helm
+  configuration** with a lock and its help ("Its description, its addresses and one token are set in bastions.declared of the Helm
+  configuration and changed there. To delete the Bastion, remove it there first.",
+  [Q-UI-1629](#q-ui-1629--a-declared-bastion-registration-shows-a-badge-helm-configuration-with-its-help)), and the actions at the
+  head's end (**Issue token**, **Disable** or **Enable**, **Delete**); under it the description, one muted line. Under the head, only when
+  there is one: an action's refusal, and the token shown once. **Created** is the last line of **Details**.
 - **Main settings**, rows of name and control ([Q-UI-1621](#q-ui-1621--a-bastions-main-settings-are-rows-of-name-and-control-a-reader-reads-the-word),
   `<quader-setting>` of R-UI-267), each with its help behind the info sign after its name: **Web interface** and **Documentation**
   (W-35's switches, [bastion.md](bastion.md) R-BAS-102, in the card's plain view by
@@ -10406,6 +10412,23 @@ Info-Zeichen", "sortiere neu", "Haupt-Settings"):* the card reads top to bottom
   their format the field's hint and their meaning its help), the slots to the main installation, the anonymous ceiling, the throughput's
   anonymous share and GB per hour per class (each group's help behind the sign beside its heading), the egress addresses (R-UI-243), and
   the link **Rules of this Bastion** to R-UI-241.
+- **Replicas** ([Q-UI-1622](#q-ui-1622--a-bastions-replicas-are-one-line-it-warns-when-the-bastion-is-silent-or-its-replicas-disagree)),
+  a closed section with the count of the replicas the server keeps and one line: "Last contact 1 minute ago · version 0.42.0", or a
+  warning, which opens the section by itself: "No replica has made contact for 20 minutes." (no replica heard in the last 5 minutes while
+  the registration is enabled; a disabled one says "Last contact …" muted), "The replicas run different versions: 0.42.0, 0.41.3.", "The
+  replicas report different base URLs." (each among the replicas heard in the last 5 minutes). Inside, the table **Replica** (the
+  address it connected from and "Version 0.42.0" under its name), **Last contact**, **Reported base URL**. Without a contact, "No replica
+  has made contact yet." in the section's place.
+- **Tokens** ([Q-UI-1623](#q-ui-1623--a-bastions-tokens-are-one-line-the-mark-says-expires-soon-without-a-number)), a closed section
+  with the count and one line: "The next expires in 12 months", "None expires", or a warning, which opens the section by itself:
+  "“partners 2026” expires in 3 weeks." (within 30 days), "“partners 2026” has expired.". Inside, the table **Token**, **Expires** (its
+  relative time and, within 30 days, the mark **Expires soon**, past it **Expired**), **Last used**, **Revoke**; the declared token is
+  named "Token of the Helm configuration" with "Secret quader-bastion-token" beside its hint. Without a token, "No token yet: issue one for
+  the Bastion's chart." in the section's place.
+- A section that turns into a warning opens by itself on that change; a live read never closes what the viewer opened, and the screen
+  never closes a section.
+- **The list page**: the header **Bastions** with its one sentence, "A read-only cache of this installation for clients outside your
+  network." ([Q-UI-1627](#q-ui-1627--the-bastions-pages-paragraph-becomes-the-headers-one-sentence)), and **New Bastion**.
 - **Help behind the sign** (R-UI-267): what each row, group and list does; the help texts are those of W-39's plan, section 2.7. A
   sentence that only explains a setting is never a paragraph of the card.
 - **The warnings**, one line each in the warning colour with its icon, under what they concern
@@ -10445,7 +10468,12 @@ networks as one field, the slots, the anonymous ceiling, the throughput's share 
 [Q-UI-1487](#q-ui-1487--the-details-are-one-form-whose-refusal-keeps-what-was-typed-and-the-exempt-networks-are-one-field)), R-UI-243's
 list and the link **Rules of this Bastion**. Why a reported address is blocked is the tab **Blocks**' (R-UI-241); the card no longer
 names the reasons. The list reads again every few seconds while a web interface waits for its first build (R-UI-213), every minute
-otherwise. English and German.
+otherwise. The head, **Replicas** and **Tokens** are [bastion-card.ts](../../web/src/app/features/bastions/bastion-card.ts): the
+sections are `<quader-disclosure [level]="3">` with the count and the line of `contactHealth` and `tokenHealth`
+([bastion-state.ts](../../web/src/app/features/bastions/bastion-state.ts)) as their note, `noteTone="warn"` for a warning, and their
+open state a `linkedSignal` of the warning that only a change into it sets true; **Created** is projected into the end of **Details**
+(`[details-end]` of `<quader-bastion-limits>`); the page's sentence is the header's `description`
+([bastion-list.ts](../../web/src/app/features/bastions/bastion-list.ts)). English and German.
 
 Acceptance criteria:
 
@@ -10461,9 +10489,16 @@ Acceptance criteria:
   "R-BAS-102 …" (no line repeats Off, the lost catalogue's warning as the row's sibling); "R-BAS-104 …" (each reason's line with the
   key as its Helm path, the base URL of the newest contact, no base URL, waiting for a contact, built, not built yet, nothing with the
   web interface off). The direct reads' row: "Direct reads from the object store on a Bastion card (R-BAS-071)", with the key line only
-  while an encrypted connection exists.
+  while an encrypted connection exists. The head, the sections and the page: "R-UI-240 W-39 the head holds the name, the state and the
+  actions; …", "R-UI-240 W-39 the page says what a Bastion is in the header, one sentence", and "A Bastion's replicas and tokens, one
+  line each (R-UI-240)", five cases, about 0.3 s: `contactHealth` (none, current, silent enabled and disabled, two versions, two base
+  URLs, a replica of an earlier rollout beside current ones) and `tokenHealth` (none, none expires, the next, soon, expired) as plain
+  unit cases; the sections closed and one line while healthy, a warning that opens its section by itself and a live read that does not
+  close what the viewer opened, with axe; the silent and the disabled Bastion and two base URLs; a token within 30 days named with one
+  time, the declared one by the screen's name.
 - Rendered (rule 11): `admin-bastions`, `admin-bastions-read`, `admin-bastions-limits` in both schemes, at 1,440, 1,024 and 390 px,
-  `admin-bastions-limits` in English and German.
+  `admin-bastions-limits` in English and German, with the states `replicas-open` (a section its warning opened) and `help` (a help
+  sign tapped) and four registrations: one with warnings in every row, one declared, one never contacted, one healthy.
 
 ### R-UI-241 · A Bastion's limits page
 Priority: **MVP** · Covers: quader-only
@@ -24232,7 +24267,12 @@ the next card, with a shorter URL, kept its table and broke its dates onto two l
 **Choice:** (a). The least widths: **Replica** 16 rem (a pod name of 31 characters stays on one line), **Time** 7.5 rem, **Reported base
 URL** 10 rem; **Token** 9 rem, **Expires** 11 rem (its mark **Expires in 29 days** included), **Last used** 7.5 rem. **Applied in the
 spec:** [bastion.md](bastion.md) R-BAS-007 (amended); code: `contactColumns`, `tokenColumns` and `breakParts` of
-[bastion-card.ts](../../web/src/app/features/bastions/bastion-card.ts).
+[bastion-card.ts](../../web/src/app/features/bastions/bastion-card.ts). *Amended on 2026-11-27 by
+[Q-UI-1622](#q-ui-1622--a-bastions-replicas-are-one-line-it-warns-when-the-bastion-is-silent-or-its-replicas-disagree) and
+[Q-UI-1623](#q-ui-1623--a-bastions-tokens-are-one-line-the-mark-says-expires-soon-without-a-number):* the tables stand in the closed
+sections **Replicas** and **Tokens**; the column **Time** is **Last contact**; under a replica's name stand its address and "Version
+0.42.0" (the interface version, which every recorded contact shares, is gone); the mark is **Expires soon**, without a number, and
+**Expires** is 8 rem (inside a section's indent the tokens' table stacked at 1,024 px with 11).
 
 ### Q-UI-960 · Who may only read a card's switch reads it as the settings pages say a switch to an auditor
 
@@ -30152,6 +30192,83 @@ only where no maximum is set (W-39's D13). **Applied in the spec:** R-UI-240, R-
 [bastion-state.ts](../../web/src/app/features/bastions/bastion-state.ts) `catalogueNote`,
 [bastion-egress.ts](../../web/src/app/features/bastions/bastion-egress.ts).
 
+### Q-UI-1622 · A Bastion's replicas are one line; it warns when the Bastion is silent or its replicas disagree
+
+Status: **Decided by the development agent on 2026-11-27** (W-39's plan, D5) — selected from the options below; the owner reviews it at
+the walkthrough. R-UI-240, [bastion.md](bastion.md) R-BAS-007.
+
+Context: the owner called the tables of the last contact and the tokens "absolute Randinformation"; they took about half of a card at
+390 px. What an administrator has to see of the replicas is whether they are late, run another version, or report another address.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A closed section **Replicas** with the count of the replicas heard in the last 5 minutes, the last contact and the version; a warning, with the section opened by itself, when no replica was heard in 5 minutes while the registration is enabled, when the current replicas run more than one version, or report more than one base URL; a replica not heard beside current ones is no warning; the table lists every contact the server keeps; the interface version leaves (chosen) | | The owner's one line; his three cases made decidable; no false warning for an hour after every rollout | A single replica that dies beside a healthy one is not flagged here: the Bastion's own alerts and `quader_bastion_main_reachable` say it |
+| (b) A warning for every contact older than 5 minutes | | Flags a dead replica | Every rollout leaves its old pod names for 30 days (`BastionContactPrune`): the card would warn after every upgrade |
+| (c) A warning for every contact older than an hour | | Fewer false warnings | Still one per rollout for an hour, and a real outage is flagged late |
+
+**Choice:** (a). "Another address" is the base URL; a client address outside the registration's list is the offer under **Limits**
+(R-UI-243). A version other than the main installation's is no warning: the handshake refuses a different interface version, so a
+recorded contact is compatible, and the interface version, which every recorded contact shares, is no longer shown. A disabled
+registration that is silent says "Last contact …" muted, no warning. A section that turns into a warning opens by itself once, on that
+edge; the screen never closes what the viewer opened, and a live read keeps the viewer's choice. **Applied in the spec:** R-UI-240,
+[bastion.md](bastion.md) R-BAS-007; code: `contactHealth` of [bastion-state.ts](../../web/src/app/features/bastions/bastion-state.ts),
+[bastion-card.ts](../../web/src/app/features/bastions/bastion-card.ts).
+
+### Q-UI-1623 · A Bastion's tokens are one line; the mark says "Expires soon" without a number
+
+Status: **Decided by the development agent on 2026-11-27** (W-39's plan, D6) — selected from the options below; the owner reviews it at
+the walkthrough. R-UI-240, [bastion.md](bastion.md) R-BAS-007.
+
+Context: a token expiring in 20 days read "in 2 weeks" under **Expires** and "Expires in 20 days" in its mark beside it: two numbers for
+one expiry (F1 of W-39's plan).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A closed section **Tokens** with the count and "The next expires in 12 months" or "None expires"; a warning with the section opened when a token expires within 30 days or has expired; the mark in the row "Expires soon" beside its relative time; the declared token named "Token of the Helm configuration" with its Secret under it (chosen) | | One number per expiry; the renewal is prompted until the old token is revoked | The exact day is in the time's title only |
+| (b) The mark keeps "Expires in 20 days" and the cell's time goes | | The exact number | The cell's time is the column's one format (Q-UI-431) |
+| (c) No mark, the line alone | | Less | The row that needs the act is not marked |
+
+**Choice:** (a). An expired token comes before one that expires soon in the line; the line names the token by its description, the
+declared one by the screen's name. A registration without a token says "No token yet: issue one for the Bastion's chart." in the
+section's place. **Applied in the spec:** R-UI-240, [bastion.md](bastion.md) R-BAS-007; code: `tokenHealth` of
+[bastion-state.ts](../../web/src/app/features/bastions/bastion-state.ts), [bastion-card.ts](../../web/src/app/features/bastions/bastion-card.ts).
+
+### Q-UI-1629 · A declared Bastion registration shows a badge "Helm configuration" with its help
+
+Status: **Decided by the development agent on 2026-11-27** (W-39's plan, D8; the plan's number was taken) — selected from the options
+below; the owner reviews it at the walkthrough. R-UI-240, [bastion.md](bastion.md) R-BAS-127.
+
+Context: a declared registration carried a paragraph of two to three lines under its facts ("From the Helm values, token from Secret
+… to delete it, remove it there first."), and its token a server-made English name ("Bastion partners (declared in the configuration)")
+with a lock and "In the configuration" under it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A badge with a lock beside the state, its help naming `bastions.declared` and the rule to delete; the Secret stands in the declared token's row (chosen) | | One word in the head; the Secret where the token is | The rule to delete is behind the sign; there is no **Delete** to try |
+| (b) The lock line, shortened to one line | | Visible | A line for what a badge says |
+| (c) Nothing but the missing **Delete** | | Least | The reader does not learn why the description and the addresses cannot change |
+
+**Choice:** (a), built as a lock and the words "Helm configuration" in the muted colour beside the state, not as a pill: the help sign
+explains the name before it (R-UI-267), and beside a badge's word, which is no name, the layout check found the sign apart from its
+text at 390 px. The declared token is named "Token of the Helm configuration" by the screen whatever the server stored, with "Secret
+<name>" under it beside its hint, and keeps **Never** under **Expires** and no **Revoke**. The wording "Helm configuration" is R-UI-268's
+(Q-UI-1625). **Applied in the spec:** R-UI-240, [bastion.md](bastion.md) R-BAS-127; code:
+[bastion-card.ts](../../web/src/app/features/bastions/bastion-card.ts).
+
+### Q-UI-1627 · The Bastions page's paragraph becomes the header's one sentence
+
+Status: **Decided by the development agent on 2026-11-27** (W-39's plan, D11) — selected from the options below; the owner reviews it at
+the walkthrough. R-UI-240.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The first sentence as the header's `description`, the rest cut (chosen) | | Q-UI-569's one sentence under a page's heading; the manual says how to register | The steps are no longer on the page |
+| (b) Keep the paragraph | | The steps at hand | Against Q-UI-569 |
+| (c) No sentence | | Least | The page never says what a Bastion is |
+
+**Choice:** (a): "A read-only cache of this installation for clients outside your network." **Applied in the spec:** R-UI-240; code:
+[bastion-list.ts](../../web/src/app/features/bastions/bastion-list.ts).
+
 ### Q-UI-1481 · A preset is applied after a dialog that names what it replaces
 
 Status: **Decided by the development agent on 2026-11-26** — selected from the options below; the owner reviews it at the walkthrough.
@@ -30967,7 +31084,9 @@ the card has to say so and keep those members out of reach. An account the confi
 | (c) The fields shown disabled | | The form is the same | A disabled field invites a click and explains nothing |
 
 **Choice:** (a). The brief's words "Declared in the configuration" are not used: the declared accounts, whose words the brief asked for,
-say "From the Helm values". **Applied in the spec:** R-BAS-127, R-UI-243 (the list is text for a declared registration).
+say "From the Helm values". **Applied in the spec:** R-BAS-127, R-UI-243 (the list is text for a declared registration). *Amended on
+2026-11-27 by [Q-UI-1629](#q-ui-1629--a-declared-bastion-registration-shows-a-badge-helm-configuration-with-its-help):* the lock line is
+the mark **Helm configuration** (a lock and the words) in the head with its help behind the info sign; the Secret stands in the declared token's row.
 
 ### Q-UI-1498 · A declared registration's card offers no Delete
 
@@ -30993,7 +31112,10 @@ walkthrough.
 | (b) The declared token left out of the table | | Fewer rows | **Last used** of the token the Bastion actually uses is hidden |
 | (c) **Revoke** answered with the `409` | | | An action offered to be refused |
 
-**Choice:** (a). **Applied in the spec:** R-BAS-127, R-BAS-007.
+**Choice:** (a). **Applied in the spec:** R-BAS-127, R-BAS-007. *Amended on 2026-11-27 by
+[Q-UI-1629](#q-ui-1629--a-declared-bastion-registration-shows-a-badge-helm-configuration-with-its-help):* the declared token is named
+"Token of the Helm configuration" by the screen, with "Secret quader-bastion-token" beside its hint, and no lock and no "In the
+configuration" under it; **Never** and no **Revoke** stay.
 
 ### Q-UI-1500 · A column's help says what the column means for every row; what holds for one row is said at that row
 

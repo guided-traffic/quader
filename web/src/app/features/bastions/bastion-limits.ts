@@ -37,8 +37,8 @@ const MB = 1e6;
  *   maximum is set, and the callers limited and the addresses blocked with a link to the Bastion's **Blocks**, or "No report in the
  *   last 5 minutes".
  * - **Details**, closed, with its note: the flood figures, the slots, the anonymous ceiling and the throughput by class
- *   (`<quader-bastion-limit-details>`), the addresses the Bastion connects from (R-UI-243) and the link to the rules of the Bastion's
- *   place (R-UI-241).
+ *   (`<quader-bastion-limit-details>`), the addresses the Bastion connects from (R-UI-243), the link to the rules of the Bastion's
+ *   place (R-UI-241), and what the card puts at its end (`[details-end]`: **Created**).
  *
  * Who changes what follows Q-BAS-325: `limits:write` the preset, the mode, the throughput and the figures; `endpoints:write` the
  * addresses; a reader sees each as its value in words (Q-UI-960). Every change reads the registration for its `ETag` and sends the merge
@@ -173,6 +173,8 @@ const MB = 1e6;
           <a [routerLink]="rulesLink()" i18n="@@bastion.limits.rules-link">Rules of this Bastion</a>
         </p>
       }
+      <!-- What the card puts last into Details: its creation time (Q-UI-1620). -->
+      <ng-content select="[details-end]" />
     </quader-disclosure>
   `,
   styles: `
@@ -214,9 +216,6 @@ const MB = 1e6;
       flex-wrap: wrap;
       align-items: center;
       gap: var(--quader-space-2) var(--quader-space-3);
-    }
-    .mode-word {
-      font-weight: 600;
     }
     .throughput-form .unit {
       margin-inline-end: var(--quader-space-2);
