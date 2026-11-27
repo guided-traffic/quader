@@ -104,6 +104,8 @@ export interface ClientSetupQuery {
   readonly scope?: string;
   /** The name of a Bastion registration: the snippets are for that Bastion (R-BAS-007). */
   readonly bastion?: string;
+  /** With `bastion`: the base URL of the Bastion's deployment the snippets are for, one of its listed addresses (R-BAS-135). */
+  readonly address?: string;
   /**
    * A file's path, or a folder's with a trailing slash, of a generic repository (R-GENERIC-017): the install snippets download and
    * check the file, the publish snippets upload into the folder or replace the file.

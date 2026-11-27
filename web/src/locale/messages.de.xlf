@@ -15193,9 +15193,9 @@
         <note category="location">src/app/features/packages/package-list.html:2,5</note>
         <note category="location">src/app/features/repositories/content/repository-content.html:26,28</note>
         <note category="location">src/app/features/repositories/repository-list.html:212,213</note>
-        <note category="location">src/app/views/packages/client-command-menu.ts:143,144</note>
-        <note category="location">src/app/views/packages/client-command-menu.ts:180,181</note>
-        <note category="location">src/app/views/packages/client-command-menu.ts:196,197</note>
+        <note category="location">src/app/views/packages/client-command-menu.ts:147,148</note>
+        <note category="location">src/app/views/packages/client-command-menu.ts:202,203</note>
+        <note category="location">src/app/views/packages/client-command-menu.ts:218,219</note>
         <note category="location">src/app/views/packages/package-version-view.html:80,83</note>
       </notes>
       <segment>
@@ -46384,7 +46384,7 @@
     </unit>
     <unit id="setup.client">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:54,55</note>
+        <note category="location">src/app/features/setup/client-setup.html:57,58</note>
       </notes>
       <segment>
         <source>Client</source>
@@ -46393,7 +46393,7 @@
     </unit>
     <unit id="setup.step.credentials">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:68,69</note>
+        <note category="location">src/app/features/setup/client-setup.html:87,88</note>
       </notes>
       <segment>
         <source>Token in the snippets</source>
@@ -46402,7 +46402,7 @@
     </unit>
     <unit id="setup.cred.env">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:73,74</note>
+        <note category="location">src/app/features/setup/client-setup.html:92,93</note>
       </notes>
       <segment>
         <source>Read it from the variable QUADER_TOKEN</source>
@@ -46411,7 +46411,7 @@
     </unit>
     <unit id="setup.cred.env-hint">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:74,76</note>
+        <note category="location">src/app/features/setup/client-setup.html:93,95</note>
       </notes>
       <segment>
         <source>No secret appears on this page or in the files you save.</source>
@@ -46420,7 +46420,7 @@
     </unit>
     <unit id="setup.cred.paste">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:80,81</note>
+        <note category="location">src/app/features/setup/client-setup.html:99,100</note>
       </notes>
       <segment>
         <source>Write a token into the snippets</source>
@@ -46429,7 +46429,7 @@
     </unit>
     <unit id="setup.cred.paste-hint">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:82,83</note>
+        <note category="location">src/app/features/setup/client-setup.html:101,102</note>
       </notes>
       <segment>
         <source> For a file outside version control. The token stays in this browser: it is checked here and never sent to the server. </source>
@@ -46438,7 +46438,7 @@
     </unit>
     <unit id="setup.paste.label">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:90,91</note>
+        <note category="location">src/app/features/setup/client-setup.html:109,110</note>
       </notes>
       <segment>
         <source>Token</source>
@@ -46447,7 +46447,7 @@
     </unit>
     <unit id="setup.paste.hide">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:105,106</note>
+        <note category="location">src/app/features/setup/client-setup.html:124,125</note>
       </notes>
       <segment>
         <source>Hide</source>
@@ -46456,7 +46456,7 @@
     </unit>
     <unit id="setup.paste.show">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:107,108</note>
+        <note category="location">src/app/features/setup/client-setup.html:126,127</note>
       </notes>
       <segment>
         <source>Show</source>
@@ -46465,7 +46465,7 @@
     </unit>
     <unit id="setup.paste.ok">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:114,116</note>
+        <note category="location">src/app/features/setup/client-setup.html:133,135</note>
       </notes>
       <segment>
         <source>The value looks like a Quader token. It is written into the snippets.</source>
@@ -46474,7 +46474,7 @@
     </unit>
     <unit id="setup.paste.prefix">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:117,119</note>
+        <note category="location">src/app/features/setup/client-setup.html:136,138</note>
       </notes>
       <segment>
         <source>A Quader token starts with qdr_pat_, qdr_sat_ or qdr_cit_.</source>
@@ -46483,7 +46483,7 @@
     </unit>
     <unit id="setup.paste.length">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:120,122</note>
+        <note category="location">src/app/features/setup/client-setup.html:139,141</note>
       </notes>
       <segment>
         <source>A Quader token has 57 characters. The value is shorter or longer, maybe cut off.</source>
@@ -46492,7 +46492,7 @@
     </unit>
     <unit id="setup.paste.alphabet">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:123,125</note>
+        <note category="location">src/app/features/setup/client-setup.html:142,144</note>
       </notes>
       <segment>
         <source>A Quader token holds only letters and digits after its prefix.</source>
@@ -46501,62 +46501,16 @@
     </unit>
     <unit id="setup.paste.checksum">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:126,128</note>
+        <note category="location">src/app/features/setup/client-setup.html:145,147</note>
       </notes>
       <segment>
         <source>The checksum does not match. A character is probably wrong or missing.</source>
         <target>Die Prüfsumme stimmt nicht. Vermutlich ist ein Zeichen falsch oder fehlt.</target>
       </segment>
     </unit>
-    <unit id="setup.step.target">
-      <notes>
-        <note category="location">src/app/features/setup/client-setup.html:137,138</note>
-      </notes>
-      <segment>
-        <source>Install from</source>
-        <target>Installieren von</target>
-      </segment>
-    </unit>
-    <unit id="setup.target.main">
-      <notes>
-        <note category="location">src/app/features/setup/client-setup.html:142,143</note>
-      </notes>
-      <segment>
-        <source>This installation</source>
-        <target>Diese Installation</target>
-      </segment>
-    </unit>
-    <unit id="setup.target.main-hint">
-      <notes>
-        <note category="location">src/app/features/setup/client-setup.html:143,145</note>
-      </notes>
-      <segment>
-        <source>The address you are using now.</source>
-        <target>Die Adresse, die Sie gerade nutzen.</target>
-      </segment>
-    </unit>
-    <unit id="setup.target.bastion">
-      <notes>
-        <note category="location">src/app/features/setup/client-setup.html:150</note>
-        <note category="location">src/app/features/setup/client-setup.html:162</note>
-      </notes>
-      <segment>
-        <source>Bastion</source>
-        <target>Bastion</target>
-      </segment>
-    </unit>
-    <unit id="setup.target.bastion-hint">
-      <notes>
-        <note category="location">src/app/features/setup/client-setup.html:152,153</note>
-      </notes>
-      <segment>
-        <source> A read-only cache for clients outside the network. You can install through it; you cannot publish. </source>
-        <target>Ein schreibgeschützter Cache für Clients außerhalb des Netzwerks. Sie können darüber installieren, aber nicht veröffentlichen.</target>
-      </segment>
-    </unit>
     <unit id="setup.anonymous">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:175,177</note>
+        <note category="location">src/app/features/setup/client-setup.html:159,161</note>
       </notes>
       <segment>
         <source>You are not signed in: the snippets hold no credentials.</source>
@@ -46565,7 +46519,7 @@
     </unit>
     <unit id="setup.cred.line-class">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:181,182</note>
+        <note category="location">src/app/features/setup/client-setup.html:162,163</note>
       </notes>
       <segment>
         <source>The snippets read your token from the variable QUADER_TOKEN.</source>
@@ -46574,7 +46528,7 @@
     </unit>
     <unit id="setup.class.placeholders">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:182,184</note>
+        <note category="location">src/app/features/setup/client-setup.html:163,165</note>
       </notes>
       <segment>
         <source>The addresses show &lt;project&gt; and &lt;repository&gt; where the project and the key of your repository go.</source>
@@ -46583,7 +46537,7 @@
     </unit>
     <unit id="setup.cred.token">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:189,190</note>
+        <note category="location">src/app/features/setup/client-setup.html:170,171</note>
       </notes>
       <segment>
         <source>Token</source>
@@ -46592,7 +46546,7 @@
     </unit>
     <unit id="setup.cred.line-paste">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:191,193</note>
+        <note category="location">src/app/features/setup/client-setup.html:172,174</note>
       </notes>
       <segment>
         <source>The snippets hold the token you paste under More options.</source>
@@ -46601,7 +46555,7 @@
     </unit>
     <unit id="setup.cred.line-env">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:193,194</note>
+        <note category="location">src/app/features/setup/client-setup.html:174,175</note>
       </notes>
       <segment>
         <source>The snippets read it from <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span class=&quot;with-stop&quot;&gt;" dispEnd="&lt;/span&gt;"><pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">QUADER_TOKEN</pc>.</pc></source>
@@ -46610,7 +46564,7 @@
     </unit>
     <unit id="setup.token.create">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:199,200</note>
+        <note category="location">src/app/features/setup/client-setup.html:180,181</note>
       </notes>
       <segment>
         <source> Create a token </source>
@@ -46619,7 +46573,7 @@
     </unit>
     <unit id="setup.token.with-publish">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:204,206</note>
+        <note category="location">src/app/features/setup/client-setup.html:185,187</note>
       </notes>
       <segment>
         <source>It may also publish</source>
@@ -46628,7 +46582,7 @@
     </unit>
     <unit id="setup.token.once">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:216,217</note>
+        <note category="location">src/app/features/setup/client-setup.html:197,198</note>
       </notes>
       <segment>
         <source>This token is shown once.</source>
@@ -46637,7 +46591,7 @@
     </unit>
     <unit id="setup.token.scope-publish">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:218,219</note>
+        <note category="location">src/app/features/setup/client-setup.html:199,200</note>
       </notes>
       <segment>
         <source>It may read this repository and publish to <ph id="0" equiv="INTERPOLATION" disp="{{ publishTarget() }}"/>.</source>
@@ -46646,7 +46600,7 @@
     </unit>
     <unit id="setup.token.scope-read">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:220,223</note>
+        <note category="location">src/app/features/setup/client-setup.html:201,204</note>
       </notes>
       <segment>
         <source>It may read this repository.</source>
@@ -46655,7 +46609,7 @@
     </unit>
     <unit id="setup.token.read-how">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:224,225</note>
+        <note category="location">src/app/features/setup/client-setup.html:205,206</note>
       </notes>
       <segment>
         <source>Run this, paste the token, press Enter. The shell keeps it out of its history.</source>
@@ -46664,34 +46618,16 @@
     </unit>
     <unit id="setup.token.read-ci">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:226,227</note>
+        <note category="location">src/app/features/setup/client-setup.html:207,208</note>
       </notes>
       <segment>
         <source>In CI: a masked variable named <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span class=&quot;with-stop&quot;&gt;" dispEnd="&lt;/span&gt;"><pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">QUADER_TOKEN</pc>.</pc></source>
         <target>In CI: eine maskierte Variable namens <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span class=&quot;with-stop&quot;&gt;" dispEnd="&lt;/span&gt;"><pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">QUADER_TOKEN</pc>.</pc></target>
       </segment>
     </unit>
-    <unit id="setup.bastion.banner">
-      <notes>
-        <note category="location">src/app/features/setup/client-setup.html:239</note>
-      </notes>
-      <segment>
-        <source>These snippets point at the Bastion</source>
-        <target>Diese Snippets zeigen auf die Bastion</target>
-      </segment>
-    </unit>
-    <unit id="setup.bastion.banner-text">
-      <notes>
-        <note category="location">src/app/features/setup/client-setup.html:239,242</note>
-      </notes>
-      <segment>
-        <source>A Bastion is read only, so there are no publish snippets. Sign-in works with the same token as for this installation.</source>
-        <target>Eine Bastion ist schreibgeschützt, deshalb gibt es keine Snippets zum Veröffentlichen. Die Anmeldung funktioniert mit demselben Token wie bei dieser Installation.</target>
-      </segment>
-    </unit>
     <unit id="setup.pending-token">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:247</note>
+        <note category="location">src/app/features/setup/client-setup.html:220</note>
       </notes>
       <segment>
         <source>Until a token is pasted, the snippets show this placeholder where it will go:</source>
@@ -46700,7 +46636,7 @@
     </unit>
     <unit id="setup.gate">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:258,259</note>
+        <note category="location">src/app/features/setup/client-setup.html:231,232</note>
       </notes>
       <segment>
         <source>This repository serves only artifacts with a verified signature.</source>
@@ -46709,7 +46645,7 @@
     </unit>
     <unit id="setup.gate.any">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:260,261</note>
+        <note category="location">src/app/features/setup/client-setup.html:233,234</note>
       </notes>
       <segment>
         <source>Any trust anchor of the repository counts.</source>
@@ -46718,7 +46654,7 @@
     </unit>
     <unit id="setup.gate.anchors">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:262</note>
+        <note category="location">src/app/features/setup/client-setup.html:235</note>
       </notes>
       <segment>
         <source>Accepted trust anchors:</source>
@@ -46727,7 +46663,7 @@
     </unit>
     <unit id="setup.publish.no-target">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:273,276</note>
+        <note category="location">src/app/features/setup/client-setup.html:246,249</note>
       </notes>
       <segment>
         <source> This virtual repository has no default deployment target, so there is nothing to publish to through it. Publish to one of its local repositories instead. </source>
@@ -46736,7 +46672,7 @@
     </unit>
     <unit id="setup.publish.members">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:277,280</note>
+        <note category="location">src/app/features/setup/client-setup.html:250,253</note>
       </notes>
       <segment>
         <source>Open the repository&apos;s settings to see its members</source>
@@ -46745,7 +46681,7 @@
     </unit>
     <unit id="setup.loading.client">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:282,285</note>
+        <note category="location">src/app/features/setup/client-setup.html:255,258</note>
       </notes>
       <segment>
         <source>Loading the client setup.</source>
@@ -46754,16 +46690,16 @@
     </unit>
     <unit id="setup.bastion.no-guide">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:288,290</note>
+        <note category="location">src/app/features/setup/client-setup.html:261,263</note>
       </notes>
       <segment>
-        <source>The explanation describes this installation. Choose This installation under More options to read it.</source>
-        <target>Die Erklärung beschreibt diese Installation. Wählen Sie unter „Weitere Optionen“ „Diese Installation“, um sie zu lesen.</target>
+        <source>The explanation describes this installation. Choose This installation under Install from to read it.</source>
+        <target>Die Erklärung beschreibt diese Installation. Wählen Sie unter „Installieren von“ „Diese Installation“, um sie zu lesen.</target>
       </segment>
     </unit>
     <unit id="setup.guide.heading">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.html:291,292</note>
+        <note category="location">src/app/features/setup/client-setup.html:264,265</note>
       </notes>
       <segment>
         <source>Guide</source>
@@ -46772,7 +46708,7 @@
     </unit>
     <unit id="setup.heading">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.ts:127</note>
+        <note category="location">src/app/features/setup/client-setup.ts:130</note>
       </notes>
       <segment>
         <source>Set up client</source>
@@ -46781,7 +46717,7 @@
     </unit>
     <unit id="setup.more">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.ts:128</note>
+        <note category="location">src/app/features/setup/client-setup.ts:131</note>
       </notes>
       <segment>
         <source>More options</source>
@@ -46790,7 +46726,7 @@
     </unit>
     <unit id="setup.copy-token">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.ts:131</note>
+        <note category="location">src/app/features/setup/client-setup.ts:134</note>
       </notes>
       <segment>
         <source>Copy token</source>
@@ -46799,7 +46735,7 @@
     </unit>
     <unit id="setup.copy-command">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.ts:132</note>
+        <note category="location">src/app/features/setup/client-setup.ts:135</note>
       </notes>
       <segment>
         <source>Copy command</source>
@@ -46808,16 +46744,34 @@
     </unit>
     <unit id="setup.token.label">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.ts:133</note>
+        <note category="location">src/app/features/setup/client-setup.ts:136</note>
       </notes>
       <segment>
         <source>Token</source>
         <target>Token</target>
       </segment>
     </unit>
+    <unit id="setup.step.target">
+      <notes>
+        <note category="location">src/app/features/setup/client-setup.ts:269</note>
+      </notes>
+      <segment>
+        <source>Install from</source>
+        <target>Installieren von</target>
+      </segment>
+    </unit>
+    <unit id="setup.target.help">
+      <notes>
+        <note category="location">src/app/features/setup/client-setup.ts:270</note>
+      </notes>
+      <segment>
+        <source>A Bastion serves this repository outside your network, read only: it has no publish snippets, and the same token signs in.</source>
+        <target>Eine Bastion liefert dieses Repository außerhalb Ihres Netzwerks aus, nur lesend: Sie hat keine Veröffentlichungs-Snippets, und es meldet sich dasselbe Token an.</target>
+      </segment>
+    </unit>
     <unit id="setup.bastion.replace-host">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.ts:381</note>
+        <note category="location">src/app/features/setup/client-setup.ts:420</note>
       </notes>
       <segment>
         <source>`replace-registry-host=always` makes npm fetch every package from this address, also when a lockfile written against another host names that host.</source>
@@ -46826,7 +46780,7 @@
     </unit>
     <unit id="setup.token.description">
       <notes>
-        <note category="location">src/app/features/setup/client-setup.ts:401</note>
+        <note category="location">src/app/features/setup/client-setup.ts:440</note>
       </notes>
       <segment>
         <source>Client setup: <ph id="0" equiv="client" disp="setup.client"/>, <ph id="1" equiv="repository" disp="repository"/>, <ph id="2" equiv="date" disp="new Date().toISOString().slice(0, 10)"/></source>
@@ -64448,8 +64402,8 @@
       <notes>
         <note category="location">src/app/views/files/file-view.ts:61,62</note>
         <note category="location">src/app/views/files/file-view.ts:277</note>
-        <note category="location">src/app/views/packages/client-command-menu.ts:172,173</note>
-        <note category="location">src/app/views/packages/client-command-menu.ts:476</note>
+        <note category="location">src/app/views/packages/client-command-menu.ts:194,195</note>
+        <note category="location">src/app/views/packages/client-command-menu.ts:559</note>
       </notes>
       <segment>
         <source>Download address</source>
@@ -64634,7 +64588,7 @@
     <unit id="files.copy-download-address">
       <notes>
         <note category="location">src/app/views/files/file-view.ts:278</note>
-        <note category="location">src/app/views/packages/client-command-menu.ts:477</note>
+        <note category="location">src/app/views/packages/client-command-menu.ts:560</note>
       </notes>
       <segment>
         <source>Copy download address</source>
@@ -65786,7 +65740,7 @@
     </unit>
     <unit id="pkg.command-menu.loading">
       <notes>
-        <note category="location">src/app/views/packages/client-command-menu.ts:133,135</note>
+        <note category="location">src/app/views/packages/client-command-menu.ts:137,139</note>
       </notes>
       <segment>
         <source>Loading the commands.</source>
@@ -65795,16 +65749,25 @@
     </unit>
     <unit id="pkg.install.repository">
       <notes>
-        <note category="location">src/app/views/packages/client-command-menu.ts:161,162</note>
+        <note category="location">src/app/views/packages/client-command-menu.ts:168,169</note>
       </notes>
       <segment>
         <source>Repository</source>
         <target>Repository</target>
       </segment>
     </unit>
+    <unit id="pkg.command-menu.from">
+      <notes>
+        <note category="location">src/app/views/packages/client-command-menu.ts:180,181</note>
+      </notes>
+      <segment>
+        <source>From</source>
+        <target>Von</target>
+      </segment>
+    </unit>
     <unit id="pkg.command-menu.by-digest">
       <notes>
-        <note category="location">src/app/views/packages/client-command-menu.ts:222,224</note>
+        <note category="location">src/app/views/packages/client-command-menu.ts:245,247</note>
       </notes>
       <segment>
         <source>By digest</source>
@@ -65813,7 +65776,7 @@
     </unit>
     <unit id="pkg.command-menu.checksum">
       <notes>
-        <note category="location">src/app/views/packages/client-command-menu.ts:237,239</note>
+        <note category="location">src/app/views/packages/client-command-menu.ts:261,263</note>
       </notes>
       <segment>
         <source>Check the download</source>
@@ -65822,7 +65785,7 @@
     </unit>
     <unit id="pkg.command-menu.label-file">
       <notes>
-        <note category="location">src/app/views/packages/client-command-menu.ts:469</note>
+        <note category="location">src/app/views/packages/client-command-menu.ts:552</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="verb" disp="this.verb()"/> <ph id="1" equiv="name" disp="this.name()"/></source>
@@ -65831,7 +65794,7 @@
     </unit>
     <unit id="pkg.command-menu.label">
       <notes>
-        <note category="location">src/app/views/packages/client-command-menu.ts:470</note>
+        <note category="location">src/app/views/packages/client-command-menu.ts:553</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="verb" disp="this.verb()"/> <ph id="1" equiv="name" disp="this.name()"/> <ph id="2" equiv="version" disp="this.version()"/></source>
@@ -65840,7 +65803,7 @@
     </unit>
     <unit id="pkg.command-menu.split">
       <notes>
-        <note category="location">src/app/views/packages/client-command-menu.ts:475</note>
+        <note category="location">src/app/views/packages/client-command-menu.ts:558</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="verb" disp="this.verb()"/> with a client</source>
@@ -65849,7 +65812,7 @@
     </unit>
     <unit id="pkg.command-menu.field">
       <notes>
-        <note category="location">src/app/views/packages/client-command-menu.ts:500</note>
+        <note category="location">src/app/views/packages/client-command-menu.ts:583</note>
       </notes>
       <segment>
         <source>Command for <ph id="0" equiv="client" disp="c.label"/></source>
@@ -65858,7 +65821,7 @@
     </unit>
     <unit id="pkg.command-menu.copy">
       <notes>
-        <note category="location">src/app/views/packages/client-command-menu.ts:504</note>
+        <note category="location">src/app/views/packages/client-command-menu.ts:587</note>
       </notes>
       <segment>
         <source>Copy the command for <ph id="0" equiv="client" disp="c.label"/></source>
@@ -65867,7 +65830,7 @@
     </unit>
     <unit id="pkg.command-menu.digest-field">
       <notes>
-        <note category="location">src/app/views/packages/client-command-menu.ts:508</note>
+        <note category="location">src/app/views/packages/client-command-menu.ts:591</note>
       </notes>
       <segment>
         <source>Command for <ph id="0" equiv="client" disp="c.label"/> by digest</source>
@@ -65876,7 +65839,7 @@
     </unit>
     <unit id="pkg.command-menu.digest-copy">
       <notes>
-        <note category="location">src/app/views/packages/client-command-menu.ts:512</note>
+        <note category="location">src/app/views/packages/client-command-menu.ts:595</note>
       </notes>
       <segment>
         <source>Copy the command for <ph id="0" equiv="client" disp="c.label"/> by digest</source>
@@ -65885,7 +65848,7 @@
     </unit>
     <unit id="pkg.command-menu.check-field">
       <notes>
-        <note category="location">src/app/views/packages/client-command-menu.ts:516</note>
+        <note category="location">src/app/views/packages/client-command-menu.ts:599</note>
       </notes>
       <segment>
         <source>Check of the download for <ph id="0" equiv="client" disp="c.label"/></source>
@@ -65894,7 +65857,7 @@
     </unit>
     <unit id="pkg.command-menu.check-copy">
       <notes>
-        <note category="location">src/app/views/packages/client-command-menu.ts:520</note>
+        <note category="location">src/app/views/packages/client-command-menu.ts:603</note>
       </notes>
       <segment>
         <source>Copy the check of the download for <ph id="0" equiv="client" disp="c.label"/></source>
@@ -65903,7 +65866,7 @@
     </unit>
     <unit id="pkg.install.loading">
       <notes>
-        <note category="location">src/app/views/packages/client-command.ts:36,37</note>
+        <note category="location">src/app/views/packages/client-command.ts:38,39</note>
       </notes>
       <segment>
         <source>Loading the command.</source>
@@ -65912,7 +65875,7 @@
     </unit>
     <unit id="pkg.install.form">
       <notes>
-        <note category="location">src/app/views/packages/client-command.ts:41,42</note>
+        <note category="location">src/app/views/packages/client-command.ts:43,44</note>
       </notes>
       <segment>
         <source>Form</source>
@@ -65921,7 +65884,7 @@
     </unit>
     <unit id="pkg.install.collapse">
       <notes>
-        <note category="location">src/app/views/packages/client-command.ts:80,81</note>
+        <note category="location">src/app/views/packages/client-command.ts:82,83</note>
       </notes>
       <segment>
         <source>Show less</source>
@@ -65930,7 +65893,7 @@
     </unit>
     <unit id="pkg.install.expand">
       <notes>
-        <note category="location">src/app/views/packages/client-command.ts:82,84</note>
+        <note category="location">src/app/views/packages/client-command.ts:84,86</note>
       </notes>
       <segment>
         <source>Show the whole command</source>
@@ -65939,7 +65902,7 @@
     </unit>
     <unit id="pkg.install.command">
       <notes>
-        <note category="location">src/app/views/packages/client-command.ts:118</note>
+        <note category="location">src/app/views/packages/client-command.ts:125</note>
       </notes>
       <segment>
         <source>Install command</source>
@@ -65948,7 +65911,7 @@
     </unit>
     <unit id="pkg.install.copy">
       <notes>
-        <note category="location">src/app/views/packages/client-command.ts:120</note>
+        <note category="location">src/app/views/packages/client-command.ts:127</note>
       </notes>
       <segment>
         <source>Copy install command</source>
@@ -66278,6 +66241,42 @@
       <segment>
         <source>Not delivered</source>
         <target>Nicht ausgeliefert</target>
+      </segment>
+    </unit>
+    <unit id="setup.target.main">
+      <notes>
+        <note category="location">src/app/views/packages/destinations.ts:62</note>
+      </notes>
+      <segment>
+        <source>This installation (<ph id="0" equiv="host" disp="host"/>)</source>
+        <target>Diese Installation (<ph id="0" equiv="host" disp="host"/>)</target>
+      </segment>
+    </unit>
+    <unit id="setup.target.main-no-host">
+      <notes>
+        <note category="location">src/app/views/packages/destinations.ts:63</note>
+      </notes>
+      <segment>
+        <source>This installation</source>
+        <target>Diese Installation</target>
+      </segment>
+    </unit>
+    <unit id="setup.target.bastion">
+      <notes>
+        <note category="location">src/app/views/packages/destinations.ts:70</note>
+      </notes>
+      <segment>
+        <source>Bastion <ph id="0" equiv="name" disp="d.bastion"/> · <ph id="1" equiv="host" disp="host"/></source>
+        <target>Bastion <ph id="0" equiv="name" disp="d.bastion"/> · <ph id="1" equiv="host" disp="host"/></target>
+      </segment>
+    </unit>
+    <unit id="setup.target.bastion-no-host">
+      <notes>
+        <note category="location">src/app/views/packages/destinations.ts:71</note>
+      </notes>
+      <segment>
+        <source>Bastion <ph id="0" equiv="name" disp="d.bastion"/></source>
+        <target>Bastion <ph id="0" equiv="name" disp="d.bastion"/></target>
       </segment>
     </unit>
     <unit id="pkg.dist-tag.title">

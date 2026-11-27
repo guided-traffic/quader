@@ -15,13 +15,23 @@
   }
 }
 
-// The client: one control with its label on one line, as wide as the longest client's name.
+// The client and Install from (Q-UI-1656): each one control with its label on one line, as wide as its longest option, side by side
+// where they fit and stacked where not.
 .client-choice {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--quader-space-2);
+  gap: var(--quader-space-3) var(--quader-space-5);
   margin-block: 0 var(--quader-space-3);
+
+  .choice-field {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--quader-space-1) var(--quader-space-2);
+    min-inline-size: 0;
+    max-inline-size: 100%;
+  }
 
   .field-label {
     margin: 0;
@@ -30,6 +40,7 @@
   .select-input {
     inline-size: auto;
     min-inline-size: 12rem;
+    max-inline-size: 100%;
   }
 }
 
@@ -113,10 +124,6 @@
   p {
     margin: 0;
   }
-}
-
-.more-alone {
-  margin-block: 0 var(--quader-space-3);
 }
 
 .more-options {

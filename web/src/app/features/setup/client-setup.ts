@@ -3,7 +3,6 @@ import { failureMayPass } from '../../shared/none-on-refusal';
 import { Component, DestroyRef, computed, effect, inject, input, resource, signal, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { newIdempotencyKey } from '../../api/client';
-import { Bastion, BastionsApi } from '../../api/bastions-api';
 import { Guide, GuidesApi } from '../../api/guides-api';
 import { ClientSnippet } from '../../api/packages-api';
 import { ClientSetupReads } from '../../api/package-reads';
@@ -28,7 +27,9 @@ import { DistributionMark } from '../../shared/ui/distribution-mark';
 import { GuideView } from '../guides/guide-view';
 import { classIcon, classLabel, classTip, isSystemOnly } from '../repositories/repository-class';
 import { Tooltip } from '../../shared/ui/tooltip';
-import { reportedBastions } from './bastion-targets';
+import { Help } from '../../shared/ui/help';
+import { ServerAddress } from '../../core/server-address';
+import { Destination, bastionDestinations, destinationLabel, mainDestinationLabel, sameDestination } from '../../views/packages/destinations';
 import { SnippetText, clientLabel, snippetText } from './clients';
 import { SetupFlowArt } from './setup-flow-art';
 import { SetupSteps } from '../../views/setup/setup-steps';
@@ -97,6 +98,7 @@ type Step = 'configure' | 'install' | 'publish' | 'verify';
     SetupSteps,
     SetupFlowArt,
     GuideView,
+    Help,
     Tooltip,
   ],
   templateUrl: './client-setup.html',
@@ -109,7 +111,7 @@ export class ClientSetupPage {
   private readonly guidesApi = inject(GuidesApi);
   private readonly repositories = inject(RepositoriesApi);
   private readonly tokens = inject(TokensApi);
-  private readonly bastionsApi = inject(BastionsApi);
+  private readonly serverAddress = inject(ServerAddress);
   private readonly signaturesApi = inject(SignaturesApi);
   private readonly router = inject(Router);
   protected readonly session = inject(SessionStore);
@@ -120,9 +122,10 @@ export class ClientSetupPage {
   /** The route parameters of the guide of a class (`/guides/<format>/<class>`). */
   readonly format = input<string | undefined>();
   readonly class = input<string | undefined>();
-  /** Query parameters: the client, and a Bastion to install from (R-BAS-007). */
+  /** Query parameters: the client, and a Bastion's deployment to install from (R-BAS-007, R-BAS-135). */
   readonly client = input<string | undefined>();
   readonly bastion = input<string | undefined>();
+  readonly address = input<string | undefined>();
 
   protected readonly heading = $localize`:@@setup.heading:Set up client`;
   protected readonly moreHeading = $localize`:@@setup.more:More options`;
@@ -228,19 +231,48 @@ export class ClientSetupPage {
     return given && ids.includes(given) ? given : (ids[0] ?? null);
   });
 
-  /** The Bastions to install from (R-BAS-007, Q-BAS-96): a repository's page only. */
-  protected readonly bastions = resource({
-    params: () => (this.ref() ? true : undefined),
-    loader: () => reportedBastions(this.bastionsApi, this.session),
-  });
-  protected readonly bastionOptions = computed<readonly Bastion[]>(() => valueOf(this.bastions) ?? []);
+  // ---- Install from (R-BAS-007, R-UI-016, Q-UI-1656) ----
+
+  /** The Bastion of the query: a repository's page only. */
   protected readonly activeBastion = computed<string | null>(() => (this.ref() ? this.bastion()?.trim() || null : null));
-  protected readonly showTarget = computed(() => this.bastionOptions().length > 0 || this.activeBastion() !== null);
+  /** The deployment of the query's Bastion: its `address`, or none, which the server answers on the Bastion's first address. */
+  private readonly givenAddress = computed<string | null>(() => (this.activeBastion() ? this.address()?.trim() || null : null));
+  /**
+   * The places to install from besides this installation: every deployment of every Bastion that distributes the repository and is not
+   * disabled, from the repository's member `bastions`, which every reader reads. A Bastion named in a link that offers none stands as
+   * one more choice, so the select shows what the snippets are for; the notice says why it answers none.
+   */
+  protected readonly targets = computed<readonly Destination[]>(() => {
+    const offered = bastionDestinations(this.repository()?.bastions);
+    const bastion = this.activeBastion();
+    if (bastion === null) return offered;
+    const address = this.givenAddress();
+    const named = offered.some((d) => d.bastion === bastion && (address === null || sameDestination(d, { bastion, address })));
+    return named ? offered : [...offered, { bastion, address: address ?? '' }];
+  });
+  /** The chosen place: the query's Bastion at its address, or its first offered one; null: this installation. */
+  protected readonly activeTarget = computed<Destination | null>(() => {
+    const bastion = this.activeBastion();
+    if (bastion === null) return null;
+    const address = this.givenAddress();
+    return this.targets().find((d) => d.bastion === bastion && (address === null || d.address === '' || sameDestination(d, { bastion, address }))) ?? null;
+  });
+  /** The select stands only while the repository is distributed through a Bastion that has an address, or the link names one. */
+  protected readonly showTarget = computed(() => this.targets().length > 0);
+  private readonly mainBase = resource({
+    params: () => (this.showTarget() ? true : undefined),
+    // The host only names the option: without it the option says "This installation".
+    loader: () => this.serverAddress.baseUrl().catch(() => null),
+  });
+  protected readonly mainLabel = computed(() => mainDestinationLabel(valueOf(this.mainBase) ?? null));
+  protected readonly targetLabel = destinationLabel;
+  protected readonly targetName = $localize`:@@setup.step.target:Install from`;
+  protected readonly targetHelp = $localize`:@@setup.target.help:A Bastion serves this repository outside your network, read only: it has no publish snippets, and the same token signs in.`;
 
   protected readonly mode = signal<CredentialMode>('env');
   /** Whether More options is open; a choice inside it keeps it open while the page lives. */
   protected readonly moreOpen = signal(false);
-  protected readonly offerMore = computed(() => this.ref() !== null && (!this.anonymous() || this.showTarget()));
+  protected readonly offerMore = computed(() => this.ref() !== null && !this.anonymous());
 
   protected readonly credentials = computed<'none' | 'env' | 'placeholder'>(() =>
     this.anonymous() ? 'none' : this.mode() === 'paste' ? 'placeholder' : 'env',
@@ -251,13 +283,14 @@ export class ClientSetupPage {
       const repository = this.ref();
       const client = this.activeClient();
       if (!repository || !client || !this.repository() || this.systemRepository()) return undefined;
-      return { repository, client, credentials: this.credentials(), bastion: this.activeBastion() };
+      return { repository, client, credentials: this.credentials(), bastion: this.activeBastion(), address: this.givenAddress() };
     },
     loader: ({ params }) =>
       this.setupApi.get(params.repository, {
         client: params.client,
         credentials: params.credentials,
         ...(params.bastion ? { bastion: params.bastion } : {}),
+        ...(params.bastion && params.address ? { address: params.address } : {}),
       }),
   });
   protected readonly setup = computed(() => valueOf(this.setupAnswer));
@@ -278,11 +311,11 @@ export class ClientSetupPage {
   protected readonly guide = computed(() => valueOf(this.guideAnswer));
   /**
    * The failure of the page's reads, kept while its notice reads them again (R-UI-216): the repository, the snippets, the guide, the
-   * formats. Its Retry reads each that failed, and the anchors' titles and the Bastions with them, so the page that comes back is the
-   * page of a fresh load (it used to read the snippets and the guide only, never the repository or the formats that had failed).
+   * formats. Its Retry reads each that failed, and the anchors' titles with them, so the page that comes back is the page of a fresh
+   * load (it used to read the snippets and the guide only, never the repository or the formats that had failed).
    */
   protected readonly loadFailure = failureOf([this.loaded, this.setupAnswer, this.guideAnswer, this.formats], {
-    also: [this.anchorTitles, this.bastions],
+    also: [this.anchorTitles],
   });
   /**
    * A repository of a format without clients has nothing to set up; the guide of a class asks for a format with a guide and one of
@@ -371,8 +404,14 @@ export class ClientSetupPage {
     void this.router.navigate([], { queryParams: { client }, queryParamsHandling: 'merge', replaceUrl: true });
   }
 
-  protected pickBastion(bastion: string | null): void {
-    void this.router.navigate([], { queryParams: { bastion }, queryParamsHandling: 'merge', replaceUrl: true });
+  /** The select's value is the index of a Bastion's deployment in `targets`, or empty for this installation. */
+  protected pickTarget(value: string): void {
+    const d = value === '' ? null : (this.targets()[Number(value)] ?? null);
+    void this.router.navigate([], {
+      queryParams: { bastion: d?.bastion ?? null, address: d?.address || null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
   }
 
   /** The sentence under a snippet that is for a Bastion and holds what only a Bastion needs (R-BAS-007). */

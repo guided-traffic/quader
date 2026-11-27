@@ -3777,6 +3777,8 @@ export const screens: readonly Screen[] = [
   { id: 'setup-generic-wget', path: `${P}/repositories/assets/setup?client=wget`, kinds: ['power'] },
   { id: 'setup-generic-powershell', path: `${P}/repositories/assets/setup?client=powershell`, kinds: ['power'] },
   { id: 'setup-oci-local', path: `${P}/repositories/images/setup`, kinds: all, walk: setupVerify, de: true },
+  // Install from chosen: the image repository distributed through dmz-berlin, its pull on the Bastion's host (Q-UI-1656).
+  { id: 'setup-oci-bastion', path: `${P}/repositories/images/setup?client=docker&bastion=${seededBastion.name}`, kinds: all, de: true },
   { id: 'setup-oci-remote', path: `${O}/repositories/docker-hub-remote/setup`, kinds: all },
   { id: 'setup-nuget', path: `${O}/repositories/nuget/setup`, kinds: all },
   { id: 'setup-deb', path: `${O}/repositories/${longDebKey}/setup`, kinds: all, walk: explained },

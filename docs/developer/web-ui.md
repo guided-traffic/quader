@@ -529,8 +529,9 @@ running and stops only what it started: Quader with the sign-in provider (`serve
    the one before it and a history row, a bytecode 8 days old) and change the switch's state (off, on, on at Internal where Public is not
    allowed) in the answers of the upstream list and item. **A Bastion** ([renders/bastions.ts](../../web/e2e/renders/bastions.ts),
    R-BAS-007): the registration `dmz-berlin`, created through the API, with the contact of one replica written by SQL as a handshake
-   leaves it (the profile runs no Bastion), so that Set up client offers it under **Install from** and answers its snippets
-   (`setup-npm-bastion`); the Bastions page's empty state and its other registrations are answers of its walk.
+   leaves it (the profile runs no Bastion), distributing `npm` and `images` of the main project, so that Set up client offers it under
+   **Install from** and answers its snippets (`setup-npm-bastion`, `setup-oci-bastion`) and their panels offer it as **From**; the
+   Bastions page's empty state and its other registrations are answers of its walk.
 2. **The three kinds of user** of [R-UI-067](../spec/api-and-ui.md#r-ui-067--three-kinds-of-user-the-plain-user-the-power-user-and-the-administrator)
    and the auditor of the security dashboard (R-UI-158) sign in through the provider; their sessions are kept in
    `.out/ui-renders/.auth/` for the run:
@@ -1311,7 +1312,7 @@ format. Everything offered comes from `GET /api/v1/formats`: a format with `clie
 
 | Route or place | Component | Services | Notes |
 |---|---|---|---|
-| `/projects/:project/repositories/:key/setup` (`?client=&bastion=`) | [client-setup](../../web/src/app/features/setup/client-setup.ts) | `RepositoriesApi`, `ClientSetupReads`, `GuidesApi`, `TokensApi`, `BastionsApi`, `SessionStore` | The design the owner chose, variant A of W-27 (Q-UI-800). The header with the context (`.context`: the repository, the format and the class as the badges `.format-badge` and `.class-badge` of the repository's header), the address and, projected as `art`, `<quader-setup-flow-art>`; one select **Client** where the format has several (`pickClient` writes `?client=`); the framed row `.credential` with the key, **Token**, **Create a token** (`btn-confirm`, `createToken`, R-UI-122) and, inside it, the inline `<quader-disclosure class="more-options">` with **Token in the snippets** (`mode`: `env` or `paste`) and **Install from**; the steps `section.step` in `.steps` (the rail) Configure, Install and, for who may publish (`offerPublish`), Publish, each a list of `<quader-setup-snippet>`, a second way inside `<quader-disclosure class="second-way">`; then `section.explanation`, the heading **Guide** and `<quader-guide-view>` with the repository's guide, none for a Bastion. The host sets `--quader-art-accent` to the format's accent (`formatAccent`) |
+| `/projects/:project/repositories/:key/setup` (`?client=&bastion=&address=`) | [client-setup](../../web/src/app/features/setup/client-setup.ts) | `RepositoriesApi`, `ClientSetupReads`, `GuidesApi`, `TokensApi`, `ServerAddress`, `SessionStore` | The design the owner chose, variant A of W-27 (Q-UI-800). The header with the context (`.context`: the repository, the format and the class as the badges `.format-badge` and `.class-badge` of the repository's header), the address and, projected as `art`, `<quader-setup-flow-art>`; one select **Client** where the format has several (`pickClient` writes `?client=`) and beside it, in `.client-choice`, the select **Install from** while the repository is distributed through a Bastion (`pickTarget` writes `?bastion=&address=`, [Set up client for a Bastion](#set-up-client-for-a-bastion)); the framed row `.credential` with the key, **Token**, **Create a token** (`btn-confirm`, `createToken`, R-UI-122) and, inside it, the inline `<quader-disclosure class="more-options">` with **Token in the snippets** (`mode`: `env` or `paste`); the steps `section.step` in `.steps` (the rail) Configure, Install and, for who may publish (`offerPublish`), Publish, each a list of `<quader-setup-snippet>`, a second way inside `<quader-disclosure class="second-way">`; then `section.explanation`, the heading **Guide** and `<quader-guide-view>` with the repository's guide, none for a Bastion. The host sets `--quader-art-accent` to the format's accent (`formatAccent`) |
 | `/guides/:format/:class` | the same component | `RepositoriesApi`, `GuidesApi` | The guide of a class (R-UI-124): no repository, so no setup request, no token and no More options; the snippets are the guide's (`Guide.snippets`) |
 | `/guides` | [guides-home](../../web/src/app/features/guides/guides-home.ts) | `RepositoriesApi` | The formats with clients as `<quader-format-tiles>`, each to `/guides/<format>`; the grid takes the page's width (Q-UI-488) |
 | `/guides/:format` | [guide-format](../../web/src/app/features/guides/guide-format.ts) | `RepositoriesApi` | The readable, enabled repositories of the format (`listAll`), virtual first, as a repository list built from its parts (Q-UI-430): the `.icon-name` cell with the visibility icon, the key and the description, `<quader-project-link>`, the class with its icon (`classIcon` of [repository-class.ts](../../web/src/app/features/repositories/repository-class.ts), the one place that names a class and shows a repository of a system-only format as **System**, `shownClass`, Q-UI-1203) and the row action `row-setup` (Q-UI-487); below, one link per class to `/guides/<format>/<class>` |
@@ -2192,19 +2193,30 @@ R-BAS-007 against the operations of R-BAS-004; decisions [Q-BAS-95](../spec/bast
 
 ### Set up client for a Bastion
 
-R-BAS-007, R-UI-120 and Q-BAS-96. The page **Set up client** of a repository offers **Install from** under **More options**: **This
-installation** and every registration that has reported a base URL (`reportedBastions` in
-[bastion-targets.ts](../../web/src/app/features/setup/bastion-targets.ts), which needs `endpoints:read` and returns nothing, without an
-error, for a caller who lacks it or a list that cannot be read). The query `?bastion=<name>` selects a Bastion for every caller,
-offered or not; the guide of a class (`/guides/<format>/<class>`) has no repository and offers no Bastion.
+R-BAS-007, R-UI-016, R-UI-120, R-UI-271, Q-UI-1656 and Q-UI-1657. Where a client installs from is the repository's member `bastions`,
+which every read of the repository carries: `bastionDestinations` of
+[destinations.ts](../../web/src/app/views/packages/destinations.ts) turns it into the deployments offered (every listed address of every
+Bastion that is not disabled, in order), and the same file words the options (`mainDestinationLabel`, `destinationLabel`).
 
-- The answer is `GET …/client-setup?bastion=<name>` (`ClientSetupQuery.bastion`); the header shows the Bastion's address, a banner says
-  that a Bastion is read only and the page has no **Publish** step; the npm snippet that holds `replace-registry-host=always` carries a
-  sentence that says why (`bastionNote`). A `409 bastion_base_url_unknown` is explained by `describeBastionProblem` ([problem-messages-bastion.ts](../../web/src/app/core/http/problem-messages-bastion.ts)); a `404` is the
-  ordinary not-found notice.
+- **Set up client** ([client-setup.ts](../../web/src/app/features/setup/client-setup.ts)) has the select **Install from** beside
+  **Client** while the repository offers a deployment (`targets`, `showTarget`); a Bastion the query names that is not offered is one more
+  option, so the select shows what was asked for. The query keeps `?bastion=<name>&address=<base URL>` and the answer is
+  `GET …/client-setup?bastion=<name>&address=<base URL>` (`ClientSetupQuery.bastion`, `.address`), without `address` when the link named
+  the Bastion alone (the server takes its first). The header shows the Bastion's address; the help sign of **Install from** says that a
+  Bastion is read only; the npm snippet that holds `replace-registry-host=always` carries a sentence that says why (`bastionNote`). A
+  `409 bastion_base_url_unknown` and a `409 repository_not_distributed` are worded by `describeBastionProblem`
+  ([problem-messages-bastion.ts](../../web/src/app/core/http/problem-messages-bastion.ts)); a `404` is the ordinary not-found notice.
 - The explanation below the steps describes this installation (publishing, tags, unpublishing), so with a Bastion chosen the page
-  shows none and says how to read it (**This installation** under **More options**); no guide request is sent.
-- Specs: [client-setup-bastion.spec.ts](../../web/src/app/features/setup/client-setup-bastion.spec.ts).
+  shows none and says how to read it (**This installation** under **Install from**); no guide request is sent.
+- **Every command panel** ([client-command-menu.ts](../../web/src/app/views/packages/client-command-menu.ts)) reads its repository's
+  destinations through the injection token `DESTINATIONS` once it has opened, and shows **From** beside **Repository** while there is one;
+  `<quader-client-command [destination]>` asks for the command on it. The main installation binds the token to
+  `RepositoryDestinationReads` ([repository-destinations.ts](../../web/src/app/core/repository-destinations.ts), in `provideViewReads`
+  of [providers.ts](../../web/src/app/api/providers.ts)): one `GET` of the repository per repository and page, and the page's choice as a
+  signal every panel follows, both forgotten at the first read on another path. The Bastion's application binds nothing; the token's
+  default is null, so its panels show no **From** and read no repository.
+- Specs: [client-setup-bastion.spec.ts](../../web/src/app/features/setup/client-setup-bastion.spec.ts),
+  [client-command-menu-from.spec.ts](../../web/src/app/views/packages/client-command-menu-from.spec.ts).
 
 ## The vulnerability screens
 

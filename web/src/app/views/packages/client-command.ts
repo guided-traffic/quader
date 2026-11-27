@@ -6,6 +6,7 @@ import { ErrorNotice } from '../../shared/error-notice';
 import { failureOf, valueOf } from '../../shared/paged-resource';
 import { Loading } from '../../shared/ui/loading';
 import { installFormLabel } from '../../features/setup/clients';
+import { Destination } from './destinations';
 
 /** A command longer than this many lines is collapsed behind an expander (R-UI-009). */
 export const COLLAPSE_AFTER_LINES = 3;
@@ -24,7 +25,8 @@ export const COLLAPSE_AFTER_LINES = 3;
  * package (NuGet's `dotnet add package`, Paket, a script's directive, a file-based app, Cake; Visual Studio's PackageReference, Package
  * Manager console and Central Package Management, formats/nuget.md R-NUGET-037, Q-UI-1360): a select **Form** above the command picks
  * one, the server's first by default and kept while the panel stands; a client with one form shows no select. The version's `kind` (a
- * .NET tool, a template) asks for the forms of its kind.
+ * .NET tool, a template) asks for the forms of its kind. With a `destination`, a Bastion's deployment that distributes the repository
+ * (Q-UI-1657), the command is the server's on that deployment's address.
  */
 @Component({
   selector: 'quader-client-command',
@@ -114,6 +116,11 @@ export class ClientCommand {
   readonly snippetId = input<string | null>(null);
   /** The version's kind, as its metadata names it (NuGet's `dotnet-tool`, `template`, `msbuild-sdk`): the server's forms of that kind. */
   readonly kind = input<string | null>(null);
+  /**
+   * A Bastion's deployment the command installs from (R-BAS-007, Q-UI-1657): the server's command on that address (`bastion` and
+   * `address` of `client-setup`); null: this installation.
+   */
+  readonly destination = input<Destination | null>(null);
   /** The accessible name of the one-line field; the menu names the client in it. */
   readonly commandLabel = input($localize`:@@pkg.install.command:Install command`);
   /** The accessible name and title of the copy button. */
@@ -128,26 +135,31 @@ export class ClientCommand {
       const repository = this.repository();
       const client = this.client();
       if (!repository || !client) return undefined;
+      const d = this.destination();
+      const at = d ? { bastion: d.bastion, address: d.address } : null;
       const path = this.path();
-      if (path !== null) return { repository, client, name: '', version: '', path, sha256: this.sha256(), kind: '' };
+      if (path !== null) return { repository, client, name: '', version: '', path, sha256: this.sha256(), kind: '', at };
       // A pull by digest asks for the image without a version: the digest follows the reference.
       const version = this.digest() ? '' : this.version();
       const kind = this.kind() ?? '';
-      return version !== null ? { repository, client, name: this.name(), version, path: null, sha256: null, kind } : undefined;
+      return version !== null ? { repository, client, name: this.name(), version, path: null, sha256: null, kind, at } : undefined;
     },
-    loader: ({ params }) =>
-      this.setup.get(
+    loader: ({ params }) => {
+      const at = params.at ? { bastion: params.at.bastion, ...(params.at.address ? { address: params.at.address } : {}) } : {};
+      return this.setup.get(
         params.repository,
         params.path !== null
-          ? { client: params.client, credentials: 'none', path: params.path, ...(params.sha256 ? { sha256: params.sha256 } : {}) }
+          ? { client: params.client, credentials: 'none', path: params.path, ...(params.sha256 ? { sha256: params.sha256 } : {}), ...at }
           : {
               client: params.client,
               credentials: 'none',
               package: params.name,
               ...(params.version !== '' ? { version: params.version } : {}),
               ...(params.kind ? { kind: params.kind } : {}),
+              ...at,
             },
-      ),
+      );
+    },
   });
 
   /**

@@ -593,6 +593,7 @@ export class FakeRepositoriesApi extends RepositoriesApi {
           description: repo.description ?? '',
           layout: 'generic',
           visibility: repo.visibility ?? { artifacts: 'private', wiki: 'private' },
+          bastions: repo.bastions ?? [],
           addresses: [`https://quader.example.net/files/${ref}/`],
           disabled: repo.disabled ?? false,
         },

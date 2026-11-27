@@ -4648,6 +4648,10 @@ Priority: **MVP** · Covers: UI-021, UI-022, UI-023
   after the click, and the copy button; a command is a terminal window with the copy button. The copy button copies the snippet
   unchanged.
 - For npm, the Publish step also holds the GitLab CI snippet in its two labelled variants (R-UI-017), for who may publish.
+- *Amended on 2026-11-27 (W-41's D2):* where the repository is distributed through a Bastion that has an address and is not disabled,
+  the select **Install from** stands beside the client, for every reader: this installation or a Bastion's deployment, whose snippets
+  are then rendered on that deployment's address ([R-UI-271](#r-ui-271--a-repository-says-where-it-is-distributed),
+  [Q-UI-1656](#q-ui-1656--set-up-client-offers-the-distributing-bastions-beside-the-client)). **More options** holds only the token.
 
 Acceptance criteria:
 
@@ -7868,7 +7872,9 @@ Priority: **MVP** · Covers: quader-only
   the snippets**, a password field with a reveal toggle; the value is checked in the browser for its prefix, length, alphabet and
   CRC-32 (INV-8, R-AUTH-022), the check that failed is named, only a value that passes is written into the snippets, and it is
   sent nowhere. Until one passes, the snippets show `{{token}}` and a note says so; a token written in stays marked where it
-  stands. **More options** also holds **Install from** where a Bastion can be chosen (R-BAS-007, Q-BAS-96); it has no hint line.
+  stands. *Amended on 2026-11-27 (W-41's D2):* **Install from** is no longer in **More options**: it stands beside **Client**
+  (R-UI-016, R-UI-271, [Q-UI-1656](#q-ui-1656--set-up-client-offers-the-distributing-bastions-beside-the-client)), so a signed-out
+  visitor gets no **More options**.
 - Secrets (R-UI-043): the created and the pasted token live in signals of the page only; another repository or another client
   discards both, leaving the page discards both; an answer of the creation that arrives after the repository or the client changed
   is revoked and never shown; a double click creates one token.
@@ -11956,6 +11962,25 @@ einen Bastion (per Tooltip auch welcher Bastion) verteilt wird." What a reposito
     `upstream/clamav` the section's statement of its level is followed by the group and its **Save changes** alone.
 - **The problems' sentences:** `repository_not_distributed` (409 of `client-setup?bastion=`) "This Bastion does not distribute the
   repository."; `bastion_not_allowed` the sentence above.
+- **Where a client installs from.** The owner on 2026-11-27: "Wenn ein Repo auch über einen Bastion verteilt wird, muss beim 'set up
+  client' auch der Bastion als Destination ausgewählt werden können. Oder beim Image-Pull muss es ein Dropdown geben um auf den Pull über
+  den Bastion umzuschalten." A place to install from is a deployment of a Bastion that distributes the repository and is not disabled now:
+  each address of its entry in the member `bastions`, in the member's order and the addresses' (the lexically first, which `client-setup`
+  takes without `address`, first, [bastion.md](bastion.md) R-BAS-135). A Bastion without an address, or disabled now, offers none.
+  - **Set up client** has the select **Install from** in the row of **Client**
+    ([Q-UI-1656](#q-ui-1656--set-up-client-offers-the-distributing-bastions-beside-the-client)), shown to every reader of the repository
+    only while it offers a place: "This installation (quader.example.com)" *(example)*, then "Bastion artifacts · pkgs.example.com"
+    *(example)* per deployment; its help sign: "A Bastion serves this repository outside your network, read only: it has no publish
+    snippets, and the same token signs in." The page's query keeps the choice as `?bastion=<name>&address=<base URL>`; a link that names
+    a Bastion the repository does not offer stands chosen as "Bastion <name>", and the answer's problem says why it has no snippets.
+  - **Every Pull ▾ and Install ▾** has the select **From** at the top of its panel
+    ([Q-UI-1657](#q-ui-1657--every-command-panel-switches-its-destination)), beside **Repository** where both stand (one line where
+    they fit, stacked where not), only while the chosen repository offers a place and only for the install commands (a Bastion takes no
+    upload). The commands, the pull by digest, the check of a download, a file's download address (this installation's base URL replaced
+    by the deployment's) and **Set up client**'s link (`bastion`, `address`) follow it. The choice is the page's: every panel of the page
+    whose repository offers the same deployment opens on it, until the path changes. The destinations are read once per repository and
+    page when a panel first opens, through `DESTINATIONS` of [destinations.ts](../../web/src/app/views/packages/destinations.ts); the
+    Bastion's application binds none, so its panels show no **From**.
 
 *Built on 2026-11-27 (W-41's D1):* [distribution-mark.ts](../../web/src/app/shared/ui/distribution-mark.ts) and its places in
 [repository-list.html](../../web/src/app/features/repositories/repository-list.html),
@@ -11969,8 +11994,13 @@ einen Bastion (per Tooltip auch welcher Bastion) verteilt wird." What a reposito
 [repository-visibility.ts](../../web/src/app/features/repositories/repository-visibility.ts), the offer and the members' read in
 [repository-detail.ts](../../web/src/app/features/repositories/repository-detail.ts); the member `bastions` of a well-known repository's item
 (`UpstreamRepository`, [upstream_repositories_api.go](../../internal/api/v1/upstream_repositories_api.go)); the problems' sentences in
-[problem-messages-bastion.ts](../../web/src/app/core/http/problem-messages-bastion.ts). *Not built:* **Install from** in **Set up client**
-and **From** in every command panel (W-41's D2).
+[problem-messages-bastion.ts](../../web/src/app/core/http/problem-messages-bastion.ts).
+*Built on 2026-11-27 (W-41's D2):* **Install from** in [client-setup.html](../../web/src/app/features/setup/client-setup.html) and
+[client-setup.ts](../../web/src/app/features/setup/client-setup.ts); **From** in
+[client-command-menu.ts](../../web/src/app/views/packages/client-command-menu.ts) and
+[client-command.ts](../../web/src/app/views/packages/client-command.ts); the token and the places in
+[destinations.ts](../../web/src/app/views/packages/destinations.ts), the main installation's reads in
+[repository-destinations.ts](../../web/src/app/core/repository-destinations.ts), bound in [providers.ts](../../web/src/app/api/providers.ts).
 
 Acceptance criteria (Vitest, under a second; no data beyond a few rows):
 
@@ -11981,6 +12011,17 @@ Acceptance criteria (Vitest, under a second; no data beyond a few rows):
   the boxes with their hosts, the save sends `{"bastions": ["artifacts"]}` alone, axe; a Public remote's line under a Bastion whose web
   interface is on, none while it is Internal; a virtual's warning names its undistributed member; a reader sees the sentence and the
   head's mark; `bastion_not_allowed` stands under the group.
+- [client-setup-bastion.spec.ts](../../web/src/app/features/setup/client-setup-bastion.spec.ts) (about 0.7 s): no **Install from** for a
+  repository distributed nowhere; every deployment of a distributing Bastion offered to a reader without `endpoints:read` and to a
+  signed-out visitor, a disabled Bastion and one without an address left out, axe; a deployment asks with `bastion` and `address`, its
+  host in the snippets, no publish step, no guide, no banner; a link naming the Bastion alone shows its first deployment; the choice goes
+  into the query; one OCI case; an unlisted Bastion and `repository_not_distributed` worded.
+- [client-command-menu-from.spec.ts](../../web/src/app/views/packages/client-command-menu-from.spec.ts) (about 0.3 s): **From** with this
+  installation and each deployment, axe; the commands, the pull by digest and Set up client's link follow it; the page's choice opens a
+  second panel on it, one read per repository and page; no **From** for a repository distributed nowhere; a file's download address
+  moves to the deployment; none at the Bastion (`DESTINATIONS` bound to null), which reads no repository.
+- Renders: `setup-oci-bastion` (**Install from** chosen), `setup-npm-local` (none), `package-version-oci-head` and `packages-row-menu`
+  (a panel's **From**), both schemes, 1,440, 1,024 and 390 px, English and German.
 - Renders: `repositories` (a project's list with distributed rows), `repository-oci-signed` (the head's badge), `repository-settings-npm-local`,
   `repository-settings-npm-remote`, `repository-settings-npm-virtual` (the group, the remote's line, the virtual's warning), `search-results`,
   `admin-upstream` (a distributed well-known repository), both schemes, 1,440 and 390 px, English and German.
@@ -33325,6 +33366,57 @@ rare; the target's path and identifier, which may hold a digest, keep `anywhere`
 `quader-audit-log td.target .name-cell quader-parts-text .piece` of [_list-screens.scss](../../web/src/styles/_list-screens.scss) and
 `td.target .name-cell` of [audit-log.scss](../../web/src/app/features/audit/audit-log.scss); its fixture in
 [layout-checks.spec.ts](../../web/e2e/renders/layout-checks.spec.ts).
+
+### Q-UI-1656 · Set up client offers the distributing Bastions beside the client
+
+Status: **Decided by the development agent on 2026-11-27** (W-41's plan, D21, built by D2) — selected from the options below; the owner
+reviews it at the walkthrough. R-UI-271, R-UI-016, [bastion.md](bastion.md) R-BAS-007; supersedes in part
+[Q-BAS-96](bastion.md#q-bas-96--a-bastion-is-a-target-of-the-setup-page-and-of-the-guides-read-only-and-by-link-for-everyone) (the offer
+built for holders of `endpoints:read` from the list of registrations).
+
+Context: the owner on 2026-11-27, "Wenn ein Repo auch über einen Bastion verteilt wird, muss beim 'set up client' auch der Bastion als
+Destination ausgewählt werden können." Until then the page offered a radio group **Install from** under the closed **More options**, built
+from `GET /api/v1/bastions`, so only an administrator saw it, followed by a banner of three sentences once a Bastion was chosen. Since
+W-41's B1 every read of a repository carries the Bastions that distribute it with their addresses.
+
+| Option | For | Against |
+|---|---|---|
+| (a) A select **Install from** in the row of **Client**, shown only while the repository is distributed through a Bastion that is not disabled and has an address: "This installation (quader.example.com)", then one option per Bastion and address ("Bastion artifacts · pkgs.example.com"); read from the repository's `bastions`, so every reader has it; the URL keeps `?bastion=<name>&address=<base URL>`; the old radio group, its list of registrations and the banner go, the banner's facts into the select's help (chosen) | The owner's "als Destination auswählen"; visible where it matters, absent where it does not; a partner's docs writer is no administrator | A second select in the row |
+| (b) Keep it under **More options** for everyone | Plain page | Hidden for the case the owner names |
+| (c) Keep the administrators' list | No change | A plain user never sees it, and it offers Bastions that do not distribute the repository |
+
+**Choice:** (a). The select is as wide as its longest option and stands beside **Client** where both fit, under it where not (390 px).
+A link that names a Bastion the repository does not offer (`?bastion=old`) keeps it chosen as "Bastion old", so the page says what its
+snippets were asked for, and the answer's problem (`repository_not_distributed`, `bastion_base_url_unknown`) says why there are none. The
+host of this installation's option is its configured base URL (`ServerAddress`); without one the option says "This installation".
+**Applied in the spec:** R-UI-271, R-UI-016, [bastion.md](bastion.md) R-BAS-007; code:
+[client-setup.ts](../../web/src/app/features/setup/client-setup.ts), [client-setup.html](../../web/src/app/features/setup/client-setup.html),
+[destinations.ts](../../web/src/app/views/packages/destinations.ts).
+
+### Q-UI-1657 · Every command panel switches its destination
+
+Status: **Decided by the development agent on 2026-11-27** (W-41's plan, D22, built by D2) — selected from the options below; the owner
+reviews it at the walkthrough. R-UI-271, R-UI-269.
+
+Context: the owner's "Oder beim Image-Pull muss es ein Dropdown geben um auf den Pull über den Bastion umzuschalten." Every list of things a
+client fetches and every version's head has the panel of the commands (R-UI-269, Q-UI-1066); the views are shared with the Bastion's
+application (R-UI-223), which is itself the destination.
+
+| Option | For | Against |
+|---|---|---|
+| (a) A select **From** at the panel's top, beside **Repository** when both stand (one line at 1,440 px, stacked at 390 px), shown only while the chosen repository has a destination besides this installation; the commands and **Set up client** follow it (`bastion` and `address` on the client set-up's read); the choice is kept for the page's life; the views read the destinations through an injection token `DESTINATIONS`, which the Bastion's application does not bind (chosen) | The switch the owner asked for, in the place the commands are; nothing for a repository that leaves nowhere; the Bastion's panels unchanged | One more read per repository and page |
+| (b) A tab per destination | One click | The tabs are the clients already: two strips of tabs |
+| (c) Only Set up client | Smallest | The owner named the image pull explicitly |
+
+**Choice:** (a). "Kept for the page's life" is one choice for every panel of the page: a reader who pulls through the Bastion picks it once
+in a list, and every row whose repository offers the same deployment opens on it; a row whose repository does not offers no **From** and
+its commands are this installation's. The destinations are read when a panel first opens, once per repository and page (the repository's
+`GET`, which sends no `If-None-Match`), so a list of a hundred rows reads only the repositories of the panels opened; a read that fails
+offers no choice and is asked again at the next open. **From** is the install commands' only: a folder's upload panel has none, since a
+Bastion takes no upload. A generic file's download address follows by its origin: this installation's base URL replaced by the
+deployment's; an address on another origin is not shown rather than shown wrong. **Applied in the spec:** R-UI-271; code:
+[client-command-menu.ts](../../web/src/app/views/packages/client-command-menu.ts), [client-command.ts](../../web/src/app/views/packages/client-command.ts),
+[destinations.ts](../../web/src/app/views/packages/destinations.ts), [repository-destinations.ts](../../web/src/app/core/repository-destinations.ts).
 
 ## What this does not cover
 

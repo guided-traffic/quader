@@ -13459,10 +13459,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-859 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+861 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 859 questions</summary>
+<summary>Q-UI: 861 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -14325,6 +14325,8 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1653](spec/api-and-ui.md#q-ui-1653--the-server-stores-no-phrase-it-makes-up-the-screen-words-the-thing-from-a-fact-of-the-api) | The server stores no phrase it makes up; the screen words the thing from a fact of the API | Decided by the development agent | (a) None of them is stored; the screen words the thing from `createdVia`, `declared`, the name or the roles | — |
 | [Q-UI-1654](spec/api-and-ui.md#q-ui-1654--the-last-places-of-r-ui-270-the-helm-configurations-trust-anchor-the-last-project-owner-and-the-boxes-that-said-why-they-are-off) | The last places of R-UI-270: the Helm configuration's trust anchor, the last project Owner, and the boxes that said why they are off | Decided by the development agent on 2026-11-27 | — | — |
 | [Q-UI-1655](spec/api-and-ui.md#q-ui-1655--a-downloads-repository-and-unit-in-the-audit-log-count-their-longest-piece-in-the-logs-least-width) | A download's repository and unit in the audit log count their longest piece in the log's least width | Decided by the development agent on 2026-11-27 | (b) `break-word` on the download row's pieces, the version or tag (a digest) kept on `anywhere` | — |
+| [Q-UI-1656](spec/api-and-ui.md#q-ui-1656--set-up-client-offers-the-distributing-bastions-beside-the-client) | Set up client offers the distributing Bastions beside the client | Decided by the development agent on 2026-11-27 | (a) A select **Install from** in the row of **Client**, shown only while the repository is distributed through a Bastion that is not disabled and has an address: "This installation (quader.example.com)", then one option per Bastion and address ("Bastion artifacts · pkgs.example.com"); read from the repository's `bastions`, so every reader has it; the URL keeps `?bastion=<name>&address=<base URL>`; the old radio group, its list of registrations and the banner go, the banner's facts into the select's help | — |
+| [Q-UI-1657](spec/api-and-ui.md#q-ui-1657--every-command-panel-switches-its-destination) | Every command panel switches its destination | Decided by the development agent on 2026-11-27 | (a). "Kept for the page's life" is one choice for every panel of the page: a reader who pulls through the Bastion picks it once in a list, and every row whose repository offers the same deployment opens on it; a row whose repository does not offers no **From** and its commands are this installation's. | — |
 
 </details>
 

@@ -1,7 +1,7 @@
 import { CdkTrapFocus } from '@angular/cdk/a11y';
 import { NgTemplateOutlet } from '@angular/common';
 import { CdkConnectedOverlay, CdkOverlayOrigin, ConnectedPosition, FlexibleConnectedPositionStrategy } from '@angular/cdk/overlay';
-import { Component, DestroyRef, ElementRef, computed, effect, inject, input, linkedSignal, signal, untracked, viewChild } from '@angular/core';
+import { Component, DestroyRef, ElementRef, computed, effect, inject, input, linkedSignal, resource, signal, untracked, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ApiError } from '../../api/problem';
 import { setupCommands } from '../../core/project-links';
@@ -13,6 +13,7 @@ import { Loading } from '../../shared/ui/loading';
 import { TabGroup, TabPage } from '../../shared/ui/tabs';
 import { ClientChoice, clientsOfKind } from '../../features/setup/clients';
 import { ClientCommand } from './client-command';
+import { DESTINATIONS, Destination, destinationLabel, mainDestinationLabel, onDestination, sameDestination } from './destinations';
 import { VersionCommandFacts, clamavInstallNote } from './version-command';
 
 let nextId = 0;
@@ -40,7 +41,10 @@ const POSITIONS: ConnectedPosition[] = [
  * image's `digest` adds the pull by digest as the second line of each tab (R-OCI-041). A client with several forms of installing the
  * package (NuGet's, R-NUGET-037) has a select **Form** above its command in its tab (Q-UI-1360), so the row keeps one tab per client. Where the
  * version is held by more than one repository a client can use (the version's page), a select **Repository** stands above the row, and
- * the command and the setup follow it. A generic repository's file (`path`, formats/generic.md R-GENERIC-017) has curl, wget and
+ * the command and the setup follow it. Where the chosen repository is distributed through a Bastion as well (R-UI-271, Q-UI-1657), a
+ * select **From** stands there too, beside **Repository** where both do: this installation, then each deployment of each distributing
+ * Bastion; the commands, the download address and **Set up client** (`bastion`, `address`) follow it, and so does every panel of the page
+ * that offers the same place (`DESTINATIONS`). The Bastion's application binds no destinations, so its panels have no **From**. A generic repository's file (`path`, formats/generic.md R-GENERIC-017) has curl, wget and
  * PowerShell, its download address above the row (`address`, Q-UI-1331) and, with its `sha256`, the check of the download as the second
  * line of each tab (Q-UI-1332); a folder's path with a trailing slash and `section="publish"` gives the upload into it. Where the page
  * has a main act of its own (a file's download in the browser, a folder's upload dialog), it is projected as `[mainAct]` and the button
@@ -155,18 +159,36 @@ const MARGIN = { start: 16, end: 0, top: 16, bottom: 16 };
     </ng-template>
     <!-- The clients' commands through the chosen repository. -->
     <ng-template #commands>
-        @if (repositoriesShown() && offered().length > 1) {
-          <!-- The version is held by several repositories a client can use: the command and the setup follow the one picked here. -->
-          <label class="command-repository">
-            <span i18n="@@pkg.install.repository">Repository</span>
-            <select class="select-input" (change)="pickRepository($event)">
-              @for (r of offered(); track r) {
-                <option [value]="r" [selected]="r === chosenRepository()" translate="no">{{ r }}</option>
-              }
-            </select>
-          </label>
+        @if ((repositoriesShown() && offered().length > 1) || destinations().length > 0) {
+          <!-- The panel's selects on one line where they fit, stacked where not: the repository, then where the command goes. -->
+          <div class="command-selects">
+            @if (repositoriesShown() && offered().length > 1) {
+              <!-- The version is held by several repositories a client can use: the command and the setup follow the one picked here. -->
+              <label class="command-repository">
+                <span i18n="@@pkg.install.repository">Repository</span>
+                <select class="select-input" (change)="pickRepository($event)">
+                  @for (r of offered(); track r) {
+                    <option [value]="r" [selected]="r === chosenRepository()" translate="no">{{ r }}</option>
+                  }
+                </select>
+              </label>
+            }
+            @if (destinations().length > 0) {
+              <!-- The repository is distributed through a Bastion as well: the commands and Set up client follow the place picked here
+                   (R-UI-271, Q-UI-1657), and every panel of the page with it. -->
+              <label class="command-from">
+                <span i18n="@@pkg.command-menu.from">From</span>
+                <select class="select-input" (change)="pickDestination($event)">
+                  <option value="" [selected]="chosenDestination() === null" translate="no">{{ mainLabel() }}</option>
+                  @for (d of destinations(); track $index) {
+                    <option [value]="$index" [selected]="d === chosenDestination()" translate="no">{{ destinationLabel(d) }}</option>
+                  }
+                </select>
+              </label>
+            }
+          </div>
         }
-        @if (address(); as a) {
+        @if (shownAddress(); as a) {
           <!-- A file's address for any other tool, above its clients, as GitLab's menu has its clone addresses (Q-UI-1331). -->
           <div class="command-address">
             <span class="field-label" i18n="@@files.download-address">Download address</span>
@@ -176,7 +198,7 @@ const MARGIN = { start: 16, end: 0, top: 16, bottom: 16 };
         @if (clients().length > 1) {
           <quader-tab-group [(selectedIndex)]="chosenTab" [keepAll]="true" [compact]="true">
             @if (setupLink(); as setup) {
-              <a tabsEnd class="btn btn-default btn-sm setup-link" [routerLink]="setup" [queryParams]="{ client: chosenClient()?.id }"
+              <a tabsEnd class="btn btn-default btn-sm setup-link" [routerLink]="setup" [queryParams]="setupQuery(chosenClient()?.id)"
                 ><ng-container i18n="@@repo.content.tab.setup">Set up client</ng-container
                 ><span class="visually-hidden" translate="no">&ngsp;{{ chosenClient()?.label }}</span></a
               >
@@ -192,7 +214,7 @@ const MARGIN = { start: 16, end: 0, top: 16, bottom: 16 };
           <div class="command-row">
             <p class="command-client" translate="no">{{ c.tab }}</p>
             @if (setupLink(); as setup) {
-              <a class="btn btn-default btn-sm setup-link" [routerLink]="setup" [queryParams]="{ client: c.id }"
+              <a class="btn btn-default btn-sm setup-link" [routerLink]="setup" [queryParams]="setupQuery(c.id)"
                 ><ng-container i18n="@@repo.content.tab.setup">Set up client</ng-container
                 ><span class="visually-hidden" translate="no">&ngsp;{{ c.label }}</span></a
               >
@@ -210,6 +232,7 @@ const MARGIN = { start: 16, end: 0, top: 16, bottom: 16 };
           [name]="commandName()"
           [version]="version()"
           [repository]="chosenRepository()"
+          [destination]="chosenDestination()"
           [client]="c.id"
           [kind]="commandKind()"
           [path]="path()"
@@ -227,6 +250,7 @@ const MARGIN = { start: 16, end: 0, top: 16, bottom: 16 };
             [version]="version()"
             [digest]="d"
             [repository]="chosenRepository()"
+            [destination]="chosenDestination()"
             [client]="c.id"
             [commandLabel]="digestFieldLabel(c)"
             [copyLabel]="digestCopyLabel(c)"
@@ -241,6 +265,7 @@ const MARGIN = { start: 16, end: 0, top: 16, bottom: 16 };
             [name]="commandName()"
             [version]="version()"
             [repository]="chosenRepository()"
+            [destination]="chosenDestination()"
             [client]="c.id"
             [path]="path()"
             [sha256]="sha256()"
@@ -302,18 +327,29 @@ const MARGIN = { start: 16, end: 0, top: 16, bottom: 16 };
       outline: var(--quader-focus-ring);
       outline-offset: 2px;
     }
-    /* The repository's select on one line with its label, above the row of the clients. */
-    .command-repository {
+    /* The selects above the row of the clients: Repository and From on one line where they fit (Q-UI-1657), stacked where not. */
+    .command-selects {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--quader-space-2) var(--quader-space-4);
+      padding-block: var(--quader-space-2);
+    }
+    /* Each select on one line with its label. */
+    .command-repository,
+    .command-from {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       gap: var(--quader-space-1) var(--quader-space-2);
-      padding-block: var(--quader-space-2);
+      min-inline-size: 0;
+      max-inline-size: 100%;
       font-size: 0.875rem;
       font-weight: 600;
     }
-    /* As wide as its longest repository's name, never the panel's width for its own sake. */
-    .command-repository .select-input {
+    /* As wide as its longest repository's name or place, never the panel's width for its own sake. */
+    .command-repository .select-input,
+    .command-from .select-input {
       flex: 0 1 auto;
       inline-size: auto;
       min-inline-size: 0;
@@ -464,6 +500,53 @@ export class ClientCommandMenu {
    * for a system repository of upstream, which answers no client (Q-UI-896).
    */
   protected readonly setupLink = computed(() => setupCommands(this.chosenRepository()));
+
+  // ---- Where the commands install from (R-UI-271, Q-UI-1657) ----
+
+  /** The main installation's reads of a repository's destinations; null in the Bastion's application, which is the destination itself. */
+  private readonly destinationReads = inject(DESTINATIONS);
+  /** Whether the panel has opened once: its repository's destinations are read from then on, never for a row nobody opens. */
+  private readonly wasOpened = signal(false);
+  /**
+   * The destinations of the chosen repository: read once the panel opened, for the install commands only (a Bastion takes no upload),
+   * kept while the repository stays; a read that failed offers no choice, and the next open asks again.
+   */
+  private readonly destinationsRead = resource({
+    params: () => {
+      const repository = this.chosenRepository();
+      return this.destinationReads && this.wasOpened() && repository && this.section() === 'install' ? { repository } : undefined;
+    },
+    loader: ({ params }) => this.destinationReads!.of(params.repository).catch(() => null),
+  });
+  /** The deployments of the Bastions that distribute the chosen repository; none: the panel shows no **From**. */
+  protected readonly destinations = computed(() => (this.destinationsRead.hasValue() ? (this.destinationsRead.value()?.bastions ?? []) : []));
+  /** The page's choice where this panel offers it (the same entry of `destinations`), else null: this installation. */
+  protected readonly chosenDestination = computed<Destination | null>(() => {
+    const chosen = this.destinationReads?.chosen() ?? null;
+    return this.destinations().find((d) => sameDestination(d, chosen)) ?? null;
+  });
+  protected readonly mainLabel = computed(() =>
+    mainDestinationLabel(this.destinationsRead.hasValue() ? (this.destinationsRead.value()?.main ?? null) : null),
+  );
+  protected readonly destinationLabel = destinationLabel;
+  /** A file's download address on the chosen place: this installation's as given, a Bastion's with its address; none where it cannot be. */
+  protected readonly shownAddress = computed(() => {
+    const a = this.address();
+    const d = this.chosenDestination();
+    if (a === null || d === null) return a;
+    return onDestination(a, this.destinationsRead.value()?.main ?? null, d);
+  });
+
+  /** The query of Set up client's link: the client, and the place the commands install from. */
+  protected setupQuery(client: string | undefined): Record<string, string | null> {
+    const d = this.chosenDestination();
+    return { client: client ?? null, bastion: d?.bastion ?? null, address: d?.address || null };
+  }
+
+  protected pickDestination(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    this.destinationReads?.chosen.set(value === '' ? null : (this.destinations()[Number(value)] ?? null));
+  }
   protected readonly panelLabel = computed(() =>
     this.version() === ''
       ? $localize`:@@pkg.command-menu.label-file:${this.verb()}:verb: ${this.name()}:name:`
@@ -530,6 +613,7 @@ export class ClientCommandMenu {
       return;
     }
     this.open.set(true);
+    this.wasOpened.set(true);
   }
 
   /** Reads the version's command through `resolve`, once per function at a time; the notice's Retry calls it again. */

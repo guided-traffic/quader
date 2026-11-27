@@ -1042,6 +1042,18 @@ export class FakeClientSetupReads extends ClientSetupReads {
     return finishSetup(raw);
   }
 
+  /**
+   * The base URL the snippets are rendered on: this installation's, or the Bastion's (R-BAS-007) at the deployment `address` names
+   * (R-BAS-135), which the fake takes as given.
+   */
+  private baseOf(query: ClientSetupQuery): string {
+    if (!query.bastion) return BASE;
+    const reported = this.bastionBases[query.bastion];
+    if (reported === undefined) throw notFound();
+    if (reported === null) throw new ApiError(409, { code: 'bastion_base_url_unknown' }, null);
+    return (query.address ?? reported).replace(/\/+$/, '');
+  }
+
   private answer(repository: string, query: ClientSetupQuery): RawSetup {
     if (repository === refOf(GENERIC_REPOSITORY)) {
       return curlSetup(repository, query, !this.readOnly.has(repository), this.ttl);
@@ -1053,8 +1065,8 @@ export class FakeClientSetupReads extends ClientSetupReads {
     }
     const oci = OCI_REPOSITORIES.find((r) => refOf(r) === repository);
     if (oci) {
-      const mayPublish = !this.readOnly.has(repository) && !this.noTarget.has(repository);
-      return ociSetup(oci, query, mayPublish, this.ttl);
+      const mayPublish = !query.bastion && !this.readOnly.has(repository) && !this.noTarget.has(repository);
+      return ociSetup(oci, query, mayPublish, this.ttl, this.baseOf(query));
     }
     const ansible = ANSIBLE_REPOSITORIES.find((r) => refOf(r) === repository);
     if (ansible) {
@@ -1064,13 +1076,7 @@ export class FakeClientSetupReads extends ClientSetupReads {
     const repo = NPM_REPOSITORIES.find((r) => refOf(r) === repository);
     if (!repo) throw notFound();
     const credentials = query.credentials ?? 'placeholder';
-    let base = BASE;
-    if (query.bastion) {
-      const reported = this.bastionBases[query.bastion];
-      if (reported === undefined) throw notFound();
-      if (reported === null) throw new ApiError(409, { code: 'bastion_base_url_unknown' }, null);
-      base = reported;
-    }
+    const base = this.baseOf(query);
     const registryUrl = `${base}/api/npm/${repository}/`;
     const endpointPath = registryUrl.replace(/^https?:/, '');
     const target =
@@ -1391,13 +1397,13 @@ function ansibleSetup(repo: Repository, query: ClientSetupQuery, mayPublish: boo
  * the registry URL. With a credential the login reads the token from standard input; without one it is the interactive login and the
  * pull secret is a comment that asks for the snippet with a credential (the API drops the lines that hold the token reference).
  */
-function ociSetup(repo: Repository, query: ClientSetupQuery, mayPublish: boolean, ttl: number): RawSetup {
+function ociSetup(repo: Repository, query: ClientSetupQuery, mayPublish: boolean, ttl: number, base = BASE): RawSetup {
   if (!['docker', 'podman'].includes(query.client)) {
     throw new ApiError(400, { code: 'malformed_request', detail: 'unknown client' }, null);
   }
   const credentials = query.credentials ?? 'placeholder';
-  const registryUrl = `${BASE}/v2/${refOf(repo)}/`;
-  const prefix = `${BASE.replace(/^https?:\/\//, '')}/${refOf(repo)}`;
+  const registryUrl = `${base}/v2/${refOf(repo)}/`;
+  const prefix = `${base.replace(/^https?:\/\//, '')}/${refOf(repo)}`;
   const token = credentials === 'placeholder' ? '{{token}}' : credentials === 'env' ? '${QUADER_TOKEN}' : null;
   const target = mayPublish ? refOf(repo) : null;
   const tool = query.client;

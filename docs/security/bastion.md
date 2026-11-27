@@ -764,7 +764,7 @@ marked [derived] are calculated from the defaults, not measured.
 - [H-456](../spec/bastion.md#h-456--a-block-or-a-timeout-set-without-valkey-or-while-it-is-unavailable-is-forgotten-when-the-replica-restarts):
   blocks set without Valkey are forgotten at a restart;
 - [H-457](../spec/bastion.md#h-457--a-reader-without-endpointsread-is-not-offered-the-bastion-as-a-target): a reader without
-  `endpoints:read` is not offered the Bastion as a target;
+  `endpoints:read` was not offered the Bastion as a target (closed by W-41's D2);
 - [H-458](../spec/bastion.md#h-458--the-address-a-registration-reports-chooses-among-the-listed-addresses-and-the-name-is-testable):
   the reported address chooses among the listed addresses, and the name is testable;
 - [H-460](../spec/bastion.md#h-460--without-a-signing-key-the-entries-on-the-volume-are-not-authenticated): without a signing key the entries on the
@@ -1661,7 +1661,8 @@ reader of a public repository who should not know the names an administrator gav
 owner asked for it ("Es muss für die Viewer von Repos … direkt ersichtlich sein, ob das Repo zusätzlich auch über einen Bastion (per
 Tooltip auch welcher Bastion) verteilt wird"), so it is not closed; an administrator who minds names a registration for its users. Since
 W-41's D1 every screen that shows the repository's level shows it in the tooltip of the distribution mark ([api-and-ui.md](../spec/api-and-ui.md)
-R-UI-271); a well-known repository's item of the admin area carries the same member, for the readers of `repositories:read-config` only.
+R-UI-271), and since W-41's D2 **Set up client** and every command panel offer each address as a place to install from; a well-known
+repository's item of the admin area carries the same member, for the readers of `repositories:read-config` only.
 
 ### H-2446 · A pair of deployments holds the anonymous ceiling, the slots and the throughput each
 

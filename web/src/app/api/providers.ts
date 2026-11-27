@@ -6,6 +6,8 @@ import { HttpFormatCatalog } from '../core/format-catalog-http';
 import { SystemClients } from '../core/system-clients';
 import { HttpSystemClients } from '../core/system-clients-http';
 import { MEMORY_OWNER } from '../core/disclosure-memory';
+import { RepositoryDestinationReads } from '../core/repository-destinations';
+import { DESTINATIONS } from '../views/packages/destinations';
 import { ClientSetupReads, PackageReads } from './package-reads';
 import { SignatureReads } from './signature-reads';
 import { VulnerabilityReads } from './vulnerability-reads';
@@ -33,6 +35,8 @@ export function provideViewReads(): Provider[] {
     { provide: FormatCatalog, useClass: HttpFormatCatalog },
     { provide: SystemClients, useClass: HttpSystemClients },
     { provide: SIGNED_IN, useFactory: () => inject(SessionStore).authenticated },
+    // Every command panel offers the Bastions that distribute its repository (Q-UI-1657); the Bastion's application binds none.
+    { provide: DESTINATIONS, useClass: RepositoryDestinationReads },
     // The memory of an opened section is kept per signed-in principal (Q-UI-967); the Bastion's application keeps it for the tab.
     {
       provide: MEMORY_OWNER,

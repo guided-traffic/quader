@@ -48,19 +48,38 @@
     </p>
   }
 
-  <!-- The client is one control, shown only where the format has more than one (Q-UI-482). -->
-  @if (clients().length > 1) {
-    <p class="client-choice">
-      <label class="field-label" for="setup-client" i18n="@@setup.client">Client</label>
-      <select id="setup-client" class="select-input" [value]="activeClient()" (change)="pickClient($any($event.target).value)">
-        @for (c of clients(); track c.id) {
-          <option [value]="c.id" [selected]="c.id === activeClient()" translate="no">{{ clientName(c.id, c.displayName) }}</option>
-        }
-      </select>
-    </p>
+  <!-- The client is one control, shown only where the format has more than one (Q-UI-482); Install from beside it, shown only while the
+       repository is distributed through a Bastion that has an address (Q-UI-1656). -->
+  @if (clients().length > 1 || showTarget()) {
+    <div class="client-choice">
+      @if (clients().length > 1) {
+        <span class="choice-field">
+          <label class="field-label" for="setup-client" i18n="@@setup.client">Client</label>
+          <select id="setup-client" class="select-input" [value]="activeClient()" (change)="pickClient($any($event.target).value)">
+            @for (c of clients(); track c.id) {
+              <option [value]="c.id" [selected]="c.id === activeClient()" translate="no">{{ clientName(c.id, c.displayName) }}</option>
+            }
+          </select>
+        </span>
+      }
+      @if (showTarget()) {
+        <span class="choice-field">
+          <span class="target-label"
+            ><label class="field-label help-anchor" for="setup-target">{{ targetName }}</label
+            ><quader-help [text]="targetHelp" [about]="targetName"
+          /></span>
+          <select id="setup-target" class="select-input" (change)="pickTarget($any($event.target).value)">
+            <option value="" [selected]="activeTarget() === null" translate="no">{{ mainLabel() }}</option>
+            @for (t of targets(); track $index) {
+              <option [value]="$index" [selected]="t === activeTarget()" translate="no">{{ targetLabel(t) }}</option>
+            }
+          </select>
+        </span>
+      }
+    </div>
   }
 
-  <!-- More options: in the credential's row for who is signed in; on its own for a visitor who may choose a Bastion. -->
+  <!-- More options, in the credential's row: the way to write a token into the snippets. -->
   <ng-template #more>
     <quader-disclosure class="more-options" [inline]="true" [heading]="moreHeading" [(expanded)]="moreOpen">
       @if (!anonymous()) {
@@ -132,50 +151,12 @@
         </fieldset>
       }
 
-      @if (showTarget()) {
-        <fieldset>
-          <legend i18n="@@setup.step.target">Install from</legend>
-          <div class="choices vertical">
-            <label class="choice">
-              <input type="radio" name="target" value="" [checked]="activeBastion() === null" (change)="pickBastion(null)" />
-              <span class="choice-text">
-                <span i18n="@@setup.target.main">This installation</span>
-                <span class="secondary" i18n="@@setup.target.main-hint">The address you are using now.</span>
-              </span>
-            </label>
-            @for (b of bastionOptions(); track b.name) {
-              <label class="choice">
-                <input type="radio" name="target" [value]="b.name" [checked]="b.name === activeBastion()" (change)="pickBastion(b.name)" />
-                <span class="choice-text">
-                  <span><ng-container i18n="@@setup.target.bastion">Bastion</ng-container>&ngsp;<strong translate="no">{{ b.name }}</strong></span>
-                  <span class="secondary" i18n="@@setup.target.bastion-hint">
-                    A read-only cache for clients outside the network. You can install through it; you cannot publish.
-                  </span>
-                </span>
-              </label>
-            }
-            @if (activeBastion(); as chosen) {
-              @if (!bastionOptions().some((b) => b.name === chosen)) {
-                <label class="choice">
-                  <input type="radio" name="target" [value]="chosen" checked />
-                  <span class="choice-text">
-                    <span><ng-container i18n="@@setup.target.bastion">Bastion</ng-container>&ngsp;<strong translate="no">{{ chosen }}</strong></span>
-                  </span>
-                </label>
-              }
-            }
-          </div>
-        </fieldset>
-      }
     </quader-disclosure>
   </ng-template>
 
   <!-- The credential in one framed row, a token created in place without leaving the page (R-UI-122). -->
   @if (anonymous()) {
     <p class="credential-line" i18n="@@setup.anonymous">You are not signed in: the snippets hold no credentials.</p>
-    @if (offerMore()) {
-      <div class="more-alone"><ng-container [ngTemplateOutlet]="more" /></div>
-    }
   } @else if (!ref()) {
     <p class="credential-line">
       <span i18n="@@setup.cred.line-class">The snippets read your token from the variable QUADER_TOKEN.</span>&ngsp;
@@ -232,14 +213,6 @@
     </div>
   }
 
-  @if (activeBastion(); as chosen) {
-    <p class="banner-warning" role="note">
-      <span class="material-icons inline" aria-hidden="true">public</span>
-      <span>
-        <ng-container i18n="@@setup.bastion.banner">These snippets point at the Bastion</ng-container>&ngsp;<strong translate="no">{{ chosen }}</strong>.&ngsp;<ng-container i18n="@@setup.bastion.banner-text">A Bastion is read only, so there are no publish snippets. Sign-in works with the same token as for this installation.</ng-container>
-      </span>
-    </p>
-  }
   @if (needsToken()) {
     <p class="banner-warning" role="note">
       <span class="material-icons inline warn" aria-hidden="true">warning</span>
@@ -285,7 +258,7 @@
   <!-- The explanation below the job (R-UI-125): the guide's sections as closed rows; it describes this installation, so a Bastion
        shows none. -->
   @if (activeBastion()) {
-    <p class="hint" i18n="@@setup.bastion.no-guide">The explanation describes this installation. Choose This installation under More options to read it.</p>
+    <p class="hint" i18n="@@setup.bastion.no-guide">The explanation describes this installation. Choose This installation under Install from to read it.</p>
   } @else if (guide(); as g) {
     <section class="explanation" aria-labelledby="guide-heading">
       <h2 id="guide-heading" i18n="@@setup.guide.heading">Guide</h2>

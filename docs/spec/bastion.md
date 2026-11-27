@@ -495,7 +495,13 @@ Priority: **MVP** · Covers: quader-only
   it the lexically first answers, which stays the same whichever deployment of a pair made contact last; an `address` that is not one of
   them answers `409 bastion_base_url_unknown`, and `address` without `bastion` `400 malformed_request`. The guide of each format (R-UI-049) and the setup page of
   R-UI-016 offer the Bastion as a target when a registration has reported a base URL
-  ([Q-BAS-96](#q-bas-96--a-bastion-is-a-target-of-the-setup-page-and-of-the-guides-read-only-and-by-link-for-everyone)).
+  ([Q-BAS-96](#q-bas-96--a-bastion-is-a-target-of-the-setup-page-and-of-the-guides-read-only-and-by-link-for-everyone)). *Amended on
+  2026-11-27 (W-41's D2, [api-and-ui.md](api-and-ui.md) R-UI-271,
+  [Q-UI-1656](api-and-ui.md#q-ui-1656--set-up-client-offers-the-distributing-bastions-beside-the-client)):* the setup page offers, to every
+  reader of the repository, each deployment of each Bastion that distributes it and is not disabled, from the repository's member
+  `bastions`, as the select **Install from** beside the client, and asks with `bastion` and `address`; every command panel offers the same
+  as **From** ([Q-UI-1657](api-and-ui.md#q-ui-1657--every-command-panel-switches-its-destination)). The list of registrations, which
+  needed `endpoints:read`, offers nothing any more.
   For npm, the configure snippet sets `replace-registry-host=always`, so that a lockfile written against another host resolves
   through the Bastion.
 - *Revised on 2026-11-26 (W-34, W-35):* the card holds the registration's configuration (R-UI-240): the switches `gui` and `docs` beside
@@ -3293,7 +3299,7 @@ the open gaps H-1242 to H-1249, H-1290, H-1295 and H-1296 of [What this does not
 | A document above 64 MiB is passed through and the caller's `Range` is not forwarded, so a ranged request for such a document gets the whole body | `maxDocumentBytes` and `onShared` in [forward.go](../../internal/bastion/engine/forward.go) (lines 21, 386 to 395), `stripRequest` (lines 99 to 115) |
 | The Bastion answers `If-None-Match` from an entry and not `If-Modified-Since` | `serveSource` in [serve.go](../../internal/bastion/engine/serve.go) (line 56) |
 | A caller's `Range` on a miss waits for the whole fill; a second caller of a running fill waits at most 30 s and is then answered `503 busy` | `waitFill` in [fill.go](../../internal/bastion/engine/fill.go) (lines 296 to 316), `waitLeader` in [readflow.go](../../internal/bastion/engine/readflow.go) (lines 357 to 374) |
-| The setup page offers a Bastion as a target for every format, OCI included, whose snippets then name the Bastion's image prefix that answers `404` today | `bastionBase` and `imagePrefix` in [packages_api.go](../../internal/api/v1/packages_api.go) (lines 717 to 752, 844 to 876); [bastion-targets.ts](../../web/src/app/features/setup/bastion-targets.ts) has no filter by format |
+| The setup page offers a Bastion as a target for every format, OCI included, whose snippets then name the Bastion's image prefix that answers `404` today | `bastionBase` and `imagePrefix` in [packages_api.go](../../internal/api/v1/packages_api.go) (lines 717 to 752, 844 to 876); `bastion-targets.ts` had no filter by format (gone since W-41's D2: the page offers the Bastions that distribute the repository) |
 | The interface is at version 3 | [version.go](../../internal/bastion/iface/version.go) (line 12) |
 
 </details>
@@ -10226,6 +10232,11 @@ gains Bastion-specific text.
 
 **Applied in the spec:** R-BAS-007, R-UI-049 (through R-BAS-007). Implementation: [web-ui.md](../developer/web-ui.md#set-up-client-for-a-bastion).
 
+**Superseded in part on 2026-11-27 by [Q-UI-1656](api-and-ui.md#q-ui-1656--set-up-client-offers-the-distributing-bastions-beside-the-client)**
+(W-41's D2): the offer is no longer built from `GET /api/v1/bastions` for holders of `endpoints:read`, but from the repository's member
+`bastions` for every reader, and stands beside the client instead of under **More options**; the link `?bastion=<name>` still works for
+everyone, and the guide of a class still offers no Bastion.
+
 ### Q-BAS-97 · The reported address is matched against the listed addresses, and the setup needs no base URL of its own
 
 Status: Decided by the development agent — selected from the options below; the owner reviews it at the walkthrough.
@@ -16925,6 +16936,11 @@ blocked at level 4 for 2 hours returns at once and its next block lasts 15 minut
 to Valkey when it returns. What makes it real: an attacker who outlasts one replica's lifetime; Valkey closes it.
 
 ### H-457 · A reader without endpoints:read is not offered the Bastion as a target
+
+*Closed by W-41's D2 (2026-11-27):* the setup page and every command panel offer the Bastions that distribute the repository to every
+reader of it, read from the repository's member `bastions` ([api-and-ui.md](api-and-ui.md) R-UI-271,
+[Q-UI-1656](api-and-ui.md#q-ui-1656--set-up-client-offers-the-distributing-bastions-beside-the-client)); what the readers learn by it, the
+names and addresses of those Bastions, is H-2444. What it was:
 
 Stage: R-BAS-007, the **Install from** step of the setup page and of the guides. Subject: a developer who may read a repository and
 should install through a Bastion.
