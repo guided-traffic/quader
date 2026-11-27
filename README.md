@@ -2725,6 +2725,10 @@ sets them; what follows the declaration in a row is written by hand.
 | `GET /api/v1/storage/damaged-blobs` | `listDamagedBlobs` | `settings:read`; `scope=blobs` (default: no connection holds the blob whole) or `scope=copies` (a copy is damaged), `connection`, `status`, each entry with its copies and its first 20 items ([R-STOR-027](docs/spec/storage.md#r-stor-027--integrity-scrub)) |
 | `POST /api/v1/storage/damaged-blobs/{sha256}/recheck` | `recheckDamagedBlob` | `settings:write`; reads every copy of the blob whole now and answers the copies; writes no object |
 | `GET /api/v1/storage/overview` | `getStorageOverview` | `settings:read`; the storage overview |
+| `GET /api/v1/storage/history` | `getStorageHistory` | `settings:read`; per connection the cells of a period (`period=24h|7d|30d|90d|1y`) with their tone, and the totals of the period's findings ([R-STOR-111](docs/spec/storage.md)) |
+| `GET /api/v1/storage/problems` | `listStorageProblems` | `settings:read`; the period's problems, newest first, paged; derived at read time from the history's records |
+| `GET /api/v1/storage/findings` | `listStorageFindings` | `settings:read`; the damaged copies of the period with up to three items each, `state=open` or all |
+| `POST /api/v1/storage/findings/{id}/acknowledge` | `acknowledgeStorageFinding` | `settings:write`; an optional note of at most 500 characters; `409 finding_resolved` for a resolved finding; audited as `storage.finding.acknowledged` |
 | `GET /api/v1/storage/summary` | `getStorageSummary` | `settings:read`; the latest result of the task `storage-summary`, `404` before the first run; a read never computes, `POST /api/v1/system/tasks/storage-summary/run` starts one ([R-STOR-028](docs/spec/storage.md)) |
 
 **users**
