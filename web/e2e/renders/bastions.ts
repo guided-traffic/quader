@@ -16,6 +16,9 @@ const DAY = 86_400_000;
 export const forbiddenLink = { outcome: 'unexpected_answer', status: 403, bytes: 0, expectedStatus: 200, expectedBytes: 2048 };
 const at = (days: number): string => new Date(Date.now() + days * DAY).toISOString();
 
+/** The read of a Bastion's projects (R-BAS-134), which a walk answers wherever it answers the registrations. */
+const projectsUrl = (url: URL): boolean => /\/api\/v1\/bastions\/[^/]+\/projects$/.test(url.pathname);
+
 function contact(replica: string, address: string, baseUrl: string, minutesAgo: number, over: Json = {}): Json {
   return {
     replica,
@@ -361,6 +364,7 @@ async function answerLimits(page: Page): Promise<void> {
   await page.route('**/api/v1/bastions/partners/limits/assignments**', (route) =>
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(partnersRules()) }),
   );
+  await answerProjects(page);
   await page.reload();
   await page.waitForLoadState('networkidle');
   await expect(page.locator('main quader-bastion-card')).toHaveCount(registrations(false).items.length);
@@ -379,7 +383,7 @@ export async function* bastionLimits(page: Page): AsyncGenerator<string> {
   const partners = page.locator('main quader-bastion-card').nth(1);
   await expect(frankfurt.locator('[data-testid="bastion-edge-warning"]')).toBeVisible();
   yield '';
-  const details = frankfurt.locator('quader-bastion-limits quader-disclosure button[aria-expanded]').first();
+  const details = frankfurt.locator('quader-bastion-limits quader-disclosure.details button[aria-expanded]').first();
   await details.click();
   await expect(details).toHaveAttribute('aria-expanded', 'true');
   await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
@@ -416,7 +420,7 @@ export async function* bastionLimits(page: Page): AsyncGenerator<string> {
   await expect(page.locator('.cdk-overlay-container quader-tooltip')).toHaveCount(0);
   // The declared registration's networks (R-UI-270): their field and Add address unavailable in its Details, Add address tapped, its
   // reason pinned.
-  const declaredDetails = partners.locator('quader-bastion-limits quader-disclosure button[aria-expanded]').first();
+  const declaredDetails = partners.locator('quader-bastion-limits quader-disclosure.details button[aria-expanded]').first();
   await declaredDetails.click();
   await expect(declaredDetails).toHaveAttribute('aria-expanded', 'true');
   const addAddress = partners.locator('quader-bastion-egress .row-actions button[aria-disabled="true"]');
@@ -429,6 +433,7 @@ export async function* bastionLimits(page: Page): AsyncGenerator<string> {
   await page.keyboard.press('Escape');
   await page.unroute('**/api/v1/bastions');
   await page.unroute('**/api/v1/bastions/partners/limits/assignments**');
+  await page.unroute(projectsUrl);
 }
 
 /**
@@ -537,6 +542,7 @@ export async function* bastionStates(page: Page): AsyncGenerator<string> {
   await page.route('**/api/v1/bastions', (route) =>
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(stateRegistrations()) }),
   );
+  await answerProjects(page);
   await page.reload();
   await page.waitForLoadState('networkidle');
   const cards = page.locator('main quader-bastion-card');
@@ -565,6 +571,109 @@ export async function* bastionStates(page: Page): AsyncGenerator<string> {
   await page.keyboard.press('Escape');
   await clearFolds();
   await page.unroute('**/api/v1/bastions');
+  await page.unroute(projectsUrl);
+}
+
+/** A project a Bastion allows (R-BAS-134), allowed `days` ago by `by`, with the repositories whose Owner chose the Bastion. */
+function allowed(project: string, displayName: string, days: number, repositories: readonly string[], by = 'root'): Json {
+  return { project, displayName, allowedAt: at(-days), allowedBy: by, repositories };
+}
+
+/**
+ * The twelve projects `artifacts` allows (W-41's 3.8): one with seven repositories distributed (the cell names five and counts the rest),
+ * two with none chosen yet, display names long and short.
+ */
+const twelveProjects: readonly Json[] = [
+  allowed('customer-portal', 'Customer portal', 40, ['web-app', 'npm-components', 'images']),
+  allowed('data-science', 'Data science and machine learning platform', 30, []),
+  allowed('developer-tools', 'Developer tools', 28, ['cli', 'homebrew-tap']),
+  allowed('documentation', 'Documentation', 21, ['site'], 'priya'),
+  allowed('identity', 'Identity', 14, ['images', 'helm-charts']),
+  allowed('mobile', 'Mobile apps', 12, []),
+  allowed('observability', 'Observability', 9, ['dashboards', 'agents', 'helm-charts', 'images']),
+  allowed('payments', 'Payments', 7, ['sdk-java', 'sdk-dotnet']),
+  allowed('platform', 'Platform engineering', 2, ['image-source', 'npm-open-source', 'nuget-internal', 'helm-charts', 'terraform-modules', 'ansible-collections', 'base-images']),
+  allowed('search', 'Search', 2, ['images']),
+  allowed('security-tooling', 'Security tooling', 1, ['scanners', 'policies']),
+  allowed('upstream', 'Upstream', 1, ['npmjs', 'clamav']),
+];
+
+/**
+ * Answers a Bastion's projects in the browser: `bastion` the first `shown` of the twelve, every other Bastion none; the registrations a
+ * walk answers do not exist in the stack, whose read of their projects answers 404.
+ */
+async function answerProjects(page: Page, bastion = '', shown = 0): Promise<void> {
+  await page.route(
+    projectsUrl,
+    (route) => {
+      const name = /\/bastions\/([^/]+)\/projects$/.exec(new URL(route.request().url()).pathname)?.[1] ?? '';
+      const items = name === bastion ? twelveProjects.slice(0, shown) : [];
+      const repositories = items.reduce((n, p) => n + (p['repositories'] as unknown[]).length, 0);
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ items, nextCursor: null, totals: { projects: items.length, repositories } }),
+      });
+    },
+  );
+}
+
+/**
+ * The card's section **Projects** (W-41's C2, R-UI-240, Q-UI-1637): `artifacts`, which allows two projects, and `dmz-hamburg`, which allows
+ * none, each card opened with its section opened (`two`, `empty`); then the search of **Allow a project** with the projects of the stack
+ * that match "pla" (`search`). Locators are the markup's: the walk renders in German too. Nothing is saved.
+ */
+export async function* bastionProjects(page: Page): AsyncGenerator<string> {
+  await page.evaluate(() => {
+    for (const k of Object.keys(localStorage)) if (k.startsWith('quader.admin.bastions.open.')) localStorage.removeItem(k);
+  });
+  const registrations = stateRegistrations().items.filter((b) => b['name'] === 'artifacts');
+  registrations.push(healthy('dmz-hamburg', '0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a65', [contact('quader-bastion-3b5c7d9e8-h6k2v', '192.0.2.75', 'https://packages.dmz-hamburg.example.com', 1)]));
+  await page.route('**/api/v1/bastions', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: registrations }) }));
+  await answerProjects(page, 'artifacts', 2);
+  await page.reload();
+  await page.waitForLoadState('networkidle');
+  const cards = page.locator('main quader-bastion-card');
+  await expect(cards).toHaveCount(2);
+  const settled = (): Promise<unknown> => page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
+  for (const [i, state] of [[0, 'two'], [1, 'empty']] as const) {
+    const card = cards.nth(i);
+    const fold = card.locator('.head button.fold');
+    await fold.click();
+    await expect(fold).toHaveAttribute('aria-expanded', 'true');
+    const section = card.locator('[data-testid="bastion-projects"] button[aria-expanded]');
+    await section.click();
+    await expect(section).toHaveAttribute('aria-expanded', 'true');
+    await settled();
+    await card.locator('[data-testid="bastion-projects"]').scrollIntoViewIfNeeded();
+    yield state;
+    await section.click();
+    await fold.click();
+    await expect(fold).toHaveAttribute('aria-expanded', 'false');
+  }
+  const artifacts = cards.nth(0);
+  await artifacts.locator('.head button.fold').click();
+  await artifacts.locator('[data-testid="bastion-projects"] button[aria-expanded]').click();
+  await settled();
+  const field = artifacts.locator('[data-testid="bastion-projects-allow"] input[role="combobox"]');
+  await field.scrollIntoViewIfNeeded();
+  await field.fill('pla');
+  await expect(page.locator('quader-principal-field [role="listbox"]:not([aria-busy])')).toBeVisible();
+  yield 'search';
+  await page.keyboard.press('Escape');
+  await page.evaluate(() => {
+    for (const k of Object.keys(localStorage)) if (k.startsWith('quader.admin.bastions.open.')) localStorage.removeItem(k);
+  });
+  await page.unroute('**/api/v1/bastions');
+  await page.unroute(projectsUrl);
+}
+
+/** **Projects of dmz-berlin** (Q-UI-1637): the page of the seed's Bastion with the twelve projects it allows, answered in the browser. */
+export async function* bastionProjectsPage(page: Page): AsyncGenerator<string> {
+  await answerProjects(page, seededBastion.name, twelveProjects.length);
+  await page.reload();
+  await expect(page.locator('main quader-bastion-projects tbody tr')).toHaveCount(twelveProjects.length);
+  yield '';
 }
 
 /**
@@ -587,6 +696,8 @@ async function answer(page: Page, frankfurtOn: boolean, connections: readonly Js
   const settings = '**/api/v1/download-links/settings';
   await page.unroute(list);
   await page.route(list, (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(registrations(frankfurtOn)) }));
+  await page.unroute(projectsUrl);
+  await answerProjects(page);
   await page.unroute(settings);
   await page.route(settings, async (route) => {
     const res = await route.fetch();
@@ -622,6 +733,7 @@ export async function* bastionsHandover(page: Page): AsyncGenerator<string> {
   yield 'reasons';
   await page.unroute('**/api/v1/bastions');
   await page.unroute('**/api/v1/download-links/settings');
+  await page.unroute(projectsUrl);
 }
 
 /**
@@ -632,13 +744,14 @@ export async function* bastionsRead(page: Page): AsyncGenerator<string> {
   await answer(page, true, blocked);
   await expect(page.locator('main [data-testid="bastion-handover-reasons"]')).toBeVisible();
   yield 'reasons';
-  const details = page.locator('main quader-bastion-card').first().locator('quader-bastion-limits quader-disclosure button[aria-expanded]').first();
+  const details = page.locator('main quader-bastion-card').first().locator('quader-bastion-limits quader-disclosure.details button[aria-expanded]').first();
   await details.click();
   await expect(details).toHaveAttribute('aria-expanded', 'true');
   await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
   yield 'details';
   await page.unroute('**/api/v1/bastions');
   await page.unroute('**/api/v1/download-links/settings');
+  await page.unroute(projectsUrl);
 }
 
 /** The traces of data keys handed to a Bastion (storage.md R-STOR-096) as the main installation writes them, with the files' paths. */

@@ -20,12 +20,14 @@ import { SearchApi, SuggestionKind } from '../../api/search-api';
 import { ActiveOption, heldEnter, optionDomId } from './active-option';
 import { QuaderAvatar } from './avatar';
 import { Loading } from './loading';
+import { ProjectMark } from './project-mark';
 
 /**
  * The kinds of principal a field names. A technical token and a CI project are the two kinds of the download limits' rule dialog
- * (R-UI-179): no policy names them, so their matches come from the limits' own suggestions.
+ * (R-UI-179): no policy names them, so their matches come from the limits' own suggestions. A project is no principal, but it is chosen
+ * the same way where one is named (a Bastion's projects, R-UI-240): its matches come from the admin area's suggestions of projects.
  */
-export type PrincipalKind = 'user' | 'group' | 'service_account' | 'technical_token' | 'ci_project';
+export type PrincipalKind = 'user' | 'group' | 'service_account' | 'technical_token' | 'ci_project' | 'project';
 
 /** The kinds the principal lookup of a project and the admin area's suggestions know. */
 type DirectoryKind = 'user' | 'group' | 'service_account';
@@ -39,7 +41,7 @@ export interface PrincipalChoice {
    * mapping's own policies grant instead (Q-UI-583). Its chip shows the reference and can be removed.
    */
   readonly kind: PrincipalKind | 'other';
-  /** The username, the group's name or the service account's stored name; the whole reference for `other`. */
+  /** The username, the group's name, the service account's stored name or the project's key; the whole reference for `other`. */
   readonly name: string;
   readonly displayName?: string | null;
   /** The seed of a user's generated avatar. */
@@ -64,6 +66,7 @@ export function choiceFromRef(ref: string): PrincipalChoice {
   const prefix = at < 0 ? '' : ref.slice(0, at);
   const name = at < 0 ? ref : ref.slice(at + 1);
   if (prefix === 'group') return { ref, kind: 'group', name };
+  if (prefix === 'project') return { ref, kind: 'project', name };
   if (prefix === TECHNICAL_TOKEN_PREFIX) return { ref, kind: 'technical_token', name };
   if (prefix === CI_PROJECT_PREFIX) return { ref, kind: 'ci_project', name };
   if (prefix === 'sa') {
@@ -141,7 +144,7 @@ function placeList(popup: HTMLElement, anchor: HTMLElement): void {
 @Component({
   selector: 'quader-principal-field',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Loading, QuaderAvatar],
+  imports: [Loading, ProjectMark, QuaderAvatar],
   template: `
     <div class="field">
       <label class="field-label" [for]="inputId">{{ label() }}</label>
@@ -151,13 +154,17 @@ function placeList(popup: HTMLElement, anchor: HTMLElement): void {
             <ul class="chips" [attr.aria-label]="chosenLabel()">
               @for (c of chosen(); track c.ref) {
                 <li class="chip">
-                  <span class="mark picture" aria-hidden="true">
-                    @if (c.kind === 'user') {
-                      <quader-avatar class="chip-avatar" [seed]="c.id || c.ref" [imageUrl]="c.avatarUrl" />
-                    } @else {
-                      <span class="material-icons">{{ iconOf(c) }}</span>
-                    }
-                  </span>
+                  @if (c.kind === 'project') {
+                    <quader-project-mark [key]="c.name" [name]="c.displayName" />
+                  } @else {
+                    <span class="mark picture" aria-hidden="true">
+                      @if (c.kind === 'user') {
+                        <quader-avatar class="chip-avatar" [seed]="c.id || c.ref" [imageUrl]="c.avatarUrl" />
+                      } @else {
+                        <span class="material-icons">{{ iconOf(c) }}</span>
+                      }
+                    </span>
+                  }
                   <span class="chip-name" translate="no" [attr.title]="primaryOf(c)">{{ primaryOf(c) }}</span>
                   <span class="visually-hidden">{{ secondaryOf(c) }}</span>
                   @if (!readonly()) {
@@ -213,16 +220,21 @@ function placeList(popup: HTMLElement, anchor: HTMLElement): void {
                   (keydown.enter)="pick(m)"
                   (mousemove)="active.pointer(i, $event)"
                 >
-                  <span class="mark picture" aria-hidden="true">
-                    @if (m.kind === 'user') {
-                      <quader-avatar class="option-avatar" [seed]="m.id || m.ref" [imageUrl]="m.avatarUrl" />
-                    } @else {
-                      <span class="material-icons">{{ iconOf(m) }}</span>
-                    }
-                  </span>
+                  @if (m.kind === 'project') {
+                    <!-- A project's mark, as in every list of projects (Q-UI-424). -->
+                    <quader-project-mark [key]="m.name" [name]="m.displayName" size="medium" />
+                  } @else {
+                    <span class="mark picture" aria-hidden="true">
+                      @if (m.kind === 'user') {
+                        <quader-avatar class="option-avatar" [seed]="m.id || m.ref" [imageUrl]="m.avatarUrl" />
+                      } @else {
+                        <span class="material-icons">{{ iconOf(m) }}</span>
+                      }
+                    </span>
+                  }
                   <span class="who">
                     <span class="primary" translate="no">{{ primaryOf(m) }}</span>
-                    <span class="secondary" [attr.translate]="m.kind === 'user' ? 'no' : null">{{ secondaryOf(m) }}</span>
+                    <span class="secondary" [attr.translate]="m.kind === 'user' || m.kind === 'project' ? 'no' : null">{{ secondaryOf(m) }}</span>
                   </span>
                 </div>
               }
@@ -612,12 +624,13 @@ export class PrincipalField {
   }
 
   protected primaryOf(c: PrincipalChoice): string {
-    return (c.kind === 'user' && c.displayName) || c.name;
+    return ((c.kind === 'user' || c.kind === 'project') && c.displayName) || c.name;
   }
 
-  /** The line under the name: the username of a person, the kind of a group or a service account and its project. */
+  /** The line under the name: the username of a person, a project's key, the kind of a group or a service account and its project. */
   protected secondaryOf(c: PrincipalChoice): string {
     if (c.kind === 'user') return `@${c.name}`;
+    if (c.kind === 'project') return c.name;
     if (c.kind === 'group') return $localize`:@@principal-field.kind-group:Group`;
     if (c.kind === 'other') return $localize`:@@principal-field.kind-other:CI identity`;
     if (c.kind === 'technical_token') return c.detail || $localize`:@@principal-field.kind-technical-token:Technical token`;
@@ -740,11 +753,20 @@ export class PrincipalField {
     const all = this.kinds();
     const limitKinds = all.flatMap((k) => (k === 'technical_token' ? ['technicalToken' as const] : k === 'ci_project' ? ['ci' as const] : []));
     const kinds = all.filter((k): k is DirectoryKind => k === 'user' || k === 'group' || k === 'service_account');
-    const [directory, subjects] = await Promise.all([
-      kinds.length > 0 ? this.searchDirectory(text, kinds, signal) : Promise.resolve({ items: [], more: false }),
-      limitKinds.length > 0 ? this.searchSubjects(text, limitKinds, signal) : Promise.resolve({ items: [], more: false }),
+    const none = Promise.resolve({ items: [], more: false });
+    const [directory, subjects, projects] = await Promise.all([
+      kinds.length > 0 ? this.searchDirectory(text, kinds, signal) : none,
+      limitKinds.length > 0 ? this.searchSubjects(text, limitKinds, signal) : none,
+      all.includes('project') ? this.searchProjects(text, signal) : none,
     ]);
-    return { items: [...directory.items, ...subjects.items], more: directory.more || subjects.more };
+    return { items: [...directory.items, ...subjects.items, ...projects.items], more: directory.more || subjects.more || projects.more };
+  }
+
+  /** The projects whose key or display name matches, from the admin area's suggestions (R-API-060): what the caller may see. */
+  private async searchProjects(text: string, signal: AbortSignal): Promise<{ items: PrincipalChoice[]; more: boolean }> {
+    const answer = await this.searchApi.suggest({ q: text, kinds: ['project'], limit: SUGGEST_LIMIT, signal });
+    const items = (answer.projects?.items ?? []).map((p): PrincipalChoice => ({ ref: refOf('project', p.key), kind: 'project', name: p.key, displayName: p.displayName }));
+    return { items, more: !!answer.projects?.more };
   }
 
   private async searchSubjects(

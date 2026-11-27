@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { ApiClient } from './client';
-import { seg } from './query';
+import { cleanQuery, seg } from './query';
 import { Versioned } from './repositories-api';
 import { Schema } from './types';
 
@@ -27,6 +27,17 @@ export type BastionDisableMode = Schema<'BastionDisable'>['mode'];
 export type NewBastion = Schema<'NewBastion'>;
 export type NewBastionToken = Schema<'NewBastionToken'>;
 export type BastionTokenCreated = Schema<'BastionTokenCreated'>;
+/** A project the Bastion allows (R-BAS-134), with the keys of its repositories whose Owner chose the Bastion. */
+export type BastionProject = Schema<'BastionProject'>;
+/** One page of the projects a Bastion allows, with the whole list's `totals` whatever the page and the filter. */
+export type BastionProjectList = Schema<'BastionProjectList'>;
+
+/** What one read of a Bastion's projects asks: the filter by key or display name, the page's size and the cursor of the next. */
+export interface BastionProjectQuery {
+  readonly q?: string;
+  readonly limit?: number;
+  readonly cursor?: string | null;
+}
 
 type Limits = Bastion['limits'];
 type Flood = Limits['flood'];
@@ -85,6 +96,12 @@ export abstract class BastionsApi {
   abstract createToken(name: string, body: NewBastionToken, idempotencyKey: string): Promise<BastionTokenCreated>;
   /** Invalidates a token at once, for good, the declared one included (R-BAS-133, Q-UI-1642): the last resort of a leak. */
   abstract invalidateToken(name: string, id: string): Promise<void>;
+  /** One page of the projects the Bastion allows (`endpoints:read`, R-BAS-134), by key, with the totals of the whole list. */
+  abstract projects(name: string, query?: BastionProjectQuery): Promise<BastionProjectList>;
+  /** Allows the project's repositories to be distributed through the Bastion (`endpoints:write`); idempotent. */
+  abstract allowProject(name: string, project: string): Promise<void>;
+  /** Takes the project off the Bastion's list; its repositories' choices of the Bastion go with it (`endpoints:write`). */
+  abstract removeProject(name: string, project: string): Promise<void>;
   /** The three presets in the card's order, each with what applying it writes (`limits:read`; R-LIM-046, Q-UI-1485). */
   abstract presets(): Promise<readonly BastionPreset[]>;
 }
@@ -137,6 +154,19 @@ export class HttpBastionsApi extends BastionsApi {
 
   override async invalidateToken(name: string, id: string): Promise<void> {
     await this.client.delete(`/api/v1/bastions/${seg(name)}/tokens/${seg(id)}`);
+  }
+
+  override async projects(name: string, query: BastionProjectQuery = {}): Promise<BastionProjectList> {
+    const params = cleanQuery({ q: query.q, limit: query.limit, cursor: query.cursor });
+    return (await this.client.getJson<BastionProjectList>(`/api/v1/bastions/${seg(name)}/projects`, { params })).body;
+  }
+
+  override async allowProject(name: string, project: string): Promise<void> {
+    await this.client.putBinding(`/api/v1/bastions/${seg(name)}/projects/${seg(project)}`);
+  }
+
+  override async removeProject(name: string, project: string): Promise<void> {
+    await this.client.delete(`/api/v1/bastions/${seg(name)}/projects/${seg(project)}`);
   }
 
   override async presets(): Promise<readonly BastionPreset[]> {

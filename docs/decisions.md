@@ -13450,10 +13450,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-853 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+854 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 853 questions</summary>
+<summary>Q-UI: 854 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -14297,6 +14297,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1634](spec/api-and-ui.md#q-ui-1634--a-rows-command-is-resolved-when-its-panel-opens) | A row's command is resolved when its panel opens | Decided by the development agent on 2026-11-27 | (b) Read the version's details when the panel first opens and decide with the head's rule (`versionCommandFacts`) | — |
 | [Q-UI-1635](spec/api-and-ui.md#q-ui-1635--the-order-of-a-panels-repositories-is-unchanged) | The order of a panel's repositories is unchanged | Decided by the development agent on 2026-11-27 | (a) `clientRepositories` as it is | — |
 | [Q-UI-1636](spec/api-and-ui.md#q-ui-1636--a-control-that-cannot-act-shows-greyed-out-with-its-reason-as-its-tooltip-never-a-paragraph) | A control that cannot act shows greyed out, with its reason as its tooltip; never a paragraph | Decided by the development agent on 2026-11-27 | (a) A directive on the control | — |
+| [Q-UI-1637](spec/api-and-ui.md#q-ui-1637--a-bastions-projects-are-a-closed-section-of-its-card-of-ten-rows-and-a-page-of-all) | A Bastion's projects are a closed section of its card of ten rows, and a page of all | Decided by the development agent on 2026-11-27 | (a) A closed section **Projects** of the card with its count and one line; opened, **Allow a project** and at most ten rows, with "All 37 projects" to the Bastion's page `/admin/bastions/<name>/projects`, the same component unbounded with a filter and **Load more** | — |
 | [Q-UI-1638](spec/api-and-ui.md#q-ui-1638--the-products-own-names-are-worded-by-key-in-the-ui-not-translated-by-the-server) | The product's own names are worded by key in the UI, not translated by the server | Decided by the development agent on 2026-11-27 | (b) A key the UI words | — |
 | [Q-UI-1639](spec/api-and-ui.md#q-ui-1639--what-the-product-sends-in-english-and-the-ui-shows-as-it-is) | What the product sends in English, and the UI shows as it is | Decided by the development agent on 2026-11-27 | — | — |
 | [Q-UI-1640](spec/api-and-ui.md#q-ui-1640--a-bastions-card-folds-to-its-head-the-viewers-choice-is-kept-in-the-browser) | A Bastion's card folds to its head; the viewer's choice is kept in the browser | Decided by the development agent on 2026-11-27 | (a) Each card folds to its head (chevron before the name; the head keeps its badge and acts); open where the page holds one Bastion, folded where it holds several, except a card that shows a warning; the viewer's choice per Bastion kept in the browser, and a change *into* a warning opens a card whatever was kept | — |

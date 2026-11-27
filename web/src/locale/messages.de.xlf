@@ -473,8 +473,8 @@
     <unit id="limits.heading">
       <notes>
         <note category="location">src/app/app.routes.ts:180</note>
-        <note category="location">src/app/features/bastions/bastions.routes.ts:20</note>
         <note category="location">src/app/features/bastions/bastions.routes.ts:27</note>
+        <note category="location">src/app/features/bastions/bastions.routes.ts:34</note>
         <note category="location">src/app/features/limits/limits-frame.ts:23,24</note>
         <note category="location">src/app/features/limits/limits.routes.ts:25</note>
       </notes>
@@ -6251,7 +6251,7 @@
     </unit>
     <unit id="bastion.state.connected">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:43</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:44</note>
       </notes>
       <segment>
         <source>Connected</source>
@@ -6260,7 +6260,7 @@
     </unit>
     <unit id="bastion.state.no-contact">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:45</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:46</note>
       </notes>
       <segment>
         <source>No contact yet</source>
@@ -6269,7 +6269,7 @@
     </unit>
     <unit id="bastion.state.lost">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:47</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:48</note>
       </notes>
       <segment>
         <source>Contact lost</source>
@@ -6278,7 +6278,7 @@
     </unit>
     <unit id="bastion.state.disabling">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:49</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:50</note>
       </notes>
       <segment>
         <source>Disabling</source>
@@ -6287,7 +6287,7 @@
     </unit>
     <unit id="bastion.state.disabled">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:51</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:52</note>
       </notes>
       <segment>
         <source>Disabled</source>
@@ -6296,7 +6296,7 @@
     </unit>
     <unit id="bastion.state.unconfirmed">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:53</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:54</note>
       </notes>
       <segment>
         <source>Disable not confirmed</source>
@@ -6305,7 +6305,7 @@
     </unit>
     <unit id="bastion.enable">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:132,133</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:134,135</note>
       </notes>
       <segment>
         <source>Enable</source>
@@ -6314,7 +6314,7 @@
     </unit>
     <unit id="bastion.disable-hard">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:137,138</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:139,140</note>
       </notes>
       <segment>
         <source>Disable hard…</source>
@@ -6323,7 +6323,7 @@
     </unit>
     <unit id="bastion.disable">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:143,144</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:145,146</note>
       </notes>
       <segment>
         <source>Disable…</source>
@@ -6332,7 +6332,7 @@
     </unit>
     <unit id="bastion.delete">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:158,159</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:160,161</note>
       </notes>
       <segment>
         <source>Delete</source>
@@ -6341,7 +6341,7 @@
     </unit>
     <unit id="bastion.created">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:190,191</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:194,195</note>
       </notes>
       <segment>
         <source>Created <pc id="0" equivStart="START_TAG_QUADER_TIME_AGO" equivEnd="CLOSE_TAG_QUADER_TIME_AGO" type="other" dispStart="&lt;quader-time-ago [at]=&quot;bastion().createdAt&quot; absolute=&quot;title&quot; /&gt;" dispEnd="&lt;quader-time-ago [at]=&quot;bastion().createdAt&quot; absolute=&quot;title&quot; /&gt;"></pc></source>
@@ -6350,8 +6350,8 @@
     </unit>
     <unit id="bastion.replicas.heading">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:196,197</note>
-        <note category="location">src/app/features/bastions/bastion-card.ts:203,205</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:200,201</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:207,209</note>
       </notes>
       <segment>
         <source>Replicas</source>
@@ -6360,7 +6360,7 @@
     </unit>
     <unit id="bastion.replicas.none">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:197,199</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:201,203</note>
       </notes>
       <segment>
         <source>No replica has made contact yet.</source>
@@ -6369,7 +6369,7 @@
     </unit>
     <unit id="bastion.contact.release">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:228,229</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:232,233</note>
       </notes>
       <segment>
         <source>Version <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ c.release }}"/></pc></source>
@@ -6378,8 +6378,8 @@
     </unit>
     <unit id="bastion.tokens">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:245,246</note>
-        <note category="location">src/app/features/bastions/bastion-card.ts:266,267</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:249,250</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:270,271</note>
       </notes>
       <segment>
         <source>Tokens</source>
@@ -6388,7 +6388,7 @@
     </unit>
     <unit id="bastion.tokens-empty">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:246,247</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:250,251</note>
       </notes>
       <segment>
         <source>No token yet.</source>
@@ -6397,7 +6397,7 @@
     </unit>
     <unit id="bastion.token.issue">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:256,257</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:260,261</note>
       </notes>
       <segment>
         <source>Issue token</source>
@@ -6406,7 +6406,7 @@
     </unit>
     <unit id="bastion.token.rotate">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:283,284</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:287,288</note>
         <note category="location">src/app/features/bastions/bastion-dialogs.ts:176,177</note>
       </notes>
       <segment>
@@ -6416,7 +6416,7 @@
     </unit>
     <unit id="bastion.token.secret">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:302,303</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:306,307</note>
       </notes>
       <segment>
         <source>Secret <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ secretName }}"/></pc></source>
@@ -6425,7 +6425,7 @@
     </unit>
     <unit id="bastion.token.created">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:303,304</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:307,308</note>
       </notes>
       <segment>
         <source>Created <pc id="0" equivStart="START_TAG_QUADER_TIME_AGO" equivEnd="CLOSE_TAG_QUADER_TIME_AGO" type="other" dispStart="&lt;quader-time-ago [at]=&quot;t.createdAt&quot; absolute=&quot;title&quot; /&gt;" dispEnd="&lt;quader-time-ago [at]=&quot;t.createdAt&quot; absolute=&quot;title&quot; /&gt;"></pc></source>
@@ -6434,7 +6434,7 @@
     </unit>
     <unit id="bastion.token.never">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:311,313</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:315,317</note>
       </notes>
       <segment>
         <source>Never</source>
@@ -6443,7 +6443,7 @@
     </unit>
     <unit id="bastion.token.expired">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:315,316</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:319,320</note>
       </notes>
       <segment>
         <source>Expired</source>
@@ -6452,7 +6452,7 @@
     </unit>
     <unit id="bastion.token.soon">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:318,319</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:322,323</note>
       </notes>
       <segment>
         <source>Expires soon</source>
@@ -6461,7 +6461,7 @@
     </unit>
     <unit id="bastion.token.unused">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:326,328</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:330,332</note>
       </notes>
       <segment>
         <source>Not used yet</source>
@@ -6470,7 +6470,7 @@
     </unit>
     <unit id="bastion.token.invalidate">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:333,334</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:337,338</note>
       </notes>
       <segment>
         <source>Invalidate</source>
@@ -6479,7 +6479,7 @@
     </unit>
     <unit id="bastion.source.helm">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:535</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:539</note>
       </notes>
       <segment>
         <source>Helm configuration</source>
@@ -6488,7 +6488,7 @@
     </unit>
     <unit id="bastion.source.helm-help">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:536</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:540</note>
       </notes>
       <segment>
         <source>Its description, its addresses and its token are set in bastions.declared of the Helm configuration and changed there.</source>
@@ -6497,7 +6497,7 @@
     </unit>
     <unit id="bastion.delete.helm">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:538</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:542</note>
       </notes>
       <segment>
         <source>Set in bastions.declared of the Helm configuration: remove it there first, then delete it here.</source>
@@ -6506,7 +6506,7 @@
     </unit>
     <unit id="bastion.token.rotate.helm">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:540</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:544</note>
       </notes>
       <segment>
         <source>Its token is set in bastions.declared of the Helm configuration: put a new value into its Secret.</source>
@@ -6515,7 +6515,7 @@
     </unit>
     <unit id="bastion.token.helm">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:542</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:548</note>
       </notes>
       <segment>
         <source>Token of the Helm configuration</source>
@@ -6524,7 +6524,7 @@
     </unit>
     <unit id="bastion.contacts-caption">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:548</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:554</note>
       </notes>
       <segment>
         <source>Replicas of <ph id="0" equiv="name" disp="this.bastion().name"/></source>
@@ -6533,7 +6533,7 @@
     </unit>
     <unit id="bastion.tokens-caption">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:549</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:555</note>
       </notes>
       <segment>
         <source>Tokens of <ph id="0" equiv="name" disp="this.bastion().name"/></source>
@@ -6542,7 +6542,7 @@
     </unit>
     <unit id="bastion.col.replica">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:561</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:567</note>
       </notes>
       <segment>
         <source>Replica</source>
@@ -6551,7 +6551,7 @@
     </unit>
     <unit id="bastion.help.replica">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:562</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:568</note>
       </notes>
       <segment>
         <source>Under its name: the address the main installation saw it connect from, and its version.</source>
@@ -6560,7 +6560,7 @@
     </unit>
     <unit id="bastion.col.time">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:566</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:572</note>
       </notes>
       <segment>
         <source>Last contact</source>
@@ -6569,7 +6569,7 @@
     </unit>
     <unit id="bastion.col.token">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:569</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:575</note>
       </notes>
       <segment>
         <source>Token</source>
@@ -6578,7 +6578,7 @@
     </unit>
     <unit id="bastion.col.expires">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:571</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:577</note>
       </notes>
       <segment>
         <source>Expires</source>
@@ -6587,7 +6587,7 @@
     </unit>
     <unit id="bastion.col.last-used">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:574</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:580</note>
       </notes>
       <segment>
         <source>Last used</source>
@@ -6596,7 +6596,7 @@
     </unit>
     <unit id="bastion.help.last-used">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:575</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:581</note>
       </notes>
       <segment>
         <source>The last time the token authenticated a request. When you rotate, invalidate the old token once the new one shows a recent time.</source>
@@ -6605,7 +6605,8 @@
     </unit>
     <unit id="bastion.col.actions">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:578</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:584</note>
+        <note category="location">src/app/features/bastions/bastion-projects.ts:269</note>
       </notes>
       <segment>
         <source>Actions</source>
@@ -6614,7 +6615,7 @@
     </unit>
     <unit id="bastion.state.lost-tip">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:603</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:609</note>
       </notes>
       <segment>
         <source>No replica has made contact for <ph id="0" equiv="duration" disp="this.duration(newest.contactAt)"/>.</source>
@@ -6623,7 +6624,7 @@
     </unit>
     <unit id="bastion.state.disabled-hard-tip">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:611</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:617</note>
       </notes>
       <segment>
         <source>Hard, since <ph id="0" equiv="time" disp="since"/></source>
@@ -6632,7 +6633,7 @@
     </unit>
     <unit id="bastion.state.disabled-soft-tip">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:612</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:618</note>
       </notes>
       <segment>
         <source>Soft, since <ph id="0" equiv="time" disp="since"/></source>
@@ -6641,7 +6642,7 @@
     </unit>
     <unit id="bastion.state.unconfirmed-tip">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:615</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:621</note>
       </notes>
       <segment>
         <source>No replica has confirmed it yet. The main installation refuses its requests; its replicas serve from their cache until their next contact, at most their grace period.</source>
@@ -6650,7 +6651,7 @@
     </unit>
     <unit id="bastion.state.running-one">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:625</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:631</note>
       </notes>
       <segment>
         <source>1 download still running</source>
@@ -6659,7 +6660,7 @@
     </unit>
     <unit id="bastion.state.running">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:626</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:632</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="count" disp="b.running"/> downloads still running</source>
@@ -6668,7 +6669,7 @@
     </unit>
     <unit id="bastion.replicas.silent">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:674</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:680</note>
       </notes>
       <segment>
         <source>No replica has made contact for <ph id="0" equiv="duration" disp="this.duration(h.since)"/>.</source>
@@ -6677,7 +6678,7 @@
     </unit>
     <unit id="bastion.replicas.quiet">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:675</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:681</note>
       </notes>
       <segment>
         <source>Last contact <ph id="0" equiv="time" disp="this.ago(h.since)"/></source>
@@ -6686,7 +6687,7 @@
     </unit>
     <unit id="bastion.replicas.releases">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:679</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:685</note>
       </notes>
       <segment>
         <source>The replicas run different versions: <ph id="0" equiv="versions" disp="h.releases.join(&apos;, &apos;)"/>.</source>
@@ -6695,7 +6696,7 @@
     </unit>
     <unit id="bastion.replicas.address-silent">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:682</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:688</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="host" disp="d.host"/>: no contact for <ph id="1" equiv="duration" disp="this.duration(d.since)"/>.</source>
@@ -6704,7 +6705,7 @@
     </unit>
     <unit id="bastion.replicas.ok-many">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:686</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:692</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="count" disp="h.deployments"/> addresses · last contact <ph id="1" equiv="time" disp="this.ago(h.last)"/> · version <ph id="2" equiv="release" disp="h.release"/></source>
@@ -6713,7 +6714,7 @@
     </unit>
     <unit id="bastion.replicas.ok">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:687</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:693</note>
       </notes>
       <segment>
         <source>Last contact <ph id="0" equiv="time" disp="this.ago(h.last)"/> · version <ph id="1" equiv="release" disp="h.release"/></source>
@@ -6722,7 +6723,7 @@
     </unit>
     <unit id="bastion.tokens.expired">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:698</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:704</note>
       </notes>
       <segment>
         <source>“<ph id="0" equiv="description" disp="this.tokenName(h.token)"/>” has expired.</source>
@@ -6731,7 +6732,7 @@
     </unit>
     <unit id="bastion.tokens.soon">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:700</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:706</note>
       </notes>
       <segment>
         <source>“<ph id="0" equiv="description" disp="this.tokenName(h.token)"/>” expires <ph id="1" equiv="time" disp="this.ago(h.token.expiresAt!)"/>.</source>
@@ -6740,7 +6741,7 @@
     </unit>
     <unit id="bastion.tokens.never">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:703</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:709</note>
       </notes>
       <segment>
         <source>None expires</source>
@@ -6749,7 +6750,7 @@
     </unit>
     <unit id="bastion.tokens.next">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:704</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:710</note>
       </notes>
       <segment>
         <source>The next expires <ph id="0" equiv="time" disp="this.ago(h.next)"/></source>
@@ -6758,7 +6759,7 @@
     </unit>
     <unit id="bastion.draft-restored">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:717</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:723</note>
       </notes>
       <segment>
         <source>Your entries were restored. Issue the token again.</source>
@@ -6767,7 +6768,7 @@
     </unit>
     <unit id="bastion.replicas.no-base-url">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:736</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:742</note>
       </notes>
       <segment>
         <source>No base URL reported</source>
@@ -6776,7 +6777,7 @@
     </unit>
     <unit id="bastion.replicas.group-one">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:738</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:744</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="host" disp="host"/> · 1 replica</source>
@@ -6785,7 +6786,7 @@
     </unit>
     <unit id="bastion.replicas.group">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:739</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:745</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="host" disp="host"/> · <ph id="1" equiv="count" disp="d.contacts.length"/> replicas</source>
@@ -6794,7 +6795,7 @@
     </unit>
     <unit id="bastion.secret-note">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:760</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:766</note>
       </notes>
       <segment>
         <source>For <ph id="0" equiv="name" disp="this.bastion().name"/>: <ph id="1" equiv="description" disp="s.description"/></source>
@@ -6803,8 +6804,8 @@
     </unit>
     <unit id="bastion.disabled-done">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:784</note>
-        <note category="location">src/app/features/bastions/bastion-card.ts:801</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:790</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:807</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="name" disp="name"/> is being disabled.</source>
@@ -6813,7 +6814,7 @@
     </unit>
     <unit id="bastion.disable-hard-title">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:792</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:798</note>
       </notes>
       <segment>
         <source>Disable <ph id="0" equiv="name" disp="name"/> hard?</source>
@@ -6822,7 +6823,7 @@
     </unit>
     <unit id="bastion.disable-hard-text-one">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:795</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:801</note>
       </notes>
       <segment>
         <source>1 running download is cut.</source>
@@ -6831,7 +6832,7 @@
     </unit>
     <unit id="bastion.disable-hard-text">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:796</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:802</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="count" disp="running"/> running downloads are cut.</source>
@@ -6840,7 +6841,7 @@
     </unit>
     <unit id="bastion.disable-hard-confirm">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:798</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:804</note>
       </notes>
       <segment>
         <source>Disable hard</source>
@@ -6849,7 +6850,7 @@
     </unit>
     <unit id="bastion.enabled-done">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:806</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:812</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="name" disp="name"/> is enabled.</source>
@@ -6858,7 +6859,7 @@
     </unit>
     <unit id="bastion.delete-title">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:819</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:825</note>
       </notes>
       <segment>
         <source>Delete this Bastion?</source>
@@ -6867,7 +6868,7 @@
     </unit>
     <unit id="bastion.delete-text">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:820</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:826</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="name" disp="name"/> and its tokens are removed; the tokens stop working at once. This cannot be undone.</source>
@@ -6876,7 +6877,7 @@
     </unit>
     <unit id="bastion.delete-confirm">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:821</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:827</note>
       </notes>
       <segment>
         <source>Delete</source>
@@ -6885,7 +6886,7 @@
     </unit>
     <unit id="bastion.deleted">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:825</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:831</note>
       </notes>
       <segment>
         <source>Bastion deleted.</source>
@@ -6894,7 +6895,7 @@
     </unit>
     <unit id="bastion.invalidate-text">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:832</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:838</note>
       </notes>
       <segment>
         <source>“<ph id="0" equiv="description" disp="description"/>” stops working at once on every replica, for good. A replica that still uses it can no longer reach the main installation.</source>
@@ -6903,7 +6904,7 @@
     </unit>
     <unit id="bastion.invalidate-helm">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:835</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:841</note>
       </notes>
       <segment>
         <source>The next rollout stops at its migration until the Secret of bastions.declared holds a new value.</source>
@@ -6912,7 +6913,7 @@
     </unit>
     <unit id="bastion.invalidate-title">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:838</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:844</note>
       </notes>
       <segment>
         <source>Invalidate this token?</source>
@@ -6921,7 +6922,7 @@
     </unit>
     <unit id="bastion.invalidate-confirm">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:840</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:846</note>
       </notes>
       <segment>
         <source>Invalidate</source>
@@ -6930,7 +6931,7 @@
     </unit>
     <unit id="bastion.invalidated">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:843</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:849</note>
       </notes>
       <segment>
         <source>Token invalidated.</source>
@@ -7796,7 +7797,7 @@
     <unit id="limits.unlimited">
       <notes>
         <note category="location">src/app/features/bastions/bastion-limit-details.ts:338</note>
-        <note category="location">src/app/features/bastions/bastion-limits.ts:336</note>
+        <note category="location">src/app/features/bastions/bastion-limits.ts:341</note>
         <note category="location">src/app/features/limits/figure-fields.ts:78,79</note>
         <note category="location">src/app/features/limits/figures.ts:105</note>
         <note category="location">src/app/features/limits/figures.ts:269</note>
@@ -7972,7 +7973,7 @@
     </unit>
     <unit id="bastion.limits.heading">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-limits.ts:52,54</note>
+        <note category="location">src/app/features/bastions/bastion-limits.ts:53,55</note>
       </notes>
       <segment>
         <source>Limits</source>
@@ -7981,7 +7982,7 @@
     </unit>
     <unit id="bastion.limits.edge">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-limits.ts:58,59</note>
+        <note category="location">src/app/features/bastions/bastion-limits.ts:59,60</note>
       </notes>
       <segment>
         <source>The ingress refuses more than <ph id="0" equiv="INTERPOLATION" disp="{{ edgeText(e) }}"/> requests a second per address, below this Bastion&apos;s flood figures.</source>
@@ -7990,7 +7991,7 @@
     </unit>
     <unit id="bastion.preset.label">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-limits.ts:64</note>
+        <note category="location">src/app/features/bastions/bastion-limits.ts:65</note>
       </notes>
       <segment>
         <source>Preset</source>
@@ -7999,7 +8000,7 @@
     </unit>
     <unit id="bastion.preset.custom">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-limits.ts:71,74</note>
+        <note category="location">src/app/features/bastions/bastion-limits.ts:72,75</note>
         <note category="location">src/app/features/bastions/presets.ts:27</note>
       </notes>
       <segment>
@@ -8009,7 +8010,7 @@
     </unit>
     <unit id="bastion.row.mode">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-limits.ts:83</note>
+        <note category="location">src/app/features/bastions/bastion-limits.ts:84</note>
       </notes>
       <segment>
         <source>Mode</source>
@@ -8018,7 +8019,7 @@
     </unit>
     <unit id="limits.mode.to-enforce">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-limits.ts:89,90</note>
+        <note category="location">src/app/features/bastions/bastion-limits.ts:90,91</note>
         <note category="location">src/app/features/limits/limit-mode.ts:255,256</note>
       </notes>
       <segment>
@@ -8028,7 +8029,7 @@
     </unit>
     <unit id="limits.mode.to-audit">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-limits.ts:91,93</note>
+        <note category="location">src/app/features/bastions/bastion-limits.ts:92,94</note>
         <note category="location">src/app/features/limits/limit-mode.ts:257,259</note>
       </notes>
       <segment>
@@ -8038,7 +8039,7 @@
     </unit>
     <unit id="bastion.row.throughput">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-limits.ts:101,102</note>
+        <note category="location">src/app/features/bastions/bastion-limits.ts:102,103</note>
       </notes>
       <segment>
         <source>Maximum throughput</source>
@@ -8047,7 +8048,7 @@
     </unit>
     <unit id="bastion.throughput.unit">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-limits.ts:121,122</note>
+        <note category="location">src/app/features/bastions/bastion-limits.ts:122,123</note>
       </notes>
       <segment>
         <source>MB/s</source>
@@ -8056,7 +8057,7 @@
     </unit>
     <unit id="bastion.throughput.save">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-limits.ts:123,125</note>
+        <note category="location">src/app/features/bastions/bastion-limits.ts:124,126</note>
       </notes>
       <segment>
         <source> Save changes </source>
@@ -8065,7 +8066,7 @@
     </unit>
     <unit id="bastion.row.now">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-limits.ts:141</note>
+        <note category="location">src/app/features/bastions/bastion-limits.ts:142</note>
       </notes>
       <segment>
         <source>Now</source>
@@ -8074,7 +8075,7 @@
     </unit>
     <unit id="bastion.state.none">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-limits.ts:155,157</note>
+        <note category="location">src/app/features/bastions/bastion-limits.ts:156,158</note>
       </notes>
       <segment>
         <source>No report in the last 5 minutes</source>
@@ -8083,7 +8084,7 @@
     </unit>
     <unit id="bastion.details.heading">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-limits.ts:163</note>
+        <note category="location">src/app/features/bastions/bastion-limits.ts:168</note>
       </notes>
       <segment>
         <source>Details</source>
@@ -8092,7 +8093,7 @@
     </unit>
     <unit id="bastion.details.note">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-limits.ts:164,166</note>
+        <note category="location">src/app/features/bastions/bastion-limits.ts:169,171</note>
       </notes>
       <segment>
         <source>Web interface, flood protection, addresses, rules</source>
@@ -8101,7 +8102,7 @@
     </unit>
     <unit id="bastion.limits.rules-link">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-limits.ts:174,177</note>
+        <note category="location">src/app/features/bastions/bastion-limits.ts:179,182</note>
       </notes>
       <segment>
         <source>Rules of this Bastion</source>
@@ -8110,7 +8111,7 @@
     </unit>
     <unit id="bastion.help.preset">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-limits.ts:270</note>
+        <note category="location">src/app/features/bastions/bastion-limits.ts:275</note>
       </notes>
       <segment>
         <source>Internet: strict limits, administrators too. Partner network: the installation&apos;s own profiles. Internal: no limits, everything counted. A choice first shows what it replaces.</source>
@@ -8119,7 +8120,7 @@
     </unit>
     <unit id="bastion.help.mode">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-limits.ts:271</note>
+        <note category="location">src/app/features/bastions/bastion-limits.ts:276</note>
       </notes>
       <segment>
         <source>Enforce applies the download limits at this Bastion; Audit only counts them. Flood protection, ceiling, slots and throughput hold in both.</source>
@@ -8128,7 +8129,7 @@
     </unit>
     <unit id="bastion.help.throughput">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-limits.ts:272</note>
+        <note category="location">src/app/features/bastions/bastion-limits.ts:277</note>
       </notes>
       <segment>
         <source>The Bastion&apos;s share of the link between the two networks: only what it does not hold crosses it. Empty is unlimited.</source>
@@ -8137,7 +8138,7 @@
     </unit>
     <unit id="bastion.help.now">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-limits.ts:273</note>
+        <note category="location">src/app/features/bastions/bastion-limits.ts:278</note>
       </notes>
       <segment>
         <source>What the Bastion&apos;s replicas reported in the last 5 minutes, added up.</source>
@@ -8146,7 +8147,7 @@
     </unit>
     <unit id="bastion.throughput.label">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-limits.ts:280</note>
+        <note category="location">src/app/features/bastions/bastion-limits.ts:285</note>
       </notes>
       <segment>
         <source>Maximum throughput of <ph id="0" equiv="name" disp="this.bastion().name"/> in MB/s</source>
@@ -8155,7 +8156,7 @@
     </unit>
     <unit id="bastion.state.meter">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-limits.ts:314</note>
+        <note category="location">src/app/features/bastions/bastion-limits.ts:319</note>
       </notes>
       <segment>
         <source>Throughput of <ph id="0" equiv="name" disp="this.bastion().name"/> against its maximum</source>
@@ -8164,7 +8165,7 @@
     </unit>
     <unit id="bastion.state.meter-text">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-limits.ts:319</note>
+        <note category="location">src/app/features/bastions/bastion-limits.ts:324</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="rate" disp="megabytesPerSecond(s.bytesPerSecond, this.locale)"/> of <ph id="1" equiv="cap" disp="megabytesPerSecond(cap, this.locale)"/></source>
@@ -8173,7 +8174,7 @@
     </unit>
     <unit id="bastion.throughput.invalid">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-limits.ts:343</note>
+        <note category="location">src/app/features/bastions/bastion-limits.ts:348</note>
       </notes>
       <segment>
         <source>A whole number of MB/s from 1, or empty for unlimited.</source>
@@ -8182,7 +8183,7 @@
     </unit>
     <unit id="bastion.preset.applied">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-limits.ts:360</note>
+        <note category="location">src/app/features/bastions/bastion-limits.ts:365</note>
       </notes>
       <segment>
         <source>The preset <ph id="0" equiv="preset" disp="presetLabel(preset)"/> applies to <ph id="1" equiv="name" disp="this.bastion().name"/>.</source>
@@ -8191,7 +8192,7 @@
     </unit>
     <unit id="bastion.mode.switched">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-limits.ts:378</note>
+        <note category="location">src/app/features/bastions/bastion-limits.ts:383</note>
       </notes>
       <segment>
         <source>Mode of <ph id="0" equiv="name" disp="name"/>: <ph id="1" equiv="mode" disp="modeName(result.value.limits.mode)"/>.</source>
@@ -8200,7 +8201,7 @@
     </unit>
     <unit id="bastion.throughput.saved">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-limits.ts:395</note>
+        <note category="location">src/app/features/bastions/bastion-limits.ts:400</note>
       </notes>
       <segment>
         <source>The maximum throughput of <ph id="0" equiv="name" disp="name"/> is saved.</source>
@@ -8344,6 +8345,257 @@
       <segment>
         <source><ph id="0" equiv="what" disp="c.what"/>: <ph id="1" equiv="from" disp="c.from"/> → <ph id="2" equiv="to" disp="c.to"/></source>
         <target><ph id="0" equiv="what" disp="c.what"/>: <ph id="1" equiv="from" disp="c.from"/> → <ph id="2" equiv="to" disp="c.to"/></target>
+      </segment>
+    </unit>
+    <unit id="bastion.projects.note-zero">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-projects.ts:30</note>
+      </notes>
+      <segment>
+        <source>No repository distributed yet</source>
+        <target>Noch kein Repository verteilt</target>
+      </segment>
+    </unit>
+    <unit id="bastion.projects.note-one">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-projects.ts:32</note>
+      </notes>
+      <segment>
+        <source>1 repository distributed</source>
+        <target>1 Repository verteilt</target>
+      </segment>
+    </unit>
+    <unit id="bastion.projects.note">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-projects.ts:33</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="repositories"/> repositories distributed</source>
+        <target><ph id="0" equiv="count" disp="repositories"/> Repositories verteilt</target>
+      </segment>
+    </unit>
+    <unit id="bastion.projects.allow">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-projects.ts:70,72</note>
+      </notes>
+      <segment>
+        <source> Allow </source>
+        <target>Erlauben</target>
+      </segment>
+    </unit>
+    <unit id="projects.loading">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-projects.ts:86,87</note>
+        <note category="location">src/app/features/limits/limits-projects-tab.ts:54,55</note>
+        <note category="location">src/app/features/projects/projects-home.ts:63,64</note>
+      </notes>
+      <segment>
+        <source>Loading the projects.</source>
+        <target>Die Projekte werden geladen.</target>
+      </segment>
+    </unit>
+    <unit id="bastion.projects.nothing-yet">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-projects.ts:108,110</note>
+      </notes>
+      <segment>
+        <source>None yet</source>
+        <target>Noch keines</target>
+      </segment>
+    </unit>
+    <unit id="bastion.projects.remove">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-projects.ts:123,124</note>
+        <note category="location">src/app/features/bastions/bastion-projects.ts:364</note>
+      </notes>
+      <segment>
+        <source>Remove</source>
+        <target>Entfernen</target>
+      </segment>
+    </unit>
+    <unit id="bastion.projects.all">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-projects.ts:134,135</note>
+      </notes>
+      <segment>
+        <source>All <ph id="0" equiv="INTERPOLATION" disp="{{ totals().projects }}"/> projects</source>
+        <target>Alle <ph id="0" equiv="INTERPOLATION" disp="{{ totals().projects }}"/> Projekte</target>
+      </segment>
+    </unit>
+    <unit id="bastion.projects.none">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-projects.ts:145,148</note>
+        <note category="location">src/app/features/bastions/bastion-projects.ts:257</note>
+        <note category="location">src/app/features/bastions/bastion-projects.ts:262</note>
+      </notes>
+      <segment>
+        <source>No project may distribute through it yet.</source>
+        <target>Noch kein Projekt darf über sie verteilen.</target>
+      </segment>
+    </unit>
+    <unit id="bastion.projects.heading">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-projects.ts:222</note>
+        <note category="location">src/app/features/bastions/bastions.routes.ts:21</note>
+      </notes>
+      <segment>
+        <source>Projects</source>
+        <target>Projekte</target>
+      </segment>
+    </unit>
+    <unit id="bastion.help.projects">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-projects.ts:223</note>
+        <note category="location">src/app/features/bastions/bastion-projects.ts:404</note>
+      </notes>
+      <segment>
+        <source>The projects whose owners may distribute their repositories through this Bastion. A new Bastion allows none.</source>
+        <target>Die Projekte, deren Owner ihre Repositories über diese Bastion verteilen dürfen. Eine neue Bastion erlaubt keines.</target>
+      </segment>
+    </unit>
+    <unit id="bastion.projects.allow-label">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-projects.ts:224</note>
+      </notes>
+      <segment>
+        <source>Allow a project</source>
+        <target>Projekt erlauben</target>
+      </segment>
+    </unit>
+    <unit id="bastion.projects.filter">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-projects.ts:225</note>
+      </notes>
+      <segment>
+        <source>Filter projects</source>
+        <target>Projekte filtern</target>
+      </segment>
+    </unit>
+    <unit id="bastion.projects.caption">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-projects.ts:231</note>
+      </notes>
+      <segment>
+        <source>Projects of <ph id="0" equiv="name" disp="this.name()"/></source>
+        <target>Projekte von <ph id="0" equiv="name" disp="this.name()"/></target>
+      </segment>
+    </unit>
+    <unit id="bastion.projects.failed">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-projects.ts:254</note>
+      </notes>
+      <segment>
+        <source>The projects could not be read.</source>
+        <target>Die Projekte konnten nicht gelesen werden.</target>
+      </segment>
+    </unit>
+    <unit id="limits.projects.no-match">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-projects.ts:262</note>
+        <note category="location">src/app/features/limits/limits-projects-tab.ts:146</note>
+      </notes>
+      <segment>
+        <source>No project matches.</source>
+        <target>Kein Projekt passt.</target>
+      </segment>
+    </unit>
+    <unit id="bastion.projects.col-project">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-projects.ts:266</note>
+      </notes>
+      <segment>
+        <source>Project</source>
+        <target>Projekt</target>
+      </segment>
+    </unit>
+    <unit id="bastion.projects.col-repositories">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-projects.ts:267</note>
+      </notes>
+      <segment>
+        <source>Distributed here</source>
+        <target>Hier verteilt</target>
+      </segment>
+    </unit>
+    <unit id="bastion.projects.col-allowed">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-projects.ts:268</note>
+      </notes>
+      <segment>
+        <source>Allowed</source>
+        <target>Erlaubt</target>
+      </segment>
+    </unit>
+    <unit id="bastion.projects.more">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-projects.ts:289</note>
+      </notes>
+      <segment>
+        <source>and <ph id="0" equiv="count" disp="n"/> more</source>
+        <target>und <ph id="0" equiv="count" disp="n"/> weitere</target>
+      </segment>
+    </unit>
+    <unit id="bastion.projects.allowed-done">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-projects.ts:345</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="project" disp="project"/> may distribute through <ph id="1" equiv="name" disp="name"/>.</source>
+        <target><ph id="0" equiv="project" disp="project"/> darf über <ph id="1" equiv="name" disp="name"/> verteilen.</target>
+      </segment>
+    </unit>
+    <unit id="bastion.projects.remove-text-zero">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-projects.ts:357</note>
+      </notes>
+      <segment>
+        <source>None of its repositories is distributed there yet. Its owners can no longer choose this Bastion.</source>
+        <target>Noch keines seiner Repositories wird dort verteilt. Seine Owner können diese Bastion nicht mehr wählen.</target>
+      </segment>
+    </unit>
+    <unit id="bastion.projects.remove-text-one">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-projects.ts:359</note>
+      </notes>
+      <segment>
+        <source>Its distributed repository is no longer served there, within seconds. Its owner&apos;s choice goes with it: allowing the project again distributes nothing until they choose again.</source>
+        <target>Sein verteiltes Repository wird dort binnen Sekunden nicht mehr ausgeliefert. Die Auswahl seines Owners entfällt damit: Wird das Projekt wieder erlaubt, ist nichts verteilt, bis neu gewählt wird.</target>
+      </segment>
+    </unit>
+    <unit id="bastion.projects.remove-text">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-projects.ts:360</note>
+      </notes>
+      <segment>
+        <source>Its <ph id="0" equiv="count" disp="n"/> distributed repositories are no longer served there, within seconds. Their owners&apos; choices go with it: allowing the project again distributes nothing until they choose again.</source>
+        <target>Seine <ph id="0" equiv="count" disp="n"/> verteilten Repositories werden dort binnen Sekunden nicht mehr ausgeliefert. Die Auswahl ihrer Owner entfällt damit: Wird das Projekt wieder erlaubt, ist nichts verteilt, bis sie neu wählen.</target>
+      </segment>
+    </unit>
+    <unit id="bastion.projects.remove-title">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-projects.ts:362</note>
+      </notes>
+      <segment>
+        <source>Remove <ph id="0" equiv="project" disp="project"/> from <ph id="1" equiv="name" disp="name"/>?</source>
+        <target><ph id="0" equiv="project" disp="project"/> aus <ph id="1" equiv="name" disp="name"/> entfernen?</target>
+      </segment>
+    </unit>
+    <unit id="bastion.projects.removed-done">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-projects.ts:367</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="project" disp="project"/> removed from <ph id="1" equiv="name" disp="name"/>.</source>
+        <target><ph id="0" equiv="project" disp="project"/> aus <ph id="1" equiv="name" disp="name"/> entfernt.</target>
+      </segment>
+    </unit>
+    <unit id="bastion.projects.page-title">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-projects.ts:403</note>
+      </notes>
+      <segment>
+        <source>Projects of <ph id="0" equiv="name" disp="this.name()"/></source>
+        <target>Projekte von <ph id="0" equiv="name" disp="this.name()"/></target>
       </segment>
     </unit>
     <unit id="bastion.block-reason.refusals">
@@ -8646,7 +8898,7 @@
     </unit>
     <unit id="limits.title.blocks">
       <notes>
-        <note category="location">src/app/features/bastions/bastions.routes.ts:32</note>
+        <note category="location">src/app/features/bastions/bastions.routes.ts:39</note>
         <note category="location">src/app/features/limits/limits.routes.ts:40</note>
       </notes>
       <segment>
@@ -17000,16 +17252,6 @@
         <target>Projekte mit Download-Limits</target>
       </segment>
     </unit>
-    <unit id="projects.loading">
-      <notes>
-        <note category="location">src/app/features/limits/limits-projects-tab.ts:54,55</note>
-        <note category="location">src/app/features/projects/projects-home.ts:63,64</note>
-      </notes>
-      <segment>
-        <source>Loading the projects.</source>
-        <target>Die Projekte werden geladen.</target>
-      </segment>
-    </unit>
     <unit id="limits.projects.set">
       <notes>
         <note category="location">src/app/features/limits/limits-projects-tab.ts:78,80</note>
@@ -17035,15 +17277,6 @@
       <segment>
         <source>Filter projects</source>
         <target>Projekte filtern</target>
-      </segment>
-    </unit>
-    <unit id="limits.projects.no-match">
-      <notes>
-        <note category="location">src/app/features/limits/limits-projects-tab.ts:146</note>
-      </notes>
-      <segment>
-        <source>No project matches.</source>
-        <target>Kein Projekt passt.</target>
       </segment>
     </unit>
     <unit id="limits.projects.empty">
@@ -61606,7 +61839,7 @@
     </unit>
     <unit id="principal-field.failed">
       <notes>
-        <note category="location">src/app/shared/ui/principal-field.ts:516</note>
+        <note category="location">src/app/shared/ui/principal-field.ts:528</note>
       </notes>
       <segment>
         <source>The search failed. Change the text to try again.</source>
@@ -61615,7 +61848,7 @@
     </unit>
     <unit id="principal-field.searching">
       <notes>
-        <note category="location">src/app/shared/ui/principal-field.ts:517</note>
+        <note category="location">src/app/shared/ui/principal-field.ts:529</note>
       </notes>
       <segment>
         <source>Searching…</source>
@@ -61624,7 +61857,7 @@
     </unit>
     <unit id="principal-field.none-user">
       <notes>
-        <note category="location">src/app/shared/ui/principal-field.ts:522</note>
+        <note category="location">src/app/shared/ui/principal-field.ts:534</note>
       </notes>
       <segment>
         <source>Nobody matches “<ph id="0" equiv="text" disp="text"/>”. A person can be found after their first sign-in.</source>
@@ -61633,7 +61866,7 @@
     </unit>
     <unit id="principal-field.none">
       <notes>
-        <note category="location">src/app/shared/ui/principal-field.ts:523</note>
+        <note category="location">src/app/shared/ui/principal-field.ts:535</note>
       </notes>
       <segment>
         <source>Nothing matches “<ph id="0" equiv="text" disp="text"/>”.</source>
@@ -61642,7 +61875,7 @@
     </unit>
     <unit id="principal-field.more">
       <notes>
-        <note category="location">src/app/shared/ui/principal-field.ts:527</note>
+        <note category="location">src/app/shared/ui/principal-field.ts:539</note>
       </notes>
       <segment>
         <source>More match. Type more of the name.</source>
@@ -61651,7 +61884,7 @@
     </unit>
     <unit id="principal-field.one-match">
       <notes>
-        <note category="location">src/app/shared/ui/principal-field.ts:536</note>
+        <note category="location">src/app/shared/ui/principal-field.ts:548</note>
       </notes>
       <segment>
         <source>1 match.</source>
@@ -61660,7 +61893,7 @@
     </unit>
     <unit id="principal-field.matches">
       <notes>
-        <note category="location">src/app/shared/ui/principal-field.ts:536</note>
+        <note category="location">src/app/shared/ui/principal-field.ts:548</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="count" disp="n"/> matches.</source>
@@ -61669,7 +61902,7 @@
     </unit>
     <unit id="principal-field.list">
       <notes>
-        <note category="location">src/app/shared/ui/principal-field.ts:589</note>
+        <note category="location">src/app/shared/ui/principal-field.ts:601</note>
       </notes>
       <segment>
         <source>Matches for <ph id="0" equiv="field" disp="this.label()"/></source>
@@ -61678,7 +61911,7 @@
     </unit>
     <unit id="principal-field.chosen">
       <notes>
-        <note category="location">src/app/shared/ui/principal-field.ts:593</note>
+        <note category="location">src/app/shared/ui/principal-field.ts:605</note>
       </notes>
       <segment>
         <source>Chosen for <ph id="0" equiv="field" disp="this.label()"/></source>
@@ -61687,7 +61920,7 @@
     </unit>
     <unit id="principal-field.remove">
       <notes>
-        <note category="location">src/app/shared/ui/principal-field.ts:597</note>
+        <note category="location">src/app/shared/ui/principal-field.ts:609</note>
       </notes>
       <segment>
         <source>Remove <ph id="0" equiv="name" disp="this.primaryOf(c)"/></source>
@@ -61696,7 +61929,7 @@
     </unit>
     <unit id="principal-field.kind-group">
       <notes>
-        <note category="location">src/app/shared/ui/principal-field.ts:621</note>
+        <note category="location">src/app/shared/ui/principal-field.ts:634</note>
       </notes>
       <segment>
         <source>Group</source>
@@ -61705,7 +61938,7 @@
     </unit>
     <unit id="principal-field.kind-other">
       <notes>
-        <note category="location">src/app/shared/ui/principal-field.ts:622</note>
+        <note category="location">src/app/shared/ui/principal-field.ts:635</note>
       </notes>
       <segment>
         <source>CI identity</source>
@@ -61714,7 +61947,7 @@
     </unit>
     <unit id="principal-field.kind-technical-token">
       <notes>
-        <note category="location">src/app/shared/ui/principal-field.ts:623</note>
+        <note category="location">src/app/shared/ui/principal-field.ts:636</note>
       </notes>
       <segment>
         <source>Technical token</source>
@@ -61723,7 +61956,7 @@
     </unit>
     <unit id="principal-field.kind-ci-project">
       <notes>
-        <note category="location">src/app/shared/ui/principal-field.ts:624</note>
+        <note category="location">src/app/shared/ui/principal-field.ts:637</note>
       </notes>
       <segment>
         <source>CI project</source>
@@ -61732,7 +61965,7 @@
     </unit>
     <unit id="principal-field.kind-project-account">
       <notes>
-        <note category="location">src/app/shared/ui/principal-field.ts:626</note>
+        <note category="location">src/app/shared/ui/principal-field.ts:639</note>
       </notes>
       <segment>
         <source>Service account of <ph id="0" equiv="project" disp="c.project"/></source>
@@ -61741,7 +61974,7 @@
     </unit>
     <unit id="principal-field.kind-account">
       <notes>
-        <note category="location">src/app/shared/ui/principal-field.ts:627</note>
+        <note category="location">src/app/shared/ui/principal-field.ts:640</note>
       </notes>
       <segment>
         <source>Service account</source>

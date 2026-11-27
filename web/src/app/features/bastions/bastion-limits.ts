@@ -36,6 +36,7 @@ const MB = 1e6;
  *   throughput against it under the field; **Now**, the replicas' state, live with the list (R-UI-213), the read rate only where no
  *   maximum is set, and the callers limited and the addresses blocked with a link to the Bastion's **Blocks**, all on one line of
  *   parts (W-41 D27), or "No report in the last 5 minutes".
+ * - What the card puts after the rows (`[before-details]`: its section **Projects**, R-BAS-134).
  * - **Details**, closed, with its note: what the card puts first (`[details-start]`: the web interface's **Hide repositories**), the
  *   flood figures, the slots, the anonymous ceiling and the throughput by class (`<quader-bastion-limit-details>`), the addresses the Bastion connects from (R-UI-243), the link to the rules of the Bastion's
  *   place (R-UI-241), and what the card puts at its end (`[details-end]`: **Created**).
@@ -156,27 +157,32 @@ const MB = 1e6;
       }
     </quader-setting>
 
-    <quader-disclosure
-      class="details"
-      i18n-heading="@@bastion.details.heading"
-      heading="Details"
-      i18n-note="@@bastion.details.note"
-      note="Web interface, flood protection, addresses, rules"
-      [level]="3"
-      [(expanded)]="detailsOpen"
-    >
-      <!-- What the card puts first into Details: the web interface's expert setting (R-BAS-131). -->
-      <ng-content select="[details-start]" />
-      <quader-bastion-limit-details [bastion]="bastion()" [canWrite]="canLimits()" (changed)="changed.emit()" />
-      <quader-bastion-egress part="list" [bastion]="bastion()" (changed)="changed.emit()" />
-      @if (canReadRules()) {
-        <p class="rules-link">
-          <a [routerLink]="rulesLink()" i18n="@@bastion.limits.rules-link">Rules of this Bastion</a>
-        </p>
-      }
-      <!-- What the card puts last into Details: its creation time (Q-UI-1620). -->
-      <ng-content select="[details-end]" />
-    </quader-disclosure>
+    <!-- The closed sections after the rows: what the card puts first (its section Projects, W-41's C2), then Details. -->
+    <div class="sections">
+      <ng-content select="[before-details]" />
+
+      <quader-disclosure
+        class="details"
+        i18n-heading="@@bastion.details.heading"
+        heading="Details"
+        i18n-note="@@bastion.details.note"
+        note="Web interface, flood protection, addresses, rules"
+        [level]="3"
+        [(expanded)]="detailsOpen"
+      >
+        <!-- What the card puts first into Details: the web interface's expert setting (R-BAS-131). -->
+        <ng-content select="[details-start]" />
+        <quader-bastion-limit-details [bastion]="bastion()" [canWrite]="canLimits()" (changed)="changed.emit()" />
+        <quader-bastion-egress part="list" [bastion]="bastion()" (changed)="changed.emit()" />
+        @if (canReadRules()) {
+          <p class="rules-link">
+            <a [routerLink]="rulesLink()" i18n="@@bastion.limits.rules-link">Rules of this Bastion</a>
+          </p>
+        }
+        <!-- What the card puts last into Details: its creation time (Q-UI-1620). -->
+        <ng-content select="[details-end]" />
+      </quader-disclosure>
+    </div>
   `,
   styles: `
     :host {
@@ -240,8 +246,7 @@ const MB = 1e6;
     form {
       margin: 0;
     }
-    .details {
-      display: block;
+    .sections {
       margin-block-start: var(--quader-space-4);
     }
     .rules-link {

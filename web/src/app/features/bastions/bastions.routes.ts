@@ -2,7 +2,7 @@ import { inject } from '@angular/core';
 import { Router, Routes } from '@angular/router';
 import { capabilityGuard } from '../../core/auth-guard';
 
-/** R-BAS-007; a Bastion's limits page (R-UI-241) for the holders of `limits:read`. */
+/** R-BAS-007; a Bastion's limits page (R-UI-241) for the holders of `limits:read`, its projects page (Q-UI-1637) for those of `endpoints:read`. */
 export const BASTIONS_ROUTES: Routes = [
   {
     path: '',
@@ -14,6 +14,13 @@ export const BASTIONS_ROUTES: Routes = [
     path: ':name',
     pathMatch: 'full',
     redirectTo: ({ params }) => inject(Router).createUrlTree(['/admin/bastions'], { fragment: `bastion-${params['name'] ?? ''}` }),
+  },
+  {
+    // Every project a Bastion allows (R-BAS-134, Q-UI-1637): the card's section Projects shows ten and leads here.
+    path: ':name/projects',
+    title: $localize`:@@bastion.projects.heading:Projects`,
+    canActivate: [capabilityGuard('endpoints:read')],
+    loadComponent: () => import('./bastion-projects').then((m) => m.BastionProjectsPage),
   },
   {
     path: ':name/limits',

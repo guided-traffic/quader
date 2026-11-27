@@ -97,7 +97,7 @@ describe('Bastions screen (R-BAS-007)', () => {
     expect(text(partners.querySelector('[data-testid="bastion-description"]')!)).toBe('The partner network');
     // No term for the obvious: no Status, no Description, no facts' list.
     expect(partners.querySelector('dl.facts')).toBeNull();
-    const details = partners.querySelector('quader-bastion-limits quader-disclosure')!;
+    const details = partners.querySelector('quader-bastion-limits quader-disclosure.details')!;
     const created = details.querySelector('[data-testid="bastion-created"]')!;
     expect(text(created)).toMatch(/^Created \d+ months ago$/);
     expect(created.parentElement!.lastElementChild).toBe(created);
@@ -1040,7 +1040,7 @@ describe("A Bastion's limits, throughput, switches and state on its card (R-UI-2
   /** An administrator of the registrations and of the download limits. */
   const ADMIN = ['endpoints:read', 'endpoints:write', 'limits:read', 'limits:write'];
   const limitsOf = (root: HTMLElement, name: string): HTMLElement => card(root, name).querySelector<HTMLElement>('quader-bastion-limits')!;
-  const details = (root: HTMLElement, name: string): HTMLElement => limitsOf(root, name).querySelector<HTMLElement>('quader-disclosure')!;
+  const details = (root: HTMLElement, name: string): HTMLElement => limitsOf(root, name).querySelector<HTMLElement>('quader-disclosure.details')!;
   /** The section **Web interface** of a card, in its plain view (Q-UI-1616). */
   const switchesOf = (root: HTMLElement, name: string): HTMLElement => card(root, name).querySelector<HTMLElement>('quader-bastion-switches')!;
   const presetButtons = (el: HTMLElement): HTMLButtonElement[] => [...el.querySelectorAll<HTMLButtonElement>('.presets button')];
@@ -1572,7 +1572,7 @@ describe('Several Bastions, each a card that folds (R-UI-240)', () => {
 
   it('R-BAS-131 Hide repositories is the first row of Details, under the web interface, and sends its merge patch', async () => {
     const { fixture, root, get } = await renderScreen(BastionList, { setup: (g) => void ((g(BastionsApi) as FakeBastionsApi).bastions = [sampleBastion()]) });
-    const details = card(root, 'partners').querySelector<HTMLElement>('quader-bastion-limits quader-disclosure')!;
+    const details = card(root, 'partners').querySelector<HTMLElement>('quader-bastion-limits quader-disclosure.details')!;
     const group = details.querySelector<HTMLElement>('.body > quader-bastion-switches:first-child')!;
     expect(text(group.querySelector('h4')!)).toBe('Web interface');
     const hide = group.querySelector<HTMLElement>('[role="switch"]')!;

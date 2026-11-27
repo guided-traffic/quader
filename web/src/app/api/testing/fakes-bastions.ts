@@ -5,6 +5,9 @@ import {
   BastionContact,
   BastionDisableMode,
   BastionPreset,
+  BastionProject,
+  BastionProjectList,
+  BastionProjectQuery,
   BastionsApi,
   BastionView,
   BastionTokenCreated,
@@ -132,6 +135,18 @@ export function sampleBastion(over: Partial<Bastion> = {}): Bastion {
       sampleBastionContact(),
       sampleBastionContact({ replica: 'quader-bastion-7d9c-m8v2j', clientAddress: '198.51.100.21', contactAt: inDays(-2 / 1440) }),
     ],
+    ...over,
+  };
+}
+
+/** A project a Bastion allows (R-BAS-134), as the list answers it. */
+export function sampleBastionProject(over: Partial<BastionProject> = {}): BastionProject {
+  return {
+    project: 'platform',
+    displayName: 'Platform engineering',
+    allowedAt: inDays(-2),
+    allowedBy: 'root',
+    repositories: ['image-source', 'npm-open-source'],
     ...over,
   };
 }
@@ -348,6 +363,52 @@ export class FakeBastionsApi extends BastionsApi {
       createdAt: summary.createdAt,
       expiresAt: summary.expiresAt ?? '',
     };
+  }
+
+  /** The projects each Bastion allows, by its name (R-BAS-134); a Bastion not named allows none. */
+  allowed = new Map<string, BastionProject[]>();
+  /** The keys of the projects that exist: an allow of any other answers 404, as the server does. */
+  projectKeys = new Set(['platform', 'upstream', 'web', 'web-frontend']);
+  /** Each read of the projects: the Bastion and the query. */
+  readonly projectReads: { name: string; query: BastionProjectQuery }[] = [];
+
+  /** One page by key, the filter on key and display name, the totals of the whole list (R-BAS-134). */
+  override async projects(name: string, query: BastionProjectQuery = {}): Promise<BastionProjectList> {
+    this.fail();
+    this.find(name);
+    this.projectReads.push({ name, query });
+    const all = [...(this.allowed.get(name) ?? [])].sort((a, b) => a.project.localeCompare(b.project));
+    const q = (query.q ?? '').trim().toLowerCase();
+    const matching = all.filter((p) => !q || p.project.includes(q) || p.displayName.toLowerCase().includes(q));
+    const from = query.cursor ? matching.findIndex((p) => p.project > query.cursor!) : 0;
+    const start = from < 0 ? matching.length : from;
+    const limit = query.limit ?? 50;
+    const items = matching.slice(start, start + limit);
+    const more = start + limit < matching.length;
+    return {
+      items,
+      nextCursor: more ? items[items.length - 1]!.project : null,
+      totals: { projects: all.length, repositories: all.reduce((n, p) => n + p.repositories.length, 0) },
+    };
+  }
+
+  override async allowProject(name: string, project: string): Promise<void> {
+    this.fail();
+    this.find(name);
+    this.calls.push(`allowProject ${name} ${project}`);
+    if (!this.projectKeys.has(project)) throw problem(404, 'not_found');
+    const list = this.allowed.get(name) ?? [];
+    if (list.some((p) => p.project === project)) return;
+    this.allowed.set(name, [...list, sampleBastionProject({ project, displayName: project, allowedAt: new Date().toISOString(), repositories: [] })]);
+  }
+
+  override async removeProject(name: string, project: string): Promise<void> {
+    this.fail();
+    this.find(name);
+    this.calls.push(`removeProject ${name} ${project}`);
+    const list = this.allowed.get(name) ?? [];
+    if (!list.some((p) => p.project === project)) throw problem(404, 'not_found');
+    this.allowed.set(name, list.filter((p) => p.project !== project));
   }
 
   override async invalidateToken(name: string, id: string): Promise<void> {

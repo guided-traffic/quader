@@ -3978,6 +3978,7 @@ selected tab live in query parameters; a version of a package is an object with 
 | `/admin/bastions` | Bastions: one page with a card per registration ([bastion.md](bastion.md) Q-BAS-95) | [bastion.md](bastion.md) R-BAS-007 |
 | `/admin/bastions/{name}` | No page: the trail's step of a registration's name, which leads to its card on `/admin/bastions` | R-UI-241 |
 | `/admin/bastions/{name}/limits`, `/admin/bastions/{name}/limits/blocks` | A Bastion's download limits: the rules of its place and the blocks its replicas reported | R-UI-241 |
+| `/admin/bastions/{name}/projects` | Projects of a Bastion: every project it allows, with the filter, **Allow a project** and **Remove** | R-UI-240 |
 | `/admin/audit` | Audit log, with a project column | R-UI-037 |
 | `/admin/advisory-sources` | Advisory sources of the vulnerability data | [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-022 |
 | `/admin/endpoints`, `/admin/endpoints/{endpoint}`, `/admin/endpoints/{endpoint}/rules/new`, `/admin/endpoints/{endpoint}/rules/{name}` | Endpoints and exposure rules | [endpoints.md](endpoints.md) R-EP-017 |
@@ -10460,6 +10461,19 @@ aussieht, wenn du mit ihr fertig bist."):* the page is a list of cards that fold
   installation" only where no maximum is set, and "4 callers limited · 1 address blocked" linking to R-UI-241's **Blocks**, one line of
   parts that breaks between two parts and never inside one (W-41), or "No report in the last 5 minutes"). The cache's figures add each
   deployment's bucket once ([Q-UI-1643](#q-ui-1643--a-pair-of-deployments-under-one-registration-is-legitimate-on-the-card)).
+- **Projects** ([bastion.md](bastion.md) R-BAS-134, [Q-UI-1637](#q-ui-1637--a-bastions-projects-are-a-closed-section-of-its-card-of-ten-rows-and-a-page-of-all)),
+  a closed section after **Now** with its help ("The projects whose owners may distribute their repositories through this Bastion. A new
+  Bastion allows none."), the number of projects allowed and one line: "5 repositories distributed", "1 repository distributed", "No
+  repository distributed yet", or without a project "No project may distribute through it yet." (no number). Inside, for a holder of
+  `endpoints:write`, **Allow a project**, the shared search field of R-UI-150, which lists the matching projects with their mark, name and
+  key while one types, never a typed key, and **Allow**; then the table **Project** (mark, display name, key under it), **Distributed
+  here** (the keys of the repositories whose Owner chose the Bastion, the first five as links and "and 3 more", or "None yet"),
+  **Allowed** (when, and by whom under it) and **Remove**, whose dialog says "Its 3 distributed repositories are no longer served there,
+  within seconds. Their owners' choices go with it: allowing the project again distributes nothing until they choose again.". At most ten
+  rows; with more, "All 37 projects" leads to the Bastion's page **Projects of artifacts** (`/admin/bastions/<name>/projects`,
+  `endpoints:read`): the header with the help's sentence, the same form and table, unbounded, with **Filter projects** (by key or display
+  name, asked of the server) and **Load more**. A reader sees the list and no act; without a project, the section is its one line. The
+  list is read again every minute while it is seen (R-UI-213): an Owner's choice changes its counts.
 - **Details** (a closed disclosure with the note "Web interface, flood protection, addresses, rules"): first the group **Web interface**
   with the row **Hide repositories** ([bastion.md](bastion.md) R-BAS-131, its help "Visitors see the projects and their packages, not the
   repositories that hold them. Commands and download addresses still name a repository's key: clients need it."); the flood figures per address (anonymous,
@@ -10493,8 +10507,8 @@ aussieht, wenn du mit ihr fertig bist."):* the page is a list of cards that fold
   list every few seconds while a card is **Disabling** or **Disable not confirmed** (the badge turns to **Disabled** about a second after the
   last download), every minute otherwise.
 - **What a healthy card shows** (W-41's count): opened, with no help pinned and no section open, the head, the description, the three main
-  settings, the heading **Limits** and its four rows with the meter, and the closed sections **Details**, **Replicas** and **Tokens**, one
-  line each; every sentence that explains stands behind a sign or a tooltip.
+  settings, the heading **Limits** and its four rows with the meter, and the closed sections **Projects**, **Details**, **Replicas** and
+  **Tokens**, one line each; every sentence that explains stands behind a sign or a tooltip.
 - **Help behind the sign** (R-UI-267): what each row, group and list does; the help texts are those of W-39's plan, section 2.7. A
   sentence that only explains a setting is never a paragraph of the card.
 - **The warnings**, one line each in the warning colour with its icon, under what they concern
@@ -10558,6 +10572,15 @@ of [bastion-limits.ts](../../web/src/app/features/bastions/bastion-limits.ts)); 
 list passes `single` and reads fast while a card is disabling or unconfirmed, and opens a card just created
 ([bastion-list.ts](../../web/src/app/features/bastions/bastion-list.ts)).
 
+*Built on 2026-11-27 (W-41's C2):* **Projects** is `<quader-bastion-projects>` of
+[bastion-projects.ts](../../web/src/app/features/bastions/bastion-projects.ts), projected into `<quader-bastion-limits>` before
+**Details** (`[before-details]`), with `limit` ten (`CARD_PROJECTS`) on the card and none on the page `BastionProjectsPage` (route
+`:name/projects` of [bastions.routes.ts](../../web/src/app/features/bastions/bastions.routes.ts)); its section is the shared
+`<quader-disclosure>`, whose new `help` puts the sign after the toggle, outside the button; **Allow a project** is
+`<quader-principal-field>` with the kind `project`, whose matches are the admin area's suggestions of projects
+([principal-field.ts](../../web/src/app/shared/ui/principal-field.ts)); the reads and writes are `projects`, `allowProject` and
+`removeProject` of [bastions-api.ts](../../web/src/app/api/bastions-api.ts).
+
 Acceptance criteria:
 
 - Vitest ([bastions.spec.ts](../../web/src/app/features/bastions/bastions.spec.ts), "A Bastion's limits, throughput, switches and state
@@ -10592,6 +10615,14 @@ Acceptance criteria:
   sign tapped) and four registrations: one with warnings in every row, one declared, one never contacted, one healthy;
   `admin-bastions-states` in English and German, light and dark, at the three widths: five Bastions folded but the unconfirmed one, the
   healthy pair `artifacts` opened, the dialog **Disable…**, and a declared registration's **Delete** with its reason pinned.
+- Vitest, W-41's C2 ([bastion-projects.spec.ts](../../web/src/app/features/bastions/bastion-projects.spec.ts), "A Bastion's projects on
+  its card and its page (R-UI-240, R-BAS-134)", seven cases, about 2.7 s with three axe passes, a dozen rows at most but the page's sixty of a few bytes): the
+  section's line with its count and help, the line without a project, its place before **Details**, axe; a row's mark, name, key, the
+  first five keys and "and 2 more", "None yet", when and by whom; **Allow a project** through the search and **Allow**, the field emptied
+  and the listed project no longer offered; **Remove** with its dialog; eleven projects show ten and "All 11 projects" to the page; the
+  page with its header, fifty rows, **Load more**, the filter asked of the server, axe; a reader's list without acts and the plain line.
+- Rendered (rule 11), W-41's C2: `admin-bastions-projects` (the section opened with two projects and empty, and the search of **Allow a
+  project**) and `admin-bastion-projects` (the page with twelve), English and German, light and dark, at 1,440, 1,024 and 390 px.
 
 ### R-UI-241 · A Bastion's limits page
 Priority: **MVP** · Covers: quader-only
@@ -32762,6 +32793,34 @@ configuration fixes, each with a paragraph of its own.
 before the control's own handlers and a router link's. A switch has no place in the audit and no input for it yet; the first place that
 needs one gives `<quader-switch>` the reason for its inner button. **Applied in the spec:** R-UI-270 (new), R-UI-268 (its pointer). The
 style guide's "A disabled destructive action says why it is disabled, next to the button" now says "in its tooltip (`quaderUnavailable`)".
+
+### Q-UI-1637 · A Bastion's projects are a closed section of its card of ten rows, and a page of all
+
+Status: **Decided by the development agent on 2026-11-27** (W-41's plan, D12's screen part, built by C2) — selected from the options
+below; the owner reviews it at the walkthrough. R-UI-240, [bastion.md](bastion.md) R-BAS-134,
+[Q-BAS-519](bastion.md#q-bas-519--an-administrator-allows-projects-per-bastion-and-a-new-bastion-allows-none).
+
+Context: the owner: "Ein Admin muss also freigeben, welche Projekte ihre Repos über den Bastion zur Verteilung freigeben dürfen", and of
+the card: "Ich weiß nicht wie du es schaffst, dass jede Seite immer so gnadenlos überladen aussieht, wenn du mit ihr fertig bist." The
+list lives where it is used without lengthening the default card; an enterprise allows hundreds of projects.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A closed section **Projects** of the card with its count and one line; opened, **Allow a project** and at most ten rows, with "All 37 projects" to the Bastion's page `/admin/bastions/<name>/projects`, the same component unbounded with a filter and **Load more** (chosen) | | One line on the default card; the common case of a few projects is done on the card; the page bears hundreds; one page scrolls (R-UI-215) | Two places for one list |
+| (b) Only a page, linked from a line of the card | | Nothing to open on the card | A detour for two or three projects |
+| (c) The section unbounded | | One place | Hundreds of rows on the page of every Bastion |
+
+**Choice:** (a). The section stands after **Now** and before **Details**, closed; its help ("The projects whose owners may distribute
+their repositories through this Bastion. A new Bastion allows none.") is the sign after its line, outside the toggle (the shared
+`<quader-disclosure>`'s `help`). Its line counts the repositories distributed (the API's `totals`), or says "No project may distribute
+through it yet." without a number. A project is chosen from the matches of the shared search field, which lists the projects with their
+mark, name and key while one types (R-UI-150), never typed as a key; the projects listed are not offered again. **Distributed here** names
+the first five keys and counts the rest, so a project of hundreds of repositories keeps its row short. **Remove** asks, naming how many
+distributed repositories stop and that their Owners' choices go with it (R-BAS-134's transaction). A reader without `endpoints:write`
+sees the list and no act; without a project, the section is its one line with nothing to open. The section and the page read again every
+minute while seen (R-UI-213). **Applied in the spec:** R-UI-240; code:
+[bastion-projects.ts](../../web/src/app/features/bastions/bastion-projects.ts), [disclosure.ts](../../web/src/app/shared/ui/disclosure.ts),
+[principal-field.ts](../../web/src/app/shared/ui/principal-field.ts).
 
 ### Q-UI-1640 · A Bastion's card folds to its head; the viewer's choice is kept in the browser
 

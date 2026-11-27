@@ -7816,9 +7816,12 @@ the statements of [bastion_distribution.sql](../../internal/meta/postgres/querie
 the feed's mapping of [feed.go](../../internal/bastionmain/feed.go), the member of [bastions.go](../../internal/repository/bastions.go),
 the move's part of [move.go](../../internal/project/move.go), [bastion_projects_api.go](../../internal/api/v1/bastion_projects_api.go)
 and the OpenAPI document, the events of [events_bastion_distribution.go](../../internal/audit/events_bastion_distribution.go).
+*Built on 2026-11-27 (W-41's C2):* the administrator's list on the screen, the card's section **Projects** and the Bastion's page
+**Projects of <name>** ([api-and-ui.md](api-and-ui.md) R-UI-240,
+[Q-UI-1637](api-and-ui.md#q-ui-1637--a-bastions-projects-are-a-closed-section-of-its-card-of-ten-rows-and-a-page-of-all),
+[bastion-projects.ts](../../web/src/app/features/bastions/bastion-projects.ts)).
 *Not built:* the ceiling (W-41's B2, [authorization.md](authorization.md)): nothing decides a request through a Bastion on the
-distribution yet, so a Bastion serves what it served before; the card's section **Projects** (W-41's C2) and the repository's group
-**Bastions** with its mark (W-41's D1).
+distribution yet, so a Bastion serves what it served before; the repository's group **Bastions** with its mark (W-41's D1).
 
 Acceptance criteria:
 

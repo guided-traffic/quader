@@ -132,7 +132,16 @@ The entry must equal the Bastion's `config.server.base_url`: the same scheme and
 
 **Public** is your main installation's level: public on its network, usually your intranet. What leaves it through a Bastion is granted twice. You, as an administrator, allow the projects whose repositories may be distributed through a Bastion; a new Bastion allows none. A project's Owner then chooses, per repository, the Bastions that distribute it, among those that allow the project. Not every repository that is public on the intranet goes to the internet, and a private repository that a partner reads through a Bastion with his token needs the same choice.
 
-**This release stores the two lists; it does not yet hold a Bastion to them.** Until the next step lands, a Bastion still serves what each caller's credential may read on the main installation, as before. The card's section **Projects** and the repository's **Bastions** in its settings are not there yet either: use the API below.
+**This release stores the two lists; it does not yet hold a Bastion to them.** Until the next step lands, a Bastion still serves what each caller's credential may read on the main installation, as before. The repository's **Bastions** in its settings is not there yet either: an Owner's choice is made through the API (`bastions` of the repository).
+
+On the Bastion's card in **Admin area › Bastions**, the closed section **Projects** says how many projects it allows and how many repositories it distributes. Open it:
+
+- **Allow a project:** type a part of the project's name or key into **Allow a project**, choose the project from the list, and select **Allow**. It distributes nothing by itself: the project's Owners can now choose the Bastion for their repositories.
+- **Distributed here** lists the repositories whose Owner chose the Bastion; "None yet" until one does.
+- **Remove** takes the project off. Its distributed repositories are no longer served there, and their Owners' choices go with it.
+- The card lists at most ten projects; **All 37 projects** under them opens **Projects of artifacts**, the Bastion's page of every project, with a filter by name or key.
+
+The same through the API:
 
 - **Allow a project:** `PUT /api/v1/bastions/<name>/projects/<project>` (the permission `endpoints:write`). It distributes nothing by itself; a second call changes nothing. The audit event is `bastion.project.allowed`.
 - **See what is allowed:** `GET /api/v1/bastions/<name>/projects` (`endpoints:read`) lists the projects with the keys of the repositories whose Owner chose the Bastion, and `totals` counts them all.

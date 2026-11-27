@@ -1,6 +1,7 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { Component, Injector, effect, inject, input, model, untracked } from '@angular/core';
 import { DisclosureMemory } from '../../core/disclosure-memory';
+import { Help } from './help';
 
 let nextDisclosureId = 1;
 
@@ -46,9 +47,9 @@ let nextDisclosureId = 1;
       @if (inline()) {
         <ng-container [ngTemplateOutlet]="toggle" />
       } @else if (level() === 3) {
-        <h3 class="heading"><ng-container [ngTemplateOutlet]="toggle" /></h3>
+        <h3 class="heading" [class.with-help]="!!help()"><ng-container [ngTemplateOutlet]="toggle" /><quader-help [text]="help()" [about]="heading()" /></h3>
       } @else {
-        <h2 class="heading"><ng-container [ngTemplateOutlet]="toggle" /></h2>
+        <h2 class="heading" [class.with-help]="!!help()"><ng-container [ngTemplateOutlet]="toggle" /><quader-help [text]="help()" [about]="heading()" /></h2>
       }
       @if (hint()) {
         <p class="hint">{{ hint() }}</p>
@@ -59,7 +60,7 @@ let nextDisclosureId = 1;
       </div>
     </div>
   `,
-  imports: [NgTemplateOutlet],
+  imports: [Help, NgTemplateOutlet],
   styles: `
     :host {
       display: block;
@@ -76,6 +77,11 @@ let nextDisclosureId = 1;
       margin: 0;
       font-size: var(--quader-text-size);
       font-weight: 600;
+    }
+    /* The sign (24 px) on the middle of the toggle's line, making it no taller (R-UI-175). */
+    .heading.with-help {
+      display: flex;
+      align-items: center;
     }
     .toggle,
     .inline-toggle {
@@ -152,6 +158,11 @@ export class Disclosure {
   readonly heading = input.required<string>();
   /** One muted line under the heading that says what is inside. */
   readonly hint = input('');
+  /**
+   * What the section is, behind the help sign after the toggle (R-UI-267): outside the button, so the sign is no control inside a
+   * control. Empty shows none.
+   */
+  readonly help = input('');
   /** A short state after the heading, such as "Unsaved changes" of a closed section that holds one (R-UI-087). */
   readonly note = input('');
   /**

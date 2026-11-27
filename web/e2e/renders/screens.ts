@@ -70,7 +70,18 @@ import {
   severalConnections,
   twoForThePage,
 } from './storage';
-import { auditDataKeys, bastionLimits, bastionLimitsPage, bastionStates, bastionsHandover, bastionsRead, forbiddenLink, seededBastion } from './bastions';
+import {
+  auditDataKeys,
+  bastionLimits,
+  bastionLimitsPage,
+  bastionProjects,
+  bastionProjectsPage,
+  bastionStates,
+  bastionsHandover,
+  bastionsRead,
+  forbiddenLink,
+  seededBastion,
+} from './bastions';
 import { auditRows } from './audit-rows';
 import { downloadsWalk } from './downloads';
 import { cachedDeb, cachedNpm } from './cached';
@@ -3985,6 +3996,9 @@ export const screens: readonly Screen[] = [
   { id: 'admin-bastions-limits', path: '/ui/admin/bastions', kinds: admins, walk: bastionLimits, de: true },
   // Several Bastions, each a card that folds; the head's state, the disable's dialog and a declared registration's Delete (W-41, R-UI-240).
   { id: 'admin-bastions-states', path: '/ui/admin/bastions', kinds: admins, walk: bastionStates, de: true },
+  // A Bastion's projects (W-41's C2, Q-UI-1637): the card's section empty and with two, its search, and the page with twelve.
+  { id: 'admin-bastions-projects', path: '/ui/admin/bastions', kinds: admins, walk: bastionProjects, de: true },
+  { id: 'admin-bastion-projects', path: `/ui/admin/bastions/${seededBastion.name}/projects`, kinds: admins, walk: bastionProjectsPage, de: true },
   {
     id: 'admin-bastion-limits',
     path: `/ui/admin/bastions/${seededBastion.name}/limits`,

@@ -317,6 +317,10 @@ At most four builders at once (rule 10 of the project plan). The waves are the o
   URL each); `contactHealth` reports `deployments` and `silentDeployments` instead of a base-URL warning, and `bastionState` takes each
   deployment's shared bucket once and adds them. **Now** is one line of parts; **Hide repositories** is `bastion-switches.ts` with
   `part="details"`, projected first into **Details** (`[details-start]`).
+- **Added by W-41 C2** (2026-11-27, R-UI-240, Q-UI-1637, bastion.md R-BAS-134): the closed section **Projects** before **Details**
+  (`[before-details]` of `bastion-limits.ts`), [bastion-projects.ts](../../web/src/app/features/bastions/bastion-projects.ts), and the
+  page `/admin/bastions/<name>/projects` of the same component without a bound. It reads `GET …/projects` (ten rows on the card, pages of
+  fifty on the page) and writes with `PUT` and `DELETE …/projects/{project}`; its own `live()` reads it every minute.
 
 ### E13 · Egress addresses on the registration
 

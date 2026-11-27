@@ -24,6 +24,7 @@ import { BastionTokenDialog, BastionTokenDialogData, BastionTokenDraft } from '.
 import { BastionFold, cardWarns } from './bastion-fold';
 import { BastionHandover } from './bastion-handover';
 import { BastionLimits } from './bastion-limits';
+import { BastionProjects, CARD_PROJECTS } from './bastion-projects';
 import { BastionSwitches } from './bastion-switches';
 import { ContactHealth, Deployment, TokenHealth, contactHealth, deployments, headHosts, newestContact, tokenExpiry, tokenHealth } from './bastion-state';
 import { ADDRESS_MARKS, PartsText } from '../../shared/break-parts';
@@ -62,8 +63,8 @@ export function stateBadge(state: Bastion['state']): StateBadge {
  * disable drains, and **Delete**, offered unavailable with its reason on a declared registration (R-UI-270). Under the head, folding with
  * the card, the description; the main settings, the rows of its web interface (`<quader-bastion-switches>`, R-BAS-102, R-BAS-104) and of
  * its direct reads from the object store (`<quader-bastion-handover>`, R-BAS-071); **Limits** with **Details** (its first group the web
- * interface's **Hide repositories**, R-BAS-131) and, at their end, **Created** (`<quader-bastion-limits>`, R-UI-240, R-UI-243); and the
- * closed sections **Replicas**, grouped by deployment where there are several, and **Tokens** with **Issue token** or **Rotate token** and
+ * interface's **Hide repositories**, R-BAS-131) and, at their end, **Created** (`<quader-bastion-limits>`, R-UI-240, R-UI-243), with the
+ * closed section **Projects** before **Details** (`<quader-bastion-projects>`, R-BAS-134, Q-UI-1637); and the closed sections **Replicas**, grouped by deployment where there are several, and **Tokens** with **Issue token** or **Rotate token** and
  * **Invalidate** per token (Q-UI-1642), one line each, which turn into a warning and open by themselves (Q-UI-1622, Q-UI-1623). A change
  * reads the registration for its `ETag` first, because the list carries none (R-API-012). A token's value is shown once through
  * `<quader-token-secret>` and lives in this card's signal only (R-UI-043). Which acts show follows the capabilities of R-BAS-004:
@@ -75,6 +76,7 @@ export function stateBadge(state: Bastion['state']): StateBadge {
     Busy,
     BastionHandover,
     BastionLimits,
+    BastionProjects,
     BastionSwitches,
     DataTable,
     Disclosure,
@@ -187,6 +189,8 @@ export function stateBadge(state: Bastion['state']): StateBadge {
           <quader-bastion-limits [bastion]="bastion()" (changed)="changed.emit()">
             <!-- The first group of Details: what the web interface hides (R-BAS-131, W-40's P6). -->
             <quader-bastion-switches details-start part="details" [bastion]="bastion()" (changed)="changed.emit()" />
+            <!-- The projects it allows, one closed line before Details (R-BAS-134, Q-UI-1637). -->
+            <quader-bastion-projects before-details [name]="bastion().name" [limit]="cardProjects" />
             <p details-end class="created" data-testid="bastion-created" i18n="@@bastion.created">Created <quader-time-ago [at]="bastion().createdAt" absolute="title" /></p>
           </quader-bastion-limits>
 
@@ -538,6 +542,8 @@ export class BastionCard {
   protected readonly deleteReason = $localize`:@@bastion.delete.helm:Set in bastions.declared of the Helm configuration: remove it there first, then delete it here.`;
   /** Why a declared registration's token is not issued or rotated here (R-BAS-133, Q-BAS-517). */
   protected readonly rotateReason = $localize`:@@bastion.token.rotate.helm:Its token is set in bastions.declared of the Helm configuration: put a new value into its Secret.`;
+  /** The rows the section Projects shows at most (Q-UI-1637). */
+  protected readonly cardProjects = CARD_PROJECTS;
   /** The declared token's name, the screen's whatever the server stored (Q-UI-1629). */
   protected readonly helmTokenName = $localize`:@@bastion.token.helm:Token of the Helm configuration`;
 
