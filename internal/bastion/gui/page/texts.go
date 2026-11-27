@@ -10,6 +10,9 @@ type Texts struct {
 	LatestVersion, Published, Licenses, Keywords, Documentation, Package   string
 	// SetupClient is the title of a repository's page Set up client (R-BAS-129).
 	SetupClient string
+	// Files heads a folder's entries; FilesSentence is the description of a generic repository's folders and files (R-UI-229).
+	Files         string
+	FilesSentence string
 	// PackagesIn is a project's list ("Packages in web"), VersionsOf a package's versions ("Versions of ui").
 	PackagesIn, VersionsOf func(string) string
 	// The page of a refusal of the class gui (R-BAS-123).
@@ -24,6 +27,7 @@ func TextsOf(locale string) Texts {
 			NotFound: "Seite nicht gefunden", NotFoundText: "Unter dieser Adresse wird nichts angeboten.",
 			LatestVersion: "Neueste Version", Published: "Veröffentlicht", Licenses: "Lizenzen", Keywords: "Schlagwörter",
 			Documentation: "Dokumentation", Package: "Paket", SetupClient: "Client einrichten",
+			Files: "Dateien", FilesSentence: "Die Dateien, die in diesem Repository veröffentlicht sind.",
 			PackagesIn: func(p string) string { return "Pakete in " + p },
 			VersionsOf: func(n string) string { return "Versionen von " + n },
 			TooManyText: func(s int64) string {
@@ -42,6 +46,7 @@ func TextsOf(locale string) Texts {
 		NotFound: "Page not found", NotFoundText: "Nothing is offered at this address.",
 		LatestVersion: "Latest version", Published: "Published", Licenses: "Licenses", Keywords: "Keywords",
 		Documentation: "Documentation", Package: "Package", SetupClient: "Set up client",
+		Files: "Files", FilesSentence: "The files published in this repository.",
 		PackagesIn: func(p string) string { return "Packages in " + p },
 		VersionsOf: func(n string) string { return "Versions of " + n },
 		TooManyText: func(s int64) string {

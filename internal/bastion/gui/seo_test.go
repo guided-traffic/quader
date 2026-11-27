@@ -152,6 +152,12 @@ func TestR_BAS_121_APagesHeadAndTextComeFromTheCatalogue(t *testing.T) {
 		{"/ui/en/legal/imprint", "Imprint – Quader", base + "/ui/en/legal/imprint", "WebPage", false},
 		// A public repository's page Set up client is found and never indexed (R-BAS-129, Q-BAS-401), its canonical address without the client.
 		{"/ui/de/projects/acme/repositories/npm/setup?client=pnpm", "Client einrichten – Quader", base + "/ui/de/projects/acme/repositories/npm/setup", "WebPage", true},
+		// A public generic repository's folders and files are found and indexed (R-UI-229, Q-BAS-483), the root under the
+		// repository's address, every query dropped.
+		{"/ui/en/projects/tools/repositories/downloads", "downloads – Quader", base + "/ui/en/projects/tools/repositories/downloads", "WebPage", false},
+		{"/ui/en/projects/tools/repositories/downloads/files", "downloads – Quader", base + "/ui/en/projects/tools/repositories/downloads", "WebPage", false},
+		{"/ui/de/projects/tools/repositories/downloads/files/tools?sort=name", "tools – Quader", base + "/ui/de/projects/tools/repositories/downloads/files/tools", "WebPage", false},
+		{"/ui/en/projects/tools/repositories/downloads/files/tools/agent.tar.gz", "agent.tar.gz – Quader", base + "/ui/en/projects/tools/repositories/downloads/files/tools/agent.tar.gz", "WebPage", false},
 	}
 	for _, c := range cases {
 		rec := do(h, http.MethodGet, c.target)
@@ -169,12 +175,28 @@ func TestR_BAS_121_APagesHeadAndTextComeFromTheCatalogue(t *testing.T) {
 	if body := do(h, http.MethodGet, "/ui/de/legal/imprint").Body.String(); !strings.Contains(body, "Beispiel GmbH") {
 		t.Errorf("the imprint's text:\n%s", body)
 	}
+	// A folder's text links its entries, whether the listing names an entry by its path or by its name; a file's way leads back
+	// through its folders.
+	if body := do(h, http.MethodGet, "/ui/en/projects/tools/repositories/downloads").Body.String(); !strings.Contains(body, `<a href="/ui/en/projects/tools/repositories/downloads/files/tools">tools</a>`) ||
+		!strings.Contains(body, "The files published in this repository.") {
+		t.Errorf("the root's text:\n%s", body)
+	}
+	if body := do(h, http.MethodGet, "/ui/de/projects/tools/repositories/downloads/files/tools").Body.String(); !strings.Contains(body, `<a href="/ui/de/projects/tools/repositories/downloads/files/tools/agent.tar.gz">agent.tar.gz</a>`) ||
+		!strings.Contains(body, "<h2>Dateien</h2>") {
+		t.Errorf("the folder's text:\n%s", body)
+	}
+	if body := do(h, http.MethodGet, "/ui/en/projects/tools/repositories/downloads/files/tools/agent.tar.gz").Body.String(); !strings.Contains(body, `<a href="/ui/en/projects/tools/repositories/downloads">tools/downloads</a>`) ||
+		!strings.Contains(body, `<a href="/ui/en/projects/tools/repositories/downloads/files/tools">tools</a>`) || !strings.Contains(body, "<h1>agent.tar.gz</h1>") {
+		t.Errorf("the file's text:\n%s", body)
+	}
 
 	// What the catalogue does not show is not found: the application says so, and a crawler drops the address (D15).
 	for _, target := range []string{
 		"/ui/en/nothing", "/ui/en/index.html", "/ui/en/projects/web/packages/npm/@acme/ui", "/ui/en/projects/acme/packages/npm/@acme/gone",
 		"/ui/en" + pkg + "@9.9.9", "/ui/en/projects/upstream/packages", "/ui/en/projects/nobody/packages", "/ui/en/legal/privacy",
 		"/ui/en/projects/acme/packages/npm/@acme/ui@1.0.0/-/versions", "/ui/en/projects/acme/repositories/internal/setup",
+		"/ui/en/projects/tools/repositories/downloads/files/gone.bin", "/ui/en/projects/acme/repositories/npm",
+		"/ui/en/projects/tools/repositories/hidden/files/tools",
 	} {
 		rec := do(h, http.MethodGet, target)
 		body := rec.Body.String()

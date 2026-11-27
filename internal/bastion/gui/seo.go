@@ -57,8 +57,76 @@ func (h *Handler) describe(ctx context.Context, a pg.Address) (pg.Page, int) {
 		return h.legalPage(a)
 	case pg.Setup:
 		return h.setupPage(a)
+	case pg.Files:
+		return h.filesPage(ctx, a)
 	}
 	return pg.Page{}, http.StatusNotFound
+}
+
+// filesPage is a public generic repository's folder or file (R-UI-229, Q-BAS-483): found while the catalogue holds the folder's listing
+// or the file's description, indexed like a package's page, its canonical address the one spelling of the path (the root is the
+// repository's own address). A folder's text links its entries, the first maxListed; a file's names it. Only `path` and `kind` of the
+// main installation's shapes are read.
+func (h *Handler) filesPage(ctx context.Context, a pg.Address) (pg.Page, int) {
+	at := func(kind iface.CatalogueKind) iface.CataloguePath {
+		return iface.CataloguePath{Kind: kind, Project: a.Project, Repository: a.Repository, File: a.Path}
+	}
+	var folder struct {
+		Items []struct {
+			Path string `json:"path"`
+			Kind string `json:"kind"`
+		} `json:"items"`
+	}
+	isFolder := h.readJSON(ctx, at(iface.CatalogueFolder), &folder)
+	if !isFolder {
+		var file struct {
+			Path string `json:"path"`
+		}
+		if a.Path == "" || !h.readJSON(ctx, at(iface.CatalogueFile), &file) {
+			return pg.Page{}, http.StatusNotFound
+		}
+	}
+	t := pg.TextsOf(a.Locale)
+	root := pg.Address{Kind: pg.Files, Project: a.Project, Repository: a.Repository}
+	p := h.base(a, a.Route(), nil)
+	p.Title, p.Heading = a.Repository, a.Repository
+	if a.Path != "" {
+		p.Title = a.Path[strings.LastIndexByte(a.Path, '/')+1:]
+		p.Heading = p.Title
+	}
+	p.Lead, p.Description = t.FilesSentence, t.FilesSentence
+	p.LD = webPage(p.Title, p.Canonical)
+	p.Crumbs = []pg.Link{{Text: t.Projects, Href: local(a.Locale, "")}}
+	if a.Path != "" {
+		p.Crumbs = append(p.Crumbs, pg.Link{Text: a.Project + "/" + a.Repository, Href: local(a.Locale, root.Route())})
+		segs := strings.Split(a.Path, "/")
+		for i := 1; i < len(segs); i++ {
+			parent := root
+			parent.Path = strings.Join(segs[:i], "/")
+			p.Crumbs = append(p.Crumbs, pg.Link{Text: segs[i-1], Href: local(a.Locale, parent.Route())})
+		}
+	}
+	if isFolder {
+		s := pg.Section{Heading: t.Files}
+		for _, it := range folder.Items {
+			path := strings.Trim(it.Path, "/")
+			if path == "" {
+				continue
+			}
+			// An entry names its path in the repository, or its name in the folder.
+			if a.Path != "" && !strings.HasPrefix(path, a.Path+"/") {
+				path = a.Path + "/" + path
+			}
+			entry := root
+			entry.Path = path
+			s.Links = append(s.Links, pg.Link{Text: path[strings.LastIndexByte(path, '/')+1:], Href: local(a.Locale, entry.Route())})
+			if len(s.Links) == maxListed {
+				break
+			}
+		}
+		p.Sections = []pg.Section{s}
+	}
+	return p, http.StatusOK
 }
 
 // setupPage is a public repository's page Set up client (R-BAS-129): found while the public set holds the repository, never indexed

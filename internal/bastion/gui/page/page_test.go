@@ -45,6 +45,17 @@ func TestR_BAS_121_TheAddressGrammarIsTheApplicationsRoutes(t *testing.T) {
 			"projects/web/repositories/raw%20files/setup",
 		},
 		{"projects/web/repositories/raw/setup/x", "", Address{Project: "web"}, ""},
+		// A public generic repository's folders and files (R-UI-229, Q-BAS-483): the repository's address and `files` alone are the
+		// root, whose one spelling is the repository's; a folder named setup is a folder.
+		{"projects/web/repositories/raw%20files", "", Address{Kind: Files, Project: "web", Repository: "raw files"}, "projects/web/repositories/raw%20files"},
+		{"projects/web/repositories/raw/files/", "", Address{Kind: Files, Project: "web", Repository: "raw"}, "projects/web/repositories/raw"},
+		{
+			"projects/web/repositories/raw/files/tools/setup/agent%20v1.tar.gz", "sort=name",
+			Address{Kind: Files, Project: "web", Repository: "raw", Path: "tools/setup/agent v1.tar.gz"},
+			"projects/web/repositories/raw/files/tools/setup/agent%20v1.tar.gz",
+		},
+		{"projects/web/repositories/raw/other", "", Address{Project: "web"}, ""},
+		{"projects/web/repositories/raw/files/a/../b", "", Address{}, ""},
 		{"legal/other", "", Address{}, ""},
 		{"projects/web/packages/npm", "", Address{Project: "web"}, ""},
 		{"projects/web/packages/npm/ui@1/-/versions", "", Address{Project: "web", Format: "npm"}, ""},

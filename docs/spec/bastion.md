@@ -6945,7 +6945,11 @@ Priority: **P1** · Covers: quader-only
   (`tab=vulnerabilities`, a `severity`) and a list with a search, a filter, a sort or a cursor are `noindex`, canonical without their
   query; every other query is dropped from the canonical address; a documentation entry's keeps `tab` and `doc`. A repository's page Set
   up client is found while the public set holds the repository, titled "Set up client", and never indexed (R-BAS-129,
-  [Q-BAS-401](#q-bas-401--a-page-set-up-client-of-the-bastion-is-found-and-never-indexed)). While the replica holds
+  [Q-BAS-401](#q-bas-401--a-page-set-up-client-of-the-bastion-is-found-and-never-indexed)). A public generic repository's folder or file
+  (`projects/<project>/repositories/<key>`, the root, and `…/files/<path…>`, R-UI-229) is found while the catalogue holds its listing or
+  its description, titled by its name (the root by the repository's key), indexed, its canonical address the one spelling of the path
+  without a query; a folder's text links its entries, the first 100
+  ([Q-BAS-483](#q-bas-483--a-public-generic-repositorys-folders-and-files-are-pages-a-crawler-finds-and-indexes)). While the replica holds
   no state a page is `503` with `Retry-After: 30`, `noindex` and the title "Quader" alone (R-BAS-117).
 - **Cost** ([Q-BAS-410](#q-bas-410--a-pages-head-and-text-are-written-per-request-without-a-cache)). Two or three documents of the
   catalogue per page, as a person's browser reads them a moment later; nothing is kept per address.
@@ -6958,11 +6962,12 @@ Acceptance criteria:
 
 - Unit ([seo_test.go](../../internal/bastion/gui/seo_test.go), milliseconds): `TestR_BAS_121_APagesHeadAndTextComeFromTheCatalogue` (a
   package's page in German with every member of its head and text; a version's, the versions', a documentation entry's, a list's, the
-  start's and the imprint's title, canonical address, JSON-LD type and robots rule; `tab=vulnerabilities` and `severity` noindex, a list's
-  search noindex, other queries dropped; nine addresses `404` with `noindex` and no canonical; a README the catalogue does not show is not
+  start's and the imprint's title, canonical address, JSON-LD type and robots rule; a generic repository's root, a folder and a file
+  found and indexed, a folder's entries and a file's way back in the text; `tab=vulnerabilities` and `severity` noindex, a list's
+  search noindex, other queries dropped; thirteen addresses `404` with `noindex` and no canonical; a README the catalogue does not show is not
   in the text; not ready `503`; the text hidden under the page's nonce; a description with `</script>` closes nothing; a sentinel in a
   version's `metadata` is on no page); [page_test.go](../../internal/bastion/gui/page/page_test.go):
-  `TestR_BAS_121_TheAddressGrammarIsTheApplicationsRoutes` (fourteen addresses, the one spelling of a route, the absolute address).
+  `TestR_BAS_121_TheAddressGrammarIsTheApplicationsRoutes` (twenty-one addresses, the one spelling of a route, the absolute address).
 - Vitest ([search-engines.spec.ts](../../web/src/bastion/search-engines.spec.ts)): the page holds both slots and no `<title>` of its own.
 - Integration (area `bastion`, inside `TestR_BAS_109_TheBastionMirrorsTheCatalogueAndServesOnWhileTheLinkIsCut`, no world of its own, about
   0.1 s): `crawlWebInterface` reads the package's page as a crawler, finds its title, canonical address on the Bastion's base URL, heading,
@@ -14110,6 +14115,24 @@ that no page decides by a format's name which repositories have files.
 | (c) The format as a query parameter of the address | — | No address | A link without it is no page; the address is no longer the main installation's |
 
 **Choice:** (a). **Applied in the spec:** R-BAS-118, R-BAS-129.
+
+### Q-BAS-483 · A public generic repository's folders and files are pages a crawler finds and indexes
+
+Status: **Decided by the development agent on 2026-11-27** (batch F, W35-P9e's third finding) — selected from the options below; the owner
+reviews it at the walkthrough.
+
+Context: R-BAS-121, R-UI-229. W35-P9d gave the Bastion's application a public generic repository's folders and files at the main
+installation's addresses (`projects/<project>/repositories/<key>` and `…/files/<path…>`), but the address grammar of the head a crawler
+reads knew neither: a direct load or a shared link answered `404` with `noindex` while the application then showed the page.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A kind `Files` of the address grammar: `200` while the catalogue holds the folder's listing or the file's description, indexed like a package's page, the root's one spelling the repository's address, every query dropped; a folder's text links its entries (the first 100), a file's text names it and leads back through its folders (chosen) | The page exists for the crawler as for the person | A shared link answers `200`; a search engine reaches a file through its folders; only `path` and `kind` of the listing are read, no format's metadata (W-35's B.11) | Not in the sitemap and not linked from the start's text, so a crawler without script reaches it only through a link from elsewhere |
+| (b) Found and never indexed, as Set up client (Q-BAS-401) | — | Nothing new in an index | A public file is the content a visitor looks for; its page holds no commands per client that would make it empty for an index |
+| (c) Left to the grammar's `404` | No change | — | A link answers `404`; a crawler drops a page that exists |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-121; `filesPage` of [seo.go](../../internal/bastion/gui/seo.go), the kind `Files` of
+[address.go](../../internal/bastion/gui/page/address.go).
 
 ### Q-BAS-423 · The public set names a project by its key, display name and description
 
