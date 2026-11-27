@@ -1166,7 +1166,7 @@ describe("A Bastion's limits, throughput, switches and state on its card (R-UI-2
       },
     });
     const parts = (name: string): string[] =>
-      [...limitsOf(root, name).querySelectorAll('[data-testid="bastion-state"] .state-line')[0]!.querySelectorAll(':scope > span')].map((s) => text(s));
+      [...limitsOf(root, name).querySelectorAll('[data-testid="bastion-now"] .state-line')[0]!.querySelectorAll(':scope > span')].map((s) => text(s));
     expect(parts('partners')).not.toContain('21 MB/s from the main installation');
     expect(text(limitsOf(root, 'partners').querySelector('[data-testid="bastion-throughput-row"]')!)).toContain('21 MB/s of 200 MB/s');
     expect(parts('standby')).toContain('21 MB/s from the main installation');
@@ -1183,7 +1183,7 @@ describe("A Bastion's limits, throughput, switches and state on its card (R-UI-2
           sampleBastion({ status: [own('quader-bastion-7d9c-x2k4q', 7e9), own('quader-bastion-7d9c-m8v2j', 5e9)] }),
         ]),
     });
-    const state = limitsOf(root, 'partners').querySelector('[data-testid="bastion-state"]')!;
+    const state = limitsOf(root, 'partners').querySelector('[data-testid="bastion-now"]')!;
     // One line of parts (W-41 D27): the callers are its last part, no second line.
     expect(state.querySelectorAll('.state-line')).toHaveLength(1);
     expect([...state.querySelector('.state-line')!.querySelectorAll(':scope > span')].map((s) => text(s))).toEqual([
@@ -1203,7 +1203,7 @@ describe("A Bastion's limits, throughput, switches and state on its card (R-UI-2
           sampleBastion({ id: 'b-2', name: 'standby', status: [report('quader-bastion-7d9c-old', { reportedAt: inDays(-10 / 1440) })] }),
         ]),
     });
-    const state = limitsOf(root, 'partners').querySelector('[data-testid="bastion-state"]')!;
+    const state = limitsOf(root, 'partners').querySelector('[data-testid="bastion-now"]')!;
     expect([...state.querySelector('.state-line')!.querySelectorAll(':scope > span')].map((s) => text(s))).toEqual([
       'Cache 7.0 of 10.0 GB',
       '97 % hits',

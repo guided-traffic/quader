@@ -139,7 +139,7 @@ const MB = 1e6;
     </quader-setting>
 
     <!-- What the replicas reported in the last five minutes, live with the list (R-UI-213). -->
-    <quader-setting label="Now" i18n-label="@@bastion.row.now" [help]="nowHelp" data-testid="bastion-state">
+    <quader-setting label="Now" i18n-label="@@bastion.row.now" [help]="nowHelp" data-testid="bastion-now">
       @if (state(); as s) {
         <!-- One line of parts (W-41 D27), each whole, the callers' link the last of them; a narrow card breaks between two parts. -->
         <p class="state-line">
