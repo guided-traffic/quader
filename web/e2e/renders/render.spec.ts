@@ -1,8 +1,9 @@
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { Page, Request, expect, test } from '@playwright/test';
+import { Page, expect, test } from '@playwright/test';
 import { LayoutFinding, emptyScroll, findingLine, innerScroll, judge, layoutFindings, loadingPlace, stackedFits } from './layout';
 import { inShard, locale, manifestDir, outDir } from './paths';
+import { getsOf, openCalls, trackRequests } from './requests';
 import { awaitAnswersOnUnroute, isHeld } from './routes';
 import { Kind } from './seed';
 import { KEEP_OPEN, Screen, screens } from './screens';
@@ -98,7 +99,7 @@ for (const screen of locale === 'de' ? screens.filter((s) => s.de) : screens) {
           // A measurement, not a check (UI_RENDERS_COUNT=1): the calls of the app's API a screen's load sends, the first width's
           // being a cold load of a new browser context, set against the read class of R-API-016 (50 a second, burst 200).
           if (process.env['UI_RENDERS_COUNT'] && width === widths[0]) {
-            console.log(`cold load: ${screen.id} as ${kind}: ${gets.get(page) ?? 0} GETs of the API`);
+            console.log(`cold load: ${screen.id} as ${kind}: ${getsOf(page)} GETs of the API`);
           }
           if (screen.walk) {
             // A flow: one picture of each state it names; an empty name is the screen as it opens.
@@ -156,52 +157,23 @@ async function tabNames(page: Page): Promise<string[]> {
   return names.map((n) => n.replace(/\s+/g, ' ').trim()).filter((n, i, a) => n !== '' && a.indexOf(n) === i);
 }
 
-/** The calls of the app's API that are open, per page: `settle` waits until there are none. */
-const open = new WeakMap<Page, Set<unknown>>();
-/** The GETs of the app's API since the page's last document (UI_RENDERS_COUNT). */
-const gets = new WeakMap<Page, number>();
-
-function trackRequests(page: Page): void {
-  const pending = new Set<unknown>();
-  open.set(page, pending);
-  // The app's API, and a Bastion's data path below its pages (R-UI-230).
-  const api = (url: string): boolean => /^\/(api|auth|ui\/data)\//.test(new URL(url).pathname);
-  page.on('request', (r) => {
-    // A new document: the calls of the one before it are no longer the screen's. Chromium cancels them, but a call it cancels
-    // while the server still works on it got no "failed" here, and kept `settle` waiting its 15 s on every later state of a walk
-    // that passed through a slow page.
-    if (r.isNavigationRequest() && r.frame() === page.mainFrame()) {
-      pending.clear();
-      gets.set(page, 0);
-    }
-    if (api(r.url())) pending.add(r);
-    if (api(r.url()) && r.method() === 'GET') gets.set(page, (gets.get(page) ?? 0) + 1);
-  });
-  page.on('requestfinished', (r) => pending.delete(r));
-  page.on('requestfailed', (r) => pending.delete(r));
-  // A redirected request gets its answer and no "finished" of its own.
-  page.on('response', (r) => {
-    if (r.status() >= 300 && r.status() < 400) pending.delete(r.request());
-  });
-}
-
 /**
  * Waits until the screen stands still: the document loaded, no call of the app's API open for 400 ms (at most 15 s: a
  * screen that polls never gets there and is taken as it is), the fonts loaded and every finite animation finished.
  */
 async function settle(page: Page): Promise<void> {
   await page.waitForLoadState('load');
-  const pending = open.get(page);
+  const pending = openCalls(page);
   const deadline = Date.now() + 15_000;
   let quietSince = Date.now();
-  while (pending && Date.now() < deadline) {
+  while (Date.now() < deadline) {
     await page.waitForTimeout(100);
     // A call a walk holds open to picture a load (R-UI-217) is not waited for.
-    if ([...pending].some((r) => !isHeld(r as Request))) quietSince = Date.now();
+    if ([...pending].some((r) => !isHeld(r))) quietSince = Date.now();
     else if (Date.now() - quietSince >= 400) break;
   }
-  if (pending && [...pending].some((r) => !isHeld(r as Request)) && Date.now() >= deadline) {
-    console.log(`settle: on ${new URL(page.url()).pathname}, still open after 15 s: ${[...pending].map((r) => (r as { url(): string }).url()).join(', ')}`);
+  if ([...pending].some((r) => !isHeld(r)) && Date.now() >= deadline) {
+    console.log(`settle: on ${new URL(page.url()).pathname}, still open after 15 s: ${[...pending].map((r) => r.url()).join(', ')}`);
   }
   const t0 = Date.now();
   await page.evaluate(async () => {

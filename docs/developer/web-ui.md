@@ -420,7 +420,7 @@ a finding fails the job that finds it, and neither gates a release until the fir
 
 ```shell
 make web-ci                       # once, and after a change of web/package-lock.json
-make ui-layout-test               # the layout checks on their own fixture pages: seconds, no stack (also the first step of ui-renders without SHARD)
+make ui-layout-test               # the layout checks and the run's request tracking on their own fixture pages: seconds, no stack (also the first step of ui-renders without SHARD)
 make ui-states                    # the dialogs' and the overlays' states, measured by the same checks without a stack (Dialog states, below)
 make ui-renders                   # every screen, into an empty .out/ui-renders
 make ui-renders GREP=repositories # the screens whose test title matches; the other pictures stay
@@ -548,7 +548,9 @@ running and stops only what it started: Quader with the sign-in provider (`serve
    each with the kinds of user that reach it. For each width the screen is loaded, then every tab of it (`role=tab` inside
    `main`) is opened in turn; each view is taken light and dark (`prefers-color-scheme`, which the app follows while no theme is
    stored, the theme button's "Follow the system"). A view is taken when no call of the app's API has been open for 400 ms (at most
-   15 s; a new document drops the calls of the one before it, which Chromium cancels without a word to the run). The window grows by what the content panel hides (the one thing of a page
+   15 s; a new document drops the calls of the one before it when it commits, not when its navigation begins: the old document
+   sends on until then, and Chromium cancels what it left open without a word to the run; a navigation inside the document keeps
+   them, [requests.ts](../../web/e2e/renders/requests.ts), proven on pages of its own by `make ui-layout-test`). The window grows by what the content panel hides (the one thing of a page
    that scrolls, R-UI-215) and what a box or a navigation column that keeps a scroll of its own hides, so a picture shows the whole length; not for a boxed list that `inner-scroll` allows (framed, at most 24 rem high), which keeps its height whatever the window's (the profile's usage table grew to the cap of 16,000 px before). It does not grow while a pane of the overlay container holds content (a dialog, a drawer, a menu, a tooltip): such a state is pictured and measured in the window a person has, where a dialog's body scrolls and a drawer is the window's height ([Q-UI-1171](../spec/api-and-ui.md#q-ui-1171--a-state-with-an-open-overlay-is-pictured-and-measured-in-the-window-a-person-has)). A flow is a screen with a `walk`: the creation form is walked for OCI, npm, Ansible, NuGet and Debian,
    local, remote and virtual, as the power user in a project and as the administrator in the admin area: as it opens, with two
    members for a virtual repository, with Advanced settings open, and with the key's error (`new-<format>-<class>-…`); the format

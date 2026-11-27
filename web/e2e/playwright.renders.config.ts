@@ -17,8 +17,8 @@ import { CHROMIUM_TEXT, authFile, edge, engine, locale, shard } from './renders/
 const device = { chromium: 'Desktop Chrome', firefox: 'Desktop Firefox', webkit: 'Desktop Safari' }[engine];
 export default defineConfig({
   testDir: './renders',
-  // The checks' own fixtures run in `make ui-layout-test` (playwright.layout.config.ts), without the stack and the seed.
-  testIgnore: 'layout-checks.spec.ts',
+  // The harness's own fixtures run in `make ui-layout-test` (playwright.layout.config.ts), without the stack and the seed.
+  testIgnore: ['layout-checks.spec.ts', 'requests.spec.ts'],
   // A part of the screens (UI_RENDERS_SHARD) holds the screens alone: the measurements (live-cost, slow-loads) run with the whole set and
   // their GREP, and a spec file a part leaves out shows as missing in `make ui-renders-parts-check`, never as rendered in every leg.
   ...(shard.total > 1 ? { testMatch: 'render.spec.ts' } : {}),
