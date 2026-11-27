@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"net/url"
+	"os"
 	"os/exec"
 	"slices"
 	"strings"
@@ -133,10 +134,10 @@ func TestR_GENERIC_017_AFoldersUploadCommands(t *testing.T) {
 	}
 }
 
-// TestR_GENERIC_017_WgetAndPowerShellKeepTheTokenOffTheCommandLine (Q-GENERIC-10, Q-GENERIC-13): the configure snippets of wget and
-// PowerShell hold the token's reference in the one line that is dropped for credentials=none, written in the client's syntax for env
-// and as the placeholder for the browser; wget reads it from a configuration file of its own, PowerShell keeps it in a variable of the
-// session, and neither puts it on a command line.
+// TestR_GENERIC_017_WgetAndPowerShellKeepTheTokenOffTheCommandLine (Q-GENERIC-10, Q-GENERIC-13, Q-GENERIC-14): the configure snippets
+// of wget and PowerShell hold the token's reference written in the client's syntax for env and as the placeholder for the browser; wget
+// reads it from a configuration file of its own, PowerShell keeps it in a variable of the session, and neither puts it on a command
+// line. For credentials=none PowerShell's line is dropped and wget's function runs wget without a configuration file.
 func TestR_GENERIC_017_WgetAndPowerShellKeepTheTokenOffTheCommandLine(t *testing.T) {
 	wget := wgetFunction
 	ps := func(line string) string { return "$QuaderHeaders = @{}\n" + line }
@@ -149,7 +150,7 @@ func TestR_GENERIC_017_WgetAndPowerShellKeepTheTokenOffTheCommandLine(t *testing
 			"wget.configure.function":      wget("header = Authorization: Bearer {{token}}\n"),
 			"powershell.configure.headers": ps("$QuaderHeaders.Authorization = \"Bearer {{token}}\"\n"),
 		},
-		"none": {"wget.configure.function": wget(""), "powershell.configure.headers": ps("")},
+		"none": {"wget.configure.function": wgetAnonymous, "powershell.configure.headers": ps("")},
 	} {
 		for _, client := range []string{"wget", "powershell"} {
 			w := get(setupServer(t, "https://quader.example.com", true), "/api/v1/projects/it/repositories/files/client-setup?client="+client+"&credentials="+credentials)
@@ -171,7 +172,10 @@ func TestR_GENERIC_017_WgetAndPowerShellKeepTheTokenOffTheCommandLine(t *testing
 	}
 }
 
-// wgetFunction is wget's configure snippet with the header line given ("" for credentials=none).
+// wgetAnonymous is wget's configure snippet for credentials=none (Q-GENERIC-14).
+const wgetAnonymous = "quader_wget() {\n  wget --no-verbose --no-config \"$@\"\n}\n"
+
+// wgetFunction is wget's configure snippet that sends a credential, with the header line given.
 func wgetFunction(header string) string {
 	return "quader_wget() (\n  config=$(mktemp) || exit\n  trap 'rm -f \"$config\"' EXIT\n  cat > \"$config\" <<EOF\n" + header +
 		"EOF\n  wget --no-verbose --config=\"$config\" \"$@\"\n)\n"
@@ -222,6 +226,40 @@ func TestR_GENERIC_017_WgetReadsTheHeaderFromAFileOfItsOwnThatTheCallRemoves(t *
 		}
 		if strings.Contains(stderr.String(), "tok-value-1") {
 			t.Errorf("%s: the shell trace shows the token:\n%s", address, stderr.String())
+		}
+	}
+}
+
+// TestR_GENERIC_017_AnAnonymousReadersWgetRunsWithoutAConfigurationFile (Q-GENERIC-14): run by a real POSIX shell with wget replaced
+// by a function, the configure snippet for credentials=none hands wget its arguments after --no-verbose --no-config, names no
+// configuration file and leaves nothing in $TMPDIR, and wget's status is the function's.
+func TestR_GENERIC_017_AnAnonymousReadersWgetRunsWithoutAConfigurationFile(t *testing.T) {
+	w := get(setupServer(t, "https://quader.example.com", true), "/api/v1/projects/it/repositories/files/client-setup?client=wget&credentials=none")
+	var out gen.ClientSetup
+	if err := json.Unmarshal(w.Body.Bytes(), &out); err != nil || w.Code != 200 {
+		t.Fatalf("%d %s", w.Code, w.Body.String())
+	}
+	var function string
+	for _, sn := range out.Snippets {
+		if sn.Id == "wget.configure.function" {
+			function = sn.Content
+		}
+	}
+	for address, status := range map[string]string{"https://quader.example.com/files/it/files/a.bin": "0", "fail": "8"} {
+		tmp := t.TempDir()
+		script := "wget() { printf '%s\\n' \"$@\"; case $* in *fail*) return 8 ;; esac; }\n" + function +
+			"quader_wget --output-document - " + address + "\necho \"status $?\"\n"
+		cmd := exec.Command("sh", "-c", script)
+		cmd.Env = append(cmd.Environ(), "TMPDIR="+tmp)
+		got, err := cmd.Output()
+		if err != nil {
+			t.Fatalf("sh: %v", err)
+		}
+		if want := "--no-verbose\n--no-config\n--output-document\n-\n" + address + "\nstatus " + status + "\n"; string(got) != want {
+			t.Errorf("%s:\n%s\nwant\n%s", address, got, want)
+		}
+		if left, _ := os.ReadDir(tmp); len(left) != 0 {
+			t.Errorf("%s: the call left %v in $TMPDIR", address, left)
 		}
 	}
 }

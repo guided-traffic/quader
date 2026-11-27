@@ -746,8 +746,13 @@ func (r *run) setup() {
 			r.failf("setup template %q does not parse: %v", t.ID, err)
 			continue
 		}
-		if err := tp.Execute(&bytes.Buffer{}, data); err != nil {
-			r.failf("setup template %q does not execute over SetupData: %v", t.ID, err)
+		// Both credential modes (SetupData.Anonymous): a template that branches on it runs each branch.
+		anonymous := data
+		anonymous.Anonymous, anonymous.RequiresAuth = true, false
+		for _, d := range []formats.SetupData{data, anonymous} {
+			if err := tp.Execute(&bytes.Buffer{}, d); err != nil {
+				r.failf("setup template %q does not execute over SetupData (anonymous %v): %v", t.ID, d.Anonymous, err)
+			}
 		}
 		text := t.Template
 		// The references to the token are not credentials, in any of their spellings.

@@ -2,7 +2,7 @@ Paste the snippet into the shell, or into the CI script, that runs wget; the sni
 
 The function reads the variable each time it runs and writes the header into a configuration file of its own, which `mktemp` creates readable by you alone and which the function removes when wget ends, also after an error or Ctrl-C (`--config`; wget refuses a configuration read from standard input). The token therefore appears neither on wget's command line, where other users of the machine could read it in the process list, nor in a shell trace (`set -x`), and the file exists only while wget runs. The configuration replaces your own `.wgetrc` for these calls{{end}}.
 {{if .Anonymous}}
-You are not signed in, so the function sends no credential. It works for repositories that are open to anonymous readers.
+You are not signed in, so the function sends no credential: it runs wget without any configuration file (`--no-config`), so neither a file of its own nor your `.wgetrc` is read. It works for repositories that are open to anonymous readers.
 {{end}}
 ### Addresses
 

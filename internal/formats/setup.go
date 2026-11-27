@@ -151,6 +151,11 @@ type SetupData struct {
 	// snippet then makes the client send its credential without waiting for a
 	// challenge (always-auth, npmAlwaysAuth).
 	RequiresAuth bool
+	// Anonymous is the credential mode none (R-API-030): the snippets send no credential, as for a reader who is not signed in, and
+	// a guide's sections leave out what needs one. A template whose credential is one line needs nothing of it, because the API drops
+	// that line; a template whose shape differs without a credential branches on it (wget's function then runs wget without a
+	// configuration file, formats/generic.md Q-GENERIC-14).
+	Anonymous bool
 	// Bastion is true when the snippets are for a quader Bastion (R-BAS-007): a read-only
 	// cache in front of the installation, which a lockfile written against another host
 	// must resolve through. A configure template may add what the client needs for that.

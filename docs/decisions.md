@@ -11588,7 +11588,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-GENERIC
 
-13 questions on [spec/formats/generic.md](spec/formats/generic.md).
+14 questions on [spec/formats/generic.md](spec/formats/generic.md).
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -11605,6 +11605,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-GENERIC-11](spec/formats/generic.md#q-generic-11--a-file-deployed-without-a-type-gets-one-from-its-name-from-a-closed-list-of-text-at-the-deploy) | A file deployed without a type gets one from its name, from a closed list of text, at the deploy | Decided by the development agent on 2026-11-26 | (a) At the deploy, from a closed list of text types by the extension; a deployed type wins | — |
 | [Q-GENERIC-12](spec/formats/generic.md#q-generic-12--the-type-of-a-forms-body-is-no-files-type) | The type of a form's body is no file's type | Decided by the development agent on 2026-11-26 | (a) A deploy that carries the form's type records none, and the guess of Q-GENERIC-11 applies | — |
 | [Q-GENERIC-13](spec/formats/generic.md#q-generic-13--wget-reads-its-configuration-from-a-file-of-its-own-that-the-function-removes) | wget reads its configuration from a file of its own that the function removes | Decided by the development agent on 2026-11-27 | (a) The function writes the header with a here-document into a file of `mktemp` (mode `0600`), passes `--config="$config"` and removes the file by a trap on `EXIT` of its subshell | — |
+| [Q-GENERIC-14](spec/formats/generic.md#q-generic-14--an-anonymous-readers-wget-runs-without-a-configuration-file) | An anonymous reader's wget runs without a configuration file | Decided by the development agent on 2026-11-27 | (a) The templates see the credential mode, `SetupData.Anonymous`, set for `credentials=none` alone; wget's template writes `quader_wget() { wget --no-verbose --no-config "$@"; }` then | — |
 
 ### Q-HA
 

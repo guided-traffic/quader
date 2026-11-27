@@ -1840,7 +1840,9 @@ on:
   `{{token}}`, replaced in the browser (R-UI-016); with `credentials=env` they hold the
   environment-variable reference of the client's syntax (`${QUADER_TOKEN}` for npm and Yarn,
   `%QUADER_TOKEN%` for `nuget.config` and cmd, `$env:QUADER_TOKEN` for PowerShell, Q-API-187); with `credentials=none` they hold no authentication line (an
-  anonymous caller, and the install command panel of R-UI-009). The variable name is
+  anonymous caller, and the install command panel of R-UI-009): the API drops the line that holds the token's reference, and a template
+  whose shape differs without a credential branches on `SetupData.Anonymous`, which is set for this mode alone (wget's function of
+  [formats/generic.md](formats/generic.md) Q-GENERIC-14). The variable name is
   `ui.client_setup.token_env_var`. `tokenTtlSeconds` is `ui.client_setup.token_ttl` in seconds, the lifetime
   the setup dialog asks for when it creates a token.
 - Every snippet has a stable `id`; the human-readable explanation lives in the UI, translated per

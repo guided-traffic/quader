@@ -22,13 +22,13 @@ var guideClasses = []formats.Class{formats.Local, formats.Remote, formats.Virtua
 func guideData(class formats.Class, client string, anonymous, rules bool) formats.GuideData {
 	repo := map[formats.Class]string{formats.Local: "nuget-local", formats.Remote: "nuget-org", formats.Virtual: "nuget-all"}[class]
 	sd := setupData(!anonymous)
+	sd.Anonymous = anonymous
 	sd.Repository = repo
 	return formats.GuideData{
 		SetupData:     sd,
 		Class:         class,
 		Client:        client,
 		PublishTarget: map[formats.Class]string{formats.Local: "nuget-local", formats.Virtual: "nuget-local"}[class],
-		Anonymous:     anonymous,
 		ExposureRules: rules,
 		TokenEnvVar:   "QUADER_TOKEN",
 	}

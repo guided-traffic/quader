@@ -206,7 +206,6 @@ formats.GateKind: type uint8
 formats.GateSubject: field Covering [][32]byte
 formats.GateSubject: field Kind GateKind
 formats.GuideData: embedded SetupData
-formats.GuideData: field Anonymous bool
 formats.GuideData: field CertificateURLs []string
 formats.GuideData: field Class Class
 formats.GuideData: field Client string
@@ -528,6 +527,7 @@ formats.ServeMode: type uint8
 formats.ServeNPMRemoteFacts: alias servefacts.NPMRemoteFacts
 formats.SessionRef: field Binding string
 formats.SessionRef: field ID uuid.UUID
+formats.SetupData: field Anonymous bool
 formats.SetupData: field Bastion bool
 formats.SetupData: field Endpoint string
 formats.SetupData: field ImagePrefix string

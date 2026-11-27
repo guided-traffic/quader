@@ -163,9 +163,9 @@ func (r *run) guideVariants(class formats.Class, client string) []formats.GuideD
 					out = append(out, formats.GuideData{
 						SetupData: formats.SetupData{
 							RegistryURL: registry, ImagePrefix: imagePrefix(r.d, registry), Repository: key, Project: project, Key: key, Endpoint: "default",
-							RequiresAuth: !anonymous,
+							RequiresAuth: !anonymous, Anonymous: anonymous,
 						},
-						Class: class, Client: client, PublishTarget: target, Anonymous: anonymous,
+						Class: class, Client: client, PublishTarget: target,
 						ExposureRules: rules, TokenEnvVar: "QUADER_TOKEN",
 					})
 				}

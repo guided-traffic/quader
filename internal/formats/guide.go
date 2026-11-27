@@ -89,9 +89,6 @@ type GuideData struct {
 	// PublishTarget is the repository a publish through this one reaches when the
 	// reader may deploy there; "" otherwise.
 	PublishTarget string
-	// Anonymous is true for a reader who is not signed in: sections leave out what
-	// needs a credential.
-	Anonymous bool
 	// ExposureRules is true when the endpoint of the request serves under exposure
 	// rules (endpoints.md R-EP-012).
 	ExposureRules bool

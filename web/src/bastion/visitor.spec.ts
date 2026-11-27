@@ -138,7 +138,7 @@ describe("What a Bastion's visitor reads (R-BAS-128, R-BAS-129)", () => {
         snippet(
           'wget.configure.function',
           'configure',
-          'quader_wget() (\n  config=$(mktemp) || exit\n  trap \'rm -f "$config"\' EXIT\n  cat > "$config" <<EOF\nEOF\n  wget --no-verbose --config="$config" "$@"\n)\n',
+          'quader_wget() {\n  wget --no-verbose --no-config "$@"\n}\n',
         ),
         snippet('wget.install', 'install', 'quader_wget --output-document agent.tar.gz "https://bastion.example.org/files/platform/downloads/agent.tar.gz"\n'),
       ],
@@ -149,7 +149,7 @@ describe("What a Bastion's visitor reads (R-BAS-128, R-BAS-129)", () => {
     expect([...root.querySelectorAll<HTMLOptionElement>('#setup-client option')].map((o) => o.value)).toEqual(['curl', 'wget', 'powershell']);
     expect([...root.querySelectorAll('.step h2')].map((h) => h.textContent?.replace(/\d/g, '').trim())).toEqual(['Configure', 'Install']);
     const text = root.textContent ?? '';
-    expect(text).toContain('quader_wget() (');
+    expect(text).toContain('wget --no-verbose --no-config');
     expect(text).toContain('Everything here is public: the snippets need no credentials.');
     // The Bastion's visitor is anonymous: the caption says the function sends no credential (R-UI-123).
     expect(text).toContain('The function sends no credential: this repository can be read without signing in.');

@@ -15,15 +15,16 @@ import (
 )
 
 func guideData(class formats.Class, client string, anonymous, rules bool) formats.GuideData {
-	return formats.GuideData{
+	d := formats.GuideData{
 		SetupData:     setupData("", !anonymous),
 		Class:         class,
 		Client:        client,
 		PublishTarget: map[formats.Class]string{formats.Local: "npm-all", formats.Virtual: "npm-local"}[class],
-		Anonymous:     anonymous,
 		ExposureRules: rules,
 		TokenEnvVar:   "QUADER_TOKEN",
 	}
+	d.Anonymous = anonymous
+	return d
 }
 
 // renderGuide runs every section that applies to the class and the client.

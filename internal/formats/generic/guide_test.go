@@ -28,9 +28,9 @@ func guideData(anonymous, rules bool, target string) formats.GuideData {
 	return formats.GuideData{
 		SetupData: formats.SetupData{
 			RegistryURL: registry, Repository: "generic-local", Endpoint: "default",
-			RequiresAuth: !anonymous,
+			RequiresAuth: !anonymous, Anonymous: anonymous,
 		},
-		Class: formats.Local, Client: ClientCurl, PublishTarget: target, Anonymous: anonymous, ExposureRules: rules,
+		Class: formats.Local, Client: ClientCurl, PublishTarget: target, ExposureRules: rules,
 		TokenEnvVar: "QUADER_TOKEN",
 	}
 }

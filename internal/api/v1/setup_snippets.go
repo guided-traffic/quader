@@ -42,7 +42,8 @@ type setupInput struct {
 	// TokenEnvVar is the variable credentials=env refers to.
 	TokenEnvVar string
 	// Data is what the templates see. RequiresAuth is cleared for credNone, because a
-	// snippet without a credential has nothing for an always-auth switch to send.
+	// snippet without a credential has nothing for an always-auth switch to send, and
+	// Anonymous is set (formats.SetupData.Anonymous).
 	Data formats.SetupData
 	// Package and Version name what an install snippet installs; Package empty keeps
 	// the placeholder. DisplayName is the package's display name, which an install
@@ -141,6 +142,7 @@ func renderSnippets(in setupInput) ([]snippet, error) {
 	data := in.Data
 	if in.Credentials == credNone {
 		data.RequiresAuth = false
+		data.Anonymous = true
 	}
 	var out []snippet
 	claimed := claimingPrefix(in.Templates, in.Client, in.Package)

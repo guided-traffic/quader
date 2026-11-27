@@ -1528,7 +1528,10 @@ function curlSetup(repository: string, query: ClientSetupQuery, mayPublish: bool
       shell(
         'wget.configure.function',
         'configure',
-        `quader_wget() (\n  config=$(mktemp) || exit\n  trap 'rm -f "$config"' EXIT\n  cat > "$config" <<EOF\n${token === null ? '' : `header = Authorization: Bearer ${token}\n`}EOF\n  wget --no-verbose --config="$config" "$@"\n)\n`,
+        // Without a credential the function writes no configuration file (Q-GENERIC-14).
+        token === null
+          ? `quader_wget() {\n  wget --no-verbose --no-config "$@"\n}\n`
+          : `quader_wget() (\n  config=$(mktemp) || exit\n  trap 'rm -f "$config"' EXIT\n  cat > "$config" <<EOF\nheader = Authorization: Bearer ${token}\nEOF\n  wget --no-verbose --config="$config" "$@"\n)\n`,
       ),
       shell('wget.install', 'install', `quader_wget --output-document ${name} ${address}\n`),
       shell('wget.install.checksum', 'install', check),

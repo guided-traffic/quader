@@ -211,6 +211,7 @@ func renderGuide(rd *readme.Renderer, in guideInput) (gen.Guide, error) {
 	if in.Anonymous {
 		creds = credNone
 		in.Data.RequiresAuth = false
+		in.Data.Anonymous = true
 	}
 	setup := setupInput{
 		Templates: in.Format.SetupTemplates(), Client: in.Client, Credentials: creds, TokenEnvVar: in.TokenEnvVar,
@@ -221,7 +222,7 @@ func renderGuide(rd *readme.Renderer, in guideInput) (gen.Guide, error) {
 		return gen.Guide{}, errs.Wrap(err, "api.renderGuide")
 	}
 	data := formats.GuideData{
-		SetupData: in.Data, Class: in.Class, Client: in.Client, Anonymous: in.Anonymous,
+		SetupData: in.Data, Class: in.Class, Client: in.Client,
 		ExposureRules: in.ExposureRules, TokenEnvVar: in.TokenEnvVar, CertificateURLs: in.CertificateURLs,
 	}
 	if in.MayPublish {

@@ -33,11 +33,12 @@ const address = `"{{.RegistryURL}}` + formats.SetupPathRef + `"`
 // PowerShell's Invoke-WebRequest. Each keeps the token off the command line (Q-GENERIC-9, Q-GENERIC-10): curl through a shell
 // function that hands it the header as configuration on standard input; wget through a shell function that writes the header into
 // a configuration file of its own, readable by its owner alone, which it removes when wget ends (Q-GENERIC-13: wget refuses or
-// skips a configuration read from standard input); PowerShell through a variable of the session that holds the header, which no
-// other process sees. In neither shell function is the token an argument, visible in the process list or in a shell trace. The
-// header is the one line that holds the token's reference, so credentials=none drops it and leaves a configuration that sends no
-// credential. Install has two snippets per client: the download of a file under its name, and the line that checks it against its
-// SHA-256. Deleting has no tab of its own (Q-API-160); the guide names it.
+// skips a configuration read from standard input), and which it does not create without a credential (Q-GENERIC-14); PowerShell
+// through a variable of the session that holds the header, which no other process sees. In neither shell function is the token an
+// argument, visible in the process list or in a shell trace. The header is the one line that holds the token's reference, so
+// credentials=none drops it and leaves a configuration that sends no credential; wget's function takes another shape then
+// (SetupData.Anonymous). Install has two snippets per client: the download of a file under its name, and the line that checks it
+// against its SHA-256. Deleting has no tab of its own (Q-API-160); the guide names it.
 func (Format) SetupTemplates() []formats.SetupTemplate {
 	const curlFunction = CurlFunction + `() {
   curl --silent --show-error --config - "$@" <<EOF
@@ -46,15 +47,18 @@ EOF
 }
 `
 	// The body is a subshell, so the trap and the variable end with the call; mktemp creates the file with mode 0600, and the
-	// here-document, which a shell trace does not print, fills it.
-	const wgetFunction = WgetFunction + `() (
+	// here-document, which a shell trace does not print, fills it. Without a credential there is nothing to write: the function
+	// runs wget with no configuration file at all, which skips the reader's .wgetrc as --config does (Q-GENERIC-14).
+	const wgetFunction = WgetFunction + `() {{if .Anonymous}}{
+  wget --no-verbose --no-config "$@"
+}{{else}}(
   config=$(mktemp) || exit
   trap 'rm -f "$config"' EXIT
   cat > "$config" <<EOF
 header = Authorization: Bearer ${QUADER_TOKEN}
 EOF
   wget --no-verbose --config="$config" "$@"
-)
+){{end}}
 `
 	const headers = PowerShellHeaders + ` = @{}
 ` + PowerShellHeaders + `.Authorization = "Bearer $env:QUADER_TOKEN"

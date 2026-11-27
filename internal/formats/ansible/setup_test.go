@@ -118,7 +118,8 @@ func TestR_ANS_025_TheInstallSnippetsTakeThePackageAndTheVersion(t *testing.T) {
 func TestR_ANS_025_TheGuideTextRendersForEveryClass(t *testing.T) {
 	for _, class := range []formats.Class{formats.Local, formats.Remote, formats.Virtual} {
 		for _, anonymous := range []bool{false, true} {
-			d := formats.GuideData{SetupData: setupData(!anonymous), Class: class, Client: ClientGalaxy, Anonymous: anonymous, TokenEnvVar: "QUADER_TOKEN"}
+			d := formats.GuideData{SetupData: setupData(!anonymous), Class: class, Client: ClientGalaxy, TokenEnvVar: "QUADER_TOKEN"}
+			d.Anonymous = anonymous
 			if class != formats.Remote {
 				d.PublishTarget = "galaxy"
 			}

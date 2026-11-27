@@ -360,7 +360,9 @@ theirs, and the server writes each of them (R-API-030).
   into a file of `mktemp` (mode `0600`), runs `wget --no-verbose --config="$config" "$@"` and removes the file when its subshell ends, by
   a trap on `EXIT` ([Q-GENERIC-13](#q-generic-13--wget-reads-its-configuration-from-a-file-of-its-own-that-the-function-removes)), and
   PowerShell's variable `$QuaderHeaders`, filled in the session from `$env:QUADER_TOKEN`. The line that holds the token's reference is the
-  one `credentials=none` drops.
+  one `credentials=none` drops. Without a credential wget's function writes no file: it is `quader_wget() { wget --no-verbose --no-config
+  "$@"; }`, which reads no configuration, the reader's `.wgetrc` included, as the signed-in function does not
+  ([Q-GENERIC-14](#q-generic-14--an-anonymous-readers-wget-runs-without-a-configuration-file)).
 
   | Snippet `id` | Tab | Content |
   |---|---|---|
@@ -412,8 +414,10 @@ Acceptance criteria:
 - A folder's path answers the upload of every client into the folder and no download; a path the `/files/` rules refuse, a path of
   another format, and a SHA-256 of a folder answer 400 (`TestR_GENERIC_017_AFoldersUploadCommands`,
   `TestR_GENERIC_017_AFilesPathIsHeldToThePathRules`).
-- The configure snippets of wget and PowerShell hold the token's reference in the one line `credentials=none` drops
-  (`TestR_GENERIC_017_WgetAndPowerShellKeepTheTokenOffTheCommandLine`).
+- The configure snippets of wget and PowerShell hold the token's reference in their client's syntax; `credentials=none` drops
+  PowerShell's line and answers wget's function without a configuration file
+  (`TestR_GENERIC_017_WgetAndPowerShellKeepTheTokenOffTheCommandLine`); run by a POSIX shell, that function passes `--no-config` and
+  leaves nothing in `$TMPDIR` (`TestR_GENERIC_017_AnAnonymousReadersWgetRunsWithoutAConfigurationFile`).
 - `README.md` deployed without a type is served as `text/markdown`, `values.YAML` with the form's type as `application/yaml`, a
   deployed `text/plain` wins over the name, and `index.html` without a type is served as `application/octet-stream`, every one as an
   attachment with the sandboxing policy (`TestE1_4_RawTransfer`, R-GENERIC-017; the list: `TestR_GENERIC_017_TheGuessIsAClosedListOfText`).
@@ -821,9 +825,10 @@ way to take a header than an argument (`--header`, `-e`) or a configuration file
 | (c) `/dev/fd/3` or a process substitution in place of `/dev/stdin` | Another descriptor | No file | The same check of wget 1.25 and the same pipe of bash and dash; a process substitution is no POSIX shell's |
 | (d) A configuration file the reader keeps (`~/.wgetrc` with the header, `WGETRC`) | wget reads it itself | No function | A file with the token in plain text that stays, which the owner ruled out for curl's `.netrc` (Q-GENERIC-9) |
 
-**Choice:** (a). The anonymous variant keeps the function's shape with an empty configuration, as curl's does: the same function serves
-a reader who signs in later, and the configuration still replaces the reader's own `.wgetrc` for these calls (a CA certificate a reader
-keeps there is not read; `--ca-certificate` passes one to `quader_wget`). The same run found the check of curl and wget failing on macOS:
+**Choice:** (a). The configuration replaces the reader's own `.wgetrc` for these calls (a CA certificate a reader keeps there is not
+read; `--ca-certificate` passes one to `quader_wget`). The anonymous variant first kept the function's shape with an empty
+configuration, as curl's does; [Q-GENERIC-14](#q-generic-14--an-anonymous-readers-wget-runs-without-a-configuration-file) replaced it
+by a function that writes no file. The same run found the check of curl and wget failing on macOS:
 its `sha256sum` printed its usage for `-c` without a file, so the check names standard input, `sha256sum -c -`, which GNU coreutils,
 BusyBox and macOS read alike (measured on Debian 13, Alpine 3.22 and macOS 27).
 
@@ -832,6 +837,35 @@ the call and only its owner can read it. The development agent would revisit thi
 from standard input again.
 
 **Applied in the spec:** R-GENERIC-017; the guide of wget's Configure step; [client-setup.md](../../manual/user/client-setup.md).
+
+### Q-GENERIC-14 · An anonymous reader's wget runs without a configuration file
+
+Status: **Decided by the development agent** on 2026-11-27 — selected from the options below; the owner reviews it at the walkthrough.
+It amends Q-GENERIC-13 for `credentials=none`.
+
+Context: for `credentials=none` the API drops the line that holds the token's reference, so the function of Q-GENERIC-13 created a file
+with `mktemp`, wrote nothing into it, handed it to wget and removed it: a temporary file for every anonymous download, and a function a
+reader cannot read as "this sends nothing". The templates saw no credential mode, so the function could not take another shape. Run once
+on 2026-11-27 against a local echo server, with a `~/.wgetrc` that adds a header, under sh, bash, dash and zsh: GNU wget 1.21.2
+(Ubuntu 22.04), 1.21.4 (Ubuntu 24.04) and 1.25.0 (Debian 13) on Linux and 1.25.0 on macOS 27 download with `--no-config` (exit `0`,
+the `.wgetrc` header not sent), and every one of them refuses `--config=/dev/null` with "Exiting due to error in /dev/null" (exit `2`,
+nothing downloaded); without either option the `.wgetrc` header is sent.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The templates see the credential mode, `SetupData.Anonymous`, set for `credentials=none` alone; wget's template writes `quader_wget() { wget --no-verbose --no-config "$@"; }` then (chosen) | One template with two shapes | No file and no `mktemp` without a credential; the reader's `.wgetrc` is skipped as with the signed-in function, so a command behaves alike in both modes; works with every wget and shell measured; the mode is one field the guide's sections already read (`GuideData.Anonymous` moved into `SetupData`) | A template that branches must run in both modes, which the format kit's check 8 now does |
+| (b) The same, with `--config=/dev/null` | wget's configuration file named empty | No new option | Refused by every wget measured |
+| (c) A template per credential mode, chosen by the API | Two templates with one snippet `id` | No branch in a template | The template's `ID` stops naming one template, and the kit's and the API's rule of unique IDs would need an exception |
+| (d) Plain `wget --no-verbose "$@"` | The reader's `.wgetrc` is read | The reader's own settings apply | The same command behaves differently signed in and anonymously |
+
+**Choice:** (a).
+
+**Rationale:** the smallest form that sends nothing and writes nothing, measured to run with the clients as they are; the credential
+mode is a fact of the request the templates may read, and no template sees a credential by it. The development agent would revisit this
+when a second format needs a shape of its own without a credential.
+
+**Applied in the spec:** R-GENERIC-017; R-API-030 ([api-and-ui.md](../api-and-ui.md)); the guide of wget's Configure step;
+[client-setup.md](../../manual/user/client-setup.md).
 
 ## What this does not cover
 
