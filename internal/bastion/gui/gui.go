@@ -12,7 +12,9 @@
 // body. Nothing here reaches the main installation: the package imports neither the client of the main installation, nor the
 // handover, nor the engine (the archtest rule of R-BAS-116), and a document the catalogue does not hold is a 404, never a fill.
 // No answer sets a cookie or keeps a state per visitor, none carries a header of the product's own (`Quader-…`), and every one
-// carries the headers of R-BAS-117. Every request is counted in the guard's class gui (Q-LIM-307): a page view is never a miss.
+// carries the headers of R-BAS-117. Every request is counted before anything answers it: a request of the application in the guard's
+// class gui (Q-LIM-307), where a page view is never a miss, robots.txt, the sitemap and a refused method in the anonymous class
+// (Q-BAS-525).
 //
 // The state decides first (R-BAS-117, R-BAS-111): while the switch gui is off every address answers 404 not_found; while the
 // replica holds no state to show (or knows neither its switches nor a state) the data answers 503 not_ready with Retry-After 30
@@ -85,10 +87,12 @@ const (
 	textUnhandled = "The server failed to process the request."
 )
 
-// Guard is what the web interface asks of the Bastion's guard (R-BAS-019): the block list and the class gui (Q-LIM-307).
+// Guard is what the web interface asks of the Bastion's guard (R-BAS-019): the block list, the class gui (Q-LIM-307) and the
+// request limit of the anonymous class (Q-BAS-525).
 type Guard interface {
 	Blocked(ctx context.Context, addr string) guard.Verdict
 	Page(ctx context.Context, addr string) guard.Verdict
+	Request(ctx context.Context, addr string, c guard.Credentialed) guard.Verdict
 }
 
 // Options configure a [Handler].
@@ -100,11 +104,10 @@ type Options struct {
 	// BaseURL is the Bastion's own server.base_url: every absolute address a page's head, robots.txt and the sitemap name is on it
 	// (R-BAS-121, W-35's B.13), never on the main installation's. Required.
 	BaseURL string
-	// Guard counts every request in the class gui; nil admits every request (tests).
+	// Guard counts every request, in the class gui or the anonymous request class ([pageRequest]); nil admits every request (tests).
 	Guard Guard
-	// Flood is the class gui's figures of the configuration a request read, for the RateLimit fields of a refusal; nil leaves them
-	// out.
-	Flood func(ctx context.Context) settings.Rate
+	// Flood is the flood figures of the configuration a request read, for the RateLimit fields of a refusal; nil leaves them out.
+	Flood func(ctx context.Context) settings.Flood
 	// Quiet marks a request that is not logged one by one (a blocked address, R-BAS-037); nil does nothing.
 	Quiet func(ctx context.Context)
 	// Disabled reports whether the replica applies a disable of its registration (R-BAS-133): every request is then answered 503.
@@ -177,15 +180,17 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		ri.SetHandler("bastion-gui")
 	}
 	secure(w.Header())
+	// The guard first: every request the web interface answers is counted, a method it refuses and a disabled replica's answer
+	// included (Q-BAS-525).
+	if !h.admit(w, r) {
+		return
+	}
 	if r.Method != http.MethodGet && r.Method != http.MethodHead {
 		h.problem(w, r, errs.E(errs.MethodNotAllowed, errs.CodeMethodNotAllowed, textMethod, errs.WithAllow(http.MethodGet, http.MethodHead)))
 		return
 	}
 	if h.o.Disabled != nil && h.o.Disabled() {
 		h.unavailable(w, r)
-		return
-	}
-	if !h.admit(w, r) {
 		return
 	}
 	path := r.URL.Path
@@ -229,16 +234,34 @@ func secure(hd http.Header) {
 	hd.Set("Referrer-Policy", "no-referrer")
 }
 
-// admit asks the guard: the block list, then the class gui (R-BAS-018 steps 2 and 4, Q-LIM-307). A refusal is the problem of
-// R-BAS-029 with Retry-After and the RateLimit fields of the class.
+// pageRequest reports whether a request counts in the class gui (Q-LIM-307): a GET or a HEAD of the application's addresses, `/`,
+// `/ui` and everything below `/ui/`, a page, a file of the bundle and the data alike (Q-BAS-526). robots.txt, the sitemap and
+// every other method are no request of the application: they count in the anonymous request class, as a path the engine answers
+// does, whatever Authorization says, because the web interface reads no credential (Q-BAS-525).
+func pageRequest(r *http.Request) bool {
+	if r.Method != http.MethodGet && r.Method != http.MethodHead {
+		return false
+	}
+	p := r.URL.Path
+	return p == "/" || p == "/ui" || strings.HasPrefix(p, "/ui/")
+}
+
+// admit asks the guard: the block list, then the class gui for a request of the application and the anonymous request class for
+// every other one (R-BAS-018 steps 2 and 4, Q-LIM-307, Q-BAS-525). A refusal is the problem of R-BAS-029 with Retry-After and the
+// RateLimit fields of the class.
 func (h *Handler) admit(w http.ResponseWriter, r *http.Request) bool {
 	if h.o.Guard == nil {
 		return true
 	}
 	addr := addressKey(r)
+	page := pageRequest(r)
 	v := h.o.Guard.Blocked(r.Context(), addr)
 	if v.Allowed {
-		v = h.o.Guard.Page(r.Context(), addr)
+		if page {
+			v = h.o.Guard.Page(r.Context(), addr)
+		} else {
+			v = h.o.Guard.Request(r.Context(), addr, false)
+		}
 	}
 	if v.Allowed {
 		return true
@@ -253,14 +276,19 @@ func (h *Handler) admit(w http.ResponseWriter, r *http.Request) bool {
 	wait := oneWait(v.RetryAfter)
 	var fields [][2]string
 	if h.o.Flood != nil {
-		rate := h.o.Flood(r.Context())
+		// The names of the policies are the engine's: "requests" for the request classes, "pages" for the class gui (Q-BAS-394).
+		f := h.o.Flood(r.Context())
+		name, rate := "requests", f.Anonymous.Rate
+		if page {
+			name, rate = "pages", f.GUI
+		}
 		window := max(1, (rate.Burst+rate.RequestsPerSecond-1)/max(1, rate.RequestsPerSecond))
 		fields = [][2]string{
-			{"RateLimit-Policy", `"pages";q=` + strconv.Itoa(rate.Burst) + ";w=" + strconv.Itoa(window)},
-			{"RateLimit", `"pages";r=0;t=` + strconv.FormatInt(int64(wait/time.Second), 10)},
+			{"RateLimit-Policy", `"` + name + `";q=` + strconv.Itoa(rate.Burst) + ";w=" + strconv.Itoa(window)},
+			{"RateLimit", `"` + name + `";r=0;t=` + strconv.FormatInt(int64(wait/time.Second), 10)},
 		}
 	}
-	if locale, ok := h.pageLocale(r); ok {
+	if locale, ok := h.pageLocale(r); ok && page {
 		// A person reads a page in the Bastion's shape, not problem details; the data keep theirs (R-BAS-123).
 		h.refusalPage(w, r, locale, wait, code == guard.CodeAddressBlocked, fields)
 		return false

@@ -264,11 +264,14 @@ A Bastion protects itself and the main installation in two stages: a coarse limi
 |---|---|---|---|
 | requests without a credential | `50` a second, burst `1000` | requests without a credential | an anonymous `docker pull` of an image of 40 layers: 48 requests in 0.3 s; an `npm ci` of 475 packages: 475 in 2.5 s |
 | requests with a credential | `200` a second, burst `4000` | requests with a credential | an install of up to 4,000 packages at once |
+| pages of the web interface | `20` a second, burst `100` | the pages, files and data of the web interface | a browser's first visit: 17 to 29 requests |
 | misses without a credential | `1000` a minute | requests that need the main installation, without a credential | on an empty cache every request is one: the pull above is 48 |
 | misses with a credential | `4000` a minute | the same, with a credential | as above |
 | blocking | `3000` refusals in a minute | refused requests before the address is blocked for 15 minutes, doubling up to 24 hours | none: an address is blocked only when it sends, after its burst, at least twice the anonymous rate or 1.25 times the rate with a credential |
 | `edgeLimit.requestsPerSecond` | `1000` | HTTP requests in the last second, also on a kept-alive connection, without a burst; refused by the ingress with `429` and no `Retry-After` | an `npm ci` is about 190 a second |
 | `edgeLimit.connections` | `256` | requests in flight at once | `npm ci` up to 15, `docker pull` 3, APT up to 10; `dotnet restore` on Linux has no bound of its own, so raise this value if a large restore through the Bastion is refused by the ingress |
+
+Every request the Bastion answers counts against one of the request figures, also one for an address it does not serve (a scanner's `/wp-admin/` or `/.env`, answered "Nothing is served at this address."): the pages, files and data of the web interface against the pages' figure, `robots.txt` and the sitemap against the requests without a credential, and every other request against the requests with or without a credential, by what it carries. A scanner is therefore refused with `429` after its burst and blocked like any other flood, whether it asks a page or not.
 
 The figures count per client address, not per person: many people or build jobs behind one NAT share them. Such an address can be exempted from every limit, timeout and block of the Bastion in its registration's exempt networks (**Networks without flood protection** under **Details** on its card), and from the ingress's limit with `edgeLimit.exemptCIDRs`. Keep `edgeLimit.requestsPerSecond` above the Bastion's figure for requests with a credential; the chart no longer checks it, every replica reports the edge figure to the main installation, and the card warns where a figure of the registration lies above it.
 

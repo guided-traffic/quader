@@ -1183,8 +1183,17 @@ Q-BAS-17). Each request passes these steps in order; the first that answers ends
    project segment that does not match `^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` or a key that does not match
    `^[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*$` (INV-5) answers `404` without a request, and so does `/api/npm/web` with one segment after
    the format. The Bastion reads no other part of a path. A family, format, project or key segment that is percent-encoded
-   and a `.` or `..` segment are not classified: the path answers `404 not_found` (Q-BAS-121).
-4. **Per-address limits** (R-BAS-035) and **credentials** (R-BAS-019), including the failed-authentication timeout (R-BAS-036).
+   and a `.` or `..` segment are not classified: the path answers `404 not_found` (Q-BAS-121). *Revised on 2026-11-27 (H-2448,
+   [Q-BAS-525](#q-bas-525--every-request-past-the-host-and-the-block-list-takes-one-token-of-its-addresss-request-limit)):* the step reads
+   the path, its credential and the form of `POST /v2/_token` (R-BAS-051), because they choose the class of the limit, and answers
+   what it refuses (`404`, a form above 16 KiB `413`) only after the request limit of step 4 has counted the request.
+4. **Per-address limits** (R-BAS-035) and **credentials** (R-BAS-019), including the failed-authentication timeout (R-BAS-036). The
+   request limit is asked for every request that passed steps 1 and 2, before the refusal of step 3, the disable (R-BAS-133) and the
+   method of step 5: a path that is not served, a method the Bastion refuses and a disabled replica's `503` take a token of the
+   address like a read. The web interface's addresses (R-BAS-116) ask the block list and then the class `gui` for a page, a file of its
+   bundle and its data, and the anonymous request class for `robots.txt`, the sitemap and any method but `GET` and `HEAD` (Q-BAS-525,
+   [Q-BAS-526](#q-bas-526--the-web-interfaces-files-and-data-count-as-pages)). A request for a foreign host (step 1) takes no token
+   ([Q-BAS-527](#q-bas-527--a-request-for-a-foreign-host-takes-no-token)).
 5. **Method.** `GET` and `HEAD` go to the read flow (R-BAS-020 to R-BAS-024); `OPTIONS` answers `405`; a read route with a body of
    the format table is forwarded with its body; every other method is refused `403 read_only` by the Bastion itself (R-BAS-095). The
    credential of a write is not read ([Q-BAS-452](#q-bas-452--a-write-is-refused-before-its-credential-is-read)); the credential
@@ -2099,6 +2108,14 @@ Quader's knowledge of credentials and misses:
   without (`limits.flood.anonymous`, stricter), and pages of the web interface (`limits.flood.gui`). Limiters of R-ARCH-034, scope
   `cluster` with Valkey; refusals answer `429 rate_limited`. A figure that changes while the replicas run replaces the limiter under its
   name ([Q-BAS-449](#q-bas-449--a-limiter-whose-figures-change-is-replaced-under-its-name)).
+- **What counts where** (*revised on 2026-11-27*, H-2448, [Q-BAS-525](#q-bas-525--every-request-past-the-host-and-the-block-list-takes-one-token-of-its-addresss-request-limit)).
+  Every request the client listener answers after the host and the block list (R-BAS-018 steps 1 and 2) takes one token of exactly
+  one of the three, before anything else answers it: a `GET` or `HEAD` of `/`, `/ui` or below `/ui/` (a page, a file of the bundle,
+  the data) the class `gui` ([Q-BAS-526](#q-bas-526--the-web-interfaces-files-and-data-count-as-pages)); `robots.txt`, the sitemap
+  and any other method on those paths the anonymous class; every other request the class its credential chooses, whether its path is
+  an address or not (`404 not_found`, `405`, `403 read_only`, `413`, a disabled replica's `503`, the registry root and its token
+  service alike). A refusal of the limit is `429 rate_limited` with `Retry-After`, whatever the path. Before, a path that was no
+  address was answered before the limit and a scanner that asked no page was never limited or blocked (the attack of 2026-11-27).
 - **Misses** per client address: requests that need the main installation (forwards, checks, conditional requests, probes),
   `missesPerMinute` of the two classes of callers; a page is never a miss. A refused miss answers `429 rate_limited`; hits of the same
   address keep being served.
@@ -2133,6 +2150,17 @@ with a credential 50 and 200, misses 300 and 30 a minute, the defaults before R-
 - An address that asks for 330 misses a minute with a credential (limit 300) is admitted about 300 a minute from the second
   minute on, answers `rate_limited` for the rest, and is not blocked; the same holds for an anonymous client at 11 requests a
   second against 10, with and without Valkey.
+- Unit, microseconds per request ([everyrequest_test.go](../../internal/bastion/engine/everyrequest_test.go),
+  `TestR_BAS_035_R_BAS_037_APathThatIsNoAddressCountsAgainstItsAddress`): paths that are no address (`/wp-admin/admin-ajax.php`,
+  `/.env`, `POST /xmlrpc.php`, `/api/v1/system/ping`) answer `404` for the burst of 40 and `429 rate_limited` with `Retry-After` from the
+  41st; the 301st refusal blocks the address, which then answers `429 address_blocked` for every path; a token form above 16 KiB is
+  counted too; another address is not touched; nothing reaches the main installation.
+- Unit ([limits_test.go](../../internal/bastion/gui/limits_test.go), [gui_test.go](../../internal/bastion/gui/gui_test.go)):
+  `TestR_BAS_035_APageFloodTakesThePageLimitAndABrowsersFirstLoadStaysInsideIt` (a browser's first load of 29 requests is admitted
+  whole at the class `gui`'s burst of 100; the 101st page request is refused as the page of R-BAS-123; the pages take nothing of the
+  anonymous class, which `robots.txt` takes) and `TestR_BAS_035_EveryOtherRequestOfTheWebInterfaceCountsInTheAnonymousRequestClass`
+  (`robots.txt`, the sitemap, a refused method and a disabled replica's answer ask the anonymous class, also with an `Authorization`
+  header; its refusal is the problem with the policy `requests`).
 
 ### R-BAS-036 · Failed-authentication timeout
 Priority: **MVP** · Covers: quader-only
@@ -2176,6 +2204,9 @@ Priority: **MVP** · Covers: quader-only
 
 - An address that collects more than `threshold` refusals of R-BAS-035 and R-BAS-036 within `windowSeconds` is blocked for
   `durationSeconds` (`limits.flood.blocking`); each further block within 24 h doubles the duration, up to `maxDurationSeconds` ([Q-BAS-37](#q-bas-37--one-refusal-threshold-blocks-an-address-with-doubling-durations)).
+  Every request the Bastion answers after its host and the block list can be such a refusal, a page of the web interface and a path that
+  is no address included (R-BAS-035's "What counts where", *revised on 2026-11-27*, Q-BAS-525): a scanner that asks no page fills the
+  threshold as fast as one that asks addresses.
 - Blocking is the answer to a flood and not to a client slightly over its limit: only a request or miss beyond the limit is a
   refusal and a refusal consumes nothing (Q-BAS-127), so a client at 110 % of its limit collects a tenth of its requests as
   refusals, and the default threshold of 3,000 refusals a minute is reached only by an address that sends, after its burst, at
@@ -6911,7 +6942,10 @@ Priority: **P1** · Covers: quader-only
   `address_blocked`) with `Retry-After` rounded up to whole seconds and the RateLimit fields under the policy name `pages`
   ([Q-BAS-394](#q-bas-394--a-refusal-of-the-class-gui-names-the-policy-pages)); a refusal of a blocked address is not logged one by one.
   *Revised by W-35's P10:* a page's address answers the refusal as a page of its own (R-BAS-123); the data, the bundle's files, `robots.txt`
-  and the sitemap keep the problem.
+  and the sitemap keep the problem. *Revised on 2026-11-27 (H-2448, [Q-BAS-525](#q-bas-525--every-request-past-the-host-and-the-block-list-takes-one-token-of-its-addresss-request-limit)):*
+  the guard is asked first, before the method and the disable, so every answer is counted; `robots.txt`, the sitemap and a method other
+  than `GET` and `HEAD` ask the anonymous request class (policy `requests`) instead of the class `gui`, whatever `Authorization` says, and
+  their refusal is the problem, never the page of R-BAS-123.
 
 *Built on 2026-11-26 (W-35's P9):* [gui.go](../../internal/bastion/gui/gui.go), `webui.Options.CSP`, `ReferrerPolicy`, `OnIndex` and
 `Problem` of [webui.go](../../internal/webui/webui.go), `errs.CodeNotReady`, `engine.MarkQuiet`.
@@ -7693,7 +7727,8 @@ Priority: **MVP** · Covers: DIST-025
   main installation nothing but the handshake, the feed and its status batches: the catalogue's sync pauses, the cache stays as it is.
   A `503 bastion_disabled` to a forward or a check (a request that raced the disable) makes the replica handshake at once.
   `quader_bastion_disabled{mode}` is 1 while it applies a disable. *Built on 2026-11-27 (W-41's A2):* `stepDisabled`, `operation` and
-  `Operation` of [disable.go](../../internal/bastion/engine/disable.go) (the gate after the path's family, the requests counted, a hard
+  `Operation` of [disable.go](../../internal/bastion/engine/disable.go) (the gate after the path's family and, since 2026-11-27,
+  after the request limit (Q-BAS-525), the requests counted, a hard
   disable's cut of every request and of the request a fill holds, `newHold`), `ErrDisabled` of the client and the link's handshake at
   once ([client.go](../../internal/bastion/mainclient/client.go), [link.go](../../internal/bastion/link/link.go)), `unavailable` of the
   web interface ([refusal.go](../../internal/bastion/gui/refusal.go)) with its words in [texts.go](../../internal/bastion/gui/page/texts.go),
@@ -16210,6 +16245,84 @@ Context: R-BAS-134, R-BAS-015, R-HA-054. What a change of the distribution tells
 the same way; a deletion of a repository or a project, or of a registration, cascades. **Applied in the spec:** R-BAS-134; code:
 [distribution_replay.go](../../internal/bastionmain/distribution_replay.go), [feed.go](../../internal/bastionmain/feed.go).
 
+### Q-BAS-525 · Every request past the host and the block list takes one token of its address's request limit
+
+Status: **Decided by the development agent** on 2026-11-27 (H-2448 of the security page, which the owner asked to be solved after the
+authorized attack of that day) — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-BAS-018, R-BAS-035, R-BAS-037. A scanner sent about 140,000 requests from one address at up to 790 a second; the paths that
+are no address (`/wp-admin/admin-ajax.php`, `/.env`) were answered `404` at step 3, before the limit of step 4, took no token and never
+counted toward the block threshold. The address was blocked only because it also asked `/`, `/ui/` and `/ui/en/`, whose class `gui`
+refused it 3,002 times. A disabled replica's `503`, the web interface's `405` and an oversized token form were answered before the limit
+too.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The request limit right after the block list for every request: the path, its credential and the token form are read first (they choose the class), and what they refuse is answered after the limit; the web interface asks the class `gui` for its application and the anonymous class for the rest (chosen) | One rule: whatever an address sends counts once, in one bucket; a scan is limited after its burst and its refusals block it like any flood | One limiter call more for a `404` (0.7 µs in memory, one Valkey round trip with Valkey, [Q-BAS-528](#q-bas-528--a-not-served-request-costs-one-valkey-round-trip-more-until-its-address-is-blocked)); a client that mistypes a path spends a token |
+| (b) A bucket of its own for paths that are no address | A scanner's budget apart from a client's | A sixth figure pair on the card for a case no client has; a scan that mixes addresses and junk still uses two budgets |
+| (c) A `404` counts as a refusal toward the threshold, without a bucket | Blocks a pure scan fastest | A client that asks a few unserved paths (a browser's `/favicon.ico`, a probe) collects refusals; the threshold would count answers, not floods |
+| (d) Leave it to the ingress | Nothing changes | The ingress has no burst and no block list; it is switchable and another controller ignores it (R-BAS-038) |
+
+**Choice:** (a). The class stays as before (H-2447 is apart): the credential the request carries, the form's password of a token
+request included, decided by `limitClass` in [request.go](../../internal/bastion/engine/request.go); since the credential's syntax is read
+before the limit, taking a malformed credential for none is a one-line change there (`q.hasAuth && q.credOK`) with no step moved. The web
+interface reads no credential, so its non-page requests are anonymous whatever `Authorization` says. A refusal is `429 rate_limited` with
+`Retry-After` whatever the path; a blocked address keeps answering `429 address_blocked` first. **Applied in the spec:** R-BAS-018,
+R-BAS-035, R-BAS-037, R-BAS-117, R-BAS-133; code: `readPath`, `readTokenForm`, `stepRefusal`, `stepLimits` of the engine, `admit` and
+`pageRequest` of [gui.go](../../internal/bastion/gui/gui.go).
+
+### Q-BAS-526 · The web interface's files and data count as pages
+
+Status: **Decided by the development agent** on 2026-11-27 (H-2448) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-BAS-117, Q-LIM-307. Measured on 2026-11-27 with headless Chromium against the built bundle and the web interface's test
+catalogue: a cold first load of the start page is 17 requests, a project's page 22, a package's page 28 (the document, its stylesheet, five
+scripts it names, two fonts, 15 lazy chunks and five data calls); a headed browser adds its favicon.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Every `GET` and `HEAD` below `/ui/` (and `/`, `/ui`) is the class `gui`: a page, a file of the bundle and the data alike (chosen) | One class for what the application loads; a first load of 29 is under a third of the burst of 100, and five cold loads within a few seconds from one address (114 requests) were all admitted | A scraper of the bundle's files shares the visitor's budget, which is the point |
+| (b) The bundle's files in the anonymous class | A page's budget for the documents and the data only | A first load would take from two budgets, a package client behind the same NAT would share one with a browser, and Q-LIM-307 kept the two apart for that reason |
+
+**Choice:** (a), as built before; the measurement is written into the test that holds it
+(`TestR_BAS_035_APageFloodTakesThePageLimitAndABrowsersFirstLoadStaysInsideIt`). **Applied in the spec:** R-BAS-035, R-BAS-117.
+
+### Q-BAS-527 · A request for a foreign host takes no token
+
+Status: **Decided by the development agent** on 2026-11-27 (H-2448) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-BAS-018 step 1 answers `421 misdirected_request` before the block list. The chart's Ingress routes only the Bastion's hosts
+(`ingress.hosts`, by default the host of `server.base_url`) to the pods, so a foreign host reaches a replica only from inside the cluster's
+network or through a proxy in front that routes any host.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The host step stays first and takes no token (chosen) | A request for another host is no request of this Bastion: it neither spends nor fills an address's budget | Nothing reachable through the chart's Ingress changes; no Valkey round trip for traffic the Ingress already drops | Behind a proxy that routes every host to the Bastion, a flood of foreign hosts is bounded by the ingress alone |
+| (b) A `421` takes a token of the anonymous class | Every answer counted | The block list would have to move before the host to be consistent, and a block would then hold for a host the Bastion does not serve |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-018.
+
+### Q-BAS-528 · A not-served request costs one Valkey round trip more until its address is blocked
+
+Status: **Decided by the development agent** on 2026-11-27 (H-2448) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: H-455. Measured on 2026-11-27 in process (the engine with the guard in memory, no TLS, no log; 20 cores at load 9 to 11): a `404`
+without the limit 3.9 µs, with it 4.6 µs, a refused one 6.0 µs, a blocked one 6.0 µs; the attack measured 0.03 to 0.2 ms per `404` at the
+listener. With Valkey (derived from the code, not measured): a `404` of an address that is not blocked asks for the block (one `GET`) and
+now for the limiter (one `MULTI`/`EXEC`), two round trips instead of one; a refused one two more (the refusal's counter and the threshold's
+count); a blocked address none, the block is held in memory.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Count every request at the shared limiter (chosen) | A sustained scan of one address costs two to four round trips per request for its burst and the threshold, then none | Before, a scan that was never blocked cost one round trip per request for as long as it ran; at the defaults one address is blocked within seconds at the ingress's rate, so the total is lower | A scan spread over many addresses each under its burst costs two round trips per request instead of one (H-455) |
+| (b) Count not-served requests in the replica's memory only, with Valkey too | No round trip for a `404` | Each replica counts alone (H-2449's multiplication for exactly the traffic of an attack), and a block it sets is shared only through the block list |
+| (c) Ask the limiter only after the path, for a not-served path only every n-th request | Fewer round trips | The count is no longer the count; a scan with n−1 junk paths per address request is free again |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-035; H-455 names the cost per request.
+
 ## What this does not cover
 
 ### H-2304 · A Bastion serves its imprint and privacy notice only with its web interface
@@ -16599,7 +16712,9 @@ the family that the Bastion's ACL user may run.
 Stage: R-BAS-034 to R-BAS-037. Subject: the load a request flood puts on the Bastion's Valkey.
 
 Live on every Bastion with Valkey. A request of an address that is not blocked asks Valkey for the block (one `GET`) and for the limiter
-(one `MULTI`/`EXEC`), a miss one more, a refusal two more; a blocked address costs none, the block is held in the replica's memory. A flood
+(one `MULTI`/`EXEC`), a miss one more, a refusal two more; a blocked address costs none, the block is held in the replica's memory. Since
+2026-11-27 this holds for a path that is no address too, which asked only for the block before
+([Q-BAS-528](#q-bas-528--a-not-served-request-costs-one-valkey-round-trip-more-until-its-address-is-blocked)). A flood
 from many addresses, each below its limits, costs Valkey two round trips per request. The breaker of R-ARCH-031 opens after repeated
 failures and the guard runs from memory until it closes, so a Valkey that cannot keep up costs the shared counters, not the service; the
 coarse limit at the ingress (R-BAS-038) bounds the request rate before the pods. What makes it real: a flood of the size of the edge limit

@@ -3,7 +3,6 @@ package gui
 import (
 	"bytes"
 	"compress/gzip"
-	"context"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
@@ -16,7 +15,6 @@ import (
 	"time"
 
 	"github.com/guided-traffic/quader/internal/bastion/catalogue"
-	"github.com/guided-traffic/quader/internal/bastion/settings"
 )
 
 // What a crawler reads (W-35's B.11): the pages' heads and texts, robots.txt, the sitemap and the page of a refusal, against the
@@ -431,8 +429,7 @@ func TestR_BAS_122_RobotsAndTheSitemapAtTheHostsRoot(t *testing.T) {
 func TestR_BAS_123_APageOverTheLimitIsAPageInTheBastionsShape(t *testing.T) {
 	g := &fakeGuard{limited: true}
 	h := seoGUI(t, seoReader(), func(o *Options) {
-		o.Guard = g
-		o.Flood = func(context.Context) settings.Rate { return settings.Rate{RequestsPerSecond: 20, Burst: 100} }
+		o.Guard, o.Flood = g, testFlood
 	})
 	for _, c := range []struct{ target, lang, locale, text string }{
 		{"/ui/de/projects/acme/packages/npm/@acme/ui", "", "de", "Von Ihrer Adresse kamen zu viele Anfragen. Versuchen Sie es in 2\u00a0Sekunden erneut."},

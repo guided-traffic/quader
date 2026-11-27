@@ -215,6 +215,19 @@ Without Valkey every counter and block holds per replica at the configured value
 - The address is the one R-ARCH-006 yields with the Bastion's own `server.trusted_proxies`; an IPv6 address counts as its `/64`, so one
   host that owns a whole prefix is one address. `exempt_cidrs` are never limited, timed out or blocked: an entry is a promise that nothing
   behind that network abuses the Bastion.
+- **Every request counts, whatever its path** ([Q-BAS-525](../spec/bastion.md#q-bas-525--every-request-past-the-host-and-the-block-list-takes-one-token-of-its-addresss-request-limit)).
+  After the host and the block list, every request the client listener answers takes one token of one bucket of its address before
+  anything else answers it: the web interface's pages, the files of its bundle and its data the class `gui` (a browser's first load is 17
+  to 29 requests against a burst of 100, [Q-BAS-526](../spec/bastion.md#q-bas-526--the-web-interfaces-files-and-data-count-as-pages));
+  `robots.txt`, the sitemap and a method the web interface refuses the anonymous class; every other request the class of its credential,
+  a path that is no address (`404`), a refused method, an oversized token form and a disabled replica's `503` included. So a content
+  discovery or template scanner is refused `429 rate_limited` after its burst and blocked once its refusals pass the threshold, like any
+  other flood, whether it asks a page or not; before, such a path was answered before the limit and a scanner that asked no page was
+  never limited or blocked (the authorized attack of 2026-11-27: about 140,000 requests from one address at up to 790 a second, blocked
+  only by its 3,002 refusals of the page limit). A request for a foreign host (`421`) takes no token: the chart's Ingress routes only the
+  Bastion's hosts ([Q-BAS-527](../spec/bastion.md#q-bas-527--a-request-for-a-foreign-host-takes-no-token)). The count costs a `404` one
+  limiter call more, 0.7 µs in memory and with Valkey one round trip until the address is blocked
+  ([Q-BAS-528](../spec/bastion.md#q-bas-528--a-not-served-request-costs-one-valkey-round-trip-more-until-its-address-is-blocked)).
 - Each refusal of a request limit, a miss limit or a timeout counts toward one threshold. Above it the address is blocked, for 15 minutes
   and twice as long for each further block within 24 h, up to `max_duration`. A blocked address costs the Bastion one comparison in memory
   and is answered `429 address_blocked`; its requests are not logged one by one, the block is, once.
@@ -289,7 +302,7 @@ These are properties of [internal/bastion/engine](../../internal/bastion/engine)
 
 | Property | Where | Test |
 |---|---|---|
-| A path outside `/api/<format>/<projectKey>/<repoKey>/…` and `/files/<projectKey>/<repoKey>/…`, a project or key that fails INV-5's rule, and a path with one segment after the format, is refused before any request | `stepPath`, `classifyPath` | `TestR_BAS_003_OnlyThePackagePathFamiliesReachTheReadFlow` |
+| A path outside `/api/<format>/<projectKey>/<repoKey>/…` and `/files/<projectKey>/<repoKey>/…`, a project or key that fails INV-5's rule, and a path with one segment after the format, is refused before any request, after the request limit has counted it | `readPath`, `stepRefusal`, `classifyPath` | `TestR_BAS_003_OnlyThePackagePathFamiliesReachTheReadFlow`, `TestR_BAS_035_R_BAS_037_APathThatIsNoAddressCountsAgainstItsAddress` |
 | The same repository key in two projects is two repositories: the read-shape answer is keyed by credential and the qualified name `<projectKey>/<repoKey>`, so a caller's answer for one is never used for the other | `shapeKey`, `classifyPath` | `TestR_BAS_018_TheAddressedRepositoryIsTheQualifiedName`, `TestR_BAS_018_ARepositoryOfAnotherProjectIsAnotherRepository` |
 | A malformed token, a `bst` token and an unknown prefix are refused without a request and counted as failed authentications; `X-NuGet-Apikey` and cookies are never read as credentials | `parseCredential` | `TestR_BAS_019_AMalformedTokenAnswers401WithoutARequest`, `TestR_BAS_019_TheNuGetAPIKeyIsNeverAReadCredential` |
 | No answer is keyed by a token: the key is the SHA-256 of the token string, and the string lives in memory for the request | `credentialKey`, H-447 | `TestR_BAS_019_TheCredentialKeyIsTheSHA256AndNoTokenIsKept` |
@@ -299,7 +312,7 @@ These are properties of [internal/bastion/engine](../../internal/bastion/engine)
 | The headers of the interface, the replica header, `Cache-Status`, cookies and the hop-by-hop headers never reach the caller, and the caller's cookie, conditionals, range and forwarded-for headers never reach the main installation | `replayHeader`, `stripRequest` | `TestR_BAS_021_AMissIsForwardedWithTheCallersCredentialAndTheListedHeaders`, `TestR_BAS_021_TheCallerReceivesTheMainInstallationsAnswerWithoutTheInternalHeaders` |
 | A write sends the main installation a probe without body and credential; the upload is not read | `write` | `TestR_BAS_014_AWriteIsProbedWithoutBodyAndCredentialAndTheRefusalIsReplayed` |
 | Below `/v2/` only the core routes and `/v2/<projectKey>/<repoKey>/…` (on a bound host every path, as the main installation reads it) are classified; any other path answers the Bastion's own `404 NAME_UNKNOWN` without a request; the version check without a credential is the Bastion's own `401` | `classifyRegistry`, `versionChallenge` | `TestR_BAS_051_TheRegistryRootIsAPathFamilyOfTheBastion`, `TestR_BAS_057_ABoundHostIsClassifiedAsItsRepository` |
-| The token service's answer is passed on and never kept, collapsed or put into an answer; the form of `POST /v2/_token` is read only for its password's syntax and slot class, at most 16 KiB | `passCore`, `onPassOnly`, `stepTokenForm` | `TestR_BAS_051_TheRegistryRootIsAPathFamilyOfTheBastion` |
+| The token service's answer is passed on and never kept, collapsed or put into an answer; the form of `POST /v2/_token` is read only for its password's syntax and slot class, at most 16 KiB | `passCore`, `onPassOnly`, `readTokenForm` | `TestR_BAS_051_TheRegistryRootIsAPathFamilyOfTheBastion` |
 | The Galaxy clients' `Authorization: Token` is read on `/api/<format>/…` only, checked like any token and forwarded unchanged; its answers are keyed apart from the same token's under Bearer or Basic, so the main installation's refusal of the scheme on one route is never the token's answer on another | `parseCredential` | `TestR_BAS_019_TheGalaxyTokenSchemeIsACredentialOfTheProtocolFamily` |
 | A registry token is a credential below `/v2/` only, checked by its form; one that names the anonymous principal is forwarded without `Authorization`; its read shape is recorded at most `partial` whatever the main installation marks; `insufficient_scope` keeps no `invalid` answer and counts nothing | `parseCredential`, `capRead`, `insufficientScope` | `TestR_BAS_052_RegistryTokensAtTheBastion` |
 | A cached answer replays the core's representation headers, the content headers of R-ARCH-007 among them, and the headers its format declares; never a per-request header of the core, a cookie or a header of the interface, whatever a format declares | `keepHeader` | `TestR_BAS_053_TheEnginesHeaderListsAreTheCatalogs`, `TestR_BAS_022_AHitCarriesTheContentHeadersOfRARCH007`, `TestR_BAS_053_ContainerImagesFollowTheRouteKinds` |
@@ -609,7 +622,9 @@ Debian's changelog and copyright; a public generic repository's folders and file
 - **No request to the main installation.** Every answer comes from the replica's catalogue and its legal pages; an architecture rule
   keeps the client, the handover and the engine out of the web interface's closure (R-BAS-116).
 - **The flood class `gui`.** Every request of a page, a file of the bundle or the data asks the block list and the class `gui` per
-  address (20 requests a second, a burst of 100, by default), never a miss and never the anonymous class's budget (R-BAS-117).
+  address (20 requests a second, a burst of 100, by default), never a miss and never the anonymous class's budget (R-BAS-117);
+  `robots.txt`, the sitemap and a method other than `GET` and `HEAD` ask the anonymous class instead, before the method's `405` and a
+  disabled replica's `503` are answered, so nothing the web interface answers goes uncounted (Q-BAS-525).
 - **The CSP and the headers.** A page runs only the Bastion's own scripts under Trusted Types, frames and forms are refused, no
   referrer leaves, no cookie is set and no `Server` or `Quader-` header is sent (R-BAS-117).
 - **The bundle.** The application is built apart from the main installation's, and its build fails when the main installation's API
@@ -625,7 +640,7 @@ What it means for trust, mechanism by mechanism:
 | The Bastion's own bundle | The application is built and embedded apart from the main installation's; the main installation's bundle is a package the Bastion may not import, so none of its screens (sign-in, administration) is in the role's closure. Its build fails when the main installation's API client, its session, a screen of its own or a dialog put a byte into it, read from the build's metafile | R-BAS-116, R-BAS-119, R-UI-228 |
 | Authors' HTML on the page | READMEs, documentation and changelogs are the main installation's sanitized HTML, bound through Angular's sanitizer under Trusted Types ([H-2327](#h-2327--authors-html-is-shown-on-the-bastions-origin)) | R-UI-229, R-BAS-117 |
 | A page runs only its own code | The page's policy admits scripts, styles, images, fonts and requests of the Bastion's own origin alone, no form target, no frame ancestor and Trusted Types; every other answer runs nothing (`default-src 'none'`); frames are refused twice (`frame-ancestors 'none'`, `X-Frame-Options: DENY`), and no referrer leaves the page (W-35's D7) | R-BAS-117 |
-| The request class `gui` | Every request asks the block list and the class `gui` per address, never the anonymous class's budget and never a miss | R-BAS-117, Q-LIM-307 |
+| The request class `gui` | Every request of the application asks the block list and the class `gui` per address, never the anonymous class's budget and never a miss; `robots.txt`, the sitemap and a refused method ask the anonymous class; nothing is answered uncounted | R-BAS-117, Q-LIM-307, Q-BAS-525 |
 | One origin with the package API | A browser that answered a `401` of the package API holds Basic credentials for the origin ([H-2325](#h-2325--the-web-interface-shares-its-origin-with-the-package-api)) | — |
 | A rolling upgrade | A replica answers a file of another release's bundle `404`; the page loads itself again ([H-2324](#h-2324--a-page-of-one-release-asks-a-replica-of-another-for-a-file-its-bundle-lacks)) | R-BAS-116 |
 | A generic repository's files | A public generic repository's folders and files are the main installation's views without an act (W-35's P9d): a file downloads through the Bastion's own package route, its commands are the catalogue's set-up of its path, and no upload, delete or statistic is in the bundle. The file's signatures are a badge without their report ([H-2328](#h-2328--a-generic-files-signatures-are-a-badge-alone-at-the-bastion)), and its malware verdict shows no database date ([H-2329](#h-2329--a-generic-files-malware-verdict-at-the-bastion-shows-no-date-of-its-database)) | R-UI-229, R-BAS-118 |
@@ -1645,17 +1660,6 @@ burst 4,000) instead of the anonymous ones (50, burst 1,000). A malformed creden
 What makes it real: an anonymous caller who sends a junk header gets four times the anonymous rate; seen in the authorized test of
 2026-11-27, 19:23 to 19:35 UTC, where about 12,000 junk Basic credentials at about 100 a second were neither limited nor refused with
 `429`. Each answer cost the Bastion about 0.1 ms and nothing reached the main installation.
-
-### H-2448 · A path that is no address is answered before the per-address limit
-
-Stage: R-BAS-003, R-BAS-018, the order host, block list, path, disable, token form, limits ([request.go](../../internal/bastion/engine/request.go)
-`serve`). Subject: the per-address limit and the block list (R-BAS-035, R-BAS-037). Live in every installation. A request whose path the
-Bastion cannot classify is answered `404 not_served` (`405` for a page) before the limit, so it never consumes a token of its address and
-never counts toward the block threshold. What makes it real: content discovery and template scanners run unbounded by the Bastion; in the
-test of 2026-11-27 about 30,000 such requests in ten minutes at up to 160 a second were answered in 0.03 to 0.2 ms each with no effect on the
-main installation. The address was blocked only when its requests of the web interface's pages had filled the threshold
-(20:48:59, both replicas, 15 minutes, after 3,002 refusals of the page limit); a scanner that asks no page is never blocked. The bound left
-is the ingress in front of the Bastion, which in the owner's installation refused the same address with its own `429` at the same time.
 
 ### H-2449 · Without Valkey every limit and block counts per replica
 

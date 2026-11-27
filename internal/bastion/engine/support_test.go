@@ -508,8 +508,10 @@ type options struct {
 	cache  *testCache
 	main   *fakeMain
 	guard  *fakeGuard
-	clock  *testClock
-	m      *metrics.Metrics
+	// realGuard, when set, is the engine's guard instead of the double (a test that counts with guard.New).
+	realGuard guard.Guard
+	clock     *testClock
+	m         *metrics.Metrics
 	// down makes the handshake fail from the start: the link is unreachable and has never handshaken.
 	down bool
 	// noFeed makes the feed fail from the start, so that the link has no history and is not reachable.
@@ -580,6 +582,9 @@ func newHarness(t *testing.T, o options) *harness {
 		Config: cfg, Metrics: h.m, Replica: "bastion-0", Release: "test", Now: h.clock.now, Main: h.link.Guard(client),
 		Cache: h.cache.Cache, Shared: h.state, Guard: h.guard, Downloads: h.dl, Link: h.link, Handover: o.handover, Log: o.log,
 		Throughput: o.throughput, Budgets: o.budgets,
+	}
+	if o.realGuard != nil {
+		d.Guard = o.realGuard
 	}
 	e, err := newFlow(d)
 	if err != nil {

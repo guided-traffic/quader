@@ -10729,10 +10729,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-BAS
 
-432 questions on [spec/bastion.md](spec/bastion.md).
+436 questions on [spec/bastion.md](spec/bastion.md).
 
 <details>
-<summary>Q-BAS: 432 questions</summary>
+<summary>Q-BAS: 436 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -11168,6 +11168,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-BAS-519](spec/bastion.md#q-bas-519--an-administrator-allows-projects-per-bastion-and-a-new-bastion-allows-none) | An administrator allows projects per Bastion, and a new Bastion allows none | Decided by the owner on 2026-11-27 | (a) Rows of `bastion_project`; `PUT`/`DELETE /api/v1/bastions/{name}/projects/{project}`, a paged `GET`; `endpoints:write` to change, `endpoints:read` to read, as the registration's other members (Q-BAS-325); a removal deletes the project's choices of that Bastion | — |
 | [Q-BAS-520](spec/bastion.md#q-bas-520--every-level-needs-the-choice-not-only-public) | Every level needs the choice, not only Public | Decided by the development agent on 2026-11-27 (W-41's plan, D15) | (a); no reason against it was found. | — |
 | [Q-BAS-521](spec/bastion.md#q-bas-521--a-narrowing-of-the-distribution-is-journaled-and-tells-every-bastion-at-once) | A narrowing of the distribution is journaled and tells every Bastion at once | Decided by the development agent on 2026-11-27 (W-41's plan, D17) | (a) Four events; the two removals journaled (`{bastionId, projectId}`, `{repositoryId, bastionId}`) and replayed by deleting the rows; the feed maps a widening to `settings` and a narrowing to `grants` and `settings`; the change area `bastion_distribution` starts the catalogue's builder | — |
+| [Q-BAS-525](spec/bastion.md#q-bas-525--every-request-past-the-host-and-the-block-list-takes-one-token-of-its-addresss-request-limit) | Every request past the host and the block list takes one token of its address's request limit | Decided by the development agent on 2026-11-27 (H-2448 of the security page, which the owner asked to be solved after the authorized attack of that day) | (a) The request limit right after the block list for every request: the path, its credential and the token form are read first (they choose the class), and what they refuse is answered after the limit; the web interface asks the class `gui` for its application and the anonymous class for the rest | — |
+| [Q-BAS-526](spec/bastion.md#q-bas-526--the-web-interfaces-files-and-data-count-as-pages) | The web interface's files and data count as pages | Decided by the development agent on 2026-11-27 (H-2448) | (a), as built before; the measurement is written into the test that holds it (`TestR_BAS_035_APageFloodTakesThePageLimitAndABrowsersFirstLoadStaysInsideIt`). | — |
+| [Q-BAS-527](spec/bastion.md#q-bas-527--a-request-for-a-foreign-host-takes-no-token) | A request for a foreign host takes no token | Decided by the development agent on 2026-11-27 (H-2448) | (a) The host step stays first and takes no token | — |
+| [Q-BAS-528](spec/bastion.md#q-bas-528--a-not-served-request-costs-one-valkey-round-trip-more-until-its-address-is-blocked) | A not-served request costs one Valkey round trip more until its address is blocked | Decided by the development agent on 2026-11-27 (H-2448) | (a) Count every request at the shared limiter | — |
 
 </details>
 

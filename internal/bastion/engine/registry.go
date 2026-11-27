@@ -20,35 +20,39 @@ import (
 // maxTokenForm bounds the form of POST /v2/_token the Bastion reads, as the token service does (R-BAS-051).
 const maxTokenForm = 16 << 10
 
-// stepTokenForm reads the form of POST /v2/_token before the limits (R-BAS-051): its password is the one credential
+// readTokenForm reads the form of POST /v2/_token before the limits (R-BAS-051): its password is the one credential
 // the token service reads, so it decides the request's slot class and limits and is checked for its syntax before
-// anything is sent. The Bastion keeps nothing of the form beyond the request and logs none of it. Every other request
-// passes unchanged.
-func (e *engine) stepTokenForm(q *rq) bool {
-	if q.core != coreToken || q.r.Method != http.MethodPost {
-		return true
+// anything is sent. A form that is too large is refused by stepRefusal, after the limit has counted the request
+// (Q-BAS-525). The Bastion keeps nothing of the form beyond the request and logs none of it. Every other request passes
+// unchanged.
+func (e *engine) readTokenForm(q *rq) {
+	if q.refusal != nil || q.core != coreToken || q.r.Method != http.MethodPost {
+		return
 	}
 	limit := min(int64(maxTokenForm), int64(e.cfg.Main.MaxForwardedBody))
 	if q.r.ContentLength > limit {
-		e.refuse(q, errs.E(errs.TooLarge, errs.CodeTooLarge, "The body is too large."), metrics.RefusedReadOnly)
-		return false
+		q.refusal, q.refusalReason = errTokenFormTooLarge(), metrics.RefusedReadOnly
+		return
 	}
 	body, err := io.ReadAll(io.LimitReader(q.r.Body, limit+1))
 	if err != nil || int64(len(body)) > limit {
-		e.refuse(q, errs.E(errs.TooLarge, errs.CodeTooLarge, "The body is too large."), metrics.RefusedReadOnly)
-		return false
+		q.refusal, q.refusalReason = errTokenFormTooLarge(), metrics.RefusedReadOnly
+		return
 	}
 	q.form = body
 	form, _ := url.ParseQuery(string(body)) // a form the token service cannot read is its 400 to give
 	pw := form.Get("password")
 	if pw == "" {
-		return true
+		return
 	}
 	// A form with a password takes an authenticated slot and the authenticated limits; a malformed token in it is
 	// refused before anything is sent (stepCredentials, R-BAS-036).
 	q.hasAuth = true
 	q.cred, q.credOK = parseToken(pw, "form")
-	return true
+}
+
+func errTokenFormTooLarge() *errs.Error {
+	return errs.E(errs.TooLarge, errs.CodeTooLarge, "The body is too large.")
 }
 
 // versionChallenge answers the version check without a credential itself (R-BAS-051): 401 with the registry's

@@ -437,7 +437,9 @@ func TestR_BAS_117_TheStateDecidesOffNotReadyAndServing(t *testing.T) {
 // fakeGuard refuses what its fields say and counts the classes it was asked.
 type fakeGuard struct {
 	blocked, limited bool
-	pages            int
+	pages, requests  int
+	// credentialed counts the requests asked in the authenticated class.
+	credentialed int
 }
 
 func (g *fakeGuard) Blocked(context.Context, string) guard.Verdict {
@@ -449,10 +451,30 @@ func (g *fakeGuard) Blocked(context.Context, string) guard.Verdict {
 
 func (g *fakeGuard) Page(context.Context, string) guard.Verdict {
 	g.pages++
+	return g.verdict()
+}
+
+func (g *fakeGuard) Request(_ context.Context, _ string, c guard.Credentialed) guard.Verdict {
+	g.requests++
+	if c {
+		g.credentialed++
+	}
+	return g.verdict()
+}
+
+func (g *fakeGuard) verdict() guard.Verdict {
 	if g.limited {
 		return guard.Verdict{Status: 429, Code: guard.CodeRateLimited, RetryAfter: 1500 * time.Millisecond}
 	}
 	return guard.Allow()
+}
+
+// testFlood is the flood figures of the guard's tests: the class gui at its defaults, the anonymous class small.
+func testFlood(context.Context) settings.Flood {
+	return settings.Flood{
+		Anonymous: settings.Class{Rate: settings.Rate{RequestsPerSecond: 10, Burst: 40}},
+		GUI:       settings.Rate{RequestsPerSecond: 20, Burst: 100},
+	}
 }
 
 // TestR_BAS_117_EveryRequestCountsInTheClassGui: the block list, then the class gui, for a page, a file and the data alike; a
@@ -462,16 +484,15 @@ func TestR_BAS_117_EveryRequestCountsInTheClassGui(t *testing.T) {
 	quiet := 0
 	r := newReader()
 	h := newGUI(t, r, func(o *Options) {
-		o.Guard, o.Quiet = g, func(context.Context) { quiet++ }
-		o.Flood = func(context.Context) settings.Rate { return settings.Rate{RequestsPerSecond: 20, Burst: 100} }
+		o.Guard, o.Quiet, o.Flood = g, func(context.Context) { quiet++ }, testFlood
 	})
 	for _, a := range []string{"/ui/en/", "/ui/en/main-ABCD1234.js", "/ui/data/v1/packages"} {
 		if rec := do(h, http.MethodGet, a); rec.Code != 200 {
 			t.Errorf("GET %s = %d", a, rec.Code)
 		}
 	}
-	if g.pages != 3 {
-		t.Errorf("the class gui was asked %d times, want 3", g.pages)
+	if g.pages != 3 || g.requests != 0 {
+		t.Errorf("the class gui was asked %d times and the request class %d, want 3 and 0", g.pages, g.requests)
 	}
 	g.limited = true
 	reads := r.reads
@@ -486,6 +507,44 @@ func TestR_BAS_117_EveryRequestCountsInTheClassGui(t *testing.T) {
 	g.blocked = true
 	if rec := do(h, http.MethodGet, "/ui/data/v1/state"); rec.Code != 429 || problemCode(t, rec) != "address_blocked" || quiet != 1 {
 		t.Errorf("blocked = %d %s, quiet %d", rec.Code, rec.Body.String(), quiet)
+	}
+}
+
+// TestR_BAS_035_EveryOtherRequestOfTheWebInterfaceCountsInTheAnonymousRequestClass: robots.txt, the sitemap, a method the web
+// interface refuses and a disabled replica's answer are counted too, in the anonymous request class whatever Authorization says,
+// and a refusal of that class is the problem with the policy "requests", never the page of R-BAS-123 (Q-BAS-525).
+func TestR_BAS_035_EveryOtherRequestOfTheWebInterfaceCountsInTheAnonymousRequestClass(t *testing.T) {
+	g := &fakeGuard{}
+	disabled := false
+	r := newReader()
+	h := newGUI(t, r, func(o *Options) {
+		o.Guard, o.Flood, o.Disabled = g, testFlood, func() bool { return disabled }
+	})
+	if rec := do(h, http.MethodGet, "/robots.txt", "Authorization", "Bearer junk"); rec.Code != 200 {
+		t.Errorf("robots.txt = %d", rec.Code)
+	}
+	do(h, http.MethodGet, "/sitemap.xml")
+	if rec := do(h, http.MethodPost, "/ui/en/"); rec.Code != http.StatusMethodNotAllowed {
+		t.Errorf("POST = %d", rec.Code)
+	}
+	disabled = true
+	if rec := do(h, http.MethodGet, "/ui/en/"); rec.Code != http.StatusServiceUnavailable {
+		t.Errorf("disabled = %d", rec.Code)
+	}
+	if g.requests != 3 || g.credentialed != 0 || g.pages != 1 {
+		t.Errorf("requests %d (credentialed %d), pages %d; want 3 anonymous requests and 1 page", g.requests, g.credentialed, g.pages)
+	}
+	disabled, g.limited = false, true
+	reads := r.reads
+	for _, a := range []string{"/robots.txt", "/ui/en/"} {
+		rec := do(h, http.MethodPost, a)
+		if rec.Code != 429 || problemCode(t, rec) != "rate_limited" || rec.Header().Get("RateLimit-Policy") != `"requests";q=40;w=4` ||
+			rec.Header().Get("RateLimit") != `"requests";r=0;t=2` {
+			t.Errorf("POST %s limited = %d %v %s", a, rec.Code, rec.Header(), rec.Body.String())
+		}
+	}
+	if r.reads != reads {
+		t.Errorf("a refused request read the catalogue %d times", r.reads-reads)
 	}
 }
 
