@@ -21,6 +21,8 @@ type Status struct {
 	// database (the kind trivy, Q-OPS-225); zero for the kind clamav and before a database.
 	DatabaseBuiltAt time.Time
 	InUse, Total    int
+	// Calls are a malware scanner's calls in flight (Q-OPS-460); nil for the other kinds.
+	Calls []Call
 }
 
 // Identity names the replica in its reports.
@@ -196,7 +198,7 @@ func (r *Reporter) Send(ctx context.Context) {
 	id := r.o.Identity
 	rep := Report{
 		Name: id.Name, Node: id.Node, Version: id.Version, Revision: id.Revision, State: st.State, Reason: st.Reason,
-		ToolVersion: st.ToolVersion, Database: st.Database, Slots: Slots{InUse: st.InUse, Total: st.Total},
+		ToolVersion: st.ToolVersion, Database: st.Database, Slots: Slots{InUse: st.InUse, Total: st.Total}, Calls: st.Calls,
 	}
 	if !st.DatabaseBuiltAt.IsZero() {
 		at := st.DatabaseBuiltAt.UTC()

@@ -657,7 +657,9 @@ already reaches with the certificate of its kind ([ha-and-helm.md](ha-and-helm.m
   `freshclam`'s from the first line of `freshclam --version` that its container wrote, [malware-scanning.md](malware-scanning.md)
   R-MAL-032), its slots in use and in all (none for the updater), and for ClamAV the signature database `clamd` scans with, for the updater
   the set its directory holds and the build time of its newest daily (the member `databaseBuiltAt`, kept in the column `db_built_at`,
-  [Q-OPS-226](#q-ops-226--the-updaters-report-carries-its-dailys-build-time-in-a-column-of-its-own-and-no-slots)). At `SIGTERM` it reports `draining` at once; at its clean shutdown it signs off with
+  [Q-OPS-226](#q-ops-226--the-updaters-report-carries-its-dailys-build-time-in-a-column-of-its-own-and-no-slots)), and for ClamAV the
+  calls its slots hold, each with the digest the worker's call named and since when (the member `calls`, kept in the column `calls`,
+  [Q-OPS-460](#q-ops-460--a-malware-scanners-report-names-the-calls-its-slots-hold)). At `SIGTERM` it reports `draining` at once; at its clean shutdown it signs off with
   `DELETE` on the same path, tried again while the scan listener cannot take it (no connection, `5xx`, `429`, `408`) for at most 10 s
   within its close phase ([ha-and-helm.md](ha-and-helm.md) Q-HA-495). Two processes may carry one name (both containers of a
   `vuln-scanner-trivy` pod carry the pod's): a row's key is the UID, so they never share a row, and only the scanner of a pod reports
@@ -668,11 +670,12 @@ already reaches with the certificate of its kind ([ha-and-helm.md](ha-and-helm.m
   R-HA-069; [Q-OPS-224](#q-ops-224--the-updater-reports-as-the-kind-freshclam-with-the-newest-daily-it-holds)). A certificate of none, of
   more than one, and a request without TLS are refused with `401`; the body names no kind, and a member it does not know is refused. The
   names must differ and each must be one of `server.scan_clients` (the configuration refuses otherwise).
-- **Nothing beyond its size and shape.** A body of at most 4 KiB, decoded strictly; the pod's and the node's name 1 to 253 letters, digits,
-  dots, hyphens or underscores; a version, a revision, a tool's version and a database's version of letters, digits and `. + _ ~ -`; a
-  reason of at most 32 letters, digits and underscores; slots 1 to 64, in use 0 to all, and none from the kind `freshclam`; a database only
-  from the kinds `clamav` and `freshclam`, the latter with the daily's build time. Anything
-  else is `400`. The table checks the same bounds.
+- **Nothing beyond its size and shape.** A body of at most 16 KiB ([Q-OPS-461](#q-ops-461--a-report-may-be-16-kib)), decoded strictly;
+  the pod's and the node's name 1 to 253 letters, digits, dots, hyphens or underscores; a version, a revision, a tool's version and a
+  database's version of letters, digits and `. + _ ~ -`; a reason of at most 32 letters, digits and underscores; slots 1 to 64, in use 0 to
+  all, and none from the kind `freshclam`; a database only from the kinds `clamav` and `freshclam`, the latter with the daily's build time;
+  calls only from the kind `clamav`, at most its slots in all, each `sha256:` and 64 lower-case hexadecimal digits with its time, no digest
+  twice. Anything else is `400`. The table checks the same bounds.
 - **The row.** `packages` writes it with PostgreSQL's clock: `heartbeat_at` at every report, `started_at` at the first, `state_since` when
   the state or its reason changes. `draining` is the last state of a row, as in R-OPS-003. A kind has at most 64 live rows: the report of a
   new UID beyond them is refused `409`, and so is a report whose UID is a row of the other kind. The route writes no other table.
@@ -701,7 +704,7 @@ API: `GET /api/v1/system/scanners` → `200`. Requires `settings:read`, the perm
       "name": "quader-malware-scanner-clamav-6d9c7b5f4-x2v4q", "node": "pool-a-7x2k", "version": "0.42.0", "revision": "4f1c2a9e0d7b",
       "state": "starting", "reason": "database", "stateSince": "2026-11-21T09:58:02Z", "lost": false,
       "startedAt": "2026-11-21T09:58:02Z", "heartbeatAt": "2026-11-21T10:02:12Z",
-      "toolVersion": "1.5.5", "slots": {"inUse": 0, "total": 2}, "database": null
+      "toolVersion": "1.5.5", "slots": {"inUse": 0, "total": 2}, "database": null, "calls": []
     }
   ]
 }
@@ -712,8 +715,10 @@ here, from the answering replica's configuration (every role reads the same file
 while the installation calls scanner pods of the kind (`vulnerabilities.images.scanner.url`, `malware.scanner.url`) and the scan listener
 can tell their kind (TLS and the kind's name), so an empty list is a fault; `unverified` while it calls them but cannot tell their kind and
 records none; `none` while no scanner of the kind is configured (the role `all` builds none, Q-ARCH-563). `database.builtAt` is the build time of the version in use when the row names it, `null` for another
-version. The screens are [api-and-ui.md](api-and-ui.md) R-UI-038 (the System page), [malware-scanning.md](malware-scanning.md) R-MAL-023
-and [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-022 (Q-UI-897).
+version. `calls` is a malware scanner's (`clamav`) list of what it works on, `[{"sha256", "since"}]`, the oldest first, at most
+`slots.total`, its own statement as its slots are (H-1161); `null` for the other kinds. The screens are [api-and-ui.md](api-and-ui.md)
+R-UI-038 (the System page), [malware-scanning.md](malware-scanning.md) R-MAL-023 (its **Working on**, R-MAL-041) and
+[vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-022 (Q-UI-897).
 
 **Acceptance criteria:**
 
@@ -8037,6 +8042,34 @@ Status: **Decided by the development agent** (W-37, 2026-11-26).
 `quader_storage_reads_unavailable_total` carries `connection` alone; `quader_storage_uploads_unavailable_total` none, since an upload is
 refused once and the connection it is counted on in the history is a choice of that record ([Q-STOR-513](storage.md#q-stor-513--counts-are-flushed-per-minute-per-replica)).
 No label holds a digest, a key or a text of the store. **Applied in the spec:** R-OPS-007.
+
+### Q-OPS-460 · A malware scanner's report names the calls its slots hold
+
+Status: **Decided by the development agent** on 2026-11-26 (W-36's plan, B.12 and C.3) and built on 2026-11-27 — selected from the options
+below; the owner reviews it at the walkthrough.
+
+Context: the settings page lists, per replica of `malware-scanner-clamav`, what it works on (**Working on**, W-36's package P6). The
+replicas' slots in use already come from their reports (Q-MAL-110); the scan controller knows its calls per address
+([malware-scanning.md](malware-scanning.md) R-MAL-038), but an address is no row of the report.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The report of the kind `clamav` names each call its slots hold, its digest and since when; `packages` keeps them in `scanner_replica.calls` (migration 00153), at most `slots_total` (chosen) | The replica's own list | The list and the slots in use are one source, so one fact never has two numbers (Q-MAL-110); no join of an address to a pod | A report names digests (H-1161 bounds what a taken-over scanner can make up: at most its slots, digests of the call's form) |
+| (b) The controller's row per address, joined to the report by the pod's name | No change of the report | — | Two sources for one column; an address and a pod's name meet only in the controller's last answer |
+| (c) No list | Nothing | — | The screen cannot say what a replica works on |
+
+**Choice:** (a). The digest is the blob's, as the worker's call names it; the API answers it as 64 hexadecimal digits. A row of another
+kind has none (`null`). **Applied in the spec:** R-OPS-048; [malware-scanning.md](malware-scanning.md) R-MAL-041;
+[security/scanner-replicas.md](../security/scanner-replicas.md).
+
+### Q-OPS-461 · A report may be 16 KiB
+
+Status: **Decided by the development agent** on 2026-11-26 (W-36's plan, C.3) and built on 2026-11-27.
+
+A report was a few hundred bytes under a bound of 4 KiB. A call adds 126 bytes (`{"digest":"sha256:<64>","since":"<RFC 3339 with
+nanoseconds>"},`), at most one per slot, and a replica has at most 64 slots: a report of 64 slots that each hold a call is 8,335 bytes
+(measured as the JSON of the report of `TestR_OPS_048_AMalwareScannerReportsItsCallsWithinItsSlots`, which holds it under the bound). The
+bound rises to 16 KiB, which holds that with room and still bounds what one request of a scanner makes `packages` read. **Applied in the spec:** R-OPS-048.
 
 ## What this does not cover
 

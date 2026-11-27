@@ -29003,6 +29003,24 @@ owner reviews it at the walkthrough.
 **Choice:** (a). `catalogue.Stored.Versions` answers each stored version with its id in `package_version_listing`. **Applied in the
 spec:** [malware-scanning.md](malware-scanning.md) R-MAL-039.
 
+### Q-API-468 · The scan controller and the coverage are two reads, each for the page that shows it
+
+Status: **Decided by the development agent** on 2026-11-26 (W-36's plan, D.3) and built on 2026-11-27 — selected from the options below;
+the owner reviews it at the walkthrough.
+
+Context: what the scan controller sees is the administrator's (**Settings › Malware scanning**), how current the checks are the auditor's
+(**Security audit › Malware**, the owner's note of Q-MAL-5: "Der Administrator hat das Settings, Funde gehen in Security-Dashboard"). Both
+read one row the controller writes (R-MAL-038).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `GET /api/v1/malware/controller` (`settings:read`) with the live queue, and `GET /api/v1/malware/coverage` (`content:metadata-read`) with the checks made longest ago (chosen) | One read per page, by the capability of its reader | Each page reads one answer under its own permission; the coverage's items are the auditor's; nothing is counted per request but two lists of 20, each one index walk | Two operations over one row |
+| (b) Everything in `GET /api/v1/malware/settings` | One operation | — | The auditor, who holds no `settings:write` and reads the coverage, would read the settings' answer; the queue's items would need the settings' permission to decide on paths |
+| (c) A member of the system status | Exists | — | The system status is not the place an administrator opens for the malware scanning |
+
+**Choice:** (a). A field the controller has not counted yet is null, never a zero, and every count comes with its time. **Applied in the
+spec:** [malware-scanning.md](malware-scanning.md) R-MAL-022, R-MAL-041.
+
 ### Q-API-475 · The storage overview is an operation of its own
 
 Status: **Decided by the development agent** while building W-37's package P1 ([storage.md](storage.md) R-STOR-107); the owner reviews

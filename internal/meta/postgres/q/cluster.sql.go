@@ -195,7 +195,7 @@ func (q *Queries) ListReplicas(ctx context.Context, staleSecs float64) ([]ListRe
 
 const listScannerReplicas = `-- name: ListScannerReplicas :many
 SELECT s.instance_uid, s.kind, s.name, s.node, s.version, s.revision, s.state, s.reason, s.state_since, s.tool_version, s.db_version,
-       s.slots_in_use, s.slots_total, s.started_at, s.heartbeat_at,
+       s.slots_in_use, s.slots_total, s.calls, s.started_at, s.heartbeat_at,
        (s.heartbeat_at < now() - make_interval(secs => $1::float8))::bool AS lost,
        (CASE WHEN s.kind = 'trivy' THEN
                   (CASE WHEN s.db_version = (SELECT substr(v.etag, 8) FROM vuln_source_state v
@@ -223,6 +223,7 @@ type ListScannerReplicasRow struct {
 	DbVersion   pgtype.Text
 	SlotsInUse  int32
 	SlotsTotal  int32
+	Calls       json.RawMessage
 	StartedAt   pgtype.Timestamptz
 	HeartbeatAt pgtype.Timestamptz
 	Lost        bool
@@ -233,7 +234,7 @@ type ListScannerReplicasRow struct {
 // draining has signed off and is not listed, every other stale row is lost. db_built_at is the build time the updater reported of the set
 // its directory holds (the kind freshclam); for an image scanner the build time it reported of the database its pod holds, while that is
 // the database in use (the source trivy's digest, Q-OPS-225); for a malware scanner the build time of the signature database in use when
-// the row names that version.
+// the row names that version. calls are a malware scanner's calls in flight (Q-OPS-460), null for the other kinds.
 func (q *Queries) ListScannerReplicas(ctx context.Context, staleSecs float64) ([]ListScannerReplicasRow, error) {
 	rows, err := q.db.Query(ctx, listScannerReplicas, staleSecs)
 	if err != nil {
@@ -257,6 +258,7 @@ func (q *Queries) ListScannerReplicas(ctx context.Context, staleSecs float64) ([
 			&i.DbVersion,
 			&i.SlotsInUse,
 			&i.SlotsTotal,
+			&i.Calls,
 			&i.StartedAt,
 			&i.HeartbeatAt,
 			&i.Lost,
@@ -335,15 +337,16 @@ func (q *Queries) PruneScannerReplicas(ctx context.Context, arg PruneScannerRepl
 const recordScannerReplica = `-- name: RecordScannerReplica :execrows
 
 INSERT INTO scanner_replica (instance_uid, kind, name, node, version, revision, state, reason, state_since, tool_version, db_version,
-                             db_built_at, slots_in_use, slots_total, started_at, heartbeat_at)
+                             db_built_at, slots_in_use, slots_total, calls, started_at, heartbeat_at)
 SELECT $1::text::uuid, $2::text, $3::text, NULLIF($4::text, ''),
        $5::text, $6::text, $7::text, NULLIF($8::text, ''), now(),
        NULLIF($9::text, ''), NULLIF($10::text, ''),
-       NULLIF($11::text, '')::timestamptz, $12::int, $13::int, now(), now()
+       NULLIF($11::text, '')::timestamptz, $12::int, $13::int,
+       NULLIF($14::text, '')::jsonb, now(), now()
  WHERE EXISTS (SELECT 1 FROM scanner_replica e WHERE e.instance_uid = $1::text::uuid)
     OR (SELECT count(*) FROM scanner_replica s
          WHERE s.kind = $2::text
-           AND s.heartbeat_at >= now() - make_interval(secs => $14::float8)) < $15::int
+           AND s.heartbeat_at >= now() - make_interval(secs => $15::float8)) < $16::int
 ON CONFLICT (instance_uid) DO UPDATE
    SET name = EXCLUDED.name, node = EXCLUDED.node, version = EXCLUDED.version, revision = EXCLUDED.revision,
        state = CASE WHEN scanner_replica.state = 'draining' THEN scanner_replica.state ELSE EXCLUDED.state END,
@@ -352,7 +355,7 @@ ON CONFLICT (instance_uid) DO UPDATE
                             OR (scanner_replica.state = EXCLUDED.state AND scanner_replica.reason IS NOT DISTINCT FROM EXCLUDED.reason)
                           THEN scanner_replica.state_since ELSE now() END,
        tool_version = EXCLUDED.tool_version, db_version = EXCLUDED.db_version, db_built_at = EXCLUDED.db_built_at,
-       slots_in_use = EXCLUDED.slots_in_use, slots_total = EXCLUDED.slots_total, heartbeat_at = now()
+       slots_in_use = EXCLUDED.slots_in_use, slots_total = EXCLUDED.slots_total, calls = EXCLUDED.calls, heartbeat_at = now()
  WHERE scanner_replica.kind = EXCLUDED.kind
 `
 
@@ -370,6 +373,7 @@ type RecordScannerReplicaParams struct {
 	DbBuiltAt   string
 	SlotsInUse  int32
 	SlotsTotal  int32
+	Calls       string
 	StaleSecs   float64
 	MaxRows     int32
 }
@@ -378,7 +382,8 @@ type RecordScannerReplicaParams struct {
 // the kind the client certificate named; heartbeat_at, started_at and state_since are the database's clock.
 // A report in one statement, as the registry's heartbeat is: a new row only while its kind has fewer than max_rows live rows (the
 // bound against a scanner that invents replicas, H-1161), and never over a row of another kind. draining is the last state of an
-// instance, as in the registry (Q-HA-308); state_since moves when the state or its reason changes. No row affected: refused.
+// instance, as in the registry (Q-HA-308); state_since moves when the state or its reason changes. calls are a malware scanner's calls in
+// flight as JSON (” for none, Q-OPS-460). No row affected: refused.
 func (q *Queries) RecordScannerReplica(ctx context.Context, arg RecordScannerReplicaParams) (int64, error) {
 	result, err := q.db.Exec(ctx, recordScannerReplica,
 		arg.InstanceUid,
@@ -394,6 +399,7 @@ func (q *Queries) RecordScannerReplica(ctx context.Context, arg RecordScannerRep
 		arg.DbBuiltAt,
 		arg.SlotsInUse,
 		arg.SlotsTotal,
+		arg.Calls,
 		arg.StaleSecs,
 		arg.MaxRows,
 	)

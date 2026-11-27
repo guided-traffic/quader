@@ -15,8 +15,8 @@ rendered from it ([checklist.md there](https://github.com/guided-traffic/quader/
 requirement lists the feature in its `Covers:` line. *open*: no requirement does. For entries with priority
 *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,395 spec requirements:
-809 cover catalog features, 586 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,396 spec requirements:
+809 cover catalog features, 587 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>586 requirements</summary>
+<summary>587 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3387,6 +3387,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-MAL-021 | Releasing a blob | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-023 | Admin area › Settings › Malware scanning | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-040 | Today's signatures | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
+| R-MAL-041 | What the scan controller and the coverage show, and the rescan settings | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-026 | Audit events, metrics and alerts | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-027 | Configuration, the chart's defaults and what the scanning costs | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-028 | Backups, restores and replicas | P1 | [malware-scanning.md](../spec/malware-scanning.md) |

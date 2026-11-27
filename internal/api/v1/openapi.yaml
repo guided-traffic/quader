@@ -15667,10 +15667,12 @@ paths:
       tags: [malware]
       summary: Read the switch and the state of the malware scanning
       description: |
-        The installation's switch with its `ETag`, the backlog that switching it on would refuse or hold and the signature database in
-        use (R-MAL-019, R-MAL-022, R-MAL-023); the scanners are the rows of `GET /api/v1/system/scanners` (Q-MAL-110). `backlog.unchecked` counts the blobs of
-        scannable items without a verdict, `backlog.notCheckable` those whose verdict is unscannable or failed and that no release
-        passes. Read from PostgreSQL, so an answer shows a change another replica committed.
+        The installation's switch and the rescan settings with their `ETag`, the backlog that switching the switch on would refuse or
+        hold and the signature database in use (R-MAL-019, R-MAL-022, R-MAL-023, R-MAL-041); the scanners are the rows of
+        `GET /api/v1/system/scanners` (Q-MAL-110). The backlog is the scan controller's count of at most five minutes ago, with its time
+        (`backlogAt`, Q-MAL-136): `backlog.unchecked` counts the blobs that wait for their first verdict, `backlog.notCheckable` those
+        whose verdict is unscannable or failed and that no release passes. Read from PostgreSQL, so an answer shows a change another
+        replica committed.
       x-quader-permission:
         permission: settings:read
       responses:
@@ -15696,11 +15698,15 @@ paths:
     patch:
       operationId: updateMalwareSettings
       tags: [malware]
-      summary: Switch Only checked artifacts can be downloaded on or off
+      summary: Switch Only checked artifacts can be downloaded on or off, and set the rescans
       description: |
-        A JSON merge patch with `onlyChecked` (R-MAL-019); `If-Match` is required. A change records `malware.settings.changed`
-        with `before` and `after`; switching on carries the journal flag, so a restore to an earlier point keeps it on. Every
-        replica follows within the bound of R-ARCH-018. The answer is the settings after the change.
+        A JSON merge patch with `onlyChecked` (R-MAL-019) and the members of `rescan` (R-MAL-041) to change; `If-Match` is required. A
+        rescan setting outside its bounds is `422` with its pointer (`/rescan/shortestHours`), `shortestHours` and `demandStepHours`
+        bounded by the `cycleHours` after the patch. A change records `malware.settings.changed` with the whole settings `before` and
+        `after`; switching the switch on carries the journal flag, so a restore to an earlier point keeps it on, and nothing else is
+        journaled (H-2400). A change of the rescan settings wakes the scan controller in the same transaction, which ranks the verdicts
+        again before it works (Q-MAL-137). Every replica follows within the bound of R-ARCH-018. The answer is the settings after the
+        change.
       x-quader-permission:
         permission: settings:write
       x-quader-if-match: required
@@ -15712,7 +15718,7 @@ paths:
           application/merge-patch+json:
             schema:
               $ref: "#/components/schemas/MalwareSettingsPatch"
-            example: {onlyChecked: true}
+            example: {onlyChecked: true, rescan: {cycleHours: 720, recentWithinHours: 0}}
       responses:
         "200":
           description: The settings after the change.
@@ -15739,6 +15745,66 @@ paths:
           $ref: "#/components/responses/Unprocessable"
         "428":
           $ref: "#/components/responses/PreconditionRequired"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/malware/controller:
+    get:
+      operationId: getMalwareController
+      tags: [malware]
+      summary: Read what the scan controller sees
+      description: |
+        The scan controller's row (R-MAL-038, R-MAL-041): its state, its capacity and calls in flight, each replica it calls with its
+        state, slots and what it did within the hour, the rows due by lane, the verdicts by how current their check is and the backlog
+        from its class pass, and how busy the scanning was within the hour (`utilization`, `secondsPerScan`), so that an administrator
+        sees whether replicas are to be added. `queue` is the first 20 rows the controller works, read live: each with its lane, its
+        scan pressure and its parts. A caller with `content:metadata-read` reads each entry's first item; every other caller the digest
+        only. A replica's address and pod name are named to an internal caller only (Q-MAL-131, Q-API-468). Nothing but the queue is
+        counted per request.
+      x-quader-permission:
+        permission: settings:read
+      responses:
+        "200":
+          description: What the controller sees.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MalwareController"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/malware/coverage:
+    get:
+      operationId: getMalwareCoverage
+      tags: [malware]
+      summary: Read how current the malware checks are
+      description: |
+        How current the checks are (R-MAL-041), for the page Malware of the security audit: the verdicts by how current their check is
+        and the oldest check from the scan controller's class pass of at most five minutes ago (H-2405), with the bounds of the classes,
+        and the 20 checks made longest ago, read live, each with its first item.
+      x-quader-permission:
+        permission: content:metadata-read
+      responses:
+        "200":
+          description: How current the checks are.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MalwareCoverage"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "429":
           $ref: "#/components/responses/TooManyRequests"
         "500":
@@ -24304,7 +24370,7 @@ components:
             configured (the development role `all` builds none, Q-ARCH-563).
     ScannerReplica:
       type: object
-      required: [kind, instanceUid, name, node, version, revision, state, reason, stateSince, lost, startedAt, heartbeatAt, toolVersion, slots, database]
+      required: [kind, instanceUid, name, node, version, revision, state, reason, stateSince, lost, startedAt, heartbeatAt, toolVersion, slots, database, calls]
       properties:
         kind:
           type: string
@@ -24362,6 +24428,27 @@ components:
           oneOf:
             - $ref: "#/components/schemas/ScannerDatabase"
             - type: "null"
+        calls:
+          type: [array, "null"]
+          maxItems: 64
+          description: |
+            What a malware scanner (`clamav`) works on now, from its own report (Q-OPS-460): one entry per call its slots hold, the oldest
+            first, at most `slots.total`; the scanner's own statement, as its slots are (H-1161). `null` for the other kinds.
+          items:
+            $ref: "#/components/schemas/ScannerCall"
+    ScannerCall:
+      type: object
+      additionalProperties: false
+      required: [sha256, since]
+      properties:
+        sha256:
+          type: string
+          pattern: "^[0-9a-f]{64}$"
+          description: The blob the call reads, as the scan controller's call named it.
+        since:
+          type: string
+          format: date-time
+          description: When the replica's slot took the call, by the scanner's clock.
     ScannerDatabase:
       type: object
       required: [version, builtAt]
@@ -33073,7 +33160,7 @@ components:
     MalwareSettings:
       type: object
       additionalProperties: false
-      required: [enabled, onlyChecked, version, updatedAt, updatedBy, backlog, database]
+      required: [enabled, onlyChecked, rescan, version, updatedAt, updatedBy, backlog, backlogAt, database]
       properties:
         enabled:
           type: boolean
@@ -33091,8 +33178,19 @@ components:
         updatedBy:
           type: [string, "null"]
           description: "`<kind>:<name>` of the principal who changed the switch last; null for none."
+        rescan:
+          $ref: "#/components/schemas/MalwareRescan"
         backlog:
-          $ref: "#/components/schemas/MalwareBacklog"
+          description: |
+            What switching the switch on would hold or refuse, from the scan controller's count of at most five minutes ago (R-MAL-019,
+            Q-MAL-136); null while the controller has not counted since the installation started or a restore.
+          oneOf:
+            - $ref: "#/components/schemas/MalwareBacklog"
+            - type: "null"
+        backlogAt:
+          type: [string, "null"]
+          format: date-time
+          description: When the scan controller counted `backlog`; null with it.
         database:
           $ref: "#/components/schemas/MalwareDatabaseState"
     MalwareBacklog:
@@ -33167,6 +33265,380 @@ components:
       properties:
         onlyChecked:
           type: boolean
+        rescan:
+          $ref: "#/components/schemas/MalwareRescanPatch"
+    MalwareRescan:
+      type: object
+      additionalProperties: false
+      required: [cycleHours, shortestHours, demandStepHours, overdueAfterHours, recentWithinHours]
+      description: |
+        The rescan settings of the installation (R-MAL-037, R-MAL-041, Q-MAL-135), each in whole hours. A check is due once the signatures in
+        use are `cycleHours` newer than its own, sooner the more its blob was downloaded since (`demandStepHours` for each doubling), at the
+        earliest once they are `shortestHours` newer; a due check is overdue after `overdueAfterHours`; whatever was downloaded within
+        `recentWithinHours` is due at every new signature set (the floor of Q-MAL-9; 0 switches it off).
+      properties:
+        cycleHours:
+          type: integer
+          minimum: 24
+          maximum: 8760
+          description: "`rescan_cycle`: 24 (1 day) to 8760 (365 days); 720 (30 days) by default."
+        shortestHours:
+          type: integer
+          minimum: 1
+          maximum: 8760
+          description: "`rescan_shortest`: 1 to `cycleHours`; 24 (1 day) by default."
+        demandStepHours:
+          type: integer
+          minimum: 0
+          maximum: 8760
+          description: "`rescan_demand_step`: 0 (demand off) to `cycleHours`; 144 (6 days) by default."
+        overdueAfterHours:
+          type: integer
+          minimum: 1
+          maximum: 8760
+          description: "`rescan_overdue_after`: 1 to 8760 (365 days); 168 (7 days) by default."
+        recentWithinHours:
+          type: integer
+          minimum: 0
+          maximum: 8760
+          description: "`rescan_recent_within`: 0 (the floor off) to 8760 (365 days); 168 (7 days) by default."
+    MalwareRescanPatch:
+      type: object
+      additionalProperties: false
+      description: The members of `MalwareRescan` to change; a member left out keeps its value. The bounds are `MalwareRescan`'s.
+      properties:
+        cycleHours:
+          type: integer
+          minimum: 24
+          maximum: 8760
+        shortestHours:
+          type: integer
+          minimum: 1
+          maximum: 8760
+        demandStepHours:
+          type: integer
+          minimum: 0
+          maximum: 8760
+        overdueAfterHours:
+          type: integer
+          minimum: 1
+          maximum: 8760
+        recentWithinHours:
+          type: integer
+          minimum: 0
+          maximum: 8760
+    MalwareController:
+      type: object
+      additionalProperties: false
+      required: [state, observedAt, capacity, inFlight, utilization, scansLastHour, busySecondsLastHour, secondsPerScan, replicas, lanes,
+        ages, backlog, oldestCheckAt, aggregatedAt, sweptAt, rankedWith, queue]
+      description: |
+        What the scan controller sees (R-MAL-038, R-MAL-041): its row, written at most every 15 seconds while it runs and when a run ends, the
+        counts of its class pass of at most five minutes ago, and the first entries of its queue, read live. Nothing in it is counted per
+        request but the queue.
+      properties:
+        state:
+          description: |
+            What the controller did last: `running`, `idle` (nothing presses), `no_scanner` (no replica reachable, it holds back),
+            `no_database` (no signature set yet), `no_address` (no `malware.scanner.url`); null while it has written no row since the
+            installation started or a restore.
+          oneOf:
+            - $ref: "#/components/schemas/MalwareControllerState"
+            - type: "null"
+        observedAt:
+          type: [string, "null"]
+          format: date-time
+          description: When the controller last wrote its row; null with `state`.
+        capacity:
+          type: integer
+          minimum: 0
+          description: The slots of the reachable replicas that neither rest nor pause.
+        inFlight:
+          type: integer
+          minimum: 0
+          description: The calls the controller has open.
+        utilization:
+          type: [number, "null"]
+          format: double
+          description: |
+            How busy the scanning was within the last hour: `busySecondsLastHour` over the slots of the replicas listed × 3600, from 0 to 1;
+            near 1 with a backlog, replicas are to be added. Null while no replica is listed.
+        scansLastHour:
+          type: integer
+          format: int64
+          minimum: 0
+          description: The verdicts written within the last hour.
+        busySecondsLastHour:
+          type: number
+          format: double
+          minimum: 0
+          description: The seconds the replicas' slots were held within the last hour.
+        secondsPerScan:
+          type: [number, "null"]
+          format: double
+          description: "`busySecondsLastHour` over `scansLastHour`: what one check held a slot on average; null without a check in the hour."
+        replicas:
+          type: array
+          items:
+            $ref: "#/components/schemas/MalwareControllerReplica"
+        lanes:
+          $ref: "#/components/schemas/MalwareLanes"
+        ages:
+          description: The verdicts by how current their check is, from the class pass; null before its first count.
+          oneOf:
+            - $ref: "#/components/schemas/MalwareAges"
+            - type: "null"
+        backlog:
+          description: What switching the switch on would hold or refuse, from the class pass; null before its first count.
+          oneOf:
+            - $ref: "#/components/schemas/MalwareBacklog"
+            - type: "null"
+        oldestCheckAt:
+          type: [string, "null"]
+          format: date-time
+          description: The oldest check that is not `too_large`, from the class pass.
+        aggregatedAt:
+          type: [string, "null"]
+          format: date-time
+          description: When the class pass counted `ages`, `backlog` and `oldestCheckAt`.
+        sweptAt:
+          type: [string, "null"]
+          format: date-time
+          description: The last discovery and sweep (R-MAL-004).
+        rankedWith:
+          type: integer
+          format: int64
+          description: The version of the settings the ranks were made with; another than `MalwareSettings.version` while a re-rank is to come.
+        queue:
+          type: array
+          maxItems: 20
+          description: The first 20 rows the controller works, in the order of their lanes, read live (R-MAL-041).
+          items:
+            $ref: "#/components/schemas/MalwareQueueEntry"
+    MalwareControllerState:
+      type: string
+      enum: [running, idle, no_scanner, no_database, no_address]
+      x-enum-varnames: [MalwareControllerRunning, MalwareControllerIdle, MalwareControllerNoScanner, MalwareControllerNoDatabase,
+        MalwareControllerNoAddress]
+    MalwareControllerReplica:
+      type: object
+      additionalProperties: false
+      required: [address, instance, state, inFlight, slots, restingSince, restingUntil, restReason, scansLastHour, busySecondsLastHour,
+        utilization]
+      description: One malware scanner replica as the controller saw it (Q-MAL-121).
+      properties:
+        address:
+          type: [string, "null"]
+          description: The address it is called at; null in an answer to a caller who is not internal (Q-MAL-131, Q-API-468).
+        instance:
+          type: [string, "null"]
+          description: The pod's name from its last answer; null before one and in an answer to a caller who is not internal.
+        state:
+          type: string
+          enum: [ready, paused, resting]
+          x-enum-varnames: [MalwareReplicaReady, MalwareReplicaPaused, MalwareReplicaResting]
+          description: "`paused` while it loads a new signature set or drains (expected); `resting` after a failure."
+        inFlight:
+          type: integer
+          minimum: 0
+        slots:
+          type: integer
+          minimum: 0
+        restingSince:
+          type: [string, "null"]
+          format: date-time
+        restingUntil:
+          type: [string, "null"]
+          format: date-time
+        restReason:
+          type: [string, "null"]
+          description: The code of the call that paused or rested it (`scanner_unavailable`, `clamd_unavailable`, `database_loading`, …).
+        scansLastHour:
+          type: integer
+          minimum: 0
+        busySecondsLastHour:
+          type: number
+          format: double
+          minimum: 0
+        utilization:
+          type: [number, "null"]
+          format: double
+          description: "`busySecondsLastHour` over `slots` × 3600, from 0 to 1; null without slots."
+    MalwareLanes:
+      type: object
+      additionalProperties: false
+      required: [asked, new, retry, pressure]
+      description: The rows due by lane (R-MAL-004, R-MAL-026); `pressure` counts the verdicts whose scan pressure reached the cycle.
+      properties:
+        asked:
+          type: integer
+          format: int64
+          minimum: 0
+        new:
+          type: integer
+          format: int64
+          minimum: 0
+        retry:
+          type: integer
+          format: int64
+          minimum: 0
+        pressure:
+          type: integer
+          format: int64
+          minimum: 0
+    MalwareAges:
+      type: object
+      additionalProperties: false
+      required: [current, older, due, overdue, unchecked]
+      description: The verdicts by how current their check is (`MalwareAge`), and the rows without one.
+      properties:
+        current:
+          type: integer
+          format: int64
+          minimum: 0
+        older:
+          type: integer
+          format: int64
+          minimum: 0
+        due:
+          type: integer
+          format: int64
+          minimum: 0
+        overdue:
+          type: integer
+          format: int64
+          minimum: 0
+        unchecked:
+          type: integer
+          format: int64
+          minimum: 0
+    MalwareQueueLane:
+      type: string
+      enum: [asked, new, retry, pressure]
+      x-enum-varnames: [MalwareLaneAsked, MalwareLaneNew, MalwareLaneRetry, MalwareLanePressure]
+      description: "`asked`, a download waits; `new`, no verdict yet; `retry`, after a failed attempt; `pressure`, its scan pressure reached the cycle."
+    MalwareRequested:
+      type: string
+      enum: [rescan, limits, recent]
+      x-enum-varnames: [MalwareRequestedRescan, MalwareRequestedLimits, MalwareRequestedRecent]
+      description: "What requested a rescan (R-MAL-037): an administrator's (`rescan`), a change of the limits (`limits`), the floor of what was downloaded lately at a new set (`recent`)."
+    MalwareItemRef:
+      type: object
+      additionalProperties: false
+      required: [repository, path]
+      description: An item over the blob, the first by repository and path.
+      properties:
+        repository:
+          type: string
+          description: "`<project>/<repository>`."
+        path:
+          type: string
+    MalwareQueueEntry:
+      type: object
+      additionalProperties: false
+      required: [lane, sha256, state, since, attempts, pressure, signatureDays, downloadsSince, requested, item]
+      properties:
+        lane:
+          $ref: "#/components/schemas/MalwareQueueLane"
+        sha256:
+          type: string
+          pattern: "^[0-9a-f]{64}$"
+        state:
+          $ref: "#/components/schemas/MalwareState"
+        since:
+          type: string
+          format: date-time
+          description: "The due lanes: when the row is due (`not_before`); the lane `pressure`: when its last check was made."
+        attempts:
+          type: integer
+          minimum: 0
+          description: The attempts spent on the row's current scan.
+        pressure:
+          type: [integer, "null"]
+          format: int64
+          description: The scan pressure in percent of the cycle, as `MalwareStatus.pressure`; null for a row without a verdict.
+        signatureDays:
+          type: [integer, "null"]
+          format: int64
+          description: How many days newer the signatures in use are than the ones of the check; null without a verdict or a set in use.
+        downloadsSince:
+          type: integer
+          format: int64
+          minimum: 0
+          description: The downloads of the blob since its check.
+        requested:
+          description: What requested a rescan of it; null for none.
+          oneOf:
+            - $ref: "#/components/schemas/MalwareRequested"
+            - type: "null"
+        item:
+          description: The first item over the blob; null for a caller without `content:metadata-read` (Q-API-468) and for a blob no live item holds.
+          oneOf:
+            - $ref: "#/components/schemas/MalwareItemRef"
+            - type: "null"
+    MalwareCoverage:
+      type: object
+      additionalProperties: false
+      required: [ages, oldestCheckAt, aggregatedAt, cycleHours, overdueAfterHours, oldest]
+      description: How current the checks are (R-MAL-041), for the page Malware of the security audit.
+      properties:
+        ages:
+          description: The verdicts by how current their check is, from the scan controller's class pass; null before its first count.
+          oneOf:
+            - $ref: "#/components/schemas/MalwareAges"
+            - type: "null"
+        oldestCheckAt:
+          type: [string, "null"]
+          format: date-time
+          description: The oldest check that is not `too_large`, from the class pass.
+        aggregatedAt:
+          type: [string, "null"]
+          format: date-time
+          description: When the class pass counted; the counts are at most five minutes old while the controller runs (H-2405).
+        cycleHours:
+          type: integer
+          description: "`MalwareRescan.cycleHours`: a check is due at it."
+        overdueAfterHours:
+          type: integer
+          description: "`MalwareRescan.overdueAfterHours`: a due check is overdue after it."
+        oldest:
+          type: array
+          maxItems: 20
+          description: The 20 checks made longest ago that are not `too_large`, read live, the oldest first.
+          items:
+            $ref: "#/components/schemas/MalwareOldestCheck"
+    MalwareOldestCheck:
+      type: object
+      additionalProperties: false
+      required: [sha256, state, released, checkedAt, signatures, age, pressure, item]
+      properties:
+        sha256:
+          type: string
+          pattern: "^[0-9a-f]{64}$"
+        state:
+          $ref: "#/components/schemas/MalwareState"
+        released:
+          type: boolean
+        checkedAt:
+          type: string
+          format: date-time
+        signatures:
+          type: [string, "null"]
+          description: The signature set the check was made with; null for a check that names none.
+        age:
+          description: How current the check is; null while no set is in use.
+          oneOf:
+            - $ref: "#/components/schemas/MalwareAge"
+            - type: "null"
+        pressure:
+          type: [integer, "null"]
+          format: int64
+          description: The scan pressure in percent of the cycle, as `MalwareStatus.pressure`.
+        item:
+          description: The first item over the blob; null for a blob no live item holds.
+          oneOf:
+            - $ref: "#/components/schemas/MalwareItemRef"
+            - type: "null"
     MalwareStatus:
       type: object
       additionalProperties: false

@@ -36,14 +36,22 @@ writes the row:
 
 ## What is the scanner's own statement, and how it is bounded
 
-The pod's and the node's name, the build of Quader, the state and its reason, the tool's version, the slots and ClamAV's database version
-are what the scanner says. The route checks their size and shape and nothing else ([report.go](../../internal/scanreport/report.go)
-`Validate`): a body of at most 4 KiB, decoded strictly; names of letters, digits, dots, hyphens and underscores; versions of letters,
-digits and `. + _ ~ -`; a reason of letters, digits and underscores; slots 1 to 64; a database only from `clamav`. None of these character
-sets holds markup, the table checks the same lengths, and the screens bind every value as text. A kind has at most 64 live rows
+The pod's and the node's name, the build of Quader, the state and its reason, the tool's version, the slots, ClamAV's database version and
+the calls a malware scanner says it works on are what the scanner says. The route checks their size and shape and nothing else
+([report.go](../../internal/scanreport/report.go) `Validate`): a body of at most 16 KiB, decoded strictly; names of letters, digits, dots,
+hyphens and underscores; versions of letters, digits and `. + _ ~ -`; a reason of letters, digits and underscores; slots 1 to 64; a
+database only from `clamav`; calls only from `clamav`, at most its slots, each a digest of `sha256:` and 64 hexadecimal digits with a time.
+None of these character sets holds markup, the table checks the same lengths, and the screens bind every value as text. A kind has at most 64 live rows
 (`scanreport.MaxRowsPerKind`). Nothing decides on a row: no job, gate, count or limit reads the table, and the worker's calls go to the Service, not to a row. The summary
 of the malware settings ("2 ready, 1 scan running") counts the rows since Q-MAL-110, so it is the scanners' statement as the fold under it is
 (H-1161 names the page).
+
+**A report names digests** since a malware scanner lists its calls
+([Q-OPS-460](../spec/operations-and-observability.md#q-ops-460--a-malware-scanners-report-names-the-calls-its-slots-hold)): the blobs it
+reads now, which the worker's calls named. `GET /api/v1/system/scanners` answers them to the holder of `settings:read`, who learns which
+blob is checked, not where it is stored; the path of a blob is answered by the scan controller's read only to the holder of
+`content:metadata-read` ([malware-scanning.md](../spec/malware-scanning.md) R-MAL-041). A taken-over scanner can list digests of its
+choosing, at most its slots: a screen that shows a blob being checked that is not, which is the statement H-1161 already names.
 
 The route writes one table, `scanner_replica`, apart from the registry of R-OPS-003, so no reader of the registry (the key rings, the
 support bundle, the fetch shares, the rate-limit shares) counts a scanner.
@@ -63,7 +71,7 @@ Component: the route of the scanner replicas on the scan listener ([replicas.go]
 administrator or an auditor who reads the scanner replicas on the System page, **Settings › Malware scanning** or **Advisory sources**.
 Live wherever the scanners run, which is the chart's default. Every pod of a kind holds the same certificate, so one that a hostile image or
 file takes over (H-1035, H-1105) can report as many replicas of its kind as it likes, up to 64 live rows, with names, nodes, versions,
-states, reasons, slots and, for ClamAV, a database version of its choosing: a fleet that looks ready and current while it is not, or rows
+states, reasons, slots and, for ClamAV, a database version and calls of its choosing: a fleet that looks ready and current while it is not, or rows
 that fill the bound so that a new real replica of the kind is refused and not shown until the made-up rows go stale. It cannot report a row
 of the other kind, change the kind of a row, write markup, touch the replica registry, or remove a real row without its UID, which no
 answer of the scan listener names. What makes it real: an exploit of the scanner's tool; a pod that can do that can already answer false

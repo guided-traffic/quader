@@ -296,6 +296,7 @@ export function sampleScannerReplica(over: Partial<ScannerReplica> = {}): Scanne
     toolVersion: '0.67.2',
     slots: { inUse: 0, total: 1 },
     database: null,
+    calls: null,
     ...over,
   };
 }

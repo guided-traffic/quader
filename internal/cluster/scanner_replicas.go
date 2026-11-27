@@ -2,6 +2,7 @@ package cluster
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -18,6 +19,14 @@ type ScannerRecord struct {
 	// DatabaseBuiltAt is the build time the updater reports of the set its directory holds (the kind freshclam); zero otherwise.
 	DatabaseBuiltAt   time.Time
 	SlotsInUse, Slots int
+	// Calls are a malware scanner's calls in flight (Q-OPS-460); nil for the other kinds.
+	Calls []ScannerCall
+}
+
+// ScannerCall is one call a malware scanner has in flight: the digest of the blob it reads and when its slot took it.
+type ScannerCall struct {
+	Digest string    `json:"digest"`
+	Since  time.Time `json:"since"`
 }
 
 // ScannerReplicas writes the rows on the scan listener of packages.
@@ -32,11 +41,19 @@ type ScannerReplicas struct {
 
 // Record writes a report; false when the row was refused (MaxRows live rows of the kind, or the UID of a row of another kind).
 func (s ScannerReplicas) Record(ctx context.Context, kind, uid string, r ScannerRecord) (bool, error) {
+	calls := ""
+	if r.Calls != nil {
+		b, err := json.Marshal(r.Calls)
+		if err != nil {
+			return false, fmt.Errorf("recording the scanner replica %s: %w", uid, err)
+		}
+		calls = string(b)
+	}
 	n, err := q.New(s.DB).RecordScannerReplica(ctx, q.RecordScannerReplicaParams{
 		InstanceUid: uid, Kind: kind, Name: r.Name, Node: r.Node, Version: r.Version, Revision: r.Revision, State: r.State,
 		Reason: r.Reason, ToolVersion: r.ToolVersion, DbVersion: r.Database, DbBuiltAt: builtAt(r.DatabaseBuiltAt),
 		SlotsInUse: int32(r.SlotsInUse), SlotsTotal: int32(r.Slots), //nolint:gosec // bounded by the route's check: 0 to 64
-		StaleSecs: s.System.HeartbeatStaleAfter.Seconds(), MaxRows: int32(s.MaxRows), //nolint:gosec // a small constant
+		Calls: calls, StaleSecs: s.System.HeartbeatStaleAfter.Seconds(), MaxRows: int32(s.MaxRows), //nolint:gosec // a small constant
 	})
 	if err != nil {
 		return false, fmt.Errorf("recording the scanner replica %s: %w", uid, err)
@@ -71,6 +88,8 @@ type ScannerReplica struct {
 	// the signature database in use when the row names that version; zero otherwise.
 	DatabaseBuiltAt   time.Time
 	SlotsInUse, Slots int
+	// Calls are what a malware scanner reported it works on (Q-OPS-460), the oldest first; nil for the other kinds.
+	Calls []ScannerCall
 }
 
 // ListScannerReplicas reads the rows: a row that went stale while draining is not listed, every other stale one is lost (Q-OPS-210),
@@ -90,6 +109,11 @@ func ListScannerReplicas(ctx context.Context, db q.DBTX, sys config.System) ([]S
 		}
 		if r.DbBuiltAt.Valid {
 			sr.DatabaseBuiltAt = r.DbBuiltAt.Time.UTC()
+		}
+		if len(r.Calls) > 0 {
+			if err := json.Unmarshal(r.Calls, &sr.Calls); err != nil {
+				return nil, fmt.Errorf("reading the calls of the scanner replica %s: %w", sr.InstanceUID, err)
+			}
 		}
 		out = append(out, sr)
 	}

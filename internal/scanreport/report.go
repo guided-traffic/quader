@@ -1,7 +1,7 @@
 // Package scanreport is a scanner replica's report of itself (operations-and-observability.md R-OPS-048, Q-OPS-223, ADR-224). A scanner
 // holds no credential of PostgreSQL (ADR-212), so it cannot write the replica registry: every system.heartbeat_interval it sends its
 // state, the version of the tool it runs, its slots and the database it works with (for ClamAV the signature database clamd scans with,
-// for Trivy the newest database its pod holds, Q-OPS-225) to the scan listener of packages, which it reaches already with the
+// for Trivy the newest database its pod holds, Q-OPS-225), and for ClamAV the calls it has in flight (Q-OPS-460) to the scan listener of packages, which it reaches already with the
 // certificate of its kind (R-HA-066), and packages writes the row. At its clean shutdown it signs off. The kind is the one the
 // certificate names; the scan listener never reads it from the report.
 //
@@ -32,8 +32,9 @@ const PathPrefix = "/scan/v1/replicas/"
 // Path is the route of the report of one replica.
 func Path(uid string) string { return PathPrefix + uid }
 
-// MaxBodyBytes bounds the body of a report: a report is a few hundred bytes.
-const MaxBodyBytes = 4 << 10
+// MaxBodyBytes bounds the body of a report (Q-OPS-461): a report is a few hundred bytes, and a malware scanner's calls in flight add 126
+// bytes each, at most one per slot: 64 slots that each hold a call are 8,335 bytes.
+const MaxBodyBytes = 16 << 10
 
 // MaxRowsPerKind bounds the live rows of one kind (Q-OPS-223): a report of a new replica beyond it is refused, so a scanner that
 // invents replicas fills no table. A Deployment of a scanner runs a handful of replicas.
@@ -70,6 +71,14 @@ type Report struct {
 	DatabaseBuiltAt *time.Time `json:"databaseBuiltAt,omitempty"`
 	// Slots are a scanner's; the updater runs no calls and reports none (zero).
 	Slots Slots `json:"slots"`
+	// Calls are the calls a malware scanner has in flight (the kind clamav, Q-OPS-460): at most one per slot, absent for the other kinds.
+	Calls []Call `json:"calls,omitempty"`
+}
+
+// Call is one call a malware scanner has in flight: the blob it reads, as the worker's call named it, and when its slot took it.
+type Call struct {
+	Digest string    `json:"digest"`
+	Since  time.Time `json:"since"`
 }
 
 // Slots are the calls the scanner runs now and the calls it runs at a time.
@@ -88,6 +97,8 @@ var (
 	reason = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9_]{0,31}$`)
 	// trivyDatabase is an image scanner's database: the 64 lower-case hexadecimal digits of its layer's digest.
 	trivyDatabase = regexp.MustCompile(`^[0-9a-f]{64}$`)
+	// callDigest is the blob of a malware scanner's call, as the worker's call names it.
+	callDigest = regexp.MustCompile(`^sha256:[0-9a-f]{64}$`)
 )
 
 // ErrInvalid is the error of a report that is not of the shape Validate admits.
@@ -127,9 +138,13 @@ func Decode(body io.Reader) (Report, error) {
 // Validate checks a report of a scanner of kind (config.ScannerKindTrivy, ScannerKindClamav or ScannerKindFreshclam) against the shape
 // the table holds (migrations 00090, 00095 and the detection's): bounded strings of a fixed character set, a known state, slots within the
 // configuration's bounds and none from the updater, an image scanner's database as the 64 hexadecimal digits of its digest, and a build
-// time only from the updater and the image scanner, with the database it belongs to.
+// time only from the updater and the image scanner, with the database it belongs to, and calls only from a malware scanner, at most its
+// slots, each a digest of the call's form with its time.
 func (r Report) Validate(kind string) error {
 	if err := r.validateCommon(); err != nil {
+		return err
+	}
+	if err := r.validateCalls(kind); err != nil {
 		return err
 	}
 	updater, trivy := kind == config.ScannerKindFreshclam, kind == config.ScannerKindTrivy
@@ -144,6 +159,33 @@ func (r Report) Validate(kind string) error {
 		return invalid("the updater runs no calls and reports no slots")
 	case !updater && (r.Slots.Total < 1 || r.Slots.Total > 64 || r.Slots.InUse < 0 || r.Slots.InUse > r.Slots.Total):
 		return invalid("slots must be 0 to total in use of 1 to 64")
+	}
+	return nil
+}
+
+// validateCalls checks the calls in flight (Q-OPS-460): only a malware scanner names them, at most one per slot of all, each the digest of a
+// call with the time its slot took it, and no digest twice (a slot holds one call, the worker calls a blob once at a time).
+func (r Report) validateCalls(kind string) error {
+	if len(r.Calls) == 0 {
+		return nil
+	}
+	if kind != config.ScannerKindClamav {
+		return invalid("only a malware scanner reports its calls")
+	}
+	if len(r.Calls) > r.Slots.Total {
+		return invalid("calls must be at most the slots in all")
+	}
+	seen := make(map[string]bool, len(r.Calls))
+	for _, c := range r.Calls {
+		switch {
+		case !callDigest.MatchString(c.Digest):
+			return invalid("a call's digest must be sha256: and 64 lower-case hexadecimal digits")
+		case c.Since.IsZero():
+			return invalid("a call must name since when its slot holds it")
+		case seen[c.Digest]:
+			return invalid("a call's digest must not repeat")
+		}
+		seen[c.Digest] = true
 	}
 	return nil
 }

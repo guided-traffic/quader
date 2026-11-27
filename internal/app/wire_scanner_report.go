@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"net/http"
+	"strings"
 
 	"github.com/google/uuid"
 
@@ -84,7 +85,8 @@ func (a *App) startScannerReport(ctx context.Context) error {
 // scannerStatus is what a scanner reports of itself: the state of its readiness and the reason of the check that fails, the version of
 // its tool, the signature database clamd scans with or the newest database the image scanner's pod holds with its build time
 // (Q-OPS-225), and its slots; the updater the set its directory holds with the daily's build time and no slots (Q-OPS-224). clamd's
-// version is the malware scanner's own, asked until clamd answers it once and kept, the one its answers name (R-MAL-036).
+// version is the malware scanner's own, asked until clamd answers it once and kept, the one its answers name (R-MAL-036); the malware
+// scanner also names the calls its slots hold (Q-OPS-460).
 func (a *App) scannerStatus(s scannerArea) func(context.Context) scanreport.Status {
 	return func(ctx context.Context) scanreport.Status {
 		snap := a.health.Snapshot()
@@ -96,6 +98,10 @@ func (a *App) scannerStatus(s scannerArea) func(context.Context) scanreport.Stat
 		if s.malware != nil {
 			st.InUse, st.Total, st.Database = s.malware.Busy(), s.malware.Slots(), s.malware.DatabaseLoaded()
 			st.ToolVersion = s.malware.Engine(ctx)
+			st.Calls = []scanreport.Call{}
+			for _, c := range s.malware.Calls() {
+				st.Calls = append(st.Calls, scanreport.Call{Digest: c.Digest, Since: c.Since})
+			}
 			return st
 		}
 		st.InUse, st.Total = s.svc.Busy(), s.svc.Slots()
@@ -181,6 +187,13 @@ func (s scannerStore) Record(ctx context.Context, kind, uid string, r scanreport
 		Name: r.Name, Node: r.Node, Version: r.Version, Revision: r.Revision, State: r.State, Reason: r.Reason,
 		ToolVersion: r.ToolVersion, Database: r.Database, SlotsInUse: r.Slots.InUse, Slots: r.Slots.Total,
 	}
+	// A malware scanner's row names its calls, none as an empty list; the other kinds' rows none (Q-OPS-460).
+	if kind == config.ScannerKindClamav {
+		rec.Calls = make([]cluster.ScannerCall, 0, len(r.Calls))
+		for _, c := range r.Calls {
+			rec.Calls = append(rec.Calls, cluster.ScannerCall{Digest: c.Digest, Since: c.Since})
+		}
+	}
 	if r.DatabaseBuiltAt != nil {
 		rec.DatabaseBuiltAt = *r.DatabaseBuiltAt
 	}
@@ -264,6 +277,13 @@ func scannerReplicaOf(r cluster.ScannerReplica) gen.ScannerReplica {
 	}
 	if r.ToolVersion != "" {
 		out.ToolVersion = &r.ToolVersion
+	}
+	if r.Calls != nil {
+		calls := make([]gen.ScannerCall, 0, len(r.Calls))
+		for _, c := range r.Calls {
+			calls = append(calls, gen.ScannerCall{Sha256: strings.TrimPrefix(c.Digest, "sha256:"), Since: c.Since})
+		}
+		out.Calls = &calls
 	}
 	if r.DatabaseVersion != "" {
 		db := &gen.ScannerDatabase{Version: r.DatabaseVersion}

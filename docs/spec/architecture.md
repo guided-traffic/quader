@@ -13049,8 +13049,8 @@ client, which drops it; the statement then ends because its client is gone, with
 **Requests that need longer**, checked the same day: none needs it. The audit export reads in keyset batches of short queries and holds no
 connection while it writes; the export of the findings counts at most `export.max_rows` + 1 and reads pages of 500; the usage export reads
 the scope's aggregates of its window in the statements of the list; a commit of an upload writes its rows in short statements, and its
-object-store work runs outside every transaction; the settings' malware backlog reads in about 0.25 s per million items
-([malware-scanning.md](malware-scanning.md) H-1660). A request whose statement grows with the data beyond the bound answers
+object-store work runs outside every transaction; the settings' malware backlog read in about 0.25 s per million items until the scan controller's count replaced it
+([malware-scanning.md](malware-scanning.md) Q-MAL-136). A request whose statement grows with the data beyond the bound answers
 `database_timeout` and is a finding of its own, never a blanket exemption.
 
 **Applied in the spec:** R-ARCH-019; [ha-and-helm.md](ha-and-helm.md) R-HA-015 (the configuration). Code:

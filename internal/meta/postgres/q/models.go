@@ -1658,6 +1658,7 @@ type ScannerReplica struct {
 	StartedAt   pgtype.Timestamptz
 	HeartbeatAt pgtype.Timestamptz
 	DbBuiltAt   pgtype.Timestamptz
+	Calls       json.RawMessage
 }
 
 type SchemaMigration struct {

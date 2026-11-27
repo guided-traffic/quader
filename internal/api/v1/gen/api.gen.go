@@ -2641,6 +2641,54 @@ func (e MalwareAge) Valid() bool {
 	}
 }
 
+// Defines values for MalwareControllerReplicaState.
+const (
+	MalwareReplicaPaused  MalwareControllerReplicaState = "paused"
+	MalwareReplicaReady   MalwareControllerReplicaState = "ready"
+	MalwareReplicaResting MalwareControllerReplicaState = "resting"
+)
+
+// Valid indicates whether the value is a known member of the MalwareControllerReplicaState enum.
+func (e MalwareControllerReplicaState) Valid() bool {
+	switch e {
+	case MalwareReplicaPaused:
+		return true
+	case MalwareReplicaReady:
+		return true
+	case MalwareReplicaResting:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MalwareControllerState.
+const (
+	MalwareControllerIdle       MalwareControllerState = "idle"
+	MalwareControllerNoAddress  MalwareControllerState = "no_address"
+	MalwareControllerNoDatabase MalwareControllerState = "no_database"
+	MalwareControllerNoScanner  MalwareControllerState = "no_scanner"
+	MalwareControllerRunning    MalwareControllerState = "running"
+)
+
+// Valid indicates whether the value is a known member of the MalwareControllerState enum.
+func (e MalwareControllerState) Valid() bool {
+	switch e {
+	case MalwareControllerIdle:
+		return true
+	case MalwareControllerNoAddress:
+		return true
+	case MalwareControllerNoDatabase:
+		return true
+	case MalwareControllerNoScanner:
+		return true
+	case MalwareControllerRunning:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for MalwareDatabaseStateSource.
 const (
 	MalwareDatabaseStateSourceRepository MalwareDatabaseStateSource = "repository"
@@ -2722,6 +2770,51 @@ func (e MalwareLimit) Valid() bool {
 	case MalwareLimitUnpackDepth:
 		return true
 	case MalwareLimitUnreadableContent:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MalwareQueueLane.
+const (
+	MalwareLaneAsked    MalwareQueueLane = "asked"
+	MalwareLaneNew      MalwareQueueLane = "new"
+	MalwareLanePressure MalwareQueueLane = "pressure"
+	MalwareLaneRetry    MalwareQueueLane = "retry"
+)
+
+// Valid indicates whether the value is a known member of the MalwareQueueLane enum.
+func (e MalwareQueueLane) Valid() bool {
+	switch e {
+	case MalwareLaneAsked:
+		return true
+	case MalwareLaneNew:
+		return true
+	case MalwareLanePressure:
+		return true
+	case MalwareLaneRetry:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MalwareRequested.
+const (
+	MalwareRequestedLimits MalwareRequested = "limits"
+	MalwareRequestedRecent MalwareRequested = "recent"
+	MalwareRequestedRescan MalwareRequested = "rescan"
+)
+
+// Valid indicates whether the value is a known member of the MalwareRequested enum.
+func (e MalwareRequested) Valid() bool {
+	switch e {
+	case MalwareRequestedLimits:
+		return true
+	case MalwareRequestedRecent:
+		return true
+	case MalwareRequestedRescan:
 		return true
 	default:
 		return false
@@ -13662,6 +13755,15 @@ type MaintenanceModeMode string
 // `overdue`, due for longer than `rescan_overdue_after`, so the scanning falls behind.
 type MalwareAge string
 
+// MalwareAges The verdicts by how current their check is (`MalwareAge`), and the rows without one.
+type MalwareAges struct {
+	Current   int64 `json:"current"`
+	Due       int64 `json:"due"`
+	Older     int64 `json:"older"`
+	Overdue   int64 `json:"overdue"`
+	Unchecked int64 `json:"unchecked"`
+}
+
 // MalwareBacklog What switching the switch on would hold or refuse (R-MAL-019).
 type MalwareBacklog struct {
 	// NotCheckable Blobs whose verdict is unscannable or failed and that no release passes; under the switch they are refused.
@@ -13693,6 +13795,114 @@ type MalwareBlob struct {
 	// signature matched, `infected` ClamAV named a signature, `unscannable` nothing could check it (`reason`: `too_large`,
 	// `limits_exceeded`, `encrypted`), `failed` the scans that may pass did not (`reason`: the last code).
 	State MalwareState `json:"state"`
+}
+
+// MalwareController What the scan controller sees (R-MAL-038, R-MAL-041): its row, written at most every 15 seconds while it runs and when a run ends, the
+// counts of its class pass of at most five minutes ago, and the first entries of its queue, read live. Nothing in it is counted per
+// request but the queue.
+type MalwareController struct {
+	// Ages The verdicts by how current their check is, from the class pass; null before its first count.
+	Ages *MalwareAges `json:"ages"`
+
+	// AggregatedAt When the class pass counted `ages`, `backlog` and `oldestCheckAt`.
+	AggregatedAt *time.Time `json:"aggregatedAt"`
+
+	// Backlog What switching the switch on would hold or refuse, from the class pass; null before its first count.
+	Backlog *MalwareBacklog `json:"backlog"`
+
+	// BusySecondsLastHour The seconds the replicas' slots were held within the last hour.
+	BusySecondsLastHour float64 `json:"busySecondsLastHour"`
+
+	// Capacity The slots of the reachable replicas that neither rest nor pause.
+	Capacity int `json:"capacity"`
+
+	// InFlight The calls the controller has open.
+	InFlight int `json:"inFlight"`
+
+	// Lanes The rows due by lane (R-MAL-004, R-MAL-026); `pressure` counts the verdicts whose scan pressure reached the cycle.
+	Lanes MalwareLanes `json:"lanes"`
+
+	// ObservedAt When the controller last wrote its row; null with `state`.
+	ObservedAt *time.Time `json:"observedAt"`
+
+	// OldestCheckAt The oldest check that is not `too_large`, from the class pass.
+	OldestCheckAt *time.Time `json:"oldestCheckAt"`
+
+	// Queue The first 20 rows the controller works, in the order of their lanes, read live (R-MAL-041).
+	Queue []MalwareQueueEntry `json:"queue"`
+
+	// RankedWith The version of the settings the ranks were made with; another than `MalwareSettings.version` while a re-rank is to come.
+	RankedWith int64                      `json:"rankedWith"`
+	Replicas   []MalwareControllerReplica `json:"replicas"`
+
+	// ScansLastHour The verdicts written within the last hour.
+	ScansLastHour int64 `json:"scansLastHour"`
+
+	// SecondsPerScan `busySecondsLastHour` over `scansLastHour`: what one check held a slot on average; null without a check in the hour.
+	SecondsPerScan *float64 `json:"secondsPerScan"`
+
+	// State What the controller did last: `running`, `idle` (nothing presses), `no_scanner` (no replica reachable, it holds back),
+	// `no_database` (no signature set yet), `no_address` (no `malware.scanner.url`); null while it has written no row since the
+	// installation started or a restore.
+	State *MalwareControllerState `json:"state"`
+
+	// SweptAt The last discovery and sweep (R-MAL-004).
+	SweptAt *time.Time `json:"sweptAt"`
+
+	// Utilization How busy the scanning was within the last hour: `busySecondsLastHour` over the slots of the replicas listed × 3600, from 0 to 1;
+	// near 1 with a backlog, replicas are to be added. Null while no replica is listed.
+	Utilization *float64 `json:"utilization"`
+}
+
+// MalwareControllerReplica One malware scanner replica as the controller saw it (Q-MAL-121).
+type MalwareControllerReplica struct {
+	// Address The address it is called at; null in an answer to a caller who is not internal (Q-MAL-131, Q-API-468).
+	Address             *string `json:"address"`
+	BusySecondsLastHour float64 `json:"busySecondsLastHour"`
+	InFlight            int     `json:"inFlight"`
+
+	// Instance The pod's name from its last answer; null before one and in an answer to a caller who is not internal.
+	Instance *string `json:"instance"`
+
+	// RestReason The code of the call that paused or rested it (`scanner_unavailable`, `clamd_unavailable`, `database_loading`, …).
+	RestReason    *string    `json:"restReason"`
+	RestingSince  *time.Time `json:"restingSince"`
+	RestingUntil  *time.Time `json:"restingUntil"`
+	ScansLastHour int        `json:"scansLastHour"`
+	Slots         int        `json:"slots"`
+
+	// State `paused` while it loads a new signature set or drains (expected); `resting` after a failure.
+	State MalwareControllerReplicaState `json:"state"`
+
+	// Utilization `busySecondsLastHour` over `slots` × 3600, from 0 to 1; null without slots.
+	Utilization *float64 `json:"utilization"`
+}
+
+// MalwareControllerReplicaState `paused` while it loads a new signature set or drains (expected); `resting` after a failure.
+type MalwareControllerReplicaState string
+
+// MalwareControllerState defines model for MalwareControllerState.
+type MalwareControllerState string
+
+// MalwareCoverage How current the checks are (R-MAL-041), for the page Malware of the security audit.
+type MalwareCoverage struct {
+	// Ages The verdicts by how current their check is, from the scan controller's class pass; null before its first count.
+	Ages *MalwareAges `json:"ages"`
+
+	// AggregatedAt When the class pass counted; the counts are at most five minutes old while the controller runs (H-2405).
+	AggregatedAt *time.Time `json:"aggregatedAt"`
+
+	// CycleHours `MalwareRescan.cycleHours`: a check is due at it.
+	CycleHours int `json:"cycleHours"`
+
+	// Oldest The 20 checks made longest ago that are not `too_large`, read live, the oldest first.
+	Oldest []MalwareOldestCheck `json:"oldest"`
+
+	// OldestCheckAt The oldest check that is not `too_large`, from the class pass.
+	OldestCheckAt *time.Time `json:"oldestCheckAt"`
+
+	// OverdueAfterHours `MalwareRescan.overdueAfterHours`: a due check is overdue after it.
+	OverdueAfterHours int `json:"overdueAfterHours"`
 }
 
 // MalwareDatabaseError defines model for MalwareDatabaseError.
@@ -13804,6 +14014,22 @@ type MalwareImagePart struct {
 	Stored bool `json:"stored"`
 }
 
+// MalwareItemRef An item over the blob, the first by repository and path.
+type MalwareItemRef struct {
+	Path string `json:"path"`
+
+	// Repository `<project>/<repository>`.
+	Repository string `json:"repository"`
+}
+
+// MalwareLanes The rows due by lane (R-MAL-004, R-MAL-026); `pressure` counts the verdicts whose scan pressure reached the cycle.
+type MalwareLanes struct {
+	Asked    int64 `json:"asked"`
+	New      int64 `json:"new"`
+	Pressure int64 `json:"pressure"`
+	Retry    int64 `json:"retry"`
+}
+
 // MalwareLimit The bound an `unscannable` `limits_exceeded` verdict passed, by its purpose (R-MAL-008, Q-MAL-105). clamd's: `max_scan_size`
 // (what it reads of one part, archives inside included; `malware.scanner.max_scan_size`), `max_file_size` (one file inside a
 // part; `malware.scanner.max_file_size`), `max_stream_length` (one part handed to it; the same setting), `max_recursion` (how
@@ -13812,6 +14038,65 @@ type MalwareImagePart struct {
 // `max_uncompressed_size`, `max_entries`, `unpack_depth` (two levels), `unreadable_content` (a stream that does not decompress,
 // a tar or an `ar` archive that breaks off). The scanner's own name of what tripped is `signature`.
 type MalwareLimit string
+
+// MalwareOldestCheck defines model for MalwareOldestCheck.
+type MalwareOldestCheck struct {
+	// Age How current the check is; null while no set is in use.
+	Age       *MalwareAge `json:"age"`
+	CheckedAt time.Time   `json:"checkedAt"`
+
+	// Item The first item over the blob; null for a blob no live item holds.
+	Item *MalwareItemRef `json:"item"`
+
+	// Pressure The scan pressure in percent of the cycle, as `MalwareStatus.pressure`.
+	Pressure *int64 `json:"pressure"`
+	Released bool   `json:"released"`
+	Sha256   string `json:"sha256"`
+
+	// Signatures The signature set the check was made with; null for a check that names none.
+	Signatures *string `json:"signatures"`
+
+	// State The state of a blob's verdict (R-MAL-002): `pending` not checked yet (also a blob the scanning has not reached), `clean` no
+	// signature matched, `infected` ClamAV named a signature, `unscannable` nothing could check it (`reason`: `too_large`,
+	// `limits_exceeded`, `encrypted`), `failed` the scans that may pass did not (`reason`: the last code).
+	State MalwareState `json:"state"`
+}
+
+// MalwareQueueEntry defines model for MalwareQueueEntry.
+type MalwareQueueEntry struct {
+	// Attempts The attempts spent on the row's current scan.
+	Attempts int `json:"attempts"`
+
+	// DownloadsSince The downloads of the blob since its check.
+	DownloadsSince int64 `json:"downloadsSince"`
+
+	// Item The first item over the blob; null for a caller without `content:metadata-read` (Q-API-468) and for a blob no live item holds.
+	Item *MalwareItemRef `json:"item"`
+
+	// Lane `asked`, a download waits; `new`, no verdict yet; `retry`, after a failed attempt; `pressure`, its scan pressure reached the cycle.
+	Lane MalwareQueueLane `json:"lane"`
+
+	// Pressure The scan pressure in percent of the cycle, as `MalwareStatus.pressure`; null for a row without a verdict.
+	Pressure *int64 `json:"pressure"`
+
+	// Requested What requested a rescan of it; null for none.
+	Requested *MalwareRequested `json:"requested"`
+	Sha256    string            `json:"sha256"`
+
+	// SignatureDays How many days newer the signatures in use are than the ones of the check; null without a verdict or a set in use.
+	SignatureDays *int64 `json:"signatureDays"`
+
+	// Since The due lanes: when the row is due (`not_before`); the lane `pressure`: when its last check was made.
+	Since time.Time `json:"since"`
+
+	// State The state of a blob's verdict (R-MAL-002): `pending` not checked yet (also a blob the scanning has not reached), `clean` no
+	// signature matched, `infected` ClamAV named a signature, `unscannable` nothing could check it (`reason`: `too_large`,
+	// `limits_exceeded`, `encrypted`), `failed` the scans that may pass did not (`reason`: the last code).
+	State MalwareState `json:"state"`
+}
+
+// MalwareQueueLane `asked`, a download waits; `new`, no verdict yet; `retry`, after a failed attempt; `pressure`, its scan pressure reached the cycle.
+type MalwareQueueLane string
 
 // MalwareRelease defines model for MalwareRelease.
 type MalwareRelease struct {
@@ -13836,6 +14121,39 @@ type MalwareReleaseRequest struct {
 	Sha256 string `json:"sha256"`
 }
 
+// MalwareRequested What requested a rescan (R-MAL-037): an administrator's (`rescan`), a change of the limits (`limits`), the floor of what was downloaded lately at a new set (`recent`).
+type MalwareRequested string
+
+// MalwareRescan The rescan settings of the installation (R-MAL-037, R-MAL-041, Q-MAL-135), each in whole hours. A check is due once the signatures in
+// use are `cycleHours` newer than its own, sooner the more its blob was downloaded since (`demandStepHours` for each doubling), at the
+// earliest once they are `shortestHours` newer; a due check is overdue after `overdueAfterHours`; whatever was downloaded within
+// `recentWithinHours` is due at every new signature set (the floor of Q-MAL-9; 0 switches it off).
+type MalwareRescan struct {
+	// CycleHours `rescan_cycle`: 24 (1 day) to 8760 (365 days); 720 (30 days) by default.
+	CycleHours int `json:"cycleHours"`
+
+	// DemandStepHours `rescan_demand_step`: 0 (demand off) to `cycleHours`; 144 (6 days) by default.
+	DemandStepHours int `json:"demandStepHours"`
+
+	// OverdueAfterHours `rescan_overdue_after`: 1 to 8760 (365 days); 168 (7 days) by default.
+	OverdueAfterHours int `json:"overdueAfterHours"`
+
+	// RecentWithinHours `rescan_recent_within`: 0 (the floor off) to 8760 (365 days); 168 (7 days) by default.
+	RecentWithinHours int `json:"recentWithinHours"`
+
+	// ShortestHours `rescan_shortest`: 1 to `cycleHours`; 24 (1 day) by default.
+	ShortestHours int `json:"shortestHours"`
+}
+
+// MalwareRescanPatch The members of `MalwareRescan` to change; a member left out keeps its value. The bounds are `MalwareRescan`'s.
+type MalwareRescanPatch struct {
+	CycleHours        *int `json:"cycleHours,omitempty"`
+	DemandStepHours   *int `json:"demandStepHours,omitempty"`
+	OverdueAfterHours *int `json:"overdueAfterHours,omitempty"`
+	RecentWithinHours *int `json:"recentWithinHours,omitempty"`
+	ShortestHours     *int `json:"shortestHours,omitempty"`
+}
+
 // MalwareRescanRequest defines model for MalwareRescanRequest.
 type MalwareRescanRequest struct {
 	// Repository `<project>/<key>`: only the blobs an item of this repository holds.
@@ -13852,8 +14170,12 @@ type MalwareRescanResult struct {
 
 // MalwareSettings defines model for MalwareSettings.
 type MalwareSettings struct {
-	// Backlog What switching the switch on would hold or refuse (R-MAL-019).
-	Backlog MalwareBacklog `json:"backlog"`
+	// Backlog What switching the switch on would hold or refuse, from the scan controller's count of at most five minutes ago (R-MAL-019,
+	// Q-MAL-136); null while the controller has not counted since the installation started or a restore.
+	Backlog *MalwareBacklog `json:"backlog"`
+
+	// BacklogAt When the scan controller counted `backlog`; null with it.
+	BacklogAt *time.Time `json:"backlogAt"`
 
 	// Database The signature database in use (R-MAL-010, R-MAL-023); `version` is null until the first version is in use.
 	Database MalwareDatabaseState `json:"database"`
@@ -13862,8 +14184,14 @@ type MalwareSettings struct {
 	Enabled bool `json:"enabled"`
 
 	// OnlyChecked Only checked artifacts can be downloaded (R-MAL-019); false by default.
-	OnlyChecked bool      `json:"onlyChecked"`
-	UpdatedAt   time.Time `json:"updatedAt"`
+	OnlyChecked bool `json:"onlyChecked"`
+
+	// Rescan The rescan settings of the installation (R-MAL-037, R-MAL-041, Q-MAL-135), each in whole hours. A check is due once the signatures in
+	// use are `cycleHours` newer than its own, sooner the more its blob was downloaded since (`demandStepHours` for each doubling), at the
+	// earliest once they are `shortestHours` newer; a due check is overdue after `overdueAfterHours`; whatever was downloaded within
+	// `recentWithinHours` is due at every new signature set (the floor of Q-MAL-9; 0 switches it off).
+	Rescan    MalwareRescan `json:"rescan"`
+	UpdatedAt time.Time     `json:"updatedAt"`
 
 	// UpdatedBy `<kind>:<name>` of the principal who changed the switch last; null for none.
 	UpdatedBy *string `json:"updatedBy"`
@@ -13875,6 +14203,9 @@ type MalwareSettings struct {
 // MalwareSettingsPatch defines model for MalwareSettingsPatch.
 type MalwareSettingsPatch struct {
 	OnlyChecked *bool `json:"onlyChecked,omitempty"`
+
+	// Rescan The members of `MalwareRescan` to change; a member left out keeps its value. The bounds are `MalwareRescan`'s.
+	Rescan *MalwareRescanPatch `json:"rescan,omitempty"`
 }
 
 // MalwareSignatures Today's signatures of the malware scan (R-MAL-040).
@@ -17246,6 +17577,15 @@ type RotateRequest struct {
 	OverlapSeconds *int `json:"overlapSeconds,omitempty"`
 }
 
+// ScannerCall defines model for ScannerCall.
+type ScannerCall struct {
+	// Sha256 The blob the call reads, as the scan controller's call named it.
+	Sha256 string `json:"sha256"`
+
+	// Since When the replica's slot took the call, by the scanner's clock.
+	Since time.Time `json:"since"`
+}
+
 // ScannerDatabase defines model for ScannerDatabase.
 type ScannerDatabase struct {
 	// BuiltAt The build time of the version while it is the version in use (for `trivy` the build time of the database's metadata.json while its digest is the database in use, the source `trivy`'s); for the updater (`freshclam`) the build time of the daily its directory holds, whichever version it is; `null` otherwise.
@@ -17297,6 +17637,10 @@ type ScannerList struct {
 
 // ScannerReplica defines model for ScannerReplica.
 type ScannerReplica struct {
+	// Calls What a malware scanner (`clamav`) works on now, from its own report (Q-OPS-460): one entry per call its slots hold, the oldest
+	// first, at most `slots.total`; the scanner's own statement, as its slots are (H-1161). `null` for the other kinds.
+	Calls *[]ScannerCall `json:"calls"`
+
 	// Database The database the replica works with (Q-OPS-225): the signature database clamd scans with (`clamav`), the set the updater's directory holds (`freshclam`), or the newest database the image scanner's pod holds (`trivy`, R-VULN-049); `null` before its first load and while the updater holds no complete set.
 	Database *ScannerDatabase `json:"database"`
 
@@ -25702,6 +26046,12 @@ type ServerInterface interface {
 	// GetMalwareBlob The verdict of one blob
 	// (GET /api/v1/malware/blobs/{sha256})
 	GetMalwareBlob(w http.ResponseWriter, r *http.Request, sha256 string)
+	// GetMalwareController Read what the scan controller sees
+	// (GET /api/v1/malware/controller)
+	GetMalwareController(w http.ResponseWriter, r *http.Request)
+	// GetMalwareCoverage Read how current the malware checks are
+	// (GET /api/v1/malware/coverage)
+	GetMalwareCoverage(w http.ResponseWriter, r *http.Request)
 	// ListMalwareFinds List the blobs the malware scan found or could not check
 	// (GET /api/v1/malware/finds)
 	ListMalwareFinds(w http.ResponseWriter, r *http.Request, params ListMalwareFindsParams)
@@ -25717,7 +26067,7 @@ type ServerInterface interface {
 	// GetMalwareSettings Read the switch and the state of the malware scanning
 	// (GET /api/v1/malware/settings)
 	GetMalwareSettings(w http.ResponseWriter, r *http.Request)
-	// UpdateMalwareSettings Switch Only checked artifacts can be downloaded on or off
+	// UpdateMalwareSettings Switch Only checked artifacts can be downloaded on or off, and set the rescans
 	// (PATCH /api/v1/malware/settings)
 	UpdateMalwareSettings(w http.ResponseWriter, r *http.Request, params UpdateMalwareSettingsParams)
 	// GetMalwareSignatures Today's signatures of the malware scan
@@ -30823,6 +31173,34 @@ func (siw *ServerInterfaceWrapper) GetMalwareBlob(w http.ResponseWriter, r *http
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetMalwareBlob(w, r, sha256)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetMalwareController operation middleware
+func (siw *ServerInterfaceWrapper) GetMalwareController(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetMalwareController(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetMalwareCoverage operation middleware
+func (siw *ServerInterfaceWrapper) GetMalwareCoverage(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetMalwareCoverage(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -48028,6 +48406,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/malware/signatures", wrapper.GetMalwareSignatures)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/malware/settings", wrapper.GetMalwareSettings)
 	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/api/v1/malware/settings", wrapper.UpdateMalwareSettings)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/malware/controller", wrapper.GetMalwareController)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/malware/coverage", wrapper.GetMalwareCoverage)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/malware/finds", wrapper.ListMalwareFinds)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/malware/blobs/{sha256}", wrapper.GetMalwareBlob)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/malware/releases", wrapper.CreateMalwareRelease)

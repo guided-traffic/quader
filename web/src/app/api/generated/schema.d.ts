@@ -5937,10 +5937,12 @@ export interface paths {
         };
         /**
          * Read the switch and the state of the malware scanning
-         * @description The installation's switch with its `ETag`, the backlog that switching it on would refuse or hold and the signature database in
-         *     use (R-MAL-019, R-MAL-022, R-MAL-023); the scanners are the rows of `GET /api/v1/system/scanners` (Q-MAL-110). `backlog.unchecked` counts the blobs of
-         *     scannable items without a verdict, `backlog.notCheckable` those whose verdict is unscannable or failed and that no release
-         *     passes. Read from PostgreSQL, so an answer shows a change another replica committed.
+         * @description The installation's switch and the rescan settings with their `ETag`, the backlog that switching the switch on would refuse or
+         *     hold and the signature database in use (R-MAL-019, R-MAL-022, R-MAL-023, R-MAL-041); the scanners are the rows of
+         *     `GET /api/v1/system/scanners` (Q-MAL-110). The backlog is the scan controller's count of at most five minutes ago, with its time
+         *     (`backlogAt`, Q-MAL-136): `backlog.unchecked` counts the blobs that wait for their first verdict, `backlog.notCheckable` those
+         *     whose verdict is unscannable or failed and that no release passes. Read from PostgreSQL, so an answer shows a change another
+         *     replica committed.
          */
         get: operations["getMalwareSettings"];
         put?: never;
@@ -5949,12 +5951,64 @@ export interface paths {
         options?: never;
         head?: never;
         /**
-         * Switch Only checked artifacts can be downloaded on or off
-         * @description A JSON merge patch with `onlyChecked` (R-MAL-019); `If-Match` is required. A change records `malware.settings.changed`
-         *     with `before` and `after`; switching on carries the journal flag, so a restore to an earlier point keeps it on. Every
-         *     replica follows within the bound of R-ARCH-018. The answer is the settings after the change.
+         * Switch Only checked artifacts can be downloaded on or off, and set the rescans
+         * @description A JSON merge patch with `onlyChecked` (R-MAL-019) and the members of `rescan` (R-MAL-041) to change; `If-Match` is required. A
+         *     rescan setting outside its bounds is `422` with its pointer (`/rescan/shortestHours`), `shortestHours` and `demandStepHours`
+         *     bounded by the `cycleHours` after the patch. A change records `malware.settings.changed` with the whole settings `before` and
+         *     `after`; switching the switch on carries the journal flag, so a restore to an earlier point keeps it on, and nothing else is
+         *     journaled (H-2400). A change of the rescan settings wakes the scan controller in the same transaction, which ranks the verdicts
+         *     again before it works (Q-MAL-137). Every replica follows within the bound of R-ARCH-018. The answer is the settings after the
+         *     change.
          */
         patch: operations["updateMalwareSettings"];
+        trace?: never;
+    };
+    "/api/v1/malware/controller": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read what the scan controller sees
+         * @description The scan controller's row (R-MAL-038, R-MAL-041): its state, its capacity and calls in flight, each replica it calls with its
+         *     state, slots and what it did within the hour, the rows due by lane, the verdicts by how current their check is and the backlog
+         *     from its class pass, and how busy the scanning was within the hour (`utilization`, `secondsPerScan`), so that an administrator
+         *     sees whether replicas are to be added. `queue` is the first 20 rows the controller works, read live: each with its lane, its
+         *     scan pressure and its parts. A caller with `content:metadata-read` reads each entry's first item; every other caller the digest
+         *     only. A replica's address and pod name are named to an internal caller only (Q-MAL-131, Q-API-468). Nothing but the queue is
+         *     counted per request.
+         */
+        get: operations["getMalwareController"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/malware/coverage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read how current the malware checks are
+         * @description How current the checks are (R-MAL-041), for the page Malware of the security audit: the verdicts by how current their check is
+         *     and the oldest check from the scan controller's class pass of at most five minutes ago (H-2405), with the bounds of the classes,
+         *     and the 20 checks made longest ago, read live, each with its first item.
+         */
+        get: operations["getMalwareCoverage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/malware/finds": {
@@ -9585,6 +9639,20 @@ export interface components {
             };
             /** @description The database the replica works with (Q-OPS-225): the signature database clamd scans with (`clamav`), the set the updater's directory holds (`freshclam`), or the newest database the image scanner's pod holds (`trivy`, R-VULN-049); `null` before its first load and while the updater holds no complete set. */
             database: components["schemas"]["ScannerDatabase"] | null;
+            /**
+             * @description What a malware scanner (`clamav`) works on now, from its own report (Q-OPS-460): one entry per call its slots hold, the oldest
+             *     first, at most `slots.total`; the scanner's own statement, as its slots are (H-1161). `null` for the other kinds.
+             */
+            calls: components["schemas"]["ScannerCall"][] | null;
+        };
+        ScannerCall: {
+            /** @description The blob the call reads, as the scan controller's call named it. */
+            sha256: string;
+            /**
+             * Format: date-time
+             * @description When the replica's slot took the call, by the scanner's clock.
+             */
+            since: string;
         };
         ScannerDatabase: {
             /**
@@ -15716,7 +15784,17 @@ export interface components {
             updatedAt: string;
             /** @description `<kind>:<name>` of the principal who changed the switch last; null for none. */
             updatedBy: string | null;
-            backlog: components["schemas"]["MalwareBacklog"];
+            rescan: components["schemas"]["MalwareRescan"];
+            /**
+             * @description What switching the switch on would hold or refuse, from the scan controller's count of at most five minutes ago (R-MAL-019,
+             *     Q-MAL-136); null while the controller has not counted since the installation started or a restore.
+             */
+            backlog: components["schemas"]["MalwareBacklog"] | null;
+            /**
+             * Format: date-time
+             * @description When the scan controller counted `backlog`; null with it.
+             */
+            backlogAt: string | null;
             database: components["schemas"]["MalwareDatabaseState"];
         };
         /** @description What switching the switch on would hold or refuse (R-MAL-019). */
@@ -15767,6 +15845,244 @@ export interface components {
         };
         MalwareSettingsPatch: {
             onlyChecked?: boolean;
+            rescan?: components["schemas"]["MalwareRescanPatch"];
+        };
+        /**
+         * @description The rescan settings of the installation (R-MAL-037, R-MAL-041, Q-MAL-135), each in whole hours. A check is due once the signatures in
+         *     use are `cycleHours` newer than its own, sooner the more its blob was downloaded since (`demandStepHours` for each doubling), at the
+         *     earliest once they are `shortestHours` newer; a due check is overdue after `overdueAfterHours`; whatever was downloaded within
+         *     `recentWithinHours` is due at every new signature set (the floor of Q-MAL-9; 0 switches it off).
+         */
+        MalwareRescan: {
+            /** @description `rescan_cycle`: 24 (1 day) to 8760 (365 days); 720 (30 days) by default. */
+            cycleHours: number;
+            /** @description `rescan_shortest`: 1 to `cycleHours`; 24 (1 day) by default. */
+            shortestHours: number;
+            /** @description `rescan_demand_step`: 0 (demand off) to `cycleHours`; 144 (6 days) by default. */
+            demandStepHours: number;
+            /** @description `rescan_overdue_after`: 1 to 8760 (365 days); 168 (7 days) by default. */
+            overdueAfterHours: number;
+            /** @description `rescan_recent_within`: 0 (the floor off) to 8760 (365 days); 168 (7 days) by default. */
+            recentWithinHours: number;
+        };
+        /** @description The members of `MalwareRescan` to change; a member left out keeps its value. The bounds are `MalwareRescan`'s. */
+        MalwareRescanPatch: {
+            cycleHours?: number;
+            shortestHours?: number;
+            demandStepHours?: number;
+            overdueAfterHours?: number;
+            recentWithinHours?: number;
+        };
+        /**
+         * @description What the scan controller sees (R-MAL-038, R-MAL-041): its row, written at most every 15 seconds while it runs and when a run ends, the
+         *     counts of its class pass of at most five minutes ago, and the first entries of its queue, read live. Nothing in it is counted per
+         *     request but the queue.
+         */
+        MalwareController: {
+            /**
+             * @description What the controller did last: `running`, `idle` (nothing presses), `no_scanner` (no replica reachable, it holds back),
+             *     `no_database` (no signature set yet), `no_address` (no `malware.scanner.url`); null while it has written no row since the
+             *     installation started or a restore.
+             */
+            state: components["schemas"]["MalwareControllerState"] | null;
+            /**
+             * Format: date-time
+             * @description When the controller last wrote its row; null with `state`.
+             */
+            observedAt: string | null;
+            /** @description The slots of the reachable replicas that neither rest nor pause. */
+            capacity: number;
+            /** @description The calls the controller has open. */
+            inFlight: number;
+            /**
+             * Format: double
+             * @description How busy the scanning was within the last hour: `busySecondsLastHour` over the slots of the replicas listed × 3600, from 0 to 1;
+             *     near 1 with a backlog, replicas are to be added. Null while no replica is listed.
+             */
+            utilization: number | null;
+            /**
+             * Format: int64
+             * @description The verdicts written within the last hour.
+             */
+            scansLastHour: number;
+            /**
+             * Format: double
+             * @description The seconds the replicas' slots were held within the last hour.
+             */
+            busySecondsLastHour: number;
+            /**
+             * Format: double
+             * @description `busySecondsLastHour` over `scansLastHour`: what one check held a slot on average; null without a check in the hour.
+             */
+            secondsPerScan: number | null;
+            replicas: components["schemas"]["MalwareControllerReplica"][];
+            lanes: components["schemas"]["MalwareLanes"];
+            /** @description The verdicts by how current their check is, from the class pass; null before its first count. */
+            ages: components["schemas"]["MalwareAges"] | null;
+            /** @description What switching the switch on would hold or refuse, from the class pass; null before its first count. */
+            backlog: components["schemas"]["MalwareBacklog"] | null;
+            /**
+             * Format: date-time
+             * @description The oldest check that is not `too_large`, from the class pass.
+             */
+            oldestCheckAt: string | null;
+            /**
+             * Format: date-time
+             * @description When the class pass counted `ages`, `backlog` and `oldestCheckAt`.
+             */
+            aggregatedAt: string | null;
+            /**
+             * Format: date-time
+             * @description The last discovery and sweep (R-MAL-004).
+             */
+            sweptAt: string | null;
+            /**
+             * Format: int64
+             * @description The version of the settings the ranks were made with; another than `MalwareSettings.version` while a re-rank is to come.
+             */
+            rankedWith: number;
+            /** @description The first 20 rows the controller works, in the order of their lanes, read live (R-MAL-041). */
+            queue: components["schemas"]["MalwareQueueEntry"][];
+        };
+        /** @enum {string} */
+        MalwareControllerState: "running" | "idle" | "no_scanner" | "no_database" | "no_address";
+        /** @description One malware scanner replica as the controller saw it (Q-MAL-121). */
+        MalwareControllerReplica: {
+            /** @description The address it is called at; null in an answer to a caller who is not internal (Q-MAL-131, Q-API-468). */
+            address: string | null;
+            /** @description The pod's name from its last answer; null before one and in an answer to a caller who is not internal. */
+            instance: string | null;
+            /**
+             * @description `paused` while it loads a new signature set or drains (expected); `resting` after a failure.
+             * @enum {string}
+             */
+            state: "ready" | "paused" | "resting";
+            inFlight: number;
+            slots: number;
+            /** Format: date-time */
+            restingSince: string | null;
+            /** Format: date-time */
+            restingUntil: string | null;
+            /** @description The code of the call that paused or rested it (`scanner_unavailable`, `clamd_unavailable`, `database_loading`, …). */
+            restReason: string | null;
+            scansLastHour: number;
+            /** Format: double */
+            busySecondsLastHour: number;
+            /**
+             * Format: double
+             * @description `busySecondsLastHour` over `slots` × 3600, from 0 to 1; null without slots.
+             */
+            utilization: number | null;
+        };
+        /** @description The rows due by lane (R-MAL-004, R-MAL-026); `pressure` counts the verdicts whose scan pressure reached the cycle. */
+        MalwareLanes: {
+            /** Format: int64 */
+            asked: number;
+            /** Format: int64 */
+            new: number;
+            /** Format: int64 */
+            retry: number;
+            /** Format: int64 */
+            pressure: number;
+        };
+        /** @description The verdicts by how current their check is (`MalwareAge`), and the rows without one. */
+        MalwareAges: {
+            /** Format: int64 */
+            current: number;
+            /** Format: int64 */
+            older: number;
+            /** Format: int64 */
+            due: number;
+            /** Format: int64 */
+            overdue: number;
+            /** Format: int64 */
+            unchecked: number;
+        };
+        /**
+         * @description `asked`, a download waits; `new`, no verdict yet; `retry`, after a failed attempt; `pressure`, its scan pressure reached the cycle.
+         * @enum {string}
+         */
+        MalwareQueueLane: "asked" | "new" | "retry" | "pressure";
+        /**
+         * @description What requested a rescan (R-MAL-037): an administrator's (`rescan`), a change of the limits (`limits`), the floor of what was downloaded lately at a new set (`recent`).
+         * @enum {string}
+         */
+        MalwareRequested: "rescan" | "limits" | "recent";
+        /** @description An item over the blob, the first by repository and path. */
+        MalwareItemRef: {
+            /** @description `<project>/<repository>`. */
+            repository: string;
+            path: string;
+        };
+        MalwareQueueEntry: {
+            lane: components["schemas"]["MalwareQueueLane"];
+            sha256: string;
+            state: components["schemas"]["MalwareState"];
+            /**
+             * Format: date-time
+             * @description The due lanes: when the row is due (`not_before`); the lane `pressure`: when its last check was made.
+             */
+            since: string;
+            /** @description The attempts spent on the row's current scan. */
+            attempts: number;
+            /**
+             * Format: int64
+             * @description The scan pressure in percent of the cycle, as `MalwareStatus.pressure`; null for a row without a verdict.
+             */
+            pressure: number | null;
+            /**
+             * Format: int64
+             * @description How many days newer the signatures in use are than the ones of the check; null without a verdict or a set in use.
+             */
+            signatureDays: number | null;
+            /**
+             * Format: int64
+             * @description The downloads of the blob since its check.
+             */
+            downloadsSince: number;
+            /** @description What requested a rescan of it; null for none. */
+            requested: components["schemas"]["MalwareRequested"] | null;
+            /** @description The first item over the blob; null for a caller without `content:metadata-read` (Q-API-468) and for a blob no live item holds. */
+            item: components["schemas"]["MalwareItemRef"] | null;
+        };
+        /** @description How current the checks are (R-MAL-041), for the page Malware of the security audit. */
+        MalwareCoverage: {
+            /** @description The verdicts by how current their check is, from the scan controller's class pass; null before its first count. */
+            ages: components["schemas"]["MalwareAges"] | null;
+            /**
+             * Format: date-time
+             * @description The oldest check that is not `too_large`, from the class pass.
+             */
+            oldestCheckAt: string | null;
+            /**
+             * Format: date-time
+             * @description When the class pass counted; the counts are at most five minutes old while the controller runs (H-2405).
+             */
+            aggregatedAt: string | null;
+            /** @description `MalwareRescan.cycleHours`: a check is due at it. */
+            cycleHours: number;
+            /** @description `MalwareRescan.overdueAfterHours`: a due check is overdue after it. */
+            overdueAfterHours: number;
+            /** @description The 20 checks made longest ago that are not `too_large`, read live, the oldest first. */
+            oldest: components["schemas"]["MalwareOldestCheck"][];
+        };
+        MalwareOldestCheck: {
+            sha256: string;
+            state: components["schemas"]["MalwareState"];
+            released: boolean;
+            /** Format: date-time */
+            checkedAt: string;
+            /** @description The signature set the check was made with; null for a check that names none. */
+            signatures: string | null;
+            /** @description How current the check is; null while no set is in use. */
+            age: components["schemas"]["MalwareAge"] | null;
+            /**
+             * Format: int64
+             * @description The scan pressure in percent of the cycle, as `MalwareStatus.pressure`.
+             */
+            pressure: number | null;
+            /** @description The first item over the blob; null for a blob no live item holds. */
+            item: components["schemas"]["MalwareItemRef"] | null;
         };
         /**
          * @description The member `malware` of a stored file (R-MAL-022, R-MAL-024): the verdict of its blob, the release that passes it and
@@ -32801,7 +33117,11 @@ export interface operations {
             content: {
                 /**
                  * @example {
-                 *       "onlyChecked": true
+                 *       "onlyChecked": true,
+                 *       "rescan": {
+                 *         "cycleHours": 720,
+                 *         "recentWithinHours": 0
+                 *       }
                  *     }
                  */
                 "application/merge-patch+json": components["schemas"]["MalwareSettingsPatch"];
@@ -32826,6 +33146,56 @@ export interface operations {
             415: components["responses"]["UnsupportedMediaType"];
             422: components["responses"]["Unprocessable"];
             428: components["responses"]["PreconditionRequired"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getMalwareController: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description What the controller sees. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MalwareController"];
+                };
+            };
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getMalwareCoverage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description How current the checks are. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MalwareCoverage"];
+                };
+            };
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
             429: components["responses"]["TooManyRequests"];
             500: components["responses"]["Internal"];
             503: components["responses"]["Unavailable"];

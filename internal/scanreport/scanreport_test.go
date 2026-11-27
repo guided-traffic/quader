@@ -282,3 +282,56 @@ func TestR_OPS_048_TheSignOffIsTriedAgainWithinItsBound(t *testing.T) {
 		})
 	}
 }
+
+// R-OPS-048, Q-OPS-460, Q-OPS-461: a malware scanner names the calls its slots hold, each the digest of the call with the time its slot
+// took it, at most one per slot; a report of 64 slots that each hold a call fits the bound of 16 KiB. Calls from another kind, more calls
+// than slots, a malformed digest, a call without its time, a digest twice and a body above the bound are refused.
+func TestR_OPS_048_AMalwareScannerReportsItsCallsWithinItsSlots(t *testing.T) {
+	since := time.Date(2026, 11, 27, 9, 14, 5, 123456789, time.UTC)
+	const hexDigits = "0123456789abcdef"
+	call := func(i int) Call {
+		return Call{Digest: "sha256:" + strings.Repeat("f", 62) + string(hexDigits[i/16]) + string(hexDigits[i%16]), Since: since}
+	}
+	r := valid()
+	r.Calls = []Call{call(1)}
+	if err := r.Validate(config.ScannerKindClamav); err != nil {
+		t.Fatalf("a call: %v", err)
+	}
+	full := valid()
+	full.Slots = Slots{InUse: 64, Total: 64}
+	for i := range 64 {
+		full.Calls = append(full.Calls, call(i))
+	}
+	b, _ := json.Marshal(full)
+	if len(b) > MaxBodyBytes {
+		t.Fatalf("64 calls are %d bytes, above the bound", len(b))
+	}
+	if got, err := Decode(strings.NewReader(string(b))); err != nil || got.Validate(config.ScannerKindClamav) != nil || len(got.Calls) != 64 {
+		t.Fatalf("64 calls: %v", err)
+	}
+	trivy := valid()
+	trivy.Database = ""
+	for name, c := range map[string]struct {
+		calls []Call
+		kind  string
+	}{
+		"more calls than slots":       {[]Call{call(1), call(2), call(3)}, config.ScannerKindClamav},
+		"a digest without its prefix": {[]Call{{Digest: strings.Repeat("a", 64), Since: since}}, config.ScannerKindClamav},
+		"a digest in upper case":      {[]Call{{Digest: "sha256:" + strings.Repeat("A", 64), Since: since}}, config.ScannerKindClamav},
+		"a call without its time":     {[]Call{{Digest: call(1).Digest}}, config.ScannerKindClamav},
+		"a digest twice":              {[]Call{call(1), call(1)}, config.ScannerKindClamav},
+		"calls from an image scanner": {[]Call{call(1)}, config.ScannerKindTrivy},
+	} {
+		rep := valid()
+		if c.kind == config.ScannerKindTrivy {
+			rep = trivy
+		}
+		rep.Calls = c.calls
+		if err := rep.Validate(c.kind); err == nil {
+			t.Errorf("%s: admitted", name)
+		}
+	}
+	if _, err := Decode(strings.NewReader(`{"name":"` + strings.Repeat("a", 16<<10) + `"}`)); err == nil {
+		t.Error("a body above 16 KiB: decoded")
+	}
+}

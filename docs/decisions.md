@@ -9863,10 +9863,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-API
 
-177 questions on [spec/api-and-ui.md](spec/api-and-ui.md) and [spec/formats/ansible.md](spec/formats/ansible.md).
+178 questions on [spec/api-and-ui.md](spec/api-and-ui.md) and [spec/formats/ansible.md](spec/formats/ansible.md).
 
 <details>
-<summary>Q-API: 177 questions</summary>
+<summary>Q-API: 178 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10044,6 +10044,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-API-465](spec/api-and-ui.md#q-api-465--a-units-malware-state-is-its-deciding-parts-member-with-three-members-of-the-unit) | A unit's malware state is its deciding part's member, with three members of the unit | Decided by the development agent on 2026-11-26 | (a) `MalwareSummary` carries every member of `MalwareStatus`, the deciding part's, plus `files`, `currentFiles` and `decidedBy` | — |
 | [Q-API-466](spec/api-and-ui.md#q-api-466--a-folders-file-carries-the-files-member-and-an-images-page-lists-the-parts-its-files-do-not) | A folder's file carries the file's member, and an image's page lists the parts its files do not | Decided by the development agent on 2026-11-26 | (a) A file of a folder's listing carries `MalwareStatus`; a version's page carries `malwareParts`, the image's parts its `files` do not list, each with its `MalwareStatus` and whether it is `stored` | — |
 | [Q-API-467](spec/api-and-ui.md#q-api-467--the-upstream-view-and-the-download-queue-carry-the-state-of-the-stored-versions-they-name) | The upstream view and the download queue carry the state of the stored versions they name | Decided by the development agent on 2026-11-26 (W-36's plan, B.1 rows 15 and 17) | (a) A row of the upstream view (`UpstreamVersion`) and of the download queue (`RemoteDownload`) carries the member of the version it names once the repository stores it; the read of the stored versions answers their ids | — |
+| [Q-API-468](spec/api-and-ui.md#q-api-468--the-scan-controller-and-the-coverage-are-two-reads-each-for-the-page-that-shows-it) | The scan controller and the coverage are two reads, each for the page that shows it | Decided by the development agent on 2026-11-26 (W-36's plan, D.3) and built on 2026-11-27 | (a) `GET /api/v1/malware/controller` (`settings:read`) with the live queue, and `GET /api/v1/malware/coverage` (`content:metadata-read`) with the checks made longest ago | — |
 | [Q-API-475](spec/api-and-ui.md#q-api-475--the-storage-overview-is-an-operation-of-its-own) | The storage overview is an operation of its own | Decided by the development agent while building W-37's package P1 ([storage.md](spec/storage.md) R-STOR-107) | (a) `GET /api/v1/storage/overview`, `settings:read`, the states and the figures of now in one answer | — |
 | [Q-API-476](spec/api-and-ui.md#q-api-476--the-connection-lists-additions-are-nullable-for-a-connection-the-replica-does-not-configure) | The connection list's additions are nullable for a connection the replica does not configure | Decided by the development agent while building W-37's package P1 ([storage.md](spec/storage.md) R-STOR-106) | (a) `capacityBytes` and the settings' `sseKmsKeyId` and `sseBucketKey` follow `settings` (Q-API-406): the answering replica's element, `null` where it does not configure the connection or states no capacity; `firstSeenAt`, `passStartedAt`, `encryptedSince` and `retiredAt` are PostgreSQL's and the same from every replica | — |
 | [Q-API-477](spec/api-and-ui.md#q-api-477--the-recheck-of-a-blob-is-audited-before-its-answer) | The recheck of a blob is audited before its answer | Decided by the development agent while building W-37's package P1 ([storage.md](spec/storage.md) R-STOR-027) | (a) `storage.blob.rechecked`, transactional, written in a transaction of its own after the reads and before the answer; when its insert fails the answer is `500` | — |
@@ -11979,10 +11980,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-MAL
 
-107 questions on [spec/malware-scanning.md](spec/malware-scanning.md).
+110 questions on [spec/malware-scanning.md](spec/malware-scanning.md).
 
 <details>
-<summary>Q-MAL: 107 questions</summary>
+<summary>Q-MAL: 110 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -12093,6 +12094,9 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-MAL-132](spec/malware-scanning.md#q-mal-132--todays-signatures-are-one-public-read) | Today's signatures are one public read | Decided by the development agent on 2026-11-26 (W-36's plan, D.2) | (a) `GET /api/v1/malware/signatures`, public, read once by a screen for all its marks | — |
 | [Q-MAL-133](spec/malware-scanning.md#q-mal-133--the-bastions-catalogue-keeps-none-of-what-a-new-set-or-a-download-changes) | The Bastion's catalogue keeps none of what a new set or a download changes | Decided by the development agent on 2026-11-26 (W-36's plan, B.15 and D.1) | (a) The strip drops `engine`, `scannerInstance`, `age`, `pressure`, `due`, `nextCheckInDays`, `downloadsSince` and `currentFiles` from a malware member, and moves `decidedBy` with `scannedAt`, `database` and `databaseBuiltAt` into the version's state | — |
 | [Q-MAL-134](spec/malware-scanning.md#q-mal-134--a-part-that-is-not-stored-does-not-decide-an-artifacts-word) | A part that is not stored does not decide an artifact's word | Decided by the development agent | (a) The word is decided over the stored parts only; the summary counts the rest in `partsNotStored`, and the version's page marks each such part | — |
+| [Q-MAL-135](spec/malware-scanning.md#q-mal-135--the-rescan-settings-are-whole-hours-each-within-its-bounds) | The rescan settings are whole hours, each within its bounds | Decided by the development agent on 2026-11-27 (W-36's package P5) | (a) Every member in whole hours, an integer: `cycleHours`, `shortestHours`, `demandStepHours`, `overdueAfterHours`, `recentWithinHours` | — |
+| [Q-MAL-136](spec/malware-scanning.md#q-mal-136--the-settings-backlog-is-the-scan-controllers-count-with-its-time) | The settings' backlog is the scan controller's count, with its time | Decided by the development agent on 2026-11-26 (W-36's plan, B.12) and built on 2026-11-27 | (a) `backlog` is the class pass's of `malware_controller` (R-MAL-038), with `backlogAt`; null until the controller counted | — |
+| [Q-MAL-137](spec/malware-scanning.md#q-mal-137--a-reader-of-the-controller-sees-a-path-only-with-contentmetadata-read-and-a-host-only-as-an-internal-caller) | A reader of the controller sees a path only with content:metadata-read, and a host only as an internal caller | Decided by the development agent on 2026-11-27 (W-36's package P5) | (a) Every entry names its digest; its first item (repository and path) only for the holder of `content:metadata-read`; a replica's address and pod name only for an internal caller at the main installation's door (Q-MAL-131); a change of the rescan settings enqueues the controller in its transaction, which ranks again | — |
 
 </details>
 
@@ -12483,10 +12487,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-OPS
 
-130 questions on [spec/operations-and-observability.md](spec/operations-and-observability.md).
+132 questions on [spec/operations-and-observability.md](spec/operations-and-observability.md).
 
 <details>
-<summary>Q-OPS: 130 questions</summary>
+<summary>Q-OPS: 132 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -12617,6 +12621,8 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-OPS-450](spec/operations-and-observability.md#q-ops-450--a-change-of-a-format-whose-unit-is-a-file-names-its-folder) | A change of a format whose unit is a file names its folder | Decided by the development agent on 2026-11-26 | (a) The unit of a generic file's change is a folder: the folder an upload wrote it into, the folder a delete named (`<folder>/`, `/` for the root) | — |
 | [Q-OPS-451](spec/operations-and-observability.md#q-ops-451--the-filters-apply-to-a-rows-every-event-and-the-callers-name-is-part-of-its-key) | The filters apply to a row's every event, and the caller's name is part of its key | Decided by the development agent on 2026-11-26 | (a) The predecessor test and the walk apply every filter that can differ inside a key (action, prefix, category, outcome, resource, trace); the key holds the name | — |
 | [Q-OPS-452](spec/operations-and-observability.md#q-ops-452--the-filter-by-an-actors-name-is-an-index-condition) | The filter by an actor's name is an index condition | Decided by the development agent on 2026-11-26 | (a) The value is an ID when it is a UUID, a name otherwise, never both; a partial index on `(actor_name, occurred_at DESC)` | [ADR-297](#adr-297--the-audit-log-shows-a-download-as-one-row-and-keeps-one-event-per-item) |
+| [Q-OPS-460](spec/operations-and-observability.md#q-ops-460--a-malware-scanners-report-names-the-calls-its-slots-hold) | A malware scanner's report names the calls its slots hold | Decided by the development agent on 2026-11-26 (W-36's plan, B.12 and C.3) and built on 2026-11-27 | (a) The report of the kind `clamav` names each call its slots hold, its digest and since when; `packages` keeps them in `scanner_replica.calls` (migration 00153), at most `slots_total` | — |
+| [Q-OPS-461](spec/operations-and-observability.md#q-ops-461--a-report-may-be-16-kib) | A report may be 16 KiB | Decided by the development agent on 2026-11-26 (W-36's plan, C.3) and built on 2026-11-27 | — | — |
 | [Q-OPS-470](spec/operations-and-observability.md#q-ops-470--the-task-storage-history-in-r-ops-019s-list) | The task `storage-history` in R-OPS-019's list | Decided by the development agent | — | — |
 | [Q-OPS-471](spec/operations-and-observability.md#q-ops-471--the-labels-of-the-historys-three-metrics-stay-within-r-ops-007s-set) | The labels of the history's three metrics stay within R-OPS-007's set | Decided by the development agent | — | — |
 | [Q-OPS-473](spec/operations-and-observability.md#q-ops-473--the-recheck-of-a-blob-is-an-event-of-the-registry) | The recheck of a blob is an event of the registry | Decided by the development agent while building W-37's package P1 ([storage.md](spec/storage.md) R-STOR-027) | (a) `storage.blob.rechecked` in R-OPS-014's registry, category `system`, transactional, no hook, not journaled; its data the digest, the content state after the reads and each copy's connection and state | — |

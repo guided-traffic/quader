@@ -197,8 +197,10 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 		// dashboard the same summary (R-UI-262 to R-UI-264, R-UI-266, four P1 requirements of W-37, P3).
 		// 1395 since the job malware-scan is the scan controller that calls each scanner replica (R-MAL-038, one P1 requirement
 		// of W-36, P2).
-		if len(m.Reqs) != 1395 || count[prioMVP] != 743 || count[prioP1] != 613 || count[prioP2] != 39 {
-			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1395 (743, 613, 39)",
+		// 1396 since what the scan controller and the coverage show, and the rescan settings, are read and set through the API
+		// (R-MAL-041, one P1 requirement of W-36, P5).
+		if len(m.Reqs) != 1396 || count[prioMVP] != 743 || count[prioP1] != 614 || count[prioP2] != 39 {
+			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1396 (743, 614, 39)",
 				len(m.Reqs), count[prioMVP], count[prioP1], count[prioP2])
 		}
 	})
