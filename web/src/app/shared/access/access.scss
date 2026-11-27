@@ -66,6 +66,11 @@ table.data {
   }
 }
 
+// A box's own Save changes keeps a line's room from it: the paragraph that stood between them is the box's help now (Q-UI-1628).
+quader-checkbox + .btn {
+  margin-block-start: var(--quader-space-3);
+}
+
 fieldset.form-grid {
   margin: 0;
   padding: 0;
