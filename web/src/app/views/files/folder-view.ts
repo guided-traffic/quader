@@ -88,6 +88,8 @@ export const FILES_PAGE = 200;
             <td>
               @if (c.kind === 'file' && c.malware; as m) {
                 <quader-malware-mark [malware]="m" [digest]="c.sha256 ?? null" />
+              } @else {
+                –
               }
             </td>
           }
@@ -175,7 +177,7 @@ export class FolderView {
    * lines at 1,024 px (2026-11-18).
    */
   private readonly malwareMarks = inject(MalwareSignaturesStore);
-  /** The files carry their malware state (R-MAL-039): the column **Malware scan** (R-UI-255); a folder's cell stays empty. */
+  /** The files carry their malware state (R-MAL-039): the column **Malware scan** (R-UI-255); a folder's cell, and a file without a state, show the dash. */
   protected readonly malware = computed(() => malwareShown(this.malwareMarks, this.list.items()));
   protected readonly columns = computed<readonly TableColumn[]>(() => [
     { id: 'name', label: $localize`:@@repo.content.col.name:Name`, width: '12rem' },

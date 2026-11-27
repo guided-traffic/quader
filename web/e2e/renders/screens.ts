@@ -1520,7 +1520,8 @@ async function* malwareLimitVersion(page: Page): AsyncGenerator<string> {
  * release dialog with the false alarm and its Technical details unfolded. By place, not by words: the German pass walks it too.
  */
 async function* malwareLimitFind(page: Page): AsyncGenerator<string> {
-  await expect(page.locator('main tbody tr').first()).toBeVisible();
+  // The finds' own table: the coverage's fold above it (W36-P6) holds a table of its own, closed.
+  await expect(page.locator('main quader-malware-finds > quader-data-table tbody tr').first()).toBeVisible();
   yield '';
   await page.locator('main .name-cell button[aria-expanded="false"]').first().click();
   await page.locator('main .find-detail quader-technical-details button').first().click();
