@@ -48,9 +48,9 @@ func TestR_BAS_071_TheSwitchIsPerRegistration(t *testing.T) {
 	}
 	waitFor(t, "the snapshot of the switch-on", 5*time.Second, func() bool { return switches.On(bid) })
 
-	t.Run("a null switches nothing, nor does a null enabled", func(t *testing.T) {
-		want(t, r.call("PATCH", bastions+"/partners", c.admin, `{"switches": {"handover": null}, "enabled": null}`, "If-Match", "*"), http.StatusOK, "")
-		if got := r.call("GET", bastions+"/partners", c.admin, nil).json(t); switchOf(t, got, "handover") != true || got["enabled"] != true {
+	t.Run("a null switches nothing", func(t *testing.T) {
+		want(t, r.call("PATCH", bastions+"/partners", c.admin, `{"switches": {"handover": null}}`, "If-Match", "*"), http.StatusOK, "")
+		if got := r.call("GET", bastions+"/partners", c.admin, nil).json(t); switchOf(t, got, "handover") != true || got["disabled"] != nil {
 			t.Fatalf("after the nulls: %v", got)
 		}
 	})

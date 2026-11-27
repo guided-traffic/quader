@@ -15,8 +15,8 @@ rendered from it ([checklist.md there](https://github.com/guided-traffic/quader/
 requirement lists the feature in its `Covers:` line. *open*: no requirement does. For entries with priority
 *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,413 spec requirements:
-812 cover catalog features, 601 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,414 spec requirements:
+813 cover catalog features, 601 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -1202,7 +1202,7 @@ Catalog page: [distribution-and-lifecycle.md](../features/distribution-and-lifec
 | DIST-022 | Promotion records and queries | Later | open | – |
 | DIST-023 | Security scan gate for release sets | Later | open | – |
 | DIST-024 | Distribution topology and edge instances | MVP | specified | [R-BAS-001](../spec/bastion.md), [R-BAS-002](../spec/bastion.md), [R-BAS-003](../spec/bastion.md), [R-BAS-045](../spec/bastion.md), [R-BAS-046](../spec/bastion.md), [R-BAS-050](../spec/bastion.md), [R-BAS-051](../spec/bastion.md), [R-BAS-053](../spec/bastion.md), [R-BAS-055](../spec/bastion.md), [R-BAS-093](../spec/bastion.md) |
-| DIST-025 | Trust between source and edge instances | MVP | specified | [R-BAS-004](../spec/bastion.md), [R-BAS-005](../spec/bastion.md), [R-BAS-006](../spec/bastion.md), [R-BAS-052](../spec/bastion.md), [R-BAS-127](../spec/bastion.md) |
+| DIST-025 | Trust between source and edge instances | MVP | specified | [R-BAS-004](../spec/bastion.md), [R-BAS-005](../spec/bastion.md), [R-BAS-006](../spec/bastion.md), [R-BAS-052](../spec/bastion.md), [R-BAS-133](../spec/bastion.md), [R-BAS-127](../spec/bastion.md) |
 | DIST-026 | Signing key propagation to targets | Later | open | – |
 | DIST-027 | Distribute a release set version | Later | open | – |
 | DIST-028 | Target path mapping and repository auto-creation | Later | open | – |

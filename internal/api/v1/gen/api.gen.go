@@ -202,6 +202,36 @@ func (e BannerInputSeverity) Valid() bool {
 	}
 }
 
+// Defines values for BastionState.
+const (
+	BastionStateConnected          BastionState = "connected"
+	BastionStateContactLost        BastionState = "contactLost"
+	BastionStateDisableUnconfirmed BastionState = "disableUnconfirmed"
+	BastionStateDisabled           BastionState = "disabled"
+	BastionStateDisabling          BastionState = "disabling"
+	BastionStateNoContact          BastionState = "noContact"
+)
+
+// Valid indicates whether the value is a known member of the BastionState enum.
+func (e BastionState) Valid() bool {
+	switch e {
+	case BastionStateConnected:
+		return true
+	case BastionStateContactLost:
+		return true
+	case BastionStateDisableUnconfirmed:
+		return true
+	case BastionStateDisabled:
+		return true
+	case BastionStateDisabling:
+		return true
+	case BastionStateNoContact:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for BastionCatalogueOutcomeOutcome.
 const (
 	BastionCatalogueOutcomeOutcomeBuilt   BastionCatalogueOutcomeOutcome = "built"
@@ -259,6 +289,27 @@ func (e BastionCataloguePublicRepositoriesClass) Valid() bool {
 	case BastionCataloguePublicRepositoriesClassRemote:
 		return true
 	case BastionCataloguePublicRepositoriesClassVirtual:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BastionConfigurationDisabled.
+const (
+	BastionConfigurationDisabledHard        BastionConfigurationDisabled = "hard"
+	BastionConfigurationDisabledLessThannil BastionConfigurationDisabled = "<nil>"
+	BastionConfigurationDisabledSoft        BastionConfigurationDisabled = "soft"
+)
+
+// Valid indicates whether the value is a known member of the BastionConfigurationDisabled enum.
+func (e BastionConfigurationDisabled) Valid() bool {
+	switch e {
+	case BastionConfigurationDisabledHard:
+		return true
+	case BastionConfigurationDisabledLessThannil:
+		return true
+	case BastionConfigurationDisabledSoft:
 		return true
 	default:
 		return false
@@ -331,6 +382,24 @@ func (e BastionConfigurationLimitsPreset) Valid() bool {
 	case BastionConfigurationLimitsPresetInternet:
 		return true
 	case BastionConfigurationLimitsPresetPartnerNetwork:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BastionDisableMode.
+const (
+	BastionDisableModeHard BastionDisableMode = "hard"
+	BastionDisableModeSoft BastionDisableMode = "soft"
+)
+
+// Valid indicates whether the value is a known member of the BastionDisableMode enum.
+func (e BastionDisableMode) Valid() bool {
+	switch e {
+	case BastionDisableModeHard:
+		return true
+	case BastionDisableModeSoft:
 		return true
 	default:
 		return false
@@ -427,6 +496,27 @@ func (e BastionLimitsPreset) Valid() bool {
 	}
 }
 
+// Defines values for BastionOperationDisabled.
+const (
+	BastionOperationDisabledHard        BastionOperationDisabled = "hard"
+	BastionOperationDisabledLessThannil BastionOperationDisabled = "<nil>"
+	BastionOperationDisabledSoft        BastionOperationDisabled = "soft"
+)
+
+// Valid indicates whether the value is a known member of the BastionOperationDisabled enum.
+func (e BastionOperationDisabled) Valid() bool {
+	switch e {
+	case BastionOperationDisabledHard:
+		return true
+	case BastionOperationDisabledLessThannil:
+		return true
+	case BastionOperationDisabledSoft:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for BastionPackageReadRead.
 const (
 	BastionPackageReadReadFull    BastionPackageReadRead = "full"
@@ -439,6 +529,27 @@ func (e BastionPackageReadRead) Valid() bool {
 	case BastionPackageReadReadFull:
 		return true
 	case BastionPackageReadReadPartial:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BastionPatchDisabled.
+const (
+	BastionPatchDisabledHard        BastionPatchDisabled = "hard"
+	BastionPatchDisabledLessThannil BastionPatchDisabled = "<nil>"
+	BastionPatchDisabledSoft        BastionPatchDisabled = "soft"
+)
+
+// Valid indicates whether the value is a known member of the BastionPatchDisabled enum.
+func (e BastionPatchDisabled) Valid() bool {
+	switch e {
+	case BastionPatchDisabledHard:
+		return true
+	case BastionPatchDisabledLessThannil:
+		return true
+	case BastionPatchDisabledSoft:
 		return true
 	default:
 		return false
@@ -10757,8 +10868,8 @@ type BannerInput struct {
 type BannerInputSeverity string
 
 // Bastion A Bastion registration, a principal of the kind `bastion` (R-BAS-004). Every member is present for a caller that holds
-// `endpoints:read`; a caller that reads one registration with `limits:read` alone reads `id`, `name`, `limits` and `status`, and
-// every other member is absent (R-BAS-093).
+// `endpoints:read`; a caller that reads one registration with `limits:read` alone reads `id`, `name`, `limits`, `status`, `state`
+// and `running`, and every other member is absent (R-BAS-093, R-BAS-133).
 type Bastion struct {
 	// Catalogue The last outcome of the builder of the registration's public catalogue (R-BAS-104, R-BAS-105); null while the builder holds
 	// no catalogue for it: the web interface is off, or no run followed the switch yet.
@@ -10774,21 +10885,34 @@ type Bastion struct {
 	Declared    *BastionDeclaration `json:"declared,omitempty"`
 	Description *string             `json:"description,omitempty"`
 
+	// Disabled How and since when an administrator disabled the Bastion (R-BAS-133): `soft` admits no new request and lets what runs
+	// finish, `hard` also cuts what runs. Null while it works. Its tokens stay valid either way.
+	Disabled *BastionDisable `json:"disabled,omitempty"`
+
 	// Egress The networks the Bastion connects from (R-BAS-017, R-UI-243): the main installation believes the caller's address and the
 	// host a Bastion forwards, and the caller's address of its check, only on a request of this registration that comes from one
 	// of them, as `server.trusted_proxies` resolves the request's address. Empty for a new registration: then every caller through
 	// the Bastion counts as the Bastion's own address, with one budget and one block for all. An entry is an IPv4 or IPv6 address
 	// (read as its `/32` or `/128`) or a network in CIDR form; the answer gives each with its prefix length. Refused are more than
 	// 32, a network listed twice, a `/0` and a network with bits set beyond its prefix (`422` with a field error at the entry).
-	Egress  *BastionEgress     `json:"egress,omitempty"`
-	Enabled *bool              `json:"enabled,omitempty"`
-	Id      openapi_types.UUID `json:"id"`
+	Egress *BastionEgress     `json:"egress,omitempty"`
+	Id     openapi_types.UUID `json:"id"`
 
 	// Limits The limits of the registration's configuration (R-BAS-093). The rules of the Bastion's place are read and written through
 	// `/api/v1/bastions/{name}/limits/assignments` (R-LIM-043). Every figure is held to the rules a Bastion applies it by: flood
 	// figures are positive integers, never null; a share lies in 0 to 1; a ceiling's burst only with its rate.
 	Limits BastionLimits `json:"limits"`
 	Name   string        `json:"name"`
+
+	// Running The requests the replicas that confirm the disable still run (R-BAS-133); 0 while the Bastion is not disabled.
+	Running int64 `json:"running"`
+
+	// State The Bastion's state as the main installation knows it (R-BAS-133). While it works: `connected` when a replica was heard
+	// within 5 minutes, `noContact` before any replica was heard, `contactLost` otherwise. While disabled: `disabling` while a
+	// replica heard since the disable has not confirmed it yet (at most 15 seconds) or the confirming replicas still run requests,
+	// `disabled` when every replica heard since confirms it and runs nothing, `disableUnconfirmed` when 15 seconds after the
+	// disable a replica heard since has not confirmed it, or at once when no replica was heard in the 5 minutes before.
+	State BastionState `json:"state"`
 
 	// Status The state each replica reported with its last batch within the last hour, the newest first (R-LIM-045); a block that ended is left out (Q-BAS-443).
 	Status []BastionReplicaStatus `json:"status"`
@@ -10799,6 +10923,13 @@ type Bastion struct {
 	// Tokens The unrevoked tokens, newest first. Neither the value nor its hash is part of it.
 	Tokens *[]BastionTokenSummary `json:"tokens,omitempty"`
 }
+
+// BastionState The Bastion's state as the main installation knows it (R-BAS-133). While it works: `connected` when a replica was heard
+// within 5 minutes, `noContact` before any replica was heard, `contactLost` otherwise. While disabled: `disabling` while a
+// replica heard since the disable has not confirmed it yet (at most 15 seconds) or the confirming replicas still run requests,
+// `disabled` when every replica heard since confirms it and runs nothing, `disableUnconfirmed` when 15 seconds after the
+// disable a replica heard since has not confirmed it, or at once when no replica was heard in the 5 minutes before.
+type BastionState string
 
 // BastionCatalogueChanges The changes of a registration's public catalogue after a cursor (R-BAS-101).
 type BastionCatalogueChanges struct {
@@ -10908,6 +11039,10 @@ type BastionCheckRequest struct {
 // or `null` for unlimited. The main installation answers it from its snapshot of the registrations: the registration's own
 // members and the rules of its place with each rule's effective figures, of one moment, and the installation's display.
 type BastionConfiguration struct {
+	// Disabled The registration's disable (R-BAS-133): null while the Bastion works; `soft` admits no new request and lets every request in
+	// flight finish, `hard` also cuts every request in flight.
+	Disabled *BastionConfigurationDisabled `json:"disabled"`
+
 	// Display How the Bastion's web interface writes what the installation's settings decide (R-BAS-128).
 	Display struct {
 		// TimeFormat The installation's default form of a time (R-UI-251), which the web interface writes every time in.
@@ -10935,6 +11070,10 @@ type BastionConfiguration struct {
 		HideRepositories bool `json:"hideRepositories"`
 	} `json:"switches"`
 }
+
+// BastionConfigurationDisabled The registration's disable (R-BAS-133): null while the Bastion works; `soft` admits no new request and lets every request in
+// flight finish, `hard` also cuts every request in flight.
+type BastionConfigurationDisabled string
 
 // BastionConfigurationDisplayTimeFormat The installation's default form of a time (R-UI-251), which the web interface writes every time in.
 type BastionConfigurationDisplayTimeFormat string
@@ -11006,6 +11145,16 @@ type BastionDeclaration struct {
 	Since time.Time `json:"since"`
 }
 
+// BastionDisable A Bastion's disable (R-BAS-133).
+type BastionDisable struct {
+	// At When it was set; a change from soft to hard sets it again.
+	At   time.Time          `json:"at"`
+	Mode BastionDisableMode `json:"mode"`
+}
+
+// BastionDisableMode defines model for BastionDisable.Mode.
+type BastionDisableMode string
+
 // BastionDownloadEvent defines model for BastionDownloadEvent.
 type BastionDownloadEvent struct {
 	At            time.Time           `json:"at"`
@@ -11045,8 +11194,12 @@ type BastionDownloadsRequest struct {
 			// Shared True when the cache is the Bastion's bucket, which every replica shares and reports alike (the bucket backend); false for the replica's own volume (Q-BAS-480).
 			Shared bool `json:"shared"`
 		} `json:"cache"`
-		Limited    int64  `json:"limited"`
-		Replica    string `json:"replica"`
+		Limited int64 `json:"limited"`
+
+		// Operation What a replica applies of its registration's disable (R-BAS-133), the replica's own word: the way of the configuration it applies,
+		// null while it works, and the requests of its callers it still runs.
+		Operation  BastionOperation `json:"operation"`
+		Replica    string           `json:"replica"`
 		Throughput struct {
 			BytesPerSecondByClass struct {
 				Anonymous int64 `json:"anonymous"`
@@ -11267,6 +11420,16 @@ type BastionList struct {
 	Items []Bastion `json:"items"`
 }
 
+// BastionOperation What a replica applies of its registration's disable (R-BAS-133), the replica's own word: the way of the configuration it applies,
+// null while it works, and the requests of its callers it still runs.
+type BastionOperation struct {
+	Disabled *BastionOperationDisabled `json:"disabled"`
+	Running  int64                     `json:"running"`
+}
+
+// BastionOperationDisabled defines model for BastionOperation.Disabled.
+type BastionOperationDisabled string
+
 // BastionPackageRead defines model for BastionPackageRead.
 type BastionPackageRead struct {
 	Package string `json:"package"`
@@ -11283,9 +11446,12 @@ type BastionPackageReadRead string
 type BastionPatch struct {
 	Description *string `json:"description,omitempty"`
 
+	// Disabled `endpoints:write`. Disables the Bastion soft or hard, told to its replicas over their connection within seconds, or enables
+	// it with `null` (R-BAS-133); absent is unchanged. Its tokens are not touched.
+	Disabled *BastionPatchDisabled `json:"disabled,omitempty"`
+
 	// Egress Replaces the whole list; `[]` empties it, a `null` reads as absent and changes nothing.
-	Egress  *BastionEgress `json:"egress,omitempty"`
-	Enabled *bool          `json:"enabled,omitempty"`
+	Egress *BastionEgress `json:"egress,omitempty"`
 
 	// Limits `limits:write`. A merge patch of the registration's limits (R-BAS-093): a member that is absent is unchanged, a nested member
 	// merges. `preset` applies a preset first (R-LIM-046), `custom` nothing; a change of `mode` needs recent authentication.
@@ -11306,6 +11472,10 @@ type BastionPatch struct {
 		HideRepositories *bool `json:"hideRepositories,omitempty"`
 	} `json:"switches,omitempty"`
 }
+
+// BastionPatchDisabled `endpoints:write`. Disables the Bastion soft or hard, told to its replicas over their connection within seconds, or enables
+// it with `null` (R-BAS-133); absent is unchanged. Its tokens are not touched.
+type BastionPatchDisabled string
 
 // BastionPatchLimitsMode defines model for BastionPatch.Limits.Mode.
 type BastionPatchLimitsMode string
@@ -11360,9 +11530,13 @@ type BastionReplicaStatus struct {
 		// Shared Whose cache `bytes`, `capacityBytes` and `protectedBytes` describe (Q-BAS-480): true for the Bastion's bucket, which every replica reports alike (take one value), false for the replica's own volume (add the replicas up).
 		Shared bool `json:"shared"`
 	} `json:"cache"`
-	Limited    int64     `json:"limited"`
-	Replica    string    `json:"replica"`
-	ReportedAt time.Time `json:"reportedAt"`
+	Limited int64 `json:"limited"`
+
+	// Operation What a replica applies of its registration's disable (R-BAS-133), the replica's own word: the way of the configuration it applies,
+	// null while it works, and the requests of its callers it still runs.
+	Operation  BastionOperation `json:"operation"`
+	Replica    string           `json:"replica"`
+	ReportedAt time.Time        `json:"reportedAt"`
 	Throughput struct {
 		BytesPerSecondByClass struct {
 			Anonymous int64 `json:"anonymous"`
@@ -22895,6 +23069,9 @@ type BastionInterfaceMismatch = Problem
 // BastionTokenInvalid RFC 9457 problem details. The extension members are `code`, `requestId`, `errors`, `currentEtag`, `job` and `references`.
 type BastionTokenInvalid = Problem
 
+// BastionUnavailableOrDisabled RFC 9457 problem details. The extension members are `code`, `requestId`, `errors`, `currentEtag`, `job` and `references`.
+type BastionUnavailableOrDisabled = Problem
+
 // Conflict RFC 9457 problem details. The extension members are `code`, `requestId`, `errors`, `currentEtag`, `job` and `references`.
 type Conflict = Problem
 
@@ -26858,7 +27035,7 @@ type ServerInterface interface {
 	// GetBastion Read a Bastion registration
 	// (GET /api/v1/bastions/{name})
 	GetBastion(w http.ResponseWriter, r *http.Request, name string, params GetBastionParams)
-	// UpdateBastion Change or disable a Bastion registration, or configure it
+	// UpdateBastion Change, disable or configure a Bastion registration
 	// (PATCH /api/v1/bastions/{name})
 	UpdateBastion(w http.ResponseWriter, r *http.Request, name string, params UpdateBastionParams)
 	// ListBastionLimitAssignments List the rules of a Bastion's place

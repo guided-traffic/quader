@@ -17,6 +17,8 @@ func TestR_BAS_004_TheBastionCommandsRefuseWhatIsIncomplete(t *testing.T) {
 	for _, args := range [][]string{
 		{"admin", "bastion"},
 		{"admin", "bastion", "create"},
+		{"admin", "bastion", "disable"},
+		{"admin", "bastion", "enable"},
 		{"admin", "bastion", "frobnicate"},
 		{"admin", "bastion", "token"},
 		{"admin", "bastion", "token", "create"},

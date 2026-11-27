@@ -3,6 +3,7 @@ import {
   Bastion,
   BastionConfigurationPatch,
   BastionContact,
+  BastionDisableMode,
   BastionPreset,
   BastionsApi,
   BastionView,
@@ -116,7 +117,9 @@ export function sampleBastion(over: Partial<Bastion> = {}): Bastion {
     id: '0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a40',
     name: 'partners',
     description: 'The partner network',
-    enabled: true,
+    disabled: null,
+    state: 'connected',
+    running: 0,
     switches: { handover: false, gui: false, docs: false, hideRepositories: false },
     catalogue: null,
     limits: sampleBastionLimits(),
@@ -152,7 +155,8 @@ export class FakeBastionsApi extends BastionsApi {
       id: '0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a41',
       name: 'standby',
       description: '',
-      enabled: false,
+      disabled: { mode: 'soft', at: inDays(-3) },
+      state: 'disableUnconfirmed',
       tokens: [],
       contacts: [],
     }),
@@ -217,14 +221,14 @@ export class FakeBastionsApi extends BastionsApi {
     return created;
   }
 
-  override async setEnabled(name: string, enabled: boolean, etag: string): Promise<Versioned<Bastion>> {
+  override async setDisabled(name: string, disabled: BastionDisableMode | null, etag: string): Promise<Versioned<Bastion>> {
     this.fail();
     this.ifMatch.push(etag);
-    this.calls.push(`setEnabled ${name} ${enabled}`);
+    this.calls.push(`setDisabled ${name} ${disabled}`);
     const current = this.find(name);
     if (etag !== this.etagOf(name)) throw problem(412, 'precondition_failed', { currentEtag: this.etagOf(name) });
     this.bumpRevision(name);
-    const changed = { ...current, enabled };
+    const changed: Bastion = { ...current, disabled: disabled === null ? null : { mode: disabled, at: new Date().toISOString() } };
     this.bastions = this.bastions.map((b) => (b.name === name ? changed : b));
     return { value: changed, etag: this.etagOf(name) };
   }

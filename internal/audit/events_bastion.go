@@ -3,11 +3,13 @@ package audit
 // The events of the Bastion registrations on the main installation (R-BAS-004). A registration is a principal
 // of the kind bastion; its events are about the registration, so their resource type is bastion, and the token
 // events of a Bastion token (token.created, token.revoked, registered with the identity events) carry the same
-// resource type. A disable and a deletion end what the registration's tokens may do, so both are journaled
-// (R-HA-054, Q-BAS-145): a disable revokes nothing, and without its entry a restore to a point before it would
-// accept the registration's tokens again. Their entry is the registration's principal ID and name; the replay
-// disables the registration. A deletion also journals each token it revokes (token.revoked). bastion.updated
-// (the description) and bastion.enabled narrow nothing and carry no entry.
+// resource type. A disable and a deletion end what the Bastion may do, so both are journaled (R-HA-054, Q-BAS-145): a
+// disable is a member of the registration's configuration and revokes nothing (R-BAS-133), and without its entry a restore to
+// a point before it would let the Bastion work again. Their entry is the registration's principal ID, its name and the way
+// of the disable, soft or hard (hard for a deletion); the replay disables the registration that way, never more lightly than
+// it is. A deletion also journals each token it revokes (token.revoked). bastion.disabled carries the way in its details as
+// well. bastion.updated (the description) and bastion.enabled narrow nothing and carry no entry; the feed maps bastion.disabled
+// and bastion.enabled to a settings entry, so every Bastion handshakes again within one poll.
 //
 // The switch of the handover per blob (R-BAS-071, Q-BAS-232): bastion.handover.enabled and bastion.handover.disabled, about
 // the registration as well. Switching it off narrows what leaves the main installation, so it is journaled with the entry
@@ -47,7 +49,7 @@ func init() {
 	}
 	bastion(EventBastionCreated, NoJournal, `{"type":"object","properties":{"source":{"type":"string","enum":["api","admin-cli","configuration"]},"description":{"type":"string"}}}`)
 	bastion(EventBastionUpdated, NoJournal, `{"type":"object","properties":{"fields":`+eventSchemaNames+`,"reason":{"type":"string","enum":["configuration","configuration_removed"]},"tokenId":{"type":"string"}}}`)
-	bastion(EventBastionDisabled, JournalRevocation, `{"type":"object"}`)
+	bastion(EventBastionDisabled, JournalRevocation, `{"type":"object","required":["mode"],"properties":{"mode":{"type":"string","enum":["soft","hard"]}}}`)
 	bastion(EventBastionEnabled, NoJournal, `{"type":"object"}`)
 	bastion(EventBastionDeleted, JournalRevocation, `{"type":"object","properties":{"tokensRevoked":{"type":"integer"}}}`)
 	bastion(EventBastionHandoverEnabled, NoJournal, `{"type":"object"}`)

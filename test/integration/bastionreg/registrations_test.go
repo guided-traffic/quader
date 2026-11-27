@@ -34,7 +34,7 @@ func TestR_BAS_004_RegisterIssueAndLimit(t *testing.T) {
 	rp := r.call("POST", bastions, c.admin, map[string]any{"name": "partners", "description": "The partner network"})
 	want(t, rp, http.StatusCreated, "")
 	reg := rp.json(t)
-	if reg["name"] != "partners" || reg["enabled"] != true || reg["description"] != "The partner network" ||
+	if reg["name"] != "partners" || reg["disabled"] != nil || reg["state"] != "noContact" || reg["description"] != "The partner network" ||
 		len(tokensOf(t, rp)) != 0 || rp.Header.Get("ETag") == "" || rp.Header.Get("Location") != baseURL+bastions+"/partners" {
 		t.Fatalf("registration = %v, headers %v", reg, rp.Header)
 	}
@@ -235,8 +235,9 @@ func TestR_BAS_004_TheListShowsTheTokensAndTheLastContacts(t *testing.T) {
 	})
 }
 
-// TestR_BAS_004_PatchDisableAndTheRevision: the description and enabled change with If-Match; a stale tag is
-// 412, none is 428, a patch that changes nothing records no event, and null never switches a registration off.
+// TestR_BAS_004_PatchDisableAndTheRevision: the description and the disable change with If-Match; a stale tag is
+// 412, none is 428, a patch that changes nothing records no event, a way other than soft and hard is refused, and null enables
+// (R-BAS-133).
 func TestR_BAS_004_PatchDisableAndTheRevision(t *testing.T) {
 	e := newEnv(t)
 	r, c := e.newCast("web-1", replicaOpts{})
@@ -244,9 +245,9 @@ func TestR_BAS_004_PatchDisableAndTheRevision(t *testing.T) {
 	etag := created.Header.Get("ETag")
 
 	want(t, r.call("PATCH", bastions+"/partners", c.admin, map[string]any{"description": "new"}), http.StatusPreconditionRequired, "")
-	rp := r.call("PATCH", bastions+"/partners", c.admin, map[string]any{"description": "new", "enabled": false}, "If-Match", etag)
+	rp := r.call("PATCH", bastions+"/partners", c.admin, map[string]any{"description": "new", "disabled": "soft"}, "If-Match", etag)
 	want(t, rp, http.StatusOK, "")
-	if got := rp.json(t); got["description"] != "new" || got["enabled"] != false || rp.Header.Get("ETag") == etag {
+	if got := rp.json(t); got["description"] != "new" || disableMode(got) != "soft" || got["state"] != "disableUnconfirmed" || rp.Header.Get("ETag") == etag {
 		t.Fatalf("after the patch: %v, ETag %q", got, rp.Header.Get("ETag"))
 	}
 	want(t, r.call("PATCH", bastions+"/partners", c.admin, map[string]any{"description": "again"}, "If-Match", etag), http.StatusPreconditionFailed, "")
@@ -254,25 +255,27 @@ func TestR_BAS_004_PatchDisableAndTheRevision(t *testing.T) {
 
 	t.Run("a patch that changes nothing records no event", func(t *testing.T) {
 		before := len(e.events(audit.EventBastionUpdated))
-		want(t, r.call("PATCH", bastions+"/partners", c.admin, map[string]any{"description": "new", "enabled": false}, "If-Match", next), http.StatusOK, "")
+		want(t, r.call("PATCH", bastions+"/partners", c.admin, map[string]any{"description": "new", "disabled": "soft"}, "If-Match", next), http.StatusOK, "")
 		if after := len(e.events(audit.EventBastionUpdated)); after != before {
 			t.Fatalf("bastion.updated: %d -> %d", before, after)
 		}
 	})
-	t.Run("a string is refused for enabled, and a null changes nothing", func(t *testing.T) {
-		rp := r.call("PATCH", bastions+"/partners", c.admin, `{"enabled": "yes"}`, "If-Match", next)
-		if rp.Status != http.StatusUnprocessableEntity && rp.Status != http.StatusBadRequest {
-			t.Errorf("a string: %d %s", rp.Status, rp.Body)
+	t.Run("a way other than soft and hard is refused, and an absent disable changes nothing", func(t *testing.T) {
+		for _, bad := range []string{`{"disabled": "off"}`, `{"disabled": true}`} {
+			rp := r.call("PATCH", bastions+"/partners", c.admin, bad, "If-Match", next)
+			if rp.Status != http.StatusUnprocessableEntity && rp.Status != http.StatusBadRequest {
+				t.Errorf("%s: %d %s", bad, rp.Status, rp.Body)
+			}
 		}
-		want(t, r.call("PATCH", bastions+"/partners", c.admin, `{"enabled": null}`, "If-Match", next), http.StatusOK, "")
-		if got := r.call("GET", bastions+"/partners", c.admin, nil).json(t); got["enabled"] != false {
-			t.Fatalf("enabled = %v", got["enabled"])
+		want(t, r.call("PATCH", bastions+"/partners", c.admin, `{"description": "new"}`, "If-Match", next), http.StatusOK, "")
+		if got := r.call("GET", bastions+"/partners", c.admin, nil).json(t); disableMode(got) != "soft" {
+			t.Fatalf("disabled = %v", got["disabled"])
 		}
 	})
-	t.Run("the read-only members are accepted and ignored", func(t *testing.T) {
-		rp := r.call("PATCH", bastions+"/partners", c.admin, map[string]any{"name": "other", "tokens": []any{}, "enabled": true}, "If-Match", next)
+	t.Run("the read-only members are accepted and ignored, and null enables", func(t *testing.T) {
+		rp := r.call("PATCH", bastions+"/partners", c.admin, map[string]any{"name": "other", "tokens": []any{}, "state": "connected", "disabled": nil}, "If-Match", next)
 		want(t, rp, http.StatusOK, "")
-		if got := rp.json(t); got["name"] != "partners" || got["enabled"] != true {
+		if got := rp.json(t); got["name"] != "partners" || got["disabled"] != nil || got["state"] != "noContact" {
 			t.Fatalf("after: %v", got)
 		}
 	})
@@ -285,13 +288,23 @@ func TestR_BAS_004_PatchDisableAndTheRevision(t *testing.T) {
 			t.Fatalf("bastion.disabled = %+v, bastion.enabled = %+v", off, on)
 		}
 		bid := e.text(`SELECT id::text FROM principal WHERE kind = 'bastion' AND name = 'partners'`)
-		if n := e.number(`SELECT count(*) FROM revocation_outbox WHERE event = 'bastion.disabled' AND entry ->> 'principalId' = $1 AND entry ->> 'name' = 'partners'`, bid); n != 1 {
+		if fmt.Sprint(off[0].Details["mode"]) != "soft" {
+			t.Fatalf("bastion.disabled's details = %v, want the way soft", off[0].Details)
+		}
+		if n := e.number(`SELECT count(*) FROM revocation_outbox WHERE event = 'bastion.disabled' AND entry ->> 'principalId' = $1 AND entry ->> 'name' = 'partners' AND entry ->> 'mode' = 'soft'`, bid); n != 1 {
 			t.Fatalf("journal entries of the disable = %d, want 1 (R-HA-054, Q-BAS-145)", n)
 		}
 		if n := e.number(`SELECT count(*) FROM revocation_outbox WHERE event IN ('bastion.updated', 'bastion.enabled')`); n != 0 {
 			t.Fatalf("%d journal entries of the description or the enable, want none", n)
 		}
 	})
+}
+
+// disableMode is the way of a registration's member disabled, empty while it is not disabled.
+func disableMode(reg map[string]any) string {
+	d, _ := reg["disabled"].(map[string]any)
+	m, _ := d["mode"].(string)
+	return m
 }
 
 // TestR_BAS_004_DeleteRevokesTheTokensAndJournalsThem: deleting a registration revokes its tokens
@@ -392,7 +405,7 @@ func TestR_BAS_004_CapabilitiesGateTheOperations(t *testing.T) {
 		want(t, r.call("GET", bastions+"/partners", c.auditor, nil), http.StatusOK, "")
 		want(t, r.call("POST", bastions, c.auditor, map[string]any{"name": "x"}), http.StatusForbidden, "")
 		want(t, r.call("POST", bastions+"/partners/tokens", c.auditor, map[string]any{}), http.StatusForbidden, "")
-		want(t, r.call("PATCH", bastions+"/partners", c.auditor, map[string]any{"enabled": false}, "If-Match", "*"), http.StatusForbidden, "")
+		want(t, r.call("PATCH", bastions+"/partners", c.auditor, map[string]any{"disabled": "hard"}, "If-Match", "*"), http.StatusForbidden, "")
 		want(t, r.call("DELETE", bastions+"/partners", c.auditor, nil), http.StatusForbidden, "")
 		want(t, r.call("DELETE", bastions+"/partners/tokens/"+id, c.auditor, nil), http.StatusForbidden, "")
 	})
@@ -405,7 +418,7 @@ func TestR_BAS_004_CapabilitiesGateTheOperations(t *testing.T) {
 			members = append(members, k)
 		}
 		sort.Strings(members)
-		if strings.Join(members, ",") != "id,limits,name,status" {
+		if strings.Join(members, ",") != "id,limits,name,running,state,status" {
 			t.Errorf("the members a holder of limits:read reads: %v", members)
 		}
 		if full := r.call("GET", bastions+"/partners", c.auditor, nil).json(t); full["tokens"] == nil || full["contacts"] == nil || full["egress"] == nil {

@@ -19,7 +19,23 @@ type Configuration struct {
 	Switches Switches `json:"switches"`
 	Limits   Limits   `json:"limits"`
 	Display  Display  `json:"display"`
+	// Disabled is the registration's disable (R-BAS-133): null while the Bastion works, [DisableSoft] or [DisableHard] while an
+	// administrator has disabled it. Always present on the wire.
+	Disabled *DisableMode `json:"disabled"`
 }
+
+// DisableMode is how a Bastion is disabled (R-BAS-133): soft admits no new request and lets every request in flight finish; hard
+// also cuts every request in flight.
+type DisableMode string
+
+// The ways of a disable.
+const (
+	DisableSoft DisableMode = "soft"
+	DisableHard DisableMode = "hard"
+)
+
+// Valid reports whether m is one of the two ways.
+func (m DisableMode) Valid() bool { return m == DisableSoft || m == DisableHard }
 
 // Display is how the Bastion's web interface writes what the main installation's screens write by the installation's settings
 // (R-BAS-128): the installation's default form of a time (api-and-ui.md R-UI-251), so that a time reads the same at both.
@@ -232,8 +248,8 @@ func refuse(format string, a ...any) error {
 	return fmt.Errorf("%w: "+format, append([]any{errConfiguration}, a...)...)
 }
 
-// Validate checks a configuration as a Bastion applies it (R-BAS-093): a revision not below 0; a known form of a time; a known
-// mode and preset;
+// Validate checks a configuration as a Bastion applies it (R-BAS-093): a revision not below 0; a known form of a time; a disable
+// that is null, soft or hard (R-BAS-133); a known mode and preset;
 // rules with valid IDs and figures that are positive or null; address rules and exempt networks as canonical prefixes, no
 // prefix twice, each address rule and kind rule naming a rule of the table; flood figures that are positive with a block's
 // duration not above its longest; slots of at least one with a share in 0 to 1 and a wait not below 0; a throughput and a
@@ -245,6 +261,9 @@ func (c Configuration) Validate() error {
 	}
 	if !slices.Contains(TimeFormats(), c.Display.TimeFormat) {
 		return refuse("display.timeFormat %q", c.Display.TimeFormat)
+	}
+	if c.Disabled != nil && !c.Disabled.Valid() {
+		return refuse("disabled %q", *c.Disabled)
 	}
 	l := c.Limits
 	switch {

@@ -45,7 +45,8 @@ type Registration struct {
 	ID          string
 	Name        string
 	Description string
-	Enabled     bool
+	// Disabled is how and since when an administrator disabled the Bastion (R-BAS-133), nil while it works. Its tokens stay valid.
+	Disabled *Disable
 	// Switches are the switches of its configuration (R-BAS-093): the handover per blob (R-BAS-071), the web interface and its
 	// documentation (R-BAS-102), each off for a new registration.
 	Switches iface.Switches
@@ -150,7 +151,8 @@ type NewRegistration struct {
 // Patch is the request of [Registrations.Update]; a nil member is unchanged.
 type Patch struct {
 	Description *string
-	Enabled     *bool
+	// Disable disables the Bastion soft or hard, or enables it with the empty way (R-BAS-133); nil leaves it.
+	Disable *iface.DisableMode
 	// Handover switches the handover per blob on or off (R-BAS-071); GUI and Docs the web interface and its documentation
 	// (R-BAS-102); HideRepositories the web interface's switch Hide repositories (R-BAS-131).
 	Handover         *bool
@@ -295,7 +297,7 @@ func load(ctx context.Context, qs *q.Queries, name string) (Registration, error)
 	}
 	g := rows[0]
 	out := Registration{
-		ID: g.ID, Name: g.Name, Description: g.Description, Enabled: g.Enabled,
+		ID: g.ID, Name: g.Name, Description: g.Description, Disabled: disableOf(g.Disabled, g.DisabledAt.Time),
 		Switches: iface.Switches{Handover: g.Handover, GUI: g.Gui, Docs: g.Docs, HideRepositories: g.HideRepositories},
 		Limits: limitsOf(limitsColumns{
 			mode: g.LimitsMode, preset: g.LimitsPreset, flood: g.LimitsFlood, slots: g.LimitsSlots, throughput: g.LimitsThroughput,
@@ -466,7 +468,7 @@ func (r *Registrations) List(ctx context.Context) ([]Registration, error) {
 		for _, g := range rows {
 			byID[g.ID] = len(out)
 			out = append(out, Registration{
-				ID: g.ID, Name: g.Name, Description: g.Description, Enabled: g.Enabled,
+				ID: g.ID, Name: g.Name, Description: g.Description, Disabled: disableOf(g.Disabled, g.DisabledAt.Time),
 				Switches: iface.Switches{Handover: g.Handover, GUI: g.Gui, Docs: g.Docs, HideRepositories: g.HideRepositories},
 				Limits: limitsOf(limitsColumns{
 					mode: g.LimitsMode, preset: g.LimitsPreset, flood: g.LimitsFlood, slots: g.LimitsSlots, throughput: g.LimitsThroughput,
@@ -513,22 +515,22 @@ func (r *Registrations) List(ctx context.Context) ([]Registration, error) {
 	return out, principal.DBErr("bastion.list", err)
 }
 
-// Update changes the description and enables or disables a registration (R-BAS-004). expected is the revision
-// the caller loaded (If-Match) or errs.AnyRevision for the blind write. A disabled registration refuses its
-// tokens like a disabled service account's (R-AUTH-020) within the revocation bound; enabling it restores them,
-// because disabling revokes nothing. A new description records bastion.updated; a disable records
-// bastion.disabled with its journal entry, so a restore to a point before it disables the registration again
-// (R-HA-054, Q-BAS-145); an enable records bastion.enabled. The switch of the handover per blob records
-// bastion.handover.enabled or the journaled bastion.handover.disabled (R-BAS-071). New networks the Bastion connects from record
-// bastion.updated with the field egress and the lists before and after (R-BAS-017). A change of the configuration - a switch, a
-// preset applied, the mode, the flood figures, the slots, the throughput or the anonymous ceiling - records one
-// bastion.configuration.changed with the parts and their values before and after (R-BAS-093). A patch that changes nothing writes
-// nothing and records nothing.
+// Update changes the description, the disable and the configuration of a registration (R-BAS-004, R-BAS-093, R-BAS-133). expected
+// is the revision the caller loaded (If-Match) or errs.AnyRevision for the blind write. A disable or an enable is a member of the
+// configuration ([Registrations.setDisable]): it touches neither the principal nor its tokens. A new description records
+// bastion.updated. The switch of the handover per blob records bastion.handover.enabled or the journaled bastion.handover.disabled
+// (R-BAS-071). New networks the Bastion connects from record bastion.updated with the field egress and the lists before and after
+// (R-BAS-017). A change of the configuration - a switch, a preset applied, the mode, the flood figures, the slots, the throughput or
+// the anonymous ceiling - records one bastion.configuration.changed with the parts and their values before and after (R-BAS-093). A
+// patch that changes nothing writes nothing and records nothing.
 func (r *Registrations) Update(ctx context.Context, c principal.Caller, name string, p Patch, expected int64) (Registration, error) {
 	if p.Description != nil {
 		if err := checkDescription("/description", *p.Description); err != nil {
 			return Registration{}, err
 		}
+	}
+	if p.Disable != nil && *p.Disable != "" && !p.Disable.Valid() {
+		return Registration{}, invalid("/disabled", "enum", "The way of a disable is soft or hard; null enables the Bastion.")
 	}
 	if p.Preset != nil {
 		if _, ok := Presets()[*p.Preset]; !ok {
@@ -575,25 +577,9 @@ func (r *Registrations) Update(ctx context.Context, c principal.Caller, name str
 				return err
 			}
 		}
-		if p.Enabled != nil && *p.Enabled != cur.Enabled {
-			changed, err := qs.BastionSetEnabled(ctx, q.BastionSetEnabledParams{ID: lock.ID, Enabled: *p.Enabled})
-			if err != nil {
+		if p.Disable != nil && *p.Disable != cur.DisabledMode() {
+			if err := r.setDisable(ctx, tx, c, subject, *p.Disable); err != nil {
 				return err
-			}
-			if len(changed) > 0 {
-				if err := principal.NotifyPrincipals(r.o.Notifier, tx, principal.ChangePrincipal, lock.ID); err != nil {
-					return err
-				}
-				ev := audit.Event{
-					Type: audit.EventBastionEnabled, Outcome: audit.Success, Actor: c.Actor, Source: c.Source,
-					Subject: subject, Details: mustJSON(map[string]any{}),
-				}
-				if !*p.Enabled {
-					ev.Type, ev.Journal = audit.EventBastionDisabled, registrationEntry(lock.ID, name)
-				}
-				if err := r.o.Recorder.RecordTx(ctx, tx, ev); err != nil {
-					return err
-				}
 			}
 		}
 		var ch configChange
@@ -820,7 +806,7 @@ func (r *Registrations) notifyEgress(tx meta.Tx, id string) error {
 
 // Delete deletes a registration: its tokens are revoked first (token.revoked with the journal entry of each,
 // R-HA-054), then the registration and its contacts go; bastion.deleted is the last event, with the journal entry
-// that disables the registration a restore brings back (Q-BAS-145).
+// that disables the registration a restore brings back hard (Q-BAS-145, R-BAS-133).
 func (r *Registrations) Delete(ctx context.Context, c principal.Caller, name string) error {
 	err := r.o.DB.InTx(ctx, func(tx meta.Tx) error {
 		qs := principal.Queries(tx)
@@ -852,16 +838,17 @@ func (r *Registrations) Delete(ctx context.Context, c principal.Caller, name str
 		return r.o.Recorder.RecordTx(ctx, tx, audit.Event{
 			Type: audit.EventBastionDeleted, Outcome: audit.Success, Actor: c.Actor, Source: c.Source,
 			Subject: audit.Subject{Kind: "bastion", ID: id, Name: name}, Details: mustJSON(map[string]any{"tokensRevoked": len(revoked)}),
-			Journal: registrationEntry(id, name),
+			Journal: registrationEntry(id, name, iface.DisableHard),
 		})
 	})
 	return principal.DBErr("bastion.delete", err)
 }
 
-// registrationEntry is the journal entry of bastion.disabled and bastion.deleted: the registration's principal ID and,
-// for display, its name. The replay disables the registration of that ID (R-HA-054, Q-BAS-145).
-func registrationEntry(id, name string) json.RawMessage {
-	return mustJSON(map[string]string{"principalId": id, "name": name})
+// registrationEntry is the journal entry of bastion.disabled and bastion.deleted: the registration's principal ID, for display its
+// name, and the way of the disable, hard for a deletion. The replay disables the registration of that ID that way, never more lightly
+// than it is (R-HA-054, Q-BAS-145, R-BAS-133).
+func registrationEntry(id, name string, mode iface.DisableMode) json.RawMessage {
+	return mustJSON(map[string]string{"principalId": id, "name": name, "mode": string(mode)})
 }
 
 // TokenRequest is the request of [Registrations.CreateTokenTx].
@@ -875,7 +862,7 @@ type TokenRequest struct {
 
 // CreateTokenTx issues a Bastion token for a registration inside the caller's transaction (R-BAS-004,
 // R-AUTH-022): the management API makes the idempotent create one transaction with its idempotency row. The
-// secret is in the result only.
+// secret is in the result only. A registration the configuration declares gets no token here: 409 managed_by_config (R-BAS-133).
 func (r *Registrations) CreateTokenTx(ctx context.Context, tx meta.Tx, c principal.Caller, name string, in TokenRequest) (token.Created, error) {
 	if utf8.RuneCountInString(in.Description) > maxDescription {
 		return token.Created{}, invalid("/description", "too_long", fmt.Sprintf("The description has at most %d characters.", maxDescription))
@@ -887,6 +874,12 @@ func (r *Registrations) CreateTokenTx(ctx context.Context, tx meta.Tx, c princip
 	}
 	if len(rows) == 0 {
 		return token.Created{}, notFound()
+	}
+	if rows[0].DeclaredAt.Valid {
+		// The Secret of the declaration is the one source of a declared Bastion's credential (R-BAS-133): a second one issued here is
+		// what the declaration exists to avoid.
+		return token.Created{}, errs.E(errs.Conflict, errs.CodeManagedByConfig,
+			"The token of "+name+" is declared in bastions.declared of the Helm configuration: put a new value into its Secret and roll out.")
 	}
 	desc := in.Description
 	if desc == "" {
@@ -911,7 +904,8 @@ func (r *Registrations) CreateToken(ctx context.Context, c principal.Caller, nam
 	return created, nil
 }
 
-// RevokeToken revokes one token of a registration (R-BAS-004); a token that is revoked already is not an error.
+// RevokeToken revokes one token of a registration (R-BAS-004), the declared one included (R-BAS-133); a token that is revoked already
+// is not an error.
 func (r *Registrations) RevokeToken(ctx context.Context, c principal.Caller, name, id string) error {
 	return r.o.Tokens.RevokeBastionToken(ctx, c, name, id)
 }

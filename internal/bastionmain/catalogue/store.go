@@ -60,7 +60,6 @@ type State struct {
 // Registered is a registration as the builder lists them.
 type Registered struct {
 	ID, Name string
-	Enabled  bool
 }
 
 // PackageKey names a package by its format and its normalized name.
@@ -144,7 +143,7 @@ func (s *DB) Registrations(ctx context.Context) ([]Registered, error) {
 		rows, err := qs.BastionCatalogueRegistrations(ctx)
 		out = make([]Registered, 0, len(rows))
 		for _, r := range rows {
-			out = append(out, Registered{ID: r.ID, Name: r.Name, Enabled: r.Enabled})
+			out = append(out, Registered{ID: r.ID, Name: r.Name})
 		}
 		return err
 	})

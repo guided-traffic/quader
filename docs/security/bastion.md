@@ -88,6 +88,10 @@ API key (R-BAS-005).
 | Make the main installation mark its forwarded responses and refuse a forwarded write (R-BAS-013, R-BAS-095's backstop) | Turn an anonymous forwarded request into anything but anonymous |
 | Read its registration's configuration in the handshake (R-BAS-093) and, while the registration's web interface is on, its public catalogue (R-BAS-101) | Read another registration's configuration or catalogue, or a catalogue while `gui` is off |
 
+While its registration is disabled (R-BAS-133) the token keeps the handshake, the feed and the download intake, and gets `503
+bastion_disabled` for a forward, the check and the catalogue: the Bastion learns its disable over the line it keeps, and gets nothing new
+([H-2443](#h-2443--a-disabled-bastions-token-still-answers-the-handshake-the-feed-and-the-download-intake)).
+
 What its holder can still do with those rights is H-386. It is revoked like every token, journaled, and renewed by hand with an
 overlap (R-BAS-006); the Bastion warns 30 days before it expires and alerts when the main installation refuses it (R-BAS-041).
 
@@ -108,8 +112,9 @@ that owns it:
 - **Who manages it.** `endpoints:write` registers, issues, disables and deletes; `tokens:revoke` alone may revoke a token, so a
   security administrator can end a leaked token without managing endpoints. Every operation is an audit event with `resource_type`
   `bastion`, a revocation is journaled, and deleting a registration revokes its tokens first.
-- **Disabling is not revoking.** A disabled registration refuses its tokens within `auth.revocation_bound` on every replica and enabling
-  it restores them; nothing is deleted.
+- **Disabling is not revoking.** A disable is a member of the registration's configuration ([Disabling a Bastion](#disabling-a-bastion)):
+  its tokens stay valid, so the Bastion keeps its line and learns the disable within seconds. Revoking a token is the act that ends it,
+  the last resort, and works on every token, the declared one included; nothing is deleted by a disable.
 
 ### A registration the configuration declares
 
@@ -127,9 +132,10 @@ fresh database:
 - **Who can change it.** Whoever writes the Secret in the main installation's namespace (and whoever writes the values in Git) decides the
   Bastion's credential at the next rollout: they can rotate it, or put in the value of another Bastion they hold, which makes that
   Bastion speak as this registration. That is the right to write a Secret of the namespace, which already decides the database's and the
-  key ring's credentials. On the API the declared members (description, networks), the declared token's revocation and the deletion answer
-  `409 managed_by_config`; an administrator keeps the switches, the limits and the enablement, so disabling the registration still refuses
-  the declared token at once.
+  key ring's credentials. On the API the declared members (description, networks), a token issued beside the declared one and the
+  deletion answer `409 managed_by_config`: the Secret is the one source of the Bastion's credential. An administrator keeps the switches,
+  the limits and the disable, and may revoke the declared token as the last resort against a leak (R-BAS-133): the next rollout then stops
+  at its migration until the Secret holds a new value, so the revoked value does not come back.
 - **What it does not loosen.** A revoked, expired or another registration's value stops the run: a token revoked because it leaked does not
   come back by configuration. The value must be a Bastion token in the issued format, so the routing by prefix (R-BAS-005), the Bastion's
   own check and the log redaction hold for it as for every Bastion token.
@@ -465,6 +471,34 @@ probes' admission; a write costs the Bastion its request limit and nothing of th
 | The Bastion reports usage and state | The main installation stores what a Bastion says it served; it is the Bastion's word ([H-2282](#h-2282--the-usage-and-the-state-a-bastion-reports-are-its-word)) | R-BAS-016, R-LIM-045 |
 | Egress addresses per registration (built, E13) | A Bastion token makes its forwarded client address count only from its own registration's addresses, no longer from any address of one list for all registrations ([who may speak as a Bastion](#who-may-speak-as-a-bastion)) | R-BAS-017, Q-BAS-334 |
 | Nothing names the main installation | No host, base URL, request ID, rule, place, internal repository name or version in a Bastion's answers; what remains tells that an installation stands behind it, not which ([H-2294](#h-2294--a-bastions-answers-still-tell-that-an-installation-stands-behind-it)). *Since W-35's P8 with E17:* the problems the main installation renders for a forward carry their forward texts, every 5xx of a forward the neutral text of its status, and a registry token names only its anonymity, expiry and grant ([H-2297](#h-2297--a-registry-tokens-readable-grant-tells-its-holder-which-of-the-names-it-asked-for-it-may-pull), [H-2322](#h-2322--an-ansible-galaxy-role-served-through-a-virtual-repository-names-the-member-in-its-id), [H-2323](#h-2323--a-4xx-text-written-later-reaches-a-forward-as-written-until-it-is-given-its-forward-text)) | R-BAS-099, R-BAS-114, R-BAS-115 |
+
+## Disabling a Bastion
+
+Built on the main installation's side ([R-BAS-133](../spec/bastion.md#r-bas-133--disabling-a-bastion-soft-or-hard-told-over-its-connection),
+W-41's A1); the Bastion's own part (its `503`, the pause of its sync and the cut of what it runs) is **specified and not built** (W-41's A2).
+The owner's words of 2026-11-27: the Bastion is told at once to stop work, soft (what started finishes) or hard (what runs is cut), not by
+a refused token and a grace period.
+
+- **The disable is a member of the configuration**, signed and stored with it at the Bastion, so a replica restarted during an outage keeps
+  it ([H-2442](#h-2442--a-replica-restarted-during-an-outage-without-its-stored-configuration-does-not-know-it-was-disabled) for one that
+  lost its stored configuration). Every replica learns it within one poll of the feed (about 3 s) and confirms it with its status; the
+  registration's state says whether it did.
+- **The main installation refuses the disabled Bastion's work.** From every main replica's snapshot (2 s): a forward, the check and the
+  catalogue answer `503 bastion_disabled`, a problem the Bastion never passes on; a hard disable cancels the Bastion's forwards in flight on
+  every main replica. A Bastion that ignores its disable gets nothing new, but keeps what it holds
+  ([H-2440](#h-2440--a-disabled-bastion-that-ignores-the-disable-serves-what-it-holds)).
+- **What an outsider sees** (A2): a temporary outage, `503` with `Retry-After`, in the format's shape and the Bastion's page, naming no
+  administrator's act (R-BAS-099).
+- **The line stays open.** The handshake, the feed and the download intake answer while disabled, so the Bastion confirms and learns the
+  enable, and a soft disable's last downloads are reported. That is also what a leaked token of a disabled registration can still do
+  ([H-2443](#h-2443--a-disabled-bastions-token-still-answers-the-handshake-the-feed-and-the-download-intake)); revoking the token ends it.
+- **Restore.** `bastion.disabled` is journaled with its way and replayed never more lightly; a deletion is replayed as a hard disable, its
+  tokens by their own entries. A restore never hands a Bastion back work an administrator stopped.
+- **Upgrade.** A registration disabled before by its principal's status became disabled hard with migration 00158, so an upgrade restarted
+  no Bastion an administrator had stopped.
+- **Without a connection** nothing reaches the Bastion: it serves its cache for its grace period as an unreachable Bastion does, and applies
+  the disable at its first handshake ([H-2441](#h-2441--a-disable-reaches-a-bastion-only-over-its-connection)). A soft disable has no
+  time bound ([H-2444](#h-2444--a-soft-disable-has-no-time-bound)).
 
 ## The public catalogue and the configuration on the wire
 
@@ -1199,11 +1233,12 @@ shows in a set-up of a version (the set-ups per repository are rendered every ru
 next change, or at a full render when the salt changes (the public set, `docs`, the base URL, the README policy). What holds: none of these
 widens what a visitor reads beyond what the anonymous caller reads; a narrowing of access is a change of the public set or of the facts.
 
-### H-2313 · A disabled or deleted registration's catalogue goes at the next run
+### H-2313 · A disabled registration's catalogue is kept, and a deleted one's documents go at the next sweep
 
-Stage: the builder (R-BAS-104, R-BAS-108). Subject: the documents of a registration that was disabled. Its catalogue rows stay until the
-next run drops them; a deleted registration takes its rows at once (the foreign key), its documents with the next sweep. Live for the
-seconds until the next run; the routes refuse a disabled registration's token in the meantime (R-BAS-006), so nothing is served from them.
+Stage: the builder (R-BAS-104, R-BAS-108). Subject: the documents of a registration that was disabled or deleted. A disabled registration's
+catalogue is built on, so that an enable finds it current (R-BAS-133); its routes answer `503 bastion_disabled` meanwhile, so nothing is
+served from them. A deleted registration takes its rows at once (the foreign key), its documents with the next sweep. Live for a disabled
+registration as long as it is disabled: the rows exist, read by nobody.
 
 ### H-2314 · A narrowing reaches a Bastion's pages only at its next poll after the run
 
@@ -1442,6 +1477,44 @@ space (Q-BAS-17). A visitor who wants the layout learns the keys and classes of 
 whenever the switch is on: it hides the presentation, not the facts. What would close it: documents without the holders' classes and a
 command order that needs none (W-40's D14 option (b), rejected for forking the views per mode), and client addresses without a
 repository's key, which need a binding per host the owner has not asked for.
+
+### H-2440 · A disabled Bastion that ignores the disable serves what it holds
+
+Stage: the disable (R-BAS-133). Subject: a Bastion that was taken over, or that runs a release without the disable. The main installation
+refuses its forwards, checks and catalogue reads and cuts its forwards in flight, but the bytes of its cache and its stored catalogue are
+its own: it can serve them on to anyone who reaches it. Live for every disabled Bastion whose replicas do not confirm (the state reads
+`disableUnconfirmed`). What holds: nothing new leaves the main installation for it. What would close it: an act on its deployment (scale it
+to zero, take its ingress or its DNS away), which the main installation cannot do.
+
+### H-2441 · A disable reaches a Bastion only over its connection
+
+Stage: the disable (R-BAS-133). Subject: a Bastion cut off from the main installation when it is disabled. It is unreachable already
+(R-BAS-027): it serves its cache for `answers.period` plus `grace_period` (5 m and 15 m by default) and then nothing, and applies the disable
+at its first handshake, before it serves a request through the main installation, which refuses those anyway. Live during an outage of the
+link; the state reads `disableUnconfirmed` meanwhile. What would close it: nothing on the main installation's side; an act on the Bastion's
+deployment.
+
+### H-2442 · A replica restarted during an outage without its stored configuration does not know it was disabled
+
+Stage: the stored configuration (R-BAS-093, R-BAS-133), the extension of
+[H-2285](#h-2285--a-replica-restarted-during-an-outage-without-its-stored-configuration-applies-the-built-in-one). Subject: a replica
+restarted while it cannot reach the main installation and without the configuration its cache backend keeps (a new volume, a lost bucket
+object). It applies the built-in configuration, which is not disabled, and serves its cache for its grace period until its first
+handshake. Live only with both an outage and a lost stored configuration. What would close it: a built-in configuration that is disabled,
+which would keep every new Bastion from serving before its first handshake.
+
+### H-2443 · A disabled Bastion's token still answers the handshake, the feed and the download intake
+
+Stage: the main installation's refusal (R-BAS-133, Q-BAS-513). Subject: the holder of a disabled registration's token, the Bastion or
+whoever took it. They read the feed's IDs (token and principal IDs, qualified repository names), learn their configuration and can report
+download events and usage for the registration until the token is revoked. Live by design: the line stays open so that the Bastion confirms
+and learns the enable. What closes it: revoking the token, which a disable deliberately does not do.
+
+### H-2444 · A soft disable has no time bound
+
+Stage: the soft disable (R-BAS-133). Subject: a slow download running through a softly disabled Bastion. It runs until it ends; the state
+reads `disabling` with the requests still running. Live for every soft disable while a long download runs. What would close it: the hard
+disable, which cuts it, or a bound after which soft turns hard, which the owner's words do not ask for.
 
 ### H-2408 · The Bastion's class ignores demand
 

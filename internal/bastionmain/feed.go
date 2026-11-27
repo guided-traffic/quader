@@ -64,7 +64,7 @@ func feedActions() []string {
 		audit.EventMalwareFound, audit.EventMalwareReleaseWithdrawn,
 		audit.EventSignatureReleaseWithdrawn, audit.EventSignatureAnchorRemoved, audit.EventSignatureAnchorUpdated,
 		audit.EventSignatureSettingsChanged, audit.EventSignatureSignerBlocked,
-		audit.EventBastionConfigurationChanged, audit.EventTimeFormatChanged,
+		audit.EventBastionConfigurationChanged, audit.EventBastionDisabled, audit.EventBastionEnabled, audit.EventTimeFormatChanged,
 	}
 }
 
@@ -81,7 +81,6 @@ func noFeedEntry() map[string]string {
 		audit.EventAnsibleTombstoneCleared: "frees the number of a deleted Ansible Galaxy version, which widens what may be published and changes no byte a Bastion holds (Q-BAS-175)",
 		audit.EventPackagePublished:        "reserves the version numbers a publish took (R-HA-054); a Bastion never publishes",
 		audit.EventProjectDeleted:          "a project is deleted only when it holds no repository and no service account, and its policies are deleted before it, each journaled as authz.policy.deleted (grants)",
-		audit.EventBastionDisabled:         "a registration is no caller a Bastion answers; the Bastion learns of its own disable from 401 bastion_token_invalid on its next call (R-BAS-006, Q-BAS-145)",
 		audit.EventBastionDeleted:          "a registration is no caller a Bastion answers; its tokens' token.revoked entries come before it, and the Bastion learns of its end from 401 bastion_token_invalid (R-BAS-006, Q-BAS-145)",
 		audit.EventGroupUpdated:            "clearing auto-join removes no membership that exists (R-AUTH-019): only users created afterwards stay out of the group; a rename or a description changes no grant",
 		audit.EventUserUpdated:             "removes a pending identity link, which no caller holds until a login completes it; a profile change changes no grant",
@@ -198,6 +197,10 @@ var mappers = sync.OnceValue(func() map[string]mapper {
 		audit.EventSettingsAuthChanged: mapSettings,
 		// A registration's configuration changed (R-BAS-093): every Bastion handshakes again and applies its own (Q-BAS-349).
 		audit.EventBastionConfigurationChanged: mapSettings,
+		// A registration disabled or enabled (R-BAS-133): its disable is a member of its configuration, so every Bastion handshakes
+		// again within one poll and the disabled one applies it.
+		audit.EventBastionDisabled: mapSettings,
+		audit.EventBastionEnabled:  mapSettings,
 		// The installation's default form of a time changed (R-UI-251): it is the configuration's display, so every Bastion handshakes
 		// again and its web interface writes the new form (R-BAS-128, Q-BAS-402).
 		audit.EventTimeFormatChanged:        mapSettings,

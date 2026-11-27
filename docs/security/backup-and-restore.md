@@ -215,7 +215,7 @@ a missing member, an oversized value or a digest that is not the expected shape 
   `TestR_HA_054_ForgedEntriesCannotEscalate`.
 - **Removals.** A deleted user, service account or CI owner is disabled, a moved repository is disabled and not moved, a released name
   stays claimed, a membership is never added or raised, the break-glass account is never touched. A disabled or deleted Bastion
-  registration is disabled (Q-BAS-145), and a disabled or deleted repository is disabled, never deleted (Q-AUTHZ-238, Q-AUTHZ-239). An
+  registration is disabled in the entry's way, never more lightly, and hard for a deletion (Q-BAS-145, R-BAS-133), and a disabled or deleted repository is disabled, never deleted (Q-AUTHZ-238, Q-AUTHZ-239). An
   entry acts only on an object of its own kind: a `bastion.*` entry naming a user or a service account is `subject unknown`.
 - **Tokens a disable ended.** A disable with `revokeTokens` and a deletion of a user, service account or registration journal one
   `token.revoked` per token besides the principal's own entry ([token_events.go](../../internal/auth/principal/token_events.go),

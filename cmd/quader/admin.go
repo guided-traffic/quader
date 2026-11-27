@@ -29,6 +29,8 @@ commands:
   deb reinstate <projectKey>/<repoKey> <path>   put back a package file a journal replay withheld (R-DEB-032)
   import npm|nuget --from <source> --to <repository> [--package <name>]... [--state <file>]   copy the packages of an existing registry into a local repository (R-IMP-001)
   bastion create <name> [--description <text>]   register a Bastion (R-BAS-004)
+  bastion disable <name> [--hard]               disable a Bastion soft or hard (R-BAS-133)
+  bastion enable <name>                         enable a disabled Bastion again (R-BAS-133)
   bastion token create <name> [--ttl 8760h]     print a Bastion token once (R-BAS-004)
   bastion token revoke <name> <token-id>        revoke a Bastion token (R-BAS-004)
   bastion token generate                        print a new Bastion token value for bastions.declared (R-BAS-127)

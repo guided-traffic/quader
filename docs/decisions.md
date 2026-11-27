@@ -10729,10 +10729,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-BAS
 
-421 questions on [spec/bastion.md](spec/bastion.md).
+429 questions on [spec/bastion.md](spec/bastion.md).
 
 <details>
-<summary>Q-BAS: 421 questions</summary>
+<summary>Q-BAS: 429 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -11157,6 +11157,14 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-BAS-508](spec/bastion.md#q-bas-508--a-projects-list-keeps-its-repositories-with-files-in-both-modes) | A project's list keeps its repositories with files in both modes | Decided by the development agent on 2026-11-27 (plan W-40, D24) | (a) The section **Files** stays on a project's list in both modes; the start's section **Files**, by qualified names, only while the repositories are shown | — |
 | [Q-BAS-509](spec/bastion.md#q-bas-509--a-repositorys-page-in-the-text-is-its-files-root-where-the-catalogue-holds-one-and-its-indexs-packages-otherwise) | A repository's page in the text is its files' root where the catalogue holds one, and its index's packages otherwise | Decided by the development agent on 2026-11-27 (W-40's P2) | (a) The root of the files where the catalogue holds the repository's root folder, otherwise the packages of its index | — |
 | [Q-BAS-510](spec/bastion.md#q-bas-510--a-link-that-names-a-project-leads-to-its-repositories-or-to-its-packages-while-they-are-hidden) | A link that names a project leads to its repositories, or to its packages while they are hidden | Decided by the development agent on 2026-11-27 (W-40's P2) | (a) The link is the default view's own address: `…/repositories`, or `…/packages` while the repositories are hidden | — |
+| [Q-BAS-511](spec/bastion.md#q-bas-511--the-bastions-state-is-one-of-six-computed-by-the-main-installation) | The Bastion's state is one of six, computed by the main installation | Decided by the development agent on 2026-11-27 (plan W-41, D3) | (a) The server computes `state` and `running` from the registration, its contacts and its replicas' statuses, one function (`bastionmain.StateOf`) for the API and the command line | — |
+| [Q-BAS-512](spec/bastion.md#q-bas-512--disable-is-a-member-of-the-configuration-told-over-the-connection-the-token-is-not-touched) | Disable is a member of the configuration, told over the connection; the token is not touched | Decided by the development agent on 2026-11-27 (plan W-41, D5) | (a) `configuration.disabled` `null`, `soft` or `hard`; `bastion.disabled` and `bastion.enabled` map to the feed's `settings`, every replica handshakes within one poll and applies it whole; stored with the configuration a replica keeps | — |
+| [Q-BAS-513](spec/bastion.md#q-bas-513--while-disabled-the-main-installation-refuses-the-bastions-work-and-keeps-its-line-open) | While disabled, the main installation refuses the Bastion's work and keeps its line open | Decided by the development agent on 2026-11-27 (plan W-41, D6) | (a) A forward, the check and the catalogue routes answer `503 bastion_disabled`; the handshake, the feed and the download intake answer as before; a hard disable cancels the registration's forwards in flight on every main replica within the snapshot's bound | — |
+| [Q-BAS-514](spec/bastion.md#q-bas-514--a-disabled-bastion-answers-503-in-the-formats-shape-and-names-no-disable) | A disabled Bastion answers 503 in the format's shape and names no disable | Decided by the development agent on 2026-11-27 (plan W-41, D7) | (a). 300 s is a constant of the Bastion, not a setting. | — |
+| [Q-BAS-515](spec/bastion.md#q-bas-515--the-bastion-confirms-with-its-status) | The Bastion confirms with its status | Decided by the development agent on 2026-11-27 (plan W-41, D8) | (a). 15 s is three polls of the feed and a flush beyond the expected 4 s. | — |
+| [Q-BAS-516](spec/bastion.md#q-bas-516--audit-journal-and-restore-of-a-disable) | Audit, journal and restore of a disable | Decided by the development agent on 2026-11-27 (plan W-41, D9) | (a) `bastion.disabled` with `details.mode` and the entry `{principalId, name, mode}`, replayed by disabling the registration in that way and never more lightly; `bastion.deleted` replayed as a hard disable; the replay lives with the registration's other replays in `bastionmain`; `quader admin bastion disable | — |
+| [Q-BAS-517](spec/bastion.md#q-bas-517--the-declared-token-is-invalidated-on-the-api-and-no-token-is-issued-beside-it) | The declared token is invalidated on the API, and no token is issued beside it | Decided by the development agent on 2026-11-27 (plan W-41, D10) | (a) The declared token's revocation is admitted, the last resort (the next `quader migrate` refuses the revoked value until the Secret holds a new one); a declared registration gets no token issued on the API, `409 managed_by_config` | — |
+| [Q-BAS-518](spec/bastion.md#q-bas-518--a-registration-disabled-by-its-principals-status-becomes-disabled-hard) | A registration disabled by its principal's status becomes disabled hard | Decided by the development agent on 2026-11-27 (W-41's A1) | (a): not a compatibility path for a client, but the narrower reading of what an administrator decided. | — |
 
 </details>
 

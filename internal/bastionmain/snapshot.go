@@ -21,7 +21,8 @@ import (
 // The replica's snapshot of the Bastion registrations: what a request of a Bastion is decided on without a statement (R-ARCH-027).
 // It holds each registration's switch of the handover per blob (R-BAS-071), which the serve point reads, the networks its Bastion
 // connects from (R-BAS-017, Q-BAS-334), which the recognition reads, and its configuration (R-BAS-093, Q-BAS-320), which the
-// handshake answers and the intake reads a rule's figures from. A change of a member announces its change area (bastion_handover,
+// handshake answers and the intake reads a rule's figures from, with its disable (R-BAS-133), which the recognition refuses a disabled
+// Bastion's work by and whose change to hard cuts its forwards in flight. A change of a member announces its change area (bastion_handover,
 // bastion_egress, bastion_configuration; a rule of a Bastion's place or a profile the area limits), every replica reads the rows
 // again within the bound of R-ARCH-018 (2 s), and a lost change is read again after [SnapshotReload]. One statement reads a
 // registration's revision with the rules of its place, so the configuration a handshake sends is of one moment.
@@ -35,6 +36,8 @@ type SnapshotRow struct {
 	ID       string
 	Handover bool
 	Egress   []netip.Prefix
+	// Disabled is the way the registration is disabled (R-BAS-133), empty while it works.
+	Disabled iface.DisableMode
 	// Configuration is what the handshake sends (R-BAS-093); ConfigurationErr why the row's configuration could not be built, which
 	// the handshake answers instead of a guess.
 	Configuration    iface.Configuration
@@ -45,6 +48,7 @@ type SnapshotRow struct {
 type snapshotState struct {
 	handover      map[string]bool
 	egress        map[string][]netip.Prefix
+	disabled      map[string]iface.DisableMode
 	configuration map[string]SnapshotRow
 }
 
@@ -58,6 +62,7 @@ type RegistrationSnapshot struct {
 	state      atomic.Pointer[snapshotState]
 	loaded     atomic.Bool
 	switchedOn atomic.Pointer[func()]
+	hard       atomic.Pointer[func(bastionID string)]
 	// trusted are server.trusted_proxies of the default endpoint: a registration's network that overlaps one is logged at the load
 	// that brings it, because the forwarded headers from it count for every request, a Bastion's or not.
 	trusted atomic.Pointer[[]netip.Prefix]
@@ -87,7 +92,7 @@ func NewRegistrationSnapshot(db Reader, r *cache.Registry, log *slog.Logger) *Re
 
 // snapshotRowOf builds a registration's row of the snapshot, its configuration included.
 func snapshotRowOf(row q.BastionSnapshotRow) SnapshotRow {
-	out := SnapshotRow{ID: row.ID, Handover: row.Handover, Egress: egressOf(row.Egress)}
+	out := SnapshotRow{ID: row.ID, Handover: row.Handover, Egress: egressOf(row.Egress), Disabled: iface.DisableMode(row.Disabled)}
 	rules, err := placeRulesOf(row.Rules)
 	if err == nil {
 		l := limitsOf(limitsColumns{
@@ -95,6 +100,10 @@ func snapshotRowOf(row q.BastionSnapshotRow) SnapshotRow {
 			throughput: row.LimitsThroughput, ceiling: row.LimitsCeiling,
 		})
 		out.Configuration, err = Configuration(row.Revision, iface.Switches{Handover: row.Handover, GUI: row.Gui, Docs: row.Docs, HideRepositories: row.HideRepositories}, l, rules)
+		if err == nil && out.Disabled != "" {
+			d := out.Disabled
+			out.Configuration.Disabled = &d
+		}
 	}
 	out.ConfigurationErr = err
 	return out
@@ -106,7 +115,10 @@ func newRegistrationSnapshot(load func(context.Context) ([]SnapshotRow, error), 
 		log = slog.New(slog.DiscardHandler)
 	}
 	s := &RegistrationSnapshot{load: load, log: log, kick: make(chan struct{}, 1)}
-	s.state.Store(&snapshotState{handover: map[string]bool{}, egress: map[string][]netip.Prefix{}, configuration: map[string]SnapshotRow{}})
+	s.state.Store(&snapshotState{
+		handover: map[string]bool{}, egress: map[string][]netip.Prefix{}, disabled: map[string]iface.DisableMode{},
+		configuration: map[string]SnapshotRow{},
+	})
 	if r != nil {
 		cache.Register(r, "bastion_registrations", cache.Options[struct{}, struct{}]{
 			MaxEntries: 1, SafetyTTL: SnapshotReload,
@@ -122,6 +134,20 @@ func newRegistrationSnapshot(load func(context.Context) ([]SnapshotRow, error), 
 // runs its connections' link checks again (storage.md R-STOR-096). The first load calls nothing, since the link checks run at
 // every start.
 func (s *RegistrationSnapshot) OnSwitchedOn(f func()) { s.switchedOn.Store(&f) }
+
+// OnHardDisabled sets what runs when a reload finds a registration disabled hard that the snapshot before it did not hold disabled hard
+// (R-BAS-133): the replica cuts that Bastion's forwards in flight ([InFlight.Cancel]). The first load calls it too, for a registration
+// it finds disabled hard: no forward is in flight before it, so it cuts nothing.
+func (s *RegistrationSnapshot) OnHardDisabled(f func(bastionID string)) { s.hard.Store(&f) }
+
+// Disabled returns the way the registration bastionID is disabled in the replica's snapshot (R-BAS-133), empty while it works and
+// for a registration the snapshot does not hold.
+func (s *RegistrationSnapshot) Disabled(bastionID string) iface.DisableMode {
+	if s == nil {
+		return ""
+	}
+	return s.state.Load().disabled[bastionID]
+}
 
 // WarnOverlap sets the networks of server.trusted_proxies a registration's network is compared with (Q-BAS-433): the networks the
 // snapshot holds now at once, and each one a later load brings.
@@ -244,15 +270,18 @@ func (s *RegistrationSnapshot) refresh(ctx context.Context) {
 	s.set(rows)
 }
 
-// set replaces the snapshot with rows, reports a registration whose handover turned on after the first load, and logs a network
-// that a load brought and that overlaps server.trusted_proxies.
+// set replaces the snapshot with rows, reports a registration whose handover turned on after the first load and one that turned
+// disabled hard, and logs a network that a load brought and that overlaps server.trusted_proxies.
 func (s *RegistrationSnapshot) set(rows []SnapshotRow) {
 	next := &snapshotState{
 		handover: make(map[string]bool, len(rows)), egress: make(map[string][]netip.Prefix, len(rows)),
-		configuration: make(map[string]SnapshotRow, len(rows)),
+		disabled: make(map[string]iface.DisableMode, len(rows)), configuration: make(map[string]SnapshotRow, len(rows)),
 	}
 	for _, row := range rows {
 		next.configuration[row.ID] = row
+		if row.Disabled != "" {
+			next.disabled[row.ID] = row.Disabled
+		}
 		if row.Handover {
 			next.handover[row.ID] = true
 		}
@@ -263,6 +292,13 @@ func (s *RegistrationSnapshot) set(rows []SnapshotRow) {
 	prev := s.state.Swap(next)
 	first := !s.loaded.Swap(true)
 	s.warnOverlaps(prev, next, first)
+	if f := s.hard.Load(); f != nil && *f != nil {
+		for id, mode := range next.disabled {
+			if mode == iface.DisableHard && prev.disabled[id] != iface.DisableHard {
+				(*f)(id)
+			}
+		}
+	}
 	if first || maps.Equal(prev.handover, next.handover) {
 		return
 	}

@@ -316,9 +316,9 @@ Priority: **MVP** · Covers: DIST-025
   a Bastion reads nothing on its own credential, only for the callers it forwards for. Its token is refused by every route that
   could admit it, and the decision point gives the kind `bastion` an empty principal set (no grant, no role, no level but
   `public`), should any route ever decide for it. At most
-  `bastions.max_registrations` registrations exist. A registration can be disabled, which refuses its tokens like a disabled
-  service account's ([identity-and-authentication.md](identity-and-authentication.md) R-AUTH-020), and deleted, which revokes
-  them.
+  `bastions.max_registrations` registrations exist. A registration can be disabled soft or hard, which tells its Bastion over its
+  connection to stop and leaves its tokens valid (R-BAS-133; *revised on 2026-11-27*, before it refused the tokens like a disabled
+  service account's), and deleted, which revokes them.
 - **Bastion token.** The Bastion's credential is a token of the type `bst`, prefix `qdr_bst_`, issued by an administrator of
   the main installation (owner, [Q-BAS-3](#q-bas-3--the-bastions-credential-is-a-token-issued-by-an-administrator-of-the-main-installation),
   [Q-BAS-23](#q-bas-23--the-bastion-token-is-a-token-type-of-its-own-on-a-bastion-principal)). It follows the format, storage,
@@ -335,25 +335,26 @@ Priority: **MVP** · Covers: DIST-025
   registration revokes nothing, deleting it revokes every token first
   ([Q-BAS-61](#q-bas-61--the-registration-events-carry-no-journal-entry-a-bastion-tokens-events-name-the-registration-in-their-data)).
   Both are journaled ([ha-and-helm.md](ha-and-helm.md) R-HA-054): a restore to a point before a disable or a deletion disables the
-  registration again, so its tokens stay refused
-  ([Q-BAS-145](#q-bas-145--a-disabled-or-deleted-registration-is-journaled-and-replayed-as-disabled)).
+  registration again, hard for a deletion, whose revoked tokens stay revoked
+  ([Q-BAS-145](#q-bas-145--a-disabled-or-deleted-registration-is-journaled-and-replayed-as-disabled), R-BAS-133).
 - **API** (management API conventions of [api-and-ui.md](api-and-ui.md); capability in brackets,
   [Q-BAS-24](#q-bas-24--bastion-registrations-are-managed-with-the-endpoint-capabilities)):
 
 | Operation | Capability | Answer |
 |---|---|---|
 | `POST /api/v1/bastions` `{"name", "description"}` | `endpoints:write` | `201` with the registration |
-| `GET /api/v1/bastions`, `GET /api/v1/bastions/{name}` | `endpoints:read`; `GET /api/v1/bastions/{name}` also `limits:read`, which reads `id`, `name`, `limits` and `status` only (R-BAS-093) | name, description, `enabled`, its tokens (ID, hint, `expiresAt`, `createdAt`, `lastUsedAt`), and the last contact of R-BAS-010: time, client address, Bastion release, interface version, reported base URL, replica |
-| `PATCH /api/v1/bastions/{name}` `{"description", "enabled"}` | `endpoints:write` | `200` |
+| `GET /api/v1/bastions`, `GET /api/v1/bastions/{name}` | `endpoints:read`; `GET /api/v1/bastions/{name}` also `limits:read`, which reads `id`, `name`, `limits`, `status`, `state` and `running` only (R-BAS-093, R-BAS-133) | name, description, `disabled`, `state` and `running` (R-BAS-133), its tokens (ID, hint, `expiresAt`, `createdAt`, `lastUsedAt`), and the last contact of R-BAS-010: time, client address, Bastion release, interface version, reported base URL, replica |
+| `PATCH /api/v1/bastions/{name}` `{"description", "disabled"}` | `endpoints:write` | `200`; `disabled` is `soft`, `hard` or `null` (R-BAS-133) |
 | `DELETE /api/v1/bastions/{name}` | `endpoints:write` | `204`; revokes its tokens (`token.revoked`, journaled) |
-| `POST /api/v1/bastions/{name}/tokens` `{"description", "ttlSeconds"}` | `endpoints:write`; a session needs a recent authentication ([api-and-ui.md](api-and-ui.md) R-API-007) | `201` with the token secret, once (R-AUTH-022) |
-| `DELETE /api/v1/bastions/{name}/tokens/{id}` | `endpoints:write` or `tokens:revoke` | `204`; `token.revoked`, journaled (R-HA-054) |
+| `POST /api/v1/bastions/{name}/tokens` `{"description", "ttlSeconds"}` | `endpoints:write`; a session needs a recent authentication ([api-and-ui.md](api-and-ui.md) R-API-007) | `201` with the token secret, once (R-AUTH-022); `409 managed_by_config` for a declared registration (R-BAS-133) |
+| `DELETE /api/v1/bastions/{name}/tokens/{id}` | `endpoints:write` or `tokens:revoke` | `204`; `token.revoked`, journaled (R-HA-054); the declared token's too (R-BAS-133) |
 
-- `quader admin bastion create <name>`, `quader admin bastion token create <name> --ttl <duration>` and
+- `quader admin bastion create <name>`, `quader admin bastion disable <name> [--hard]`, `quader admin bastion enable <name>`
+  (R-BAS-133), `quader admin bastion token create <name> --ttl <duration>` and
   `quader admin bastion token revoke <name> <id>` do the same from a `web` pod (R-AUTH-015's pattern). Every operation writes its
-  audit event: `bastion.created`, `bastion.updated` (the description), `bastion.disabled`, `bastion.enabled`, `bastion.deleted`, and
-  `token.created` / `token.revoked` with `resource_type: bastion`. `bastion.disabled` and `bastion.deleted` carry the journal entry
-  `{principalId, name}`, the others none; `token.revoked` keeps its flag and its entry (Q-BAS-145). At most
+  audit event: `bastion.created`, `bastion.updated` (the description), `bastion.disabled` (with its way), `bastion.enabled`,
+  `bastion.deleted`, and `token.created` / `token.revoked` with `resource_type: bastion`. `bastion.disabled` and `bastion.deleted` carry
+  the journal entry `{principalId, name, mode}` (R-BAS-133), the others none; `token.revoked` keeps its flag and its entry (Q-BAS-145). At most
   `bastions.max_registrations` is held exactly, also when creates race
   ([Q-BAS-64](#q-bas-64--creating-registrations-is-serialized-by-an-advisory-lock-a-registrations-name-never-changes)).
 
@@ -378,9 +379,9 @@ Acceptance criteria:
 - A caller with `endpoints:read` only gets `403` on the token creation; `tokens:revoke` alone may revoke a Bastion token.
 - Deleting `partners` revokes its tokens (a `token.revoked` with `resource_type: bastion` and a journal entry each), removes the
   registration and its contacts, and the revoked token is refused on every replica within `auth.revocation_bound`; disabling it
-  refuses the tokens in the same time and enabling it restores them.
-- A registration disabled or deleted after the point a restore returns to is disabled by the journal's replay, and its tokens are
-  refused afterwards; an enable after that point is not replayed
+  leaves its tokens valid (R-BAS-133).
+- A registration disabled or deleted after the point a restore returns to is disabled by the journal's replay, in the disable's way and
+  hard for a deletion, whose tokens stay revoked; an enable after that point is not replayed
   (`TestR_BAS_004_ADisabledOrDeletedRegistrationStaysDisabledAfterARestore`).
 
 ### R-BAS-005 · What the Bastion token can do
@@ -623,7 +624,9 @@ The Bastion interface has a version of its own, separate from the release number
   catalogue of the project view: a public repository's description, a project's and a repository's index, an image's list by content,
   the set-up path of a package without a version, and the switch `hideRepositories` (R-BAS-130, R-BAS-131,
   [Q-BAS-506](#q-bas-506--the-project-view-raises-the-interface-to-version-12-and-the-bastions-state-record-to-form-3), built on
-  2026-11-27 by W-40's P1). The version is `iface.InterfaceVersion`; the comment beside it names the same list.
+  2026-11-27 by W-40's P1), which before its release also took the disable of a Bastion: the configuration's `disabled`, the status's
+  `operation` and the problem `bastion_disabled` (R-BAS-133, built on 2026-11-27 by W-41's A1). The version is `iface.InterfaceVersion`;
+  the comment beside it names the same list.
 
 Acceptance criteria:
 
@@ -943,6 +946,7 @@ the content events below ([Q-BAS-29](#q-bas-29--the-feed-reads-the-journals-even
 | `group.deleted`, `authz.role.unbound` of a group, `authz.policy.deleted`, `authz.policy.updated`, `authz.settings.changed`, the `ci.issuer.*` and `ci.mapping.*` disables, deletions and updates, `endpoint.exposure.deleted` and `.updated` of the default endpoint | `{"kind": "grants"}`: every permission answer of every caller; `authz.settings.changed` that changed `visibility.artifacts` yields `settings` as well; one whose changed members are levels only (`visibility.artifacts`, `visibility.wiki`) and none of them lower than before yields no `grants`: a raise opens reads and makes no kept answer wrong |
 | `settings.auth.changed` | `{"kind": "settings"}` |
 | `bastion.configuration.changed` (R-BAS-093; built by E8) | `{"kind": "settings"}`: every Bastion handshakes again and applies its registration's configuration; a change of one registration costs every replica of every Bastion one handshake |
+| `bastion.disabled`, `bastion.enabled` (R-BAS-133, *revised on 2026-11-27*: before, a disable yielded none) | `{"kind": "settings"}`: the disable is a member of the configuration, so the disabled Bastion applies it within one poll |
 | `authz.project.visibility_changed` | `{"kind": "settings"}`, so the Bastion asks the handshake for `anonymousReads` again, and `grants` when the level was lowered ([authorization.md](authorization.md) R-AUTHZ-036) |
 | `user.external_changed` | `principal` with the user when the flag was set: the user read by `internal` through a Bastion as at the main installation (Q-BAS-148), and the flag ends that, so every answer the Bastion keeps for the user's credentials goes; clearing the flag only widens and yields none |
 | `npm.unpublish`, `package.deleted` | `{"kind": "content", "repositories": [<projectKey>/<repoKey>, …]}`: the repository and every virtual repository that includes it, recursively, at the time the feed is read, by their qualified names |
@@ -959,7 +963,7 @@ the content events below ([Q-BAS-29](#q-bas-29--the-feed-reads-the-journals-even
 | `repository.narrowed` ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-061) | `content` for the repository and its virtual repositories: patterns, members, pin rules and blocks change which bytes a URL may be answered with, not who may read the repository ([Q-BAS-146](#q-bas-146--a-content-narrowing-and-a-claim-of-scope-members-yield-a-content-entry-a-global-claim-yields-grants)) |
 | `remote.examination.discarded` ([remote-curation.md](remote-curation.md) R-CUR-016) | none: it removes what a remote stored and its delivery rules did not deliver, so no Bastion was ever served it; listed with that reason (`TestR_BAS_015_EveryJournaledEventIsClassified`). A narrowing of the delivery rules is a part of `repository.narrowed` (the parts `rules` and `deliveryMode`, R-REPO-061) and yields its `content` entry |
 | `repository.claims_changed` with an added claim | `content` for the claiming repository and its virtual repositories when every added claim has scope `members`; `grants` when one has scope `global`, which is in effect in every virtual repository of the format and in remote refusal (Q-BAS-146); none when the change only removed claims |
-| `authz.ownership.removed`, `authz.ownership.released`, `package.published`, `authz.project.updated`, `authz.project.deleted`, `bastion.disabled`, `bastion.deleted`, `group.updated`, `user.updated` | none: they bound publishing, reserve numbers, change a project's name and description, remove a project that holds no repository (a project's policies are deleted before it, each `authz.policy.deleted`), end a registration, which is no caller a Bastion answers and learns of its end from `401 bastion_token_invalid` (R-BAS-006, [Q-BAS-145](#q-bas-145--a-disabled-or-deleted-registration-is-journaled-and-replayed-as-disabled)), clear a group's auto-join flag, which removes no membership that exists, or remove a pending identity link, which no caller holds until a login completes it; each is listed with its reason, and every journaled event of the audit registry is either mapped or listed (`TestR_BAS_015_EveryJournaledEventIsClassified`) |
+| `authz.ownership.removed`, `authz.ownership.released`, `package.published`, `authz.project.updated`, `authz.project.deleted`, `bastion.deleted`, `group.updated`, `user.updated` | none: they bound publishing, reserve numbers, change a project's name and description, remove a project that holds no repository (a project's policies are deleted before it, each `authz.policy.deleted`), end a registration, which is no caller a Bastion answers and learns of its end from `401 bastion_token_invalid` (R-BAS-006, [Q-BAS-145](#q-bas-145--a-disabled-or-deleted-registration-is-journaled-and-replayed-as-disabled)), clear a group's auto-join flag, which removes no membership that exists, or remove a pending identity link, which no caller holds until a login completes it; each is listed with its reason, and every journaled event of the audit registry is either mapped or listed (`TestR_BAS_015_EveryJournaledEventIsClassified`) |
 | `signing.identity.removed`, `signing.identity.retired` ([signatures.md](signatures.md) R-SIG-057, R-SIG-059) | none: what a withdrawal changes on the wire, npm's keys document and the documents that carry the identity's signatures, reaches a Bastion as those documents' new revisions ([signatures.md](signatures.md) Q-SIG-154); listed with that reason (`TestR_BAS_015_EveryJournaledEventIsClassified`) |
 | `oci.manifest.deleted`, `deb.package.deleted`, `deb.coordinates.removed`, `deb.signing_key.promoted`, `deb.signing_key.retired`, `ansible.version.deleted` | `content` for the event's repository and its virtual repositories, as `package.deleted`: a deleted manifest (and the tags and children its cascade took), a withheld package file, a package taken out of a suite, a new primary key and a withdrawn key each change which bytes a URL of the repository is answered with ([Q-BAS-175](#q-bas-175--the-withdrawals-of-oci-debian-and-ansible-galaxy-are-content-entries)). *Superseded in place on 2026-11-22: they yielded none, because a Bastion served neither the OCI registry nor the Debian format (Q-OCI-23, Q-DEB-26), and the code listed them and the two Ansible events in `noFeedEntry`, Ansible Galaxy with Q-ANS-25 as its reason. Built the same day: the six are mapped in `mappers` ([feed.go](../../internal/bastionmain/feed.go))* |
 | `ansible.tombstone.cleared` | none: it frees the number of a deleted Galaxy version, which widens what may be published and changes no byte a Bastion holds; listed with that reason (`TestR_BAS_015_EveryJournaledEventIsClassified`) |
@@ -1615,7 +1619,8 @@ age of its last confirmation, which the pages show; the package answers below ke
   begins when the handshake fails (connect or TLS error, timeout, `5xx`, `401 bastion_token_invalid`, `400
   bastion_interface_mismatch`, a base URL mismatch) or when no feed poll has succeeded for `bastion.main.unreachable_after`, and
   ends when a handshake and a feed poll succeed again. Forward errors alone do not begin it (a `401 bastion_token_invalid` to a forward is a forward error, Q-BAS-121), and neither does one failed feed
-  poll. Every call of the link ends after `unreachable_after`, so a connection that swallows the request is a failed call at that time
+  poll. A disable is no unreachable state: the disabled Bastion keeps its handshake and its feed and stops by its configuration
+  (R-BAS-133). Every call of the link ends after `unreachable_after`, so a connection that swallows the request is a failed call at that time
   and not at `response_header_timeout`. A replica starts unreachable, since its start; the first poll that succeeds after a failed one is followed by a
   handshake; a `401 bastion_token_invalid` or a mismatch in the answer to any request begins the state at once
   ([Q-BAS-79](#q-bas-79--the-link-is-one-state-machine-per-replica-run-by-the-server)).
@@ -5139,7 +5144,8 @@ The owner's choice (a) of [Q-BAS-323](#q-bas-323--a-bastion-is-configured-on-its
 on its card at the main installation. It replaces "configuration only through the chart" (R-BAS-002, Q-BAS-15) for what an administrator
 of the main installation decides; the chart keeps what the installation of the pods sizes.
 
-- **What the registration holds**, beside its name, description, `enabled` and tokens (R-BAS-004):
+- **What the registration holds**, beside its name, description, its disable (R-BAS-133, a member of the configuration the handshake
+  sends) and tokens (R-BAS-004):
 
 | Member | What it sets | Default of a new registration | Changed with |
 |---|---|---|---|
@@ -7627,6 +7633,101 @@ Acceptance criteria:
 - Integration (area `bastion`, `walkWebInterface` inside `TestR_BAS_109_TheBastionMirrorsTheCatalogueAndServesOnWhileTheLinkIsCut`, about
   0.05 s more): the page of the world's npm repository, its facts and its search, each `200`, scanned for the main installation.
 
+## Disabling a Bastion
+
+The owner's words of 2026-11-27, looking at the dialog that disabled a Bastion by refusing its tokens: "Es muss eine Möglichkeit geben,
+bei voller Konnektivität zwischen Hauptinstanz und Bastion den Bastion sekundenschnell zu deaktivieren. Nicht wie hier über einen
+synthetischen Timeout. Ich klicke auf Deaktivieren des Bastions und diesem wird direkt mitgeteilt: Arbeit einstellen. Zwei Wege, Soft
+und Hard: Soft lässt noch alle Downloads, die bereits begonnen haben, weiterlaufen, aber keine neuen mehr zu. Hard bricht auch aktuelle
+Downloads ab." Plan W-41, D3 and D5 to D10.
+
+### R-BAS-133 · Disabling a Bastion: soft or hard, told over its connection
+Priority: **MVP** · Covers: DIST-025
+
+- **A member of the configuration** ([Q-BAS-512](#q-bas-512--disable-is-a-member-of-the-configuration-told-over-the-connection-the-token-is-not-touched)).
+  A registration carries `disabled`: `null` while the Bastion works, `soft` (no new request is admitted; every request in flight, a
+  download that started and the fill it reads, finishes) or `hard` (the same, and every request in flight and every fill is cut), with
+  the time it was set (`disabled_at`, set again by a change from soft to hard). It is a member of the configuration the handshake sends
+  (`iface.Configuration.disabled`, R-BAS-093), raises the registration's revision, and is stored with the configuration a replica keeps
+  (`configuration/current.json`), so a replica restarted during an outage keeps it. The registration's principal and its tokens are not
+  touched: the Bastion keeps its line to the main installation.
+- **The API and the command line.** `PATCH /api/v1/bastions/{name}` `{"disabled": "soft"|"hard"|null}` (`endpoints:write`, no recent
+  authentication: a disable narrows, and an enable restores a state the administrator had); absent is unchanged, `null` enables, any
+  other value is `400` at `/disabled`. Soft to hard is allowed at any time; hard to soft changes nothing that runs. `quader admin bastion
+  disable <name> [--hard]` and `quader admin bastion enable <name>` do the same from a `web` pod (R-AUTH-015's pattern). The
+  registration reads `disabled` `{mode, at}` or null, `state` and `running`; `state` and `running` also for a holder of `limits:read`.
+- **Told within seconds.** `bastion.disabled` and `bastion.enabled` map to the feed's `settings` entry (R-BAS-015): every replica
+  handshakes again within one poll of the feed (`bastions.feed.poll_interval`, 2 s, plus a round trip: about 3 s) and applies its
+  registration's configuration whole. The change area `bastion_configuration` brings it into every main replica's snapshot of the
+  registrations within the bound of R-ARCH-018 (2 s).
+- **The main installation refuses the disabled Bastion's work** ([Q-BAS-513](#q-bas-513--while-disabled-the-main-installation-refuses-the-bastions-work-and-keeps-its-line-open)).
+  From its snapshot, the recognition stage (R-BAS-008) answers a forward, the check and the four catalogue routes of a disabled
+  registration `503 bastion_disabled`, a problem of the interface that the Bastion never passes on; the handshake, the feed and the
+  download intake answer as before, so the Bastion learns the disable, confirms it and reports the downloads a soft disable lets finish.
+  A hard disable cancels the registration's forwards in flight on every main replica as its snapshot takes it.
+- **The Bastion's answer** ([Q-BAS-514](#q-bas-514--a-disabled-bastion-answers-503-in-the-formats-shape-and-names-no-disable)). While
+  disabled, every new request gets `503` with `Retry-After: 300` capped per format (R-BAS-091), in the format's error shape with the code
+  and the detail of the Bastion's own `503 unavailable` (R-BAS-029, R-BAS-099: it names nothing of the main installation and does not say
+  "disabled"); the web interface's pages a `503` page in its shape ("Not available at the moment. Try again later."); its data path,
+  `robots.txt` and the sitemap `503`. Readiness is unchanged, so the ingress keeps answering in the Bastion's shape. A replica sends the
+  main installation nothing but the handshake, the feed and its status batches: the catalogue's sync pauses, the cache stays as it is.
+  A `503 bastion_disabled` to a forward or a check (a request that raced the disable) makes the replica handshake at once.
+  `quader_bastion_disabled{mode}` is 1 while it applies a disable. *Not built (package W41-A2).*
+- **The confirmation and the state** ([Q-BAS-511](#q-bas-511--the-bastions-state-is-one-of-six-computed-by-the-main-installation),
+  [Q-BAS-515](#q-bas-515--the-bastion-confirms-with-its-status)). Every replica's status (`iface.ReplicaStatus`, sent with every flush, 1 s)
+  carries `operation` `{disabled, running}`: the way of the configuration it applies and the requests of its callers it has in flight. A
+  replica confirms when a status reported after the disable names the same way. The main installation computes the state once
+  (`bastionmain.StateOf`), for the API and the command line:
+
+| `state` | When |
+|---|---|
+| `connected` | not disabled; a replica was heard (a contact or a status) within 5 minutes |
+| `noContact` | not disabled; no replica was ever heard |
+| `contactLost` | not disabled; no replica was heard within 5 minutes |
+| `disabling` | disabled; a replica heard since has not confirmed it yet, within 15 s of the disable, or the confirming replicas still run requests (`running` is their sum) |
+| `disabled` | disabled; every replica heard since confirms it and runs nothing |
+| `disableUnconfirmed` | disabled; 15 s after the disable a replica heard since has not confirmed it, or none was heard since; at once when no replica was heard in the 5 minutes before the disable |
+
+- **Audit, journal and restore** ([Q-BAS-516](#q-bas-516--audit-journal-and-restore-of-a-disable)). `bastion.disabled` carries
+  `details.mode` and the journal entry `{principalId, name, mode}`; `bastion.enabled` none. The replay of `bastion.disabled` disables
+  the registration in the entry's way and never more lightly than it is (a hard one stays hard); the replay of `bastion.deleted` disables
+  it hard, and the deletion's own `token.revoked` entries revoke its tokens. An enable after the restore point is not replayed.
+- **The token is not the Bastion** ([Q-BAS-517](#q-bas-517--the-declared-token-is-invalidated-on-the-api-and-no-token-is-issued-beside-it)).
+  A disabled registration's token stays valid. Revoking a token is the last resort and works on every token, the declared one of
+  R-BAS-127 included; a declared registration gets no token issued on the API (`409 managed_by_config`).
+- **The fallback while the connection is down.** Nothing reaches a Bastion that cannot reach the main installation: it is unreachable
+  already (R-BAS-027), serves its cache for its grace period and then nothing; the disable is stored on the registration and applied at
+  its first handshake, before it serves a request through the main installation, which refuses those anyway. The state reads
+  `disableUnconfirmed` meanwhile.
+- **Upgrade** ([Q-BAS-518](#q-bas-518--a-registration-disabled-by-its-principals-status-becomes-disabled-hard)). Migration 00158 turns a
+  registration disabled before by its principal's status into one disabled hard, with its principal active again.
+
+*Built on 2026-11-27 (W-41's A1), the main installation's part:* migration
+[00158_bastion_disable.sql](../../internal/meta/postgres/migrations/00158_bastion_disable.sql); `BastionSetDisabled` and
+`BastionReplayDisable` of [bastion_registration.sql](../../internal/meta/postgres/queries/bastion_registration.sql); `setDisable`,
+`StateOf` and `replayDisable` of [state.go](../../internal/bastionmain/state.go); the snapshot's `Disabled` and `OnHardDisabled` of
+[snapshot.go](../../internal/bastionmain/snapshot.go); `refusedWhileDisabled` and `forward` of
+[recognize.go](../../internal/bastionmain/recognize.go) with [inflight.go](../../internal/bastionmain/inflight.go); the wire's
+`DisableMode`, `Operation` and `CodeDisabled` of [iface](../../internal/bastion/iface/configuration.go); the API of
+[bastion_registrations_api.go](../../internal/api/v1/bastion_registrations_api.go); the commands of
+[admin_bastion.go](../../cmd/quader/admin_bastion.go). The card reads `disabled` and disables soft; its head, the hard way and the
+state's badge are W-41's C1.
+
+Acceptance criteria:
+
+- Unit ([state_test.go](../../internal/bastionmain/state_test.go), milliseconds, no data): `TestR_BAS_133_StateOfARegistration` (the six
+  states and `running`); `TestR_BAS_133_ADisabledRegistrationsWorkIsRefused` (a forward, the check and the four catalogue routes `503
+  bastion_disabled`; the handshake, the feed and the downloads answered; enabled again, the forward passes);
+  `TestR_BAS_133_AHardDisableCancelsTheForwardsInFlight` (a forward blocked on its answer cancelled with `ErrHardDisabled` when the
+  snapshot takes the hard disable, not by a soft one, another registration's untouched);
+  `TestR_BAS_133_TheDisableIsJournaledAndReplayed`; `TestR_BAS_133_TheConfigurationCarriesTheDisable`. The feed's mapping in
+  `TestR_BAS_015_TheMappingTableOfTheFeed`.
+- Integration (area `bastionreg`, rows, about 3 s): `TestR_BAS_133_ADisableIsToldOverTheConnection` (`PATCH disabled soft` → the event
+  with its way, the revision, the feed's `settings` entry, the snapshot's configuration the handshake answers, the token still valid on
+  two replicas; `null` → enabled); `TestR_BAS_004_PatchDisableAndTheRevision`; the declared token's invalidation in
+  `TestR_BAS_127_ADeclaredRegistrationSurvivesAFreshDatabase`. Area `backup`: `TestR_BAS_004_ADisabledOrDeletedRegistrationStaysDisabledAfterARestore`.
+- Integration (area `bastion`, W41-A2): `TestR_BAS_133_ADisableReachesTheBastionWithinSeconds`. *Not built.*
+
 ## A registration the configuration declares
 
 The owner's wish of 2026-11-26: "Kannst du bitte dafür sorgen, dass der Bastion immer mit der Instanz verbunden wird, auch wenn du die DB
@@ -7693,13 +7794,16 @@ The chart renders the map from `bastions.declared` of its values, a list of `{na
   (its metric of the remaining lifetime is `+Inf`, and it warns of no expiry). The interface is unchanged. The declared token does not count
   against `auth.tokens.max_active_per_principal.bst`.
 - **What stays the administrator's:** the switches, the limits and the rules of the place, enable and disable, and tokens issued on the
-  screen. They survive every run; after a fresh database they are the defaults of a new registration again.
+  screen before the declaration (R-BAS-133: none is issued beside a declared token). They survive every run; after a fresh database they are the defaults of a new registration again.
 - **The API and the card** ([api-and-ui.md](api-and-ui.md) [Q-UI-1497](api-and-ui.md#q-ui-1497--a-declared-bastion-registration-says-where-it-comes-from-with-the-words-of-a-declared-account)
   to [Q-UI-1499](api-and-ui.md#q-ui-1499--the-declared-token-reads-never-under-expires-and-in-the-configuration-under-its-name-with-no-revoke)): the
   registration carries `declared: {since, secretName}` (null otherwise; the Secret's name as the configuration of the replica that answers
   names it) and each token `declared`; `expiresAt` is null for the declared token. A `PATCH` that changes `description` or `egress` of a
-  declared registration, the revocation of its declared token and its deletion answer `409 managed_by_config`. *Amended on 2026-11-27
-  (W-39, [Q-UI-1629](api-and-ui.md#q-ui-1629--a-declared-bastion-registration-shows-a-badge-helm-configuration-with-its-help)):* the
+  declared registration, a token issued for it and its deletion answer `409 managed_by_config`. *Amended on 2026-11-27 (W-41's A1,
+  R-BAS-133, [Q-BAS-517](#q-bas-517--the-declared-token-is-invalidated-on-the-api-and-no-token-is-issued-beside-it)):* the declared
+  token's revocation is admitted, the last resort against a leaked one, and the next run refuses its revoked value until the Secret holds
+  a new one; a token issued on the API for a declared registration is refused, the Secret being the one source of its credential.
+  *Amended on 2026-11-27 (W-39, [Q-UI-1629](api-and-ui.md#q-ui-1629--a-declared-bastion-registration-shows-a-badge-helm-configuration-with-its-help)):* the
   card's head carries the mark **Helm configuration** (a lock and the words) with its help ("Its description, its addresses and one token are set in
   bastions.declared of the Helm configuration and changed there. To delete the Bastion, remove it there first."); the declared token is
   named "Token of the Helm configuration" by the screen, whatever description the server stored, with "Secret <name>" beside its hint.
@@ -7724,9 +7828,10 @@ Acceptance criteria:
 - Integration, area `bastionreg`, about 3 s: `TestR_BAS_127_ADeclaredRegistrationSurvivesAFreshDatabase`: after `quader migrate` on a
   fresh database the registration exists with its members and the authenticator of the handshake accepts the value without an expiry; a
   second run records nothing and keeps the revision; the API reads it declared with the Secret's name and refuses the declared members,
-  the token's revocation and the deletion with `409 managed_by_config` while it takes a switch; a new value replaces the token and the old
-  one is refused within the revocation bound; the revoked value back in the file stops the run naming the entry and not the value; a value
-  issued on the screen is taken; a run without the declaration releases the registration and keeps it and its issued token.
+  a token issued beside the declared one and the deletion with `409 managed_by_config` while it takes a switch; a new value replaces the
+  token and the old one is refused within the revocation bound; the revoked value back in the file stops the run naming the entry and not
+  the value; a value issued on the screen before the declaration is taken; the declared token is revoked on the API and its value stops the
+  next run (R-BAS-133); a run without the declaration releases the registration and keeps it and its issued token.
 - Chart: `TestR_BAS_127_TheDeclaredBastionsReachTheMigrationJobAlone`. Web: the card's case of `bastions.spec.ts`.
 
 ## Deferred
@@ -10757,7 +10862,10 @@ registration came back enabled.
 
 **Choice:** (a). Q-BAS-61 stands for the token events and the feed; its "no journal entry" for the registration events is replaced by
 this decision. Neither event yields a feed entry: a registration is no caller a Bastion answers, and the Bastion learns of its own
-disable from `401 bastion_token_invalid` (R-BAS-006).
+disable from `401 bastion_token_invalid` (R-BAS-006). *Amended on 2026-11-27 (R-BAS-133,
+[Q-BAS-516](#q-bas-516--audit-journal-and-restore-of-a-disable)):* a disable no longer refuses the tokens; its entry carries the way,
+the replay sets the registration's disable (a deletion's hard) instead of the principal's status, and `bastion.disabled` and
+`bastion.enabled` yield the feed's `settings` entry, from which the Bastion learns its disable.
 
 **Rationale:** the journal's question is whether a restore brings removed access back, not whether a Bastion must learn of the
 change. A forged entry can only disable a registration, which a `PATCH` with `enabled: true` reverses. The development agent would
@@ -15808,6 +15916,129 @@ project's default view.
 
 **Choice:** (a). `projects/<project>` stays an address of its own whose text and canonical are the default view's. **Applied in the
 spec:** R-BAS-121, R-BAS-132; code: `projectRoute` and `projectTrail` of [seo.go](../../internal/bastion/gui/seo.go).
+
+### Q-BAS-511 · The Bastion's state is one of six, computed by the main installation
+
+Status: **Decided by the development agent** on 2026-11-27 (plan W-41, D3) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-BAS-133. The owner asked for the Bastion's current state in the head of its card; until now the card showed only `enabled`.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The server computes `state` and `running` from the registration, its contacts and its replicas' statuses, one function (`bastionmain.StateOf`) for the API and the command line (chosen) | `connected`, `noContact`, `contactLost`, `disabling`, `disabled`, `disableUnconfirmed` | One rule, testable in milliseconds; the card only words it | The card's own freshness rule of a contact (R-UI-240) stays beside it until C1 reads the state |
+| (b) The screen computes it from the members | No server change | — | A second copy for the command line |
+| (c) Two badges, connection and disable | Each fact its own | — | Two words where the owner asked for one state |
+
+**Choice:** (a). A replica is heard at its newest contact or status; 5 minutes is the freshness of a contact on the card. A pair of
+deployments is `contactLost` only while every replica is silent. **Applied in the spec:** R-BAS-133; code:
+[state.go](../../internal/bastionmain/state.go).
+
+### Q-BAS-512 · Disable is a member of the configuration, told over the connection; the token is not touched
+
+Status: **Decided by the development agent** on 2026-11-27 (plan W-41, D5) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-BAS-133, the owner's words of 2026-11-27. A disable refused the registration's tokens: the Bastion learnt of it from `401
+bastion_token_invalid`, treated the main installation as unreachable and served its cache for the grace period, the "synthetic timeout"
+the owner rejects.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `configuration.disabled` `null`, `soft` or `hard`; `bastion.disabled` and `bastion.enabled` map to the feed's `settings`, every replica handshakes within one poll and applies it whole; stored with the configuration a replica keeps (chosen) | About 3 s; one mechanism that exists, signed and stored | The Bastion keeps its connection, so it confirms, and an enable reaches it the same way | Every Bastion handshakes once for one registration's disable, as for every configuration change (H-2306) |
+| (b) A feed entry kind `disable` naming the registration | One round trip less | — | The feed names no registration (Q-BAS-349); not stored across a restart; a second path |
+| (c) Refuse the token (before) | No Bastion change | — | The synthetic timeout, the grace period, no soft or hard |
+
+**Choice:** (a). Soft admits no new request and lets every request in flight finish; hard also cuts them. The principal's status stays
+`active` for a Bastion: nothing sets it any more. **Applied in the spec:** R-BAS-004, R-BAS-015, R-BAS-093, R-BAS-133; code:
+[state.go](../../internal/bastionmain/state.go), [configuration.go](../../internal/bastion/iface/configuration.go).
+
+### Q-BAS-513 · While disabled, the main installation refuses the Bastion's work and keeps its line open
+
+Status: **Decided by the development agent** on 2026-11-27 (plan W-41, D6) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A forward, the check and the catalogue routes answer `503 bastion_disabled`; the handshake, the feed and the download intake answer as before; a hard disable cancels the registration's forwards in flight on every main replica within the snapshot's bound (chosen) | Decided in the recognition stage from the replica's snapshot | A Bastion that ignores the disable gets nothing new from the main installation; the honest one keeps its line to confirm and to learn the enable; a soft disable's download events still arrive | A leaked token still reads the feed and reports downloads while disabled (H-2443); revoking the token ends that |
+| (b) Refuse everything but the handshake | Smaller surface | — | The soft drain's events and the confirmations are lost |
+| (c) No enforcement at the main installation | Simplest | — | A taken-over Bastion fills its cache on while "disabled" |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-008, R-BAS-133; code: [recognize.go](../../internal/bastionmain/recognize.go),
+[inflight.go](../../internal/bastionmain/inflight.go).
+
+### Q-BAS-514 · A disabled Bastion answers 503 in the format's shape and names no disable
+
+Status: **Decided by the development agent** on 2026-11-27 (plan W-41, D7) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Every new request `503` with `Retry-After: 300` capped per format, in the format's shape with the code and detail of the Bastion's own `503 unavailable`; the pages a `503` page in the Bastion's shape; the data path, `robots.txt` and the sitemap `503`; readiness unchanged (chosen) | A temporary outage to every reader | Clients and crawlers retry later and keep their index; nothing tells an outsider that an administrator acted (R-BAS-099); the pod stays in its Service, so no ingress page without the format's shape | A visitor cannot tell a disable from an outage, as intended |
+| (b) Not ready while disabled | Kubernetes takes it out | — | The ingress answers its own page without `Retry-After` and the format's shape |
+| (c) `404` | Looks empty | — | Clients and crawlers forget it; caches drop entries |
+
+**Choice:** (a). 300 s is a constant of the Bastion, not a setting. **Applied in the spec:** R-BAS-133 (W-41's A2).
+
+### Q-BAS-515 · The Bastion confirms with its status
+
+Status: **Decided by the development agent** on 2026-11-27 (plan W-41, D8) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `ReplicaStatus.operation` `{disabled, running}`, sent with every flush (1 s); a replica confirms with a status reported after the disable that names the same way; unconfirmed 15 s after the disable, or at once when no replica was heard in the 5 minutes before (chosen) | One member on a message that exists | The state turns from disabling to disabled within about a second of the last download | The confirmation is the replica's word, as every status is (H-2282) |
+| (b) A call of its own to confirm | Explicit | — | A call per replica per change for what the status carries anyway |
+| (c) No confirmation | Simple | — | The owner's question how the card shows that the Bastion stopped stays unanswered |
+
+**Choice:** (a). 15 s is three polls of the feed and a flush beyond the expected 4 s. **Applied in the spec:** R-BAS-133; code:
+[usage.go](../../internal/bastion/iface/usage.go), [state.go](../../internal/bastionmain/state.go).
+
+### Q-BAS-516 · Audit, journal and restore of a disable
+
+Status: **Decided by the development agent** on 2026-11-27 (plan W-41, D9) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `bastion.disabled` with `details.mode` and the entry `{principalId, name, mode}`, replayed by disabling the registration in that way and never more lightly; `bastion.deleted` replayed as a hard disable; the replay lives with the registration's other replays in `bastionmain`; `quader admin bastion disable|enable` (chosen) | Q-BAS-145 kept in substance | A restore never brings back a Bastion's work an administrator stopped, and never lightens a hard disable | An entry from before the way existed is read as hard |
+| (b) Replay by the principal's status as before | No change of the replay | — | The status no longer disables anything (Q-BAS-512) |
+
+**Choice:** (a). Q-BAS-145 is amended: its replay sets the disable, not the principal's status. **Applied in the spec:** R-BAS-004,
+R-BAS-133; code: `replayDisable` of [state.go](../../internal/bastionmain/state.go), [admin_bastion.go](../../cmd/quader/admin_bastion.go).
+
+### Q-BAS-517 · The declared token is invalidated on the API, and no token is issued beside it
+
+Status: **Decided by the development agent** on 2026-11-27 (plan W-41, D10) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-BAS-127 answered the declared token's revocation `409 managed_by_config`. With a disable no longer refusing tokens
+(Q-BAS-512), a leaked declared token would have no act on the screen left.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The declared token's revocation is admitted, the last resort (the next `quader migrate` refuses the revoked value until the Secret holds a new one); a declared registration gets no token issued on the API, `409 managed_by_config` (chosen) | The Secret is the one source of a declared Bastion's credential | A leaked token is ended at once; no second credential beside the declaration | The rollout after an invalidation stops at its migration until the Secret is changed, which is what an invalidation asks for |
+| (b) Keep the 409 on the revocation | The declaration decides alone | — | No way to end a leaked declared token without a rollout |
+
+**Choice:** (a). A value issued on the screen before the declaration still becomes the declared token (Q-BAS-466). **Applied in the
+spec:** R-BAS-004, R-BAS-127, R-BAS-133; code: [bastion.go](../../internal/auth/token/bastion.go),
+[registrations.go](../../internal/bastionmain/registrations.go).
+
+### Q-BAS-518 · A registration disabled by its principal's status becomes disabled hard
+
+Status: **Decided by the development agent** on 2026-11-27 (W-41's A1) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-BAS-133. Before, a disable set the principal's status; after it, nothing reads the status of a Bastion. Quader is pre-alpha
+and carries no migration paths, but a Bastion an administrator disabled would work again unseen after the upgrade.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Migration 00158 sets such a registration disabled hard and its principal active again (chosen) | Two statements in the migration that adds the column | Nothing an administrator stopped starts again by an upgrade; no state remains that no screen can change | A statement for the data of before |
+| (b) Leave the rows | No data statement | — | A disabled Bastion is enabled by the upgrade; its principal stays disabled for good, and nothing on a screen clears it |
+
+**Choice:** (a): not a compatibility path for a client, but the narrower reading of what an administrator decided. **Applied in the
+spec:** R-BAS-133; code: [00158_bastion_disable.sql](../../internal/meta/postgres/migrations/00158_bastion_disable.sql).
 
 ## What this does not cover
 

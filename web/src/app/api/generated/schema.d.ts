@@ -5403,14 +5403,16 @@ export interface paths {
         options?: never;
         head?: never;
         /**
-         * Change or disable a Bastion registration, or configure it
+         * Change, disable or configure a Bastion registration
          * @description Changes the description, enables or disables the registration, its networks, its switches and its limits (JSON merge patch;
          *     R-BAS-004, R-BAS-093). The handler requires `limits:write` for the member `limits` and `endpoints:write` for every other
-         *     member (Q-BAS-325), so the declaration is the coarse `authenticated` form; a patch of both needs both. A disabled
-         *     registration refuses its tokens like a disabled service account's (R-AUTH-020) within the revocation bound of every
-         *     replica; the tokens stay unrevoked, so enabling the registration again restores them. A new description records
-         *     `bastion.updated`; a disable records `bastion.disabled`, journaled, so a restore to a point before it disables the
-         *     registration again (R-HA-054, Q-BAS-145); an enable records `bastion.enabled`. `switches.handover` true records
+         *     member (Q-BAS-325), so the declaration is the coarse `authenticated` form; a patch of both needs both. `disabled` disables
+         *     the Bastion `soft` or `hard`, or enables it with `null` (R-BAS-133): every replica learns it at its next handshake, within
+         *     one poll of the feed (about 3 s), and confirms it with its status (`state`); meanwhile the main installation answers none of
+         *     its forwards, checks and catalogue reads (`503 bastion_disabled`), and a hard disable cuts its forwards in flight. Its
+         *     tokens stay valid. A new description records `bastion.updated`; a disable records `bastion.disabled` with its way,
+         *     journaled, so a restore to a point before it disables the registration again (R-HA-054, Q-BAS-145); an enable records
+         *     `bastion.enabled`. `switches.handover` true records
          *     `bastion.handover.enabled`, false `bastion.handover.disabled`, journaled, so a restore keeps the handover off (R-BAS-071).
          *     A change of a switch or of `limits` records `bastion.configuration.changed` with the parts changed and their values
          *     before and after, and every Bastion handshakes again within one poll of the feed (about 3 s) and applies its
@@ -5440,7 +5442,9 @@ export interface paths {
          *     most `auth.tokens.max_active_per_principal.bst` unrevoked tokens exist per registration (`409 token_limit_reached`), so
          *     a renewal by hand fits its overlap (R-BAS-006). The value is in this answer only, which is never cached. Records
          *     `token.created` with `resource_type: bastion`. A session needs a recent authentication (`401
-         *     reauthentication_required`, R-API-007), as for every other token it mints.
+         *     reauthentication_required`, R-API-007), as for every other token it mints. A registration the installation's configuration
+         *     declares (`declared` is set, R-BAS-127) answers `409 managed_by_config`: the Secret of `bastions.declared` is the one source of
+         *     its credential (R-BAS-133).
          */
         post: operations["createBastionToken"];
         delete?: never;
@@ -5464,8 +5468,9 @@ export interface paths {
          * @description Revokes one token of the registration; `204` for a token that is revoked already. The handler requires `endpoints:write`
          *     or `tokens:revoke` (Q-BAS-24), so a security administrator can revoke a leaked token without managing endpoints; the
          *     declaration is the coarse `authenticated` form for that reason. Records `token.revoked` with `resource_type: bastion`,
-         *     journaled (R-HA-054). The token the registration's configuration declares (`declared: true`, R-BAS-127) answers `409
-         *     managed_by_config`: it ends with a new value in its Secret or the removal of the declaration, applied by `quader migrate`.
+         *     journaled (R-HA-054). The token the registration's configuration declares (`declared: true`, R-BAS-127) is revoked as well,
+         *     the last resort against a leaked one (R-BAS-133): the next run of `quader migrate` refuses the revoked value until its Secret
+         *     holds a new one.
          */
         delete: operations["revokeBastionToken"];
         options?: never;
@@ -15085,13 +15090,15 @@ export interface components {
         };
         /**
          * @description A Bastion registration, a principal of the kind `bastion` (R-BAS-004). Every member is present for a caller that holds
-         *     `endpoints:read`; a caller that reads one registration with `limits:read` alone reads `id`, `name`, `limits` and `status`, and
-         *     every other member is absent (R-BAS-093).
+         *     `endpoints:read`; a caller that reads one registration with `limits:read` alone reads `id`, `name`, `limits`, `status`, `state`
+         *     and `running`, and every other member is absent (R-BAS-093, R-BAS-133).
          * @example {
          *       "id": "0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a40",
          *       "name": "partners",
          *       "description": "The partner network",
-         *       "enabled": true,
+         *       "disabled": null,
+         *       "state": "connected",
+         *       "running": 0,
          *       "declared": null,
          *       "switches": {
          *         "handover": false,
@@ -15197,7 +15204,25 @@ export interface components {
             id: string;
             name: string;
             description?: string;
-            enabled?: boolean;
+            /**
+             * @description How and since when an administrator disabled the Bastion (R-BAS-133): `soft` admits no new request and lets what runs
+             *     finish, `hard` also cuts what runs. Null while it works. Its tokens stay valid either way.
+             */
+            disabled?: components["schemas"]["BastionDisable"] | null;
+            /**
+             * @description The Bastion's state as the main installation knows it (R-BAS-133). While it works: `connected` when a replica was heard
+             *     within 5 minutes, `noContact` before any replica was heard, `contactLost` otherwise. While disabled: `disabling` while a
+             *     replica heard since the disable has not confirmed it yet (at most 15 seconds) or the confirming replicas still run requests,
+             *     `disabled` when every replica heard since confirms it and runs nothing, `disableUnconfirmed` when 15 seconds after the
+             *     disable a replica heard since has not confirmed it, or at once when no replica was heard in the 5 minutes before.
+             * @enum {string}
+             */
+            state: "connected" | "noContact" | "contactLost" | "disabling" | "disabled" | "disableUnconfirmed";
+            /**
+             * Format: int64
+             * @description The requests the replicas that confirm the disable still run (R-BAS-133); 0 while the Bastion is not disabled.
+             */
+            running: number;
             egress?: components["schemas"]["BastionEgress"];
             switches?: components["schemas"]["BastionSwitches"];
             /**
@@ -15214,6 +15239,16 @@ export interface components {
             tokens?: components["schemas"]["BastionTokenSummary"][];
             /** @description The last contact of each replica, the most recent first (R-BAS-010). */
             contacts?: components["schemas"]["BastionContact"][];
+        };
+        /** @description A Bastion's disable (R-BAS-133). */
+        BastionDisable: {
+            /** @enum {string} */
+            mode: "soft" | "hard";
+            /**
+             * Format: date-time
+             * @description When it was set; a change from soft to hard sets it again.
+             */
+            at: string;
         };
         /**
          * @description What the builder of the public catalogue last did for a registration whose web interface is on (R-BAS-104, R-BAS-105): `built`
@@ -15433,6 +15468,17 @@ export interface components {
                 until: string;
                 reason: string;
             }[];
+            operation: components["schemas"]["BastionOperation"];
+        };
+        /**
+         * @description What a replica applies of its registration's disable (R-BAS-133), the replica's own word: the way of the configuration it applies,
+         *     null while it works, and the requests of its callers it still runs.
+         */
+        BastionOperation: {
+            /** @enum {string|null} */
+            disabled: "soft" | "hard" | null;
+            /** Format: int64 */
+            running: number;
         };
         BastionList: {
             items: components["schemas"]["Bastion"][];
@@ -15514,7 +15560,12 @@ export interface components {
         /** @description The read-only members of `Bastion` are accepted and ignored. */
         BastionPatch: {
             description?: string;
-            enabled?: boolean;
+            /**
+             * @description `endpoints:write`. Disables the Bastion soft or hard, told to its replicas over their connection within seconds, or enables
+             *     it with `null` (R-BAS-133); absent is unchanged. Its tokens are not touched.
+             * @enum {string|null}
+             */
+            disabled?: "soft" | "hard" | null;
             /** @description `endpoints:write`. A switch that is absent or `null` is unchanged (R-BAS-071, R-BAS-102). */
             switches?: {
                 handover?: boolean;
@@ -15609,6 +15660,12 @@ export interface components {
          *     members and the rules of its place with each rule's effective figures, of one moment, and the installation's display.
          */
         BastionConfiguration: {
+            /**
+             * @description The registration's disable (R-BAS-133): null while the Bastion works; `soft` admits no new request and lets every request in
+             *     flight finish, `hard` also cuts every request in flight.
+             * @enum {string|null}
+             */
+            disabled: "soft" | "hard" | null;
             /**
              * Format: int64
              * @description The registration's revision, raised also by a change of a rule of the Bastion's place or of a profile such a rule names.
@@ -15878,6 +15935,7 @@ export interface components {
                 replica: string;
                 /** Format: date-time */
                 at: string;
+                operation: components["schemas"]["BastionOperation"];
                 cache: {
                     /** @description True when the cache is the Bastion's bucket, which every replica shares and reports alike (the bucket backend); false for the replica's own volume (Q-BAS-480). */
                     shared: boolean;
@@ -21002,8 +21060,21 @@ export interface components {
                 "application/problem+json": components["schemas"]["Problem"];
             };
         };
-        /** @description The Bastion token is invalid, revoked, expired, of the wrong type or its registration is disabled (`bastion_token_invalid`, R-BAS-008). */
+        /** @description The Bastion token is invalid, revoked, expired or of the wrong type (`bastion_token_invalid`, R-BAS-008). */
         BastionTokenInvalid: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
+        /**
+         * @description The installation cannot answer now (`unavailable`, `database_unavailable`), or an administrator has disabled the Bastion's
+         *     registration (`bastion_disabled`, R-BAS-133): the main installation answers none of its forwards, checks and catalogue reads
+         *     until it is enabled again, and the Bastion learns the disable at its next handshake.
+         */
+        BastionUnavailableOrDisabled: {
             headers: {
                 [name: string]: unknown;
             };
@@ -32982,7 +33053,6 @@ export interface operations {
             401: components["responses"]["Unauthenticated"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
             429: components["responses"]["TooManyRequests"];
             500: components["responses"]["Internal"];
             501: components["responses"]["NotImplemented"];
@@ -33068,7 +33138,7 @@ export interface operations {
             429: components["responses"]["TooManyRequests"];
             500: components["responses"]["Internal"];
             501: components["responses"]["NotImplemented"];
-            503: components["responses"]["Unavailable"];
+            503: components["responses"]["BastionUnavailableOrDisabled"];
         };
     };
     bastionFeed: {
@@ -33186,7 +33256,7 @@ export interface operations {
             429: components["responses"]["TooManyRequests"];
             500: components["responses"]["Internal"];
             501: components["responses"]["NotImplemented"];
-            503: components["responses"]["Unavailable"];
+            503: components["responses"]["BastionUnavailableOrDisabled"];
         };
     };
     bastionCatalogueDocument: {
@@ -33229,7 +33299,7 @@ export interface operations {
             429: components["responses"]["TooManyRequests"];
             500: components["responses"]["Internal"];
             501: components["responses"]["NotImplemented"];
-            503: components["responses"]["Unavailable"];
+            503: components["responses"]["BastionUnavailableOrDisabled"];
         };
     };
     bastionCatalogueDocuments: {
@@ -33272,7 +33342,7 @@ export interface operations {
             429: components["responses"]["TooManyRequests"];
             500: components["responses"]["Internal"];
             501: components["responses"]["NotImplemented"];
-            503: components["responses"]["Unavailable"];
+            503: components["responses"]["BastionUnavailableOrDisabled"];
         };
     };
     bastionCataloguePublic: {
@@ -33307,7 +33377,7 @@ export interface operations {
             429: components["responses"]["TooManyRequests"];
             500: components["responses"]["Internal"];
             501: components["responses"]["NotImplemented"];
-            503: components["responses"]["Unavailable"];
+            503: components["responses"]["BastionUnavailableOrDisabled"];
         };
     };
     listVulnerabilityFindings: {

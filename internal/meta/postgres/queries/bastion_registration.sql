@@ -14,14 +14,15 @@ INSERT INTO bastion (principal_id, description, egress)
 VALUES (sqlc.arg(id)::text::uuid, sqlc.arg(description)::text, sqlc.arg(egress)::text[]::cidr[]);
 
 -- name: BastionGet :many
--- A registration by name. revision is the ETag (R-API-012); enabled is the principal's status; handover is the switch of the
+-- A registration by name. revision is the ETag (R-API-012); disabled is the way an administrator disabled it, soft or hard, and
+-- disabled_at since when, empty and NULL while it works (R-BAS-133, 00158); handover is the switch of the
 -- handover per blob (R-BAS-071, 00110); egress the networks the Bastion connects from (R-BAS-017, 00145), each in the text form of
 -- cidr, which always names the prefix length; gui, docs, hide_repositories and the limits_* members the rest of its configuration
 -- (R-BAS-093, 00147; R-BAS-131, 00157);
 -- declared_at the mark of a registration the configuration declares (R-BAS-127, 00148), NULL otherwise; catalogue_* the builder's last
 -- outcome for its public catalogue, read from the state the builder keeps (R-BAS-104, 00146): whether one is held, why it stopped, and
 -- the times of its last run and of the last run that changed it.
-SELECT p.id::text AS id, p.name, (p.status = 'active')::boolean AS enabled, p.created_at, p.revision, b.description, b.handover,
+SELECT p.id::text AS id, p.name, coalesce(b.disabled, '')::text AS disabled, b.disabled_at, p.created_at, p.revision, b.description, b.handover,
        b.egress::text[] AS egress, b.gui, b.docs, b.hide_repositories, b.limits_mode, b.limits_preset, b.limits_flood, b.limits_slots,
        b.limits_throughput, b.limits_ceiling, b.declared_at, (s.bastion_id IS NOT NULL)::boolean AS catalogue_held,
        coalesce(s.stopped, '')::text AS catalogue_stopped, s.checked_at AS catalogue_checked_at, s.built_at AS catalogue_built_at
@@ -32,7 +33,7 @@ SELECT p.id::text AS id, p.name, (p.status = 'active')::boolean AS enabled, p.cr
 -- name: BastionLock :many
 -- The registration by name, locking the principal row: an update or a delete compares If-Match with the
 -- revision in the transaction that writes.
-SELECT p.id::text AS id, p.name, (p.status = 'active')::boolean AS enabled, p.revision,
+SELECT p.id::text AS id, p.name, coalesce(b.disabled, '')::text AS disabled, p.revision,
        (b.declared_at IS NOT NULL)::boolean AS declared, coalesce(b.declared_token::text, '')::text AS declared_token
   FROM principal p JOIN bastion b ON b.principal_id = p.id
  WHERE p.kind = 'bastion' AND p.name = sqlc.arg(name)::text
@@ -41,7 +42,7 @@ SELECT p.id::text AS id, p.name, (p.status = 'active')::boolean AS enabled, p.re
 -- name: BastionList :many
 -- Keyset order by name; there are at most bastions.max_registrations of them, so the caller may pass an empty
 -- after and a generous max_rows. The members are BastionGet's.
-SELECT p.id::text AS id, p.name, (p.status = 'active')::boolean AS enabled, p.created_at, p.revision, b.description, b.handover,
+SELECT p.id::text AS id, p.name, coalesce(b.disabled, '')::text AS disabled, b.disabled_at, p.created_at, p.revision, b.description, b.handover,
        b.egress::text[] AS egress, b.gui, b.docs, b.hide_repositories, b.limits_mode, b.limits_preset, b.limits_flood, b.limits_slots,
        b.limits_throughput, b.limits_ceiling, b.declared_at, (s.bastion_id IS NOT NULL)::boolean AS catalogue_held,
        coalesce(s.stopped, '')::text AS catalogue_stopped, s.checked_at AS catalogue_checked_at, s.built_at AS catalogue_built_at
@@ -79,7 +80,7 @@ RETURNING principal_id::text AS id;
 -- at the start, on a change of the area bastion_handover, bastion_egress, bastion_configuration or limits and once a minute; never by a
 -- request.
 SELECT b.principal_id::text AS id, p.name, p.revision, b.handover, b.egress::text[] AS egress, b.gui, b.docs, b.hide_repositories,
-       b.limits_mode, b.limits_preset, b.limits_flood, b.limits_slots, b.limits_throughput, b.limits_ceiling,
+       coalesce(b.disabled, '')::text AS disabled, b.limits_mode, b.limits_preset, b.limits_flood, b.limits_slots, b.limits_throughput, b.limits_ceiling,
        COALESCE((SELECT jsonb_agg(jsonb_build_object(
                     'id', a.id::text, 'whoKind', a.who_kind, 'whoRef', a.who_ref, 'profile', lp.key, 'overrides', a.overrides,
                     'builtin', a.builtin,
@@ -161,13 +162,25 @@ UPDATE bastion SET handover = false
  WHERE principal_id = sqlc.arg(id)::text::uuid AND handover
 RETURNING principal_id::text AS id;
 
--- name: BastionSetEnabled :many
--- Enable or disable (R-BAS-004): a disabled registration refuses its tokens like a disabled service account
--- (R-AUTH-020). No row when the status already is the one asked for.
-UPDATE principal SET status = CASE WHEN sqlc.arg(enabled)::boolean THEN 'active' ELSE 'disabled' END
- WHERE id = sqlc.arg(id)::text::uuid AND kind = 'bastion'
-   AND status <> CASE WHEN sqlc.arg(enabled)::boolean THEN 'active' ELSE 'disabled' END
-RETURNING id::text AS id;
+-- name: BastionSetDisabled :many
+-- Disable a registration soft or hard, or enable it with the empty way (R-BAS-133): the way and the time it was set, which a change from
+-- soft to hard sets again, since the replicas confirm the new way. The principal and its tokens are not touched. No row when the way
+-- already is the one asked for.
+UPDATE bastion
+   SET disabled = NULLIF(sqlc.arg(disabled)::text, ''),
+       disabled_at = CASE WHEN sqlc.arg(disabled)::text = '' THEN NULL ELSE now() END
+ WHERE principal_id = sqlc.arg(id)::text::uuid AND disabled IS DISTINCT FROM NULLIF(sqlc.arg(disabled)::text, '')
+RETURNING principal_id::text AS id;
+
+-- name: BastionReplayDisable :many
+-- The journal's replay of bastion.disabled and bastion.deleted (R-BAS-133, R-HA-054): the registration of the entry disabled in the
+-- entry's way, never more lightly than it is: a hard disable stays hard. No row when it is disabled that way or harder already, or the
+-- registration is not in the database.
+UPDATE bastion
+   SET disabled = sqlc.arg(disabled)::text, disabled_at = now()
+ WHERE principal_id = sqlc.arg(id)::text::uuid
+   AND (disabled IS NULL OR (disabled = 'soft' AND sqlc.arg(disabled)::text = 'hard'))
+RETURNING principal_id::text AS id;
 
 -- name: BastionCountActiveTokens :one
 -- The unrevoked, unexpired tokens of a registration, against auth.tokens.max_active_per_principal.bst
@@ -200,7 +213,7 @@ SELECT t.principal_id::text AS bastion_id, t.id::text AS id, t.hint, t.descripti
 -- name: BastionTokenOwner :many
 -- The registration a token belongs to, for the revocation of one token by ID (R-BAS-004): no row when the
 -- token is not a Bastion token of that registration. declared says it is the token the registration's configuration declares
--- (R-BAS-127), which the API does not revoke.
+-- (R-BAS-127), whose revocation the API admits as the last resort and names in the event (R-BAS-133).
 SELECT t.id::text AS id, t.principal_id::text AS bastion_id, t.revoked_at,
        EXISTS (SELECT 1 FROM bastion b WHERE b.declared_token = t.id)::boolean AS declared
   FROM api_token t JOIN principal p ON p.id = t.principal_id
@@ -211,8 +224,7 @@ SELECT t.id::text AS id, t.principal_id::text AS bastion_id, t.revoked_at,
 -- secret hash, joined with the registration; a row of another type is never returned here. rejection_due says
 -- whether token.rejected is due for this token (at most once an hour, as for every token, R-AUTH-023 step 4); declared whether it
 -- is the token its registration's configuration declares (R-BAS-127), the one Bastion token that may have no expiry.
-SELECT t.id::text AS token_id, t.principal_id::text AS bastion_id, p.name, (p.status = 'active')::boolean AS enabled,
-       t.expires_at, coalesce(t.expires_at IS NOT NULL AND t.expires_at <= now(), false)::boolean AS expired,
+SELECT t.id::text AS token_id, t.principal_id::text AS bastion_id, p.name, t.expires_at, coalesce(t.expires_at IS NOT NULL AND t.expires_at <= now(), false)::boolean AS expired,
        (t.revoked_at IS NOT NULL)::boolean AS revoked, t.hint,
        coalesce(t.rejection_logged_at IS NULL OR t.rejection_logged_at < now() - interval '1 hour', true)::boolean AS rejection_due,
        coalesce(b.declared_token = t.id, false)::boolean AS declared

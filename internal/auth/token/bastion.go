@@ -34,8 +34,7 @@ type BastionRequest struct {
 	Via string
 }
 
-// BastionInfo is what the validation of a Bastion token yields: the token and the enabled registration it
-// belongs to. It holds no secret and no hash.
+// BastionInfo is what the validation of a Bastion token yields: the token and the registration it belongs to. It holds no secret and no hash.
 type BastionInfo struct {
 	TokenID   string
 	Hint      string
@@ -98,8 +97,9 @@ func (s *Service) bastionTTL(ttl time.Duration) (time.Duration, error) {
 
 // RevokeBastionToken revokes one token of a registration (R-BAS-004): token.revoked with resource_type bastion
 // and the journal entry (R-HA-054). A token that is revoked already, or has expired, ends nothing and
-// succeeds; a token that is no Bastion token of that registration is a 404, and the token the registration's configuration
-// declares a 409 managed_by_config (R-BAS-127).
+// succeeds; a token that is no Bastion token of that registration is a 404. The token the registration's configuration declares is
+// revoked as well (R-BAS-133): the last resort against a leaked one, after which quader migrate refuses the revoked value until its
+// Secret holds a new one (R-BAS-127).
 func (s *Service) RevokeBastionToken(ctx context.Context, c principal.Caller, bastion, id string) error {
 	if !principal.IsID(id) {
 		return principal.NotFound("The token")
@@ -112,11 +112,6 @@ func (s *Service) RevokeBastionToken(ctx context.Context, c principal.Caller, ba
 		}
 		if len(rows) == 0 {
 			return principal.NotFound("The token")
-		}
-		if rows[0].Declared {
-			// The token the configuration declares ends with a change of its Secret, or of the declaration (R-BAS-127).
-			return errs.E(errs.Conflict, errs.CodeManagedByConfig,
-				"The token is declared in bastions.declared of the Helm configuration; put another value in its Secret, or remove the declaration, and roll out.")
 		}
 		_, err = s.revokeTree(ctx, tx, qs, c, id, ReasonAdmin, false)
 		return err
@@ -136,8 +131,8 @@ func (s *Service) RevokeAllOfBastionTx(ctx context.Context, tx meta.Tx, c princi
 
 // AuthenticateBastion validates a raw Bastion token (R-BAS-005): the syntax without database access, the
 // replica's cache while the freshness gate is open, then the database through BastionTokenBySecret. A token of
-// another type, a malformed, unknown, revoked, expired token and a token whose registration is disabled are
-// one of the Err values; PostgreSQL not answering is an *errs.Error of kind Unavailable, never a cached
+// another type, a malformed, unknown, revoked and expired token are one of the Err values; a disabled registration's token is valid,
+// since the Bastion learns its disable over the connection it keeps (R-BAS-133); PostgreSQL not answering is an *errs.Error of kind Unavailable, never a cached
 // acceptance. The cache, its invalidation by the change area auth and the revocation bound are those of every
 // token (R-AUTH-023); a revoked or expired token logs token.rejected at most once an hour, with req.Source. A
 // token the cache does not hold while req.Throttle is exceeded is a [ThrottledError] unless its marker says it
@@ -216,8 +211,6 @@ func (s *Service) loadBastion(ctx context.Context, hash [32]byte) (cachedToken, 
 			return &rejection{err: ErrRevoked, id: r.TokenID, hint: r.Hint, owner: ref, due: r.RejectionDue}
 		case r.Expired:
 			return &rejection{err: ErrExpired, id: r.TokenID, hint: r.Hint, owner: ref, due: r.RejectionDue}
-		case !r.Enabled:
-			return ErrOwner
 		case !r.ExpiresAt.Valid && !r.Declared:
 			// An issued Bastion token always expires (R-BAS-004); only the token a registration's configuration declares has no
 			// expiry (R-BAS-127, Q-BAS-466). Any other row without one is a storage fault, never an acceptance.

@@ -10,7 +10,7 @@
 //     by the recognition stage (package 2), read by the marking stage and the route observer (package 3), by
 //     the shared authorization step of the interface routes (internal/api/v1, built) and by the interface
 //     handlers (package 2).
-//   - [TokenAuthenticator]: a raw Bastion token to an enabled registration. Implemented by package 1,
+//   - [TokenAuthenticator]: a raw Bastion token to its registration. Implemented by package 1,
 //     consumed by the recognition stage (package 2).
 //   - [ShapeResolver]: a subject's read shape on repositories (R-BAS-012). Implemented by package 3, used
 //     by the marking (package 3) and by the check operation (package 2).

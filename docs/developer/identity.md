@@ -28,7 +28,7 @@ the decisions of this area are Q-AUTH-18 to Q-AUTH-22 and Q-AUTH-41 to Q-AUTH-48
 | [internal/auth/registrytoken](../../internal/auth/registrytoken) | The registry token of the OCI token service (R-OCI-005): form, HKDF keys from the key ring, scope grammar, grant, challenge text, metrics; see [oci.md](oci.md#registry-tokens-and-the-token-service) |
 | [internal/avatar](../../internal/avatar) | The user avatar (R-API-055): `Processor.Process` turns an upload into a 256 x 256 PNG, `Store` keeps it in the blob store and `user_avatars` |
 | [internal/audit/events_identity.go](../../internal/audit/events_identity.go) | The identity event types with their data schemas and journal flags |
-| [internal/audit/events_bastion.go](../../internal/audit/events_bastion.go) | `bastion.created`, `bastion.updated`, `bastion.disabled`, `bastion.enabled`, `bastion.deleted`; the disable and the deletion carry the journal entry (Q-BAS-145); `bastion.handover.enabled` and `bastion.handover.disabled`, the switch-off journaled (R-BAS-071) |
+| [internal/audit/events_bastion.go](../../internal/audit/events_bastion.go) | `bastion.created`, `bastion.updated`, `bastion.disabled`, `bastion.enabled`, `bastion.deleted`; the disable (with its way) and the deletion carry the journal entry (Q-BAS-145, R-BAS-133); `bastion.handover.enabled` and `bastion.handover.disabled`, the switch-off journaled (R-BAS-071) |
 | [internal/bastionmain](../../internal/bastionmain) | The Bastion registrations (`registrations.go`: `Registrations`, the service behind `/api/v1/bastions` and `quader admin bastion`) and the `TokenAuthenticator` over the token service (`authenticator.go`); see [bastion.md](bastion.md) |
 | [internal/cluster/valkey_tokseen.go](../../internal/cluster/valkey_tokseen.go) | `TokenSeen`: the throttle-exemption marker (key family `tokseen`) |
 | [internal/meta/postgres/queries/identity.sql](../../internal/meta/postgres/queries/identity.sql) | Every identity query; parameters are plain Go types because the packages above import no driver |
@@ -448,8 +448,10 @@ A Bastion registration is a principal of the kind `bastion` plus a row of the ta
   the second line.
 - **Events**: the five `bastion.*` events and `token.created` / `token.revoked` with `resource_type` `bastion` (the token as the resource,
   the registration in `details.bastion`). `Update` records `bastion.updated` for a description, `bastion.disabled` (journaled,
-  `registrationEntry`) for a disable and `bastion.enabled` for an enable; `Delete` journals `bastion.deleted` as well. The replay
-  of both is `replayDisableAccount` with the kind bastion in `internal/auth/principal/journal_replay.go` (Q-BAS-145). A `handover` of the
+  `registrationEntry` with the way) for a disable and `bastion.enabled` for an enable, both from `setDisable` of
+  [bastionmain/state.go](../../internal/bastionmain/state.go) (R-BAS-133: the disable is the registration's member `disabled`, the
+  principal's status and the tokens are not touched); `Delete` journals `bastion.deleted` as well. The replay of both is `replayDisable`
+  in the same file, in the journal's domain `bastion` (Q-BAS-145, Q-BAS-516). A `handover` of the
   patch records `bastion.handover.enabled` or `bastion.handover.disabled` (journaled, the same entry), replayed by `replayHandoverOff` in
   [bastionmain/handover.go](../../internal/bastionmain/handover.go) (R-BAS-071).
 - **Wiring**: the `package 1` block of [wire_bastion.go](../../internal/app/wire_bastion.go) builds `bastionRegistrations` (passed as
@@ -466,7 +468,8 @@ standard output (default lifetime 15 minutes, the SAT maximum applies; `--scope-
 `app.TokenScopeOptions`); `token revoke --value-stdin` reads the value from standard input and revokes with reason `leaked`.
 The integration test is [admin_test.go](../../test/integration/login/admin_test.go).
 
-`quader admin bastion create <name>`, `bastion token create <name> [--ttl <duration>]` and `bastion token revoke <name> <id>`
+`quader admin bastion create <name>`, `bastion disable <name> [--hard]`, `bastion enable <name>` (R-BAS-133),
+`bastion token create <name> [--ttl <duration>]` and `bastion token revoke <name> <id>`
 ([admin_bastion.go](../../cmd/quader/admin_bastion.go), R-BAS-004) use the same `identityParts`, with `bastionmain.Registrations` on top;
 `token create` prints only the secret. The integration test is [cli_test.go](../../test/integration/bastionreg/cli_test.go).
 

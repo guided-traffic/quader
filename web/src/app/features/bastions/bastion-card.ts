@@ -2,7 +2,7 @@ import { NoValue } from '../../shared/ui/no-value';
 import { Component, DestroyRef, LOCALE_ID, computed, effect, inject, input, linkedSignal, output, signal, untracked } from '@angular/core';
 import { QuaderDialog } from '../../shared/ui/dialog';
 import { firstValueFrom } from 'rxjs';
-import { Bastion, BastionsApi, BastionTokenCreated, BastionTokenSummary } from '../../api/bastions-api';
+import { Bastion, BastionDisableMode, BastionsApi, BastionTokenCreated, BastionTokenSummary } from '../../api/bastions-api';
 import { ApiError } from '../../api/problem';
 import { Notifier } from '../../core/notifier';
 import { SessionStore } from '../../core/session-store';
@@ -57,7 +57,7 @@ import { Busy } from '../../shared/ui/busy';
       <div class="head">
         <div class="title">
           <h2 [id]="headingId()" translate="no">{{ bastion().name }}</h2>
-          @if (bastion().enabled) {
+          @if (!bastion().disabled) {
             <span class="ok state"><span class="material-icons" aria-hidden="true">check_circle</span> <ng-container i18n="@@bastion.enabled">Enabled</ng-container></span>
           } @else {
             <span class="bad state"><span class="material-icons" aria-hidden="true">block</span> <ng-container i18n="@@bastion.disabled">Disabled</ng-container></span>
@@ -77,7 +77,7 @@ import { Busy } from '../../shared/ui/busy';
               <ng-container i18n="@@bastion.issue">Issue token</ng-container>
               <span class="visually-hidden"> {{ bastion().name }}</span>
             </button>
-            @if (bastion().enabled) {
+            @if (!bastion().disabled) {
               <button class="btn btn-tertiary" type="button" [disabled]="busy()" [quaderBusy]="busy()" (click)="disable()">
                 <ng-container i18n="@@bastion.disable">Disable</ng-container>
                 <span class="visually-hidden"> {{ bastion().name }}</span>
@@ -518,22 +518,22 @@ export class BastionCard {
     const answer = await this.confirmer.ask({
       title: $localize`:@@bastion.disable-title:Disable this Bastion?`,
       lines: [
-        $localize`:@@bastion.disable-text:The tokens of ${this.bastion().name}:name: are refused until you enable it again. Its replicas treat the main installation as unreachable and serve from their cache within the grace period.`,
+        $localize`:@@bastion.disable-text:Its replicas stop within seconds. Clients get 503 Service Unavailable until you enable it again.`,
       ],
       confirmLabel: $localize`:@@bastion.disable-confirm:Disable`,
     });
     if (answer === null) return;
-    await this.setEnabled(false, $localize`:@@bastion.disabled-done:Bastion disabled.`);
+    await this.setDisabled('soft', $localize`:@@bastion.disabled-done:Bastion disabled.`);
   }
 
   protected async enable(): Promise<void> {
-    await this.setEnabled(true, $localize`:@@bastion.enabled-done:Bastion enabled.`);
+    await this.setDisabled(null, $localize`:@@bastion.enabled-done:Bastion enabled.`);
   }
 
-  private async setEnabled(enabled: boolean, done: string): Promise<void> {
+  private async setDisabled(disabled: BastionDisableMode | null, done: string): Promise<void> {
     await this.act(async () => {
       const { etag } = await this.api.get(this.bastion().name);
-      await this.api.setEnabled(this.bastion().name, enabled, etag);
+      await this.api.setDisabled(this.bastion().name, disabled, etag);
     }, done);
   }
 

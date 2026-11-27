@@ -5843,7 +5843,7 @@
         <note category="location">src/app/features/bastions/bastion-card.ts:521</note>
       </notes>
       <segment>
-        <source>The tokens of <ph id="0" equiv="name" disp="this.bastion().name"/> are refused until you enable it again. Its replicas treat the main installation as unreachable and serve from their cache within the grace period.</source>
+        <source>Its replicas stop within seconds. Clients get 503 Service Unavailable until you enable it again.</source>
       </segment>
     </unit>
     <unit id="bastion.disable-confirm">

@@ -112,6 +112,16 @@ type ReplicaStatus struct {
 	Limited int64         `json:"limited"`
 	Blocked int64         `json:"blocked"`
 	Blocks  []StatusBlock `json:"blocks"`
+	// Operation is the replica's own word on its disable (R-BAS-133): the way it applies and the requests it still runs, which the
+	// main installation reads as its confirmation.
+	Operation Operation `json:"operation"`
+}
+
+// Operation is what a replica applies of its registration's disable (R-BAS-133): Disabled is the way of the configuration it applies,
+// null while it works; Running the requests of its callers it has in flight, a download that has started included.
+type Operation struct {
+	Disabled *DisableMode `json:"disabled"`
+	Running  int64        `json:"running"`
 }
 
 // MarshalJSON writes the status with [] for no block: the member is always present.
@@ -157,8 +167,15 @@ type StatusBlock struct {
 	Reason  string    `json:"reason"`
 }
 
-// Validate checks the bounds: at most [MaxStatusBlocks] blocks, each with a canonical prefix, and counts not below 0.
+// Validate checks the bounds: at most [MaxStatusBlocks] blocks, each with a canonical prefix, counts not below 0, and an operation
+// whose way is null, soft or hard.
 func (s ReplicaStatus) Validate() error {
+	if d := s.Operation.Disabled; d != nil && !d.Valid() {
+		return fmt.Errorf("bastion status: operation.disabled %q", *d)
+	}
+	if s.Operation.Running < 0 {
+		return fmt.Errorf("bastion status: operation.running %d is negative", s.Operation.Running)
+	}
 	if len(s.Blocks) > MaxStatusBlocks {
 		return fmt.Errorf("bastion status: %d blocks, at most %d", len(s.Blocks), MaxStatusBlocks)
 	}

@@ -17,7 +17,9 @@ import (
 // statement for it (R-ARCH-027). Switching it off is journaled; the replay below switches it off again after a restore.
 
 // handoverEntry is the journal entry of bastion.handover.disabled: the registration's principal ID and, for display, its name.
-func handoverEntry(id, name string) json.RawMessage { return registrationEntry(id, name) }
+func handoverEntry(id, name string) json.RawMessage {
+	return mustJSON(map[string]string{"principalId": id, "name": name})
+}
 
 // The replay of a handover switched off (R-BAS-071, R-HA-054): a restore to t brings a registration's member back as it was at
 // t, and the replay switches it off again when it was switched off after t, so a restore never hands a Bastion more than the

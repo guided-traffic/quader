@@ -84,7 +84,7 @@ func (q *Queries) BastionDeclaredList(ctx context.Context) ([]BastionDeclaredLis
 }
 
 const bastionGet = `-- name: BastionGet :many
-SELECT p.id::text AS id, p.name, (p.status = 'active')::boolean AS enabled, p.created_at, p.revision, b.description, b.handover,
+SELECT p.id::text AS id, p.name, coalesce(b.disabled, '')::text AS disabled, b.disabled_at, p.created_at, p.revision, b.description, b.handover,
        b.egress::text[] AS egress, b.gui, b.docs, b.hide_repositories, b.limits_mode, b.limits_preset, b.limits_flood, b.limits_slots,
        b.limits_throughput, b.limits_ceiling, b.declared_at, (s.bastion_id IS NOT NULL)::boolean AS catalogue_held,
        coalesce(s.stopped, '')::text AS catalogue_stopped, s.checked_at AS catalogue_checked_at, s.built_at AS catalogue_built_at
@@ -96,7 +96,8 @@ SELECT p.id::text AS id, p.name, (p.status = 'active')::boolean AS enabled, p.cr
 type BastionGetRow struct {
 	ID                 string
 	Name               string
-	Enabled            bool
+	Disabled           string
+	DisabledAt         pgtype.Timestamptz
 	CreatedAt          pgtype.Timestamptz
 	Revision           int64
 	Description        string
@@ -118,7 +119,8 @@ type BastionGetRow struct {
 	CatalogueBuiltAt   pgtype.Timestamptz
 }
 
-// A registration by name. revision is the ETag (R-API-012); enabled is the principal's status; handover is the switch of the
+// A registration by name. revision is the ETag (R-API-012); disabled is the way an administrator disabled it, soft or hard, and
+// disabled_at since when, empty and NULL while it works (R-BAS-133, 00158); handover is the switch of the
 // handover per blob (R-BAS-071, 00110); egress the networks the Bastion connects from (R-BAS-017, 00145), each in the text form of
 // cidr, which always names the prefix length; gui, docs, hide_repositories and the limits_* members the rest of its configuration
 // (R-BAS-093, 00147; R-BAS-131, 00157);
@@ -137,7 +139,8 @@ func (q *Queries) BastionGet(ctx context.Context, name string) ([]BastionGetRow,
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,
-			&i.Enabled,
+			&i.Disabled,
+			&i.DisabledAt,
 			&i.CreatedAt,
 			&i.Revision,
 			&i.Description,
@@ -303,7 +306,7 @@ func (q *Queries) BastionKindRulesInsert(ctx context.Context, arg BastionKindRul
 }
 
 const bastionList = `-- name: BastionList :many
-SELECT p.id::text AS id, p.name, (p.status = 'active')::boolean AS enabled, p.created_at, p.revision, b.description, b.handover,
+SELECT p.id::text AS id, p.name, coalesce(b.disabled, '')::text AS disabled, b.disabled_at, p.created_at, p.revision, b.description, b.handover,
        b.egress::text[] AS egress, b.gui, b.docs, b.hide_repositories, b.limits_mode, b.limits_preset, b.limits_flood, b.limits_slots,
        b.limits_throughput, b.limits_ceiling, b.declared_at, (s.bastion_id IS NOT NULL)::boolean AS catalogue_held,
        coalesce(s.stopped, '')::text AS catalogue_stopped, s.checked_at AS catalogue_checked_at, s.built_at AS catalogue_built_at
@@ -322,7 +325,8 @@ type BastionListParams struct {
 type BastionListRow struct {
 	ID                 string
 	Name               string
-	Enabled            bool
+	Disabled           string
+	DisabledAt         pgtype.Timestamptz
 	CreatedAt          pgtype.Timestamptz
 	Revision           int64
 	Description        string
@@ -358,7 +362,8 @@ func (q *Queries) BastionList(ctx context.Context, arg BastionListParams) ([]Bas
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,
-			&i.Enabled,
+			&i.Disabled,
+			&i.DisabledAt,
 			&i.CreatedAt,
 			&i.Revision,
 			&i.Description,
@@ -504,7 +509,7 @@ func (q *Queries) BastionListTokensOfAll(ctx context.Context) ([]BastionListToke
 }
 
 const bastionLock = `-- name: BastionLock :many
-SELECT p.id::text AS id, p.name, (p.status = 'active')::boolean AS enabled, p.revision,
+SELECT p.id::text AS id, p.name, coalesce(b.disabled, '')::text AS disabled, p.revision,
        (b.declared_at IS NOT NULL)::boolean AS declared, coalesce(b.declared_token::text, '')::text AS declared_token
   FROM principal p JOIN bastion b ON b.principal_id = p.id
  WHERE p.kind = 'bastion' AND p.name = $1::text
@@ -514,7 +519,7 @@ SELECT p.id::text AS id, p.name, (p.status = 'active')::boolean AS enabled, p.re
 type BastionLockRow struct {
 	ID            string
 	Name          string
-	Enabled       bool
+	Disabled      string
 	Revision      int64
 	Declared      bool
 	DeclaredToken string
@@ -534,7 +539,7 @@ func (q *Queries) BastionLock(ctx context.Context, name string) ([]BastionLockRo
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,
-			&i.Enabled,
+			&i.Disabled,
 			&i.Revision,
 			&i.Declared,
 			&i.DeclaredToken,
@@ -635,6 +640,42 @@ func (q *Queries) BastionPlaceRulesOfAll(ctx context.Context) ([]BastionPlaceRul
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const bastionReplayDisable = `-- name: BastionReplayDisable :many
+UPDATE bastion
+   SET disabled = $1::text, disabled_at = now()
+ WHERE principal_id = $2::text::uuid
+   AND (disabled IS NULL OR (disabled = 'soft' AND $1::text = 'hard'))
+RETURNING principal_id::text AS id
+`
+
+type BastionReplayDisableParams struct {
+	Disabled string
+	ID       string
+}
+
+// The journal's replay of bastion.disabled and bastion.deleted (R-BAS-133, R-HA-054): the registration of the entry disabled in the
+// entry's way, never more lightly than it is: a hard disable stays hard. No row when it is disabled that way or harder already, or the
+// registration is not in the database.
+func (q *Queries) BastionReplayDisable(ctx context.Context, arg BastionReplayDisableParams) ([]string, error) {
+	rows, err := q.db.Query(ctx, bastionReplayDisable, arg.Disabled, arg.ID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -753,21 +794,24 @@ func (q *Queries) BastionSetDeclaredToken(ctx context.Context, arg BastionSetDec
 	return err
 }
 
-const bastionSetEgress = `-- name: BastionSetEgress :many
-UPDATE bastion SET egress = $1::text[]::cidr[]
- WHERE principal_id = $2::text::uuid AND egress IS DISTINCT FROM $1::text[]::cidr[]
+const bastionSetDisabled = `-- name: BastionSetDisabled :many
+UPDATE bastion
+   SET disabled = NULLIF($1::text, ''),
+       disabled_at = CASE WHEN $1::text = '' THEN NULL ELSE now() END
+ WHERE principal_id = $2::text::uuid AND disabled IS DISTINCT FROM NULLIF($1::text, '')
 RETURNING principal_id::text AS id
 `
 
-type BastionSetEgressParams struct {
-	Egress []string
-	ID     string
+type BastionSetDisabledParams struct {
+	Disabled string
+	ID       string
 }
 
-// Replace the networks a registration's Bastion connects from (R-BAS-017, R-UI-243); the service validated and ordered them. No row
-// when the list already is the one asked for.
-func (q *Queries) BastionSetEgress(ctx context.Context, arg BastionSetEgressParams) ([]string, error) {
-	rows, err := q.db.Query(ctx, bastionSetEgress, arg.Egress, arg.ID)
+// Disable a registration soft or hard, or enable it with the empty way (R-BAS-133): the way and the time it was set, which a change from
+// soft to hard sets again, since the replicas confirm the new way. The principal and its tokens are not touched. No row when the way
+// already is the one asked for.
+func (q *Queries) BastionSetDisabled(ctx context.Context, arg BastionSetDisabledParams) ([]string, error) {
+	rows, err := q.db.Query(ctx, bastionSetDisabled, arg.Disabled, arg.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -786,22 +830,21 @@ func (q *Queries) BastionSetEgress(ctx context.Context, arg BastionSetEgressPara
 	return items, nil
 }
 
-const bastionSetEnabled = `-- name: BastionSetEnabled :many
-UPDATE principal SET status = CASE WHEN $1::boolean THEN 'active' ELSE 'disabled' END
- WHERE id = $2::text::uuid AND kind = 'bastion'
-   AND status <> CASE WHEN $1::boolean THEN 'active' ELSE 'disabled' END
-RETURNING id::text AS id
+const bastionSetEgress = `-- name: BastionSetEgress :many
+UPDATE bastion SET egress = $1::text[]::cidr[]
+ WHERE principal_id = $2::text::uuid AND egress IS DISTINCT FROM $1::text[]::cidr[]
+RETURNING principal_id::text AS id
 `
 
-type BastionSetEnabledParams struct {
-	Enabled bool
-	ID      string
+type BastionSetEgressParams struct {
+	Egress []string
+	ID     string
 }
 
-// Enable or disable (R-BAS-004): a disabled registration refuses its tokens like a disabled service account
-// (R-AUTH-020). No row when the status already is the one asked for.
-func (q *Queries) BastionSetEnabled(ctx context.Context, arg BastionSetEnabledParams) ([]string, error) {
-	rows, err := q.db.Query(ctx, bastionSetEnabled, arg.Enabled, arg.ID)
+// Replace the networks a registration's Bastion connects from (R-BAS-017, R-UI-243); the service validated and ordered them. No row
+// when the list already is the one asked for.
+func (q *Queries) BastionSetEgress(ctx context.Context, arg BastionSetEgressParams) ([]string, error) {
+	rows, err := q.db.Query(ctx, bastionSetEgress, arg.Egress, arg.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -854,7 +897,7 @@ func (q *Queries) BastionSetHandover(ctx context.Context, arg BastionSetHandover
 
 const bastionSnapshot = `-- name: BastionSnapshot :many
 SELECT b.principal_id::text AS id, p.name, p.revision, b.handover, b.egress::text[] AS egress, b.gui, b.docs, b.hide_repositories,
-       b.limits_mode, b.limits_preset, b.limits_flood, b.limits_slots, b.limits_throughput, b.limits_ceiling,
+       coalesce(b.disabled, '')::text AS disabled, b.limits_mode, b.limits_preset, b.limits_flood, b.limits_slots, b.limits_throughput, b.limits_ceiling,
        COALESCE((SELECT jsonb_agg(jsonb_build_object(
                     'id', a.id::text, 'whoKind', a.who_kind, 'whoRef', a.who_ref, 'profile', lp.key, 'overrides', a.overrides,
                     'builtin', a.builtin,
@@ -881,6 +924,7 @@ type BastionSnapshotRow struct {
 	Gui              bool
 	Docs             bool
 	HideRepositories bool
+	Disabled         string
 	LimitsMode       string
 	LimitsPreset     string
 	LimitsFlood      json.RawMessage
@@ -914,6 +958,7 @@ func (q *Queries) BastionSnapshot(ctx context.Context) ([]BastionSnapshotRow, er
 			&i.Gui,
 			&i.Docs,
 			&i.HideRepositories,
+			&i.Disabled,
 			&i.LimitsMode,
 			&i.LimitsPreset,
 			&i.LimitsFlood,
@@ -979,8 +1024,7 @@ func (q *Queries) BastionTokenByHash(ctx context.Context, secretSha256 []byte) (
 }
 
 const bastionTokenBySecret = `-- name: BastionTokenBySecret :many
-SELECT t.id::text AS token_id, t.principal_id::text AS bastion_id, p.name, (p.status = 'active')::boolean AS enabled,
-       t.expires_at, coalesce(t.expires_at IS NOT NULL AND t.expires_at <= now(), false)::boolean AS expired,
+SELECT t.id::text AS token_id, t.principal_id::text AS bastion_id, p.name, t.expires_at, coalesce(t.expires_at IS NOT NULL AND t.expires_at <= now(), false)::boolean AS expired,
        (t.revoked_at IS NOT NULL)::boolean AS revoked, t.hint,
        coalesce(t.rejection_logged_at IS NULL OR t.rejection_logged_at < now() - interval '1 hour', true)::boolean AS rejection_due,
        coalesce(b.declared_token = t.id, false)::boolean AS declared
@@ -992,7 +1036,6 @@ type BastionTokenBySecretRow struct {
 	TokenID      string
 	BastionID    string
 	Name         string
-	Enabled      bool
 	ExpiresAt    pgtype.Timestamptz
 	Expired      bool
 	Revoked      bool
@@ -1018,7 +1061,6 @@ func (q *Queries) BastionTokenBySecret(ctx context.Context, secretSha256 []byte)
 			&i.TokenID,
 			&i.BastionID,
 			&i.Name,
-			&i.Enabled,
 			&i.ExpiresAt,
 			&i.Expired,
 			&i.Revoked,
@@ -1057,7 +1099,7 @@ type BastionTokenOwnerRow struct {
 
 // The registration a token belongs to, for the revocation of one token by ID (R-BAS-004): no row when the
 // token is not a Bastion token of that registration. declared says it is the token the registration's configuration declares
-// (R-BAS-127), which the API does not revoke.
+// (R-BAS-127), whose revocation the API admits as the last resort and names in the event (R-BAS-133).
 func (q *Queries) BastionTokenOwner(ctx context.Context, arg BastionTokenOwnerParams) ([]BastionTokenOwnerRow, error) {
 	rows, err := q.db.Query(ctx, bastionTokenOwner, arg.ID, arg.Name)
 	if err != nil {

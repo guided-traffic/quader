@@ -1,13 +1,13 @@
 package iface
 
 // The problem codes the two sides exchange or produce for the interface
-// (R-BAS-008, R-BAS-009, R-BAS-029, R-BAS-095). The main installation answers the
-// first four as problem details of the management API, also on a package route;
+// (R-BAS-008, R-BAS-009, R-BAS-029, R-BAS-095, R-BAS-133). The main installation answers the
+// first five as problem details of the management API, also on a package route;
 // the Bastion produces the rest itself. internal/errs registers every one of them
 // with its kind, which gives the HTTP status.
 const (
-	// CodeTokenInvalid (401): the Bastion token on a request is invalid, revoked,
-	// expired or the registration is disabled. It concerns the Bastion, never the
+	// CodeTokenInvalid (401): the Bastion token on a request is invalid, revoked
+	// or expired. It concerns the Bastion, never the
 	// caller, and the Bastion never passes it on (R-BAS-008, R-BAS-027).
 	CodeTokenInvalid = "bastion_token_invalid"
 	// CodeInterfaceMismatch (400): the request's [HeaderInterface] differs from
@@ -20,6 +20,10 @@ const (
 	// CodeNotImplemented (501): an operation of the Bastion work that is not built
 	// yet; it leaves with the last stub.
 	CodeNotImplemented = "bastion_not_implemented"
+	// CodeDisabled (503): a forward, a check or a catalogue route of a Bastion
+	// whose registration an administrator has disabled (R-BAS-133). It concerns
+	// the Bastion, never the caller, and the Bastion never passes it on.
+	CodeDisabled = "bastion_disabled"
 )
 
 // The codes of the Bastion's own answers (R-BAS-029, Q-BAS-321). Each is named by

@@ -3,8 +3,9 @@
 -- time in the cluster; the catalogue routes of the Bastion interface read them. Identifiers travel as text and are cast here.
 
 -- name: BastionCatalogueRegistrations :many
--- Every registration with its name and whether it is enabled: the builder builds for those whose web interface is on.
-SELECT p.id::text AS id, p.name, (p.status = 'active')::boolean AS enabled
+-- Every registration with its name: the builder builds for those whose web interface is on, a disabled one's too, so that an enable
+-- finds its catalogue current (R-BAS-133).
+SELECT p.id::text AS id, p.name
   FROM principal p JOIN bastion b ON b.principal_id = p.id
  WHERE p.kind = 'bastion'
  ORDER BY p.name;

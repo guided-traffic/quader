@@ -8,12 +8,12 @@ import { Schema } from './types';
  * The registrations of Quader Bastions (R-BAS-004, R-BAS-007; docs/developer/bastion.md). The shapes
  * are the generated ones. The list is one page (at most `bastions.max_registrations` exist) and
  * carries no tag; a registration read on its own carries the `ETag` a change needs (R-API-012), so a
- * switch to disabled or enabled reads the registration first.
+ * disable or an enable reads the registration first.
  */
 
 /**
  * A registration as one registration's read answers a holder of `limits:read` without `endpoints:read` (R-BAS-093): `id`, `name`,
- * `limits` and `status`; every other member is absent.
+ * `limits`, `status`, `state` and `running`; every other member is absent.
  */
 export type BastionView = Schema<'Bastion'>;
 /** A registration with every member, as the list, the writes and the read of a holder of `endpoints:read` answer it. */
@@ -22,6 +22,8 @@ export type BastionTokenSummary = Schema<'BastionTokenSummary'>;
 /** What applying a preset to a Bastion's limits writes (R-LIM-046), as the server applies it. */
 export type BastionPreset = Schema<'BastionPreset'>;
 export type BastionContact = Schema<'BastionContact'>;
+/** The way a Bastion is disabled (R-BAS-133): soft lets what runs finish, hard cuts it. */
+export type BastionDisableMode = Schema<'BastionDisable'>['mode'];
 export type NewBastion = Schema<'NewBastion'>;
 export type NewBastionToken = Schema<'NewBastionToken'>;
 export type BastionTokenCreated = Schema<'BastionTokenCreated'>;
@@ -69,8 +71,8 @@ export abstract class BastionsApi {
   /** One registration: every member for a holder of `endpoints:read`, its limits and state for a holder of `limits:read` alone. */
   abstract get(name: string): Promise<Versioned<BastionView>>;
   abstract create(body: NewBastion, idempotencyKey: string): Promise<Bastion>;
-  /** Disables or enables; a disabled registration's tokens are refused (R-BAS-004). */
-  abstract setEnabled(name: string, enabled: boolean, etag: string): Promise<Versioned<Bastion>>;
+  /** Disables the Bastion soft or hard, told to its replicas over their connection, or enables it with `null` (R-BAS-133). */
+  abstract setDisabled(name: string, disabled: BastionDisableMode | null, etag: string): Promise<Versioned<Bastion>>;
   /** Switches the direct reads from the object store on or off (the handover per blob, R-BAS-071); a new registration has them off. */
   abstract setHandover(name: string, handover: boolean, etag: string): Promise<Versioned<Bastion>>;
   /** Replaces the networks the Bastion connects from (R-BAS-017, R-UI-243); `[]` empties the list. */
@@ -103,8 +105,8 @@ export class HttpBastionsApi extends BastionsApi {
     return (await this.client.post<Bastion>('/api/v1/bastions', body, { idempotencyKey })).body;
   }
 
-  override async setEnabled(name: string, enabled: boolean, etag: string): Promise<Versioned<Bastion>> {
-    const r = await this.client.patch<Bastion>(`/api/v1/bastions/${seg(name)}`, { enabled }, etag);
+  override async setDisabled(name: string, disabled: BastionDisableMode | null, etag: string): Promise<Versioned<Bastion>> {
+    const r = await this.client.patch<Bastion>(`/api/v1/bastions/${seg(name)}`, { disabled }, etag);
     return { value: r.body, etag: r.etag ?? '' };
   }
 

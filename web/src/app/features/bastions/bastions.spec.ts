@@ -331,12 +331,12 @@ describe('Bastions screen (R-BAS-007)', () => {
     await settle(fixture);
     buttonByText(overlay().querySelector('quader-confirm-dialog') as HTMLElement, 'Disable').click();
     await sleep(fixture, 100);
-    expect(api.calls).toContain('setEnabled partners false');
+    expect(api.calls).toContain('setDisabled partners soft');
     expect(api.ifMatch).toEqual(['"1"']);
     expect(text(card(root, 'partners'))).toContain('Disabled');
     buttonByText(card(root, 'partners'), 'Enable').click();
     await sleep(fixture, 100);
-    expect(api.calls).toContain('setEnabled partners true');
+    expect(api.calls).toContain('setDisabled partners null');
     expect(api.ifMatch).toEqual(['"1"', '"2"']);
     expect(text(card(root, 'partners'))).toContain('Enabled');
   });
@@ -885,6 +885,7 @@ describe("A Bastion's limits, throughput, switches and state on its card (R-UI-2
     limited: 2,
     blocked: 1,
     blocks: [{ address: '203.0.113.9/32', until: inDays(0.01), reason: 'refusals' }],
+    operation: { disabled: null, running: 0 },
     ...over,
   });
   const withProfiles = (g: <A>(token: abstract new (...args: never[]) => A) => A): void => {
@@ -1335,7 +1336,7 @@ describe("A Bastion's replicas and tokens, one line each (R-UI-240)", () => {
   const toggleOf = (el: HTMLElement): HTMLButtonElement => el.querySelector<HTMLButtonElement>('button[aria-expanded]')!;
 
   it('R-UI-240 W-39 the replicas: none, current with the newest version, silent while enabled and disabled, two versions, two base URLs', () => {
-    const enabled = { enabled: true };
+    const enabled = { disabled: null };
     expect(contactHealth({ ...enabled, contacts: [] }, now)).toEqual({ kind: 'none' });
     expect(contactHealth({ ...enabled, contacts: [contact('a', 1, { release: '0.42.0' }), contact('b', 2, { release: '0.42.0' })] }, now)).toEqual({
       kind: 'current',
@@ -1349,7 +1350,7 @@ describe("A Bastion's replicas and tokens, one line each (R-UI-240)", () => {
     const rollout = contactHealth({ ...enabled, contacts: [contact('new', 1, { release: '0.42.0' }), contact('old', 600, { release: '0.41.3', baseUrl: 'https://old.example.com' })] }, now);
     expect(rollout).toMatchObject({ kind: 'current', count: 1, releases: ['0.42.0'], baseUrls: false });
     expect(contactHealth({ ...enabled, contacts: [contact('a', 20), contact('b', 30)] }, now)).toEqual({ kind: 'silent', since: minutesAgo(20), warn: true });
-    expect(contactHealth({ enabled: false, contacts: [contact('a', 20)] }, now)).toEqual({ kind: 'silent', since: minutesAgo(20), warn: false });
+    expect(contactHealth({ disabled: { mode: 'soft', at: minutesAgo(1) }, contacts: [contact('a', 20)] }, now)).toEqual({ kind: 'silent', since: minutesAgo(20), warn: false });
     expect(contactHealth({ ...enabled, contacts: [contact('a', 1, { release: '0.42.0' }), contact('b', 2, { release: '0.41.3' })] }, now)).toMatchObject({
       releases: ['0.42.0', '0.41.3'],
     });
@@ -1405,7 +1406,7 @@ describe("A Bastion's replicas and tokens, one line each (R-UI-240)", () => {
       setup: (g) =>
         void ((g(BastionsApi) as FakeBastionsApi).bastions = [
           sampleBastion({ contacts: [old('a', 20), old('b', 40)] }),
-          sampleBastion({ id: 'b-2', name: 'standby', enabled: false, contacts: [old('a', 20)] }),
+          sampleBastion({ id: 'b-2', name: 'standby', disabled: { mode: 'soft', at: old('a', 20).contactAt }, contacts: [old('a', 20)] }),
           sampleBastion({ id: 'b-3', name: 'edge', contacts: [old('a', 1), old('b', 2, { baseUrl: 'https://other.example.com' })] }),
         ]),
     });

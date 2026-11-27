@@ -14644,15 +14644,17 @@ paths:
     patch:
       operationId: updateBastion
       tags: [bastions]
-      summary: Change or disable a Bastion registration, or configure it
+      summary: Change, disable or configure a Bastion registration
       description: |
         Changes the description, enables or disables the registration, its networks, its switches and its limits (JSON merge patch;
         R-BAS-004, R-BAS-093). The handler requires `limits:write` for the member `limits` and `endpoints:write` for every other
-        member (Q-BAS-325), so the declaration is the coarse `authenticated` form; a patch of both needs both. A disabled
-        registration refuses its tokens like a disabled service account's (R-AUTH-020) within the revocation bound of every
-        replica; the tokens stay unrevoked, so enabling the registration again restores them. A new description records
-        `bastion.updated`; a disable records `bastion.disabled`, journaled, so a restore to a point before it disables the
-        registration again (R-HA-054, Q-BAS-145); an enable records `bastion.enabled`. `switches.handover` true records
+        member (Q-BAS-325), so the declaration is the coarse `authenticated` form; a patch of both needs both. `disabled` disables
+        the Bastion `soft` or `hard`, or enables it with `null` (R-BAS-133): every replica learns it at its next handshake, within
+        one poll of the feed (about 3 s), and confirms it with its status (`state`); meanwhile the main installation answers none of
+        its forwards, checks and catalogue reads (`503 bastion_disabled`), and a hard disable cuts its forwards in flight. Its
+        tokens stay valid. A new description records `bastion.updated`; a disable records `bastion.disabled` with its way,
+        journaled, so a restore to a point before it disables the registration again (R-HA-054, Q-BAS-145); an enable records
+        `bastion.enabled`. `switches.handover` true records
         `bastion.handover.enabled`, false `bastion.handover.disabled`, journaled, so a restore keeps the handover off (R-BAS-071).
         A change of a switch or of `limits` records `bastion.configuration.changed` with the parts changed and their values
         before and after, and every Bastion handshakes again within one poll of the feed (about 3 s) and applies its
@@ -14753,7 +14755,9 @@ paths:
         most `auth.tokens.max_active_per_principal.bst` unrevoked tokens exist per registration (`409 token_limit_reached`), so
         a renewal by hand fits its overlap (R-BAS-006). The value is in this answer only, which is never cached. Records
         `token.created` with `resource_type: bastion`. A session needs a recent authentication (`401
-        reauthentication_required`, R-API-007), as for every other token it mints.
+        reauthentication_required`, R-API-007), as for every other token it mints. A registration the installation's configuration
+        declares (`declared` is set, R-BAS-127) answers `409 managed_by_config`: the Secret of `bastions.declared` is the one source of
+        its credential (R-BAS-133).
       x-quader-recent-auth: true
       x-quader-permission:
         permission: endpoints:write
@@ -14824,8 +14828,9 @@ paths:
         Revokes one token of the registration; `204` for a token that is revoked already. The handler requires `endpoints:write`
         or `tokens:revoke` (Q-BAS-24), so a security administrator can revoke a leaked token without managing endpoints; the
         declaration is the coarse `authenticated` form for that reason. Records `token.revoked` with `resource_type: bastion`,
-        journaled (R-HA-054). The token the registration's configuration declares (`declared: true`, R-BAS-127) answers `409
-        managed_by_config`: it ends with a new value in its Secret or the removal of the declaration, applied by `quader migrate`.
+        journaled (R-HA-054). The token the registration's configuration declares (`declared: true`, R-BAS-127) is revoked as well,
+        the last resort against a leaked one (R-BAS-133): the next run of `quader migrate` refuses the revoked value until its Secret
+        holds a new one.
       x-quader-permission:
         authenticated: true
       parameters:
@@ -14851,8 +14856,6 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
-        "409":
-          $ref: "#/components/responses/Conflict"
         "429":
           $ref: "#/components/responses/TooManyRequests"
         "500":
@@ -14967,7 +14970,7 @@ paths:
         "501":
           $ref: "#/components/responses/NotImplemented"
         "503":
-          $ref: "#/components/responses/Unavailable"
+          $ref: "#/components/responses/BastionUnavailableOrDisabled"
   /api/v1/bastion/feed:
     get:
       operationId: bastionFeed
@@ -15123,7 +15126,7 @@ paths:
         "501":
           $ref: "#/components/responses/NotImplemented"
         "503":
-          $ref: "#/components/responses/Unavailable"
+          $ref: "#/components/responses/BastionUnavailableOrDisabled"
   /api/v1/bastion/catalogue/document:
     get:
       operationId: bastionCatalogueDocument
@@ -15176,7 +15179,7 @@ paths:
         "501":
           $ref: "#/components/responses/NotImplemented"
         "503":
-          $ref: "#/components/responses/Unavailable"
+          $ref: "#/components/responses/BastionUnavailableOrDisabled"
   /api/v1/bastion/catalogue/documents:
     post:
       operationId: bastionCatalogueDocuments
@@ -15239,7 +15242,7 @@ paths:
         "501":
           $ref: "#/components/responses/NotImplemented"
         "503":
-          $ref: "#/components/responses/Unavailable"
+          $ref: "#/components/responses/BastionUnavailableOrDisabled"
   /api/v1/bastion/catalogue/public:
     get:
       operationId: bastionCataloguePublic
@@ -15278,7 +15281,7 @@ paths:
         "501":
           $ref: "#/components/responses/NotImplemented"
         "503":
-          $ref: "#/components/responses/Unavailable"
+          $ref: "#/components/responses/BastionUnavailableOrDisabled"
   # <<< M13 bastion
   #
   # >>> M4b vulnerabilities
@@ -23880,7 +23883,16 @@ components:
           schema:
             $ref: "#/components/schemas/Problem"
     BastionTokenInvalid:
-      description: The Bastion token is invalid, revoked, expired, of the wrong type or its registration is disabled (`bastion_token_invalid`, R-BAS-008).
+      description: The Bastion token is invalid, revoked, expired or of the wrong type (`bastion_token_invalid`, R-BAS-008).
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    BastionUnavailableOrDisabled:
+      description: |
+        The installation cannot answer now (`unavailable`, `database_unavailable`), or an administrator has disabled the Bastion's
+        registration (`bastion_disabled`, R-BAS-133): the main installation answers none of its forwards, checks and catalogue reads
+        until it is enabled again, and the Bastion learns the disable at its next handshake.
       content:
         application/problem+json:
           schema:
@@ -32530,9 +32542,9 @@ components:
       type: object
       description: |
         A Bastion registration, a principal of the kind `bastion` (R-BAS-004). Every member is present for a caller that holds
-        `endpoints:read`; a caller that reads one registration with `limits:read` alone reads `id`, `name`, `limits` and `status`, and
-        every other member is absent (R-BAS-093).
-      required: [id, name, limits, status]
+        `endpoints:read`; a caller that reads one registration with `limits:read` alone reads `id`, `name`, `limits`, `status`, `state`
+        and `running`, and every other member is absent (R-BAS-093, R-BAS-133).
+      required: [id, name, limits, status, state, running]
       properties:
         declared:
           description: |
@@ -32550,8 +32562,27 @@ components:
           pattern: "^[a-z][a-z0-9-]{0,19}$"
         description:
           type: string
-        enabled:
-          type: boolean
+        disabled:
+          description: |
+            How and since when an administrator disabled the Bastion (R-BAS-133): `soft` admits no new request and lets what runs
+            finish, `hard` also cuts what runs. Null while it works. Its tokens stay valid either way.
+          oneOf:
+            - $ref: "#/components/schemas/BastionDisable"
+            - type: "null"
+        state:
+          type: string
+          enum: [connected, noContact, contactLost, disabling, disabled, disableUnconfirmed]
+          description: |
+            The Bastion's state as the main installation knows it (R-BAS-133). While it works: `connected` when a replica was heard
+            within 5 minutes, `noContact` before any replica was heard, `contactLost` otherwise. While disabled: `disabling` while a
+            replica heard since the disable has not confirmed it yet (at most 15 seconds) or the confirming replicas still run requests,
+            `disabled` when every replica heard since confirms it and runs nothing, `disableUnconfirmed` when 15 seconds after the
+            disable a replica heard since has not confirmed it, or at once when no replica was heard in the 5 minutes before.
+        running:
+          type: integer
+          format: int64
+          minimum: 0
+          description: The requests the replicas that confirm the disable still run (R-BAS-133); 0 while the Bastion is not disabled.
         egress:
           $ref: "#/components/schemas/BastionEgress"
         switches:
@@ -32587,7 +32618,9 @@ components:
         id: 0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a40
         name: partners
         description: The partner network
-        enabled: true
+        disabled: null
+        state: connected
+        running: 0
         declared: null
         switches: {handover: false, gui: true, docs: false, hideRepositories: false}
         catalogue: {outcome: built, reason: null, checkedAt: "2026-11-02T10:06:30Z", builtAt: "2026-11-02T10:06:30Z"}
@@ -32624,6 +32657,19 @@ components:
             baseUrl: https://packages.example.com
             edgeLimit: rps=200; connections=1000
             catalogueKept: null
+    BastionDisable:
+      type: object
+      additionalProperties: false
+      description: A Bastion's disable (R-BAS-133).
+      required: [mode, at]
+      properties:
+        mode:
+          type: string
+          enum: [soft, hard]
+        at:
+          type: string
+          format: date-time
+          description: When it was set; a change from soft to hard sets it again.
     BastionCatalogueOutcome:
       type: object
       additionalProperties: false
@@ -32814,7 +32860,7 @@ components:
     BastionReplicaStatus:
       type: object
       description: The state a replica reported with its last batch (R-LIM-045), the Bastion's word (H-2282).
-      required: [replica, reportedAt, cache, throughput, limited, blocked, blocks]
+      required: [replica, reportedAt, cache, throughput, limited, blocked, blocks, operation]
       properties:
         replica: {type: string}
         reportedAt: {type: string, format: date-time}
@@ -32856,6 +32902,23 @@ components:
               address: {type: string}
               until: {type: string, format: date-time}
               reason: {type: string}
+        operation:
+          $ref: "#/components/schemas/BastionOperation"
+    BastionOperation:
+      type: object
+      additionalProperties: false
+      description: |
+        What a replica applies of its registration's disable (R-BAS-133), the replica's own word: the way of the configuration it applies,
+        null while it works, and the requests of its callers it still runs.
+      required: [disabled, running]
+      properties:
+        disabled:
+          type: [string, "null"]
+          enum: [soft, hard, null]
+        running:
+          type: integer
+          format: int64
+          minimum: 0
     BastionList:
       type: object
       required: [items]
@@ -32965,8 +33028,12 @@ components:
         description:
           type: string
           maxLength: 1024
-        enabled:
-          type: boolean
+        disabled:
+          type: [string, "null"]
+          enum: [soft, hard, null]
+          description: |
+            `endpoints:write`. Disables the Bastion soft or hard, told to its replicas over their connection within seconds, or enables
+            it with `null` (R-BAS-133); absent is unchanged. Its tokens are not touched.
         switches:
           type: object
           description: "`endpoints:write`. A switch that is absent or `null` is unchanged (R-BAS-071, R-BAS-102)."
@@ -33099,8 +33166,14 @@ components:
         The registration's configuration (R-BAS-093, Q-BAS-320): applied whole by every replica; a figure is a positive integer
         or `null` for unlimited. The main installation answers it from its snapshot of the registrations: the registration's own
         members and the rules of its place with each rule's effective figures, of one moment, and the installation's display.
-      required: [revision, switches, limits, display]
+      required: [revision, switches, limits, display, disabled]
       properties:
+        disabled:
+          type: [string, "null"]
+          enum: [soft, hard, null]
+          description: |
+            The registration's disable (R-BAS-133): null while the Bastion works; `soft` admits no new request and lets every request in
+            flight finish, `hard` also cuts every request in flight.
         revision:
           type: integer
           format: int64
@@ -33485,10 +33558,12 @@ components:
           type: object
           additionalProperties: false
           description: The sending replica's state (R-UI-240); at most 100 blocks, the newest.
-          required: [replica, at, cache, throughput, limited, blocked, blocks]
+          required: [replica, at, cache, throughput, limited, blocked, blocks, operation]
           properties:
             replica: {type: string}
             at: {type: string, format: date-time}
+            operation:
+              $ref: "#/components/schemas/BastionOperation"
             cache:
               type: object
               additionalProperties: false

@@ -313,22 +313,22 @@ func (q *Queries) BastionCataloguePackageFacts(ctx context.Context) ([]BastionCa
 
 const bastionCatalogueRegistrations = `-- name: BastionCatalogueRegistrations :many
 
-SELECT p.id::text AS id, p.name, (p.status = 'active')::boolean AS enabled
+SELECT p.id::text AS id, p.name
   FROM principal p JOIN bastion b ON b.principal_id = p.id
  WHERE p.kind = 'bastion'
  ORDER BY p.name
 `
 
 type BastionCatalogueRegistrationsRow struct {
-	ID      string
-	Name    string
-	Enabled bool
+	ID   string
+	Name string
 }
 
 // Queries of the public catalogue of the Bastion registrations (bastion.md R-BAS-101 to R-BAS-108; W-35's package P6, the tables of
 // 00146_bastion_catalogue). The builder (internal/bastionmain/catalogue) writes them in the worker's job bastion-catalogue, one run at a
 // time in the cluster; the catalogue routes of the Bastion interface read them. Identifiers travel as text and are cast here.
-// Every registration with its name and whether it is enabled: the builder builds for those whose web interface is on.
+// Every registration with its name: the builder builds for those whose web interface is on, a disabled one's too, so that an enable
+// finds its catalogue current (R-BAS-133).
 func (q *Queries) BastionCatalogueRegistrations(ctx context.Context) ([]BastionCatalogueRegistrationsRow, error) {
 	rows, err := q.db.Query(ctx, bastionCatalogueRegistrations)
 	if err != nil {
@@ -338,7 +338,7 @@ func (q *Queries) BastionCatalogueRegistrations(ctx context.Context) ([]BastionC
 	items := []BastionCatalogueRegistrationsRow{}
 	for rows.Next() {
 		var i BastionCatalogueRegistrationsRow
-		if err := rows.Scan(&i.ID, &i.Name, &i.Enabled); err != nil {
+		if err := rows.Scan(&i.ID, &i.Name); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

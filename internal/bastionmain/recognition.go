@@ -8,7 +8,7 @@ import (
 )
 
 // Recognition is the result of recognizing a request of a Bastion (R-BAS-008, Q-BAS-25): the request carried a
-// valid `bst` token of an enabled registration, in Quader-Bastion-Authorization on a forwarded request or in
+// valid `bst` token of a registration, in Quader-Bastion-Authorization on a forwarded request or in
 // Authorization on an interface route. A request with Quader-Bastion-* headers and no valid token is served as
 // an ordinary request and carries no Recognition; one with an invalid token is answered 401
 // bastion_token_invalid before it gets this far.

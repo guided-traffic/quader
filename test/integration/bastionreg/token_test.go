@@ -12,6 +12,7 @@ import (
 
 	"github.com/guided-traffic/quader/internal/audit"
 	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
 	"github.com/guided-traffic/quader/internal/bastionmain"
 )
 
@@ -163,36 +164,67 @@ func TestR_BAS_005_TheAuthenticatorValidatesAgainstTheDatabase(t *testing.T) {
 	})
 }
 
-// TestR_BAS_005_ADisabledRegistrationRefusesItsTokens: a disabled registration refuses its tokens like a
-// disabled service account's (R-AUTH-020) within the revocation bound on every replica, and enabling it
-// restores them (nothing was revoked).
-func TestR_BAS_005_ADisabledRegistrationRefusesItsTokens(t *testing.T) {
+// TestR_BAS_133_ADisableIsToldOverTheConnection: disabling a registration soft records bastion.disabled with its way, raises the
+// revision, yields a settings entry of the feed and reaches the snapshot's configuration, from which the handshake answers, within the
+// snapshot's bound; its token stays valid on every replica, so the Bastion keeps its line and learns it; enabling it again takes the
+// member back the same way. Rows only, about 3 s.
+func TestR_BAS_133_ADisableIsToldOverTheConnection(t *testing.T) {
 	e := newEnv(t)
 	a, c := e.newCast("web-1", replicaOpts{})
 	b := e.newReplica("web-2", replicaOpts{})
 	_, secret := issue(t, a, c.admin, "partners")
 	ctx := context.Background()
+	bid := e.text(`SELECT id::text FROM principal WHERE kind = 'bastion' AND name = 'partners'`)
+	snap := bastionmain.NewRegistrationSnapshot(a.db, a.caches, quiet)
+	if err := snap.Start(ctx); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = snap.Stop(ctx) })
+	feed := bastionmain.NewFeed(bastionmain.FeedOptions{DB: a.db, Lookback: time.Minute, MaxPage: 100, Endpoint: "default", Log: quiet})
+	cursor, err := feed.Position(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	before := e.number(`SELECT revision FROM principal WHERE id = $1::uuid`, bid)
+
+	want(t, a.call("PATCH", bastions+"/partners", c.admin, map[string]any{"disabled": "soft"}, "If-Match", "*"), http.StatusOK, "")
+	if after := e.number(`SELECT revision FROM principal WHERE id = $1::uuid`, bid); after <= before {
+		t.Fatalf("the revision stayed %d", before)
+	}
+	if ev := e.events(audit.EventBastionDisabled); len(ev) != 1 || ev[0].ResourceID != bid || ev[0].Details["mode"] != "soft" {
+		t.Fatalf("bastion.disabled = %+v", ev)
+	}
+	waitFor(t, "the feed's settings entry", 5*time.Second, func() bool {
+		ans, err := feed.Read(ctx, cursor, 100)
+		if err != nil {
+			return false
+		}
+		for _, en := range ans.Entries {
+			if en.Kind == iface.FeedSettings {
+				return true
+			}
+		}
+		return false
+	})
+	waitFor(t, "the snapshot's configuration, which the handshake answers", 5*time.Second, func() bool {
+		cfg, ok, err := snap.Configuration(bid)
+		return ok && err == nil && cfg.Disabled != nil && *cfg.Disabled == iface.DisableSoft && snap.Disabled(bid) == iface.DisableSoft
+	})
 	for _, r := range []*replica{a, b} {
 		if _, err := r.auth.Authenticate(ctx, secret); err != nil {
-			t.Fatal(err)
+			t.Fatalf("the token of a disabled registration on %s: %v", r.name, err)
 		}
 	}
-	want(t, a.call("PATCH", bastions+"/partners", c.admin, map[string]any{"enabled": false}, "If-Match", "*"), http.StatusOK, "")
-	for _, r := range []*replica{a, b} {
-		waitFor(t, "the token of a disabled registration is refused on "+r.name, revocationBound, func() bool {
-			_, err := r.auth.Authenticate(ctx, secret)
-			return errors.Is(err, bastionmain.ErrTokenInvalid)
-		})
+	if n := e.number(`SELECT count(*) FROM principal WHERE id = $1::uuid AND status <> 'active'`, bid); n != 0 {
+		t.Fatal("the disable touched the principal")
 	}
-	if n := e.number(`SELECT count(*) FROM api_token WHERE type = 'bst' AND revoked_at IS NOT NULL`); n != 0 {
-		t.Fatalf("disabling revoked %d tokens", n)
-	}
-	want(t, a.call("PATCH", bastions+"/partners", c.admin, map[string]any{"enabled": true}, "If-Match", "*"), http.StatusOK, "")
-	for _, r := range []*replica{a, b} {
-		waitFor(t, "the token works again on "+r.name, revocationBound, func() bool {
-			_, err := r.auth.Authenticate(ctx, secret)
-			return err == nil
-		})
+	want(t, a.call("PATCH", bastions+"/partners", c.admin, map[string]any{"disabled": nil}, "If-Match", "*"), http.StatusOK, "")
+	waitFor(t, "the snapshot of the enable", 5*time.Second, func() bool {
+		cfg, ok, _ := snap.Configuration(bid)
+		return ok && cfg.Disabled == nil && snap.Disabled(bid) == ""
+	})
+	if ev := e.events(audit.EventBastionEnabled); len(ev) != 1 {
+		t.Fatalf("bastion.enabled = %+v", ev)
 	}
 }
 

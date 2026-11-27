@@ -35,7 +35,7 @@ func NewAuthenticator(v BastionValidator) *Authenticator {
 }
 
 // Authenticate implements [TokenAuthenticator]. A token that is malformed, of another type, unknown, revoked or
-// expired, or whose registration is disabled or gone is [ErrTokenInvalid], whichever it is (R-AUTH-002); a token
+// expired, or whose registration is gone is [ErrTokenInvalid], whichever it is (R-AUTH-002); a token
 // the replica does not hold while the sender's address is throttled is [ErrThrottled]; a store that does not
 // answer is the store's error, never a verdict on the token. token.rejected names the request's source, and the
 // last use of an accepted token records the address the request came from: the Bastion's own, not the caller's

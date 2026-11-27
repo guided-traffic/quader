@@ -40,6 +40,7 @@ const CodeBadGateway = "bad_gateway"
 const CodeBaseURLUnknown = "bastion_base_url_unknown"
 const CodeBusy = "busy"
 const CodeCredentialsNeeded = "credentials_required"
+const CodeDisabled = "bastion_disabled"
 const CodeGatewayTimeout = "gateway_timeout"
 const CodeInterfaceMismatch = "bastion_interface_mismatch"
 const CodeInvalidToken = "invalid_token"
@@ -53,6 +54,8 @@ const CodeReadOnly = "read_only"
 const CodeTokenInvalid = "bastion_token_invalid"
 const CodeUnavailable = "unavailable"
 const CountedDownload = "download"
+const DisableHard DisableMode = "hard"
+const DisableSoft DisableMode = "soft"
 const ErrorShapeDistribution ErrorShape = "distribution"
 const ErrorShapeGalaxy ErrorShape = "galaxy"
 const ErrorShapeNPM ErrorShape = "npm"
@@ -151,6 +154,7 @@ func (Class) Valid() bool
 func (Configuration) Validate() error
 func (Cursor) String() string
 func (Cursor) Synthetic() bool
+func (DisableMode) Valid() bool
 func (EdgeLimit) Header() string
 func (EdgeLimit) Off() bool
 func (ErrorShape) Valid() bool
@@ -316,6 +320,7 @@ type CheckRequest: field Packages CheckPackages `json:"packages"`
 type CheckRequest: field Repositories []string `json:"repositories"`
 type Class string
 type Configuration struct
+type Configuration: field Disabled *DisableMode `json:"disabled"`
 type Configuration: field Display Display `json:"display"`
 type Configuration: field Limits Limits `json:"limits"`
 type Configuration: field Revision int64 `json:"revision"`
@@ -323,6 +328,7 @@ type Configuration: field Switches Switches `json:"switches"`
 type Cursor struct
 type Cursor: field At time.Time
 type Cursor: field ID string
+type DisableMode string
 type Display struct
 type Display: field TimeFormat string `json:"timeFormat"`
 type DownloadEvent struct
@@ -461,6 +467,9 @@ type Marking: field PackageRead Read
 type Marking: field Read Read
 type Marking: field Repository string
 type Marking: field Subject Subject
+type Operation struct
+type Operation: field Disabled *DisableMode `json:"disabled"`
+type Operation: field Running int64 `json:"running"`
 type PackageProblem struct
 type PackageProblem: field Code string
 type PackageProblem: field Detail string
@@ -486,6 +495,7 @@ type ReplicaStatus: field Blocked int64 `json:"blocked"`
 type ReplicaStatus: field Blocks []StatusBlock `json:"blocks"`
 type ReplicaStatus: field Cache CacheStatus `json:"cache"`
 type ReplicaStatus: field Limited int64 `json:"limited"`
+type ReplicaStatus: field Operation Operation `json:"operation"`
 type ReplicaStatus: field Replica string `json:"replica"`
 type ReplicaStatus: field Throughput ThroughputStatus `json:"throughput"`
 type RepositoryRead struct

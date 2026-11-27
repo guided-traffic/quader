@@ -117,7 +117,7 @@ func TestBastionMigration(t *testing.T) {
 		qs := q.New(admin)
 
 		got, err := qs.BastionGet(ctx, "partners")
-		if err != nil || len(got) != 1 || got[0].ID != bastionPrincipal || !got[0].Enabled || got[0].Description != "partner network, EU" {
+		if err != nil || len(got) != 1 || got[0].ID != bastionPrincipal || got[0].Disabled != "" || got[0].Description != "partner network, EU" {
 			t.Fatalf("BastionGet: %+v %v", got, err)
 		}
 		if rows, err := qs.BastionGet(ctx, "unknown"); err != nil || len(rows) != 0 {
@@ -157,20 +157,30 @@ func TestBastionMigration(t *testing.T) {
 			secret[i] = 0xcd
 		}
 		by, err := qs.BastionTokenBySecret(ctx, secret)
-		if err != nil || len(by) != 1 || by[0].TokenID != bastionToken || by[0].Name != "partners" || !by[0].Enabled || by[0].Revoked || by[0].Expired {
+		if err != nil || len(by) != 1 || by[0].TokenID != bastionToken || by[0].Name != "partners" || by[0].Revoked || by[0].Expired {
 			t.Fatalf("BastionTokenBySecret: %+v %v", by, err)
 		}
-		if off, err := qs.BastionSetEnabled(ctx, q.BastionSetEnabledParams{ID: bastionPrincipal, Enabled: false}); err != nil || len(off) != 1 {
-			t.Fatalf("BastionSetEnabled(false): %v %v", off, err)
+		// R-BAS-133: the disable is the registration's member, the replay never makes it lighter, and the token stays valid.
+		if off, err := qs.BastionSetDisabled(ctx, q.BastionSetDisabledParams{ID: bastionPrincipal, Disabled: "soft"}); err != nil || len(off) != 1 {
+			t.Fatalf("BastionSetDisabled(soft): %v %v", off, err)
 		}
-		if again, err := qs.BastionSetEnabled(ctx, q.BastionSetEnabledParams{ID: bastionPrincipal, Enabled: false}); err != nil || len(again) != 0 {
-			t.Fatalf("BastionSetEnabled(false) twice: %v %v", again, err)
+		if again, err := qs.BastionSetDisabled(ctx, q.BastionSetDisabledParams{ID: bastionPrincipal, Disabled: "soft"}); err != nil || len(again) != 0 {
+			t.Fatalf("BastionSetDisabled(soft) twice: %v %v", again, err)
 		}
-		if by, err := qs.BastionTokenBySecret(ctx, secret); err != nil || len(by) != 1 || by[0].Enabled {
+		if by, err := qs.BastionTokenBySecret(ctx, secret); err != nil || len(by) != 1 || by[0].Revoked {
 			t.Fatalf("BastionTokenBySecret of a disabled registration: %+v %v", by, err)
 		}
-		if on, err := qs.BastionSetEnabled(ctx, q.BastionSetEnabledParams{ID: bastionPrincipal, Enabled: true}); err != nil || len(on) != 1 {
-			t.Fatalf("BastionSetEnabled(true): %v %v", on, err)
+		if up, err := qs.BastionReplayDisable(ctx, q.BastionReplayDisableParams{ID: bastionPrincipal, Disabled: "hard"}); err != nil || len(up) != 1 {
+			t.Fatalf("BastionReplayDisable(hard) over soft: %v %v", up, err)
+		}
+		if down, err := qs.BastionReplayDisable(ctx, q.BastionReplayDisableParams{ID: bastionPrincipal, Disabled: "soft"}); err != nil || len(down) != 0 {
+			t.Fatalf("BastionReplayDisable(soft) over hard: %v %v", down, err)
+		}
+		if got, err := qs.BastionGet(ctx, "partners"); err != nil || len(got) != 1 || got[0].Disabled != "hard" || !got[0].DisabledAt.Valid {
+			t.Fatalf("BastionGet of a disabled registration: %+v %v", got, err)
+		}
+		if on, err := qs.BastionSetDisabled(ctx, q.BastionSetDisabledParams{ID: bastionPrincipal, Disabled: ""}); err != nil || len(on) != 1 {
+			t.Fatalf("BastionSetDisabled(enable): %v %v", on, err)
 		}
 	})
 

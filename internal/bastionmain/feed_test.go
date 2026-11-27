@@ -145,7 +145,10 @@ func TestR_BAS_015_TheMappingTableOfTheFeed(t *testing.T) {
 		{"ansible.tombstone.cleared frees a number and yields none", FeedEvent{Action: audit.EventAnsibleTombstoneCleared, Repository: "web/galaxy"}, nil},
 		{"repository.disabled drops every answer", FeedEvent{Action: audit.EventRepositoryDisabled, Repository: "web/npm-local"}, []rawEntry{{kind: iface.FeedGrants}}},
 		{"repository.deleted drops every answer", FeedEvent{Action: "repository.deleted", Repository: "web/npm-local"}, []rawEntry{{kind: iface.FeedGrants}}},
-		{"bastion.disabled concerns no caller", FeedEvent{Action: audit.EventBastionDisabled, ResourceID: u1}, nil},
+		// R-BAS-133: the disable is a member of the registration's configuration; every Bastion handshakes again and applies its own.
+		{"bastion.disabled asks for the handshake", FeedEvent{Action: audit.EventBastionDisabled, ResourceID: u1}, []rawEntry{{kind: iface.FeedSettings}}},
+		{"bastion.enabled asks for the handshake", FeedEvent{Action: audit.EventBastionEnabled, ResourceID: u1}, []rawEntry{{kind: iface.FeedSettings}}},
+		{"bastion.deleted concerns no caller", FeedEvent{Action: audit.EventBastionDeleted, ResourceID: u1}, nil},
 		{"user.updated removes a pending link no caller holds", FeedEvent{Action: audit.EventUserUpdated, ResourceID: u1}, nil},
 		{"group.updated removes no membership", FeedEvent{Action: audit.EventGroupUpdated, ResourceID: u1}, nil},
 		{"authz.ownership.removed bounds writes", FeedEvent{Action: "authz.ownership.removed"}, nil},

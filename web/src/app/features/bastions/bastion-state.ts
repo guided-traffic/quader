@@ -247,13 +247,13 @@ export type ContactHealth =
       readonly baseUrls: boolean;
     };
 
-export function contactHealth(bastion: Pick<Bastion, 'contacts' | 'enabled'>, now: number): ContactHealth {
+export function contactHealth(bastion: Pick<Bastion, 'contacts' | 'disabled'>, now: number): ContactHealth {
   const newest = newestContact(bastion.contacts);
   if (!newest) return { kind: 'none' };
   const current = bastion.contacts
     .filter((c) => now - Date.parse(c.contactAt) <= REPORT_FRESH_MS)
     .sort((a, b) => Date.parse(b.contactAt) - Date.parse(a.contactAt));
-  if (current.length === 0) return { kind: 'silent', since: newest.contactAt, warn: bastion.enabled };
+  if (current.length === 0) return { kind: 'silent', since: newest.contactAt, warn: !bastion.disabled };
   const releases = [...new Set(current.map((c) => c.release))];
   const baseUrls = new Set(current.map((c) => c.baseUrl).filter((u) => u !== '')).size > 1;
   return { kind: 'current', count: current.length, last: newest.contactAt, release: newest.release, releases, baseUrls };

@@ -146,7 +146,7 @@ func (a *App) registerBastionCatalogueJobs(r *jobs.Registry) {
 
 // catalogueRegistrations returns the list of every registration with its switches and the base URL its documents are rendered on
 // (R-BAS-104): the base URL the registration reported at its last handshake, when it is an entry of server.additional_base_urls. A
-// disabled registration builds nothing. The list reads the database and the registration service it is built over here, never
+// disabled registration's catalogue is built on, so that an enable finds it current (R-BAS-133). The list reads the database and the registration service it is built over here, never
 // a.parts: the trigger calls it on its own goroutine while the wiring still writes them.
 func (a *App) catalogueRegistrations(in infra, id identityArea) func(context.Context) ([]catalogue.Registration, error) {
 	regs := a.registrationsOver(in, id)
@@ -166,7 +166,7 @@ func (a *App) catalogueRegistrations(in infra, id identityArea) func(context.Con
 				return nil, err
 			}
 			sw := a.bastionSwitches(l.Name, reg.Switches)
-			r := catalogue.Registration{ID: l.ID, Name: l.Name, GUI: l.Enabled && sw.GUI, Docs: sw.Docs, HideRepositories: sw.HideRepositories}
+			r := catalogue.Registration{ID: l.ID, Name: l.Name, GUI: sw.GUI, Docs: sw.Docs, HideRepositories: sw.HideRepositories}
 			if r.GUI {
 				base, _, err := reported.ReportedBaseURL(ctx, l.Name)
 				if err != nil {

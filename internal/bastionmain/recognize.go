@@ -41,6 +41,11 @@ type RecognizeOptions struct {
 	// is served with (R-BAS-017, Q-BAS-430). It runs after the token check, so the headers of a request
 	// without a valid Bastion token never count through it. Nil keeps what the chain resolved.
 	Forwarded func(r *http.Request) context.Context
+	// Disabled returns the way a registration is disabled (R-BAS-133), from the replica's snapshot of the registrations; empty while it
+	// works. Nil disables none.
+	Disabled func(bastionID string) iface.DisableMode
+	// InFlight holds the forwards in flight per registration, which a hard disable cancels (R-BAS-133). Nil tracks none.
+	InFlight *InFlight
 	// Problem renders an error as the problem details of the management API, whatever the path: the
 	// answers of this stage concern the Bastion, never the caller, so a package route does not render
 	// them in its format's shape (R-BAS-008). The composition root passes errs.Write with the request's ID
@@ -92,6 +97,9 @@ const maxReplicaName = 253
 //     (nothing downstream needs it, and a remote repository must never be able to forward it). The forwarded
 //     headers are re-derived with the networks of the Bastion's own registration trusted, when the request came from one
 //     ([Recognition.FromEgress], [RecognizeOptions.Forwarded]).
+//   - A forward, the check and a catalogue route of a registration an administrator has disabled answer 503 bastion_disabled
+//     (R-BAS-133): the Bastion gets nothing new while it is disabled, and learns the disable from its handshake, which, like the feed
+//     and the download intake, answers as before. A forward is tracked while it runs, and a hard disable cancels it.
 //   - The offer of a handover per blob, Quader-Bastion-Handover, is read into the Recognition of a forwarded GET
 //     ([Recognition.Offer], R-BAS-072) and taken out of every request, recognized or not, before the stages behind: the
 //     serve point decides a handover on the Recognition alone, so an ordinary caller that sends the header gets the file
@@ -134,6 +142,11 @@ func Recognize(o RecognizeOptions) func(http.Handler) http.Handler {
 				return
 			}
 			w.Header().Set(iface.HeaderInterface, strconv.Itoa(iface.InterfaceVersion))
+			if refusedWhileDisabled(route, r.URL.Path) && o.disabled(tok.BastionID) != "" {
+				o.count(tok.Name, op, OutcomeRefused)
+				o.problem(w, r, disabledError())
+				return
+			}
 			if !route {
 				// Every answer to a forward reaches a caller of the Bastion: its problems name nothing of this installation
 				// (R-BAS-099, Q-BAS-321).
@@ -171,7 +184,11 @@ func Recognize(o RecognizeOptions) func(http.Handler) http.Handler {
 			// The offer and the statement of a HEAD are the Recognition's; no handler reads their headers.
 			r2.Header.Del(iface.HeaderHandover)
 			r2.Header.Del(iface.HeaderForHead)
-			if !route || op == "" {
+			if !route {
+				o.forward(w, r2, next, tok.BastionID)
+				return
+			}
+			if op == "" {
 				next.ServeHTTP(w, r2)
 				return
 			}
@@ -180,6 +197,43 @@ func Recognize(o RecognizeOptions) func(http.Handler) http.Handler {
 			o.count(tok.Name, op, outcomeOf(sw.status))
 		})
 	}
+}
+
+// forward serves a recognized forward while it is tracked as in flight for its registration, so that a hard disable cancels it
+// (R-BAS-133). A hard disable the snapshot took between the stage's check and the tracking is caught by the check after it.
+func (o RecognizeOptions) forward(w http.ResponseWriter, r *http.Request, next http.Handler, bastionID string) {
+	if o.InFlight == nil {
+		next.ServeHTTP(w, r)
+		return
+	}
+	ctx, done := o.InFlight.Track(r.Context(), bastionID)
+	defer done()
+	if o.disabled(bastionID) == iface.DisableHard {
+		o.problem(w, r, disabledError())
+		return
+	}
+	next.ServeHTTP(w, r.WithContext(ctx))
+}
+
+// disabled is the way the registration bastionID is disabled, empty without a source.
+func (o RecognizeOptions) disabled(bastionID string) iface.DisableMode {
+	if o.Disabled == nil {
+		return ""
+	}
+	return o.Disabled(bastionID)
+}
+
+// refusedWhileDisabled reports whether a disabled registration's request is refused (R-BAS-133): a forward, the check and the
+// catalogue routes; the handshake, the feed and the download intake are answered, so the Bastion learns the disable, confirms it and
+// reports the downloads a soft disable lets finish.
+func refusedWhileDisabled(route bool, path string) bool {
+	return !route || path == iface.PathCheck || path == iface.PathCatalogue || strings.HasPrefix(path, iface.PathCatalogue+"/")
+}
+
+// disabledError is the 503 of a disabled registration's refused request (R-BAS-133): a problem of the interface, which the Bastion
+// never passes on to its caller.
+func disabledError() error {
+	return errs.E(errs.Unavailable, errs.CodeBastionDisabled, "An administrator has disabled this Bastion: its requests are not answered until it is enabled again.")
 }
 
 // refuse answers a Bastion token the authenticator did not accept: 429 for a throttled address, 401 for a
@@ -195,7 +249,7 @@ func (o RecognizeOptions) refuse(w http.ResponseWriter, r *http.Request, op stri
 		}
 		o.count(UnknownBastion, op, OutcomeInvalid)
 		o.problem(w, r, errs.E(errs.Unauthenticated, errs.CodeBastionTokenInvalid,
-			"The Bastion token is invalid, revoked, expired or its registration is disabled.",
+			"The Bastion token is invalid, revoked or expired.",
 			errs.WithChallenge(`Bearer realm="quader", error="invalid_token"`)))
 	default:
 		o.count(UnknownBastion, op, OutcomeError)

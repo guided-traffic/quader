@@ -15,11 +15,11 @@ import (
 )
 
 // Replay of the identity events of the revocation journal (R-HA-054, R-AUTH-016, R-AUTH-018, R-AUTH-019, R-AUTH-020,
-// R-AUTH-021, R-AUTH-039, R-BAS-004). The handlers remove or disable and nothing else:
+// R-AUTH-021, R-AUTH-039). The handlers remove or disable and nothing else (a Bastion registration's disable and deletion are
+// replayed by internal/bastionmain, R-BAS-133):
 //
 //   - a deleted user or service account is disabled, not deleted, so a mistaken or forged entry stays reversible and the
 //     account's tokens fail all the same (R-AUTH-016, R-AUTH-020);
-//   - a disabled or deleted Bastion registration is disabled, which refuses its tokens (R-BAS-004, Q-BAS-145);
 //   - a deleted group is deleted, which removes its memberships and the role bindings and policy entries that named it;
 //   - a removed membership is removed with its source; added members are never replayed;
 //   - a group update clears the auto-join flag when the entry cleared it, and never sets it (R-AUTH-019, Q-AUTH-198).
@@ -32,7 +32,6 @@ func init() {
 		Events: []string{
 			audit.EventUserDisabled, audit.EventUserDeleted, audit.EventUserUpdated, audit.EventUserExternalChanged, audit.EventSADisabled, audit.EventSADeleted,
 			audit.EventSAUpdated,
-			audit.EventBastionDisabled, audit.EventBastionDeleted,
 			audit.EventGroupDeleted, audit.EventGroupMembersChanged, audit.EventUserGroupsSynced, audit.EventGroupUpdated,
 		},
 		Apply: replayPrincipal,
@@ -54,8 +53,6 @@ func replayPrincipal(ctx context.Context, tx meta.Tx, env journal.Env, o journal
 		return replayDisableAccount(ctx, tx, env, o, KindServiceAccount)
 	case audit.EventSAUpdated:
 		return replayAccountActions(ctx, tx, env, o)
-	case audit.EventBastionDisabled, audit.EventBastionDeleted:
-		return replayDisableAccount(ctx, tx, env, o, KindBastion)
 	case audit.EventGroupUpdated:
 		return replayGroupUpdated(ctx, tx, env, o)
 	case audit.EventGroupDeleted:
@@ -115,9 +112,9 @@ func replayDisableUser(ctx context.Context, tx meta.Tx, env journal.Env, o journ
 	return o.Result(journal.Applied, u.Name), NotifyPrincipals(env, tx, ChangePrincipal, u.ID)
 }
 
-// replayDisableAccount disables a service account or a Bastion registration, the two kinds whose disable is the status
-// alone: the status refuses every token of the principal (R-AUTH-020, R-BAS-004). An entry naming a principal of another
-// kind is "subject unknown", so a bastion.* entry cannot disable a user and the reverse.
+// replayDisableAccount disables a service account, whose disable is the status alone: the status refuses every token of the
+// principal (R-AUTH-020). An entry naming a principal of another kind is "subject unknown", so an entry cannot disable a user and
+// the reverse.
 func replayDisableAccount(ctx context.Context, tx meta.Tx, env journal.Env, o journal.Object, kind Kind) (journal.Result, error) {
 	var e struct {
 		PrincipalID string `json:"principalId"`

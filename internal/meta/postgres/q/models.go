@@ -370,6 +370,8 @@ type Bastion struct {
 	DeclaredAt       pgtype.Timestamptz
 	DeclaredToken    pgtype.UUID
 	HideRepositories bool
+	Disabled         pgtype.Text
+	DisabledAt       pgtype.Timestamptz
 }
 
 type BastionCatalogue struct {

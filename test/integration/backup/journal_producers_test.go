@@ -18,6 +18,7 @@ import (
 	"github.com/guided-traffic/quader/internal/audit"
 	"github.com/guided-traffic/quader/internal/auth/principal"
 	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
 	"github.com/guided-traffic/quader/internal/bastionmain"
 	"github.com/guided-traffic/quader/internal/cache"
 	"github.com/guided-traffic/quader/internal/cluster"
@@ -314,8 +315,9 @@ func TestR_AUTH_016_ADisableCostsTheSameStatementsForOneTokenAndForThousands(t *
 }
 
 // TestR_BAS_004_ADisabledOrDeletedRegistrationStaysDisabledAfterARestore: disabling a registration revokes nothing, so
-// without its entry a restore to a point before it would accept the registration's tokens again; bastion.disabled and
-// bastion.deleted are journaled and the replay disables the registration (Q-BAS-145). An enable after t is not replayed.
+// without its entry a restore to a point before it would let the Bastion work again; bastion.disabled and bastion.deleted are
+// journaled and the replay disables the registration in the entry's way, hard for a deletion, whose token.revoked entries revoke its
+// tokens (Q-BAS-145, R-BAS-133). An enable after t is not replayed, and a disabled registration's token stays valid.
 func TestR_BAS_004_ADisabledOrDeletedRegistrationStaysDisabledAfterARestore(t *testing.T) {
 	tw := newTwin(t)
 	src := tw.open(tw.src)
@@ -332,8 +334,8 @@ func TestR_BAS_004_ADisabledOrDeletedRegistrationStaysDisabledAfterARestore(t *t
 		}
 		values[name] = c.Secret
 	}
-	off := false
-	if _, err := ids.bastions.Update(ctx, producerAdmin, "lab", bastionmain.Patch{Enabled: &off}, errs.AnyRevision); err != nil {
+	soft, hard, none := iface.DisableSoft, iface.DisableHard, iface.DisableMode("")
+	if _, err := ids.bastions.Update(ctx, producerAdmin, "lab", bastionmain.Patch{Disable: &hard}, errs.AnyRevision); err != nil {
 		t.Fatal(err)
 	}
 	if n := src.ship(newMemStore()); n != 1 {
@@ -345,14 +347,13 @@ func TestR_BAS_004_ADisabledOrDeletedRegistrationStaysDisabledAfterARestore(t *t
 	src = tw.open(tw.src)
 	ids = newIdentity(t, src)
 	desc := "the partners' Bastion"
-	if _, err := ids.bastions.Update(ctx, producerAdmin, "partners", bastionmain.Patch{Description: &desc, Enabled: &off}, errs.AnyRevision); err != nil {
+	if _, err := ids.bastions.Update(ctx, producerAdmin, "partners", bastionmain.Patch{Description: &desc, Disable: &soft}, errs.AnyRevision); err != nil {
 		t.Fatal(err)
 	}
 	if err := ids.bastions.Delete(ctx, producerAdmin, "dmz"); err != nil {
 		t.Fatal(err)
 	}
-	on := true
-	if _, err := ids.bastions.Update(ctx, producerAdmin, "lab", bastionmain.Patch{Enabled: &on}, errs.AnyRevision); err != nil {
+	if _, err := ids.bastions.Update(ctx, producerAdmin, "lab", bastionmain.Patch{Disable: &none}, errs.AnyRevision); err != nil {
 		t.Fatal(err)
 	}
 	t.Run("R-BAS-004 the disable and the deletion carry a journal row, the description and the enable none", func(t *testing.T) {
@@ -388,13 +389,16 @@ func TestR_BAS_004_ADisabledOrDeletedRegistrationStaysDisabledAfterARestore(t *t
 	if o := got["bastion.deleted dmz"]; !slices.Equal(o, []journal.Outcome{journal.Applied}) {
 		t.Errorf("bastion.deleted dmz: %v, want applied (disabled, not deleted)", o)
 	}
-	for name, want := range map[string]string{"partners": "disabled", "dmz": "disabled", "lab": "disabled"} {
-		if st := rst.text("SELECT status FROM principal WHERE kind = 'bastion' AND name = $1", name); st != want {
-			t.Errorf("registration %s is %s after the replay, want %s", name, st, want)
+	for name, want := range map[string]string{"partners": "soft", "dmz": "hard", "lab": "hard"} {
+		if st := rst.text("SELECT coalesce(b.disabled, '') || ' ' || p.status FROM bastion b JOIN principal p ON p.id = b.principal_id WHERE p.name = $1", name); st != want+" active" {
+			t.Errorf("registration %s is %q after the replay, want %q", name, st, want+" active")
 		}
 	}
-	if n := newIdentity(t, rst).bastionsAccept(values["partners"], values["dmz"], values["lab"]); n != 0 {
-		t.Errorf("%d Bastion tokens are accepted after the replay, want none", n)
+	if n := newIdentity(t, rst).bastionsAccept(values["dmz"]); n != 0 {
+		t.Error("the deleted registration's token is accepted after the replay")
+	}
+	if n := newIdentity(t, rst).bastionsAccept(values["partners"], values["lab"]); n != 2 {
+		t.Errorf("%d of the disabled registrations' two tokens are accepted, want both: a disable is told over the connection", n)
 	}
 	if d := rst.text("SELECT description FROM bastion b JOIN principal p ON p.id = b.principal_id WHERE p.name = 'partners'"); d != "" {
 		t.Errorf("the description %q was replayed: replay changes access, not descriptions", d)

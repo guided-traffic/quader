@@ -65,7 +65,12 @@ func (a *App) bastionStages(rt *endpointRuntime) (bastionmain.Stages, error) {
 	if err != nil {
 		return st, err
 	}
-	st.Recognize = a.bastionRecognize(forwarded, snap.Egress)
+	// A hard disable cuts the Bastion's forwards in flight on this replica as soon as the snapshot holds it (R-BAS-133).
+	inflight := bastionmain.NewInFlight()
+	if snap != nil {
+		snap.OnHardDisabled(func(id string) { inflight.Cancel(id) })
+	}
+	st.Recognize = a.bastionRecognize(forwarded, snap, inflight)
 	// <<< package 2
 
 	// >>> package 3
@@ -155,11 +160,12 @@ func (a *App) bastionMetrics() *bastionmain.Metrics {
 
 // bastionRecognize is the Recognize stage (R-BAS-008, R-BAS-009): its refusals are problem details of the
 // management API on every path, written with the request's ID and logger. The source of a Bastion token is the
-// request as stage 5 resolved it, before the Bastion's forwarded headers count (R-BAS-017); egress names the networks
-// of each registration (Q-BAS-430).
-func (a *App) bastionRecognize(forwarded func(*http.Request) context.Context, egress func(string) []netip.Prefix) func(http.Handler) http.Handler {
+// request as stage 5 resolved it, before the Bastion's forwarded headers count (R-BAS-017); the snapshot names the networks
+// of each registration (Q-BAS-430) and its disable (R-BAS-133), whose hard way cancels the forwards inflight holds.
+func (a *App) bastionRecognize(forwarded func(*http.Request) context.Context, snap *bastionmain.RegistrationSnapshot, inflight *bastionmain.InFlight) func(http.Handler) http.Handler {
 	return bastionmain.Recognize(bastionmain.RecognizeOptions{
-		Tokens: a.bastionAuthenticator(), Metrics: a.bastionMetrics(), Throttle: a.bastionThrottle(), Egress: egress,
+		Tokens: a.bastionAuthenticator(), Metrics: a.bastionMetrics(), Throttle: a.bastionThrottle(), Egress: snap.Egress,
+		Disabled: snap.Disabled, InFlight: inflight,
 		Source: func(r *http.Request) (string, string) {
 			src := httpserver.SourceFrom(r.Context())
 			return src.ClientAddr, src.UserAgent

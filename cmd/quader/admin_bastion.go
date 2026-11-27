@@ -5,19 +5,24 @@ import (
 	"fmt"
 
 	"github.com/guided-traffic/quader/internal/auth/token"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
 	"github.com/guided-traffic/quader/internal/bastionmain"
+	"github.com/guided-traffic/quader/internal/errs"
 )
 
-// The Bastion commands (R-BAS-004, R-AUTH-015's pattern): register a Bastion, issue its token and revoke one.
+// The Bastion commands (R-BAS-004, R-AUTH-015's pattern): register a Bastion, disable or enable it (R-BAS-133), issue its token and
+// revoke one.
 // They call the same registration service as the management API, in the same transaction with the change
 // record and the audit event, with the actor admin-cli.
 
 const bastionUsage = "usage: quader admin bastion create <name> [--description <text>] [--config <file>]\n" +
+	"       quader admin bastion disable <name> [--hard] [--config <file>]\n" +
+	"       quader admin bastion enable <name> [--config <file>]\n" +
 	"       quader admin bastion token create <name> [--ttl 8760h] [--description <text>] [--config <file>]\n" +
 	"       quader admin bastion token generate\n" +
 	"       quader admin bastion token revoke <name> <token-id> [--config <file>]"
 
-// bastionCmd is quader admin bastion create|token create|token revoke.
+// bastionCmd is quader admin bastion create|disable|enable|token create|token generate|token revoke.
 func bastionCmd(args []string, s streams) error {
 	if len(args) == 0 {
 		return usageError{bastionUsage}
@@ -25,6 +30,10 @@ func bastionCmd(args []string, s streams) error {
 	switch args[0] {
 	case "create":
 		return bastionCreate(args[1:], s)
+	case "disable":
+		return bastionDisable(args[1:], s)
+	case "enable":
+		return bastionEnable(args[1:], s)
 	case "token":
 		if len(args) >= 2 {
 			switch args[1] {
@@ -61,6 +70,45 @@ func bastionCreate(args []string, s streams) error {
 			return err
 		}
 		_, err = fmt.Fprintf(s.stdout, "bastion %s registered (%s)\n", reg.Name, reg.ID)
+		return err
+	})
+}
+
+// bastionDisable is quader admin bastion disable <name> [--hard] (R-BAS-133): soft by default, so what the Bastion's replicas run
+// finishes; --hard cuts it too. An administrator can disable a Bastion while the screen is not at hand.
+func bastionDisable(args []string, s streams) error {
+	name, rest := positional(args)
+	c := newFlags("admin bastion disable", s)
+	hard := c.fs.Bool("hard", false, "cut the requests the Bastion runs too, not only refuse new ones")
+	if name == "" {
+		return usageError{bastionUsage}
+	}
+	mode := iface.DisableSoft
+	return withBastions(c, s, rest, func(ctx context.Context, id *identityParts, b *bastionmain.Registrations) error {
+		if *hard {
+			mode = iface.DisableHard
+		}
+		if _, err := b.Update(ctx, id.caller, name, bastionmain.Patch{Disable: &mode}, errs.AnyRevision); err != nil {
+			return err
+		}
+		_, err := fmt.Fprintf(s.stdout, "bastion %s disabled %s; its replicas stop within seconds\n", name, mode)
+		return err
+	})
+}
+
+// bastionEnable is quader admin bastion enable <name> (R-BAS-133).
+func bastionEnable(args []string, s streams) error {
+	name, rest := positional(args)
+	c := newFlags("admin bastion enable", s)
+	if name == "" {
+		return usageError{bastionUsage}
+	}
+	return withBastions(c, s, rest, func(ctx context.Context, id *identityParts, b *bastionmain.Registrations) error {
+		none := iface.DisableMode("")
+		if _, err := b.Update(ctx, id.caller, name, bastionmain.Patch{Disable: &none}, errs.AnyRevision); err != nil {
+			return err
+		}
+		_, err := fmt.Fprintf(s.stdout, "bastion %s enabled\n", name)
 		return err
 	})
 }

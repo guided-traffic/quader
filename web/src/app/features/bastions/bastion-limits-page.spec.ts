@@ -80,6 +80,7 @@ describe("A Bastion's limits page (R-UI-241)", () => {
             { address: '203.0.113.9/32', until: inDays(0.01), reason: 'refusals' },
             { address: '198.51.100.7/32', until: inDays(-0.01), reason: 'refusals' },
           ],
+          operation: { disabled: null, running: 0 },
         },
         {
           replica: 'quader-bastion-7d9c-m8v2j',
@@ -89,6 +90,7 @@ describe("A Bastion's limits page (R-UI-241)", () => {
           limited: 0,
           blocked: 1,
           blocks: [{ address: '2001:db8:4::/64', until: inDays(0.02), reason: 'failed_auth' }],
+          operation: { disabled: null, running: 0 },
         },
       ],
     });

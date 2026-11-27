@@ -172,19 +172,6 @@ func TestR_HA_054_EveryIdentityEventIsRegisteredWithItsHandler(t *testing.T) {
 	}
 }
 
-// TestR_BAS_004_ARegistrationEntryWithoutAnIDIsSkipped: bastion.disabled and bastion.deleted name the registration by its
-// principal ID; an entry without one is skipped before any statement runs (Q-BAS-145).
-func TestR_BAS_004_ARegistrationEntryWithoutAnIDIsSkipped(t *testing.T) {
-	for _, event := range []string{audit.EventBastionDisabled, audit.EventBastionDeleted} {
-		for _, bad := range []string{`{"name":"partners"}`, `{"principalId":"partners"}`, `[]`} {
-			o := journal.Object{Event: event, Entry: json.RawMessage(bad)}
-			if r, err := replayPrincipal(context.Background(), nil, journal.Env{}, o); err != nil || r.Outcome != journal.Skipped {
-				t.Errorf("%s %s: %+v, %v; want skipped as malformed", event, bad, r, err)
-			}
-		}
-	}
-}
-
 // TestR_AUTH_029_TheEventOfARevokedToken: the token.revoked a revoke-all records for each token has the journal entry
 // {tokenId, reason}; a Bastion token's names the registration and has the resource type bastion, and the token of a project
 // service account names the project (R-AUTH-029, R-BAS-004, Q-AUTHZ-169, Q-AUTH-198).

@@ -42,5 +42,6 @@ package iface
 // Version 12 (R-BAS-130, R-BAS-131): the catalogue of the project view. A public repository's description
 // ([CatalogueRepository]), the kinds of a project's and a repository's index ([CatalogueProjectIndex],
 // [CatalogueRepositoryIndex]) and of an image's list by content ([CataloguePackageImages]), the set-up path of a package without a
-// version, and the switch hideRepositories of the configuration ([Switches]).
+// version, and the switch hideRepositories of the configuration ([Switches]). Before its release it also took the disable of a
+// Bastion (R-BAS-133): the configuration's member disabled ([DisableMode]), the status's [Operation] and the problem [CodeDisabled].
 const InterfaceVersion = 12

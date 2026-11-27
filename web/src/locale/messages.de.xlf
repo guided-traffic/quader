@@ -6562,8 +6562,8 @@
         <note category="location">src/app/features/bastions/bastion-card.ts:521</note>
       </notes>
       <segment>
-        <source>The tokens of <ph id="0" equiv="name" disp="this.bastion().name"/> are refused until you enable it again. Its replicas treat the main installation as unreachable and serve from their cache within the grace period.</source>
-        <target>Die Token von <ph id="0" equiv="name" disp="this.bastion().name"/> werden abgewiesen, bis Sie sie wieder aktivieren. Ihre Replikate behandeln die Hauptinstallation als nicht erreichbar und liefern innerhalb der Karenzzeit aus ihrem Cache.</target>
+        <source>Its replicas stop within seconds. Clients get 503 Service Unavailable until you enable it again.</source>
+        <target>Ihre Replikate stellen die Arbeit binnen Sekunden ein. Clients erhalten 503 Service Unavailable, bis Sie sie wieder aktivieren.</target>
       </segment>
     </unit>
     <unit id="bastion.disable-confirm">
