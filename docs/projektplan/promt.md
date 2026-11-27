@@ -1450,6 +1450,13 @@ records the recorder that tells such a stall apart).
   the owner picked (batch M, B-1127i). Read without signing in at 08:05: his installation admits requests without a
   credential and shows no public project, so the web interface he switched on lists nothing until a project and its
   repositories are **Public**; told him so, with the warning about public remote repositories.
+  **Closed on 2026-11-27, 09:37 by B-1127h and B-1127i.** (1) The section **Web interface** with both switches stands in the
+  card's plain view after the direct reads, with the two warnings that concern it (Q-UI-1616); a third registration that never
+  made contact joined the render walk. (2) The generator writes the tower's geometry and the Bastion's favicon; the Bastion's
+  top bar, its favicon and its refusal page show the tower and "Quader Bastion", a unit test holds the Go page's stones to the
+  generated SVG, and every title ends in "Quader Bastion", the first paint says "Loading Quader Bastion." (Q-UI-1617). Gates on
+  the stack: the landing gates, the 45 Bastion screens (0 failed, 0 layout findings, looked at: the start with the tower, the
+  card with the section), `bastion` and `bastionreg`, all green.
 
 - **Open since 2026-11-27, 08:41, from the owner's screenshot of an image reading "No database": the admin area says nothing
   of the vulnerability scanning** ("ich habe keine Ahnung was mit meinem Trivy los ist, und wieso nicht gescannt wird"). It was
@@ -1471,6 +1478,15 @@ records the recorder that tells such a stall apart).
   planner with a UX profile plans the page (W-39, `.dev/briefs/w39-plan.md`): the inventory, the new order with mock-ups, one
   help component for settings and columns, the packages, the "Helm configuration" sweep across the UI and the server-made
   names, and the other admin pages with the same faults.
+  The plan came at 09:40 (`.dev/w39-plan.md`, 1,011 lines, recovered from the planner's transcript since its worktree went
+  with it): the card becomes head, the main settings as rows of label and control with a help sign (ⓘ, a tap pins it), Limits,
+  then the closed sections Details, Replicas and Tokens, each one line and opened by itself with a warning (other versions,
+  other base URLs, silence, a token near expiry); every warning one line under what it concerns. Packages: P1 the help sign
+  and the setting row (one sign for settings and columns), P2 the card (after P1 and batch L), P3 "Helm configuration" in
+  every screen and server text that marks a value of the chart, P4 no server-made names (the declared token, the upload
+  token, the CLI's token, the declared group) and display names worded by key, P5 the help sign on the other settings pages.
+  Six more findings of the planner go with P2 (the token's expiry said twice in two forms, the interface version that can
+  never differ, the read rate said twice). P1 and P3 build since 09:45.
 
 - **Open since 2026-11-27, 09:00, the owner on his Bastion's web interface: "der Bastion braucht eine Projektansicht" and
   "außerdem fehlt im Bastion komplett der Pull-Button".** A project's page at the Bastion lists its packages flat; repository
@@ -1480,6 +1496,17 @@ records the recorder that tells such a stall apart).
   second view; an administrator may hide the repositories per Bastion (behind the card's details, shown by default); every
   list a client fetches from offers its command with the Bastion's address and no credential, for every format; server-made
   texts in the reader's language.
+  The plan came at 09:50 (`.dev/w40-plan.md`, 905 lines, recovered from the transcript): D1 to D24, seven packages in three
+  waves (P1 the catalogue's indexes per project and repository, an image's list by content, the commands of every holder, the
+  switch, interface version 12; P2 the Bastion's reader, data path and crawler; P3 no sign-in in a Bastion's set-up; P4a the
+  repository's lists become shared views; P4b a command in every list of both applications, also the main installation's flat
+  list and versions table; P5 the Bastion's pages with a breadcrumb; P6 the card's switch; P7 the product's texts in the
+  reader's language). Catalogue cost measured on the seed: about 23 B per version of a package of ten, 150 B per tag of an
+  image of ten; a version in a second public repository adds 3 % (Debian) to 12 % (npm) of 15 KiB. Three defects of today it
+  verified: a Bastion's OCI and Helm set-up tells a visitor to `docker login` (against R-BAS-104), its pull by digest names the
+  set-up's placeholder `myapp:1.0`, and a version's command through any public repository but its first answers 404. Overlap
+  decided: the display names worded by key (well-known repositories, formats, clients) are W-40 P7's; W-39 P4 keeps the stored
+  descriptions of tokens and groups. Waits for free builders.
 
 - **Read on 2026-11-27, 07:37: the owner's installation on v0.163.0** (the release of 06:39's push, the night's last batch B-1127e included: the malware mark and its details
   everywhere, the controller's screens, the grade's details, the Bastion's marks, the storage page's history, the Bastion's last fixes;
