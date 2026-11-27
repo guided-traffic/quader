@@ -1469,6 +1469,21 @@ records the recorder that tells such a stall apart).
   page **Settings › Vulnerability scanning** built as **Malware scanning** (scanners, database in use with **Import now**, the
   image scanning's state by reason), the grade's word says the scan row's state and links there, the renders run the import
   at their end, the loader says once why it waits.
+  **Closed on 2026-11-27, 10:33 by W-38** (one commit): **Settings › Vulnerability scanning** beside **Malware scanning**
+  (R-VULN-053, `GET /api/v1/vulnerabilities/image-scans`, migration 00156 `vuln_image_scan.failed_at`): a sentence at the top
+  says what blocks the scanning and what to do (scanning off, no database with **Import now**, no scanner ready, every pod
+  loading); the scanning's counts by state and reason with the last failure in full and the Trivy replicas (moved from
+  **Advisory sources**, which links there); the database in use with built, imported, confirmed, the next import and its last
+  failure. Measured against the brief: **No database** already meant no database in use; what was wrong is that failed and
+  running scans hid behind it, so a failed scan now says its failure, a call in progress "Scanning", and a queued image why its
+  last attempt was put off; the grade's details link to the page for readers of the settings (Q-VULN-298, Q-VULN-299). The
+  renders' global teardown runs `vuln-sync-trivy-db` (not in CI); the loader logs once when it finds no database. Shared fix: in
+  German at 390 px the scanner replicas' row ran 81 px past its panel (malware page and System status too). Gates on the stack:
+  the landing gates, the renders of every vulnerability, advisory, settings, system, grade and OCI screen (76 passed, 2 failed:
+  `repository-oci-upstream-own`'s empty malware cell of the 07:42 entry, batch K's), `vulnimage`, `vulnfindings`. Open: the
+  database still stands on **Advisory sources** as a source with its own fetch button (left: it is a source); a builder's
+  first run of `vulnimage` timed out once at 60 s under a host load of 33 and passed alone in 3.8 s
+  (`TestR_VULN_042_TheImagesOfADisabledRepositoryAreNotScanned`), recorded as a load finding.
 
 - **Open since 2026-11-27, 08:52, the owner on Admin area › Bastions: "Die ganze Seite ist ein UX Albtraum. Überall massig Text
   Slop. Info-Texte zu Settings gehören als Hover hinter ein kleines Info-Zeichen. Sortiere die Seite neu."** Also: **Last
