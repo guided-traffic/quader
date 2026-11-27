@@ -214,7 +214,9 @@ test('R-VULN-023 R-VULN-022 the package page shows the finding on the affected v
       // R-UI-094, R-UI-112: the repository's grade card, and the version's grade with its total in the facts.
       await expect(panel.locator('quader-grade-card')).toBeVisible();
       await expect(panel.locator('quader-grade-card')).not.toContainText('no known vulnerabilities');
-      await expect(page.locator('.version-facts a.facts-grade')).toContainText('1 finding');
+      // The grade is the button of its details (R-UI-256), found as a reader finds it: in the facts, by what it says.
+      const facts = page.getByRole('region', { name: 'Facts of this version', exact: true });
+      await expect(facts.getByRole('button', { name: /^Grade / })).toContainText('1 finding');
       await expectAccessible(page, 'the package page, Vulnerabilities tab');
       await page.goto(packagePage('1.0.1', 'vulnerabilities'));
       await expect(page.locator('quader-package-vulnerabilities')).toContainText('S · no known vulnerabilities');
