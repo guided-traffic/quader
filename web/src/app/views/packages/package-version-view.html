@@ -205,7 +205,7 @@
         <span class="material-icons inline warn" aria-hidden="true">bug_report</span>
         @if (f.malware?.state === 'infected') {
           <span i18n="@@pkg.malware.found"
-            >Malware found in <code translate="no">{{ fileName(f.path) }}</code> (<code translate="no">{{ f.malware.signature }}</code>). Downloads are
+            >Malware found in <code translate="no">{{ fileName(f.path) }}</code><span class="with-stop"> (<code translate="no">{{ f.malware.signature }}</code>)</span>. Downloads are
             refused.</span
           >
         } @else if (notCheckedWhy(f.malware); as why) {
@@ -229,22 +229,22 @@
           <p>
             @switch (f.reason) {
               @case ('missing') {
-                <span i18n="@@pkg.gate.banner.missing">Downloads are refused in <code translate="no">{{ f.repository }}</code>: it serves only artifacts with a verified signature, and <code translate="no">{{ f.name }}</code> has no signature of its publisher or its build.</span>
+                <span i18n="@@pkg.gate.banner.missing">Downloads are refused in <span class="with-stop"><code translate="no">{{ f.repository }}</code>:</span> it serves only artifacts with a verified signature, and <code translate="no">{{ f.name }}</code> has no signature of its publisher or its build.</span>
               }
               @case ('untrusted') {
-                <span i18n="@@pkg.gate.banner.untrusted">Downloads are refused in <code translate="no">{{ f.repository }}</code>: it serves only artifacts with a verified signature, and <code translate="no">{{ f.name }}</code> has a signature of its publisher or its build whose signer no trust anchor this repository accepts knows.</span>
+                <span i18n="@@pkg.gate.banner.untrusted">Downloads are refused in <span class="with-stop"><code translate="no">{{ f.repository }}</code>:</span> it serves only artifacts with a verified signature, and <code translate="no">{{ f.name }}</code> has a signature of its publisher or its build whose signer no trust anchor this repository accepts knows.</span>
               }
               @case ('not_chosen') {
-                <span i18n="@@pkg.gate.banner.not-chosen">Downloads are refused in <code translate="no">{{ f.repository }}</code>: it serves only artifacts with a verified signature, and <code translate="no">{{ f.name }}</code> is verified only by trust anchors this repository does not accept.</span>
+                <span i18n="@@pkg.gate.banner.not-chosen">Downloads are refused in <span class="with-stop"><code translate="no">{{ f.repository }}</code>:</span> it serves only artifacts with a verified signature, and <code translate="no">{{ f.name }}</code> is verified only by trust anchors this repository does not accept.</span>
               }
               @case ('invalid') {
-                <span i18n="@@pkg.gate.banner.invalid">Downloads are refused in <code translate="no">{{ f.repository }}</code>: it serves only artifacts with a verified signature, and <code translate="no">{{ f.name }}</code> has a signature of its publisher or its build that does not match its content.</span>
+                <span i18n="@@pkg.gate.banner.invalid">Downloads are refused in <span class="with-stop"><code translate="no">{{ f.repository }}</code>:</span> it serves only artifacts with a verified signature, and <code translate="no">{{ f.name }}</code> has a signature of its publisher or its build that does not match its content.</span>
               }
               @case ('blocked') {
-                <span i18n="@@pkg.gate.banner.blocked">Downloads are refused in <code translate="no">{{ f.repository }}</code>: it serves only artifacts with a verified signature, and <code translate="no">{{ f.name }}</code> is signed by a signer an administrator blocked.</span>
+                <span i18n="@@pkg.gate.banner.blocked">Downloads are refused in <span class="with-stop"><code translate="no">{{ f.repository }}</code>:</span> it serves only artifacts with a verified signature, and <code translate="no">{{ f.name }}</code> is signed by a signer an administrator blocked.</span>
               }
               @default {
-                <span i18n="@@pkg.gate.banner.not-checked">Downloads are refused in <code translate="no">{{ f.repository }}</code>: it serves only artifacts with a verified signature, and <code translate="no">{{ f.name }}</code> has a signature of its publisher or its build that Quader cannot read or could not check.</span>
+                <span i18n="@@pkg.gate.banner.not-checked">Downloads are refused in <span class="with-stop"><code translate="no">{{ f.repository }}</code>:</span> it serves only artifacts with a verified signature, and <code translate="no">{{ f.name }}</code> has a signature of its publisher or its build that Quader cannot read or could not check.</span>
               }
             }
           </p>
@@ -780,7 +780,7 @@
                   @if (symbols(); as file) {
                     <dt i18n="@@pkg.meta.symbols">Symbols</dt>
                     <dd data-testid="symbols">
-                      <ng-container i18n="@@pkg.meta.symbols-held">Symbol package held: <code translate="no">{{ file }}</code>. Quader does not serve symbols to a debugger yet; download the file from the tab Files.</ng-container>
+                      <ng-container i18n="@@pkg.meta.symbols-held">Symbol package held: <span class="with-stop"><code translate="no">{{ file }}</code>.</span> Quader does not serve symbols to a debugger yet; download the file from the tab Files.</ng-container>
                     </dd>
                   }
                   <!-- The source package lists its binaries: the package list filtered by it (R-DEB-038, Q-DEB-142). -->

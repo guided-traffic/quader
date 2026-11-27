@@ -5505,7 +5505,7 @@
         <note category="location">src/app/features/bastions/bastion-card.ts:76,77</note>
       </notes>
       <segment>
-        <source>From the Helm values, token from Secret <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code class=&quot;secret-name&quot; translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ d.secretName }}"/></pc>. Its description, addresses and that token are changed or removed there; to delete it, remove it there first.</source>
+        <source>From the Helm values, token from Secret <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span class=&quot;with-stop&quot;&gt;" dispEnd="&lt;/span&gt;"><pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code class=&quot;secret-name&quot; translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="2" equiv="INTERPOLATION" disp="{{ d.secretName }}"/></pc>.</pc> Its description, addresses and that token are changed or removed there; to delete it, remove it there first.</source>
       </segment>
     </unit>
     <unit id="bastion.declared-file">
@@ -6700,7 +6700,7 @@
         <note category="location">src/app/features/bastions/bastion-limits.ts:118,120</note>
       </notes>
       <segment>
-        <source>The main installation does not build this Bastion&apos;s web interface: the Bastion has not connected yet, or the address it reported is not in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">server.additional_base_urls</pc>. Connect it, or add its address there and restart the main installation: it is built within seconds of either.</source>
+        <source>The main installation does not build this Bastion&apos;s web interface: the Bastion has not connected yet, or the address it reported is not in <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span class=&quot;with-stop&quot;&gt;" dispEnd="&lt;/span&gt;"><pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">server.additional_base_urls</pc>.</pc> Connect it, or add its address there and restart the main installation: it is built within seconds of either.</source>
       </segment>
     </unit>
     <unit id="bastion.preset.label">
@@ -24884,7 +24884,7 @@
         <note category="location">src/app/features/repositories/mirror-settings.ts:204,207</note>
       </notes>
       <segment>
-        <source>A mirror of a well-known public registry needs a bound: packages to mirror whose patterns each start with a literal part (such as <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">@types/*</pc>), or a storage limit. Without either the server refuses to save it, and a mirror stored without either does not run.</source>
+        <source>A mirror of a well-known public registry needs a bound: packages to mirror whose patterns each start with a literal part (such as <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span class=&quot;with-stop&quot;&gt;" dispEnd="&lt;/span&gt;"><pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">@types/*</pc>)</pc>, or a storage limit. Without either the server refuses to save it, and a mirror stored without either does not run.</source>
       </segment>
     </unit>
     <unit id="mirror.unbounded.warned">
@@ -24900,7 +24900,7 @@
         <note category="location">src/app/features/repositories/mirror-settings.ts:235,238</note>
       </notes>
       <segment>
-        <source> One name pattern per line, such as <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">@types/*</pc>; <pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">*</pc> matches any characters. Empty mirrors every package the repository delivers. </source>
+        <source> One name pattern per line, such as <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span class=&quot;with-stop&quot;&gt;" dispEnd="&lt;/span&gt;"><pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">@types/*</pc>;</pc><pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">*</pc> matches any characters. Empty mirrors every package the repository delivers. </source>
       </segment>
     </unit>
     <unit id="mirror.paused.hint">
@@ -27295,7 +27295,7 @@
         <note category="location">src/app/features/repositories/repository-format-chooser.ts:39,40</note>
       </notes>
       <segment>
-        <source>This installation has no format <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ name }}"/></pc>.</source>
+        <source>This installation has no format <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span class=&quot;with-stop&quot;&gt;" dispEnd="&lt;/span&gt;"><pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="2" equiv="INTERPOLATION" disp="{{ name }}"/></pc>.</pc></source>
       </segment>
     </unit>
     <unit id="repo.new.system-only">
@@ -28062,7 +28062,7 @@
         <note category="location">src/app/features/repositories/upstream-settings.ts:135</note>
       </notes>
       <segment>
-        <source><ph id="0" equiv="INTERPOLATION" disp="{{ c.displayName }}"/> is offered to every project as <pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="2" equiv="INTERPOLATION_1" disp="{{ c.name }}"/></pc>. A virtual repository can list it instead of a remote of your own.</source>
+        <source><ph id="0" equiv="INTERPOLATION" disp="{{ c.displayName }}"/> is offered to every project as <pc id="1" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span class=&quot;with-stop&quot;&gt;" dispEnd="&lt;/span&gt;"><pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ c.name }}"/></pc>.</pc> A virtual repository can list it instead of a remote of your own.</source>
       </segment>
     </unit>
     <unit id="wellknown.central.link">
@@ -28177,7 +28177,7 @@
         <note category="location">src/app/features/repositories/upstream-settings.ts:313,315</note>
       </notes>
       <segment>
-        <source> The registry asks for a login at <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ host }}"/></pc>, which this repository may not reach. Allow it as a further host if it is the registry&apos;s own token service. </source>
+        <source> The registry asks for a login at <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span class=&quot;with-stop&quot;&gt;" dispEnd="&lt;/span&gt;"><pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="2" equiv="INTERPOLATION" disp="{{ host }}"/></pc>,</pc> which this repository may not reach. Allow it as a further host if it is the registry&apos;s own token service. </source>
       </segment>
     </unit>
     <unit id="upstream.test.allow">
@@ -35892,7 +35892,7 @@
         <note category="location">src/app/features/settings/signing-dialogs.ts:321,323</note>
       </notes>
       <segment>
-        <source> PKCS#8 or SEC 1, encrypted or not. PKCS#12 is not taken: convert it with <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">openssl pkcs12 -in &lt;file&gt; -nodes</pc>. </source>
+        <source> PKCS#8 or SEC 1, encrypted or not. PKCS#12 is not taken: convert it with <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span class=&quot;with-stop&quot;&gt;" dispEnd="&lt;/span&gt;"><pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">openssl pkcs12 -in &lt;file&gt; -nodes</pc>.</pc></source>
       </segment>
     </unit>
     <unit id="signing.import.passphrase">
@@ -45209,7 +45209,7 @@
         <note category="location">src/app/features/upstream/upstream-registry.html:378,379</note>
       </notes>
       <segment>
-        <source>From the Helm values: Secret <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code class=&quot;secret-name&quot; translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ secret }}"/></pc>. Change or remove it there.</source>
+        <source>From the Helm values: Secret <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span class=&quot;with-stop&quot;&gt;" dispEnd="&lt;/span&gt;"><pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code class=&quot;secret-name&quot; translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="2" equiv="INTERPOLATION" disp="{{ secret }}"/></pc>.</pc> Change or remove it there.</source>
       </segment>
     </unit>
     <unit id="wellknown.account.configured-file">
@@ -50883,17 +50883,17 @@
     </unit>
     <unit id="vuln.sources.mirror-hint">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:317,319</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:318,320</note>
       </notes>
       <segment>
         <source>
-          A source in the mode <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">repository</pc> reads its files from a generic local repository, with no network access. Download each file on a machine that is connected, then upload it with any client that writes to the file API. Upload each file to the mirror repository named in the command (the setting <pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">vulnerabilities.sources.osv.repository</pc>, and <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">vulnerabilities.sources.kev.repository</pc> for the catalog). Whoever may deploy to that repository decides the advisory data of this installation.
+          A source in the mode <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">repository</pc> reads its files from a generic local repository, with no network access. Download each file on a machine that is connected, then upload it with any client that writes to the file API. Upload each file to the mirror repository named in the command (the setting <pc id="1" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span class=&quot;with-stop&quot;&gt;" dispEnd="&lt;/span&gt;"><pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">vulnerabilities.sources.osv.repository</pc>,</pc> and <pc id="3" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span class=&quot;with-stop&quot;&gt;" dispEnd="&lt;/span&gt;"><pc id="4" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">vulnerabilities.sources.kev.repository</pc></pc> for the catalog). Whoever may deploy to that repository decides the advisory data of this installation.
         </source>
       </segment>
     </unit>
     <unit id="vuln.sources.caption">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:388</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:389</note>
       </notes>
       <segment>
         <source>Advisory sources</source>
@@ -50901,7 +50901,7 @@
     </unit>
     <unit id="vuln.sources.empty">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:389</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:390</note>
       </notes>
       <segment>
         <source>There is no advisory source yet.</source>
@@ -50909,7 +50909,7 @@
     </unit>
     <unit id="vuln.sources.copy">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:390</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:391</note>
       </notes>
       <segment>
         <source>Copy the commands</source>
@@ -50917,7 +50917,7 @@
     </unit>
     <unit id="vuln.sources.database-fill">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:391</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:392</note>
       </notes>
       <segment>
         <source>Fill the repository of the image database</source>
@@ -50925,7 +50925,7 @@
     </unit>
     <unit id="vuln.sources.database-fill-hint">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:392</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:393</note>
       </notes>
       <segment>
         <source>The image database comes from a local repository of this installation, which makes no request for it. Copy the database into it with oras, from a machine that reaches both the publisher and this installation, or in two steps through a file.</source>
@@ -50933,7 +50933,7 @@
     </unit>
     <unit id="vuln.sources.col-source">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:401</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:402</note>
       </notes>
       <segment>
         <source>Source</source>
@@ -50941,7 +50941,7 @@
     </unit>
     <unit id="vuln.sources.col-mode">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:402</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:403</note>
       </notes>
       <segment>
         <source>Mode</source>
@@ -50949,7 +50949,7 @@
     </unit>
     <unit id="vuln.sources.help-mode">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:402</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:403</note>
       </notes>
       <segment>
         <source>online reads the public archive, repository reads a mirror repository, off stops the sync and keeps the data as it was.</source>
@@ -50957,7 +50957,7 @@
     </unit>
     <unit id="vuln.sources.col-state">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:403</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:404</note>
       </notes>
       <segment>
         <source>State</source>
@@ -50965,7 +50965,7 @@
     </unit>
     <unit id="vuln.sources.help-state">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:403</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:404</note>
       </notes>
       <segment>
         <source>Stale means the last successful sync is older than the configured limit.</source>
@@ -50973,7 +50973,7 @@
     </unit>
     <unit id="vuln.sources.col-synced">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:404</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:405</note>
       </notes>
       <segment>
         <source>Last sync</source>
@@ -50981,7 +50981,7 @@
     </unit>
     <unit id="vuln.sources.col-failures">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:406</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:407</note>
       </notes>
       <segment>
         <source>Failures</source>
@@ -50989,7 +50989,7 @@
     </unit>
     <unit id="vuln.sources.help-failures">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:407</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:408</note>
       </notes>
       <segment>
         <source>The count of consecutive failed runs and the error of the last one.</source>
@@ -50997,7 +50997,7 @@
     </unit>
     <unit id="vuln.sources.col-records">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:409</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:410</note>
       </notes>
       <segment>
         <source>Records</source>
@@ -51005,7 +51005,7 @@
     </unit>
     <unit id="vuln.sources.col-rejected">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:410</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:411</note>
       </notes>
       <segment>
         <source>Rejected</source>
@@ -51013,7 +51013,7 @@
     </unit>
     <unit id="vuln.sources.help-rejected">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:410</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:411</note>
       </notes>
       <segment>
         <source>Records of the last run that were rejected: they failed validation or crossed the size or compression limit of a record. Below it, the count of the last full sync, which an incremental run does not change. A rejected record that was stored before keeps its stored copy.</source>
@@ -51021,7 +51021,7 @@
     </unit>
     <unit id="vuln.sources.col-unevaluable">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:411</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:412</note>
       </notes>
       <segment>
         <source>Unevaluable</source>
@@ -51029,7 +51029,7 @@
     </unit>
     <unit id="vuln.sources.help-unevaluable">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:411</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:412</note>
       </notes>
       <segment>
         <source>Affected ranges Quader cannot compare with a version; a version they name is not flagged by them.</source>
@@ -51037,7 +51037,7 @@
     </unit>
     <unit id="vuln.sources.col-next">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:412</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:413</note>
       </notes>
       <segment>
         <source>Next run</source>
@@ -51045,7 +51045,7 @@
     </unit>
     <unit id="vuln.sources.mode-online">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:430</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:431</note>
       </notes>
       <segment>
         <source>Online</source>
@@ -51053,7 +51053,7 @@
     </unit>
     <unit id="vuln.sources.mode-repository">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:432</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:433</note>
       </notes>
       <segment>
         <source>Mirror repository</source>
@@ -51061,7 +51061,7 @@
     </unit>
     <unit id="vuln.sources.mode-off">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:434</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:435</note>
       </notes>
       <segment>
         <source>Off</source>
@@ -51069,7 +51069,7 @@
     </unit>
     <unit id="vuln.sources.error.unknown">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:446</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:447</note>
       </notes>
       <segment>
         <source>The last run failed.</source>
@@ -51077,7 +51077,7 @@
     </unit>
     <unit id="vuln.sources.queued">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:471</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-sources.ts:472</note>
       </notes>
       <segment>
         <source>The run is queued. Reload the page to see its result.</source>
@@ -53289,23 +53289,23 @@
     </unit>
     <unit id="scanners.none.updater">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:114,115</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:115,116</note>
       </notes>
       <segment>
-        <source>This installation runs no <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ g.deployment }}"/></pc> pod: no <ph id="2" equiv="INTERPOLATION_1" disp="{{ g.tool }}"/> updater is configured (<pc id="3" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="4" equiv="INTERPOLATION_2" disp="{{ urlKey() }}"/></pc> is empty).</source>
+        <source>This installation runs no <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span class=&quot;with-stop&quot;&gt;" dispEnd="&lt;/span&gt;"><pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="2" equiv="INTERPOLATION" disp="{{ g.deployment }}"/></pc></pc> pod: no <ph id="3" equiv="INTERPOLATION_1" disp="{{ g.tool }}"/> updater is configured (<pc id="4" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="5" equiv="INTERPOLATION_2" disp="{{ urlKey() }}"/></pc> is empty).</source>
       </segment>
     </unit>
     <unit id="scanners.none.none">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:116,117</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:117,118</note>
       </notes>
       <segment>
-        <source>This installation runs no <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ g.deployment }}"/></pc> pod: no <ph id="2" equiv="INTERPOLATION_1" disp="{{ g.tool }}"/> scanner is configured (<pc id="3" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="4" equiv="INTERPOLATION_2" disp="{{ urlKey() }}"/></pc> is empty).</source>
+        <source>This installation runs no <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span class=&quot;with-stop&quot;&gt;" dispEnd="&lt;/span&gt;"><pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="2" equiv="INTERPOLATION" disp="{{ g.deployment }}"/></pc></pc> pod: no <ph id="3" equiv="INTERPOLATION_1" disp="{{ g.tool }}"/> scanner is configured (<pc id="4" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="5" equiv="INTERPOLATION_2" disp="{{ urlKey() }}"/></pc> is empty).</source>
       </segment>
     </unit>
     <unit id="scanners.none.off">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:121,122</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:122,123</note>
       </notes>
       <segment>
         <source>No replica of <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ g.deployment }}"/></pc> is listed.</source>
@@ -53313,7 +53313,7 @@
     </unit>
     <unit id="scanners.updater.daily">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:157</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:158</note>
       </notes>
       <segment>
         <source>daily built</source>
@@ -53321,7 +53321,7 @@
     </unit>
     <unit id="scanners.slots-value">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:170,171</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:171,172</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="INTERPOLATION" disp="{{ r.slots.inUse }}"/> of <ph id="1" equiv="INTERPOLATION_1" disp="{{ r.slots.total }}"/></source>
@@ -53329,7 +53329,7 @@
     </unit>
     <unit id="scanners.db.current">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:205,206</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:206,207</note>
       </notes>
       <segment>
         <source>Database in use</source>
@@ -53337,7 +53337,7 @@
     </unit>
     <unit id="scanners.db.built">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:207</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:208</note>
       </notes>
       <segment>
         <source>built</source>
@@ -53345,7 +53345,7 @@
     </unit>
     <unit id="scanners.db.older">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:211,212</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:212,213</note>
       </notes>
       <segment>
         <source>Older database</source>
@@ -53353,7 +53353,7 @@
     </unit>
     <unit id="scanners.db.none">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:214,215</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:215,216</note>
       </notes>
       <segment>
         <source>No database yet</source>
@@ -53361,7 +53361,7 @@
     </unit>
     <unit id="scanners.state.lost">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:223,224</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:224,225</note>
       </notes>
       <segment>
         <source>Lost</source>
@@ -53369,7 +53369,7 @@
     </unit>
     <unit id="scanners.state.ready">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:227,228</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:228,229</note>
       </notes>
       <segment>
         <source>Ready</source>
@@ -53377,7 +53377,7 @@
     </unit>
     <unit id="scanners.state.starting">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:230,232</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:231,233</note>
       </notes>
       <segment>
         <source>Starting</source>
@@ -53385,7 +53385,7 @@
     </unit>
     <unit id="scanners.state.draining">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:233,235</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:234,236</note>
       </notes>
       <segment>
         <source>Draining</source>
@@ -53393,7 +53393,7 @@
     </unit>
     <unit id="scanners.state.unready">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:236,238</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:237,239</note>
       </notes>
       <segment>
         <source>Unready</source>
@@ -53401,7 +53401,7 @@
     </unit>
     <unit id="scanners.col.pod-database">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:372</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:373</note>
       </notes>
       <segment>
         <source>Database</source>
@@ -53409,7 +53409,7 @@
     </unit>
     <unit id="scanners.col.pod-database-help">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:373</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:374</note>
       </notes>
       <segment>
         <source>The advisory database the pod detects with. Database in use: the one Quader uses now, with how long ago it was built. Older database: the pod is still loading the one in use, which takes under a minute, or its container database cannot load it; that container&apos;s log says why. No database yet: the pod&apos;s first load has not finished.</source>
@@ -53417,7 +53417,7 @@
     </unit>
     <unit id="scanners.caption">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:377</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:378</note>
       </notes>
       <segment>
         <source>Replicas of <ph id="0" equiv="deployment" disp="d"/></source>
@@ -53425,7 +53425,7 @@
     </unit>
     <unit id="scanners.fold">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:383</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:384</note>
       </notes>
       <segment>
         <source>Replicas of <ph id="0" equiv="deployment" disp="d"/> (<ph id="1" equiv="count" disp="n"/>)</source>
@@ -53433,8 +53433,8 @@
     </unit>
     <unit id="scanners.col.name">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:395</note>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:412</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:396</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:413</note>
       </notes>
       <segment>
         <source>Name</source>
@@ -53442,7 +53442,7 @@
     </unit>
     <unit id="scanners.col.node">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:396</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:397</note>
       </notes>
       <segment>
         <source>Node</source>
@@ -53450,7 +53450,7 @@
     </unit>
     <unit id="scanners.col.version">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:397</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:398</note>
       </notes>
       <segment>
         <source>Version</source>
@@ -53458,8 +53458,8 @@
     </unit>
     <unit id="scanners.col.state">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:398</note>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:413</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:399</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:414</note>
       </notes>
       <segment>
         <source>State</source>
@@ -53467,7 +53467,7 @@
     </unit>
     <unit id="scanners.col.since">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:401</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:402</note>
       </notes>
       <segment>
         <source>State changed</source>
@@ -53475,7 +53475,7 @@
     </unit>
     <unit id="scanners.col.since-help">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:402</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:403</note>
       </notes>
       <segment>
         <source>When the replica entered the state it shows, or the reason beside it changed.</source>
@@ -53483,7 +53483,7 @@
     </unit>
     <unit id="scanners.col.heartbeat">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:404</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:405</note>
       </notes>
       <segment>
         <source>Heartbeat</source>
@@ -53491,9 +53491,9 @@
     </unit>
     <unit id="scanners.col.tool">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:406</note>
         <note category="location">src/app/shared/scanner/scanner-replicas.ts:407</note>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:414</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:408</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:415</note>
       </notes>
       <segment>
         <source>Tool</source>
@@ -53501,7 +53501,7 @@
     </unit>
     <unit id="scanners.col.updater-database">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:420</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:421</note>
       </notes>
       <segment>
         <source>Definitions it holds</source>
@@ -53509,7 +53509,7 @@
     </unit>
     <unit id="scanners.col.database">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:421</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:422</note>
       </notes>
       <segment>
         <source>Signature database</source>
@@ -53517,7 +53517,7 @@
     </unit>
     <unit id="scanners.col.slots">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:428</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:429</note>
       </notes>
       <segment>
         <source>Slots</source>
@@ -53525,7 +53525,7 @@
     </unit>
     <unit id="scanners.col.slots-help">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:430</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:431</note>
       </notes>
       <segment>
         <source>The scans the replica runs now, of the scans it runs at a time.</source>
@@ -53533,7 +53533,7 @@
     </unit>
     <unit id="scanners.col.calls">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:438</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:439</note>
       </notes>
       <segment>
         <source>Working on</source>
@@ -53541,7 +53541,7 @@
     </unit>
     <unit id="scanners.col.calls-help">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:439</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:440</note>
       </notes>
       <segment>
         <source>What the replica checks now, by its own report, and for how long.</source>
@@ -54049,7 +54049,7 @@
         <note category="location">src/app/shared/signatures/gate-release-dialog.ts:50,52</note>
       </notes>
       <segment>
-        <source><pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ data.repository }}"/></pc> serves only artifacts with a verified signature and refuses <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ data.artifact }}"/></pc>.</source>
+        <source><pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ data.repository }}"/></pc> serves only artifacts with a verified signature and refuses <pc id="2" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span class=&quot;with-stop&quot;&gt;" dispEnd="&lt;/span&gt;"><pc id="3" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="4" equiv="INTERPOLATION_1" disp="{{ data.artifact }}"/></pc>.</pc></source>
       </segment>
     </unit>
     <unit id="sig.release.effect">
@@ -58768,7 +58768,7 @@
         <note category="location">src/app/views/packages/package-version-view.html:208,209</note>
       </notes>
       <segment>
-        <source>Malware found in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ fileName(f.path) }}"/></pc> (<pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.malware.signature }}"/></pc>). Downloads are refused.</source>
+        <source>Malware found in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ fileName(f.path) }}"/></pc><pc id="2" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span class=&quot;with-stop&quot;&gt;" dispEnd="&lt;/span&gt;"> (<pc id="3" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="4" equiv="INTERPOLATION_1" disp="{{ f.malware.signature }}"/></pc>)</pc>. Downloads are refused.</source>
       </segment>
     </unit>
     <unit id="pkg.malware.not-checked-why">
@@ -58792,7 +58792,7 @@
         <note category="location">src/app/views/packages/package-version-view.html:232,233</note>
       </notes>
       <segment>
-        <source>Downloads are refused in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>: it serves only artifacts with a verified signature, and <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> has no signature of its publisher or its build.</source>
+        <source>Downloads are refused in <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span class=&quot;with-stop&quot;&gt;" dispEnd="&lt;/span&gt;"><pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="2" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>:</pc> it serves only artifacts with a verified signature, and <pc id="3" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="4" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> has no signature of its publisher or its build.</source>
       </segment>
     </unit>
     <unit id="pkg.gate.banner.untrusted">
@@ -58800,7 +58800,7 @@
         <note category="location">src/app/views/packages/package-version-view.html:235,236</note>
       </notes>
       <segment>
-        <source>Downloads are refused in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>: it serves only artifacts with a verified signature, and <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> has a signature of its publisher or its build whose signer no trust anchor this repository accepts knows.</source>
+        <source>Downloads are refused in <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span class=&quot;with-stop&quot;&gt;" dispEnd="&lt;/span&gt;"><pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="2" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>:</pc> it serves only artifacts with a verified signature, and <pc id="3" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="4" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> has a signature of its publisher or its build whose signer no trust anchor this repository accepts knows.</source>
       </segment>
     </unit>
     <unit id="pkg.gate.banner.not-chosen">
@@ -58808,7 +58808,7 @@
         <note category="location">src/app/views/packages/package-version-view.html:238,239</note>
       </notes>
       <segment>
-        <source>Downloads are refused in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>: it serves only artifacts with a verified signature, and <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> is verified only by trust anchors this repository does not accept.</source>
+        <source>Downloads are refused in <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span class=&quot;with-stop&quot;&gt;" dispEnd="&lt;/span&gt;"><pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="2" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>:</pc> it serves only artifacts with a verified signature, and <pc id="3" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="4" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> is verified only by trust anchors this repository does not accept.</source>
       </segment>
     </unit>
     <unit id="pkg.gate.banner.invalid">
@@ -58816,7 +58816,7 @@
         <note category="location">src/app/views/packages/package-version-view.html:241,242</note>
       </notes>
       <segment>
-        <source>Downloads are refused in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>: it serves only artifacts with a verified signature, and <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> has a signature of its publisher or its build that does not match its content.</source>
+        <source>Downloads are refused in <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span class=&quot;with-stop&quot;&gt;" dispEnd="&lt;/span&gt;"><pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="2" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>:</pc> it serves only artifacts with a verified signature, and <pc id="3" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="4" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> has a signature of its publisher or its build that does not match its content.</source>
       </segment>
     </unit>
     <unit id="pkg.gate.banner.blocked">
@@ -58824,7 +58824,7 @@
         <note category="location">src/app/views/packages/package-version-view.html:244,245</note>
       </notes>
       <segment>
-        <source>Downloads are refused in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>: it serves only artifacts with a verified signature, and <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> is signed by a signer an administrator blocked.</source>
+        <source>Downloads are refused in <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span class=&quot;with-stop&quot;&gt;" dispEnd="&lt;/span&gt;"><pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="2" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>:</pc> it serves only artifacts with a verified signature, and <pc id="3" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="4" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> is signed by a signer an administrator blocked.</source>
       </segment>
     </unit>
     <unit id="pkg.gate.banner.not-checked">
@@ -58832,7 +58832,7 @@
         <note category="location">src/app/views/packages/package-version-view.html:247,248</note>
       </notes>
       <segment>
-        <source>Downloads are refused in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>: it serves only artifacts with a verified signature, and <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> has a signature of its publisher or its build that Quader cannot read or could not check.</source>
+        <source>Downloads are refused in <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span class=&quot;with-stop&quot;&gt;" dispEnd="&lt;/span&gt;"><pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="2" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>:</pc> it serves only artifacts with a verified signature, and <pc id="3" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="4" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> has a signature of its publisher or its build that Quader cannot read or could not check.</source>
       </segment>
     </unit>
     <unit id="pkg.deprecated-collection">
@@ -59155,7 +59155,7 @@
         <note category="location">src/app/views/packages/package-version-view.html:783,784</note>
       </notes>
       <segment>
-        <source>Symbol package held: <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ file }}"/></pc>. Quader does not serve symbols to a debugger yet; download the file from the tab Files.</source>
+        <source>Symbol package held: <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span class=&quot;with-stop&quot;&gt;" dispEnd="&lt;/span&gt;"><pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="2" equiv="INTERPOLATION" disp="{{ file }}"/></pc>.</pc> Quader does not serve symbols to a debugger yet; download the file from the tab Files.</source>
       </segment>
     </unit>
     <unit id="pkg.meta.deb-source">

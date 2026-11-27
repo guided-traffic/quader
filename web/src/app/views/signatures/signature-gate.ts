@@ -76,7 +76,7 @@ export interface GateArtifact {
                   ></span
                 >
                 <span
-                  >@if (refusedArtifacts().length > 1) {<code translate="no">{{ a.artifact.name }}</code>:&ngsp;}{{ sentence(a.artifact.refusedReason ?? g.reason ?? 'missing') }}</span
+                  >@if (refusedArtifacts().length > 1) {<span class="with-stop"><code translate="no">{{ a.artifact.name }}</code>:</span>&ngsp;}{{ sentence(a.artifact.refusedReason ?? g.reason ?? 'missing') }}</span
                 >
               </p>
               @if (gateAct; as slot) {

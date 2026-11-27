@@ -503,7 +503,7 @@ export function mirrorErrorText(code: MirrorErrorCode): string {
       <a routerLink="/admin/system/jobs" [queryParams]="{ kind: 'mirror-pass' }">
         <ng-container i18n="@@mirror.job.link">Open the mirror jobs</ng-container>
       </a>
-      (<span i18n="@@mirror.job.is">job</span>&ngsp;<code translate="no">{{ job.id }}</code>,&ngsp;{{ jobState(job) }})
+      (<span i18n="@@mirror.job.is">job</span>&ngsp;<span class="with-stop"><code translate="no">{{ job.id }}</code>,</span>&ngsp;{{ jobState(job) }})
     </ng-template>
   `,
   styles: `

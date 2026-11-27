@@ -73,7 +73,7 @@ export function tokenExpiry(token: Pick<BastionTokenSummary, 'expiresAt'>, now: 
           <span class="material-icons inline" aria-hidden="true">lock</span>
           @if (d.secretName) {
             <span i18n="@@bastion.declared-helm"
-              >From the Helm values, token from Secret <code class="secret-name" translate="no">{{ d.secretName }}</code>. Its description,
+              >From the Helm values, token from Secret <span class="with-stop"><code class="secret-name" translate="no">{{ d.secretName }}</code>.</span> Its description,
               addresses and that token are changed or removed there; to delete it, remove it there first.</span
             >
           } @else {

@@ -132,7 +132,7 @@ export function upstreamAuthLabel(mode: string): string {
             <!-- The registry is offered to every project already (R-UI-191, Q-UI-836): one line, and nothing stops the create. -->
             @if (centralOf(); as c) {
               <p class="hint central" data-testid="upstream-central">
-                <ng-container i18n="@@wellknown.central">{{ c.displayName }} is offered to every project as <code translate="no">{{ c.name }}</code>. A virtual repository can list it instead of a remote of your own.</ng-container>&ngsp;<a [routerLink]="virtualLink()" [queryParams]="virtualQuery()" i18n="@@wellknown.central.link">New virtual repository</a>
+                <ng-container i18n="@@wellknown.central">{{ c.displayName }} is offered to every project as <span class="with-stop"><code translate="no">{{ c.name }}</code>.</span> A virtual repository can list it instead of a remote of your own.</ng-container>&ngsp;<a [routerLink]="virtualLink()" [queryParams]="virtualQuery()" i18n="@@wellknown.central.link">New virtual repository</a>
               </p>
             }
           </div>
@@ -310,7 +310,7 @@ export function upstreamAuthLabel(mode: string): string {
             @if (foreignTokenHost(); as host) {
               <div class="allow">
                 <p i18n="@@upstream.test.foreign">
-                  The registry asks for a login at <code translate="no">{{ host }}</code>, which this repository may not reach.
+                  The registry asks for a login at <span class="with-stop"><code translate="no">{{ host }}</code>,</span> which this repository may not reach.
                   Allow it as a further host if it is the registry's own token service.
                 </p>
                 <button class="btn btn-default" type="button" data-testid="upstream-allow-host" (click)="allow(host)">

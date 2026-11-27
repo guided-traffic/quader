@@ -375,7 +375,7 @@
             <p class="source-note" role="note">
               <span class="material-icons inline" aria-hidden="true">lock</span>
               @if (secretName(); as secret) {
-                <span i18n="@@wellknown.account.configured-helm">From the Helm values: Secret <code class="secret-name" translate="no">{{ secret }}</code>. Change or remove it there.</span>
+                <span i18n="@@wellknown.account.configured-helm">From the Helm values: Secret <span class="with-stop"><code class="secret-name" translate="no">{{ secret }}</code>.</span> Change or remove it there.</span>
               } @else {
                 <span i18n="@@wellknown.account.configured-file">From the installation's configuration file. Change or remove it there.</span>
               }

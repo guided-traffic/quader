@@ -107,9 +107,9 @@
       @if (x.decidedBy?.claim || x.decidedBy?.pin) {
         <p>
           @if (x.decidedBy.claim; as claim) {
-            <ng-container i18n="@@virtual.decided-claim">The name matches the claim</ng-container>&ngsp;<code translate="no">{{ claim }}</code>.
+            <ng-container i18n="@@virtual.decided-claim">The name matches the claim</ng-container>&ngsp;<span class="with-stop"><code translate="no">{{ claim }}</code>.</span>
           } @else if (x.decidedBy.pin; as pin) {
-            <ng-container i18n="@@virtual.decided-pin">The name matches the pin rule</ng-container>&ngsp;<code translate="no">{{ pin }}</code>.
+            <ng-container i18n="@@virtual.decided-pin">The name matches the pin rule</ng-container>&ngsp;<span class="with-stop"><code translate="no">{{ pin }}</code>.</span>
           }
         </p>
       }

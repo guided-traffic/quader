@@ -119,7 +119,7 @@
         <ul>
           @for (p of s.status.providers; track p.id) {
             <li>
-              <span translate="no">{{ p.displayName }}</span> (<code translate="no">{{ p.id }}</code>):
+              <span translate="no">{{ p.displayName }}</span>&ngsp;<span class="with-stop">(<code translate="no">{{ p.id }}</code>)</span>:
               @if (p.available) {
                 <span class="ok"><span class="material-icons" aria-hidden="true">check_circle</span> <ng-container i18n="@@auth-settings.provider-up">discovery document loaded</ng-container></span>
               } @else {

@@ -116,7 +116,7 @@ const MB = 1e6;
         } @else {
           <span i18n="@@bastion.limits.catalogue-base-url"
             >The main installation does not build this Bastion's web interface: the Bastion has not connected yet, or the address it reported
-            is not in <code translate="no">server.additional_base_urls</code>. Connect it, or add its address there and restart the main
+            is not in <span class="with-stop"><code translate="no">server.additional_base_urls</code>.</span> Connect it, or add its address there and restart the main
             installation: it is built within seconds of either.</span
           >
         }

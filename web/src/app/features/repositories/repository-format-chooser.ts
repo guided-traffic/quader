@@ -36,7 +36,7 @@ export function matchingFormats(formats: readonly FormatDescriptor[], query: str
     @if (unknownFormat(); as name) {
       <p class="banner-warning" role="note">
         <span class="material-icons inline warn" aria-hidden="true">warning</span>
-        <span i18n="@@repo.new.unknown-format">This installation has no format <code translate="no">{{ name }}</code>.</span>
+        <span i18n="@@repo.new.unknown-format">This installation has no format <span class="with-stop"><code translate="no">{{ name }}</code>.</span></span>
       </p>
     }
     @if (systemOnly(); as f) {

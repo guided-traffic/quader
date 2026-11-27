@@ -8571,7 +8571,8 @@ A value in running text, a host, a repository's key, a digest, a version, a path
 breaks inside itself only where it is longer than the line ([Q-UI-1213](#q-ui-1213--a-value-in-running-text-is-one-code-that-moves-whole-to-the-next-line-while-it-fits-on-one)).
 A sentence the code builds with a value splits at it (`aroundValue`), and a list of values stands as one (`<quader-value-list>`). A
 value that a punctuation mark follows stands with it in `<span class="with-stop">`, so the mark does not begin the next line
-([Q-UI-1615](#q-ui-1615--a-value-and-the-punctuation-after-it-stay-on-one-line)).
+([Q-UI-1615](#q-ui-1615--a-value-and-the-punctuation-after-it-stay-on-one-line)); where only the German sentence puts a mark after the
+value, the template wraps the value alone and the German unit wraps it with its mark.
 
 A word of a list's cell does not break inside itself: a column that wraps declares a least width that holds its words (the
 audit log's project broke into "Platfor" / "m enginee" / "ring" beside a target that took the room). A token longer than any
@@ -28251,8 +28252,11 @@ Q-UI-1213 is its own box (`inline-block`), and a line may break after any such b
 | (b) The value inline (`display: inline`) where it holds no hyphen or dot | No wrapper | No translation changes | Only for values known to hold neither; the rule of Q-UI-1213 would get exceptions |
 | (c) A word joiner (U+2060) before the mark | Text only | — | A browser breaks around an inline box whatever the characters beside it |
 
-**Choice:** (a), on the set-up page's two sentences that end with `QUADER_TOKEN` (`setup.cred.line-env`, `setup.token.read-ci`). The
-other places where a marked value stands before a mark are [H-2438](#h-2438--a-marked-value-before-a-punctuation-mark-can-leave-the-mark-at-the-start-of-a-line).
+**Choice:** (a), on the set-up page's two sentences that end with `QUADER_TOKEN` (`setup.cred.line-env`, `setup.token.read-ci`); since
+batch I at every other place where a marked value stands before a mark, in English or only in German
+([H-2438](#h-2438--a-marked-value-before-a-punctuation-mark-can-leave-the-mark-at-the-start-of-a-line), closed). A unit whose German
+sentence alone puts a mark after the value wraps the value in the template without one, so that the German target can wrap it with its
+mark: a translation may use only the placeholders of its source.
 **Applied in the spec:** R-UI-171's paragraph of values. Code: [main.scss](../../web/src/styles/main.scss),
 [client-setup.html](../../web/src/app/features/setup/client-setup.html).
 
@@ -32109,6 +32113,16 @@ key fetch failed. Live: the row says the failure in words (Q-UI-1227); its statu
 away. A compact place, as R-UI-216's toast is; the row has no **Details** of its own.
 
 ### H-2438 · A marked value before a punctuation mark can leave the mark at the start of a line
+
+*Closed on 2026-11-27 (batch I):* the 27 lines in 17 files of the templates where a `<code translate="no">` stood before a full stop, a
+comma, a colon, a semicolon or a closing parenthesis wrap the value and its mark in `<span class="with-stop">`
+([Q-UI-1615](#q-ui-1615--a-value-and-the-punctuation-after-it-stay-on-one-line)), and the German units with them: 19 units, of which
+the German sentence of eight (`wellknown.central`, `signing.import.key-hint`, the six `pkg.gate.banner.*`) puts no mark after the
+value and keeps it unwrapped. Three units whose German sentence alone puts a mark after a value (`vuln.sources.mirror-hint`,
+`scanners.none.updater`, `scanners.none.none`) wrap the value in the template without a mark, so that the German unit wraps it with
+its own. An opening parenthesis right before such a value goes into the wrapper too: the render at 390 px showed "Malware found in
+build-helpers-2.3.0.tgz (" above the signature, a line broken after the parenthesis. A sample of the screens was rendered at 390 px in
+both languages. What it was:
 
 Component: the templates' sentences with a `<code translate="no">` followed by a full stop, a comma, a colon or a closing parenthesis
 (Q-UI-1213, Q-UI-1615). Subject: a reader at 390 px, where the value reaches the end of a line. Live since Q-UI-1213. Read on 2026-11-27:

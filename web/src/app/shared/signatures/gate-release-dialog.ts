@@ -48,7 +48,7 @@ export interface GateReleaseData {
         <p data-testid="release-refusal">
           <ng-container i18n="@@sig.release.refuses"
             ><code translate="no">{{ data.repository }}</code> serves only artifacts with a verified signature and refuses
-            <code translate="no">{{ data.artifact }}</code>.</ng-container
+            <span class="with-stop"><code translate="no">{{ data.artifact }}</code>.</span></ng-container
           >&ngsp;{{ sentence }}
         </p>
         <p i18n="@@sig.release.effect">

@@ -202,7 +202,7 @@ interface NumberMember {
             <span class="material-icons inline warn" aria-hidden="true">warning</span>
             <span i18n="@@mirror.unbounded.refused"
               >A mirror of a well-known public registry needs a bound: packages to mirror whose
-              patterns each start with a literal part (such as <code translate="no">&#64;types/*</code>),
+              patterns each start with a literal part (such as <span class="with-stop"><code translate="no">&#64;types/*</code>)</span>,
               or a storage limit. Without either the server refuses to save it, and a mirror stored
               without either does not run.</span
             >
@@ -232,7 +232,7 @@ interface NumberMember {
             (input)="setScope($any($event.target).value)"
           ></textarea>
           <p id="d-mirror-include" class="hint" i18n="@@mirror.include.hint">
-            One name pattern per line, such as <code translate="no">&#64;types/*</code>;
+            One name pattern per line, such as <span class="with-stop"><code translate="no">&#64;types/*</code>;</span>
             <code translate="no">*</code> matches any characters. Empty mirrors every package the
             repository delivers.
           </p>

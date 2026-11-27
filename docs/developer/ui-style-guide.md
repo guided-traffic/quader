@@ -550,7 +550,9 @@ vertical-align: top;                                                     // in r
 - Sentence case everywhere; upper-case is not used for labels.
 - 14 px on 21 px for text and controls, 12 px for small text. Headings use `--quader-heading-1` to `-3`.
 - A setting's name or value of the configuration in running text is `<code translate="no">`
-  ([Q-UI-571](../spec/api-and-ui.md#q-ui-571--a-settings-name-in-running-text-is-code)).
+  ([Q-UI-571](../spec/api-and-ui.md#q-ui-571--a-settings-name-in-running-text-is-code)). Such a value with a punctuation mark after it
+  stands with the mark in `<span class="with-stop">`, in the template and in the German unit, so the mark never begins a line at 390 px
+  ([Q-UI-1615](../spec/api-and-ui.md#q-ui-1615--a-value-and-the-punctuation-after-it-stay-on-one-line)).
 - Say what happens, in plain words: **Filter members**, not **Search criteria**. Do not name internal terms where the reader
   needs none: **All repository permissions of the owner, without administration**, not `inherit`.
 - A label promises exactly what the thing does. If it does less than it says, the label is a bug.

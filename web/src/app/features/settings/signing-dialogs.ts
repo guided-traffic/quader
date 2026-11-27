@@ -318,7 +318,7 @@ export class SigningCertificateDialog {
             (input)="key.set($any($event.target).value)"
           ></textarea>
           <p id="signing-import-key-hint" class="hint" i18n="@@signing.import.key-hint">
-            PKCS#8 or SEC 1, encrypted or not. PKCS#12 is not taken: convert it with <code translate="no">openssl pkcs12 -in &lt;file&gt; -nodes</code>.
+            PKCS#8 or SEC 1, encrypted or not. PKCS#12 is not taken: convert it with <span class="with-stop"><code translate="no">openssl pkcs12 -in &lt;file&gt; -nodes</code>.</span>
           </p>
         </div>
         @if (err('/key'); as text) {

@@ -109,7 +109,7 @@ export function ciKeyErrorFacts(line: string): CiKeyErrorFacts {
               <span
                 >{{ text(w) }}
                 @if (w.pointer) {
-                  <span class="muted">(<code translate="no">{{ w.pointer }}</code>)</span>
+                  <span class="muted"><span class="with-stop">(<code translate="no">{{ w.pointer }}</code>)</span></span>
                 }
               </span>
             </li>

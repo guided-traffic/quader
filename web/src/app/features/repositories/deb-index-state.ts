@@ -137,7 +137,7 @@ export function behindBy(suite: DebSuiteState): number {
             }
             @if (n.job; as job) {
               &ngsp;<a routerLink="/admin/system/jobs"><ng-container i18n="@@deb.index.job-link">Open the jobs</ng-container></a>
-              (<code translate="no">{{ job.id }}</code>)
+              &ngsp;<span class="with-stop">(<code translate="no">{{ job.id }}</code>)</span>
             }
           </p>
         }

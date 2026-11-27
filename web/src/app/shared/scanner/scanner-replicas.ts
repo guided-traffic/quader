@@ -109,11 +109,12 @@ export function scannerReasonText(reason: string): string | null {
             @case ('none') {
               <span class="material-icons inline" aria-hidden="true">info</span>
               <!-- The updater is no scanner and has a setting of its own (R-MAL-032): it said "no freshclam scanner is configured
-                   (malware.scanner.url is empty)" on a start without it (Q-UI-1003). -->
+                   (malware.scanner.url is empty)" on a start without it (Q-UI-1003). The pod's name is wrapped for the German sentence,
+                   which puts its colon right after it (Q-UI-1615). -->
               @if (updater()) {
-                <span i18n="@@scanners.none.updater">This installation runs no <code translate="no">{{ g.deployment }}</code> pod: no {{ g.tool }} updater is configured (<code translate="no">{{ urlKey() }}</code> is empty).</span>
+                <span i18n="@@scanners.none.updater">This installation runs no <span class="with-stop"><code translate="no">{{ g.deployment }}</code></span> pod: no {{ g.tool }} updater is configured (<code translate="no">{{ urlKey() }}</code> is empty).</span>
               } @else {
-                <span i18n="@@scanners.none.none">This installation runs no <code translate="no">{{ g.deployment }}</code> pod: no {{ g.tool }} scanner is configured (<code translate="no">{{ urlKey() }}</code> is empty).</span>
+                <span i18n="@@scanners.none.none">This installation runs no <span class="with-stop"><code translate="no">{{ g.deployment }}</code></span> pod: no {{ g.tool }} scanner is configured (<code translate="no">{{ urlKey() }}</code> is empty).</span>
               }
             }
             @default {

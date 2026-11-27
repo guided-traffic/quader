@@ -23,7 +23,7 @@ export interface TechnicalTokenDescriptionData {
     <h2 quaderDialogTitle i18n="@@tt-desc.title">Edit description</h2>
     <div class="dialog-body">
       <p class="hint">
-        <span i18n="@@tt-desc.of">Of the technical token</span>&ngsp;<code translate="no">{{ data.token.name }}</code>.
+        <span i18n="@@tt-desc.of">Of the technical token</span>&ngsp;<span class="with-stop"><code translate="no">{{ data.token.name }}</code>.</span>
       </p>
       <div class="field">
         <label class="field-label" for="tt-description" i18n="@@tt-desc.label">Description (optional)</label>
