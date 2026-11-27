@@ -1502,6 +1502,18 @@ records the recorder that tells such a stall apart).
   token, the CLI's token, the declared group) and display names worded by key, P5 the help sign on the other settings pages.
   Six more findings of the planner go with P2 (the token's expiry said twice in two forms, the interface version that can
   never differ, the read rate said twice). P1 and P3 build since 09:45.
+  **P1 and P3 landed on 2026-11-27, 12:02.** P1: `<quader-help>` (ⓘ, a tap pins its bubble, `quaderTooltipPin`), one sign for
+  settings and columns (every column help turned from "?" to ⓘ), `<quader-setting>` rows, `TextField.help`, `Disclosure.noteTone`
+  (R-UI-267, Q-UI-1618, Q-UI-1619); the plan's word joiner kept the sign on its label's line in no browser, so a name a sign
+  follows carries `.help-anchor`, which reserves the sign's room at the end of its last line, and the layout check treats a sign
+  as part of its text. P3: 43 screen texts and about twenty server texts name the Helm configuration and the key as its path in
+  the chart's values (R-UI-268, Q-UI-1625), and a Vitest case scans the translation file for "configuration" without Helm; it
+  found the vulnerability scanning page's switch sentence of W-38, worded alike in a fix of mine on the stack. Gates on the stack:
+  the landing gates (the one red web test that fix), chart lint and test, `ui-states`, `upstream`, `authz`, and the whole render
+  set to screen 716 of 749: the run was ended from outside at 11:56 (a SIGTERM to Playwright and the backend at the same moment;
+  the scripts stop only their own PIDs, so most likely a builder's cleanup by pattern; the builders' rules now say to stop only
+  their own PIDs). Its 15 failures are all of the 07:42 entry (batch K's: empty malware cells in the package lists and search,
+  `files-many`, `package-npm-many`, `repository-oci-upstream-own`); none new. The next landing renders the whole set again.
 
 - **Open since 2026-11-27, 09:00, the owner on his Bastion's web interface: "der Bastion braucht eine Projektansicht" and
   "außerdem fehlt im Bastion komplett der Pull-Button".** A project's page at the Bastion lists its packages flat; repository
@@ -1522,6 +1534,32 @@ records the recorder that tells such a stall apart).
   set-up's placeholder `myapp:1.0`, and a version's command through any public repository but its first answers 404. Overlap
   decided: the display names worded by key (well-known repositories, formats, clients) are W-40 P7's; W-39 P4 keeps the stored
   descriptions of tokens and groups. Waits for free builders.
+
+- **Open since 2026-11-27, 11:18, the owner on the Bastions page of his installation (the card before W39-P2): "Ich weiß nicht
+  wie du es schaffst, dass jede Seite immer so gnadenlos überladen aussieht, wenn du mit ihr fertig bist."** His points: the page
+  reads as if there could be one Bastion only (each card folds); the head names the Bastion, its ingress address in grey and
+  its state, its own actions at the right; a pair of deployments may connect with one token; the declared registration's
+  **Delete** comes back greyed out with the paragraph as its tooltip; **Disable** must stop the Bastion within seconds over the
+  live connection, not by refusing its token, Soft (running downloads finish) and Hard (cut them); the token's actions say
+  "rotate" and "invalidate"; an administrator allow-lists per Bastion the projects that may distribute through it, and the
+  project owner opts each repository in, because Public was always the main installation's (intranet) level; readers see
+  beside the visibility whether a repository is distributed through a Bastion (tooltip: which), and Set up client and Pull
+  offer the Bastion as destination. Given to a planner with a UX profile at 11:15 (W-41, `.dev/briefs/w41-plan.md`): the
+  visible lines of a healthy card are counted and each justified; the grants narrow what W-40's catalogue holds to the
+  distributed repositories. W39-P2 lands as the base (it removed most of the text); its warning "the replicas report
+  different base URLs" goes with W-41, since a pair is legitimate.
+  The plan came at 11:50 (`.dev/w41-plan.md`, 1,291 lines): D1 to D27 in nine packages (A disable soft/hard over the
+  configuration's feed with the replicas' confirmation, B1 the allow list and the opt-in stored, B2 the distribution as a ceiling
+  in the decision point through `Subject.Bastion` beside the endpoint's exposure, superseding Q-AUTHZ-321 and Q-BAS-6, C0 a
+  control fixed by the Helm configuration shown unavailable with its reason as tooltip, C1 the card's fold, head, states and
+  token acts (absorbs W40-P6), C2 the card's Projects and the Bastion's projects page, D1 the opt-in in a repository's settings
+  and the tower mark beside every visibility, E a pair of deployments with one stable catalogue address, D2 Install from in Set
+  up client and every command panel). Its findings: a registration holds no public address (the head names the hosts the
+  replicas report, none before the first contact); a pair today flips the catalogue's base URL at every contact and admits each
+  limit twice; with Disable no longer refusing the token, **Invalidate** must work on the declared token too; a healthy card
+  shows fifteen lines, each justified, against W39-P2's sixteen. Decided at landing: B2 lands together with C2 and D1, so the
+  owner can grant on the screen the moment his Bastion starts serving only what is granted (D25: nothing until a project is
+  allowed and its repositories chosen, `upstream/clamav` included).
 
 - **Read on 2026-11-27, 07:37: the owner's installation on v0.163.0** (the release of 06:39's push, the night's last batch B-1127e included: the malware mark and its details
   everywhere, the controller's screens, the grade's details, the Bastion's marks, the storage page's history, the Bastion's last fixes;
