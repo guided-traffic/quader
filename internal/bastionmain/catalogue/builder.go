@@ -27,6 +27,11 @@ import (
 // server.additional_base_urls, or that reported none (R-BAS-104): the documents would name another host than the Bastion's.
 const CodeBaseURLUnknown = "bastion_base_url_unknown"
 
+// CodeAnonymousRefused is why the builder builds nothing for any registration while the main installation's default endpoint admits
+// no request without a credential (its auth.anonymous is false, R-EP-010): the catalogue shows what an anonymous visitor reads through
+// that endpoint, which is nothing then (R-BAS-104). The registration's catalogue is emptied and the reason kept for its card.
+const CodeAnonymousRefused = "anonymous_requests_refused"
+
 // revision is the builder's own part of every fingerprint: a change of what the builder makes of an answer (the strip, the paths)
 // raises it, and every registration's catalogue is rendered again at its next run.
 const revision = "catalogue/2"
@@ -73,6 +78,9 @@ type Options struct {
 	// DocsPolicy names what else decides the HTML of the documentation the catalogue keeps: the README renderer's version and the
 	// version of the Ansible markup's converter (R-BAS-124). A change renders every document again, as PolicyHash does (D1).
 	DocsPolicy string
+	// AnonymousRefused is set while the default endpoint admits no request without a credential (its auth.anonymous is false): every
+	// registration's catalogue is then empty, with CodeAnonymousRefused (R-BAS-104).
+	AnonymousRefused bool
 	// Workers render packages in parallel (R-BAS-105); at least one.
 	Workers int
 	Now     func() time.Time
@@ -124,8 +132,8 @@ func (b *Builder) Run(ctx context.Context, regs []Registration) (Report, error) 
 			continue
 		}
 		on[reg.ID] = true
-		if reg.BaseURL == "" {
-			if err := b.o.Store.Stop(ctx, reg.ID, CodeBaseURLUnknown, b.o.Now().UnixMicro()); err != nil {
+		if reason := b.stopReason(reg); reason != "" {
+			if err := b.stop(ctx, reg.ID, reason); err != nil {
 				errs = append(errs, err)
 			}
 			rep.Stopped = append(rep.Stopped, reg.Name)
@@ -154,6 +162,71 @@ func (b *Builder) Run(ctx context.Context, regs []Registration) (Report, error) 
 	}
 	rep.Swept = n
 	return rep, errors.Join(errs...)
+}
+
+// stopReason is why the builder builds nothing for a registration whose web interface is on, empty when it builds: the default
+// endpoint refusing anonymous requests first, since nothing is public then whatever the base URL, then a base URL it does not know.
+func (b *Builder) stopReason(reg Registration) string {
+	switch {
+	case b.o.AnonymousRefused:
+		return CodeAnonymousRefused
+	case reg.BaseURL == "":
+		return CodeBaseURLUnknown
+	}
+	return ""
+}
+
+// stop records why the builder stopped for a registration. A base URL it does not know keeps what was built before; the default
+// endpoint refusing anonymous requests empties the catalogue first, once: the state recorded after the drop starts its numbers above
+// every number of the catalogue before, so a Bastion's cursor answers reset and its copy empties too (R-BAS-108).
+func (b *Builder) stop(ctx context.Context, id, reason string) error {
+	if reason == CodeAnonymousRefused {
+		st, ok, err := b.o.Store.State(ctx, id)
+		if err != nil {
+			return err
+		}
+		if ok && st.Stopped == reason {
+			return nil
+		}
+		if ok {
+			if err := b.o.Store.Drop(ctx, id); err != nil {
+				return err
+			}
+		}
+	}
+	return b.o.Store.Stop(ctx, id, reason, b.o.Now().UnixMicro())
+}
+
+// Drift reports whether a run would change what the store holds for some registration: a catalogue to build or to drop, a stop
+// reason that no longer holds or newly does, a base URL that moved. The trigger asks it when its replica starts, so that a change of
+// the configuration a run reads (the default endpoint's auth.anonymous, server.additional_base_urls), which only a restart applies,
+// starts a run without waiting for the hourly one (R-BAS-105).
+func (b *Builder) Drift(ctx context.Context, regs []Registration) (bool, error) {
+	held, err := b.o.Store.Held(ctx)
+	if err != nil {
+		return false, err
+	}
+	on := map[string]bool{}
+	for _, reg := range regs {
+		if !reg.GUI {
+			continue
+		}
+		on[reg.ID] = true
+		st, ok, err := b.o.Store.State(ctx, reg.ID)
+		if err != nil {
+			return false, err
+		}
+		want := b.stopReason(reg)
+		if !ok || st.Stopped != want || (want == "" && st.BaseURL != reg.BaseURL) {
+			return true, nil
+		}
+	}
+	for _, id := range held {
+		if !on[id] {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 // format is what the builder reads of GET /api/v1/formats.

@@ -544,8 +544,9 @@ Debian's changelog and copyright; a public generic repository's folders and file
 
 - **Public only.** The builder reads as the anonymous caller and never with a user's or the Bastion's credential, and the replica
   hides at once what falls out of the public set (R-BAS-104, R-BAS-112). The anonymous caller's reads are the rule; the catalogue has
-  none of its own. One difference is read in the code: the builder's chain applies no endpoint's `auth.anonymous`
-  ([H-2330](#h-2330--the-catalogue-holds-public-content-while-the-default-endpoint-admits-no-request-without-a-credential)).
+  none of its own. While the default endpoint admits no request without a credential (`auth.anonymous: false`), the builder builds every
+  catalogue empty and records why (R-BAS-104, Q-BAS-495;
+  [H-2330](#h-2330--the-catalogue-holds-public-content-while-the-default-endpoint-admits-no-request-without-a-credential), closed).
 - **The strip.** Who published, released, uploaded or triaged, a CI job's claims, every principal's reference, download counts, an
   internal anchor's title, a state code, the scanner's engine and replica, an upstream that is no public registry, and every origin of
   the main installation leave every document before it is kept (R-BAS-106, R-BAS-107; [H-2309](#h-2309--the-strip-knows-the-members-the-main-installation-writes-today)).
@@ -573,7 +574,7 @@ What it means for trust, mechanism by mechanism:
 | A rolling upgrade | A replica answers a file of another release's bundle `404`; the page loads itself again ([H-2324](#h-2324--a-page-of-one-release-asks-a-replica-of-another-for-a-file-its-bundle-lacks)) | R-BAS-116 |
 | A generic repository's files | A public generic repository's folders and files are the main installation's views without an act (W-35's P9d): a file downloads through the Bastion's own package route, its commands are the catalogue's set-up of its path, and no upload, delete or statistic is in the bundle. The file's signatures are a badge without their report ([H-2328](#h-2328--a-generic-files-signatures-are-a-badge-alone-at-the-bastion)), and its malware verdict shows no database date ([H-2329](#h-2329--a-generic-files-malware-verdict-at-the-bastion-shows-no-date-of-its-database)) | R-UI-229, R-BAS-118 |
 | The documentation (W-35's P11) | A version's README and documentation travel only while the registration's `docs` is on and a public repository that holds the version has a public wiki; without them the version announces none (`hasReadme` false). With `docs` off the data path answers no documentation, no hit of the documentation's search and no Debian changelog or copyright at once, before the builder's next run. The search inside a version runs in the browser over the tree; the search across packages scans the replica's index ([H-2338](#h-2338--a-search-of-the-documentation-across-packages-scans-every-entry-of-the-newest-versions), [H-2339](#h-2339--a-replica-holds-every-public-packages-newest-documentation-entries-in-memory)) | R-BAS-124 to R-BAS-126 |
-| A package's grades per version (W-35's P9e) | The document `packages/<id>/vulnerabilities` is the main installation's anonymous answer, open findings only, through the strip, which takes each grade's `checkedAt` out ([H-2407](../spec/bastion.md#h-2407--a-bastions-grade-says-nothing-of-when-and-against-which-database-it-was-checked)) | R-BAS-128, Q-BAS-403 |
+| A package's grades per version (W-35's P9e) | The document `packages/<id>/vulnerabilities` is the main installation's anonymous answer, open findings only, through the strip, which takes each grade's `checkedAt` out ([H-2407](../spec/bastion.md#h-2407--a-bastions-grade-in-a-list-says-nothing-of-when-and-against-which-database-it-was-checked)) | R-BAS-128, Q-BAS-403 |
 | Set up client (W-35's P9e) | The snippets are the catalogue's set-up documents, rendered with `credentials=none` and `bastion=<name>`: the Bastion's address, no login line, no publish step, no token field and no guide of the main installation; a repository the public set does not hold gets none | R-BAS-129, R-BAS-104 |
 | The age | A replica serves its copy whatever its age and every page says how old it is; a narrowing made during an outage stays visible until the link returns ([H-2319](#h-2319--a-narrowing-made-during-an-outage-stays-on-the-pages-until-the-link-returns)) | R-BAS-111, R-BAS-120 |
 
@@ -599,7 +600,7 @@ that no mechanism of the Bastion holds, because the chart leaves it to the clust
 [H-522](#h-522--the-chart-restricts-no-egress-of-the-bastion-pods). The gaps of the owner's decisions of 2026-11-26 (W-34), specified and
 not built, are recorded on this page as well, each with the package whose mechanism has it: H-2280 to H-2283, H-2285, H-2289 to H-2297,
 H-2348 to H-2351, H-2354, H-2355 (H-2291, H-2348 and H-2349 are E13's, built; H-2281 to H-2283, H-2354 and H-2355 E8's, live); so are the gaps of the public catalogue's wire (W-35, interface version 8),
-H-2305 to H-2307, of its builder (W-35's P6), H-2308 to H-2314, of the catalogue at the Bastion (W-35's P7), H-2315 to H-2321, of the web interface (W-35's P9), H-2324 to H-2327, with its generic files (W-35's P9d), H-2328 and H-2329, of what the web interface shows (W-35's P12), H-2330, and of its search engines (W-35's P10), H-2334 to H-2337; so are the gaps of the packages built since: H-2356 and H-2357
+H-2305 to H-2307, of its builder (W-35's P6), H-2308 to H-2314, of the catalogue at the Bastion (W-35's P7), H-2315 to H-2321, of the web interface (W-35's P9), H-2324 to H-2327, with its generic files (W-35's P9d), H-2328 and H-2329, of what the web interface shows (W-35's P12), H-2330 (closed by W35-P9f), and of its search engines (W-35's P10), H-2334 to H-2337; so are the gaps of the packages built since: H-2356 and H-2357
 (E9a), H-2358 and H-2359 (E15), H-2360 and H-2361 (E10), H-2362 (E11), H-2322 and H-2323 (W-35's P8 with E17), H-2374 and H-2375 (E18;
 H-2375 closed by E19), H-2370 (E19);
 and of a registration the configuration declares (R-BAS-127), H-2366 and H-2367; and of the documentation of the web interface (W-35's
@@ -1332,6 +1333,20 @@ most 4 KiB of words per entry at the main installation, `rows.MaxDocSearchText`,
 Galaxy mirror, whose every collection's newest documentation enters the index.
 
 ### H-2330 · The catalogue holds public content while the default endpoint admits no request without a credential
+
+*Closed on 2026-11-27 by W35-P9f ([Q-BAS-495](../spec/bastion.md#q-bas-495--while-the-default-endpoint-refuses-anonymous-requests-every-catalogue-is-empty-with-its-reason),
+[Q-BAS-496](../spec/bastion.md#q-bas-496--a-replica-that-claims-jobs-starts-a-run-at-its-start-only-when-the-store-differs-from-what-a-run-would-leave)):*
+the builder takes the default endpoint's `auth.anonymous` from the configuration, as the handshake's `anonymousReads` does, and while it is
+`false` builds nothing: each registration's catalogue is emptied once (its documents, its public set, and a Bastion's cursor answers
+`reset`), and the state names `anonymous_requests_refused` for the card. A replica that claims jobs and starts with the setting changed
+starts a run within the debounce. Tested by `TestR_BAS_104_NothingIsBuiltWhileTheDefaultEndpointRefusesAnonymousRequests` and
+`TestR_BAS_104_TheBuilderTakesTheDefaultEndpointsAnonymousSetting` (unit). What remains, and it is bounded: from the restart that closes
+the endpoint until the run, the debounce and the run itself (seconds), the catalogue routes still answer the old catalogue, and each
+replica of a Bastion empties its copy at its first round after the run (`bastion.gui.poll_interval`, 10 s), or, cut off from the main
+installation, when the link returns ([H-2319](#h-2319--a-narrowing-made-during-an-outage-stays-on-the-pages-until-the-link-returns)).
+During a rolling restart that changes the setting, a replica that claims jobs with the old configuration may run the builder after one
+with the new configuration and build the catalogue again; the next run of a new replica empties it, at the latest the hourly
+reconciliation. What makes that real: a job claimed by an old replica after the new ones started, while it terminates. What it was:
 
 Stage: the builder's renderer (R-BAS-104, Q-BAS-355; `catalogueRenderer` of
 [wire_bastion_catalogue.go](../../internal/app/wire_bastion_catalogue.go)). Subject: the public repositories of an installation whose

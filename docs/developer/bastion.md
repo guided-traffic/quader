@@ -1409,7 +1409,8 @@ request. Do not note a lookup whose empty result is not an answer (an optional r
 Migrations ([database.md](database.md#migrations-of-the-bastion-q-bas-48)): `00032_bastion` (expand: `bastion`, `bastion_contact`,
 the name rule, the token guard), `00033_bastion_kinds` (contract, `requires-app >= 0.1.0`: the checks of `principal.kind` and
 `api_token.type`), `00034_bastion_validate` (expand), and W-35's `00146_bastion_catalogue` (expand: the public catalogue's tables,
-[database.md](database.md#the-bastions-public-catalogue-00146)). `00148_bastion_declared` (expand) marks a registration the configuration declares and its declared token
+[database.md](database.md#the-bastions-public-catalogue-00146)), widened by `00155_bastion_catalogue_refused` (expand: the stop reason
+`anonymous_requests_refused`). `00148_bastion_declared` (expand) marks a registration the configuration declares and its declared token
 (R-BAS-127, [database.md](database.md#migrations-of-the-bastion-q-bas-48)); the apply is
 [declared.go](../../internal/bastionmain/declared.go), run by `quader migrate` through
 [migrate_bastions.go](../../internal/app/migrate_bastions.go). The query files are owned by the package that writes them and read by others
@@ -1856,7 +1857,14 @@ reported base URL `server.additional_base_urls` lists, read `GET /api/v1/formats
 `GET /api/v1/packages?include=vulnerabilities` in pages of 100 (the index), and the fingerprints (`BastionCataloguePackageFacts`,
 `BastionCatalogueRepositoryFacts`); render every package and generic repository whose fingerprint differs from the one it was rendered
 at; write what changed; delete the units no longer listed; render and write the registration's own documents; record the state. A
-registration whose `gui` is off loses its catalogue; documents no row names go at the end.
+registration whose `gui` is off loses its catalogue; documents no row names go at the end. While the default endpoint's
+`auth.anonymous` is `false` (`Options.AnonymousRefused`, read by `anonymousRefused` of the wiring) no registration is built: each one's
+catalogue is dropped once and its state records `anonymous_requests_refused` (`stopReason`, `stop`; R-BAS-104, Q-BAS-495).
+
+**The trigger** enqueues the job 5 s after a signal or a change area (R-BAS-105) while some registration has a catalogue to build or to
+drop, and once when its replica starts if `Builder.Drift` finds that the stored states differ from what a run would leave: the
+configuration a run reads changes only with a restart (Q-BAS-496). Its answers (`active`, `enqueue`, `drift`) are functions the wiring
+fills, so [wire_bastion_catalogue_test.go](../../internal/app/wire_bastion_catalogue_test.go) drives it without a database or a queue.
 
 **The catalogue's state** (`state`, `iface.CatalogueStateDocument`, interface version 11): `builtAt`, the time of the last run that
 changed a document; `malware`, today's signatures as the anonymous caller reads `GET /api/v1/malware/signatures` without the engine,

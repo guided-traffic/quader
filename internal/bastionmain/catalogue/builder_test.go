@@ -406,6 +406,68 @@ func TestR_BAS_102_TheSwitchesDecideWhatIsBuilt(t *testing.T) {
 	}
 }
 
+// TestR_BAS_104_NothingIsBuiltWhileTheDefaultEndpointRefusesAnonymousRequests (H-2330): while the default endpoint admits no request
+// without a credential the catalogue shows what an anonymous visitor reads there, which is nothing: a built catalogue is emptied, its
+// public set is empty, a Bastion's cursor answers reset, and the state keeps the reason for the card. A second run changes nothing; the
+// endpoint opened again builds the catalogue again. Drift tells each change apart from a run that would do nothing.
+func TestR_BAS_104_NothingIsBuiltWhileTheDefaultEndpointRefusesAnonymousRequests(t *testing.T) {
+	ctx := context.Background()
+	store, api := cataloguetest.New(), newFake()
+	clock := time.Date(2026, 11, 26, 12, 0, 0, 0, time.UTC)
+	build := func(refused bool) *catalogue.Builder {
+		return catalogue.New(catalogue.Options{
+			Store: store, Renderer: api, Main: []string{mainOrigin, otherBase, bastionURL}, PolicyHash: "policy-1", Workers: 2,
+			AnonymousRefused: refused, Now: func() time.Time { clock = clock.Add(time.Second); return clock },
+		})
+	}
+	open, closed := build(false), build(true)
+	run(t, open, reg(true, true))
+	cursor := store.Seq(regID)
+	if len(store.Raw(regID)) == 0 || cursor == 0 {
+		t.Fatal("nothing built with the endpoint open")
+	}
+	if drift, err := closed.Drift(ctx, []catalogue.Registration{reg(true, true)}); err != nil || !drift {
+		t.Fatalf("the endpoint closed after a build is no drift: %v %v", drift, err)
+	}
+
+	rep := run(t, closed, reg(true, true))
+	st, ok, _ := store.State(ctx, regID)
+	if len(rep.Stopped) != 1 || len(rep.Built) != 0 || !ok || st.Stopped != catalogue.CodeAnonymousRefused {
+		t.Fatalf("closed: %+v %+v", rep, st)
+	}
+	if n := len(store.Raw(regID)); n != 0 {
+		t.Fatalf("closed: %d documents stay", n)
+	}
+	if pub, _ := store.Public(ctx, regID); len(pub.Projects) != 0 || len(pub.Repositories) != 0 {
+		t.Fatalf("closed: the public set is %+v", pub)
+	}
+	if ch, _ := store.Changes(ctx, regID, cursor, 100); !ch.Reset || len(ch.Entries) != 0 {
+		t.Fatalf("closed: a Bastion's cursor answers %+v", ch)
+	}
+	floor := st.Floor
+	run(t, closed, reg(true, true))
+	if st, _, _ := store.State(ctx, regID); st.Floor != floor || st.Stopped != catalogue.CodeAnonymousRefused {
+		t.Fatalf("a second run while closed started the catalogue again: %+v", st)
+	}
+	if drift, _ := closed.Drift(ctx, []catalogue.Registration{reg(true, true)}); drift {
+		t.Fatal("a run while closed would change nothing, but Drift says it would")
+	}
+
+	if drift, _ := open.Drift(ctx, []catalogue.Registration{reg(true, true)}); !drift {
+		t.Fatal("the endpoint opened again is no drift")
+	}
+	run(t, open, reg(true, true))
+	if st, _, _ := store.State(ctx, regID); st.Stopped != "" || len(store.Raw(regID)) == 0 {
+		t.Fatalf("open again: %+v, %d documents", st, len(store.Raw(regID)))
+	}
+	if drift, _ := open.Drift(ctx, []catalogue.Registration{reg(true, true)}); drift {
+		t.Fatal("a built catalogue is a drift")
+	}
+	if drift, _ := open.Drift(ctx, []catalogue.Registration{reg(false, true)}); !drift {
+		t.Fatal("gui off with a catalogue held is no drift")
+	}
+}
+
 // TestR_BAS_104_TheBaseURLIsAnEntryOfTheAdditionalBaseURLs: the reported base URL counts only as an entry of
 // server.additional_base_urls, in its listed spelling.
 func TestR_BAS_104_TheBaseURLIsAnEntryOfTheAdditionalBaseURLs(t *testing.T) {

@@ -6,11 +6,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/url"
+	"slices"
 	"strconv"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	v1 "github.com/guided-traffic/quader/internal/api/v1"
@@ -71,21 +72,46 @@ func (a *App) wireBastionCatalogue(_ context.Context, in infra, co coordArea, _ 
 	render := sync.OnceValues(a.catalogueRenderer)
 	b := catalogue.New(catalogue.Options{
 		Store: store, Renderer: lateRenderer{render}, Main: a.mainOrigins(), PolicyHash: a.readmePolicy(), DocsPolicy: docsPolicy(),
-		Workers: catalogueWorkers, Log: a.log.With("component", "bastion-catalogue"),
+		AnonymousRefused: anonymousRefused(a.cfg), Workers: catalogueWorkers, Log: a.log.With("component", "bastion-catalogue"),
 	})
 	a.catalogue.set(catalogueRuntime{builder: b, regs: a.catalogueRegistrations})
-	t := &catalogueTrigger{a: a, queue: co.queue, signals: co.signals, store: store, kick: make(chan struct{}, 1)}
+	t := &catalogueTrigger{
+		signals: co.signals, log: a.log,
+		active: func(ctx context.Context) bool {
+			if held, err := store.Held(ctx); err == nil && len(held) > 0 {
+				return true
+			}
+			regs, err := a.catalogueRegistrations(ctx)
+			return err == nil && slices.ContainsFunc(regs, func(r catalogue.Registration) bool { return r.GUI })
+		},
+		enqueue: func(ctx context.Context) error {
+			_, err := co.queue.EnqueueNow(ctx, jobs.EnqueueSpec{Kind: KindBastionCatalogue, Delay: catalogueDebounce})
+			return err
+		},
+		drift: func(ctx context.Context) (bool, error) {
+			regs, err := a.catalogueRegistrations(ctx)
+			if err != nil {
+				return false, err
+			}
+			return b.Drift(ctx, regs)
+		},
+	}
 	if co.caches != nil {
-		// A new signature set in use and a change of the rescan settings change the catalogue's state (R-MAL-042, Q-BAS-491).
-		cache.Register(co.caches, "bastion_catalogue_trigger", cache.Options[struct{}, struct{}]{
-			MaxEntries: 1, SafetyTTL: time.Hour, Areas: []string{
-				cluster.AreaRepoConfig, cluster.AreaAuthz, cluster.AreaVulnData, cluster.AreaMalwareDatabase, cluster.AreaMalwareSettings,
-			},
-			OnChange: func(*cache.Cache[struct{}, struct{}], string, int, json.RawMessage) { t.fire() },
-			OnFlush:  func(string) { t.fire() },
-		})
+		t.register(co.caches)
 	}
 	return bastionCatalogueArea{trigger: t}, a.startComponent(context.Background(), t)
+}
+
+// anonymousRefused reports whether the default endpoint admits no request without a credential (its auth.anonymous, R-EP-010), so
+// that an anonymous visitor reads nothing and the builder builds every catalogue empty (R-BAS-104). It is the same word the
+// handshake's anonymousReads takes from the endpoint (R-BAS-019).
+func anonymousRefused(cfg *config.Config) bool {
+	for _, e := range cfg.Server.ResolveEndpoints() {
+		if e.Default {
+			return !e.Anonymous
+		}
+	}
+	return true
 }
 
 // registerBastionCatalogueJobs registers the job and its task (R-BAS-105): one run at a time in the installation (Coalesce: a change
@@ -290,21 +316,41 @@ func (l lateRenderer) Get(ctx context.Context, base, target string) (catalogue.A
 // catalogueTrigger starts the job a debounce after a change that may change a catalogue (R-BAS-105): a package's metadata, a
 // verdict of the malware scanning or of a signature, a repository's settings, the authorization, the advisory data. It enqueues
 // only while some registration's web interface is on or some registration still holds a catalogue, so an installation without
-// one queues nothing.
+// one queues nothing. When its replica starts it starts a run once if the store does not hold what a run would leave, so that a
+// change of the configuration a run reads, which only a restart applies, does not wait for the hourly run (catalogue.Builder.Drift).
 type catalogueTrigger struct {
-	a       *App
-	queue   *jobs.Queue
 	signals *cluster.Signals
-	store   *catalogue.DB
-	kick    chan struct{}
-	cancel  context.CancelFunc
-	unsub   []func()
-	wg      sync.WaitGroup
-	// activeAt and active cache the answer of active for catalogueActiveFor.
-	mu       sync.Mutex
-	activeAt time.Time
-	active   bool
-	fired    atomic.Int64
+	log     *slog.Logger
+	// active answers whether some registration holds a catalogue or has its web interface on; enqueue starts the job a debounce
+	// later; drift answers whether a run would change what the store holds.
+	active  func(context.Context) bool
+	enqueue func(context.Context) error
+	drift   func(context.Context) (bool, error)
+
+	kick   chan struct{}
+	cancel context.CancelFunc
+	unsub  []func()
+	wg     sync.WaitGroup
+	// activeAt and wasActive cache the answer of active for catalogueActiveFor.
+	mu        sync.Mutex
+	activeAt  time.Time
+	wasActive bool
+}
+
+// catalogueTriggerAreas are the change areas after which the trigger starts a run: a repository's settings, the authorization, the
+// advisory data, and a new signature set in use and a change of the rescan settings, which change the catalogue's state (R-MAL-042,
+// Q-BAS-491).
+var catalogueTriggerAreas = []string{
+	cluster.AreaRepoConfig, cluster.AreaAuthz, cluster.AreaVulnData, cluster.AreaMalwareDatabase, cluster.AreaMalwareSettings,
+}
+
+// register hears the change areas through the cache registry.
+func (t *catalogueTrigger) register(caches *cache.Registry) {
+	cache.Register(caches, "bastion_catalogue_trigger", cache.Options[struct{}, struct{}]{
+		MaxEntries: 1, SafetyTTL: time.Hour, Areas: catalogueTriggerAreas,
+		OnChange: func(*cache.Cache[struct{}, struct{}], string, int, json.RawMessage) { t.fire() },
+		OnFlush:  func(string) { t.fire() },
+	})
 }
 
 // Name implements Component.
@@ -317,15 +363,18 @@ func (t *catalogueTrigger) fire() {
 	}
 }
 
-// Start subscribes to the signals and runs the enqueue loop.
+// Start subscribes to the signals and runs the enqueue loop, after the check of the store against what a run would leave.
 func (t *catalogueTrigger) Start(ctx context.Context) error {
+	if t.kick == nil {
+		t.kick = make(chan struct{}, 1)
+	}
 	lctx, cancel := context.WithCancel(context.WithoutCancel(ctx))
 	t.cancel = cancel
 	if t.signals != nil {
 		for _, area := range []string{cluster.AreaMetadataChanged, cluster.AreaMalwareVerdict, cluster.AreaSignatureVerdict} {
 			unsub, err := t.signals.Subscribe(lctx, area, func([]string, bool) { t.fire() })
 			if err != nil {
-				t.a.log.Warn("the public catalogue's builder does not hear a signal; its hourly run takes the change", "area", area, "error", err)
+				t.log.Warn("the public catalogue's builder does not hear a signal; its hourly run takes the change", "area", area, "error", err)
 				continue
 			}
 			t.unsub = append(t.unsub, unsub)
@@ -334,41 +383,41 @@ func (t *catalogueTrigger) Start(ctx context.Context) error {
 	t.wg.Add(1)
 	go func() {
 		defer t.wg.Done()
+		if drift, err := t.drift(lctx); err != nil && lctx.Err() == nil {
+			t.log.Warn("the public catalogue's builder could not compare its store with the configuration; its hourly run does", "error", err)
+		} else if drift {
+			t.start(lctx)
+		}
 		for {
 			select {
 			case <-lctx.Done():
 				return
 			case <-t.kick:
 			}
-			if !t.isActive(lctx) {
-				continue
+			if t.isActive(lctx) {
+				t.start(lctx)
 			}
-			if _, err := t.queue.EnqueueNow(lctx, jobs.EnqueueSpec{Kind: KindBastionCatalogue, Delay: catalogueDebounce}); err != nil && lctx.Err() == nil {
-				t.a.log.Warn("the public catalogue's builder was not started after a change; its hourly run takes it", "error", err)
-			}
-			t.fired.Add(1)
 		}
 	}()
 	return nil
+}
+
+// start enqueues the job.
+func (t *catalogueTrigger) start(ctx context.Context) {
+	if err := t.enqueue(ctx); err != nil && ctx.Err() == nil {
+		t.log.Warn("the public catalogue's builder was not started after a change; its hourly run takes it", "error", err)
+	}
 }
 
 // isActive reports whether some registration has a catalogue to build or to drop.
 func (t *catalogueTrigger) isActive(ctx context.Context) bool {
 	t.mu.Lock()
 	defer t.mu.Unlock()
-	if time.Since(t.activeAt) < catalogueActiveFor {
-		return t.active
+	if !t.activeAt.IsZero() && time.Since(t.activeAt) < catalogueActiveFor {
+		return t.wasActive
 	}
-	active := false
-	if held, err := t.store.Held(ctx); err == nil && len(held) > 0 {
-		active = true
-	} else if regs, err := t.a.catalogueRegistrations(ctx); err == nil {
-		for _, r := range regs {
-			active = active || r.GUI
-		}
-	}
-	t.active, t.activeAt = active, time.Now()
-	return active
+	t.wasActive, t.activeAt = t.active(ctx), time.Now()
+	return t.wasActive
 }
 
 // Stop implements Component.

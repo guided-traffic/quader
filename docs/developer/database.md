@@ -1272,7 +1272,7 @@ shared one: [bastion_registration.sql](../../internal/meta/postgres/queries/bast
 |---|---|
 | `bastion_catalogue` | a registration's change list: one row per document path it ever held, with the unit it is rendered from, the SHA-256 and size of its document or none (deleted), and the change's number `seq`; indexes on `(bastion_id, seq)`, `(bastion_id, unit)` and the SHA-256 |
 | `bastion_catalogue_document` | a document's bytes, gzip-compressed alone, keyed by the SHA-256 of the raw bytes, once for every row of every registration that names them |
-| `bastion_catalogue_state` | per registration the range of the numbers (`floor`, `seq`), the salt of the fingerprints, the base URL, why the builder stopped, the public set, the times of the last runs |
+| `bastion_catalogue_state` | per registration the range of the numbers (`floor`, `seq`), the salt of the fingerprints, the base URL, why the builder stopped (`stopped`: `bastion_base_url_unknown`, or `anonymous_requests_refused` since [00155](../../internal/meta/postgres/migrations/00155_bastion_catalogue_refused.sql)), the public set, the times of the last runs |
 | `bastion_catalogue_unit` | per registration and unit the fingerprint it was rendered at and the signature objects it names |
 
 All four reference `bastion (principal_id)` with `ON DELETE CASCADE`, except the documents, which the end of every run deletes when no

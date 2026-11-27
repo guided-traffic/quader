@@ -6359,6 +6359,15 @@ The priority is the one of R-BAS-101 to R-BAS-103.
   (the renderer of `internal/app/wire_bastion_catalogue.go`, [Q-BAS-355](#q-bas-355--the-builder-is-the-workers-job-and-reads-the-management-api-through-a-router-of-its-own)).
   What an anonymous visitor reads through the default endpoint is what the catalogue shows, and nothing else: every public repository of
   every class, public remotes included, the open findings of P3's anonymous answer.
+- **The default endpoint refuses anonymous requests.** The renderer's chain has no authentication stage, so the builder applies the
+  default endpoint's `auth.anonymous` itself, as the handshake's `anonymousReads` does (R-BAS-019): while it is `false` (explicitly, or
+  because the listener requires a client certificate, R-EP-010) an anonymous visitor reads nothing there, and the builder builds nothing
+  for any registration. It empties a registration's catalogue once (its rows and state go, and the state it records starts its numbers
+  above every number before, so a Bastion's cursor answers `reset` and its copy empties at its next round, R-BAS-108) and records
+  `anonymous_requests_refused` in the state for the registration's card; a later run leaves it as it is. The setting is the configuration
+  file's and applies when a replica starts; a replica that claims jobs starts a run then when the stored state differs from what a run
+  would leave (R-BAS-105), so opening the endpoint again builds the catalogues within seconds of the restart
+  ([Q-BAS-495](#q-bas-495--while-the-default-endpoint-refuses-anonymous-requests-every-catalogue-is-empty-with-its-reason)).
 - **The base URL.** A registration's documents are rendered on the base URL it reported at its last handshake, provided it is an entry of
   `server.additional_base_urls` (the rule of client-setup with `bastion=<name>`, R-BAS-007, `catalogue.BaseURL`); a registration that
   reported none, or one the installation does not list, is not built: the builder records `bastion_base_url_unknown` in its state for the
@@ -6380,13 +6389,19 @@ The priority is the one of R-BAS-101 to R-BAS-103.
 *Built on 2026-11-26 (W-35's P6):* [builder.go](../../internal/bastionmain/catalogue/builder.go),
 [render.go](../../internal/bastionmain/catalogue/render.go), [wire_bastion_catalogue.go](../../internal/app/wire_bastion_catalogue.go).
 The switches are the registration's stored ones since E8 (`PATCH /api/v1/bastions/{name}` with `switches.gui` and `switches.docs`); the
-integration suite may set them instead (`app.Options.BastionSwitches`, tests only).
+integration suite may set them instead (`app.Options.BastionSwitches`, tests only). *Built on 2026-11-27 (W35-P9f, H-2330):* the default
+endpoint's `auth.anonymous` (`Options.AnonymousRefused`, `anonymousRefused` of the wiring), the stop reason `anonymous_requests_refused`
+(migration 00155).
 
 Acceptance criteria:
 
 - Unit ([builder_test.go](../../internal/bastionmain/catalogue/builder_test.go), a fake management API, milliseconds, bytes):
   `TestR_BAS_104_TheBuilderRendersEveryDocumentOnTheBastionsBase` (every document of an npm package and a generic file, read on the
-  Bastion's base URL alone), `TestR_BAS_104_TheBaseURLIsAnEntryOfTheAdditionalBaseURLs`.
+  Bastion's base URL alone), `TestR_BAS_104_TheBaseURLIsAnEntryOfTheAdditionalBaseURLs`,
+  `TestR_BAS_104_NothingIsBuiltWhileTheDefaultEndpointRefusesAnonymousRequests` (a built catalogue emptied with its public set, a
+  Bastion's cursor answered `reset`, the reason kept, a second run changing nothing, the endpoint opened again building it again);
+  ([wire_bastion_catalogue_test.go](../../internal/app/wire_bastion_catalogue_test.go))
+  `TestR_BAS_104_TheBuilderTakesTheDefaultEndpointsAnonymousSetting`.
 - Integration (area `bastion`, [catalogue_test.go](../../test/integration/bastion/catalogue_test.go), the role all, two npm packages and a
   NuGet package of bytes, about 11 s with the world's set-up): `TestR_BAS_104_TheCatalogueFollowsPublishesLevelsAndTheSwitch`: a publish is
   in the change list within the debounce and a run (measured 0.9 to 1.7 s), every document read through the batch verifies and names
@@ -6405,6 +6420,11 @@ Priority: **P1** · Covers: quader-only
   the catalogue's state, [Q-BAS-491](#q-bas-491--a-new-set-and-a-change-of-the-rescan-settings-start-the-builder-and-only-the-state-changes)).
   A replica enqueues only while some registration's web interface is on or some registration still holds a catalogue, so an
   installation without one queues nothing ([Q-BAS-361](#q-bas-361--every-change-starts-the-same-run-after-5-s-and-the-hourly-run-is-the-reconciliation)).
+- **At a start.** What a run reads of the configuration file (the default endpoint's `auth.anonymous`, `server.additional_base_urls`)
+  changes only with a restart, which no trigger hears. A replica that claims jobs therefore compares, once when it starts, the stored
+  state of every registration with what a run would leave (`Builder.Drift`: a catalogue to build or to drop, a stop reason that no longer
+  holds or newly does, a base URL that moved) and starts a run when they differ, none when they agree
+  ([Q-BAS-496](#q-bas-496--a-replica-that-claims-jobs-starts-a-run-at-its-start-only-when-the-store-differs-from-what-a-run-would-leave)).
 - **The reconciliation.** The task `bastion-catalogue` runs the same job every hour (`41 * * * *`, `maintenance.tasks.bastion-catalogue`,
   R-OPS-019), so a change a trigger missed stays at most an hour. A run renders only what changed: a unit (a package, a generic repository)
   is rendered again only when its fingerprint differs from the one it was rendered at. The fingerprint is read from the database in one
@@ -6422,12 +6442,16 @@ Priority: **P1** · Covers: quader-only
 `BastionCatalogueRepositoryFacts` of [bastion_catalogue.sql](../../internal/meta/postgres/queries/bastion_catalogue.sql). *Not built:* the
 feed entry of the kind `catalogue` (R-BAS-101): a Bastion learns of a change at its poll or at the round it runs after the builder's
 debounce (R-BAS-112, [Q-BAS-378](#q-bas-378--no-feed-entry-of-the-kind-catalogue-the-follow-up-round-after-the-builders-debounce-carries-a-change); [Q-BAS-369](#q-bas-369--the-builder-writes-no-feed-entry-yet-a-bastion-learns-a-change-at-its-poll),
-[H-2314](../security/bastion.md#h-2314--a-narrowing-reaches-a-bastions-pages-only-at-its-next-poll-after-the-run)).
+[H-2314](../security/bastion.md#h-2314--a-narrowing-reaches-a-bastions-pages-only-at-its-next-poll-after-the-run)). *Built on 2026-11-27
+(W35-P9f):* the run at a start (`Builder.Drift`, the trigger's `drift`).
 
 Acceptance criteria:
 
 - Unit: `TestR_BAS_105_TheReconciliationRendersOnlyWhatChanged` (a rescan that moved every time renders and writes nothing; a changed
-  fingerprint renders the package and writes only what changed; a package gone is deleted whole), milliseconds.
+  fingerprint renders the package and writes only what changed; a package gone is deleted whole), milliseconds;
+  ([wire_bastion_catalogue_test.go](../../internal/app/wire_bastion_catalogue_test.go))
+  `TestR_BAS_105_AReplicaThatStartsWithAChangedConfigurationStartsARun` (a start with a drift starts one run, one without none), and
+  `Drift` in `TestR_BAS_104_NothingIsBuiltWhileTheDefaultEndpointRefusesAnonymousRequests`, milliseconds.
 - The task table of R-OPS-019 ([operations-and-observability.md](operations-and-observability.md)) and the role table of R-ARCH-001 (the
   areas `packages-api`, `vuln-api` and `bastion-catalogue` of the role `worker`): `TestR_OPS_019_TheTaskTableIsTheRegistry`,
   `TestR_ARCH_001_RoleTableIsData`.
@@ -6497,7 +6521,8 @@ Priority: **P1** · Covers: quader-only
 - **Tables** (migration 00146, [database.md](../developer/database.md)): `bastion_catalogue` (a registration's change list: path, unit,
   the document's SHA-256 and size or deleted, the change's number), `bastion_catalogue_document` (a document's bytes gzip-compressed once
   for every registration and path that holds the same bytes, addressed by the SHA-256 of the raw bytes), `bastion_catalogue_state` (the
-  range of the numbers, the salt, the base URL, why the builder stopped, the public set, the times of the last runs) and
+  range of the numbers, the salt, the base URL, why the builder stopped (`bastion_base_url_unknown` or, since migration 00155,
+  `anonymous_requests_refused`, R-BAS-104), the public set, the times of the last runs) and
   `bastion_catalogue_unit` (each unit's fingerprint and the signature objects it names). The routes read the documents the builder kept;
   a read renders nothing ([Q-BAS-356](#q-bas-356--the-main-installation-keeps-every-document-compressed-once-per-content)).
 - **Numbers.** A run reserves a block of the registration's numbers on its state row in the transaction that writes the rows, so the
@@ -15175,6 +15200,42 @@ Bastion reads its member `malware`, so the shape is an agreement between the two
 
 **Choice:** (a). **Applied in the spec:** R-BAS-009's list of raises, R-BAS-103; code: [catalogue.go](../../internal/bastion/iface/catalogue.go),
 [version.go](../../internal/bastion/iface/version.go), the operations' `x-quader-bastion-interface: 11`.
+
+### Q-BAS-495 · While the default endpoint refuses anonymous requests, every catalogue is empty, with its reason
+
+Status: **Decided by the development agent** on 2026-11-27 (W35-P9f, H-2330) — selected from the options below; the owner reviews it at
+the walkthrough.
+
+Context: the builder reads through a chain without an authentication stage, so the default endpoint's `auth.anonymous` was never asked: an
+installation that refuses anonymous requests (and so refuses the anonymous downloads a Bastion's pages link, R-BAS-019) still showed every
+repository whose level is `public` on a Bastion with `gui` on. The levels stay `public` when the setting is closed later; only a new
+`public` level is refused then.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The builder builds nothing while the setting is `false`: it empties each registration's catalogue once and records `anonymous_requests_refused` for the card; the switch stays as the administrator set it (chosen) | R-BAS-104's sentence, read literally: what an anonymous visitor reads through the default endpoint, which is nothing | One rule at the one place that decides what is public; it also holds for a switch set before the setting was closed; the card says why the pages are empty | The pages say "No package is published here yet." while the switch is on |
+| (b) `PATCH` refuses `gui` on (`409`) while the setting is `false` | The switch cannot be set | The administrator learns it at once | A switch set before the setting was closed stays on, so (a) is needed anyway |
+| (c) Keep it and document it | — | Nothing to build | The catalogue publishes what the installation refuses to publish |
+
+**Choice:** (a). The setting applies when a replica starts; the run at a start (Q-BAS-496) applies it within seconds. **Applied in the
+spec:** R-BAS-104, R-BAS-108; code: `stopReason` and `stop` of [builder.go](../../internal/bastionmain/catalogue/builder.go).
+
+### Q-BAS-496 · A replica that claims jobs starts a run at its start only when the store differs from what a run would leave
+
+Status: **Decided by the development agent** on 2026-11-27 (W35-P9f) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: the default endpoint's `auth.anonymous` and `server.additional_base_urls` decide a run's outcome and change only with a restart,
+which no signal and no change area carries.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) At its start the trigger compares each registration's stored state with what a run would leave (`Builder.Drift`) and starts a run only when they differ (chosen) | A restart with a changed setting builds within the debounce | A restart that changed nothing starts nothing, however many replicas start | One read of the registrations and their states per start |
+| (b) A run at every start | Simple | — | A run per replica start (the Coalesce mode merges those of one rollout), each reading the public set and the whole-registration documents |
+| (c) The hourly run alone | Nothing to wire | — | An endpoint closed at a restart shows its public content for up to an hour |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-105; code: `Drift` of [builder.go](../../internal/bastionmain/catalogue/builder.go), the
+trigger's `drift` in [wire_bastion_catalogue.go](../../internal/app/wire_bastion_catalogue.go).
 
 ## What this does not cover
 

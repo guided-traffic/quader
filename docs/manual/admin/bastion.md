@@ -332,6 +332,8 @@ The main installation builds the catalogue by reading its own answers as a visit
 
 Making a repository **Public** opens it on the main installation as well, to every endpoint that admits requests without a credential ([Public content](sign-in-and-identity.md#public-content-and-requests-without-a-credential)). Downloads through the Bastion are still decided by the main installation for every request; the catalogue only shows.
 
+**While the main installation admits no request without a credential** (`endpoints.default.auth.anonymous: false`), nothing is public, whatever the levels say, and the web interface shows nothing: the main installation builds every Bastion's catalogue empty, each replica of a Bastion empties its copy within a few seconds. The setting applies when the main installation's replicas restart; the first build after that applies it within seconds, in both directions.
+
 ### Kept or lost across a restart
 
 Each replica keeps its copy of the catalogue, and the record of what it holds, in its cache backend. Whether that survives a new pod depends on the cache:

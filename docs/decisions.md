@@ -10727,10 +10727,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-BAS
 
-405 questions on [spec/bastion.md](spec/bastion.md).
+407 questions on [spec/bastion.md](spec/bastion.md).
 
 <details>
-<summary>Q-BAS: 405 questions</summary>
+<summary>Q-BAS: 407 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -11139,6 +11139,8 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-BAS-492](spec/bastion.md#q-bas-492--the-bastion-answers-todays-signatures-in-the-main-installations-shape-from-its-catalogue) | The Bastion answers today's signatures in the main installation's shape, from its catalogue | Decided by the development agent on 2026-11-27 (W-36's package P8) | (a), and by the same rule `/ui/data/v1/vulnerabilities/database` in the shape of `GET /api/v1/vulnerabilities/database`, `syncedAt` null and `stale` false, `404` while the state holds no database (R-VULN-052). | — |
 | [Q-BAS-493](spec/bastion.md#q-bas-493--a-generic-file-at-a-bastion-carries-no-time-of-its-check) | A generic file at a Bastion carries no time of its check | Decided by the development agent on 2026-11-27 (W-36's package P8) | (a); the gap stays [H-2329](security/bastion.md#h-2329--a-generic-files-malware-verdict-at-the-bastion-shows-no-date-of-its-database), which a state for a repository's files would close. | — |
 | [Q-BAS-494](spec/bastion.md#q-bas-494--the-state-documents-shape-is-part-of-the-interface-version-11) | The state document's shape is part of the interface, version 11 | Decided by the development agent on 2026-11-27 (W-36's plan J.4, package P8) | (a) `iface.CatalogueStateDocument` with `iface.CatalogueMalware` and `iface.CatalogueVulnerabilityDatabase`, written by the builder and read by the Bastion, in the surface; the version rises to 11 | — |
+| [Q-BAS-495](spec/bastion.md#q-bas-495--while-the-default-endpoint-refuses-anonymous-requests-every-catalogue-is-empty-with-its-reason) | While the default endpoint refuses anonymous requests, every catalogue is empty, with its reason | Decided by the development agent on 2026-11-27 (W35-P9f, H-2330) | (a) The builder builds nothing while the setting is `false`: it empties each registration's catalogue once and records `anonymous_requests_refused` for the card; the switch stays as the administrator set it | — |
+| [Q-BAS-496](spec/bastion.md#q-bas-496--a-replica-that-claims-jobs-starts-a-run-at-its-start-only-when-the-store-differs-from-what-a-run-would-leave) | A replica that claims jobs starts a run at its start only when the store differs from what a run would leave | Decided by the development agent on 2026-11-27 (W35-P9f) | (a) At its start the trigger compares each registration's stored state with what a run would leave (`Builder.Drift`) and starts a run only when they differ | — |
 
 </details>
 
