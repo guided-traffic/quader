@@ -1560,7 +1560,7 @@ async function* malwareSection(page: Page): AsyncGenerator<string> {
   yield '';
   await answerWith(page, '**/api/v1/malware/switch', (b) => ({ ...b, onlyChecked: true }));
   await openSectionOf(page, 'quader-repository-malware');
-  await expect(page.locator('main [data-testid="repo-malware-installation"]')).toBeVisible();
+  await expect(page.locator('main quader-repository-malware .check-row input[aria-disabled="true"]')).toBeVisible();
   yield 'installation-on';
   await page.unroute('**/api/v1/malware/switch');
 }

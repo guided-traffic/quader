@@ -139,6 +139,7 @@ export class UserDetail {
   });
   /** The break-glass account is never external (R-AUTH-044); every other user's flag is edited with `identities:write`. */
   protected readonly canEditExternal = this.canEdit;
+  protected readonly neverExternal = $localize`:@@user.external-system:The break-glass account is never external.`;
 
   constructor() {
     effect(() => {

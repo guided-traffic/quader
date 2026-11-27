@@ -31,16 +31,28 @@ const rowOf = (root: ParentNode, title: string): HTMLTableRowElement =>
   [...root.querySelectorAll<HTMLTableRowElement>('tr')].find((tr) => text(tr.querySelector('th') ?? tr).startsWith(title))!;
 
 describe('Admin area › Settings › Signatures (R-SIG-036)', () => {
-  it('R-SIG-036 lists the anchors by where they come from: a shipped one with only its switch, a Helm one with nothing, an administrator\'s with its switch and Remove; passes axe', async () => {
-    const { root } = await render(ADMIN);
+  it('R-SIG-036 lists the anchors by where they come from: a shipped one with only its switch, a Helm one with both unavailable, an administrator\'s with its switch and Remove; passes axe', async () => {
+    const { fixture, root, api } = await render(ADMIN);
     expect(text(root.querySelector('h1')!)).toBe('Signatures');
     expect(text(root.querySelector('[data-testid="signature-promise"]')!)).toContain('It does not tell that the content is safe');
     const titles = [...root.querySelectorAll('section[aria-labelledby="sig-anchors"] tbody th')].map((th) => text(th).split(' ')[0]);
     expect(titles).toEqual(['Public', 'GitLab', 'Release']);
     expect(rowOf(root, 'Public Sigstore').querySelector('quader-switch')).not.toBeNull();
     expect(rowOf(root, 'Public Sigstore').querySelector('td.actions button')).toBeNull();
-    expect(rowOf(root, 'GitLab CI signing CA').querySelector('quader-switch')).toBeNull();
-    expect(text(rowOf(root, 'GitLab CI signing CA'))).toContain('From the Helm configuration');
+    // R-UI-270: the Helm configuration's anchor keeps its switch and Remove, greyed out, the key that sets it their reason; neither acts.
+    const helmRow = rowOf(root, 'GitLab CI signing CA');
+    expect(text(helmRow)).toContain('From the Helm configuration');
+    const sw = helmRow.querySelector<HTMLButtonElement>('quader-switch button[role="switch"]')!;
+    const remove = helmRow.querySelector<HTMLButtonElement>('td.actions button')!;
+    const reason = (el: Element): string | undefined => document.getElementById(el.getAttribute('aria-describedby') ?? '')?.textContent ?? undefined;
+    expect(sw.getAttribute('aria-disabled')).toBe('true');
+    expect(reason(sw)).toBe('Set in signatures.anchors of the Helm configuration: change it there.');
+    expect(remove.getAttribute('aria-disabled')).toBe('true');
+    expect(reason(remove)).toBe('Declared in signatures.anchors of the Helm configuration: remove it there.');
+    sw.click();
+    remove.click();
+    await settle(fixture);
+    expect(api.calls).toEqual([]);
     expect(rowOf(root, 'Release key').querySelector('quader-switch')).not.toBeNull();
     expect(text(rowOf(root, 'Release key').querySelector('td.actions')!)).toContain('Remove');
     await expectAccessible(root);

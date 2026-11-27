@@ -1,5 +1,6 @@
 import { Component, computed, input, output } from '@angular/core';
 import { Spinner } from './spinner';
+import { Unavailable } from './unavailable';
 
 /**
  * A switch (Q-UI-830, the style guide's Forms): something that is on or off and changes at once, without a save, such as a
@@ -10,7 +11,9 @@ import { Spinner } from './spinner';
  *
  * The control does not change itself: a click asks for the other state (`checkedChange`) and the screen sets `checked` from the
  * server's answer. `busy` holds it while that answer is open (`aria-busy`, no second click) and shows the spinner in place of the word
- * after the delay of every load (R-UI-217); `disabled` where it cannot change.
+ * after the delay of every load (R-UI-217); `disabled` where it cannot change. `unavailable` is the reason a switch the Helm
+ * configuration fixes cannot change (R-UI-270, Q-UI-1636): the switch stays in its place, greyed out, and says the reason as its
+ * tooltip on hover, focus and tap (`quaderUnavailable` on its button); an empty reason leaves it as it is.
  * The look follows the reference's toggle: a track of 40 by 24 px, the accent's fill when on and the control's border colour
  * when off (never green, which is a positive status), a knob of 16 px with a check or a cross in the track's colour, the focus
  * ring of every control. It stands on the middle of its text's line (R-UI-175).
@@ -28,7 +31,8 @@ import { Spinner } from './spinner';
       [attr.aria-label]="label()"
       [attr.aria-describedby]="describedBy()"
       [attr.aria-busy]="busy() ? 'true' : null"
-      [disabled]="disabled()"
+      [disabled]="disabled() && !unavailable()"
+      [quaderUnavailable]="unavailable()"
       (click)="toggle()"
     >
       <span class="knob" aria-hidden="true"><span class="material-icons">{{ checked() ? 'check' : 'close' }}</span></span>
@@ -41,7 +45,7 @@ import { Spinner } from './spinner';
       <span class="word" aria-hidden="true" [class.busy]="busy()">{{ word() }}</span>
     }
   `,
-  imports: [Spinner],
+  imports: [Spinner, Unavailable],
   host: { class: 'quader-switch' },
   styles: `
     :host {
@@ -68,20 +72,21 @@ import { Spinner } from './spinner';
       cursor: pointer;
       transition: background-color var(--quader-motion-duration) var(--quader-motion-easing);
     }
-    .switch:hover:not(:disabled) {
+    .switch:hover:not(:disabled, [aria-disabled='true']) {
       background: var(--quader-control-border-hover);
     }
     .switch[aria-checked='true'] {
       background: var(--quader-accent-fill);
     }
-    .switch[aria-checked='true']:hover:not(:disabled) {
+    .switch[aria-checked='true']:hover:not(:disabled, [aria-disabled='true']) {
       background: var(--quader-accent-fill-hover);
     }
     .switch:focus-visible {
       outline: var(--quader-focus-ring);
       outline-offset: 2px;
     }
-    .switch:disabled {
+    .switch:disabled,
+    .switch[aria-disabled='true'] {
       background: var(--quader-control-disabled-fg);
       cursor: not-allowed;
     }
@@ -109,7 +114,7 @@ import { Spinner } from './spinner';
     :host-context([dir='rtl']) .switch[aria-checked='true'] .knob {
       transform: translateX(-1rem);
     }
-    .switch:disabled .knob {
+    .switch:is(:disabled, [aria-disabled='true']) .knob {
       color: var(--quader-control-disabled-fg);
     }
     .knob .material-icons {
@@ -135,6 +140,8 @@ export class Switch {
   readonly disabled = input(false);
   /** A change is being saved: the switch holds until the answer. */
   readonly busy = input(false);
+  /** Why the switch cannot change, as its tooltip (R-UI-270); empty where it can. */
+  readonly unavailable = input('');
   /** The id of a note that describes the switch. */
   readonly describedBy = input<string | null>(null);
   /** The word **On** or **Off** after the switch; false where the place says the state otherwise. */
@@ -147,7 +154,7 @@ export class Switch {
   );
 
   protected toggle(): void {
-    if (this.disabled() || this.busy()) return;
+    if (this.disabled() || this.busy() || this.unavailable() !== '') return;
     this.checkedChange.emit(!this.checked());
   }
 }

@@ -5,13 +5,14 @@ import { Switch } from './switch';
 @Component({
   imports: [Switch],
   template: `<p>
-    <quader-switch [checked]="on()" [busy]="busy()" [disabled]="disabled()" label="Switch on Docker Hub" (checkedChange)="asked.push($event)" />
+    <quader-switch [checked]="on()" [busy]="busy()" [disabled]="disabled()" [unavailable]="reason()" label="Switch on Docker Hub" (checkedChange)="asked.push($event)" />
   </p>`,
 })
 class Host {
   readonly on = signal(false);
   readonly busy = signal(false);
   readonly disabled = signal(false);
+  readonly reason = signal('');
   readonly asked: boolean[] = [];
 }
 
@@ -49,5 +50,24 @@ describe('The switch', () => {
     expect(sw.disabled).toBe(true);
     sw.click();
     expect(host.asked).toEqual([true]);
+  });
+
+  it('R-UI-270 a switch the Helm configuration fixes stays, greyed out and aria-disabled, says its reason, and asks nothing', async () => {
+    const { fixture, root } = await renderScreen(Host);
+    const host = fixture.componentInstance;
+    host.on.set(true);
+    host.disabled.set(true);
+    host.reason.set('Set in signatures.anchors of the Helm configuration: change it there.');
+    await settle(fixture);
+    const sw = root.querySelector<HTMLButtonElement>('button[role="switch"]')!;
+    expect(sw.disabled).toBe(false);
+    expect(sw.getAttribute('aria-disabled')).toBe('true');
+    expect(sw.getAttribute('aria-checked')).toBe('true');
+    expect(document.getElementById(sw.getAttribute('aria-describedby')!)?.textContent).toBe(
+      'Set in signatures.anchors of the Helm configuration: change it there.',
+    );
+    sw.click();
+    expect(host.asked).toEqual([]);
+    await expectAccessible(root);
   });
 });

@@ -1510,7 +1510,8 @@ Priority: **P1** · Covers: quader-only
   1. **Trust anchors**, open: one list of every anchor of the installation with its title, kind, scope ("Shipped with Quader", "From the
      Helm values", "Added by an administrator"), fingerprints, expiry, the signatures it knows, and on/off; **Add trust anchor** opens a form
      whose first field is the kind and whose fields follow the kind (a CA certificate's subject restriction and its use behind **More
-     options**); a shipped anchor has only its switch, a Helm one nothing.
+     options**); a shipped anchor has only its switch; a Helm one its switch and **Remove**, unavailable with the key that sets it as
+     their tooltip ([api-and-ui.md](api-and-ui.md) R-UI-270, Q-UI-1654).
   2. **Project trust anchors**, open: the checkbox **Project owners may add trust anchors for their project** (off by default) with its
      help behind the sign after its label ([api-and-ui.md](api-and-ui.md) R-UI-267, [Q-UI-1628](api-and-ui.md#q-ui-1628--the-help-sign-on-every-settings-page-and-no-info-icon-beside-a-status)): "Project anchors apply
      only to the repositories of their project. A project cannot switch off an anchor of the installation.", and below it every project's anchors with their project and **Remove**.

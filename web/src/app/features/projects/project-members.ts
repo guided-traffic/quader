@@ -15,13 +15,15 @@ import { ProjectNeeds } from './project-access';
 import { ProjectMemberChoice, ProjectMemberDialog, ProjectMemberDialogData } from './project-member-dialog';
 import { projectRoleLabel } from './project-roles';
 import { Busy } from '../../shared/ui/busy';
+import { Unavailable } from '../../shared/ui/unavailable';
 
 /**
  * The members of a project with their roles (R-UI-041, R-AUTHZ-026, Q-AUTHZ-207, Q-UI-214): the list, adding a user or group
  * with a role in a dialog, changing a role and removing a member. The Owner of the project and the holder of `projects:write`
- * change it; every other member reads. Removing or demoting the last Owner is refused by the server (409
- * `last_owner`, Q-AUTHZ-217) and the refusal is shown here; an administrator of Quader may leave a project without an
- * Owner, so the UI does not hide the action. The API decides in any case (R-UI-005).
+ * change it; every other member reads. Removing or demoting the last Owner is refused for an Owner (409 `last_owner`, Q-AUTHZ-217):
+ * the guard is shown before the server refuses it (R-UI-005), the last Owner's role and **Remove** greyed out with the reason as their
+ * tooltip (R-UI-270); an administrator of Quader may leave a project without an Owner and keeps both. A refusal the list did not
+ * foresee (another Owner removed at the same moment) is shown above the list. The API decides in any case.
  *
  * The list is built like every other list (R-UI-142, Q-UI-550): the head with the search by name (no drawer: the list has no
  * other filter), the shared data table, sorted by its column headers Account and Role. The answer holds every member, so the
@@ -29,7 +31,7 @@ import { Busy } from '../../shared/ui/busy';
  */
 @Component({
   selector: 'quader-project-members',
-  imports: [Busy, DataTable, ErrorNotice, ListHead, ProjectNeeds, QuaderAvatar],
+  imports: [Busy, DataTable, ErrorNotice, ListHead, ProjectNeeds, QuaderAvatar, Unavailable],
   template: `
     @if (writeError(); as e) {
       @if (e.code === 'last_owner') {
@@ -88,6 +90,7 @@ import { Busy } from '../../shared/ui/busy';
                 [name]="'role-' + m.principal"
                 [attr.aria-label]="roleOf(m)"
                 [disabled]="busy()"
+                [quaderUnavailable]="keeps(m)"
                 (change)="change(m, $any($event.target).value)"
               >
                 @for (o of roleOptions; track o.value) {
@@ -101,7 +104,7 @@ import { Busy } from '../../shared/ui/busy';
           <!-- The row's one action is its word, as a group's member has it; a menu of one entry is not made (R-UI-163). -->
           <td class="actions">
             @if (canWrite()) {
-              <button class="btn btn-tertiary" type="button" [disabled]="busy()" [quaderBusy]="busy()" (click)="remove(m)">
+              <button class="btn btn-tertiary" type="button" [disabled]="busy()" [quaderBusy]="busy()" [quaderUnavailable]="keeps(m)" (click)="remove(m)">
                 <ng-container i18n="@@project-members.remove">Remove</ng-container>
                 <span class="visually-hidden" translate="no"> {{ m.principal }}</span>
               </button>
@@ -205,6 +208,12 @@ export class ProjectMembers {
     () => this.session.has('projects:write') || this.session.isOwnerOf(this.project()),
   );
   protected readonly caption = $localize`:@@project-members.caption:Members of the project`;
+  /** The one membership with the role Owner, which an Owner cannot remove or demote (Q-AUTHZ-217); null while there are several or none. */
+  private readonly lastOwner = computed(() => {
+    const owners = this.members().filter((m) => m.role === 'owner');
+    return owners.length === 1 ? owners[0]!.principal : null;
+  });
+  private readonly lastOwnerReason = $localize`:@@project-members.last-owner:A project keeps at least one Owner. Make another member an Owner first.`;
   protected readonly roleOptions: readonly SelectOption[] = PROJECT_ROLES.map((r) => ({
     value: r,
     label: projectRoleLabel(r),
@@ -215,6 +224,11 @@ export class ProjectMembers {
       this.project();
       untracked(() => void this.load());
     });
+  }
+
+  /** Why the member's role and Remove cannot act for this caller: the last Owner, for whoever does not hold `projects:write`. */
+  protected keeps(m: ProjectMember): string {
+    return m.principal === this.lastOwner() && !this.session.has('projects:write') ? this.lastOwnerReason : '';
   }
 
   protected isMe(m: ProjectMember): boolean {

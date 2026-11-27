@@ -35,17 +35,14 @@
     <quader-checkbox
       [checked]="external()"
       [disabled]="!canEditExternal()"
-      [describedBy]="editable() ? null : 'external-system'"
+      [unavailable]="editable() ? '' : neverExternal"
       [help]="externalHelp"
       [about]="externalName"
       (checkedChange)="external.set($event)"
     >
       <ng-container i18n="@@user.external">External user</ng-container>
     </quader-checkbox>
-    <!-- What the flag means is its help (R-UI-267); why the box is off stays visible, one line (Q-UI-1628). -->
-    @if (!editable()) {
-      <p id="external-system" class="muted" i18n="@@user.external-system">The break-glass account is never external.</p>
-    }
+    <!-- What the flag means is its help (R-UI-267); why the box cannot change is its tooltip (R-UI-270, Q-UI-1654). -->
     @if (canEditExternal()) {
       <button class="btn btn-confirm" type="submit" [disabled]="busy() || !externalDirty()" [quaderBusy]="busy()">
         <ng-container i18n="@@user.save-changes">Save changes</ng-container>

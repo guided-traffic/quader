@@ -6074,7 +6074,7 @@ Priority: **MVP** · Covers: quader-only
   hidden.", the same in **New user**; edited in place with its
   own **Save changes** ([Q-UI-232](#q-ui-232--the-external-flag-is-a-checkbox-in-place-on-the-user-page-and-a-badge-in-the-list)).
   It is editable for a holder of `identities:write`; saving needs recent authentication; the break-glass account shows it
-  disabled with "The break-glass account is never external."
+  greyed out with "The break-glass account is never external." as its tooltip (R-UI-270, Q-UI-1654).
 - The users list shows a badge **External** next to the name of an external user and has the filter External (yes, no) in its
   filter drawer (`external=`).
 - **New user** has the same checkbox, preset to the installation's `newUsersExternal` (R-UI-031).
@@ -11867,6 +11867,10 @@ zurückgeholt, ausgegraut und mit diesem Tooltip versehen. Ich weiß nicht wie d
   | **Settings › Signatures**, the signing identity the Helm configuration names | **Replace**, **Remove**; **Create signing key** while no pair of its files passed | "Set in signing.identity of the Helm configuration: change or remove it there." |
   | A declared **Bastion**'s networks | **Add 198.51.100.21** (the offer of a contact's address), the fields of **Addresses this Bastion connects from**, **Add address** | "Set in bastions.declared of the Helm configuration." |
   | A declared **Bastion**'s head and tokens | **Delete**, **Rotate token** | "Set in bastions.declared of the Helm configuration: remove it there first, then delete it here."; "Its token is set in bastions.declared of the Helm configuration: put a new value into its Secret." |
+  | **Settings › Signatures › Trust anchors**, an anchor of the Helm configuration ([Q-UI-1654](#q-ui-1654--the-last-places-of-r-ui-270-the-helm-configurations-trust-anchor-the-last-project-owner-and-the-boxes-that-said-why-they-are-off)) | its switch, **Remove** | "Set in signatures.anchors of the Helm configuration: change it there."; "Declared in signatures.anchors of the Helm configuration: remove it there." |
+  | A project's **Members**, the last Owner, for an Owner (R-UI-005, Q-AUTHZ-217; an administrator keeps both) | the role, **Remove** | "A project keeps at least one Owner. Make another member an Owner first." |
+  | A repository's **Malware scan** | the box | "The installation lets only checked artifacts be downloaded."; "Only an administrator or someone who triages vulnerabilities can switch this off." |
+  | A user's **External user**, the break-glass account | the box | "The break-glass account is never external." |
 
   A CI issuer of the Helm configuration keeps its fields as read-only fields (style guide) under the mark **Helm configuration** with its
   help, as a declared Bastion's (Q-UI-1629); an upstream registry's declared account shows its source and its Secret as facts. Read-only
@@ -31901,8 +31905,8 @@ it was cut to the bubble's 200 characters. The texts:
 | Settings › **Authentication** · `auth-settings.new-users-external-note` | a paragraph under the checkbox | the box's help |
 | Settings › **Authentication** · `auth-settings.tokens-note` | the hint of **Token lifetimes**, two sentences | the input's format alone, "In days; fractions are allowed, at least 60 seconds." (R-UI-267 keeps a format visible); the ceiling's sentence goes, as every field's hint names its ceiling from the Helm configuration |
 | Settings › **Authentication** · `auth-settings.break-glass-no-password` | named `auth.break_glass.password_file`, a key of the configuration file | names `secrets.breakGlass` of the Helm configuration (R-UI-268): the chart sets the file from that Secret |
-| Users › a user, **New user** · `user.external-note`, `user-create.external-note` | a paragraph under the checkbox | the box's help; "The break-glass account is never external." stays: why the box is off |
-| A repository's **Malware scan** · `repo.malware.what`, `repo.malware.virtual` | lines under the box | the box's help; `repo.malware.installation-on` and `repo.malware.locked` stay: why the box is off |
+| Users › a user, **New user** · `user.external-note`, `user-create.external-note` | a paragraph under the checkbox | the box's help; "The break-glass account is never external." stayed: why the box is off (since Q-UI-1654 the box's tooltip) |
+| A repository's **Malware scan** · `repo.malware.what`, `repo.malware.virtual` | lines under the box | the box's help; `repo.malware.installation-on` and `repo.malware.locked` stayed: why the box is off (since Q-UI-1654 the box's tooltip) |
 | A repository's **Download links** · `repo.links.virtual` | a line under the box | the box's help, and after a reader's state sentence; `repo.links.not-applicable`, `installation-on` and `installation-off` stay: whether the choice acts now |
 | A repository's **Signatures** · `repo.gate.what`, `repo.gate.virtual` | lines under the box | the box's help; `repo.gate.locked` and `repo.gate.fetch-off` stay |
 | A repository's **Signatures** · `repo.signatures.what`, `repo.signatures.off` | two paragraphs under **Fetch the upstream's signatures** | one help (`repo.signatures.help`) |
@@ -33237,6 +33241,34 @@ keeps a description of 1 to 1024 characters (`description_required`). **Applied 
 [service.go](../../internal/auth/token/service.go), [upload_tokens_api.go](../../internal/api/v1/upload_tokens_api.go),
 [bastion.go](../../internal/auth/token/bastion.go), [admin_identity.go](../../cmd/quader/admin_identity.go),
 [declared.go](../../internal/authz/declared.go), `tokenName` of [token-table.ts](../../web/src/app/shared/access/token-table.ts).
+
+### Q-UI-1654 · The last places of R-UI-270: the Helm configuration's trust anchor, the last project Owner, and the boxes that said why they are off
+
+Status: **Decided by the development agent on 2026-11-27** (batch B-1127k, W-41's C0 open point 1) — selected per place; the owner
+reviews it at the walkthrough. R-UI-270, R-UI-005, Q-UI-1636, Q-UI-1628.
+
+Context: C0 applied `quaderUnavailable` to buttons, links and fields and left three places: a trust anchor of the Helm configuration on
+**Settings › Signatures** showed "On" as text, with neither its switch nor **Remove** (the switch had no input for a reason); R-UI-005's
+last project Owner was offered as acting and refused by the server afterwards; and Q-UI-1628 kept lines under boxes that said why the box
+is off, where the box could carry the reason.
+
+| Place | Decision | Why |
+|---|---|---|
+| A trust anchor of the Helm configuration | Its switch and **Remove** stay, unavailable (`<quader-switch [unavailable]>` puts the directive on its button) | The server refuses both (`anchor_managed`); the key that sets it is the reason, as at the other places |
+| The last Owner of a project, for an Owner | Its role's select and **Remove** unavailable with the sentence the refusal had (the directive holds a select: no opening, no key that changes the choice) | A self-lockout guard is shown before the API refuses it (R-UI-005); an administrator may leave a project without an Owner (Q-AUTHZ-217) and keeps both; the notice above the list stays for a refusal the list did not foresee (another Owner removed at the same moment) |
+| A repository's **Malware scan**, held on by the installation or not the caller's to loosen | The box carries the reason (`<quader-checkbox [unavailable]>`), the line goes | One box, one reason |
+| A user's **External user**, the break-glass account | The box carries the reason, the line goes | One box, one reason |
+| A repository's **Signatures**, the gate an Owner may not loosen (`repo.gate.locked`) | The line stays | The lock holds three kinds of control: the box, **Any trust anchor of this repository** and each stored anchor's box; one line says it once, on the box alone the others would be greyed out without a reason |
+| A repository's **Download links** (`repo.links.not-applicable`, `installation-on`, `installation-off`) | The lines stay | They say whether the choice acts now; the box acts |
+| A repository's **Signatures**, `repo.gate.fetch-off` | The line stays | A warning of a consequence, not a reason the box is off |
+
+A reader without the right to change sees a box that cannot change as before (disabled, no reason), except where the reason is a fact of
+the thing itself (the installation's malware setting, the break-glass account), which every reader may read. The checkbox's unavailable
+look is the disabled colour as its fill and the box faded (`_controls.scss`): the browser draws a native box. **Applied in the spec:**
+R-UI-270's table, [signatures.md](signatures.md) R-SIG-036. Code: [switch.ts](../../web/src/app/shared/ui/switch.ts),
+[checkbox.ts](../../web/src/app/shared/ui/checkbox.ts), [unavailable.ts](../../web/src/app/shared/ui/unavailable.ts),
+[anchor-table.ts](../../web/src/app/shared/signatures/anchor-table.ts), [project-members.ts](../../web/src/app/features/projects/project-members.ts),
+[repository-malware.ts](../../web/src/app/features/repositories/repository-malware.ts), [user-detail.html](../../web/src/app/features/users/user-detail.html).
 
 ### Q-UI-1655 · A download's repository and unit in the audit log count their longest piece in the log's least width
 

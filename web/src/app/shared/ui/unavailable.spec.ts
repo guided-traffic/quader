@@ -15,6 +15,7 @@ const REASON = 'Declared in config.authz.role_bindings of the Helm configuration
       <button type="submit" class="btn btn-confirm send" [quaderUnavailable]="reason()">Save</button>
       <input class="text-input field" aria-label="Address" value="198.51.100.21" [quaderUnavailable]="reason()" />
       <a class="btn btn-default go" routerLink="/elsewhere" [quaderUnavailable]="reason()">Go</a>
+      <select class="select-input role" aria-label="Role" [quaderUnavailable]="reason()"><option>Owner</option><option>Reader</option></select>
     </form>
   `,
 })
@@ -63,6 +64,20 @@ describe('An unavailable control (R-UI-270)', () => {
     expect(host.clicks).toBe(0);
     expect(host.submitted).toBe(0);
     expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('R-UI-270 a select does not open and takes no key that changes its choice; Tab and Escape pass', async () => {
+    const { root } = await render();
+    const role = root.querySelector<HTMLSelectElement>('.role')!;
+    expect(role.getAttribute('aria-disabled')).toBe('true');
+    const down = new MouseEvent('mousedown', { bubbles: true, cancelable: true });
+    role.dispatchEvent(down);
+    expect(down.defaultPrevented).toBe(true);
+    for (const [key, held] of [['ArrowDown', true], ['r', true], [' ', true], ['Tab', false], ['Escape', false]] as const) {
+      const press = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
+      role.dispatchEvent(press);
+      expect(press.defaultPrevented, key).toBe(held);
+    }
   });
 
   it('R-UI-270 hover and focus show the reason; a tap pins it until the next tap', async () => {

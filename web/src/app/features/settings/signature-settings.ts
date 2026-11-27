@@ -128,10 +128,14 @@ export class SignatureSettingsPage {
     return [...this.anchors()].sort((a, b) => rank[a.scope] - rank[b.scope] || a.title.localeCompare(b.title));
   });
 
-  /** A shipped anchor only its switch, a Helm one nothing, an administrator's its switch and Remove (R-SIG-036). */
+  /**
+   * A shipped anchor only its switch, an administrator's its switch and Remove (R-SIG-036); one of the Helm configuration both,
+   * unavailable with their reason (R-UI-270). A reader without the right sees no control and no reason.
+   */
   protected readonly installationControls = (a: SignatureAnchor): AnchorRowControls => ({
-    toggle: this.canWrite() && (a.scope === 'shipped' || a.scope === 'installation'),
-    remove: this.canWrite() && a.scope === 'installation',
+    toggle: this.canWrite() && a.scope !== 'project',
+    remove: this.canWrite() && (a.scope === 'installation' || a.scope === 'configuration'),
+    fixed: a.scope === 'configuration',
   });
   /** An administrator removes any project's anchor, whatever the switch says (R-SIG-019). */
   protected readonly projectControls = (): AnchorRowControls => ({ toggle: false, remove: this.canWrite() });

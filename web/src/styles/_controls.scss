@@ -549,6 +549,14 @@ input[type='radio'] {
     outline: var(--quader-focus-ring);
     outline-offset: 2px;
   }
+
+  // An unavailable box (quaderUnavailable, R-UI-270) keeps its focus and its tooltip and looks as a disabled one: the browser draws a
+  // native box, so its fill is the disabled colour and the box is faded as the browser fades a disabled one.
+  &[aria-disabled='true'] {
+    accent-color: var(--quader-control-disabled-fg);
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
 }
 
 // ---- Opening and closing ---------------------------------------------------------------

@@ -7,11 +7,16 @@ import { Switch } from '../ui/switch';
 import { TimeAgo } from '../ui/time-ago';
 import { anchorKindWords, anchorScopeWords, shortFingerprint } from '../../views/signatures/signature-words';
 import { Busy } from '../ui/busy';
+import { Unavailable } from '../ui/unavailable';
 
-/** What a row of the table may offer: its switch, its removal, or nothing. */
+/**
+ * What a row of the table may offer: its switch, its removal, or nothing. `fixed` offers both unavailable, with the reason as their
+ * tooltip: an anchor of the Helm configuration, which only the configuration changes (R-UI-270).
+ */
 export interface AnchorRowControls {
   readonly toggle: boolean;
   readonly remove: boolean;
+  readonly fixed?: boolean;
 }
 
 /**
@@ -19,7 +24,7 @@ export interface AnchorRowControls {
  * subject or fingerprint of its first certificate or key, a Sigstore identity's issuer), its kind, where it comes from, the first
  * expiry of its material, the signatures it knows in the installation's scope, and whether it applies. The page decides per row what
  * it offers (`controls`): a shipped anchor only its switch, an administrator's its switch and **Remove**, an anchor of the Helm
- * values nothing; a project anchor that no longer applies says why. `project` names the project that owns each anchor instead of
+ * configuration both, greyed out with the key that sets it as their tooltip (R-UI-270); a project anchor that no longer applies says why. `project` names the project that owns each anchor instead of
  * where it comes from.
  *
  * One form at every width but a phone's (Q-UI-969, the rule of the lists of 2026-11-23): a table whose columns fit at 1,440 and
@@ -29,7 +34,7 @@ export interface AnchorRowControls {
 @Component({
   selector: 'quader-anchor-table',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Busy, DataTable, DecimalPipe, NoValue, Switch, TimeAgo],
+  imports: [Busy, DataTable, DecimalPipe, NoValue, Switch, TimeAgo, Unavailable],
   template: `
     <quader-data-table [caption]="caption()" [columns]="columns()" [empty]="anchors().length === 0" [emptyText]="emptyText()">
       @for (a of anchors(); track a.id) {
@@ -68,7 +73,13 @@ export interface AnchorRowControls {
           @if (showState()) {
             <td class="state-cell">
               @if (c.toggle) {
-                <quader-switch [checked]="a.enabled" [label]="switchName(a)" [busy]="busy().has(a.id)" (checkedChange)="switched.emit({ anchor: a, on: $event })" />
+                <quader-switch
+                  [checked]="a.enabled"
+                  [label]="switchName(a)"
+                  [busy]="busy().has(a.id)"
+                  [unavailable]="c.fixed ? fixedSwitch : ''"
+                  (checkedChange)="switched.emit({ anchor: a, on: $event })"
+                />
               } @else if (a.scope !== 'project') {
                 <span class="word">{{ a.enabled ? onWord : offWord }}</span>
               } @else {
@@ -81,7 +92,14 @@ export interface AnchorRowControls {
           @if (anyRemove()) {
             <td class="actions">
               @if (c.remove) {
-                <button class="btn btn-tertiary" type="button" [disabled]="busy().has(a.id)" [quaderBusy]="busy().has(a.id)" (click)="remove.emit(a)">
+                <button
+                  class="btn btn-tertiary"
+                  type="button"
+                  [disabled]="busy().has(a.id)"
+                  [quaderBusy]="busy().has(a.id)"
+                  [quaderUnavailable]="c.fixed ? fixedRemove : ''"
+                  (click)="remove.emit(a)"
+                >
                   <ng-container i18n="@@sig.anchor.remove">Remove</ng-container><span class="visually-hidden">&ngsp;{{ a.title }}</span>
                 </button>
               }
@@ -141,6 +159,9 @@ export class AnchorTable {
   protected readonly offWord = $localize`:@@switch.off:Off`;
   protected readonly expiredWord = $localize`:@@sig.anchor.expired:expired`;
   protected readonly appliedWord = $localize`:@@sig.anchor.applied:Applied`;
+  /** The reasons of an anchor of the Helm configuration's switch and **Remove** (R-UI-268's words, R-UI-270). */
+  protected readonly fixedSwitch = $localize`:@@sig.anchor.helm-switch:Set in signatures.anchors of the Helm configuration: change it there.`;
+  protected readonly fixedRemove = $localize`:@@sig.anchor.helm-remove:Declared in signatures.anchors of the Helm configuration: remove it there.`;
   protected readonly notApplied = $localize`:@@sig.anchor.not-applied:Not applied: project anchors are switched off by an administrator.`;
 
   /** What identifies an anchor's material: a Sigstore identity's issuer and pattern, else its first certificate's or key's subject or fingerprint. */

@@ -50,8 +50,10 @@ describe('The external flag of a user (R-UI-056)', () => {
       },
     });
     await settle(fixture);
-    expect(externalBox(root).disabled).toBe(true);
-    expect(text(root)).toContain('The break-glass account is never external.');
+    // R-UI-270: the box stays, greyed out, its reason its tooltip; no line under it says it again (Q-UI-1654).
+    expect(externalBox(root).getAttribute('aria-disabled')).toBe('true');
+    expect(document.getElementById(externalBox(root).getAttribute('aria-describedby')!)?.textContent).toBe('The break-glass account is never external.');
+    expect(text(root)).not.toContain('The break-glass account is never external.');
   });
 
   it('R-UI-056 without identities:write the flag is shown but cannot be changed', async () => {

@@ -144,20 +144,41 @@ describe('Project members (R-UI-041)', () => {
     expect(text(members)).toContain('No member matches.');
   });
 
-  it('R-UI-041 removing or demoting the last Owner is refused and the refusal is shown', async () => {
+  it('R-UI-005 R-UI-270 an Owner sees the last Owner\'s role and Remove greyed out with the reason, and neither acts', async () => {
     const { fixture, root, get } = await renderScreen(ProjectMembersPage, {
       inputs: { project: 'web' },
       capabilities: [],
       setup: asMember('owner'),
     });
     const members = root.querySelector('quader-project-members') as HTMLElement;
+    const reason = 'A project keeps at least one Owner. Make another member an Owner first.';
+    const describedBy = (el: Element): string | undefined => document.getElementById(el.getAttribute('aria-describedby') ?? '')?.textContent ?? undefined;
+    const remove = [...members.querySelectorAll<HTMLButtonElement>('td.actions button')].find((b) => text(b) === 'Remove group:web-leads')!;
+    const role = members.querySelector<HTMLSelectElement>('select[name="role-group:web-leads"]')!;
+    for (const control of [remove, role]) {
+      expect(control.disabled).toBe(false);
+      expect(control.getAttribute('aria-disabled')).toBe('true');
+      expect(describedBy(control)).toBe(reason);
+    }
+    remove.click();
+    await sleep(fixture, 100);
+    expect(text(members)).not.toContain(reason);
+    expect((get(ProjectsApi) as FakeProjectsApi).memberLists['web']).toHaveLength(1);
+    await expectAccessible(root);
+  });
+
+  it('R-UI-041 an administrator keeps the last Owner\'s Remove, and a refusal of the server is shown above the list', async () => {
+    const { fixture, root, get } = await renderScreen(ProjectMembersPage, {
+      inputs: { project: 'web' },
+      capabilities: ['projects:write'],
+    });
+    const members = root.querySelector('quader-project-members') as HTMLElement;
+    const role = members.querySelector<HTMLSelectElement>('select[name="role-group:web-leads"]')!;
+    expect(role.getAttribute('aria-disabled')).toBeNull();
+    // The fake refuses as the server does for an Owner; the screen shows what the server answered.
     await removeMember(fixture, members, 'group:web-leads');
     expect(text(members)).toContain('A project keeps at least one Owner');
     expect((get(ProjectsApi) as FakeProjectsApi).memberLists['web']).toHaveLength(1);
-    type(members.querySelector<HTMLSelectElement>('select[name="role-group:web-leads"]')!, 'reader');
-    await sleep(fixture, 100);
-    expect(text(members)).toContain('A project keeps at least one Owner');
-    expect((get(ProjectsApi) as FakeProjectsApi).memberLists['web']![0]!.role).toBe('owner');
   });
 
   it('R-UI-041 a Reader sees the members and the roles as text', async () => {
