@@ -156,7 +156,7 @@ function registrations(frankfurtOn: boolean): { items: Json[] } {
         // The declared token as the server stored it (its phrase); the screen names it itself (Q-UI-1629). The issued one expires in
         // three weeks: the section Tokens warns and opens by itself (Q-UI-1623).
         tokens: [
-          { ...token('0192f0d1-1c2a-7c3e-8a51-6f7d2b9c4e44', 'Bastion partners (declared in the configuration)', 'qdr_bst_Lm4c', 2, 0), expiresAt: null, declared: true },
+          { ...token('0192f0d1-1c2a-7c3e-8a51-6f7d2b9c4e44', '', 'qdr_bst_Lm4c', 2, 0), expiresAt: null, declared: true },
           token('0192f0d1-1c2a-7c3e-8a51-6f7d2b9c4e41', 'partners 2026', 'qdr_bst_3kQ9', 165, 21),
         ],
         contacts: [contact('quader-bastion-7d9c5b8f6-p4r7t', '203.0.113.7', 'https://packages.example.com', 1)],
@@ -561,7 +561,7 @@ function stateRegistrations(): { items: Json[] } {
       healthy('partners', '0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a64', [contact('quader-bastion-7d9c5b8f6-p4r7t', '203.0.113.7', 'https://pkgs.partner.example.com', 1)], {
         description: 'The partner network',
         declared: { since: at(-2), secretName: 'quader-bastion-token' },
-        tokens: [{ ...token('0192f0d1-1c2a-7c3e-8a51-6f7d2b9c4e64', 'Bastion partners (declared in the configuration)', 'qdr_bst_Lm4c', 2, 0), expiresAt: null, declared: true }],
+        tokens: [{ ...token('0192f0d1-1c2a-7c3e-8a51-6f7d2b9c4e64', '', 'qdr_bst_Lm4c', 2, 0), expiresAt: null, declared: true }],
       }),
     ],
   };
