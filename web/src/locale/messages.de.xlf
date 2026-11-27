@@ -333,7 +333,7 @@
       <notes>
         <note category="location">src/app/app.routes.ts:86</note>
         <note category="location">src/app/app.routes.ts:87</note>
-        <note category="location">src/app/features/search/search-results.ts:325</note>
+        <note category="location">src/app/features/search/search-results.ts:327</note>
       </notes>
       <segment>
         <source>Search</source>
@@ -12722,9 +12722,9 @@
         <note category="location">src/app/features/system/backups/backups-page.html:156,158</note>
         <note category="location">src/app/features/system/job-table.ts:151</note>
         <note category="location">src/app/features/system/tasks-card.ts:123</note>
-        <note category="location">src/app/views/files/folder-view.ts:189</note>
-        <note category="location">src/app/views/repositories/repository-item-versions.ts:247</note>
-        <note category="location">src/app/views/repositories/repository-items.ts:242</note>
+        <note category="location">src/app/views/files/folder-view.ts:190</note>
+        <note category="location">src/app/views/repositories/repository-item-versions.ts:250</note>
+        <note category="location">src/app/views/repositories/repository-items.ts:245</note>
       </notes>
       <segment>
         <source>Actions</source>
@@ -14580,9 +14580,9 @@
       <notes>
         <note category="location">src/app/features/guides/guide-format.ts:156</note>
         <note category="location">src/app/features/repositories/repository-list.ts:393</note>
-        <note category="location">src/app/features/search/search-results.ts:343</note>
-        <note category="location">src/app/features/search/search-results.ts:360</note>
-        <note category="location">src/app/features/search/search-results.ts:381</note>
+        <note category="location">src/app/features/search/search-results.ts:345</note>
+        <note category="location">src/app/features/search/search-results.ts:362</note>
+        <note category="location">src/app/features/search/search-results.ts:383</note>
       </notes>
       <segment>
         <source>Repository</source>
@@ -14611,7 +14611,7 @@
         <note category="location">src/app/features/repositories/repository-list.html:69</note>
         <note category="location">src/app/features/repositories/repository-list.ts:329</note>
         <note category="location">src/app/features/repositories/repository-list.ts:400</note>
-        <note category="location">src/app/features/search/search-results.ts:348</note>
+        <note category="location">src/app/features/search/search-results.ts:350</note>
       </notes>
       <segment>
         <source>Class</source>
@@ -17975,7 +17975,7 @@
     <unit id="pkg.list.loading">
       <notes>
         <note category="location">src/app/features/packages/namespace-page.html:33,34</note>
-        <note category="location">src/app/views/packages/package-table.ts:29,30</note>
+        <note category="location">src/app/views/packages/package-table.ts:30,31</note>
       </notes>
       <segment>
         <source>Loading the packages.</source>
@@ -17984,7 +17984,7 @@
     </unit>
     <unit id="ns.publishing.loading">
       <notes>
-        <note category="location">src/app/features/packages/namespace-page.html:76,77</note>
+        <note category="location">src/app/features/packages/namespace-page.html:78,79</note>
       </notes>
       <segment>
         <source>Reading who may publish into the name.</source>
@@ -17993,7 +17993,7 @@
     </unit>
     <unit id="ns.publishing.heading">
       <notes>
-        <note category="location">src/app/features/packages/namespace-page.html:81,82</note>
+        <note category="location">src/app/features/packages/namespace-page.html:83,84</note>
       </notes>
       <segment>
         <source>Who may publish into the name</source>
@@ -18002,7 +18002,7 @@
     </unit>
     <unit id="ns.publishing.intro">
       <notes>
-        <note category="location">src/app/features/packages/namespace-page.html:83,86</note>
+        <note category="location">src/app/features/packages/namespace-page.html:85,88</note>
       </notes>
       <segment>
         <source> Whoever may publish into a local <ph id="0" equiv="INTERPOLATION" disp="{{ formatLabel() }}"/> repository may publish a package whose name starts with <pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="2" equiv="INTERPOLATION_1" disp="{{ prefix() }}"/></pc> there. Claims decide which repository a virtual repository serves such a name from. </source>
@@ -18011,7 +18011,7 @@
     </unit>
     <unit id="ns.publishing.none">
       <notes>
-        <note category="location">src/app/features/packages/namespace-page.html:87,89</note>
+        <note category="location">src/app/features/packages/namespace-page.html:89,91</note>
       </notes>
       <segment>
         <source>No local repository of this format whose settings you may read.</source>
@@ -18020,7 +18020,7 @@
     </unit>
     <unit id="ns.publishing.who">
       <notes>
-        <note category="location">src/app/features/packages/namespace-page.html:94,97</note>
+        <note category="location">src/app/features/packages/namespace-page.html:96,99</note>
       </notes>
       <segment>
         <source> Who may publish here: the developers, maintainers and owners among the <pc id="0" equivStart="START_LINK" equivEnd="CLOSE_LINK" type="link" dispStart="&lt;a [routerLink]=&quot;[&apos;/projects&apos;, r.project, &apos;members&apos;]&quot;&gt;" dispEnd="&lt;/a&gt;">members of <ph id="1" equiv="INTERPOLATION" disp="{{ r.project }}"/></pc>, and whoever a <pc id="2" equivStart="START_LINK_1" equivEnd="CLOSE_LINK" type="link" dispStart="&lt;a [routerLink]=&quot;[&apos;/projects&apos;, r.project, &apos;policies&apos;]&quot;&gt;" dispEnd="&lt;/a&gt;">permission policy</pc> gives the right to publish. </source>
@@ -18029,7 +18029,7 @@
     </unit>
     <unit id="ns.publishing.enforce">
       <notes>
-        <note category="location">src/app/features/packages/namespace-page.html:100,101</note>
+        <note category="location">src/app/features/packages/namespace-page.html:102,103</note>
       </notes>
       <segment>
         <source>Package ownership is enforced: whoever publishes a new name first owns it, and a later version needs one of its owners or the right to manage the repository.</source>
@@ -18038,7 +18038,7 @@
     </unit>
     <unit id="ns.publishing.off">
       <notes>
-        <note category="location">src/app/features/packages/namespace-page.html:102,104</note>
+        <note category="location">src/app/features/packages/namespace-page.html:104,106</note>
       </notes>
       <segment>
         <source>Package ownership is off: whoever may publish here may publish every name.</source>
@@ -18047,7 +18047,7 @@
     </unit>
     <unit id="ns.publishing.claim">
       <notes>
-        <note category="location">src/app/features/packages/namespace-page.html:109</note>
+        <note category="location">src/app/features/packages/namespace-page.html:111</note>
       </notes>
       <segment>
         <source>Claims</source>
@@ -18056,7 +18056,7 @@
     </unit>
     <unit id="ns.publishing.no-claim">
       <notes>
-        <note category="location">src/app/features/packages/namespace-page.html:115,117</note>
+        <note category="location">src/app/features/packages/namespace-page.html:117,119</note>
       </notes>
       <segment>
         <source>No claim of this repository covers a name of it.</source>
@@ -18065,7 +18065,7 @@
     </unit>
     <unit id="ns.publishing.auto-on">
       <notes>
-        <note category="location">src/app/features/packages/namespace-page.html:120,121</note>
+        <note category="location">src/app/features/packages/namespace-page.html:122,123</note>
       </notes>
       <segment>
         <source>A first publish of a new name claims that name for this repository.</source>
@@ -18074,7 +18074,7 @@
     </unit>
     <unit id="ns.publishing.auto-off">
       <notes>
-        <note category="location">src/app/features/packages/namespace-page.html:122,124</note>
+        <note category="location">src/app/features/packages/namespace-page.html:124,126</note>
       </notes>
       <segment>
         <source>A first publish claims nothing.</source>
@@ -18083,7 +18083,7 @@
     </unit>
     <unit id="ns.description.project">
       <notes>
-        <note category="location">src/app/features/packages/namespace-page.ts:61</note>
+        <note category="location">src/app/features/packages/namespace-page.ts:62</note>
       </notes>
       <segment>
         <source>The <ph id="0" equiv="format" disp="this.formatLabel()"/> packages of the name in <ph id="1" equiv="project" disp="where"/> that you may read.</source>
@@ -18092,7 +18092,7 @@
     </unit>
     <unit id="ns.description.all">
       <notes>
-        <note category="location">src/app/features/packages/namespace-page.ts:62</note>
+        <note category="location">src/app/features/packages/namespace-page.ts:63</note>
       </notes>
       <segment>
         <source>The <ph id="0" equiv="format" disp="this.formatLabel()"/> packages of the name in every project that you may read.</source>
@@ -18101,9 +18101,9 @@
     </unit>
     <unit id="pkg.col.package">
       <notes>
-        <note category="location">src/app/features/packages/namespace-page.ts:79</note>
-        <note category="location">src/app/features/search/search-results.ts:358</note>
-        <note category="location">src/app/views/packages/package-table.ts:112</note>
+        <note category="location">src/app/features/packages/namespace-page.ts:80</note>
+        <note category="location">src/app/features/search/search-results.ts:360</note>
+        <note category="location">src/app/views/packages/package-table.ts:115</note>
       </notes>
       <segment>
         <source>Package</source>
@@ -18112,12 +18112,12 @@
     </unit>
     <unit id="projects.col.project">
       <notes>
-        <note category="location">src/app/features/packages/namespace-page.ts:80</note>
+        <note category="location">src/app/features/packages/namespace-page.ts:81</note>
         <note category="location">src/app/features/projects/projects-home.ts:224</note>
-        <note category="location">src/app/features/search/search-results.ts:344</note>
-        <note category="location">src/app/features/search/search-results.ts:359</note>
-        <note category="location">src/app/features/search/search-results.ts:380</note>
-        <note category="location">src/app/features/search/search-results.ts:385</note>
+        <note category="location">src/app/features/search/search-results.ts:346</note>
+        <note category="location">src/app/features/search/search-results.ts:361</note>
+        <note category="location">src/app/features/search/search-results.ts:382</note>
+        <note category="location">src/app/features/search/search-results.ts:387</note>
       </notes>
       <segment>
         <source>Project</source>
@@ -18126,9 +18126,9 @@
     </unit>
     <unit id="pkg.col.latest">
       <notes>
-        <note category="location">src/app/features/packages/namespace-page.ts:83</note>
-        <note category="location">src/app/features/search/search-results.ts:364</note>
-        <note category="location">src/app/views/packages/package-table.ts:117</note>
+        <note category="location">src/app/features/packages/namespace-page.ts:84</note>
+        <note category="location">src/app/features/search/search-results.ts:366</note>
+        <note category="location">src/app/views/packages/package-table.ts:120</note>
       </notes>
       <segment>
         <source>Latest</source>
@@ -18137,9 +18137,9 @@
     </unit>
     <unit id="pkg.help.latest">
       <notes>
-        <note category="location">src/app/features/packages/namespace-page.ts:84</note>
-        <note category="location">src/app/features/search/search-results.ts:365</note>
-        <note category="location">src/app/views/packages/package-table.ts:118</note>
+        <note category="location">src/app/features/packages/namespace-page.ts:85</note>
+        <note category="location">src/app/features/search/search-results.ts:367</note>
+        <note category="location">src/app/views/packages/package-table.ts:121</note>
       </notes>
       <segment>
         <source>The highest stable version you may see. A pre-release is shown only while no stable version exists.</source>
@@ -18148,9 +18148,9 @@
     </unit>
     <unit id="pkg.col.updated">
       <notes>
-        <note category="location">src/app/features/packages/namespace-page.ts:89</note>
-        <note category="location">src/app/features/search/search-results.ts:371</note>
-        <note category="location">src/app/views/packages/package-table.ts:123</note>
+        <note category="location">src/app/features/packages/namespace-page.ts:90</note>
+        <note category="location">src/app/features/search/search-results.ts:373</note>
+        <note category="location">src/app/views/packages/package-table.ts:126</note>
       </notes>
       <segment>
         <source>Updated</source>
@@ -18159,9 +18159,9 @@
     </unit>
     <unit id="pkg.help.updated">
       <notes>
-        <note category="location">src/app/features/packages/namespace-page.ts:90</note>
-        <note category="location">src/app/features/search/search-results.ts:372</note>
-        <note category="location">src/app/views/packages/package-table.ts:125</note>
+        <note category="location">src/app/features/packages/namespace-page.ts:91</note>
+        <note category="location">src/app/features/search/search-results.ts:374</note>
+        <note category="location">src/app/views/packages/package-table.ts:128</note>
       </notes>
       <segment>
         <source>When the latest version you may see was published.</source>
@@ -18170,7 +18170,7 @@
     </unit>
     <unit id="ns.list.empty">
       <notes>
-        <note category="location">src/app/features/packages/namespace-page.ts:94</note>
+        <note category="location">src/app/features/packages/namespace-page.ts:95</note>
       </notes>
       <segment>
         <source>No package of this name that you may read.</source>
@@ -18179,7 +18179,7 @@
     </unit>
     <unit id="ns.claim.global">
       <notes>
-        <note category="location">src/app/features/packages/namespace-page.ts:131</note>
+        <note category="location">src/app/features/packages/namespace-page.ts:132</note>
       </notes>
       <segment>
         <source>in every virtual repository of the format</source>
@@ -18188,7 +18188,7 @@
     </unit>
     <unit id="ns.claim.members">
       <notes>
-        <note category="location">src/app/features/packages/namespace-page.ts:132</note>
+        <note category="location">src/app/features/packages/namespace-page.ts:133</note>
       </notes>
       <segment>
         <source>in the virtual repositories that contain this repository</source>
@@ -18197,7 +18197,7 @@
     </unit>
     <unit id="ns.claim.all">
       <notes>
-        <note category="location">src/app/features/packages/namespace-page.ts:137</note>
+        <note category="location">src/app/features/packages/namespace-page.ts:138</note>
       </notes>
       <segment>
         <source>every name of it</source>
@@ -18206,7 +18206,7 @@
     </unit>
     <unit id="ns.claim.some">
       <notes>
-        <note category="location">src/app/features/packages/namespace-page.ts:138</note>
+        <note category="location">src/app/features/packages/namespace-page.ts:139</note>
       </notes>
       <segment>
         <source>some names of it</source>
@@ -18215,7 +18215,7 @@
     </unit>
     <unit id="ns.claim.manual">
       <notes>
-        <note category="location">src/app/features/packages/namespace-page.ts:142</note>
+        <note category="location">src/app/features/packages/namespace-page.ts:143</note>
       </notes>
       <segment>
         <source>set by hand</source>
@@ -18224,7 +18224,7 @@
     </unit>
     <unit id="ns.claim.auto">
       <notes>
-        <note category="location">src/app/features/packages/namespace-page.ts:142</note>
+        <note category="location">src/app/features/packages/namespace-page.ts:143</note>
       </notes>
       <segment>
         <source>claimed by a first publish</source>
@@ -21995,7 +21995,7 @@
     <unit id="projects.built-in">
       <notes>
         <note category="location">src/app/features/projects/projects-home.ts:80,82</note>
-        <note category="location">src/app/features/search/search-results.ts:206,208</note>
+        <note category="location">src/app/features/search/search-results.ts:208,210</note>
       </notes>
       <segment>
         <source>Built-in</source>
@@ -22086,7 +22086,7 @@
     <unit id="projects-home.col.description">
       <notes>
         <note category="location">src/app/features/projects/projects-home.ts:226</note>
-        <note category="location">src/app/features/search/search-results.ts:386</note>
+        <note category="location">src/app/features/search/search-results.ts:388</note>
       </notes>
       <segment>
         <source>Description</source>
@@ -22096,7 +22096,7 @@
     <unit id="projects.col.visibility">
       <notes>
         <note category="location">src/app/features/projects/projects-home.ts:227</note>
-        <note category="location">src/app/features/search/search-results.ts:387</note>
+        <note category="location">src/app/features/search/search-results.ts:389</note>
         <note category="location">src/app/features/upstream/upstream-registries.ts:299</note>
         <note category="location">src/app/features/upstream/upstream-registries.ts:317</note>
       </notes>
@@ -22108,7 +22108,7 @@
     <unit id="projects.col.role">
       <notes>
         <note category="location">src/app/features/projects/projects-home.ts:230</note>
-        <note category="location">src/app/features/search/search-results.ts:390</note>
+        <note category="location">src/app/features/search/search-results.ts:392</note>
       </notes>
       <segment>
         <source>Your role</source>
@@ -22118,7 +22118,7 @@
     <unit id="projects.help.role">
       <notes>
         <note category="location">src/app/features/projects/projects-home.ts:231</note>
-        <note category="location">src/app/features/search/search-results.ts:391</note>
+        <note category="location">src/app/features/search/search-results.ts:393</note>
       </notes>
       <segment>
         <source>Your role in the project; a dash when you see it through a system role and are no member.</source>
@@ -22137,7 +22137,7 @@
     <unit id="projects.col.repositories">
       <notes>
         <note category="location">src/app/features/projects/projects-home.ts:235</note>
-        <note category="location">src/app/features/search/search-results.ts:394</note>
+        <note category="location">src/app/features/search/search-results.ts:396</note>
       </notes>
       <segment>
         <source>Repositories</source>
@@ -22147,7 +22147,7 @@
     <unit id="projects.col.members">
       <notes>
         <note category="location">src/app/features/projects/projects-home.ts:236</note>
-        <note category="location">src/app/features/search/search-results.ts:395</note>
+        <note category="location">src/app/features/search/search-results.ts:397</note>
       </notes>
       <segment>
         <source>Members</source>
@@ -23257,7 +23257,7 @@
     <unit id="repo.content.loading">
       <notes>
         <note category="location">src/app/features/repositories/content/repository-content.html:100,102</note>
-        <note category="location">src/app/views/repositories/repository-items.ts:70,71</note>
+        <note category="location">src/app/views/repositories/repository-items.ts:71,72</note>
       </notes>
       <segment>
         <source>Loading the repository&apos;s content.</source>
@@ -26331,7 +26331,7 @@
     <unit id="downloads.failure.address">
       <notes>
         <note category="location">src/app/features/repositories/downloads/remote-downloads.html:39,40</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:428,429</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:430,431</note>
       </notes>
       <segment>
         <source>Address</source>
@@ -26341,7 +26341,7 @@
     <unit id="downloads.failure.query-removed">
       <notes>
         <note category="location">src/app/features/repositories/downloads/remote-downloads.html:40,42</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:429,431</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:431,433</note>
       </notes>
       <segment>
         <source>(shown without its query, which can carry a credential)</source>
@@ -26351,7 +26351,7 @@
     <unit id="downloads.failure.headers">
       <notes>
         <note category="location">src/app/features/repositories/downloads/remote-downloads.html:43,44</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:440,441</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:442,443</note>
       </notes>
       <segment>
         <source>Headers of the limit</source>
@@ -26361,7 +26361,7 @@
     <unit id="downloads.failure.excerpt">
       <notes>
         <note category="location">src/app/features/repositories/downloads/remote-downloads.html:52,53</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:449,450</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:451,452</note>
       </notes>
       <segment>
         <source>The start of the upstream&apos;s answer</source>
@@ -26563,7 +26563,7 @@
     </unit>
     <unit id="downloads.next-attempt">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:368</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:370</note>
       </notes>
       <segment>
         <source>next</source>
@@ -26572,7 +26572,7 @@
     </unit>
     <unit id="downloads.progress.refused">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:375</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:377</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="INTERPOLATION" disp="{{ r.refused }}"/> refused by a gate</source>
@@ -26581,7 +26581,7 @@
     </unit>
     <unit id="downloads.failure.title">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:411</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:413</note>
       </notes>
       <segment>
         <source>Failure of attempt <ph id="0" equiv="INTERPOLATION" disp="{{ f.attempt }}"/></source>
@@ -26590,7 +26590,7 @@
     </unit>
     <unit id="downloads.failure.class">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:417,418</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:419,420</note>
       </notes>
       <segment>
         <source>Class</source>
@@ -26599,7 +26599,7 @@
     </unit>
     <unit id="downloads.failure.step">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:419,420</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:421,422</note>
       </notes>
       <segment>
         <source>Step</source>
@@ -26608,7 +26608,7 @@
     </unit>
     <unit id="downloads.failure.code">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:421,422</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:423,424</note>
       </notes>
       <segment>
         <source>Code</source>
@@ -26617,7 +26617,7 @@
     </unit>
     <unit id="downloads.failure.file">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:424,425</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:426,427</note>
       </notes>
       <segment>
         <source>File</source>
@@ -26626,7 +26626,7 @@
     </unit>
     <unit id="downloads.failure.status">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:432,433</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:434,435</note>
       </notes>
       <segment>
         <source>Upstream status</source>
@@ -26635,7 +26635,7 @@
     </unit>
     <unit id="downloads.failure.retry-after">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:436,437</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:438,439</note>
       </notes>
       <segment>
         <source>Retry-After</source>
@@ -26644,7 +26644,7 @@
     </unit>
     <unit id="downloads.failure.seconds">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:437,438</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:439,440</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="INTERPOLATION" disp="{{ f.retryAfter }}"/> s</source>
@@ -26653,8 +26653,8 @@
     </unit>
     <unit id="downloads.fact.started-by">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:455,456</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:458,459</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:457,458</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:460,461</note>
       </notes>
       <segment>
         <source>Started by</source>
@@ -26663,7 +26663,7 @@
     </unit>
     <unit id="downloads.fact.started-by-you">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:457</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:459</note>
       </notes>
       <segment>
         <source>You</source>
@@ -26672,7 +26672,7 @@
     </unit>
     <unit id="downloads.fact.queued">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:461,462</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:463,464</note>
       </notes>
       <segment>
         <source>Queued</source>
@@ -26681,7 +26681,7 @@
     </unit>
     <unit id="downloads.fact.started">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:464,465</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:466,467</note>
       </notes>
       <segment>
         <source>Started</source>
@@ -26690,7 +26690,7 @@
     </unit>
     <unit id="downloads.fact.finished">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:468,469</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:470,471</note>
       </notes>
       <segment>
         <source>Finished</source>
@@ -26699,7 +26699,7 @@
     </unit>
     <unit id="downloads.fact.files">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:472,473</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:474,475</note>
       </notes>
       <segment>
         <source>Files</source>
@@ -26708,7 +26708,7 @@
     </unit>
     <unit id="downloads.fact.files-value">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:473,474</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:475,476</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="INTERPOLATION" disp="{{ r.files }}"/> named, <ph id="1" equiv="INTERPOLATION_1" disp="{{ r.stored }}"/> stored, <ph id="2" equiv="INTERPOLATION_2" disp="{{ r.present }}"/> already stored, <ph id="3" equiv="INTERPOLATION_3" disp="{{ r.refused }}"/> refused</source>
@@ -26717,7 +26717,7 @@
     </unit>
     <unit id="downloads.fact.bytes">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:476,477</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:478,479</note>
       </notes>
       <segment>
         <source>Stored</source>
@@ -29141,7 +29141,7 @@
         <note category="location">src/app/features/repositories/repository-list.html:56</note>
         <note category="location">src/app/features/repositories/repository-list.ts:327</note>
         <note category="location">src/app/features/repositories/repository-list.ts:397</note>
-        <note category="location">src/app/features/search/search-results.ts:345</note>
+        <note category="location">src/app/features/search/search-results.ts:347</note>
       </notes>
       <segment>
         <source>Format</source>
@@ -30443,7 +30443,7 @@
     <unit id="repo.help.class">
       <notes>
         <note category="location">src/app/features/repositories/repository-list.ts:401</note>
-        <note category="location">src/app/features/search/search-results.ts:349</note>
+        <note category="location">src/app/features/search/search-results.ts:351</note>
       </notes>
       <segment>
         <source>Local repositories hold what you upload, remote repositories fetch and cache from another registry, virtual repositories combine other repositories behind one address.</source>
@@ -33906,7 +33906,7 @@
     </unit>
     <unit id="upstream.package.loading">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.html:224,226</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.html:226,228</note>
       </notes>
       <segment>
         <source>Reading the package from the upstream.</source>
@@ -33915,7 +33915,7 @@
     </unit>
     <unit id="upstream.rule.own-line">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:110</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:111</note>
       </notes>
       <segment>
         <source>Rule: this version</source>
@@ -33924,7 +33924,7 @@
     </unit>
     <unit id="upstream.rule.package-range-line">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:115</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:116</note>
       </notes>
       <segment>
         <source>Rule: the package&apos;s range</source>
@@ -33933,7 +33933,7 @@
     </unit>
     <unit id="upstream.rule.package-line">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:116</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:117</note>
       </notes>
       <segment>
         <source>Rule: the package</source>
@@ -33942,7 +33942,7 @@
     </unit>
     <unit id="upstream.versions.empty">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:133</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:134</note>
       </notes>
       <segment>
         <source>The upstream lists no version of this package.</source>
@@ -33951,7 +33951,7 @@
     </unit>
     <unit id="upstream.versions.empty-filtered">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:134</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:135</note>
       </notes>
       <segment>
         <source>No version matches.</source>
@@ -33960,7 +33960,7 @@
     </unit>
     <unit id="upstream.col.delivery">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:142</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:143</note>
       </notes>
       <segment>
         <source>Delivery</source>
@@ -33969,7 +33969,7 @@
     </unit>
     <unit id="upstream.col.cache">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:143</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:144</note>
       </notes>
       <segment>
         <source>Cache</source>
@@ -33978,7 +33978,7 @@
     </unit>
     <unit id="upstream.versions.showing">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:277</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:278</note>
       </notes>
       <segment>
         <source>Showing <ph id="0" equiv="shown" disp="groupedCount(n)"/> of <ph id="1" equiv="total" disp="groupedCount(p.total)"/></source>
@@ -33987,7 +33987,7 @@
     </unit>
     <unit id="upstream.act.download">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:312</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:313</note>
       </notes>
       <segment>
         <source>Download</source>
@@ -33996,7 +33996,7 @@
     </unit>
     <unit id="upstream.act.examine">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:314</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:315</note>
       </notes>
       <segment>
         <source>Download for examination</source>
@@ -34005,7 +34005,7 @@
     </unit>
     <unit id="upstream.act.discard">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:316</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:317</note>
       </notes>
       <segment>
         <source>Discard</source>
@@ -34014,7 +34014,7 @@
     </unit>
     <unit id="upstream.rule.this-package">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:366</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:367</note>
       </notes>
       <segment>
         <source>Rule: this package</source>
@@ -34023,7 +34023,7 @@
     </unit>
     <unit id="upstream.preview.title-package">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:378</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:379</note>
       </notes>
       <segment>
         <source>Every version of <ph id="0" equiv="name" disp="name"/></source>
@@ -35670,7 +35670,7 @@
     <unit id="search.group.repositories">
       <notes>
         <note category="location">src/app/features/search/search-model.ts:217</note>
-        <note category="location">src/app/features/search/search-results.ts:327</note>
+        <note category="location">src/app/features/search/search-results.ts:329</note>
       </notes>
       <segment>
         <source>Repositories</source>
@@ -35680,7 +35680,7 @@
     <unit id="search.group.packages">
       <notes>
         <note category="location">src/app/features/search/search-model.ts:218</note>
-        <note category="location">src/app/features/search/search-results.ts:328</note>
+        <note category="location">src/app/features/search/search-results.ts:330</note>
       </notes>
       <segment>
         <source>Packages</source>
@@ -35690,7 +35690,7 @@
     <unit id="search.group.projects">
       <notes>
         <note category="location">src/app/features/search/search-model.ts:219</note>
-        <note category="location">src/app/features/search/search-results.ts:329</note>
+        <note category="location">src/app/features/search/search-results.ts:331</note>
       </notes>
       <segment>
         <source>Projects</source>
@@ -35700,7 +35700,7 @@
     <unit id="search.group.documentation">
       <notes>
         <note category="location">src/app/features/search/search-model.ts:220</note>
-        <note category="location">src/app/features/search/search-results.ts:330</note>
+        <note category="location">src/app/features/search/search-results.ts:332</note>
       </notes>
       <segment>
         <source>Documentation</source>
@@ -35783,8 +35783,8 @@
       <notes>
         <note category="location">src/app/features/search/search-results.ts:78,79</note>
         <note category="location">src/app/features/search/search-results.ts:131,132</note>
-        <note category="location">src/app/features/search/search-results.ts:188,189</note>
-        <note category="location">src/app/features/search/search-results.ts:251,252</note>
+        <note category="location">src/app/features/search/search-results.ts:190,191</note>
+        <note category="location">src/app/features/search/search-results.ts:253,254</note>
       </notes>
       <segment>
         <source>Searching.</source>
@@ -35793,7 +35793,7 @@
     </unit>
     <unit id="search.results.description">
       <notes>
-        <note category="location">src/app/features/search/search-results.ts:333</note>
+        <note category="location">src/app/features/search/search-results.ts:335</note>
       </notes>
       <segment>
         <source>What you may read that matches “<ph id="0" equiv="text" disp="this.term()"/>”.</source>
@@ -35802,7 +35802,7 @@
     </unit>
     <unit id="search.results.too-short">
       <notes>
-        <note category="location">src/app/features/search/search-results.ts:337</note>
+        <note category="location">src/app/features/search/search-results.ts:339</note>
       </notes>
       <segment>
         <source>Type at least two characters.</source>
@@ -35811,7 +35811,7 @@
     </unit>
     <unit id="search.results.none">
       <notes>
-        <note category="location">src/app/features/search/search-results.ts:338</note>
+        <note category="location">src/app/features/search/search-results.ts:340</note>
       </notes>
       <segment>
         <source>Nothing you may read matches “<ph id="0" equiv="text" disp="this.term()"/>”.</source>
@@ -35820,8 +35820,8 @@
     </unit>
     <unit id="pkg.col.format">
       <notes>
-        <note category="location">src/app/features/search/search-results.ts:361</note>
-        <note category="location">src/app/views/packages/package-table.ts:113</note>
+        <note category="location">src/app/features/search/search-results.ts:363</note>
+        <note category="location">src/app/views/packages/package-table.ts:116</note>
       </notes>
       <segment>
         <source>Format</source>
@@ -35830,7 +35830,7 @@
     </unit>
     <unit id="search.col.entry">
       <notes>
-        <note category="location">src/app/features/search/search-results.ts:378</note>
+        <note category="location">src/app/features/search/search-results.ts:380</note>
       </notes>
       <segment>
         <source>Entry</source>
@@ -35839,7 +35839,7 @@
     </unit>
     <unit id="search.col.collection">
       <notes>
-        <note category="location">src/app/features/search/search-results.ts:379</note>
+        <note category="location">src/app/features/search/search-results.ts:381</note>
       </notes>
       <segment>
         <source>Collection</source>
@@ -63214,8 +63214,8 @@
     </unit>
     <unit id="repo.content.filter-files">
       <notes>
-        <note category="location">src/app/views/files/folder-view.ts:42,43</note>
-        <note category="location">src/app/views/files/folder-view.ts:44,46</note>
+        <note category="location">src/app/views/files/folder-view.ts:43,44</note>
+        <note category="location">src/app/views/files/folder-view.ts:45,47</note>
       </notes>
       <segment>
         <source>Filter files</source>
@@ -63224,7 +63224,7 @@
     </unit>
     <unit id="files.filter-partial">
       <notes>
-        <note category="location">src/app/views/files/folder-view.ts:54,57</note>
+        <note category="location">src/app/views/files/folder-view.ts:55,58</note>
       </notes>
       <segment>
         <source> The filter searches the <ph id="0" equiv="INTERPOLATION" disp="{{ list.items().length }}"/> entries loaded so far. Load more to search the rest. </source>
@@ -63233,7 +63233,7 @@
     </unit>
     <unit id="files.loading">
       <notes>
-        <note category="location">src/app/views/files/folder-view.ts:62,63</note>
+        <note category="location">src/app/views/files/folder-view.ts:63,64</note>
       </notes>
       <segment>
         <source>Loading the files.</source>
@@ -63242,7 +63242,7 @@
     </unit>
     <unit id="repo.content.files-empty-filtered">
       <notes>
-        <note category="location">src/app/views/files/folder-view.ts:169</note>
+        <note category="location">src/app/views/files/folder-view.ts:170</note>
       </notes>
       <segment>
         <source>No file matches the filter.</source>
@@ -63251,7 +63251,7 @@
     </unit>
     <unit id="files.folder-empty">
       <notes>
-        <note category="location">src/app/views/files/folder-view.ts:170</note>
+        <note category="location">src/app/views/files/folder-view.ts:171</note>
       </notes>
       <segment>
         <source>This folder is empty.</source>
@@ -63260,7 +63260,7 @@
     </unit>
     <unit id="files.empty-upload">
       <notes>
-        <note category="location">src/app/views/files/folder-view.ts:171</note>
+        <note category="location">src/app/views/files/folder-view.ts:172</note>
       </notes>
       <segment>
         <source>This repository holds no files yet. Upload files here or with your client.</source>
@@ -63269,7 +63269,7 @@
     </unit>
     <unit id="repo.content.col.name">
       <notes>
-        <note category="location">src/app/views/files/folder-view.ts:183</note>
+        <note category="location">src/app/views/files/folder-view.ts:184</note>
       </notes>
       <segment>
         <source>Name</source>
@@ -63278,8 +63278,8 @@
     </unit>
     <unit id="repo.content.col.size">
       <notes>
-        <note category="location">src/app/views/files/folder-view.ts:184</note>
-        <note category="location">src/app/views/repositories/repository-item-versions.ts:240</note>
+        <note category="location">src/app/views/files/folder-view.ts:185</note>
+        <note category="location">src/app/views/repositories/repository-item-versions.ts:243</note>
       </notes>
       <segment>
         <source>Size</source>
@@ -63288,7 +63288,7 @@
     </unit>
     <unit id="repo.content.col.modified">
       <notes>
-        <note category="location">src/app/views/files/folder-view.ts:186</note>
+        <note category="location">src/app/views/files/folder-view.ts:187</note>
       </notes>
       <segment>
         <source>Last change</source>
@@ -63297,7 +63297,7 @@
     </unit>
     <unit id="files.copy-url-of">
       <notes>
-        <note category="location">src/app/views/files/folder-view.ts:238</note>
+        <note category="location">src/app/views/files/folder-view.ts:239</note>
       </notes>
       <segment>
         <source>Copy the download address of <ph id="0" equiv="name" disp="c.path"/></source>
@@ -66056,7 +66056,7 @@
     </unit>
     <unit id="pkg.list.caption">
       <notes>
-        <note category="location">src/app/views/packages/package-table.ts:102</note>
+        <note category="location">src/app/views/packages/package-table.ts:105</note>
       </notes>
       <segment>
         <source>Packages</source>
@@ -68085,7 +68085,7 @@
     </unit>
     <unit id="repo.versions.loading">
       <notes>
-        <note category="location">src/app/views/repositories/repository-item-versions.ts:55,56</note>
+        <note category="location">src/app/views/repositories/repository-item-versions.ts:56,57</note>
       </notes>
       <segment>
         <source>Loading the versions.</source>
@@ -68094,7 +68094,7 @@
     </unit>
     <unit id="repo.content.prerelease">
       <notes>
-        <note category="location">src/app/views/repositories/repository-item-versions.ts:80,82</note>
+        <note category="location">src/app/views/repositories/repository-item-versions.ts:81,83</note>
       </notes>
       <segment>
         <source>Pre-release</source>
@@ -68103,7 +68103,7 @@
     </unit>
     <unit id="repo.content.copy-digest">
       <notes>
-        <note category="location">src/app/views/repositories/repository-item-versions.ts:213</note>
+        <note category="location">src/app/views/repositories/repository-item-versions.ts:216</note>
       </notes>
       <segment>
         <source>Copy digest</source>
@@ -68112,7 +68112,7 @@
     </unit>
     <unit id="repo.content.col.digest">
       <notes>
-        <note category="location">src/app/views/repositories/repository-item-versions.ts:238</note>
+        <note category="location">src/app/views/repositories/repository-item-versions.ts:241</note>
       </notes>
       <segment>
         <source>Digest</source>
@@ -68121,8 +68121,8 @@
     </unit>
     <unit id="repo.content.col.vulnerabilities">
       <notes>
-        <note category="location">src/app/views/repositories/repository-item-versions.ts:245</note>
-        <note category="location">src/app/views/repositories/repository-items.ts:234</note>
+        <note category="location">src/app/views/repositories/repository-item-versions.ts:248</note>
+        <note category="location">src/app/views/repositories/repository-items.ts:237</note>
       </notes>
       <segment>
         <source>Vulnerabilities</source>
@@ -68131,7 +68131,7 @@
     </unit>
     <unit id="repo.content.grade-sort-partial">
       <notes>
-        <note category="location">src/app/views/repositories/repository-items.ts:155,158</note>
+        <note category="location">src/app/views/repositories/repository-items.ts:158,161</note>
       </notes>
       <segment>
         <source> Sorted by grade among the first <ph id="0" equiv="INTERPOLATION" disp="{{ list.items().length }}"/> entries; the list holds more. </source>
@@ -68140,7 +68140,7 @@
     </unit>
     <unit id="repo.content.col.latest">
       <notes>
-        <note category="location">src/app/views/repositories/repository-items.ts:228</note>
+        <note category="location">src/app/views/repositories/repository-items.ts:231</note>
       </notes>
       <segment>
         <source>Latest</source>
@@ -68149,7 +68149,7 @@
     </unit>
     <unit id="repo.content.col.updated">
       <notes>
-        <note category="location">src/app/views/repositories/repository-items.ts:240</note>
+        <note category="location">src/app/views/repositories/repository-items.ts:243</note>
       </notes>
       <segment>
         <source>Updated</source>
@@ -68158,7 +68158,7 @@
     </unit>
     <unit id="repo.content.col.downloads">
       <notes>
-        <note category="location">src/app/views/repositories/repository-items.ts:241</note>
+        <note category="location">src/app/views/repositories/repository-items.ts:244</note>
       </notes>
       <segment>
         <source>Downloads</source>
@@ -68167,7 +68167,7 @@
     </unit>
     <unit id="repo.content.open-versions">
       <notes>
-        <note category="location">src/app/views/repositories/repository-items.ts:297</note>
+        <note category="location">src/app/views/repositories/repository-items.ts:300</note>
       </notes>
       <segment>
         <source>Show the versions of <ph id="0" equiv="name" disp="p.name"/></source>
