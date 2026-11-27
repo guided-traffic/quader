@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/guided-traffic/quader/internal/config"
@@ -95,4 +96,35 @@ func TestRetryBudgetBoundsTheWaitForAConnection(t *testing.T) {
 			}
 		}
 	})
+}
+
+// TestR_HA_009_ADeadlockRetryAfterTheBudgetStillGetsItsConnection (Q-HA-507): a transaction that waited longer than retry.max_elapsed
+// for a lock and lost the deadlock is run again, and the new attempt waits for its connection within a budget that counts from the
+// deadlock; it used to find the deadline of its acquire passed and answer 503 database_unavailable ("context deadline exceeded") from a
+// database that works (integration area files, TestConcurrentWritersOnOnePath, 2026-11-27, with retry.max_elapsed 2 s and two
+// deadlocks of PostgreSQL's deadlock_timeout of 1 s each).
+func TestR_HA_009_ADeadlockRetryAfterTheBudgetStillGetsItsConnection(t *testing.T) {
+	r := newRetrier(config.DatabaseRetry{InitialBackoff: 10 * time.Millisecond, MaxBackoff: 20 * time.Millisecond, MaxElapsed: 100 * time.Millisecond})
+	attempts := 0
+	err := r.doCtx(context.Background(), func(actx context.Context) error {
+		attempts++
+		// The wait for a connection as acquire bounds it: an attempt whose deadline has passed gets none.
+		by, ok := actx.Value(retryDeadlineKey{}).(time.Time)
+		if !ok {
+			t.Fatal("no budget for the connection")
+		}
+		wait, cancel := context.WithDeadline(actx, by)
+		defer cancel()
+		if err := wait.Err(); err != nil {
+			return err
+		}
+		if attempts < 3 {
+			time.Sleep(150 * time.Millisecond) // the lock wait until the deadlock is detected, longer than the budget
+			return &pgconn.PgError{Code: "40P01", Message: "deadlock detected"}
+		}
+		return nil
+	})
+	if err != nil || attempts != 3 {
+		t.Fatalf("after two deadlocks: %v in %d attempts, want success in 3", err, attempts)
+	}
 }

@@ -229,6 +229,12 @@ func (r retrier) doCtx(ctx context.Context, op func(context.Context) error) erro
 			if r.sleep(ctx, jitter(time.Duration(serial)*10*time.Millisecond)) != nil {
 				return err
 			}
+			// The database answered: retry.max_elapsed bounds an outage, so it counts again from here (Q-HA-507). Otherwise an
+			// attempt that waited out a deadlock or a lock longer than the budget would find its connection's deadline passed and
+			// answer 503 database_unavailable from a database that works.
+			start = r.now()
+			actx = context.WithValue(ctx, retryDeadlineKey{}, start.Add(r.cfg.MaxElapsed))
+			backoff = r.cfg.InitialBackoff
 		case retryFailover:
 			wait := jitter(backoff)
 			if r.now().Sub(start)+wait > r.cfg.MaxElapsed {

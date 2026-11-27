@@ -1557,6 +1557,9 @@ the function. S3 writes happen before the transaction and are idempotent by cont
 
 - Backoff: exponential from `database.retry.initial_backoff` to `database.retry.max_backoff` with
   full jitter, bounded by `database.retry.max_elapsed` and by the request's own deadline.
+- `database.retry.max_elapsed` bounds an outage, so it counts from the last answer of the database: after a serialization failure or
+  a deadlock the next attempt, its wait for a connection included, has the whole budget again
+  ([Q-HA-507](#q-ha-507--retrymax_elapsed-counts-again-after-a-serialization-failure-or-a-deadlock)).
 - **Unknown commit outcome.** When the connection drops after `COMMIT` was sent, the transaction
   may or may not have committed. Quader MUST NOT retry it blindly. Writes that a client may
   repeat MUST be idempotent at the protocol level: re-uploading identical content to the same path
@@ -1607,6 +1610,8 @@ Acceptance criteria:
   `Retry-After`; the next loop iteration succeeds.
 - A unit test with an injected connection drop after `COMMIT` returns `503` and does not run the
   transaction function a second time.
+- Unit (`TestR_HA_009_ADeadlockRetryAfterTheBudgetStillGetsItsConnection`, 0.4 s, no database): two deadlocks after lock waits longer
+  than `retry.max_elapsed` are retried, and the third attempt gets its connection and succeeds.
 
 ### R-HA-010 · Object-storage outage
 Priority: **MVP** · Covers: HA-004
@@ -13519,6 +13524,27 @@ It amends [Q-HA-364](#q-ha-364--the-sizing-profiles-size-the-malware-scanner-fro
 | (b) Each profile sets `max_in_flight` to its maximum replicas × 2 | A bound per profile | Tighter | A second place that must follow the autoscaler's range |
 
 **Choice:** (a). **Applied in the spec:** R-HA-050.
+
+### Q-HA-507 · `retry.max_elapsed` counts again after a serialization failure or a deadlock
+
+Status: **Decided by the development agent on 2026-11-27** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the wait of an attempt for a pooled connection ends at the start of the transaction's retries plus `database.retry.max_elapsed`,
+so that a request fails with `503` within the budget while no connection can be made. A transaction that waited for locks longer than the
+budget and lost a deadlock was run again with that deadline already passed: its acquire failed at once with "context deadline
+exceeded", which the classification reads as a connection failure, and the request answered `503 database_unavailable` from a database
+that works. Seen once in each of two CI runs of the integration area `files` on 2026-11-27 (`TestConcurrentWritersOnOnePath`, whose
+environment sets the budget to 2 s; PostgreSQL detects a deadlock after its `deadlock_timeout` of 1 s, and the area's writers deadlock in
+`LockFoldersShared`, which the stack's log showed in a local run the same night); the unit case reproduces it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A serialization failure or a deadlock restarts the budget and the backoff: the next attempt's wait for a connection and any failover after it count from there (chosen) | The budget measures an outage from the database's last answer | A retry the table allows is never refused by a clock that measured lock waits; an outage still ends in the `503` within the budget once it starts | A request that meets deadlocks (at most three repeats) and then an outage may run longer than the budget past its start, bounded by its own deadline |
+| (b) Only the wait for a connection gets a fresh deadline; the elapsed time of failovers still counts from the start | Narrower | — | A failover right after a long lock wait has no budget left |
+| (c) Raise the test environment's budget to the default of 30 s | No product change | The flake goes | The defect stays for an operator who sets a short budget, and the case remains unreachable in tests |
+
+**Choice:** (a). **Applied in the spec:** R-HA-009; `doCtx` of [retry.go](../../internal/meta/postgres/retry.go); test
+`TestR_HA_009_ADeadlockRetryAfterTheBudgetStillGetsItsConnection` ([acquire_budget_test.go](../../internal/meta/postgres/acquire_budget_test.go)).
 
 ### H-37 · A database restore revives revoked credentials and removed grants
 

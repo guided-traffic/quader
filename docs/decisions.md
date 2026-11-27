@@ -11604,10 +11604,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-HA
 
-269 questions on [spec/ha-and-helm.md](spec/ha-and-helm.md).
+270 questions on [spec/ha-and-helm.md](spec/ha-and-helm.md).
 
 <details>
-<summary>Q-HA: 269 questions</summary>
+<summary>Q-HA: 270 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -11880,6 +11880,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-HA-501](spec/ha-and-helm.md#q-ha-501--the-profiles-set-no-number-of-calls-the-replicas-do) | The profiles set no number of calls; the replicas do | Decided by the development agent on 2026-11-26 | (a) No profile sets the scan controller's calls; they follow the replicas times `config.malware.scanner.slots`, bounded by `config.malware.controller.max_in_flight` (256) | — |
 | [Q-HA-505](spec/ha-and-helm.md#q-ha-505--capacity-is-a-key-of-the-element-a-size-with-the-schemas-pattern) | Capacity is a key of the element, a size with the schema's pattern | Decided by the development agent while building W-37's package P1 ([storage.md](spec/storage.md) R-STOR-106, Q-STOR-503) | (a) `capacity` in the element of `config.storage.connections`, passed through, the values file's element with `capacity: ""`; the schema allows an empty string or a whole number with a unit of `KiB` to `TiB` or `KB` to `TB`, the binary checks the bound of `1GiB` | — |
 | [Q-HA-506](spec/ha-and-helm.md#q-ha-506--storagehistoryretention-has-no-chart-line) | `storage.history.retention` has no chart line | Decided by the development agent | — | — |
+| [Q-HA-507](spec/ha-and-helm.md#q-ha-507--retrymax_elapsed-counts-again-after-a-serialization-failure-or-a-deadlock) | `retry.max_elapsed` counts again after a serialization failure or a deadlock | Decided by the development agent on 2026-11-27 | (a) A serialization failure or a deadlock restarts the budget and the backoff: the next attempt's wait for a connection and any failover after it count from there | — |
 
 </details>
 
