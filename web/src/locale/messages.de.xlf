@@ -6624,7 +6624,7 @@
     <unit id="bastion.col.actions">
       <notes>
         <note category="location">src/app/features/bastions/bastion-card.ts:584</note>
-        <note category="location">src/app/features/bastions/bastion-projects.ts:269</note>
+        <note category="location">src/app/features/bastions/bastion-projects.ts:271</note>
       </notes>
       <segment>
         <source>Actions</source>
@@ -8424,7 +8424,7 @@
     <unit id="bastion.projects.remove">
       <notes>
         <note category="location">src/app/features/bastions/bastion-projects.ts:123,124</note>
-        <note category="location">src/app/features/bastions/bastion-projects.ts:364</note>
+        <note category="location">src/app/features/bastions/bastion-projects.ts:366</note>
       </notes>
       <segment>
         <source>Remove</source>
@@ -8464,7 +8464,7 @@
     <unit id="bastion.help.projects">
       <notes>
         <note category="location">src/app/features/bastions/bastion-projects.ts:223</note>
-        <note category="location">src/app/features/bastions/bastion-projects.ts:404</note>
+        <note category="location">src/app/features/bastions/bastion-projects.ts:406</note>
       </notes>
       <segment>
         <source>The projects whose owners may distribute their repositories through this Bastion. A new Bastion allows none.</source>
@@ -8519,7 +8519,7 @@
     </unit>
     <unit id="bastion.projects.col-project">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-projects.ts:266</note>
+        <note category="location">src/app/features/bastions/bastion-projects.ts:268</note>
       </notes>
       <segment>
         <source>Project</source>
@@ -8528,7 +8528,7 @@
     </unit>
     <unit id="bastion.projects.col-repositories">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-projects.ts:267</note>
+        <note category="location">src/app/features/bastions/bastion-projects.ts:269</note>
       </notes>
       <segment>
         <source>Distributed here</source>
@@ -8537,7 +8537,7 @@
     </unit>
     <unit id="bastion.projects.col-allowed">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-projects.ts:268</note>
+        <note category="location">src/app/features/bastions/bastion-projects.ts:270</note>
       </notes>
       <segment>
         <source>Allowed</source>
@@ -8546,7 +8546,7 @@
     </unit>
     <unit id="bastion.projects.more">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-projects.ts:289</note>
+        <note category="location">src/app/features/bastions/bastion-projects.ts:291</note>
       </notes>
       <segment>
         <source>and <ph id="0" equiv="count" disp="n"/> more</source>
@@ -8555,7 +8555,7 @@
     </unit>
     <unit id="bastion.projects.allowed-done">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-projects.ts:345</note>
+        <note category="location">src/app/features/bastions/bastion-projects.ts:347</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="project" disp="project"/> may distribute through <ph id="1" equiv="name" disp="name"/>.</source>
@@ -8564,7 +8564,7 @@
     </unit>
     <unit id="bastion.projects.remove-text-zero">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-projects.ts:357</note>
+        <note category="location">src/app/features/bastions/bastion-projects.ts:359</note>
       </notes>
       <segment>
         <source>None of its repositories is distributed there yet. Its owners can no longer choose this Bastion.</source>
@@ -8573,7 +8573,7 @@
     </unit>
     <unit id="bastion.projects.remove-text-one">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-projects.ts:359</note>
+        <note category="location">src/app/features/bastions/bastion-projects.ts:361</note>
       </notes>
       <segment>
         <source>Its distributed repository is no longer served there, within seconds. Its owner&apos;s choice goes with it: allowing the project again distributes nothing until they choose again.</source>
@@ -8582,7 +8582,7 @@
     </unit>
     <unit id="bastion.projects.remove-text">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-projects.ts:360</note>
+        <note category="location">src/app/features/bastions/bastion-projects.ts:362</note>
       </notes>
       <segment>
         <source>Its <ph id="0" equiv="count" disp="n"/> distributed repositories are no longer served there, within seconds. Their owners&apos; choices go with it: allowing the project again distributes nothing until they choose again.</source>
@@ -8591,7 +8591,7 @@
     </unit>
     <unit id="bastion.projects.remove-title">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-projects.ts:362</note>
+        <note category="location">src/app/features/bastions/bastion-projects.ts:364</note>
       </notes>
       <segment>
         <source>Remove <ph id="0" equiv="project" disp="project"/> from <ph id="1" equiv="name" disp="name"/>?</source>
@@ -8600,7 +8600,7 @@
     </unit>
     <unit id="bastion.projects.removed-done">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-projects.ts:367</note>
+        <note category="location">src/app/features/bastions/bastion-projects.ts:369</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="project" disp="project"/> removed from <ph id="1" equiv="name" disp="name"/>.</source>
@@ -8609,7 +8609,7 @@
     </unit>
     <unit id="bastion.projects.page-title">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-projects.ts:403</note>
+        <note category="location">src/app/features/bastions/bastion-projects.ts:405</note>
       </notes>
       <segment>
         <source>Projects of <ph id="0" equiv="name" disp="this.name()"/></source>

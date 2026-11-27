@@ -263,8 +263,10 @@ export class BastionProjects {
   );
 
   protected readonly columns = computed<readonly TableColumn[]>(() => [
-    { id: 'project', label: $localize`:@@bastion.projects.col-project:Project`, width: '12rem', prefer: true },
-    { id: 'repositories', label: $localize`:@@bastion.projects.col-repositories:Distributed here`, width: '12rem' },
+    // Least widths that hold the table's form in a card at 1,024 px (Q-UI-969), as the card's Tokens do: the project takes the room left,
+    // and a row's keys break between keys.
+    { id: 'project', label: $localize`:@@bastion.projects.col-project:Project`, width: '9rem', prefer: true },
+    { id: 'repositories', label: $localize`:@@bastion.projects.col-repositories:Distributed here`, width: '9rem' },
     { id: 'allowed', label: $localize`:@@bastion.projects.col-allowed:Allowed`, width: '7.5rem' },
     ...(this.canWrite() ? [{ id: 'actions', label: $localize`:@@bastion.col.actions:Actions`, hideLabel: true }] : []),
   ]);
