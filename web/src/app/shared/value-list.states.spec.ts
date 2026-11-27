@@ -48,7 +48,7 @@ describe('a value in running text (R-UI-171)', () => {
     expect(value.getBoundingClientRect().right).toBeLessThanOrEqual(box.getBoundingClientRect().right + 0.5);
   });
 
-  it('R-UI-171 a value and its full stop stay on one line in with-stop (Q-UI-1615)', () => {
+  it('R-UI-171 a value and its full stop stay on one line in with-stop', () => {
     box = document.createElement('p');
     document.body.append(box);
     // The widths at which the value's box ends a line and its full stop begins the next: the case the class is for.
