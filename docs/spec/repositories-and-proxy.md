@@ -1826,8 +1826,9 @@ Priority: **MVP** · Covers: quader-only
   in it (R-REPO-075).
 - **What a preset repository is created with**: the document a create of only `key`, `class: remote` and `format` would store
   (R-REPO-063), with the preset's `url`, `extraHosts` and format settings, the preset's display name as `description` ("Docker
-  Hub"), `disabled: true`, no account, and both levels `internal`, whatever the installation's `defaultLevel`
-  ([Q-REPO-388](#q-repo-388--a-well-known-repository-starts-switched-off-and-internal), the owner's): one switch-on is all a team
+  Hub"; the product's English, which the UI and the Bastion's pages word by the key in the reader's language,
+  [api-and-ui.md](api-and-ui.md) R-UI-272), `disabled: true`, no account, and both levels `internal`, whatever the installation's
+  `defaultLevel` ([Q-REPO-388](#q-repo-388--a-well-known-repository-starts-switched-off-and-internal), the owner's): one switch-on is all a team
   needs. An installation that does not let a non-administrator choose `internal` gets the highest level below it that it does, and
   `private` where there is none; the reconcile never fails on the restrictions
   ([Q-REPO-393](#q-repo-393--where-the-installation-restricts-internal-a-preset-repository-is-created-private)). The reconcile never

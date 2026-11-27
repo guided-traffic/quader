@@ -21,7 +21,7 @@ import {
 import { Notifier } from '../../core/notifier';
 import { ServerAddress } from '../../core/server-address';
 import { SessionStore } from '../../core/session-store';
-import { isSystemRepository, isUpstreamProject, mayServeClients } from '../../core/upstream-project';
+import { isSystemRepository, isUpstreamProject, mayServeClients, repositoryDescription, wordedByProduct } from '../../core/upstream-project';
 import { SelectField, SelectOption } from '../../shared/access/fields';
 import { Confirm } from '../../shared/confirm-dialog';
 import { repositoryConflictFields } from './conflict-fields';
@@ -178,6 +178,14 @@ export class RepositoryDetail implements HasUnsavedChanges {
     () => (valueOf(this.formats) ?? []).find((f) => f.name === this.stored()?.format) ?? null,
   );
   protected readonly formatLabel = computed(() => this.format()?.displayName ?? this.stored()?.format ?? '');
+  /**
+   * The description as the screen shows it: a repository the product declares in the project upstream has the UI's words for it
+   * (R-UI-272); its field is read-only there (R-REPO-069), so the words are never sent back.
+   */
+  protected readonly worded = computed(() => wordedByProduct(this.project(), this.key()));
+  protected descriptionOf(stored: string | null | undefined): string {
+    return repositoryDescription(this.project(), this.key(), stored);
+  }
   /** The format of the reader's view by its name, as every other place shows a format (R-UI-006). */
   protected readonly consumerFormat = computed(() => {
     const key = this.consumer()?.format ?? '';

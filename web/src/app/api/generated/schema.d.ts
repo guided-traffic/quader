@@ -12932,13 +12932,13 @@ export interface components {
         FormatClient: {
             /** @description The value of `client` of the client setup and the guide (`npm`, `pnpm`, `yarn`, `yarn-classic`). */
             id: string;
-            /** @description A product name; the UI does not translate it. */
+            /** @description The client's name (`Docker CLI (with Buildx)`); the UI names a client it knows by its `id` in the reader's words (R-UI-272). */
             displayName: string;
         };
         UpstreamPreset: {
             /** @description Stable within the format (`docker-hub`, `ghcr`). */
             id: string;
-            /** @description A product name (`Docker Hub`, `GitHub (ghcr.io)`); the UI does not translate it. */
+            /** @description The name of the preset's well-known repository (`Docker Hub`, `Debian security updates`) in English; the UI names it by the preset's `id` in the reader's language (R-UI-272). */
             displayName: string;
             /** @description The upstream URL, written as `remote.url` is stored (R-REPO-024), so it compares equal to a stored URL. */
             url: string;
@@ -13132,7 +13132,7 @@ export interface components {
             /** @description The repository's format (a name of `GET /api/v1/formats`); the class is `remote`, but `local` for `clamav` (Q-REPO-411). */
             format: string;
             kind: components["schemas"]["UpstreamRepositoryKind"];
-            /** @description The preset's display name, a product name the UI does not translate; the system repository's name. */
+            /** @description The preset's display name, or the system repository's name, in English; the UI names the repository by its `key` in the reader's language (R-UI-272). */
             displayName: string;
             state: components["schemas"]["UpstreamRepositoryState"] | null;
             /** @description For a system repository, whether the work it serves reads through it, from the configuration of the replica that answers (R-REPO-070). */
@@ -13174,7 +13174,7 @@ export interface components {
             key: string;
             /** @description The qualified name, `upstream/<key>`, as a member list writes it (R-REPO-071). */
             name: string;
-            /** @description The preset's display name, a product name the UI does not translate. */
+            /** @description The preset's display name in English; the UI names the repository by its `key` in the reader's language (R-UI-272). */
             displayName: string;
             state: components["schemas"]["UpstreamRepositoryState"];
             visibility: components["schemas"]["VisibilityLevel"];

@@ -1,3 +1,5 @@
+import german from '../locale/messages.de.xlf' with { loader: 'text' };
+import { clearTranslations, loadTranslations } from '@angular/localize';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
@@ -48,6 +50,12 @@ const PROJECTS = {
   ],
 };
 
+/** The German targets of the translation file by unit id, for the units without a placeholder. */
+function germanUnits(): Record<string, string> {
+  const unit = /<unit id="([^"]+)">[\s\S]*?<target>([^<]*)<\/target>/g;
+  return Object.fromEntries([...german.matchAll(unit)].map((m) => [m[1]!, m[2]!.replace(/&apos;/g, "'").replace(/&amp;/g, '&')]));
+}
+
 /** A snippet as the catalogue's set-up document carries it (R-API-030). */
 function snippet(id: string, tab: ClientSnippet['tab'], content: string): ClientSnippet {
   return { id, tab, language: 'shell', fileName: null, content, marks: [] } as unknown as ClientSnippet;
@@ -97,6 +105,27 @@ describe("What a Bastion's visitor reads (R-BAS-128, R-BAS-129)", () => {
     expect([...root.querySelectorAll('.project-list .description')].map((p) => p.textContent?.trim())).toEqual([
       'Images and packages the platform team publishes.',
     ]);
+  });
+
+  it("R-UI-272 in German, the start says the project Upstream's description in German and a team's own as written", async () => {
+    loadTranslations(germanUnits());
+    try {
+      const http = setup();
+      const fixture = TestBed.createComponent(StartPage);
+      fixture.detectChanges();
+      const upstream = { key: 'upstream', displayName: 'Upstream', description: 'The public registries this installation offers to every project.' };
+      http.expectOne('/ui/data/v1/projects').flush({ items: [upstream, ...PROJECTS.items] });
+      await settled(fixture);
+      const descriptions = [...(fixture.nativeElement as HTMLElement).querySelectorAll('.project-list .description')];
+      expect(descriptions.map((p) => p.textContent?.trim())).toEqual([
+        'Die öffentlichen Registrys, die diese Installation jedem Projekt anbietet.',
+        'Images and packages the platform team publishes.',
+      ]);
+      // The product's sentence is the reader's language; a team's text is left to the browser as written.
+      expect(descriptions.map((p) => p.getAttribute('translate'))).toEqual([null, 'no']);
+    } finally {
+      clearTranslations();
+    }
   });
 
   it("R-BAS-128 a project's packages are headed by its name and description", async () => {
@@ -185,6 +214,31 @@ describe("What a Bastion's visitor reads (R-BAS-128, R-BAS-129)", () => {
     expect([...root.querySelectorAll('.step h2')].map((h) => h.textContent?.trim())).toEqual(['1Install']);
     expect(root.querySelector('section[aria-labelledby="step-configure"]')).toBeNull();
     expect(root.textContent).not.toContain('login');
+  });
+
+  it("R-UI-272 Set up client names the clients by the application's table, as a version's commands do, not by the catalogue's names", async () => {
+    const http = setup();
+    const fixture = TestBed.createComponent(SetupPage);
+    fixture.componentRef.setInput('project', 'platform');
+    fixture.componentRef.setInput('key', 'nuget');
+    fixture.componentRef.setInput('client', 'nuget');
+    fixture.detectChanges();
+    http.expectOne('/ui/data/v1/repositories').flush({ items: [{ name: 'platform/nuget', format: 'nuget', class: 'local' }] });
+    for (let i = 0; i < 3; i++) {
+      await turn();
+      fixture.detectChanges();
+    }
+    http.expectOne('/ui/data/v1/setup/platform/nuget/nuget').flush({
+      repository: 'platform/nuget',
+      format: 'nuget',
+      client: 'nuget',
+      credentials: 'none',
+      registryUrl: 'https://bastion.example.org/api/nuget/platform/nuget/v3/index.json',
+      snippets: [snippet('nuget.install', 'install', 'nuget install Acme.Core -Source quader\n')],
+    });
+    await settled(fixture);
+    const options = [...(fixture.nativeElement as HTMLElement).querySelectorAll<HTMLOptionElement>('#setup-client option')];
+    expect(options.map((o) => o.textContent?.trim())).toEqual(['.NET CLI (dotnet)', 'NuGet CLI (nuget.exe)', 'Visual Studio']);
   });
 
   it('R-BAS-129 Set up client of a repository the Bastion does not offer says so and asks for no set-up', async () => {

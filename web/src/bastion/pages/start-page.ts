@@ -1,5 +1,6 @@
 import { Component, effect, inject, resource, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
+import { isUpstreamProject, projectDescription } from '../../app/core/upstream-project';
 import { ErrorNotice } from '../../app/shared/error-notice';
 import { failureOf, valueOf } from '../../app/shared/paged-resource';
 import { Loading } from '../../app/shared/ui/loading';
@@ -26,8 +27,9 @@ import { BastionProjects } from '../data/projects';
           @for (p of list; track p.key) {
             <li>
               <a [routerLink]="['/projects', p.key, 'packages']" translate="no">{{ p.displayName }}</a>
-              @if (p.description) {
-                <p class="muted description" translate="no">{{ p.description }}</p>
+              <!-- A project's own description is what a person wrote; the built-in project's is the UI's (R-UI-272, Q-UI-895). -->
+              @if (descriptionOf(p.key, p.description); as description) {
+                <p class="muted description" [attr.translate]="builtIn(p.key) ? null : 'no'">{{ description }}</p>
               }
             </li>
           }
@@ -64,6 +66,8 @@ export class StartPage {
   protected readonly projects = () => valueOf(this.answer) ?? null;
   protected readonly failure = failureOf(this.answer);
   protected readonly retry = (): void => void this.answer.reload();
+  protected readonly descriptionOf = projectDescription;
+  protected readonly builtIn = isUpstreamProject;
 
   constructor() {
     effect(() => {

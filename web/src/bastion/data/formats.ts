@@ -33,7 +33,8 @@ function format(f: Pick<FormatDescriptor, 'name' | 'displayName' | 'clients'> & 
  * The formats of the product as the main installation's `GET /api/v1/formats` names them (internal/formats/*, R-REPO-003), for the
  * Bastion's application, whose catalogue holds no format descriptor (Q-UI-1436): a page shows a format's name, never its key
  * (R-UI-006). A format the table does not know shows its key. The spec `formats.spec.ts` holds the table to the fakes' catalogue,
- * which mirrors the server's.
+ * which mirrors the server's. The names stay the server's here; the read (`BastionFormatCatalog`) gives `generic` and `clamav` the
+ * UI's words, and a page names a client by `FORMAT_CLIENTS` (R-UI-272).
  */
 export const BASTION_FORMATS: readonly FormatDescriptor[] = [
   format({

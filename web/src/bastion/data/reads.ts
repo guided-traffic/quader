@@ -35,7 +35,7 @@ import { MALWARE_SIGNATURES_READ } from '../../app/core/malware-signatures';
 import type { VulnerabilityDatabase } from '../../app/api/vulnerabilities-api';
 import { VULNERABILITY_DATABASE_READ } from '../../app/core/vulnerability-database';
 import { FormatDescriptor } from '../../app/api/repositories-api';
-import { FormatCatalog } from '../../app/core/format-names';
+import { FormatCatalog, withFormatWords } from '../../app/core/format-names';
 import { SIGNED_IN } from '../../app/core/signed-in';
 import { SystemClients } from '../../app/core/system-clients';
 import { narrowDocTree } from '../../app/views/packages/docs-model';
@@ -308,12 +308,12 @@ export class BastionLegalApi extends LegalApi {
 
 /**
  * The formats as the Bastion's application names them: the product's own table (./formats.ts), since the catalogue holds no
- * descriptor of the main installation's formats (Q-UI-1436).
+ * descriptor of the main installation's formats (Q-UI-1436), with the names the UI shows (R-UI-272).
  */
 @Injectable()
 export class BastionFormatCatalog extends FormatCatalog {
   override formats(): Promise<readonly FormatDescriptor[]> {
-    return Promise.resolve(BASTION_FORMATS);
+    return Promise.resolve(withFormatWords(BASTION_FORMATS));
   }
 }
 

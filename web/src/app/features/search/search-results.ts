@@ -1,5 +1,12 @@
 import { Component, computed, effect, inject, input, resource, signal, untracked } from '@angular/core';
-import { isSystemRepository, isUpstreamProject, projectDescription, systemBadge } from '../../core/upstream-project';
+import {
+  isSystemRepository,
+  isUpstreamProject,
+  projectDescription,
+  repositoryDescription,
+  systemBadge,
+  wordedByProduct,
+} from '../../core/upstream-project';
 import { NoValue } from '../../shared/ui/no-value';
 import { Router, RouterLink } from '@angular/router';
 import { PackageSummary, PackagesApi } from '../../api/packages-api';
@@ -98,8 +105,8 @@ const PAGE = 25;
                       @if (system(row) && shownClassOf(row) !== 'system') {
                         &ngsp;<span class="badge">{{ systemText }}</span>
                       }
-                      @if (row.description) {
-                        <span class="secondary" translate="no">{{ row.description }}</span>
+                      @if (repositoryDescriptionOf(row.project, row.key, row.description); as description) {
+                        <span class="secondary" [attr.translate]="wordedByProduct(row.project, row.key) ? null : 'no'">{{ description }}</span>
                       }
                     </span>
                   </span>
@@ -465,6 +472,9 @@ export class SearchResults {
   protected readonly systemText = systemBadge();
   /** The built-in project's description is the UI's localized sentence (Q-UI-895). */
   protected readonly descriptionOf = projectDescription;
+  /** A repository the product declares has the UI's words for its description (R-UI-272). */
+  protected readonly repositoryDescriptionOf = repositoryDescription;
+  protected readonly wordedByProduct = wordedByProduct;
 
   protected roleLabel(role: ProjectRole): string {
     return projectRoleLabel(role);

@@ -4,6 +4,7 @@ import { PackageReads } from '../../app/api/package-reads';
 import { PackageSort, PackageSummary } from '../../app/api/packages-api';
 import { FormatCatalog } from '../../app/core/format-names';
 import { LIVE_IDLE_MS, live } from '../../app/core/live-refresh';
+import { isUpstreamProject, projectDescription } from '../../app/core/upstream-project';
 import { ErrorNotice } from '../../app/shared/error-notice';
 import { PagedResource, failureOf, valueOf } from '../../app/shared/paged-resource';
 import { TableSort } from '../../app/shared/ui/data-table';
@@ -28,7 +29,7 @@ const KNOWN_SORTS: readonly string[] = ['name', '-name', 'createdAt', '-createdA
   imports: [DocumentationHits, ErrorNotice, ListHead, PackageTable, PageHeader, RouterLink],
   template: `
     <!-- The project by its display name and description (R-BAS-128, Q-UI-1470): its packages are the page. -->
-    <quader-page-header [heading]="named()?.displayName ?? project()" [name]="true" [description]="named()?.description" [descriptionAsWritten]="true" />
+    <quader-page-header [heading]="named()?.displayName ?? project()" [name]="true" [description]="description()" [descriptionAsWritten]="!builtIn()" />
     @if (filesFailure(); as f) {
       <quader-error-notice [error]="f" (retry)="filesFailure.retry()" />
     } @else if (fileRepositories().length > 0) {
@@ -120,6 +121,9 @@ export class PackageListPage {
   /** The project with its name and description; until it is read the heading is the key of the address. */
   private readonly project$ = resource({ params: () => this.project(), loader: ({ params }) => this.projects.named(params) });
   protected readonly named = computed(() => valueOf(this.project$) ?? null);
+  /** The project's description; the built-in project's is the UI's sentence (R-UI-272, Q-UI-895). */
+  protected readonly description = computed(() => projectDescription(this.project(), this.named()?.description));
+  protected readonly builtIn = computed(() => isUpstreamProject(this.project()));
   private readonly formats = resource({ loader: () => this.catalog.formats() });
   /** The catalogue's repositories with files (`/ui/data/v1/files`), those of this project by their keys. */
   private readonly files = resource({ loader: () => this.data.get<{ items: readonly string[] }>('files') });

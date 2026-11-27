@@ -3,6 +3,7 @@ import { repositoryUrl } from './refs';
 import { ApiClient, QueryParams } from './client';
 import { PageFetcher, collectAll } from './pagination';
 import { Schema } from './types';
+import { withFormatWords } from '../core/format-names';
 
 export type Repository = Schema<'Repository'>;
 export type RepositoryConsumerView = Schema<'RepositoryConsumerView'>;
@@ -143,8 +144,9 @@ export abstract class RepositoriesApi {
 export class HttpRepositoriesApi extends RepositoriesApi {
   private readonly client = inject(ApiClient);
 
+  /** The formats with the names the UI shows (R-UI-272): `generic` and `clamav` in the reader's language. */
   async formats(): Promise<readonly FormatDescriptor[]> {
-    return (await this.client.get('/api/v1/formats')).body.formats;
+    return withFormatWords((await this.client.get('/api/v1/formats')).body.formats);
   }
 
   async baseUrl(): Promise<string | null> {

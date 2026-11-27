@@ -28,7 +28,7 @@ import { GuideView } from '../guides/guide-view';
 import { classIcon, classLabel, classTip, isSystemOnly } from '../repositories/repository-class';
 import { Tooltip } from '../../shared/ui/tooltip';
 import { reportedBastions } from './bastion-targets';
-import { SnippetText, snippetText } from './clients';
+import { SnippetText, clientLabel, snippetText } from './clients';
 import { SetupFlowArt } from './setup-flow-art';
 import { SetupSteps } from '../../views/setup/setup-steps';
 import { checkTokenShape, TokenShape } from './token-shape';
@@ -217,6 +217,10 @@ export class ClientSetupPage {
 
   /** The format's clients (`GET /api/v1/formats`); a format with one client asks nothing (Q-UI-482). */
   protected readonly clients = computed(() => this.descriptor()?.clients ?? []);
+  /** A client by the UI's name, in the reader's words (R-UI-272). */
+  protected clientName(id: string, served: string): string {
+    return clientLabel(this.formatName() ?? '', id, served);
+  }
   protected readonly activeClient = computed<string | null>(() => {
     const ids = this.clients().map((c) => c.id);
     const given = this.client();

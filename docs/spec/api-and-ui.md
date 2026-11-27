@@ -9433,7 +9433,10 @@ The owner's decision of 2026-11-21 ([Q-UI-891](#q-ui-891--the-system-repositorie
   the section's matches; a filter that matches one of its rows opens it, one that matches none closes it, at 0; without a filter it is
   closed. The reader's own toggle holds until the filters change.
 - **The project's description** under the title is the UI's localized sentence
-  ([Q-UI-895](#q-ui-895--the-built-in-projects-description-is-a-localized-text-of-the-ui)).
+  ([Q-UI-895](#q-ui-895--the-built-in-projects-description-is-a-localized-text-of-the-ui)), and each repository's description under
+  its key the UI's words for it by key (R-UI-272,
+  [Q-UI-1638](#q-ui-1638--the-products-own-names-are-worded-by-key-in-the-ui-not-translated-by-the-server)): "Debian-Sicherheitsupdates"
+  in German.
 - **Nowhere a client action.** No screen offers **Set up client** for a system repository, and its content page offers no upload, no
   new folder and no sentence about what clients fetch or publish
   ([Q-UI-896](#q-ui-896--no-screen-offers-a-client-action-for-a-system-repository-one-function-decides-the-link)).
@@ -11841,6 +11844,61 @@ Acceptance criteria (Vitest, about 3 s; [unavailable.spec.ts](../../web/src/app/
   acting, without a tooltip; axe finds nothing serious.
 - Each place of the table shows its control with its reason and no paragraph that says it again; a click on it sends nothing.
 - An unavailable button at the window's right edge at 390 px, pinned: its bubble inside the window.
+
+### R-UI-272 · A text the product writes is shown in the reader's language
+Priority: **P1** · Covers: quader-only
+
+W-40's D21 and D22: the owner's screenshot of a Bastion's start in German showed the project Upstream's description in English, and its
+Set up client "Docker CLI (with Buildx)" ([Q-UI-1638](#q-ui-1638--the-products-own-names-are-worded-by-key-in-the-ui-not-translated-by-the-server),
+[Q-UI-1639](#q-ui-1639--what-the-product-sends-in-english-and-the-ui-shows-as-it-is)).
+
+- **Worded by key, in both applications and in the crawler text.** A text that is the product's, stored once in English and rewritten by
+  the reconcile, is shown in the reader's words by its key, never as the stored text:
+
+  | Text | Stored as | Worded by | Where |
+  |---|---|---|---|
+  | The project Upstream's description | the project's `description` (R-REPO-066) | the key `upstream` (`projectDescription`, Q-UI-895) | every place a project's description stands |
+  | The name of a repository the product declares in `upstream`: every format's presets and the system repositories (`docker-hub`, `quay`, `ghcr`, `gitlab`, `npmjs`, `nuget-org`, `debian`, `debian-security`, `ubuntu`, `ubuntu-security`, `ubuntu-ports`, `galaxy`, `scanner-trivy`, `clamav`) | the repository's `description`, the preset's and the admin item's `displayName` (R-REPO-066) | the key (`repositoryDescription`, `wellKnownName` of [upstream-project.ts](../../web/src/app/core/upstream-project.ts)) | the repository lists and the system section, a repository's head and its settings, the search's repositories, the buttons of a new remote and a failure that names the registry, the member picker's upstream registries, the admin area's upstream registries, their dialogs and notices; at the Bastion the crawler text's project and repository pages |
+  | The format names "Generic" and "ClamAV definitions" | the format descriptor's `displayName` | the format's key (`formatDisplayName` of [format-names.ts](../../web/src/app/core/format-names.ts)) | every place a format is named, applied where the formats are read (`HttpRepositoriesApi.formats`, the Bastion's `BastionFormatCatalog`) |
+  | A client's name ("Docker CLI (with Buildx)", "Yarn Berry (2 and later)") | the format descriptor's `clients[].displayName` | the client's id in `FORMAT_CLIENTS` of [clients.ts](../../web/src/app/features/setup/clients.ts) (`clientLabel`) | Set up client's select at the main installation and at the Bastion, as a version's commands name them already |
+
+  A descriptive name has German words ("Debian-Sicherheitsupdates", "Öffentliche npm-Registry", "Datenbank der Image-Analyse",
+  "ClamAV-Definitionen", "Generisch"); a proper name ("Docker Hub", "nuget.org", "Ansible Galaxy", "Debian") is the same in both
+  languages and stands in the same table, so a key the product declares and the table lacks fails a test instead of showing English.
+- **Only where the product writes it.** A repository of the same key in another project, and a key the product does not declare (a
+  retired preset), show the stored description as its author wrote it, marked `translate="no"`; the product's words are not marked. The
+  field Description of an `upstream` repository's settings is read-only (R-REPO-069), so the words it shows are never sent back.
+- **The crawler text** ([page/texts.go](../../internal/bastion/gui/page/texts.go), `ProjectDescription` and `RepositoryDescription`)
+  holds the same words, used by the start, a project's packages and repositories, a repository's page and a root of files
+  ([seo.go](../../internal/bastion/gui/seo.go)), and a unit test holds its German words equal to the targets of the units in
+  `messages.de.xlf`.
+- **What stays as the server sends it** (Q-UI-1639): the project's display name "Upstream" (the same word in German); a problem's own
+  sentence in an error notice (the server's words, `lang="en"`, beside the reader's sentence, R-UI-216); the comments inside a set-up
+  snippet (code a reader pastes, English by the project's rule); advisory summaries, signers, licences and packages' descriptions
+  (content, not the product's text).
+- **The filter of the repository list** matches the stored description, as the server's `q` does (R-REPO-012): a German reader finds
+  `upstream/debian-security` by "debian" or "security", not by "Sicherheit".
+
+*Built on 2026-11-27 (W-40's P7):* the functions above and their readers in both applications, the units `wellknown.repository.*` and
+`format.name.*`, the Go table of the crawler text; the OpenAPI descriptions of `UpstreamPreset`, `FormatClient`, `UpstreamRepository` and
+`UpstreamRepositorySummary` say that the UI words the name.
+
+Acceptance criteria (Vitest, about 0.6 s: [upstream-project.spec.ts](../../web/src/app/core/upstream-project.spec.ts),
+[visitor.spec.ts](../../web/src/bastion/visitor.spec.ts); Go, milliseconds: [texts_test.go](../../internal/bastion/gui/page/texts_test.go),
+[words_test.go](../../internal/wellknown/words_test.go), [project_view_test.go](../../internal/bastion/gui/project_view_test.go); rendered
+under rule 11 in German, `bastion-start`, `repositories-upstream-plain` and a `setup-*` with a client whose name has a qualifier):
+
+- Every key of the fake catalogue's presets and the two system repositories has its words, the English ones its stored text; a stored
+  text other than the product's is not shown for them; another project's `npmjs` keeps its text; in German the descriptive names, the
+  project's description and the two format names are German and the proper names as written.
+- `TestR_UI_272_EveryDeclaredRepositoryHasItsWords`: every declaration of `wellknown.Declared` has its words in both languages of the
+  crawler text, the English ones the stored text, and the table names no other key.
+- `TestR_UI_272_TheCrawlerTextsMatchTheApplicationsGermanWords`: the crawler text's words equal the units' English sources and German
+  targets.
+- `TestR_UI_272_TheCrawlerTextSaysTheProductsTextsInTheReadersLanguage`: `/ui/de/projects/upstream/repositories` leads with the German
+  description and names `npmjs` "Öffentliche npm-Registry"; a team's project keeps its English text.
+- The Bastion's start in German says the Upstream's description in German, unmarked, and a team's description marked `translate="no"`;
+  the Bastion's Set up client of a NuGet repository offers ".NET CLI (dotnet)", "NuGet CLI (nuget.exe)", "Visual Studio".
 
 ## Deferred
 
@@ -32681,6 +32739,48 @@ reported none group under "No base URL reported". The section's line for a pair 
 0.42.0". A report's deployment is its replica's contact's base URL; a report whose replica has no contact counts as one more deployment.
 **Applied in the spec:** R-UI-240; code: `deployments`, `headHosts`, `contactHealth`, `bastionState` of
 [bastion-state.ts](../../web/src/app/features/bastions/bastion-state.ts), [bastion-card.ts](../../web/src/app/features/bastions/bastion-card.ts).
+
+### Q-UI-1638 · The product's own names are worded by key in the UI, not translated by the server
+
+Status: **Decided by the development agent on 2026-11-27** (W-40, D21) — selected from the options below; the owner reviews it at the
+walkthrough. R-UI-272.
+
+Context: the project Upstream's description and the names of the repositories the product declares are stored once in English and
+rewritten by the reconcile (R-REPO-066, R-REPO-069); the owner's screenshot of a Bastion's start in German showed the description in
+English. The UI says the project's description in its own words already (Q-UI-895).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The server translates per locale | `Accept-Language` on the management API and the Bastion's data path; the catalogue per locale | One source | The first localized text of the API; the catalogue built twice; a change of the server for a dozen names |
+| (b) A key the UI words (chosen) | `projectDescription` and a new `repositoryDescription(project, key, stored)` with the words of every preset and system repository; the crawler text the same words in its Go table, held equal to `messages.de.xlf` | As the project's mark and description; German at once in every place; nothing on the wire | The UI repeats the product's names; a new preset needs its words (a test fails until it has them) |
+
+**Choice:** (b). The words are applied where a screen reads them: the admin item and the format's presets where they are read
+(`HttpUpstreamApi`, `withFormatWords`), a repository's description at each screen that shows one (the repository's `description` is a
+team's text for every other project).
+
+**Applied in the spec:** R-UI-272 (new), R-UI-192, [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-066,
+[bastion.md](bastion.md) R-BAS-132.
+
+### Q-UI-1639 · What the product sends in English, and the UI shows as it is
+
+Status: **Decided by the development agent on 2026-11-27** (W-40, D22) — selected per text; the owner reviews it at the walkthrough.
+R-UI-272.
+
+Context: besides the texts of Q-UI-1638, a Bastion's visitor reads further texts the server makes. Each is decided on its own.
+
+| Text | Source | Decision |
+|---|---|---|
+| The project Upstream's display name "Upstream" | `wellknown.ProjectDisplayName` | stays: the same word in German |
+| The format names "Generic" and "ClamAV definitions" | the format descriptor; the Bastion's table | the UI's words by the format's key (`formatDisplayName`), both applications; the product names ("npm", "OCI (Docker)", "Debian (APT)", "Ansible Galaxy", "NuGet") stay |
+| The clients' names in Set up client ("Docker CLI (with Buildx)", "Yarn Berry (2 and later)") | the format descriptor | the UI's table `FORMAT_CLIENTS`, which translates the qualifiers already and names the version panel's clients |
+| A problem's own sentence in an error notice | the server's `detail` | stays: the server's words, `lang="en"`, beside the reader's sentence (R-UI-216) |
+| Comments inside set-up snippets | the format's templates | stay: a snippet is code a reader pastes; code is English by the project's rule, at both applications |
+| Advisory summaries, signers, licences, packages' descriptions | the packages and the advisory sources | stay: content, not the product's text |
+
+**Rationale:** what the product writes as words for a reader is the reader's language; what is a name of a product, code, or another
+party's content stays as written.
+
+**Applied in the spec:** R-UI-272.
 
 ## What this does not cover
 

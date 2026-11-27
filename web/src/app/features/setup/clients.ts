@@ -53,6 +53,14 @@ export function clientsOf(format: string): readonly ClientChoice[] {
 }
 
 /**
+ * A client's name where a screen names it (R-UI-272): the label of this table, whose words beside a product's name are the reader's
+ * ("Docker CLI (with Buildx)"), at both applications; the server's name only for a client the table does not know.
+ */
+export function clientLabel(format: string, id: string, served: string): string {
+  return clientsOf(format).find((c) => c.id === id)?.label ?? served;
+}
+
+/**
  * The clients of one artifact of a format (formats/oci.md R-OCI-042, Q-UI-1250): an OCI Helm chart is pulled and installed by Helm
  * alone, and an image (or an artifact whose kind is not known) by every client but Helm. Every other format's clients are its own.
  */

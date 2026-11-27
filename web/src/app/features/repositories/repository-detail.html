@@ -56,7 +56,7 @@
       <dt i18n="@@repo.col.format">Format</dt>
       <dd translate="no">{{ consumerFormat() }}</dd>
       <dt i18n="@@repo.field.description">Description</dt>
-      <dd>{{ c.description || '–' }}</dd>
+      <dd [attr.translate]="worded() ? null : 'no'">{{ descriptionOf(c.description) || '–' }}</dd>
     </dl>
   </div>
 } @else if (stored(); as repo) {
@@ -91,7 +91,7 @@
             rows="2"
             maxlength="2000"
             [readonly]="!canSave('general')"
-            [value]="current.description"
+            [value]="descriptionOf(current.description)"
             [attr.aria-invalid]="errorsOf('general').has('/description') ? 'true' : null"
             (input)="setDescription($any($event.target).value)"
           ></textarea>

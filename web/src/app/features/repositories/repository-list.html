@@ -165,8 +165,8 @@
           @if (row.lifecycle === 'deleting') {
             <span class="badge" i18n="@@repo.badge.deleting">Being deleted</span>
           }
-          @if (row.description) {
-            <span class="secondary" translate="no">{{ row.description }}</span>
+          @if (descriptionOf(row); as description) {
+            <span class="secondary" [attr.translate]="wordedByProduct(row) ? null : 'no'">{{ description }}</span>
           }
           <!-- What holds for this row alone is said at the row, not above the table (Q-UI-1500); once it answers clients, its Set up
                client says so. -->

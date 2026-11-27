@@ -1,3 +1,16 @@
+import german from '../../locale/messages.de.xlf' with { loader: 'text' };
+import { clearTranslations, loadTranslations } from '@angular/localize';
+import {
+  ANSIBLE_PRESETS,
+  DEB_PRESETS,
+  GENERIC_FORMAT,
+  NPM_PRESETS,
+  NUGET_PRESETS,
+  OCI_FORMAT,
+  OCI_PRESETS,
+} from '../api/testing/fakes-catalog';
+import { clientLabel } from '../features/setup/clients';
+import { formatDisplayName, withFormatWords } from './format-names';
 import { setupCommands } from './project-links';
 import {
   isSystemRepository,
@@ -6,12 +19,15 @@ import {
   isUpstreamProject,
   mayServeClients,
   projectDescription,
+  repositoryDescription,
   systemBadge,
   systemClientSentence,
   systemRepositoryNames,
   upstreamFirst,
   upstreamKeyOf,
   upstreamName,
+  wellKnownName,
+  wordedByProduct,
 } from './upstream-project';
 
 describe('The built-in project upstream (R-UI-190)', () => {
@@ -76,5 +92,67 @@ describe('The built-in project upstream (R-UI-190)', () => {
     expect(projectDescription('upstream', 'Stored by the product')).toBe('The public registries this installation offers to every project.');
     expect(projectDescription('web', "The web team's repositories")).toBe("The web team's repositories");
     expect(projectDescription('web', undefined)).toBe('');
+  });
+});
+
+/** The German targets of the translation file by unit id, for the units without a placeholder. */
+function germanUnits(): Record<string, string> {
+  const unit = /<unit id="([^"]+)">[\s\S]*?<target>([^<]*)<\/target>/g;
+  return Object.fromEntries([...german.matchAll(unit)].map((m) => [m[1]!, m[2]!.replace(/&apos;/g, "'").replace(/&amp;/g, '&')]));
+}
+
+describe('A text the product writes in the reader\'s language (R-UI-272)', () => {
+  const declared = [
+    ...[NPM_PRESETS, NUGET_PRESETS, OCI_PRESETS, DEB_PRESETS, ANSIBLE_PRESETS].flat().map((p) => ({ key: p.id, stored: p.displayName })),
+    { key: 'scanner-trivy', stored: 'Image scanning database' },
+    { key: 'clamav', stored: 'ClamAV definitions' },
+  ];
+
+  it('R-UI-272 every repository the product declares has its words, the English ones its stored text; an administrator\'s text elsewhere stays as written', () => {
+    for (const { key, stored } of declared) {
+      expect(wordedByProduct('upstream', key), key).toBe(true);
+      // The words by key, not the stored text: a stored text the product changed is not what the screen says.
+      expect(repositoryDescription('upstream', key, 'Stored by the product'), key).toBe(stored);
+    }
+    expect(repositoryDescription('web', 'npmjs', 'Our npm mirror')).toBe('Our npm mirror');
+    expect(wordedByProduct('web', 'npmjs')).toBe(false);
+    expect(repositoryDescription('upstream', 'retired-preset', 'A retired preset')).toBe('A retired preset');
+    expect(repositoryDescription('upstream', 'npmjs', null)).toBe('npm public registry');
+    expect(repositoryDescription('web', 'npm-local', null)).toBe('');
+    expect(wellKnownName('debian-security', 'Debian security updates')).toBe('Debian security updates');
+  });
+
+  it('R-UI-272 in German, the descriptive names and the project\'s description are German, the proper names as they are written', () => {
+    loadTranslations(germanUnits());
+    try {
+      expect(repositoryDescription('upstream', 'debian-security', 'Debian security updates')).toBe('Debian-Sicherheitsupdates');
+      expect(repositoryDescription('upstream', 'npmjs', 'npm public registry')).toBe('Öffentliche npm-Registry');
+      expect(repositoryDescription('upstream', 'scanner-trivy', 'Image scanning database')).toBe('Datenbank der Image-Analyse');
+      expect(repositoryDescription('upstream', 'clamav', 'ClamAV definitions')).toBe('ClamAV-Definitionen');
+      expect(repositoryDescription('upstream', 'docker-hub', 'Docker Hub')).toBe('Docker Hub');
+      expect(projectDescription('upstream', 'The public registries this installation offers to every project.')).toBe(
+        'Die öffentlichen Registrys, die diese Installation jedem Projekt anbietet.',
+      );
+      expect(formatDisplayName('generic', 'Generic')).toBe('Generisch');
+      expect(formatDisplayName('clamav', 'ClamAV definitions')).toBe('ClamAV-Definitionen');
+      expect(formatDisplayName('oci', 'OCI (Docker)')).toBe('OCI (Docker)');
+    } finally {
+      clearTranslations();
+    }
+  });
+
+  it('R-UI-272 a format is named by the UI for generic and clamav, by the server otherwise, by its key when the server names it not', () => {
+    expect(formatDisplayName('generic', 'Generic')).toBe('Generic');
+    expect(formatDisplayName('npm', 'npm')).toBe('npm');
+    expect(formatDisplayName('cargo', null)).toBe('cargo');
+    const [oci] = withFormatWords([{ ...OCI_FORMAT, upstreamPresets: [{ ...OCI_PRESETS[0]!, displayName: 'Stored' }] }]);
+    expect(oci!.upstreamPresets[0]!.displayName).toBe('Docker Hub');
+    expect(withFormatWords([GENERIC_FORMAT])[0]!.displayName).toBe('Generic');
+  });
+
+  it('R-UI-272 a client is named by the UI\'s table, the server\'s name only for a client the table does not know', () => {
+    expect(clientLabel('nuget', 'nuget', 'nuget.exe')).toBe('NuGet CLI (nuget.exe)');
+    expect(clientLabel('oci', 'docker', 'Docker CLI (with Buildx)')).toBe('Docker CLI (with Buildx)');
+    expect(clientLabel('cargo', 'cargo', 'Cargo')).toBe('Cargo');
   });
 });

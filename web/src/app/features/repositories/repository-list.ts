@@ -26,9 +26,11 @@ import {
   isUpstreamProject,
   mayServeClients,
   projectDescription,
+  repositoryDescription,
   systemBadge,
   systemRepositoryNames,
   upstreamName,
+  wordedByProduct,
 } from '../../core/upstream-project';
 import { SystemClients } from '../../core/system-clients';
 import { UpstreamApi } from '../../api/upstream-api';
@@ -228,6 +230,9 @@ export class RepositoryList {
   });
   private readonly acrossLine = $localize`:@@repo.list.across:The repositories you can see, in every project. A new repository is created in its project.`;
   protected readonly refOf = refOf;
+  /** A row's description: the UI's words for a repository the product declares (R-UI-272), else as its author wrote it. */
+  protected readonly descriptionOf = (r: RepositorySummary): string => repositoryDescription(r.project, r.key, r.description);
+  protected readonly wordedByProduct = (r: RepositorySummary): boolean => wordedByProduct(r.project, r.key);
   protected readonly formatOptions = computed(() =>
     (valueOf(this.formats) ?? []).map((f) => f.name),
   );

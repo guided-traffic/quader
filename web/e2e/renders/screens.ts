@@ -3254,7 +3254,7 @@ export const screens: readonly Screen[] = [
   // The built-in project with the registries the seed switched on: the administrator sees its two system repositories in their
   // section (R-UI-192); the plain user reads the registries that are on and no system repository, so no section.
   { id: 'repositories-upstream', path: '/ui/projects/upstream/repositories', kinds: ['admin'], walk: systemRepositories },
-  { id: 'repositories-upstream-plain', path: '/ui/projects/upstream/repositories', kinds: ['plain'] },
+  { id: 'repositories-upstream-plain', path: '/ui/projects/upstream/repositories', kinds: ['plain'], de: true },
   { id: 'repository-npm-local', path: `${P}/repositories/npm-internal`, kinds: all, de: true },
   // The tab Details, the last of the strip (Q-UI-1067): a local repository's address for downloads by path, a remote's upstream and
   // address, a virtual one's members.

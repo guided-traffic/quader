@@ -112,7 +112,8 @@ func (h *Handler) filesPage(ctx context.Context, a pg.Address) (pg.Page, int) {
 		p.Title = a.Path[strings.LastIndexByte(a.Path, '/')+1:]
 		p.Heading = p.Title
 	} else if repo, ok := h.publicRepository(a.Project, a.Repository); ok && !hidden && repo.Description != "" {
-		p.Lead, p.Description = repo.Description, repo.Description
+		d := t.RepositoryDescription(a.Project, a.Repository, repo.Description)
+		p.Lead, p.Description = d, d
 	}
 	p.LD = webPage(p.Title, p.Canonical)
 	p.Crumbs = h.repositoryTrail(a.Locale, a.Project, hidden)
@@ -312,7 +313,8 @@ func (h *Handler) startPage(a pg.Address) (pg.Page, int) {
 	p.LD = webPage(t.Projects, p.Canonical)
 	s := pg.Section{Heading: t.Projects}
 	for _, pr := range projects {
-		s.Links = append(s.Links, pg.Link{Text: pr.DisplayName, Note: pg.Cut(pr.Description, 160), Href: local(a.Locale, projectRoute(pr.Key, hidden))})
+		note := pg.Cut(t.ProjectDescription(pr.Key, pr.Description), 160)
+		s.Links = append(s.Links, pg.Link{Text: pr.DisplayName, Note: note, Href: local(a.Locale, projectRoute(pr.Key, hidden))})
 	}
 	p.Sections = []pg.Section{s}
 	// The repositories with files by their qualified names, only while the repositories are shown (R-BAS-131).
@@ -343,7 +345,8 @@ func (h *Handler) listPage(a pg.Address) (pg.Page, int) {
 	project := h.projectName(a.Project)
 	p.Title = t.PackagesIn(project.DisplayName)
 	p.Heading = project.DisplayName
-	p.Lead, p.Description = project.Description, project.Description
+	p.Lead = t.ProjectDescription(a.Project, project.Description)
+	p.Description = p.Lead
 	// A list of results is not indexed; its canonical address is the list itself (W-35's B.11).
 	p.Noindex = a.Filtered
 	p.LD = webPage(p.Title, p.Canonical)
@@ -380,7 +383,8 @@ func (h *Handler) repositoriesPage(a pg.Address) (pg.Page, int) {
 			continue
 		}
 		s.Links = append(s.Links, pg.Link{
-			Text: key, Note: pg.Cut(r.Description, 160), Href: local(a.Locale, pg.Address{Kind: pg.Repository, Project: project, Repository: key}.Route()),
+			Text: key, Note: pg.Cut(t.RepositoryDescription(project, key, r.Description), 160),
+			Href: local(a.Locale, pg.Address{Kind: pg.Repository, Project: project, Repository: key}.Route()),
 		})
 	}
 	if len(s.Links) == 0 {
@@ -389,7 +393,8 @@ func (h *Handler) repositoriesPage(a pg.Address) (pg.Page, int) {
 	project := h.projectName(a.Project)
 	p := h.base(a, pg.Address{Kind: pg.Repositories, Project: a.Project}.Route(), nil)
 	p.Title, p.Heading = t.RepositoriesIn(project.DisplayName), project.DisplayName
-	p.Lead, p.Description = project.Description, project.Description
+	p.Lead = t.ProjectDescription(a.Project, project.Description)
+	p.Description = p.Lead
 	p.LD = webPage(p.Title, p.Canonical)
 	p.Crumbs = h.projectTrail(a.Locale, a.Project, false)
 	p.Sections = []pg.Section{s}
@@ -420,7 +425,8 @@ func (h *Handler) repositoryPage(ctx context.Context, a pg.Address) (pg.Page, in
 	t := pg.TextsOf(a.Locale)
 	p := h.base(a, a.Route(), nil)
 	p.Title, p.Heading = a.Repository, a.Repository
-	p.Lead, p.Description = repo.Description, repo.Description
+	p.Lead = t.RepositoryDescription(a.Project, a.Repository, repo.Description)
+	p.Description = p.Lead
 	p.LD = webPage(p.Title, p.Canonical)
 	p.Crumbs = h.repositoryTrail(a.Locale, a.Project, false)
 	s := pg.Section{Heading: t.Packages}

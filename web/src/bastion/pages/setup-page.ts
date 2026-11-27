@@ -4,6 +4,7 @@ import { ClientSetupReads } from '../../app/api/package-reads';
 import type { ClientSnippet } from '../../app/api/packages-api';
 import { FormatCatalog } from '../../app/core/format-names';
 import { classIcon, classLabel, classTip } from '../../app/features/repositories/repository-class';
+import { clientLabel } from '../../app/features/setup/clients';
 import { SetupFlowArt } from '../../app/features/setup/setup-flow-art';
 import { ErrorNotice } from '../../app/shared/error-notice';
 import { formatAccent } from '../../app/shared/format-accent';
@@ -62,7 +63,7 @@ interface PublicRepository {
           <label class="field-label" for="setup-client" i18n="@@setup.client">Client</label>
           <select id="setup-client" class="select-input" [value]="activeClient()" (change)="pickClient($any($event.target).value)">
             @for (c of clients(); track c.id) {
-              <option [value]="c.id" [selected]="c.id === activeClient()" translate="no">{{ c.displayName }}</option>
+              <option [value]="c.id" [selected]="c.id === activeClient()" translate="no">{{ clientName(c.id, c.displayName) }}</option>
             }
           </select>
         </p>
@@ -139,6 +140,10 @@ export class SetupPage {
   protected readonly accent = computed(() => formatAccent(this.repository()?.format ?? null));
   /** The format's clients; a format with one asks nothing (Q-UI-482). */
   protected readonly clients = computed(() => this.descriptor()?.clients ?? []);
+  /** A client by the UI's name, in the reader's words (R-UI-272). */
+  protected clientName(id: string, served: string): string {
+    return clientLabel(this.repository()?.format ?? '', id, served);
+  }
   protected readonly activeClient = computed<string | null>(() => {
     const ids = this.clients().map((c) => c.id);
     const given = this.client();

@@ -123,3 +123,28 @@ func TestR_BAS_132_HiddenRepositoriesHaveNoPage(t *testing.T) {
 		t.Errorf("hidden, the start lists the repositories with files:\n%s", body)
 	}
 }
+
+// TestR_UI_272_TheCrawlerTextSaysTheProductsTextsInTheReadersLanguage: the project upstream's description and the name of a repository
+// the product declares in it are the reader's words on every page that shows them, as the application shows them; a team's own text
+// stays as written (R-BAS-132).
+func TestR_UI_272_TheCrawlerTextSaysTheProductsTextsInTheReadersLanguage(t *testing.T) {
+	h := seoGUI(t, projectViewReader(), nil)
+	cases := []struct {
+		target string
+		wants  []string
+	}{
+		{"/ui/de/projects/upstream/repositories", []string{
+			`<p>Die öffentlichen Registrys, die diese Installation jedem Projekt anbietet.</p>`,
+			`<a href="/ui/de/projects/upstream/repositories/npmjs">npmjs</a> – Öffentliche npm-Registry`,
+		}},
+		{"/ui/de/projects/upstream/repositories/npmjs", []string{`<p>Öffentliche npm-Registry</p>`}},
+		{"/ui/en/projects/upstream/repositories/npmjs", []string{`<p>npm public registry</p>`}},
+		{"/ui/de/projects/acme/repositories", []string{`<p>The packages Acme publishes.</p>`, `npm</a> – Our npm packages`}},
+	}
+	for _, c := range cases {
+		rec := do(h, http.MethodGet, c.target)
+		if missing := lacks(rec.Body.String(), c.wants...); rec.Code != 200 || len(missing) > 0 {
+			t.Errorf("%s = %d lacks %q:\n%s", c.target, rec.Code, missing, rec.Body.String())
+		}
+	}
+}

@@ -122,6 +122,67 @@ export function projectDescription(key: string | null | undefined, stored: strin
 }
 
 /**
+ * The names of the preset repositories that are proper names (R-UI-272): the same word in every language, here so that a key the
+ * product declares and this table lacks fails `upstream-project.spec.ts` instead of showing the stored English.
+ */
+const PROPER_NAMES: Readonly<Record<string, string>> = {
+  'docker-hub': 'Docker Hub',
+  quay: 'Quay',
+  ghcr: 'GitHub (ghcr.io)',
+  gitlab: 'GitLab',
+  'nuget-org': 'nuget.org',
+  galaxy: 'Ansible Galaxy',
+  debian: 'Debian',
+  ubuntu: 'Ubuntu',
+};
+
+/**
+ * The words of a repository the product declares in the project `upstream`, by its key (R-UI-272, Q-UI-1638): a descriptive name in
+ * the reader's language, a proper name as it is written; `null` for a key the product does not declare.
+ */
+function wellKnownWords(key: string): string | null {
+  switch (key) {
+    case 'debian-security':
+      return $localize`:@@wellknown.repository.debian-security:Debian security updates`;
+    case 'ubuntu-security':
+      return $localize`:@@wellknown.repository.ubuntu-security:Ubuntu security updates`;
+    case 'ubuntu-ports':
+      return $localize`:@@wellknown.repository.ubuntu-ports:Ubuntu ports`;
+    case 'npmjs':
+      return $localize`:@@wellknown.repository.npmjs:npm public registry`;
+    case 'scanner-trivy':
+      return $localize`:@@wellknown.repository.scanner-trivy:Image scanning database`;
+    case CLAMAV_KEY:
+      return $localize`:@@wellknown.repository.clamav:ClamAV definitions`;
+    default:
+      return Object.hasOwn(PROPER_NAMES, key) ? PROPER_NAMES[key]! : null;
+  }
+}
+
+/** Whether the UI words the description of `<project>/<key>` itself (R-UI-272): a repository the product declares in `upstream`. */
+export function wordedByProduct(project: string | null | undefined, key: string | null | undefined): boolean {
+  return isUpstreamProject(project) && !!key && wellKnownWords(key) !== null;
+}
+
+/**
+ * A repository's description as the UI shows it (R-UI-272, Q-UI-1638): a repository the product declares in the project `upstream`
+ * stores its preset's name in English and the reconcile writes it back (R-REPO-066, R-REPO-069), so the UI says it in its own words
+ * by key, as it says the project's description (Q-UI-895); every other repository's is the stored one, as its author wrote it.
+ */
+export function repositoryDescription(
+  project: string | null | undefined,
+  key: string | null | undefined,
+  stored: string | null | undefined,
+): string {
+  return (isUpstreamProject(project) && key && wellKnownWords(key)) || (stored ?? '');
+}
+
+/** The name of a well-known repository (`upstream/<key>`) where a screen names it: {@link repositoryDescription} of the key. */
+export function wellKnownName(key: string, stored: string): string {
+  return repositoryDescription(UPSTREAM_PROJECT, key, stored);
+}
+
+/**
  * A list of projects with the project `upstream` first and every other entry in its order (the owner's Q-UI-837): every list of
  * projects the app builds keeps it on top whatever it is sorted by, and a filter that does not match it has already taken it out.
  * Lists ordered by time or by relevance (Recently opened, the switcher's recent projects, the search's results) do not use it.

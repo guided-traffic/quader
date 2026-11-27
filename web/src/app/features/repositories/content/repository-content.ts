@@ -18,7 +18,7 @@ import { Notifier } from '../../../core/notifier';
 import { filesCommands, setupCommands } from '../../../core/project-links';
 import { ServerAddress } from '../../../core/server-address';
 import { SessionStore } from '../../../core/session-store';
-import { isSystemRepository, isUpstreamProject } from '../../../core/upstream-project';
+import { isSystemRepository, isUpstreamProject, repositoryDescription, wordedByProduct } from '../../../core/upstream-project';
 import { systemClosed } from '../../../core/system-clients';
 import { UpstreamApi } from '../../../api/upstream-api';
 import { retiredSentence, stateBadge } from '../../upstream/upstream-words';
@@ -170,8 +170,13 @@ export class RepositoryContent {
   });
   protected readonly classText = computed(() => classLabel(this.kind()));
   protected readonly classTip = computed(() => classTip(this.kind()));
-  /** The header's sentence is the repository's description as its author wrote it; a system repository's says what it is. */
-  protected readonly sentenceAsWritten = computed(() => !!this.repository()?.description && this.kind() !== 'system');
+  /**
+   * The header's sentence is the repository's description as its author wrote it; a system repository's says what it is, and a
+   * repository the product declares has the UI's words for it (R-UI-272).
+   */
+  protected readonly sentenceAsWritten = computed(
+    () => !!this.repository()?.description && this.kind() !== 'system' && !wordedByProduct(this.project(), this.key()),
+  );
   /** The settings exist for whoever can read the configuration: the capability, or an Owner of the project. */
   protected readonly canConfigure = computed(
     () => this.session.has('repositories:read-config') || this.session.canWriteRepositories(this.project()),
@@ -184,7 +189,8 @@ export class RepositoryContent {
     // A repository of a system-only format says that the installation fills it (Q-UI-1203): its description is the product's, the
     // format's name, which the badge beside it shows.
     if (this.kind() === 'system') return classHelp('system');
-    if (r.description) return r.description;
+    const description = repositoryDescription(this.project(), this.key(), r.description);
+    if (description) return description;
     switch (r.class) {
       case 'remote':
         return $localize`:@@repo.content.sentence.remote:A cache of another registry. It lists what clients have fetched through it.`;

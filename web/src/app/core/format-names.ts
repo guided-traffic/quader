@@ -2,6 +2,7 @@ import { DestroyRef, Signal, computed, effect, inject, resource, untracked } fro
 import type { FormatDescriptor } from '../api/repositories-api';
 import { valueOf } from '../shared/paged-resource';
 import { ReadAgain } from './read-again';
+import { wellKnownName } from './upstream-project';
 
 /**
  * The formats wherever a screen shows a format: it shows its name (**OCI (Docker)**, **NuGet**), never its key (`oci`), which stays in
@@ -32,4 +33,33 @@ export function formatName(key: () => string | null | undefined): Signal<string>
     const k = key() ?? '';
     return (valueOf(formats) ?? []).find((f) => f.name === k)?.displayName ?? k;
   });
+}
+
+/**
+ * A format's name as the UI shows it (R-UI-272, Q-UI-1639): the two formats whose name is a description, `generic` and `clamav`, in
+ * the reader's language; every other format's name is a product's ("npm", "OCI (Docker)", "Debian (APT)") as the server sends it, and
+ * a format the server does not name its key.
+ */
+export function formatDisplayName(name: string, served: string | null | undefined): string {
+  switch (name) {
+    case 'generic':
+      return $localize`:@@format.name.generic:Generic`;
+    case 'clamav':
+      return $localize`:@@format.name.clamav:ClamAV definitions`;
+    default:
+      return served ?? name;
+  }
+}
+
+/**
+ * The formats with the names the UI shows (R-UI-272): applied where the formats are read, the main installation's
+ * `GET /api/v1/formats` and the Bastion's table, so every screen that shows a format's `displayName` shows the UI's words, and every
+ * screen that shows an upstream preset (a button of a new remote, a failure that names the registry) its well-known repository's.
+ */
+export function withFormatWords(formats: readonly FormatDescriptor[]): readonly FormatDescriptor[] {
+  return formats.map((f) => ({
+    ...f,
+    displayName: formatDisplayName(f.name, f.displayName),
+    upstreamPresets: f.upstreamPresets.map((p) => ({ ...p, displayName: wellKnownName(p.id, p.displayName) })),
+  }));
 }

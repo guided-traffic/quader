@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { ApiClient } from './client';
 import { UpstreamTestResult } from './repositories-api';
 import { Schema } from './types';
-import { UPSTREAM_PROJECT } from '../core/upstream-project';
+import { UPSTREAM_PROJECT, wellKnownName } from '../core/upstream-project';
 
 /** A well-known repository of the project `upstream` as the admin page shows it (R-REPO-073). */
 export type UpstreamRepository = Schema<'UpstreamRepository'>;
@@ -81,50 +81,66 @@ const BASE = '/api/v1/upstream-repositories';
 const PRESETS = '/api/v1/settings/registry-presets';
 const item = (key: string): string => `${BASE}/${encodeURIComponent(key)}`;
 
+/**
+ * A well-known repository with its name in the UI's words (R-UI-272): the server sends the preset's English name, the UI names a
+ * repository the product declares by its key, so every screen of the admin area, every dialog and every notice that names one shows
+ * the reader's words.
+ */
+function worded<T extends { readonly key: string; readonly displayName: string }>(r: T): T {
+  return { ...r, displayName: wellKnownName(r.key, r.displayName) };
+}
+
+const loaded = (r: { readonly body: UpstreamRepository; readonly etag?: string | null }): LoadedUpstreamRepository => ({
+  value: worded(r.body),
+  etag: r.etag ?? '',
+});
+
+const bulk = (b: UpstreamRepositoryBulkResult): UpstreamRepositoryBulkResult => ({ ...b, items: b.items.map(worded) });
+
 @Injectable()
 export class HttpUpstreamApi extends UpstreamApi {
   private readonly client = inject(ApiClient);
 
   override async list(): Promise<readonly UpstreamRepository[]> {
-    return (await this.client.get(BASE)).body.items;
+    return (await this.client.get(BASE)).body.items.map(worded);
   }
 
   override async get(key: string): Promise<LoadedUpstreamRepository> {
     const r = await this.client.getJson<UpstreamRepository>(item(key));
-    return { value: r.body, etag: r.etag ?? '' };
+    return loaded(r);
   }
 
   override async listForFormat(format: string): Promise<readonly UpstreamRepositorySummary[]> {
     const url = `/api/v1/formats/${encodeURIComponent(format)}/upstream-repositories`;
-    return (await this.client.getJson<Schema<'UpstreamRepositorySummaryList'>>(url)).body.items;
+    return (await this.client.getJson<Schema<'UpstreamRepositorySummaryList'>>(url)).body.items.map(worded);
   }
 
   override async setState(key: string, state: 'on' | 'off'): Promise<LoadedUpstreamRepository> {
     const r = await this.client.putJson<UpstreamRepository>(`${item(key)}/state`, { state });
-    return { value: r.body, etag: r.etag ?? '' };
+    return loaded(r);
   }
 
   override async switchOnAll(idempotencyKey: string): Promise<UpstreamRepositoryBulkResult> {
-    return (await this.client.post<UpstreamRepositoryBulkResult>(`${BASE}/switch-on-all`, undefined, { idempotencyKey })).body;
+    return bulk((await this.client.post<UpstreamRepositoryBulkResult>(`${BASE}/switch-on-all`, undefined, { idempotencyKey })).body);
   }
 
   override async setClients(key: string, enabled: boolean, level?: UpstreamVisibilityLevel): Promise<LoadedUpstreamRepository> {
     const r = await this.client.putJson<UpstreamRepository>(`${item(key)}/clients`, enabled && level ? { enabled, level } : { enabled });
-    return { value: r.body, etag: r.etag ?? '' };
+    return loaded(r);
   }
 
   override async setVisibility(key: string, level: UpstreamVisibilityLevel): Promise<LoadedUpstreamRepository> {
     const r = await this.client.putJson<UpstreamRepository>(`${item(key)}/visibility`, { level });
-    return { value: r.body, etag: r.etag ?? '' };
+    return loaded(r);
   }
 
   override async setAllVisibility(level: UpstreamVisibilityLevel, idempotencyKey: string): Promise<UpstreamRepositoryBulkResult> {
-    return (await this.client.post<UpstreamRepositoryBulkResult>(`${BASE}/set-visibility`, { level }, { idempotencyKey })).body;
+    return bulk((await this.client.post<UpstreamRepositoryBulkResult>(`${BASE}/set-visibility`, { level }, { idempotencyKey })).body);
   }
 
   override async setAddress(key: string, address: UpstreamRepositoryAddress, etag: string): Promise<LoadedUpstreamRepository> {
     const r = await this.client.put<UpstreamRepository>(`${item(key)}/address`, address, etag);
-    return { value: r.body, etag: r.etag ?? '' };
+    return loaded(r);
   }
 
   override async resetAddress(key: string, etag: string, removeAccount = false): Promise<LoadedUpstreamRepository> {
@@ -132,17 +148,17 @@ export class HttpUpstreamApi extends UpstreamApi {
       etag,
       params: removeAccount ? { removeAccount: true } : undefined,
     });
-    return { value: r.body, etag: r.etag ?? '' };
+    return loaded(r);
   }
 
   override async setAccount(key: string, account: UpstreamRepositoryAccount, etag: string): Promise<LoadedUpstreamRepository> {
     const r = await this.client.put<UpstreamRepository>(`${item(key)}/account`, account, etag);
-    return { value: r.body, etag: r.etag ?? '' };
+    return loaded(r);
   }
 
   override async removeAccount(key: string, etag: string): Promise<LoadedUpstreamRepository> {
     const r = await this.client.delete<UpstreamRepository>(`${item(key)}/account`, { etag });
-    return { value: r.body, etag: r.etag ?? '' };
+    return loaded(r);
   }
 
   override async testSaved(key: string): Promise<UpstreamTestResult> {

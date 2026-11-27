@@ -7636,8 +7636,9 @@ catalogue of R-BAS-130 alone. The application's own pages are W-40's P5; until i
 *Built on 2026-11-27 (W-40's P2):* the kinds `Project`, `Repositories` and `Repository` of
 [address.go](../../internal/bastion/gui/page/address.go) and the words of [texts.go](../../internal/bastion/gui/page/texts.go);
 `repositoriesPage`, `repositoryPage`, `projectTrail`, `repositoryTrail` and `projectRoute` of [seo.go](../../internal/bastion/gui/seo.go);
-`repositoryPages` of [crawl.go](../../internal/bastion/gui/crawl.go). The project Upstream's description and the well-known repositories'
-names stay the stored English text until W-40's P7 gives the Go table its words.
+`repositoryPages` of [crawl.go](../../internal/bastion/gui/crawl.go). *Revised on 2026-11-27 (W-40's P7):* the project Upstream's
+description and the well-known repositories' names are the reader's words by key, `ProjectDescription` and `RepositoryDescription` of
+[texts.go](../../internal/bastion/gui/page/texts.go) ([api-and-ui.md](api-and-ui.md) R-UI-272).
 
 Acceptance criteria:
 

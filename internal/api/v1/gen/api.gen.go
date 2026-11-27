@@ -13543,7 +13543,7 @@ type FieldError struct {
 
 // FormatClient defines model for FormatClient.
 type FormatClient struct {
-	// DisplayName A product name; the UI does not translate it.
+	// DisplayName The client's name (`Docker CLI (with Buildx)`); the UI names a client it knows by its `id` in the reader's words (R-UI-272).
 	DisplayName string `json:"displayName"`
 
 	// Id The value of `client` of the client setup and the guide (`npm`, `pnpm`, `yarn`, `yarn-classic`).
@@ -21298,7 +21298,7 @@ type UpstreamPreset struct {
 	// Default The format's default upstream; exactly one preset of a format has it.
 	Default bool `json:"default"`
 
-	// DisplayName A product name (`Docker Hub`, `GitHub (ghcr.io)`); the UI does not translate it.
+	// DisplayName The name of the preset's well-known repository (`Docker Hub`, `Debian security updates`) in English; the UI names it by the preset's `id` in the reader's language (R-UI-272).
 	DisplayName string `json:"displayName"`
 
 	// ExtraHosts The `remote.extraHosts` a repository of this upstream needs, stored with a create whose `url` is this preset's and that
@@ -21396,7 +21396,7 @@ type UpstreamRepository struct {
 	// ConfigVersion The repository's `config_version`, the value of the `ETag`.
 	ConfigVersion int `json:"configVersion"`
 
-	// DisplayName The preset's display name, a product name the UI does not translate; the system repository's name.
+	// DisplayName The preset's display name, or the system repository's name, in English; the UI names the repository by its `key` in the reader's language (R-UI-272).
 	DisplayName string                    `json:"displayName"`
 	Fixed       []UpstreamRepositoryFixed `json:"fixed"`
 
@@ -21608,7 +21608,7 @@ type UpstreamRepositoryStateRequestState string
 // preset's display name, the state (never `retired`: a retired repository is not listed) and the level. Nothing of the
 // address, the account or who lists it.
 type UpstreamRepositorySummary struct {
-	// DisplayName The preset's display name, a product name the UI does not translate.
+	// DisplayName The preset's display name in English; the UI names the repository by its `key` in the reader's language (R-UI-272).
 	DisplayName string `json:"displayName"`
 
 	// Key The repository key in the project `upstream`, the preset's id.
