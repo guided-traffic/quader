@@ -73,13 +73,18 @@ func newUploadFixture(t *testing.T) *uploadFixture {
 	e.grant(r, "up-peer", []string{"oci-peer"}, authz.PatternLists{}, map[string][]string{"user:writer": {"read", "deploy"}})
 	e.grant(r, "up-source-push", []string{"oci-source"}, authz.PatternLists{}, map[string][]string{"user:pusher": {"read", "deploy"}})
 	e.grant(r, "up-source", []string{"oci-source"}, authz.PatternLists{}, map[string][]string{"user:mover": {"read"}})
-	// every replica knows the policies before the first request
+	// Every replica knows every policy before the first request. Each probe answers only once its policy is in the replica's index:
+	// a read the replica cannot yet grant answers 404 like a name that does not exist (R-AUTHZ-016), so a read of a name that does not
+	// exist proves nothing, and a replica that knew the first grants but not the last two once answered mover's first read of
+	// oci-source 404 (TestR_OCI_012_AnExcludePatternAddedAfterThePushHidesTheSourceFromAMount, 2026-11-27).
+	probe := f.seed("oci-source", "probe", []byte("the policies' probe"))
 	for i, rep := range f.replicas {
 		waitFor(t, fmt.Sprintf("the policies on replica %d", i), 15*time.Second, func() bool {
 			return rep.do("writer", http.MethodPost, apiPrefix+"oci-local/probe/blobs/uploads/", nil).status == http.StatusAccepted &&
-				rep.do("mover", http.MethodGet, apiPrefix+"oci-source/probe/tags/list", nil).status != http.StatusForbidden &&
-				rep.do("writer", http.MethodGet, apiPrefix+"oci-small/probe/blobs/uploads/"+uuid.NewString(), nil).status != http.StatusForbidden &&
-				rep.do("pusher", http.MethodGet, apiPrefix+"oci-source/probe/tags/list", nil).status != http.StatusForbidden
+				rep.do("writer", http.MethodPost, apiPrefix+"oci-small/probe/blobs/uploads/", nil).status == http.StatusAccepted &&
+				rep.do("writer", http.MethodPost, apiPrefix+"oci-peer/probe/blobs/uploads/", nil).status == http.StatusAccepted &&
+				rep.do("pusher", http.MethodPost, apiPrefix+"oci-source/probe/blobs/uploads/", nil).status == http.StatusAccepted &&
+				rep.do("mover", http.MethodGet, apiPrefix+"oci-source/probe/blobs/"+probe, nil).status == http.StatusOK
 		})
 	}
 	return f
