@@ -6327,7 +6327,7 @@
       </notes>
       <segment>
         <source>Expires in</source>
-        <target>Läuft ab in</target>
+        <target>Restlaufzeit</target>
       </segment>
     </unit>
     <unit id="bastion.token.unused">
