@@ -3452,6 +3452,8 @@ In `read_only` mode:
   ([repositories-and-proxy.md](repositories-and-proxy.md), RMT-031).
 - **Background work.** The scheduler does not enqueue mutating tasks (`gc`, `gc-full`,
   `orphan-sweep`, retention, reindex, `remote-cache-cleanup`, `remote-examination-cleanup`). Runs already in progress finish.
+  A replica's scheduler that does not know the mode yet (its first tick can come before the start-up has read the system state)
+  holds the mutating tasks back too; the next tick enqueues the same latest slot once the mode is known.
 - **Readiness** is unaffected.
 - **UI.** The UI shows the mode as a banner (R-OPS-025).
 

@@ -147,13 +147,13 @@ func (w *Worker) Tick(ctx context.Context, h *cluster.Held) error {
 	}
 	var first error
 	woke := map[string]bool{}
-	readOnly := w.o.ReadOnly != nil && w.o.ReadOnly(ctx)
+	held := w.mutatingHeld(ctx)
 	for _, task := range tasks {
 		slot, ok := task.sched.Prev(now.Time)
 		if !ok {
 			continue
 		}
-		if readOnly && task.mutating {
+		if held && task.mutating {
 			continue // R-OPS-024: no mutating task is enqueued in read-only mode; its slot is missed, not caught up
 		}
 		spec, ok := w.o.Registry.Kind(task.kind)
@@ -185,6 +185,18 @@ func (w *Worker) Tick(ctx context.Context, h *cluster.Held) error {
 		}
 	}
 	return first
+}
+
+// mutatingHeld reports whether this tick holds back the mutating tasks (R-OPS-024): in read-only maintenance mode, and while the
+// replica does not know the mode yet. The scheduler's first tick runs as soon as the replica holds the scheduler lease, which can
+// be before the start-up has built the store of the system state; a task held back then is enqueued by the next tick, whose
+// latest slot is the same unless a new one has passed.
+func (w *Worker) mutatingHeld(ctx context.Context) bool {
+	if w.o.ReadOnly == nil {
+		return false
+	}
+	readOnly, known := w.o.ReadOnly(ctx)
+	return readOnly || !known
 }
 
 func (w *Worker) tickErr(what string, err error) error {

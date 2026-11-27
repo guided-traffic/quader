@@ -60,9 +60,11 @@ type WorkerOptions struct {
 	// R-OPS-001 passes). The claim loop claims only while it is (Q-OPS-12). Nil
 	// means always.
 	Ready func() bool
-	// ReadOnly reports whether the installation is in read-only maintenance mode (R-OPS-024); the scheduler enqueues no mutating task
-	// then. An error reading the mode is no reason to skip a task, so the function answers false for it. Nil means never.
-	ReadOnly func(ctx context.Context) bool
+	// ReadOnly reports whether the installation is in read-only maintenance mode (R-OPS-024) and whether the replica knows that yet:
+	// the scheduler enqueues no mutating task while it is read-only or not known, as at a first tick that comes before the replica
+	// has built the store of the system state. An error reading a known store is no reason to skip a task, so the function answers
+	// (false, true) for it. Nil means never read-only.
+	ReadOnly func(ctx context.Context) (readOnly, known bool)
 
 	Watchdog        cluster.Watchdog
 	WatchdogTimeout time.Duration

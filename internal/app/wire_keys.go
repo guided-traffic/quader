@@ -58,19 +58,20 @@ func (a *App) wireInfra(_ context.Context, keys keysArea, pg postgresArea, au au
 	return in, nil
 }
 
-// readOnlyMode reports whether the installation is in read-only maintenance mode (R-OPS-024), for the scheduler. The store is built by
-// wireInfra, after the worker; the answer is read when it is asked. The scheduler asks on the lease manager's goroutine from its
-// first tick, while the wiring still writes a.parts, so the store is read under the replica's lock, never from a.parts. An error
-// reading the mode is no reason to skip a task.
-func (a *App) readOnlyMode(ctx context.Context) bool {
+// readOnlyMode reports whether the installation is in read-only maintenance mode (R-OPS-024), and whether the replica knows it yet,
+// for the scheduler. The store is built by wireInfra, after the worker; the answer is read when it is asked. The scheduler asks on
+// the lease manager's goroutine from its first tick, while the wiring still writes a.parts, so the store is read under the
+// replica's lock, never from a.parts. Before wireInfra hands the store over the mode is not known, and the scheduler holds its
+// mutating tasks back. An error reading the mode is no reason to skip a task.
+func (a *App) readOnlyMode(ctx context.Context) (readOnly, known bool) {
 	a.mu.Lock()
 	sys := a.sys
 	a.mu.Unlock()
 	if sys == nil {
-		return false
+		return false, false
 	}
 	m, err := sys.Maintenance(ctx)
-	return err == nil && m.ReadOnly()
+	return err == nil && m.ReadOnly(), true
 }
 
 // offlineForMaintenance is proxy.Options.GlobalOffline: the configured global offline mode, or read-only maintenance mode with
