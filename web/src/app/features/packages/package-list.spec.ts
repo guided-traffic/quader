@@ -145,7 +145,7 @@ describe('Packages list', () => {
       text(b.querySelector('span:first-child')!),
     );
     expect(sortable).toEqual(['Package', 'Updated']);
-    expect(r.root.querySelectorAll('thead .th-help').length).toBeGreaterThanOrEqual(2);
+    expect(r.root.querySelectorAll('thead .help-sign').length).toBeGreaterThanOrEqual(2);
     expect(r.root.querySelector('th[aria-sort="ascending"]')?.textContent).toContain('Package');
     expect(r.fake.listFilters.at(-1)?.sort).toBe('name');
   });

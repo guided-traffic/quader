@@ -5,7 +5,7 @@ import { EncryptionStatus } from '../../../api/system-api';
 import { TimePipe } from '../../../shared/time-pipe';
 import { DataTable, TableColumn } from '../../../shared/ui/data-table';
 import { NoValue } from '../../../shared/ui/no-value';
-import { Tooltip } from '../../../shared/ui/tooltip';
+import { Help } from '../../../shared/ui/help';
 import { StorageMeter } from './storage-meter';
 import { EncryptsRow, appliedSse, holdingConnections, inFormat, keyRing, percentOf, whatQuaderEncrypts } from './storage-model';
 
@@ -19,7 +19,7 @@ import { EncryptsRow, appliedSse, holdingConnections, inFormat, keyRing, percent
  */
 @Component({
   selector: 'quader-storage-encryption',
-  imports: [DataTable, DecimalPipe, NoValue, StorageMeter, TimePipe, Tooltip],
+  imports: [DataTable, DecimalPipe, NoValue, Help, StorageMeter, TimePipe],
   templateUrl: './encryption-section.html',
   styleUrl: './storage-sections.scss',
 })
@@ -131,10 +131,6 @@ export class EncryptionSection {
         return $localize`:@@storage.encrypts.bastion-caches.help:A Bastion encrypts its cache when its chart gives it a key.`;
     }
     return '';
-  }
-
-  protected aboutLabel(r: EncryptsRow): string {
-    return $localize`:@@storage.encrypts.about:About: ${this.familyText(r)}:family:`;
   }
 
   protected markIcon(r: EncryptsRow): string {

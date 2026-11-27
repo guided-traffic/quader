@@ -83,4 +83,34 @@ describe('The text field (R-UI-085)', () => {
     expect([...input.classList]).toEqual(['text-input', 'field-w-duration']);
     expect([...root.querySelector('textarea')!.classList]).toEqual(['area-input', 'field-w-full']);
   });
+
+  it('R-UI-267 the hint keeps the format under the field; the help is the sign after the label, outside it', async () => {
+    TestBed.resetTestingModule();
+    await TestBed.configureTestingModule({ imports: [HelpHost] }).compileComponents();
+    const fixture = TestBed.createComponent(HelpHost);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const root = fixture.nativeElement as HTMLElement;
+    const input = root.querySelector('input') as HTMLInputElement;
+    const label = root.querySelector('label') as HTMLLabelElement;
+    expect(label.control).toBe(input);
+    expect(label.querySelector('button')).toBeNull();
+    const sign = root.querySelector<HTMLButtonElement>('.field-label-line > quader-help button.help-sign')!;
+    expect(sign.getAttribute('aria-label')).toBe('About Exempt addresses');
+    expect(document.getElementById(sign.getAttribute('aria-describedby')!)?.textContent).toBe('No flood figure, timeout or block applies to them.');
+    // The format is the input's description; the meaning is the sign's, not the field's.
+    expect(document.getElementById(input.getAttribute('aria-describedby')!)?.textContent).toBe('Addresses or networks, separated by commas');
+    expect(root.querySelectorAll('.hint')).toHaveLength(1);
+  });
 });
+
+@Component({
+  imports: [TextField],
+  template: `<quader-text-field
+    width="full"
+    label="Exempt addresses"
+    hint="Addresses or networks, separated by commas"
+    help="No flood figure, timeout or block applies to them."
+  />`,
+})
+class HelpHost {}

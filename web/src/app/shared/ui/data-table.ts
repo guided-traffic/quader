@@ -1,6 +1,6 @@
 import { Component, DestroyRef, ElementRef, LOCALE_ID, afterRenderEffect, computed, inject, input, output, untracked } from '@angular/core';
 import { relativeTimeWords } from '../../features/packages/format-time';
-import { Tooltip } from './tooltip';
+import { Help } from './help';
 import { ApiError } from '../../api/problem';
 import { ErrorNotice } from '../error-notice';
 import { EmptyState } from './empty-state';
@@ -11,7 +11,7 @@ import { Busy } from './busy';
 export interface TableColumn {
   readonly id: string;
   readonly label: string;
-  /** Explains the column; shown as a "?" button whose tooltip is also its accessible description. */
+  /** Explains the column for every row (Q-UI-1500); shown as the help sign (`<quader-help>`, R-UI-267) after the label. */
   readonly help?: string;
   /** Only where the API (or a complete client-side list) can really sort by this column. */
   readonly sortable?: boolean;
@@ -73,7 +73,7 @@ const REMEASURE = 'quader-remeasure';
  * The data table of every list screen (R-UI-020, R-UI-024 to R-UI-027, R-UI-030, R-UI-037, R-UI-006).
  * It owns the frame: a table named by its caption that grows the page and never scrolls by itself, its head scrolling away
  * with the page (R-UI-215, Q-UI-1110), sortable headers
- * (`aria-sort`, a real button per sortable column), a "?" help tooltip per column that needs one,
+ * (`aria-sort`, a real button per sortable column), a help sign per column that needs one (`<quader-help>`, R-UI-267),
  * and the four states: loading, error (with retry), empty and filled, plus the "Load more" button of
  * cursor lists (R-UI-006). The rows are the screen's own `<tr>` elements, projected into the body, so
  * links, badges and actions stay in the screen's template.
@@ -83,7 +83,7 @@ const REMEASURE = 'quader-remeasure';
  */
 @Component({
   selector: 'quader-data-table',
-  imports: [Tooltip, ErrorNotice, EmptyState, Loading, Busy],
+  imports: [Help, ErrorNotice, EmptyState, Loading, Busy],
   template: `
     @if (error(); as e) {
       <quader-error-notice [error]="e" (retry)="retry.emit()" />
@@ -122,14 +122,7 @@ const REMEASURE = 'quader-remeasure';
                         <span [class.visually-hidden]="c.hideLabel">{{ c.label }}</span>
                       }
                       @if (c.help) {
-                        <button
-                          type="button"
-                          class="th-help"
-                          [quaderTooltip]="c.help"
-                          [attr.aria-label]="helpLabel(c)"
-                        >
-                          <span class="material-icons" aria-hidden="true">help_outline</span>
-                        </button>
+                        <quader-help [text]="c.help" [about]="c.label" [column]="true" />
                       }
                     </span>
                   </th>
@@ -380,10 +373,6 @@ export class DataTable {
     const s = this.sort();
     if (s?.column !== c.id) return 'unfold_more';
     return s.direction === 'asc' ? 'arrow_upward' : 'arrow_downward';
-  }
-
-  protected helpLabel(c: TableColumn): string {
-    return $localize`:@@table.help-label:About the column ${c.label}:column:`;
   }
 
   protected toggle(c: TableColumn): void {

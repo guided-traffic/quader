@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { settle } from '../../testing/screen';
+import { settle, sleep } from '../../testing/screen';
 import { Tooltip } from './tooltip';
 
 @Component({
@@ -8,6 +8,15 @@ import { Tooltip } from './tooltip';
   template: `<button type="button" aria-label="About the column" quaderTooltip="Counts the files">?</button>`,
 })
 class Host {}
+
+@Component({
+  imports: [Tooltip],
+  template: `
+    <button type="button" class="plain" aria-label="Plain" quaderTooltip="Not pinned">?</button>
+    <button type="button" class="pin" aria-label="Pinned" quaderTooltip="Pinned by a tap" [quaderTooltipPin]="true">i</button>
+  `,
+})
+class PinHost {}
 
 describe('Quader tooltip', () => {
   async function render() {
@@ -44,6 +53,32 @@ describe('Quader tooltip', () => {
     expect(bubble()).not.toBeNull();
     button.dispatchEvent(new Event('blur'));
     await settle(fixture);
+    expect(bubble()).toBeNull();
+  });
+
+  it('R-UI-267 a pinning tooltip stays after a click when the pointer leaves, until the next click; without the pin a click changes nothing', async () => {
+    TestBed.resetTestingModule();
+    await TestBed.configureTestingModule({ imports: [PinHost] }).compileComponents();
+    const fixture = TestBed.createComponent(PinHost);
+    document.body.appendChild(fixture.nativeElement);
+    await settle(fixture);
+    const root = fixture.nativeElement as HTMLElement;
+    const pin = root.querySelector<HTMLButtonElement>('.pin')!;
+    pin.click();
+    await settle(fixture);
+    pin.dispatchEvent(new Event('mouseleave'));
+    await sleep(fixture, 150);
+    expect(bubble()?.textContent).toBe('Pinned by a tap');
+    pin.click();
+    await settle(fixture);
+    expect(bubble()).toBeNull();
+
+    const plain = root.querySelector<HTMLButtonElement>('.plain')!;
+    plain.dispatchEvent(new Event('mouseenter'));
+    plain.click();
+    await settle(fixture);
+    plain.dispatchEvent(new Event('mouseleave'));
+    await sleep(fixture, 150);
     expect(bubble()).toBeNull();
   });
 });

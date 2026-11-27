@@ -77,7 +77,7 @@ describe('Start page', () => {
       },
     });
     await settle(fixture);
-    const heads = [...root.querySelectorAll('thead th')].map((th) => text(th).replace('help_outline', ''));
+    const heads = [...root.querySelectorAll('thead th')].map((th) => text(th).replace(/info$/, ''));
     const cells = [...root.querySelectorAll('tbody tr:first-child > td')];
     for (const column of ['Your role', 'Description']) {
       const cell = cells[heads.findIndex((h) => h.startsWith(column)) - 1]!;
@@ -91,7 +91,7 @@ describe('Start page', () => {
     });
     await settle(fixture);
     expect(text(root.querySelector('caption')!)).toBe('Public projects');
-    const heads = [...root.querySelectorAll('thead th')].map((th) => text(th).replace('help_outline', ''));
+    const heads = [...root.querySelectorAll('thead th')].map((th) => text(th).replace(/info$/, ''));
     expect(heads.some((h) => h.startsWith('Your role'))).toBe(false);
     await expectAccessible(root);
   });

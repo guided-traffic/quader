@@ -175,17 +175,6 @@ ul.plain {
   overflow-wrap: anywhere;
 }
 
-.help {
-  &.btn-sm {
-    inline-size: 24px;
-  }
-
-  > .material-icons {
-    font-size: 1.125rem;
-    color: var(--quader-text-muted);
-  }
-}
-
 .section-actions {
   margin-block-start: var(--quader-space-3);
 }

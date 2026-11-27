@@ -46,8 +46,9 @@ Take the first of these that fits, in this order:
 
 1. A shared control: `<quader-text-field>`, `<quader-select-field>`, `<quader-checkbox>`, `<quader-switch>`, `<quader-tab-group>`,
    `<quader-data-table>`, `<quader-avatar>`, `QuaderDialog`, the `[quaderTooltip]` directive for a sentence of plain text, the
-   `[quaderDetailPopover]` directive on a `<button>` for details on demand in lines (hover, focus and tap, R-UI-256)
-   ([web/src/app/shared/](../../web/src/app/shared/)).
+   `[quaderDetailPopover]` directive on a `<button>` for details on demand in lines (hover, focus and tap, R-UI-256),
+   `<quader-help>` for the sentence that explains a setting, a heading or a column behind an info sign, and `<quader-setting>` for
+   a row of a settings card, its name beside its control (R-UI-267) ([web/src/app/shared/](../../web/src/app/shared/)).
 2. A class of [_controls.scss](../../web/src/styles/_controls.scss): `btn`, `text-input`, `select-input`, `badge`, `tab-nav`,
    `menu`. The table in [design-language.md](design-language.md#controls) lists each with its markup.
 3. A component style that uses only the `--quader-*` tokens of [_tokens.scss](../../web/src/styles/_tokens.scss).
@@ -268,7 +269,7 @@ existing ones are moved over ([What does not follow this page yet](#what-does-no
 |---|---|
 | A region that stays in the page | `<div class="collapse-region" [class.open]="open()"><div>…</div></div>`; the second element is required |
 | A list that drops below its field: the search's suggestions ([search-field.html](../../web/src/app/features/search/search-field.html)) and its sheet below 36 rem | `animate.enter="dropdown-in"` on the list; it closes at once, because the focus stays in the field and the next key must not wait for an animation |
-| A collapsible section of any screen: the details of a content page, the groups of a settings page or an editor | `<quader-disclosure heading hint note count>` (`note`: a short state after the heading, such as **Unsaved changes** of a closed section that holds one; `count`: the number of entries of a section that is a list, the neutral badge of a count after the heading, **System repositories 2**, [R-UI-192](../spec/api-and-ui.md#r-ui-192--the-system-repositories-of-the-project-upstream-stand-apart-on-its-page)) ([disclosure.ts](../../web/src/app/shared/ui/disclosure.ts), [Q-UI-322](../spec/api-and-ui.md#q-ui-322--a-closed-section-of-details-is-one-quiet-disclosure-a-small-heading-with-a-chevron-and-one-hint-line)): the heading at the text's size, weight 600, a chevron before it, one muted hint line, closed at first; `[(expanded)]` binds its state. Never a settings section below a list or a README |
+| A collapsible section of any screen: the details of a content page, the groups of a settings page or an editor | `<quader-disclosure heading hint note noteTone count>` (`note`: a short state after the heading, such as **Unsaved changes** of a closed section that holds one, with `noteTone="warn"` a line that needs action in the warning's colour with its icon (R-UI-267); `count`: the number of entries of a section that is a list, the neutral badge of a count after the heading, **System repositories 2**, [R-UI-192](../spec/api-and-ui.md#r-ui-192--the-system-repositories-of-the-project-upstream-stand-apart-on-its-page)) ([disclosure.ts](../../web/src/app/shared/ui/disclosure.ts), [Q-UI-322](../spec/api-and-ui.md#q-ui-322--a-closed-section-of-details-is-one-quiet-disclosure-a-small-heading-with-a-chevron-and-one-hint-line)): the heading at the text's size, weight 600, a chevron before it, one muted hint line, closed at first; `[(expanded)]` binds its state. Never a settings section below a list or a README |
 | A fold inside a section or a table cell: a pattern syntax, a certificate, the messages of a row, a section's further details | `<quader-disclosure [inline]="true" heading>`: the same chevron and weight, without the heading element, the rule and the room around it ([Q-UI-552](../spec/api-and-ui.md#q-ui-552--every-fold-is-the-shared-disclosure-a-fold-inside-a-section-is-its-inline-form)). Its toggle is a button, so its label stays on one line at 390 px (R-UI-171); only a section's heading toggle wraps. A label of Set up client has at most 32 characters in every locale, which `clients.spec.ts` holds in English and German ([Q-UI-810](../spec/api-and-ui.md#q-ui-810--a-folds-label-is-a-buttons-label-at-most-32-characters-in-every-locale)): name the way, not the reason (**Remote without upstream keys**). The app has no bare `<details>`: `check-rules.mjs` refuses one in a template |
 | Something added and removed with `@if` | A wrapper with `class="collapse-animated" animate.enter="collapse-in" animate.leave="collapse-out"` around one child |
 | A side panel, a drop-down panel, the sidebar | `panel-in`, `panel-out`; `dropdown-in`, `dropdown-out`; `sidebar-in`, `sidebar-out` |
@@ -282,8 +283,9 @@ The button has `aria-expanded` and `aria-controls`. A closed region is `visibili
 
 - The label is above the field, at weight 600, always visible. A placeholder is an example, never the label.
 - An optional field says **(optional)** in its label. Required fields are not marked, because they are the normal case.
-- Help text is one muted line under the field. An error replaces nothing: it appears below the field, in the error colour, tied
-  to it by `aria-describedby`, and the field has `aria-invalid`.
+- A field's hint is one muted line for its format (a list separated by commas, a name's characters); what the setting does is its
+  help, behind the info sign beside its label (`help`). An error replaces nothing: it appears below the field, in the error colour,
+  tied to it by `aria-describedby`, and the field has `aria-invalid`.
 - An error appears only after the field was touched and left, or after a submit of its form was attempted (the form's `submit`,
   or a click on its submit or confirm button). `<quader-text-field>` and `<quader-select-field>` hold this rule
   (`revealRule` in [fields.ts](../../web/src/app/shared/access/fields.ts)), so a form passes its errors in and keeps no state of
@@ -584,6 +586,8 @@ Before a screen is committed:
 - [ ] Only shared controls, classes of `_controls.scss` and `--quader-*` tokens; no colour literal.
 - [ ] One `<h1>`, one primary action per view, one way to each job (no button and tab for the same thing).
 - [ ] A row's one action is its quiet word, several are its menu **Actions for &lt;name&gt;**; no menu of one entry. A row that sets a state by a switch has the switch in that state's cell beside its badge and an act of one cell as that cell's one word, and no menu ([Q-CUR-201](../spec/remote-curation.md#q-cur-201--a-versions-acts-stand-where-their-state-stands)).
+- [ ] No paragraph explains a setting: its help is behind the info sign; what becomes public, a refusal and a state that needs action
+      stay visible, one line each ([R-UI-267](../spec/api-and-ui.md#r-ui-267--help-behind-an-info-sign)).
 - [ ] A column's help and a description above a table say what holds for every row; what holds for one row, one format or one special
       case is said in that row, in words seen without hover ([Q-UI-1500](../spec/api-and-ui.md#q-ui-1500--a-columns-help-says-what-the-column-means-for-every-row-what-holds-for-one-row-is-said-at-that-row)).
 - [ ] Every value to copy of one line is an address field; a page shows one client address, further ones labelled in Details.

@@ -17,7 +17,7 @@ describe('Token administration (R-UI-030)', () => {
     // The hint names the type (`qdr_pat_…`); an active token shows its action, not the word "Active".
     expect(rows[0]!.querySelector('th code')?.textContent).toMatch(/^qdr_/);
     expect(rows[0]!.querySelector('td.actions button')?.textContent).toContain('Revoke');
-    const heads = [...root.querySelectorAll('thead th')].map((th) => text(th).replace(/help_outline/g, ''));
+    const heads = [...root.querySelectorAll('thead th')].map((th) => text(th).replace(/info$/, ''));
     expect(heads).toEqual(['Select', 'Token', 'Owner', 'Scope', 'Expires', 'Last used', 'Actions']);
     expect(await seriousViolations(root)).toEqual([]);
   });

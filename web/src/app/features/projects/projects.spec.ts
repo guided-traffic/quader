@@ -33,7 +33,7 @@ async function showDetails(r: { root: HTMLElement; fixture: ComponentFixture<unk
   await settle(r.fixture);
 }
 
-const headsOf = (root: HTMLElement): string[] => [...root.querySelectorAll('thead th')].map((h) => text(h).replace('help_outline', '').trim());
+const headsOf = (root: HTMLElement): string[] => [...root.querySelectorAll('thead th')].map((h) => text(h).replace(/info$/, '').trim());
 
 describe('The start page holds what the admin area\'s list of projects held (R-UI-041, the owner\'s T-25)', () => {
   // The choice of the columns is kept in the browser per viewer (Q-UI-1041): each case starts without it.
@@ -67,7 +67,7 @@ describe('The start page holds what the admin area\'s list of projects held (R-U
       },
     });
     await showDetails(r);
-    const heads = [...r.root.querySelectorAll('thead th')].map((h) => [text(h).replace('help_outline', '').trim(), h.classList.contains('num')]);
+    const heads = [...r.root.querySelectorAll('thead th')].map((h) => [text(h).replace(/info$/, '').trim(), h.classList.contains('num')]);
     expect(heads.filter(([, num]) => num).map(([label]) => label)).toEqual(['Repositories', 'Members', 'Storage']);
     const row = r.root.querySelector('tbody tr')!;
     expect(row.querySelectorAll('td.num')).toHaveLength(3);

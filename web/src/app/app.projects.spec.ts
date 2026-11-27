@@ -180,7 +180,7 @@ describe('The project is the context of the content (R-UI-041)', () => {
 
   it('R-UI-020 inside a project the repository list has the columns repository, format and class, no client address and no project', async () => {
     const { root } = await render('/projects/web/repositories', undefined, TWO);
-    const heads = [...root.querySelectorAll('main thead th')].map((th) => th.textContent?.replace(/help_outline/g, '').trim());
+    const heads = [...root.querySelectorAll('main thead th')].map((th) => th.textContent?.replace(/info$/, '').trim());
     expect(heads).toEqual(['Repository', 'Format', 'Class', 'Actions']);
     const row = root.querySelector('main tbody tr')!;
     expect(row.querySelector('td.format-cell .format-name quader-format-icon')).toBeTruthy();

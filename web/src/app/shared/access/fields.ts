@@ -1,4 +1,5 @@
 import { Component, DestroyRef, ElementRef, Signal, afterNextRender, computed, inject, input, model, signal } from '@angular/core';
+import { Help } from '../ui/help';
 import { Spinner } from '../ui/spinner';
 
 let nextFieldId = 1;
@@ -43,12 +44,23 @@ function revealRule(): { readonly touched: () => void; readonly reveal: Signal<b
  * field, 3.3.1). The error is tied to the input with `aria-describedby` and `aria-invalid`; the
  * form's summary is the screen's `<quader-error-notice>`. `type="password"` fields are for secrets
  * only and switch autocomplete and spellcheck off (R-UI-043).
+ *
+ * `hint` is one muted line under the field for the input's format (a list separated by commas, a name's characters); what the
+ * setting does is its `help`, behind the help sign after the label (R-UI-267).
  */
 @Component({
   selector: 'quader-text-field',
+  imports: [Help],
   template: `
     <div class="field">
-      <label class="field-label" [for]="id">{{ label() }}</label>
+      @if (help()) {
+        <!-- The help sign after the label's last word, outside the label: its tap pins its sentence and never focuses the field. -->
+        <span class="field-label-line"
+          ><label class="field-label help-anchor" [for]="id">{{ label() }}</label><quader-help [text]="help()" [about]="label()"
+        /></span>
+      } @else {
+        <label class="field-label" [for]="id">{{ label() }}</label>
+      }
       @if (type() === 'textarea') {
         <textarea
           class="area-input"
@@ -128,7 +140,10 @@ export class TextField {
   readonly value = model('');
   readonly name = input('');
   readonly type = input<'text' | 'email' | 'password' | 'date' | 'number' | 'textarea'>('text');
+  /** The input's format, one muted line under the field. */
   readonly hint = input('');
+  /** What the setting does, behind the help sign after the label (R-UI-267); empty shows no sign. */
+  readonly help = input('');
   readonly error = input<string | null>(null);
   readonly required = input(false);
   readonly readonly = input(false);

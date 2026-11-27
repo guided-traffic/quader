@@ -100,7 +100,7 @@ describe('The system repositories of the project upstream (R-UI-192)', () => {
     expect(s.querySelector('.collapse-region')!.classList.contains('open')).toBe(false);
 
     // The same columns as the list above, and the rows' facts; no Set up client, no Delete.
-    const heads = (t: Element) => [...t.querySelectorAll('thead th')].map((th) => text(th).replace('help_outline', '').trim());
+    const heads = (t: Element) => [...t.querySelectorAll('thead th')].map((th) => text(th).replace(/info$/, '').trim());
     expect(heads(sectionTable(root)!)).toEqual(heads(mainTable(root)!));
     expect(keys(sectionTable(root))).toEqual(['clamav', 'scanner-trivy']);
     const rowOf = (key: string) => [...sectionTable(root)!.querySelectorAll('tbody tr')].find((tr) => text(tr.querySelector('th a')!) === key)!;

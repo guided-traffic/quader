@@ -36,7 +36,9 @@ let nextDisclosureId = 1;
           &ngsp;<span class="badge heading-count" translate="no">{{ count() }}</span>
         }
         @if (note()) {
-          <span class="note">{{ note() }}</span>
+          <span class="note" [class.warn]="noteTone() === 'warn'"
+            >@if (noteTone() === 'warn') {<span class="material-icons" aria-hidden="true">warning</span>}{{ note() }}</span
+          >
         }
       </button>
     </ng-template>
@@ -114,6 +116,18 @@ let nextDisclosureId = 1;
       color: var(--quader-text-muted);
       font-size: var(--quader-text-muted-size);
       font-weight: 400;
+      text-align: start;
+    }
+    /* A note that is a warning (a section's line that needs action, R-UI-267): the warning's colour with its icon before it, on the
+       middle of the note's first line (R-UI-175). */
+    .note.warn {
+      color: var(--quader-status-warn);
+    }
+    .note.warn > .material-icons {
+      margin-block: calc((var(--quader-line) - 1rem) / 2);
+      margin-inline-end: var(--quader-space-1);
+      font-size: 1rem;
+      vertical-align: top;
     }
     [aria-expanded='true'] > .chevron {
       transform: rotate(90deg);
@@ -139,6 +153,11 @@ export class Disclosure {
   readonly hint = input('');
   /** A short state after the heading, such as "Unsaved changes" of a closed section that holds one (R-UI-087). */
   readonly note = input('');
+  /**
+   * The note's tone: `muted` for a state, `warn` for a line that needs action (a Bastion's replicas that run different versions),
+   * in the warning's colour with its icon.
+   */
+  readonly noteTone = input<'muted' | 'warn'>('muted');
   /**
    * The number of entries of a section that is a list, after its heading as the neutral badge of a count, as a page's heading and a
    * tab carry it (Q-UI-550): **System repositories 2** (R-UI-192). `null` shows none.

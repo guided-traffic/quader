@@ -11098,6 +11098,7 @@ The owner's "als Hover über einem Button oder Text" for every reader: with a mo
   of the button's host, so its facts come with the host's data, it needs no request and shows no spinner (R-UI-217 does not apply).
 - `quaderTooltip` stays for a sentence of plain text; the details of a mark are lines of facts, a disclosure and a target the keyboard
   reaches.
+- One sign for a sentence that explains a setting, a heading or a column: `<quader-help>` (R-UI-267); this directive for facts in lines.
 
 *Built on 2026-11-27 (W-36 P4):* [detail-popover.ts](../../web/src/app/shared/ui/detail-popover.ts), first used by the malware mark
 (R-UI-255).
@@ -11109,6 +11110,63 @@ Acceptance criteria:
   focus opens it at once and Escape closes it with the focus back; a pointer's focus does not open it, its tap does and keeps it after
   the pointer leaves, a press inside the card keeps it, a second tap and a tap outside close it; the focus moving elsewhere closes it.
 - Not verified locally: a tap on a real phone; the renders emulate it with a click.
+
+### R-UI-267 · Help behind an info sign
+Priority: **P1** · Covers: quader-only
+
+The owner, 2026-11-27, 08:52, on Admin area › Bastions: "Überall massig Text Slop. Info-Texte zu Settings gehören als Hover hinter ein
+kleines Info-Zeichen." A sentence that explains what a setting, a section or a list's column does is not a paragraph on the page: it stands
+behind one sign after its label, the same for the pointer, the keyboard, the touch screen and a screen reader.
+
+- **One sign** (`<quader-help [text] [about]>`, [help.ts](../../web/src/app/shared/ui/help.ts),
+  [Q-UI-1618](#q-ui-1618--one-help-sign-for-settings-and-columns-an-info-sign-whose-tooltip-a-tap-pins)): a `<button>` with the outlined
+  `info` icon, 18 px in `--quader-text-muted` in a target of 24 by 24 px (WCAG 2.5.8), the row's hover veil under the pointer and the
+  focus ring of every control; its bubble is the tooltip's (R-UI-044, Q-UI-1065, 200 px). The button is named "About {about}" ("Hilfe zu
+  {about}"; "About the column {about}" in a list's header) and described by its sentence through the tooltip's hidden description, read
+  on focus whether the bubble shows or not; the bubble is `aria-hidden`, and the button has no `aria-expanded`. An empty text shows no sign.
+- **Behaviour.** Hover shows the bubble and it stays while the pointer is on the sign or the bubble (WCAG 1.4.13); keyboard focus shows it,
+  Escape hides it and keeps the focus; a click, a tap, Enter and Space pin it (`quaderTooltipPin` of
+  [tooltip.ts](../../web/src/app/shared/ui/tooltip.ts), the pattern of R-UI-256's pin): it stays when the pointer or the focus leaves,
+  until a second tap on the sign, a press outside the sign and the bubble, or Escape. The sign never stands inside a `<label>`: its tap
+  pins and does nothing else.
+- **Where it stands.** After the last word of its label, on that line's middle (R-UI-175): the name before it carries `help-anchor`,
+  which keeps the sign's room at the end of its last line, so a label of two lines carries the sign at the end of the second and the
+  sign never takes a line alone (the layout checks treat it as attached to its text). In a list's header it is the header's own item.
+- **"?" keeps one meaning.** `help_outline` is a link that opens the manual (the top bar's **Documentation**, the storage sections'
+  headings); ⓘ explains in place.
+- **What stays visible** ([Q-UI-1619](#q-ui-1619--what-stays-visible-beside-a-setting)): behind the sign stands what the setting does.
+  Visible, one line each: the input's format while typing (a field's `hint`: a list separated by commas, a name's characters), what
+  becomes public or leaves for the DMZ, a refusal, a warning or a state that needs action, and the next step of a new object.
+- **The parts.** `<quader-setting [label] [help] [for]>` ([setting.ts](../../web/src/app/shared/ui/setting.ts)) is one row of a settings
+  card: the name at weight 600 with its sign in a column of `--quader-setting-label` (16 rem), the control beside it, the name above
+  its control below 40 rem of content; `for` makes the name the control's `<label>`, otherwise `labelId` names a control by
+  `aria-labelledby`; the slot `[below]` holds the lines under the control; a warning of the row is its next sibling. `<quader-text-field>`
+  takes `help` beside its `hint` ([fields.ts](../../web/src/app/shared/access/fields.ts)). `<quader-disclosure>` takes `noteTone="warn"`:
+  a section's one line that needs action stands in the warning's colour with its icon. The data table's column help is this sign.
+
+*Built on 2026-11-27 (W-39 P1):* [help.ts](../../web/src/app/shared/ui/help.ts), the pin of
+[tooltip.ts](../../web/src/app/shared/ui/tooltip.ts), [setting.ts](../../web/src/app/shared/ui/setting.ts), `help` of
+[fields.ts](../../web/src/app/shared/access/fields.ts), `noteTone` of [disclosure.ts](../../web/src/app/shared/ui/disclosure.ts),
+`.help-sign` and `.help-anchor` of [_controls.scss](../../web/src/styles/_controls.scss); every column help of
+[data-table.ts](../../web/src/app/shared/ui/data-table.ts) and the two help buttons of Settings › Storage (the target of
+**Availability**, the families of **What Quader encrypts**) use it. The Bastion card's rows follow (W-39 P2), and the other settings
+pages' paragraphs (W-39 P5).
+
+Acceptance criteria:
+
+- Vitest ([help.spec.ts](../../web/src/app/shared/ui/help.spec.ts), five cases, about 0.5 s): the name and the description with the
+  `info` icon and no `aria-expanded`; hover and focus show, leaving, Escape (focus kept) and blur hide; a tap pins through leaving, a
+  press on the bubble keeps it, a second tap and a press outside close it; an empty text renders no sign; axe passes.
+  [tooltip.spec.ts](../../web/src/app/shared/ui/tooltip.spec.ts): the pin, and no pin without it.
+  [setting.spec.ts](../../web/src/app/shared/ui/setting.spec.ts): `for` and `labelId`, the lines below, no sign without help.
+  [fields.spec.ts](../../web/src/app/shared/access/fields.spec.ts): the hint is the input's description, the help the sign's, outside
+  the label. [disclosure.spec.ts](../../web/src/app/shared/ui/disclosure.spec.ts): the warning tone's class and icon.
+  [data-table.spec.ts](../../web/src/app/shared/ui/data-table.spec.ts): a column's sign is named "About the column Detail" with `info`.
+- State `help-pinned` ([tooltip.states.spec.ts](../../web/src/app/shared/ui/tooltip.states.spec.ts), `make ui-states`): a setting
+  row's sign at the window's right edge, pinned, its bubble inside the window at 390 and 1,440 px.
+- Layout fixture ([layout-checks.spec.ts](../../web/e2e/renders/layout-checks.spec.ts), `make ui-layout-test`, three engines): an anchored
+  name of two lines carries the sign on its last line's middle; without the anchor the sign alone on the next line is `icon-apart`.
+- Not verified locally: a tap on a real phone; the unit tests and the renders emulate it with a click.
 
 ### R-UI-257 · The scan controller and the coverage on their pages
 Priority: **P1** · Covers: quader-only
@@ -31001,6 +31059,34 @@ reviews it at the walkthrough. R-UI-256.
 
 **Choice:** (a). A pointer's focus opens nothing by itself: its click decides, so a click after a hover keeps the card instead of closing
 it. The card is the menu's surface, at most 28 rem and never wider than the window less 16 px a side. **Applied in the spec:** R-UI-256.
+
+### Q-UI-1618 · One help sign for settings and columns: an info sign whose tooltip a tap pins
+
+Status: **Decided by the development agent on 2026-11-27** (W-39's plan, D1, built) — selected from the options below; the owner
+reviews it at the walkthrough. R-UI-267.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `<quader-help>`: a button with the `info` icon and the tooltip's bubble, shown on hover and focus, pinned by a tap; the data table's column help uses it; "?" keeps meaning "open the manual" (chosen) | | The owner's "kleines Info-Zeichen"; one sign, one look, one behaviour for every reader; the tooltip and its description exist, the pin is the detail popover's known pattern | Every list's column help changes its icon from "?" to ⓘ |
+| (b) The detail popover's card (`quaderDetailPopover`) | | Tap and keyboard already built; room for links | A second look for one sentence; the card is for facts in lines (R-UI-256) |
+| (c) Keep "?" (`help_outline`) and add the pin | | No change of the lists | "?" already opens the manual in the top bar and on the storage page: one sign with two meanings |
+
+**Choice:** (a). The bubble keeps the tooltip's 200 px; a help text stays under about 200 characters in English, as the longest column
+help does. A word joiner does not hold the sign to its label's last word in any of the three engines (measured on 2026-11-27): the name
+before the sign keeps the sign's room at the end of its last line instead (`help-anchor`). **Applied in the spec:** R-UI-267, R-UI-256.
+
+### Q-UI-1619 · What stays visible beside a setting
+
+Status: **Decided by the development agent on 2026-11-27** (W-39's plan, D2) — selected from the options below; the owner reviews it at
+the walkthrough. R-UI-267.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Behind the sign: what the setting does. Visible, one line each: the input's format (needed while typing), what becomes public or leaves for the DMZ, a refusal, a warning, the next step of a new object (chosen) | | The owner's rule with its own exception, made concrete enough to apply to every page | A builder still judges which sentence is a consequence; R-UI-267 names the kinds |
+| (b) Everything behind the sign | | The plainest page | A field's format and a public exposure would need a hover before acting |
+| (c) Only paragraphs longer than one line move | | Mechanical | Keeps one-line slop; a line's length is not its worth |
+
+**Choice:** (a). A field's `hint` keeps the format, its `help` the meaning. **Applied in the spec:** R-UI-267.
 
 ### Q-UI-1513 · A column Malware scan in every list of artifacts, its help said for the list's rows
 

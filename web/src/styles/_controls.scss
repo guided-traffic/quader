@@ -38,6 +38,7 @@
     .chip,
     .picture,
     quader-copy-button,
+    quader-help,
     quader-visibility-icon,
     quader-format-icon,
     quader-project-mark,
@@ -64,6 +65,59 @@ quader-copy-button.on-line {
 
 .btn-sm.on-line {
   margin-block: calc((var(--quader-line) - 24px) / 2);
+}
+
+// ---- The help sign (R-UI-267, Q-UI-1618) -----------------------------------------------------------
+//
+//   <quader-help [text]="help" [about]="label" />   after the last word of a setting's label, a heading or a column's label
+//
+// The info sign of the outlined set, 18 px in the muted text colour, in a target of 24 by 24 px (WCAG 2.5.8) without a border; the
+// row's hover veil under the pointer and the focus ring of every control. It stands on the middle of its label's line and makes
+// the line no taller (R-UI-175), and keeps 4 px from the label's last word.
+//
+// In running text the name before it carries `help-anchor`: the name keeps the sign's room at the end of its last line, and the
+// sign stands in that room and takes none of its own. A name of two lines then carries the sign after its last word, and the sign
+// never takes a line alone (a word joiner does not hold an element to the word before it in any engine). In a row of flex items (a
+// list's header) the sign is an item of its own and needs no anchor.
+.help-anchor {
+  padding-inline-end: calc(var(--quader-space-1) + 24px);
+}
+
+.help-anchor + quader-help > .help-sign {
+  margin-inline-start: -24px;
+}
+
+.help-sign {
+  box-sizing: border-box;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  inline-size: 24px;
+  block-size: 24px;
+  margin-block: calc((var(--quader-line) - 24px) / 2);
+  margin-inline-start: var(--quader-space-1);
+  padding: 0;
+  border: 0;
+  border-radius: var(--quader-radius-s);
+  background: none;
+  color: var(--quader-text-muted);
+  font: inherit;
+  vertical-align: top;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--quader-row-hover);
+  }
+
+  &:focus-visible {
+    outline: var(--quader-focus-ring);
+    outline-offset: 1px;
+  }
+
+  .material-icons {
+    font-size: 1.125rem;
+  }
 }
 
 // ---- Buttons -------------------------------------------------------------------------------------

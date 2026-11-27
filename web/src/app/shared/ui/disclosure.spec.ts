@@ -30,6 +30,19 @@ class InlineHost {}
 @Component({
   imports: [Disclosure],
   template: `
+    <quader-disclosure heading="Replicas" [level]="3" [count]="2" note="The replicas run different versions: 0.42.0, 0.41.3." noteTone="warn">
+      <p class="inside">Two replicas.</p>
+    </quader-disclosure>
+    <quader-disclosure heading="Tokens" [level]="3" [count]="2" note="The next expires in 12 months">
+      <p class="inside">Two tokens.</p>
+    </quader-disclosure>
+  `,
+})
+class NoteHost {}
+
+@Component({
+  imports: [Disclosure],
+  template: `
     <quader-disclosure heading="Details" remember="file.details" (expandedChange)="opened = $event">
       <p class="inside">Every checksum.</p>
     </quader-disclosure>
@@ -91,6 +104,22 @@ describe('Disclosure', () => {
     await settle(fixture);
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
     expect(root.querySelector('.collapse-region')!.classList).toContain('open');
+    await expectAccessible(root);
+  });
+
+  it('R-UI-267 a note that needs action is in the warning\'s colour with its icon; a state stays muted and without one', async () => {
+    TestBed.resetTestingModule();
+    await TestBed.configureTestingModule({ imports: [NoteHost] }).compileComponents();
+    const fixture = TestBed.createComponent(NoteHost);
+    await settle(fixture);
+    const root = fixture.nativeElement as HTMLElement;
+    const [warn, muted] = [...root.querySelectorAll<HTMLElement>('h3 button .note')];
+    expect(warn!.classList).toContain('warn');
+    expect(warn!.querySelector('.material-icons')?.textContent).toBe('warning');
+    expect(warn!.querySelector('.material-icons')?.getAttribute('aria-hidden')).toBe('true');
+    expect(warn!.textContent).toBe('warningThe replicas run different versions: 0.42.0, 0.41.3.');
+    expect(muted!.classList).not.toContain('warn');
+    expect(muted!.querySelector('.material-icons')).toBeNull();
     await expectAccessible(root);
   });
 

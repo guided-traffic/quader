@@ -575,8 +575,12 @@ td.class-cell .material-icons {
     gap: var(--quader-space-1);
   }
 
-  .th-sort,
-  .th-help {
+  // The header's own gap stands between the label and its help sign.
+  .th-inner .help-sign {
+    margin-inline-start: 0;
+  }
+
+  .th-sort {
     display: inline-flex;
     align-items: center;
     gap: var(--quader-space-1);
@@ -596,14 +600,6 @@ td.class-cell .material-icons {
     &:focus-visible {
       outline: var(--quader-focus-ring);
       outline-offset: 1px;
-    }
-  }
-
-  .th-help {
-    color: var(--quader-text-muted);
-
-    .material-icons {
-      font-size: 1.125rem;
     }
   }
 

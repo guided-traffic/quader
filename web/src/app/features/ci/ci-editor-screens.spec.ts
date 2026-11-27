@@ -779,7 +779,7 @@ describe('The CI identity of a project (R-UI-035)', () => {
     // The issuers are a read-only choice: no create, no edit.
     expect(text(sections[0]!)).toContain('gitlab-com');
     expect(text(sections[0]!)).toContain('https://gitlab.example.com');
-    expect(sections[0]!.querySelector('a, button:not(.th-help)')).toBeNull();
+    expect(sections[0]!.querySelector('a, button:not(.help-sign)')).toBeNull();
     // Only the project's mappings, with the project's routes.
     expect(text(sections[1]!)).toContain('web-x');
     expect(text(sections[1]!)).not.toContain('system-only');

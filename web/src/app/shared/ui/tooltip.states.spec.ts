@@ -1,6 +1,7 @@
-import { Component, input } from '@angular/core';
+import { Component, ViewEncapsulation, input } from '@angular/core';
 import { describe, it } from 'vitest';
 import { expectState, openInPage, stable } from '../../testing/states';
+import { Setting } from './setting';
 import { Tooltip } from './tooltip';
 
 /**
@@ -34,11 +35,39 @@ class TooltipEdge {
   readonly low = input(false);
 }
 
+/**
+ * A setting row whose name ends at the right edge of the page, so its help sign stands there (R-UI-267): at 390 px the name stands
+ * above its control across the whole width.
+ */
+@Component({
+  selector: 'quader-help-edge',
+  imports: [Setting],
+  // The row's own styles stay the component's; this only moves its name to the end of its column.
+  encapsulation: ViewEncapsulation.None,
+  template: `
+    <quader-setting class="help-edge" label="Direct reads from the object store" [help]="text()">
+      <span>Off</span>
+    </quader-setting>
+  `,
+  styles: `
+    .help-edge .setting-label {
+      text-align: end;
+    }
+  `,
+})
+class HelpEdge {
+  readonly text = input.required<string>();
+}
+
 /** The longest texts of the tooltips (data-table column help, limit-rules.ts, token-table.ts), as the screens set them. */
 const LONGEST_HELP =
   "The system tier is the administrators'. A project's administrators manage the tier of their project. The tiers are evaluated separately and their matches combined.";
 const CLAMPED =
   "Lowered to what the instance or the project's maximum allows: 400 requests per second; 2,000 in a burst; 1,000 GB per hour from the cache; 5,000 GB per day.";
+
+/** The help of a Bastion's direct reads (W-39), as the card sets it. */
+const HANDOVER_HELP =
+  'Large files go from the object store to this Bastion by a link per file. The main installation still decides and counts every download.';
 
 async function shown(text: string, low: boolean): Promise<void> {
   const fixture = await openInPage(TooltipEdge, { text, low });
@@ -54,5 +83,14 @@ describe('tooltips at the right edge of the window in a browser (R-UI-044, R-UI-
 
   it("a rule's lowered figures lower down at the right edge: above its element, inside the window", async () => {
     await expectState('tooltip-edge', () => shown(CLAMPED, true));
+  });
+
+  it("R-UI-267 a setting's help sign at the window's right edge, pinned by a tap: the bubble inside the window", async () => {
+    await expectState('help-pinned', async () => {
+      const fixture = await openInPage(HelpEdge, { text: HANDOVER_HELP });
+      (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('button.help-sign')!.click();
+      await stable(fixture);
+      if (!document.querySelector('quader-tooltip')) throw new Error('the help did not open');
+    });
   });
 });

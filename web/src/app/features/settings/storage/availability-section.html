@@ -1,11 +1,9 @@
 @let o = overview();
 <p class="target-line">
-  <span i18n="@@storage.availability.target"
+  <span class="help-anchor" i18n="@@storage.availability.target"
     >{o.availability.target, plural, =1 {Target 1 copy per blob} other {Target {{ o.availability.target }} copies per blob}} · written before
     answering: {{ o.availability.minCopies }}</span
-  >&ngsp;<button type="button" class="btn btn-tertiary btn-icon btn-sm help on-line" [quaderTooltip]="targetHelp" i18n-aria-label="@@storage.availability.target.about" aria-label="About the target">
-    <span class="material-icons" aria-hidden="true">help_outline</span>
-  </button>
+  ><quader-help [text]="targetHelp" [about]="targetSubject" />
 </p>
 
 @if (parts().length > 0) {

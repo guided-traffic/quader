@@ -45,7 +45,7 @@ describe('Repository list', () => {
     expect(t).toContain('generic-local');
     expect(t).toContain('Installers and build outputs');
     expect(root.querySelectorAll('tbody tr').length).toBe(2);
-    const heads = [...root.querySelectorAll('thead th')].map((th) => text(th).replace('help_outline', '').split(' ')[0]);
+    const heads = [...root.querySelectorAll('thead th')].map((th) => text(th).replace(/info$/, '').split(' ')[0]);
     expect(heads.slice(0, 4)).toEqual(['Repository', 'Project', 'Format', 'Class']);
     const row = [...root.querySelectorAll('tbody tr')].find((tr) => text(tr).includes('generic-local'))!;
     expect(row.querySelector('td.project-cell a')?.getAttribute('href')).toBe('/projects/web');

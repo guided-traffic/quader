@@ -772,6 +772,38 @@ test.describe("the shared patterns with the app's stylesheet (R-UI-176)", () => 
     expect(only(nowrap, 'name-over').map((f) => f.text), describe(nowrap)).toEqual(['From the upstream in the last hour']);
   });
 
+  // The help sign after a setting's name (R-UI-267), with the app's `.help-anchor` and `.help-sign`, in a box as wide as the name's
+  // text on one line, so the sign has no room on that line. The anchored name takes its last word to the next line with the sign,
+  // which stands on that line's middle; without the anchor the sign alone takes the next line and is found.
+  const helpAfter = (anchor: boolean): string =>
+    `<div id="box" style="display:inline-block"><span class="setting-name${anchor ? ' help-anchor' : ''}" style="font-weight:600">Direct reads from the object store</span><quader-help><button type="button" class="help-sign" aria-label="About Direct reads from the object store"><span class="material-icons" aria-hidden="true">info</span></button></quader-help></div>`;
+  async function narrowed(page: Page): Promise<{ found: LayoutFinding[]; lines: number; off: number }> {
+    const { lines, off } = await page.evaluate(() => {
+      const box = document.getElementById('box')!;
+      const name = box.querySelector<HTMLElement>('.setting-name')!;
+      const reserved = parseFloat(getComputedStyle(name).paddingInlineEnd);
+      box.style.display = 'block';
+      box.style.inlineSize = `${Math.ceil(name.getBoundingClientRect().width - reserved)}px`;
+      const rects = Array.from(name.getClientRects());
+      const last = rects[rects.length - 1]!;
+      const sign = box.querySelector('button')!.getBoundingClientRect();
+      return { lines: rects.length, off: Math.abs((sign.top + sign.bottom) / 2 - (last.top + last.bottom) / 2) };
+    });
+    return { found: await page.evaluate(layoutFindings), lines, off };
+  }
+
+  test('R-UI-175 R-UI-267 a help sign after a name of two lines stands on the last line, on its middle', async ({ page }) => {
+    await check(page, helpAfter(true), '', true);
+    const anchored = await narrowed(page);
+    expect(anchored.found, describe(anchored.found)).toEqual([]);
+    expect(anchored.lines).toBe(2);
+    expect(anchored.off).toBeLessThan(1);
+    await check(page, helpAfter(false), '', true);
+    const apart = await narrowed(page);
+    expect(apart.lines).toBe(1);
+    expect(only(apart.found, 'icon-apart'), describe(apart.found)).toHaveLength(1);
+  });
+
   test("R-UI-176 the guard can fail: the owner's row without the line rule is found with the app's stylesheet", async ({ page }) => {
     const html = patterns[0]!.html.replace('btn btn-tertiary btn-icon on-line', 'btn btn-tertiary btn-icon');
     expect(only(await check(page, html, '', true), 'off-line')).toHaveLength(1);

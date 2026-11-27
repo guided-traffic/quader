@@ -45,7 +45,7 @@ describe('Bastions screen (R-BAS-007)', () => {
     }
     // Q-UI-959: three columns; the address, the release and the interface version stand under the replica's name, the time is
     // relative with its date and time as the title, and the URL keeps its text whole where it may break.
-    expect([...partners.querySelectorAll('table')[0]!.querySelectorAll('thead th')].map((th) => text(th).replace(/help_outline/g, '').trim())).toEqual([
+    expect([...partners.querySelectorAll('table')[0]!.querySelectorAll('thead th')].map((th) => text(th).replace(/info$/, '').trim())).toEqual([
       'Replica',
       'Time',
       'Reported base URL',
@@ -336,7 +336,7 @@ describe('Bastions screen (R-BAS-007)', () => {
     const { root } = await renderScreen(BastionList, { capabilities: ['endpoints:read'] });
     expect(card(root, 'partners')).toBeTruthy();
     // The fold of a card's Details is no action (R-UI-240).
-    expect([...root.querySelectorAll('button')].map((b) => text(b)).filter((t) => !/^New Bastion|help_outline|Details$/.test(t))).toEqual([]);
+    expect([...root.querySelectorAll('button')].map((b) => text(b)).filter((t) => !/^New Bastion|^info$|Details$/.test(t))).toEqual([]);
     const create = buttonByText(root, 'New Bastion') as HTMLButtonElement;
     expect(create.disabled).toBe(true);
     expect(text(root)).toContain('endpoints:write');
@@ -347,7 +347,7 @@ describe('Bastions screen (R-BAS-007)', () => {
     const { root } = await renderScreen(BastionList, { capabilities: ['endpoints:read', 'tokens:revoke'] });
     const partners = card(root, 'partners');
     expect(buttonByText(partners, 'Revoke')).toBeTruthy();
-    expect([...partners.querySelectorAll('button')].map((b) => text(b)).filter((t) => !/help_outline|Details$/.test(t))).toEqual(['Revoke partners 2026']);
+    expect([...partners.querySelectorAll('button')].map((b) => text(b)).filter((t) => !/^info$|Details$/.test(t))).toEqual(['Revoke partners 2026']);
   });
 
   it('R-BAS-007 shows the empty state, the loading failure with a retry, and recovers', async () => {
@@ -735,7 +735,7 @@ describe('A registration the configuration declares (R-BAS-127)', () => {
     expect(text(partners.querySelector('[data-testid="bastion-declared"]')!).replace('lock', '').trim()).toBe(
       'From the Helm values, token from Secret quader-bastion-token. Its description, addresses and that token are changed or removed there; to delete it, remove it there first.',
     );
-    const buttons = [...partners.querySelectorAll('button')].map((b) => text(b)).filter((t) => !/help_outline/.test(t));
+    const buttons = [...partners.querySelectorAll('button')].map((b) => text(b)).filter((t) => !/^info$/.test(t));
     expect(buttons.some((b) => b.startsWith('Delete'))).toBe(false);
     expect(buttons.some((b) => b.startsWith('Issue token'))).toBe(true);
     expect(buttons.filter((b) => b.startsWith('Revoke'))).toEqual(['Revoke partners 2026']);

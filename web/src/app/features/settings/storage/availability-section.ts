@@ -6,7 +6,7 @@ import { Busy } from '../../../shared/ui/busy';
 import { DataTable, TableColumn } from '../../../shared/ui/data-table';
 import { Loading } from '../../../shared/ui/loading';
 import { NoValue } from '../../../shared/ui/no-value';
-import { Tooltip } from '../../../shared/ui/tooltip';
+import { Help } from '../../../shared/ui/help';
 import { formatSize } from '../../packages/format-size';
 import { StorageMeter } from './storage-meter';
 import { PeriodSums, periodSums, periodWord } from './storage-history';
@@ -29,7 +29,7 @@ interface CopiesPart {
  */
 @Component({
   selector: 'quader-storage-availability',
-  imports: [Busy, DataTable, DecimalPipe, Loading, NoValue, StorageMeter, TimePipe, Tooltip],
+  imports: [Busy, DataTable, DecimalPipe, Loading, NoValue, Help, StorageMeter, TimePipe],
   templateUrl: './availability-section.html',
   styleUrl: './storage-sections.scss',
 })
@@ -88,6 +88,8 @@ export class AvailabilitySection {
   }
 
   protected readonly rows = computed(() => holdingConnections(this.connections()));
+  /** What the target line's help sign explains: its name is "About the target". */
+  protected readonly targetSubject = $localize`:@@storage.availability.target.subject:the target`;
   protected readonly targetHelp = $localize`:@@storage.availability.target.help:Target: every connection without drain in storage.connections. Written before answering: storage.replication.min_copies.`;
 
   /** The bar of copies per blob, the most copies first; a part below the target warns, a blob without a copy is an error. */

@@ -87,19 +87,26 @@ export class TooltipBubble {
  * (WCAG 1.4.13: dismissible, hoverable, persistent while it is pointed at). The element is described by it
  * (a hidden message the CDK links with `aria-describedby`); an element whose name already says everything needs no tooltip. An empty
  * text is no tooltip: neither a bubble nor a description, so one cell of a list may carry it where its value needs one (Q-UI-1203).
+ *
+ * `quaderTooltipPin` (the help sign's, R-UI-267) makes a click or a tap pin the bubble: it stays when the pointer or the focus leaves,
+ * until a second click on the element, a press outside the element and the bubble, or Escape, as a touch screen needs it; the
+ * pattern of the detail popover's pin (R-UI-256). Without it a click changes nothing.
  */
 @Directive({
   selector: '[quaderTooltip]',
   host: {
     '(mouseenter)': 'show()',
-    '(mouseleave)': 'hideSoon()',
+    '(mouseleave)': 'left()',
     '(focus)': 'show()',
-    '(blur)': 'hide()',
+    '(blur)': 'blurred($event)',
+    '(click)': 'clicked()',
     '(keydown.escape)': 'hide()',
   },
 })
 export class Tooltip implements OnDestroy {
   readonly quaderTooltip = input.required<string>();
+  /** A click or a tap pins the bubble until the next, a press outside or Escape (R-UI-267). */
+  readonly quaderTooltipPin = input(false);
 
   private readonly overlay = inject(Overlay);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -108,6 +115,13 @@ export class Tooltip implements OnDestroy {
   private placed: MutationObserver | null = null;
   private timer: ReturnType<typeof setTimeout> | undefined;
   private described: string | null = null;
+  /** A click or a tap pinned the bubble: leaving with the pointer or the focus does not hide it. */
+  private pinned = false;
+  private readonly outside = (e: Event): void => {
+    const t = e.target as Node | null;
+    if (t && (this.host.nativeElement.contains(t) || this.ref?.overlayElement.contains(t))) return;
+    this.hide();
+  };
 
   constructor() {
     // The element is always described by the text (a hidden message the CDK keeps), so a screen reader announces it on
@@ -150,7 +164,7 @@ export class Tooltip implements OnDestroy {
     this.pointArrow(ref, bubble);
     // Hoverable: moving from the element onto the tooltip keeps it open.
     ref.overlayElement.addEventListener('mouseenter', () => clearTimeout(this.timer));
-    ref.overlayElement.addEventListener('mouseleave', () => this.hideSoon());
+    ref.overlayElement.addEventListener('mouseleave', () => this.left());
   }
 
   /**
@@ -170,13 +184,36 @@ export class Tooltip implements OnDestroy {
     });
   }
 
-  protected hideSoon(): void {
+  /** The pointer left the element or the bubble: hidden after a moment, unless pinned. */
+  protected left(): void {
+    if (this.pinned) return;
     clearTimeout(this.timer);
     this.timer = setTimeout(() => this.hide(), 100);
   }
 
+  protected blurred(e: FocusEvent): void {
+    // A pinned bubble stays when the focus goes nowhere (a tap on the page's text): the press outside decides, as for the popover.
+    if (this.pinned && e.relatedTarget === null) return;
+    this.hide();
+  }
+
+  /** A click or a tap (and Enter or Space on a button) pins the bubble, or unpins and hides a pinned one. */
+  protected clicked(): void {
+    if (!this.quaderTooltipPin()) return;
+    if (this.pinned) {
+      this.hide();
+      return;
+    }
+    this.show();
+    if (!this.ref) return;
+    this.pinned = true;
+    document.addEventListener('pointerdown', this.outside, true);
+  }
+
   protected hide(): void {
     clearTimeout(this.timer);
+    this.pinned = false;
+    document.removeEventListener('pointerdown', this.outside, true);
     this.placed?.disconnect();
     this.placed = null;
     this.ref?.dispose();

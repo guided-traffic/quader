@@ -55,7 +55,7 @@ describe('Upstream registries (R-UI-187)', () => {
 
   it('R-UI-187 R-UI-002 the help of Clients says what the column means; each row says in its cell, in words, what holds for it', async () => {
     const { root } = await render();
-    const help = [...root.querySelectorAll<HTMLElement>('.th-help')].find((b) => b.getAttribute('aria-label') === 'About the column Clients')!;
+    const help = [...root.querySelectorAll<HTMLElement>('.help-sign')].find((b) => b.getAttribute('aria-label') === 'About the column Clients')!;
     // The help is the description the tooltip gives its button.
     const described = (help.getAttribute('aria-describedby') ?? '').split(' ').map((id) => document.getElementById(id)?.textContent ?? '');
     expect(described).toEqual(['Whether the repository answers clients.']);

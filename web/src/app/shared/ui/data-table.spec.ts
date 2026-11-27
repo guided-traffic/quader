@@ -72,7 +72,7 @@ describe('Data table', () => {
     expect(root.querySelector('caption')?.textContent?.trim()).toBe('Widgets');
     expect([...root.querySelectorAll('th[scope="col"]')].map((h) => h.textContent?.trim())).toEqual([
       'Nameunfold_more',
-      'Detailhelp_outline',
+      'Detailinfo',
     ]);
     expect(root.querySelectorAll('tbody tr')).toHaveLength(2);
     expect(await seriousViolations(root)).toEqual([]);
@@ -100,12 +100,14 @@ describe('Data table', () => {
     expect(header.querySelector('.th-arrow')?.textContent).toBe('arrow_downward');
   });
 
-  it('R-UI-044 the help button of a column names the column, is a real button and is described by its tooltip text', async () => {
+  it('R-UI-044 R-UI-267 the help of a column is the help sign: a real button named after the column, described by its text', async () => {
     const { root } = await render();
-    const help = root.querySelectorAll<HTMLButtonElement>('th button.th-help');
+    const help = root.querySelectorAll<HTMLButtonElement>('th button.help-sign');
     expect(help).toHaveLength(1);
     expect(help[0]!.type).toBe('button');
     expect(help[0]!.getAttribute('aria-label')).toBe('About the column Detail');
+    // The info sign, not "?": "?" opens the manual (Q-UI-1618).
+    expect(help[0]!.querySelector('.material-icons')?.textContent).toBe('info');
     // The tooltip directive points aria-describedby at its message, so the help is not mouse-only.
     expect(help[0]!.getAttribute('aria-describedby')).toBeTruthy();
   });

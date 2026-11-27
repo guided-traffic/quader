@@ -15700,7 +15700,7 @@
         <note category="location">src/app/features/packages/ansible-import-log.ts:37,38</note>
         <note category="location">src/app/features/system/backups/backups-page.html:229,230</note>
         <note category="location">src/app/features/system/jobs-page.ts:106,107</note>
-        <note category="location">src/app/shared/ui/data-table.ts:154,155</note>
+        <note category="location">src/app/shared/ui/data-table.ts:147,148</note>
       </notes>
       <segment>
         <source> Load more </source>
@@ -36566,17 +36566,9 @@
         <source><ph id="0" equiv="ICU" disp="{o.availability.target, plural, =1 {Target 1 copy per blob} other {Target {{ o.availability.target }} copies per blob}}" subFlows="1916400377036662509"/> · written before answering: <ph id="1" equiv="INTERPOLATION_1" disp="{{ o.availability.minCopies }}"/></source>
       </segment>
     </unit>
-    <unit id="storage.availability.target.about">
-      <notes>
-        <note category="location">src/app/features/settings/storage/availability-section.html:6,7</note>
-      </notes>
-      <segment>
-        <source>About the target</source>
-      </segment>
-    </unit>
     <unit id="storage.availability.per-blob">
       <notes>
-        <note category="location">src/app/features/settings/storage/availability-section.html:13,14</note>
+        <note category="location">src/app/features/settings/storage/availability-section.html:11,12</note>
       </notes>
       <segment>
         <source>Copies per blob</source>
@@ -36584,7 +36576,7 @@
     </unit>
     <unit id="1191242711289385570">
       <notes>
-        <note category="location">src/app/features/settings/storage/availability-section.html:24</note>
+        <note category="location">src/app/features/settings/storage/availability-section.html:22</note>
       </notes>
       <segment>
         <source>{VAR_PLURAL, plural, =0 {no copy} =1 {1 copy} other {<ph id="0" equiv="INTERPOLATION"/> copies}}</source>
@@ -36592,7 +36584,7 @@
     </unit>
     <unit id="storage.availability.part">
       <notes>
-        <note category="location">src/app/features/settings/storage/availability-section.html:24,25</note>
+        <note category="location">src/app/features/settings/storage/availability-section.html:22,23</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="ICU" disp="{p.copies, plural, =0 {no copy} =1 {1 copy} other {{{ p.copies }} copies}}" subFlows="5697596411409206735"/>: <ph id="1" equiv="INTERPOLATION_1" disp="{{ p.blobs | number }}"/> (<ph id="2" equiv="INTERPOLATION_2" disp="{{ formatSize(p.bytes) }}"/>)</source>
@@ -36600,7 +36592,7 @@
     </unit>
     <unit id="storage.loss.one-store">
       <notes>
-        <note category="location">src/app/features/settings/storage/availability-section.html:37,39</note>
+        <note category="location">src/app/features/settings/storage/availability-section.html:35,37</note>
       </notes>
       <segment>
         <source>One store: no copy elsewhere</source>
@@ -36608,7 +36600,7 @@
     </unit>
     <unit id="storage.loss.losing">
       <notes>
-        <note category="location">src/app/features/settings/storage/availability-section.html:43,47</note>
+        <note category="location">src/app/features/settings/storage/availability-section.html:41,45</note>
       </notes>
       <segment>
         <source>Losing <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ w.connection }}"/></pc>: <ph id="2" equiv="ICU" disp="{w.blobs, plural, =1 {1 blob} other {{{ w.blobs | number }} blobs}}" subFlows="7877143411740521869"/> (<ph id="3" equiv="INTERPOLATION_2" disp="{{
@@ -36618,8 +36610,8 @@
     </unit>
     <unit id="4007325042343732265">
       <notes>
-        <note category="location">src/app/features/settings/storage/availability-section.html:43,44</note>
-        <note category="location">src/app/features/settings/storage/availability-section.html:57,58</note>
+        <note category="location">src/app/features/settings/storage/availability-section.html:41,42</note>
+        <note category="location">src/app/features/settings/storage/availability-section.html:55,56</note>
         <note category="location">src/app/features/settings/storage/storage-summary.ts:84</note>
       </notes>
       <segment>
@@ -36628,7 +36620,7 @@
     </unit>
     <unit id="storage.loss.more">
       <notes>
-        <note category="location">src/app/features/settings/storage/availability-section.html:49,51</note>
+        <note category="location">src/app/features/settings/storage/availability-section.html:47,49</note>
       </notes>
       <segment>
         <source> <ph id="0" equiv="ICU" disp="{others().length, plural, =1 {1 more} other {{{ others().length }} more}}" subFlows="57438175629652"/> </source>
@@ -36636,7 +36628,7 @@
     </unit>
     <unit id="5019039962725604652">
       <notes>
-        <note category="location">src/app/features/settings/storage/availability-section.html:49</note>
+        <note category="location">src/app/features/settings/storage/availability-section.html:47</note>
       </notes>
       <segment>
         <source>{VAR_PLURAL, plural, =1 {1 more} other {<ph id="0" equiv="INTERPOLATION"/> more}}</source>
@@ -36644,7 +36636,7 @@
     </unit>
     <unit id="storage.loss.losing-other">
       <notes>
-        <note category="location">src/app/features/settings/storage/availability-section.html:57,61</note>
+        <note category="location">src/app/features/settings/storage/availability-section.html:55,59</note>
       </notes>
       <segment>
         <source>Losing <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ l.connection }}"/></pc>: <ph id="2" equiv="ICU" disp="{l.blobs, plural, =1 {1 blob} other {{{ l.blobs | number }} blobs}}" subFlows="7877143411740521869"/> (<ph id="3" equiv="INTERPOLATION_2" disp="{{
@@ -36654,7 +36646,7 @@
     </unit>
     <unit id="storage.loss.survives">
       <notes>
-        <note category="location">src/app/features/settings/storage/availability-section.html:67,71</note>
+        <note category="location">src/app/features/settings/storage/availability-section.html:65,69</note>
       </notes>
       <segment>
         <source>Survives the loss of any one connection</source>
@@ -36662,7 +36654,7 @@
     </unit>
     <unit id="storage.only-here.value">
       <notes>
-        <note category="location">src/app/features/settings/storage/availability-section.html:89,90</note>
+        <note category="location">src/app/features/settings/storage/availability-section.html:87,88</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="INTERPOLATION" disp="{{ c.summary.soleCopies | number }}"/> · <ph id="1" equiv="INTERPOLATION_1" disp="{{ formatSize(c.summary.soleBytes) }}"/></source>
@@ -36670,7 +36662,7 @@
     </unit>
     <unit id="storage.backlog.blobs">
       <notes>
-        <note category="location">src/app/features/settings/storage/availability-section.html:98</note>
+        <note category="location">src/app/features/settings/storage/availability-section.html:96</note>
       </notes>
       <segment>
         <source>{VAR_PLURAL, plural, =1 {1 blob} other {<ph id="0" equiv="INTERPOLATION"/> blobs}}</source>
@@ -36678,7 +36670,7 @@
     </unit>
     <unit id="storage.backlog.oldest-days">
       <notes>
-        <note category="location">src/app/features/settings/storage/availability-section.html:100,102</note>
+        <note category="location">src/app/features/settings/storage/availability-section.html:98,100</note>
       </notes>
       <segment>
         <source>{VAR_PLURAL, plural, =1 {oldest 1 day} other {oldest <ph id="0" equiv="INTERPOLATION"/> days}}</source>
@@ -36686,7 +36678,7 @@
     </unit>
     <unit id="storage.backlog.oldest-hours">
       <notes>
-        <note category="location">src/app/features/settings/storage/availability-section.html:103,105</note>
+        <note category="location">src/app/features/settings/storage/availability-section.html:101,103</note>
       </notes>
       <segment>
         <source>{VAR_PLURAL, plural, =1 {oldest 1 hour} other {oldest <ph id="0" equiv="INTERPOLATION"/> hours}}</source>
@@ -36694,7 +36686,7 @@
     </unit>
     <unit id="storage.backlog.oldest-minutes">
       <notes>
-        <note category="location">src/app/features/settings/storage/availability-section.html:106,108</note>
+        <note category="location">src/app/features/settings/storage/availability-section.html:104,106</note>
       </notes>
       <segment>
         <source>{VAR_PLURAL, plural, =1 {oldest 1 minute} other {oldest <ph id="0" equiv="INTERPOLATION"/> minutes}}</source>
@@ -36702,7 +36694,7 @@
     </unit>
     <unit id="storage.backlog.oldest-seconds">
       <notes>
-        <note category="location">src/app/features/settings/storage/availability-section.html:109,111</note>
+        <note category="location">src/app/features/settings/storage/availability-section.html:107,109</note>
       </notes>
       <segment>
         <source>oldest less than a minute</source>
@@ -36710,7 +36702,7 @@
     </unit>
     <unit id="storage.backlog.behind">
       <notes>
-        <note category="location">src/app/features/settings/storage/availability-section.html:116,117</note>
+        <note category="location">src/app/features/settings/storage/availability-section.html:114,115</note>
       </notes>
       <segment>
         <source>Behind for over an hour</source>
@@ -36718,7 +36710,7 @@
     </unit>
     <unit id="storage.pass.since">
       <notes>
-        <note category="location">src/app/features/settings/storage/availability-section.html:128,129</note>
+        <note category="location">src/app/features/settings/storage/availability-section.html:126,127</note>
       </notes>
       <segment>
         <source>Pass since <ph id="0" equiv="INTERPOLATION" disp="{{ at | time }}"/></source>
@@ -36726,7 +36718,7 @@
     </unit>
     <unit id="storage.pass.last">
       <notes>
-        <note category="location">src/app/features/settings/storage/availability-section.html:131,132</note>
+        <note category="location">src/app/features/settings/storage/availability-section.html:129,130</note>
       </notes>
       <segment>
         <source>Last full pass <ph id="0" equiv="INTERPOLATION" disp="{{ at | time }}"/></source>
@@ -36734,7 +36726,7 @@
     </unit>
     <unit id="storage.absorbed.reads">
       <notes>
-        <note category="location">src/app/features/settings/storage/availability-section.html:144,145</note>
+        <note category="location">src/app/features/settings/storage/availability-section.html:142,143</note>
       </notes>
       <segment>
         <source>{VAR_PLURAL, plural, =1 {1 read from another copy} other {<ph id="0" equiv="INTERPOLATION"/> reads from another copy}}</source>
@@ -36742,7 +36734,7 @@
     </unit>
     <unit id="storage.absorbed.writes">
       <notes>
-        <note category="location">src/app/features/settings/storage/availability-section.html:149,150</note>
+        <note category="location">src/app/features/settings/storage/availability-section.html:147,148</note>
       </notes>
       <segment>
         <source>{VAR_PLURAL, plural, =1 {1 write to the next connection} other {<ph id="0" equiv="INTERPOLATION"/> writes to the next connection}}</source>
@@ -36750,7 +36742,7 @@
     </unit>
     <unit id="storage.absorbed.copies-failed">
       <notes>
-        <note category="location">src/app/features/settings/storage/availability-section.html:156,157</note>
+        <note category="location">src/app/features/settings/storage/availability-section.html:154,155</note>
       </notes>
       <segment>
         <source>{VAR_PLURAL, plural, =1 {1 copy failed} other {<ph id="0" equiv="INTERPOLATION"/> copies failed}}</source>
@@ -36758,7 +36750,7 @@
     </unit>
     <unit id="storage.absorbed.loading">
       <notes>
-        <note category="location">src/app/features/settings/storage/availability-section.html:165,167</note>
+        <note category="location">src/app/features/settings/storage/availability-section.html:163,165</note>
       </notes>
       <segment>
         <source>Loading the period.</source>
@@ -36766,7 +36758,7 @@
     </unit>
     <unit id="storage.reconcile.run">
       <notes>
-        <note category="location">src/app/features/settings/storage/availability-section.html:175,177</note>
+        <note category="location">src/app/features/settings/storage/availability-section.html:173,175</note>
       </notes>
       <segment>
         <source>Run the reconciliation now</source>
@@ -36857,9 +36849,17 @@
         <source>What the copies absorbed in the period: reads served from another copy, writes taken by the next connection, copies the reconciliation could not make.</source>
       </segment>
     </unit>
+    <unit id="storage.availability.target.subject">
+      <notes>
+        <note category="location">src/app/features/settings/storage/availability-section.ts:92</note>
+      </notes>
+      <segment>
+        <source>the target</source>
+      </segment>
+    </unit>
     <unit id="storage.availability.target.help">
       <notes>
-        <note category="location">src/app/features/settings/storage/availability-section.ts:91</note>
+        <note category="location">src/app/features/settings/storage/availability-section.ts:93</note>
       </notes>
       <segment>
         <source>Target: every connection without drain in storage.connections. Written before answering: storage.replication.min_copies.</source>
@@ -36867,7 +36867,7 @@
     </unit>
     <unit id="storage.holds.meter">
       <notes>
-        <note category="location">src/app/features/settings/storage/availability-section.ts:117</note>
+        <note category="location">src/app/features/settings/storage/availability-section.ts:119</note>
       </notes>
       <segment>
         <source>Share of every blob on <ph id="0" equiv="id" disp="c.id"/></source>
@@ -38104,7 +38104,7 @@
     </unit>
     <unit id="storage.root-key">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.html:133</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.html:131</note>
       </notes>
       <segment>
         <source>Root key</source>
@@ -38112,7 +38112,7 @@
     </unit>
     <unit id="storage.root-key.count">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.html:135,136</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.html:133,134</note>
       </notes>
       <segment>
         <source>{VAR_PLURAL, plural, =1 {1 key} other {<ph id="0" equiv="INTERPOLATION"/> keys}}</source>
@@ -38120,7 +38120,7 @@
     </unit>
     <unit id="storage.root-key.agree">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.html:138,140</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.html:136,138</note>
       </notes>
       <segment>
         <source>Rings agree</source>
@@ -38128,7 +38128,7 @@
     </unit>
     <unit id="storage.root-key.differ">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.html:142,145</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.html:140,143</note>
       </notes>
       <segment>
         <source>Rings differ</source>
@@ -38136,7 +38136,7 @@
     </unit>
     <unit id="storage.root-key.resealed">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.html:146,148</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.html:144,146</note>
       </notes>
       <segment>
         <source>Last re-sealing <ph id="0" equiv="INTERPOLATION" disp="{{ at | time }}"/></source>
@@ -38366,17 +38366,9 @@
         <source>A Bastion encrypts its cache when its chart gives it a key.</source>
       </segment>
     </unit>
-    <unit id="storage.encrypts.about">
-      <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.ts:137</note>
-      </notes>
-      <segment>
-        <source>About: <ph id="0" equiv="family" disp="this.familyText(r)"/></source>
-      </segment>
-    </unit>
     <unit id="storage.encrypts.mark.yes">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.ts:155</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.ts:151</note>
       </notes>
       <segment>
         <source>Encrypted</source>
@@ -38384,7 +38376,7 @@
     </unit>
     <unit id="storage.encrypts.mark.partly">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.ts:157</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.ts:153</note>
       </notes>
       <segment>
         <source>Depends</source>
@@ -38392,7 +38384,7 @@
     </unit>
     <unit id="storage.encrypts.mark.plain">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.ts:159</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.ts:155</note>
       </notes>
       <segment>
         <source>Plain on purpose</source>
@@ -38400,7 +38392,7 @@
     </unit>
     <unit id="storage.encrypts.mark.no">
       <notes>
-        <note category="location">src/app/features/settings/storage/encryption-section.ts:161</note>
+        <note category="location">src/app/features/settings/storage/encryption-section.ts:157</note>
       </notes>
       <segment>
         <source>Not encrypted</source>
@@ -54727,7 +54719,7 @@
     </unit>
     <unit id="table.loading">
       <notes>
-        <note category="location">src/app/shared/ui/data-table.ts:182</note>
+        <note category="location">src/app/shared/ui/data-table.ts:175</note>
       </notes>
       <segment>
         <source>Loading.</source>
@@ -54735,18 +54727,10 @@
     </unit>
     <unit id="table.empty">
       <notes>
-        <note category="location">src/app/shared/ui/data-table.ts:185</note>
+        <note category="location">src/app/shared/ui/data-table.ts:178</note>
       </notes>
       <segment>
         <source>Nothing to show.</source>
-      </segment>
-    </unit>
-    <unit id="table.help-label">
-      <notes>
-        <note category="location">src/app/shared/ui/data-table.ts:386</note>
-      </notes>
-      <segment>
-        <source>About the column <ph id="0" equiv="column" disp="c.label"/></source>
       </segment>
     </unit>
     <unit id="mark.unlisted">
@@ -54819,6 +54803,22 @@
       </notes>
       <segment>
         <source>Close filters</source>
+      </segment>
+    </unit>
+    <unit id="table.help-label">
+      <notes>
+        <note category="location">src/app/shared/ui/help.ts:41</note>
+      </notes>
+      <segment>
+        <source>About the column <ph id="0" equiv="column" disp="about"/></source>
+      </segment>
+    </unit>
+    <unit id="help.about">
+      <notes>
+        <note category="location">src/app/shared/ui/help.ts:41</note>
+      </notes>
+      <segment>
+        <source>About <ph id="0" equiv="name" disp="about"/></source>
       </segment>
     </unit>
     <unit id="list-head.chips">

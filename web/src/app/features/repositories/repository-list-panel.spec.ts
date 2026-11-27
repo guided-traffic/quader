@@ -90,7 +90,7 @@ describe('Repository list head and filter drawer (R-UI-020)', () => {
     const { root } = await open();
     expect(root.querySelectorAll('th button.th-sort')).toHaveLength(0);
     // No list has an address column (Q-UI-330): the class is the column to explain.
-    expect([...root.querySelectorAll('th button.th-help')].map((b) => b.getAttribute('aria-label'))).toEqual([
+    expect([...root.querySelectorAll('th button.help-sign')].map((b) => b.getAttribute('aria-label'))).toEqual([
       'About the column Class',
     ]);
   });

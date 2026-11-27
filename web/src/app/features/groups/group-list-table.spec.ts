@@ -14,6 +14,6 @@ describe('Groups table (R-UI-025, R-UI-020)', () => {
 
   it('R-UI-025 the origin column explains itself in a help tooltip', async () => {
     const { root } = await renderScreen(GroupList);
-    expect(root.querySelector('th button.th-help')?.getAttribute('aria-label')).toBe('About the column Origin');
+    expect(root.querySelector('th button.help-sign')?.getAttribute('aria-label')).toBe('About the column Origin');
   });
 });

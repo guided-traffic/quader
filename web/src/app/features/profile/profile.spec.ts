@@ -365,7 +365,7 @@ describe('Personal tokens (R-UI-029)', () => {
     const { root } = await renderScreen(ProfileTokens);
     const table = root.querySelector('quader-token-table quader-data-table')!;
     const heads = [...table.querySelectorAll<HTMLElement>('thead th')];
-    expect(heads.map((th) => text(th).replace(/help_outline/g, ''))).toEqual(['Token', 'Scope', 'Expires', 'Last used', 'Created', 'Actions']);
+    expect(heads.map((th) => text(th).replace(/info$/, ''))).toEqual(['Token', 'Scope', 'Expires', 'Last used', 'Created', 'Actions']);
     expect(heads.map((th) => th.classList.contains('narrow-drop'))).toEqual([false, false, false, false, true, false]);
     // No column is pinned: the token and the scope wrap and share the room the others leave by their content; the times and the
     // actions are as wide as their values (Q-UI-563).

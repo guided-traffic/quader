@@ -39,7 +39,7 @@ const versions = (r: Opened) => rows(r).map((tr) => text(tr.querySelector('th a'
 const headers = (r: Opened) =>
   [...r.root.querySelectorAll('.pkg-versions thead th')].map((th) =>
     text(th)
-      .replace(/help_outline$/, '')
+      .replace(/info$/, '')
       .replace(/(arrow_downward|arrow_upward|unfold_more)$/, ''),
   );
 const filter = (r: Opened) => r.root.querySelector<HTMLInputElement>('.versions-filter input')!;

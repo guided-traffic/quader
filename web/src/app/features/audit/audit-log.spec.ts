@@ -266,7 +266,7 @@ describe('Audit log', () => {
   it('R-UI-037 the log keeps five columns: the address stands under the actor, the project under the target', async () => {
     const { root } = await open();
     const heads = [...root.querySelectorAll('table thead th')].map((th) => text(th as HTMLElement));
-    expect(heads.map((h) => h.replace(/help_outline|Help.*$/, '').trim())).toEqual(['Time', 'Actor', 'Action', 'Target', 'Outcome']);
+    expect(heads.map((h) => h.replace(/info$|Help.*$/, '').trim())).toEqual(['Time', 'Actor', 'Action', 'Target', 'Outcome']);
     const actorWithAddress = [...root.querySelectorAll('tbody td.actor')].find((td) => text(td as HTMLElement).includes('10.12.4.7'));
     expect(actorWithAddress?.querySelector('.secondary')?.textContent).toContain('10.12.4.7');
     expect(root.querySelector('tbody td.target .target-project quader-project-link')).toBeTruthy();

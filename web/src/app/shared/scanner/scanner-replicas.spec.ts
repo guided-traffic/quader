@@ -202,7 +202,7 @@ describe('The scanner replicas (R-OPS-048)', () => {
   it('R-UI-188 the updater has no slots: its rows show its state, freshclam\'s version and the set it holds with the age of its daily', async () => {
     const { root } = await render({ list: withUpdater(sampleScanners(), { state: 'starting', reason: 'seed' }), kind: 'freshclam', view: 'open' });
     expect(root.querySelector('quader-disclosure')).toBeNull();
-    const heads = [...root.querySelectorAll('thead th')].map((th) => text(th).replace('help_outline', '').trim());
+    const heads = [...root.querySelectorAll('thead th')].map((th) => text(th).replace(/info$/, '').trim());
     expect(heads).toEqual(['Name', 'State', 'Tool', 'Definitions it holds']);
     const row = text(root.querySelector('tbody tr')!);
     expect(row).toContain('freshclam 1.5.5');

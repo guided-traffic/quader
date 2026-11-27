@@ -51,7 +51,7 @@ describe('The results page of the search (R-UI-098)', () => {
     const project = first.querySelector('td.project-cell quader-project-link')!;
     expect(project.querySelector('quader-project-mark')).toBeTruthy();
     expect(project.querySelector('a')!.getAttribute('href')).toMatch(/^\/projects\/[^/]+$/);
-    const heads = [...r.root.querySelectorAll('thead th')].map((th) => text(th).replace('help_outline', ''));
+    const heads = [...r.root.querySelectorAll('thead th')].map((th) => text(th).replace(/info$/, ''));
     expect(heads.map((h) => h.split(' ')[0])).toEqual(['Repository', 'Project', 'Format', 'Class']);
     // The address means nothing without its client (Q-UI-426): no field and no copy button.
     expect(addressValues(r.root)).toEqual([]);

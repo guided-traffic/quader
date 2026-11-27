@@ -154,10 +154,11 @@ export function layoutFindings(): LayoutFinding[] {
   ].join(', ');
   /**
    * The units that belong to their text: moved to another line than it, they are a defect wherever they stand. A unit with a word
-   * of its own (a badge, a status, a chip) says what it is wherever it stands, and may wrap to a line of its own like a word.
+   * of its own (a badge, a status, a chip) says what it is wherever it stands, and may wrap to a line of its own like a word. The
+   * help sign explains the name before it (R-UI-267): alone on a line it explains nothing.
    */
   const ATTACHED =
-    '.material-icons, quader-format-icon, quader-visibility-icon, quader-project-mark, quader-avatar, quader-copy-button, quader-grade-shield, .picture, input[type="checkbox"], input[type="radio"]';
+    '.material-icons, quader-format-icon, quader-visibility-icon, quader-project-mark, quader-avatar, quader-copy-button, quader-grade-shield, .picture, input[type="checkbox"], input[type="radio"], .help-sign';
   const PICTURE = 'quader-avatar, quader-project-mark, quader-grade-shield, .picture';
   const range = document.createRange();
 

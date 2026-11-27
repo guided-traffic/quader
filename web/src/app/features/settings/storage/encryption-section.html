@@ -120,9 +120,7 @@
       <span class="visually-hidden">{{ markText(r) }}:</span>
       <span translate="no" class="family">{{ familyText(r) }}</span>
       @if (familyHelp(r); as help) {
-        <button type="button" class="btn btn-tertiary btn-icon btn-sm help on-line" [quaderTooltip]="help" [attr.aria-label]="aboutLabel(r)">
-          <span class="material-icons" aria-hidden="true">help_outline</span>
-        </button>
+        <quader-help [text]="help" [about]="familyText(r)" />
       }
     </li>
   }
