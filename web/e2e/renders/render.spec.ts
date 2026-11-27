@@ -11,7 +11,8 @@ import { KEEP_OPEN, Screen, screens } from './screens';
  * The renders of `make ui-renders` (rule 11 of docs/projektplan/promt.md; docs/developer/web-ui.md#renders-of-every-screen):
  * every screen, as each kind of user that reaches it, in both schemes and at three widths, every tab of the screen, the
  * whole length of the content. A screen fails when it shows an error notice, when a call of the app's own API answers 4xx
- * or 5xx, or when the console reports an error; the pictures are taken first, so a failure has its picture.
+ * or 5xx, or when the console reports an error or a warning of Angular's or `@angular/aria`'s development checks; the pictures are
+ * taken first, so a failure has its picture.
  */
 
 /** The widths: wide, the narrowest window with the pinned sidebar, a phone. UI_RENDERS_WIDTHS=1440,1280,1024,390 adds one. */
@@ -399,15 +400,40 @@ function slug(text: string): string {
  */
 const NORMAL_ANSWERS: readonly RegExp[] = [/^GET \/api\/v1\/packages\/lookup\?format=(npm|nuget|ansible|deb)&name=[^&\s]+ answered 404$/];
 
-/** The failures of a screen: the console's errors, uncaught errors, and the app's API calls answered 4xx or 5xx. */
+/**
+ * The warnings of Angular's and `@angular/aria`'s own development checks: an `NG0…` code, and the line with which `@angular/aria`
+ * reports what one of its patterns found wrong on an element (its violations follow as warnings of their own). Each names a template
+ * mistake no unit test sees. Other warnings, a library's or the browser's, are not failures.
+ */
+const DEV_CHECK_WARNING = /\bNG0\d{3,4}\b/;
+const ARIA_VIOLATIONS = /^Violations found on element/;
+
+/**
+ * The failures of a screen: the console's errors, the development checks' warnings (DEV_CHECK_WARNING, ARIA_VIOLATIONS), uncaught
+ * errors, and the app's API calls answered 4xx or 5xx.
+ */
 function watch(page: Page, screen: Screen): { notices: string[]; list(): string[] } {
   const seen: string[] = [];
   const notices: string[] = [];
+  // The index in seen of the last aria line whose violations, the warnings right after it, are still being written to it.
+  let violations = -1;
   page.on('console', (m) => {
+    const text = m.text();
+    if (m.type() === 'warning') {
+      if (ARIA_VIOLATIONS.test(text)) {
+        violations = seen.push(`console warning: ${text.slice(0, 200)}`) - 1;
+      } else if (violations >= 0) {
+        seen[violations] = `${seen[violations]} ${text}`.slice(0, 500);
+      } else if (DEV_CHECK_WARNING.test(text)) {
+        seen.push(`console warning: ${text.slice(0, 300)}`);
+      }
+      return;
+    }
+    violations = -1;
     if (m.type() !== 'error') return;
     // The browser's own line for a failed fetch repeats the response below.
-    if (/^Failed to load resource: the server responded with a status of/.test(m.text())) return;
-    seen.push(`console error: ${m.text().slice(0, 300)}`);
+    if (/^Failed to load resource: the server responded with a status of/.test(text)) return;
+    seen.push(`console error: ${text.slice(0, 300)}`);
   });
   page.on('pageerror', (e) => seen.push(`uncaught: ${e.message.slice(0, 300)}`));
   page.on('response', (r) => {

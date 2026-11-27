@@ -8756,6 +8756,10 @@ Acceptance criteria:
 - `make ui-states` passes (`web/src/app/**/*.states.spec.ts`), the harness's test name carries R-UI-175 and R-UI-176.
 - `make web-lint` passes; the rule's own test fails on both declarations (`web/scripts/lint-rules.test.mjs`).
 - A full render run names no layout finding.
+- A screen of the render run fails on a console warning of Angular's or `@angular/aria`'s own development checks (an `NG0…` code,
+  aria's `Violations found on element` with the violations after it), as on a console error; other warnings are no failure. They name
+  template mistakes no unit test sees: the tabs' aria warnings stood on every screen with tabs until B-1126c and were found by reading a
+  log ([render.spec.ts](../../web/e2e/renders/render.spec.ts), `watch`).
 
 ### R-UI-177 · Download limits in the admin area
 Priority: **MVP** · Covers: BEYOND-030

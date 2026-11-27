@@ -551,7 +551,9 @@ running and stops only what it started: Quader with the sign-in provider (`serve
    room, as on a phone, on every load of the page, a walk's own too), and before the window grows each picture's regions are measured once more, sideways (a boxed list taller
    than its box has its scrollbar beside its rows then, which takes their width) and for `inner-scroll`.
 4. **A failure is loud.** A screen fails when it shows an error notice, when a call of the app's own API (`/api/`, `/auth/`)
-   answers 4xx or 5xx, when the console reports an error, when its walk or a tab stops (`stopped at <width> px: …`, with the
+   answers 4xx or 5xx, when the console reports an error or a warning of Angular's or `@angular/aria`'s own development checks (an
+   `NG0…` code, and aria's `Violations found on element` with the violations that follow it; other warnings are no failure), when its
+   walk or a tab stops (`stopped at <width> px: …`, with the
    pictures it took so far), or when a layout check finds a defect (below); the pictures are taken first. Playwright lists the
    failures and exits non-zero; `failures.txt` has one line per failure, the contact sheet marks the rows and lists the layout
    findings at its top. A screen whose normal state includes such an answer lists it in `expected` of `screens.ts` with its reason; a
