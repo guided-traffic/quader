@@ -1634,3 +1634,43 @@ owner asked for it ("Es muss für die Viewer von Repos … direkt ersichtlich se
 Tooltip auch welcher Bastion) verteilt wird"), so it is not closed; an administrator who minds names a registration for its users. Since
 W-41's D1 every screen that shows the repository's level shows it in the tooltip of the distribution mark ([api-and-ui.md](../spec/api-and-ui.md)
 R-UI-271); a well-known repository's item of the admin area carries the same member, for the readers of `repositories:read-config` only.
+
+### H-2447 · Any Authorization header puts a caller in the authenticated class of the per-address limit
+
+Stage: R-BAS-035, step 4 of the request ([request.go](../../internal/bastion/engine/request.go) `stepLimits`, `q.hasAuth`). Subject: the
+per-address request limit of an anonymous caller. Live in every installation. The class of the limit is chosen before the credential is
+checked: a request with any non-empty `Authorization` header counts against the authenticated figures (built in: 200 requests a second,
+burst 4,000) instead of the anonymous ones (50, burst 1,000). A malformed credential is then refused locally with `401 invalid_token`
+(R-BAS-036 counts it as a failed authentication, but its timeout guards only the main installation's lookups of well-formed credentials).
+What makes it real: an anonymous caller who sends a junk header gets four times the anonymous rate; seen in the authorized test of
+2026-11-27, 19:23 to 19:35 UTC, where about 12,000 junk Basic credentials at about 100 a second were neither limited nor refused with
+`429`. Each answer cost the Bastion about 0.1 ms and nothing reached the main installation.
+
+### H-2448 · A path that is no address is answered before the per-address limit
+
+Stage: R-BAS-003, R-BAS-018, the order host, block list, path, disable, token form, limits ([request.go](../../internal/bastion/engine/request.go)
+`serve`). Subject: the per-address limit and the block list (R-BAS-035, R-BAS-037). Live in every installation. A request whose path the
+Bastion cannot classify is answered `404 not_served` (`405` for a page) before the limit, so it never consumes a token of its address and
+never counts toward the block threshold. What makes it real: content discovery and template scanners run unbounded by the Bastion; in the
+test of 2026-11-27 about 30,000 such requests in ten minutes at up to 160 a second were answered in 0.03 to 0.2 ms each with no effect on the
+main installation, and the address was never blocked. The bound left is the ingress in front of the Bastion.
+
+### H-2449 · Without Valkey every limit and block counts per replica
+
+Stage: R-BAS-035 to R-BAS-037 with the state of `local` (the chart without `valkey`). Subject: the per-address limits, the failed-authentication
+timeout and the block list. Live in every installation without Valkey. Each replica keeps its own buckets, failure counts and blocks, so a
+caller whose requests the ingress spreads over n replicas gets n times every figure, and a block or timeout set by one replica does not hold
+at the others. What makes it real: an installation with several replicas and no Valkey; in the test of 2026-11-27 one replica set the
+failed-authentication timeout after 20 failures while the other had not. Configuring Valkey closes it; this page does not require it.
+
+### H-2450 · An anonymous caller can make a remote repository fetch from its upstream through the Bastion
+
+Stage: a forward of a `Download` or `Metadata` route to a remote repository (R-BAS-115's note on fills, the misses of R-BAS-035). Subject:
+the main installation's upstream requests and its quota at the upstream (for Docker Hub its pull limit). Live wherever a remote repository is
+served through a Bastion to anonymous callers. A read of a version the remote has not cached is a miss: the main installation fetches it from
+the upstream. Misses are bounded per address (built in: 1,000 a minute for anonymous callers, per replica without Valkey, H-2449) and by the
+Bastion's budgets, not by the upstream's quota. What makes it real: an internet caller who asks for many uncached names under a public remote
+repository spends the main installation's upstream quota; in the test of 2026-11-27 two anonymous reads of a public Docker Hub image
+(`tags/list` 819 ms, a manifest 452 ms) went through to the upstream. Not verified: how many misses an anonymous caller can cause before a
+budget refuses. W-41's distribution narrows it to the remote repositories an administrator allows and an Owner opts in; a remote's delivery
+mode and rules ([remote-curation.md](../spec/remote-curation.md) R-CUR-001, decided before a fill by R-CUR-003) narrow it further.

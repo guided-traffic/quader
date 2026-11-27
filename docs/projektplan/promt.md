@@ -1620,6 +1620,27 @@ records the recorder that tells such a stall apart).
   to do the same for any repository he reads from outside with a token (D15: every level needs the opt-in), which the Bastion's
   logs do not show.
 
+- **Watched on 2026-11-27, 20:20 to 20:47: an authorized attack on the owner's Bastion** (he announced it at 20:17: "es wird heute noch
+  einen Angriff auf den Bastion geben. Bekommen wir das mit?"). Watched read-only from this Mac: the external HAProxy's JSON access logs
+  (address, AS, country, method, path, status, termination), the Bastion's own request log and guard lines, pods, CPU and memory, the main
+  installation's errors; a 15-second view and alerts. One address (AS 3209, DE) from 20:23 to 20:36 UTC+1 with ffuf, nuclei, nikto and curl:
+  at least 32,680 requests in ten minutes (a lower bound, the container logs rotated about every minute), up to 160 a second. What held:
+  every management path 404 without a word about the main installation; 12,040 Basic credentials refused locally in about 0.1 ms (the
+  Bastion has no passwords; the failed-authentication timeout fired at 20:28 after 20 failures); a push and `PUT /v2/` `403 read_only`
+  locally, not at the main installation; `OPTIONS`, `TRACE`, `DEBUG`, `TRACK`, `PURGE` and invented methods `405` or `404`; the web
+  interface's page limit refused with `429`; no restart, the Bastion at most 29m CPU and 56 MiB; the main installation reached only by two
+  anonymous reads of a public Docker Hub image. The tester's report (pasted by the owner at 20:45) rates as high "unauthenticated read of a
+  private registry": the images are public Docker Hub images in the Public remote `upstream/docker-hub`, served anonymously by design; its
+  point is W-41's (every intranet-public repository reaches the internet until B2 lands). Its medium "privileged flag `a:true`" is the
+  anonymous placeholder token (R-BAS-094), which carries no scope. Found, and written as gaps on the security page: H-2447 (any
+  `Authorization` header lifts a caller into the authenticated class before it is checked), H-2448 (a path that is no address is answered
+  before the per-address limit, so scanners are never limited or blocked), H-2449 (without Valkey every limit and block counts per
+  replica), H-2450 (an anonymous caller can make a remote fetch from its upstream through the Bastion, spending its quota). Also seen: one
+  `504` at the HAProxy after 50 s for a Jenkins CLI probe the Bastion had answered `404` in 0.1 ms (cause not found); Prometheus does not
+  scrape Quader in the owner's cluster (`serviceMonitor` off in both charts' values; asked him). Next: a batch for H-2447, H-2448, the
+  malformed credential's count toward the timeout, a narrower `robots.txt` and the anonymous misses, after the held W-41 chain lands (same
+  files); asked the owner whether B2 lands now, before he grants (his Bastion then serves nothing until he does).
+
 - **Read on 2026-11-27, 17:44: main's CI runs, red in each of the 24 since 2026-11-26, 17:48.** The last finished run (the push of 15:56,
   46020395243) failed in two jobs: `integration (shard b)`, `TestR_REPO_067_EveryTableThatReferencesARepositoryIsPurgedOrKeptByADecision`,
   because W41-B1's `repository_bastion` was in neither list (the area `conventions` is in no landing gate); the opt-in is
