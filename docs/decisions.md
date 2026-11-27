@@ -13418,10 +13418,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-808 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+809 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 808 questions</summary>
+<summary>Q-UI: 809 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -14233,6 +14233,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1610](spec/api-and-ui.md#q-ui-1610--the-applied-server-side-encryption-differs-only-when-what-is-asked-for-is-not-applied) | The applied server-side encryption differs only when what is asked for is not applied | Decided by the development agent on 2026-11-27 | (a) **Differs** (warning) when the configuration asks for `s3` and the store applied no `AES256`, or for `kms` and it applied no `aws:kms`; a store that encrypts under `none` is named "bucket default", no difference | — |
 | [Q-UI-1611](spec/api-and-ui.md#q-ui-1611--the-checks-of-a-connection-are-marks) | The checks of a connection are marks | Decided by the development agent on 2026-11-27 | — | — |
 | [Q-UI-1612](spec/api-and-ui.md#q-ui-1612--the-counts-of-the-period-in-availability) | The counts of the period in Availability | Decided by the development agent on 2026-11-27 | — | — |
+| [Q-UI-1613](spec/api-and-ui.md#q-ui-1613--the-findings-columns-are-as-wide-as-their-cells) | The findings' columns are as wide as their cells | Decided by the development agent on 2026-11-27 | (a) The least widths of what the cells hold: When 11 rem, Connection 5.5 (a longer id widens it), Blob 10 (it takes the rest), Bytes 4.5, Found by 11.5, State 9 rem: 1,080 px | — |
 
 </details>
 

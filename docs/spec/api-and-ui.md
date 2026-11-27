@@ -31340,7 +31340,8 @@ Status: **Decided by the development agent on 2026-11-27** (W-37 P4).
 
 When, Connection, Blob (the short digest with its first item and "+ n more"; the item is a link to its file), Bytes (the stored size),
 Found by (source · reason), State. The time is the row's header for a screen reader, the short digest stands on a line of its own over
-its item, whose path breaks anywhere, so the columns fit from about 64 rem; the digest's full value is its title. **Applied in the spec:**
+its item, whose path breaks anywhere, so the columns fit from 1,080 px of the list
+([Q-UI-1613](#q-ui-1613--the-findings-columns-are-as-wide-as-their-cells)); the digest's full value is its title. **Applied in the spec:**
 R-UI-265.
 
 ### Q-UI-1605 · The columns of the problems
@@ -31410,6 +31411,24 @@ Status: **Decided by the development agent on 2026-11-27** (W-37 P4), after the 
 A column named by the period ("30 d") in the table of Availability: the reads served from another copy, the writes the next connection took,
 and the copies the reconciliation could not make (warning), each a line only when it is not zero, "–" for a quiet period; its spinner while
 the history is read. **Applied in the spec:** R-UI-263.
+
+### Q-UI-1613 · The findings' columns are as wide as their cells
+
+Status: **Decided by the development agent on 2026-11-27** (batch F, after W-37 P4's render).
+
+Context: the findings of the section Integrity stood as stacked cards even at 1,440 px, against Q-UI-1609. Measured in the render: the list
+needs its columns' least widths plus their padding, 1,152 px with When 12 rem, Connection 7, Blob 12, Bytes 6, Found by 9 and State
+10 rem, and the content panel at 1,440 px with the sidebar open gives it 1,113 px. No cell needed those widths: a size is at most nine
+characters, the short digest twelve, and the item's path breaks anywhere.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The least widths of what the cells hold: When 11 rem, Connection 5.5 (a longer id widens it), Blob 10 (it takes the rest), Bytes 4.5, Found by 11.5, State 9 rem: 1,080 px (chosen) | A field as wide as its expected input (CLAUDE.md) | A table at 1,440 px in English and German, cards below (1,024 and 390 px) | 33 px of room at 1,440 px: a seventh column would stack it again |
+| (b) Drop a column at a narrow list (Bytes, a `narrow` column) | Fewer columns from 64 rem | A table from about 1,000 px | The stored size of a damaged copy is what an administrator weighs it by |
+| (c) Keep the widths, accept cards | — | — | The table the section promises is never seen on a common screen |
+
+**Choice:** (a). The layout checks of the renders found "Found by" wrapping "Download · Nicht gefunden" at 9 rem while When, Connection
+and Bytes had room, so they gave it theirs. **Applied in the spec:** R-UI-265; the columns of [findings-list.ts](../../web/src/app/features/settings/storage/findings-list.ts).
 
 ## What this does not cover
 

@@ -182,13 +182,16 @@ export class FindingsList {
   protected readonly stateWord = findingStateWord;
   protected readonly caption = $localize`:@@storage.findings.caption:Damaged copies of the period`;
   protected readonly loadingText = $localize`:@@storage.findings.loading:Loading the findings.`;
+  // Each least width holds what its cells say and no more (CLAUDE.md, "a field is as wide as its expected input"): the seven columns need
+  // 1,080 px with their padding, so the list is a table in the content panel at 1,440 px with the sidebar open (1,113 px) and stacks
+  // only below; with the widths before (1,152 px) it stood as cards there (R-UI-265, Q-UI-1613).
   protected readonly columns = computed<readonly TableColumn[]>(() => [
-    { id: 'when', label: $localize`:@@storage.col.when:When`, width: '12rem' },
-    { id: 'connection', label: $localize`:@@storage.col.connection:Connection`, width: '7rem' },
-    { id: 'blob', label: $localize`:@@storage.col.blob:Blob`, width: '12rem', prefer: true },
-    { id: 'bytes', label: $localize`:@@storage.col.bytes:Bytes`, width: '6rem' },
-    { id: 'found', label: $localize`:@@storage.col.found-by:Found by`, width: '9rem' },
-    { id: 'state', label: $localize`:@@storage.col.finding-state:State`, width: '10rem' },
+    { id: 'when', label: $localize`:@@storage.col.when:When`, width: '11rem' },
+    { id: 'connection', label: $localize`:@@storage.col.connection:Connection`, width: '5.5rem' },
+    { id: 'blob', label: $localize`:@@storage.col.blob:Blob`, width: '10rem', prefer: true },
+    { id: 'bytes', label: $localize`:@@storage.col.bytes:Bytes`, width: '4.5rem' },
+    { id: 'found', label: $localize`:@@storage.col.found-by:Found by`, width: '11.5rem' },
+    { id: 'state', label: $localize`:@@storage.col.finding-state:State`, width: '9rem' },
     ...(this.canWrite() ? [{ id: 'actions', label: $localize`:@@repo.col.actions:Actions`, hideLabel: true }] : []),
   ]);
   protected readonly emptyText = computed(() =>
