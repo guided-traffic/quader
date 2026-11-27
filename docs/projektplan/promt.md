@@ -1609,6 +1609,25 @@ records the recorder that tells such a stall apart).
   the attack: "Natürlich soll B2 landen, go.", superseding the order of 15:56 that held B2 until he had granted; his Bastion serves
   nothing from that release until he allows `upstream` and ticks `artifacts` at `upstream/docker-hub`, told him), and the renders'
   declared Bastion token without the old phrase (K's open point); their gates next.
+  **Read on 2026-11-27, 23:38: the owner's installation on v0.168.3** (M and H-2448, released 23:26): every pod ready, no restart, no
+  error or warning in the Bastion's log of the last five minutes. The CI run of that push: the layout checks' part 5 failed once on
+  `upstream-deb` at 1,024 px (one of two host fields after 15 s) and passed on its re-run (flaky, the first time seen); `e2e (access-long)`
+  and `e2e (bastion)` red since K's landing at 19:04, by tests the landings had made stale (fixed below).
+  **Landed on 2026-11-28, 00:55: W41-B2, E, D2 and D1's seed, with four fixes.** B2: a Bastion serves only the repositories distributed
+  through it, whoever asks (the distribution a ceiling in the decision point beside the endpoint's exposure; Q-BAS-522, Q-BAS-523,
+  Q-AUTHZ-341, Q-AUTHZ-342). E: two deployments under one token share one catalogue on a stable base URL, each serving it with its own
+  address (Q-BAS-524; H-2446: a pair admits the anonymous ceiling, the slots and the throughput each). D2: Set up client's **Install
+  from** and every command panel's **From** offer the Bastions that distribute the repository (Q-UI-1656, Q-UI-1657). The seed
+  distributes the npm and the image repository and `upstream/ubuntu` through `dmz-berlin`. The fixes: the renders' declared Bastion token
+  without the old phrase (K's open point); a card's **Projects** keeps the form of a table at 1,024 px (least widths 12 + 12 rem to
+  9 + 9, as the card's Tokens; found by this gate, since the seed gave the live card its projects, and the check of stacked lists now
+  covers the open section too); the projects journey checks the last Owner's **Remove** unavailable with its reason (K made it so; the
+  journey still clicked it); the card's state badge and its limits' **Now** row carry test ids of their own (two `bastion-state` on a
+  card since C1). Neither e2e leg was run locally (their next CI run shows it). Gates on the stack: the landing gates, charts,
+  `ui-states`, the whole render set (768 passed, 1 failed: `admin-bastions`, the stacked Projects, fixed; its five Bastion screens then
+  passed), `bastion`, `bastionreg`, `authz`, `bastionsetup`, `bastioniface`, `bastionshared`, `packages`, the bundle budgets; after the
+  fixes the web unit run (2,644 passed), lint, `web-i18n-check`. From the release on the owner's Bastion serves nothing until he allows
+  `upstream` on its card and ticks `artifacts` at `upstream/docker-hub` (told him at 22:45).
 
 - **Open since 2026-11-27, 11:18, the owner on the Bastions page of his installation (the card before W39-P2): "Ich weiß nicht
   wie du es schaffst, dass jede Seite immer so gnadenlos überladen aussieht, wenn du mit ihr fertig bist."** His points: the page
