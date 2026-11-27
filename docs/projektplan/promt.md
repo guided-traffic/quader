@@ -367,7 +367,7 @@ wrapped line was seen (2026-11-19), so its condition to build a check is met.
 | B-1127b · Small findings of the night's builders | the generic `wget` set-up on macOS, the anonymous Configure caption, the Bastion's `Files` page kind, the storage findings as a table where it fits, the README's System table checked, two flaky `files` cases read, `TestMemoryAdmission`'s headroom; brief `.dev/briefs/batch-f.md` | landed and pushed on 2026-11-27 at 06:03 |
 | B-1127c · The tools the night's builders tripped over | the lint cache per checkout, the render seed's partially pulled image made deterministic, UI instances freed from finished builders; brief `.dev/briefs/batch-g.md` | landed and pushed on 2026-11-27 at 06:03 |
 | B-1127d · What batch F left | the anonymous wget without a configuration file, the Bastion's generic files in its start text and sitemap, the uncounted 503s of the overload test at 512 MiB, a refusal or warning for containers too small, the set-up page's full stop; brief `.dev/briefs/batch-h.md` | landed and pushed on 2026-11-27 at 06:03 |
-| B-1127e · The night's last open points | a Bastion's new base URL starts the catalogue's build, H-2438's punctuation sweep, the malware screens' walks in German, the seed's image-scan reset, `LINT_WAIT`'s match; brief `.dev/briefs/batch-i.md` | in work since 2026-11-27, 05:04 |
+| B-1127e · The night's last open points | a Bastion's new base URL starts the catalogue's build, H-2438's punctuation sweep, the malware screens' walks in German, the seed's image-scan reset, `LINT_WAIT`'s match; brief `.dev/briefs/batch-i.md` | landed and pushed on 2026-11-27 at 06:38 |
 | UI-1126 · Times in the format the reader chose, 26.11.2026 21:39:22 (Thu.) by default; the spinner in the middle of the page (the owner's two requests of about 21:40) | one formatter for every absolute time of both applications with the owner's default and five other forms, the reader's choice in Preferences and the installation's default, the error report's copy in ISO 8601; the page-level spinner centred, the boot screen without a scrollbar, a layout check; R-UI-250 to R-UI-252, Q-UI-1560 to Q-UI-1569, H-2390, H-2391; base the head of `landing2`; brief `.dev/briefs/ui-1126.md` | landed and pushed on 2026-11-27 at 00:03 |
 | W-37 · The storage page: what is connected, what is encrypted, whether the data is intact, and what went wrong (the owner's request of about 21:55) | the plan: a summary and the sections connections, encryption, integrity and problems at Admin › Settings › Storage, configured against actual, visuals instead of prose, the history it needs; brief `.dev/briefs/w37-plan.md` | landed and pushed on 2026-11-27: P1 and P2 at 01:13, P3 at 02:07, P4 at 06:04 |
 | B-1126d · Today's regressions in CI (the window of 22:00) | the area `oci`'s token service and pull map since W35-P8, `TestHeldDownloadCost`, the Bastion's edge limit in `e2e (bastion)`, the render walk of `profile-usage` for a power user; each reproduced, its cause named, fixed | landed and pushed on 2026-11-27 at 02:06 |
@@ -1412,6 +1412,18 @@ records the recorder that tells such a stall apart).
   that failed between 07:39 and 09:00 is no finding of the code.
 
 ### Product
+
+- **Closed on 2026-11-27, 06:38: the Debian dependents' integration test** (`TestR_DEB_038_039`, area `deblocal`, red in the run of
+  37663de62) looked for one contiguous piece of the answer's JSON; since W36-P3 the answer carries `malware` between `key` and `name`.
+  It reads each member on its own now (pushed at 06:10 as 23c159173, the whole area green locally).
+
+- **Closed on 2026-11-27, 06:38, by B-1127e (the night's last open points; Q-BAS-499; H-2438 closed; Q-UI-1615 and Q-UI-1000 amended): five
+  commits.** A Bastion that connects for the first time, or moves to another base URL, after its web interface was switched on has it
+  built within seconds (the contact raises a signal the builder's trigger hears; a rollout's new replica with the same URL raises
+  nothing); a value keeps its full stop, comma, colon or parenthesis on its line on a narrow screen (27 lines in 17 files, English and
+  German); the malware settings and the malware page render in German too, which found a German-only defect (the finds list fell back
+  to blocks at 1,024 px by 3 px; the Verdict column's least width 13 rem); the render seed resets the image scanning's state;
+  `LINT_WAIT` matches only the linter. Gates in the landing worktree with the six commits stacked above main: build, vet, generate-check, coverage, unit, lint, the web gates, the layout test, chart-lint, chart-test, archtest, ui-states, the render parts check, 19 render screens in English and German (0 failed, 0 layout findings) and the seven Bastion and conventions areas green. Open: "Läuft ab in 20 Tage" on a Bastion card's token should read "in 20 Tagen".
 
 - **Closed on 2026-11-27, 06:03, by B-1127d (Q-GENERIC-14, Q-BAS-498, Q-ARCH-1074, Q-ARCH-1075, Q-UI-1615; H-2438): eight commits.** An
   anonymous reader's wget runs with `--no-config` (measured; `--config=/dev/null` fails everywhere); a Bastion's start text and sitemap
