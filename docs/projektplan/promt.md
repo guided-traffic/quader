@@ -1640,6 +1640,10 @@ records the recorder that tells such a stall apart).
   scrape Quader in the owner's cluster (`serviceMonitor` off in both charts' values; asked him). Next: a batch for H-2447, H-2448, the
   malformed credential's count toward the timeout, a narrower `robots.txt` and the anonymous misses, after the held W-41 chain lands (same
   files); asked the owner whether B2 lands now, before he grants (his Bastion then serves nothing until he does).
+  **A second wave from 20:47:** the same address at up to about 790 requests a second. At 20:48:59 both replicas blocked it for 15 minutes
+  (`bastion address blocked`, `rate_limited`, 3,002 refusals of the web interface's page limit, R-BAS-037), and the external HAProxy refused
+  it with its own `429` before the Bastion (termination `PR`, no server); from 20:49:20 every request of it was refused. The Bastion stayed at
+  50m CPU a replica, the main installation unchanged; one HAProxy controller carried the wave at about 490m CPU.
 
 - **Read on 2026-11-27, 17:44: main's CI runs, red in each of the 24 since 2026-11-26, 17:48.** The last finished run (the push of 15:56,
   46020395243) failed in two jobs: `integration (shard b)`, `TestR_REPO_067_EveryTableThatReferencesARepositoryIsPurgedOrKeptByADecision`,

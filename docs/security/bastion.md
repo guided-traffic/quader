@@ -1653,7 +1653,9 @@ Stage: R-BAS-003, R-BAS-018, the order host, block list, path, disable, token fo
 Bastion cannot classify is answered `404 not_served` (`405` for a page) before the limit, so it never consumes a token of its address and
 never counts toward the block threshold. What makes it real: content discovery and template scanners run unbounded by the Bastion; in the
 test of 2026-11-27 about 30,000 such requests in ten minutes at up to 160 a second were answered in 0.03 to 0.2 ms each with no effect on the
-main installation, and the address was never blocked. The bound left is the ingress in front of the Bastion.
+main installation. The address was blocked only when its requests of the web interface's pages had filled the threshold
+(20:48:59, both replicas, 15 minutes, after 3,002 refusals of the page limit); a scanner that asks no page is never blocked. The bound left
+is the ingress in front of the Bastion, which in the owner's installation refused the same address with its own `429` at the same time.
 
 ### H-2449 · Without Valkey every limit and block counts per replica
 
