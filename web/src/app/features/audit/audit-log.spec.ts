@@ -232,7 +232,9 @@ describe('Audit log', () => {
     const utc = await open({ utc: '1' });
     const localTime = local.root.querySelector('tbody time')!;
     const utcTime = utc.root.querySelector('tbody time')!;
-    expect(utcTime.textContent).toMatch(/ago|now/);
+    // The fixture's moment is fixed, so the relative words move with the calendar: any relative form, never the moment itself.
+    expect(utcTime.textContent).toMatch(/ago|now|yesterday|last /);
+    expect(utcTime.textContent).not.toContain('11:58:02');
     expect(utcTime.getAttribute('title')).toContain('11:58:02');
     expect(localTime.getAttribute('title')).toBeTruthy();
     expect((utc.root.querySelector('#a-utc') as HTMLInputElement).checked).toBe(true);

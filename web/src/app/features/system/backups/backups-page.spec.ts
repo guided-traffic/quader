@@ -33,7 +33,7 @@ describe('The backups screen: status (R-UI-048)', () => {
     const { root } = await renderScreen(BackupsPage);
     const card = root.querySelector('section[aria-labelledby="bk-status"]')!;
     expect(text(card)).toContain('Last success');
-    expect(text(card)).toMatch(/ago/);
+    expect(text(card)).toMatch(/ago|yesterday|last /); // a fixed date: the relative words move with the calendar
     expect(text(card)).toContain('Expected interval1 d');
     expect(text(card)).not.toContain('Overdue');
     expect(text(card)).not.toContain('Last failure');
