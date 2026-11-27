@@ -1607,6 +1607,13 @@ records the recorder that tells such a stall apart).
   to do the same for any repository he reads from outside with a token (D15: every level needs the opt-in), which the Bastion's
   logs do not show.
 
+- **Read on 2026-11-27, 17:44: main's CI runs, red in each of the 24 since 2026-11-26, 17:48.** The last finished run (the push of 15:56,
+  46020395243) failed in two jobs: `integration (shard b)`, `TestR_REPO_067_EveryTableThatReferencesARepositoryIsPurgedOrKeptByADecision`,
+  because W41-B1's `repository_bastion` was in neither list (the area `conventions` is in no landing gate); the opt-in is
+  configuration and is kept (`fe2209c10`, the area passed locally). And `UI layout checks (screens, part 5 of 5)`,
+  `admin-permissions` ("frontend" broken inside the word at 1,440 px), which batch B-1127j fixes, landed at 17:39. The older
+  red runs are not read one by one; the run of the push of 17:39 and its fix shows what is left.
+
 - **Read on 2026-11-27, 17:25: the owner's installation on v0.167.0** (the release of 15:56's landing: W40-P2 and P4b, W39-P5,
   W41-A, B1 and C0, batch K, interface 13). Every deployment on 0.167.0 and ready, main installation and Bastion both on
   interface 13; the Bastion's one error "interface version differs" (13 against 12) was at 15:24, while the main installation
