@@ -1315,7 +1315,8 @@ lists as system scope items (R-AUTH-025) use the same names; the others extend t
   - A role that is not built yet, or `anonymous` / `authenticated` as principal, stops `quader migrate`
     (`role_not_allowed`), as the API refuses them.
   - The API lists configuration bindings with `source: "configuration"`; `DELETE` on one answers 409
-    `role_binding_managed_by_configuration`, and the UI shows it without the remove control. Bindings made through the
+    `role_binding_managed_by_configuration`, and the UI shows its **Unbind** unavailable with the key as its tooltip
+    ([api-and-ui.md](api-and-ui.md) R-UI-270). Bindings made through the
     API stay as they are, beside the declared ones.
   - The rules of the API bind a declaration as they bind a request ([Q-AUTHZ-171](#q-authz-171--a-configuration-binding-follows-the-rules-of-the-api)):
     `PUT` of a binding the configuration keeps answers 200 and leaves it to the configuration; a declared binding the API

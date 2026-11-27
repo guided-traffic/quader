@@ -17,6 +17,7 @@ import { Disclosure } from '../../shared/ui/disclosure';
 import { PageHeader } from '../../shared/ui/page-header';
 import { Busy } from '../../shared/ui/busy';
 import { Loading } from '../../shared/ui/loading';
+import { Unavailable } from '../../shared/ui/unavailable';
 
 /** The tabs of the issuer page, in this order; the query parameter `tab` names the open one. */
 export const ISSUER_TABS = ['settings', 'keys', 'mappings', 'issuances'] as const;
@@ -30,7 +31,7 @@ export type IssuerTab = (typeof ISSUER_TABS)[number];
  */
 @Component({
   selector: 'quader-ci-issuer-detail',
-  imports: [Loading, Busy, PageHeader, TabContent, TabGroup, TabPage, RouterLink, ErrorNotice, IssuanceList, IssuerForm, IssuerKeys, MappingList, Disclosure],
+  imports: [Loading, Busy, PageHeader, TabContent, TabGroup, TabPage, RouterLink, ErrorNotice, IssuanceList, IssuerForm, IssuerKeys, MappingList, Disclosure, Unavailable],
   template: `
     <quader-page-header [heading]="issuer()" [name]="true">
       <span meta class="badge" i18n="@@ci.issuer.heading">CI issuer</span>
@@ -47,7 +48,7 @@ export type IssuerTab = (typeof ISSUER_TABS)[number];
           <ng-template quaderTabContent>
             <div class="settings">
               <quader-ci-issuer-form [issuer]="i" [etag]="etag()" (saved)="saved($event.value, $event.etag)" />
-              @if (session.has('ci:write') && deletable()) {
+              @if (session.has('ci:write')) {
                 <quader-disclosure
                   i18n-heading="@@ci.issuer.advanced"
                   heading="Advanced"
@@ -55,7 +56,16 @@ export type IssuerTab = (typeof ISSUER_TABS)[number];
                   hint="Delete this issuer."
                 >
                   <p class="muted" i18n="@@ci.issuer.delete-note">Deleting the issuer revokes the tokens issued through it and deletes its mappings.</p>
-                  <button class="btn btn-danger" type="button" [disabled]="busy()" [quaderBusy]="busy()" (click)="remove()" i18n="@@ci.issuer.delete">Delete issuer</button>
+                  <!-- Declared in the Helm configuration, Delete says why it cannot act (R-UI-270). -->
+                  <button
+                    class="btn btn-danger"
+                    type="button"
+                    [disabled]="busy()"
+                    [quaderBusy]="busy()"
+                    [quaderUnavailable]="deleteReason()"
+                    (click)="remove()"
+                    i18n="@@ci.issuer.delete"
+                  >Delete issuer</button>
                 </quader-disclosure>
               }
             </div>
@@ -118,10 +128,12 @@ export class IssuerDetail {
     const i = ISSUER_TABS.indexOf((this.tab() ?? 'mappings') as IssuerTab);
     return i < 0 ? 2 : i;
   });
-  /** An issuer of the configuration is deletable only once it is no longer declared (R-CI-001). */
-  protected readonly deletable = computed(() => {
+  /** An issuer of the configuration is deletable only once it is no longer declared (R-CI-001): **Delete** says so (R-UI-270). */
+  protected readonly deleteReason = computed(() => {
     const i = this.current();
-    return i !== null && (i.source !== 'configuration' || i.removedFromConfiguration);
+    return i?.source === 'configuration' && !i.removedFromConfiguration
+      ? $localize`:@@ci.issuer.delete.helm:Declared in config.ci.issuers of the Helm configuration: remove it there first, then delete it here.`
+      : '';
   });
 
   constructor() {

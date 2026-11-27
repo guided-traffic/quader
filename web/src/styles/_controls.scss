@@ -194,8 +194,8 @@ quader-copy-button.on-line {
   }
 }
 
-.btn-tertiary:disabled,
-.btn-icon:disabled {
+.btn-tertiary:is(:disabled, [aria-disabled='true']),
+.btn-icon:is(:disabled, [aria-disabled='true']) {
   background: transparent;
 }
 
@@ -459,7 +459,7 @@ span.bad:has(> .material-icons) {
     color: var(--quader-control-placeholder);
   }
 
-  &:hover:not(:disabled, :focus-visible) {
+  &:hover:not(:disabled, [aria-disabled='true'], :focus-visible) {
     border-color: var(--quader-control-border-hover);
   }
 
@@ -468,7 +468,9 @@ span.bad:has(> .material-icons) {
     outline-offset: 1px;
   }
 
-  &:disabled {
+  // An unavailable field (quaderUnavailable, R-UI-270) looks disabled and keeps its focus and its tooltip.
+  &:disabled,
+  &[aria-disabled='true'] {
     background: var(--quader-control-disabled-bg);
     color: var(--quader-control-disabled-fg);
     cursor: not-allowed;

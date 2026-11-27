@@ -1,7 +1,7 @@
 import { ApiError } from '../../api/problem';
 import { SigningApi } from '../../api/signing-api';
 import { FakeSigningApi, daysFromNow, pendingIdentity, signingIdentity, signingOverview } from '../../api/testing/fakes-signing';
-import { button, buttonByText, expectAccessible, renderScreen, settle, text } from '../../testing/screen';
+import { button, buttonByText, expectAccessible, renderScreen, settle, text, unavailableReason } from '../../testing/screen';
 import { SigningIdentitySection } from './signing-identity';
 
 const overlay = (): HTMLElement => document.querySelector('.cdk-overlay-container') as HTMLElement;
@@ -130,8 +130,8 @@ describe('Signing identity (R-SIG-056)', () => {
     expect(labels(root)).toEqual(['Download chain', 'Download trusted root', 'Previous identities 2']);
   });
 
-  it('R-SIG-046 from the Helm configuration: the facts and no control; a refused pair as a red line with its check in plain words', async () => {
-    const { root } = await render(WRITER, (api) => {
+  it('R-SIG-046 R-UI-270 from the Helm configuration: the facts, Replace and Remove unavailable with the key; a refused pair as a red line', async () => {
+    const { fixture, root, api } = await render(WRITER, (api) => {
       api.current = signingOverview({
         state: 'configuration',
         managed: true,
@@ -143,12 +143,35 @@ describe('Signing identity (R-SIG-056)', () => {
         },
       });
     });
-    expect(text(root.querySelector('[data-testid="signing-source"]')!)).toContain('From the Helm configuration');
-    expect(labels(root)).toEqual(['Download chain', 'Download trusted root']);
+    // The source in its words, no paragraph of where it is changed: the acts' tooltip says it.
+    expect(text(root.querySelector('[data-testid="signing-source"]')!)).toBe('From the Helm configuration');
+    expect(labels(root)).toEqual(['Download chain', 'Download trusted root', 'Replace', 'Remove']);
+    const fixed = 'Set in signing.identity of the Helm configuration: change or remove it there.';
+    expect(unavailableReason(buttonByText(root, 'Replace'))).toBe(fixed);
+    expect(unavailableReason(buttonByText(root, 'Remove'))).toBe(fixed);
+    buttonByText(root, 'Remove').click();
+    await settle(fixture);
+    expect(overlay().querySelector('quader-confirm-dialog')).toBeNull();
+    expect(api.calls).toEqual([]);
+    // An auditor reads the same without a control.
+    const auditor = await render(READER, (a) => (a.current = signingOverview({ state: 'configuration', managed: true, current: signingIdentity({ source: 'configuration', createdBy: null }) })));
+    expect(labels(auditor.root)).toEqual(['Download chain', 'Download trusted root']);
     const refused = text(root.querySelector('[data-testid="signing-refused"]')!);
     expect(refused).toContain('The certificate is not for code signing: ask the CA for the extended key usage codeSigning.');
     expect(refused).toContain('(code_signing).');
     expect(refused).toContain('The identity in use keeps signing.');
+  });
+
+  it('R-SIG-046 R-UI-270 named by the Helm configuration before a pair passes: Create signing key unavailable, nothing behind More options', async () => {
+    const { root } = await render(WRITER, (api) => (api.current = signingOverview({ state: 'configuration', managed: true })));
+    expect(text(root.querySelector('[data-testid="signing-managed"]')!)).toBe(
+      'From the Helm configuration: Quader signs nothing until a pair of its files passes the checks.',
+    );
+    expect(labels(root)).toEqual(['Create signing key']);
+    expect(unavailableReason(buttonByText(root, 'Create signing key'))).toBe(
+      'Set in signing.identity of the Helm configuration: change or remove it there.',
+    );
+    await expectAccessible(root);
   });
 
   it('R-SIG-047 Create signing key: the fields hold the defaults, More options holds the rest, and a refused chain names its check under the field', async () => {

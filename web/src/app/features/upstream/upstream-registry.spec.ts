@@ -6,7 +6,7 @@ import { MalwareApi } from '../../api/malware-api';
 import { FakeMalwareApi, malwareSettings } from '../../api/testing/fakes-malware';
 import { CLAMAV_ENDPOINT, FakeUpstreamApi, configuredAccount, noAccount } from '../../api/testing/fakes-upstream';
 import { FakeVisibilityApi } from '../../api/testing/fakes-projects';
-import { button, buttonByText, expectAccessible, renderScreen, settle, text, type } from '../../testing/screen';
+import { button, buttonByText, expectAccessible, renderScreen, settle, text, type, unavailableReason } from '../../testing/screen';
 import { UpstreamRegistry } from './upstream-registry';
 
 const overlay = (): HTMLElement => document.querySelector('.cdk-overlay-container') as HTMLElement;
@@ -295,19 +295,26 @@ describe("A well-known repository's page (R-UI-188)", () => {
 describe('An account the configuration declares on a well-known repository (R-UI-188 section 3, R-REPO-077)', () => {
   const section = (root: HTMLElement): HTMLElement => root.querySelector<HTMLElement>('[aria-labelledby="wk-account"]')!;
 
-  it('R-REPO-077 shows where it comes from, its mode and its files, with Test connection and no field, Save or Remove', async () => {
+  it('R-REPO-077 R-UI-270 shows where it comes from, its Secret, mode and files, Test connection, no field or Save, and Remove account unavailable', async () => {
     const { fixture, root, api } = await render('docker-hub', {
       setup: (a) => a.set('docker-hub', { account: configuredAccount('readable'), accountRaisesLimit: false }),
     });
     const s = section(root);
-    expect(text(s.querySelector('.source-note > span:last-child')!)).toBe('From the Helm configuration: Secret quader-upstream-docker-hub. Change or remove it there.');
-    expect(text(s.querySelector('.account-facts')!)).toContain('Username and password');
-    expect(text(s.querySelector('.account-facts')!)).toContain('Readable on this server');
+    const facts = Object.fromEntries([...s.querySelectorAll('.account-facts dt')].map((dt) => [text(dt), text(dt.nextElementSibling!)]));
+    // One line, where the paragraph it replaces stood: the source and the Secret.
+    expect(facts['Source']).toBe('lock Helm configuration Secret quader-upstream-docker-hub');
+    expect(facts['Authentication']).toBe('Username and password');
+    expect(facts['Files']).toContain('Readable on this server');
+    // No paragraph says where it is changed: Remove account's tooltip does.
+    expect(text(s)).not.toContain('Change or remove it there');
     expect(text(s)).toContain('The credential is sent to');
     expect(s.querySelectorAll('input, select')).toHaveLength(0);
-    for (const label of ['Save account', 'Remove account']) {
-      expect([...s.querySelectorAll('button')].some((b) => text(b) === label)).toBe(false);
-    }
+    expect([...s.querySelectorAll('button')].some((b) => text(b) === 'Save account')).toBe(false);
+    const remove = buttonByText(s, 'Remove account');
+    expect(unavailableReason(remove)).toBe('Set in secrets.upstreamAccounts of the Helm configuration: change or remove it there.');
+    remove.click();
+    await settle(fixture);
+    expect(api.calls.some((c) => c.op === 'remove-account')).toBe(false);
     expect(text(s)).not.toContain('allows more requests');
     buttonByText(s, 'Test connection').click();
     await settle(fixture);
@@ -367,7 +374,7 @@ describe('An account the configuration declares on a well-known repository (R-UI
           accountRaisesLimit: false,
         }),
     });
-    expect(text(section(plain.root).querySelector('.source-note > span:last-child')!)).toBe('From the Helm configuration. Change or remove it there.');
+    expect(text(section(plain.root).querySelector('.account-facts dd')!)).toBe('lock Helm configuration');
     expect(text(section(plain.root).querySelector('.banner-warning > span:last-child')!)).toContain('A file of the account is empty on this server');
   });
 

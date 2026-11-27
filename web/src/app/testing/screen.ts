@@ -155,6 +155,13 @@ export const helpSigns = (root: ParentNode): [string, string][] =>
       .trim(),
   ]);
 
+/** The reason of an unavailable control (R-UI-270): null while it is available, else the sentence its tooltip describes it by. */
+export function unavailableReason(control: Element): string | null {
+  if (control.getAttribute('aria-disabled') !== 'true') return null;
+  const ids = (control.getAttribute('aria-describedby') ?? '').split(' ').filter((id) => id !== '');
+  return ids.map((id) => document.getElementById(id)?.textContent?.replace(/\s+/g, ' ').trim() ?? '').join(' ');
+}
+
 /** The addresses of the `quader-address-field`s in `root`: the field holds the address as its value, not as text (R-UI-065). */
 export const addressValues = (root: ParentNode): string[] =>
   [...root.querySelectorAll<HTMLInputElement>('quader-address-field input')].map((i) => i.value);

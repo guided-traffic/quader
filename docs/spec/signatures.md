@@ -2519,7 +2519,9 @@ Simple by default ([CLAUDE.md](../../CLAUDE.md#product-simple-by-default-details
     address behind **More options**); then the request with **Copy** and **Download**, the sentence "Have your company's CA issue a
     code-signing certificate for this request, then upload it with its chain.", and **Upload certificate**. **Import key and certificate**
     behind the section's **More options**.
-  - **From the Helm configuration:** "From the Helm configuration" and the facts, no controls; a refused pair of the files as a line in red with its
+  - **From the Helm configuration:** "From the Helm configuration" and the facts; for the holder of the right **Replace** and **Remove**
+    unavailable, before a pair passed **Create signing key**, each with "Set in signing.identity of the Helm configuration: change or
+    remove it there." as its tooltip ([api-and-ui.md](api-and-ui.md) R-UI-270); a refused pair of the files as a line in red with its
     reason.
   - **Uploaded:** the facts, **Replace** (a new key request; the current identity signs until the new one is current) and **Remove**.
   - **The facts:** subject, issuer, alternative names, valid from and until ("expires in 12 days" amber from 14 days, "expired" red), the

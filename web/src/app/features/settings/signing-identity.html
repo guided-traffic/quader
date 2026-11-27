@@ -93,19 +93,18 @@
         } @else {
           &ngsp;<quader-time-ago [at]="cur.createdAt" absolute="title" />
         }
-      } @else {
-        &ngsp;<span class="muted" i18n="@@signing.helm-note">Change it there; nothing here changes it.</span>
       }
     </p>
     <ng-container *ngTemplateOutlet="facts; context: { $implicit: cur }" />
+    <!-- An identity of the Helm configuration keeps Replace and Remove, unavailable, its key their tooltip (R-UI-270). -->
     <div class="row-actions">
       <a class="btn btn-default" [href]="chainUrl" download="quader-signing-chain.pem" i18n="@@signing.download-chain">Download chain</a>
       <a class="btn btn-default" [href]="rootUrl" download="quader-trusted-root.json" i18n="@@signing.download-root">Download trusted root</a>
-      @if (canReplace()) {
-        <button class="btn btn-default" type="button" [disabled]="busy()" [quaderBusy]="busy()" (click)="createKey(true)" i18n="@@signing.replace">Replace</button>
+      @if (canReplace() || fixedReason()) {
+        <button class="btn btn-default" type="button" [disabled]="busy()" [quaderBusy]="busy()" [quaderUnavailable]="fixedReason()" (click)="createKey(true)" i18n="@@signing.replace">Replace</button>
       }
-      @if (canRemove()) {
-        <button class="btn btn-danger" type="button" [disabled]="busy()" [quaderBusy]="busy()" (click)="remove()" i18n="@@signing.remove">Remove</button>
+      @if (canRemove() || fixedReason()) {
+        <button class="btn btn-danger" type="button" [disabled]="busy()" [quaderBusy]="busy()" [quaderUnavailable]="fixedReason()" (click)="remove()" i18n="@@signing.remove">Remove</button>
       }
     </div>
     @if (ov.announced; as next) {
@@ -117,8 +116,8 @@
     }
   } @else if (ov.managed) {
     <p data-testid="signing-managed">
-      <strong i18n="@@signing.source.configuration">From the Helm configuration</strong>:&ngsp;<ng-container i18n="@@signing.managed-none"
-        >the Helm configuration names the signing identity, and Quader signs nothing until a pair of its files passes the checks.</ng-container
+      <strong i18n="@@signing.source.configuration">From the Helm configuration</strong>:&ngsp;<ng-container i18n="@@signing.managed-waiting"
+        >Quader signs nothing until a pair of its files passes the checks.</ng-container
       >
     </p>
   } @else {
@@ -175,9 +174,9 @@
         <button class="btn btn-default" type="button" [disabled]="busy()" [quaderBusy]="busy()" (click)="discard()" i18n="@@signing.discard">Discard</button>
       </div>
     }
-  } @else if (!ov.current && canChange()) {
+  } @else if (!ov.current && (canChange() || fixedReason())) {
     <div class="row-actions">
-      <button class="btn btn-confirm" type="button" [disabled]="busy()" [quaderBusy]="busy()" (click)="createKey(false)" i18n="@@signing.key.heading">Create signing key</button>
+      <button class="btn btn-confirm" type="button" [disabled]="busy()" [quaderBusy]="busy()" [quaderUnavailable]="fixedReason()" (click)="createKey(false)" i18n="@@signing.key.heading">Create signing key</button>
     </div>
   }
 

@@ -5128,7 +5128,8 @@ Priority: **MVP** · Covers: UI-035, UI-036
   user's record in Quader with **Create user** ([Q-UI-573](#q-ui-573--the-button-that-makes-a-new-thing-says-new-thing-and-a-new-user-is-made-not-added)). No password
   fields exist.
 - `/admin/roles` lists the fixed roles of `GET /api/v1/roles` with their bindings and offers bind
-  and unbind; a binding's principal is chosen in the shared principal field (R-UI-150, R-UI-152).
+  and unbind; a binding's principal is chosen in the shared principal field (R-UI-150, R-UI-152). **Unbind** of a binding of the Helm
+  configuration and of the last administrator's is unavailable with its reason as its tooltip (R-UI-270).
 
 Acceptance criteria:
 
@@ -5544,6 +5545,8 @@ Priority: **MVP** · Covers: UI-049, CIOIDC-024
   project may read) for the chosen format (npm or NuGet) with a copy button. This covers the GitLab counterpart of
   CIOIDC-024 ([GitLab ID tokens](https://docs.gitlab.com/ci/secrets/id_token_authentication/)).
 - Delegations (P1) and issuances (R-UI-030) are tabs of the issuer.
+- An issuer of the Helm configuration (Q-CI-16) shows its settings as read-only fields under the mark **Helm configuration** with its help,
+  and its **Delete issuer** unavailable with the key as its tooltip until it leaves the configuration (R-UI-270).
 - An Owner of a project reaches the project's CI mappings from the project (the project route family of
   R-API-035): the mapping list and editor, the claim tester over the project's tier and the issuances of its mappings, with
   the issuers as a read-only choice (Q-CI-26). A mapping's name is unique within the project and the issuer, without a
@@ -9276,9 +9279,10 @@ Priority: **MVP** · Covers: quader-only
      registry pulls with it." ([security/data-and-secret-flow.md](../security/data-and-secret-flow.md)). While the registry has no account
      and its vendor allows more requests with one (`accountRaisesLimit`), a muted line says "Docker Hub allows more requests with an
      account." ([Q-UI-1160](#q-ui-1160--a-limit-an-account-would-lift-offers-one-to-each-reader-where-that-reader-adds-it)). **An account the configuration declares** ([repositories-and-proxy.md](repositories-and-proxy.md)
-     R-REPO-077, [Q-UI-1161](#q-ui-1161--an-account-the-configuration-declares-is-read-only-on-the-registrys-page-its-source-and-its-files-state-no-value)) is read-only: no field, no **Save account**, no **Remove account**; a lock line "From the Helm
-     configuration: Secret quader-upstream-docker-hub. Change or remove it there." ("From the Helm configuration. Change or remove it
-     there." without a Secret's name, R-UI-268), the facts **Authentication** (the mode in the words above), **Files** ("Readable on this server", "Missing …",
+     R-REPO-077, [Q-UI-1161](#q-ui-1161--an-account-the-configuration-declares-is-read-only-on-the-registrys-page-its-source-and-its-files-state-no-value)) is read-only: no field, no **Save account**, and **Remove account** unavailable with "Set in
+     secrets.upstreamAccounts of the Helm configuration: change or remove it there." as its tooltip (R-UI-270, R-UI-268); the facts
+     **Source** (one line: a lock, "Helm configuration" and, where the chart's Secret sets it, "Secret quader-upstream-docker-hub"),
+     **Authentication** (the mode in the words above), **Files** ("Readable on this server", "Missing …",
      "Empty …", "Not usable …"), **Last download** and **Last failed download** where the item has them, the line of the credential's
      hosts and **Test connection** of the saved repository. Files that are not readable add a warning that says what fails until when
      ([Q-UI-1162](#q-ui-1162--the-files-state-is-a-word-among-the-facts-and-a-warning-that-says-what-fails-until-when)); the username read from a file and the values are never shown. An address whose save would move the hosts
@@ -10608,6 +10612,9 @@ for an empty list) in its **Details** (R-UI-240).
 *Amended on 2026-11-26 ([bastion.md](bastion.md) R-BAS-127, [Q-UI-1497](#q-ui-1497--a-declared-bastion-registration-says-where-it-comes-from-with-the-words-of-a-declared-account)):*
 a registration the configuration declares shows its networks as the line of text a reader sees, with the warnings and without **Add**,
 also to a holder of `endpoints:write`: they follow the Helm configuration, and the line ends "· from the Helm configuration" (W-39).
+*Amended on 2026-11-27 (W-41 C0, R-UI-270):* to the holder of `endpoints:write` the declared networks stand in their fields, unavailable,
+with **Add address** and each offer's **Add 198.51.100.21**, all with "Set in bastions.declared of the Helm configuration." as their
+tooltip; no **Remove**, no **Save changes**. A reader keeps the line of text.
 
 *Amended on 2026-11-27 (W-39, [Q-UI-1624](#q-ui-1624--every-warning-of-a-bastions-card-is-one-line-under-what-it-concerns)):* the
 warnings are one line each with their consequence: an offer reads "Its last contact came from 198.51.100.21, which is not listed: callers
@@ -11706,6 +11713,71 @@ Acceptance criteria:
   while REPOSITORIES_SHOWN is false` (the column, the fact, the Details' table, the findings' card, the docs' line, the delivery note).
 - Rendered (rule 11): the screens above in both applications, both schemes, 1,440, 1,024 and 390 px, English and German; the versions
   table does not break into blocks at 1,024 px (R-UI-175) and the panel keeps 16 px from the window's edges at 390 px.
+
+*Amended on 2026-11-27 (W-41 C0):* where the fixed value has a control, the wording of this requirement is the control's tooltip, not a
+paragraph beside it (R-UI-270).
+
+### R-UI-270 · A control fixed by the Helm configuration is offered unavailable, its reason its tooltip
+Priority: **P1** · Covers: quader-only
+
+The owner on 2026-11-27, on a declared Bastion's card whose **Delete** was missing and whose paragraph said why: "Der Button gehört
+zurückgeholt, ausgegraut und mit diesem Tooltip versehen. Ich weiß nicht wie du es schaffst, dass jede Seite immer so gnadenlos
+überladen aussieht, wenn du mit ihr fertig bist." ([Q-UI-1636](#q-ui-1636--a-control-that-cannot-act-shows-greyed-out-with-its-reason-as-its-tooltip-never-a-paragraph))
+
+- **The control stays.** A value or an act fixed by the Helm configuration is offered as its control, unavailable: never hidden, never
+  replaced by words, never explained by a paragraph beside it.
+- **Unavailable** (`[quaderUnavailable]="reason"` of [unavailable.ts](../../web/src/app/shared/ui/unavailable.ts)): `aria-disabled="true"`,
+  never the `disabled` attribute, which takes the control out of hover, focus and touch; the disabled look of its kind (a button, a text
+  field); a click, a tap, Enter and Space act on nothing; a field is read-only. The reason is its tooltip and its accessible description:
+  shown on hover and on focus, and a tap pins it until the next tap, a press outside or Escape, as the help sign's (R-UI-267). An empty
+  reason leaves the control as it is.
+- **The reason** is one sentence of R-UI-268's words: where the value is set, the key as its path in the chart's values, and what to do
+  ("Declared in config.authz.role_bindings of the Helm configuration: remove it there."). A control that cannot act for another reason
+  that stands at the control itself (the last administrator's binding) says it the same way.
+- **The places** (the audit of 2026-11-27):
+
+  | Place | Control | Reason |
+  |---|---|---|
+  | **System roles**, a binding of the Helm configuration | **Unbind** | "Declared in config.authz.role_bindings of the Helm configuration: remove it there." |
+  | **System roles**, the last administrator's binding | **Unbind** | "The last administrator binding cannot be removed." |
+  | A **CI issuer** of the Helm configuration, **Settings › Advanced** | **Delete issuer** | "Declared in config.ci.issuers of the Helm configuration: remove it there first, then delete it here." |
+  | An **upstream registry**'s account of the Helm configuration | **Remove account** | "Set in secrets.upstreamAccounts of the Helm configuration: change or remove it there." |
+  | **Settings › Signatures**, the signing identity the Helm configuration names | **Replace**, **Remove**; **Create signing key** while no pair of its files passed | "Set in signing.identity of the Helm configuration: change or remove it there." |
+  | A declared **Bastion**'s networks | **Add 198.51.100.21** (the offer of a contact's address), the fields of **Addresses this Bastion connects from**, **Add address** | "Set in bastions.declared of the Helm configuration." |
+  | A declared **Bastion**'s head and tokens | **Delete**, **Rotate token** | "Set in bastions.declared of the Helm configuration: remove it there first, then delete it here."; "Its token is set in bastions.declared of the Helm configuration: put a new value into its Secret." |
+
+  A CI issuer of the Helm configuration keeps its fields as read-only fields (style guide) under the mark **Helm configuration** with its
+  help, as a declared Bastion's (Q-UI-1629); an upstream registry's declared account shows its source and its Secret as facts. Read-only
+  facts that have no control (an endpoint's, the authentication ceiling, the base URL, the storage connections) keep R-UI-268's words
+  and are not controls. A reader without the right to change sees no control and no reason: the facts say the source.
+
+*Built on 2026-11-27 (W-41 C0):* [unavailable.ts](../../web/src/app/shared/ui/unavailable.ts), the looks in
+[_controls.scss](../../web/src/styles/_controls.scss), and the places of the table in
+[role-bindings.html](../../web/src/app/features/roles/role-bindings.html),
+[issuer-form.ts](../../web/src/app/features/ci/issuer-form.ts), [issuer-detail.ts](../../web/src/app/features/ci/issuer-detail.ts),
+[upstream-registry.html](../../web/src/app/features/upstream/upstream-registry.html),
+[signing-identity.html](../../web/src/app/features/settings/signing-identity.html) and
+[bastion-egress.ts](../../web/src/app/features/bastions/bastion-egress.ts). The paragraphs they replace are gone: **System roles**' "Managed in
+the Helm configuration" and its note under the table, the last administrator's line, the CI issuer's lock paragraph, the account's
+"From the Helm configuration: Secret …. Change or remove it there.", the signing identity's "Change it there; nothing here changes it."
+and half of its sentence before a pair passed. **Import key and certificate** behind **More options** is not offered while the Helm
+configuration names the identity: the act in view says the reason once.
+
+*Not built:* a declared Bastion's **Delete** and **Rotate token** (W-41's C1, with the card's head and its tokens' acts).
+
+Acceptance criteria (Vitest, about 3 s; [unavailable.spec.ts](../../web/src/app/shared/ui/unavailable.spec.ts) and the specs of the places:
+[role-bindings.spec.ts](../../web/src/app/features/roles/role-bindings.spec.ts),
+[ci-issuer-screens.spec.ts](../../web/src/app/features/ci/ci-issuer-screens.spec.ts),
+[upstream-registry.spec.ts](../../web/src/app/features/upstream/upstream-registry.spec.ts),
+[signing-identity.spec.ts](../../web/src/app/features/settings/signing-identity.spec.ts),
+[bastions.spec.ts](../../web/src/app/features/bastions/bastions.spec.ts); `make ui-states` state `unavailable-pinned` of
+[tooltip.states.spec.ts](../../web/src/app/shared/ui/tooltip.states.spec.ts)):
+
+- An unavailable control is `aria-disabled` and not `disabled`, described by its reason; a click, Enter and Space run no handler, submit no
+  form and follow no link; a field is read-only; hover and focus show the reason, a tap pins it; an empty reason leaves the control
+  acting, without a tooltip; axe finds nothing serious.
+- Each place of the table shows its control with its reason and no paragraph that says it again; a click on it sends nothing.
+- An unavailable button at the window's right edge at 390 px, pinned: its bubble inside the window.
 
 ## Deferred
 
@@ -32412,6 +32484,26 @@ Context: a row's panel offers the repositories a client can take its version fro
 
 **Choice:** (a). **Applied in the spec:** R-UI-269. Code: `clientRepositories` of
 [version-command.ts](../../web/src/app/views/packages/version-command.ts).
+
+### Q-UI-1636 · A control that cannot act shows greyed out, with its reason as its tooltip; never a paragraph
+
+Status: **Decided by the development agent on 2026-11-27** (W-41's plan, D11, built by C0) — selected from the options below; the owner
+reviews it at the walkthrough. R-UI-270, R-UI-268, R-UI-267.
+
+Context: the owner on a declared Bastion's card, whose **Delete** was missing and a paragraph said to remove it in the Helm configuration
+first: "Der Button gehört zurückgeholt, ausgegraut und mit diesem Tooltip versehen." Four more screens hid or replaced a control the Helm
+configuration fixes, each with a paragraph of its own.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A directive on the control (chosen) | `[quaderUnavailable]="reason"`: `aria-disabled`, the disabled look of its kind, a click and Enter swallowed, the reason as its tooltip with the pin of the help sign and as its accessible description; the same for a field and a button | One rule for every place; the reason is where the eye is when the act is tried; keyboard and touch reach it | A disabled control takes room a missing one would not |
+| (b) Hide the control | Say it in the help of the mark | Less on screen | The owner: "Der Button gehört zurückgeholt" |
+| (c) `disabled` plus a `title` | The browser's own | Native | No hover in most browsers, no focus, no touch |
+
+**Choice:** (a). The directive composes the tooltip (`hostDirectives`) and pins it on a tap; its capturing listeners on the control run
+before the control's own handlers and a router link's. A switch has no place in the audit and no input for it yet; the first place that
+needs one gives `<quader-switch>` the reason for its inner button. **Applied in the spec:** R-UI-270 (new), R-UI-268 (its pointer). The
+style guide's "A disabled destructive action says why it is disabled, next to the button" now says "in its tooltip (`quaderUnavailable`)".
 
 ## What this does not cover
 

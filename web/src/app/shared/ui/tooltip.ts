@@ -199,7 +199,11 @@ export class Tooltip implements OnDestroy {
 
   /** A click or a tap (and Enter or Space on a button) pins the bubble, or unpins and hides a pinned one. */
   protected clicked(): void {
-    if (!this.quaderTooltipPin()) return;
+    if (this.quaderTooltipPin()) this.togglePin();
+  }
+
+  /** Pins the bubble, or unpins and hides a pinned one: a pinning tooltip's click, and an unavailable control's (`quaderUnavailable`). */
+  togglePin(): void {
     if (this.pinned) {
       this.hide();
       return;

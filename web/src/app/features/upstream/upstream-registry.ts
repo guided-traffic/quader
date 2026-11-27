@@ -2,6 +2,7 @@ import { NgTemplateOutlet } from '@angular/common';
 import { TimePipe } from '../../shared/time-pipe';
 import { failureMayPass } from '../../shared/none-on-refusal';
 import { Tooltip } from '../../shared/ui/tooltip';
+import { Unavailable } from '../../shared/ui/unavailable';
 import { classHelp, isSystemOnly } from '../repositories/repository-class';
 import { Component, LOCALE_ID, computed, effect, inject, input, resource, signal, untracked } from '@angular/core';
 import { RouterLink } from '@angular/router';
@@ -92,6 +93,7 @@ function needsAccount(e: ApiError): boolean {
     Switch,
     TextField,
     Tooltip,
+    Unavailable,
     UpstreamTestResultView,
     ValueList,
     VisibilityIcon,
@@ -282,10 +284,13 @@ export class UpstreamRegistry {
   protected readonly password = signal('');
   protected readonly accountStored = computed(() => this.item()?.account.source !== 'configuration' && (this.item()?.account.authMode ?? 'none') !== 'none');
   /**
-   * The account comes from the installation's configuration (R-REPO-077, Q-UI-1161): read-only, no fields, no Save, no Remove; the
-   * declaration's Secret, the state of its files on the server that answered, and Test connection.
+   * The account comes from the Helm configuration (R-REPO-077, Q-UI-1161): read-only, no fields, no Save, **Remove account**
+   * unavailable with where it is changed (R-UI-270); the declaration's Secret, the state of its files on the server that answered, and
+   * Test connection.
    */
   protected readonly configured = computed(() => this.item()?.account.source === 'configuration');
+  /** Why **Remove account** cannot act on a declared account, its tooltip (R-UI-270). */
+  protected readonly declaredReason = $localize`:@@wellknown.account.remove.helm:Set in secrets.upstreamAccounts of the Helm configuration: change or remove it there.`;
   /** The Secret of the Helm values the declared account's files come from; empty for a configuration written without the chart. */
   protected readonly secretName = computed(() => this.item()?.account.configuration?.secretName ?? '');
   protected readonly filesText = computed(() => accountFilesText(this.item()?.account.configuration?.files ?? 'readable'));

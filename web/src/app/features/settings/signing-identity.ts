@@ -38,13 +38,15 @@ import {
 } from './signing-dialogs';
 import { Busy } from '../../shared/ui/busy';
 import { Loading } from '../../shared/ui/loading';
+import { Unavailable } from '../../shared/ui/unavailable';
 
 /**
  * The section **Signing identity** of **Admin area › Settings › Signatures** (R-SIG-056, Q-SIG-70), first on the page and open, in
  * every state of R-SIG-045: none (the sentence; for the holder of `security-settings:write` **Create signing key**, and **Import key and
  * certificate** behind the section's **More options**), a pending key request (its request with **Copy** and **Download**, the sentence
- * about the company's CA, **Upload certificate** and **Discard**; shown again after a reload), from the Helm values (the facts and no
- * controls; a refused pair of the files as a red line with its reason), uploaded (the facts, **Replace**, **Remove**). The facts are the
+ * about the company's CA, **Upload certificate** and **Discard**; shown again after a reload), from the Helm configuration (the facts,
+ * **Replace** and **Remove** unavailable with the key as their tooltip, R-UI-270; a refused pair of the files as a red line with its
+ * reason), uploaded (the facts, **Replace**, **Remove**). The facts are the
  * subject, the issuer, the alternative names, the validity with "expires in 12 days" amber from 14 days and "expired" red, the
  * fingerprint, npm's key ID and the state, with **Download chain** and **Download trusted root**; an announced identity stands below with
  * its switch; one quiet line says what the job `signing` has left to do. **Previous identities**, closed, each with its dates and
@@ -54,7 +56,7 @@ import { Loading } from '../../shared/ui/loading';
  */
 @Component({
   selector: 'quader-signing-identity',
-  imports: [Loading, Busy, CodeWindow, CopyButton, DataTable, TimePipe, DecimalPipe, Disclosure, ErrorNotice, NgTemplateOutlet, TimeAgo],
+  imports: [Loading, Busy, CodeWindow, CopyButton, DataTable, TimePipe, DecimalPipe, Disclosure, ErrorNotice, NgTemplateOutlet, TimeAgo, Unavailable],
   templateUrl: './signing-identity.html',
   styleUrl: '../../shared/access/access.scss',
   styles: `
@@ -148,6 +150,16 @@ export class SigningIdentitySection {
   protected readonly canWrite = computed(() => this.session.has('security-settings:write'));
   /** Whether the holder of the right may change the identity here: not while the Helm values name it (R-SIG-046). */
   protected readonly canChange = computed(() => this.canWrite() && this.overview()?.managed === false);
+  /**
+   * While the Helm configuration names the identity, the holder of the right finds its acts (**Replace**, **Remove**, **Create signing
+   * key**) unavailable with this reason (R-UI-270); empty otherwise. **Import key and certificate** stays behind **More options**, not
+   * offered: the act in view says it once.
+   */
+  protected readonly fixedReason = computed(() =>
+    this.canWrite() && this.overview()?.managed
+      ? $localize`:@@signing.helm-fixed:Set in signing.identity of the Helm configuration: change or remove it there.`
+      : '',
+  );
   /** **Remove** stands at an uploaded current identity; an identity of the Helm values is removed by taking it out of the values. */
   protected readonly canRemove = computed(() => this.canChange() && this.overview()?.current?.source === 'upload');
   /** **Replace** besides, while no key is pending (its request stands below) and none is announced (it waits for its switch). */

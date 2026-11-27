@@ -3,6 +3,7 @@ import { describe, it } from 'vitest';
 import { expectState, openInPage, stable } from '../../testing/states';
 import { Setting } from './setting';
 import { Tooltip } from './tooltip';
+import { Unavailable } from './unavailable';
 
 /**
  * An element with a tooltip at the right edge of the page, as a list's last column (its help, a row's Rotate) stands there: at the
@@ -59,6 +60,34 @@ class HelpEdge {
   readonly text = input.required<string>();
 }
 
+/**
+ * A row whose last act stands at the right edge of the page and cannot act (R-UI-270), as a declared binding's **Unbind** stands at
+ * the end of its row: its reason is the tooltip, a tap pins it.
+ */
+@Component({
+  selector: 'quader-unavailable-edge',
+  imports: [Unavailable],
+  template: `
+    <div class="row">
+      <span>group:platform-admins</span>
+      <button class="btn btn-tertiary" type="button" [quaderUnavailable]="text()">Unbind</button>
+    </div>
+  `,
+  styles: `
+    .row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+  `,
+})
+class UnavailableEdge {
+  readonly text = input.required<string>();
+}
+
+/** The longest reason of an unavailable control, as the CI issuer's Delete says it. */
+const ISSUER_DELETE = 'Declared in config.ci.issuers of the Helm configuration: remove it there first, then delete it here.';
+
 /** The longest texts of the tooltips (data-table column help, limit-rules.ts, token-table.ts), as the screens set them. */
 const LONGEST_HELP =
   "The system tier is the administrators'. A project's administrators manage the tier of their project. The tiers are evaluated separately and their matches combined.";
@@ -91,6 +120,15 @@ describe('tooltips at the right edge of the window in a browser (R-UI-044, R-UI-
       (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('button.help-sign')!.click();
       await stable(fixture);
       if (!document.querySelector('quader-tooltip')) throw new Error('the help did not open');
+    });
+  });
+
+  it("R-UI-270 an unavailable button at the window's right edge, pinned by a tap: its reason inside the window", async () => {
+    await expectState('unavailable-pinned', async () => {
+      const fixture = await openInPage(UnavailableEdge, { text: ISSUER_DELETE });
+      (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('button')!.click();
+      await stable(fixture);
+      if (!document.querySelector('quader-tooltip')) throw new Error('the reason did not open');
     });
   });
 });

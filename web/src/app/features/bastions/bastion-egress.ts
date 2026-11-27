@@ -8,6 +8,7 @@ import { fieldErrorAt } from '../../shared/field-errors';
 import { asApiError } from '../../shared/paged-resource';
 import { Busy } from '../../shared/ui/busy';
 import { Help } from '../../shared/ui/help';
+import { Unavailable } from '../../shared/ui/unavailable';
 import { unlistedContacts } from './egress';
 
 /** One row of the list being edited: a key that survives removing a row above it, and the text. */
@@ -32,7 +33,7 @@ interface Row {
  */
 @Component({
   selector: 'quader-bastion-egress',
-  imports: [Busy, ErrorNotice, Help],
+  imports: [Busy, ErrorNotice, Help, Unavailable],
   template: `
     @if (part() === 'warnings') {
       <!-- The empty list warns only where it matters and no offer says it already (Q-UI-1624): after a contact. -->
@@ -51,8 +52,8 @@ interface Row {
               block.</span
             >
           </p>
-          @if (canWrite()) {
-            <button class="btn btn-default btn-sm" type="button" [disabled]="busy()" [quaderBusy]="busy()" (click)="add(a)">
+          @if (mayWrite()) {
+            <button class="btn btn-default btn-sm" type="button" [disabled]="busy()" [quaderBusy]="busy()" [quaderUnavailable]="fixedReason()" (click)="add(a)">
               <ng-container i18n="@@bastion.egress.add-contact">Add <span translate="no">{{ a }}</span></ng-container>
             </button>
           }
@@ -60,7 +61,8 @@ interface Row {
       }
     } @else {
       <h4><span class="help-anchor" [id]="headingId()">{{ heading }}</span><quader-help [text]="help" [about]="heading" /></h4>
-      @if (canWrite()) {
+      @if (mayWrite()) {
+        <!-- A declared registration's networks stand in their fields, unavailable, with where they are set (R-UI-270). -->
         <div class="rows" role="group" [attr.aria-labelledby]="headingId()">
           @for (row of rows(); track row.id; let i = $index) {
             <div class="row">
@@ -75,9 +77,10 @@ interface Row {
                 [attr.aria-label]="fieldLabel(i)"
                 [attr.aria-invalid]="errorAt(i) ? true : null"
                 [attr.aria-describedby]="errorAt(i) ? fieldId(i) + '-error' : null"
+                [quaderUnavailable]="fixedReason()"
                 (input)="setRow(row.id, $any($event.target).value)"
               />
-              @if (rows().length > 1 || row.text !== '') {
+              @if (canWrite() && (rows().length > 1 || row.text !== '')) {
                 <button class="btn btn-tertiary" type="button" (click)="removeRow(row.id)">
                   <ng-container i18n="@@bastion.egress.remove">Remove</ng-container>
                   <span class="visually-hidden"> {{ row.text }}</span>
@@ -90,10 +93,19 @@ interface Row {
           }
         </div>
         <div class="row-actions">
-          <button class="btn btn-default" type="button" [disabled]="rows().length >= max" (click)="addRow()" i18n="@@bastion.egress.add-row">Add address</button>
-          <button class="btn btn-confirm" type="button" [disabled]="busy() || !dirty()" [quaderBusy]="busy()" (click)="save()" i18n="@@bastion.egress.save">
-            Save changes
-          </button>
+          <button
+            class="btn btn-default"
+            type="button"
+            [disabled]="rows().length >= max"
+            [quaderUnavailable]="fixedReason()"
+            (click)="addRow()"
+            i18n="@@bastion.egress.add-row"
+          >Add address</button>
+          @if (canWrite()) {
+            <button class="btn btn-confirm" type="button" [disabled]="busy() || !dirty()" [quaderBusy]="busy()" (click)="save()" i18n="@@bastion.egress.save">
+              Save changes
+            </button>
+          }
         </div>
       } @else {
         <p class="state-text" data-testid="bastion-egress-list">
@@ -179,8 +191,14 @@ export class BastionEgress {
   protected readonly noneText = $localize`:@@bastion.egress.none:No address is listed.`;
   protected readonly busy = signal(false);
   protected readonly error = signal<ApiError | null>(null);
-  /** A registration the configuration declares takes its networks from there (R-BAS-127): the list is text then. */
-  protected readonly canWrite = computed(() => this.session.has('endpoints:write') && !this.bastion().declared);
+  /** Who may change a registration (`endpoints:write`) gets the fields; who may only read gets the networks as text (Q-UI-960). */
+  protected readonly mayWrite = computed(() => this.session.has('endpoints:write'));
+  /** A registration the configuration declares takes its networks from there (R-BAS-127): its fields and acts are unavailable. */
+  protected readonly canWrite = computed(() => this.mayWrite() && !this.bastion().declared);
+  /** Why the networks' fields and acts cannot act, their tooltip (R-UI-270); empty where they can. */
+  protected readonly fixedReason = computed(() =>
+    this.mayWrite() && this.bastion().declared ? $localize`:@@bastion.egress.helm:Set in bastions.declared of the Helm configuration.` : '',
+  );
   protected readonly headingId = computed(() => `bastion-egress-${this.bastion().name}`);
   protected readonly heading = $localize`:@@bastion.egress.heading:Addresses this Bastion connects from`;
   protected readonly help = $localize`:@@bastion.egress.note:The main installation believes the caller's address a Bastion forwards only from these addresses. While none is listed, all callers count as the Bastion's own address.`;

@@ -15,6 +15,7 @@ import { asApiError } from '../../shared/paged-resource';
 import { changedMembers, overwriteBody } from './ci-common';
 import { splitValues } from './ci-model';
 import { Busy } from '../../shared/ui/busy';
+import { Help } from '../../shared/ui/help';
 
 const ALGORITHMS = ['RS256', 'RS384', 'RS512', 'PS256', 'PS384', 'PS512', 'ES256', 'ES384', 'EdDSA'] as const;
 
@@ -24,7 +25,7 @@ const toLines = (text: string): string[] => splitValues(text.replace(/,/g, '\n')
 /**
  * The settings of a CI issuer (R-UI-035, R-CI-001, R-CI-002): the create form (with the discovery and
  * key check of `validate`) and the editor of an issuer that API created. An issuer declared in the
- * system configuration is shown read-only with the configuration named as its source (Q-CI-16); so is
+ * Helm configuration is shown read-only under the mark **Helm configuration** with its help (Q-CI-16); so is
  * every issuer for a caller without `ci:write`. The save sends the full representation with the loaded
  * `ETag`; a 412 opens the conflict dialog. The 422 codes of the validation show next to the field they
  * name and as the notice of the form.
@@ -54,14 +55,14 @@ function issuerConflictFields(): Record<string, string> {
 
 @Component({
   selector: 'quader-ci-issuer-form',
-  imports: [Busy, Checkbox, ErrorNotice, Disclosure, TextField],
+  imports: [Busy, Checkbox, ErrorNotice, Disclosure, Help, TextField],
   template: `
     @if (configured()) {
-      <p class="source-note" role="note">
-        <span class="material-icons" aria-hidden="true">lock</span>
-        <span i18n="@@ci.form.configuration-source">
-          From the Helm configuration (<code translate="no">config.ci.issuers</code>): its settings are changed there. Its mappings are managed here.
-        </span>
+      <!-- An issuer of the Helm configuration (Q-CI-16): a lock and two words, what they mean behind the sign, as a declared Bastion's
+           (Q-UI-1629); its fields stay read-only fields, and Delete says why it cannot act (R-UI-270). -->
+      <p class="source" data-testid="ci-issuer-declared">
+        <span class="material-icons inline" aria-hidden="true">lock</span><span class="help-anchor">{{ helmName }}</span
+        ><quader-help [text]="declaredHelp" [about]="helmName" />
       </p>
       @if (issuer()?.removedFromConfiguration) {
         <p class="source-note warn" role="note">
@@ -199,6 +200,14 @@ function issuerConflictFields(): Record<string, string> {
   `,
   styleUrl: '../../shared/access/access.scss',
   styles: `
+    .source {
+      margin-block: var(--quader-space-2);
+      color: var(--quader-text-muted);
+      font-size: var(--quader-text-muted-size);
+    }
+    .source > .material-icons {
+      margin-inline-end: var(--quader-space-1);
+    }
     .source-note {
       display: flex;
       gap: var(--quader-space-2);
@@ -236,6 +245,8 @@ export class IssuerForm {
   private readonly session = inject(SessionStore);
 
   protected readonly algorithms = ALGORITHMS;
+  protected readonly helmName = $localize`:@@ci.form.source.helm:Helm configuration`;
+  protected readonly declaredHelp = $localize`:@@ci.form.source.helm-help:Its settings are set in config.ci.issuers of the Helm configuration and changed there. Its mappings are managed here.`;
   protected readonly yes = $localize`:@@ci.yes:yes`;
   protected readonly no = $localize`:@@ci.no:no`;
 

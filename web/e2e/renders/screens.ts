@@ -79,6 +79,7 @@ import { factsCollection, factsImage, factsNpm, factsNuget, factsNugetPlain, fac
 import { usedByMany, usedByNone, usedByTwo } from './used-by';
 import { bareRole, blockedRole, pipRole } from './roles';
 import { accountOfferWalk, registryAccountWalk } from './upstream-accounts';
+import { helmIssuer, helmRoleBinding } from './helm-fixed';
 import {
   ansibleFind,
   deepImagePath,
@@ -3941,6 +3942,8 @@ export const screens: readonly Screen[] = [
   { id: 'admin-permissions', path: '/ui/admin/permissions', kinds: admins, walk: filtersOpen() },
   { id: 'admin-permission-new', path: '/ui/admin/permissions/new', kinds: admins },
   { id: 'admin-roles', path: '/ui/admin/roles', kinds: admins, walk: principalSearch('Bind to', 'sa') },
+  // A binding of the Helm configuration: its Unbind unavailable, the reason tapped (R-UI-270, renders/helm-fixed.ts).
+  { id: 'admin-roles-helm', path: '/ui/admin/roles', kinds: admins, walk: helmRoleBinding, de: true, states: overlays('unbind') },
   { id: 'admin-tokens', path: '/ui/admin/tokens', kinds: admins, walk: filtersOpen() },
   // The usage and the download limits (R-UI-177 to R-UI-184): the administrator changes, the auditor reads.
   { id: 'admin-usage', path: '/ui/admin/usage', kinds: auditors, walk: usageWalk },
@@ -4094,6 +4097,8 @@ export const screens: readonly Screen[] = [
   { id: 'security-finding', path: '/ui/security', kinds: ['auditor'], walk: securityFinding, only: narrowAndWide },
   { id: 'admin-ci-issuer', path: `/ui/admin/ci/${ciIssuer}`, kinds: ['admin'] },
   { id: 'admin-ci-issuer-states', path: `/ui/admin/ci/${ciIssuer}`, kinds: ['admin'], walk: issuerStates, states: { ...sections, ...overlays('mapping-menu') } },
+  // The issuer as one of the Helm configuration: its mark and Delete issuer unavailable, the reason tapped (R-UI-270, renders/helm-fixed.ts).
+  { id: 'admin-ci-issuer-helm', path: `/ui/admin/ci/${ciIssuer}?tab=settings`, kinds: ['admin'], walk: helmIssuer, de: true, states: overlays('delete') },
   { id: 'admin-ci-test', path: `/ui/admin/ci/${ciIssuer}/test`, kinds: ['admin'] },
   { id: 'admin-ci-mapping', path: editorPaths.systemMapping, kinds: ['admin'] },
   { id: 'admin-ci-mapping-new', path: `/ui/admin/ci/${ciIssuer}/mappings/new`, kinds: ['admin'] },

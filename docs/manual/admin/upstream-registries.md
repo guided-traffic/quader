@@ -165,9 +165,10 @@ with it. GitHub (ghcr.io) takes a username and a classic token with `read:packag
 - **What happens at the upgrade.** The migration Job applies the account: an account an administrator had stored on the page is removed,
   and the change is in the audit log with the actor `system:configuration`. A key that names no registry here stops the upgrade with the
   key named.
-- **The page** shows "From the Helm configuration: Secret quader-upstream-docker-hub. Change or remove it there.", the authentication, the state
-  of the Secret's files on the server that answered, the last download and the last failed download, and **Test connection**. Saving or
-  removing the account there, and an address that sends it to other hosts, are refused.
+- **The page** shows the source **Helm configuration**, the Secret `quader-upstream-docker-hub` *(example)*, the authentication, the state
+  of the Secret's files on the server that answered, the last download and the last failed download, **Test connection**, and **Remove
+  account** greyed out: pointing at it or tapping it shows "Set in secrets.upstreamAccounts of the Helm configuration: change or remove
+  it there." Saving or removing the account there, and an address that sends it to other hosts, are refused.
 - **A Secret that does not exist yet** starts every pod. Every request to that registry fails with `502 upstream_secret_unavailable` until
   the Secret exists with its keys; the page says "Missing on this server" with a warning, and the log names the file's path. A wrong token
   is refused by the registry: **Test connection** says "The upstream answered and refused the credentials."

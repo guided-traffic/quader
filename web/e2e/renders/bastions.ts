@@ -132,9 +132,9 @@ function registrations(frankfurtOn: boolean): { items: Json[] } {
         name: 'partners',
         description: 'The partner network',
         enabled: true,
-        // Declared in the Helm values (R-BAS-127, Q-UI-1497 to Q-UI-1499): the lock line with the Secret, no Delete, the networks as
-        // text with the warning of its replica's unlisted address and no Add, the declared token without an expiry and without Revoke
-        // beside one issued on the screen.
+        // Declared in the Helm values (R-BAS-127, Q-UI-1497 to Q-UI-1499): the lock line with the Secret, no Delete, the networks in
+        // their fields and the warning of its replica's unlisted address with its Add, unavailable (R-UI-270), the declared token
+        // without an expiry and without Revoke beside one issued on the screen.
         declared: { since: at(-2), secretName: 'quader-bastion-token' },
         // The web interface on, but the address its replica reported is not listed: the builder stops and says why (R-BAS-104).
         switches: { handover: false, gui: true, docs: false },
@@ -404,6 +404,19 @@ export async function* bastionLimits(page: Page): AsyncGenerator<string> {
   yield 'help';
   await page.keyboard.press('Escape');
   await expect(page.locator('.cdk-overlay-container quader-tooltip')).toHaveCount(0);
+  // The declared registration's networks (R-UI-270): their field and Add address unavailable in its Details, Add address tapped, its
+  // reason pinned.
+  const declaredDetails = partners.locator('quader-bastion-limits quader-disclosure button[aria-expanded]').first();
+  await declaredDetails.click();
+  await expect(declaredDetails).toHaveAttribute('aria-expanded', 'true');
+  const addAddress = partners.locator('quader-bastion-egress .row-actions button[aria-disabled="true"]');
+  await addAddress.scrollIntoViewIfNeeded();
+  await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
+  // Playwright holds an aria-disabled control for not enabled and waits; the tap a person makes reaches it.
+  await addAddress.click({ force: true });
+  await expect(page.locator('.cdk-overlay-container quader-tooltip')).toBeVisible();
+  yield 'declared-networks';
+  await page.keyboard.press('Escape');
   await page.unroute('**/api/v1/bastions');
   await page.unroute('**/api/v1/bastions/partners/limits/assignments**');
 }

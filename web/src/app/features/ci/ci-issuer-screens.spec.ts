@@ -8,7 +8,20 @@ import { helpFor } from '../../core/help-topics';
 import { Navigation, areaItems } from '../../core/navigation';
 import { Notifier } from '../../core/notifier';
 import { SessionStore } from '../../core/session-store';
-import { buttonByText, expectAccessible, filterDrawer, openFilters, renderScreen, settle, sleep, text, type, typeInto } from '../../testing/screen';
+import {
+  buttonByText,
+  expectAccessible,
+  filterDrawer,
+  helpSigns,
+  openFilters,
+  renderScreen,
+  settle,
+  sleep,
+  text,
+  type,
+  typeInto,
+  unavailableReason,
+} from '../../testing/screen';
 import { ClaimTester } from './claim-tester';
 import { IssuancesPage } from './issuances-page';
 import { IssuerCreate, IssuerDetail } from './issuer-detail';
@@ -113,14 +126,28 @@ describe('A CI issuer (R-UI-035, R-CI-001, R-CI-002)', () => {
     await expectAccessible(root);
   });
 
-  it('R-CI-001 an issuer of the Helm configuration is read-only and names it as its source', async () => {
-    const { root, fixture } = await renderScreen(IssuerDetail, { inputs: { issuer: 'corp-gitlab', tab: 'settings' } });
+  it('R-CI-001 R-UI-270 an issuer of the Helm configuration is read-only under its mark, and Delete says why it cannot act', async () => {
+    const { root, fixture, get } = await renderScreen(IssuerDetail, { inputs: { issuer: 'corp-gitlab', tab: 'settings' } });
     await settle(fixture);
-    expect(text(root)).toContain('From the Helm configuration (config.ci.issuers): its settings are changed there.');
+    // The mark and its help, no paragraph (Q-UI-1629's pattern).
+    expect(text(root.querySelector('[data-testid="ci-issuer-declared"]')!)).toContain('Helm configuration');
+    expect(text(root)).not.toContain('its settings are changed there');
+    expect(helpSigns(root)).toContainEqual([
+      'About Helm configuration',
+      'Its settings are set in config.ci.issuers of the Helm configuration and changed there. Its mappings are managed here.',
+    ]);
     expect(root.querySelector('form')).toBeNull();
     expect(root.querySelector<HTMLInputElement>('input[name="ro-issuer"]')!.readOnly).toBe(true);
-    // Not deletable while it is still declared.
-    expect(root.textContent).not.toContain('Delete issuer');
+    // Not deletable while it is still declared: the button stands, unavailable, its reason its tooltip.
+    const remove = buttonByText(root, 'Delete issuer');
+    expect(unavailableReason(remove)).toBe(
+      'Declared in config.ci.issuers of the Helm configuration: remove it there first, then delete it here.',
+    );
+    remove.click();
+    await settle(fixture);
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(ci(get).calls.some((c) => c.startsWith('deleteIssuer'))).toBe(false);
+    await expectAccessible(root);
   });
 
   it('R-CI-001 an issuer that left the Helm configuration says it is disabled and can be deleted', async () => {
@@ -133,7 +160,7 @@ describe('A CI issuer (R-UI-035, R-CI-001, R-CI-002)', () => {
     });
     await settle(fixture);
     expect(text(root)).toContain('The issuer is no longer in the Helm configuration.');
-    expect(text(root)).toContain('Delete issuer');
+    expect(unavailableReason(buttonByText(root, 'Delete issuer'))).toBeNull();
   });
 
   it('R-UI-035 the settings of an API issuer are edited and saved with the loaded ETag', async () => {

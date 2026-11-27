@@ -16,21 +16,23 @@ import { PageHeader } from '../../shared/ui/page-header';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
 import { Loading } from '../../shared/ui/loading';
 import { Busy } from '../../shared/ui/busy';
+import { Unavailable } from '../../shared/ui/unavailable';
+import { NoValue } from '../../shared/ui/no-value';
 
 /**
  * System roles and their bindings (R-UI-024, R-AUTHZ-022). The five roles are fixed (R-AUTHZ-010);
  * each shows its capabilities and who holds it, and offers bind and unbind with `roles:write`.
- * The last administrator binding cannot be removed: the button is disabled with the reason before
- * the API would answer 409 `last_admin` (R-UI-005). A binding declared in the system configuration
- * (`source: configuration`, R-AUTHZ-010, Q-AUTHZ-170) has no unbind control and a hint where it is
- * changed, before the API would answer 409 `role_binding_managed_by_configuration`. A write
+ * The last administrator binding cannot be removed: **Unbind** is unavailable with the reason as its
+ * tooltip before the API would answer 409 `last_admin` (R-UI-005, R-UI-270). So is the **Unbind** of a
+ * binding declared in the Helm configuration (`source: configuration`, R-AUTHZ-010, Q-AUTHZ-170), its
+ * tooltip naming the key, before the API would answer 409 `role_binding_managed_by_configuration`. A write
  * answers `Quader-Authz-Epoch`; the HTTP layer sends it as `Quader-Authz-Min-Epoch` on the reads
  * that follow (R-AUTHZ-032), and the caller's own capabilities are read again because a binding
  * may have changed them.
  */
 @Component({
   selector: 'quader-role-bindings',
-  imports: [Busy, Loading, DataTable, PageHeader, TimePipe, ErrorNotice, Needs, PrincipalField],
+  imports: [Busy, Loading, DataTable, PageHeader, TimePipe, ErrorNotice, Needs, PrincipalField, Unavailable, NoValue],
   templateUrl: './role-bindings.html',
   styleUrl: '../../shared/access/access.scss',
   styles: `
@@ -114,8 +116,12 @@ export class RoleBindings {
     return b.source === 'configuration';
   }
 
-  protected hasConfigured(role: RoleName): boolean {
-    return this.holders(role).some((b) => this.fromConfiguration(b));
+  /** Why **Unbind** cannot act on the binding, its tooltip (R-UI-270); empty where it can. */
+  protected unbindReason(b: RoleBinding): string {
+    if (this.fromConfiguration(b)) {
+      return $localize`:@@roles.unbind.helm:Declared in config.authz.role_bindings of the Helm configuration: remove it there.`;
+    }
+    return this.isLastAdmin(b) ? $localize`:@@roles.last-admin:The last administrator binding cannot be removed.` : '';
   }
 
   protected draft(role: RoleName): readonly string[] {

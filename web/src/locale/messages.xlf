@@ -6104,7 +6104,7 @@
     </unit>
     <unit id="bastion.egress.empty">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-egress.ts:42,45</note>
+        <note category="location">src/app/features/bastions/bastion-egress.ts:43,46</note>
       </notes>
       <segment>
         <source>No address this Bastion connects from is listed: all its callers share one budget and one block.</source>
@@ -6112,7 +6112,7 @@
     </unit>
     <unit id="bastion.egress.unlisted">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-egress.ts:50,51</note>
+        <note category="location">src/app/features/bastions/bastion-egress.ts:51,52</note>
       </notes>
       <segment>
         <source>Its last contact came from <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ a }}"/></pc>, which is not listed: callers through it share one budget and one block.</source>
@@ -6120,7 +6120,7 @@
     </unit>
     <unit id="bastion.egress.add-contact">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-egress.ts:56,57</note>
+        <note category="location">src/app/features/bastions/bastion-egress.ts:57,58</note>
       </notes>
       <segment>
         <source>Add <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ a }}"/></pc></source>
@@ -6128,7 +6128,7 @@
     </unit>
     <unit id="bastion.egress.remove">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-egress.ts:82,83</note>
+        <note category="location">src/app/features/bastions/bastion-egress.ts:85,86</note>
       </notes>
       <segment>
         <source>Remove</source>
@@ -6136,7 +6136,7 @@
     </unit>
     <unit id="bastion.egress.add-row">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-egress.ts:93,94</note>
+        <note category="location">src/app/features/bastions/bastion-egress.ts:103,104</note>
       </notes>
       <segment>
         <source>Add address</source>
@@ -6144,7 +6144,7 @@
     </unit>
     <unit id="bastion.egress.save">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-egress.ts:95,97</note>
+        <note category="location">src/app/features/bastions/bastion-egress.ts:106,107</note>
       </notes>
       <segment>
         <source> Save changes </source>
@@ -6152,7 +6152,7 @@
     </unit>
     <unit id="bastion.egress.from-helm">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-egress.ts:102,104</note>
+        <note category="location">src/app/features/bastions/bastion-egress.ts:114,116</note>
       </notes>
       <segment>
         <source>from the Helm configuration</source>
@@ -6160,15 +6160,23 @@
     </unit>
     <unit id="bastion.egress.none">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-egress.ts:179</note>
+        <note category="location">src/app/features/bastions/bastion-egress.ts:191</note>
       </notes>
       <segment>
         <source>No address is listed.</source>
       </segment>
     </unit>
+    <unit id="bastion.egress.helm">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-egress.ts:200</note>
+      </notes>
+      <segment>
+        <source>Set in bastions.declared of the Helm configuration.</source>
+      </segment>
+    </unit>
     <unit id="bastion.egress.heading">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-egress.ts:185</note>
+        <note category="location">src/app/features/bastions/bastion-egress.ts:203</note>
       </notes>
       <segment>
         <source>Addresses this Bastion connects from</source>
@@ -6176,7 +6184,7 @@
     </unit>
     <unit id="bastion.egress.note">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-egress.ts:186</note>
+        <note category="location">src/app/features/bastions/bastion-egress.ts:204</note>
       </notes>
       <segment>
         <source>The main installation believes the caller&apos;s address a Bastion forwards only from these addresses. While none is listed, all callers count as the Bastion&apos;s own address.</source>
@@ -6184,7 +6192,7 @@
     </unit>
     <unit id="bastion.egress.field-label">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-egress.ts:229</note>
+        <note category="location">src/app/features/bastions/bastion-egress.ts:247</note>
       </notes>
       <segment>
         <source>Address or network <ph id="0" equiv="position" disp="i + 1"/> of <ph id="1" equiv="name" disp="this.bastion().name"/></source>
@@ -6192,7 +6200,7 @@
     </unit>
     <unit id="bastion.egress.saved">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-egress.ts:257</note>
+        <note category="location">src/app/features/bastions/bastion-egress.ts:275</note>
       </notes>
       <segment>
         <source>Addresses saved.</source>
@@ -6200,7 +6208,7 @@
     </unit>
     <unit id="bastion.egress.added">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-egress.ts:262</note>
+        <note category="location">src/app/features/bastions/bastion-egress.ts:280</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="address" disp="address"/> added.</source>
@@ -9156,7 +9164,7 @@
     </unit>
     <unit id="ci.issuer.heading">
       <notes>
-        <note category="location">src/app/features/ci/issuer-detail.ts:36,37</note>
+        <note category="location">src/app/features/ci/issuer-detail.ts:37,38</note>
       </notes>
       <segment>
         <source>CI issuer</source>
@@ -9164,7 +9172,7 @@
     </unit>
     <unit id="ci.issuer.test">
       <notes>
-        <note category="location">src/app/features/ci/issuer-detail.ts:37,38</note>
+        <note category="location">src/app/features/ci/issuer-detail.ts:38,39</note>
       </notes>
       <segment>
         <source>Test with claims</source>
@@ -9172,7 +9180,7 @@
     </unit>
     <unit id="ci.issuer.tab.settings">
       <notes>
-        <note category="location">src/app/features/ci/issuer-detail.ts:46</note>
+        <note category="location">src/app/features/ci/issuer-detail.ts:47</note>
       </notes>
       <segment>
         <source>Settings</source>
@@ -9180,7 +9188,7 @@
     </unit>
     <unit id="ci.issuer.advanced">
       <notes>
-        <note category="location">src/app/features/ci/issuer-detail.ts:53,54</note>
+        <note category="location">src/app/features/ci/issuer-detail.ts:54,55</note>
       </notes>
       <segment>
         <source>Advanced</source>
@@ -9188,7 +9196,7 @@
     </unit>
     <unit id="ci.issuer.advanced-hint">
       <notes>
-        <note category="location">src/app/features/ci/issuer-detail.ts:55,57</note>
+        <note category="location">src/app/features/ci/issuer-detail.ts:56,58</note>
       </notes>
       <segment>
         <source>Delete this issuer.</source>
@@ -9196,7 +9204,7 @@
     </unit>
     <unit id="ci.issuer.delete-note">
       <notes>
-        <note category="location">src/app/features/ci/issuer-detail.ts:57,58</note>
+        <note category="location">src/app/features/ci/issuer-detail.ts:58,59</note>
       </notes>
       <segment>
         <source>Deleting the issuer revokes the tokens issued through it and deletes its mappings.</source>
@@ -9204,7 +9212,7 @@
     </unit>
     <unit id="ci.issuer.delete">
       <notes>
-        <note category="location">src/app/features/ci/issuer-detail.ts:58,59</note>
+        <note category="location">src/app/features/ci/issuer-detail.ts:68,69</note>
       </notes>
       <segment>
         <source>Delete issuer</source>
@@ -9212,7 +9220,7 @@
     </unit>
     <unit id="ci.issuer.tab.keys">
       <notes>
-        <note category="location">src/app/features/ci/issuer-detail.ts:64</note>
+        <note category="location">src/app/features/ci/issuer-detail.ts:74</note>
       </notes>
       <segment>
         <source>Keys</source>
@@ -9220,7 +9228,7 @@
     </unit>
     <unit id="ci.issuer.keys">
       <notes>
-        <note category="location">src/app/features/ci/issuer-detail.ts:67,68</note>
+        <note category="location">src/app/features/ci/issuer-detail.ts:77,78</note>
       </notes>
       <segment>
         <source>Signing keys</source>
@@ -9228,7 +9236,7 @@
     </unit>
     <unit id="ci.issuer.tab.mappings">
       <notes>
-        <note category="location">src/app/features/ci/issuer-detail.ts:72</note>
+        <note category="location">src/app/features/ci/issuer-detail.ts:82</note>
       </notes>
       <segment>
         <source>Mappings</source>
@@ -9236,7 +9244,7 @@
     </unit>
     <unit id="ci.issuer.mappings">
       <notes>
-        <note category="location">src/app/features/ci/issuer-detail.ts:75,76</note>
+        <note category="location">src/app/features/ci/issuer-detail.ts:85,86</note>
       </notes>
       <segment>
         <source>Mappings</source>
@@ -9244,7 +9252,7 @@
     </unit>
     <unit id="ci.issuer.tab.issuances">
       <notes>
-        <note category="location">src/app/features/ci/issuer-detail.ts:80</note>
+        <note category="location">src/app/features/ci/issuer-detail.ts:90</note>
       </notes>
       <segment>
         <source>Issuances</source>
@@ -9252,7 +9260,7 @@
     </unit>
     <unit id="ci.issuer.issuances">
       <notes>
-        <note category="location">src/app/features/ci/issuer-detail.ts:83,84</note>
+        <note category="location">src/app/features/ci/issuer-detail.ts:93,94</note>
       </notes>
       <segment>
         <source>Issued tokens</source>
@@ -9260,15 +9268,23 @@
     </unit>
     <unit id="ci.issuer.loading">
       <notes>
-        <note category="location">src/app/features/ci/issuer-detail.ts:90,93</note>
+        <note category="location">src/app/features/ci/issuer-detail.ts:100,103</note>
       </notes>
       <segment>
         <source>Loading the issuer.</source>
       </segment>
     </unit>
+    <unit id="ci.issuer.delete.helm">
+      <notes>
+        <note category="location">src/app/features/ci/issuer-detail.ts:135</note>
+      </notes>
+      <segment>
+        <source>Declared in config.ci.issuers of the Helm configuration: remove it there first, then delete it here.</source>
+      </segment>
+    </unit>
     <unit id="ci.issuer.delete-title">
       <notes>
-        <note category="location">src/app/features/ci/issuer-detail.ts:164</note>
+        <note category="location">src/app/features/ci/issuer-detail.ts:176</note>
       </notes>
       <segment>
         <source>Delete issuer <ph id="0" equiv="name" disp="i.name"/>?</source>
@@ -9276,7 +9292,7 @@
     </unit>
     <unit id="ci.issuer.delete-text">
       <notes>
-        <note category="location">src/app/features/ci/issuer-detail.ts:166</note>
+        <note category="location">src/app/features/ci/issuer-detail.ts:178</note>
       </notes>
       <segment>
         <source>The tokens issued through this issuer are revoked at once and no job of the instance can exchange a token any more.</source>
@@ -9284,7 +9300,7 @@
     </unit>
     <unit id="ci.issuer.delete-mappings">
       <notes>
-        <note category="location">src/app/features/ci/issuer-detail.ts:168</note>
+        <note category="location">src/app/features/ci/issuer-detail.ts:180</note>
       </notes>
       <segment>
         <source>Its <ph id="0" equiv="count" disp="count"/> mappings and their principals are deleted with it.</source>
@@ -9292,7 +9308,7 @@
     </unit>
     <unit id="ci.issuer.delete-confirm">
       <notes>
-        <note category="location">src/app/features/ci/issuer-detail.ts:171</note>
+        <note category="location">src/app/features/ci/issuer-detail.ts:183</note>
       </notes>
       <segment>
         <source>Delete issuer</source>
@@ -9300,7 +9316,7 @@
     </unit>
     <unit id="ci.issuer.deleted">
       <notes>
-        <note category="location">src/app/features/ci/issuer-detail.ts:178</note>
+        <note category="location">src/app/features/ci/issuer-detail.ts:190</note>
       </notes>
       <segment>
         <source>CI issuer deleted.</source>
@@ -9308,7 +9324,7 @@
     </unit>
     <unit id="ci.create.heading">
       <notes>
-        <note category="location">src/app/features/ci/issuer-detail.ts:193</note>
+        <note category="location">src/app/features/ci/issuer-detail.ts:205</note>
       </notes>
       <segment>
         <source>New CI issuer</source>
@@ -9316,9 +9332,9 @@
     </unit>
     <unit id="ci.form.name">
       <notes>
-        <note category="location">src/app/features/ci/issuer-form.ts:35</note>
-        <note category="location">src/app/features/ci/issuer-form.ts:79</note>
-        <note category="location">src/app/features/ci/issuer-form.ts:108,109</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:36</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:80</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:109,110</note>
       </notes>
       <segment>
         <source>Name</source>
@@ -9326,9 +9342,9 @@
     </unit>
     <unit id="ci.form.issuer">
       <notes>
-        <note category="location">src/app/features/ci/issuer-form.ts:36</note>
-        <note category="location">src/app/features/ci/issuer-form.ts:81</note>
-        <note category="location">src/app/features/ci/issuer-form.ts:120,122</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:37</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:82</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:121,123</note>
       </notes>
       <segment>
         <source>Issuer URL</source>
@@ -9336,9 +9352,9 @@
     </unit>
     <unit id="ci.form.description">
       <notes>
-        <note category="location">src/app/features/ci/issuer-form.ts:37</note>
-        <note category="location">src/app/features/ci/issuer-form.ts:82</note>
-        <note category="location">src/app/features/ci/issuer-form.ts:130</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:38</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:83</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:131</note>
       </notes>
       <segment>
         <source>Description</source>
@@ -9346,8 +9362,8 @@
     </unit>
     <unit id="ci.form.enabled">
       <notes>
-        <note category="location">src/app/features/ci/issuer-form.ts:38</note>
-        <note category="location">src/app/features/ci/issuer-form.ts:83</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:39</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:84</note>
       </notes>
       <segment>
         <source>Enabled</source>
@@ -9355,8 +9371,8 @@
     </unit>
     <unit id="ci.form.audiences">
       <notes>
-        <note category="location">src/app/features/ci/issuer-form.ts:39</note>
-        <note category="location">src/app/features/ci/issuer-form.ts:84</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:40</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:85</note>
       </notes>
       <segment>
         <source>Accepted audiences</source>
@@ -9364,8 +9380,8 @@
     </unit>
     <unit id="ci.form.exclusive">
       <notes>
-        <note category="location">src/app/features/ci/issuer-form.ts:40</note>
-        <note category="location">src/app/features/ci/issuer-form.ts:85</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:41</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:86</note>
       </notes>
       <segment>
         <source>Only these audiences</source>
@@ -9373,9 +9389,9 @@
     </unit>
     <unit id="ci.form.algorithms">
       <notes>
-        <note category="location">src/app/features/ci/issuer-form.ts:41</note>
-        <note category="location">src/app/features/ci/issuer-form.ts:86</note>
-        <note category="location">src/app/features/ci/issuer-form.ts:168,169</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:42</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:87</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:169,170</note>
       </notes>
       <segment>
         <source>Signing algorithms</source>
@@ -9383,8 +9399,8 @@
     </unit>
     <unit id="ci.form.public">
       <notes>
-        <note category="location">src/app/features/ci/issuer-form.ts:42</note>
-        <note category="location">src/app/features/ci/issuer-form.ts:87</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:43</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:88</note>
       </notes>
       <segment>
         <source>Public issuer</source>
@@ -9392,8 +9408,8 @@
     </unit>
     <unit id="ci.form.pin-claims">
       <notes>
-        <note category="location">src/app/features/ci/issuer-form.ts:43</note>
-        <note category="location">src/app/features/ci/issuer-form.ts:88</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:44</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:89</note>
       </notes>
       <segment>
         <source>Pin claims</source>
@@ -9401,8 +9417,8 @@
     </unit>
     <unit id="ci.form.required-claims">
       <notes>
-        <note category="location">src/app/features/ci/issuer-form.ts:44</note>
-        <note category="location">src/app/features/ci/issuer-form.ts:89</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:45</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:90</note>
       </notes>
       <segment>
         <source>Required claims</source>
@@ -9410,9 +9426,9 @@
     </unit>
     <unit id="ci.form.skew">
       <notes>
-        <note category="location">src/app/features/ci/issuer-form.ts:45</note>
-        <note category="location">src/app/features/ci/issuer-form.ts:90</note>
-        <note category="location">src/app/features/ci/issuer-form.ts:178</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:46</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:91</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:179</note>
       </notes>
       <segment>
         <source>Clock skew (seconds)</source>
@@ -9420,9 +9436,9 @@
     </unit>
     <unit id="ci.form.max-ttl">
       <notes>
-        <note category="location">src/app/features/ci/issuer-form.ts:46</note>
-        <note category="location">src/app/features/ci/issuer-form.ts:91</note>
-        <note category="location">src/app/features/ci/issuer-form.ts:179</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:47</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:92</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:180</note>
       </notes>
       <segment>
         <source>Maximum token lifetime (seconds)</source>
@@ -9430,9 +9446,9 @@
     </unit>
     <unit id="ci.form.discovery">
       <notes>
-        <note category="location">src/app/features/ci/issuer-form.ts:47</note>
-        <note category="location">src/app/features/ci/issuer-form.ts:92</note>
-        <note category="location">src/app/features/ci/issuer-form.ts:165</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:48</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:93</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:166</note>
       </notes>
       <segment>
         <source>Discovery document</source>
@@ -9440,9 +9456,9 @@
     </unit>
     <unit id="ci.form.jwks">
       <notes>
-        <note category="location">src/app/features/ci/issuer-form.ts:48</note>
-        <note category="location">src/app/features/ci/issuer-form.ts:93</note>
-        <note category="location">src/app/features/ci/issuer-form.ts:166</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:49</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:94</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:167</note>
       </notes>
       <segment>
         <source>Key set URL</source>
@@ -9450,9 +9466,9 @@
     </unit>
     <unit id="ci.form.ca">
       <notes>
-        <note category="location">src/app/features/ci/issuer-form.ts:49</note>
-        <note category="location">src/app/features/ci/issuer-form.ts:94</note>
-        <note category="location">src/app/features/ci/issuer-form.ts:182</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:50</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:95</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:183</note>
       </notes>
       <segment>
         <source>CA bundle</source>
@@ -9460,8 +9476,8 @@
     </unit>
     <unit id="ci.form.proxy">
       <notes>
-        <note category="location">src/app/features/ci/issuer-form.ts:50</note>
-        <note category="location">src/app/features/ci/issuer-form.ts:95</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:51</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:96</note>
       </notes>
       <segment>
         <source>Outbound proxy</source>
@@ -9469,24 +9485,16 @@
     </unit>
     <unit id="ci.form.single-use">
       <notes>
-        <note category="location">src/app/features/ci/issuer-form.ts:51</note>
-        <note category="location">src/app/features/ci/issuer-form.ts:180,181</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:52</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:181,182</note>
       </notes>
       <segment>
         <source>Reject a second exchange of the same ID token</source>
       </segment>
     </unit>
-    <unit id="ci.form.configuration-source">
-      <notes>
-        <note category="location">src/app/features/ci/issuer-form.ts:63,65</note>
-      </notes>
-      <segment>
-        <source> From the Helm configuration (<pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">config.ci.issuers</pc>): its settings are changed there. Its mappings are managed here. </source>
-      </segment>
-    </unit>
     <unit id="ci.form.removed">
       <notes>
-        <note category="location">src/app/features/ci/issuer-form.ts:70,72</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:71,73</note>
       </notes>
       <segment>
         <source> The issuer is no longer in the Helm configuration. It is disabled and kept, so its mappings and issued tokens stay; you can delete it now. </source>
@@ -9494,7 +9502,7 @@
     </unit>
     <unit id="ci.form.kind">
       <notes>
-        <note category="location">src/app/features/ci/issuer-form.ts:80</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:81</note>
       </notes>
       <segment>
         <source>Kind</source>
@@ -9502,7 +9510,7 @@
     </unit>
     <unit id="ci.form.name-hint">
       <notes>
-        <note category="location">src/app/features/ci/issuer-form.ts:113,115</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:114,116</note>
       </notes>
       <segment>
         <source>Lower-case letters, digits, dot, underscore and hyphen. It cannot be changed later.</source>
@@ -9510,7 +9518,7 @@
     </unit>
     <unit id="ci.form.kind-note">
       <notes>
-        <note category="location">src/app/features/ci/issuer-form.ts:115,117</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:116,118</note>
       </notes>
       <segment>
         <source>Kind: GitLab. GitHub Actions and generic OpenID Connect issuers are not available yet.</source>
@@ -9518,7 +9526,7 @@
     </unit>
     <unit id="ci.form.issuer-hint">
       <notes>
-        <note category="location">src/app/features/ci/issuer-form.ts:128,130</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:129,131</note>
       </notes>
       <segment>
         <source>The base URL of the GitLab instance, https only. It must match the iss claim exactly.</source>
@@ -9526,7 +9534,7 @@
     </unit>
     <unit id="ci.form.enabled-check">
       <notes>
-        <note category="location">src/app/features/ci/issuer-form.ts:131,132</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:132,133</note>
       </notes>
       <segment>
         <source>Enabled (disabling revokes the tokens issued through this issuer)</source>
@@ -9534,7 +9542,7 @@
     </unit>
     <unit id="ci.form.audiences-lines">
       <notes>
-        <note category="location">src/app/features/ci/issuer-form.ts:135,137</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:136,138</note>
       </notes>
       <segment>
         <source>Accepted audiences</source>
@@ -9542,7 +9550,7 @@
     </unit>
     <unit id="ci.form.audiences-hint">
       <notes>
-        <note category="location">src/app/features/ci/issuer-form.ts:141,143</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:142,144</note>
       </notes>
       <segment>
         <source>One per line. Empty: the base URL of this server and npm:host.</source>
@@ -9550,7 +9558,7 @@
     </unit>
     <unit id="ci.form.public-check">
       <notes>
-        <note category="location">src/app/features/ci/issuer-form.ts:143,144</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:144,145</note>
       </notes>
       <segment>
         <source>Public issuer (anyone can obtain tokens from it, such as GitLab.com): mappings must pin a project or namespace ID</source>
@@ -9558,7 +9566,7 @@
     </unit>
     <unit id="ci.form.pin-lines">
       <notes>
-        <note category="location">src/app/features/ci/issuer-form.ts:150,152</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:151,153</note>
       </notes>
       <segment>
         <source>Pin claims</source>
@@ -9566,7 +9574,7 @@
     </unit>
     <unit id="ci.form.pin-hint">
       <notes>
-        <note category="location">src/app/features/ci/issuer-form.ts:156,159</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:157,160</note>
       </notes>
       <segment>
         <source>One per line. Immutable ID claims only. Empty: project_id, namespace_id, job_project_id and job_namespace_id.</source>
@@ -9574,7 +9582,7 @@
     </unit>
     <unit id="ci.form.advanced">
       <notes>
-        <note category="location">src/app/features/ci/issuer-form.ts:161,162</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:162,163</note>
       </notes>
       <segment>
         <source>More settings</source>
@@ -9582,7 +9590,7 @@
     </unit>
     <unit id="ci.form.advanced-hint">
       <notes>
-        <note category="location">src/app/features/ci/issuer-form.ts:163,165</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:164,166</note>
       </notes>
       <segment>
         <source>Discovery, algorithms, claims, lifetimes and the connection to the issuer.</source>
@@ -9590,7 +9598,7 @@
     </unit>
     <unit id="ci.form.discovery-hint">
       <notes>
-        <note category="location">src/app/features/ci/issuer-form.ts:165,166</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:166,167</note>
       </notes>
       <segment>
         <source>Empty: the issuer URL followed by /.well-known/openid-configuration</source>
@@ -9598,7 +9606,7 @@
     </unit>
     <unit id="ci.form.jwks-hint">
       <notes>
-        <note category="location">src/app/features/ci/issuer-form.ts:166,167</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:167,168</note>
       </notes>
       <segment>
         <source>Empty: the jwks_uri of the discovery document</source>
@@ -9606,7 +9614,7 @@
     </unit>
     <unit id="ci.form.exclusive-check">
       <notes>
-        <note category="location">src/app/features/ci/issuer-form.ts:176,177</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:177,178</note>
       </notes>
       <segment>
         <source>Accept only tokens whose audience is in the list above</source>
@@ -9614,7 +9622,7 @@
     </unit>
     <unit id="ci.form.required-lines">
       <notes>
-        <note category="location">src/app/features/ci/issuer-form.ts:177</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:178</note>
       </notes>
       <segment>
         <source>Required claims</source>
@@ -9622,7 +9630,7 @@
     </unit>
     <unit id="ci.form.required-hint">
       <notes>
-        <note category="location">src/app/features/ci/issuer-form.ts:177,178</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:178,179</note>
       </notes>
       <segment>
         <source>One per line. Empty: the preset of the kind.</source>
@@ -9630,7 +9638,7 @@
     </unit>
     <unit id="ci.form.skew-hint">
       <notes>
-        <note category="location">src/app/features/ci/issuer-form.ts:178,179</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:179,180</note>
       </notes>
       <segment>
         <source>0 to 300</source>
@@ -9638,7 +9646,7 @@
     </unit>
     <unit id="ci.form.max-ttl-hint">
       <notes>
-        <note category="location">src/app/features/ci/issuer-form.ts:179,180</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:180,181</note>
       </notes>
       <segment>
         <source>Empty: only the global maximum applies</source>
@@ -9646,7 +9654,7 @@
     </unit>
     <unit id="ci.form.proxy-check">
       <notes>
-        <note category="location">src/app/features/ci/issuer-form.ts:181,182</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:182,183</note>
       </notes>
       <segment>
         <source>Fetch discovery and keys through the outbound proxy</source>
@@ -9654,7 +9662,7 @@
     </unit>
     <unit id="ci.form.ca-hint">
       <notes>
-        <note category="location">src/app/features/ci/issuer-form.ts:182,183</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:183,184</note>
       </notes>
       <segment>
         <source>A reference such as file:/path or env:NAME, for an instance behind a private CA</source>
@@ -9662,7 +9670,7 @@
     </unit>
     <unit id="ci.form.validate">
       <notes>
-        <note category="location">src/app/features/ci/issuer-form.ts:186,188</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:187,189</note>
       </notes>
       <segment>
         <source>Check the discovery document and the keys before saving</source>
@@ -9670,7 +9678,7 @@
     </unit>
     <unit id="ci.form.create">
       <notes>
-        <note category="location">src/app/features/ci/issuer-form.ts:191,192</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:192,193</note>
       </notes>
       <segment>
         <source>Create issuer</source>
@@ -9678,15 +9686,31 @@
     </unit>
     <unit id="ci.form.save-changes">
       <notes>
-        <note category="location">src/app/features/ci/issuer-form.ts:193,195</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:194,196</note>
       </notes>
       <segment>
         <source>Save changes</source>
       </segment>
     </unit>
+    <unit id="ci.form.source.helm">
+      <notes>
+        <note category="location">src/app/features/ci/issuer-form.ts:248</note>
+      </notes>
+      <segment>
+        <source>Helm configuration</source>
+      </segment>
+    </unit>
+    <unit id="ci.form.source.helm-help">
+      <notes>
+        <note category="location">src/app/features/ci/issuer-form.ts:249</note>
+      </notes>
+      <segment>
+        <source>Its settings are set in config.ci.issuers of the Helm configuration and changed there. Its mappings are managed here.</source>
+      </segment>
+    </unit>
     <unit id="ci.yes">
       <notes>
-        <note category="location">src/app/features/ci/issuer-form.ts:239</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:250</note>
         <note category="location">src/app/features/ci/project-ci.ts:80</note>
       </notes>
       <segment>
@@ -9695,7 +9719,7 @@
     </unit>
     <unit id="ci.no">
       <notes>
-        <note category="location">src/app/features/ci/issuer-form.ts:240</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:251</note>
         <note category="location">src/app/features/ci/project-ci.ts:81</note>
       </notes>
       <segment>
@@ -9704,7 +9728,7 @@
     </unit>
     <unit id="ci.form.name-invalid">
       <notes>
-        <note category="location">src/app/features/ci/issuer-form.ts:271</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:282</note>
       </notes>
       <segment>
         <source>Use two to 64 characters: lower-case letters, digits, dot, underscore or hyphen, starting with a letter or digit.</source>
@@ -9712,7 +9736,7 @@
     </unit>
     <unit id="ci.form.url-invalid">
       <notes>
-        <note category="location">src/app/features/ci/issuer-form.ts:276</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:287</note>
       </notes>
       <segment>
         <source>The issuer URL must be an https URL.</source>
@@ -9720,7 +9744,7 @@
     </unit>
     <unit id="ci.form.draft-restored">
       <notes>
-        <note category="location">src/app/features/ci/issuer-form.ts:323</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:334</note>
       </notes>
       <segment>
         <source>Your entries were restored. Save the issuer again.</source>
@@ -9728,7 +9752,7 @@
     </unit>
     <unit id="ci.form.created">
       <notes>
-        <note category="location">src/app/features/ci/issuer-form.ts:396</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:407</note>
       </notes>
       <segment>
         <source>CI issuer created.</source>
@@ -9736,7 +9760,7 @@
     </unit>
     <unit id="ci.form.saved">
       <notes>
-        <note category="location">src/app/features/ci/issuer-form.ts:416</note>
+        <note category="location">src/app/features/ci/issuer-form.ts:427</note>
       </notes>
       <segment>
         <source>CI issuer saved.</source>
@@ -11919,7 +11943,7 @@
         <note category="location">src/app/features/repositories/repository-signatures.ts:212,214</note>
         <note category="location">src/app/features/repositories/repository-syncs.ts:103,105</note>
         <note category="location">src/app/features/upstream/upstream-registry.html:347,349</note>
-        <note category="location">src/app/features/upstream/upstream-registry.html:451,453</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:454,456</note>
       </notes>
       <segment>
         <source>Discard changes</source>
@@ -20152,8 +20176,8 @@
         <note category="location">src/app/features/repositories/upstream-settings.ts:70</note>
         <note category="location">src/app/features/repositories/upstream-settings.ts:200,202</note>
         <note category="location">src/app/features/upstream/account-again-dialog.ts:35,36</note>
-        <note category="location">src/app/features/upstream/upstream-registry.html:384,385</note>
-        <note category="location">src/app/features/upstream/upstream-registry.html:415,416</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:387,388</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:418,419</note>
       </notes>
       <segment>
         <source>Authentication</source>
@@ -20165,7 +20189,7 @@
         <note category="location">src/app/features/repositories/upstream-settings.ts:71</note>
         <note category="location">src/app/features/repositories/upstream-settings.ts:218,220</note>
         <note category="location">src/app/features/upstream/account-again-dialog.ts:42</note>
-        <note category="location">src/app/features/upstream/upstream-registry.html:422</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:425</note>
       </notes>
       <segment>
         <source>Username</source>
@@ -20177,7 +20201,7 @@
         <note category="location">src/app/features/repositories/upstream-settings.ts:72</note>
         <note category="location">src/app/features/repositories/upstream-settings.ts:237,239</note>
         <note category="location">src/app/features/upstream/account-again-dialog.ts:51,52</note>
-        <note category="location">src/app/features/upstream/upstream-registry.html:432,433</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:435,436</note>
       </notes>
       <segment>
         <source>Password or token</source>
@@ -26003,7 +26027,7 @@
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.html:105,106</note>
         <note category="location">src/app/features/repositories/repository-visibility.ts:44,45</note>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:206</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:208</note>
       </notes>
       <segment>
         <source>Visibility</source>
@@ -26179,8 +26203,8 @@
     <unit id="repo.settings.details">
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.html:480</note>
-        <note category="location">src/app/features/upstream/upstream-registry.html:482</note>
-        <note category="location">src/app/features/upstream/upstream-registry.html:501</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:493</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:512</note>
       </notes>
       <segment>
         <source>Details</source>
@@ -26213,7 +26237,7 @@
     <unit id="repo.detail.created">
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.html:495,496</note>
-        <note category="location">src/app/features/upstream/upstream-registry.html:530,531</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:541,542</note>
       </notes>
       <segment>
         <source>Created</source>
@@ -26222,7 +26246,7 @@
     <unit id="repo.detail.updated">
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.html:499,500</note>
-        <note category="location">src/app/features/upstream/upstream-registry.html:534,535</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:545,546</note>
       </notes>
       <segment>
         <source>Last changed</source>
@@ -27729,7 +27753,7 @@
     <unit id="upstream.password.stored">
       <notes>
         <note category="location">src/app/features/repositories/upstream-settings.ts:253,255</note>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:674</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:679</note>
       </notes>
       <segment>
         <source>A password is stored and is not shown. Leave the field empty to keep it; type one to replace it.</source>
@@ -27762,7 +27786,7 @@
     <unit id="upstream.test">
       <notes>
         <note category="location">src/app/features/repositories/upstream-settings.ts:293,294</note>
-        <note category="location">src/app/features/upstream/upstream-registry.html:447,448</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:450,451</note>
       </notes>
       <segment>
         <source>Test connection</source>
@@ -27779,7 +27803,7 @@
     <unit id="upstream.test.running">
       <notes>
         <note category="location">src/app/features/repositories/upstream-settings.ts:303,305</note>
-        <note category="location">src/app/features/upstream/upstream-registry.html:461,463</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:472,474</note>
       </notes>
       <segment>
         <source>Testing the connection.</source>
@@ -27882,7 +27906,7 @@
     <unit id="upstream.credential-hosts">
       <notes>
         <note category="location">src/app/features/repositories/upstream-settings.ts:639</note>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:319</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:324</note>
       </notes>
       <segment>
         <source>The credential is sent to <ph id="0" equiv="hosts" disp="list"/>.</source>
@@ -31383,7 +31407,7 @@
     </unit>
     <unit id="roles.source-configuration">
       <notes>
-        <note category="location">src/app/features/roles/role-bindings.html:37,39</note>
+        <note category="location">src/app/features/roles/role-bindings.html:44,46</note>
       </notes>
       <segment>
         <source>Helm configuration</source>
@@ -31391,47 +31415,23 @@
     </unit>
     <unit id="roles.source-api">
       <notes>
-        <note category="location">src/app/features/roles/role-bindings.html:39,41</note>
+        <note category="location">src/app/features/roles/role-bindings.html:46,48</note>
       </notes>
       <segment>
         <source>API</source>
       </segment>
     </unit>
-    <unit id="roles.managed-by-configuration">
-      <notes>
-        <note category="location">src/app/features/roles/role-bindings.html:45,47</note>
-      </notes>
-      <segment>
-        <source>Managed in the Helm configuration</source>
-      </segment>
-    </unit>
     <unit id="roles.unbind-button">
       <notes>
-        <note category="location">src/app/features/roles/role-bindings.html:53,54</note>
+        <note category="location">src/app/features/roles/role-bindings.html:58,59</note>
       </notes>
       <segment>
         <source>Unbind</source>
       </segment>
     </unit>
-    <unit id="roles.last-admin">
-      <notes>
-        <note category="location">src/app/features/roles/role-bindings.html:63,65</note>
-      </notes>
-      <segment>
-        <source>The last administrator binding cannot be removed.</source>
-      </segment>
-    </unit>
-    <unit id="roles.configuration-hint">
-      <notes>
-        <note category="location">src/app/features/roles/role-bindings.html:67,69</note>
-      </notes>
-      <segment>
-        <source> Bindings from the Helm configuration are declared in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">config.authz.role_bindings</pc> and applied at every install and upgrade; change or remove them there. </source>
-      </segment>
-    </unit>
     <unit id="roles.bind-principal">
       <notes>
-        <note category="location">src/app/features/roles/role-bindings.html:78</note>
+        <note category="location">src/app/features/roles/role-bindings.html:73</note>
       </notes>
       <segment>
         <source>Bind to</source>
@@ -31439,7 +31439,7 @@
     </unit>
     <unit id="roles.bind-hint">
       <notes>
-        <note category="location">src/app/features/roles/role-bindings.html:85,87</note>
+        <note category="location">src/app/features/roles/role-bindings.html:80,82</note>
       </notes>
       <segment>
         <source>A user, a group or a service account: type its name.</source>
@@ -31447,7 +31447,7 @@
     </unit>
     <unit id="roles.bind-button">
       <notes>
-        <note category="location">src/app/features/roles/role-bindings.html:88,89</note>
+        <note category="location">src/app/features/roles/role-bindings.html:83,84</note>
       </notes>
       <segment>
         <source>Bind</source>
@@ -31455,7 +31455,7 @@
     </unit>
     <unit id="roles.loading">
       <notes>
-        <note category="location">src/app/features/roles/role-bindings.html:96,98</note>
+        <note category="location">src/app/features/roles/role-bindings.html:91,93</note>
       </notes>
       <segment>
         <source>Loading roles.</source>
@@ -31463,7 +31463,7 @@
     </unit>
     <unit id="roles.principal">
       <notes>
-        <note category="location">src/app/features/roles/role-bindings.ts:78</note>
+        <note category="location">src/app/features/roles/role-bindings.ts:80</note>
       </notes>
       <segment>
         <source>Principal</source>
@@ -31471,7 +31471,7 @@
     </unit>
     <unit id="roles.granted-at">
       <notes>
-        <note category="location">src/app/features/roles/role-bindings.ts:79</note>
+        <note category="location">src/app/features/roles/role-bindings.ts:81</note>
       </notes>
       <segment>
         <source>Granted</source>
@@ -31479,7 +31479,7 @@
     </unit>
     <unit id="roles.granted-by">
       <notes>
-        <note category="location">src/app/features/roles/role-bindings.ts:80</note>
+        <note category="location">src/app/features/roles/role-bindings.ts:82</note>
       </notes>
       <segment>
         <source>Granted by</source>
@@ -31487,7 +31487,7 @@
     </unit>
     <unit id="roles.source">
       <notes>
-        <note category="location">src/app/features/roles/role-bindings.ts:81</note>
+        <note category="location">src/app/features/roles/role-bindings.ts:83</note>
       </notes>
       <segment>
         <source>Source</source>
@@ -31495,7 +31495,7 @@
     </unit>
     <unit id="roles.actions">
       <notes>
-        <note category="location">src/app/features/roles/role-bindings.ts:82</note>
+        <note category="location">src/app/features/roles/role-bindings.ts:84</note>
       </notes>
       <segment>
         <source>Actions</source>
@@ -31503,15 +31503,31 @@
     </unit>
     <unit id="roles.holders-caption">
       <notes>
-        <note category="location">src/app/features/roles/role-bindings.ts:85</note>
+        <note category="location">src/app/features/roles/role-bindings.ts:87</note>
       </notes>
       <segment>
         <source>Principals that hold the role <ph id="0" equiv="role" disp="role"/></source>
       </segment>
     </unit>
+    <unit id="roles.unbind.helm">
+      <notes>
+        <note category="location">src/app/features/roles/role-bindings.ts:122</note>
+      </notes>
+      <segment>
+        <source>Declared in config.authz.role_bindings of the Helm configuration: remove it there.</source>
+      </segment>
+    </unit>
+    <unit id="roles.last-admin">
+      <notes>
+        <note category="location">src/app/features/roles/role-bindings.ts:124</note>
+      </notes>
+      <segment>
+        <source>The last administrator binding cannot be removed.</source>
+      </segment>
+    </unit>
     <unit id="roles.bound">
       <notes>
-        <note category="location">src/app/features/roles/role-bindings.ts:146</note>
+        <note category="location">src/app/features/roles/role-bindings.ts:152</note>
       </notes>
       <segment>
         <source>Role bound.</source>
@@ -31519,7 +31535,7 @@
     </unit>
     <unit id="roles.unbind-title">
       <notes>
-        <note category="location">src/app/features/roles/role-bindings.ts:151</note>
+        <note category="location">src/app/features/roles/role-bindings.ts:157</note>
       </notes>
       <segment>
         <source>Unbind this role?</source>
@@ -31527,7 +31543,7 @@
     </unit>
     <unit id="roles.unbind-text">
       <notes>
-        <note category="location">src/app/features/roles/role-bindings.ts:152</note>
+        <note category="location">src/app/features/roles/role-bindings.ts:158</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="role" disp="b.role"/> will no longer apply to <ph id="1" equiv="principal" disp="b.principal"/>.</source>
@@ -31535,7 +31551,7 @@
     </unit>
     <unit id="roles.unbind">
       <notes>
-        <note category="location">src/app/features/roles/role-bindings.ts:153</note>
+        <note category="location">src/app/features/roles/role-bindings.ts:159</note>
       </notes>
       <segment>
         <source>Unbind</source>
@@ -31543,7 +31559,7 @@
     </unit>
     <unit id="roles.unbound">
       <notes>
-        <note category="location">src/app/features/roles/role-bindings.ts:156</note>
+        <note category="location">src/app/features/roles/role-bindings.ts:162</note>
       </notes>
       <segment>
         <source>Role unbound.</source>
@@ -35362,7 +35378,7 @@
         <note category="location">src/app/features/settings/signing-dialogs.ts:94,96</note>
         <note category="location">src/app/features/settings/signing-dialogs.ts:221,222</note>
         <note category="location">src/app/features/settings/signing-dialogs.ts:339,340</note>
-        <note category="location">src/app/features/settings/signing-identity.html:185,186</note>
+        <note category="location">src/app/features/settings/signing-identity.html:184,185</note>
       </notes>
       <segment>
         <source>More options</source>
@@ -35429,7 +35445,7 @@
     <unit id="signing.key.heading">
       <notes>
         <note category="location">src/app/features/settings/signing-dialogs.ts:134</note>
-        <note category="location">src/app/features/settings/signing-identity.html:180,184</note>
+        <note category="location">src/app/features/settings/signing-identity.html:179,183</note>
       </notes>
       <segment>
         <source>Create signing key</source>
@@ -35438,7 +35454,7 @@
     <unit id="signing.cert.heading">
       <notes>
         <note category="location">src/app/features/settings/signing-dialogs.ts:211,212</note>
-        <note category="location">src/app/features/settings/signing-identity.html:174,175</note>
+        <note category="location">src/app/features/settings/signing-identity.html:173,174</note>
       </notes>
       <segment>
         <source>Upload certificate</source>
@@ -35490,7 +35506,7 @@
     <unit id="signing.import.heading">
       <notes>
         <note category="location">src/app/features/settings/signing-dialogs.ts:297,298</note>
-        <note category="location">src/app/features/settings/signing-identity.html:189,191</note>
+        <note category="location">src/app/features/settings/signing-identity.html:188,190</note>
       </notes>
       <segment>
         <source>Import key and certificate</source>
@@ -35547,7 +35563,7 @@
     <unit id="signing.fact.subject">
       <notes>
         <note category="location">src/app/features/settings/signing-identity.html:4,5</note>
-        <note category="location">src/app/features/settings/signing-identity.html:156,157</note>
+        <note category="location">src/app/features/settings/signing-identity.html:155,156</note>
       </notes>
       <segment>
         <source>Subject</source>
@@ -35588,7 +35604,7 @@
     <unit id="signing.expired">
       <notes>
         <note category="location">src/app/features/settings/signing-identity.html:24,25</note>
-        <note category="location">src/app/features/settings/signing-identity.html:216,218</note>
+        <note category="location">src/app/features/settings/signing-identity.html:215,217</note>
       </notes>
       <segment>
         <source>expired</source>
@@ -35670,23 +35686,15 @@
     <unit id="signing.uploaded-by">
       <notes>
         <note category="location">src/app/features/settings/signing-identity.html:92</note>
-        <note category="location">src/app/features/settings/signing-identity.html:162</note>
+        <note category="location">src/app/features/settings/signing-identity.html:161</note>
       </notes>
       <segment>
         <source>by</source>
       </segment>
     </unit>
-    <unit id="signing.helm-note">
-      <notes>
-        <note category="location">src/app/features/settings/signing-identity.html:97,100</note>
-      </notes>
-      <segment>
-        <source>Change it there; nothing here changes it.</source>
-      </segment>
-    </unit>
     <unit id="signing.download-chain">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.html:102,103</note>
+        <note category="location">src/app/features/settings/signing-identity.html:101,102</note>
       </notes>
       <segment>
         <source>Download chain</source>
@@ -35694,8 +35702,8 @@
     </unit>
     <unit id="signing.download-root">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.html:103,105</note>
-        <note category="location">src/app/features/settings/signing-identity.html:197,200</note>
+        <note category="location">src/app/features/settings/signing-identity.html:102,103</note>
+        <note category="location">src/app/features/settings/signing-identity.html:196,199</note>
       </notes>
       <segment>
         <source>Download trusted root</source>
@@ -35703,7 +35711,7 @@
     </unit>
     <unit id="signing.replace">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.html:105,107</note>
+        <note category="location">src/app/features/settings/signing-identity.html:104,106</note>
       </notes>
       <segment>
         <source>Replace</source>
@@ -35711,7 +35719,7 @@
     </unit>
     <unit id="signing.remove">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.html:108,111</note>
+        <note category="location">src/app/features/settings/signing-identity.html:107,110</note>
       </notes>
       <segment>
         <source>Remove</source>
@@ -35719,7 +35727,7 @@
     </unit>
     <unit id="signing.announced">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.html:112,113</note>
+        <note category="location">src/app/features/settings/signing-identity.html:111,112</note>
       </notes>
       <segment>
         <source>Announced</source>
@@ -35727,7 +35735,7 @@
     </unit>
     <unit id="signing.announced-text">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.html:114,116</note>
+        <note category="location">src/app/features/settings/signing-identity.html:113,115</note>
       </notes>
       <segment>
         <source> npm&apos;s keys list this identity already, so that caches learn it before it signs. Until the switch the current identity signs. </source>
@@ -35735,24 +35743,24 @@
     </unit>
     <unit id="signing.source.configuration">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.html:120</note>
+        <note category="location">src/app/features/settings/signing-identity.html:119</note>
         <note category="location">src/app/shared/signatures/signing-words.ts:101</note>
       </notes>
       <segment>
         <source>From the Helm configuration</source>
       </segment>
     </unit>
-    <unit id="signing.managed-none">
+    <unit id="signing.managed-waiting">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.html:121,124</note>
+        <note category="location">src/app/features/settings/signing-identity.html:120,123</note>
       </notes>
       <segment>
-        <source>the Helm configuration names the signing identity, and Quader signs nothing until a pair of its files passes the checks.</source>
+        <source>Quader signs nothing until a pair of its files passes the checks.</source>
       </segment>
     </unit>
     <unit id="signing.none">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.html:126,131</note>
+        <note category="location">src/app/features/settings/signing-identity.html:125,130</note>
       </notes>
       <segment>
         <source> No signing identity: Quader signs nothing. Packages of local npm repositories carry no registry signature, and no artifact gets a receipt attestation. </source>
@@ -35760,7 +35768,7 @@
     </unit>
     <unit id="signing.backlog.idle">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.html:135,137</note>
+        <note category="location">src/app/features/settings/signing-identity.html:134,136</note>
       </notes>
       <segment>
         <source>Nothing waits to be signed.</source>
@@ -35768,7 +35776,7 @@
     </unit>
     <unit id="signing.backlog.due">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.html:138</note>
+        <note category="location">src/app/features/settings/signing-identity.html:137</note>
       </notes>
       <segment>
         <source>Waiting to be signed:</source>
@@ -35776,7 +35784,7 @@
     </unit>
     <unit id="signing.backlog.npm">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.html:139,140</note>
+        <note category="location">src/app/features/settings/signing-identity.html:138,139</note>
       </notes>
       <segment>
         <source>{VAR_PLURAL, plural, =1 {1 npm version} other {<ph id="0" equiv="INTERPOLATION"/> npm versions}}</source>
@@ -35784,7 +35792,7 @@
     </unit>
     <unit id="signing.backlog.and">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.html:140</note>
+        <note category="location">src/app/features/settings/signing-identity.html:139</note>
       </notes>
       <segment>
         <source>and</source>
@@ -35792,7 +35800,7 @@
     </unit>
     <unit id="signing.backlog.receipts">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.html:141,142</note>
+        <note category="location">src/app/features/settings/signing-identity.html:140,141</note>
       </notes>
       <segment>
         <source>{VAR_PLURAL, plural, =1 {1 receipt attestation} other {<ph id="0" equiv="INTERPOLATION"/> receipt attestations}}</source>
@@ -35800,7 +35808,7 @@
     </unit>
     <unit id="signing.backlog.oldest">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.html:142</note>
+        <note category="location">src/app/features/settings/signing-identity.html:141</note>
       </notes>
       <segment>
         <source>the oldest since</source>
@@ -35808,7 +35816,7 @@
     </unit>
     <unit id="signing.backlog.failed">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.html:145,147</note>
+        <note category="location">src/app/features/settings/signing-identity.html:144,146</note>
       </notes>
       <segment>
         <source>{VAR_PLURAL, plural, =1 {1 reached its last attempt; the job tries again once a day.} other {<ph id="0" equiv="INTERPOLATION"/> reached their last attempt; the job tries again once a day.}}</source>
@@ -35816,7 +35824,7 @@
     </unit>
     <unit id="signing.request">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.html:154,155</note>
+        <note category="location">src/app/features/settings/signing-identity.html:153,154</note>
       </notes>
       <segment>
         <source>Certificate request</source>
@@ -35824,7 +35832,7 @@
     </unit>
     <unit id="signing.fact.requested">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.html:158,160</note>
+        <note category="location">src/app/features/settings/signing-identity.html:157,159</note>
       </notes>
       <segment>
         <source>Key made</source>
@@ -35832,7 +35840,7 @@
     </unit>
     <unit id="signing.request-hint">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.html:171,173</note>
+        <note category="location">src/app/features/settings/signing-identity.html:170,172</note>
       </notes>
       <segment>
         <source>Have your company&apos;s CA issue a code-signing certificate for this request, then upload it with its chain.</source>
@@ -35840,7 +35848,7 @@
     </unit>
     <unit id="signing.discard">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.html:175,178</note>
+        <note category="location">src/app/features/settings/signing-identity.html:174,177</note>
       </notes>
       <segment>
         <source>Discard</source>
@@ -35848,7 +35856,7 @@
     </unit>
     <unit id="signing.import.note">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.html:187,189</note>
+        <note category="location">src/app/features/settings/signing-identity.html:186,188</note>
       </notes>
       <segment>
         <source> For a CA that hands out the key and the certificate together, or a key moved from another installation. </source>
@@ -35856,7 +35864,7 @@
     </unit>
     <unit id="signing.prev">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.html:194</note>
+        <note category="location">src/app/features/settings/signing-identity.html:193</note>
       </notes>
       <segment>
         <source>Previous identities</source>
@@ -35864,7 +35872,7 @@
     </unit>
     <unit id="signing.unused">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.html:208,210</note>
+        <note category="location">src/app/features/settings/signing-identity.html:207,209</note>
       </notes>
       <segment>
         <source>Not in use: the Helm configuration names the signing identity</source>
@@ -35872,7 +35880,7 @@
     </unit>
     <unit id="signing.retire">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.html:230</note>
+        <note category="location">src/app/features/settings/signing-identity.html:229</note>
       </notes>
       <segment>
         <source>Retire</source>
@@ -35880,15 +35888,23 @@
     </unit>
     <unit id="signing.loading">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.html:240,242</note>
+        <note category="location">src/app/features/settings/signing-identity.html:239,241</note>
       </notes>
       <segment>
         <source>Loading the signing identity.</source>
       </segment>
     </unit>
+    <unit id="signing.helm-fixed">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.ts:160</note>
+      </notes>
+      <segment>
+        <source>Set in signing.identity of the Helm configuration: change or remove it there.</source>
+      </segment>
+    </unit>
     <unit id="signing.prev.col.identity">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:179</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:191</note>
       </notes>
       <segment>
         <source>Identity</source>
@@ -35896,7 +35912,7 @@
     </unit>
     <unit id="signing.prev.col.source">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:180</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:192</note>
       </notes>
       <segment>
         <source>Source</source>
@@ -35904,7 +35920,7 @@
     </unit>
     <unit id="signing.prev.col.until">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:181</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:193</note>
       </notes>
       <segment>
         <source>Valid until</source>
@@ -35912,7 +35928,7 @@
     </unit>
     <unit id="signing.prev.col.signed">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:182</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:194</note>
       </notes>
       <segment>
         <source>Signed</source>
@@ -35920,7 +35936,7 @@
     </unit>
     <unit id="signing.prev.col.actions">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:183</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:195</note>
       </notes>
       <segment>
         <source>Actions</source>
@@ -35928,7 +35944,7 @@
     </unit>
     <unit id="signing.prev.caption">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:193</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:205</note>
       </notes>
       <segment>
         <source>Previous signing identities</source>
@@ -35936,7 +35952,7 @@
     </unit>
     <unit id="signing.prev.hint">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:194</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:206</note>
       </notes>
       <segment>
         <source>Identities that signed before. Their npm signatures stay valid until you retire them.</source>
@@ -35944,7 +35960,7 @@
     </unit>
     <unit id="signing.copy-fingerprint">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:195</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:207</note>
       </notes>
       <segment>
         <source>Copy fingerprint</source>
@@ -35952,7 +35968,7 @@
     </unit>
     <unit id="signing.copy-keyid">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:196</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:208</note>
       </notes>
       <segment>
         <source>Copy npm key ID</source>
@@ -35960,7 +35976,7 @@
     </unit>
     <unit id="signing.copy-request">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:197</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:209</note>
       </notes>
       <segment>
         <source>Copy request</source>
@@ -35968,8 +35984,8 @@
     </unit>
     <unit id="signing.draft-restored">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:220</note>
-        <note category="location">src/app/features/settings/signing-identity.ts:223</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:232</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:235</note>
       </notes>
       <segment>
         <source>Your entries were restored. Send them again.</source>
@@ -35977,7 +35993,7 @@
     </unit>
     <unit id="signing.key.done">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:250</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:262</note>
       </notes>
       <segment>
         <source>The signing key is made. Have your company&apos;s CA issue a certificate for its request.</source>
@@ -35985,7 +36001,7 @@
     </unit>
     <unit id="signing.installed-announced">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:276</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:288</note>
       </notes>
       <segment>
         <source>The new signing identity is announced. It becomes current after the announce period; until then the current one signs.</source>
@@ -35993,7 +36009,7 @@
     </unit>
     <unit id="signing.installed-current">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:277</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:289</note>
       </notes>
       <segment>
         <source>The signing identity is current. Quader signs with it from now on.</source>
@@ -36001,7 +36017,7 @@
     </unit>
     <unit id="signing.discard.title">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:299</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:311</note>
       </notes>
       <segment>
         <source>Discard the signing key?</source>
@@ -36009,7 +36025,7 @@
     </unit>
     <unit id="signing.discard.text">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:300</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:312</note>
       </notes>
       <segment>
         <source>The key and its request are deleted. A certificate the CA issues for this request can no longer be uploaded.</source>
@@ -36017,7 +36033,7 @@
     </unit>
     <unit id="signing.discard.confirm">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:301</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:313</note>
       </notes>
       <segment>
         <source>Discard</source>
@@ -36025,7 +36041,7 @@
     </unit>
     <unit id="signing.discard.done">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:304</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:316</note>
       </notes>
       <segment>
         <source>The signing key is discarded.</source>
@@ -36033,7 +36049,7 @@
     </unit>
     <unit id="signing.remove.title">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:309</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:321</note>
       </notes>
       <segment>
         <source>Remove the signing identity?</source>
@@ -36041,7 +36057,7 @@
     </unit>
     <unit id="signing.remove.text">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:311</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:323</note>
       </notes>
       <segment>
         <source>It becomes a previous identity and Quader signs nothing until another identity is current. Its npm signatures stay valid, and the attestations it made stay served until its certificate expires.</source>
@@ -36049,7 +36065,7 @@
     </unit>
     <unit id="signing.remove.confirm">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:313</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:325</note>
       </notes>
       <segment>
         <source>Remove</source>
@@ -36057,7 +36073,7 @@
     </unit>
     <unit id="signing.remove.done">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:316</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:328</note>
       </notes>
       <segment>
         <source>The signing identity is removed. Quader signs nothing now.</source>
@@ -36065,7 +36081,7 @@
     </unit>
     <unit id="signing.retire.title">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:321</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:333</note>
       </notes>
       <segment>
         <source>Retire this identity?</source>
@@ -36073,7 +36089,7 @@
     </unit>
     <unit id="signing.retire.text">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:323</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:335</note>
       </notes>
       <segment>
         <source>Its key leaves npm&apos;s keys at once; Quader signs its packages and attestations again with the current identity.</source>
@@ -36081,7 +36097,7 @@
     </unit>
     <unit id="signing.retire.confirm">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:325</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:337</note>
       </notes>
       <segment>
         <source>Retire</source>
@@ -36089,7 +36105,7 @@
     </unit>
     <unit id="signing.retire.done">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:328</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:340</note>
       </notes>
       <segment>
         <source>The identity is retired.</source>
@@ -44358,7 +44374,7 @@
     <unit id="wellknown.account.remove">
       <notes>
         <note category="location">src/app/features/upstream/account-again-dialog.ts:60,61</note>
-        <note category="location">src/app/features/upstream/upstream-registry.html:454,456</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:466,468</note>
       </notes>
       <segment>
         <source>Remove account</source>
@@ -44864,7 +44880,7 @@
       <notes>
         <note category="location">src/app/features/upstream/upstream-registries.ts:302</note>
         <note category="location">src/app/features/upstream/upstream-registry.html:29,30</note>
-        <note category="location">src/app/features/upstream/upstream-registry.html:506,507</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:517,518</note>
       </notes>
       <segment>
         <source>Listed by</source>
@@ -45191,25 +45207,33 @@
         <source>The account was removed when Quader&apos;s address moved to another host on <pc id="0" equivStart="START_TAG_TIME" equivEnd="CLOSE_TAG_TIME" type="other" dispStart="&lt;time [attr.datetime]=&quot;at&quot;&gt;" dispEnd="&lt;/time&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ at | time: &apos;date&apos; }}"/></pc>; enter it again.</source>
       </segment>
     </unit>
-    <unit id="wellknown.account.configured-helm">
+    <unit id="wellknown.account.source">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.html:378,379</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:377,378</note>
       </notes>
       <segment>
-        <source>From the Helm configuration: Secret <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span class=&quot;with-stop&quot;&gt;" dispEnd="&lt;/span&gt;"><pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code class=&quot;secret-name&quot; translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="2" equiv="INTERPOLATION" disp="{{ secret }}"/></pc>.</pc> Change or remove it there.</source>
+        <source>Source</source>
       </segment>
     </unit>
-    <unit id="wellknown.account.configured">
+    <unit id="wellknown.account.source-helm">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.html:380,383</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:381,382</note>
       </notes>
       <segment>
-        <source>From the Helm configuration. Change or remove it there.</source>
+        <source>Helm configuration</source>
+      </segment>
+    </unit>
+    <unit id="wellknown.account.secret">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.html:383</note>
+      </notes>
+      <segment>
+        <source>Secret</source>
       </segment>
     </unit>
     <unit id="wellknown.account.files">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.html:386,387</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:389,390</note>
       </notes>
       <segment>
         <source>Files</source>
@@ -45217,7 +45241,7 @@
     </unit>
     <unit id="wellknown.account.last-download">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.html:389,390</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:392,393</note>
       </notes>
       <segment>
         <source>Last download</source>
@@ -45225,7 +45249,7 @@
     </unit>
     <unit id="wellknown.account.last-failure">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.html:393,395</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:396,398</note>
       </notes>
       <segment>
         <source>Last failed download</source>
@@ -45233,7 +45257,7 @@
     </unit>
     <unit id="wellknown.account.save">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.html:449,450</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:452,453</note>
       </notes>
       <segment>
         <source>Save account</source>
@@ -45241,7 +45265,7 @@
     </unit>
     <unit id="wellknown.details.hint-local">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.html:483,485</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:494,496</note>
       </notes>
       <segment>
         <source>Its settings page and its dates.</source>
@@ -45249,8 +45273,8 @@
     </unit>
     <unit id="wellknown.details.narrowing">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.html:487,489</note>
-        <note category="location">src/app/features/upstream/upstream-registry.html:508,510</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:498,500</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:519,521</note>
       </notes>
       <segment>
         <source>Settings</source>
@@ -45258,7 +45282,7 @@
     </unit>
     <unit id="wellknown.details.settings-link">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.html:489,491</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:500,502</note>
       </notes>
       <segment>
         <source>The repository&apos;s settings page</source>
@@ -45266,7 +45290,7 @@
     </unit>
     <unit id="wellknown.details.hint">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.html:502,503</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:513,514</note>
       </notes>
       <segment>
         <source>Who lists the registry, its settings for teams, its limits and its dates.</source>
@@ -45274,7 +45298,7 @@
     </unit>
     <unit id="wellknown.details.narrowing-link">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.html:510,512</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:521,523</note>
       </notes>
       <segment>
         <source>Offline and the administrator&apos;s notes</source>
@@ -45282,7 +45306,7 @@
     </unit>
     <unit id="wellknown.details.limits">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.html:512,514</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:523,525</note>
       </notes>
       <segment>
         <source>Download limits</source>
@@ -45290,7 +45314,7 @@
     </unit>
     <unit id="wellknown.details.limits-link">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.html:514,516</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:525,527</note>
       </notes>
       <segment>
         <source>The repository&apos;s limits, on its settings page</source>
@@ -45298,7 +45322,7 @@
     </unit>
     <unit id="upstream.registry.loading">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.html:523,526</note>
+        <note category="location">src/app/features/upstream/upstream-registry.html:534,537</note>
       </notes>
       <segment>
         <source>Loading the registry.</source>
@@ -45306,7 +45330,7 @@
     </unit>
     <unit id="clamav.setup.without">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:197</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:199</note>
       </notes>
       <segment>
         <source>Without freshclam</source>
@@ -45314,7 +45338,7 @@
     </unit>
     <unit id="clamav.cert.address">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:198</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:200</note>
       </notes>
       <segment>
         <source>Address of the endpoint for client certificates</source>
@@ -45322,7 +45346,7 @@
     </unit>
     <unit id="clamav.cert.address.copy">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:199</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:201</note>
       </notes>
       <segment>
         <source>Copy the address of the endpoint for client certificates</source>
@@ -45330,7 +45354,7 @@
     </unit>
     <unit id="clamav.setup.copy-script">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:200</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:202</note>
       </notes>
       <segment>
         <source>Copy the script</source>
@@ -45338,7 +45362,7 @@
     </unit>
     <unit id="clamav.setup.copy-certificate">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:201</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:203</note>
       </notes>
       <segment>
         <source>Copy the setup</source>
@@ -45346,7 +45370,7 @@
     </unit>
     <unit id="clamav.address">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:202</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:204</note>
       </notes>
       <segment>
         <source>Address of the endpoint</source>
@@ -45354,7 +45378,7 @@
     </unit>
     <unit id="clamav.address.copy">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:203</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:205</note>
       </notes>
       <segment>
         <source>Copy the address of the endpoint</source>
@@ -45362,7 +45386,7 @@
     </unit>
     <unit id="clamav.setup.copy">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:204</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:206</note>
       </notes>
       <segment>
         <source>Copy the line</source>
@@ -45370,7 +45394,7 @@
     </unit>
     <unit id="clamav.setup.authenticate">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:205</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:207</note>
       </notes>
       <segment>
         <source>Authenticate</source>
@@ -45378,7 +45402,7 @@
     </unit>
     <unit id="clamav.updater.repository">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:249</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:251</note>
       </notes>
       <segment>
         <source>No updater runs: this installation takes its definitions from <ph id="0" equiv="repository" disp="repo"/>.</source>
@@ -45386,7 +45410,7 @@
     </unit>
     <unit id="clamav.updater.off">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:251</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:253</note>
       </notes>
       <segment>
         <source>The malware scan is off, so the definitions are not updated.</source>
@@ -45394,15 +45418,23 @@
     </unit>
     <unit id="clamav.updater.none">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:252</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:254</note>
       </notes>
       <segment>
         <source>No updater reports: the definitions are not updated.</source>
       </segment>
     </unit>
+    <unit id="wellknown.account.remove.helm">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:293</note>
+      </notes>
+      <segment>
+        <source>Set in secrets.upstreamAccounts of the Helm configuration: change or remove it there.</source>
+      </segment>
+    </unit>
     <unit id="wellknown.address.held">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:517</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:522</note>
       </notes>
       <segment>
         <source>The account of this registry comes from the Helm configuration, so an address that sends it to other hosts is changed there too.</source>
@@ -45410,7 +45442,7 @@
     </unit>
     <unit id="wellknown.address.saved">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:530</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:535</note>
       </notes>
       <segment>
         <source>Address saved.</source>
@@ -45418,8 +45450,8 @@
     </unit>
     <unit id="wellknown.address.reset-done">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:546</note>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:564</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:551</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:569</note>
       </notes>
       <segment>
         <source>The address is Quader&apos;s again.</source>
@@ -45427,7 +45459,7 @@
     </unit>
     <unit id="wellknown.reset.title">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:557</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:562</note>
       </notes>
       <segment>
         <source>Reset the address and remove the account?</source>
@@ -45435,7 +45467,7 @@
     </unit>
     <unit id="wellknown.reset.text">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:558</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:563</note>
       </notes>
       <segment>
         <source>The account goes to <ph id="0" equiv="hosts" disp="hosts"/> only, and Quader&apos;s address uses other hosts. The reset removes it; enter it again afterwards if Quader&apos;s address needs one.</source>
@@ -45443,7 +45475,7 @@
     </unit>
     <unit id="wellknown.reset.confirm">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:559</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:564</note>
       </notes>
       <segment>
         <source>Reset and remove the account</source>
@@ -45451,7 +45483,7 @@
     </unit>
     <unit id="wellknown.account.saved">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:615</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:620</note>
       </notes>
       <segment>
         <source>Account saved.</source>
@@ -45459,7 +45491,7 @@
     </unit>
     <unit id="wellknown.account.removed">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:630</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:635</note>
       </notes>
       <segment>
         <source>Account removed.</source>
@@ -45467,7 +45499,7 @@
     </unit>
     <unit id="wellknown.listed.none">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:678</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:683</note>
       </notes>
       <segment>
         <source>No virtual repository lists it.</source>
@@ -45475,7 +45507,7 @@
     </unit>
     <unit id="wellknown.listed.one">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:679</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:684</note>
       </notes>
       <segment>
         <source>1 virtual repository lists it.</source>
@@ -45483,7 +45515,7 @@
     </unit>
     <unit id="wellknown.listed.many-one-project">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:681</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:686</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="count" disp="n"/> virtual repositories in 1 project list it.</source>
@@ -45491,7 +45523,7 @@
     </unit>
     <unit id="wellknown.listed.many">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:682</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:687</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="count" disp="n"/> virtual repositories in <ph id="1" equiv="projects" disp="projects"/> projects list it.</source>
@@ -45499,7 +45531,7 @@
     </unit>
     <unit id="wellknown.listed.other">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:688</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:693</note>
       </notes>
       <segment>
         <source>And 1 more virtual repository.</source>
@@ -45507,7 +45539,7 @@
     </unit>
     <unit id="wellknown.listed.others">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-registry.ts:689</note>
+        <note category="location">src/app/features/upstream/upstream-registry.ts:694</note>
       </notes>
       <segment>
         <source>And <ph id="0" equiv="count" disp="n"/> more virtual repositories.</source>

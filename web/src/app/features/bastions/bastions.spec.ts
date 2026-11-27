@@ -19,7 +19,7 @@ import { Navigation, areaItems } from '../../core/navigation';
 import { SessionStore } from '../../core/session-store';
 import { seriousViolations } from '../../testing/axe';
 import { DraftStore } from '../../shared/drafts';
-import { browserStorage, button, buttonByText, renderScreen, settle, sleep, storedText, text, type, typeAndLeave, typeInto } from '../../testing/screen';
+import { browserStorage, button, buttonByText, renderScreen, settle, sleep, storedText, text, type, typeAndLeave, typeInto, unavailableReason } from '../../testing/screen';
 import { ADDRESS_MARKS, breakParts } from '../../shared/break-parts';
 import { BASTION_TOKEN_WARN_DAYS, contactHealth, tokenExpiry, tokenHealth } from './bastion-state';
 import { handoverLines } from './bastion-handover';
@@ -838,10 +838,36 @@ describe('A registration the configuration declares (R-BAS-127)', () => {
     expect(buttons.filter((b) => b.startsWith('Revoke'))).toEqual(['Revoke partners 2026']);
     const rows = partners.querySelectorAll('table')[1]!.querySelectorAll('tbody tr');
     expect(text(rows[0]!)).toContain('Never');
-    // The networks are the configuration's: text, no field, no Save.
-    expect(partners.querySelectorAll('quader-bastion-egress input')).toHaveLength(0);
-    expect(text(partners.querySelector('[data-testid="bastion-egress-list"]')!)).toBe('10.252.0.0/16 · from the Helm configuration');
+    // The networks are the configuration's (R-UI-270): their field and Add address unavailable with where they are set, no Remove,
+    // no Save, and no sentence beside them.
+    const fixed = 'Set in bastions.declared of the Helm configuration.';
+    const inputs = [...partners.querySelectorAll<HTMLInputElement>('quader-bastion-egress input')];
+    expect(inputs.map((i) => [i.value, i.readOnly, unavailableReason(i)])).toEqual([['10.252.0.0/16', true, fixed]]);
+    const list = partners.querySelector<HTMLElement>('quader-bastion-egress:has(h4)')!;
+    expect(unavailableReason(buttonByText(list, 'Add address'))).toBe(fixed);
+    expect([...list.querySelectorAll('button')].map((b) => text(b))).not.toContain('Save changes');
+    expect(list.querySelector('.row button')).toBeNull();
+    expect(partners.querySelector('[data-testid="bastion-egress-list"]')).toBeNull();
     expect(await seriousViolations(root)).toEqual([]);
+  });
+
+  it('R-BAS-127 R-UI-270 the offer of a contact\'s address on a declared registration stays, unavailable, and sends nothing', async () => {
+    const { fixture, root, get } = await renderScreen(BastionList, {
+      setup: (g) => void ((g(BastionsApi) as FakeBastionsApi).bastions = [{ ...declared(), contacts: [sampleBastionContact({ clientAddress: '198.51.100.21' })] }]),
+    });
+    const offer = buttonByText(card(root, 'partners').querySelector<HTMLElement>('[data-testid="bastion-egress-unlisted"]')!, 'Add 198.51.100.21');
+    expect(unavailableReason(offer)).toBe('Set in bastions.declared of the Helm configuration.');
+    offer.click();
+    await sleep(fixture, 100);
+    expect((get(BastionsApi) as FakeBastionsApi).calls.some((c) => c.startsWith('setEgress'))).toBe(false);
+  });
+
+  it('R-BAS-127 who may only read a declared registration gets its networks as text with their source', async () => {
+    const { root } = await renderScreen(BastionList, {
+      capabilities: ['endpoints:read'],
+      setup: (g) => void ((g(BastionsApi) as FakeBastionsApi).bastions = [declared()]),
+    });
+    expect(text(card(root, 'partners').querySelector('[data-testid="bastion-egress-list"]')!)).toBe('10.252.0.0/16 · from the Helm configuration');
   });
 
   it('R-BAS-127 the declared token is named by the screen whatever the server stored, with its Secret, and never expires', async () => {

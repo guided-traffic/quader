@@ -371,16 +371,19 @@
             <p class="hint raises">{{ raises }}</p>
           }
           @if (configured()) {
-            <!-- An account the configuration declares (R-REPO-077, Q-UI-1161): read-only, never a value, never the username read from a file. -->
-            <p class="source-note" role="note">
-              <span class="material-icons inline" aria-hidden="true">lock</span>
-              @if (secretName(); as secret) {
-                <span i18n="@@wellknown.account.configured-helm">From the Helm configuration: Secret <span class="with-stop"><code class="secret-name" translate="no">{{ secret }}</code>.</span> Change or remove it there.</span>
-              } @else {
-                <span i18n="@@wellknown.account.configured">From the Helm configuration. Change or remove it there.</span>
-              }
-            </p>
+            <!-- An account the configuration declares (R-REPO-077, Q-UI-1161): read-only facts, never a value, never the username read
+                 from a file; where it is changed is Remove account's tooltip (R-UI-270). -->
             <dl class="facts account-facts">
+              <dt i18n="@@wellknown.account.source">Source</dt>
+              <!-- One line for the one line it replaces: where it comes from, and the Secret where the chart's Secret sets it. -->
+              <dd>
+                <span class="dot-separated">
+                  <span><span class="material-icons inline" aria-hidden="true">lock</span>&ngsp;<ng-container i18n="@@wellknown.account.source-helm">Helm configuration</ng-container></span>
+                  @if (secretName(); as secret) {
+                    &ngsp;<span><ng-container i18n="@@wellknown.account.secret">Secret</ng-container>&ngsp;<code translate="no">{{ secret }}</code></span>
+                  }
+                </span>
+              </dd>
               <dt i18n="@@upstream.auth">Authentication</dt>
               <dd>{{ modeLabel() }}</dd>
               <dt i18n="@@wellknown.account.files">Files</dt>
@@ -450,9 +453,17 @@
                 @if (accountDirty()) {
                   <button class="btn btn-tertiary" type="button" (click)="discardAccount()" i18n="@@repo.edit.reset">Discard changes</button>
                 }
-                @if (accountStored()) {
-                  <button class="btn btn-default" type="button" [disabled]="busy() !== null" [quaderBusy]="busy() !== null" (click)="removeAccount()" i18n="@@wellknown.account.remove">Remove account</button>
-                }
+              }
+              @if (accountStored() || configured()) {
+                <button
+                  class="btn btn-default"
+                  type="button"
+                  [disabled]="busy() !== null"
+                  [quaderBusy]="busy() !== null"
+                  [quaderUnavailable]="configured() ? declaredReason : ''"
+                  (click)="removeAccount()"
+                  i18n="@@wellknown.account.remove"
+                >Remove account</button>
               }
             </div>
           }

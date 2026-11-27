@@ -2,7 +2,7 @@ import { RolesApi } from '../../api/authz-api';
 import { FakeRolesApi, problem } from '../../api/testing/access-fakes';
 import { SessionApi } from '../../api/session-api';
 import { FakeSessionApi } from '../../api/testing/fakes';
-import { buttonByText, choosePrincipal, renderScreen, settle, text, sleep } from '../../testing/screen';
+import { buttonByText, choosePrincipal, renderScreen, settle, text, sleep, unavailableReason } from '../../testing/screen';
 import { seriousViolations } from '../../testing/axe';
 import { RoleBindings } from './role-bindings';
 
@@ -20,13 +20,17 @@ describe('System roles (R-UI-024)', () => {
     expect(await seriousViolations(root)).toEqual([]);
   });
 
-  it('R-UI-005 the last administrator binding cannot be removed: the button is disabled and says why', async () => {
-    const { root } = await renderScreen(RoleBindings);
+  it('R-UI-005 R-UI-270 the last administrator binding cannot be removed: Unbind is unavailable with the reason as its tooltip', async () => {
+    const { fixture, root, get } = await renderScreen(RoleBindings);
     const adminRow = root.querySelector('section.card tbody tr') as HTMLElement;
     const unbind = adminRow.querySelector('button') as HTMLButtonElement;
-    expect(unbind.disabled).toBe(true);
-    expect(unbind.getAttribute('aria-describedby')).toBe('last-admin-guard');
-    expect(text(root.querySelector('#last-admin-guard')!)).toContain('last administrator binding cannot be removed');
+    expect(unbind.getAttribute('aria-disabled')).toBe('true');
+    expect(unavailableReason(unbind)).toBe('The last administrator binding cannot be removed.');
+    expect(text(root)).not.toContain('cannot be removed');
+    unbind.click();
+    await settle(fixture);
+    expect(overlay()?.querySelector('quader-confirm-dialog')).toBeNull();
+    expect((get(RolesApi) as FakeRolesApi).calls.some((c) => c.startsWith('unbind'))).toBe(false);
   });
 
   it('R-AUTHZ-022 R-UI-150 binds a role to a principal chosen from the search, reads the lists again and refreshes the caller\'s capabilities', async () => {
@@ -67,7 +71,7 @@ describe('System roles (R-UI-024)', () => {
     expect(text(root)).toContain('An auto-join group cannot hold the administrator role');
   });
 
-  it('R-AUTHZ-010 shows the source of every binding and no unbind control for one from the configuration', async () => {
+  it('R-AUTHZ-010 R-UI-270 shows the source of every binding; Unbind of one from the configuration is unavailable, the key its tooltip', async () => {
     const { root } = await renderScreen(RoleBindings, {
       setup: (get) => {
         const api = get(RolesApi) as FakeRolesApi;
@@ -88,20 +92,17 @@ describe('System roles (R-UI-024)', () => {
     const declared = rows.find((r) => text(r).includes('group gh-wds18-k8s-main-admins'))!;
     const made = rows.find((r) => text(r).includes('group platform'))!;
     expect(text(declared)).toContain('Helm configuration');
-    expect(text(declared)).toContain('Managed in the Helm configuration');
-    expect(declared.querySelector('button')).toBeNull();
+    // No granter: the dash of a cell without a value, never an empty cell.
+    expect(declared.querySelectorAll('td')[1]!.querySelector('quader-no-value')).not.toBeNull();
+    const fixed = declared.querySelector('button') as HTMLButtonElement;
+    expect(fixed.getAttribute('aria-disabled')).toBe('true');
+    expect(unavailableReason(fixed)).toBe('Declared in config.authz.role_bindings of the Helm configuration: remove it there.');
+    // No paragraph says it again beside the table.
+    expect(text(admin)).not.toContain('authz.role_bindings');
     expect(text(made)).toContain('API');
-    expect(made.querySelector('button')).not.toBeNull();
-    expect(text(admin)).toContain('Bindings from the Helm configuration are declared in config.authz.role_bindings');
     // Two holders of admin: the binding made through the API may go, the configuration's stays.
-    expect((made.querySelector('button') as HTMLButtonElement).disabled).toBe(false);
-    expect(admin.querySelector('#last-admin-guard')).toBeNull();
+    expect(made.querySelector('button')!.hasAttribute('aria-disabled')).toBe(false);
     expect(await seriousViolations(root)).toEqual([]);
-  });
-
-  it('R-AUTHZ-010 without a binding from the configuration there is no configuration hint', async () => {
-    const { root } = await renderScreen(RoleBindings);
-    expect(text(root)).not.toContain('authz.role_bindings');
   });
 
   it('R-UI-042 a refused unbind of a binding from the configuration shows the translated reason', async () => {

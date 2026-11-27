@@ -13450,10 +13450,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-839 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+840 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 839 questions</summary>
+<summary>Q-UI: 840 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -14296,6 +14296,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1633](spec/api-and-ui.md#q-ui-1633--every-list-of-things-a-client-fetches-offers-its-command-in-both-applications) | Every list of things a client fetches offers its command, in both applications | Decided by the development agent on 2026-11-27 | (b), the column **Actions** with its header for assistive technology only, as a repository's list has it. | — |
 | [Q-UI-1634](spec/api-and-ui.md#q-ui-1634--a-rows-command-is-resolved-when-its-panel-opens) | A row's command is resolved when its panel opens | Decided by the development agent on 2026-11-27 | (b) Read the version's details when the panel first opens and decide with the head's rule (`versionCommandFacts`) | — |
 | [Q-UI-1635](spec/api-and-ui.md#q-ui-1635--the-order-of-a-panels-repositories-is-unchanged) | The order of a panel's repositories is unchanged | Decided by the development agent on 2026-11-27 | (a) `clientRepositories` as it is | — |
+| [Q-UI-1636](spec/api-and-ui.md#q-ui-1636--a-control-that-cannot-act-shows-greyed-out-with-its-reason-as-its-tooltip-never-a-paragraph) | A control that cannot act shows greyed out, with its reason as its tooltip; never a paragraph | Decided by the development agent on 2026-11-27 | (a) A directive on the control | — |
 
 </details>
 

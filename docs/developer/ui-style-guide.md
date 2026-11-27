@@ -259,7 +259,9 @@ existing ones are moved over ([What does not follow this page yet](#what-does-no
 - **Each section has its own save button**, `btn btn-confirm` with **Save changes**, at the end of the section and disabled until
   something changed.
 - **Destructive actions come last**, in a section **Advanced**, with a `btn btn-danger` and a sentence that says what it destroys.
-  A disabled destructive action says why it is disabled, next to the button.
+  A destructive action that cannot act stays, unavailable, and says why in its tooltip (`[quaderUnavailable]="reason"`,
+  [R-UI-270](../spec/api-and-ui.md#r-ui-270--a-control-fixed-by-the-helm-configuration-is-offered-unavailable-its-reason-its-tooltip)),
+  never in a sentence next to the button.
 
 ## Opening and closing
 
@@ -590,6 +592,9 @@ Before a screen is committed:
 - [ ] A row's one action is its quiet word, several are its menu **Actions for &lt;name&gt;**; no menu of one entry. A row that sets a state by a switch has the switch in that state's cell beside its badge and an act of one cell as that cell's one word, and no menu ([Q-CUR-201](../spec/remote-curation.md#q-cur-201--a-versions-acts-stand-where-their-state-stands)).
 - [ ] No paragraph explains a setting: its help is behind the info sign; what becomes public, a refusal and a state that needs action
       stay visible, one line each ([R-UI-267](../spec/api-and-ui.md#r-ui-267--help-behind-an-info-sign)).
+- [ ] A control the Helm configuration fixes, or that cannot act for a reason of its own, is offered unavailable with the reason as
+      its tooltip (`quaderUnavailable`), never hidden and never explained by a paragraph
+      ([R-UI-270](../spec/api-and-ui.md#r-ui-270--a-control-fixed-by-the-helm-configuration-is-offered-unavailable-its-reason-its-tooltip)).
 - [ ] No `info` icon outside `<quader-help>`: a line that needs action carries `warning`, any other none
       ([Q-UI-1628](../spec/api-and-ui.md#q-ui-1628--the-help-sign-on-every-settings-page-and-no-info-icon-beside-a-status)).
 - [ ] A column's help and a description above a table say what holds for every row; what holds for one row, one format or one special

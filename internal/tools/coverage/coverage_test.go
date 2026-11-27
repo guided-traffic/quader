@@ -219,8 +219,10 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 		// 1414 since a Bastion is disabled soft or hard over its connection (R-BAS-133, one MVP requirement of W-41, A1).
 		// 1415 since what a Bastion may distribute is stored (R-BAS-134, one P1 requirement of W-41, B1).
 		// 1416 since every list of things a client fetches offers its command (R-UI-269, one P1 requirement of W-40, P4b).
-		if len(m.Reqs) != 1416 || count[prioMVP] != 744 || count[prioP1] != 633 || count[prioP2] != 39 {
-			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1416 (744, 633, 39)",
+		// 1417 since a control the Helm configuration fixes is offered unavailable with its reason (R-UI-270, one P1 requirement
+		// of W-41, C0).
+		if len(m.Reqs) != 1417 || count[prioMVP] != 744 || count[prioP1] != 634 || count[prioP2] != 39 {
+			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1417 (744, 634, 39)",
 				len(m.Reqs), count[prioMVP], count[prioP1], count[prioP2])
 		}
 	})

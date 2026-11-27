@@ -17,7 +17,8 @@ company's CA. Without one Quader signs nothing: packages of local npm repositori
 receipt attestation, and the section says so.
 
 **From the Helm configuration** (`signing.identity.existingSecret`, or `signing.identity.certManager` for a certificate cert-manager
-issues): the section shows the identity's facts and no control; change it there ([Monitoring and operations](operations.md#quaders-signing-identity)).
+issues): the section shows the identity's facts, and **Replace** and **Remove** greyed out (before a pair of its files passed, **Create
+signing key**): pointing at one or tapping it shows "Set in signing.identity of the Helm configuration: change or remove it there."; change it there ([Monitoring and operations](operations.md#quaders-signing-identity)).
 While the values name an identity, nothing here can replace it. When a worker refuses the files (an RSA key, a certificate without the
 use `codeSigning`, a chain without its root, less than a day left), a red line says why, with the check it failed; the identity in use
 keeps signing.

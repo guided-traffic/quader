@@ -272,8 +272,8 @@ kind profile does with it are on [local-profile.md](local-profile.md#the-docker-
 `up.sh` and `serve.sh` run [upstream-accounts.sh](../../deploy/dev/upstream-accounts.sh) `files`, which writes the user and the token to
 `.dev/ui-dev/upstream-accounts/docker-hub/username` and `password` (files `0600`, directories `0700`), and `config.sh` writes their paths
 into `quader.yaml` as `repositories.upstream_accounts.docker-hub` (R-REPO-077) with an empty `secret_name`. `serve.sh`'s `migrate up` applies
-the declaration, and the registry's page (**Admin area › Upstream registries › Docker Hub**) shows the account read-only: "From the
-installation's configuration file. Change or remove it there.", **Files** "Readable on this server", no value.
+the declaration, and the registry's page (**Admin area › Upstream registries › Docker Hub**) shows the account read-only: **Source** "Helm configuration",
+**Files** "Readable on this server", no value, and **Remove account** unavailable (R-UI-270).
 
 - **A placeholder file, or none:** the script says `upstream/docker-hub pulls without an account: …` in one line and removes the files,
   `quader.yaml` declares nothing, `migrate up` removes the declaration of an earlier start, and the page shows the form of an account an
@@ -691,6 +691,7 @@ running and stops only what it started: Quader with the sign-in provider (`serve
    | `repository-settings-deb-keys` (admin) | a Debian repository's keys with a next and a withheld one answered in the browser, a certificate unfolded, the next key's menu, a promotion that fails with a code the page has no sentence for (the error notice inside the section) |
    | `finding` (power), `security-finding` (auditor) | a finding's page opened from the report, and its advisory's page |
    | `admin-ci-issuer`, `admin-ci-issuer-states`, `admin-ci-test`, `admin-ci-mapping`, `admin-ci-mapping-new` (admin); `project-ci-test`, `project-ci-mapping` (power); `policy` (power), `admin-permission` (admin) | the pages of a CI issuer, its claim tester and mappings, a project's, a project's and the installation's policy (the seed's `seedPoliciesAndMappings`); the issuer's sections and a mapping's row menu; a change of a mapping and of a policy refused by the server, its problems under the fields and in the summary |
+   | `admin-roles-helm`, `admin-ci-issuer-helm` (admin, also German) | a role binding and a CI issuer of the Helm configuration answered in the browser: **Unbind** and **Delete issuer** unavailable, each tapped with its reason pinned (R-UI-270, [helm-fixed.ts](../../web/e2e/renders/helm-fixed.ts)) |
    | added to another walk (`withStates`) | the menus of an open request and of a version on the tab Upstream (`repository-npm-remote-upstream`), **Run a pass now**'s menu (`repository-settings-oci-mirror-stored`), a rule's change refused by the server (`admin-endpoint-rule`) |
 
    A walk that loads another page (`page.goto`) gets the phone's style too: the run adds it by an init script on every load of a width
