@@ -427,6 +427,13 @@ Acceptance criteria:
   not exist.
 - A token carrying `identities:read` can `GET /api/v1/users` and gets 403 on
   `POST /api/v1/users/{username}/disable`.
+- The README's table of every operation lists each operation of `api/openapi.yaml` once, under its first tag, with its
+  `operationId`, a permission column that begins with its declaration in the table's words, and "recent sign-in" and
+  `x-quader-owner-rights` exactly where the document declares them; the rest of a row is written by hand
+  (`TestR_API_008_TheReadmeListsEveryOperationWithItsPermission`, unit, [readme_operations_test.go](../../internal/api/v1/readme_operations_test.go)).
+  The table is checked, not generated: its rows say what the document does not declare (filters, the answer's codes, the
+  body), which a generator would drop. On 2026-11-27 it missed 169 of 436 operations and named a permission for the two reads
+  of a project that are public.
 
 ### R-API-009 · Errors as problem details
 Priority: **MVP** · Covers: API-001, ADMAPI-002

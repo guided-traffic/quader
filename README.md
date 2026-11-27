@@ -2652,12 +2652,16 @@ The operations below are the paths of [api/openapi.yaml](api/openapi.yaml), grou
 document is the source: `GET /api/v1/openapi.json` serves it, and the operations declare their capability in an
 `x-quader-permission` block; `Document.CheckRoutes` checks the routes against the document at start-up. The table lists every operation with its
 `x-quader-permission`, whether it requires a recent sign-in (`x-quader-recent-auth`, R-API-007), and whether a token must inherit its owner's
-rights because the operation acts on the caller's own account (`x-quader-owner-rights`, R-API-021).
+rights because the operation acts on the caller's own account (`x-quader-owner-rights`, R-API-021). A family is the operation's
+first tag, in the order of the document's `tags`. `TestR_API_008_TheReadmeListsEveryOperationWithItsPermission`
+([readme_operations_test.go](internal/api/v1/readme_operations_test.go)) holds the table to the document: each operation once, under its
+family, with its `operationId`, a permission column that begins with its declaration, and the two marks exactly where the document
+sets them; what follows the declaration in a row is written by hand.
 
 "or Owner of the project" and "or a member of the project" are the second way in of a declaration with `project: path.projectKey` and `projectRole: owner` or `reader` (R-AUTHZ-026, Q-AUTHZ-207): the shared step admits the holder of the capability, or a member of the project the path names whose role is at least the declared one; the Owner's administration needs a session or a token with `admin: true`, through any other token an Owner counts as a Maintainer. A project the caller is no member of answers `404` like a missing one, a role below the declared one `403`. The repository-content operations declare their action on `path.projectKey`/`path.repoKey` and are decided with the roles, the policies and the token scope.
 
 <details>
-<summary>Every operation with its permission (generated from api/openapi.yaml)</summary>
+<summary>Every operation with its permission (checked against api/openapi.yaml)</summary>
 
 **system**
 
@@ -2665,12 +2669,23 @@ rights because the operation acts on the caller's own account (`x-quader-owner-r
 |---|---|---|
 | `GET /api/v1/system/ping` | `getPing` | public |
 | `GET /api/v1/system/version` | `getVersion` | authenticated, public with `system.public_version` |
+| `GET /api/v1/system/banner` | `getSystemBanner` | public; the system banner |
+| `PUT /api/v1/system/banner` | `putSystemBanner` | `settings:write`; set the system banner |
+| `GET /api/v1/system/maintenance` | `getSystemMaintenance` | authenticated; the maintenance mode |
+| `PUT /api/v1/system/maintenance` | `putSystemMaintenance` | `settings:write`; switch the maintenance mode |
+| `GET /api/v1/system/time-format` | `getSystemTimeFormat` | public; the installation's default form of a time |
+| `PUT /api/v1/system/time-format` | `putSystemTimeFormat` | `settings:write`; set the installation's default form of a time |
 | `GET /api/v1/system/info` | `getSystemInfo` | `settings:read` |
 | `GET /api/v1/system/replicas` | `listReplicas` | `settings:read` |
 | `GET /api/v1/system/scanners` | `listScanners` | `settings:read` |
 | `GET /api/v1/system/migrations` | `getMigrationStatus` | `settings:read` |
 | `GET /api/v1/system/overview` | `getSystemOverview` | `settings:read` |
+| `GET /api/v1/system/upstream-downloads` | `listUpstreamDownloads` | `content:metadata-read`; the running downloads from the upstreams of remote repositories and the last 100 finished |
+| `GET /api/v1/system/upstream-downloads/summary` | `getUpstreamDownloadSummary` | `content:metadata-read`; how many downloads from upstreams run now |
+| `GET /api/v1/system/storage-connections` | `listStorageConnections` | `settings:read`; every object-store connection Quader has seen, the answering replica's in the order of its configuration first: its state (`filling`, `active`, `draining`, `drained`, `detached`, `retired`), the live replicas that configure it and those with its circuit open, the reconciliation's queue, the capabilities of its start check, `keyedNames`, its storage keys by identifier, generation, state (`active`, `retired`, `destroyed` with `destroyedAt`), creation time and the copies that name each, the answering replica's non-secret settings and the latest summary's figures; no credential, file path, key or sealed value; `404` for an id never seen ([R-STOR-061](docs/spec/storage.md), [R-STOR-088](docs/spec/storage.md#r-stor-088--what-an-encrypted-connection-changes-elsewhere)) |
+| `GET /api/v1/system/storage-connections/{id}` | `getStorageConnection` | `settings:read`; one connection as the list shows it; `404` for an id never seen |
 | `GET /api/v1/system/encryption` | `getEncryptionStatus` | `settings:read` |
+| `GET /api/v1/legal` | `getLegal` | public; read the imprint and the privacy notice |
 | `GET /api/v1/system/backups` | `listBackupRuns` | `settings:read`; filters `operation`, `state`, `trigger`, `startedFrom`, `startedTo`; cursor paging, `includeTotal` |
 | `GET /api/v1/system/backups/summary` | `getBackupSummary` | `settings:read` |
 | `GET /api/v1/system/backups/{runId}` | `getBackupRun` | `settings:read` |
@@ -2690,6 +2705,8 @@ rights because the operation acts on the caller's own account (`x-quader-owner-r
 | `GET /api/v1/audit/events` | `listAuditEvents` | `audit:read` |
 | `GET /api/v1/audit/events/export` | `exportAuditEvents` | `audit:read` |
 | `GET /api/v1/audit/events/{id}` | `getAuditEvent` | `audit:read` |
+| `GET /api/v1/audit/rows` | `listAuditRows` | `audit:read`; read the audit log's rows |
+| `GET /api/v1/audit/rows/{id}/events` | `listAuditRowEvents` | `audit:read`; list the events of one row |
 
 **jobs**
 
@@ -2705,10 +2722,10 @@ rights because the operation acts on the caller's own account (`x-quader-owner-r
 
 | Method and path | Operation | Permission |
 |---|---|---|
-| `GET /api/v1/system/storage-connections`, `GET /api/v1/system/storage-connections/{id}` | `listStorageConnections`, `getStorageConnection` | `settings:read`; every object-store connection Quader has seen, the answering replica's in the order of its configuration first: its state (`filling`, `active`, `draining`, `drained`, `detached`, `retired`), the live replicas that configure it and those with its circuit open, the reconciliation's queue, the capabilities of its start check, `keyedNames`, its storage keys by identifier, generation, state (`active`, `retired`, `destroyed` with `destroyedAt`), creation time and the copies that name each, the answering replica's non-secret settings and the latest summary's figures; no credential, file path, key or sealed value; `404` for an id never seen ([R-STOR-061](docs/spec/storage.md), [R-STOR-088](docs/spec/storage.md#r-stor-088--what-an-encrypted-connection-changes-elsewhere)) |
-| `GET /api/v1/storage/summary` | `getStorageSummary` | `settings:read`; the latest result of the task `storage-summary`, `404` before the first run; a read never computes, `POST /api/v1/system/tasks/storage-summary/run` starts one ([R-STOR-028](docs/spec/storage.md)) |
 | `GET /api/v1/storage/damaged-blobs` | `listDamagedBlobs` | `settings:read`; `scope=blobs` (default: no connection holds the blob whole) or `scope=copies` (a copy is damaged), `connection`, `status`, each entry with its copies and its first 20 items ([R-STOR-027](docs/spec/storage.md#r-stor-027--integrity-scrub)) |
 | `POST /api/v1/storage/damaged-blobs/{sha256}/recheck` | `recheckDamagedBlob` | `settings:write`; reads every copy of the blob whole now and answers the copies; writes no object |
+| `GET /api/v1/storage/overview` | `getStorageOverview` | `settings:read`; the storage overview |
+| `GET /api/v1/storage/summary` | `getStorageSummary` | `settings:read`; the latest result of the task `storage-summary`, `404` before the first run; a read never computes, `POST /api/v1/system/tasks/storage-summary/run` starts one ([R-STOR-028](docs/spec/storage.md)) |
 
 **users**
 
@@ -2722,8 +2739,8 @@ rights because the operation acts on the caller's own account (`x-quader-owner-r
 | `DELETE /api/v1/users/{username}/avatar` | `removeUserAvatar` | `identities:write` |
 | `GET /api/v1/avatars/{digest}` | `getAvatar` | authenticated; `image/png`, immutable private cache |
 | `GET /api/v1/users/{username}` | `getUser` | `identities:read` |
-| `PATCH /api/v1/users/{username}` | `updateUser` | `identities:write` |
 | `DELETE /api/v1/users/{username}` | `deleteUser` | `identities:write` |
+| `PATCH /api/v1/users/{username}` | `updateUser` | `identities:write` |
 | `POST /api/v1/users/{username}/disable` | `disableUser` | `identities:write` |
 | `POST /api/v1/users/{username}/enable` | `enableUser` | `identities:write` |
 | `PATCH /api/v1/users/{username}/groups` | `patchUserGroups` | `identities:write` |
@@ -2736,8 +2753,8 @@ rights because the operation acts on the caller's own account (`x-quader-owner-r
 | `GET /api/v1/groups` | `listGroups` | `identities:read` |
 | `POST /api/v1/groups` | `createGroup` | `identities:write` |
 | `GET /api/v1/groups/{name}` | `getGroup` | `identities:read` |
-| `PATCH /api/v1/groups/{name}` | `updateGroup` | `identities:write` |
 | `DELETE /api/v1/groups/{name}` | `deleteGroup` | `identities:write` |
+| `PATCH /api/v1/groups/{name}` | `updateGroup` | `identities:write` |
 | `GET /api/v1/groups/{name}/members` | `listGroupMembers` | `identities:read` |
 | `PATCH /api/v1/groups/{name}/members` | `patchGroupMembers` | `identities:write` |
 
@@ -2750,22 +2767,40 @@ rights because the operation acts on the caller's own account (`x-quader-owner-r
 | `GET /api/v1/projects/{projectKey}/service-accounts` | `listProjectServiceAccounts` | `identities:read` or Owner of the project |
 | `POST /api/v1/projects/{projectKey}/service-accounts` | `createProjectServiceAccount` | `identities:write` or Owner of the project |
 | `GET /api/v1/service-accounts/{name}` | `getServiceAccount` | `identities:read` |
-| `PATCH /api/v1/service-accounts/{name}` | `updateServiceAccount` | `identities:write` |
 | `DELETE /api/v1/service-accounts/{name}` | `deleteServiceAccount` | `identities:write` |
+| `PATCH /api/v1/service-accounts/{name}` | `updateServiceAccount` | `identities:write` |
 | `GET /api/v1/projects/{projectKey}/service-accounts/{name}` | `getProjectServiceAccount` | `identities:read` or Owner of the project |
-| `PATCH /api/v1/projects/{projectKey}/service-accounts/{name}` | `updateProjectServiceAccount` | `identities:write` or Owner of the project |
 | `DELETE /api/v1/projects/{projectKey}/service-accounts/{name}` | `deleteProjectServiceAccount` | `identities:write` or Owner of the project |
+| `PATCH /api/v1/projects/{projectKey}/service-accounts/{name}` | `updateProjectServiceAccount` | `identities:write` or Owner of the project |
 | `POST /api/v1/service-accounts/{name}/disable` | `disableServiceAccount` | `identities:write` |
 | `POST /api/v1/projects/{projectKey}/service-accounts/{name}/disable` | `disableProjectServiceAccount` | `identities:write` or Owner of the project |
 | `POST /api/v1/service-accounts/{name}/enable` | `enableServiceAccount` | `identities:write` |
 | `POST /api/v1/projects/{projectKey}/service-accounts/{name}/enable` | `enableProjectServiceAccount` | `identities:write` or Owner of the project |
-| `GET`, `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts` | `listRepositoryServiceAccounts`, `createRepositoryServiceAccount` | `identities:read`, `identities:write`, or Owner of the project; a repository's account holds `actions` on its repository (R-AUTHZ-039) |
-| `GET`, `PATCH`, `DELETE /api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name}` | `getRepositoryServiceAccount`, `updateRepositoryServiceAccount`, `deleteRepositoryServiceAccount` | as above; `PATCH` changes `description` and `actions` |
-| `POST …/repositories/{repoKey}/service-accounts/{name}/disable`, `…/enable` | `disableRepositoryServiceAccount`, `enableRepositoryServiceAccount` | `identities:write` or Owner of the project |
-| `GET`, `POST /api/v1/service-accounts/{name}/technical-tokens` | `listServiceAccountTechnicalTokens`, `createServiceAccountTechnicalToken` | `GET` `identities:read`; `POST` authenticated: an administrator, or a token of the account itself, decided in the handler · recent sign-in |
-| `GET`, `PATCH`, `DELETE /api/v1/service-accounts/{name}/technical-tokens/{tokenName}` | `getServiceAccountTechnicalToken`, `updateServiceAccountTechnicalToken`, `deleteServiceAccountTechnicalToken` | `identities:read`; `PATCH` `identities:write`; `DELETE` `tokens:revoke` |
-| `POST /api/v1/service-accounts/{name}/technical-tokens/{tokenName}/secrets` | `createServiceAccountTechnicalTokenSecret` | as the `POST` of a technical token; `409 technical_token_active` while a secret is live |
-| the same below `/api/v1/projects/{projectKey}/service-accounts/{name}` and `/api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name}` | `…ProjectServiceAccountTechnicalToken…`, `…RepositoryServiceAccountTechnicalToken…` | as above, or Owner of the project; an Owner's secret always expires, has `admin: false` and no `system` item, and is not self-rotatable |
+| `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts` | `listRepositoryServiceAccounts` | `identities:read` or Owner of the project; list the service accounts of a repository |
+| `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts` | `createRepositoryServiceAccount` | `identities:write` or Owner of the project; create a service account of a repository |
+| `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name}` | `getRepositoryServiceAccount` | `identities:read` or Owner of the project; read a service account of a repository |
+| `DELETE /api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name}` | `deleteRepositoryServiceAccount` | `identities:write` or Owner of the project; delete a service account of a repository |
+| `PATCH /api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name}` | `updateRepositoryServiceAccount` | `identities:write` or Owner of the project; change a service account of a repository |
+| `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name}/disable` | `disableRepositoryServiceAccount` | `identities:write` or Owner of the project; disable a service account of a repository |
+| `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name}/enable` | `enableRepositoryServiceAccount` | `identities:write` or Owner of the project; enable a service account of a repository |
+| `GET /api/v1/service-accounts/{name}/technical-tokens` | `listServiceAccountTechnicalTokens` | `identities:read`; list the technical tokens of an instance-wide service account |
+| `POST /api/v1/service-accounts/{name}/technical-tokens` | `createServiceAccountTechnicalToken` | authenticated: an administrator, or a token of the account itself, decided in the handler; create a technical token of an instance-wide service account · recent sign-in |
+| `GET /api/v1/service-accounts/{name}/technical-tokens/{tokenName}` | `getServiceAccountTechnicalToken` | `identities:read`; read a technical token of an instance-wide service account |
+| `DELETE /api/v1/service-accounts/{name}/technical-tokens/{tokenName}` | `deleteServiceAccountTechnicalToken` | `tokens:revoke`; delete a technical token of an instance-wide service account |
+| `PATCH /api/v1/service-accounts/{name}/technical-tokens/{tokenName}` | `updateServiceAccountTechnicalToken` | `identities:write`; change a technical token of an instance-wide service account |
+| `POST /api/v1/service-accounts/{name}/technical-tokens/{tokenName}/secrets` | `createServiceAccountTechnicalTokenSecret` | authenticated: as the `POST` of a technical token; `409 technical_token_active` while a secret is live · recent sign-in |
+| `GET /api/v1/projects/{projectKey}/service-accounts/{name}/technical-tokens` | `listProjectServiceAccountTechnicalTokens` | `identities:read` or Owner of the project; list the technical tokens of a project's service account |
+| `POST /api/v1/projects/{projectKey}/service-accounts/{name}/technical-tokens` | `createProjectServiceAccountTechnicalToken` | authenticated; create a technical token of a project's service account · recent sign-in |
+| `GET /api/v1/projects/{projectKey}/service-accounts/{name}/technical-tokens/{tokenName}` | `getProjectServiceAccountTechnicalToken` | `identities:read` or Owner of the project; read a technical token of a project's service account |
+| `DELETE /api/v1/projects/{projectKey}/service-accounts/{name}/technical-tokens/{tokenName}` | `deleteProjectServiceAccountTechnicalToken` | `tokens:revoke` or Owner of the project; delete a technical token of a project's service account |
+| `PATCH /api/v1/projects/{projectKey}/service-accounts/{name}/technical-tokens/{tokenName}` | `updateProjectServiceAccountTechnicalToken` | `identities:write` or Owner of the project; change a technical token of a project's service account |
+| `POST /api/v1/projects/{projectKey}/service-accounts/{name}/technical-tokens/{tokenName}/secrets` | `createProjectServiceAccountTechnicalTokenSecret` | authenticated; issue a new secret of a technical token of a project's service account · recent sign-in |
+| `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name}/technical-tokens` | `listRepositoryServiceAccountTechnicalTokens` | `identities:read` or Owner of the project; list the technical tokens of a repository's service account |
+| `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name}/technical-tokens` | `createRepositoryServiceAccountTechnicalToken` | authenticated; create a technical token of a repository's service account · recent sign-in |
+| `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name}/technical-tokens/{tokenName}` | `getRepositoryServiceAccountTechnicalToken` | `identities:read` or Owner of the project; read a technical token of a repository's service account |
+| `DELETE /api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name}/technical-tokens/{tokenName}` | `deleteRepositoryServiceAccountTechnicalToken` | `tokens:revoke` or Owner of the project; delete a technical token of a repository's service account |
+| `PATCH /api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name}/technical-tokens/{tokenName}` | `updateRepositoryServiceAccountTechnicalToken` | `identities:write` or Owner of the project; change a technical token of a repository's service account |
+| `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/service-accounts/{name}/technical-tokens/{tokenName}/secrets` | `createRepositoryServiceAccountTechnicalTokenSecret` | authenticated; issue a new secret of a technical token of a repository's service account · recent sign-in |
 
 **tokens**
 
@@ -2785,6 +2820,57 @@ rights because the operation acts on the caller's own account (`x-quader-owner-r
 | `DELETE /api/v1/service-accounts/{name}/tokens` | `revokeServiceAccountTokens` | `tokens:revoke` |
 | `DELETE /api/v1/projects/{projectKey}/service-accounts/{name}/tokens` | `revokeProjectServiceAccountTokens` | `tokens:revoke` or Owner of the project |
 
+**limits**
+
+| Method and path | Operation | Permission |
+|---|---|---|
+| `GET /api/v1/limits/profiles` | `listLimitProfiles` | `limits:read` or an Owner of any project; list the profiles of the download limits |
+| `POST /api/v1/limits/profiles` | `createLimitProfile` | `limits:write`; create a profile |
+| `GET /api/v1/limits/profiles/{key}` | `getLimitProfile` | `limits:read` or an Owner of any project; read a profile |
+| `PUT /api/v1/limits/profiles/{key}` | `replaceLimitProfile` | `limits:write`; replace a profile |
+| `DELETE /api/v1/limits/profiles/{key}` | `deleteLimitProfile` | `limits:write`; delete a profile |
+| `GET /api/v1/limits/assignments` | `listInstanceLimitAssignments` | `limits:read`; list the rules of the instance |
+| `POST /api/v1/limits/assignments` | `createInstanceLimitAssignment` | `limits:write`; create a rule at the instance |
+| `GET /api/v1/limits/assignments/{id}` | `getInstanceLimitAssignment` | `limits:read`; read a rule of the instance |
+| `PUT /api/v1/limits/assignments/{id}` | `replaceInstanceLimitAssignment` | `limits:write`; replace a rule of the instance |
+| `DELETE /api/v1/limits/assignments/{id}` | `deleteInstanceLimitAssignment` | `limits:write`; delete a rule of the instance |
+| `GET /api/v1/bastions/{name}/limits/assignments` | `listBastionLimitAssignments` | `limits:read` |
+| `POST /api/v1/bastions/{name}/limits/assignments` | `createBastionLimitAssignment` | `limits:write` |
+| `GET /api/v1/bastions/{name}/limits/assignments/{id}` | `getBastionLimitAssignment` | `limits:read` |
+| `PUT /api/v1/bastions/{name}/limits/assignments/{id}` | `replaceBastionLimitAssignment` | `limits:write` · `If-Match` |
+| `DELETE /api/v1/bastions/{name}/limits/assignments/{id}` | `deleteBastionLimitAssignment` | `limits:write` |
+| `GET /api/v1/projects/{projectKey}/limits/assignments` | `listProjectLimitAssignments` | `limits:read` or Owner of the project; list the rules of a project |
+| `POST /api/v1/projects/{projectKey}/limits/assignments` | `createProjectLimitAssignment` | `limits:write` or Owner of the project; create a rule at a project |
+| `GET /api/v1/projects/{projectKey}/limits/assignments/{id}` | `getProjectLimitAssignment` | `limits:read` or Owner of the project; read a rule of a project |
+| `PUT /api/v1/projects/{projectKey}/limits/assignments/{id}` | `replaceProjectLimitAssignment` | `limits:write` or Owner of the project; replace a rule of a project |
+| `DELETE /api/v1/projects/{projectKey}/limits/assignments/{id}` | `deleteProjectLimitAssignment` | `limits:write` or Owner of the project; delete a rule of a project |
+| `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/limits/assignments` | `listRepositoryLimitAssignments` | `limits:read` or Owner of the project; list the rules of a repository |
+| `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/limits/assignments` | `createRepositoryLimitAssignment` | `limits:write` or Owner of the project; create a rule at a repository |
+| `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/limits/assignments/{id}` | `getRepositoryLimitAssignment` | `limits:read` or Owner of the project; read a rule of a repository |
+| `PUT /api/v1/projects/{projectKey}/repositories/{repoKey}/limits/assignments/{id}` | `replaceRepositoryLimitAssignment` | `limits:write` or Owner of the project; replace a rule of a repository |
+| `DELETE /api/v1/projects/{projectKey}/repositories/{repoKey}/limits/assignments/{id}` | `deleteRepositoryLimitAssignment` | `limits:write` or Owner of the project; delete a rule of a repository |
+| `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/limits/ceilings` | `getLimitCeilings` | `repositories:read-config` or Owner of the project; read the ceilings of a remote repository |
+| `PUT /api/v1/projects/{projectKey}/repositories/{repoKey}/limits/ceilings` | `replaceLimitCeilings` | `repositories:write-config` or Owner of the project; replace the ceilings of a remote repository |
+| `GET /api/v1/limits/settings` | `getLimitSettings` | `limits:read`; read the mode and the block time |
+| `PATCH /api/v1/limits/settings` | `updateLimitSettings` | `limits:write`; change the mode or the block time · recent sign-in |
+| `GET /api/v1/limits/mode-preview` | `getLimitModePreview` | `limits:read`; what enforce would have done |
+| `GET /api/v1/projects/{projectKey}/limits/maximum` | `getLimitProjectMaximum` | `limits:read` or Owner of the project; read a project's maximum |
+| `PUT /api/v1/projects/{projectKey}/limits/maximum` | `setLimitProjectMaximum` | `limits:write`; set a project's maximum |
+| `DELETE /api/v1/projects/{projectKey}/limits/maximum` | `deleteLimitProjectMaximum` | `limits:write`; remove a project's maximum |
+| `GET /api/v1/limits/blocks` | `listLimitBlocks` | `limits:read` or an Owner of any project; list blocks |
+| `DELETE /api/v1/limits/blocks/{id}` | `liftLimitBlock` | `limits:write` or an Owner of any project; lift a block |
+| `GET /api/v1/limits/explain` | `explainLimits` | `limits:read` or an Owner of any project; which limit applies |
+| `GET /api/v1/limits/subjects` | `suggestLimitSubjects` | `limits:read` or an Owner of any project; suggest technical tokens and CI projects |
+| `GET /api/v1/limits/projects` | `listLimitProjects` | `limits:read`; every project's maximum and rule counts |
+| `GET /api/v1/usage` | `listUsage` | `usage:read`; every subject's usage |
+| `GET /api/v1/usage/export` | `exportUsage` | `usage:read`; every subject's usage as CSV |
+| `GET /api/v1/usage/subjects/{kind}/{id}` | `getUsageSubject` | `usage:read`; one subject's usage |
+| `GET /api/v1/projects/{projectKey}/usage` | `listProjectUsage` | `usage:read` or Owner of the project; usage in a project |
+| `GET /api/v1/projects/{projectKey}/usage/export` | `exportProjectUsage` | `usage:read` or Owner of the project; usage in a project as CSV |
+| `GET /api/v1/projects/{projectKey}/usage/subjects/{kind}/{id}` | `getProjectUsageSubject` | `usage:read` or Owner of the project; one subject's usage in a project |
+| `GET /api/v1/users/me/usage` | `getMyUsage` | authenticated; the caller's own usage |
+| `GET /api/v1/users/me/limits` | `getMyLimits` | authenticated; which limit applies to the caller |
+
 **auth-settings**
 
 | Method and path | Operation | Permission |
@@ -2797,8 +2883,8 @@ rights because the operation acts on the caller's own account (`x-quader-owner-r
 | Method and path | Operation | Permission |
 |---|---|---|
 | `GET /api/v1/settings/visibility` | `getVisibilitySettings` | `settings:read` |
-| `PATCH /api/v1/settings/visibility` | `updateVisibilitySettings`: `defaultLevel` and `restrictedLevels` | `security-settings:write` · recent sign-in |
-| `GET /api/v1/visibility-choices` | `getVisibilityChoices`: the levels the caller may choose | authenticated |
+| `PATCH /api/v1/settings/visibility` | `updateVisibilitySettings` | `security-settings:write`; `defaultLevel` and `restrictedLevels` · recent sign-in |
+| `GET /api/v1/visibility-choices` | `getVisibilityChoices` | authenticated; the levels the caller may choose |
 | `PUT /api/v1/projects/{projectKey}/visibility` | `setProjectVisibility` | `projects:write` · recent sign-in; a restricted level also `security-settings:write` |
 
 **auth**
@@ -2835,12 +2921,12 @@ rights because the operation acts on the caller's own account (`x-quader-owner-r
 | `POST /api/v1/projects/{projectKey}/policies` | `createProjectPermissionPolicy` | `policies:write` or Owner of the project · recent sign-in |
 | `GET /api/v1/permission-policies/{name}` | `getPermissionPolicy` | `policies:read` |
 | `PUT /api/v1/permission-policies/{name}` | `replacePermissionPolicy` | `policies:write` · recent sign-in |
-| `PATCH /api/v1/permission-policies/{name}` | `patchPermissionPolicy` | `policies:write` · recent sign-in |
 | `DELETE /api/v1/permission-policies/{name}` | `deletePermissionPolicy` | `policies:write` · recent sign-in |
+| `PATCH /api/v1/permission-policies/{name}` | `patchPermissionPolicy` | `policies:write` · recent sign-in |
 | `GET /api/v1/projects/{projectKey}/policies/{name}` | `getProjectPermissionPolicy` | `policies:read` or Owner of the project |
 | `PUT /api/v1/projects/{projectKey}/policies/{name}` | `replaceProjectPermissionPolicy` | `policies:write` or Owner of the project · recent sign-in |
-| `PATCH /api/v1/projects/{projectKey}/policies/{name}` | `patchProjectPermissionPolicy` | `policies:write` or Owner of the project · recent sign-in |
 | `DELETE /api/v1/projects/{projectKey}/policies/{name}` | `deleteProjectPermissionPolicy` | `policies:write` or Owner of the project · recent sign-in |
+| `PATCH /api/v1/projects/{projectKey}/policies/{name}` | `patchProjectPermissionPolicy` | `policies:write` or Owner of the project · recent sign-in |
 | `POST /api/v1/authz/validate-policy` | `validatePermissionPolicy` | authenticated; `policies:read`, or for a policy of a project (`"project"` in the body) an Owner of it, decided in the handler |
 | `GET /api/v1/roles` | `listRoles` | authenticated |
 | `GET /api/v1/role-bindings` | `listRoleBindings` | `roles:read` |
@@ -2853,9 +2939,9 @@ rights because the operation acts on the caller's own account (`x-quader-owner-r
 
 | Method and path | Operation | Permission |
 |---|---|---|
-| `GET /api/v1/projects` | `listProjects` | `projects:read` or a member of a project (its own projects) |
+| `GET /api/v1/projects` | `listProjects` | public; the handler narrows the list: a holder of `projects:read` sees every project, any other caller its own projects and those its level admits (`internal` for an internal subject, `public` for everyone, R-AUTHZ-033) |
 | `POST /api/v1/projects` | `createProject` | `projects:write`; `owners` names the first Owners (users and groups) |
-| `GET /api/v1/projects/{projectKey}` | `getProject` | `projects:read` or a member of the project |
+| `GET /api/v1/projects/{projectKey}` | `getProject` | public; readable with `projects:read`, by a member of the project and by any caller the project's level admits (R-AUTHZ-035 rule 8), `404` for anyone else |
 | `PUT /api/v1/projects/{projectKey}` | `replaceProject` | `projects:write` or Owner of the project · recent sign-in |
 | `DELETE /api/v1/projects/{projectKey}` | `deleteProject` | `projects:write` · recent sign-in |
 | `GET /api/v1/projects/{projectKey}/members` | `listProjectMembers` | `projects:read` or a member of the project |
@@ -2903,13 +2989,15 @@ The operations of GitLab CI federation ([docs/developer/ci-oidc.md](docs/develop
 |---|---|---|
 | `GET /api/v1/formats` | `listFormats` | public; also carries `baseUrl`, the configured base URL of the endpoint (`null` when none is configured); each format's `upstreamPresets`, the well-known registries of a remote |
 | `GET /api/v1/repositories` | `listRepositories` | public; the repositories of every project the caller may see, each with its `project`; filters `project`, `name` (up to 50 qualified names, R-API-063), `q` (the key, `<project>/<key>` or the description) |
+| `GET /api/v1/projects/{projectKey}/repository-defaults` | `getRepositoryDefaults` | `repositories:write-config` or Owner of the project; `format` and `class` in the query; what a create of only key, class and format would store, and a free key |
 | `GET /api/v1/projects/{projectKey}/repositories` | `listProjectRepositories` | public; the repositories of the project the caller may see |
 | `POST /api/v1/projects/{projectKey}/repositories` | `createProjectRepository` | `repositories:write-config` or Owner of the project |
 | `GET /api/v1/projects/{projectKey}/repositories/{repoKey}` | `getRepository` | public; the full document for `repositories:read-config` or an Owner of the project, otherwise the consumer view |
 | `PUT /api/v1/projects/{projectKey}/repositories/{repoKey}` | `replaceRepository` | `repositories:write-config` or Owner of the project |
-| `PATCH /api/v1/projects/{projectKey}/repositories/{repoKey}` | `updateRepository` | `repositories:write-config` or Owner of the project |
 | `DELETE /api/v1/projects/{projectKey}/repositories/{repoKey}` | `deleteRepository` | `repositories:write-config` or Owner of the project · recent sign-in |
+| `PATCH /api/v1/projects/{projectKey}/repositories/{repoKey}` | `updateRepository` | `repositories:write-config` or Owner of the project |
 | `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/move` | `moveRepository` | `repositories:write-config` or Owner of the project; the body `{"project": "<target>"}`; an Owner must be Owner of the target too (`404` for a target it is no member of, `403` below Owner); `409 repository_in_use` with `references`, `409 already_exists` · recent sign-in |
+| `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/upload-tokens` | `createUploadToken` | action `deploy` on `path.projectKey`/`path.repoKey`; issue the short-lived token of an upload from the screen |
 | `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/client-setup` | `getClientSetup` | action `read` on `path.projectKey`/`path.repoKey`; the publish snippets need `deploy` on the publish target; `bastion=<name>` renders on the address of a [Bastion](docs/manual/admin/bastion.md) and has no publish snippets |
 | `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/guide` | `getRepositoryGuide` | action `read` on `path.projectKey`/`path.repoKey` |
 | `GET /api/v1/formats/{format}/guide` | `getFormatGuide` | public |
@@ -2917,7 +3005,6 @@ The operations of GitLab CI federation ([docs/developer/ci-oidc.md](docs/develop
 | `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/cache/entries` | `listCacheEntries` | authenticated; `repositories:read-config`, or `manage` on the repository, decided in the handler |
 | `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/upstream-test` | `testRepositoryUpstream` | `repositories:write-config` or Owner of the project; the saved settings of a remote repository |
 | `POST /api/v1/projects/{projectKey}/upstream-tests` | `testUpstream` | `repositories:write-config` or Owner of the project; settings that are not saved; an Owner without `repositories:write-config` gives secrets as values (`secret_value_required`) |
-| `GET /api/v1/projects/{projectKey}/repository-defaults` | `getRepositoryDefaults` | `repositories:write-config` or Owner of the project; `format` and `class` in the query; what a create of only key, class and format would store, and a free key |
 | `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/claims` | `getRepositoryClaims` | action `read` on `path.projectKey`/`path.repoKey` |
 | `PUT /api/v1/projects/{projectKey}/repositories/{repoKey}/claims` | `putRepositoryClaims` | action `manage` on `path.projectKey`/`path.repoKey` |
 | `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/resolution` | `getRepositoryResolution` | action `read` on `path.projectKey`/`path.repoKey` |
@@ -2925,21 +3012,87 @@ The operations of GitLab CI federation ([docs/developer/ci-oidc.md](docs/develop
 | `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/mirror/run` | `runRepositoryMirror` | authenticated; `repositories:write-config`, an Owner of the project, or `manage` on the repository, decided in the handler · idempotent; optional body `{"full": false}` (`MirrorRunRequest`); `202` with the `mirror-pass` job; `409 mirror_pass_running` naming it while one is queued or running, `409 mirror_off`, `409 mirror_paused`, `400 not_applicable` |
 | `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/reindex` | `reindexRepository` | action `manage` on `path.projectKey`/`path.repoKey` · idempotent; `202` with the job; `409 reindex_running`; `405 not_applicable` for a format without a job-built index and for a remote repository |
 
+**deb**
+
+| Method and path | Operation | Permission |
+|---|---|---|
+| `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/deb/signing-keys` | `listDebSigningKeys` | action `read` on `path.projectKey`/`path.repoKey` |
+| `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/deb/signing-keys` | `createDebSigningKey` | action `manage` on `path.projectKey`/`path.repoKey` |
+| `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/deb/signing-keys/promote` | `promoteDebSigningKey` | action `manage` on `path.projectKey`/`path.repoKey` |
+| `DELETE /api/v1/projects/{projectKey}/repositories/{repoKey}/deb/signing-keys/{fingerprint}` | `retireDebSigningKey` | action `manage` on `path.projectKey`/`path.repoKey` |
+| `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/deb/signing-keys/{fingerprint}/reinstate` | `reinstateDebSigningKey` | action `manage` on `path.projectKey`/`path.repoKey` |
+| `PUT /api/v1/projects/{projectKey}/repositories/{repoKey}/deb/coordinates` | `putDebCoordinates` | authenticated; `deploy` for an added coordinate and `delete` for a removed one, with ownership, decided in the handler |
+| `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/deb/index` | `getDebIndexState` | action `read` on `path.projectKey`/`path.repoKey`; `waitFor` |
+
+**ansible**
+
+| Method and path | Operation | Permission |
+|---|---|---|
+| `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/imports` | `listAnsibleImportTasks` | action `read` on `path.projectKey`/`path.repoKey`; list the import tasks of an Ansible Galaxy repository |
+| `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/tombstones` | `listAnsibleTombstones` | action `manage` on `path.projectKey`/`path.repoKey`; list the tombstones of an Ansible Galaxy repository |
+| `DELETE /api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/tombstones/{collection}/{version}` | `clearAnsibleTombstone` | action `manage` on `path.projectKey`/`path.repoKey`; clear the tombstone of a deleted version |
+| `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/imports/{taskId}` | `getAnsibleImportTask` | action `read` on `path.projectKey`/`path.repoKey`; read one import task of an Ansible Galaxy repository |
+| `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/collections/{collection}/versions/{version}/signatures` | `addAnsibleVersionSignature` | action `deploy` on `path.projectKey`/`path.repoKey`; add a detached signature to a version of a local Ansible Galaxy repository |
+| `DELETE /api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/collections/{collection}/versions/{version}/signatures/{fingerprint}` | `removeAnsibleVersionSignature` | action `delete` on `path.projectKey`/`path.repoKey`; remove a signature of a version of a local Ansible Galaxy repository |
+
 **upstream** (the well-known repositories of the built-in project `upstream`, R-API-083; a caller without the read capability gets 403 on the list and on an item, Q-API-362)
 
 | Method and path | Operation | Permission |
 |---|---|---|
+| `GET /api/v1/settings/registry-presets` | `getRegistryPresets` | `repositories:read-config`; read the installation's registry presets |
+| `PUT /api/v1/settings/registry-presets` | `setRegistryPresets` | `repositories:write-config`; replace the installation's registry presets |
 | `GET /api/v1/upstream-repositories` | `listUpstreamRepositories` | `repositories:read-config` |
 | `GET /api/v1/upstream-repositories/{key}` | `getUpstreamRepository` | `repositories:read-config` |
 | `PUT /api/v1/upstream-repositories/{key}/state` | `setUpstreamRepositoryState` | `repositories:write-config` |
 | `POST /api/v1/upstream-repositories/switch-on-all` | `switchOnAllUpstreamRepositories` | `repositories:write-config` · idempotent |
 | `PUT /api/v1/upstream-repositories/{key}/visibility` | `setUpstreamRepositoryVisibility` | `repositories:write-config`; a raised level asks for a recent sign-in inside the write |
+| `PUT /api/v1/upstream-repositories/{key}/clients` | `setUpstreamRepositoryClients` | `repositories:write-config`; switch ClamAV definition updates on or off |
 | `POST /api/v1/upstream-repositories/set-visibility` | `setAllUpstreamRepositoriesVisibility` | `repositories:write-config` · idempotent |
 | `PUT /api/v1/upstream-repositories/{key}/address` | `setUpstreamRepositoryAddress` | `repositories:write-config` · recent sign-in · `If-Match` |
 | `DELETE /api/v1/upstream-repositories/{key}/address` | `resetUpstreamRepositoryAddress` | `repositories:write-config` · recent sign-in · `If-Match` |
 | `PUT /api/v1/upstream-repositories/{key}/account` | `setUpstreamRepositoryAccount` | `repositories:write-config` · recent sign-in · `If-Match` |
 | `DELETE /api/v1/upstream-repositories/{key}/account` | `removeUpstreamRepositoryAccount` | `repositories:write-config` · recent sign-in · `If-Match` |
 | `GET /api/v1/formats/{format}/upstream-repositories` | `listFormatUpstreamRepositories` | `repositories:write-config` or an Owner of any project; the preset repositories of the format that are not retired, with their state and level only (Q-API-364) |
+
+**remote-curation**
+
+| Method and path | Operation | Permission |
+|---|---|---|
+| `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-rules` | `listDeliveryRules` | authenticated; list the delivery rules of a remote repository |
+| `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-rules` | `putDeliveryRule` | authenticated; create or replace the delivery rule of a subject |
+| `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-rules/check` | `checkDeliveryRules` | authenticated; ask which delivery rule decides a package or a version |
+| `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-rules/switch` | `switchDeliveryRule` | authenticated; turn the switch of a package or a version |
+| `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-rules/summary` | `getDeliveryRulesSummary` | authenticated; what a change of the delivery mode affects |
+| `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-rules/allow-stored` | `allowStoredPackages` | authenticated; allow every stored package the mode decides |
+| `DELETE /api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-rules/{ruleId}` | `deleteDeliveryRule` | authenticated; remove a delivery rule |
+| `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-requests` | `listDeliveryRequests` | authenticated; list the requests for an allow of a remote repository |
+| `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-requests` | `askDeliveryRequest` | authenticated; ask for an allow of a package or a version |
+| `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-requests/{requestId}/allow` | `allowDeliveryRequest` | authenticated; allow a request |
+| `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-requests/{requestId}/decline` | `declineDeliveryRequest` | authenticated; decline a request with a reason |
+| `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-requests/{requestId}/withdraw` | `withdrawDeliveryRequest` | authenticated; withdraw from a request |
+| `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/examinations/discard` | `discardExaminations` | authenticated; discard what a remote stores and does not deliver |
+| `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/downloads/preview` | `previewRemoteDownload` | authenticated; preview a download ahead of a client |
+| `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/downloads` | `listRemoteDownloads` | authenticated; list the download queue of a remote repository |
+| `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/downloads` | `startRemoteDownload` | authenticated; start a download ahead of a client |
+| `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/downloads/retry` | `retryRemoteDownloads` | authenticated; retry every failed download that matches |
+| `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/downloads/{downloadId}` | `getRemoteDownload` | authenticated; read one row of the download queue |
+| `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/downloads/{downloadId}/retry` | `retryRemoteDownload` | authenticated; retry a failed or cancelled download |
+| `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/downloads/{downloadId}/cancel` | `cancelRemoteDownload` | authenticated; cancel a download |
+| `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/download-bulks` | `listRemoteDownloadBulks` | authenticated; list the bulk downloads of a remote repository |
+| `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/download-bulks/{bulkId}` | `getRemoteDownloadBulk` | authenticated; read a bulk download |
+| `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/download-bulks/{bulkId}/cancel` | `cancelRemoteDownloadBulk` | authenticated; cancel a bulk download |
+| `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/download-syncs` | `listRemoteDownloadSyncs` | authenticated; list the downloads a remote repository keeps in sync |
+| `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/download-syncs` | `createRemoteDownloadSync` | authenticated; keep a package or a sub-section of a remote repository in sync |
+| `DELETE /api/v1/projects/{projectKey}/repositories/{repoKey}/download-syncs/{syncId}` | `deleteRemoteDownloadSync` | authenticated; stop keeping a package or a sub-section in sync |
+| `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/download-syncs/{syncId}/run` | `runRemoteDownloadSync` | authenticated; run a sync now |
+| `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/download-syncs/{syncId}/pause` | `pauseRemoteDownloadSync` | authenticated; pause a sync |
+| `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/download-syncs/{syncId}/resume` | `resumeRemoteDownloadSync` | authenticated; resume a sync |
+| `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/upstream` | `getUpstreamCatalogue` | authenticated; the upstream catalogue's capabilities of a remote repository |
+| `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/upstream/search` | `searchUpstreamCatalogue` | authenticated; search the upstream of a remote repository |
+| `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/upstream/levels` | `listUpstreamLevel` | authenticated; list a level of the upstream of a remote repository |
+| `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/upstream/package` | `getUpstreamPackage` | authenticated; look a package of the upstream up by its exact name |
+| `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/upstream/readme` | `getUpstreamReadme` | authenticated; the README of a package of the upstream, read through |
+| `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/upstream/vulnerabilities` | `evaluateUpstreamVulnerabilities` | authenticated; the vulnerability verdicts of versions the repository has not stored |
 
 **items**
 
@@ -2955,12 +3108,12 @@ The operations of GitLab CI federation ([docs/developer/ci-oidc.md](docs/develop
 | Method and path | Operation | Permission |
 |---|---|---|
 | `GET /files/{projectKey}/{repoKey}/{path}` | `downloadFile` | action `read` on `path.projectKey`/`path.repoKey` |
-| `HEAD /files/{projectKey}/{repoKey}/{path}` | `headFile` | action `read` on `path.projectKey`/`path.repoKey` |
 | `PUT /files/{projectKey}/{repoKey}/{path}` | `deployFile` | action `deploy` on `path.projectKey`/`path.repoKey` |
 | `DELETE /files/{projectKey}/{repoKey}/{path}` | `deleteFile` | action `delete` on `path.projectKey`/`path.repoKey` |
+| `HEAD /files/{projectKey}/{repoKey}/{path}` | `headFile` | action `read` on `path.projectKey`/`path.repoKey` |
 | `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/content/{path}` | `downloadContent` | action `read` on `path.projectKey`/`path.repoKey` |
-| `HEAD /api/v1/projects/{projectKey}/repositories/{repoKey}/content/{path}` | `headContent` | action `read` on `path.projectKey`/`path.repoKey` |
 | `PUT /api/v1/projects/{projectKey}/repositories/{repoKey}/content/{path}` | `deployContent` | action `deploy` on `path.projectKey`/`path.repoKey` |
+| `HEAD /api/v1/projects/{projectKey}/repositories/{repoKey}/content/{path}` | `headContent` | action `read` on `path.projectKey`/`path.repoKey` |
 
 **endpoints**
 
@@ -2972,8 +3125,8 @@ The operations of GitLab CI federation ([docs/developer/ci-oidc.md](docs/develop
 | `POST /api/v1/endpoints/{endpoint}/exposure-rules` | `createExposureRule` | `endpoints:write` · recent sign-in |
 | `GET /api/v1/endpoints/{endpoint}/exposure-rules/{name}` | `getExposureRule` | `endpoints:read` |
 | `PUT /api/v1/endpoints/{endpoint}/exposure-rules/{name}` | `replaceExposureRule` | `endpoints:write` · recent sign-in |
-| `PATCH /api/v1/endpoints/{endpoint}/exposure-rules/{name}` | `patchExposureRule` | `endpoints:write` · recent sign-in |
 | `DELETE /api/v1/endpoints/{endpoint}/exposure-rules/{name}` | `deleteExposureRule` | `endpoints:write` · recent sign-in |
+| `PATCH /api/v1/endpoints/{endpoint}/exposure-rules/{name}` | `patchExposureRule` | `endpoints:write` · recent sign-in |
 | `POST /api/v1/endpoints/{endpoint}/check-exposure` | `checkExposure` | `endpoints:read` |
 
 **packages**
@@ -2981,19 +3134,21 @@ The operations of GitLab CI federation ([docs/developer/ci-oidc.md](docs/develop
 | Method and path | Operation | Permission |
 |---|---|---|
 | `GET /api/v1/packages` | `listPackages` | public; lists and counts only the versions the caller may read |
+| `GET /api/v1/packages/namespace` | `getPackageNamespace` | public; who may publish into a namespace |
 | `GET /api/v1/packages/lookup` | `lookupPackage` | public; as above |
 | `GET /api/v1/packages/{packageId}` | `getPackage` | public; as above |
+| `GET /api/v1/packages/{packageId}/dependents` | `listPackageDependents` | public; list the packages that depend on a package |
 | `GET /api/v1/packages/{packageId}/versions` | `listPackageVersions` | public; as above |
 | `GET /api/v1/packages/{packageId}/versions/{version}` | `getPackageVersion` | public; as above |
 | `GET /api/v1/packages/{packageId}/versions/{version}/readme` | `getPackageVersionReadme` | public; as above |
 | `GET /api/v1/packages/{packageId}/versions/{version}/icon` | `getPackageVersionIcon` | public; as above; a PNG or a JPEG by its bytes, `private, no-cache` (R-NUGET-038) |
 | `GET /api/v1/packages/{packageId}/versions/{version}/license` | `getPackageVersionLicense` | public; as above; UTF-8 text, never markup (R-NUGET-038) |
-
-**search** (R-API-060 to R-API-064)
-
-| Method and path | Operation | Permission |
-|---|---|---|
-| `GET /api/v1/search/suggestions` | `getSearchSuggestions` | public; the best matches of `q` per `kind` among what the caller may read, decided as the lists decide; `kind` `user`, `group` and `service_account` need `identities:read` ([security](docs/security/search.md)) |
+| `GET /api/v1/packages/{packageId}/versions/{version}/contents` | `getPackageVersionContents` | public; read what Quader read from a version's package file |
+| `GET /api/v1/packages/{packageId}/versions/{version}/docs` | `getPackageVersionDocs` | public; read the documentation tree of a version |
+| `GET /api/v1/packages/{packageId}/versions/{version}/docs/entries/{type}/{name}` | `getPackageVersionDocEntry` | public; read the documentation page of one module, plugin or role |
+| `GET /api/v1/packages/{packageId}/versions/{version}/docs/files/{file}` | `getPackageVersionDocFile` | public; read the README, a Markdown file or the changelog of the documentation of a version |
+| `PUT /api/v1/projects/{projectKey}/repositories/{repoKey}/packages/{packageName}/deprecation` | `setPackageDeprecation` | authenticated; deprecate a version or a package |
+| `DELETE /api/v1/projects/{projectKey}/repositories/{repoKey}/packages/{packageName}/deprecation` | `clearPackageDeprecation` | authenticated; undo the deprecation of a version or a package |
 
 **ownership**
 
@@ -3019,15 +3174,10 @@ The operations of GitLab CI federation ([docs/developer/ci-oidc.md](docs/develop
 | `POST /api/v1/bastions` | `createBastion` | `endpoints:write` |
 | `GET /api/v1/bastions/presets` | `listBastionPresets` | `limits:read` |
 | `GET /api/v1/bastions/{name}` | `getBastion` | authenticated; `endpoints:read` (every member) or `limits:read` (`id`, `name`, `limits`, `status`), decided in the handler |
-| `PATCH /api/v1/bastions/{name}` | `updateBastion` | authenticated; `limits:write` for the member `limits`, `endpoints:write` for every other member, decided in the handler (a patch of both needs both) · `If-Match`; a change of `limits.mode` needs a recent sign-in |
 | `DELETE /api/v1/bastions/{name}` | `deleteBastion` | `endpoints:write` |
+| `PATCH /api/v1/bastions/{name}` | `updateBastion` | authenticated; `limits:write` for the member `limits`, `endpoints:write` for every other member, decided in the handler (a patch of both needs both) · `If-Match`; a change of `limits.mode` needs a recent sign-in |
 | `POST /api/v1/bastions/{name}/tokens` | `createBastionToken` | `endpoints:write` · recent sign-in · idempotent · the secret once |
 | `DELETE /api/v1/bastions/{name}/tokens/{id}` | `revokeBastionToken` | authenticated; `endpoints:write` or `tokens:revoke`, decided in the handler |
-| `GET /api/v1/bastions/{name}/limits/assignments` | `listBastionLimitAssignments` | `limits:read` |
-| `POST /api/v1/bastions/{name}/limits/assignments` | `createBastionLimitAssignment` | `limits:write` |
-| `GET /api/v1/bastions/{name}/limits/assignments/{id}` | `getBastionLimitAssignment` | `limits:read` |
-| `PUT /api/v1/bastions/{name}/limits/assignments/{id}` | `replaceBastionLimitAssignment` | `limits:write` · `If-Match` |
-| `DELETE /api/v1/bastions/{name}/limits/assignments/{id}` | `deleteBastionLimitAssignment` | `limits:write` |
 
 **bastion**
 
@@ -3041,18 +3191,6 @@ The operations of GitLab CI federation ([docs/developer/ci-oidc.md](docs/develop
 | `GET /api/v1/bastion/catalogue/document` | `bastionCatalogueDocument` | a recognized Bastion (the Bastion interface) |
 | `POST /api/v1/bastion/catalogue/documents` | `bastionCatalogueDocuments` | a recognized Bastion (the Bastion interface) |
 | `GET /api/v1/bastion/catalogue/public` | `bastionCataloguePublic` | a recognized Bastion (the Bastion interface) |
-
-**deb**
-
-| Method and path | Operation | Permission |
-|---|---|---|
-| `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/deb/signing-keys` | `listDebSigningKeys` | action `read` on `path.projectKey`/`path.repoKey` |
-| `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/deb/signing-keys` | `createDebSigningKey` | action `manage` on `path.projectKey`/`path.repoKey` |
-| `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/deb/signing-keys/promote` | `promoteDebSigningKey` | action `manage` on `path.projectKey`/`path.repoKey` |
-| `DELETE /api/v1/projects/{projectKey}/repositories/{repoKey}/deb/signing-keys/{fingerprint}` | `retireDebSigningKey` | action `manage` on `path.projectKey`/`path.repoKey` |
-| `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/deb/signing-keys/{fingerprint}/reinstate` | `reinstateDebSigningKey` | action `manage` on `path.projectKey`/`path.repoKey` |
-| `PUT /api/v1/projects/{projectKey}/repositories/{repoKey}/deb/coordinates` | `putDebCoordinates` | authenticated; `deploy` for an added coordinate and `delete` for a removed one, with ownership, decided in the handler |
-| `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/deb/index` | `getDebIndexState` | action `read` on `path.projectKey`/`path.repoKey`; `waitFor` |
 
 **vulnerabilities**
 
@@ -3084,6 +3222,8 @@ The operations of the malware scanning ([docs/developer/malware.md](docs/develop
 | `GET /api/v1/malware/signatures` | `getMalwareSignatures` | public, an anonymous caller where the endpoint admits one; today's set, the unit, the engine the ready scanners state, the bounds (R-MAL-040) |
 | `GET /api/v1/malware/settings` | `getMalwareSettings` | `settings:read` |
 | `PATCH /api/v1/malware/settings` | `updateMalwareSettings` | `settings:write` · `If-Match`; a JSON merge patch with `onlyChecked`, journaled when it turns on |
+| `GET /api/v1/malware/controller` | `getMalwareController` | `settings:read`; read what the scan controller sees |
+| `GET /api/v1/malware/coverage` | `getMalwareCoverage` | `content:metadata-read`; read how current the malware checks are |
 | `GET /api/v1/malware/finds` | `listMalwareFinds` | authenticated; the items the caller may read, every item for a holder of `content:metadata-read` |
 | `GET /api/v1/malware/blobs/{sha256}` | `getMalwareBlob` | public; `read` on a repository that holds the blob, `404` otherwise |
 | `POST /api/v1/malware/releases` | `createMalwareRelease` | `vulnerabilities:triage` and `content:metadata-read`; `409 nothing_to_release`, `409 already_released` |
@@ -3102,6 +3242,51 @@ The operations of the delivery by signed links of the object store ([docs/develo
 | `POST /api/v1/download-links/test` | `testDownloadLink` | `settings:write`; `{"connection", "publicAddress"}`, a link to a probe valid for 60 s with its `curl` command; `422` for an address a save refuses, `409 connection_unavailable` for a failing connection |
 | `GET /api/v1/download-links/switch` | `getDownloadLinkSwitch` | authenticated; `enabled` and the `formats` it reaches only |
 
+**signatures**
+
+| Method and path | Operation | Permission |
+|---|---|---|
+| `GET /api/v1/packages/{packageId}/versions/{version}/signatures` | `getPackageVersionSignatures` | public; the signatures of one version, per repository |
+| `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/signatures` | `getFileSignatures` | action `read` on `path.projectKey`/`path.repoKey`; the signatures of one stored file |
+| `GET /api/v1/signatures/objects/{sha256}` | `getSignatureObject` | public; download the original of a signature |
+| `GET /api/v1/signatures/settings` | `getSignatureSettings` | `settings:read`; read the switch for project trust anchors and the state of the signatures |
+| `PATCH /api/v1/signatures/settings` | `updateSignatureSettings` | `security-settings:write`; allow or forbid project trust anchors · recent sign-in |
+| `GET /api/v1/signatures/anchors` | `listSignatureAnchors` | `settings:read`; list the trust anchors |
+| `POST /api/v1/signatures/anchors` | `createSignatureAnchor` | `security-settings:write`; add a trust anchor of the installation |
+| `GET /api/v1/signatures/anchors/{id}` | `getSignatureAnchor` | `settings:read`; read one trust anchor |
+| `DELETE /api/v1/signatures/anchors/{id}` | `deleteSignatureAnchor` | `security-settings:write`; remove a trust anchor |
+| `PATCH /api/v1/signatures/anchors/{id}` | `updateSignatureAnchor` | `security-settings:write`; change or switch a trust anchor |
+| `GET /api/v1/projects/{projectKey}/signatures/anchors` | `listProjectSignatureAnchors` | `settings:read` or a member of the project; list the trust anchors of a project |
+| `POST /api/v1/projects/{projectKey}/signatures/anchors` | `createProjectSignatureAnchor` | `security-settings:write` or Owner of the project; add a trust anchor of a project |
+| `DELETE /api/v1/projects/{projectKey}/signatures/anchors/{id}` | `deleteProjectSignatureAnchor` | `security-settings:write` or Owner of the project; remove a trust anchor of a project |
+| `PATCH /api/v1/projects/{projectKey}/signatures/anchors/{id}` | `updateProjectSignatureAnchor` | `security-settings:write` or Owner of the project; change or switch a trust anchor of a project |
+| `GET /api/v1/signatures/blocks` | `listSignatureBlocks` | `settings:read`; list the blocked signers |
+| `POST /api/v1/signatures/blocks` | `createSignatureBlock` | `security-settings:write`; block a signer |
+| `DELETE /api/v1/signatures/blocks/{id}` | `deleteSignatureBlock` | `security-settings:write`; lift a block |
+| `GET /api/v1/signatures/findings` | `listSignatureFindings` | authenticated; list invalid signatures and the signatures of blocked signers |
+| `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/signatures/preview` | `previewRepositorySignatureGate` | `repositories:read-config` or Owner of the project; what the repository's signature gate would refuse |
+| `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/signatures/releases` | `listSignatureReleases` | authenticated; the releases of the repository's signature gate |
+| `POST /api/v1/projects/{projectKey}/repositories/{repoKey}/signatures/releases` | `createSignatureRelease` | `vulnerabilities:triage`; release an artifact the repository's signature gate does not pass |
+| `DELETE /api/v1/projects/{projectKey}/repositories/{repoKey}/signatures/releases/{sha256}` | `deleteSignatureRelease` | `vulnerabilities:triage`; withdraw a release of the repository's signature gate |
+| `GET /api/v1/signatures/refusals` | `listSignatureRefusals` | authenticated; list the downloads the repositories' signature gates refused |
+| `POST /api/v1/signatures/impact` | `countSignatureImpact` | `security-settings:write` or an Owner of any project; count what a change of anchors, blocks or the switch makes the signature gates refuse |
+| `GET /api/v1/signing/identity` | `getSigningIdentity` | `settings:read`; read Quader's signing identity |
+| `DELETE /api/v1/signing/identity` | `removeSigningIdentity` | `security-settings:write`; remove the current uploaded signing identity · recent sign-in |
+| `POST /api/v1/signing/identity/key` | `createSigningKey` | `security-settings:write`; create a signing key and its certificate request · recent sign-in |
+| `PUT /api/v1/signing/identity/certificate` | `uploadSigningCertificate` | `security-settings:write`; upload the certificate the CA issued for the pending key · recent sign-in |
+| `POST /api/v1/signing/identity/import` | `importSigningIdentity` | `security-settings:write`; import a signing key and its certificate · recent sign-in |
+| `DELETE /api/v1/signing/identity/pending` | `discardSigningKey` | `security-settings:write`; discard the pending signing key · recent sign-in |
+| `POST /api/v1/signing/identities/{id}/retire` | `retireSigningIdentity` | `security-settings:write`; retire a previous signing identity · recent sign-in |
+| `GET /api/v1/signing/trusted-root.json` | `getSigningTrustedRoot` | public; the trusted root of Quader's signatures |
+| `GET /api/v1/signing/chain.pem` | `getSigningChain` | public; the certificate chain of the current signing identity |
+| `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/attestation` | `getAttestation` | action `read` on `path.projectKey`/`path.repoKey`; quader's receipt attestation of one stored file |
+
+**search** (R-API-060 to R-API-064)
+
+| Method and path | Operation | Permission |
+|---|---|---|
+| `GET /api/v1/search/suggestions` | `getSearchSuggestions` | public; the best matches of `q` per `kind` among what the caller may read, decided as the lists decide; `kind` `user`, `group` and `service_account` need `identities:read` ([security](docs/security/search.md)) |
+| `GET /api/v1/search/documentation` | `searchDocumentation` | public; find modules, plugins and roles across collections |
 </details>
 
 ### System API
