@@ -7942,7 +7942,7 @@
     </unit>
     <unit id="bastion.switches.gui-on">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-switches.ts:35,36</note>
+        <note category="location">src/app/features/bastions/bastion-switches.ts:41,42</note>
       </notes>
       <segment>
         <source>The <pc id="0" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">web interface</pc> is on.</source>
@@ -7951,7 +7951,7 @@
     </unit>
     <unit id="bastion.switches.gui-off">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-switches.ts:37,38</note>
+        <note category="location">src/app/features/bastions/bastion-switches.ts:43,44</note>
       </notes>
       <segment>
         <source>The <pc id="0" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">web interface</pc> is off.</source>
@@ -7960,16 +7960,25 @@
     </unit>
     <unit id="bastion.switches.gui-note">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-switches.ts:42,45</note>
+        <note category="location">src/app/features/bastions/bastion-switches.ts:48,51</note>
       </notes>
       <segment>
         <source> A read-only web interface on this Bastion shows the packages of public repositories to anyone, without signing in. Off, its pages answer &quot;not found&quot; within seconds and what it showed is deleted. </source>
         <target> Eine schreibgeschützte Weboberfläche auf dieser Bastion zeigt die Pakete öffentlicher Repositorys jedem, ohne Anmeldung. Ausgeschaltet antworten ihre Seiten binnen Sekunden mit „nicht gefunden“, und was sie zeigte, wird gelöscht. </target>
       </segment>
     </unit>
+    <unit id="bastion.switches.gui-remote">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-switches.ts:53,55</note>
+      </notes>
+      <segment>
+        <source> A public remote repository shows here every package and version your builds fetched through it. </source>
+        <target> Ein öffentliches Remote-Repository zeigt hier jedes Paket und jede Version, die Ihre Builds darüber geladen haben. </target>
+      </segment>
+    </unit>
     <unit id="bastion.switches.catalogue-built">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-switches.ts:50,52</note>
+        <note category="location">src/app/features/bastions/bastion-switches.ts:60,62</note>
       </notes>
       <segment>
         <source>Last built <pc id="0" equivStart="START_TAG_QUADER_TIME_AGO" equivEnd="CLOSE_TAG_QUADER_TIME_AGO" type="other" dispStart="&lt;quader-time-ago [at]=&quot;c.at&quot; absolute=&quot;title&quot; /&gt;" dispEnd="&lt;quader-time-ago [at]=&quot;c.at&quot; absolute=&quot;title&quot; /&gt;"></pc>.</source>
@@ -7978,7 +7987,7 @@
     </unit>
     <unit id="bastion.switches.catalogue-stopped">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-switches.ts:53,56</note>
+        <note category="location">src/app/features/bastions/bastion-switches.ts:63,66</note>
       </notes>
       <segment>
         <source>Not built: the warning above says why.</source>
@@ -7987,7 +7996,7 @@
     </unit>
     <unit id="bastion.switches.catalogue-pending">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-switches.ts:56,60</note>
+        <note category="location">src/app/features/bastions/bastion-switches.ts:66,70</note>
       </notes>
       <segment>
         <source>Not built yet. The first build follows within seconds.</source>
@@ -7996,7 +8005,7 @@
     </unit>
     <unit id="bastion.switches.docs-name">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-switches.ts:63,65</note>
+        <note category="location">src/app/features/bastions/bastion-switches.ts:73,75</note>
       </notes>
       <segment>
         <source>Documentation</source>
@@ -8005,7 +8014,7 @@
     </unit>
     <unit id="bastion.switches.docs-on">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-switches.ts:70,71</note>
+        <note category="location">src/app/features/bastions/bastion-switches.ts:80,81</note>
       </notes>
       <segment>
         <source><pc id="0" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">Documentation</pc> is on.</source>
@@ -8014,7 +8023,7 @@
     </unit>
     <unit id="bastion.switches.docs-off">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-switches.ts:72,73</note>
+        <note category="location">src/app/features/bastions/bastion-switches.ts:82,83</note>
       </notes>
       <segment>
         <source><pc id="0" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">Documentation</pc> is off.</source>
@@ -8023,7 +8032,7 @@
     </unit>
     <unit id="bastion.switches.docs-note">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-switches.ts:77,80</note>
+        <note category="location">src/app/features/bastions/bastion-switches.ts:87,90</note>
       </notes>
       <segment>
         <source> The web interface also shows each package&apos;s README and documentation where its repository&apos;s level allows it. Takes effect only while the web interface is on. </source>
@@ -8032,7 +8041,7 @@
     </unit>
     <unit id="bastion.switches.docs-idle">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-switches.ts:83,86</note>
+        <note category="location">src/app/features/bastions/bastion-switches.ts:93,96</note>
       </notes>
       <segment>
         <source>Documentation is on, but the web interface is off: nothing is shown.</source>
@@ -8041,7 +8050,7 @@
     </unit>
     <unit id="bastion.switches.gui-label">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-switches.ts:138</note>
+        <note category="location">src/app/features/bastions/bastion-switches.ts:149</note>
       </notes>
       <segment>
         <source>Web interface of <ph id="0" equiv="name" disp="this.bastion().name"/></source>
@@ -8050,7 +8059,7 @@
     </unit>
     <unit id="bastion.switches.docs-label">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-switches.ts:139</note>
+        <note category="location">src/app/features/bastions/bastion-switches.ts:150</note>
       </notes>
       <segment>
         <source>Documentation in the web interface of <ph id="0" equiv="name" disp="this.bastion().name"/></source>
@@ -8059,7 +8068,7 @@
     </unit>
     <unit id="bastion.switches.gui-on-done">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-switches.ts:163</note>
+        <note category="location">src/app/features/bastions/bastion-switches.ts:174</note>
       </notes>
       <segment>
         <source>Web interface switched on.</source>
@@ -8068,7 +8077,7 @@
     </unit>
     <unit id="bastion.switches.gui-off-done">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-switches.ts:164</note>
+        <note category="location">src/app/features/bastions/bastion-switches.ts:175</note>
       </notes>
       <segment>
         <source>Web interface switched off.</source>
@@ -8077,7 +8086,7 @@
     </unit>
     <unit id="bastion.switches.docs-on-done">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-switches.ts:167</note>
+        <note category="location">src/app/features/bastions/bastion-switches.ts:178</note>
       </notes>
       <segment>
         <source>Documentation switched on.</source>
@@ -8086,7 +8095,7 @@
     </unit>
     <unit id="bastion.switches.docs-off-done">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-switches.ts:168</note>
+        <note category="location">src/app/features/bastions/bastion-switches.ts:179</note>
       </notes>
       <segment>
         <source>Documentation switched off.</source>

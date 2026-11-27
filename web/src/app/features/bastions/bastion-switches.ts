@@ -27,7 +27,13 @@ type SwitchName = 'gui' | 'docs';
     <h4 i18n="@@bastion.switches.heading">Web interface</h4>
     @if (canWrite()) {
       <div class="state">
-        <quader-switch [checked]="gui()" [label]="guiLabel()" [busy]="busy() === 'gui'" [describedBy]="guiNote()" (checkedChange)="set('gui', $event)" />
+        <quader-switch
+          [checked]="gui()"
+          [label]="guiLabel()"
+          [busy]="busy() === 'gui'"
+          [describedBy]="guiNote() + ' ' + guiRemote()"
+          (checkedChange)="set('gui', $event)"
+        />
       </div>
     } @else {
       <p class="state-text" data-testid="bastion-gui-state">
@@ -41,6 +47,10 @@ type SwitchName = 'gui' | 'docs';
     <p class="hint note" [id]="guiNote()" i18n="@@bastion.switches.gui-note">
       A read-only web interface on this Bastion shows the packages of public repositories to anyone, without signing in. Off, its pages
       answer "not found" within seconds and what it showed is deleted.
+    </p>
+    <!-- What a public remote shows, which only the manual said (W35-P9f): the dependencies the builds pulled through it. -->
+    <p class="hint note" [id]="guiRemote()" i18n="@@bastion.switches.gui-remote">
+      A public remote repository shows here every package and version your builds fetched through it.
     </p>
     <!-- What the main installation last built for the web interface (R-BAS-104); a stop's reason and what to do stand in plain view. -->
     @if (catalogue(); as c) {
@@ -134,6 +144,7 @@ export class BastionSwitches {
   /** The builder's last run while the web interface is on, as the registration read last says it. */
   protected readonly catalogue = computed(() => catalogueLine({ switches: { ...this.bastion().switches, gui: this.gui() }, catalogue: this.bastion().catalogue }));
   protected readonly guiNote = computed(() => `bastion-gui-note-${this.bastion().name}`);
+  protected readonly guiRemote = computed(() => `bastion-gui-remote-${this.bastion().name}`);
   protected readonly docsNote = computed(() => `bastion-docs-note-${this.bastion().name}`);
   protected readonly guiLabel = computed(() => $localize`:@@bastion.switches.gui-label:Web interface of ${this.bastion().name}:name:`);
   protected readonly docsLabel = computed(() => $localize`:@@bastion.switches.docs-label:Documentation in the web interface of ${this.bastion().name}:name:`);

@@ -1028,6 +1028,9 @@ describe("A Bastion's limits, throughput, switches and state on its card (R-UI-2
     expect(limits.querySelector('quader-bastion-egress[part="list"] input')).not.toBeNull();
     const gui = limits.querySelector<HTMLElement>('[role="switch"][aria-label="Web interface of partners"]')!;
     expect(gui.getAttribute('aria-checked')).toBe('false');
+    // The switch is described by its sentence and by what a public remote shows through it (W35-P9f).
+    const described = gui.getAttribute('aria-describedby')!.split(' ').map((id) => text(root.querySelector(`#${id}`)!));
+    expect(described[1]).toBe('A public remote repository shows here every package and version your builds fetched through it.');
     gui.click();
     await sleep(fixture, 100);
     expect(api.patches).toEqual([{ switches: { gui: true } }]);

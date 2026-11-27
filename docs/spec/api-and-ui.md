@@ -10426,7 +10426,8 @@ networks as one field, the slots, the anonymous ceiling, the throughput's share 
 [Q-UI-1487](#q-ui-1487--the-details-are-one-form-whose-refusal-keeps-what-was-typed-and-the-exempt-networks-are-one-field)), R-UI-243's
 list, `<quader-bastion-switches>` ([bastion-switches.ts](../../web/src/app/features/bastions/bastion-switches.ts), each switch with its
 sentence; **Documentation** says that it takes effect only with the web interface, and a line says so where it is on without it; *since
-W35-P9f* while the web interface is on a line says "Last built" with the time of the builder's last run, "Not built yet" before its
+W35-P9f* a second line under **Web interface**, which describes the switch with its sentence, says that a public remote repository shows
+every package and version the builds fetched through it ([manual](../manual/admin/bastion.md#what-becomes-public)); while the web interface is on a line says "Last built" with the time of the builder's last run, "Not built yet" before its
 first, or that the warning above says why it is not built) and the link **Rules of this Bastion**. The list reads again every few seconds
 while a web interface waits for its first build (R-UI-213), every minute otherwise. English and German.
 
@@ -10439,7 +10440,8 @@ Acceptance criteria:
   replaces and with nothing to replace, **Custom**, the mode's dialog refused for recent authentication and then sent, the throughput's
   field, the details' merge patch, both halves of the permission split and the switches' sentences. *Since W35-P9f* also
   "R-BAS-104 the card says what the main installation last built for the web interface, and why it builds nothing with what to do"
-  (both reasons, built, not built yet, nothing with the web interface off).
+  (both reasons, built, not built yet, nothing with the web interface off), and the switch **Web interface** described by the line of a
+  public remote ("R-UI-240 R-BAS-093 endpoints:write alone …").
 - Rendered (rule 11): the card in both schemes, wide and narrow, with Internet, Custom and an Audit mode, the details open and closed;
   since W35-P9f with both reasons of a stop and a built catalogue (`admin-bastions`, `admin-bastions-limits` in English and German).
 
