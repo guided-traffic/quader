@@ -6377,6 +6377,11 @@ The priority is the one of R-BAS-101 to R-BAS-103.
   `server.additional_base_urls` (the rule of client-setup with `bastion=<name>`, R-BAS-007, `catalogue.BaseURL`); a registration that
   reported none, or one the installation does not list, is not built: the builder records `bastion_base_url_unknown` in its state for the
   registration's card and keeps what it built before. A disabled registration builds nothing.
+- **The outcome on the registration.** `GET /api/v1/bastions/{name}` and the list carry the member `catalogue`, the builder's last
+  outcome read from its state: `built`, `stopped` with its `reason` (`bastion_base_url_unknown`, `anonymous_requests_refused`), or
+  `pending` while no run completed, with the times of the last run (`checkedAt`) and of the last run that changed the catalogue
+  (`builtAt`); null while the builder holds no state for the registration. The card says it in words, a stop's reason with what to do
+  in plain view (R-UI-240, [Q-BAS-497](#q-bas-497--the-registration-carries-the-builders-last-outcome-and-the-card-says-a-stop-in-plain-view)).
 - **What it builds, per format** (W-35's section C): the index of public packages (`index/<n>`, pages of 100 in the list's order, name),
   per package its summary, its versions and its open findings per version (R-BAS-128), per version the version, its README (`docs` on and a public wiki, R-BAS-124), its open findings, its signatures, the
   Debian contents (the changelog and the copyright only with `docs` on), the Ansible documentation tree with every entry that has
@@ -6396,7 +6401,8 @@ The priority is the one of R-BAS-101 to R-BAS-103.
 The switches are the registration's stored ones since E8 (`PATCH /api/v1/bastions/{name}` with `switches.gui` and `switches.docs`); the
 integration suite may set them instead (`app.Options.BastionSwitches`, tests only). *Built on 2026-11-27 (W35-P9f, H-2330):* the default
 endpoint's `auth.anonymous` (`Options.AnonymousRefused`, `anonymousRefused` of the wiring), the stop reason `anonymous_requests_refused`
-(migration 00155).
+(migration 00155); the member `catalogue` of the registration (the statements `BastionGet` and `BastionList`, `catalogueOutcome` of
+[bastion_registrations_api.go](../../internal/api/v1/bastion_registrations_api.go)) and the card's lines.
 
 Acceptance criteria:
 
@@ -6406,12 +6412,15 @@ Acceptance criteria:
   `TestR_BAS_104_NothingIsBuiltWhileTheDefaultEndpointRefusesAnonymousRequests` (a built catalogue emptied with its public set, a
   Bastion's cursor answered `reset`, the reason kept, a second run changing nothing, the endpoint opened again building it again);
   ([wire_bastion_catalogue_test.go](../../internal/app/wire_bastion_catalogue_test.go))
-  `TestR_BAS_104_TheBuilderTakesTheDefaultEndpointsAnonymousSetting`.
+  `TestR_BAS_104_TheBuilderTakesTheDefaultEndpointsAnonymousSetting`; (`internal/api/v1`)
+  `TestR_BAS_104_TheRegistrationSaysTheBuildersLastOutcome` (absent, pending, built, stopped with each reason, times in UTC).
 - Integration (area `bastion`, [catalogue_test.go](../../test/integration/bastion/catalogue_test.go), the role all, two npm packages and a
   NuGet package of bytes, about 11 s with the world's set-up): `TestR_BAS_104_TheCatalogueFollowsPublishesLevelsAndTheSwitch`: a publish is
   in the change list within the debounce and a run (measured 0.9 to 1.7 s), every document read through the batch verifies and names
-  neither the main installation's base URL, nor another entry of `server.additional_base_urls`, nor `/api/v1/`, nor the publisher; a level
-  lowered to private deletes the packages; `gui` off answers `404` at once and the next run deletes the catalogue.
+  neither the main installation's base URL, nor another entry of `server.additional_base_urls`, nor `/api/v1/`, nor the publisher; the
+  registration's `catalogue` says `built` with the run's time; a level lowered to private deletes the packages; `gui` off answers `404`
+  at once and the next run deletes the catalogue, and the registration carries no `catalogue` then.
+- Vitest (`bastions.spec.ts`): the card's line and warnings, see R-UI-240.
 
 ### R-BAS-105 · When the builder runs: triggers, the hourly reconciliation by fingerprints
 Priority: **P1** · Covers: quader-only
@@ -15246,6 +15255,26 @@ which no signal and no change area carries.
 
 **Choice:** (a). **Applied in the spec:** R-BAS-105; code: `Drift` of [builder.go](../../internal/bastionmain/catalogue/builder.go), the
 trigger's `drift` in [wire_bastion_catalogue.go](../../internal/app/wire_bastion_catalogue.go).
+
+### Q-BAS-497 · The registration carries the builder's last outcome, and the card says a stop in plain view
+
+Status: **Decided by the development agent** on 2026-11-27 (W35-P9f) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-BAS-104 recorded `bastion_base_url_unknown` "for the registration's card", but no member of the API carried it, so an
+administrator whose web interface stayed empty learned nothing of why.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A member `catalogue` of the registration (`outcome` built, stopped or pending, `reason`, `checkedAt`, `builtAt`) in the read of one and the list, read with the registration in one statement; on the card, a stop's reason with what to do among the plain view's warnings, and a line under the switch **Web interface** with the last build (chosen) | The card the administrator already reads | No request more: the list the card reads carries it; a stop is seen without opening **Details**, as the other warnings are | The registration's `ETag` does not move with it, as with the replicas' contacts and states |
+| (b) An operation of its own (`GET /api/v1/bastions/{name}/catalogue`) | — | The registration's shape stays | A read per card, and a second live refresh |
+| (c) The job's result (`GET /api/v1/system/jobs/{id}`) | — | Nothing to build | The administrator would have to find the job; a stop names no registration's reason |
+
+**Choice:** (a). The list reads every few seconds while a web interface waits for its first build (R-UI-213's fast interval), every
+minute otherwise. **Applied in the spec:** R-BAS-104, [api-and-ui.md](api-and-ui.md) R-UI-240; code:
+[bastion_registrations_api.go](../../internal/api/v1/bastion_registrations_api.go),
+[bastion-limits.ts](../../web/src/app/features/bastions/bastion-limits.ts),
+[bastion-switches.ts](../../web/src/app/features/bastions/bastion-switches.ts).
 
 ## What this does not cover
 

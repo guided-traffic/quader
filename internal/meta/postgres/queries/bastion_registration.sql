@@ -17,11 +17,15 @@ VALUES (sqlc.arg(id)::text::uuid, sqlc.arg(description)::text, sqlc.arg(egress):
 -- A registration by name. revision is the ETag (R-API-012); enabled is the principal's status; handover is the switch of the
 -- handover per blob (R-BAS-071, 00110); egress the networks the Bastion connects from (R-BAS-017, 00145), each in the text form of
 -- cidr, which always names the prefix length; gui, docs and the limits_* members the rest of its configuration (R-BAS-093, 00147);
--- declared_at the mark of a registration the configuration declares (R-BAS-127, 00148), NULL otherwise.
+-- declared_at the mark of a registration the configuration declares (R-BAS-127, 00148), NULL otherwise; catalogue_* the builder's last
+-- outcome for its public catalogue, read from the state the builder keeps (R-BAS-104, 00146): whether one is held, why it stopped, and
+-- the times of its last run and of the last run that changed it.
 SELECT p.id::text AS id, p.name, (p.status = 'active')::boolean AS enabled, p.created_at, p.revision, b.description, b.handover,
        b.egress::text[] AS egress, b.gui, b.docs, b.limits_mode, b.limits_preset, b.limits_flood, b.limits_slots, b.limits_throughput,
-       b.limits_ceiling, b.declared_at
+       b.limits_ceiling, b.declared_at, (s.bastion_id IS NOT NULL)::boolean AS catalogue_held,
+       coalesce(s.stopped, '')::text AS catalogue_stopped, s.checked_at AS catalogue_checked_at, s.built_at AS catalogue_built_at
   FROM principal p JOIN bastion b ON b.principal_id = p.id
+  LEFT JOIN bastion_catalogue_state s ON s.bastion_id = p.id
  WHERE p.kind = 'bastion' AND p.name = sqlc.arg(name)::text;
 
 -- name: BastionLock :many
@@ -35,11 +39,13 @@ SELECT p.id::text AS id, p.name, (p.status = 'active')::boolean AS enabled, p.re
 
 -- name: BastionList :many
 -- Keyset order by name; there are at most bastions.max_registrations of them, so the caller may pass an empty
--- after and a generous max_rows.
+-- after and a generous max_rows. The members are BastionGet's.
 SELECT p.id::text AS id, p.name, (p.status = 'active')::boolean AS enabled, p.created_at, p.revision, b.description, b.handover,
        b.egress::text[] AS egress, b.gui, b.docs, b.limits_mode, b.limits_preset, b.limits_flood, b.limits_slots, b.limits_throughput,
-       b.limits_ceiling, b.declared_at
+       b.limits_ceiling, b.declared_at, (s.bastion_id IS NOT NULL)::boolean AS catalogue_held,
+       coalesce(s.stopped, '')::text AS catalogue_stopped, s.checked_at AS catalogue_checked_at, s.built_at AS catalogue_built_at
   FROM principal p JOIN bastion b ON b.principal_id = p.id
+  LEFT JOIN bastion_catalogue_state s ON s.bastion_id = p.id
  WHERE p.kind = 'bastion' AND p.name > sqlc.arg(after)::text
  ORDER BY p.name
  LIMIT sqlc.arg(max_rows)::int;

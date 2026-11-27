@@ -15068,8 +15068,14 @@ export interface components {
          *       "declared": null,
          *       "switches": {
          *         "handover": false,
-         *         "gui": false,
+         *         "gui": true,
          *         "docs": false
+         *       },
+         *       "catalogue": {
+         *         "outcome": "built",
+         *         "reason": null,
+         *         "checkedAt": "2026-11-02T10:06:30Z",
+         *         "builtAt": "2026-11-02T10:06:30Z"
          *       },
          *       "limits": {
          *         "mode": "enforce",
@@ -15166,6 +15172,11 @@ export interface components {
             enabled?: boolean;
             egress?: components["schemas"]["BastionEgress"];
             switches?: components["schemas"]["BastionSwitches"];
+            /**
+             * @description The last outcome of the builder of the registration's public catalogue (R-BAS-104, R-BAS-105); null while the builder holds
+             *     no catalogue for it: the web interface is off, or no run followed the switch yet.
+             */
+            catalogue?: components["schemas"]["BastionCatalogueOutcome"] | null;
             limits: components["schemas"]["BastionLimits"];
             /** @description The state each replica reported with its last batch within the last hour, the newest first (R-LIM-045); a block that ended is left out (Q-BAS-443). */
             status: components["schemas"]["BastionReplicaStatus"][];
@@ -15175,6 +15186,32 @@ export interface components {
             tokens?: components["schemas"]["BastionTokenSummary"][];
             /** @description The last contact of each replica, the most recent first (R-BAS-010). */
             contacts?: components["schemas"]["BastionContact"][];
+        };
+        /**
+         * @description What the builder of the public catalogue last did for a registration whose web interface is on (R-BAS-104, R-BAS-105): `built`
+         *     after a run that built it, `stopped` with the reason it builds nothing, `pending` while no run completed since the switch.
+         */
+        BastionCatalogueOutcome: {
+            /** @enum {string} */
+            outcome: "built" | "stopped" | "pending";
+            /**
+             * @description Why the builder stopped, null unless `outcome` is `stopped`. `bastion_base_url_unknown`: the base URL the Bastion reported at
+             *     its last handshake is no entry of `server.additional_base_urls`, or it reported none; what was built before stays.
+             *     `anonymous_requests_refused`: the default endpoint admits no request without a credential (`auth.anonymous: false`), so
+             *     nothing is public and the catalogue is empty.
+             * @enum {string|null}
+             */
+            reason: "bastion_base_url_unknown" | "anonymous_requests_refused" | null;
+            /**
+             * Format: date-time
+             * @description The builder's last run for the registration; null while none completed.
+             */
+            checkedAt: string | null;
+            /**
+             * Format: date-time
+             * @description The last run that changed the catalogue; null while none did.
+             */
+            builtAt: string | null;
         };
         /** @description The switches of the registration's configuration (R-BAS-093), each off for a new registration. */
         BastionSwitches: {

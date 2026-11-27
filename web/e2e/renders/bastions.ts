@@ -87,6 +87,11 @@ function registrations(frankfurtOn: boolean): Json {
         enabled: true,
         declared: null,
         switches: { handover: frankfurtOn, gui: true, docs: true },
+        // What the main installation last built for its web interface (R-BAS-104): built a few minutes ago in the walks of the direct
+        // reads, nothing while the main installation admits no request without a credential in the walk of the limits.
+        catalogue: frankfurtOn
+          ? { outcome: 'built', reason: null, checkedAt: at(-3 / 1440), builtAt: at(-40 / 1440) }
+          : { outcome: 'stopped', reason: 'anonymous_requests_refused', checkedAt: at(-3 / 1440), builtAt: null },
         // Custom, in Audit, at 150 MB/s with a flood figure above the edge's (R-UI-240): every state of the card's section at once.
         limits: limits({
           mode: 'audit',
@@ -124,7 +129,9 @@ function registrations(frankfurtOn: boolean): Json {
         // text with the warning of its replica's unlisted address and no Add, the declared token without an expiry and without Revoke
         // beside one issued on the screen.
         declared: { since: at(-2), secretName: 'quader-bastion-token' },
-        switches: { handover: false, gui: false, docs: false },
+        // The web interface on, but the address its replica reported is not listed: the builder stops and says why (R-BAS-104).
+        switches: { handover: false, gui: true, docs: false },
+        catalogue: { outcome: 'stopped', reason: 'bastion_base_url_unknown', checkedAt: at(-3 / 1440), builtAt: null },
         // A new registration's limits, and no replica that reported its state (R-UI-240).
         limits: limits(),
         status: [],

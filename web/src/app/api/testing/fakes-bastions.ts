@@ -118,6 +118,7 @@ export function sampleBastion(over: Partial<Bastion> = {}): Bastion {
     description: 'The partner network',
     enabled: true,
     switches: { handover: false, gui: false, docs: false },
+    catalogue: null,
     limits: sampleBastionLimits(),
     status: [],
     egress: ['198.51.100.16/28'],

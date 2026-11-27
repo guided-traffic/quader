@@ -32517,6 +32517,13 @@ components:
           $ref: "#/components/schemas/BastionEgress"
         switches:
           $ref: "#/components/schemas/BastionSwitches"
+        catalogue:
+          description: |
+            The last outcome of the builder of the registration's public catalogue (R-BAS-104, R-BAS-105); null while the builder holds
+            no catalogue for it: the web interface is off, or no run followed the switch yet.
+          oneOf:
+            - $ref: "#/components/schemas/BastionCatalogueOutcome"
+            - type: "null"
         limits:
           $ref: "#/components/schemas/BastionLimits"
         status:
@@ -32543,7 +32550,8 @@ components:
         description: The partner network
         enabled: true
         declared: null
-        switches: {handover: false, gui: false, docs: false}
+        switches: {handover: false, gui: true, docs: false}
+        catalogue: {outcome: built, reason: null, checkedAt: "2026-11-02T10:06:30Z", builtAt: "2026-11-02T10:06:30Z"}
         limits:
           mode: enforce
           preset: internet
@@ -32577,6 +32585,33 @@ components:
             baseUrl: https://packages.example.com
             edgeLimit: rps=200; connections=1000
             catalogueKept: null
+    BastionCatalogueOutcome:
+      type: object
+      additionalProperties: false
+      description: |
+        What the builder of the public catalogue last did for a registration whose web interface is on (R-BAS-104, R-BAS-105): `built`
+        after a run that built it, `stopped` with the reason it builds nothing, `pending` while no run completed since the switch.
+      required: [outcome, reason, checkedAt, builtAt]
+      properties:
+        outcome:
+          type: string
+          enum: [built, stopped, pending]
+        reason:
+          type: [string, "null"]
+          enum: [bastion_base_url_unknown, anonymous_requests_refused, null]
+          description: |
+            Why the builder stopped, null unless `outcome` is `stopped`. `bastion_base_url_unknown`: the base URL the Bastion reported at
+            its last handshake is no entry of `server.additional_base_urls`, or it reported none; what was built before stays.
+            `anonymous_requests_refused`: the default endpoint admits no request without a credential (`auth.anonymous: false`), so
+            nothing is public and the catalogue is empty.
+        checkedAt:
+          type: [string, "null"]
+          format: date-time
+          description: The builder's last run for the registration; null while none completed.
+        builtAt:
+          type: [string, "null"]
+          format: date-time
+          description: The last run that changed the catalogue; null while none did.
     BastionSwitches:
       type: object
       description: The switches of the registration's configuration (R-BAS-093), each off for a new registration.

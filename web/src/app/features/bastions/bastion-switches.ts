@@ -6,6 +6,8 @@ import { SessionStore } from '../../core/session-store';
 import { ErrorNotice } from '../../shared/error-notice';
 import { asApiError } from '../../shared/paged-resource';
 import { Switch } from '../../shared/ui/switch';
+import { TimeAgo } from '../../shared/ui/time-ago';
+import { catalogueLine } from './bastion-state';
 
 type SwitchName = 'gui' | 'docs';
 
@@ -13,12 +15,14 @@ type SwitchName = 'gui' | 'docs';
  * The switches **Web interface** and **Documentation** of a registration (W-35, bastion.md R-BAS-102, R-UI-240's **Details**): each with
  * its sentence; **Documentation** takes effect only while the web interface is on, and says so. Who may change a registration
  * (`endpoints:write`, Q-BAS-325) switches it with a merge patch of `switches` and the `ETag` it read; a refusal stands under the switches
- * and each keeps the state the server has. Who may only read gets each state as a sentence (Q-UI-960).
+ * and each keeps the state the server has. Who may only read gets each state as a sentence (Q-UI-960). While the web interface is on, a
+ * line says what the main installation last built for it (`catalogue` of the registration, R-BAS-104); why it builds nothing stands in
+ * the card's plain view (`<quader-bastion-limits>`).
  */
 @Component({
   selector: 'quader-bastion-switches',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ErrorNotice, Switch],
+  imports: [ErrorNotice, Switch, TimeAgo],
   template: `
     <h4 i18n="@@bastion.switches.heading">Web interface</h4>
     @if (canWrite()) {
@@ -38,6 +42,22 @@ type SwitchName = 'gui' | 'docs';
       A read-only web interface on this Bastion shows the packages of public repositories to anyone, without signing in. Off, its pages
       answer "not found" within seconds and what it showed is deleted.
     </p>
+    <!-- What the main installation last built for the web interface (R-BAS-104); a stop's reason and what to do stand in plain view. -->
+    @if (catalogue(); as c) {
+      <p class="state-text note" data-testid="bastion-catalogue-line">
+        @switch (c.kind) {
+          @case ('built') {
+            <ng-container i18n="@@bastion.switches.catalogue-built">Last built <quader-time-ago [at]="c.at" absolute="title" />.</ng-container>
+          }
+          @case ('stopped') {
+            <ng-container i18n="@@bastion.switches.catalogue-stopped">Not built: the warning above says why.</ng-container>
+          }
+          @default {
+            <ng-container i18n="@@bastion.switches.catalogue-pending">Not built yet. The first build follows within seconds.</ng-container>
+          }
+        }
+      </p>
+    }
     @if (canWrite()) {
       <!-- The second switch's name stands over it; the first one's is the heading. -->
       <p class="switch-name" i18n="@@bastion.switches.docs-name">Documentation</p>
@@ -111,6 +131,8 @@ export class BastionSwitches {
   /** The states the server answered last; they follow the registration whenever the list is read again. */
   protected readonly gui = linkedSignal(() => this.bastion().switches.gui);
   protected readonly docs = linkedSignal(() => this.bastion().switches.docs);
+  /** The builder's last run while the web interface is on, as the registration read last says it. */
+  protected readonly catalogue = computed(() => catalogueLine({ switches: { ...this.bastion().switches, gui: this.gui() }, catalogue: this.bastion().catalogue }));
   protected readonly guiNote = computed(() => `bastion-gui-note-${this.bastion().name}`);
   protected readonly docsNote = computed(() => `bastion-docs-note-${this.bastion().name}`);
   protected readonly guiLabel = computed(() => $localize`:@@bastion.switches.gui-label:Web interface of ${this.bastion().name}:name:`);

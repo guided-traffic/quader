@@ -1063,6 +1063,37 @@ describe("A Bastion's limits, throughput, switches and state on its card (R-UI-2
       "After a restart while the connection to it is down, this Bastion's web interface shows nothing until the connection returns.",
     );
   });
+
+  it("R-BAS-104 the card says what the main installation last built for the web interface, and why it builds nothing with what to do", async () => {
+    const gui = { handover: false, gui: true, docs: false };
+    const at = inDays(-0.002);
+    const { root } = await renderScreen(BastionList, {
+      capabilities: ADMIN,
+      setup: (g) =>
+        void ((g(BastionsApi) as FakeBastionsApi).bastions = [
+          sampleBastion({ switches: gui, catalogue: { outcome: 'stopped', reason: 'anonymous_requests_refused', checkedAt: at, builtAt: null } }),
+          sampleBastion({ id: 'b-2', name: 'standby', switches: gui, catalogue: { outcome: 'stopped', reason: 'bastion_base_url_unknown', checkedAt: at, builtAt: null } }),
+          sampleBastion({ id: 'b-3', name: 'edge', switches: gui, catalogue: { outcome: 'built', reason: null, checkedAt: at, builtAt: at } }),
+          sampleBastion({ id: 'b-4', name: 'fresh', switches: gui, catalogue: null }),
+          sampleBastion({ id: 'b-5', name: 'off', catalogue: { outcome: 'built', reason: null, checkedAt: at, builtAt: at } }),
+        ]),
+    });
+    const stopped = (name: string): Element | null => limitsOf(root, name).querySelector('[data-testid="bastion-catalogue-stopped"]');
+    const line = (name: string): Element | null => limitsOf(root, name).querySelector('[data-testid="bastion-catalogue-line"]');
+    // The reasons stand in plain view, outside the closed details, each with what to do.
+    expect(text(stopped('partners')!)).toContain('the main installation admits no request without a credential');
+    expect(text(stopped('partners')!)).toContain('endpoints.default.auth.anonymous');
+    expect(text(stopped('standby')!)).toContain('server.additional_base_urls');
+    expect(text(stopped('standby')!)).toContain('Connect it, or add its address there');
+    expect(text(line('partners')!)).toBe('Not built: the warning above says why.');
+    // A built catalogue and one not built yet say so under the switch; no warning.
+    expect(stopped('edge')).toBeNull();
+    expect(text(line('edge')!)).toMatch(/^Last built .+\.$/);
+    expect(text(line('fresh')!)).toBe('Not built yet. The first build follows within seconds.');
+    // The web interface off: nothing of a catalogue, also while the builder still holds one until its run.
+    expect(stopped('off')).toBeNull();
+    expect(line('off')).toBeNull();
+  });
 });
 
 describe('Bastions in the navigation and the help (R-BAS-007, R-UI-050)', () => {

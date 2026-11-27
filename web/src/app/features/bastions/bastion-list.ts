@@ -1,5 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { LIVE_IDLE_MS, live } from '../../core/live-refresh';
+import { LIVE_FAST_MS, LIVE_IDLE_MS, live } from '../../core/live-refresh';
 import { QuaderDialog } from '../../shared/ui/dialog';
 import { firstValueFrom } from 'rxjs';
 import { Bastion, BastionsApi } from '../../api/bastions-api';
@@ -11,6 +11,7 @@ import { Needs } from '../../shared/access/needs';
 import { ErrorNotice } from '../../shared/error-notice';
 import { asApiError } from '../../shared/paged-resource';
 import { BastionCard } from './bastion-card';
+import { catalogueLine } from './bastion-state';
 import { BastionCreateDialog, BastionTokenDraft } from './bastion-dialogs';
 import { PageHeader } from '../../shared/ui/page-header';
 import { EmptyState } from '../../shared/ui/empty-state';
@@ -75,8 +76,8 @@ export class BastionList {
 
   constructor() {
     void this.load();
-    // A Bastion's state (seen, its handovers) changes without the viewer: read again every minute in place (R-UI-213); a card keeps
-    // a token it shows once, as with every load.
+    // A Bastion's state (seen, its handovers) changes without the viewer: read again every minute in place (R-UI-213), every few
+    // seconds while a web interface waits for its first build; a card keeps a token it shows once, as with every load.
     live({
       reload: async () => {
         if (!this.loaded()) return;
@@ -84,7 +85,7 @@ export class BastionList {
         this.items.set(items);
         await this.loadConnections(items);
       },
-      every: () => LIVE_IDLE_MS,
+      every: () => (this.items().some((b) => catalogueLine(b)?.kind === 'pending') ? LIVE_FAST_MS : LIVE_IDLE_MS),
     });
   }
 

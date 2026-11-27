@@ -202,6 +202,48 @@ func (e BannerInputSeverity) Valid() bool {
 	}
 }
 
+// Defines values for BastionCatalogueOutcomeOutcome.
+const (
+	BastionCatalogueOutcomeOutcomeBuilt   BastionCatalogueOutcomeOutcome = "built"
+	BastionCatalogueOutcomeOutcomePending BastionCatalogueOutcomeOutcome = "pending"
+	BastionCatalogueOutcomeOutcomeStopped BastionCatalogueOutcomeOutcome = "stopped"
+)
+
+// Valid indicates whether the value is a known member of the BastionCatalogueOutcomeOutcome enum.
+func (e BastionCatalogueOutcomeOutcome) Valid() bool {
+	switch e {
+	case BastionCatalogueOutcomeOutcomeBuilt:
+		return true
+	case BastionCatalogueOutcomeOutcomePending:
+		return true
+	case BastionCatalogueOutcomeOutcomeStopped:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BastionCatalogueOutcomeReason.
+const (
+	BastionCatalogueOutcomeReasonAnonymousRequestsRefused BastionCatalogueOutcomeReason = "anonymous_requests_refused"
+	BastionCatalogueOutcomeReasonBastionBaseUrlUnknown    BastionCatalogueOutcomeReason = "bastion_base_url_unknown"
+	BastionCatalogueOutcomeReasonLessThannil              BastionCatalogueOutcomeReason = "<nil>"
+)
+
+// Valid indicates whether the value is a known member of the BastionCatalogueOutcomeReason enum.
+func (e BastionCatalogueOutcomeReason) Valid() bool {
+	switch e {
+	case BastionCatalogueOutcomeReasonAnonymousRequestsRefused:
+		return true
+	case BastionCatalogueOutcomeReasonBastionBaseUrlUnknown:
+		return true
+	case BastionCatalogueOutcomeReasonLessThannil:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for BastionCataloguePublicRepositoriesClass.
 const (
 	BastionCataloguePublicRepositoriesClassLocal   BastionCataloguePublicRepositoriesClass = "local"
@@ -10700,6 +10742,10 @@ type BannerInputSeverity string
 // `endpoints:read`; a caller that reads one registration with `limits:read` alone reads `id`, `name`, `limits` and `status`, and
 // every other member is absent (R-BAS-093).
 type Bastion struct {
+	// Catalogue The last outcome of the builder of the registration's public catalogue (R-BAS-104, R-BAS-105); null while the builder holds
+	// no catalogue for it: the web interface is off, or no run followed the switch yet.
+	Catalogue *BastionCatalogueOutcome `json:"catalogue,omitempty"`
+
 	// Contacts The last contact of each replica, the most recent first (R-BAS-010).
 	Contacts  *[]BastionContact `json:"contacts,omitempty"`
 	CreatedAt *time.Time        `json:"createdAt,omitempty"`
@@ -10755,6 +10801,32 @@ type BastionCatalogueChanges struct {
 	More  bool `json:"more"`
 	Reset bool `json:"reset"`
 }
+
+// BastionCatalogueOutcome What the builder of the public catalogue last did for a registration whose web interface is on (R-BAS-104, R-BAS-105): `built`
+// after a run that built it, `stopped` with the reason it builds nothing, `pending` while no run completed since the switch.
+type BastionCatalogueOutcome struct {
+	// BuiltAt The last run that changed the catalogue; null while none did.
+	BuiltAt *time.Time `json:"builtAt"`
+
+	// CheckedAt The builder's last run for the registration; null while none completed.
+	CheckedAt *time.Time                     `json:"checkedAt"`
+	Outcome   BastionCatalogueOutcomeOutcome `json:"outcome"`
+
+	// Reason Why the builder stopped, null unless `outcome` is `stopped`. `bastion_base_url_unknown`: the base URL the Bastion reported at
+	// its last handshake is no entry of `server.additional_base_urls`, or it reported none; what was built before stays.
+	// `anonymous_requests_refused`: the default endpoint admits no request without a credential (`auth.anonymous: false`), so
+	// nothing is public and the catalogue is empty.
+	Reason *BastionCatalogueOutcomeReason `json:"reason"`
+}
+
+// BastionCatalogueOutcomeOutcome defines model for BastionCatalogueOutcome.Outcome.
+type BastionCatalogueOutcomeOutcome string
+
+// BastionCatalogueOutcomeReason Why the builder stopped, null unless `outcome` is `stopped`. `bastion_base_url_unknown`: the base URL the Bastion reported at
+// its last handshake is no entry of `server.additional_base_urls`, or it reported none; what was built before stays.
+// `anonymous_requests_refused`: the default endpoint admits no request without a credential (`auth.anonymous: false`), so
+// nothing is public and the catalogue is empty.
+type BastionCatalogueOutcomeReason string
 
 // BastionCataloguePublic The projects and repositories a registration's catalogue shows (R-BAS-101).
 type BastionCataloguePublic struct {

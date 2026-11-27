@@ -265,6 +265,11 @@ func TestR_BAS_104_TheCatalogueFollowsPublishesLevelsAndTheSwitch(t *testing.T) 
 		return n == 3 && state
 	})
 	t.Logf("the three versions arrived %s after the publishes", time.Since(start).Round(100*time.Millisecond))
+	// The registration says what the builder did (R-BAS-104): built, with the time of its run.
+	if c, _ := w.mustAPI("GET", "/api/v1/bastions/partners", 200, nil).JSON(t)["catalogue"].(map[string]any); c["outcome"] != "built" ||
+		c["reason"] != nil || c["checkedAt"] == nil {
+		t.Fatalf("the registration's catalogue after a build: %v", c)
+	}
 
 	// Every document names nothing of the main installation (B.13): no base URL of it, no other Bastion's, no /api/v1/.
 	docs := w.documents(list)
@@ -323,6 +328,9 @@ func TestR_BAS_104_TheCatalogueFollowsPublishesLevelsAndTheSwitch(t *testing.T) 
 	testenv.WaitFor(t, "the catalogue deleted", 30*time.Second, func() bool {
 		return w.st.Text(`SELECT count(*)::text FROM bastion_catalogue`) == "0" && w.st.Text(`SELECT count(*)::text FROM bastion_catalogue_state`) == "0"
 	})
+	if c, ok := w.mustAPI("GET", "/api/v1/bastions/partners", 200, nil).JSON(t)["catalogue"]; ok && c != nil {
+		t.Fatalf("the registration's catalogue after the drop: %v", c)
+	}
 
 	// Switched on again, the catalogue starts above every number of the one before: the cursor the Bastion kept answers reset
 	// (R-BAS-108), as after a restore, which brings back no catalogue.

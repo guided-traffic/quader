@@ -69,6 +69,25 @@ type Registration struct {
 	// Declared is set while the installation's configuration declares the registration (R-BAS-127): its description, its networks
 	// and its declared token are the configuration's then, and the registration is not deleted on the API. Nil otherwise.
 	Declared *Declaration
+	// Catalogue is the builder's last outcome for the registration's public catalogue (R-BAS-104), nil while the builder holds no
+	// state for it.
+	Catalogue *CatalogueOutcome
+}
+
+// CatalogueOutcome is what the builder of the public catalogue last did for a registration, read from the state it keeps
+// (bastionmain/catalogue, 00146): why it stopped (empty when it did not), its last run and the last run that changed the catalogue,
+// each nil while there was none.
+type CatalogueOutcome struct {
+	Stopped            string
+	CheckedAt, BuiltAt *time.Time
+}
+
+// catalogueOutcomeOf is the outcome of the state's columns; nil without a state.
+func catalogueOutcomeOf(held bool, stopped string, checked, built *time.Time) *CatalogueOutcome {
+	if !held {
+		return nil
+	}
+	return &CatalogueOutcome{Stopped: stopped, CheckedAt: checked, BuiltAt: built}
 }
 
 // Declaration is what a registration shows of its declaration (R-BAS-127): since when the configuration declares it, and the Secret
@@ -282,6 +301,8 @@ func load(ctx context.Context, qs *q.Queries, name string) (Registration, error)
 			ceiling: g.LimitsCeiling,
 		}),
 		Egress: egressOf(g.Egress), CreatedAt: g.CreatedAt.Time, Revision: g.Revision, Declared: declarationOf(optTime(g.DeclaredAt.Time, g.DeclaredAt.Valid)),
+		Catalogue: catalogueOutcomeOf(g.CatalogueHeld, g.CatalogueStopped, optTime(g.CatalogueCheckedAt.Time, g.CatalogueCheckedAt.Valid),
+			optTime(g.CatalogueBuiltAt.Time, g.CatalogueBuiltAt.Valid)),
 	}
 	toks, err := qs.BastionListTokens(ctx, q.BastionListTokensParams{ID: g.ID})
 	if err != nil {
@@ -452,6 +473,8 @@ func (r *Registrations) List(ctx context.Context) ([]Registration, error) {
 				}),
 				Egress: egressOf(g.Egress), CreatedAt: g.CreatedAt.Time, Revision: g.Revision, Tokens: []RegistrationToken{},
 				Contacts: []Contact{}, Place: []PlaceRule{}, Status: []ReplicaState{}, Declared: declarationOf(optTime(g.DeclaredAt.Time, g.DeclaredAt.Valid)),
+				Catalogue: catalogueOutcomeOf(g.CatalogueHeld, g.CatalogueStopped, optTime(g.CatalogueCheckedAt.Time, g.CatalogueCheckedAt.Valid),
+					optTime(g.CatalogueBuiltAt.Time, g.CatalogueBuiltAt.Valid)),
 			})
 		}
 		for _, k := range kinds {

@@ -79,6 +79,24 @@ func toBastion(b bastionmain.Registration) gen.Bastion {
 		contacts = append(contacts, ct)
 	}
 	out.Tokens, out.Contacts = &tokens, &contacts
+	out.Catalogue = catalogueOutcome(b.Catalogue)
+	return out
+}
+
+// catalogueOutcome is the builder's last outcome as the registration shows it (R-BAS-104): stopped with its reason, pending while no
+// run completed, built otherwise; nil without a state.
+func catalogueOutcome(c *bastionmain.CatalogueOutcome) *gen.BastionCatalogueOutcome {
+	if c == nil {
+		return nil
+	}
+	out := &gen.BastionCatalogueOutcome{Outcome: gen.BastionCatalogueOutcomeOutcomeBuilt, CheckedAt: utcOrNil(c.CheckedAt), BuiltAt: utcOrNil(c.BuiltAt)}
+	switch {
+	case c.Stopped != "":
+		reason := gen.BastionCatalogueOutcomeReason(c.Stopped)
+		out.Outcome, out.Reason = gen.BastionCatalogueOutcomeOutcomeStopped, &reason
+	case c.CheckedAt == nil:
+		out.Outcome = gen.BastionCatalogueOutcomeOutcomePending
+	}
 	return out
 }
 

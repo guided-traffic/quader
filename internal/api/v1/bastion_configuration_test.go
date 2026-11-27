@@ -7,7 +7,9 @@ import (
 	"net/http/httptest"
 	"reflect"
 	"testing"
+	"time"
 
+	"github.com/guided-traffic/quader/internal/api/v1/gen"
 	"github.com/guided-traffic/quader/internal/authz"
 	"github.com/guided-traffic/quader/internal/bastion/iface"
 	"github.com/guided-traffic/quader/internal/bastionmain"
@@ -115,5 +117,39 @@ func TestR_BAS_096_TheCheckNamesTheSubjectsLimits(t *testing.T) {
 	plain := newCheckSetup(t, checkedCaller(nil))
 	if ans := decodeCheck(t, plain.post(iface.PathCheck, `{"credential":"qdr_sat_x","clientAddress":"203.0.113.7","repositories":["it/npm-all"]}`)); ans.Subject.Limits != nil {
 		t.Fatalf("without the resolution: %+v", ans.Subject)
+	}
+}
+
+// TestR_BAS_104_TheRegistrationSaysTheBuildersLastOutcome: the member catalogue of a registration (the card's line) is absent without
+// a state, pending before the first run completed, built after one, and stopped with its reason, which is one of the document's.
+func TestR_BAS_104_TheRegistrationSaysTheBuildersLastOutcome(t *testing.T) {
+	at := time.Date(2026, 11, 27, 9, 30, 0, 0, time.FixedZone("CET", 3600))
+	if got := toBastion(bastionmain.Registration{}).Catalogue; got != nil {
+		t.Fatalf("no state: %+v", got)
+	}
+	for _, c := range []struct {
+		state   bastionmain.CatalogueOutcome
+		outcome gen.BastionCatalogueOutcomeOutcome
+		reason  string
+	}{
+		{bastionmain.CatalogueOutcome{}, gen.BastionCatalogueOutcomeOutcomePending, ""},
+		{bastionmain.CatalogueOutcome{CheckedAt: &at, BuiltAt: &at}, gen.BastionCatalogueOutcomeOutcomeBuilt, ""},
+		{bastionmain.CatalogueOutcome{Stopped: "bastion_base_url_unknown", CheckedAt: &at}, gen.BastionCatalogueOutcomeOutcomeStopped, "bastion_base_url_unknown"},
+		{bastionmain.CatalogueOutcome{Stopped: "anonymous_requests_refused", CheckedAt: &at}, gen.BastionCatalogueOutcomeOutcomeStopped, "anonymous_requests_refused"},
+	} {
+		got := toBastion(bastionmain.Registration{Catalogue: &c.state}).Catalogue
+		reason := ""
+		if got.Reason != nil {
+			reason = string(*got.Reason)
+			if !got.Reason.Valid() {
+				t.Errorf("%q is no reason of the document", reason)
+			}
+		}
+		if got.Outcome != c.outcome || reason != c.reason {
+			t.Errorf("%+v: %s %q, want %s %q", c.state, got.Outcome, reason, c.outcome, c.reason)
+		}
+		if got.CheckedAt != nil && got.CheckedAt.Location() != time.UTC {
+			t.Errorf("checkedAt not in UTC: %v", got.CheckedAt)
+		}
 	}
 }

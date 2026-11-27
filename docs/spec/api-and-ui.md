@@ -10411,7 +10411,10 @@ usage overview's `<quader-usage-meter>`, so the data colour below 70 %, then war
 1 address blocked" linking to `/admin/bastions/{name}/limits/blocks` for a holder of `limits:read`, and under it why, each reason of the
 closed list (`refusals`, `failed_auth`, `refused_requests`) in words with its number of addresses (`blockReasons`); the warnings in plain view, the edge
 warning ([Q-UI-1486](#q-ui-1486--the-edge-warning-stands-in-plain-view-not-under-the-flood-figures-in-details)), W-35's sentence of a
-catalogue a restart loses (while `gui` is on and a contact reported `catalogueKept: false`) and R-UI-243's warnings; the preset (a
+catalogue a restart loses (while `gui` is on and a contact reported `catalogueKept: false`), *since W35-P9f* why the main installation
+builds nothing for the web interface while `gui` is on, with what to do (the registration's `catalogue.reason`,
+[bastion.md](bastion.md) R-BAS-104, [Q-BAS-497](bastion.md#q-bas-497--the-registration-carries-the-builders-last-outcome-and-the-card-says-a-stop-in-plain-view)),
+and R-UI-243's warnings; the preset (a
 segmented control of three pressed buttons, **Custom** a pressed segment that is no button), its dialog
 ([bastion-preset-dialog.ts](../../web/src/app/features/bastions/bastion-preset-dialog.ts), with the presets' table it reads from `GET /api/v1/bastions/presets`,
 [Q-UI-1485](#q-ui-1485--the-screen-holds-the-presets-table-to-name-what-a-preset-replaces)); the mode with R-UI-182's dialog
@@ -10422,8 +10425,10 @@ preview, H-2365), whose `401 reauthentication_required` stands in the dialog whi
 networks as one field, the slots, the anonymous ceiling, the throughput's share and GB an hour per class, one **Save changes**,
 [Q-UI-1487](#q-ui-1487--the-details-are-one-form-whose-refusal-keeps-what-was-typed-and-the-exempt-networks-are-one-field)), R-UI-243's
 list, `<quader-bastion-switches>` ([bastion-switches.ts](../../web/src/app/features/bastions/bastion-switches.ts), each switch with its
-sentence; **Documentation** says that it takes effect only with the web interface, and a line says so where it is on without it) and the
-link **Rules of this Bastion**. English and German.
+sentence; **Documentation** says that it takes effect only with the web interface, and a line says so where it is on without it; *since
+W35-P9f* while the web interface is on a line says "Last built" with the time of the builder's last run, "Not built yet" before its
+first, or that the warning above says why it is not built) and the link **Rules of this Bastion**. The list reads again every few seconds
+while a web interface waits for its first build (R-UI-213), every minute otherwise. English and German.
 
 Acceptance criteria:
 
@@ -10432,8 +10437,11 @@ Acceptance criteria:
   line from a status fixture and "No report in the last 5 minutes" without one. *As built:* "A Bastion's limits, throughput, switches and
   state on its card (R-UI-240)", eleven cases, about 1.5 s with fixtures of a few hundred bytes: also the preset's dialog with what it
   replaces and with nothing to replace, **Custom**, the mode's dialog refused for recent authentication and then sent, the throughput's
-  field, the details' merge patch, both halves of the permission split and the switches' sentences.
-- Rendered (rule 11): the card in both schemes, wide and narrow, with Internet, Custom and an Audit mode, the details open and closed.
+  field, the details' merge patch, both halves of the permission split and the switches' sentences. *Since W35-P9f* also
+  "R-BAS-104 the card says what the main installation last built for the web interface, and why it builds nothing with what to do"
+  (both reasons, built, not built yet, nothing with the web interface off).
+- Rendered (rule 11): the card in both schemes, wide and narrow, with Internet, Custom and an Audit mode, the details open and closed;
+  since W35-P9f with both reasons of a stop and a built catalogue (`admin-bastions`, `admin-bastions-limits` in English and German).
 
 ### R-UI-241 · A Bastion's limits page
 Priority: **MVP** · Covers: quader-only

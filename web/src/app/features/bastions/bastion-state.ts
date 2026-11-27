@@ -173,3 +173,24 @@ export function edgeBelowFigures(bastion: Pick<Bastion, 'contacts' | 'limits'>):
   const f = bastion.limits.flood;
   return [f.anonymous.requestsPerSecond, f.authenticated.requestsPerSecond, f.gui.requestsPerSecond].some((v) => v > edge) ? edge : null;
 }
+
+/** Why the builder of the public catalogue builds nothing for a registration (R-BAS-104), as its `catalogue.reason` says it. */
+export type CatalogueStop = NonNullable<NonNullable<Bastion['catalogue']>['reason']>;
+
+/**
+ * What the card says of the builder's last run while the web interface is on (R-BAS-104, R-UI-240): `stopped` with its reason, `built`
+ * with the time of the run, or `pending` while no run completed since the switch (also before the first run made a state). Null while
+ * the web interface is off: the card says nothing of a catalogue then.
+ */
+export type CatalogueLine =
+  | { readonly kind: 'stopped'; readonly reason: CatalogueStop }
+  | { readonly kind: 'built'; readonly at: string }
+  | { readonly kind: 'pending' };
+
+export function catalogueLine(bastion: Pick<Bastion, 'switches' | 'catalogue'>): CatalogueLine | null {
+  if (!bastion.switches.gui) return null;
+  const c = bastion.catalogue ?? null;
+  if (c?.outcome === 'stopped' && c.reason) return { kind: 'stopped', reason: c.reason };
+  if (c?.outcome === 'built' && c.checkedAt) return { kind: 'built', at: c.checkedAt };
+  return { kind: 'pending' };
+}

@@ -20,7 +20,7 @@ import { stateOfRatio } from '../usage/usage-words';
 import { BastionEgress } from './bastion-egress';
 import { BastionLimitDetails } from './bastion-limit-details';
 import { BastionPresetDialog, PresetDialogData } from './bastion-preset-dialog';
-import { bastionState, blockReasons, blockedText, edgeBelowFigures, limitedText, megabytesPerSecond, stateParts } from './bastion-state';
+import { bastionState, blockReasons, blockedText, catalogueLine, edgeBelowFigures, limitedText, megabytesPerSecond, stateParts } from './bastion-state';
 import { BastionSwitches } from './bastion-switches';
 import { PRESET_NAMES, PresetName, modeName, presetLabel, presetSentence } from './presets';
 
@@ -32,7 +32,8 @@ const MB = 1e6;
  * - **In plain view**: the replicas' state as one line, live with the list (R-UI-213), the throughput against its cap as a meter, the
  *   callers limited and the addresses blocked now with a link to the Bastion's **Blocks**, or "No report in the last 5 minutes"; the
  *   warnings an administrator has to see (the edge figure below a request figure, Q-UI-1486; the addresses the Bastion connects from,
- *   Q-UI-1483; a web interface whose catalogue a restart loses); the preset as a segmented control with its sentence, **Custom** shown and
+ *   Q-UI-1483; a web interface whose catalogue a restart loses; why the main installation builds nothing for the web interface, with
+ *   what to do, R-BAS-104); the preset as a segmented control with its sentence, **Custom** shown and
  *   not offered, a change through the dialog that names what it replaces (Q-UI-1481); the mode with its switch, the dialog of R-UI-182
  *   for this Bastion, after recent authentication (R-LIM-044); the maximum throughput in MB/s, 200 for a new registration, empty for
  *   unlimited (Q-BAS-455).
@@ -100,6 +101,25 @@ const MB = 1e6;
           >After a restart while the connection to it is down, this Bastion's web interface shows nothing until the connection returns. A
           bucket or persistent volumes keep it.</span
         >
+      </p>
+    }
+    <!-- Why the main installation builds nothing for this web interface (R-BAS-104): in plain view, with what to do. -->
+    @if (catalogueStop(); as reason) {
+      <p class="hint warn line" data-testid="bastion-catalogue-stopped">
+        <span class="material-icons inline" aria-hidden="true">warning</span>
+        @if (reason === 'anonymous_requests_refused') {
+          <span i18n="@@bastion.limits.catalogue-refused"
+            >This Bastion's web interface shows nothing: the main installation admits no request without a credential
+            (<code translate="no">endpoints.default.auth.anonymous</code> is false), so nothing is public. Admit such requests there to show
+            your public repositories, or switch the web interface off.</span
+          >
+        } @else {
+          <span i18n="@@bastion.limits.catalogue-base-url"
+            >The main installation does not build this Bastion's web interface: the Bastion has not connected yet, or the address it reported
+            is not in <code translate="no">server.additional_base_urls</code>. Connect it, or add its address there; the next build, within
+            the hour, builds it.</span
+          >
+        }
       </p>
     }
     <quader-bastion-egress part="warnings" [bastion]="bastion()" (changed)="changed.emit()" />
@@ -334,6 +354,11 @@ export class BastionLimits {
   protected readonly edge = computed(() => edgeBelowFigures(this.bastion()));
   /** The web interface is on and a replica said its catalogue does not survive a restart (W-35 B.2b). */
   protected readonly catalogueLost = computed(() => this.bastion().switches.gui && this.bastion().contacts.some((c) => c.catalogueKept === false));
+  /** Why the builder builds nothing while the web interface is on, null while it builds or the web interface is off. */
+  protected readonly catalogueStop = computed(() => {
+    const line = catalogueLine(this.bastion());
+    return line?.kind === 'stopped' ? line.reason : null;
+  });
 
   private readonly cap = computed(() => this.bastion().limits.throughput.bytesPerSecond);
   protected readonly meterRatio = computed(() => {
