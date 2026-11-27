@@ -22,16 +22,21 @@ describe('Token administration (R-UI-030)', () => {
     expect(await seriousViolations(root)).toEqual([]);
   });
 
-  it('R-UI-214 the token of an upload from the screen, stored without a description, is named by the screen from how it was created', async () => {
+  it('R-UI-214 the token of an upload from the screen and a login\'s token, stored without a description, are named by the screen from how they were made', async () => {
     const { root } = await renderScreen(TokenAdmin, {
       setup: (api) => {
         (api(TokensApi) as FakeTokensApi).tokenList = [
           sampleToken({ id: 't1', description: '', createdVia: 'upload' }),
           sampleToken({ id: 't2', description: 'laptop npm', createdVia: 'ui' }),
+          sampleToken({ id: 't3', description: '', createdVia: 'npm-web-login', createdAt: '2026-11-27T12:00:00Z' }),
+          sampleToken({ id: 't4', description: '', createdVia: 'device-login', createdAt: '2026-11-27T12:00:00Z' }),
         ];
       },
     });
     const rows = root.querySelectorAll('tbody tr');
+    // A login's token (R-AUTH-034, R-AUTH-036) is named by the way and the time it was made, in the reader's format.
+    expect(text(rows[2]!.querySelector('th')!)).toMatch(/npm login on 27\.11\.2026 \d\d:00:00/);
+    expect(text(rows[3]!.querySelector('th')!)).toMatch(/Command-line login on 27\.11\.2026 \d\d:00:00/);
     expect(text(rows[0]!.querySelector('th')!)).toContain('Upload from the screen');
     expect(rows[0]!.querySelector('td.actions button')?.textContent).toContain('Upload from the screen');
     expect(text(rows[1]!.querySelector('th')!)).toContain('laptop npm');

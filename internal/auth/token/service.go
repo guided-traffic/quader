@@ -221,10 +221,20 @@ func notTechnical(r CreateRequest) error {
 	return nil
 }
 
-// checkDescription refuses a description of more than 1024 characters, and an empty one except for the token of an upload from
-// the screen, which has none: the screen words it from created_via upload (R-UI-214, Q-UI-1653).
+// ViaNpmWebLogin is created_via of the token npm's web login mints (R-AUTH-034), and ViaDeviceLogin of the token a command-line
+// tool's browser login mints (R-AUTH-036): both are stored without a description, which the screen words from this value and the
+// token's creation time (R-UI-214, Q-UI-1653).
+const (
+	ViaNpmWebLogin = "npm-web-login"
+	ViaDeviceLogin = "device-login"
+)
+
+// checkDescription refuses a description of more than 1024 characters, and an empty one except for a token the server makes for a
+// purpose of its own, which has none: the token of an upload from the screen and the tokens of the npm web login and of the device
+// login, which the screen words from created_via (R-UI-214, Q-UI-1653).
 func checkDescription(r CreateRequest) error {
-	if n := utf8.RuneCountInString(r.Description); (n < 1 && r.Via != ViaUpload) || n > 1024 {
+	n := utf8.RuneCountInString(r.Description)
+	if (n < 1 && r.Via != ViaUpload && r.Via != ViaNpmWebLogin && r.Via != ViaDeviceLogin) || n > 1024 {
 		return errs.E(errs.Invalid, errs.CodeDescriptionRequired, "A description of 1 to 1024 characters is required.")
 	}
 	return nil

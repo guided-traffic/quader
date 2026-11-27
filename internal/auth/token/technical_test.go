@@ -84,8 +84,8 @@ func TestR_AUTH_045_TheStateAndTheSecretsTheRecordShows(t *testing.T) {
 	})
 }
 
-// The server stores no phrase it makes up (R-UI-214, Q-UI-1653): the token of an upload from the screen is created without a
-// description, every other token still needs one of 1 to 1024 characters.
+// The server stores no phrase it makes up (R-UI-214, Q-UI-1653): the token of an upload from the screen and the tokens of the npm web
+// login and of the device login are created without a description, every other token still needs one of 1 to 1024 characters.
 func TestR_UI_214_TheTokenOfAnUploadFromTheScreenHasNoDescription(t *testing.T) {
 	long := string(make([]rune, 1025))
 	for _, c := range []struct {
@@ -93,6 +93,9 @@ func TestR_UI_214_TheTokenOfAnUploadFromTheScreenHasNoDescription(t *testing.T) 
 		ok bool
 	}{
 		{CreateRequest{Type: TypePAT, Via: ViaUpload}, true},
+		{CreateRequest{Type: TypePAT, Via: ViaNpmWebLogin}, true},
+		{CreateRequest{Type: TypePAT, Via: ViaDeviceLogin}, true},
+		{CreateRequest{Type: TypePAT, Via: ViaDeviceLogin, Description: long}, false},
 		{CreateRequest{Type: TypePAT, Via: "ui", Description: "laptop"}, true},
 		{CreateRequest{Type: TypePAT, Via: "ui"}, false},
 		{CreateRequest{Type: TypePAT, Via: "api"}, false},

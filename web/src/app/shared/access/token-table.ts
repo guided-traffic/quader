@@ -2,6 +2,7 @@ import { Component, computed, input, model, output } from '@angular/core';
 import { Checkbox } from '../ui/checkbox';
 import { Token, TokenScope } from '../../api/tokens-api';
 import { DataTable, TableColumn } from '../ui/data-table';
+import { formatTime } from '../time-format';
 import { TimeAgo } from '../ui/time-ago';
 import { Tooltip } from '../ui/tooltip';
 
@@ -31,11 +32,23 @@ export function scopeSummary(scope: TokenScope): string {
 /**
  * What a token is called on the screen: its description, as its owner wrote it, or for a token the server stores without one the
  * screen's words from how it was created (Q-UI-1653): the token of an upload from the screen (`createdVia` `upload`, R-ANS-061,
- * R-NUGET-006), whose scope names the repository.
+ * R-NUGET-006), whose scope names the repository; the token of npm's web login (`npm-web-login`, R-AUTH-034) and of a command-line
+ * tool's browser login (`device-login`, R-AUTH-036), each with its creation time in the reader's format, which tells one login's
+ * token from the next.
  */
-export function tokenName(token: Pick<Token, 'description' | 'createdVia'>): string {
+export function tokenName(token: Pick<Token, 'description' | 'createdVia' | 'createdAt'>): string {
   if (token.description !== '') return token.description;
-  return token.createdVia === 'upload' ? $localize`:@@token-table.name.upload:Upload from the screen` : '';
+  const at = formatTime(token.createdAt);
+  switch (token.createdVia) {
+    case 'upload':
+      return $localize`:@@token-table.name.upload:Upload from the screen`;
+    case 'npm-web-login':
+      return $localize`:@@token-table.name.npm-web-login:npm login on ${at}:time:`;
+    case 'device-login':
+      return $localize`:@@token-table.name.device-login:Command-line login on ${at}:time:`;
+    default:
+      return '';
+  }
 }
 
 /** True for an active token that expires within `EXPIRING_SOON_DAYS` days of `now`. */

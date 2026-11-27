@@ -9905,7 +9905,11 @@ server knows, it sends as a code with its parameters
   Where the server creates a thing for a purpose of its own, it stores no description it would have to word, and the screen words the
   thing from a fact the API carries, in the reader's language: the token of an upload from the screen has `createdVia` `upload` and no
   description, and the token lists name it **Upload from the screen** ("Upload über die Oberfläche", `tokenName` of
-  [token-table.ts](../../web/src/app/shared/access/token-table.ts)), its scope naming the repository; a Bastion's declared token has none
+  [token-table.ts](../../web/src/app/shared/access/token-table.ts)), its scope naming the repository; the token of the npm web login
+  (`npm-web-login`, [identity-and-authentication.md](identity-and-authentication.md) R-AUTH-034) and of a command-line tool's browser
+  login (`device-login`, R-AUTH-036) have none either, and the lists name them **npm login on <time>** ("npm-Anmeldung am <time>") and
+  **Command-line login on <time>** ("Anmeldung von der Kommandozeile am <time>"), the time `createdAt` in the reader's format, which tells
+  one login's token from the next; a Bastion's declared token has none
   and its card names it from `declared` ([bastion.md](bastion.md) R-BAS-127); the technical token `quader admin token create` makes has
   none, its name (`admin-cli` unless `--name` says another) says where it came from; a group `quader migrate` creates for
   `authz.role_bindings` has none, its system roles say the Helm configuration.
@@ -33232,6 +33236,13 @@ Bastion's declared token ("Bastion <name> (declared in the configuration)", whos
 | (a) None of them is stored; the screen words the thing from `createdVia`, `declared`, the name or the roles (chosen) | `created_via` gains `upload`; an upload's and a declared token's description may be empty | No English in German; no stored sentence outlives its wording | A client of the API reads an empty description and words it from `createdVia` itself |
 | (b) A key in the description | The server stores `token.upload`, which the screen translates | One field | A description that is sometimes prose, sometimes a key |
 | (c) The screen recognises the phrases | The English phrase stays stored; the screen maps it to its words | No server change | Breaks with any change of the phrase; a person could type the same words |
+
+Amended on 2026-11-27 by batch B-1127l: the two logins of [identity-and-authentication.md](identity-and-authentication.md) that mint a
+token, the npm web login (R-AUTH-034, "npm login from <addr> on <date>") and the device login (R-AUTH-036), were specified with a description
+the server would make up as well. Both are not built yet; their tokens are stored without a description too, and the screen words them
+from `createdVia` and `createdAt` ("npm login on <time>", "Command-line login on <time>"). The client's address the npm phrase held is no
+part of the name: the audit event `token.created` keeps who and from where. Code: migration `00161_token_logins_without_description.sql`,
+`token.ViaNpmWebLogin`, `token.ViaDeviceLogin`.
 
 **Choice:** (a). The upload token's scope already names its repository, so the screen's words name only the way it was made; the technical
 token keeps its name, which the command sets; the declared group's roles show the Helm configuration (R-UI-270). A token a person makes

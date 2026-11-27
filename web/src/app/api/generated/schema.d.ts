@@ -12270,7 +12270,7 @@ export interface components {
              *     (Q-AUTH-428).
              */
             ownerIsAdmin?: boolean;
-            /** @description What the token's creator wrote, 1 to 1024 characters; empty for the token of an upload from the screen (`createdVia` `upload`). */
+            /** @description What the token's creator wrote, 1 to 1024 characters; empty for a token the server makes for a purpose of its own (`createdVia` `upload`, `npm-web-login`, `device-login`). */
             description: string;
             scope: components["schemas"]["TokenScope"];
             /**
@@ -12285,7 +12285,8 @@ export interface components {
             createdBy: string | null;
             /**
              * @description How the token was made: `ui`, `api`, `npm-web-login`, `device-login`, `admin-cli`, `rotation`, `ci-exchange`, or `upload`, the
-             *     token of an upload from the screen, which has no `description` and which a screen words by this value (Q-UI-1653).
+             *     token of an upload from the screen. A token of `upload`, `npm-web-login` or `device-login` has no `description`; a screen words
+             *     it by this value and, for a login, `createdAt` (Q-UI-1653).
              */
             createdVia: string;
             /** Format: date-time */

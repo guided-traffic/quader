@@ -44648,7 +44648,7 @@
     <unit id="token-table.empty">
       <notes>
         <note category="location">src/app/features/tokens/token-admin.ts:78</note>
-        <note category="location">src/app/shared/access/token-table.ts:176</note>
+        <note category="location">src/app/shared/access/token-table.ts:189</note>
       </notes>
       <segment>
         <source>No token matches.</source>
@@ -52178,7 +52178,7 @@
     </unit>
     <unit id="token-table.scope.admin">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:15</note>
+        <note category="location">src/app/shared/access/token-table.ts:16</note>
       </notes>
       <segment>
         <source>Administrator: everything on this installation</source>
@@ -52186,7 +52186,7 @@
     </unit>
     <unit id="token-table.scope.inherit">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:17</note>
+        <note category="location">src/app/shared/access/token-table.ts:18</note>
       </notes>
       <segment>
         <source>All repository permissions of the owner, without administration</source>
@@ -52194,7 +52194,7 @@
     </unit>
     <unit id="token-table.scope.none">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:22</note>
+        <note category="location">src/app/shared/access/token-table.ts:23</note>
       </notes>
       <segment>
         <source>No repository access</source>
@@ -52202,7 +52202,7 @@
     </unit>
     <unit id="token-table.scope.grants">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:23</note>
+        <note category="location">src/app/shared/access/token-table.ts:24</note>
       </notes>
       <segment>
         <source>Repository grants: <ph id="0" equiv="count" disp="grants.length"/></source>
@@ -52210,7 +52210,7 @@
     </unit>
     <unit id="token-table.scope.system">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:27</note>
+        <note category="location">src/app/shared/access/token-table.ts:28</note>
       </notes>
       <segment>
         <source>system: <ph id="0" equiv="list" disp="system.join(&apos;, &apos;)"/></source>
@@ -52218,15 +52218,31 @@
     </unit>
     <unit id="token-table.name.upload">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:38</note>
+        <note category="location">src/app/shared/access/token-table.ts:44</note>
       </notes>
       <segment>
         <source>Upload from the screen</source>
       </segment>
     </unit>
+    <unit id="token-table.name.npm-web-login">
+      <notes>
+        <note category="location">src/app/shared/access/token-table.ts:46</note>
+      </notes>
+      <segment>
+        <source>npm login on <ph id="0" equiv="time" disp="at"/></source>
+      </segment>
+    </unit>
+    <unit id="token-table.name.device-login">
+      <notes>
+        <note category="location">src/app/shared/access/token-table.ts:48</note>
+      </notes>
+      <segment>
+        <source>Command-line login on <ph id="0" equiv="time" disp="at"/></source>
+      </segment>
+    </unit>
     <unit id="tokens.list.loading">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:68,69</note>
+        <note category="location">src/app/shared/access/token-table.ts:81,82</note>
       </notes>
       <segment>
         <source>Loading the tokens.</source>
@@ -52234,7 +52250,7 @@
     </unit>
     <unit id="token-table.admin-inactive">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:103,105</note>
+        <note category="location">src/app/shared/access/token-table.ts:116,118</note>
       </notes>
       <segment>
         <source>Administrator rights inactive: the owner is no administrator now</source>
@@ -52242,7 +52258,7 @@
     </unit>
     <unit id="token-table.unknown-endpoints">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:111,113</note>
+        <note category="location">src/app/shared/access/token-table.ts:124,126</note>
       </notes>
       <segment>
         <source>Bound to an endpoint that is not configured:</source>
@@ -52250,7 +52266,7 @@
     </unit>
     <unit id="token-table.soon">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:124,125</note>
+        <note category="location">src/app/shared/access/token-table.ts:137,138</note>
       </notes>
       <segment>
         <source>Expires soon</source>
@@ -52258,7 +52274,7 @@
     </unit>
     <unit id="token-table.never">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:128,130</note>
+        <note category="location">src/app/shared/access/token-table.ts:141,143</note>
       </notes>
       <segment>
         <source>Never</source>
@@ -52266,7 +52282,7 @@
     </unit>
     <unit id="token-table.not-used">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:135,137</note>
+        <note category="location">src/app/shared/access/token-table.ts:148,150</note>
       </notes>
       <segment>
         <source>Not used yet</source>
@@ -52274,7 +52290,7 @@
     </unit>
     <unit id="token-table.rotate">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:148,149</note>
+        <note category="location">src/app/shared/access/token-table.ts:161,162</note>
       </notes>
       <segment>
         <source>Rotate</source>
@@ -52282,7 +52298,7 @@
     </unit>
     <unit id="token-table.revoke">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:154,155</note>
+        <note category="location">src/app/shared/access/token-table.ts:167,168</note>
       </notes>
       <segment>
         <source>Revoke</source>
@@ -52290,7 +52306,7 @@
     </unit>
     <unit id="token-table.state.expired">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:160,162</note>
+        <note category="location">src/app/shared/access/token-table.ts:173,175</note>
       </notes>
       <segment>
         <source>Expired</source>
@@ -52298,7 +52314,7 @@
     </unit>
     <unit id="token-table.state.revoked">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:163,165</note>
+        <note category="location">src/app/shared/access/token-table.ts:176,178</note>
       </notes>
       <segment>
         <source>Revoked</source>
@@ -52306,7 +52322,7 @@
     </unit>
     <unit id="token-table.caption">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:191</note>
+        <note category="location">src/app/shared/access/token-table.ts:204</note>
       </notes>
       <segment>
         <source>Tokens</source>
@@ -52314,7 +52330,7 @@
     </unit>
     <unit id="token-table.rotate-tip">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:192</note>
+        <note category="location">src/app/shared/access/token-table.ts:205</note>
       </notes>
       <segment>
         <source>Rotate: a new value now, the old one ends after the overlap you choose</source>
@@ -52322,7 +52338,7 @@
     </unit>
     <unit id="token-table.select">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:202</note>
+        <note category="location">src/app/shared/access/token-table.ts:215</note>
       </notes>
       <segment>
         <source>Select</source>
@@ -52330,7 +52346,7 @@
     </unit>
     <unit id="token-table.token">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:204</note>
+        <note category="location">src/app/shared/access/token-table.ts:217</note>
       </notes>
       <segment>
         <source>Token</source>
@@ -52338,7 +52354,7 @@
     </unit>
     <unit id="token-table.owner">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:205</note>
+        <note category="location">src/app/shared/access/token-table.ts:218</note>
       </notes>
       <segment>
         <source>Owner</source>
@@ -52346,7 +52362,7 @@
     </unit>
     <unit id="token-table.scope">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:208</note>
+        <note category="location">src/app/shared/access/token-table.ts:221</note>
       </notes>
       <segment>
         <source>Scope</source>
@@ -52354,7 +52370,7 @@
     </unit>
     <unit id="token-table.help.scope">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:209</note>
+        <note category="location">src/app/shared/access/token-table.ts:222</note>
       </notes>
       <segment>
         <source>What the token may do: all permissions of its owner, or only the listed repository grants.</source>
@@ -52362,7 +52378,7 @@
     </unit>
     <unit id="token-table.expires">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:212</note>
+        <note category="location">src/app/shared/access/token-table.ts:225</note>
       </notes>
       <segment>
         <source>Expires</source>
@@ -52370,7 +52386,7 @@
     </unit>
     <unit id="token-table.last-used">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:215</note>
+        <note category="location">src/app/shared/access/token-table.ts:228</note>
       </notes>
       <segment>
         <source>Last used</source>
@@ -52378,7 +52394,7 @@
     </unit>
     <unit id="token-table.help.last-used">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:216</note>
+        <note category="location">src/app/shared/access/token-table.ts:229</note>
       </notes>
       <segment>
         <source>The last time the token authenticated a request. Not every use is recorded immediately.</source>
@@ -52386,7 +52402,7 @@
     </unit>
     <unit id="token-table.created">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:221</note>
+        <note category="location">src/app/shared/access/token-table.ts:234</note>
       </notes>
       <segment>
         <source>Created</source>
@@ -52394,7 +52410,7 @@
     </unit>
     <unit id="token-table.actions">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:223</note>
+        <note category="location">src/app/shared/access/token-table.ts:236</note>
       </notes>
       <segment>
         <source>Actions</source>
@@ -52402,7 +52418,7 @@
     </unit>
     <unit id="token-table.select-one">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:255</note>
+        <note category="location">src/app/shared/access/token-table.ts:268</note>
       </notes>
       <segment>
         <source>Select <ph id="0" equiv="description" disp="description"/></source>

@@ -143,14 +143,16 @@ function sentences(): [string, string][] {
     valkeyReasonText,
   );
   // A name the server stores none of and the screen words from a fact of the API (Q-UI-1653): a token by its created_via.
-  add('token created via', ['upload'], (c) => tokenName({ description: '', createdVia: c }));
+  add('token created via', ['upload', 'npm-web-login', 'device-login'], (c) =>
+    tokenName({ description: '', createdVia: c, createdAt: '2026-11-27T20:39:22Z' }),
+  );
   return out;
 }
 
 describe('A server text in the screen\'s language (R-UI-214)', () => {
   it('R-UI-214 every code the server sends has a sentence of the screen, and a German one in the German build', () => {
     const english = sentences();
-    expect(english.length).toBe(88);
+    expect(english.length).toBe(90);
     for (const [code, sentence] of english) {
       expect(sentence, code).not.toBe('');
       expect(sentence, code).not.toContain('the API sentence');

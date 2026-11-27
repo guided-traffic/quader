@@ -2026,7 +2026,8 @@ matched by the scanner pattern above. Consequences for the Quader tokens:
 
 - ID (UUIDv7), type, owner principal, description: what the token's creator wrote; a token the server makes for a purpose of its own
   has none, and the screen words it from `createdVia` (the token of an upload from the screen, `upload`; a Bastion's declared token,
-  `configuration`), as the server stores no phrase it makes up
+  `configuration`; the token of the npm web login, `npm-web-login`, and of the device login, `device-login`, with its creation time),
+  as the server stores no phrase it makes up
   ([api-and-ui.md](api-and-ui.md#q-ui-1653--the-server-stores-no-phrase-it-makes-up-the-screen-words-the-thing-from-a-fact-of-the-api) Q-UI-1653);
 - scope (R-AUTH-024);
 - creation time and creator, `createdVia`;
@@ -2266,7 +2267,9 @@ CREATE TABLE api_token (
   hint               text        NOT NULL,
   principal_id       uuid        NOT NULL REFERENCES principal (id) ON DELETE CASCADE,
   description        text        NOT NULL CHECK (char_length(description) <= 1024
-                                                 AND (char_length(description) >= 1 OR created_via IN ('upload', 'configuration'))),
+                                                 AND (char_length(description) >= 1
+                                                      OR created_via IN ('upload', 'configuration', 'npm-web-login',
+                                                                         'device-login'))),
   scope              jsonb       NOT NULL,                          -- R-AUTH-024
   self_rotatable     boolean     NOT NULL DEFAULT false,            -- R-AUTH-030
   created_at         timestamptz NOT NULL DEFAULT now(),
@@ -3149,7 +3152,7 @@ OIDC session.
 | State | Response |
 |---|---|
 | Pending | 202, body `{}`, `Retry-After: 2`. npm parses the body as JSON before checking the status, so the body must be JSON. |
-| Approved | Mint the PAT (`createdVia: npm-web-login`, description `npm login from <addr> on <date>`), mark the row consumed, answer 200 `{"token": "qdr_pat_…"}`. The secret is generated at this moment and is never stored. |
+| Approved | Mint the PAT (`createdVia: npm-web-login`, no description: the token lists word it "npm login on <time>" from `createdVia` and `createdAt`, Q-UI-1653), mark the row consumed, answer 200 `{"token": "qdr_pat_…"}`. The secret is generated at this moment and is never stored. |
 | Denied | 403 `{"error": "denied"}` |
 | Expired, consumed or unknown | 404 `{"error": "not_found"}` |
 
@@ -3352,7 +3355,8 @@ so it yields exactly one token however many replicas the polls reach.
 **Approval.** The approval page requires the typed user code, a session, CSRF protection and
 recent authentication.
 
-**The issued token.** It is a PAT with `createdVia: device-login` and the lifetime
+**The issued token.** It is a PAT with `createdVia: device-login`, no description (the token lists word it "Command-line login on
+<time>" from `createdVia` and `createdAt`, Q-UI-1653), and the lifetime
 `auth.cli_login.token_ttl`, unless the approver chose a shorter one (R-AUTH-026). The token
 response never contains a `refresh_token` (Q-AUTH-3). A tool renews its token in one of two
 ways:
