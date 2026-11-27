@@ -1588,6 +1588,13 @@ records the recorder that tells such a stall apart).
   known, the first page's code 70 kB smaller (865.8 to 795.9 kB, under the 800 kB budget; its next step, the API services
   provided where used, about 80 kB, is open). Still open from K: the Bastion card's render data carry the old declared-token
   phrase (left for the held W41 chain's files).
+  **Landed on 2026-11-27, 21:42: batch B-1127l** (four commits; landing held from 20:30 until the attack on the Bastion had ended at
+  21:40, since a release rolls its pods). Its first render run stopped at the start of the profile's Bastion: the bundle commit had split
+  `features/limits/limit-text.ts` out of `figures.ts`, which the Bastion's bundle reaches and its rule (R-UI-228) did not allow; the rule
+  allows the words of a limit in both files now, folded into the commit, and the common brief tells builders to run `npm run build:embed`
+  when they move a module the Bastion's views reach. Gates on the stack: the landing gates, charts, `ui-states`, the whole render set (766
+  passed, 0 failed), `identity`, `go test -race ./internal/jobs/`. On the stack: batch B-1127m (the API services provided where they are
+  used, the first page 795.9 to 763.7 kB; the downloads tab's limit notice a component of its own), its gates next.
 
 - **Open since 2026-11-27, 11:18, the owner on the Bastions page of his installation (the card before W39-P2): "Ich weiß nicht
   wie du es schaffst, dass jede Seite immer so gnadenlos überladen aussieht, wenn du mit ihr fertig bist."** His points: the page
@@ -1644,6 +1651,16 @@ records the recorder that tells such a stall apart).
   (`bastion address blocked`, `rate_limited`, 3,002 refusals of the web interface's page limit, R-BAS-037), and the external HAProxy refused
   it with its own `429` before the Bastion (termination `PR`, no server); from 20:49:20 every request of it was refused. The Bastion stayed at
   50m CPU a replica, the main installation unchanged; one HAProxy controller carried the wave at about 490m CPU.
+  **The rest, to 21:40:** the owner had the address exempted from the ingress's limit at 21:00 (`edgeLimit.exemptCIDRs`, Flux `3ffef0f`,
+  removed at 21:40 when he said the test had ended, `28564ad`); the Bastion's block ran out at 21:04. A third wave of discovery (about
+  115,000 words, up to 356 a second) was answered `404` throughout: neither the ingress (exempt) nor the Bastion (H-2448) limited it, the
+  Bastion at about 60m CPU a replica. The tester's second report (pasted 21:30, about 140,000 requests in all) adds: forged anonymous
+  registry tokens with any signature and an old `exp` are accepted, which is the design of R-BAS-052/Q-BAS-168 (an unverified anonymous
+  claim can only lower what is read; `"a":false` is refused `401`); `guidedtraffic/s3-encryption-proxy`, called private, is a public
+  Docker Hub image (its README pulls it without a login); TLS 1.2/1.3 only, all ciphers A, no request smuggling, host pinning, no CORS
+  leak; and Postfix and IMAPS on the same nodes' addresses (`mail.wds18.de`, out of the test's scope). The owner asked for H-2448 to be
+  solved; a builder works on it since 21:33 (`.dev/briefs/batch-h2448.md`: every answered request counts against one bucket of its
+  address). The watch recorded 89,167 request lines (a lower bound) under the session's scratchpad.
 
 - **Read on 2026-11-27, 17:44: main's CI runs, red in each of the 24 since 2026-11-26, 17:48.** The last finished run (the push of 15:56,
   46020395243) failed in two jobs: `integration (shard b)`, `TestR_REPO_067_EveryTableThatReferencesARepositoryIsPurgedOrKeptByADecision`,
