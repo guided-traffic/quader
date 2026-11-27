@@ -6972,7 +6972,8 @@ Priority: **P1** · Covers: quader-only
   the committed placeholder of a binary without the web build holds them too. A page's address is answered with the document, its two
   slots filled after the nonce went in, so that nothing a slot carries can take the page's nonce. The application replaces the root's
   content when it starts.
-- **The head.** `<title>` as the application writes it ("<page> – Quader", R-UI-231's words), `<meta name="description">` (the package's
+- **The head.** `<title>` as the application writes it ("<page> – Quader Bastion", R-UI-231's words, [api-and-ui.md](api-and-ui.md)
+  Q-UI-1617), `<meta name="description">` (the package's
   description, cut to 300 characters), `<link rel="canonical">` and `<link rel="alternate" hreflang>` for `en`, `de` and `x-default` (the
   address without a locale, which redirects by the visitor's language), all on the Bastion's own `server.base_url`; `<meta name="robots"
   content="noindex">` where the address is not to be indexed; JSON-LD in `<script type="application/ld+json">`: `SoftwareApplication` for

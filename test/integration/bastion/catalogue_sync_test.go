@@ -240,7 +240,7 @@ func crawlWebInterface(t *testing.T, w *world, r *replica) {
 		"/sitemap.xml":   {"<loc>" + baseURL + "/sitemap/0.xml</loc>"},
 		"/sitemap/0.xml": {"<loc>" + baseURL + page + "</loc>"},
 		page: {
-			`<title>plain-lib – Quader</title>`, `<link rel="canonical" href="` + baseURL + page + `">`, `<h1>plain-lib</h1>`,
+			`<title>plain-lib – Quader Bastion</title>`, `<link rel="canonical" href="` + baseURL + page + `">`, `<h1>plain-lib</h1>`,
 			`<article><h1`, `"@type":"SoftwareApplication"`,
 		},
 	} {

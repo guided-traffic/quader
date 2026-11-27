@@ -2,9 +2,11 @@ import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Type } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { Title } from '@angular/platform-browser';
+import { Router, TitleStrategy, provideRouter } from '@angular/router';
 import { ClientSetupReads, PackageReads } from '../app/api/package-reads';
 import { ApiError } from '../app/api/problem';
+import { QuaderTitleStrategy, TITLE_SUFFIX } from '../app/core/title-strategy';
 import { BASTION_MARK } from '../app/shared/brand/mark-geometry';
 import { SignatureReads } from '../app/api/signature-reads';
 import { VulnerabilityReads } from '../app/api/vulnerability-reads';
@@ -20,9 +22,11 @@ import {
 import { NamespaceOf } from '../app/views/packages/namespace-of';
 import { PackageName } from '../app/views/packages/package-name';
 import { BastionApp } from './app';
+import { bastionConfig } from './app.config';
 import { BASTION_FORMATS } from './data/formats';
 import { bastionDataInterceptor, seg } from './data/http';
 import { provideBastionReads } from './data/reads';
+import indexHtml from './index.html' with { loader: 'text' };
 
 // The Bastion's application (bastion.md R-BAS-116 to R-BAS-118, api-and-ui.md R-UI-227, R-UI-228) against the HTTP testing backend: the
 // reads ask the data path with the catalogue's spelling, and the shell shows the state's age, the sentence of a Bastion that is not
@@ -265,6 +269,26 @@ describe('The Bastion shell (R-UI-227)', () => {
     expect(accent).toEqual([tower(BASTION_MARK.coloured)]);
     expect(product?.querySelector('.product-name')?.textContent?.trim()).toBe('Quader Bastion');
     expect(product?.querySelector('.product-qualifier')?.textContent).toBe('Bastion');
+  });
+
+  it('R-UI-227 every title ends in Quader Bastion, and the first paint says Loading Quader Bastion in both languages', async () => {
+    // The application's own binding of the suffix, as app.config.ts provides it.
+    const suffix = bastionConfig.providers.filter((p) => typeof p === 'object' && p !== null && 'provide' in p && p.provide === TITLE_SUFFIX);
+    expect(suffix.length).toBe(1);
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([{ path: 'x', title: 'Projects', children: [] }]),
+        { provide: TitleStrategy, useExisting: QuaderTitleStrategy },
+        ...suffix,
+      ],
+    });
+    await TestBed.inject(Router).navigateByUrl('/x');
+    expect(TestBed.inject(Title).getTitle()).toBe('Projects – Quader Bastion');
+    const boot = new DOMParser().parseFromString(indexHtml, 'text/html').querySelectorAll('quader-root .quader-loading-text [lang]');
+    expect([...boot].map((s) => `${s.getAttribute('lang')}: ${s.textContent}`)).toEqual([
+      'en: Loading Quader Bastion.',
+      'de: Quader Bastion wird geladen.',
+    ]);
   });
 
   it('R-UI-227 a fresh state shows the page and no band', async () => {

@@ -98,7 +98,7 @@ func TestR_BAS_121_APagesHeadAndTextComeFromTheCatalogue(t *testing.T) {
 	rec := do(h, http.MethodGet, "/ui/de"+pkg)
 	body := rec.Body.String()
 	for _, want := range []string{
-		`<title>@acme/ui – Quader</title>`,
+		`<title>@acme/ui – Quader Bastion</title>`,
 		`<meta name="description" content="A UI kit &lt;/script&gt;&lt;script&gt;alert(1)&lt;/script&gt;">`,
 		`<link rel="canonical" href="` + base + `/ui/de` + pkg + `">`,
 		`<link rel="alternate" hreflang="en" href="` + base + `/ui/en` + pkg + `">`,
@@ -135,31 +135,31 @@ func TestR_BAS_121_APagesHeadAndTextComeFromTheCatalogue(t *testing.T) {
 		target, title, canonical, ldType string
 		noindex                          bool
 	}{
-		{"/ui/en" + pkg + "@1.0.0", "@acme/ui 1.0.0 – Quader", base + "/ui/en" + pkg + "@1.0.0", "SoftwareApplication", false},
-		{"/ui/en" + pkg + "@1.0.0?tab=vulnerabilities", "@acme/ui 1.0.0 – Quader", base + "/ui/en" + pkg + "@1.0.0", "SoftwareApplication", true},
-		{"/ui/en" + pkg + "?severity=critical", "@acme/ui – Quader", base + "/ui/en" + pkg, "SoftwareApplication", true},
-		{"/ui/en" + pkg + "?tab=files", "@acme/ui – Quader", base + "/ui/en" + pkg, "SoftwareApplication", false},
-		{"/ui/en" + pkg + "/-/versions", "Versions of @acme/ui – Quader", base + "/ui/en" + pkg + "/-/versions", "WebPage", false},
+		{"/ui/en" + pkg + "@1.0.0", "@acme/ui 1.0.0 – Quader Bastion", base + "/ui/en" + pkg + "@1.0.0", "SoftwareApplication", false},
+		{"/ui/en" + pkg + "@1.0.0?tab=vulnerabilities", "@acme/ui 1.0.0 – Quader Bastion", base + "/ui/en" + pkg + "@1.0.0", "SoftwareApplication", true},
+		{"/ui/en" + pkg + "?severity=critical", "@acme/ui – Quader Bastion", base + "/ui/en" + pkg, "SoftwareApplication", true},
+		{"/ui/en" + pkg + "?tab=files", "@acme/ui – Quader Bastion", base + "/ui/en" + pkg, "SoftwareApplication", false},
+		{"/ui/en" + pkg + "/-/versions", "Versions of @acme/ui – Quader Bastion", base + "/ui/en" + pkg + "/-/versions", "WebPage", false},
 		{
-			"/ui/en" + pkg + "?tab=documentation&doc=module/button", "button – @acme/ui 1.1.0 – Quader",
+			"/ui/en" + pkg + "?tab=documentation&doc=module/button", "button – @acme/ui 1.1.0 – Quader Bastion",
 			base + "/ui/en" + pkg + "?doc=module%2Fbutton&tab=documentation", "TechArticle", false,
 		},
-		{"/ui/en" + pkg + "?tab=documentation&doc=module/none", "@acme/ui – Quader", base + "/ui/en" + pkg, "SoftwareApplication", false},
-		{"/ui/de/projects/acme/packages", "Pakete in Acme platform – Quader", base + "/ui/de/projects/acme/packages", "WebPage", false},
-		{"/ui/de/projects/acme", "Pakete in Acme platform – Quader", base + "/ui/de/projects/acme/packages", "WebPage", false},
-		{"/ui/en/projects/acme/packages?q=ui", "Packages in Acme platform – Quader", base + "/ui/en/projects/acme/packages", "WebPage", true},
+		{"/ui/en" + pkg + "?tab=documentation&doc=module/none", "@acme/ui – Quader Bastion", base + "/ui/en" + pkg, "SoftwareApplication", false},
+		{"/ui/de/projects/acme/packages", "Pakete in Acme platform – Quader Bastion", base + "/ui/de/projects/acme/packages", "WebPage", false},
+		{"/ui/de/projects/acme", "Pakete in Acme platform – Quader Bastion", base + "/ui/de/projects/acme/packages", "WebPage", false},
+		{"/ui/en/projects/acme/packages?q=ui", "Packages in Acme platform – Quader Bastion", base + "/ui/en/projects/acme/packages", "WebPage", true},
 		// A project with files and no package is a list the start offers (Q-BAS-400, Q-BAS-498).
-		{"/ui/en/projects/tools/packages", "Packages in tools – Quader", base + "/ui/en/projects/tools/packages", "WebPage", false},
-		{"/ui/en/", "Projects – Quader", base + "/ui/en/", "WebPage", false},
-		{"/ui/en/legal/imprint", "Imprint – Quader", base + "/ui/en/legal/imprint", "WebPage", false},
+		{"/ui/en/projects/tools/packages", "Packages in tools – Quader Bastion", base + "/ui/en/projects/tools/packages", "WebPage", false},
+		{"/ui/en/", "Projects – Quader Bastion", base + "/ui/en/", "WebPage", false},
+		{"/ui/en/legal/imprint", "Imprint – Quader Bastion", base + "/ui/en/legal/imprint", "WebPage", false},
 		// A public repository's page Set up client is found and never indexed (R-BAS-129, Q-BAS-401), its canonical address without the client.
-		{"/ui/de/projects/acme/repositories/npm/setup?client=pnpm", "Client einrichten – Quader", base + "/ui/de/projects/acme/repositories/npm/setup", "WebPage", true},
+		{"/ui/de/projects/acme/repositories/npm/setup?client=pnpm", "Client einrichten – Quader Bastion", base + "/ui/de/projects/acme/repositories/npm/setup", "WebPage", true},
 		// A public generic repository's folders and files are found and indexed (R-UI-229, Q-BAS-483), the root under the
 		// repository's address, every query dropped.
-		{"/ui/en/projects/tools/repositories/downloads", "downloads – Quader", base + "/ui/en/projects/tools/repositories/downloads", "WebPage", false},
-		{"/ui/en/projects/tools/repositories/downloads/files", "downloads – Quader", base + "/ui/en/projects/tools/repositories/downloads", "WebPage", false},
-		{"/ui/de/projects/tools/repositories/downloads/files/tools?sort=name", "tools – Quader", base + "/ui/de/projects/tools/repositories/downloads/files/tools", "WebPage", false},
-		{"/ui/en/projects/tools/repositories/downloads/files/tools/agent.tar.gz", "agent.tar.gz – Quader", base + "/ui/en/projects/tools/repositories/downloads/files/tools/agent.tar.gz", "WebPage", false},
+		{"/ui/en/projects/tools/repositories/downloads", "downloads – Quader Bastion", base + "/ui/en/projects/tools/repositories/downloads", "WebPage", false},
+		{"/ui/en/projects/tools/repositories/downloads/files", "downloads – Quader Bastion", base + "/ui/en/projects/tools/repositories/downloads", "WebPage", false},
+		{"/ui/de/projects/tools/repositories/downloads/files/tools?sort=name", "tools – Quader Bastion", base + "/ui/de/projects/tools/repositories/downloads/files/tools", "WebPage", false},
+		{"/ui/en/projects/tools/repositories/downloads/files/tools/agent.tar.gz", "agent.tar.gz – Quader Bastion", base + "/ui/en/projects/tools/repositories/downloads/files/tools/agent.tar.gz", "WebPage", false},
 	}
 	for _, c := range cases {
 		rec := do(h, http.MethodGet, c.target)
@@ -213,7 +213,7 @@ func TestR_BAS_121_APagesHeadAndTextComeFromTheCatalogue(t *testing.T) {
 		rec := do(h, http.MethodGet, target)
 		body := rec.Body.String()
 		if rec.Code != 404 || !strings.Contains(body, `<meta name="robots" content="noindex">`) || strings.Contains(body, "canonical") ||
-			!strings.Contains(body, "<title>Page not found – Quader</title>") || !strings.Contains(body, "<h1>Page not found</h1>") {
+			!strings.Contains(body, "<title>Page not found – Quader Bastion</title>") || !strings.Contains(body, "<h1>Page not found</h1>") {
 			t.Errorf("%s = %d:\n%s", target, rec.Code, body)
 		}
 	}
@@ -228,7 +228,7 @@ func TestR_BAS_121_APagesHeadAndTextComeFromTheCatalogue(t *testing.T) {
 	r.state = catalogue.State{Enabled: true, Decided: true}
 	rec = do(h, http.MethodGet, "/ui/en"+pkg)
 	if body := rec.Body.String(); rec.Code != 503 || rec.Header().Get("Retry-After") != "30" || !strings.Contains(body, `content="noindex"`) ||
-		!strings.Contains(body, "<title>Quader</title>") || strings.Contains(body, "quader-page\"") {
+		!strings.Contains(body, "<title>Quader Bastion</title>") || strings.Contains(body, "quader-page\"") {
 		t.Errorf("not ready = %d:\n%s", rec.Code, body)
 	}
 }

@@ -69,10 +69,11 @@ func seconds(n int64, one, many string) string {
 	return strconv.FormatInt(n, 10) + " " + many
 }
 
-// TitleSuffix ends every title, as the application's title strategy writes it (web/src/app/core/title-strategy.ts).
-const TitleSuffix = "Quader"
+// TitleSuffix ends every title with the Bastion's name (Q-UI-1617), as the application's title strategy writes it
+// (web/src/app/core/title-strategy.ts with the Bastion's TITLE_SUFFIX of web/src/bastion/app.config.ts).
+const TitleSuffix = "Quader Bastion"
 
-// FullTitle is a page's title as the application writes it: "<own> – Quader", or "Quader" alone.
+// FullTitle is a page's title as the application writes it: "<own> – Quader Bastion", or "Quader Bastion" alone.
 func FullTitle(own string) string {
 	if own == "" {
 		return TitleSuffix
