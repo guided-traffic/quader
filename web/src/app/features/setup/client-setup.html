@@ -189,7 +189,7 @@
           @if (mode() === 'paste') {
             <span i18n="@@setup.cred.line-paste">The snippets hold the token you paste under More options.</span>
           } @else {
-            <span i18n="@@setup.cred.line-env">The snippets read it from <code translate="no">QUADER_TOKEN</code>.</span>
+            <span i18n="@@setup.cred.line-env">The snippets read it from <span class="with-stop"><code translate="no">QUADER_TOKEN</code>.</span></span>
           }
         </p>
         @if (mode() === 'env' && !createdToken()) {
@@ -222,7 +222,7 @@
           <quader-address-field class="token-value" [value]="value" [label]="tokenLabel" [copyLabel]="copyTokenLabel" />
           <p i18n="@@setup.token.read-how">Run this, paste the token, press Enter. The shell keeps it out of its history.</p>
           <quader-code-window [content]="readCommand" language="shell" label="bash, zsh" [copyLabel]="copyCommandLabel" />
-          <p class="hint" i18n="@@setup.token.read-ci">In CI: a masked variable named <code translate="no">QUADER_TOKEN</code>.</p>
+          <p class="hint" i18n="@@setup.token.read-ci">In CI: a masked variable named <span class="with-stop"><code translate="no">QUADER_TOKEN</code>.</span></p>
         </div>
       }
       @if (offerMore()) {

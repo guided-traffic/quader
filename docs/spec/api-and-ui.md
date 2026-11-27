@@ -8569,7 +8569,9 @@ that is a section's heading wraps as the heading does (Q-UI-810). Not covered: a
 A value in running text, a host, a repository's key, a digest, a version, a path or a file name, is a `code` the template marks
 `translate="no"`, and breaks at none of its hyphens and dots while it fits on a line of its own: it moves to the next line whole, and
 breaks inside itself only where it is longer than the line ([Q-UI-1213](#q-ui-1213--a-value-in-running-text-is-one-code-that-moves-whole-to-the-next-line-while-it-fits-on-one)).
-A sentence the code builds with a value splits at it (`aroundValue`), and a list of values stands as one (`<quader-value-list>`).
+A sentence the code builds with a value splits at it (`aroundValue`), and a list of values stands as one (`<quader-value-list>`). A
+value that a punctuation mark follows stands with it in `<span class="with-stop">`, so the mark does not begin the next line
+([Q-UI-1615](#q-ui-1615--a-value-and-the-punctuation-after-it-stay-on-one-line)).
 
 A word of a list's cell does not break inside itself: a column that wraps declares a least width that holds its words (the
 audit log's project broke into "Platfor" / "m enginee" / "ring" beside a target that took the room). A token longer than any
@@ -28237,6 +28239,23 @@ Test: [value-list.states.spec.ts](../../web/src/app/shared/value-list.states.spe
 breaks at its hyphen as plain text at every width that does it stays whole as a value, a longer one stays in its box, a sentence splits
 at its value).
 
+### Q-UI-1615 · A value and the punctuation after it stay on one line
+
+Status: **Decided by the development agent** on 2026-11-27 (batch H, from the render of batch F) — selected from the options below; the
+owner reviews it at the walkthrough. Found on **Set up client** at 390 px: "The snippets read it from QUADER_TOKEN" / "." The value of
+Q-UI-1213 is its own box (`inline-block`), and a line may break after any such box, even before a full stop.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A class `with-stop` of `main.scss` (`white-space: nowrap`, the `code` inside back to `normal`) that the template wraps around the value and its mark (chosen) | One rule, one wrapper per place | The mark never begins a line; the value keeps Q-UI-1213's breaks; the translation carries the wrapper as a placeholder | A wrapper per place, and a unit of the translation changes with it |
+| (b) The value inline (`display: inline`) where it holds no hyphen or dot | No wrapper | No translation changes | Only for values known to hold neither; the rule of Q-UI-1213 would get exceptions |
+| (c) A word joiner (U+2060) before the mark | Text only | — | A browser breaks around an inline box whatever the characters beside it |
+
+**Choice:** (a), on the set-up page's two sentences that end with `QUADER_TOKEN` (`setup.cred.line-env`, `setup.token.read-ci`). The
+other places where a marked value stands before a mark are [H-2438](#h-2438--a-marked-value-before-a-punctuation-mark-can-leave-the-mark-at-the-start-of-a-line).
+**Applied in the spec:** R-UI-171's paragraph of values. Code: [main.scss](../../web/src/styles/main.scss),
+[client-setup.html](../../web/src/app/features/setup/client-setup.html).
+
 ### Q-UI-1219 · A sentence that names the reader or a kind of caller is a unit of its own
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Found by the
@@ -32088,6 +32107,16 @@ looks for its worst one. Hardening: a server sort over a stored grade (Q-UI-373 
 Stage: the list of **Admin area › CI** ([issuer-list.ts](../../web/src/app/features/ci/issuer-list.ts)). Subject: an issuer whose last
 key fetch failed. Live: the row says the failure in words (Q-UI-1227); its status and host are on the issuer's **Keys** tab, one click
 away. A compact place, as R-UI-216's toast is; the row has no **Details** of its own.
+
+### H-2438 · A marked value before a punctuation mark can leave the mark at the start of a line
+
+Component: the templates' sentences with a `<code translate="no">` followed by a full stop, a comma, a colon or a closing parenthesis
+(Q-UI-1213, Q-UI-1615). Subject: a reader at 390 px, where the value reaches the end of a line. Live since Q-UI-1213. Read on 2026-11-27:
+26 such lines in 16 files besides the set-up page (among them `signing-dialogs.ts`, `ci-common.ts`, `auth-settings.html`,
+`upstream-registry.html`, `virtual-members.html`, `bastion-card.ts`, `gate-release-dialog.ts`, `signature-gate.ts`,
+`package-version-view.html`); none was rendered at the width where it breaks. What makes it real: a value whose box ends a line, which
+moves its mark to the next. The remedy is the one of Q-UI-1615 per place: `<span class="with-stop">` around the value and its mark, and
+the German unit's placeholders with it.
 
 ### H-1990 · Sentences built in code still hold a value as plain text
 

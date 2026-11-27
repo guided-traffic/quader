@@ -52,6 +52,17 @@ code[translate='no'] {
   overflow-wrap: anywhere;
 }
 
+// Such a value and the punctuation after it stay on one line: an inline-block ends with a break opportunity of its own, so "QUADER_TOKEN"
+// and its full stop broke apart on the set-up page at 390 px. The template wraps the two in `<span class="with-stop">`; the value inside
+// still breaks where it is longer than the line.
+.with-stop {
+  white-space: nowrap;
+
+  > code {
+    white-space: normal;
+  }
+}
+
 // A date, a time or both are one value: a line breaks before or after it, never inside it (R-UI-171). A list's cell held this
 // already (`td time`); a fact's "ClamAV database of Nov 24, 2026" broke between "Nov" and "24" at 390 px on the days whose date
 // reached the line's end.

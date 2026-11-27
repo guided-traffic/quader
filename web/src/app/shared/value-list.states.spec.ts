@@ -48,6 +48,30 @@ describe('a value in running text (R-UI-171)', () => {
     expect(value.getBoundingClientRect().right).toBeLessThanOrEqual(box.getBoundingClientRect().right + 0.5);
   });
 
+  it('R-UI-171 a value and its full stop stay on one line in with-stop (Q-UI-1615)', () => {
+    box = document.createElement('p');
+    document.body.append(box);
+    // The widths at which the value's box ends a line and its full stop begins the next: the case the class is for.
+    const sentence = (wrap: boolean) =>
+      'The snippets read it from ' +
+      (wrap ? '<span class="with-stop">' : '') +
+      '<code id="v" translate="no">QUADER_TOKEN</code><span id="s">.</span>' +
+      (wrap ? '</span>' : '');
+    const top = (id: string) => box!.querySelector(`#${id}`)!.getBoundingClientRect().top;
+    const widths: number[] = [];
+    for (let px = 120; px <= 480; px += 1) {
+      box.style.inlineSize = `${px}px`;
+      box.innerHTML = sentence(false);
+      if (top('s') - top('v') > 8) widths.push(px);
+    }
+    expect(widths.length).toBeGreaterThan(0);
+    for (const px of widths) {
+      box.style.inlineSize = `${px}px`;
+      box.innerHTML = sentence(true);
+      expect(Math.abs(top('s') - top('v')), `at ${px} px`).toBeLessThan(8);
+    }
+  });
+
   it('R-UI-171 a sentence of the translation splits at the place of its value', () => {
     expect(aroundValue((v) => `The credential is sent to ${v}.`)).toEqual({ before: 'The credential is sent to ', after: '.' });
     expect(aroundValue((v) => `${v} geprüft`)).toEqual({ before: '', after: ' geprüft' });
