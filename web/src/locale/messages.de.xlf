@@ -31330,7 +31330,7 @@
       </notes>
       <segment>
         <source>This includes the public Sigstore, where anyone can sign. Choose anchors to accept only your own signers.</source>
-        <target>Dazu gehört der öffentliche Sigstore, bei dem jeder signieren kann. Wählen Sie Anker aus, um nur Ihre eigenen Unterzeichner zu akzeptieren.</target>
+        <target>Dazu gehört der öffentliche Sigstore, bei dem jeder signieren kann. Wählen Sie Anker aus, um nur Ihre eigenen Signierer zu akzeptieren.</target>
       </segment>
     </unit>
     <unit id="repo.gate.these">
@@ -31476,7 +31476,7 @@
       </notes>
       <segment>
         <source>Artifacts without a signature that a trust anchor of this repository knows are refused. A signature says who signed an artifact, not that it is safe.</source>
-        <target>Artefakte ohne eine Signatur, deren Unterzeichner ein Vertrauensanker dieses Repositorys kennt, werden verweigert. Eine Signatur sagt, wer ein Artefakt signiert hat, nicht, dass es sicher ist.</target>
+        <target>Artefakte ohne eine Signatur, deren Signierer ein Vertrauensanker dieses Repositorys kennt, werden verweigert. Eine Signatur sagt, wer ein Artefakt signiert hat, nicht, dass es sicher ist.</target>
       </segment>
     </unit>
     <unit id="repo.gate.virtual">
@@ -66996,7 +66996,7 @@
       </notes>
       <segment>
         <source>Downloads are refused: the repository serves only artifacts with a verified signature, and <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.name }}"/></pc> has a signature of its publisher or its build whose signer no trust anchor the repository accepts knows.</source>
-        <target>Downloads werden verweigert: Das Repository liefert nur Artefakte mit verifizierter Signatur aus, und <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.name }}"/></pc> hat eine Signatur seines Herausgebers oder seines Builds, deren Unterzeichner kein vom Repository akzeptierter Vertrauensanker kennt.</target>
+        <target>Downloads werden verweigert: Das Repository liefert nur Artefakte mit verifizierter Signatur aus, und <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.name }}"/></pc> hat eine Signatur seines Herausgebers oder seines Builds, deren Signierer kein vom Repository akzeptierter Vertrauensanker kennt.</target>
       </segment>
     </unit>
     <unit id="pkg.gate.banner.not-chosen-unnamed">
@@ -67023,7 +67023,7 @@
       </notes>
       <segment>
         <source>Downloads are refused: the repository serves only artifacts with a verified signature, and <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.name }}"/></pc> is signed by a signer an administrator blocked.</source>
-        <target>Downloads werden verweigert: Das Repository liefert nur Artefakte mit verifizierter Signatur aus, und <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.name }}"/></pc> ist von einem Unterzeichner signiert, den ein Administrator gesperrt hat.</target>
+        <target>Downloads werden verweigert: Das Repository liefert nur Artefakte mit verifizierter Signatur aus, und <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.name }}"/></pc> ist von einem Signierer signiert, den ein Administrator gesperrt hat.</target>
       </segment>
     </unit>
     <unit id="pkg.gate.banner.not-checked-unnamed">
@@ -67050,7 +67050,7 @@
       </notes>
       <segment>
         <source>Downloads are refused in <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span class=&quot;with-stop&quot;&gt;" dispEnd="&lt;/span&gt;"><pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="2" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>:</pc> it serves only artifacts with a verified signature, and <pc id="3" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="4" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> has a signature of its publisher or its build whose signer no trust anchor this repository accepts knows.</source>
-        <target>Downloads werden in <pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="2" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc> verweigert: Es liefert nur Artefakte mit verifizierter Signatur aus, und <pc id="3" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="4" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> hat eine Signatur seines Herausgebers oder seines Builds, deren Unterzeichner kein von diesem Repository akzeptierter Vertrauensanker kennt.</target>
+        <target>Downloads werden in <pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="2" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc> verweigert: Es liefert nur Artefakte mit verifizierter Signatur aus, und <pc id="3" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="4" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> hat eine Signatur seines Herausgebers oder seines Builds, deren Signierer kein von diesem Repository akzeptierter Vertrauensanker kennt.</target>
       </segment>
     </unit>
     <unit id="pkg.gate.banner.not-chosen">
@@ -67077,7 +67077,7 @@
       </notes>
       <segment>
         <source>Downloads are refused in <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span class=&quot;with-stop&quot;&gt;" dispEnd="&lt;/span&gt;"><pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="2" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>:</pc> it serves only artifacts with a verified signature, and <pc id="3" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="4" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> is signed by a signer an administrator blocked.</source>
-        <target>Downloads werden in <pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="2" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc> verweigert: Es liefert nur Artefakte mit verifizierter Signatur aus, und <pc id="3" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="4" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> ist von einem Unterzeichner signiert, den ein Administrator gesperrt hat.</target>
+        <target>Downloads werden in <pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="2" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc> verweigert: Es liefert nur Artefakte mit verifizierter Signatur aus, und <pc id="3" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="4" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> ist von einem Signierer signiert, den ein Administrator gesperrt hat.</target>
       </segment>
     </unit>
     <unit id="pkg.gate.banner.not-checked">
@@ -69062,7 +69062,7 @@
       </notes>
       <segment>
         <source>Signer not accepted</source>
-        <target>Unterzeichner nicht akzeptiert</target>
+        <target>Signierer nicht akzeptiert</target>
       </segment>
     </unit>
     <unit id="sig.gate.word.not-chosen">
@@ -69089,7 +69089,7 @@
       </notes>
       <segment>
         <source>Signer blocked</source>
-        <target>Unterzeichner gesperrt</target>
+        <target>Signierer gesperrt</target>
       </segment>
     </unit>
     <unit id="sig.gate.word.not-checked">
@@ -69127,7 +69127,7 @@
       </notes>
       <segment>
         <source>No trust anchor this repository accepts knows the signer of its publisher&apos;s or its build&apos;s signature.</source>
-        <target>Kein Vertrauensanker, den dieses Repository akzeptiert, kennt den Unterzeichner der Signatur seines Herausgebers oder seines Builds.</target>
+        <target>Kein Vertrauensanker, den dieses Repository akzeptiert, kennt den Signierer der Signatur seines Herausgebers oder seines Builds.</target>
       </segment>
     </unit>
     <unit id="sig.gate.sentence.not-chosen">
@@ -69154,7 +69154,7 @@
       </notes>
       <segment>
         <source>An administrator blocked the signer of its publisher&apos;s or its build&apos;s signature.</source>
-        <target>Ein Administrator hat den Unterzeichner der Signatur seines Herausgebers oder seines Builds gesperrt.</target>
+        <target>Ein Administrator hat den Signierer der Signatur seines Herausgebers oder seines Builds gesperrt.</target>
       </segment>
     </unit>
     <unit id="sig.gate.sentence.not-checked">

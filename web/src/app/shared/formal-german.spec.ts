@@ -90,3 +90,15 @@ describe('The German word "Token" (R-UI-045)', () => {
     }
   });
 });
+
+/**
+ * A signer is "Signierer" in every German text (web/src/locale/GLOSSARY.md): ten texts of the signature gate, the trust anchors and the
+ * refused downloads said "Unterzeichner" beside 38 with "Signierer", so the badge of a signature read "Signierer nicht
+ * vertrauenswürdig" and the refusal beside it "Unterzeichner nicht akzeptiert".
+ */
+describe('The German word for a signer (R-UI-045)', () => {
+  it('R-UI-045 every German target names a signer "Signierer", as the glossary has it, never "Unterzeichner"', () => {
+    const other = targets().filter((t) => /Unterzeichner/i.test(t.text)).map((t) => `${t.id}: ${t.text}`);
+    expect(other).toEqual([]);
+  });
+});

@@ -156,7 +156,7 @@ unless the line is too short, and then breaks at the joint with a hyphen; withou
 | release (a file the malware scan did not pass, for download; an artifact a repository's signature gate does not pass, for that repository), withdraw (a release) | zum Download zulassen (Zulassung; not "freigeben", which renders exposure), zurückziehen |
 | signature database, checked (an artifact with a verdict), verdict (of the malware scan) | Signaturdatenbank, geprüft, Prüfergebnis |
 | scanner replica, image scanner, tool (that a scanner runs), slots (of a scanner), scan listener, state changed | Scanner-Replikat, Image-Scanner, Werkzeug, Slots, Scan-Listener, Zustand geändert |
-| signature (of an artifact), signer, sign, invalid signature | Signatur, Signierer, signieren, ungültige Signatur |
+| signature (of an artifact), signer, sign, invalid signature | Signatur, Signierer (never "Unterzeichner", which ten texts used beside the others; `formal-german.spec.ts` refuses it), signieren, ungültige Signatur |
 | trust anchor, project trust anchor, trust root (of a Sigstore), public Sigstore root | Vertrauensanker, Projekt-Vertrauensanker, Vertrauensbasis, öffentliche Sigstore-Vertrauensbasis |
 | Verified · public, Verified · internal, Signed · signer not trusted (the badges of a signature; the last one is the badge **Signed** with "signer not trusted" after it, Q-UI-1076) | Verifiziert · öffentlich, Verifiziert · intern, Signiert · Signierer nicht vertrauenswürdig (Badge **Signiert**, danach „Signierer nicht vertrauenswürdig“) |
 | publisher signature, author signature, provenance attestation, attestation, SBOM, origin confirmed by registry | Herausgebersignatur, Autorensignatur, Provenienz-Attestierung, Attestierung, SBOM, Herkunft von der Registry bestätigt |
