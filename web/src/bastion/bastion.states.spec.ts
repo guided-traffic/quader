@@ -12,10 +12,14 @@ import { SystemClients } from '../app/core/system-clients';
 import { app, expectState, openInPage, stable } from '../app/testing/states';
 import { LegalStore } from '../app/core/legal-store';
 import { BastionApp } from './app';
+import { BastionProjects } from './data/projects';
+import { BastionRepositories, PublicRepository } from './data/repositories';
 import { BastionState, BastionStateStore } from './data/state';
 import { BastionFormatCatalog, BastionSystemClients } from './data/reads';
 import { PackageListPage } from './pages/package-list-page';
 import { PackagePage, VersionPage } from './pages/package-pages';
+import { ProjectRepositoriesPage } from './pages/project-repositories-page';
+import { RepositoryPage } from './pages/repository-page';
 
 /**
  * The Bastion's pages in a browser (api-and-ui.md R-UI-227 to R-UI-229, rule 11 of promt.md): the shell with an old state and with no
@@ -35,8 +39,41 @@ class HeldState {
   readonly notReady = computed(() => this.failureValue()?.problem?.code === 'not_ready');
   readonly off = computed(() => this.failureValue()?.status === 404);
   readonly settled = computed(() => this.answer() !== null || this.failureValue() !== null);
+  readonly repositoriesShown = computed(() => !(this.answer()?.hideRepositories ?? false));
   refresh(): Promise<void> {
     return Promise.resolve();
+  }
+  ready(): Promise<void> {
+    return Promise.resolve();
+  }
+}
+
+/** The public repositories of the fakes' project `web` as the Bastion's data path names them (bastion.md R-BAS-129, R-BAS-132). */
+const PUBLIC: readonly PublicRepository[] = [
+  { name: 'web/oci-local', format: 'oci', class: 'local', description: '' },
+  { name: 'web/npm-local', format: 'npm', class: 'local', description: 'The npm packages of the web team, built by its pipelines.' },
+  { name: 'web/npm-remote', format: 'npm', class: 'remote', description: '' },
+  { name: 'web/debian-internal-packages-for-bookworm-and-trixie', format: 'deb', class: 'local', description: '' },
+  { name: 'web/files', format: 'generic', class: 'local', description: '' },
+];
+
+/** The Bastion's repositories held at the fakes' answer, without a request. */
+class HeldRepositories {
+  list(): Promise<readonly PublicRepository[]> {
+    return Promise.resolve(PUBLIC);
+  }
+  one(project: string, key: string): Promise<PublicRepository | null> {
+    return Promise.resolve(PUBLIC.find((r) => r.name === `${project}/${key}`) ?? null);
+  }
+}
+
+/** The fakes' project by its name, without a request. */
+class HeldProjects {
+  list(): Promise<readonly { key: string; displayName: string; description: string }[]> {
+    return Promise.resolve([{ key: 'web', displayName: 'Web platform', description: 'Packages and images of the web team.' }]);
+  }
+  async named(key: string): Promise<{ key: string; displayName: string; description: string }> {
+    return (await this.list()).find((p) => p.key === key) ?? { key, displayName: key, description: '' };
   }
 }
 
@@ -48,6 +85,8 @@ const providers = [
   { provide: SystemClients, useClass: BastionSystemClients },
   { provide: SIGNED_IN, useValue: signal(false).asReadonly() },
   { provide: BastionStateStore, useClass: HeldState },
+  { provide: BastionRepositories, useClass: HeldRepositories },
+  { provide: BastionProjects, useClass: HeldProjects },
 ];
 
 async function shell(state: BastionState | null, failure: ApiError | null): Promise<void> {
@@ -90,6 +129,17 @@ describe("the Bastion's pages in a browser (R-UI-227, R-UI-229)", () => {
 
   it("a project's packages", async () => {
     await expectState('bastion-package-list', () => openInPage(PackageListPage, { project: 'web' }, { providers }));
+  });
+
+  // R-UI-273: a project's repositories, a long key among them, and a repository's images with their Pull.
+  it("a project's repositories", async () => {
+    await expectState('bastion-project-repositories', () => openInPage(ProjectRepositoriesPage, { project: 'web' }, { providers }));
+  });
+
+  it("a repository's images", async () => {
+    await expectState('bastion-repository-images', () =>
+      openInPage(RepositoryPage, { project: 'web', key: 'oci-local' }, { providers, setup: oci }),
+    );
   });
 
   it("a package's versions", async () => {

@@ -3,9 +3,10 @@ import { Router, RouterLink } from '@angular/router';
 import { ClientSetupReads } from '../../app/api/package-reads';
 import type { ClientSnippet } from '../../app/api/packages-api';
 import { FormatCatalog } from '../../app/core/format-names';
-import { classIcon, classLabel, classTip } from '../../app/features/repositories/repository-class';
+import { classIcon, classLabel, classTip, shownClass } from '../../app/features/repositories/repository-class';
 import { clientLabel } from '../../app/features/setup/clients';
 import { SetupFlowArt } from '../../app/features/setup/setup-flow-art';
+import { BASTION_MARK } from '../../app/shared/brand/mark-geometry';
 import { ErrorNotice } from '../../app/shared/error-notice';
 import { formatAccent } from '../../app/shared/format-accent';
 import { FormatIconView } from '../../app/shared/format-icon';
@@ -14,24 +15,22 @@ import { Loading } from '../../app/shared/ui/loading';
 import { PageHeader } from '../../app/shared/ui/page-header';
 import { Tooltip } from '../../app/shared/ui/tooltip';
 import { SetupSteps } from '../../app/views/setup/setup-steps';
-import { BastionData } from '../data/http';
-
-/** A public repository as `/ui/data/v1/repositories` names it (bastion.md R-BAS-129). */
-interface PublicRepository {
-  readonly name: string;
-  readonly format: string;
-  readonly class: string;
-}
+import { BastionProjects } from '../data/projects';
+import { BastionRepositories } from '../data/repositories';
+import { BastionStateStore } from '../data/state';
+import { BastionTrail, TrailStep, projectTrail, repositoryTrail } from '../data/trail';
 
 /**
  * **Set up client** of a public repository at the Bastion (bastion.md R-BAS-129, api-and-ui.md R-UI-120 at the Bastion, Q-UI-1468): the
  * main installation's page without what a visitor cannot do. The address is the main installation's (`/projects/<project>/repositories/
- * <key>/setup?client=<client>`), the target of **Set up client** in a panel of commands. The snippets are the catalogue's set-up
- * document of the repository and the client, which the main installation rendered for this Bastion's address without a credential and
- * without publish lines (R-BAS-104): Configure, Install and, where the installation signs, Verify, on the rail of the shared view
- * (views/setup/setup-steps.ts). No token, no **More options**, no Bastion to choose and no guide: the guide describes the main
- * installation, and nothing here names it (R-BAS-120). The repository's format and class come from the public set; one the catalogue does
- * not show is not found.
+ * <key>/setup?client=<client>`), the target of **Set up client** in a panel of commands and on a repository's page. The snippets are the
+ * catalogue's set-up document of the repository and the client, which the main installation rendered for this Bastion's address without a
+ * credential and without publish lines (R-BAS-104): Configure, Install and, where the installation signs, Verify, on the rail of the
+ * shared view (views/setup/setup-steps.ts). No token, no **More options**, no Bastion to choose and no guide: the guide describes the main
+ * installation, and nothing here names it (R-BAS-120). The picture of the flow ends at the Bastion's tower, the mark a visitor sees here
+ * (Q-UI-1617). The repository's format and class are its single answer (`repositories/<project>/<key>`, bastion.md R-BAS-132); one the
+ * catalogue does not show is not found. While the repositories are hidden (R-UI-274) the page names no repository but in its address
+ * and its snippets, which a client needs: no key, no class, and the way ends at the project.
  */
 @Component({
   selector: 'quader-bastion-setup',
@@ -40,22 +39,24 @@ interface PublicRepository {
   template: `
     <quader-page-header [heading]="heading" [addresses]="addresses()">
       <div meta class="context header-facts">
-        <span class="repo" translate="no"><a [routerLink]="repositoryLink()">{{ ref() }}</a></span>
+        @if (shown()) {
+          <span class="repo" translate="no"><a [routerLink]="['/projects', project(), 'repositories', key()]">{{ ref() }}</a></span>
+        }
         @if (descriptor(); as d) {
           <span class="badge format-badge" translate="no"><quader-format-icon [format]="d.name" />{{ d.displayName ?? d.name }}</span>
         }
-        @if (repository(); as r) {
-          <span class="badge class-badge" [quaderTooltip]="classTip(r.class)" [attr.tabindex]="classTip(r.class) ? 0 : null"
-            ><span class="material-icons" aria-hidden="true">{{ classIcon(r.class) }}</span>{{ classLabel(r.class) }}</span
+        @if (kind(); as k) {
+          <span class="badge class-badge" [quaderTooltip]="classTip(k)" [attr.tabindex]="classTip(k) ? 0 : null"
+            ><span class="material-icons" aria-hidden="true">{{ classIcon(k) }}</span>{{ classLabel(k) }}</span
           >
         }
       </div>
-      <quader-setup-flow-art art [format]="repository()?.format ?? null" [publish]="false" [token]="false" />
+      <quader-setup-flow-art art [format]="repository()?.format ?? null" [publish]="false" [token]="false" [mark]="bastionMark" />
     </quader-page-header>
 
     @if (failure(); as f) {
       <quader-error-notice [error]="f" (retry)="failure.retry()" />
-    } @else if (repositories.hasValue() && !repository()) {
+    } @else if (read.hasValue() && !repository()) {
       <p data-testid="setup-unknown" i18n="@@bastion.setup.unknown">This address offers no repository of that name.</p>
     } @else {
       @if (clients().length > 1) {
@@ -110,10 +111,12 @@ interface PublicRepository {
   `,
 })
 export class SetupPage {
-  private readonly data = inject(BastionData);
+  private readonly repositories = inject(BastionRepositories);
   private readonly reads = inject(ClientSetupReads);
   private readonly catalog = inject(FormatCatalog);
   private readonly router = inject(Router);
+  private readonly projects = inject(BastionProjects);
+  private readonly state = inject(BastionStateStore);
 
   /** Route parameters and the query's client, bound by the router's component input binding. */
   readonly project = input.required<string>();
@@ -121,9 +124,11 @@ export class SetupPage {
   readonly client = input<string | undefined>();
 
   protected readonly heading = $localize`:@@setup.heading:Set up client`;
+  protected readonly bastionMark = BASTION_MARK;
   protected readonly classIcon = classIcon;
   protected readonly classLabel = classLabel;
   protected readonly classTip = classTip;
+  protected readonly shown = this.state.repositoriesShown;
   /** npm's line that makes every package come from this address, which the main installation's page says for a Bastion (R-BAS-007). */
   protected readonly hostNote = (sn: ClientSnippet): string | null =>
     sn.content.includes('replace-registry-host=always')
@@ -131,12 +136,18 @@ export class SetupPage {
       : null;
 
   protected readonly ref = computed(() => `${this.project()}/${this.key()}`);
-  protected readonly repositories = resource({
-    loader: () => this.data.get<{ readonly items: readonly PublicRepository[] }>('repositories'),
+  protected readonly read = resource({
+    params: () => ({ project: this.project(), key: this.key() }),
+    loader: ({ params }) => this.repositories.one(params.project, params.key),
   });
-  protected readonly repository = computed(() => valueOf(this.repositories)?.items.find((r) => r.name === this.ref()) ?? null);
+  protected readonly repository = computed(() => valueOf(this.read) ?? null);
   private readonly formats = resource({ loader: () => this.catalog.formats() });
   protected readonly descriptor = computed(() => (valueOf(this.formats) ?? []).find((f) => f.name === this.repository()?.format) ?? null);
+  /** The class the head shows: System for a system-only format's (Q-UI-1203); none while hidden, which the answer leaves out. */
+  protected readonly kind = computed(() => {
+    const r = this.repository();
+    return r?.class ? shownClass({ class: r.class, format: r.format }, valueOf(this.formats)) : null;
+  });
   protected readonly accent = computed(() => formatAccent(this.repository()?.format ?? null));
   /** The format's clients; a format with one asks nothing (Q-UI-482). */
   protected readonly clients = computed(() => this.descriptor()?.clients ?? []);
@@ -158,18 +169,22 @@ export class SetupPage {
     loader: ({ params }) => this.reads.get(params.repository, { client: params.client, credentials: 'none' }),
   });
   protected readonly setup = computed(() => valueOf(this.setupAnswer));
-  protected readonly failure = failureOf([this.repositories, this.setupAnswer], { also: [this.formats] });
+  protected readonly failure = failureOf([this.read, this.setupAnswer], { also: [this.formats] });
   /** The repository's client address at this Bastion: the set-up's, which the main installation rendered on the Bastion's own. */
   protected readonly addresses = computed<readonly string[]>(() => {
     const url = this.setup()?.registryUrl;
     return url ? [url] : [];
   });
-  /** A generic repository's files are its page; a repository of packages leads to its project's packages. */
-  protected readonly repositoryLink = computed(() =>
-    this.descriptor()?.patternSubject === 'path'
-      ? ['/projects', this.project(), 'repositories', this.key()]
-      : ['/projects', this.project(), 'packages'],
-  );
+
+  constructor() {
+    const named = resource({ params: () => this.project(), loader: ({ params }) => this.projects.named(params) });
+    // The way through the repository while the repositories are shown, from the project while hidden (R-UI-273, R-UI-274).
+    inject(BastionTrail).bind((): TrailStep[] => {
+      const name = valueOf(named)?.displayName ?? this.project();
+      const above = this.shown() ? repositoryTrail(this.project(), name, this.key(), true) : projectTrail(this.project(), name);
+      return [...above, { label: this.heading, commands: null, literal: false }];
+    });
+  }
 
   protected pickClient(client: string): void {
     void this.router.navigate([], { queryParams: { client }, queryParamsHandling: 'merge', replaceUrl: true });

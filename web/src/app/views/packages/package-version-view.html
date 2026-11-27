@@ -222,12 +222,35 @@
       </p>
     }
     <!-- An artifact a repository's signature gate refuses, in a repository the reader may read (R-SIG-074): why, in the words of the
-         client's answer (R-SIG-068), and the release for the holder of the triage right. A pending one shows nothing more. -->
+         client's answer (R-SIG-068), and the release for the holder of the triage right. A pending one shows nothing more. While a
+         Bastion hides its repositories (R-UI-274, Q-UI-1651) the sentence says "the repository" in place of its key, once per artifact. -->
     @for (f of signatureRefusals(); track f.repository + ' ' + f.sha256) {
       <div class="banner-warning gate-banner" role="note" data-testid="signature-banner">
         <span class="material-icons inline warn" aria-hidden="true">gpp_bad</span>
         <div class="gate-banner-text">
           <p>
+            @if (!repositoriesShown()) {
+              @switch (f.reason) {
+                @case ('missing') {
+                  <span i18n="@@pkg.gate.banner.missing-unnamed">Downloads are refused: the repository serves only artifacts with a verified signature, and <code translate="no">{{ f.name }}</code> has no signature of its publisher or its build.</span>
+                }
+                @case ('untrusted') {
+                  <span i18n="@@pkg.gate.banner.untrusted-unnamed">Downloads are refused: the repository serves only artifacts with a verified signature, and <code translate="no">{{ f.name }}</code> has a signature of its publisher or its build whose signer no trust anchor the repository accepts knows.</span>
+                }
+                @case ('not_chosen') {
+                  <span i18n="@@pkg.gate.banner.not-chosen-unnamed">Downloads are refused: the repository serves only artifacts with a verified signature, and <code translate="no">{{ f.name }}</code> is verified only by trust anchors the repository does not accept.</span>
+                }
+                @case ('invalid') {
+                  <span i18n="@@pkg.gate.banner.invalid-unnamed">Downloads are refused: the repository serves only artifacts with a verified signature, and <code translate="no">{{ f.name }}</code> has a signature of its publisher or its build that does not match its content.</span>
+                }
+                @case ('blocked') {
+                  <span i18n="@@pkg.gate.banner.blocked-unnamed">Downloads are refused: the repository serves only artifacts with a verified signature, and <code translate="no">{{ f.name }}</code> is signed by a signer an administrator blocked.</span>
+                }
+                @default {
+                  <span i18n="@@pkg.gate.banner.not-checked-unnamed">Downloads are refused: the repository serves only artifacts with a verified signature, and <code translate="no">{{ f.name }}</code> has a signature of its publisher or its build that Quader cannot read or could not check.</span>
+                }
+              }
+            } @else {
             @switch (f.reason) {
               @case ('missing') {
                 <span i18n="@@pkg.gate.banner.missing">Downloads are refused in <span class="with-stop"><code translate="no">{{ f.repository }}</code>:</span> it serves only artifacts with a verified signature, and <code translate="no">{{ f.name }}</code> has no signature of its publisher or its build.</span>
@@ -247,6 +270,7 @@
               @default {
                 <span i18n="@@pkg.gate.banner.not-checked">Downloads are refused in <span class="with-stop"><code translate="no">{{ f.repository }}</code>:</span> it serves only artifacts with a verified signature, and <code translate="no">{{ f.name }}</code> has a signature of its publisher or its build that Quader cannot read or could not check.</span>
               }
+            }
             }
           </p>
           <!-- The release for the holder of the triage right, the page's act (views/acts.ts). -->

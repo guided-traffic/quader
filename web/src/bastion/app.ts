@@ -15,6 +15,7 @@ import { Notices } from '../app/shared/notices';
 import { Loading } from '../app/shared/ui/loading';
 import { TimeAgo } from '../app/shared/ui/time-ago';
 import { BastionStateStore } from './data/state';
+import { BastionTrail } from './data/trail';
 
 type Theme = 'light' | 'dark';
 
@@ -23,7 +24,8 @@ const THEME_KEY = 'quader.theme';
 
 /**
  * The shell of the Bastion's application (R-UI-227): the Bastion's mark and name (Q-UI-1617), the theme and the language in the top
- * bar; the band of an old state above the page; the page or, while the Bastion has no catalogue to show, its sentence; and the footer
+ * bar; the band of an old state above the page; the way from the start to the page (R-UI-273), which each page binds
+ * (`BastionTrail`); the page or, while the Bastion has no catalogue to show, its sentence; and the footer
  * with the imprint, the privacy notice and "As of". It names nothing of the main installation (W-35's B.13). It reads the state at the
  * idle cadence of a live view (R-UI-213), every 30 s while the Bastion is not ready, and never asks for a reload.
  */
@@ -98,6 +100,22 @@ const THEME_KEY = 'quader.theme';
             <span class="material-icons icon" aria-hidden="true">schedule</span>
             <p i18n="@@bastion.stale">This information is from {{ confirmedAt() | time }}. Newer information is not available right now.</p>
           </section>
+        }
+        @if (trail.steps().length > 1 && store.settled() && !store.notReady() && !store.off()) {
+          <!-- The way from the start to the page (R-UI-273, W-40's D20), as the main installation draws it above the page. -->
+          <nav class="breadcrumbs" i18n-aria-label="@@shell.breadcrumbs" aria-label="Breadcrumb">
+            <ol>
+              @for (step of trail.steps(); track $index) {
+                <li>
+                  @if (step.commands; as to) {
+                    <a [routerLink]="to" [attr.translate]="step.literal ? 'no' : null">{{ step.label }}</a>
+                  } @else {
+                    <span aria-current="page" [attr.translate]="step.literal ? 'no' : null">{{ step.label }}</span>
+                  }
+                </li>
+              }
+            </ol>
+          </nav>
         }
         <main id="main" tabindex="-1">
           <div class="content">
@@ -224,6 +242,7 @@ const THEME_KEY = 'quader.theme';
 export class BastionApp {
   protected readonly bastionMark = BASTION_MARK;
   protected readonly store = inject(BastionStateStore);
+  protected readonly trail = inject(BastionTrail);
   protected readonly legal = inject(LegalStore);
   private readonly storage = inject(BrowserStorage);
   private readonly document = inject(DOCUMENT);

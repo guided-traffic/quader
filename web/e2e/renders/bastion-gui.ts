@@ -121,6 +121,83 @@ async function* setupSteps(page: Page): AsyncGenerator<string> {
 
 const notReadyAnswer = [{ match: /^GET \/ui\/data\/v1\/state answered 503$/, why: 'the walk answers the state as a replica without a catalogue does' }];
 
+/** A Bastion that shows no project yet (W-41: every Bastion serves nothing until its projects are allowed): the start says so. */
+async function* emptyStart(page: Page): AsyncGenerator<string> {
+  await page.route('**/ui/data/v1/projects', (route: Route) =>
+    route.fulfill({ status: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items: [] }) }),
+  );
+  await page.reload();
+  await expect(page.locator('main quader-data-table quader-empty-state')).toBeVisible();
+  yield '';
+}
+
+/** A project's repositories (R-UI-273): the list as it opens, then a filter that leaves none. */
+async function* filterRepositories(page: Page): AsyncGenerator<string> {
+  await expect(page.locator('main quader-data-table tbody tr').first()).toBeVisible();
+  yield '';
+  await page.locator('main quader-list-head input[type=search]').fill('no-repository-is-called-so');
+  await expect(page).toHaveURL(/[?&]q=/);
+  await expect(page.locator('main quader-data-table quader-empty-state')).toBeVisible();
+  yield 'none';
+}
+
+/**
+ * A repository's list (R-UI-273): as it opens, its first item opened with its newest versions, then the first version's panel of
+ * commands. The controls are found by their place: the German pass walks it too.
+ */
+async function* repositoryOpened(page: Page): AsyncGenerator<string> {
+  await expect(page.locator('main quader-repository-items tbody tr').first()).toBeVisible();
+  await page.waitForLoadState('networkidle');
+  yield '';
+  await page.locator('main quader-repository-items .name-cell button[aria-expanded="false"]').first().click();
+  const opened = page.locator('main .collapse-region.open quader-repository-item-versions');
+  await expect(opened.locator('tbody tr').first()).toBeVisible();
+  await page.waitForLoadState('networkidle');
+  yield 'opened';
+  await opened.locator('quader-client-command-menu button').first().click();
+  const panel = page.locator('.client-command-panel');
+  await expect(panel.locator('quader-address-field input, quader-code-window, .command-note').first()).toBeVisible();
+  await page.waitForLoadState('networkidle');
+  yield 'version-menu';
+  await page.keyboard.press('Escape');
+}
+
+/** The ClamAV definitions' databases (R-UI-194 at the Bastion): the list with the version in use. */
+async function* clamavDatabases(page: Page): AsyncGenerator<string> {
+  await expect(page.locator('main quader-clamav-databases quader-data-table')).toBeVisible();
+  await page.waitForLoadState('networkidle');
+  yield '';
+}
+
+/**
+ * The switch Hide repositories on (R-UI-274), answered in the browser as the Bastion answers after the switch (bastion.md R-BAS-118,
+ * R-BAS-131): the state with it, a single repository's name and format alone; the page read again, then `next` walks it, or the page
+ * as it stands.
+ */
+function hidden(next?: (page: Page) => AsyncGenerator<string>): (page: Page) => AsyncGenerator<string> {
+  return async function* (page: Page): AsyncGenerator<string> {
+    await page.route('**/ui/data/v1/state', async (route: Route) => {
+      const res = await route.fetch();
+      const body = (await res.json()) as Record<string, unknown>;
+      await route.fulfill({ response: res, body: JSON.stringify({ ...body, hideRepositories: true }) });
+    });
+    await page.route(/\/ui\/data\/v1\/repositories\/[^/]+\/[^/?]+$/, async (route: Route) => {
+      const res = await route.fetch();
+      if (!res.ok()) return route.fulfill({ response: res });
+      const body = (await res.json()) as { name: string; format: string };
+      await route.fulfill({ response: res, body: JSON.stringify({ name: body.name, format: body.format }) });
+    });
+    await page.reload();
+    await expect(page.locator('main h1').first()).toBeVisible();
+    if (next) {
+      yield* next(page);
+      return;
+    }
+    await page.waitForLoadState('networkidle');
+    yield '';
+  };
+}
+
 /** The public package whose versions carry every malware state (malware.ts, R-UI-258). */
 const checksums = { format: publicMalwarePackage.format, name: publicMalwarePackage.name } as const;
 
@@ -159,6 +236,17 @@ async function* markedHead(page: Page): AsyncGenerator<string> {
 /** Every page of the Bastion's web interface the renders hold (R-UI-230), each as the anonymous visitor, in the German pass too. */
 export const bastionScreens: readonly Screen[] = [
   { id: 'bastion-start', path: `${B}/`, kinds: ['anonymous'], de: true },
+  { id: 'bastion-start-empty', path: `${B}/`, kinds: ['anonymous'], walk: emptyStart, de: true },
+  // A project's view (R-UI-273): its repositories, a repository of images, of npm packages, the ClamAV definitions; the files above.
+  { id: 'bastion-project-repositories', path: `${P}/repositories`, kinds: ['anonymous'], walk: filterRepositories, de: true },
+  { id: 'bastion-repository-images', path: `${P}/repositories/${remoteSource.key}`, kinds: ['anonymous'], walk: repositoryOpened, de: true },
+  { id: 'bastion-repository-npm', path: `${P}/repositories/npm-open-source`, kinds: ['anonymous'], walk: repositoryOpened, de: true },
+  { id: 'bastion-repository-clamav', path: `${B}/projects/upstream/repositories/clamav`, kinds: ['anonymous'], walk: clamavDatabases, de: true },
+  // The switch Hide repositories on (R-UI-274): the project's packages alone, Set up client without the repository, an image's tags
+  // and a tag's panel without the select Repository.
+  { id: 'bastion-hidden-packages', path: `${P}/packages`, kinds: ['anonymous'], walk: hidden(), de: true },
+  { id: 'bastion-hidden-setup', path: `${P}/repositories/${remoteSource.key}/setup?client=docker`, kinds: ['anonymous'], walk: hidden(setupSteps), de: true },
+  { id: 'bastion-hidden-image', path: pkg(image), kinds: ['anonymous'], walk: hidden(rowCommandFromList), de: true },
   { id: 'bastion-packages', path: `${P}/packages`, kinds: ['anonymous'], walk: search, tables: 'quader-package-table', de: true },
   // The versions of a package with open findings in some of them, and a version with its findings, signatures and files.
   { id: 'bastion-package', path: pkg(publicGradedPackage), kinds: ['anonymous'], de: true },

@@ -8,7 +8,7 @@ import { failureOf, valueOf } from '../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
 import { PageHeader } from '../../shared/ui/page-header';
 import { VisibilityIcon } from '../../shared/ui/visibility-level';
-import { ProjectLink } from '../../shared/ui/project-mark';
+import { ProjectLink } from '../../shared/ui/project-link';
 import { classIcon, classLabel, shownClass } from '../repositories/repository-class';
 import { Loading } from '../../shared/ui/loading';
 

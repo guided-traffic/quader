@@ -13450,10 +13450,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-846 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+853 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 846 questions</summary>
+<summary>Q-UI: 853 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -14303,6 +14303,13 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1641](spec/api-and-ui.md#q-ui-1641--a-bastions-head-names-its-host-in-grey-one-state-badge-and-its-own-acts-at-the-right) | A Bastion's head names its host in grey, one state badge, and its own acts at the right | Decided by the development agent on 2026-11-27 | (a) The host of each base URL the replicas reported within 24 hours, the scheme and a default port left out, joined by a dot, in the muted colour; none before the first contact; the state of [Q-BAS-511](spec/bastion.md#q-bas-511--the-bastions-state-is-one-of-six-computed-by-the-main-installation) as one badge; the Bastion's acts **Disable…**, **Enable**, **Disable hard…**, **Delete** at the head's end | — |
 | [Q-UI-1642](spec/api-and-ui.md#q-ui-1642--the-tokens-acts-say-what-they-do-and-stand-among-the-tokens) | The token's acts say what they do, and stand among the tokens | Decided by the development agent on 2026-11-27 | (a) In **Tokens**: **Issue token** while the registration has none (the plain line's act), **Rotate token** / **Token erneuern** once it has one, and **Invalidate** / **Ungültig machen** per token; the head holds none of them | — |
 | [Q-UI-1643](spec/api-and-ui.md#q-ui-1643--a-pair-of-deployments-under-one-registration-is-legitimate-on-the-card) | A pair of deployments under one registration is legitimate on the card | Decided by the development agent on 2026-11-27 | (a) A *deployment* is the replicas that report one base URL: the head names each host; **Replicas** groups its rows by deployment ("pkgs-eu.example.com · 2 replicas", no group row for one); the base-URL warning goes; kept or new: the replicas heard in 5 minutes run more than one version, and a deployment heard within 24 hours but not in 5 minutes beside a current one ("pkgs-us.example.com: no contact for 12 minutes."); **Now** adds each deployment's bucket once | — |
+| [Q-UI-1646](spec/api-and-ui.md#q-ui-1646--a-bastions-project-opens-on-its-repositories-its-packages-the-second-tab) | A Bastion's project opens on its repositories, its packages the second tab | Decided by the development agent on 2026-11-27 | (a), and while the repositories are hidden `/projects/<p>` leads to the packages, without a strip (Q-UI-1651). | — |
+| [Q-UI-1647](spec/api-and-ui.md#q-ui-1647--a-bastions-start-is-the-main-installations-table-of-projects) | A Bastion's start is the main installation's table of projects | Decided by the development agent on 2026-11-27 | (b), without visibility (everything is public), role and members. | — |
+| [Q-UI-1648](spec/api-and-ui.md#q-ui-1648--a-bastions-list-of-repositories-composes-the-main-installations-cells) | A Bastion's list of repositories composes the main installation's cells | Decided by the development agent on 2026-11-27 | (b) A Bastion page that composes the same `DataTable` with the same cells, classes and words (`icon-name`, `format-cell`, `class-cell`, `row-setup`) and the shared helpers (`shownClass`, `setupCommands`, `repositoryDescription`, the format icon) | — |
+| [Q-UI-1649](spec/api-and-ui.md#q-ui-1649--a-bastions-repository-page-shows-its-formats-list-under-the-main-installations-head-for-a-visitor) | A Bastion's repository page shows its format's list under the main installation's head for a visitor | Decided by the development agent on 2026-11-27 | (a) The page by its format: a generic repository's files, ClamAV's databases, every other format's items (`views/repositories/`, Q-UI-1630); the head's key, description, format and class badges and **Set up client** | — |
+| [Q-UI-1650](spec/api-and-ui.md#q-ui-1650--a-bastions-pages-show-the-way-from-the-start-each-page-binding-its-steps) | A Bastion's pages show the way from the start, each page binding its steps | Decided by the development agent on 2026-11-27 | (b) The main installation's `nav.breadcrumbs` above the page, its steps the crawler text's, each page binding its own (`BastionTrail`); a page's steps leave with it | — |
+| [Q-UI-1651](spec/api-and-ui.md#q-ui-1651--a-bastion-with-hidden-repositories-shows-each-project-as-its-packages) | A Bastion with hidden repositories shows each project as its packages | Decided by the development agent on 2026-11-27 | (a) The project is its packages; a repository's address is "Page not found" but a generic one's files; the gate's banner says "the repository" in place of the key, once per artifact and reason | — |
+| [Q-UI-1652](spec/api-and-ui.md#q-ui-1652--set-up-clients-picture-ends-at-the-applications-own-mark) | Set up client's picture ends at the application's own mark | Decided by the development agent on 2026-11-27 | (a) An input `mark` of the picture: a mark's stones on the wall's place and height, the parcels on its top; the Bastion passes its tower | — |
 
 </details>
 

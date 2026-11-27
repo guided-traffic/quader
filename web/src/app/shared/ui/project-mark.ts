@@ -1,6 +1,4 @@
-import { Component, computed, inject, input } from '@angular/core';
-import { RouterLink } from '@angular/router';
-import { ProjectContext } from '../../core/project-context';
+import { Component, computed, input } from '@angular/core';
 import { isUpstreamProject } from '../../core/upstream-project';
 import { VisibilityIcon, VisibilityLevel, levelName } from './visibility-level';
 
@@ -60,29 +58,4 @@ export class ProjectLevel {
   protected readonly builtIn = computed(() => isUpstreamProject(this.key()));
   protected readonly name = computed(() => levelName(this.level()));
   protected readonly ownLevels = $localize`:@@projects.level.built-in:Each registry has its own visibility.`;
-}
-
-/**
- * The project of a row (Q-UI-424): its mark and its display name, linked to the project; the key where the caller does not see
- * the project's record. A long name breaks inside itself beside the mark (Q-UI-425).
- */
-@Component({
-  selector: 'quader-project-link',
-  imports: [ProjectMark, RouterLink],
-  template: `<span class="icon-name"
-    ><quader-project-mark [key]="key()" [name]="shown()" /><a [routerLink]="['/projects', key()]" translate="no" [attr.title]="title()">{{
-      shown()
-    }}</a></span
-  >`,
-  host: { class: 'quader-project-link' },
-})
-export class ProjectLink {
-  private readonly context = inject(ProjectContext);
-
-  readonly key = input.required<string>();
-
-  /** The display name of the project the caller sees, else its key. */
-  protected readonly shown = computed(() => this.context.projects().find((p) => p.key === this.key())?.displayName || this.key());
-  /** The key, where the name shown is not the key. */
-  protected readonly title = computed(() => (this.shown() === this.key() ? null : this.key()));
 }

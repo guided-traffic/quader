@@ -97,11 +97,26 @@ describe('The Bastion application (R-UI-228)', () => {
     req.flush({ id: ID, name: '@acme/ui' });
     await lookup;
 
-    const page = reads.versions(ID, { sort: '-version', group: 'content' })(null, 100);
+    // An image's list by content is the catalogue's document of the main installation's answer (R-BAS-130, Q-BAS-501); a repository
+    // keeps the rows it holds, in pages of the view's size.
+    const page = reads.versions(ID, { sort: '-version', group: 'content', repository: ['acme/images'] })(null, 1);
+    const ireq = http.expectOne(`/ui/data/v1/packages/${ID}/images`);
+    expect(ireq.request.params.keys()).toEqual([]);
+    ireq.flush({
+      items: [
+        { version: '2.0', aliases: ['latest'], repositories: ['acme/images'] },
+        { version: '1.9', repositories: ['acme/other'] },
+        { version: '1.0', repositories: ['acme/images', 'acme/other'] },
+      ],
+    });
+    expect(await page).toEqual({ items: [{ version: '2.0', aliases: ['latest'], repositories: ['acme/images'] }], nextCursor: '1' });
+
+    // A version list narrowed to a repository keeps its versions, page by page.
+    const held = reads.versions(ID, { sort: '-version', repository: ['acme/npm-local'] })(null, 100);
     const vreq = http.expectOne((r) => r.url === `/ui/data/v1/packages/${ID}/versions`);
     expect(vreq.request.params.keys().sort()).toEqual(['limit']);
-    vreq.flush({ items: [{ version: '1.0.0' }], nextCursor: null });
-    expect((await page).items).toHaveLength(1);
+    vreq.flush({ items: [{ version: '1.0.0', repositories: ['acme/npm-local'] }, { version: '0.9.0', repositories: ['acme/npm-other'] }], nextCursor: 'c2' });
+    expect(await held).toEqual({ items: [{ version: '1.0.0', repositories: ['acme/npm-local'] }], nextCursor: 'c2' });
 
     // A walk of every page with the main installation's 500 asks the Bastion's largest page (Q-UI-1445): its 400 stood in the renders.
     const all = reads.versions(ID)(null, 500);
@@ -136,6 +151,16 @@ describe('The Bastion application (R-UI-228)', () => {
     await turn();
     http.expectOne(`/ui/data/v1/setup/acme/npm-local/npm/${ID}/1.0.0`).flush({ client: 'npm', snippets: [] });
     expect(await answer).toEqual({ client: 'npm', snippets: [] });
+  });
+
+  it("R-UI-273 the pull by digest reads the image's set-up without a version, not the repository's, whose snippet names a placeholder image", async () => {
+    const http = setup();
+    const answer = TestBed.inject(ClientSetupReads).get('acme/images', { client: 'docker', package: 'tools/agent', credentials: 'none' });
+    http.expectOne((r) => r.url === '/ui/data/v1/packages').flush({ items: [{ id: ID, name: 'tools/agent' }], nextCursor: null });
+    await turn();
+    const snippet = { id: 'docker.install', tab: 'install', content: 'docker pull bastion.example.org/acme/images/tools/agent\n' };
+    http.expectOne(`/ui/data/v1/setup/acme/images/docker/${ID}`).flush({ client: 'docker', snippets: [snippet] });
+    expect((await answer).snippets[0]?.content).not.toContain('myapp');
   });
 
   it('R-UI-228 a failed read is the error the notice shows whole: its status, its code and its call', async () => {

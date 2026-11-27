@@ -97,12 +97,13 @@ describe("What a Bastion's visitor reads (R-BAS-128, R-BAS-129)", () => {
     const fixture = TestBed.createComponent(StartPage);
     fixture.detectChanges();
     http.expectOne('/ui/data/v1/projects').flush(PROJECTS);
+    http.expectOne('/ui/data/v1/repositories').flush({ items: [] });
     await settled(fixture);
     const root = fixture.nativeElement as HTMLElement;
-    const links = [...root.querySelectorAll('.project-list a')];
+    const links = [...root.querySelectorAll('tbody th a')];
     expect(links.map((a) => a.textContent?.trim())).toEqual(['Platform team', 'Tools']);
-    expect(links[0]?.getAttribute('href')).toBe('/projects/platform/packages');
-    expect([...root.querySelectorAll('.project-list .description')].map((p) => p.textContent?.trim())).toEqual([
+    expect(links[0]?.getAttribute('href')).toBe('/projects/platform');
+    expect([...root.querySelectorAll('tbody .description')].map((p) => p.textContent?.trim())).toEqual([
       'Images and packages the platform team publishes.',
     ]);
   });
@@ -115,8 +116,9 @@ describe("What a Bastion's visitor reads (R-BAS-128, R-BAS-129)", () => {
       fixture.detectChanges();
       const upstream = { key: 'upstream', displayName: 'Upstream', description: 'The public registries this installation offers to every project.' };
       http.expectOne('/ui/data/v1/projects').flush({ items: [upstream, ...PROJECTS.items] });
+      http.expectOne('/ui/data/v1/repositories').flush({ items: [] });
       await settled(fixture);
-      const descriptions = [...(fixture.nativeElement as HTMLElement).querySelectorAll('.project-list .description')];
+      const descriptions = [...(fixture.nativeElement as HTMLElement).querySelectorAll('tbody .description')];
       expect(descriptions.map((p) => p.textContent?.trim())).toEqual([
         'Die öffentlichen Registrys, die diese Installation jedem Projekt anbietet.',
         'Images and packages the platform team publishes.',
@@ -149,9 +151,9 @@ describe("What a Bastion's visitor reads (R-BAS-128, R-BAS-129)", () => {
     fixture.componentRef.setInput('key', 'downloads');
     fixture.componentRef.setInput('client', 'wget');
     fixture.detectChanges();
-    http.expectOne('/ui/data/v1/repositories').flush({
-      items: [{ name: 'platform/downloads', format: 'generic', class: 'local' }, { name: 'platform/npm', format: 'npm', class: 'local' }],
-    });
+    // The repository's own answer (bastion.md R-BAS-132), and the project's name for the way to the page.
+    http.expectOne('/ui/data/v1/repositories/platform/downloads').flush({ name: 'platform/downloads', format: 'generic', class: 'local', description: '' });
+    http.expectOne('/ui/data/v1/projects').flush(PROJECTS);
     // The formats are the Bastion's own table (a promise), then the set-up of the chosen client is asked.
     for (let i = 0; i < 3; i++) {
       await turn();
@@ -195,7 +197,8 @@ describe("What a Bastion's visitor reads (R-BAS-128, R-BAS-129)", () => {
     fixture.componentRef.setInput('key', 'images');
     fixture.componentRef.setInput('client', 'docker');
     fixture.detectChanges();
-    http.expectOne('/ui/data/v1/repositories').flush({ items: [{ name: 'platform/images', format: 'oci', class: 'local' }] });
+    http.expectOne('/ui/data/v1/repositories/platform/images').flush({ name: 'platform/images', format: 'oci', class: 'local', description: '' });
+    http.expectOne('/ui/data/v1/projects').flush(PROJECTS);
     for (let i = 0; i < 3; i++) {
       await turn();
       fixture.detectChanges();
@@ -223,7 +226,8 @@ describe("What a Bastion's visitor reads (R-BAS-128, R-BAS-129)", () => {
     fixture.componentRef.setInput('key', 'nuget');
     fixture.componentRef.setInput('client', 'nuget');
     fixture.detectChanges();
-    http.expectOne('/ui/data/v1/repositories').flush({ items: [{ name: 'platform/nuget', format: 'nuget', class: 'local' }] });
+    http.expectOne('/ui/data/v1/repositories/platform/nuget').flush({ name: 'platform/nuget', format: 'nuget', class: 'local', description: '' });
+    http.expectOne('/ui/data/v1/projects').flush(PROJECTS);
     for (let i = 0; i < 3; i++) {
       await turn();
       fixture.detectChanges();
@@ -247,7 +251,12 @@ describe("What a Bastion's visitor reads (R-BAS-128, R-BAS-129)", () => {
     fixture.componentRef.setInput('project', 'platform');
     fixture.componentRef.setInput('key', 'internal');
     fixture.detectChanges();
-    http.expectOne('/ui/data/v1/repositories').flush({ items: [{ name: 'platform/npm', format: 'npm', class: 'local' }] });
+    // A repository the public set does not hold answers 404 (bastion.md R-BAS-132).
+    http.expectOne('/ui/data/v1/repositories/platform/internal').flush(
+      { type: 'about:blank', title: 'Not Found', status: 404, code: 'not_found' },
+      { status: 404, statusText: 'Not Found', headers: { 'Content-Type': 'application/problem+json' } },
+    );
+    http.expectOne('/ui/data/v1/projects').flush(PROJECTS);
     await settled(fixture);
     expect((fixture.nativeElement as HTMLElement).querySelector('[data-testid="setup-unknown"]')?.textContent).toContain(
       'This address offers no repository of that name.',

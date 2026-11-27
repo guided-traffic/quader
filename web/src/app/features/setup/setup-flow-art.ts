@@ -1,4 +1,5 @@
 import { Component, computed, input } from '@angular/core';
+import type { MarkGeometry } from '../../shared/brand/quader-mark';
 import { formatGlyph } from '../../shared/format-accent';
 
 interface Stone {
@@ -86,11 +87,11 @@ export function wallStones(x: number, y: number, u: number): Stone[] {
       } @else {
         <path class="lane" d="M200 92H264" />
       }
-      @for (p of parcels; track $index) {
+      @for (p of parcels(); track $index) {
         <rect class="parcel" [attr.x]="p.x" [attr.y]="p.y" width="24" height="24" rx="3" />
         <rect class="parcel-shade" [attr.x]="p.x + 9.6" [attr.y]="p.y" width="4.8" height="24" />
       }
-      @for (s of stones; track $index) {
+      @for (s of stones(); track $index) {
         <rect [class]="s.sand ? 'sand' : 'stone'" [attr.x]="s.x" [attr.y]="s.y" [attr.width]="s.w" [attr.height]="s.h" rx="2" />
       }
     </svg>
@@ -194,13 +195,45 @@ export class SetupFlowArt {
   readonly publish = input(false);
   /** Whether the reader is signed in: the token between the machine and the repository. */
   readonly token = input(true);
+  /**
+   * The mark the repository stands as where the application has a mark of its own: the Bastion's tower (Q-UI-1617, Q-UI-1652), drawn
+   * on the wall's place and height with the parcels on its top. Null draws Quader's wall.
+   */
+  readonly mark = input<MarkGeometry | null>(null);
 
   protected readonly glyph = computed(() => formatGlyph(this.format()));
-  protected readonly parcels = [
-    { x: 322, y: 36 },
-    { x: 350, y: 36 },
-    { x: 336, y: 10 },
-    { x: 398, y: 36 },
-  ];
-  protected readonly stones = wallStones(308, 62, 28);
+  protected readonly parcels = computed(() =>
+    this.mark()
+      ? [
+          { x: 314, y: 36 },
+          { x: 342, y: 36 },
+          { x: 328, y: 10 },
+        ]
+      : [
+          { x: 322, y: 36 },
+          { x: 350, y: 36 },
+          { x: 336, y: 10 },
+          { x: 398, y: 36 },
+        ],
+  );
+  protected readonly stones = computed(() => {
+    const mark = this.mark();
+    return mark ? markStones(mark, 308, 62, 60) : wallStones(308, 62, 28);
+  });
+}
+
+/**
+ * A mark's stones on the picture: its grid's stones from (`x`, `y`), the mark `size` high and wide, the coloured stone in sand. The grid
+ * holds its stones from 4 to 60 of 64, so the stones, not the grid's margin, fill the size.
+ */
+export function markStones(mark: MarkGeometry, x: number, y: number, size: number): Stone[] {
+  const scale = size / 56;
+  const at = (s: { x: number; y: number; width: number; height: number }, sand: boolean): Stone => ({
+    x: x + (s.x - 4) * scale,
+    y: y + (s.y - 4) * scale,
+    w: s.width * scale,
+    h: s.height * scale,
+    sand,
+  });
+  return [...mark.stones.map((s) => at(s, false)), at(mark.coloured, true)];
 }

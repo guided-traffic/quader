@@ -1952,7 +1952,7 @@ builder in `TestR_BAS_104_TheCatalogueFollowsPublishesLevelsAndTheSwitch` (area 
 ### The project view at the Bastion
 
 W-40's P2, built on 2026-11-27 (R-BAS-112, R-BAS-113, R-BAS-118, R-BAS-131's Bastion's part, R-BAS-132): what a replica does with P1's
-documents. The application's pages are W-40's P5.
+documents. The application's pages are W-40's P5, below.
 
 | Where | What |
 |---|---|
@@ -1973,6 +1973,23 @@ of a few hundred bytes); `TestR_BAS_118_TheDataOfTheProjectView` ([gui_test.go](
 `TestR_BAS_132_ACrawlerReadsTheProjectView`, `TestR_BAS_132_HiddenRepositoriesHaveNoPage`
 ([project_view_test.go](../../internal/bastion/gui/project_view_test.go)), unit, microseconds to 0.01 s, the reader in memory; the
 sitemap's new addresses in `TestR_BAS_122_RobotsAndTheSitemapAtTheHostsRoot`; three more reads in `walkWebInterface` (area `bastion`).
+
+**The application's pages** (W-40's P5, built on 2026-11-27, [api-and-ui.md](../spec/api-and-ui.md) R-UI-273, R-UI-274) read these
+answers in `web/src/bastion/`:
+
+| Where | What |
+|---|---|
+| [app.routes.ts](../../web/src/bastion/app.routes.ts) | `projectDefault` (`/projects/<p>` to its repositories or, hidden, its packages), `repositoriesShown`, `repositoryShown` (hidden: only a generic repository's root); each waits for the state's first answer (`BastionStateStore.ready`) |
+| [data/state.ts](../../web/src/bastion/data/state.ts), [app.config.ts](../../web/src/bastion/app.config.ts) | `repositoriesShown` from the state's `hideRepositories`, bound to the views' `REPOSITORIES_SHOWN` |
+| [data/repositories.ts](../../web/src/bastion/data/repositories.ts) | `BastionRepositories`: the list (`repositories`) and one repository (`repositories/<p>/<r>`, 404 as null), each read shared for 5 s |
+| [data/reads.ts](../../web/src/bastion/data/reads.ts) | `versions` with `group=content` from `packages/<id>/images` and a `repository` narrowed in the browser; `get` of a package without a version from `setup/<p>/<r>/<c>/<id>` (the pull by digest) |
+| [data/trail.ts](../../web/src/bastion/data/trail.ts), [app.ts](../../web/src/bastion/app.ts) | `BastionTrail`: each page binds its steps (`projectTrail`, `repositoryTrail`, `packageTrail`), the shell draws them as the main installation's `nav.breadcrumbs`; a page's steps leave with it |
+| [pages/](../../web/src/bastion/pages/) | `StartPage` (the table of projects), `BastionProjectHead` (head and tabs), `ProjectRepositoriesPage`, `RepositoryPage` (by format, composing `views/repositories/`), `BastionRepositoryHead` (also the files' head), `SetupPage` (the single repository, the tower in its picture) |
+
+Tests: [project-view.spec.ts](../../web/src/bastion/project-view.spec.ts) (Vitest, the application's routes and providers against the
+HTTP testing backend, about a second, answers of tens of bytes); two states in
+[bastion.states.spec.ts](../../web/src/bastion/bastion.states.spec.ts); the renders `bastion-start-empty`, `bastion-project-repositories`,
+`bastion-repository-*` and `bastion-hidden-*` of [bastion-gui.ts](../../web/e2e/renders/bastion-gui.ts).
 
 ## The public catalogue at the Bastion (package P7)
 

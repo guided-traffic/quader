@@ -24,7 +24,7 @@ import { DataTable, TableColumn } from '../../shared/ui/data-table';
 import { FilterPanel } from '../../shared/ui/filter-panel';
 import { ListChip, ListHead } from '../../shared/ui/list-head';
 import { NoValue } from '../../shared/ui/no-value';
-import { ProjectLink } from '../../shared/ui/project-mark';
+import { ProjectLink } from '../../shared/ui/project-link';
 import { TimeAgo } from '../../shared/ui/time-ago';
 import { PagedResource, failureOf, valueOf } from '../../shared/paged-resource';
 import { actionSuggestions, auditActionLabel, categoryLabel, outcomeLabel } from './audit-labels';

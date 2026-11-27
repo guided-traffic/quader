@@ -51,6 +51,9 @@ func TestR_UI_272_TheCrawlerTextsMatchTheApplicationsGermanWords(t *testing.T) {
 		"setup.heading":                {en.SetupClient, de.SetupClient},
 		"bastion.title.packages":       {en.PackagesIn("{project}"), de.PackagesIn("{project}")},
 		"bastion.title.versions":       {en.VersionsOf("{name}"), de.VersionsOf("{name}")},
+		// The project view's title and the way's step (api-and-ui.md R-UI-273), which the application's pages say too.
+		"bastion.title.repositories": {en.RepositoriesIn("{project}"), de.RepositoriesIn("{project}")},
+		"route.repositories.title":   {en.Repositories, de.Repositories},
 	}
 	for key, w := range en.WellKnown {
 		if properNames()[key] == w {

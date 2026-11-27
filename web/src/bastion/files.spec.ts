@@ -65,6 +65,15 @@ async function settled<T>(fixture: ComponentFixture<T>): Promise<void> {
   fixture.detectChanges();
 }
 
+/** Answers the head's reads (R-UI-273), the repository's facts and the project's name, and lets the page settle. */
+async function head<T>(http: HttpTestingController, fixture: ComponentFixture<T>): Promise<void> {
+  fixture.detectChanges();
+  await turn();
+  http.expectOne('/ui/data/v1/repositories/platform/downloads').flush({ name: 'platform/downloads', format: 'generic', class: 'local', description: '' });
+  http.expectOne('/ui/data/v1/projects').flush({ items: [{ key: 'platform', displayName: 'Platform', description: '' }] });
+  await settled(fixture);
+}
+
 describe("A generic repository's files at the Bastion (R-UI-229)", () => {
   afterEach(() => {
     backend?.verify();
@@ -110,7 +119,7 @@ describe("A generic repository's files at the Bastion (R-UI-229)", () => {
     http.expectOne('/ui/data/v1/files/platform/downloads/folder/tools').flush({ items: [{ path: 'agent 1.9.tar.gz', kind: 'file' }] });
     await turn();
     http.expectOne('/ui/data/v1/files/platform/downloads/file/tools/agent%201.9.tar.gz').flush(agent);
-    await settled(fixture);
+    await head(http, fixture);
     const root = fixture.nativeElement as HTMLElement;
     const segs = [...root.querySelectorAll('.files-trail .seg:not(.collapsed)')].map((s) => s.querySelector('a, .here-name span:last-child')?.textContent);
     expect(segs).toEqual(['Files', 'tools', 'agent 1.9.tar.gz']);
@@ -140,7 +149,7 @@ describe("A generic repository's files at the Bastion (R-UI-229)", () => {
     await turn();
     http.expectNone('/ui/data/v1/files/platform/downloads/file/tools');
     const entries = { items: [{ path: 'agent.tar.gz', kind: 'file', size: 2048, sha256: 'a'.repeat(64), modifiedAt: '2026-11-26T08:00:00Z' }] };
-    await settled(fixture);
+    await head(http, fixture);
     http.expectOne('/ui/data/v1/files/platform/downloads/folder/tools').flush(entries);
     await settled(fixture);
     const root = fixture.nativeElement as HTMLElement;
@@ -162,7 +171,7 @@ describe("A generic repository's files at the Bastion (R-UI-229)", () => {
     http.expectOne('/ui/data/v1/files/platform/downloads/folder').flush({ items: [] });
     await turn();
     http.expectOne('/ui/data/v1/files/platform/downloads/file/gone.txt').flush(notFound, notFoundAnswer);
-    await settled(fixture);
+    await head(http, fixture);
     expect((fixture.nativeElement as HTMLElement).querySelector('quader-error-notice')?.textContent).toContain('Nothing is offered at this address.');
   });
 

@@ -16,6 +16,7 @@ import {
   PackageVersion,
   PackageVersionContents,
   PackageVersionSummary,
+  VersionFilters,
 } from '../../app/api/packages-api';
 import { Child, FileReads, Item } from '../../app/api/file-reads';
 import { Page, PageFetcher } from '../../app/api/pagination';
@@ -99,9 +100,29 @@ export class BastionPackageReads extends PackageReads {
     return this.data.get<PackageSummary>('packages/lookup', { format, name });
   }
 
-  /** Every version in the main installation's order; the views sort and group them in the browser (Q-BAS-396). */
-  override versions(packageId: string): PageFetcher<PackageVersionSummary> {
-    return this.data.page<PackageVersionSummary>(`${packagePath(packageId)}/versions`);
+  /**
+   * Every version in the main installation's order (Q-BAS-396); with `group=content` an image's list by content, the catalogue's
+   * document of the main installation's answer (`packages/<id>/images`, bastion.md R-BAS-130), whose leading tag and order are the
+   * server's. A `repository` keeps the rows its repositories hold, as the main installation narrows them: a repository's opened row lists
+   * what that repository holds; an image's other tags in a second repository stay named, since a row is one manifest (Q-BAS-501).
+   */
+  override versions(packageId: string, filters: VersionFilters = {}): PageFetcher<PackageVersionSummary> {
+    const held = filters.repository && filters.repository.length > 0 ? new Set(filters.repository) : null;
+    const keep = (items: readonly PackageVersionSummary[]): readonly PackageVersionSummary[] =>
+      held === null ? items : items.filter((v) => v.repositories.some((r) => held.has(r)));
+    if (filters.group === 'content') {
+      return async (cursor, limit): Promise<Page<PackageVersionSummary>> => {
+        const all = keep((await this.data.get<{ items: readonly PackageVersionSummary[] }>(`${packagePath(packageId)}/images`)).items);
+        const from = cursor === null ? 0 : Number(cursor);
+        const to = from + limit;
+        return { items: all.slice(from, to), nextCursor: to < all.length ? String(to) : null };
+      };
+    }
+    const pages = this.data.page<PackageVersionSummary>(`${packagePath(packageId)}/versions`);
+    return async (cursor, limit) => {
+      const page = await pages(cursor, limit);
+      return held === null ? page : { ...page, items: keep(page.items) };
+    };
   }
 
   override version(packageId: string, version: string): Promise<PackageVersion> {
@@ -188,10 +209,13 @@ export class BastionClientSetupReads extends ClientSetupReads {
       return this.data.get<ClientSetup>(`${filesPath(repository, `setup/${seg(query.client)}`)}/${segments(query.path)}`);
     }
     let path = `setup/${seg(project)}/${seg(repo)}/${seg(query.client)}`;
-    if (query.package && query.version) {
+    if (query.package) {
+      // A version's set-up names it. A package's without a version, the pull by digest, is the catalogue's set-up of the package
+      // (`setup/<p>/<r>/<c>/<id>`, R-BAS-130): the repository's would name the snippet's placeholder image (`myapp:1.0@sha256:…`).
       const id = await this.idOf(repository, query.package);
       if (id === null) throw notHeld();
-      path += `/${seg(id)}/${seg(query.version)}`;
+      path += `/${seg(id)}`;
+      if (query.version) path += `/${seg(query.version)}`;
     }
     return this.data.get<ClientSetup>(path);
   }

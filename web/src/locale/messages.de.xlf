@@ -333,7 +333,7 @@
       <notes>
         <note category="location">src/app/app.routes.ts:86</note>
         <note category="location">src/app/app.routes.ts:87</note>
-        <note category="location">src/app/features/search/search-results.ts:334</note>
+        <note category="location">src/app/features/search/search-results.ts:335</note>
       </notes>
       <segment>
         <source>Search</source>
@@ -14982,9 +14982,9 @@
       <notes>
         <note category="location">src/app/features/guides/guide-format.ts:156</note>
         <note category="location">src/app/features/repositories/repository-list.ts:398</note>
-        <note category="location">src/app/features/search/search-results.ts:352</note>
-        <note category="location">src/app/features/search/search-results.ts:369</note>
-        <note category="location">src/app/features/search/search-results.ts:390</note>
+        <note category="location">src/app/features/search/search-results.ts:353</note>
+        <note category="location">src/app/features/search/search-results.ts:370</note>
+        <note category="location">src/app/features/search/search-results.ts:391</note>
       </notes>
       <segment>
         <source>Repository</source>
@@ -15013,7 +15013,7 @@
         <note category="location">src/app/features/repositories/repository-list.html:69</note>
         <note category="location">src/app/features/repositories/repository-list.ts:334</note>
         <note category="location">src/app/features/repositories/repository-list.ts:405</note>
-        <note category="location">src/app/features/search/search-results.ts:357</note>
+        <note category="location">src/app/features/search/search-results.ts:358</note>
       </notes>
       <segment>
         <source>Class</source>
@@ -18504,7 +18504,7 @@
     <unit id="pkg.col.package">
       <notes>
         <note category="location">src/app/features/packages/namespace-page.ts:80</note>
-        <note category="location">src/app/features/search/search-results.ts:367</note>
+        <note category="location">src/app/features/search/search-results.ts:368</note>
         <note category="location">src/app/views/packages/package-table.ts:137</note>
       </notes>
       <segment>
@@ -18516,10 +18516,10 @@
       <notes>
         <note category="location">src/app/features/packages/namespace-page.ts:81</note>
         <note category="location">src/app/features/projects/projects-home.ts:224</note>
-        <note category="location">src/app/features/search/search-results.ts:353</note>
-        <note category="location">src/app/features/search/search-results.ts:368</note>
-        <note category="location">src/app/features/search/search-results.ts:389</note>
-        <note category="location">src/app/features/search/search-results.ts:394</note>
+        <note category="location">src/app/features/search/search-results.ts:354</note>
+        <note category="location">src/app/features/search/search-results.ts:369</note>
+        <note category="location">src/app/features/search/search-results.ts:390</note>
+        <note category="location">src/app/features/search/search-results.ts:395</note>
       </notes>
       <segment>
         <source>Project</source>
@@ -18529,7 +18529,7 @@
     <unit id="pkg.col.latest">
       <notes>
         <note category="location">src/app/features/packages/namespace-page.ts:84</note>
-        <note category="location">src/app/features/search/search-results.ts:373</note>
+        <note category="location">src/app/features/search/search-results.ts:374</note>
         <note category="location">src/app/views/packages/package-table.ts:142</note>
       </notes>
       <segment>
@@ -18540,7 +18540,7 @@
     <unit id="pkg.help.latest">
       <notes>
         <note category="location">src/app/features/packages/namespace-page.ts:85</note>
-        <note category="location">src/app/features/search/search-results.ts:374</note>
+        <note category="location">src/app/features/search/search-results.ts:375</note>
         <note category="location">src/app/views/packages/package-table.ts:143</note>
       </notes>
       <segment>
@@ -18551,7 +18551,7 @@
     <unit id="pkg.col.updated">
       <notes>
         <note category="location">src/app/features/packages/namespace-page.ts:90</note>
-        <note category="location">src/app/features/search/search-results.ts:380</note>
+        <note category="location">src/app/features/search/search-results.ts:381</note>
         <note category="location">src/app/views/packages/package-table.ts:148</note>
       </notes>
       <segment>
@@ -18562,7 +18562,7 @@
     <unit id="pkg.help.updated">
       <notes>
         <note category="location">src/app/features/packages/namespace-page.ts:91</note>
-        <note category="location">src/app/features/search/search-results.ts:381</note>
+        <note category="location">src/app/features/search/search-results.ts:382</note>
         <note category="location">src/app/views/packages/package-table.ts:150</note>
       </notes>
       <segment>
@@ -22397,7 +22397,7 @@
     <unit id="projects.built-in">
       <notes>
         <note category="location">src/app/features/projects/projects-home.ts:80,82</note>
-        <note category="location">src/app/features/search/search-results.ts:215,217</note>
+        <note category="location">src/app/features/search/search-results.ts:216,218</note>
       </notes>
       <segment>
         <source>Built-in</source>
@@ -22488,7 +22488,7 @@
     <unit id="projects-home.col.description">
       <notes>
         <note category="location">src/app/features/projects/projects-home.ts:226</note>
-        <note category="location">src/app/features/search/search-results.ts:395</note>
+        <note category="location">src/app/features/search/search-results.ts:396</note>
       </notes>
       <segment>
         <source>Description</source>
@@ -22498,7 +22498,7 @@
     <unit id="projects.col.visibility">
       <notes>
         <note category="location">src/app/features/projects/projects-home.ts:227</note>
-        <note category="location">src/app/features/search/search-results.ts:396</note>
+        <note category="location">src/app/features/search/search-results.ts:397</note>
         <note category="location">src/app/features/upstream/upstream-registries.ts:299</note>
         <note category="location">src/app/features/upstream/upstream-registries.ts:317</note>
       </notes>
@@ -22510,7 +22510,7 @@
     <unit id="projects.col.role">
       <notes>
         <note category="location">src/app/features/projects/projects-home.ts:230</note>
-        <note category="location">src/app/features/search/search-results.ts:399</note>
+        <note category="location">src/app/features/search/search-results.ts:400</note>
       </notes>
       <segment>
         <source>Your role</source>
@@ -22520,7 +22520,7 @@
     <unit id="projects.help.role">
       <notes>
         <note category="location">src/app/features/projects/projects-home.ts:231</note>
-        <note category="location">src/app/features/search/search-results.ts:400</note>
+        <note category="location">src/app/features/search/search-results.ts:401</note>
       </notes>
       <segment>
         <source>Your role in the project; a dash when you see it through a system role and are no member.</source>
@@ -22539,7 +22539,7 @@
     <unit id="projects.col.repositories">
       <notes>
         <note category="location">src/app/features/projects/projects-home.ts:235</note>
-        <note category="location">src/app/features/search/search-results.ts:403</note>
+        <note category="location">src/app/features/search/search-results.ts:404</note>
       </notes>
       <segment>
         <source>Repositories</source>
@@ -22549,7 +22549,7 @@
     <unit id="projects.col.members">
       <notes>
         <note category="location">src/app/features/projects/projects-home.ts:236</note>
-        <note category="location">src/app/features/search/search-results.ts:404</note>
+        <note category="location">src/app/features/search/search-results.ts:405</note>
       </notes>
       <segment>
         <source>Members</source>
@@ -29543,7 +29543,7 @@
         <note category="location">src/app/features/repositories/repository-list.html:56</note>
         <note category="location">src/app/features/repositories/repository-list.ts:332</note>
         <note category="location">src/app/features/repositories/repository-list.ts:402</note>
-        <note category="location">src/app/features/search/search-results.ts:354</note>
+        <note category="location">src/app/features/search/search-results.ts:355</note>
       </notes>
       <segment>
         <source>Format</source>
@@ -30845,7 +30845,7 @@
     <unit id="repo.help.class">
       <notes>
         <note category="location">src/app/features/repositories/repository-list.ts:406</note>
-        <note category="location">src/app/features/search/search-results.ts:358</note>
+        <note category="location">src/app/features/search/search-results.ts:359</note>
       </notes>
       <segment>
         <source>Local repositories hold what you upload, remote repositories fetch and cache from another registry, virtual repositories combine other repositories behind one address.</source>
@@ -33946,7 +33946,7 @@
     <unit id="pkg.deprecated">
       <notes>
         <note category="location">src/app/features/repositories/upstream/upstream-docs.html:7,8</note>
-        <note category="location">src/app/views/packages/package-version-view.html:269,270</note>
+        <note category="location">src/app/views/packages/package-version-view.html:293,294</note>
       </notes>
       <segment>
         <source>Deprecated.</source>
@@ -33956,7 +33956,7 @@
     <unit id="pkg.deprecated-reasons">
       <notes>
         <note category="location">src/app/features/repositories/upstream/upstream-docs.html:12,13</note>
-        <note category="location">src/app/views/packages/package-version-view.html:277</note>
+        <note category="location">src/app/views/packages/package-version-view.html:301</note>
       </notes>
       <segment>
         <source>Reason:</source>
@@ -33966,7 +33966,7 @@
     <unit id="pkg.deprecated-alternate">
       <notes>
         <note category="location">src/app/features/repositories/upstream/upstream-docs.html:16</note>
-        <note category="location">src/app/views/packages/package-version-view.html:281</note>
+        <note category="location">src/app/views/packages/package-version-view.html:305</note>
       </notes>
       <segment>
         <source>Use instead:</source>
@@ -34036,7 +34036,7 @@
       <notes>
         <note category="location">src/app/features/repositories/upstream/upstream-docs.html:77,78</note>
         <note category="location">src/app/features/repositories/upstream/upstream-docs.html:125,129</note>
-        <note category="location">src/app/views/packages/package-version-view.html:346,348</note>
+        <note category="location">src/app/views/packages/package-version-view.html:370,372</note>
       </notes>
       <segment>
         <source>This version has no README to show.</source>
@@ -34163,7 +34163,7 @@
     <unit id="pkg.meta.dependencies">
       <notes>
         <note category="location">src/app/features/repositories/upstream/upstream-docs.ts:137</note>
-        <note category="location">src/app/views/packages/package-version-view.html:571,572</note>
+        <note category="location">src/app/views/packages/package-version-view.html:595,596</note>
       </notes>
       <segment>
         <source>Dependencies</source>
@@ -36063,7 +36063,7 @@
     <unit id="search.group.repositories">
       <notes>
         <note category="location">src/app/features/search/search-model.ts:217</note>
-        <note category="location">src/app/features/search/search-results.ts:336</note>
+        <note category="location">src/app/features/search/search-results.ts:337</note>
       </notes>
       <segment>
         <source>Repositories</source>
@@ -36073,7 +36073,7 @@
     <unit id="search.group.packages">
       <notes>
         <note category="location">src/app/features/search/search-model.ts:218</note>
-        <note category="location">src/app/features/search/search-results.ts:337</note>
+        <note category="location">src/app/features/search/search-results.ts:338</note>
       </notes>
       <segment>
         <source>Packages</source>
@@ -36083,7 +36083,7 @@
     <unit id="search.group.projects">
       <notes>
         <note category="location">src/app/features/search/search-model.ts:219</note>
-        <note category="location">src/app/features/search/search-results.ts:338</note>
+        <note category="location">src/app/features/search/search-results.ts:339</note>
       </notes>
       <segment>
         <source>Projects</source>
@@ -36093,7 +36093,7 @@
     <unit id="search.group.documentation">
       <notes>
         <note category="location">src/app/features/search/search-model.ts:220</note>
-        <note category="location">src/app/features/search/search-results.ts:339</note>
+        <note category="location">src/app/features/search/search-results.ts:340</note>
       </notes>
       <segment>
         <source>Documentation</source>
@@ -36174,10 +36174,10 @@
     </unit>
     <unit id="search.results.loading">
       <notes>
-        <note category="location">src/app/features/search/search-results.ts:85,86</note>
-        <note category="location">src/app/features/search/search-results.ts:138,139</note>
-        <note category="location">src/app/features/search/search-results.ts:197,198</note>
-        <note category="location">src/app/features/search/search-results.ts:260,261</note>
+        <note category="location">src/app/features/search/search-results.ts:86,87</note>
+        <note category="location">src/app/features/search/search-results.ts:139,140</note>
+        <note category="location">src/app/features/search/search-results.ts:198,199</note>
+        <note category="location">src/app/features/search/search-results.ts:261,262</note>
       </notes>
       <segment>
         <source>Searching.</source>
@@ -36186,7 +36186,7 @@
     </unit>
     <unit id="search.results.description">
       <notes>
-        <note category="location">src/app/features/search/search-results.ts:342</note>
+        <note category="location">src/app/features/search/search-results.ts:343</note>
       </notes>
       <segment>
         <source>What you may read that matches “<ph id="0" equiv="text" disp="this.term()"/>”.</source>
@@ -36195,7 +36195,7 @@
     </unit>
     <unit id="search.results.too-short">
       <notes>
-        <note category="location">src/app/features/search/search-results.ts:346</note>
+        <note category="location">src/app/features/search/search-results.ts:347</note>
       </notes>
       <segment>
         <source>Type at least two characters.</source>
@@ -36204,7 +36204,7 @@
     </unit>
     <unit id="search.results.none">
       <notes>
-        <note category="location">src/app/features/search/search-results.ts:347</note>
+        <note category="location">src/app/features/search/search-results.ts:348</note>
       </notes>
       <segment>
         <source>Nothing you may read matches “<ph id="0" equiv="text" disp="this.term()"/>”.</source>
@@ -36213,7 +36213,7 @@
     </unit>
     <unit id="pkg.col.format">
       <notes>
-        <note category="location">src/app/features/search/search-results.ts:370</note>
+        <note category="location">src/app/features/search/search-results.ts:371</note>
         <note category="location">src/app/views/packages/package-table.ts:138</note>
       </notes>
       <segment>
@@ -36223,7 +36223,7 @@
     </unit>
     <unit id="search.col.entry">
       <notes>
-        <note category="location">src/app/features/search/search-results.ts:387</note>
+        <note category="location">src/app/features/search/search-results.ts:388</note>
       </notes>
       <segment>
         <source>Entry</source>
@@ -36232,7 +36232,7 @@
     </unit>
     <unit id="search.col.collection">
       <notes>
-        <note category="location">src/app/features/search/search-results.ts:388</note>
+        <note category="location">src/app/features/search/search-results.ts:389</note>
       </notes>
       <segment>
         <source>Collection</source>
@@ -61750,7 +61750,7 @@
     </unit>
     <unit id="projects.level.built-in">
       <notes>
-        <note category="location">src/app/shared/ui/project-mark.ts:62</note>
+        <note category="location">src/app/shared/ui/project-mark.ts:60</note>
       </notes>
       <segment>
         <source>Each registry has its own visibility.</source>
@@ -63476,7 +63476,7 @@
     <unit id="sig.gate.refused-here">
       <notes>
         <note category="location">src/app/views/files/file-view.ts:117,118</note>
-        <note category="location">src/app/views/packages/package-version-view.html:410,411</note>
+        <note category="location">src/app/views/packages/package-version-view.html:434,435</note>
         <note category="location">src/app/views/signatures/signature-gate.ts:75,76</note>
       </notes>
       <segment>
@@ -65600,9 +65600,9 @@
     <unit id="pkg.image.digest">
       <notes>
         <note category="location">src/app/views/packages/image-details.ts:259</note>
-        <note category="location">src/app/views/packages/package-version-view.html:657,659</note>
-        <note category="location">src/app/views/packages/package-version-view.ts:1001</note>
-        <note category="location">src/app/views/packages/package-version-view.ts:1008</note>
+        <note category="location">src/app/views/packages/package-version-view.html:681,683</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:1010</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:1017</note>
       </notes>
       <segment>
         <source>Digest</source>
@@ -65612,8 +65612,8 @@
     <unit id="pkg.image.media-type">
       <notes>
         <note category="location">src/app/views/packages/image-details.ts:260</note>
-        <note category="location">src/app/views/packages/package-version-view.html:663,664</note>
-        <note category="location">src/app/views/packages/package-version-view.ts:1002</note>
+        <note category="location">src/app/views/packages/package-version-view.html:687,688</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:1011</note>
       </notes>
       <segment>
         <source>Media type</source>
@@ -65624,8 +65624,8 @@
       <notes>
         <note category="location">src/app/views/packages/image-details.ts:261</note>
         <note category="location">src/app/views/packages/image-details.ts:266</note>
-        <note category="location">src/app/views/packages/package-version-view.ts:1003</note>
-        <note category="location">src/app/views/packages/package-version-view.ts:1009</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:1012</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:1018</note>
       </notes>
       <segment>
         <source>Size</source>
@@ -66260,7 +66260,7 @@
     <unit id="pkg.meta.keywords">
       <notes>
         <note category="location">src/app/views/packages/package-detail-view.html:213,214</note>
-        <note category="location">src/app/views/packages/package-version-view.html:567,568</note>
+        <note category="location">src/app/views/packages/package-version-view.html:591,592</note>
       </notes>
       <segment>
         <source>Keywords</source>
@@ -66441,7 +66441,7 @@
     <unit id="pkg.ver.never-title">
       <notes>
         <note category="location">src/app/views/packages/package-detail-view.ts:294</note>
-        <note category="location">src/app/views/packages/package-version-view.ts:1018</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:1027</note>
       </notes>
       <segment>
         <source>No client has downloaded this version through Quader yet.</source>
@@ -66637,9 +66637,63 @@
         <target><pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ fileName(f.path) }}"/></pc> konnte nicht auf Malware geprüft werden. Downloads werden hier abgelehnt.</target>
       </segment>
     </unit>
+    <unit id="pkg.gate.banner.missing-unnamed">
+      <notes>
+        <note category="location">src/app/views/packages/package-version-view.html:235,236</note>
+      </notes>
+      <segment>
+        <source>Downloads are refused: the repository serves only artifacts with a verified signature, and <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.name }}"/></pc> has no signature of its publisher or its build.</source>
+        <target>Downloads werden verweigert: Das Repository liefert nur Artefakte mit verifizierter Signatur aus, und <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.name }}"/></pc> hat keine Signatur seines Herausgebers oder seines Builds.</target>
+      </segment>
+    </unit>
+    <unit id="pkg.gate.banner.untrusted-unnamed">
+      <notes>
+        <note category="location">src/app/views/packages/package-version-view.html:238,239</note>
+      </notes>
+      <segment>
+        <source>Downloads are refused: the repository serves only artifacts with a verified signature, and <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.name }}"/></pc> has a signature of its publisher or its build whose signer no trust anchor the repository accepts knows.</source>
+        <target>Downloads werden verweigert: Das Repository liefert nur Artefakte mit verifizierter Signatur aus, und <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.name }}"/></pc> hat eine Signatur seines Herausgebers oder seines Builds, deren Unterzeichner kein vom Repository akzeptierter Vertrauensanker kennt.</target>
+      </segment>
+    </unit>
+    <unit id="pkg.gate.banner.not-chosen-unnamed">
+      <notes>
+        <note category="location">src/app/views/packages/package-version-view.html:241,242</note>
+      </notes>
+      <segment>
+        <source>Downloads are refused: the repository serves only artifacts with a verified signature, and <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.name }}"/></pc> is verified only by trust anchors the repository does not accept.</source>
+        <target>Downloads werden verweigert: Das Repository liefert nur Artefakte mit verifizierter Signatur aus, und <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.name }}"/></pc> ist nur durch Vertrauensanker verifiziert, die das Repository nicht akzeptiert.</target>
+      </segment>
+    </unit>
+    <unit id="pkg.gate.banner.invalid-unnamed">
+      <notes>
+        <note category="location">src/app/views/packages/package-version-view.html:244,245</note>
+      </notes>
+      <segment>
+        <source>Downloads are refused: the repository serves only artifacts with a verified signature, and <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.name }}"/></pc> has a signature of its publisher or its build that does not match its content.</source>
+        <target>Downloads werden verweigert: Das Repository liefert nur Artefakte mit verifizierter Signatur aus, und <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.name }}"/></pc> hat eine Signatur seines Herausgebers oder seines Builds, die nicht zu seinem Inhalt passt.</target>
+      </segment>
+    </unit>
+    <unit id="pkg.gate.banner.blocked-unnamed">
+      <notes>
+        <note category="location">src/app/views/packages/package-version-view.html:247,248</note>
+      </notes>
+      <segment>
+        <source>Downloads are refused: the repository serves only artifacts with a verified signature, and <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.name }}"/></pc> is signed by a signer an administrator blocked.</source>
+        <target>Downloads werden verweigert: Das Repository liefert nur Artefakte mit verifizierter Signatur aus, und <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.name }}"/></pc> ist von einem Unterzeichner signiert, den ein Administrator gesperrt hat.</target>
+      </segment>
+    </unit>
+    <unit id="pkg.gate.banner.not-checked-unnamed">
+      <notes>
+        <note category="location">src/app/views/packages/package-version-view.html:250,251</note>
+      </notes>
+      <segment>
+        <source>Downloads are refused: the repository serves only artifacts with a verified signature, and <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.name }}"/></pc> has a signature of its publisher or its build that Quader cannot read or could not check.</source>
+        <target>Downloads werden verweigert: Das Repository liefert nur Artefakte mit verifizierter Signatur aus, und <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.name }}"/></pc> hat eine Signatur seines Herausgebers oder seines Builds, die Quader nicht lesen oder nicht prüfen konnte.</target>
+      </segment>
+    </unit>
     <unit id="pkg.gate.banner.missing">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:233,234</note>
+        <note category="location">src/app/views/packages/package-version-view.html:256,257</note>
       </notes>
       <segment>
         <source>Downloads are refused in <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span class=&quot;with-stop&quot;&gt;" dispEnd="&lt;/span&gt;"><pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="2" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>:</pc> it serves only artifacts with a verified signature, and <pc id="3" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="4" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> has no signature of its publisher or its build.</source>
@@ -66648,7 +66702,7 @@
     </unit>
     <unit id="pkg.gate.banner.untrusted">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:236,237</note>
+        <note category="location">src/app/views/packages/package-version-view.html:259,260</note>
       </notes>
       <segment>
         <source>Downloads are refused in <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span class=&quot;with-stop&quot;&gt;" dispEnd="&lt;/span&gt;"><pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="2" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>:</pc> it serves only artifacts with a verified signature, and <pc id="3" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="4" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> has a signature of its publisher or its build whose signer no trust anchor this repository accepts knows.</source>
@@ -66657,7 +66711,7 @@
     </unit>
     <unit id="pkg.gate.banner.not-chosen">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:239,240</note>
+        <note category="location">src/app/views/packages/package-version-view.html:262,263</note>
       </notes>
       <segment>
         <source>Downloads are refused in <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span class=&quot;with-stop&quot;&gt;" dispEnd="&lt;/span&gt;"><pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="2" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>:</pc> it serves only artifacts with a verified signature, and <pc id="3" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="4" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> is verified only by trust anchors this repository does not accept.</source>
@@ -66666,7 +66720,7 @@
     </unit>
     <unit id="pkg.gate.banner.invalid">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:242,243</note>
+        <note category="location">src/app/views/packages/package-version-view.html:265,266</note>
       </notes>
       <segment>
         <source>Downloads are refused in <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span class=&quot;with-stop&quot;&gt;" dispEnd="&lt;/span&gt;"><pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="2" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>:</pc> it serves only artifacts with a verified signature, and <pc id="3" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="4" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> has a signature of its publisher or its build that does not match its content.</source>
@@ -66675,7 +66729,7 @@
     </unit>
     <unit id="pkg.gate.banner.blocked">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:245,246</note>
+        <note category="location">src/app/views/packages/package-version-view.html:268,269</note>
       </notes>
       <segment>
         <source>Downloads are refused in <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span class=&quot;with-stop&quot;&gt;" dispEnd="&lt;/span&gt;"><pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="2" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>:</pc> it serves only artifacts with a verified signature, and <pc id="3" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="4" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> is signed by a signer an administrator blocked.</source>
@@ -66684,7 +66738,7 @@
     </unit>
     <unit id="pkg.gate.banner.not-checked">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:248,249</note>
+        <note category="location">src/app/views/packages/package-version-view.html:271,272</note>
       </notes>
       <segment>
         <source>Downloads are refused in <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span class=&quot;with-stop&quot;&gt;" dispEnd="&lt;/span&gt;"><pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="2" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>:</pc> it serves only artifacts with a verified signature, and <pc id="3" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="4" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> has a signature of its publisher or its build that Quader cannot read or could not check.</source>
@@ -66693,7 +66747,7 @@
     </unit>
     <unit id="pkg.deprecated-collection">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:271,273</note>
+        <note category="location">src/app/views/packages/package-version-view.html:295,297</note>
       </notes>
       <segment>
         <source>Every version of this collection is deprecated.</source>
@@ -66702,7 +66756,7 @@
     </unit>
     <unit id="pkg.readme.loading">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:341,342</note>
+        <note category="location">src/app/views/packages/package-version-view.html:365,366</note>
       </notes>
       <segment>
         <source>Loading the README.</source>
@@ -66711,7 +66765,7 @@
     </unit>
     <unit id="pkg.chart.values-cut">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:360,362</note>
+        <note category="location">src/app/views/packages/package-version-view.html:384,386</note>
       </notes>
       <segment>
         <source>The values are longer than 64 KiB; the rest is not shown.</source>
@@ -66720,9 +66774,9 @@
     </unit>
     <unit id="pkg.file.manifest">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:375,376</note>
-        <note category="location">src/app/views/packages/package-version-view.html:377,378</note>
-        <note category="location">src/app/views/packages/package-version-view.html:434,435</note>
+        <note category="location">src/app/views/packages/package-version-view.html:399,400</note>
+        <note category="location">src/app/views/packages/package-version-view.html:401,402</note>
+        <note category="location">src/app/views/packages/package-version-view.html:458,459</note>
       </notes>
       <segment>
         <source>Manifest</source>
@@ -66731,7 +66785,7 @@
     </unit>
     <unit id="pkg.file.sha256">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:389</note>
+        <note category="location">src/app/views/packages/package-version-view.html:413</note>
       </notes>
       <segment>
         <source>SHA-256</source>
@@ -66740,7 +66794,7 @@
     </unit>
     <unit id="pkg.file.image-content">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:429,431</note>
+        <note category="location">src/app/views/packages/package-version-view.html:453,455</note>
       </notes>
       <segment>
         <source>Content of the image</source>
@@ -66749,7 +66803,7 @@
     </unit>
     <unit id="pkg.file.config">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:447,448</note>
+        <note category="location">src/app/views/packages/package-version-view.html:471,472</note>
       </notes>
       <segment>
         <source>Config</source>
@@ -66758,7 +66812,7 @@
     </unit>
     <unit id="pkg.file.layer">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:460,461</note>
+        <note category="location">src/app/views/packages/package-version-view.html:484,485</note>
       </notes>
       <segment>
         <source>Layer <ph id="0" equiv="INTERPOLATION" disp="{{ i + 1 }}"/></source>
@@ -66767,7 +66821,7 @@
     </unit>
     <unit id="clamav.signature">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:484,486</note>
+        <note category="location">src/app/views/packages/package-version-view.html:508,510</note>
       </notes>
       <segment>
         <source>Detached signature</source>
@@ -66776,7 +66830,7 @@
     </unit>
     <unit id="clamav.signature.present">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:487,488</note>
+        <note category="location">src/app/views/packages/package-version-view.html:511,512</note>
       </notes>
       <segment>
         <source>Present, <ph id="0" equiv="INTERPOLATION" disp="{{ c.detachedSignature.signatures ?? 0 }}"/> signatures. Quader passes it on; ClamAV checks it.</source>
@@ -66785,7 +66839,7 @@
     </unit>
     <unit id="clamav.signature.none">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:489,491</note>
+        <note category="location">src/app/views/packages/package-version-view.html:513,515</note>
       </notes>
       <segment>
         <source>None</source>
@@ -66794,7 +66848,7 @@
     </unit>
     <unit id="clamav.members.hint">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:495,496</note>
+        <note category="location">src/app/views/packages/package-version-view.html:519,520</note>
       </notes>
       <segment>
         <source>The signature count of the header is the total; lines of a member are not always signatures.</source>
@@ -66803,7 +66857,7 @@
     </unit>
     <unit id="clamav.members.removed">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:516,518</note>
+        <note category="location">src/app/views/packages/package-version-view.html:540,542</note>
       </notes>
       <segment>
         <source>The files of this version were removed; its metadata stays as history.</source>
@@ -66812,7 +66866,7 @@
     </unit>
     <unit id="clamav.members.not-read">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:518,520</note>
+        <note category="location">src/app/views/packages/package-version-view.html:542,544</note>
       </notes>
       <segment>
         <source>Members not read: the container holds more than the bounds allow.</source>
@@ -66821,7 +66875,7 @@
     </unit>
     <unit id="pkg.meta.deb-description">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:554,555</note>
+        <note category="location">src/app/views/packages/package-version-view.html:578,579</note>
       </notes>
       <segment>
         <source>Description</source>
@@ -66830,7 +66884,7 @@
     </unit>
     <unit id="pkg.used-by.heading">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:576,577</note>
+        <note category="location">src/app/views/packages/package-version-view.html:600,601</note>
       </notes>
       <segment>
         <source>Used by</source>
@@ -66839,7 +66893,7 @@
     </unit>
     <unit id="clamav.details.heading">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:581,582</note>
+        <note category="location">src/app/views/packages/package-version-view.html:605,606</note>
       </notes>
       <segment>
         <source>Definitions</source>
@@ -66848,7 +66902,7 @@
     </unit>
     <unit id="clamav.fact.built">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:583,585</note>
+        <note category="location">src/app/views/packages/package-version-view.html:607,609</note>
       </notes>
       <segment>
         <source>Built</source>
@@ -66857,7 +66911,7 @@
     </unit>
     <unit id="clamav.fact.build-text">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:595,596</note>
+        <note category="location">src/app/views/packages/package-version-view.html:619,620</note>
       </notes>
       <segment>
         <source>Build time as written</source>
@@ -66866,7 +66920,7 @@
     </unit>
     <unit id="clamav.fact.signatures">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:598,599</note>
+        <note category="location">src/app/views/packages/package-version-view.html:622,623</note>
       </notes>
       <segment>
         <source>Signatures</source>
@@ -66875,7 +66929,7 @@
     </unit>
     <unit id="clamav.fact.level">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:600,602</note>
+        <note category="location">src/app/views/packages/package-version-view.html:624,626</note>
       </notes>
       <segment>
         <source>Functionality level</source>
@@ -66884,7 +66938,7 @@
     </unit>
     <unit id="clamav.fact.builder">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:608,609</note>
+        <note category="location">src/app/views/packages/package-version-view.html:632,633</note>
       </notes>
       <segment>
         <source>Builder</source>
@@ -66893,7 +66947,7 @@
     </unit>
     <unit id="clamav.fact.verification">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:610,611</note>
+        <note category="location">src/app/views/packages/package-version-view.html:634,635</note>
       </notes>
       <segment>
         <source>Verification</source>
@@ -66902,7 +66956,7 @@
     </unit>
     <unit id="clamav.fact.files-removed">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:613,614</note>
+        <note category="location">src/app/views/packages/package-version-view.html:637,638</note>
       </notes>
       <segment>
         <source>Files removed</source>
@@ -66911,7 +66965,7 @@
     </unit>
     <unit id="clamav.fact.header-md5">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:620,621</note>
+        <note category="location">src/app/views/packages/package-version-view.html:644,645</note>
       </notes>
       <segment>
         <source>MD5 in the header</source>
@@ -66920,7 +66974,7 @@
     </unit>
     <unit id="clamav.fact.computed-md5">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:622,623</note>
+        <note category="location">src/app/views/packages/package-version-view.html:646,647</note>
       </notes>
       <segment>
         <source>MD5 computed by Quader</source>
@@ -66929,8 +66983,8 @@
     </unit>
     <unit id="pkg.chart.heading">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:630,631</note>
-        <note category="location">src/app/views/packages/package-version-view.html:634,635</note>
+        <note category="location">src/app/views/packages/package-version-view.html:654,655</note>
+        <note category="location">src/app/views/packages/package-version-view.html:658,659</note>
       </notes>
       <segment>
         <source>Chart</source>
@@ -66939,7 +66993,7 @@
     </unit>
     <unit id="pkg.chart.held">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:631</note>
+        <note category="location">src/app/views/packages/package-version-view.html:655</note>
       </notes>
       <segment>
         <source>The chart&apos;s facts and values are not shown: a download of its files would not be served to you now.</source>
@@ -66948,7 +67002,7 @@
     </unit>
     <unit id="pkg.chart.maintainers">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:642,643</note>
+        <note category="location">src/app/views/packages/package-version-view.html:666,667</note>
       </notes>
       <segment>
         <source>Maintainers</source>
@@ -66957,7 +67011,7 @@
     </unit>
     <unit id="pkg.image.kind">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:654,655</note>
+        <note category="location">src/app/views/packages/package-version-view.html:678,679</note>
       </notes>
       <segment>
         <source>Kind</source>
@@ -66966,7 +67020,7 @@
     </unit>
     <unit id="pkg.image.artifact-type">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:667,668</note>
+        <note category="location">src/app/views/packages/package-version-view.html:691,692</note>
       </notes>
       <segment>
         <source>Artifact type</source>
@@ -66975,7 +67029,7 @@
     </unit>
     <unit id="pkg.image.total-size">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:670,671</note>
+        <note category="location">src/app/views/packages/package-version-view.html:694,695</note>
       </notes>
       <segment>
         <source>Size</source>
@@ -66984,7 +67038,7 @@
     </unit>
     <unit id="pkg.image.platforms">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:674,675</note>
+        <note category="location">src/app/views/packages/package-version-view.html:698,699</note>
       </notes>
       <segment>
         <source>Platforms</source>
@@ -66993,7 +67047,7 @@
     </unit>
     <unit id="pkg.image.not-fetched">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:716,717</note>
+        <note category="location">src/app/views/packages/package-version-view.html:740,741</note>
       </notes>
       <segment>
         <source>Not fetched</source>
@@ -67002,7 +67056,7 @@
     </unit>
     <unit id="pkg.meta.release-notes">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:746,747</note>
+        <note category="location">src/app/views/packages/package-version-view.html:770,771</note>
       </notes>
       <segment>
         <source>Release notes</source>
@@ -67011,7 +67065,7 @@
     </unit>
     <unit id="pkg.meta.facts">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:753,754</note>
+        <note category="location">src/app/views/packages/package-version-view.html:777,778</note>
       </notes>
       <segment>
         <source>Package details</source>
@@ -67020,7 +67074,7 @@
     </unit>
     <unit id="pkg.meta.frameworks">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:761,763</note>
+        <note category="location">src/app/views/packages/package-version-view.html:785,787</note>
       </notes>
       <segment>
         <source>Target frameworks</source>
@@ -67029,7 +67083,7 @@
     </unit>
     <unit id="pkg.meta.dependency-frameworks">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:771,773</note>
+        <note category="location">src/app/views/packages/package-version-view.html:795,797</note>
       </notes>
       <segment>
         <source>Frameworks of the dependencies</source>
@@ -67038,7 +67092,7 @@
     </unit>
     <unit id="pkg.meta.symbols">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:782,783</note>
+        <note category="location">src/app/views/packages/package-version-view.html:806,807</note>
       </notes>
       <segment>
         <source>Symbols</source>
@@ -67047,7 +67101,7 @@
     </unit>
     <unit id="pkg.meta.symbols-held">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:784,785</note>
+        <note category="location">src/app/views/packages/package-version-view.html:808,809</note>
       </notes>
       <segment>
         <source>Symbol package held: <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span class=&quot;with-stop&quot;&gt;" dispEnd="&lt;/span&gt;"><pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="2" equiv="INTERPOLATION" disp="{{ file }}"/></pc>.</pc> Quader does not serve symbols to a debugger yet; download the file from the tab Files.</source>
@@ -67056,7 +67110,7 @@
     </unit>
     <unit id="pkg.meta.deb-source">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:789,790</note>
+        <note category="location">src/app/views/packages/package-version-view.html:813,814</note>
       </notes>
       <segment>
         <source>Source package</source>
@@ -67065,7 +67119,7 @@
     </unit>
     <unit id="pkg.meta.authors">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:803,804</note>
+        <note category="location">src/app/views/packages/package-version-view.html:827,828</note>
       </notes>
       <segment>
         <source>Authors</source>
@@ -67074,7 +67128,7 @@
     </unit>
     <unit id="pkg.repo.heading">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.html:812,813</note>
+        <note category="location">src/app/views/packages/package-version-view.html:836,837</note>
       </notes>
       <segment>
         <source>Repositories</source>
@@ -67353,7 +67407,7 @@
     </unit>
     <unit id="pkg.file.path">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:961</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:970</note>
       </notes>
       <segment>
         <source>File</source>
@@ -67362,7 +67416,7 @@
     </unit>
     <unit id="pkg.file.signature">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:963</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:972</note>
       </notes>
       <segment>
         <source>Signature</source>
@@ -67371,7 +67425,7 @@
     </unit>
     <unit id="pkg.file.download-link">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:993</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:1002</note>
       </notes>
       <segment>
         <source>Download</source>
@@ -67380,7 +67434,7 @@
     </unit>
     <unit id="pkg.repo.repository">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:995</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:1004</note>
       </notes>
       <segment>
         <source>Repository</source>
@@ -67389,7 +67443,7 @@
     </unit>
     <unit id="pkg.repo.class">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:996</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:1005</note>
       </notes>
       <segment>
         <source>Class</source>
@@ -67398,7 +67452,7 @@
     </unit>
     <unit id="pkg.image.platform">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:1000</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:1009</note>
       </notes>
       <segment>
         <source>Platform</source>
@@ -67407,7 +67461,7 @@
     </unit>
     <unit id="pkg.image.platforms-caption">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:1005</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:1014</note>
       </notes>
       <segment>
         <source>Platforms of this image index</source>
@@ -67416,7 +67470,7 @@
     </unit>
     <unit id="pkg.file.part">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:1007</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:1016</note>
       </notes>
       <segment>
         <source>Part</source>
@@ -67425,7 +67479,7 @@
     </unit>
     <unit id="pkg.file.image-caption">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:1014</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:1023</note>
       </notes>
       <segment>
         <source>Manifest, config and layers of the image</source>
@@ -67434,7 +67488,7 @@
     </unit>
     <unit id="pkg.file.platform-caption">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:1015</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:1024</note>
       </notes>
       <segment>
         <source>Manifest, config and layers of <ph id="0" equiv="platform" disp="platform"/></source>
@@ -67443,7 +67497,7 @@
     </unit>
     <unit id="pkg.image.not-fetched-title">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:1017</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:1026</note>
       </notes>
       <segment>
         <source>No client has fetched this platform through Quader yet, so its manifest and its size are not held.</source>
@@ -67452,7 +67506,7 @@
     </unit>
     <unit id="pkg.image.copy-digest">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:1019</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:1028</note>
       </notes>
       <segment>
         <source>Copy digest</source>
@@ -67461,7 +67515,7 @@
     </unit>
     <unit id="pkg.file.caption">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:1020</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:1029</note>
       </notes>
       <segment>
         <source>Files of this version</source>
@@ -67470,7 +67524,7 @@
     </unit>
     <unit id="pkg.repo.caption">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:1023</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:1032</note>
       </notes>
       <segment>
         <source>Repositories that hold this version</source>
@@ -67479,7 +67533,7 @@
     </unit>
     <unit id="pkg.file.copy-sha">
       <notes>
-        <note category="location">src/app/views/packages/package-version-view.ts:1024</note>
+        <note category="location">src/app/views/packages/package-version-view.ts:1033</note>
       </notes>
       <segment>
         <source>Copy SHA-256</source>
@@ -70572,16 +70626,26 @@
     </unit>
     <unit id="bastion.title.packages">
       <notes>
-        <note category="location">src/bastion/app.routes.ts:31</note>
+        <note category="location">src/bastion/app.routes.ts:73</note>
       </notes>
       <segment>
         <source>Packages in <ph id="0" equiv="project" disp="project.displayName"/></source>
         <target>Pakete in <ph id="0" equiv="project" disp="project.displayName"/></target>
       </segment>
     </unit>
+    <unit id="bastion.title.repositories">
+      <notes>
+        <note category="location">src/bastion/app.routes.ts:77</note>
+      </notes>
+      <segment>
+        <source>Repositories in <ph id="0" equiv="project" disp="project.displayName"/></source>
+        <target>Repositories in <ph id="0" equiv="project" disp="project.displayName"/></target>
+      </segment>
+    </unit>
     <unit id="bastion.title.versions">
       <notes>
-        <note category="location">src/bastion/app.routes.ts:37</note>
+        <note category="location">src/bastion/app.routes.ts:83</note>
+        <note category="location">src/bastion/pages/package-pages.ts:73</note>
       </notes>
       <segment>
         <source>Versions of <ph id="0" equiv="name" disp="route.paramMap.get(&apos;name&apos;) ?? &apos;&apos;"/></source>
@@ -70590,8 +70654,10 @@
     </unit>
     <unit id="bastion.start.title">
       <notes>
-        <note category="location">src/bastion/app.routes.ts:49</note>
-        <note category="location">src/bastion/pages/start-page.ts:19</note>
+        <note category="location">src/bastion/app.routes.ts:97</note>
+        <note category="location">src/bastion/data/trail.ts:40</note>
+        <note category="location">src/bastion/pages/start-page.ts:26</note>
+        <note category="location">src/bastion/pages/start-page.ts:77</note>
       </notes>
       <segment>
         <source>Projects</source>
@@ -70600,7 +70666,7 @@
     </unit>
     <unit id="bastion.stale">
       <notes>
-        <note category="location">src/bastion/app.ts:99,100</note>
+        <note category="location">src/bastion/app.ts:101,102</note>
       </notes>
       <segment>
         <source>This information is from <ph id="0" equiv="INTERPOLATION" disp="{{ confirmedAt() | time }}"/>. Newer information is not available right now.</source>
@@ -70609,7 +70675,7 @@
     </unit>
     <unit id="bastion.not-ready.heading">
       <notes>
-        <note category="location">src/bastion/app.ts:106,107</note>
+        <note category="location">src/bastion/app.ts:124,125</note>
       </notes>
       <segment>
         <source>Not available right now</source>
@@ -70618,7 +70684,7 @@
     </unit>
     <unit id="bastion.not-ready.text">
       <notes>
-        <note category="location">src/bastion/app.ts:107,108</note>
+        <note category="location">src/bastion/app.ts:125,126</note>
       </notes>
       <segment>
         <source>This page is not available right now. Try again in a few minutes.</source>
@@ -70627,7 +70693,7 @@
     </unit>
     <unit id="bastion.not-ready.again">
       <notes>
-        <note category="location">src/bastion/app.ts:108,110</note>
+        <note category="location">src/bastion/app.ts:126,128</note>
       </notes>
       <segment>
         <source>The page tries again by itself.</source>
@@ -70636,7 +70702,7 @@
     </unit>
     <unit id="bastion.loading">
       <notes>
-        <note category="location">src/bastion/app.ts:113,114</note>
+        <note category="location">src/bastion/app.ts:131,132</note>
       </notes>
       <segment>
         <source>Loading.</source>
@@ -70645,7 +70711,7 @@
     </unit>
     <unit id="bastion.as-of">
       <notes>
-        <note category="location">src/bastion/app.ts:133</note>
+        <note category="location">src/bastion/app.ts:151</note>
       </notes>
       <segment>
         <source>As of</source>
@@ -70654,7 +70720,7 @@
     </unit>
     <unit id="bastion.files.sentence">
       <notes>
-        <note category="location">src/bastion/pages/files-page.ts:65</note>
+        <note category="location">src/bastion/pages/files-page.ts:81</note>
       </notes>
       <segment>
         <source>The files published in this repository.</source>
@@ -70673,7 +70739,7 @@
     </unit>
     <unit id="bastion.list.search">
       <notes>
-        <note category="location">src/bastion/pages/package-list-page.ts:117</note>
+        <note category="location">src/bastion/pages/package-list-page.ts:116</note>
       </notes>
       <segment>
         <source>Search packages</source>
@@ -70682,7 +70748,7 @@
     </unit>
     <unit id="bastion.list.empty">
       <notes>
-        <note category="location">src/bastion/pages/package-list-page.ts:118</note>
+        <note category="location">src/bastion/pages/package-list-page.ts:117</note>
       </notes>
       <segment>
         <source>No package is published in this project.</source>
@@ -70691,16 +70757,34 @@
     </unit>
     <unit id="bastion.list.empty-search">
       <notes>
-        <note category="location">src/bastion/pages/package-list-page.ts:119</note>
+        <note category="location">src/bastion/pages/package-list-page.ts:118</note>
       </notes>
       <segment>
         <source>No package matches the search.</source>
         <target>Kein Paket passt zur Suche.</target>
       </segment>
     </unit>
+    <unit id="bastion.project.tabs">
+      <notes>
+        <note category="location">src/bastion/pages/project-head.ts:27,29</note>
+      </notes>
+      <segment>
+        <source>Views of the project</source>
+        <target>Ansichten des Projekts</target>
+      </segment>
+    </unit>
+    <unit id="bastion.repositories.empty">
+      <notes>
+        <note category="location">src/bastion/pages/project-repositories-page.ts:99</note>
+      </notes>
+      <segment>
+        <source>This project shows no repository here.</source>
+        <target>Dieses Projekt zeigt hier kein Repository.</target>
+      </segment>
+    </unit>
     <unit id="bastion.setup.unknown">
       <notes>
-        <note category="location">src/bastion/pages/setup-page.ts:59,61</note>
+        <note category="location">src/bastion/pages/setup-page.ts:60,62</note>
       </notes>
       <segment>
         <source>This address offers no repository of that name.</source>
@@ -70709,29 +70793,29 @@
     </unit>
     <unit id="bastion.setup.no-credentials">
       <notes>
-        <note category="location">src/bastion/pages/setup-page.ts:71,73</note>
+        <note category="location">src/bastion/pages/setup-page.ts:72,74</note>
       </notes>
       <segment>
         <source>Everything here is public: the snippets need no credentials.</source>
         <target>Alles hier ist öffentlich: Die Snippets brauchen keine Zugangsdaten.</target>
       </segment>
     </unit>
-    <unit id="bastion.start.empty">
-      <notes>
-        <note category="location">src/bastion/pages/start-page.ts:24,26</note>
-      </notes>
-      <segment>
-        <source>No package is published here yet.</source>
-        <target>Hier ist noch kein Paket veröffentlicht.</target>
-      </segment>
-    </unit>
     <unit id="bastion.start.loading">
       <notes>
-        <note category="location">src/bastion/pages/start-page.ts:39,42</note>
+        <note category="location">src/bastion/pages/start-page.ts:32,33</note>
       </notes>
       <segment>
         <source>Loading the projects.</source>
         <target>Die Projekte werden geladen.</target>
+      </segment>
+    </unit>
+    <unit id="bastion.start.nothing">
+      <notes>
+        <note category="location">src/bastion/pages/start-page.ts:78</note>
+      </notes>
+      <segment>
+        <source>Nothing is shown here yet.</source>
+        <target>Hier wird noch nichts gezeigt.</target>
       </segment>
     </unit>
   </file>

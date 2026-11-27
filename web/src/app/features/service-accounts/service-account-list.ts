@@ -15,7 +15,7 @@ import { ErrorNotice } from '../../shared/error-notice';
 import { DataTable, TableColumn, TableSort } from '../../shared/ui/data-table';
 import { ListHead } from '../../shared/ui/list-head';
 import { NoValue } from '../../shared/ui/no-value';
-import { ProjectLink } from '../../shared/ui/project-mark';
+import { ProjectLink } from '../../shared/ui/project-link';
 import { PageHeader } from '../../shared/ui/page-header';
 import { AccountRights } from './account-rights';
 import { Busy } from '../../shared/ui/busy';

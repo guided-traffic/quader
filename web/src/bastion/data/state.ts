@@ -10,6 +10,11 @@ export interface BastionState {
   readonly staleAfterSeconds: number;
   readonly stale: boolean;
   readonly docs: boolean;
+  /**
+   * The switch **Hide repositories** (bastion.md R-BAS-131): the pages name no repository and a project shows its packages alone
+   * (api-and-ui.md R-UI-274). Absent from an answer reads as off, the switch's default.
+   */
+  readonly hideRepositories?: boolean;
   /** The installation's default form of a time (bastion.md R-BAS-128), which every time of the application is written in. */
   readonly timeFormat: string;
 }
@@ -44,6 +49,16 @@ export class BastionStateStore {
   readonly off = computed(() => this._failure()?.status === 404);
   /** The first read has answered or failed. */
   readonly settled = computed(() => this._state() !== null || this._failure() !== null);
+  /**
+   * The pages name the repositories (R-UI-273): true unless the state says **Hide repositories** is on (R-UI-274). Until the first
+   * answer it is true; the routes that depend on it wait for that answer (`ready`).
+   */
+  readonly repositoriesShown = computed(() => !(this._state()?.hideRepositories ?? false));
+
+  /** Resolves once the first read has answered or failed: what a route asks before it decides by the switch. */
+  async ready(): Promise<void> {
+    if (!this.settled()) await this.refresh();
+  }
 
   /** Reads the state and the legal pages; concurrent calls share the read. A failure keeps the last state, as the banner's does. */
   refresh(): Promise<void> {

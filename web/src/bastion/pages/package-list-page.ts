@@ -1,35 +1,35 @@
-import { Component, computed, effect, inject, input, resource, untracked } from '@angular/core';
+import { Component, computed, effect, inject, input, resource, untracked, viewChild } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { PackageReads } from '../../app/api/package-reads';
 import { PackageSort, PackageSummary } from '../../app/api/packages-api';
 import { FormatCatalog } from '../../app/core/format-names';
 import { LIVE_IDLE_MS, live } from '../../app/core/live-refresh';
-import { isUpstreamProject, projectDescription } from '../../app/core/upstream-project';
 import { ErrorNotice } from '../../app/shared/error-notice';
 import { PagedResource, failureOf, valueOf } from '../../app/shared/paged-resource';
 import { TableSort } from '../../app/shared/ui/data-table';
 import { ListHead } from '../../app/shared/ui/list-head';
-import { PageHeader } from '../../app/shared/ui/page-header';
 import { PackageTable } from '../../app/views/packages/package-table';
 import { BastionData } from '../data/http';
-import { BastionProjects } from '../data/projects';
 import { DocumentationHits } from './documentation-hits';
+import { BastionProjectHead } from './project-head';
 
 const KNOWN_SORTS: readonly string[] = ['name', '-name', 'createdAt', '-createdAt', 'updatedAt', '-updatedAt'];
 
 /**
- * A project's packages at the Bastion (R-UI-229, W-35's B.8): the search by name, description and keyword over the catalogue, the
- * sorts of the column headers, "Load more" in pages of 50; the rows are the main installation's view (views/packages/package-table.ts).
+ * A project's packages at the Bastion (R-UI-229, W-35's B.8), the project's second view beside its repositories (R-UI-273) and its only
+ * one while the repositories are hidden (R-UI-274): the search by name, description and keyword over the catalogue's index of the project
+ * (bastion.md R-BAS-130), the sorts of the column headers, "Load more" in pages of 50; the rows are the main installation's view
+ * (views/packages/package-table.ts), each with its latest version's **Pull ▾** or **Install ▾** (R-UI-269).
  * The search and the sort live in the address, so a link to a result is a link to the same list. Above the list, the project's public
  * repositories whose folders and files the catalogue holds lead to their files, which no search of packages finds (Q-BAS-400). While the
  * Bastion shows documentation, the same text finds the entries of the project's documentation below the packages (R-UI-232).
  */
 @Component({
   selector: 'quader-bastion-package-list',
-  imports: [DocumentationHits, ErrorNotice, ListHead, PackageTable, PageHeader, RouterLink],
+  imports: [BastionProjectHead, DocumentationHits, ErrorNotice, ListHead, PackageTable, RouterLink],
   template: `
-    <!-- The project by its display name and description (R-BAS-128, Q-UI-1470): its packages are the page. -->
-    <quader-page-header [heading]="named()?.displayName ?? project()" [name]="true" [description]="description()" [descriptionAsWritten]="!builtIn()" />
+    <!-- The project by its display name and description (R-BAS-128, Q-UI-1470), its view Packages the second tab (R-UI-273). -->
+    <quader-bastion-project-head [project]="project()" current="packages" />
     @if (filesFailure(); as f) {
       <quader-error-notice [error]="f" (retry)="filesFailure.retry()" />
     } @else if (fileRepositories().length > 0) {
@@ -99,7 +99,6 @@ export class PackageListPage {
   private readonly router = inject(Router);
   private readonly catalog = inject(FormatCatalog);
   private readonly data = inject(BastionData);
-  private readonly projects = inject(BastionProjects);
 
   /** The project of the address, then the query's search and sort, bound by component input binding. */
   readonly project = input.required<string>();
@@ -118,12 +117,7 @@ export class PackageListPage {
   protected readonly emptyText = $localize`:@@bastion.list.empty:No package is published in this project.`;
   protected readonly emptyFilteredText = $localize`:@@bastion.list.empty-search:No package matches the search.`;
   protected readonly list = new PagedResource<PackageSummary>();
-  /** The project with its name and description; until it is read the heading is the key of the address. */
-  private readonly project$ = resource({ params: () => this.project(), loader: ({ params }) => this.projects.named(params) });
-  protected readonly named = computed(() => valueOf(this.project$) ?? null);
-  /** The project's description; the built-in project's is the UI's sentence (R-UI-272, Q-UI-895). */
-  protected readonly description = computed(() => projectDescription(this.project(), this.named()?.description));
-  protected readonly builtIn = computed(() => isUpstreamProject(this.project()));
+  private readonly head = viewChild(BastionProjectHead);
   private readonly formats = resource({ loader: () => this.catalog.formats() });
   /** The catalogue's repositories with files (`/ui/data/v1/files`), those of this project by their keys. */
   private readonly files = resource({ loader: () => this.data.get<{ items: readonly string[] }>('files') });
@@ -156,7 +150,7 @@ export class PackageListPage {
     live({
       reload: async () => {
         this.files.reload();
-        this.project$.reload();
+        this.head()?.reload();
         await this.list.refresh();
       },
       every: () => LIVE_IDLE_MS,

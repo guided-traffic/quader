@@ -7512,7 +7512,7 @@ The priority is the one of R-BAS-116 to R-BAS-129, whose pages these feed.
 `publicSet`, `scopedIndexes`, `images`, `holders` and `setups` of [builder.go](../../internal/bastionmain/catalogue/builder.go).
 *Built on 2026-11-27 (W-40's P2):* the Bastion's reader of the scoped indexes, which its search reads (R-BAS-113, Q-BAS-507), and its
 show rule (R-BAS-112); the images list and the set-up without a version are a package's documents, which the reader answered already;
-the data path and the crawler (R-BAS-118, R-BAS-132). *Not built:* the pages (W-40's P5).
+the data path and the crawler (R-BAS-118, R-BAS-132). *Built on 2026-11-27 (W-40's P5):* the pages (api-and-ui.md R-UI-273).
 
 Acceptance criteria:
 
@@ -7577,7 +7577,7 @@ the statements of [bastion_registration.sql](../../internal/meta/postgres/querie
 table's caption, the documentation's line "Repository: …", the keys of a delivery note; api-and-ui.md R-UI-269,
 [repositories-shown.ts](../../web/src/app/core/repositories-shown.ts)). *Built on 2026-11-27 (W-41's C1, W-40's P6 absorbed):* the card's
 switch, `part="details"` of [bastion-switches.ts](../../web/src/app/features/bastions/bastion-switches.ts) projected first into the
-limits' **Details**. *Not built:* the Bastion's binding of the token and the pages' flat view (W-40's P5).
+limits' **Details**. *Built on 2026-11-27 (W-40's P5):* the Bastion's binding of the token and the pages' flat view (api-and-ui.md R-UI-274).
 
 Acceptance criteria:
 
@@ -7601,8 +7601,8 @@ Acceptance criteria:
 Priority: **P1** · Covers: quader-only
 
 W-40's P2: what a reader that runs no script reads of the project view (R-BAS-121's head and text, R-BAS-122's sitemap), from the
-catalogue of R-BAS-130 alone. The application's own pages are W-40's P5; until it lands a browser that runs the application shows its
-"Page not found" at the two new addresses, while a crawler reads the text below.
+catalogue of R-BAS-130 alone. The application's own pages are W-40's P5 ([api-and-ui.md](api-and-ui.md) R-UI-273, R-UI-274), at the
+same addresses, with the same titles and the same way from the start.
 
 - **The addresses** (the application's routes of W-40's plan, 4.1). `projects/<project>` is the project's own address: its text and
   canonical address are its repositories' page, or its packages' while the repositories are hidden (W-40's D1). `projects/<project>/repositories`
@@ -15926,7 +15926,7 @@ P2): the switch at once, before the builder's next run; no repository's index an
 root of files, a step **Repositories**, a repository's description or its qualified name, and a sitemap without them (R-BAS-131,
 R-BAS-132). The data a browser reads keep each version's holders with their keys and classes, and every command a key: recorded as
 [H-2439](../security/bastion.md#h-2439--with-hide-repositories-the-pages-name-no-repository-but-the-data-a-browser-reads-keep-each-versions-holders-and-every-command-names-a-key).
-The pages' part follows with W-40's P5. **Applied in the spec:** R-BAS-112, R-BAS-118, R-BAS-131, R-BAS-132; code: `build` and
+The pages' part: W-40's P5 (api-and-ui.md R-UI-274, Q-UI-1651). **Applied in the spec:** R-BAS-112, R-BAS-118, R-BAS-131, R-BAS-132; code: `build` and
 `scopedIndexes` of [builder.go](../../internal/bastionmain/catalogue/builder.go), `shows` of
 [reader.go](../../internal/bastion/catalogue/reader.go), `repositories` and `repository` of [data.go](../../internal/bastion/gui/data.go),
 [seo.go](../../internal/bastion/gui/seo.go), [crawl.go](../../internal/bastion/gui/crawl.go).
@@ -15998,7 +15998,7 @@ project view a repository's page leads there too, and Hide repositories leaves t
 | (b) Only while the repositories are hidden | One way at a time | No double | The flat list changes with the mode for no reader's gain |
 
 **Choice:** (a). **Applied in the spec:** R-BAS-121, R-BAS-132; code: `startPage` and `listPage` of
-[seo.go](../../internal/bastion/gui/seo.go). The application's list follows with W-40's P5.
+[seo.go](../../internal/bastion/gui/seo.go). The application's list keeps it too (W-40's P5, api-and-ui.md R-UI-273).
 
 ### Q-BAS-509 · A repository's page in the text is its files' root where the catalogue holds one, and its index's packages otherwise
 

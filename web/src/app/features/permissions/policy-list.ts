@@ -9,7 +9,7 @@ import { PagedResource } from '../../shared/paged-resource';
 import { DataTable, TableColumn, TableSort } from '../../shared/ui/data-table';
 import { FilterPanel } from '../../shared/ui/filter-panel';
 import { ListChip, ListHead } from '../../shared/ui/list-head';
-import { ProjectLink } from '../../shared/ui/project-mark';
+import { ProjectLink } from '../../shared/ui/project-link';
 import { expandActions } from './policy-model';
 import { PrincipalField, choiceFromRef } from '../../shared/ui/principal-field';
 import { PageHeader } from '../../shared/ui/page-header';

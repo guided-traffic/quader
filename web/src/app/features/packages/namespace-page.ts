@@ -12,7 +12,7 @@ import { DataTable, TableColumn } from '../../shared/ui/data-table';
 import { DeprecationMark } from '../../shared/ui/deprecation-mark';
 import { Loading } from '../../shared/ui/loading';
 import { PageHeader } from '../../shared/ui/page-header';
-import { ProjectLink } from '../../shared/ui/project-mark';
+import { ProjectLink } from '../../shared/ui/project-link';
 import { TimeAgo } from '../../shared/ui/time-ago';
 import { SignatureBadge } from '../../views/signatures/signature-badge';
 import { NamespaceRules, namespaceCommands, namespaceHeading, namespacesOf } from '../../views/packages/namespaces';

@@ -94,4 +94,21 @@ describe('The views of a Bastion that hides its repositories', () => {
     const source = docs.root.querySelector('[data-testid="docs-source"]')!;
     expect(text(source)).toBe('Taken from the upstream');
   });
+
+  it("R-UI-274 a refused artifact's banner says the repository in place of its key, once for an artifact two repositories refuse", async () => {
+    const refused = { state: 'none', stale: false, refused: true, refusedReason: 'missing' } as const;
+    const { root } = await versionPage({ tab: 'files' }, (fake) => {
+      fake.versionList = fake.versionList.map((v) => {
+        if (v.packageId !== 'pkg_01JBQ6V7S3K9' || v.version !== '1.4.0') return v;
+        const file = { ...v.files[0]!, signatures: refused };
+        // The same tarball refused through a second repository: its content route names that one.
+        const twin = { ...file, contentUrl: file.contentUrl.replace('/repositories/npm-local/', '/repositories/npm-all/') };
+        return { ...v, signatures: refused, files: [file, twin] };
+      });
+    });
+    const banners = [...root.querySelectorAll('[data-testid="signature-banner"] p')].map((p) => text(p));
+    expect(banners).toHaveLength(1);
+    expect(banners[0]).toMatch(/^Downloads are refused: the repository serves only artifacts with a verified signature, and .+ has no signature/);
+    expect(banners[0]).not.toContain('web/npm-');
+  });
 });

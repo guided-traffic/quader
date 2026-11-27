@@ -10785,10 +10785,14 @@ main installation", for anonymous visitors from the internet who want to know wh
 - **The project** ([Q-UI-1433](#q-ui-1433--the-bastions-application-is-a-second-project-of-the-workspace-with-the-main-installations-addresses)).
   `bastion-gui` of `web/angular.json`, its sources in `web/src/bastion`, its root element `<quader-root>` (so the shell's global styles
   hold), both locales, built and embedded by R-BAS-119.
-- **Its addresses** are the main installation's: the start (`/`), a project's packages (`/projects/<project>/packages`), a package, a
+- **Its addresses** are the main installation's: the start (`/`), a project (`/projects/<project>`, which leads to its repositories, or
+  to its packages while they are hidden, R-UI-273, R-UI-274), a project's repositories (`/projects/<project>/repositories`), a repository
+  (`/projects/<project>/repositories/<key>`, a generic one's files below it), a project's packages (`/projects/<project>/packages`), a package, a
   version (`…/packages/<format>/<name>@<version>`), the versions' table of a format whose packages lead with their documentation
   (`…/-/versions`), a public repository's Set up client (`/projects/<project>/repositories/<key>/setup`, R-BAS-129), the imprint and the privacy notice (`/legal/imprint`, `/legal/privacy`, each only while it has a text), and not found;
   nothing else. A screen whose script the Bastion no longer holds after a rollout is loaded from the server (Q-UI-1370).
+- **The way from the start** above the page, the main installation's breadcrumb, each page binding its steps (R-UI-273,
+  [Q-UI-1650](#q-ui-1650--a-bastions-pages-show-the-way-from-the-start-each-page-binding-its-steps)).
 - **The shell.** The Bastion's mark, the tower, and its name "Quader Bastion" with "Bastion" in Regular (a link to the start;
   [Q-UI-1617](#q-ui-1617--every-mark-a-visitor-of-a-bastion-sees-is-the-bastions-tower)), the Bastion's favicon, every title ending in
   "– Quader Bastion" (the token `TITLE_SUFFIX` of `core/title-strategy.ts`, which the Bastion binds), the first paint's "Loading Quader
@@ -10865,14 +10869,17 @@ Priority: **P1** · Covers: quader-only
 
 - **The start** lists the projects whose packages the catalogue shows (`/ui/data/v1/projects`, a project of the public set without a package
   left out, [Q-BAS-399](bastion.md#q-bas-399--the-start-page-offers-a-project-only-while-it-shows-a-package)), each by its display name
-  with its description under it, its link by its key ([Q-UI-1470](#q-ui-1470--the-bastion-names-a-project-by-its-display-name-its-address-by-its-key));
+  with its description beside it, its link by its key ([Q-UI-1470](#q-ui-1470--the-bastion-names-a-project-by-its-display-name-its-address-by-its-key)),
+  in the main installation's table of projects since W-40 (R-UI-273, Q-UI-1647);
   with one, it leads into it ([Q-UI-1438](#q-ui-1438--the-bastions-start-lists-its-projects-and-one-project-leads-into-it)); with none,
-  "No package is published here yet."
-- **A project's packages** (W-35's B.8): headed by the project's display name and description (Q-UI-1470), the search by name,
+  "Nothing is shown here yet."
+- **A project's packages** (W-35's B.8), the project's second view beside its repositories (R-UI-273): headed by the project's display name and description (Q-UI-1470), the search by name,
   description and keyword in the list's head, the table of R-UI-223 (`views/packages/package-table.ts`) with its sorts and "Load more",
   the search and the sort in the address.
 - **Set up client** of a public repository ([bastion.md](bastion.md) R-BAS-129, Q-UI-1468): its client's Configure, Install and Verify from
-  the catalogue's set-up document, on the rail of `views/setup/setup-steps.ts` ([Q-UI-1469](#q-ui-1469--the-steps-of-set-up-client-are-a-view-both-applications-compose)).
+  the catalogue's set-up document, on the rail of `views/setup/setup-steps.ts` ([Q-UI-1469](#q-ui-1469--the-steps-of-set-up-client-are-a-view-both-applications-compose));
+  the repository's format and class from its own answer (`repositories/<project>/<key>`, R-BAS-132), its picture with the Bastion's tower
+  (Q-UI-1652).
 - **A package and a version** are `views/packages/package-detail-view.ts` and `package-version-view.ts` for a reader who is never
   signed in: the tab Vulnerabilities lists the version report's open findings (R-UI-224, W-35's B.4a), signatures and their trust state
   (W-35's B.9), the format's own parts (an image's platforms and layers, an Ansible collection's documentation while `docs` is on, a
@@ -10903,7 +10910,9 @@ Priority: **P1** · Covers: quader-only
   version's file's) and the panel of its address and its clients' commands; a folder's entries with each file's Download; a file's facts
   with the malware verdict and the signature as the catalogue keeps them, and its checksums. No upload, no new folder, no delete, no
   download statistics, no description by the management API, and no section Signatures: the catalogue holds no file's report
-  ([Q-UI-1457](#q-ui-1457--a-folders-and-a-files-acts-and-the-management-apis-reads-are-the-pages-projected-content)). A project's
+  ([Q-UI-1457](#q-ui-1457--a-folders-and-a-files-acts-and-the-management-apis-reads-are-the-pages-projected-content)). Its head is a
+  repository page's (R-UI-273): the key, the description or "The files published in this repository.", the format and class badges and
+  **Set up client**. A project's
   packages lead to its repositories with files above the list (`/ui/data/v1/files`,
   [Q-BAS-400](bastion.md#q-bas-400--the-repositories-with-files-are-an-address-of-their-own-and-they-count-for-the-start)), since no
   search of packages finds a file.
@@ -10958,13 +10967,17 @@ address, a module's page, the search inside the version with a hit, a project's 
 package on their README (the seed's `yaml-lines` and `Acme.Platform.Json`, each with a README) and a Debian version's changelog and
 copyright. *Added by W35-P9e ([bastion.md](bastion.md) R-BAS-128, R-BAS-129):* a package's versions with the grade column (`config-merge`,
 one version with open findings and one clean), Set up client of an npm, an OCI and a generic repository, and a page whose times stand in
-the installation's form ISO 8601 (the walk answers the state as a Bastion does after the change).
+the installation's form ISO 8601 (the walk answers the state as a Bastion does after the change). *Added by W-40's P5 (R-UI-273,
+R-UI-274):* the start without a project, a project's repositories and a filter that leaves none, a repository of images and one of npm
+packages (as they open, an item opened, a version's panel), the ClamAV definitions' databases, and with the state answered as
+`hideRepositories: true` a project's packages, Set up client and an image with a tag's panel; the states gain a project's repositories and
+a repository's images.
 
 Acceptance criteria:
 
 - States ([bastion.states.spec.ts](../../web/src/bastion/bastion.states.spec.ts), 3.4 s, measured 2026-11-26): the render set's
   `layoutFindings` and `innerScroll` find nothing in any of the states at either width.
-- Renders: `make ui-renders GREP=bastion-` renders the twenty-nine screens `bastion-*` against the profile's Bastion, and the render set's
+- Renders: `make ui-renders GREP=bastion-` renders the forty-seven screens `bastion-*` (since W-40's P5) against the profile's Bastion, and the render set's
   layout checks find nothing in any picture; `make ui-renders-parts-check` holds every Bastion screen exactly once in the parts of the job
   ui-layout.
 
@@ -10974,7 +10987,8 @@ Priority: **P1** · Covers: quader-only
 W-35's B.11 and P10 ([bastion.md](bastion.md) R-BAS-121 to R-BAS-123): what a crawler that renders the Bastion's application reads.
 
 - **Titles name the page** ([Q-UI-1460](#q-ui-1460--the-bastions-titles-name-the-page-in-the-servers-words)). A project's list is "Packages
-  in <project>" (its display name since W35-P9e, Q-UI-1470), a package's page its name, a version's its name and version, the versions' "Versions of <name>", each with "– Quader Bastion"
+  in <project>" (its display name since W35-P9e, Q-UI-1470), its repositories "Repositories in <project>" and a repository's page its key
+  (W-40's P5, the server's words of R-BAS-132), a package's page its name, a version's its name and version, the versions' "Versions of <name>", each with "– Quader Bastion"
   ([Q-UI-1617](#q-ui-1617--every-mark-a-visitor-of-a-bastion-sees-is-the-bastions-tower)); the start, the legal pages and not found keep
   theirs. They are the words of the head the Bastion writes (R-BAS-121), so the title a
   rendering crawler reads is the one a crawler that runs no script reads.
@@ -11899,6 +11913,110 @@ under rule 11 in German, `bastion-start`, `repositories-upstream-plain` and a `s
   description and names `npmjs` "Öffentliche npm-Registry"; a team's project keeps its English text.
 - The Bastion's start in German says the Upstream's description in German, unmarked, and a team's description marked `translate="no"`;
   the Bastion's Set up client of a NuGet repository offers ".NET CLI (dotnet)", "NuGet CLI (nuget.exe)", "Visual Studio".
+
+### R-UI-273 · A Bastion's project view
+Priority: **P1** · Covers: quader-only
+
+The owner on 2026-11-27 (W-40): "der Bastion braucht eine Projektansicht", the main installation's way into a project, its repositories
+and what each holds, with every row's **Pull ▾** or **Install ▾** (R-UI-269). The pages are the Bastion's application's (R-UI-227) over
+the catalogue of the project view ([bastion.md](bastion.md) R-BAS-130, its data R-BAS-118, its crawler text R-BAS-132).
+
+- **The start** ([Q-UI-1647](#q-ui-1647--a-bastions-start-is-the-main-installations-table-of-projects)) is the main installation's table
+  of projects in the columns a visitor can use: **Project** (the project's mark, its display name, its key under it), **Description**
+  (R-UI-272's words for the built-in project) and, while the repositories are shown, **Repositories**, the count of the project's public
+  repositories; the project Upstream first (Q-UI-837). No visibility, role or members. A project's link is its own address; with one
+  project the start is that project (Q-UI-1438); with none it says "Nothing is shown here yet." ("Hier wird noch nichts gezeigt."), what a
+  Bastion shows until its projects are allowed (W-41).
+- **A project** ([Q-UI-1646](#q-ui-1646--a-bastions-project-opens-on-its-repositories-its-packages-the-second-tab)). `/projects/<project>`
+  leads to its repositories; under the project's head (display name, description) the tabs **Repositories** | **Packages**, two links with
+  `aria-current`, the pattern of a repository's tabs (the Bastion has no side bar). The view Packages is the flat list of R-UI-229, its
+  search over the project's own index (R-BAS-130, Q-BAS-500), with its **Files** line (Q-BAS-508).
+- **A project's repositories** (`/projects/<project>/repositories`, titled "Repositories in <display name>",
+  [Q-UI-1648](#q-ui-1648--a-bastions-list-of-repositories-composes-the-main-installations-cells)): the main installation's list in the
+  columns a visitor can use, the same cells, classes and words: **Repository** (its key, its description under it in the product's words
+  for a repository it declares), **Format**, **Class** (System for a system-only format's), the row's **Set up client** (none for a system
+  repository that answers no client). **Filter repositories** filters by key and description in the browser: the public set is whole.
+  Every public repository is listed, an empty one too.
+- **A repository** (`/projects/<project>/repositories/<key>`, titled by its key,
+  [Q-UI-1649](#q-ui-1649--a-bastions-repository-page-shows-its-formats-list-under-the-main-installations-head-for-a-visitor)) by its
+  format: a generic repository's files (R-UI-229), the ClamAV definitions' databases (R-UI-194), every other format's images or packages
+  (`views/repositories/`, Q-UI-1630): the filter and the sort in the address, a row that opens its newest versions (an image's by content,
+  the catalogue's `packages/<id>/images`, Q-BAS-501), a **Pull ▾** or **Install ▾** per item and per version through the page's
+  repository, no column Downloads (Q-UI-1449). Its head is the main installation's for a visitor: the key, the description, the format and
+  class badges, **Set up client**; no tabs, no Details, no upstream, no remote's note about what clients fetched, the sentence of a format
+  that is not scanned (Q-UI-1244). A repository the Bastion does not show is "Page not found".
+- **The pull by digest** of an image's row names the image, not the set-up's placeholder: the reads ask the package's set-up without a
+  version (`setup/<p>/<r>/<client>/<id>`, Q-BAS-503).
+- **Set up client** reads the repository's own answer (`repositories/<project>/<key>`, R-BAS-132), and its picture of the flow ends at the
+  Bastion's tower, the mark a visitor sees there ([Q-UI-1652](#q-ui-1652--set-up-clients-picture-ends-at-the-applications-own-mark),
+  Q-UI-1617).
+- **The way from the start** ([Q-UI-1650](#q-ui-1650--a-bastions-pages-show-the-way-from-the-start-each-page-binding-its-steps)), the main
+  installation's breadcrumb above the page, the crawler text's steps: Projects › <project> on a project's views; › Repositories › <key>
+  on a repository's page, its files and (› Set up client) its Set up client; › Packages › <name> (› <version> or › Versions of <name>) on a
+  package's pages. Below a generic repository's root the way ends at the key, a link: the files' path is the page's own (Q-UI-510).
+
+*Built on 2026-11-27 (W-40's P5):* [app.routes.ts](../../web/src/bastion/app.routes.ts) (`projectDefault`, `repositoriesShown`,
+`repositoryShown`, the title "Repositories in …"), [app.ts](../../web/src/bastion/app.ts) (the trail),
+[repositories.ts](../../web/src/bastion/data/repositories.ts), [trail.ts](../../web/src/bastion/data/trail.ts),
+`versions` and `get` of [reads.ts](../../web/src/bastion/data/reads.ts),
+[start-page.ts](../../web/src/bastion/pages/start-page.ts), [project-head.ts](../../web/src/bastion/pages/project-head.ts),
+[project-repositories-page.ts](../../web/src/bastion/pages/project-repositories-page.ts),
+[repository-page.ts](../../web/src/bastion/pages/repository-page.ts), [repository-head.ts](../../web/src/bastion/pages/repository-head.ts),
+[setup-flow-art.ts](../../web/src/app/features/setup/setup-flow-art.ts) (its input `mark`); `ProjectLink` moved to
+[project-link.ts](../../web/src/app/shared/ui/project-link.ts), so the mark of [project-mark.ts](../../web/src/app/shared/ui/project-mark.ts)
+brings no session into the Bastion's bundle (R-UI-228).
+
+Acceptance criteria:
+
+- Unit ([project-view.spec.ts](../../web/src/bastion/project-view.spec.ts), the application's own routes and providers against the HTTP
+  testing backend, about a second, answers of tens of bytes): `R-UI-273 a project opens on its repositories and its packages are the
+  second tab` (the redirect, the tabs, the rows with format, class and Set up client, another project's left out, the filter without a
+  read, the way), `R-UI-273 a repository lists its images with their tags and a Pull per row, …` (the repository's index, the row's
+  Pull, no Downloads, the way; the row opened from the image list by content, a Pull per image), `R-UI-273 a generic repository's address
+  is its files and ClamAV's its databases`, `R-UI-273 the start lists Upstream first and counts the repositories; …` and `R-UI-273 a
+  Bastion that shows no project yet says so on its start`.
+- Unit ([bastion.spec.ts](../../web/src/bastion/bastion.spec.ts), milliseconds): the image list by content narrowed to a repository and
+  cut into the view's pages, a version list narrowed to a repository; `R-UI-273 the pull by digest reads the image's set-up without a
+  version, …`.
+- States ([bastion.states.spec.ts](../../web/src/bastion/bastion.states.spec.ts)): a project's repositories and a repository's images
+  among the states the layout checks measure at 390 and 1,440 px.
+- Rendered (rule 11, R-UI-230): `bastion-start`, `bastion-start-empty`, `bastion-project-repositories` (and a filter that leaves none),
+  `bastion-repository-images` and `bastion-repository-npm` (as they open, an item opened, a version's panel), `bastion-repository-clamav`,
+  `bastion-packages`, `bastion-files`, `bastion-setup-oci`, both schemes, 1,440, 1,024 and 390 px, English and German.
+
+### R-UI-274 · A Bastion with hidden repositories
+Priority: **P1** · Covers: quader-only
+
+The Bastion's pages while its switch **Hide repositories** is on ([bastion.md](bastion.md) R-BAS-131, Q-BAS-504): they name no
+repository anywhere a visitor reads, and a project is its packages
+([Q-UI-1651](#q-ui-1651--a-bastion-with-hidden-repositories-shows-each-project-as-its-packages)).
+
+- **The switch is the state's.** The shell reads `hideRepositories` with the state (R-UI-227, every 60 s while seen); the application binds
+  `REPOSITORIES_SHOWN` (Q-UI-1632) to it, so every shared view leaves its places out (R-UI-269), and a page open when the switch turns on
+  follows at the state's next read without a reload (R-UI-213): a project's repositories move to its packages, a repository's page says
+  "Page not found". A route that decides by the switch waits for the state's first answer.
+- **What each page leaves.** The start has no column Repositories; `/projects/<project>` leads to its packages, which have no tab strip;
+  `/projects/<project>/repositories` and a repository's page are "Page not found", but a generic repository's root of files, whose folder is
+  the key every download address of them carries (D14), with its key and format and neither class nor description; Set up client names no
+  repository but in its address and its snippets (a client needs them), without the key's link and the class; the way has no step
+  Repositories (Projects › <project> › <key> on a generic repository's files, Projects › <project> › Set up client).
+- **A gate's refusal** says "Downloads are refused: the repository serves only artifacts with a verified signature, and …" in place of
+  "Downloads are refused in <key>: it serves …", once per artifact and reason where two repositories refuse it. The malware scan's banners
+  name no repository in either mode.
+
+*Built on 2026-11-27 (W-40's P5):* `repositoriesShown` and `ready` of [state.ts](../../web/src/bastion/data/state.ts), the binding in
+[app.config.ts](../../web/src/bastion/app.config.ts), the guards of [app.routes.ts](../../web/src/bastion/app.routes.ts), the pages above,
+the units `pkg.gate.banner.*-unnamed` of [package-version-view.html](../../web/src/app/views/packages/package-version-view.html).
+
+Acceptance criteria:
+
+- Unit ([project-view.spec.ts](../../web/src/bastion/project-view.spec.ts)): `R-UI-274 hidden: the project opens on its packages, a
+  repository address is not found but a generic one, the trail has no Repositories` (the redirect, no strip, the token false, the two
+  addresses not found, a generic repository's files without class, Set up client without the key's link, the two ways).
+- Unit ([repositories-shown.spec.ts](../../web/src/app/views/packages/repositories-shown.spec.ts), under a second): `R-UI-274 a refused
+  artifact's banner says the repository in place of its key, once for an artifact two repositories refuse`.
+- Rendered (rule 11): `bastion-hidden-packages`, `bastion-hidden-setup`, `bastion-hidden-image` (a tag's panel without the select), the
+  state answered in the browser with `hideRepositories: true`, both schemes, three widths, English and German.
 
 ## Deferred
 
@@ -32781,6 +32899,133 @@ Context: besides the texts of Q-UI-1638, a Bastion's visitor reads further texts
 party's content stays as written.
 
 **Applied in the spec:** R-UI-272.
+
+### Q-UI-1646 · A Bastion's project opens on its repositories, its packages the second tab
+
+Status: **Decided by the development agent on 2026-11-27** (W-40, D1 and D2) — selected from the options below; the owner reviews it at
+the walkthrough.
+
+Context: the owner's "der Bastion braucht eine Projektansicht". A Bastion's project was its flat list of packages; the main
+installation's project opens on its repositories, and its side bar holds **Repositories** and **Packages**. The Bastion has no side bar
+(R-UI-227).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `/projects/<p>` leads to the repositories; a tab strip **Repositories** \| **Packages** under the project's head (chosen) | The main installation's default, the repository page's pattern of tabs | A visitor finds what the main installation's user finds; the flat list stays one tab away | Two pages where there was one |
+| (b) Keep the packages as the default and add the repositories as a second view | Today's start of a project | Nothing moves for a returning visitor | The project reads differently from the main installation's, which the owner asked for |
+| (c) A select of the two views | One control | Smallest | A view is no setting; tabs are how the product switches a page's views |
+
+**Choice:** (a), and while the repositories are hidden `/projects/<p>` leads to the packages, without a strip (Q-UI-1651). **Applied in
+the spec:** R-UI-273. Code: `projectDefault` of [app.routes.ts](../../web/src/bastion/app.routes.ts),
+[project-head.ts](../../web/src/bastion/pages/project-head.ts).
+
+### Q-UI-1647 · A Bastion's start is the main installation's table of projects
+
+Status: **Decided by the development agent on 2026-11-27** (W-40, D3) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: the start was a list of links with each description under it. With the project view the count of a project's repositories tells
+a visitor where the content is.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Keep the list of links | As built | Nothing changes | Reads unlike the main installation's start; no count |
+| (b) The main installation's table in the columns a visitor can use: **Project** (mark, display name, key), **Description**, **Repositories** while they are shown; Upstream first (chosen) | `projects-home.ts`'s cells | The same picture as the main installation's (R-UI-223's rule for what both show); the count | A column a hidden Bastion leaves out |
+
+**Choice:** (b), without visibility (everything is public), role and members. With no project the table's empty state says "Nothing is
+shown here yet.", what a Bastion shows until its projects are allowed (W-41); it replaces "No package is published here yet.", which
+named packages where the project view shows repositories too. **Applied in the spec:** R-UI-273, R-UI-229. Code:
+[start-page.ts](../../web/src/bastion/pages/start-page.ts).
+
+### Q-UI-1648 · A Bastion's list of repositories composes the main installation's cells
+
+Status: **Decided by the development agent on 2026-11-27** (W-40, D4) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: the main installation's list of a project's repositories (`repository-list.ts`) is a screen of acts: its filters drawer, its
+deletions, the system section, the column of the project. A visitor needs four of its cells.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Extract the main installation's rows into a shared view | One row component | One piece of code | A component inside a `<tr>` breaks the table's semantics; an indirection both pay for four cells |
+| (b) A Bastion page that composes the same `DataTable` with the same cells, classes and words (`icon-name`, `format-cell`, `class-cell`, `row-setup`) and the shared helpers (`shownClass`, `setupCommands`, `repositoryDescription`, the format icon) (chosen) | The page holds its template | The same picture; no act's code in the Bastion's bundle | A template of twenty lines in two places |
+
+**Choice:** (b). **Filter repositories** filters in the browser by key and description: the public set is whole, so no request and no
+drawer. Every public repository is listed, an empty one too, as the main installation lists them to a visitor. **Applied in the spec:**
+R-UI-273. Code: [project-repositories-page.ts](../../web/src/bastion/pages/project-repositories-page.ts).
+
+### Q-UI-1649 · A Bastion's repository page shows its format's list under the main installation's head for a visitor
+
+Status: **Decided by the development agent on 2026-11-27** (W-40, D5) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: a repository's page at the main installation has tabs (content, Upstream and Downloads of a remote, Details), a head with
+settings, files and the remote's note. A visitor of a Bastion has no act and reads no upstream.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The page by its format: a generic repository's files, ClamAV's databases, every other format's items (`views/repositories/`, Q-UI-1630); the head's key, description, format and class badges and **Set up client** (chosen) | What a visitor can use of the main installation's page | The same list and the same rows' commands; nothing that names an upstream or an act | The page differs from the main installation's by what it leaves out |
+| (b) The main installation's page with its tabs | One page | Identical | Upstream, Downloads and Details name the upstream and the remote's working, which a Bastion keeps from its visitor (R-BAS-106) |
+
+**Choice:** (a). No column Downloads (Q-UI-1449), no list act, no remote's note "Only the tags clients have pulled …" (it explains a
+cache's working and names mirror mode), the sentence of a format that is not scanned (Q-UI-1244). A generic repository's files keep this
+head below their root too. **Applied in the spec:** R-UI-273. Code: [repository-page.ts](../../web/src/bastion/pages/repository-page.ts),
+[repository-head.ts](../../web/src/bastion/pages/repository-head.ts), [files-page.ts](../../web/src/bastion/pages/files-page.ts).
+
+### Q-UI-1650 · A Bastion's pages show the way from the start, each page binding its steps
+
+Status: **Decided by the development agent on 2026-11-27** (W-40, D20, with one deviation) — selected from the options below; the owner
+reviews it at the walkthrough.
+
+Context: the project view adds two levels (project, repository, image, tag); a visitor who lands on a tag from a search engine needs the
+way up. The main installation's breadcrumb (`core/breadcrumbs.ts`) derives its steps from the route table and asks the session, which
+the Bastion's bundle may not hold (R-UI-228).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) None, as before | The pages stand alone | Nothing to build | No way up from a deep page |
+| (b) The main installation's `nav.breadcrumbs` above the page, its steps the crawler text's, each page binding its own (`BastionTrail`); a page's steps leave with it (chosen) | The shell draws what the page binds | The same picture and the same steps as the crawler text; no session | Each page names its steps |
+
+**Choice:** (b). The steps: Projects › <project> on its views; › Repositories › <key> on a repository's page and its Set up client
+(› Set up client); › Packages › <name> › <version> (or › Versions of <name>) on a package's pages. **Deviation from D20:** below a
+generic repository's root the way ends at the key as a link, without the folders: the files' path (`quader-files-head`) is the page's
+own and the one place of a path (Q-UI-510), and two rows of the same folders said it twice. Hidden: no step Repositories (Q-UI-1651).
+**Applied in the spec:** R-UI-273, R-UI-227. Code: [trail.ts](../../web/src/bastion/data/trail.ts), [app.ts](../../web/src/bastion/app.ts).
+
+### Q-UI-1651 · A Bastion with hidden repositories shows each project as its packages
+
+Status: **Decided by the development agent on 2026-11-27** (W-40, D14 for the pages, and W40-P4b's open point on the gate's banners) —
+selected from the options below; the owner reviews it at the walkthrough.
+
+Context: Q-BAS-504 decided what Hide repositories hides; the pages follow it. The banner of a signature gate's refusal said "Downloads are
+refused in <key>: it serves only …", the one sentence of a version's page that still named a repository while hidden.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The project is its packages; a repository's address is "Page not found" but a generic one's files; the gate's banner says "the repository" in place of the key, once per artifact and reason (chosen) | The flat view alone | Nothing a visitor reads names a repository but its commands and download addresses (a client needs them) | Six more sentences in the translation |
+| (b) The same, and the gate's banner keeps the key | Fewer texts | One sentence fewer | The banner names the repository the switch hides |
+| (c) No gate's banner while hidden | Nothing to word | Shortest | A visitor no longer learns why a download is refused |
+
+**Choice:** (a). A route that decides by the switch waits for the state's first answer, so a fresh visit lands where the switch says; a
+page open when the switch turns on follows at the state's next read (R-UI-213). **Applied in the spec:** R-UI-274. Code: the guards of
+[app.routes.ts](../../web/src/bastion/app.routes.ts), `signatureRefusals` of
+[package-version-view.ts](../../web/src/app/views/packages/package-version-view.ts).
+
+### Q-UI-1652 · Set up client's picture ends at the application's own mark
+
+Status: **Decided by the development agent on 2026-11-27** (W-40's P5, found in the renders of 2026-11-27) — selected from the options
+below; the owner reviews it at the walkthrough.
+
+Context: Q-UI-1617: every mark a visitor of a Bastion sees is the Bastion's tower. The picture of the flow on Set up client
+(`setup-flow-art.ts`, Q-UI-800) draws the repository as a piece of Quader's wall, also at the Bastion.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) An input `mark` of the picture: a mark's stones on the wall's place and height, the parcels on its top; the Bastion passes its tower (chosen) | As `<quader-mark [mark]>` takes it | One picture, the application's mark in it | A second set of parcels' places |
+| (b) No picture at the Bastion | Nothing to draw | Shortest | The Bastion's page loses what the main installation's has |
+
+**Choice:** (a). **Applied in the spec:** R-UI-273. Code: [setup-flow-art.ts](../../web/src/app/features/setup/setup-flow-art.ts),
+[setup-page.ts](../../web/src/bastion/pages/setup-page.ts).
 
 ## What this does not cover
 

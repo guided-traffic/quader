@@ -914,7 +914,8 @@ export class PackageVersionView {
   }
   /**
    * The artifacts a repository's gate refuses now, one banner each: the repository that holds the file (its content route names it),
-   * the artifact as a reader names it (the version where it has one file there, else the file) and the reason.
+   * the artifact as a reader names it (the version where it has one file there, else the file) and the reason. While a Bastion hides
+   * its repositories the banner names none (R-UI-274), so an artifact refused for one reason in two of them is one banner.
    */
   protected readonly signatureRefusals = computed(() => {
     const files = this.detail()?.files ?? [];
@@ -923,8 +924,16 @@ export class PackageVersionView {
       const r = repositoryOfContent(f.contentUrl) ?? '';
       perRepository.set(r, (perRepository.get(r) ?? 0) + 1);
     }
+    const unnamed = new Set<string>();
     return files
       .filter((f) => f.signatures?.refused === true)
+      .filter((f) => {
+        if (this.repositoriesShown()) return true;
+        const once = `${f.sha256} ${f.signatures?.refusedReason ?? 'missing'}`;
+        if (unnamed.has(once)) return false;
+        unnamed.add(once);
+        return true;
+      })
       .map((f) => {
         const repository = repositoryOfContent(f.contentUrl) ?? '';
         return {

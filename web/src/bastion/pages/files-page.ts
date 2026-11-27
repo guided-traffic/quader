@@ -5,10 +5,11 @@ import { contentShapeOf } from '../../app/views/repositories/content-shape';
 import { ErrorNotice } from '../../app/shared/error-notice';
 import { failureOf, valueOf } from '../../app/shared/paged-resource';
 import { Loading } from '../../app/shared/ui/loading';
-import { PageHeader } from '../../app/shared/ui/page-header';
 import { FileView } from '../../app/views/files/file-view';
 import { FilesHead } from '../../app/views/files/files-head';
 import { FolderView } from '../../app/views/files/folder-view';
+import { BastionRepositories } from '../data/repositories';
+import { BastionRepositoryHead } from './repository-head';
 
 /** What the address names: a folder, or a file with its description. */
 type At = { readonly path: string; readonly kind: 'folder' } | { readonly path: string; readonly kind: 'file'; readonly item: Item };
@@ -19,13 +20,21 @@ type At = { readonly path: string; readonly kind: 'folder' } | { readonly path: 
  * (views/files/, R-UI-223) without an act: the path with a file's **Download** through the Bastion's own package route and its
  * clients' commands, a folder's entries, a file's facts with its malware verdict and its signature as the catalogue keeps them, and its
  * checksums; no upload, no delete, no download statistics, no description by the management API (Q-UI-1457). A path its parent folder
- * does not list is read as a file, whose answer (not found) the notice shows whole.
+ * does not list is read as a file, whose answer (not found) the notice shows whole. Its head is the repository page's (R-UI-273): the
+ * key, the description or what the files are, the format and the class, **Set up client**; while the repositories are hidden its key
+ * stays as the folder's name every download address of the files has, without class and description (R-UI-274).
  */
 @Component({
   selector: 'quader-bastion-files',
-  imports: [ErrorNotice, FileView, FilesHead, FolderView, Loading, PageHeader],
+  imports: [BastionRepositoryHead, ErrorNotice, FileView, FilesHead, FolderView, Loading],
   template: `
-    <quader-page-header [heading]="key()" [name]="true" [description]="sentence" />
+    <quader-bastion-repository-head
+      [project]="project()"
+      [key]="key()"
+      [repository]="repository()"
+      [here]="path() === ''"
+      [fallback]="sentence"
+    />
     @if (path() !== '') {
       <quader-files-head [repository]="ref()" [path]="path()" [root]="root()" [file]="file()" [generic]="true" [verb]="shape.commandVerb" />
     }
@@ -50,6 +59,7 @@ type At = { readonly path: string; readonly kind: 'folder' } | { readonly path: 
 })
 export class FilesPage {
   private readonly files = inject(FileReads);
+  private readonly repositories = inject(BastionRepositories);
 
   /** Route parameters, bound by the router's component input binding: the project, the repository, the path after `files`. */
   readonly project = input.required<string>();
@@ -57,6 +67,12 @@ export class FilesPage {
   readonly filePath = input<string | undefined>();
 
   protected readonly ref = computed(() => `${this.project()}/${this.key()}`);
+  /** The repository's facts for the head; a failed read leaves the head with its key and the files' sentence. */
+  private readonly facts = resource({
+    params: () => ({ project: this.project(), key: this.key() }),
+    loader: ({ params }) => this.repositories.one(params.project, params.key).catch(() => null),
+  });
+  protected readonly repository = computed(() => valueOf(this.facts) ?? null);
   /** The folder or file of the page; '' is the root of the repository. */
   protected readonly path = computed(() => (this.filePath() ?? '').split('/').filter((s) => s !== '').join('/'));
   /** The root of the files: the repository's own address, as a generic repository's at the main installation. */
