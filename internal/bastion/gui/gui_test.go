@@ -13,6 +13,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"regexp"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -69,8 +70,10 @@ func (r *reader) PublicSet() (iface.CataloguePublic, error) {
 			{Key: "web", DisplayName: "Web"},
 		},
 		Repositories: []iface.CatalogueRepository{
-			{Name: "acme/npm", Format: "npm", Class: "local", Wiki: true},
-			{Name: "upstream/npmjs", Format: "npm", Class: "remote"},
+			{Name: "acme/images", Format: "oci", Class: "local", Description: "Base images"},
+			{Name: "acme/npm", Format: "npm", Class: "local", Description: "Our npm packages", Wiki: true},
+			{Name: "tools/downloads", Format: "generic", Class: "local", Description: "Agents to download"},
+			{Name: "upstream/npmjs", Format: "npm", Class: "remote", Description: "npm public registry"},
 			{Name: "web/galaxy", Format: "ansible", Class: "local", Wiki: true},
 		},
 	}, r.served()
@@ -108,11 +111,12 @@ func (r *reader) Search(q catalogue.Query) (catalogue.Page, error) {
 	}
 	var out []catalogue.Entry
 	for _, e := range r.pkgs {
-		inProject := q.Project == ""
+		inProject, inRepository := q.Project == "", len(q.Repositories) == 0
 		for _, repo := range e.Repositories {
 			inProject = inProject || strings.HasPrefix(repo, q.Project+"/")
+			inRepository = inRepository || slices.Contains(q.Repositories, repo)
 		}
-		if inProject && (q.Q == "" || strings.Contains(e.Name, q.Q)) {
+		if inProject && inRepository && (q.Q == "" || strings.Contains(e.Name, q.Q)) {
 			out = append(out, e)
 		}
 	}
@@ -496,7 +500,7 @@ func TestR_BAS_118_TheDataAreTheMainInstallationsShapesFromTheCatalogue(t *testi
 	}
 
 	rec := get("/ui/data/v1/state")
-	if rec.Code != 200 || rec.Body.String() != `{"confirmedAt":"2026-11-26T09:30:00Z","staleAfterSeconds":3600,"stale":false,"docs":true,"timeFormat":"dmy-weekday"}` ||
+	if rec.Code != 200 || rec.Body.String() != `{"confirmedAt":"2026-11-26T09:30:00Z","staleAfterSeconds":3600,"stale":false,"docs":true,"hideRepositories":false,"timeFormat":"dmy-weekday"}` ||
 		rec.Header().Get("Cache-Control") != "no-cache" || rec.Header().Get("ETag") == "" {
 		t.Errorf("state = %d %v %s", rec.Code, rec.Header(), rec.Body.String())
 	}
@@ -726,8 +730,11 @@ func TestR_BAS_128_TheDataNameTheProjectsGradeTheVersionsAndWriteTheInstallation
 	if rec := do(h, http.MethodGet, "/ui/data/v1/state"); !strings.Contains(rec.Body.String(), `"timeFormat":"dmy-weekday"`) {
 		t.Errorf("state without a form = %s", rec.Body.String())
 	}
-	want := `{"items":[{"name":"acme/npm","format":"npm","class":"local"},{"name":"upstream/npmjs","format":"npm","class":"remote"},` +
-		`{"name":"web/galaxy","format":"ansible","class":"local"}]}`
+	want := `{"items":[{"name":"acme/images","format":"oci","class":"local","description":"Base images"},` +
+		`{"name":"acme/npm","format":"npm","class":"local","description":"Our npm packages"},` +
+		`{"name":"tools/downloads","format":"generic","class":"local","description":"Agents to download"},` +
+		`{"name":"upstream/npmjs","format":"npm","class":"remote","description":"npm public registry"},` +
+		`{"name":"web/galaxy","format":"ansible","class":"local","description":""}]}`
 	if rec := do(h, http.MethodGet, "/ui/data/v1/repositories"); rec.Code != 200 || rec.Body.String() != want {
 		t.Errorf("repositories = %d %s", rec.Code, rec.Body.String())
 	}
@@ -738,6 +745,49 @@ func TestR_BAS_128_TheDataNameTheProjectsGradeTheVersionsAndWriteTheInstallation
 	r.state = catalogue.State{Enabled: false, Decided: true}
 	if rec := do(h, http.MethodGet, "/ui/data/v1/repositories"); rec.Code != 404 {
 		t.Errorf("repositories while off = %d", rec.Code)
+	}
+}
+
+// TestR_BAS_118_TheDataOfTheProjectView: a single public repository answers its name, format, class and description; while the
+// repositories are hidden only its name and format, the list of repositories 404, and the state says the switch (R-BAS-131); a
+// repository outside the public set, a malformed address and a repository's index the reader does not show 404; a project's index
+// is a document of the grammar. Microseconds.
+func TestR_BAS_118_TheDataOfTheProjectView(t *testing.T) {
+	r := newReader()
+	r.docs["projects/acme/index/0"] = []byte(`{"items":[]}`)
+	h := newGUI(t, r, nil)
+	get := func(target string) *httptest.ResponseRecorder { return do(h, http.MethodGet, target) }
+
+	if rec := get("/ui/data/v1/repositories/acme/images"); rec.Code != 200 ||
+		rec.Body.String() != `{"name":"acme/images","format":"oci","class":"local","description":"Base images"}` {
+		t.Errorf("a repository = %d %s", rec.Code, rec.Body.String())
+	}
+	if rec := get("/ui/data/v1/repositories/web/galaxy"); rec.Body.String() != `{"name":"web/galaxy","format":"ansible","class":"local","description":""}` {
+		t.Errorf("a repository without a description = %d %s", rec.Code, rec.Body.String())
+	}
+	if rec := get("/ui/data/v1/projects/acme/index/0"); rec.Code != 200 || rec.Body.String() != `{"items":[]}` {
+		t.Errorf("a project's index = %d %s", rec.Code, rec.Body.String())
+	}
+	for _, a := range []string{
+		"/ui/data/v1/repositories/acme/internal", "/ui/data/v1/repositories/acme", "/ui/data/v1/repositories/acme/images/x",
+		"/ui/data/v1/repositories/acme%2Fimages/x", "/ui/data/v1/repositories/acme/npm/index/0",
+	} {
+		if rec := get(a); rec.Code != 404 || problemCode(t, rec) != "not_found" {
+			t.Errorf("GET %s = %d %s", a, rec.Code, rec.Body.String())
+		}
+	}
+
+	r.mu.Lock()
+	r.state.HideRepositories = true
+	r.mu.Unlock()
+	if rec := get("/ui/data/v1/state"); !strings.Contains(rec.Body.String(), `"hideRepositories":true`) {
+		t.Errorf("hidden, the state = %s", rec.Body.String())
+	}
+	if rec := get("/ui/data/v1/repositories/acme/images"); rec.Code != 200 || rec.Body.String() != `{"name":"acme/images","format":"oci"}` {
+		t.Errorf("hidden, a repository = %d %s", rec.Code, rec.Body.String())
+	}
+	if rec := get("/ui/data/v1/repositories"); rec.Code != 404 || problemCode(t, rec) != "not_found" {
+		t.Errorf("hidden, the repositories = %d %s", rec.Code, rec.Body.String())
 	}
 }
 

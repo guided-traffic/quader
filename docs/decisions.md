@@ -10729,10 +10729,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-BAS
 
-417 questions on [spec/bastion.md](spec/bastion.md).
+421 questions on [spec/bastion.md](spec/bastion.md).
 
 <details>
-<summary>Q-BAS: 417 questions</summary>
+<summary>Q-BAS: 421 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -11153,6 +11153,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-BAS-504](spec/bastion.md#q-bas-504--hide-repositories-hides-every-repository-a-visitor-reads-and-keeps-the-key-a-client-needs) | Hide repositories hides every repository a visitor reads and keeps the key a client needs | Decided by the development agent on 2026-11-27 (plan W-40, D14) | (a) Hide the lists, pages, titles, crumbs, sitemap entries, columns and upstreams that present a repository; keep the key in commands, download addresses, Set up client and the data a browser reads | — |
 | [Q-BAS-505](spec/bastion.md#q-bas-505--the-switch-is-hide-repositories-off-by-default-behind-the-details-of-the-web-interface) | The switch is Hide repositories, off by default, behind the Details of the web interface | Decided by the development agent on 2026-11-27 (plan W-40, D15) | (b), named **Hide repositories**, on = hidden: off, the default, is the zero value of the wire's `hideRepositories`, so no default can go missing. | — |
 | [Q-BAS-506](spec/bastion.md#q-bas-506--the-project-view-raises-the-interface-to-version-12-and-the-bastions-state-record-to-form-3) | The project view raises the interface to version 12 and the Bastion's state record to form 3 | Decided by the development agent on 2026-11-27 (plan W-40, D23) | (a) One raise to 12 for the repository's description, the switch, the kinds `projectIndex`, `repositoryIndex`, `packageImages` and the set-up path of four segments; the state record's form 3, since it holds the public set | — |
+| [Q-BAS-507](spec/bastion.md#q-bas-507--a-search-reads-the-narrowest-index-that-answers-it) | A search reads the narrowest index that answers it | Decided by the development agent on 2026-11-27 (plan W-40, D9) | (a) The narrowest index that answers: exactly one repository its own index while the repositories are shown; a project, and one repository whose index is not shown, the project's index filtered by the repositories; neither the catalogue's own | — |
+| [Q-BAS-508](spec/bastion.md#q-bas-508--a-projects-list-keeps-its-repositories-with-files-in-both-modes) | A project's list keeps its repositories with files in both modes | Decided by the development agent on 2026-11-27 (plan W-40, D24) | (a) The section **Files** stays on a project's list in both modes; the start's section **Files**, by qualified names, only while the repositories are shown | — |
+| [Q-BAS-509](spec/bastion.md#q-bas-509--a-repositorys-page-in-the-text-is-its-files-root-where-the-catalogue-holds-one-and-its-indexs-packages-otherwise) | A repository's page in the text is its files' root where the catalogue holds one, and its index's packages otherwise | Decided by the development agent on 2026-11-27 (W-40's P2) | (a) The root of the files where the catalogue holds the repository's root folder, otherwise the packages of its index | — |
+| [Q-BAS-510](spec/bastion.md#q-bas-510--a-link-that-names-a-project-leads-to-its-repositories-or-to-its-packages-while-they-are-hidden) | A link that names a project leads to its repositories, or to its packages while they are hidden | Decided by the development agent on 2026-11-27 (W-40's P2) | (a) The link is the default view's own address: `…/repositories`, or `…/packages` while the repositories are hidden | — |
 
 </details>
 

@@ -577,6 +577,7 @@ What it means for trust, mechanism by mechanism:
 | A package's grades per version (W-35's P9e) | The document `packages/<id>/vulnerabilities` is the main installation's anonymous answer, open findings only, through the strip, which takes each grade's `checkedAt` out ([H-2407](../spec/bastion.md#h-2407--a-bastions-grade-in-a-list-says-nothing-of-when-and-against-which-database-it-was-checked)) | R-BAS-128, Q-BAS-403 |
 | Set up client (W-35's P9e) | The snippets are the catalogue's set-up documents, rendered with `credentials=none` and `bastion=<name>`: the Bastion's address, no login line, no publish step, no token field and no guide of the main installation; a repository the public set does not hold gets none | R-BAS-129, R-BAS-104 |
 | The age | A replica serves its copy whatever its age and every page says how old it is; a narrowing made during an outage stays visible until the link returns ([H-2319](#h-2319--a-narrowing-made-during-an-outage-stays-on-the-pages-until-the-link-returns)) | R-BAS-111, R-BAS-120 |
+| Hide repositories (W-40's P2) | The replica applies the switch at once and keeps it in its signed state record: no repository's index, no list of repositories, a single repository's name and format alone, and no repository in the crawler's text or the sitemap. It hides the presentation, not the facts: the data keep each version's holders with their keys and classes, and every command names a key ([H-2439](#h-2439--with-hide-repositories-the-pages-name-no-repository-but-the-data-a-browser-reads-keep-each-versions-holders-and-every-command-names-a-key)) | R-BAS-131, R-BAS-112, R-BAS-118, R-BAS-132 |
 
 ## Search engines
 
@@ -1222,7 +1223,10 @@ R-BAS-015) and a narrowing the builder renders later than 8 s after its entry (a
 Stage: the sync and the reader (R-BAS-109, R-BAS-113, Q-BAS-373). Subject: the memory of a replica whose registration has a large
 public catalogue. Each replica keeps which path names which document (about 150 bytes a path) and the index of the public packages in
 memory, and a change list after a reset or a first start is read whole before the round swaps. Derived from the measurement of
-2026-11-26 (14 documents per version): about 200 MB of map for 100,000 public versions; not measured at that size. Dormant until a
+2026-11-26 (14 documents per version): about 200 MB of map for 100,000 public versions; not measured at that size. Since W-40's P2 it
+also holds the index of every public project and repository (R-BAS-130): derived from W-40's figures, about 0.93 KiB per package per
+scope, so a package in one project and one repository adds about 1.9 KiB (about 56 MiB for 30,000 public packages), less where two
+scopes' pages are the same bytes, which share their entries. Dormant until a
 catalogue of that size; the pod's memory limit is the operator's. What holds: the map is cloned only in the shards a round changed, so a
 round of one publish costs a shard, not the map.
 
@@ -1423,6 +1427,21 @@ per repository's files that holds the times by path, or keeping the times in a f
 after every database update; either is a change of what the catalogue holds. W-36's P8, which brought the malware mark to the Bastion's
 pages, left it ([Q-BAS-493](../spec/bastion.md#q-bas-493--a-generic-file-at-a-bastion-carries-no-time-of-its-check)): the mark of a
 generic file says its word and the scanner, no date and no class.
+
+### H-2439 · With Hide repositories the pages name no repository, but the data a browser reads keep each version's holders, and every command names a key
+
+Stage: the switch Hide repositories at the Bastion (R-BAS-131, W-40's P2,
+[Q-BAS-504](../spec/bastion.md#q-bas-504--hide-repositories-hides-every-repository-a-visitor-reads-and-keeps-the-key-a-client-needs)).
+Subject: an operator who switches it on to keep the company's repository layout (which repositories exist, which are remotes or virtual,
+what each is called) from visitors. The pages, the crawler's text and the sitemap name no repository, and the data's list of
+repositories, their indexes, a repository's class and description and a remote's upstream are gone at once. What stays readable to
+anyone who reads the data below `/ui/data/v1/` instead of the page: a version's document lists its holders with their keys and classes
+(the shared views' rules read them to pick a command), a single repository's data answer its name and format, and every command, set-up
+snippet and download address carries the project's and the repository's key, since the Bastion mirrors the main installation's address
+space (Q-BAS-17). A visitor who wants the layout learns the keys and classes of every repository that holds a public version. Live
+whenever the switch is on: it hides the presentation, not the facts. What would close it: documents without the holders' classes and a
+command order that needs none (W-40's D14 option (b), rejected for forking the views per mode), and client addresses without a
+repository's key, which need a binding per host the owner has not asked for.
 
 ### H-2408 · The Bastion's class ignores demand
 

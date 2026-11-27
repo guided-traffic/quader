@@ -215,8 +215,9 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 		// three P1 requirements.
 		// 1412 since a Bastion's project view has its catalogue and the switch Hide repositories (R-BAS-130, R-BAS-131, two P1
 		// requirements of W-40, P1).
-		if len(m.Reqs) != 1412 || count[prioMVP] != 743 || count[prioP1] != 630 || count[prioP2] != 39 {
-			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1412 (743, 630, 39)",
+		// 1413 since a crawler finds the project view (R-BAS-132, one P1 requirement of W-40, P2).
+		if len(m.Reqs) != 1413 || count[prioMVP] != 743 || count[prioP1] != 631 || count[prioP2] != 39 {
+			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1413 (743, 631, 39)",
 				len(m.Reqs), count[prioMVP], count[prioP1], count[prioP2])
 		}
 	})

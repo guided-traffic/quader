@@ -6748,8 +6748,12 @@ Priority: **P1** · Covers: quader-only
 - **The public set hides** ([Q-BAS-376](#q-bas-376--the-public-set-hides-a-package-while-none-of-its-repositories-is-in-it)). A round reads
   the public set first and swaps it in before it reads anything else. A package is shown while one of its repositories (the index's
   `repositories`) is in the public set, its documentation while one of them has a public wiki and `docs` is on; a repository's set-up and
-  files while the repository is in it; the anchors, the signature objects and the catalogue's state always. The pages of the index are the
-  reader's own and are never answered as documents.
+  files while the repository is in it; the anchors, the signature objects and the catalogue's state always. The pages of the catalogue's
+  own index are the reader's own and are never answered as documents; a project's index is shown while the project is in the public set,
+  a repository's while the repository is and the repositories are shown (R-BAS-130, R-BAS-131).
+- **hideRepositories** (R-BAS-131). The switch hides every repository's index at once, before the builder's next run deletes it: no
+  document of one is answered and no search reads one. The state record keeps the switch beside `gui` and `docs`, so a replica that
+  starts without its configuration applies it with them.
 - **The hooks** ([Q-BAS-377](#q-bas-377--a-narrowing-of-the-feed-runs-a-round-at-once-and-again-after-the-builders-debounce)). The link
   hands the catalogue every feed entry it applied, and after a reset one of the kind `grants`. An entry of the kinds `grants`, `settings`,
   `principal` and `content` runs a round at once and a second one 8 s later, after the builder's debounce of 5 s and its run, since the public
@@ -6758,10 +6762,13 @@ Priority: **P1** · Covers: quader-only
   ([Q-BAS-378](#q-bas-378--no-feed-entry-of-the-kind-catalogue-the-follow-up-round-after-the-builders-debounce-carries-a-change)).
 
 *Built on 2026-11-26 (W-35's P7):* `SetSwitches` and `Feed` of [catalogue.go](../../internal/bastion/catalogue/catalogue.go),
-`Link.OnFeed` of [link.go](../../internal/bastion/link/link.go).
+`Link.OnFeed` of [link.go](../../internal/bastion/link/link.go). *Built on 2026-11-27 (W-40's P2):* the indexes' show rule and the
+switch hideRepositories, `shows` of [reader.go](../../internal/bastion/catalogue/reader.go) and `hidden` of
+[catalogue.go](../../internal/bastion/catalogue/catalogue.go).
 
 Acceptance criteria:
 
+- Unit: `TestR_BAS_131_TheReaderHidesTheRepositoryIndexes` ([project_view_test.go](../../internal/bastion/catalogue/project_view_test.go)).
 - Unit: `TestR_BAS_112_TheFeedHooksHideAndResyncWithoutWaitingForThePoll` (with a poll of an hour: a `grants` entry hides a package whose
   repository fell out of the public set, a `content` entry brings a withdrawal), `TestR_BAS_112_DocsOffHidesTheDocumentationAtOnce`; the
   switch `gui` off in `TestR_BAS_111_AStoredStateIsServedAfterARestartWithItsAge` (off at once, the state record and every document
@@ -6776,15 +6783,15 @@ Priority: **P1** · Covers: quader-only
 
 | Method | Answers |
 |---|---|
-| `State()` | `gui`, `docs`, whether the switches are known, whether a state is served, `confirmedAt`, `stale_after` and whether it is older, whether the state is kept |
+| `State()` | `gui`, `docs`, `hideRepositories` (R-BAS-131), whether the switches are known, whether a state is served, `confirmedAt`, `stale_after` and whether it is older, whether the state is kept |
 | `ConfirmedAt()` | the time of the state served; zero without one |
-| `PublicSet()` | the projects and repositories the catalogue shows |
-| `Search(Query)` | the public packages by `q` (a substring of the name, the description or a keyword, without regard to case), `formats`, `project`, `repositories`, `deprecated`, sorted by `name` (the default), `createdAt`, `updatedAt` or `relevance` (a leading `-` descending), in pages of 50, at most 100, with the cursor of the page before ([Q-BAS-383](#q-bas-383--the-search-runs-over-the-index-in-memory-with-a-cursor-of-the-last-entrys-sort-key)) |
+| `PublicSet()` | the projects and repositories the catalogue shows, each repository with its description (R-BAS-130) |
+| `Search(Query)` | the public packages by `q` (a substring of the name, the description or a keyword, without regard to case), `formats`, `project`, `repositories`, `deprecated`, sorted by `name` (the default), `createdAt`, `updatedAt` or `relevance` (a leading `-` descending), in pages of 50, at most 100, with the cursor of the page before ([Q-BAS-383](#q-bas-383--the-search-runs-over-the-index-in-memory-with-a-cursor-of-the-last-entrys-sort-key)); from the narrowest index that answers it ([Q-BAS-507](#q-bas-507--a-search-reads-the-narrowest-index-that-answers-it)): exactly one repository its own index while the repositories are shown, a project (or one repository while they are hidden) the project's index filtered by the repositories, neither the catalogue's own; an entry of a scope's index is listed only while the catalogue's own index shows its package |
 | `Package(id)` | a public package of the index: the summary's members that are the same for every format, and the summary as the main installation answered it |
 | `Lookup(format, name)` | a public package of the format by its name, else by its key, as a page's address names it (R-BAS-118, [Q-BAS-395](#q-bas-395--the-lookup-finds-a-package-by-its-name-then-by-its-key); added by W-35's P9) |
 | `Versions(id, after, limit)` | a page of the package's versions list, as the main installation answered it |
 | `Document(path)` | a document of the grammar (R-BAS-103) that the state shows (R-BAS-112), raw and compressed, verified against its SHA-256 on every read |
-| `Packages()` | every public package of the index by name, each with its public repositories only, and a revision that stays exactly while the index's pages, the public set and the switch `docs` do: the sitemap's source (R-BAS-122, [Q-BAS-414](#q-bas-414--the-reader-lists-the-public-packages-under-a-revision-for-the-sitemap); added by W-35's P10) |
+| `Packages()` | every public package of the index by name, each with its public repositories only, and a revision that stays exactly while the index's pages, the pages of the projects' and the repositories' indexes, the public set and the switches `docs` and `hideRepositories` do: the sitemap's source (R-BAS-122, R-BAS-132, [Q-BAS-414](#q-bas-414--the-reader-lists-the-public-packages-under-a-revision-for-the-sitemap); added by W-35's P10) |
 | `SearchDocs(DocQuery)`, `DocEntries()` | the documentation of the public packages' newest versions searched across packages, and every entry of it for the sitemap (R-BAS-125; added by W-35's P11) |
 
 - While the switch `gui` is off every method answers `ErrOff`, while no state is served `ErrNotReady` (R-BAS-111).
@@ -6792,10 +6799,24 @@ Priority: **P1** · Covers: quader-only
   A document the store lost, or one whose bytes do not verify, is answered as not found, deleted, counted in
   `quader_bastion_cache_corrupt_total` and fetched again by the next round, which it wakes.
 
+- **The indexes of the project view** (R-BAS-130). Besides the catalogue's own index the replica builds the index of every project and
+  repository of the public set from their pages, each page read and parsed once whichever index names it (two scopes of the same
+  packages share a page and its entries), and an index whose pages did not change is kept as it is.
+
 *Built on 2026-11-26 (W-35's P7):* [reader.go](../../internal/bastion/catalogue/reader.go), [index.go](../../internal/bastion/catalogue/index.go).
+*Built on 2026-11-27 (W-40's P2):* the scoped indexes (`indexesOf`, `scopedIndexes` of [index.go](../../internal/bastion/catalogue/index.go)),
+the search's choice of index (`searchIndex` of [reader.go](../../internal/bastion/catalogue/reader.go)), the state's switch and the
+revision's new parts.
 
 Acceptance criteria:
 
+- Unit ([project_view_test.go](../../internal/bastion/catalogue/project_view_test.go), milliseconds, pages of a few hundred bytes):
+  `TestR_BAS_130_TheSearchReadsTheNarrowestIndex` (a repository's own latest version for one repository, also a virtual one's whose
+  summaries name only the local repository; the project's for a project and for two repositories; the catalogue's own without either;
+  a scope's entry the catalogue's own index does not hold not listed; both indexes served as documents; a repository that leaves the
+  public set takes its index with it); `TestR_BAS_131_TheReaderHidesTheRepositoryIndexes` (the switch hides at once: the document not
+  served, one repository's search reads the project's index, the state says it, the revision moves; a restart without a configuration
+  keeps the stored switch; off again shows the index).
 - Unit: the search's pages, sort and keyword match and a sort it refuses, the versions' pages, an index page not served
   (`TestR_BAS_109_ARoundMirrorsTheCatalogueAndReadsOnlyWhatChanged`); `TestR_BAS_113_AnIntegrityFailureIsFetchedAgain` (a document the
   main installation sent that does not verify fails the round and is fetched by the next; a stored document changed on the volume is not
@@ -6900,18 +6921,19 @@ to (R-BAS-107), in the main installation's JSON shapes, so that the shared views
 
 | Address | Answers |
 |---|---|
-| `state` | `{confirmedAt, staleAfterSeconds, stale, docs, timeFormat}`: the time of the state served, `bastion.gui.stale_after`, whether the state is older, the switch `docs` (W-35's B.2b), and the installation's default form of a time of the configuration the replica applies (R-BAS-128) |
+| `state` | `{confirmedAt, staleAfterSeconds, stale, docs, hideRepositories, timeFormat}`: the time of the state served, `bastion.gui.stale_after`, whether the state is older, the switches `docs` (W-35's B.2b) and `hideRepositories` (R-BAS-131), and the installation's default form of a time of the configuration the replica applies (R-BAS-128) |
 | `legal?locale=en\|de` | the Bastion's own imprint and privacy notice (R-BAS-100) in the shape of `GET /api/v1/legal` (R-UI-225); also while the replica is not ready |
 | `projects` | `{items}`: the projects the catalogue shows (the reader's `PublicSet`) that hold a package it lists or a repository with files, each `{key, displayName, description}` (R-BAS-128), for the start page that leads a visitor into a project ([Q-BAS-399](#q-bas-399--the-start-page-offers-a-project-only-while-it-shows-a-package), [Q-BAS-400](#q-bas-400--the-repositories-with-files-are-an-address-of-their-own-and-they-count-for-the-start)) |
-| `repositories` | `{items}`: the public set's repositories, each `{name, format, class}`, for the page Set up client of a repository (R-BAS-129, [Q-BAS-404](#q-bas-404--the-public-repositories-with-their-format-are-an-address-of-their-own-for-the-page-set-up-client)) |
+| `repositories` | `{items}`: the public set's repositories, each `{name, format, class, description}`, for a project's repositories and the page Set up client of a repository (R-BAS-129, R-BAS-132, [Q-BAS-404](#q-bas-404--the-public-repositories-with-their-format-are-an-address-of-their-own-for-the-page-set-up-client)); `404` while the repositories are hidden (R-BAS-131) |
+| `repositories/<project>/<key>` | one repository of the public set, `{name, format, class, description}`, for a repository's page and its page Set up client (R-BAS-132); while the repositories are hidden `{name, format}` alone, which the commands and the files still need ([Q-BAS-504](#q-bas-504--hide-repositories-hides-every-repository-a-visitor-reads-and-keeps-the-key-a-client-needs)); `404` for one outside the public set (added by W-40's P2) |
 | `files` | `{items}`: the qualified names (`<project>/<key>`) of the public repositories whose root folder the catalogue holds (`Reader.Files`, in the public set's order), for a project's page that leads a visitor to a generic repository's folders and files ([Q-BAS-400](#q-bas-400--the-repositories-with-files-are-an-address-of-their-own-and-they-count-for-the-start)) |
-| `packages?q&format&project&repository&deprecated&sort&cursor&limit` | the search of the reader (R-BAS-113, W-35's B.8) in the envelope of R-API-010 (`items`, `nextCursor`), each item the package summary as the main installation answered it; `include` is accepted and changes nothing (the summaries carry the counts of open findings); any other parameter is `400 malformed_request` |
+| `packages?q&format&project&repository&deprecated&sort&cursor&limit` | the search of the reader (R-BAS-113, W-35's B.8) in the envelope of R-API-010 (`items`, `nextCursor`), each item the package summary as the main installation answered it, from the narrowest index (Q-BAS-507: one `repository` its own index's summaries, a `project` its index's), so the counts and the latest version are the scope's as at the main installation; `include` is accepted and changes nothing (the summaries carry the counts of open findings); any other parameter is `400 malformed_request` |
 | `packages/lookup?format&name` | the public package of the format by its name, else by its key ([Q-BAS-395](#q-bas-395--the-lookup-finds-a-package-by-its-name-then-by-its-key)), or `404` |
 | `packages/<id>/versions?cursor&limit` | a page of the package's versions in the main installation's order; the application sorts, searches and groups them in the browser, as the main installation's view does ([Q-BAS-396](#q-bas-396--the-versions-are-paged-in-the-main-installations-order-and-sorted-in-the-browser)) |
 | `search/documentation?q&project&cursor&limit` | the documentation of the public packages' newest versions searched across packages, in the shape of `GET /api/v1/search/documentation` (R-BAS-125; added by W-35's P11) |
 | `malware/signatures` | today's signatures of the malware scan from the catalogue's state, in the shape of `GET /api/v1/malware/signatures` with `importedAt` and `engine` null and `stale` false, or `404` while the state holds no set ([malware-scanning.md](malware-scanning.md) R-MAL-042, [Q-BAS-492](#q-bas-492--the-bastion-answers-todays-signatures-in-the-main-installations-shape-from-its-catalogue); added by W-36's P8) |
 | `vulnerabilities/database` | today's vulnerability database of the image scanning from the catalogue's state, in the shape of `GET /api/v1/vulnerabilities/database` with `syncedAt` null and `stale` false, or `404` while the state holds none ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-052, Q-BAS-492; added by W-36's P8) |
-| every other path of the grammar (R-BAS-103) | the document as the builder stored it, by `Reader.Document`: a package, its open findings per version, a version, its README, findings, signatures, contents, documentation, a set-up, a generic folder or file, a signature object, `signing/trusted-root.json` and `signing/chain.pem` (the last three as attachments); an index page and the catalogue's own `state` are not answered |
+| every other path of the grammar (R-BAS-103) | the document as the builder stored it, by `Reader.Document`: a package, its open findings per version, an image's list by content, a version, its README, findings, signatures, contents, documentation, a set-up (a package's without a version too), a generic folder or file, a project's or a repository's index while the reader shows it (R-BAS-112), a signature object, `signing/trusted-root.json` and `signing/chain.pem` (the last three as attachments); a page of the catalogue's own index and the catalogue's own `state` are not answered |
 
 - **One spelling.** A path is read segment by segment and written in the grammar's one spelling before it is looked up, so a browser that
   escapes less than the grammar (`+` of a version, `encodeURIComponent`'s `!'()*`) reaches the same document; a decoded `/` in a segment
@@ -6924,10 +6946,15 @@ to (R-BAS-107), in the main installation's JSON shapes, so that the shared views
   answered as `404` and `503`, a query it refuses as `400`.
 
 *Built on 2026-11-26 (W-35's P9; `files` by W-35's P9d):* [data.go](../../internal/bastion/gui/data.go), `Reader.Lookup` and
-`Reader.Files` of [reader.go](../../internal/bastion/catalogue/reader.go).
+`Reader.Files` of [reader.go](../../internal/bastion/catalogue/reader.go). *Built on 2026-11-27 (W-40's P2):* `repository`,
+`repositoryPath` and the state's switch of [data.go](../../internal/bastion/gui/data.go).
 
 Acceptance criteria:
 
+- Unit ([gui_test.go](../../internal/bastion/gui/gui_test.go), microseconds): `TestR_BAS_118_TheDataOfTheProjectView` (a repository's
+  four members, its description empty where it has none; a project's index as a document; five addresses that answer `404`; hidden: the
+  state's switch, a repository's name and format alone, the list `404`); the list's descriptions in
+  `TestR_BAS_128_TheDataNameTheProjectsGradeTheVersionsAndWriteTheInstallationsTime`.
 - Unit ([gui_test.go](../../internal/bastion/gui/gui_test.go)): `TestR_BAS_118_TheDataAreTheMainInstallationsShapesFromTheCatalogue`
   (the state and its `304`, the projects with a package or files, the repositories with files, a folder and a file by their paths, the legal pages, the search with its cursor and the parameters it refuses, the lookup by name and by key and
   not under another format, a page of versions and the one after it, a version under three spellings of its `+`, gzip and `gzip;q=0`, a
@@ -6936,7 +6963,8 @@ Acceptance criteria:
   off; [catalogue_test.go](../../internal/bastion/catalogue/catalogue_test.go)).
 - Integration (area `bastion`, inside `TestR_BAS_109_TheBastionMirrorsTheCatalogueAndServesOnWhileTheLinkIsCut`, no world of its own, about
   0.1 s): Go's client reads the page of a package, the state, the legal pages, the search, the lookup, the package, its versions and its
-  version through the Bastion's client listener, each `200`, and every status line, header and body is scanned for the main
+  version, the facts of the world's npm repository, the search of that repository (which lists its package) and its page (W-40's P2)
+  through the Bastion's client listener, each `200`, and every status line, header and body is scanned for the main
   installation's host, the address the Bastion reaches it at and `/api/v1/` (W-35's B.13).
 
 ### R-BAS-119 · The Bastion's bundle is built, checked and embedded beside the main installation's
@@ -7024,9 +7052,12 @@ Priority: **P1** · Covers: quader-only
   format has (the newest version, when it was published, its licences and keywords), the README as the catalogue keeps it (only while the
   catalogue shows it: `docs` on and a public wiki, R-BAS-112), the links to the projects, a project's packages or a package's versions (the
   first 100 each), and the footer's legal links. The start links the projects its application offers, those with a package or with files
-  (Q-BAS-399, Q-BAS-400), and under **Files** every public repository whose files the catalogue holds, by its qualified name, to the root
-  of its files; a project's list links its own such repositories by their keys above its packages, and answers `200` for a project with
-  files and no package ([Q-BAS-498](#q-bas-498--the-start-the-projects-lists-and-the-sitemap-lead-to-a-repositorys-files)). A browser that runs the application does not show it: a rule under the page's nonce hides
+  (Q-BAS-399, Q-BAS-400), each to its repositories or, while they are hidden, to its packages (R-BAS-132), and under **Files**, only while
+  the repositories are shown, every public repository whose files the catalogue holds, by its qualified name, to the root
+  of its files; a project's list links its own such repositories by their keys above its packages, in both modes, and answers `200` for a project with
+  files and no package ([Q-BAS-498](#q-bas-498--the-start-the-projects-lists-and-the-sitemap-lead-to-a-repositorys-files),
+  [Q-BAS-508](#q-bas-508--a-projects-list-keeps-its-repositories-with-files-in-both-modes)). The project view's pages, a project's own
+  address and the way from the start are R-BAS-132's. A browser that runs the application does not show it: a rule under the page's nonce hides
   it and the application's spinner shows until the application starts (R-UI-217); `<noscript>` shows it and hides the spinner
   ([Q-BAS-406](#q-bas-406--the-text-is-hidden-from-a-browser-that-runs-the-application-and-shown-without-script)). Its few fixed words
   are a table in both languages in Go, the application's own words.
@@ -7044,7 +7075,8 @@ Priority: **P1** · Covers: quader-only
   up client is found while the public set holds the repository, titled "Set up client", and never indexed (R-BAS-129,
   [Q-BAS-401](#q-bas-401--a-page-set-up-client-of-the-bastion-is-found-and-never-indexed)). A public generic repository's folder or file
   (`projects/<project>/repositories/<key>`, the root, and `…/files/<path…>`, R-UI-229) is found while the catalogue holds its listing or
-  its description, titled by its name (the root by the repository's key), indexed, its canonical address the one spelling of the path
+  its description, titled by its name (the root by the repository's key, its description the repository's while the repositories are
+  shown, R-BAS-132), indexed, its canonical address the one spelling of the path
   without a query; a folder's text links its entries, the first 100
   ([Q-BAS-483](#q-bas-483--a-public-generic-repositorys-folders-and-files-are-pages-a-crawler-finds-and-indexes)). While the replica holds
   no state a page is `503` with `Retry-After: 30`, `noindex` and the title "Quader" alone (R-BAS-117).
@@ -7061,11 +7093,12 @@ Acceptance criteria:
   package's page in German with every member of its head and text; a version's, the versions', a documentation entry's, a list's, the
   start's and the imprint's title, canonical address, JSON-LD type and robots rule; a generic repository's root, a folder and a file
   found and indexed, a folder's entries and a file's way back in the text; the start's projects with files and its section Files, a
-  project's list with files alone `200` with its repositories by their keys (Q-BAS-498); `tab=vulnerabilities` and `severity` noindex, a list's
-  search noindex, other queries dropped; thirteen addresses `404` with `noindex` and no canonical; a README the catalogue does not show is not
+  project's list with files alone `200` with its repositories by their keys (Q-BAS-498); a project's own address as its repositories'
+  page (R-BAS-132); `tab=vulnerabilities` and `severity` noindex, a list's
+  search noindex, other queries dropped; fifteen addresses `404` with `noindex` and no canonical; a README the catalogue does not show is not
   in the text; not ready `503`; the text hidden under the page's nonce; a description with `</script>` closes nothing; a sentinel in a
   version's `metadata` is on no page); [page_test.go](../../internal/bastion/gui/page/page_test.go):
-  `TestR_BAS_121_TheAddressGrammarIsTheApplicationsRoutes` (twenty-one addresses, the one spelling of a route, the absolute address).
+  `TestR_BAS_121_TheAddressGrammarIsTheApplicationsRoutes` (twenty-two addresses, the one spelling of a route, the absolute address).
 - Vitest ([search-engines.spec.ts](../../web/src/bastion/search-engines.spec.ts)): the page holds both slots and no `<title>` of its own.
 - Integration (area `bastion`, inside `TestR_BAS_109_TheBastionMirrorsTheCatalogueAndServesOnWhileTheLinkIsCut`, no world of its own, about
   0.1 s): `crawlWebInterface` reads the package's page as a crawler, finds its title, canonical address on the Bastion's base URL, heading,
@@ -7088,9 +7121,10 @@ Priority: **P1** · Covers: quader-only
   [Q-BAS-498](#q-bas-498--the-start-the-projects-lists-and-the-sitemap-lead-to-a-repositorys-files)), every package's page in every
   project whose public repository holds it, its documentation pages (while `docs` is on, the entries of R-BAS-125's `DocEntries` in the
   project whose repository the tree was read from, each as its page's canonical address `…?doc=<type>/<name>&tab=documentation`; W-35's
-  P11), and the imprint and the privacy notice that have a text. `lastmod` is the package's `updatedAt` (a list's and the start's the newest of theirs; none for a legal page, a root of files or a project's list without a package). A version's
+  P11), and the imprint and the privacy notice that have a text; while the repositories are shown also each such project's repositories
+  and the page of each of its public repositories (R-BAS-132). `lastmod` is the package's `updatedAt` (a list's and the start's the newest of theirs; none for a legal page, a root of files or a project's list without a package). A version's
   own page is not listed: a package's page links its versions. The set is built from the reader's `Packages()` and `Files()` once per
-  revision of both (a repository's files that arrive change no revision of the packages) and every
+  revision of both and of the switch `hideRepositories` (a repository's files that arrive change no revision of the packages) and every
   file is kept compressed with it; a crawler that takes `gzip` gets those bytes, `no-cache` with an ETag of the revision and the file.
   Off: `404`; not ready: `503 not_ready`.
 - Every request of both counts in the class `gui` (R-BAS-117).
@@ -7101,8 +7135,8 @@ Priority: **P1** · Covers: quader-only
 Acceptance criteria:
 
 - Unit ([seo_test.go](../../internal/bastion/gui/seo_test.go), 0.14 s): `TestR_BAS_122_RobotsAndTheSitemapAtTheHostsRoot` (the rules on,
-  off and undecided; the sitemap off and not ready; the data's `X-Robots-Tag`; the index and the one file with twelve addresses in their
-  order, the root of a repository's files and its project's list without `lastmod`, a repository whose files arrive under the same
+  off and undecided; the sitemap off and not ready; the data's `X-Robots-Tag`; the index and the one file with thirty addresses in their
+  order (R-BAS-132's among them, eighteen while the repositories are hidden), the root of a repository's files and its project's list without `lastmod`, a repository whose files arrive under the same
   revision of the packages listed at once (Q-BAS-498); a documentation entry's address while `docs` is on and none under the revision of `docs` off
   (W-35's P11); five file names that answer `404`; gzip and `304`; 25,001 tiny packages split into two files of 50,000
   and 8 addresses under a new revision); `TestR_BAS_122_PackagesListsThePublicPackagesUnderARevision`
@@ -7416,7 +7450,8 @@ W-40 (the owner, 2026-11-27): a Bastion's project opens on its repositories, as 
 it holds with the command of every row, and a switch on the Bastion's card turns the Bastion into the flat view of packages alone. The
 main installation's side of it, W-40's package P1: the catalogue the pages read and the switch, which change the interface between the
 Bastion and the main installation, so it rises to version 12 ([Q-BAS-506](#q-bas-506--the-project-view-raises-the-interface-to-version-12-and-the-bastions-state-record-to-form-3)).
-The Bastion's reader, data path and crawler (P2), the views (P4a, P4b), the pages (P5), the card (P6) and the texts (P7) follow.
+The Bastion's reader, data path and crawler, W-40's package P2, are R-BAS-132 and the Bastion's parts of R-BAS-130 and R-BAS-131; the
+views (P4a, P4b), the pages (P5), the card (P6) and the texts (P7) follow.
 
 ### R-BAS-130 · The catalogue of the project view: the indexes per project and repository, an image's list by content, the set-ups of every holder
 Priority: **P1** · Covers: quader-only
@@ -7455,9 +7490,10 @@ The priority is the one of R-BAS-116 to R-BAS-129, whose pages these feed.
   rewrite (R-BAS-107); the scans of R-BAS-104's and R-BAS-106's tests run over them.
 
 *Built on 2026-11-27 (W-40's P1):* the kinds and the path forms of [catalogue.go](../../internal/bastion/iface/catalogue.go),
-`publicSet`, `scopedIndexes`, `images`, `holders` and `setups` of [builder.go](../../internal/bastionmain/catalogue/builder.go). *Not
-built:* the Bastion's reader of the scoped indexes and of the images list, its data path and crawler (W-40's P2), and the pages
-(W-40's P5).
+`publicSet`, `scopedIndexes`, `images`, `holders` and `setups` of [builder.go](../../internal/bastionmain/catalogue/builder.go).
+*Built on 2026-11-27 (W-40's P2):* the Bastion's reader of the scoped indexes, which its search reads (R-BAS-113, Q-BAS-507), and its
+show rule (R-BAS-112); the images list and the set-up without a version are a package's documents, which the reader answered already;
+the data path and the crawler (R-BAS-118, R-BAS-132). *Not built:* the pages (W-40's P5).
 
 Acceptance criteria:
 
@@ -7506,8 +7542,17 @@ the statements of [bastion_registration.sql](../../internal/meta/postgres/querie
 [bastion_registrations_api.go](../../internal/api/v1/bastion_registrations_api.go) and the OpenAPI document, the wire's
 [configuration.go](../../internal/bastion/iface/configuration.go), the builder's registration in
 [wire_bastion_catalogue.go](../../internal/app/wire_bastion_catalogue.go) and [builder.go](../../internal/bastionmain/catalogue/builder.go).
-*Not built:* what the Bastion does with the switch at once, before the next build (its state, the data path's `404`s, the pages' flat
-view, the sitemap; W-40's P2 and P5), and the card's switch (W-40's P6).
+- **At the Bastion, at once** (W-40's P2). The replica applies the switch with `gui` and `docs` (R-BAS-112) and keeps it in its state
+  record, before the builder's next run: its state says it (`State().HideRepositories`, the data's `state`), no repository's index is
+  answered or searched (a search of one repository reads the project's index filtered by it, Q-BAS-507), the data's list of repositories
+  answers `404` and a single repository its name and format alone (R-BAS-118), and the crawler's text names no repository: no project's
+  repositories, no repository's page but the root of a generic repository's files without its description, no step **Repositories** in
+  the way, a project's links lead to its packages, and the sitemap's set is one of its own (R-BAS-132).
+
+*Built on 2026-11-27 (W-40's P2):* the Bastion's part, `SetSwitches` and `hidden` of
+[catalogue.go](../../internal/bastion/catalogue/catalogue.go), the record of [state.go](../../internal/bastion/catalogue/state.go),
+[data.go](../../internal/bastion/gui/data.go), [seo.go](../../internal/bastion/gui/seo.go) and [crawl.go](../../internal/bastion/gui/crawl.go).
+*Not built:* the pages' flat view (W-40's P5) and the card's switch (W-40's P6).
 
 Acceptance criteria:
 
@@ -7523,6 +7568,64 @@ Acceptance criteria:
   stale `ETag`, the patch raises the revision, records the part and reaches the replica's snapshot. Area `bastion`, inside
   `TestR_BAS_104_TheCatalogueFollowsPublishesLevelsAndTheSwitch`: the switch on drops the repository's index within a run and keeps the
   project's, off builds it again.
+- Unit, the Bastion's part (milliseconds): `TestR_BAS_131_TheReaderHidesTheRepositoryIndexes`
+  ([project_view_test.go](../../internal/bastion/catalogue/project_view_test.go)); hidden in `TestR_BAS_118_TheDataOfTheProjectView`,
+  `TestR_BAS_132_HiddenRepositoriesHaveNoPage` and `TestR_BAS_122_RobotsAndTheSitemapAtTheHostsRoot`.
+
+### R-BAS-132 · A crawler finds the project view
+Priority: **P1** · Covers: quader-only
+
+W-40's P2: what a reader that runs no script reads of the project view (R-BAS-121's head and text, R-BAS-122's sitemap), from the
+catalogue of R-BAS-130 alone. The application's own pages are W-40's P5; until it lands a browser that runs the application shows its
+"Page not found" at the two new addresses, while a crawler reads the text below.
+
+- **The addresses** (the application's routes of W-40's plan, 4.1). `projects/<project>` is the project's own address: its text and
+  canonical address are its repositories' page, or its packages' while the repositories are hidden (W-40's D1). `projects/<project>/repositories`
+  is the project's repositories; `projects/<project>/repositories/<key>` and its spelling `…/<key>/files` are a repository's page;
+  `…/<key>/files/<path…>` a folder or a file below the root of a generic repository's files; `…/<key>/setup` Set up client, as before.
+- **A project's repositories.** Titled "Repositories in <display name>" ("Repositories in …" in German), headed by the display name, its
+  description as the lead and the page's description; its text links every public repository of the project, the first 100 in the public
+  set's order, each by its key with its description as the note. Indexed; `404` for a project the public set does not hold and while the
+  repositories are hidden.
+- **A repository's page** ([Q-BAS-509](#q-bas-509--a-repositorys-page-in-the-text-is-its-files-root-where-the-catalogue-holds-one-and-its-indexs-packages-otherwise)).
+  Where the catalogue holds the root of the repository's files, it is that root (R-BAS-121, R-UI-229), in both modes; its description is
+  the repository's while the repositories are shown. Otherwise it is titled and headed by the key, its description as the lead, and its
+  text links the packages of the repository's index (R-BAS-130), the first 100, each to its page in the project, under **Images** for an
+  image repository (format `oci`, the application's word for its items) and **Packages** for any other; a repository without a package
+  has the page without a list. Indexed; `404` for one outside the public set, and for every repository but a root of files while the
+  repositories are hidden.
+- **The way from the start** (W-40's D20, [Q-BAS-510](#q-bas-510--a-link-that-names-a-project-leads-to-its-repositories-or-to-its-packages-while-they-are-hidden)).
+  Every page of a project starts at Projects › the project's display name, which leads to the project's repositories, or to its packages
+  while the repositories are hidden. A project's repositories and its packages end there; a package's page goes on › Packages (› its name
+  on a version's or the versions' page); a repository's page › Repositories; Set up client › Repositories › the key; a folder or a file
+  › Repositories › the key › its folders. While the repositories are hidden there is no step **Repositories**, Set up client ends at the
+  project and names no repository, and a file's way goes Projects › the project › the key › its folders: the key is the root folder's name,
+  as every download address of the files has it (Q-BAS-504). No step is `<project>/<key>`.
+- **The start** links each project to where its way leads; its section **Files** stands only while the repositories are shown. A project's
+  packages keep their section **Files** in both modes ([Q-BAS-508](#q-bas-508--a-projects-list-keeps-its-repositories-with-files-in-both-modes)).
+- **The sitemap** (R-BAS-122). While the repositories are shown, each project the sitemap lists has its repositories (before its list, the
+  `lastmod` of its list) and each public repository of those projects its page, in the order of their names: a root of files without
+  `lastmod` as before, any other with the newest `updatedAt` of its index, none for one without a package. Hidden, the set is the one
+  before W-40: no project's repositories and no repository's page but the roots of files. The set's revision includes the switch.
+
+*Built on 2026-11-27 (W-40's P2):* the kinds `Project`, `Repositories` and `Repository` of
+[address.go](../../internal/bastion/gui/page/address.go) and the words of [texts.go](../../internal/bastion/gui/page/texts.go);
+`repositoriesPage`, `repositoryPage`, `projectTrail`, `repositoryTrail` and `projectRoute` of [seo.go](../../internal/bastion/gui/seo.go);
+`repositoryPages` of [crawl.go](../../internal/bastion/gui/crawl.go). The project Upstream's description and the well-known repositories'
+names stay the stored English text until W-40's P7 gives the Go table its words.
+
+Acceptance criteria:
+
+- Unit ([project_view_test.go](../../internal/bastion/gui/project_view_test.go), microseconds): `TestR_BAS_132_ACrawlerReadsTheProjectView`
+  (a project's repositories in English and German, an image repository's page with its images, a package repository's in German with its
+  packages, a repository without a package; the way of a package's page, of Set up client and of a folder);
+  `TestR_BAS_132_HiddenRepositoriesHaveNoPage` (three addresses `404` and `noindex`; a project's own address its packages; the ways
+  without a step Repositories and Set up client without the repository's name; the root of files without its description; the start
+  without its section Files). [page_test.go](../../internal/bastion/gui/page/page_test.go): the new kinds in
+  `TestR_BAS_121_TheAddressGrammarIsTheApplicationsRoutes`. [seo_test.go](../../internal/bastion/gui/seo_test.go): the sitemap's new
+  addresses with their `lastmod` and the hidden set in `TestR_BAS_122_RobotsAndTheSitemapAtTheHostsRoot`.
+- Integration (area `bastion`, `walkWebInterface` inside `TestR_BAS_109_TheBastionMirrorsTheCatalogueAndServesOnWhileTheLinkIsCut`, about
+  0.05 s more): the page of the world's npm repository, its facts and its search, each `200`, scanned for the main installation.
 
 ## A registration the configuration declares
 
@@ -15598,9 +15701,16 @@ address space (Q-BAS-17), and an address without the repository would need a bin
 | (b) Also strip the class from every document | Fewer facts in the data | Less to read | Forks the views' command order, the word Pushed/Fetched and the delivery note for one mode; the key stays in every command anyway |
 | (c) Hide generic files altogether | No key in a page | Nothing named | A public file vanishes from the Bastion |
 
-**Choice:** (a). The builder's part: no repository's index and no remote's upstream while it is on (R-BAS-131); the Bastion's and the
-pages' parts follow with W-40's P2 and P5, and the data's classes become a gap of [security/bastion.md](../security/bastion.md) there.
-**Applied in the spec:** R-BAS-131; code: `build` and `scopedIndexes` of [builder.go](../../internal/bastionmain/catalogue/builder.go).
+**Choice:** (a). The builder's part: no repository's index and no remote's upstream while it is on (R-BAS-131). The Bastion's part (W-40's
+P2): the switch at once, before the builder's next run; no repository's index answered or searched; the data's list of repositories
+`404` and a single repository's name and format alone; the crawler's text without a project's repositories, a repository's page but the
+root of files, a step **Repositories**, a repository's description or its qualified name, and a sitemap without them (R-BAS-131,
+R-BAS-132). The data a browser reads keep each version's holders with their keys and classes, and every command a key: recorded as
+[H-2439](../security/bastion.md#h-2439--with-hide-repositories-the-pages-name-no-repository-but-the-data-a-browser-reads-keep-each-versions-holders-and-every-command-names-a-key).
+The pages' part follows with W-40's P5. **Applied in the spec:** R-BAS-112, R-BAS-118, R-BAS-131, R-BAS-132; code: `build` and
+`scopedIndexes` of [builder.go](../../internal/bastionmain/catalogue/builder.go), `shows` of
+[reader.go](../../internal/bastion/catalogue/reader.go), `repositories` and `repository` of [data.go](../../internal/bastion/gui/data.go),
+[seo.go](../../internal/bastion/gui/seo.go), [crawl.go](../../internal/bastion/gui/crawl.go).
 
 ### Q-BAS-505 · The switch is Hide repositories, off by default, behind the Details of the web interface
 
@@ -15628,7 +15738,76 @@ walkthrough.
 
 **Choice:** (a). **Applied in the spec:** R-BAS-009's list of raises, R-BAS-130, R-BAS-131; code:
 [version.go](../../internal/bastion/iface/version.go), `recordVersion` of [state.go](../../internal/bastion/catalogue/state.go), the
-operations' `x-quader-bastion-interface: 12`.
+operations' `x-quader-bastion-interface: 12`. The record's form 3 also carries the switch `hideRepositories` (W-40's P2, R-BAS-112),
+which lands before the form was ever released.
+
+### Q-BAS-507 · A search reads the narrowest index that answers it
+
+Status: **Decided by the development agent** on 2026-11-27 (plan W-40, D9) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-BAS-113, R-BAS-130. The replica holds the catalogue's own index and, since Q-BAS-500, an index per project and per repository,
+each with the scope's own counts and latest version. The data's search (`packages?project&repository`) has to pick one; the sitemap and
+the lookup by name keep the catalogue's own (a page's address names a package, not a scope).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The narrowest index that answers: exactly one repository its own index while the repositories are shown; a project, and one repository whose index is not shown, the project's index filtered by the repositories; neither the catalogue's own (chosen) | A repository's list counts as the main installation's list of that repository, a project's as the project's | The numbers a visitor reads are the main installation's for the same scope; one repository's search keeps working while the repositories are hidden (the application finds a package's ID through it) | A virtual repository's packages, filtered out of the project's index while hidden, may be missing where its summaries name only the local repository under it |
+| (b) The catalogue's own index, filtered | No choice | One index | The counts are over every project's repositories (Q-BAS-500's reason) |
+| (c) A scope's index only when the query names exactly that scope, the catalogue's own otherwise | Fewer cases | Simple | A project's list filtered by two repositories counts over every project |
+
+**Choice:** (a). A repository's index is the repository, so no filter of the repositories applies to it (its summaries may name only
+the physical repositories that hold a version); an entry of a scope's index is listed only while the catalogue's own index shows its
+package (R-BAS-112), so a scope lists nothing a page would not show. **Applied in the spec:** R-BAS-113, R-BAS-118; code: `searchIndex`
+and `shown` of [reader.go](../../internal/bastion/catalogue/reader.go).
+
+### Q-BAS-508 · A project's list keeps its repositories with files in both modes
+
+Status: **Decided by the development agent** on 2026-11-27 (plan W-40, D24) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-BAS-121, Q-BAS-498. A project's flat list of packages leads to its generic repositories' files by their keys; with the
+project view a repository's page leads there too, and Hide repositories leaves the flat list the only view.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The section **Files** stays on a project's list in both modes; the start's section **Files**, by qualified names, only while the repositories are shown (chosen) | The flat view keeps its way to files | A file stays findable while the repositories are hidden, under the root folder's name every download address carries | Shown, the files are reachable twice (the list and the repository's page) |
+| (b) Only while the repositories are hidden | One way at a time | No double | The flat list changes with the mode for no reader's gain |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-121, R-BAS-132; code: `startPage` and `listPage` of
+[seo.go](../../internal/bastion/gui/seo.go). The application's list follows with W-40's P5.
+
+### Q-BAS-509 · A repository's page in the text is its files' root where the catalogue holds one, and its index's packages otherwise
+
+Status: **Decided by the development agent** on 2026-11-27 (W-40's P2) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-BAS-132. The application's repository page depends on the format (W-40's D5: ClamAV's databases, a generic repository's files,
+the items list otherwise); the crawler's text knows no format's rules (R-BAS-121's no format knowledge).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The root of the files where the catalogue holds the repository's root folder, otherwise the packages of its index (chosen) | Decided by what the catalogue holds | No table of formats in Go; ClamAV's index lists its databases, which are packages (R-BAS-130); every address keeps its spelling of before | A generic repository without a root folder in the catalogue has a page without a list, where the application shows an empty folder |
+| (b) A table of path formats in the Bastion | Decided by the format | The application's rule exactly | A second copy of the formats' kinds, which a new format must remember |
+
+**Choice:** (a). The section's heading follows the application's word for the items: **Images** for the format `oci`, **Packages**
+otherwise. **Applied in the spec:** R-BAS-132; code: `repositoryPage` of [seo.go](../../internal/bastion/gui/seo.go).
+
+### Q-BAS-510 · A link that names a project leads to its repositories, or to its packages while they are hidden
+
+Status: **Decided by the development agent** on 2026-11-27 (W-40's P2) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-BAS-132, W-40's D1 and D20. The start and every page's way name the project; the application leads `projects/<project>` to the
+project's default view.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The link is the default view's own address: `…/repositories`, or `…/packages` while the repositories are hidden (chosen) | No link of the text leads to an address whose canonical is another | A crawler follows canonical addresses only; the sitemap lists the same | The project's step links to the page itself on its repositories' page |
+| (b) The link is `projects/<project>` | One spelling in both modes | The application's own spelling | Every page's text links an address a crawler reads as a duplicate |
+
+**Choice:** (a). `projects/<project>` stays an address of its own whose text and canonical are the default view's. **Applied in the
+spec:** R-BAS-121, R-BAS-132; code: `projectRoute` and `projectTrail` of [seo.go](../../internal/bastion/gui/seo.go).
 
 ## What this does not cover
 

@@ -13,8 +13,11 @@ type Texts struct {
 	// Files heads a folder's entries; FilesSentence is the description of a generic repository's folders and files (R-UI-229).
 	Files         string
 	FilesSentence string
-	// PackagesIn is a project's list ("Packages in web"), VersionsOf a package's versions ("Versions of ui").
-	PackagesIn, VersionsOf func(string) string
+	// Repositories heads a project's repositories and is the way's step to them, Images what an image repository holds (R-BAS-132).
+	Repositories, Images string
+	// PackagesIn is a project's list ("Packages in web"), RepositoriesIn its repositories ("Repositories in web"), VersionsOf a
+	// package's versions ("Versions of ui").
+	PackagesIn, RepositoriesIn, VersionsOf func(string) string
 	// The page of a refusal of the class gui (R-BAS-123).
 	TooManyText, BlockedText func(seconds int64) string
 	TooManyHeading, Again    string
@@ -28,8 +31,10 @@ func TextsOf(locale string) Texts {
 			LatestVersion: "Neueste Version", Published: "Veröffentlicht", Licenses: "Lizenzen", Keywords: "Schlagwörter",
 			Documentation: "Dokumentation", Package: "Paket", SetupClient: "Client einrichten",
 			Files: "Dateien", FilesSentence: "Die Dateien, die in diesem Repository veröffentlicht sind.",
-			PackagesIn: func(p string) string { return "Pakete in " + p },
-			VersionsOf: func(n string) string { return "Versionen von " + n },
+			Repositories: "Repositories", Images: "Images",
+			PackagesIn:     func(p string) string { return "Pakete in " + p },
+			RepositoriesIn: func(p string) string { return "Repositories in " + p },
+			VersionsOf:     func(n string) string { return "Versionen von " + n },
 			TooManyText: func(s int64) string {
 				return "Von Ihrer Adresse kamen zu viele Anfragen. Versuchen Sie es in " + seconds(s, "einer Sekunde", "Sekunden") + " erneut."
 			},
@@ -47,8 +52,10 @@ func TextsOf(locale string) Texts {
 		LatestVersion: "Latest version", Published: "Published", Licenses: "Licenses", Keywords: "Keywords",
 		Documentation: "Documentation", Package: "Package", SetupClient: "Set up client",
 		Files: "Files", FilesSentence: "The files published in this repository.",
-		PackagesIn: func(p string) string { return "Packages in " + p },
-		VersionsOf: func(n string) string { return "Versions of " + n },
+		Repositories: "Repositories", Images: "Images",
+		PackagesIn:     func(p string) string { return "Packages in " + p },
+		RepositoriesIn: func(p string) string { return "Repositories in " + p },
+		VersionsOf:     func(n string) string { return "Versions of " + n },
 		TooManyText: func(s int64) string {
 			return "Too many requests came from your address. Try again in " + seconds(s, "one second", "seconds") + "."
 		},

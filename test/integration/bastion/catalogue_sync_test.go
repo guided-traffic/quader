@@ -114,10 +114,11 @@ func TestR_BAS_109_TheBastionMirrorsTheCatalogueAndServesOnWhileTheLinkIsCut(t *
 }
 
 // walkWebInterface reads what a visitor's browser reads of the package plain-lib through the web interface's own addresses
-// (R-BAS-118, W-35's P9): its page, the search, the lookup, its versions, its version and the state, each answered 200, then the
-// version's file through the download link its page carries (R-BAS-107), and scans
-// every status line, header and body for the main installation (W-35's B.13): its host, the address the Bastion reaches it at, and
-// a path of its management API. The web interface's own `/ui/` paths are the Bastion's and are not scanned for.
+// (R-BAS-118, W-35's P9): its page, the search, the lookup, its versions, its version, the state, its repository's facts, the
+// search of its repository and the repository's page (R-BAS-132), each answered 200, then the version's file through the download
+// link its page carries (R-BAS-107), and scans every status line, header and body for the main installation (W-35's B.13): its
+// host, the address the Bastion reaches it at, and a path of its management API. The web interface's own `/ui/` paths are the
+// Bastion's and are not scanned for.
 func walkWebInterface(t *testing.T, r *replica, id string) {
 	t.Helper()
 	var names []string
@@ -133,6 +134,8 @@ func walkWebInterface(t *testing.T, r *replica, id string) {
 		"/ui/data/v1/state", "/ui/data/v1/legal?locale=de",
 		"/ui/data/v1/packages?q=plain-lib", "/ui/data/v1/packages/lookup?format=npm&name=plain-lib",
 		"/ui/data/v1/packages/" + id, "/ui/data/v1/packages/" + id + "/versions", version,
+		// The project view (R-BAS-132): a repository's own facts and the search of its own index, and the crawler's repository page.
+		"/ui/data/v1/repositories/" + npmLocal, "/ui/data/v1/packages?repository=" + npmLocal, "/ui/en/projects/" + strings.Replace(npmLocal, "/", "/repositories/", 1),
 	} {
 		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, r.client+p, nil)
 		if err != nil {
@@ -150,6 +153,9 @@ func walkWebInterface(t *testing.T, r *replica, id string) {
 		}
 		if p == version {
 			versionBody = body
+		}
+		if strings.Contains(p, "repository=") && !bytes.Contains(body, []byte(`"plain-lib"`)) {
+			t.Errorf("GET %s does not list plain-lib: %s", p, body)
 		}
 		var head strings.Builder
 		for k, vs := range res.Header {

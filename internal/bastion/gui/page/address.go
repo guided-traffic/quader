@@ -23,7 +23,7 @@ const (
 	Unknown Kind = iota
 	// Start is the start page: the projects.
 	Start
-	// List is a project's packages: projects/<project>/packages, and projects/<project>, which leads there.
+	// List is a project's packages: projects/<project>/packages.
 	List
 	// Package is a package's page: projects/<project>/packages/<format>/<name…>.
 	Package
@@ -36,17 +36,26 @@ const (
 	Legal
 	// Setup is a public repository's page Set up client: projects/<project>/repositories/<key>/setup (R-BAS-129).
 	Setup
-	// Files is a public generic repository's folder or file (R-UI-229): projects/<project>/repositories/<key>, the root of its files,
-	// and projects/<project>/repositories/<key>/files/<path…>.
+	// Files is a folder or a file below the root of a public generic repository's files (R-UI-229):
+	// projects/<project>/repositories/<key>/files/<path…>.
 	Files
+	// Project is a project's own address, projects/<project>, which leads to its repositories, or to its packages while the
+	// repositories are hidden (R-BAS-131).
+	Project
+	// Repositories is a project's repositories: projects/<project>/repositories (R-BAS-132).
+	Repositories
+	// Repository is a public repository's page: projects/<project>/repositories/<key> and its spelling …/<key>/files, the root of a
+	// generic repository's files or the list of what another repository holds (R-BAS-132).
+	Repository
 )
 
 // Address is an address of a page below /ui/<locale>/ as the application's routes read it.
 type Address struct {
 	Locale string
 	Kind   Kind
-	// Project, Format, Name and Version are a package's or a version's (Name with its slashes, an npm scope's); Project alone a list's;
-	// Project and Repository (its key) a page Set up client's; Project, Repository and Path a folder's or a file's.
+	// Project, Format, Name and Version are a package's or a version's (Name with its slashes, an npm scope's); Project alone a
+	// project's, a list's or a project's repositories'; Project and Repository (its key) a repository's or a page Set up client's;
+	// Project, Repository and Path a folder's or a file's.
 	Project    string
 	Repository string
 	// Path is a folder's or a file's path in its repository, its segments joined by "/"; "" is the root of the files.
@@ -85,10 +94,18 @@ func Parse(locale, tail string, q url.Values) Address {
 	return a
 }
 
-// parseProject reads what follows projects/<project>: nothing or packages (the list), a package's, a version's or the versions'
-// address, or a repository's page Set up client.
+// parseProject reads what follows projects/<project>: nothing (the project), packages (the list), repositories, a package's, a
+// version's or the versions' address, or a repository's, its files' or its page Set up client.
 func (a *Address) parseProject(rest []string, q url.Values) {
-	if len(rest) == 0 || len(rest) == 1 && rest[0] == "packages" {
+	switch {
+	case len(rest) == 0:
+		a.Kind = Project
+		return
+	case len(rest) == 1 && rest[0] == "repositories":
+		a.Kind = Repositories
+		return
+	}
+	if len(rest) == 1 && rest[0] == "packages" {
 		a.Kind = List
 		for k := range q {
 			if k == "q" || k == "format" || k == "repository" || k == "deprecated" || k == "sort" || k == "cursor" {
@@ -101,10 +118,10 @@ func (a *Address) parseProject(rest []string, q url.Values) {
 		switch {
 		case len(rest) == 3 && rest[2] == "setup":
 			a.Kind, a.Repository = Setup, rest[1]
-		case len(rest) == 2:
-			a.Kind, a.Repository = Files, rest[1]
-		case rest[2] == "files":
+		case len(rest) == 2, len(rest) == 3 && rest[2] == "files":
 			// `files` alone is the root, as the application's matcher reads it; its one spelling is the repository's address.
+			a.Kind, a.Repository = Repository, rest[1]
+		case rest[2] == "files":
 			a.Kind, a.Repository, a.Path = Files, rest[1], strings.Join(rest[3:], "/")
 		}
 		return
@@ -170,11 +187,15 @@ func (a Address) Route() string {
 		return ""
 	case Legal:
 		return "legal/" + a.LegalPage
+	case Project:
+		return "projects/" + url.PathEscape(a.Project)
 	case List:
 		return "projects/" + url.PathEscape(a.Project) + "/packages"
+	case Repositories:
+		return "projects/" + url.PathEscape(a.Project) + "/repositories"
 	case Setup:
 		return "projects/" + url.PathEscape(a.Project) + "/repositories/" + url.PathEscape(a.Repository) + "/setup"
-	case Files:
+	case Repository, Files:
 		p := "projects/" + url.PathEscape(a.Project) + "/repositories/" + url.PathEscape(a.Repository)
 		if a.Path != "" {
 			segs := strings.Split(a.Path, "/")

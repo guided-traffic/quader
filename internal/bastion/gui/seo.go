@@ -50,8 +50,21 @@ func (h *Handler) describe(ctx context.Context, a pg.Address) (pg.Page, int) {
 	switch a.Kind {
 	case pg.Start:
 		return h.startPage(a)
+	case pg.Project:
+		// The application leads a project's own address to its repositories, or to its packages while they are hidden (R-BAS-131);
+		// the text is that page's, under its canonical address.
+		target := a
+		target.Kind = pg.Repositories
+		if h.hidden() {
+			target.Kind = pg.List
+		}
+		return h.describe(ctx, target)
 	case pg.List:
 		return h.listPage(a)
+	case pg.Repositories:
+		return h.repositoriesPage(a)
+	case pg.Repository:
+		return h.repositoryPage(ctx, a)
 	case pg.Package, pg.Versions, pg.Version:
 		return h.packagePage(ctx, a)
 	case pg.Legal:
@@ -67,7 +80,9 @@ func (h *Handler) describe(ctx context.Context, a pg.Address) (pg.Page, int) {
 // filesPage is a public generic repository's folder or file (R-UI-229, Q-BAS-483): found while the catalogue holds the folder's listing
 // or the file's description, indexed like a package's page, its canonical address the one spelling of the path (the root is the
 // repository's own address). A folder's text links its entries, the first maxListed; a file's names it. Only `path` and `kind` of the
-// main installation's shapes are read.
+// main installation's shapes are read. The root says the repository's description while the repositories are shown; the way leads
+// through the project's repositories then and through the project alone while they are hidden, the repository's step its key, never
+// `<project>/<key>` (R-BAS-132).
 func (h *Handler) filesPage(ctx context.Context, a pg.Address) (pg.Page, int) {
 	at := func(kind iface.CatalogueKind) iface.CataloguePath {
 		return iface.CataloguePath{Kind: kind, Project: a.Project, Repository: a.Repository, File: a.Path}
@@ -88,22 +103,24 @@ func (h *Handler) filesPage(ctx context.Context, a pg.Address) (pg.Page, int) {
 		}
 	}
 	t := pg.TextsOf(a.Locale)
-	root := pg.Address{Kind: pg.Files, Project: a.Project, Repository: a.Repository}
+	hidden := h.hidden()
+	root := pg.Address{Kind: pg.Repository, Project: a.Project, Repository: a.Repository}
 	p := h.base(a, a.Route(), nil)
 	p.Title, p.Heading = a.Repository, a.Repository
+	p.Lead, p.Description = t.FilesSentence, t.FilesSentence
 	if a.Path != "" {
 		p.Title = a.Path[strings.LastIndexByte(a.Path, '/')+1:]
 		p.Heading = p.Title
+	} else if repo, ok := h.publicRepository(a.Project, a.Repository); ok && !hidden && repo.Description != "" {
+		p.Lead, p.Description = repo.Description, repo.Description
 	}
-	p.Lead, p.Description = t.FilesSentence, t.FilesSentence
 	p.LD = webPage(p.Title, p.Canonical)
-	p.Crumbs = []pg.Link{{Text: t.Projects, Href: local(a.Locale, "")}}
+	p.Crumbs = h.repositoryTrail(a.Locale, a.Project, hidden)
 	if a.Path != "" {
-		p.Crumbs = append(p.Crumbs, pg.Link{Text: a.Project + "/" + a.Repository, Href: local(a.Locale, root.Route())})
+		p.Crumbs = append(p.Crumbs, pg.Link{Text: a.Repository, Href: local(a.Locale, root.Route())})
 		segs := strings.Split(a.Path, "/")
 		for i := 1; i < len(segs); i++ {
-			parent := root
-			parent.Path = strings.Join(segs[:i], "/")
+			parent := pg.Address{Kind: pg.Files, Project: a.Project, Repository: a.Repository, Path: strings.Join(segs[:i], "/")}
 			p.Crumbs = append(p.Crumbs, pg.Link{Text: segs[i-1], Href: local(a.Locale, parent.Route())})
 		}
 	}
@@ -118,8 +135,7 @@ func (h *Handler) filesPage(ctx context.Context, a pg.Address) (pg.Page, int) {
 			if a.Path != "" && !strings.HasPrefix(path, a.Path+"/") {
 				path = a.Path + "/" + path
 			}
-			entry := root
-			entry.Path = path
+			entry := pg.Address{Kind: pg.Files, Project: a.Project, Repository: a.Repository, Path: path}
 			s.Links = append(s.Links, pg.Link{Text: path[strings.LastIndexByte(path, '/')+1:], Href: local(a.Locale, entry.Route())})
 			if len(s.Links) == maxListed {
 				break
@@ -148,9 +164,16 @@ func (h *Handler) setupPage(a pg.Address) (pg.Page, int) {
 	p := h.base(a, a.Route(), nil)
 	p.Title, p.Heading, p.Lead, p.Noindex = t.SetupClient, t.SetupClient, a.Project+"/"+a.Repository, true
 	p.LD = webPage(t.SetupClient, p.Canonical)
-	p.Crumbs = []pg.Link{
-		{Text: t.Projects, Href: local(a.Locale, "")},
-		{Text: h.projectName(a.Project).DisplayName, Href: local(a.Locale, pg.Address{Kind: pg.List, Project: a.Project}.Route())},
+	// The way leads through the repository while the repositories are shown; hidden, it ends at the project and the text names no
+	// repository (R-BAS-132): the snippets the application shows carry its address, which a client needs.
+	hidden := h.hidden()
+	p.Crumbs = h.repositoryTrail(a.Locale, a.Project, hidden)
+	if hidden {
+		p.Lead = ""
+	} else {
+		p.Crumbs = append(p.Crumbs, pg.Link{
+			Text: a.Repository, Href: local(a.Locale, pg.Address{Kind: pg.Repository, Project: a.Project, Repository: a.Repository}.Route()),
+		})
 	}
 	return p, http.StatusOK
 }
@@ -207,12 +230,57 @@ func fileRepositories(locale, project string, names []string) pg.Section {
 		if project != "" {
 			text = repo
 		}
-		s.Links = append(s.Links, pg.Link{Text: text, Href: local(locale, pg.Address{Kind: pg.Files, Project: key, Repository: repo}.Route())})
+		s.Links = append(s.Links, pg.Link{Text: text, Href: local(locale, pg.Address{Kind: pg.Repository, Project: key, Repository: repo}.Route())})
 		if len(s.Links) == maxListed {
 			break
 		}
 	}
 	return s
+}
+
+// hidden reports whether the repositories are hidden (R-BAS-131): the text names no repository but a generic repository's files,
+// and leads to a project's packages.
+func (h *Handler) hidden() bool { return h.o.Catalogue.State().HideRepositories }
+
+// projectRoute is where a link to a project leads: its repositories, or its packages while they are hidden (W-40's D1, R-BAS-131).
+func projectRoute(project string, hidden bool) string {
+	if hidden {
+		return pg.Address{Kind: pg.List, Project: project}.Route()
+	}
+	return pg.Address{Kind: pg.Repositories, Project: project}.Route()
+}
+
+// projectTrail is the way from the start to a page of a project (W-40's D20): Projects › the project's display name.
+func (h *Handler) projectTrail(locale, project string, hidden bool) []pg.Link {
+	return []pg.Link{
+		{Text: pg.TextsOf(locale).Projects, Href: local(locale, "")},
+		{Text: h.projectName(project).DisplayName, Href: local(locale, projectRoute(project, hidden))},
+	}
+}
+
+// repositoryTrail is the way to a page of a repository: the project's, then its step Repositories while they are shown.
+func (h *Handler) repositoryTrail(locale, project string, hidden bool) []pg.Link {
+	out := h.projectTrail(locale, project, hidden)
+	if !hidden {
+		out = append(out, pg.Link{
+			Text: pg.TextsOf(locale).Repositories, Href: local(locale, pg.Address{Kind: pg.Repositories, Project: project}.Route()),
+		})
+	}
+	return out
+}
+
+// publicRepository is a repository of the public set by its project and key.
+func (h *Handler) publicRepository(project, key string) (iface.CatalogueRepository, bool) {
+	pub, err := h.o.Catalogue.PublicSet()
+	if err != nil {
+		return iface.CatalogueRepository{}, false
+	}
+	for _, r := range pub.Repositories {
+		if r.Name == project+"/"+key {
+			return r, true
+		}
+	}
+	return iface.CatalogueRepository{}, false
 }
 
 // projectName is a project's display name as the public set names it (R-BAS-128), its key where the set does not hold it.
@@ -238,17 +306,17 @@ func (h *Handler) startPage(a pg.Address) (pg.Page, int) {
 	if err != nil {
 		return pg.Page{}, http.StatusNotFound
 	}
+	hidden := h.hidden()
 	p := h.base(a, "", nil)
 	p.Title, p.Heading = t.Projects, t.Projects
 	p.LD = webPage(t.Projects, p.Canonical)
 	s := pg.Section{Heading: t.Projects}
 	for _, pr := range projects {
-		s.Links = append(s.Links, pg.Link{
-			Text: pr.DisplayName, Note: pg.Cut(pr.Description, 160), Href: local(a.Locale, pg.Address{Kind: pg.List, Project: pr.Key}.Route()),
-		})
+		s.Links = append(s.Links, pg.Link{Text: pr.DisplayName, Note: pg.Cut(pr.Description, 160), Href: local(a.Locale, projectRoute(pr.Key, hidden))})
 	}
 	p.Sections = []pg.Section{s}
-	if files := fileRepositories(a.Locale, "", names); len(files.Links) > 0 {
+	// The repositories with files by their qualified names, only while the repositories are shown (R-BAS-131).
+	if files := fileRepositories(a.Locale, "", names); len(files.Links) > 0 && !hidden {
 		p.Sections = append(p.Sections, files)
 	}
 	return p, http.StatusOK
@@ -279,8 +347,8 @@ func (h *Handler) listPage(a pg.Address) (pg.Page, int) {
 	// A list of results is not indexed; its canonical address is the list itself (W-35's B.11).
 	p.Noindex = a.Filtered
 	p.LD = webPage(p.Title, p.Canonical)
-	p.Crumbs = []pg.Link{{Text: t.Projects, Href: local(a.Locale, "")}}
-	// The project's repositories with files stand above its packages, as in the application.
+	p.Crumbs = h.projectTrail(a.Locale, a.Project, h.hidden())
+	// The project's repositories with files stand above its packages, as in the application, in both modes (W-40's D24).
 	if len(files.Links) > 0 {
 		p.Sections = append(p.Sections, files)
 	}
@@ -292,6 +360,79 @@ func (h *Handler) listPage(a pg.Address) (pg.Page, int) {
 			})
 		}
 		p.Sections = append(p.Sections, s)
+	}
+	return p, http.StatusOK
+}
+
+// repositoriesPage is a project's repositories (R-BAS-132): found while the public set holds a repository of the project and the
+// repositories are shown, indexed; its text links every public repository of the project, the first maxListed in the public set's
+// order, each with its description as the note.
+func (h *Handler) repositoriesPage(a pg.Address) (pg.Page, int) {
+	pub, err := h.o.Catalogue.PublicSet()
+	if err != nil || h.hidden() {
+		return pg.Page{}, http.StatusNotFound
+	}
+	t := pg.TextsOf(a.Locale)
+	s := pg.Section{Heading: t.Repositories}
+	for _, r := range pub.Repositories {
+		project, key, _ := strings.Cut(r.Name, "/")
+		if project != a.Project || len(s.Links) == maxListed {
+			continue
+		}
+		s.Links = append(s.Links, pg.Link{
+			Text: key, Note: pg.Cut(r.Description, 160), Href: local(a.Locale, pg.Address{Kind: pg.Repository, Project: project, Repository: key}.Route()),
+		})
+	}
+	if len(s.Links) == 0 {
+		return pg.Page{}, http.StatusNotFound
+	}
+	project := h.projectName(a.Project)
+	p := h.base(a, pg.Address{Kind: pg.Repositories, Project: a.Project}.Route(), nil)
+	p.Title, p.Heading = t.RepositoriesIn(project.DisplayName), project.DisplayName
+	p.Lead, p.Description = project.Description, project.Description
+	p.LD = webPage(p.Title, p.Canonical)
+	p.Crumbs = h.projectTrail(a.Locale, a.Project, false)
+	p.Sections = []pg.Section{s}
+	return p, http.StatusOK
+}
+
+// repositoryPage is a public repository's page (R-BAS-132): the root of its files where the catalogue holds them (a generic
+// repository's, also while the repositories are hidden, W-40's D14); otherwise, while the repositories are shown, its key, its
+// description and the packages of its index (images for an image repository), the first maxListed, each linked to its page in the
+// project. Hidden, such a repository has no page.
+func (h *Handler) repositoryPage(ctx context.Context, a pg.Address) (pg.Page, int) {
+	files, err := h.o.Catalogue.Files()
+	if err != nil {
+		return pg.Page{}, http.StatusNotFound
+	}
+	name := a.Project + "/" + a.Repository
+	if slices.Contains(files, name) {
+		return h.filesPage(ctx, a)
+	}
+	repo, ok := h.publicRepository(a.Project, a.Repository)
+	if !ok || h.hidden() {
+		return pg.Page{}, http.StatusNotFound
+	}
+	res, err := h.o.Catalogue.Search(catalogue.Query{Repositories: []string{name}, Limit: maxListed})
+	if err != nil {
+		return pg.Page{}, http.StatusNotFound
+	}
+	t := pg.TextsOf(a.Locale)
+	p := h.base(a, a.Route(), nil)
+	p.Title, p.Heading = a.Repository, a.Repository
+	p.Lead, p.Description = repo.Description, repo.Description
+	p.LD = webPage(p.Title, p.Canonical)
+	p.Crumbs = h.repositoryTrail(a.Locale, a.Project, false)
+	s := pg.Section{Heading: t.Packages}
+	if repo.Format == "oci" {
+		// What the application's list calls an image repository's items (R-UI-052's content shape).
+		s.Heading = t.Images
+	}
+	for _, e := range res.Items {
+		s.Links = append(s.Links, pg.Link{Text: e.Name, Note: pg.Cut(e.Description, 160), Href: local(a.Locale, pg.PackageRoute(a.Project, e.Format, e.Name))})
+	}
+	if len(s.Links) > 0 {
+		p.Sections = []pg.Section{s}
 	}
 	return p, http.StatusOK
 }
@@ -390,10 +531,8 @@ func (h *Handler) packagePage(ctx context.Context, a pg.Address) (pg.Page, int) 
 	p := h.base(a, route, query)
 	// An address that opens the open findings is not indexed, and its canonical address is the page without them (W-35's B.11).
 	p.Noindex = a.Findings
-	p.Crumbs = []pg.Link{
-		{Text: t.Projects, Href: local(a.Locale, "")},
-		{Text: h.projectName(a.Project).DisplayName, Href: local(a.Locale, pg.Address{Kind: pg.List, Project: a.Project}.Route())},
-	}
+	p.Crumbs = append(h.projectTrail(a.Locale, a.Project, h.hidden()),
+		pg.Link{Text: t.Packages, Href: local(a.Locale, pg.Address{Kind: pg.List, Project: a.Project}.Route())})
 	p.Lead = e.Description
 	p.Description = e.Description
 	switch a.Kind {

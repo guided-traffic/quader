@@ -46,13 +46,13 @@ func (c *Catalogue) sync(ctx context.Context) error {
 	if err := c.fetch(ctx, next, changed); err != nil {
 		return err
 	}
-	idx, err := c.indexOf(ctx, next, cur)
-	if err != nil {
+	next.public, next.repos = pub, reposOf(pub)
+	if err := c.indexesOf(ctx, next, cur); err != nil {
 		return err
 	}
 	gui, docs := c.effective()
-	next.public, next.repos, next.index, next.gui, next.docs = pub, reposOf(pub), idx, gui, docs
-	next.docIndex = c.docsOf(ctx, next, cur, idx)
+	next.gui, next.docs, next.hide = gui, docs, c.hidden()
+	next.docIndex = c.docsOf(ctx, next, cur, next.index)
 	next.confirmedAt = c.o.Now()
 	if !gui {
 		return nil // switched off while the round ran
@@ -254,7 +254,7 @@ func (c *Catalogue) persist(ctx context.Context, next, cur *snapshot, changed ma
 		return
 	}
 	due := cur == nil || len(changed) > 0 || cur.cursor != next.cursor || cur.gui != next.gui || cur.docs != next.docs ||
-		!samePublic(cur.public, next.public) || next.confirmedAt.Sub(c.lastWrite) >= refreshEvery
+		cur.hide != next.hide || !samePublic(cur.public, next.public) || next.confirmedAt.Sub(c.lastWrite) >= refreshEvery
 	if !due {
 		return
 	}
@@ -342,7 +342,8 @@ func (c *Catalogue) take(ctx context.Context, mode takeMode) bool {
 		return false
 	}
 	next := &snapshot{
-		cursor: rec.Cursor, confirmedAt: rec.ConfirmedAt, gui: rec.GUI, docs: rec.Docs, public: rec.Public, repos: reposOf(rec.Public),
+		cursor: rec.Cursor, confirmedAt: rec.ConfirmedAt, gui: rec.GUI, docs: rec.Docs, hide: rec.HideRepositories, public: rec.Public,
+		repos: reposOf(rec.Public),
 	}
 	for n, doc := range rec.Shards {
 		if doc == "" {
@@ -362,13 +363,11 @@ func (c *Catalogue) take(ctx context.Context, mode takeMode) bool {
 		}
 		next.shards[n].doc = doc
 	}
-	idx, err := c.indexOf(ctx, next, cur)
-	if err != nil {
+	if err := c.indexesOf(ctx, next, cur); err != nil {
 		c.log.Warn("the index of the stored state of the public catalogue cannot be read; the replica syncs it again", "error", err)
 		return false
 	}
-	next.index = idx
-	next.docIndex = c.docsOf(ctx, next, cur, idx)
+	next.docIndex = c.docsOf(ctx, next, cur, next.index)
 	if gui, _ := c.effective(); c.decided() && !gui {
 		return false
 	}

@@ -36,11 +36,14 @@ type snapshot struct {
 	cursor      int64
 	confirmedAt time.Time
 	gui, docs   bool
-	public      iface.CataloguePublic
-	repos       map[string]iface.CatalogueRepository
-	shards      [shardCount]*shard
-	index       *index
-	docIndex    *docIndex
+	// hide is the switch hideRepositories (R-BAS-131): the repositories' indexes are not shown and no search reads them.
+	hide     bool
+	public   iface.CataloguePublic
+	repos    map[string]iface.CatalogueRepository
+	shards   [shardCount]*shard
+	index    *index
+	scoped   scopedIndexes
+	docIndex *docIndex
 }
 
 // count is the number of documents the snapshot names.
@@ -122,26 +125,29 @@ func shardOf(path string) int {
 // record is the state record (R-BAS-110), the payload the store signs: what a replica that starts needs to serve, and what a
 // replica of a shared bucket takes from another.
 type record struct {
-	Version     int                   `json:"version"`
-	Cursor      int64                 `json:"cursor"`
-	ConfirmedAt time.Time             `json:"confirmedAt"`
-	GUI         bool                  `json:"gui"`
-	Docs        bool                  `json:"docs"`
-	Public      iface.CataloguePublic `json:"public"`
+	Version     int       `json:"version"`
+	Cursor      int64     `json:"cursor"`
+	ConfirmedAt time.Time `json:"confirmedAt"`
+	GUI         bool      `json:"gui"`
+	Docs        bool      `json:"docs"`
+	// HideRepositories is the switch of R-BAS-131, which a replica that starts without its configuration applies with the others.
+	HideRepositories bool                  `json:"hideRepositories"`
+	Public           iface.CataloguePublic `json:"public"`
 	// Shards are the documents of the shards of the manifest by their number, "" for an empty shard.
 	Shards []string `json:"shards"`
 	// Replica is the replica that wrote it, for the log.
 	Replica string `json:"replica"`
 }
 
-// recordVersion is the record's form: 3 since the public set carries each repository's description (R-BAS-130, interface version 12;
-// 2 named the projects with their names, R-BAS-128). A record of another form is refused, as one that does not decode, and the replica
-// reads the catalogue again from the start.
+// recordVersion is the record's form: 3 since the public set carries each repository's description (R-BAS-130, interface version 12)
+// and the record the switch hideRepositories (R-BAS-131); 2 named the projects with their names (R-BAS-128). A record of another
+// form is refused, as one that does not decode, and the replica reads the catalogue again from the start.
 const recordVersion = 3
 
 func (s *snapshot) record(replica string) record {
 	r := record{
-		Version: recordVersion, Cursor: s.cursor, ConfirmedAt: s.confirmedAt.UTC(), GUI: s.gui, Docs: s.docs, Public: s.public,
+		Version: recordVersion, Cursor: s.cursor, ConfirmedAt: s.confirmedAt.UTC(), GUI: s.gui, Docs: s.docs, HideRepositories: s.hide,
+		Public: s.public,
 		Shards: make([]string, shardCount), Replica: replica,
 	}
 	for i, sh := range s.shards {

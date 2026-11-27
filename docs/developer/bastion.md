@@ -1935,7 +1935,7 @@ image of 3 tags on 2 manifests, no version in two public repositories):
 The additions are 4.8 % of this seed's catalogue: with 1.7 versions per package and 8 repositories for 20 packages, the indexes, a cost per
 scope, weigh more than in a catalogue of many versions per package, for which W-40's section 2.2 derives about 1 % *(derived)*. A version in
 a further public repository adds its clients' set-ups (447 B each measured here); the seed has none, so that share is derived only. The
-reader's memory for the scoped indexes is P2's and not measured here.
+reader's memory for the scoped indexes is [the project view at the Bastion](#the-project-view-at-the-bastion)'s, derived and not measured.
 
 Tests (tier, time, data): `TestR_BAS_130_TheCatalogueHoldsAProjectsAndARepositorysIndex`, `TestR_BAS_130_EveryHolderHasItsSetUp` and
 `TestR_BAS_131_HiddenRepositoriesBuildNoRepositoryIndexAndNameNoUpstream` ([project_view_test.go](../../internal/bastionmain/catalogue/project_view_test.go),
@@ -1944,6 +1944,31 @@ unit, a fake management API of one project, about 0.1 s together, bytes); the pa
 (`internal/bastion/iface`, milliseconds); `TestR_BAS_131_TheSwitchHideRepositoriesIsReadAndPatched` (`internal/api/v1`, microseconds);
 the switch's store in `TestR_BAS_093_TheConfigurationLivesOnTheRegistration` (area `bastionreg`) and the indexes and the switch at the
 builder in `TestR_BAS_104_TheCatalogueFollowsPublishesLevelsAndTheSwitch` (area `bastion`, two runs of the builder more).
+
+### The project view at the Bastion
+
+W-40's P2, built on 2026-11-27 (R-BAS-112, R-BAS-113, R-BAS-118, R-BAS-131's Bastion's part, R-BAS-132): what a replica does with P1's
+documents. The application's pages are W-40's P5.
+
+| Where | What |
+|---|---|
+| [catalogue/index.go](../../internal/bastion/catalogue/index.go) | `indexesOf`: the catalogue's own index and `scopedIndexes` (a project's by its key, a repository's by its qualified name), each from its pages through `indexOf`; a page document is read and parsed once whichever index names it, an index whose pages are unchanged is the served one's |
+| [catalogue/reader.go](../../internal/bastion/catalogue/reader.go) | `searchIndex` (Q-BAS-507: one repository its own index, a project, or one repository while hidden, the project's filtered, otherwise the catalogue's own), `shown` (a scope's entry only while the catalogue's own index shows its package), `shows` for `projectIndex` and `repositoryIndex`, `State().HideRepositories`, the scopes' pages and the switch in `Packages()`'s revision |
+| [catalogue/catalogue.go](../../internal/bastion/catalogue/catalogue.go), [state.go](../../internal/bastion/catalogue/state.go) | the switch in `switches` and `hidden()` (the configuration's once decided, else the stored state's), the snapshot's `hide` overlaid by `served()` at once, the record's `hideRepositories` |
+| [gui/data.go](../../internal/bastion/gui/data.go) | `state.hideRepositories`; `repositories` with `description`, `404` while hidden; `repositories/<p>/<r>` (`repository`, `repositoryPath`), `{name, format}` alone while hidden |
+| [gui/page/address.go](../../internal/bastion/gui/page/address.go) | the kinds `Project` (`projects/<p>`), `Repositories`, `Repository` (`…/repositories/<key>` and `…/files`); `Files` is a path below the root |
+| [gui/seo.go](../../internal/bastion/gui/seo.go) | `repositoriesPage`, `repositoryPage` (the files' root where `Files()` holds it, else the index's packages, Q-BAS-509), `projectRoute`, `projectTrail`, `repositoryTrail` (W-40's D20, Q-BAS-510), the hidden mode through `hidden()` |
+| [gui/crawl.go](../../internal/bastion/gui/crawl.go) | `repositoryPages` and the projects' repositories in the sitemap while shown, `lastmod` from a sorted search of one repository; the switch in the set's revision |
+
+Memory *(derived, not measured)*: each scope's index keeps its parsed summaries (about 0.93 KiB raw each, W-40's section 2.2); a scope
+whose page is the same bytes as another's (a project of one repository) shares its entries, since pages are parsed by their SHA-256.
+
+Tests (tier, time, data): `TestR_BAS_130_TheSearchReadsTheNarrowestIndex` and `TestR_BAS_131_TheReaderHidesTheRepositoryIndexes`
+([project_view_test.go](../../internal/bastion/catalogue/project_view_test.go), unit against `maintest`, 0.04 s and 0.03 s, three pages
+of a few hundred bytes); `TestR_BAS_118_TheDataOfTheProjectView` ([gui_test.go](../../internal/bastion/gui/gui_test.go)) and
+`TestR_BAS_132_ACrawlerReadsTheProjectView`, `TestR_BAS_132_HiddenRepositoriesHaveNoPage`
+([project_view_test.go](../../internal/bastion/gui/project_view_test.go)), unit, microseconds to 0.01 s, the reader in memory; the
+sitemap's new addresses in `TestR_BAS_122_RobotsAndTheSitemapAtTheHostsRoot`; three more reads in `walkWebInterface` (area `bastion`).
 
 ## The public catalogue at the Bastion (package P7)
 
@@ -1997,11 +2022,11 @@ W-35's P9, built on 2026-11-26: the Bastion serves a read-only web interface to 
 | File | Responsibility |
 |---|---|
 | [gui/gui.go](../../internal/bastion/gui/gui.go) | `Handler`, `Options` (with the Bastion's `BaseURL`), `New`, `Owns` (`/`, `/ui`, `/ui/…`, `/robots.txt`, `/sitemap.xml`, `/sitemap/…`), `Bundle` (the embedded `dist/`); the order of a request: the headers, the method (`405`), the guard (`Blocked`, then `Page`; a page's address refused is `refusal.go`'s page), `robots.txt` (also while off), the state (off `404`, not ready `503` for the data and for a page through `webui.Options.Page`), the sitemap, the redirects, the data (with `X-Robots-Tag: noindex`), the bundle through `webui.Handler`; the problems of type `about:blank` |
-| [gui/seo.go](../../internal/bastion/gui/seo.go) | `fill`, the bundle handler's `Page` hook (R-BAS-121): the address through `page.Parse`, the documents it reads (the summary from `Lookup`, the version, the README, the documentation tree, the first page of `Versions`; a generic repository's folder listing or file description for the kind `Files`, Q-BAS-483; `Files()` for the start's and a project list's links to the repositories with files, `fileRepositories`, Q-BAS-498), decoded into the members every format has; the status (`404` for what the catalogue does not show), the canonical address and the alternates on `BaseURL`, JSON-LD |
+| [gui/seo.go](../../internal/bastion/gui/seo.go) | `fill`, the bundle handler's `Page` hook (R-BAS-121): the address through `page.Parse`, the documents it reads (the summary from `Lookup`, the version, the README, the documentation tree, the first page of `Versions`; a generic repository's folder listing or file description for the kind `Files`, Q-BAS-483; `Files()` for the start's and a project list's links to the repositories with files, `fileRepositories`, Q-BAS-498; a project's repositories and a repository's page, R-BAS-132), decoded into the members every format has; the status (`404` for what the catalogue does not show), the canonical address and the alternates on `BaseURL`, JSON-LD |
 | [gui/crawl.go](../../internal/bastion/gui/crawl.go) | `robots.txt` (on, off, undecided) and the sitemap (R-BAS-122): the set of addresses from `Reader.Packages()` and `Reader.Files()` (the roots of the repositories' files, Q-BAS-498), kept per revision of both with each file gzip-compressed once; [crawl_docs.go](../../internal/bastion/gui/crawl_docs.go) lists the documentation's pages from `Reader.DocEntries()` while `docs` is on (W-35's P11) |
 | [gui/refusal.go](../../internal/bastion/gui/refusal.go) | `pageLocale` (whether a refused request asks for a page, and in which language) and `refusalPage`, the `429` page of R-BAS-123 |
 | [gui/page/](../../internal/bastion/gui/page) | pure: the address grammar of the application's routes (`Parse`, `Route`, `URL`), the texts in both languages (`TextsOf`, the application's words), the `Renderer` of the head, the text and the refusal's page (html/template, JSON-LD through an encoder that escapes `<`) |
-| [gui/data.go](../../internal/bastion/gui/data.go) | the data below `/ui/data/v1/`: `state` (with the configuration's form of a time, `Options.TimeFormat`), `legal`, `projects` (`PublicSet` with the projects' names), `files`, `repositories` (the public set's repositories with format and class, R-BAS-129), `packages` (the reader's `Search`), `packages/lookup` (`Lookup`), `packages/<id>/versions` (`Versions`), every other document by its path in the grammar's one spelling (`canonical`); ETag, `304`, the stored gzip |
+| [gui/data.go](../../internal/bastion/gui/data.go) | the data below `/ui/data/v1/`: `state` (with the configuration's form of a time, `Options.TimeFormat`), `legal`, `projects` (`PublicSet` with the projects' names), `files`, `repositories` (the public set's repositories with format, class and description, R-BAS-129; `404` while hidden) and `repositories/<p>/<r>` (R-BAS-132), `packages` (the reader's `Search`), `packages/lookup` (`Lookup`), `packages/<id>/versions` (`Versions`), every other document by its path in the grammar's one spelling (`canonical`); ETag, `304`, the stored gzip |
 | [gui/dist/](../../internal/bastion/gui/dist) | the committed placeholder `index.html` (with the two slots of R-BAS-121, so a binary without the web build still writes a page's head); `npm run build:embed` adds `en/` and `de/` of the project `bastion-gui` (git ignores them) |
 | [server/server.go](../../internal/bastion/server/server.go) | `newGUI` over the catalogue, the legal pages, the guard, the configuration's class `gui` and its `display.timeFormat`; `clientHandler`'s dispatcher in front of the engine |
 

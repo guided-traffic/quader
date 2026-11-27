@@ -53,16 +53,24 @@ type namesBody struct {
 	Items []string `json:"items"`
 }
 
-// repositoriesBody is the answer of /ui/data/v1/repositories: the public repositories of the catalogue with their format and class
-// (R-BAS-129), what the page Set up client of a repository reads to know its clients.
+// repositoriesBody is the answer of /ui/data/v1/repositories: the public repositories of the catalogue with their format, class and
+// description (R-BAS-129, R-BAS-132), what a project's repositories and the page Set up client of a repository read.
 type repositoriesBody struct {
 	Items []repositoryItem `json:"items"`
 }
 
+// repositoryItem is a public repository as a page reads it: its qualified name and format always; its class and description while
+// the repositories are shown (R-BAS-131), which a hidden repository's single answer leaves out.
 type repositoryItem struct {
-	Name   string `json:"name"`
-	Format string `json:"format"`
-	Class  string `json:"class"`
+	Name        string  `json:"name"`
+	Format      string  `json:"format"`
+	Class       *string `json:"class,omitempty"`
+	Description *string `json:"description,omitempty"`
+}
+
+// shownItem is a repository of the public set with every member a page reads while the repositories are shown.
+func shownItem(r iface.CatalogueRepository) repositoryItem {
+	return repositoryItem{Name: r.Name, Format: r.Format, Class: &r.Class, Description: &r.Description}
 }
 
 func (h *Handler) projects(w http.ResponseWriter, r *http.Request) {
@@ -119,19 +127,62 @@ func (h *Handler) files(w http.ResponseWriter, r *http.Request) {
 	h.json(w, r, namesBody{Items: items})
 }
 
-// repositories answers /ui/data/v1/repositories: the public set's repositories with their format and class (R-BAS-129), in its
-// order. Whether a repository's wiki is public is the catalogue's own fact and stays out.
+// repositories answers /ui/data/v1/repositories: the public set's repositories with their format, class and description (R-BAS-129,
+// R-BAS-132), in its order, and 404 while the repositories are hidden (R-BAS-131). Whether a repository's wiki is public is the
+// catalogue's own fact and stays out.
 func (h *Handler) repositories(w http.ResponseWriter, r *http.Request) {
 	pub, err := h.o.Catalogue.PublicSet()
 	if err != nil {
 		h.readerError(w, r, err)
 		return
 	}
+	if h.hidden() {
+		h.problem(w, r, errNotFound())
+		return
+	}
 	items := make([]repositoryItem, 0, len(pub.Repositories))
 	for _, x := range pub.Repositories {
-		items = append(items, repositoryItem{Name: x.Name, Format: x.Format, Class: x.Class})
+		items = append(items, shownItem(x))
 	}
 	h.json(w, r, repositoriesBody{Items: items})
+}
+
+// repository answers /ui/data/v1/repositories/<project>/<key>: one repository of the public set (R-BAS-132), what a repository's page
+// and its page Set up client read; while the repositories are hidden only its name and format, which the commands and the files
+// still need (W-40's D14); 404 for one outside the public set.
+func (h *Handler) repository(w http.ResponseWriter, r *http.Request, project, key string) {
+	pub, err := h.o.Catalogue.PublicSet()
+	if err != nil {
+		h.readerError(w, r, err)
+		return
+	}
+	for _, x := range pub.Repositories {
+		if x.Name != project+"/"+key {
+			continue
+		}
+		item := shownItem(x)
+		if h.hidden() {
+			item = repositoryItem{Name: x.Name, Format: x.Format}
+		}
+		h.json(w, r, item)
+		return
+	}
+	h.problem(w, r, errNotFound())
+}
+
+// repositoryPath reads a repository's own address below the data root, repositories/<project>/<key>, segment by segment; ok is false
+// for any other path (a repository's index, repositories/<project>/<key>/index/<n>, is a path of the grammar).
+func repositoryPath(rest string) (project, key string, ok bool) {
+	segs := strings.Split(rest, "/")
+	if len(segs) != 3 || segs[0] != pathRepositories {
+		return "", "", false
+	}
+	project, perr := url.PathUnescape(segs[1])
+	key, kerr := url.PathUnescape(segs[2])
+	if perr != nil || kerr != nil || project == "" || key == "" || strings.Contains(project+key, "/") {
+		return "", "", false
+	}
+	return project, key, true
 }
 
 // data answers an address below /ui/data/v1/ (R-BAS-118): the state, the legal pages, the projects, the repositories with files,
@@ -174,6 +225,10 @@ func (h *Handler) data(w http.ResponseWriter, r *http.Request, ready bool) {
 		return
 	case pathVulnerabilityDatabase:
 		h.vulnerabilityDatabase(w, r)
+		return
+	}
+	if project, key, ok := repositoryPath(rest); ok {
+		h.repository(w, r, project, key)
 		return
 	}
 	path, ok := canonical(rest)
@@ -243,13 +298,14 @@ func (h *Handler) readerError(w http.ResponseWriter, r *http.Request, err error)
 }
 
 // stateBody is the answer of /ui/data/v1/state (W-35's B.2b): the time of the state served, the age after which the pages say it
-// is old, whether it is, the switch docs, and the installation's default form of a time the application writes every time in
-// (R-BAS-128).
+// is old, whether it is, the switches docs and hideRepositories (R-BAS-131), and the installation's default form of a time the
+// application writes every time in (R-BAS-128).
 type stateBody struct {
 	ConfirmedAt       time.Time `json:"confirmedAt"`
 	StaleAfterSeconds int64     `json:"staleAfterSeconds"`
 	Stale             bool      `json:"stale"`
 	Docs              bool      `json:"docs"`
+	HideRepositories  bool      `json:"hideRepositories"`
 	TimeFormat        string    `json:"timeFormat"`
 }
 
@@ -263,7 +319,7 @@ func (h *Handler) state(w http.ResponseWriter, r *http.Request) {
 	}
 	h.json(w, r, stateBody{
 		ConfirmedAt: st.ConfirmedAt.UTC(), StaleAfterSeconds: int64(st.StaleAfter / time.Second), Stale: st.Stale, Docs: st.Docs,
-		TimeFormat: format,
+		HideRepositories: st.HideRepositories, TimeFormat: format,
 	})
 }
 

@@ -86,7 +86,8 @@ type sitemapState struct {
 }
 
 // sitemaps is the set of the catalogue's current revision, built from the index when the revision changed. The revision of the packages
-// does not see a repository's files arrive or go, so the repositories with files are part of the set's own revision.
+// does not see a repository's files arrive or go, so the repositories with files are part of the set's own revision; the switch
+// hideRepositories is part of both (R-BAS-131).
 func (h *Handler) sitemaps() (*sitemapSet, error) {
 	entries, packages, err := h.o.Catalogue.Packages()
 	if err != nil {
@@ -96,32 +97,31 @@ func (h *Handler) sitemaps() (*sitemapSet, error) {
 	if err != nil {
 		return nil, err
 	}
+	hidden := h.hidden()
 	files = slices.Sorted(slices.Values(files))
-	sum := sha256.Sum256([]byte(packages + "\n" + strings.Join(files, "\n")))
+	sum := sha256.Sum256([]byte(packages + "\n" + strings.Join(files, "\n") + "\n" + strconv.FormatBool(hidden)))
 	rev := hex.EncodeToString(sum[:])
 	h.sm.mu.Lock()
 	defer h.sm.mu.Unlock()
 	if h.sm.cur != nil && h.sm.cur.revision == rev {
 		return h.sm.cur, nil
 	}
-	set := &sitemapSet{revision: rev, urls: h.sitemapURLs(entries, files), files: map[int][]byte{}}
+	set := &sitemapSet{revision: rev, urls: h.sitemapURLs(entries, files, hidden), files: map[int][]byte{}}
 	h.sm.cur = set
 	return set, nil
 }
 
-// sitemapURLs are the pages the sitemap lists (W-35's B.11), each in every language: the start, every project's list, the root of every
-// repository's files (Q-BAS-498), every package's page in every project that shows it, its documentation's pages (docRoutes), and the
-// imprint and the privacy notice that have a text. A version's own page is not listed: a package's page links its versions, and each
-// is canonical to itself; nor is a folder or a file below a root, which the root's page links.
-func (h *Handler) sitemapURLs(entries []catalogue.Entry, files []string) []sitemapURL {
-	type page struct {
-		route   string
-		lastmod time.Time
-	}
-	var pages []page
+// sitemapURLs are the pages the sitemap lists (W-35's B.11), each in every language: the start, every project's repositories (while
+// they are shown, R-BAS-132) and list, the page of every public repository of those projects while the repositories are shown and
+// the root of every repository's files in both modes (Q-BAS-498), every package's page in every project that shows it, its
+// documentation's pages (docRoutes), and the imprint and the privacy notice that have a text. A version's own page is not listed: a
+// package's page links its versions, and each is canonical to itself; nor is a folder or a file below a root, which the root's page
+// links.
+func (h *Handler) sitemapURLs(entries []catalogue.Entry, files []string, hidden bool) []sitemapURL {
+	var pages []sitePage
 	projects := map[string]time.Time{}
 	var newest time.Time
-	var packages []page
+	var packages []sitePage
 	docs := h.docsByPackage()
 	for _, e := range entries {
 		seen := map[string]bool{}
@@ -134,16 +134,16 @@ func (h *Handler) sitemapURLs(entries []catalogue.Entry, files []string) []sitem
 			if e.UpdatedAt.After(projects[project]) || projects[project].IsZero() {
 				projects[project] = e.UpdatedAt
 			}
-			packages = append(packages, page{pg.PackageRoute(project, e.Format, e.Name), e.UpdatedAt})
+			packages = append(packages, sitePage{pg.PackageRoute(project, e.Format, e.Name), e.UpdatedAt})
 			for _, route := range docRoutes(docs, e, project) {
-				packages = append(packages, page{route, e.UpdatedAt})
+				packages = append(packages, sitePage{route, e.UpdatedAt})
 			}
 		}
 		if e.UpdatedAt.After(newest) {
 			newest = e.UpdatedAt
 		}
 	}
-	var roots []page
+	var roots []sitePage
 	for _, name := range files {
 		project, repo, ok := strings.Cut(name, "/")
 		if !ok {
@@ -152,10 +152,10 @@ func (h *Handler) sitemapURLs(entries []catalogue.Entry, files []string) []sitem
 		if _, held := projects[project]; !held {
 			projects[project] = time.Time{} // a project with files alone: its list has no time of a package
 		}
-		roots = append(roots, page{pg.Address{Kind: pg.Files, Project: project, Repository: repo}.Route(), time.Time{}})
+		roots = append(roots, sitePage{pg.Address{Kind: pg.Repository, Project: project, Repository: repo}.Route(), time.Time{}})
 	}
 	if len(projects) > 0 {
-		pages = append(pages, page{"", newest})
+		pages = append(pages, sitePage{"", newest})
 	}
 	names := make([]string, 0, len(projects))
 	for p := range projects {
@@ -163,22 +163,66 @@ func (h *Handler) sitemapURLs(entries []catalogue.Entry, files []string) []sitem
 	}
 	slices.Sort(names)
 	for _, p := range names {
-		pages = append(pages, page{pg.Address{Kind: pg.List, Project: p}.Route(), projects[p]})
+		if !hidden {
+			pages = append(pages, sitePage{pg.Address{Kind: pg.Repositories, Project: p}.Route(), projects[p]})
+		}
+		pages = append(pages, sitePage{pg.Address{Kind: pg.List, Project: p}.Route(), projects[p]})
+	}
+	if !hidden {
+		roots = h.repositoryPages(projects, files)
 	}
 	pages = append(pages, roots...)
 	pages = append(pages, packages...)
 	set := h.o.Legal.Pages(defaultLocale)
 	if set.Imprint != nil {
-		pages = append(pages, page{"legal/imprint", time.Time{}})
+		pages = append(pages, sitePage{"legal/imprint", time.Time{}})
 	}
 	if set.Privacy != nil {
-		pages = append(pages, page{"legal/privacy", time.Time{}})
+		pages = append(pages, sitePage{"legal/privacy", time.Time{}})
 	}
 	out := make([]sitemapURL, 0, len(pages)*len(pg.Locales()))
 	for _, p := range pages {
 		for _, l := range pg.Locales() {
 			out = append(out, sitemapURL{route: p.route, locale: l, lastmod: p.lastmod})
 		}
+	}
+	return out
+}
+
+// sitePage is a page the sitemap lists, in one language yet: its route and when it last changed (zero for no lastmod).
+type sitePage struct {
+	route   string
+	lastmod time.Time
+}
+
+// repositoryPages are the pages of the public repositories of the projects the sitemap lists, while the repositories are shown
+// (R-BAS-132), in the order of their names: a repository with files is the root of its files without lastmod, as in both modes; any
+// other's lastmod is the newest updatedAt of its index, none for one without a package.
+func (h *Handler) repositoryPages(projects map[string]time.Time, files []string) []sitePage {
+	pub, err := h.o.Catalogue.PublicSet()
+	if err != nil {
+		return nil
+	}
+	names := make([]string, 0, len(pub.Repositories))
+	for _, r := range pub.Repositories {
+		names = append(names, r.Name)
+	}
+	names = append(names, files...)
+	slices.Sort(names)
+	names = slices.Compact(names)
+	var out []sitePage
+	for _, name := range names {
+		project, key, ok := strings.Cut(name, "/")
+		if _, offered := projects[project]; !ok || !offered {
+			continue
+		}
+		p := sitePage{route: pg.Address{Kind: pg.Repository, Project: project, Repository: key}.Route()}
+		if !slices.Contains(files, name) {
+			if res, err := h.o.Catalogue.Search(catalogue.Query{Repositories: []string{name}, Sort: "-updatedAt", Limit: 1}); err == nil && len(res.Items) > 0 {
+				p.lastmod = res.Items[0].UpdatedAt
+			}
+		}
+		out = append(out, p)
 	}
 	return out
 }

@@ -146,7 +146,8 @@ func TestR_BAS_121_APagesHeadAndTextComeFromTheCatalogue(t *testing.T) {
 		},
 		{"/ui/en" + pkg + "?tab=documentation&doc=module/none", "@acme/ui – Quader Bastion", base + "/ui/en" + pkg, "SoftwareApplication", false},
 		{"/ui/de/projects/acme/packages", "Pakete in Acme platform – Quader Bastion", base + "/ui/de/projects/acme/packages", "WebPage", false},
-		{"/ui/de/projects/acme", "Pakete in Acme platform – Quader Bastion", base + "/ui/de/projects/acme/packages", "WebPage", false},
+		// A project's own address is its repositories' page (R-BAS-132).
+		{"/ui/de/projects/acme", "Repositories in Acme platform – Quader Bastion", base + "/ui/de/projects/acme/repositories", "WebPage", false},
 		{"/ui/en/projects/acme/packages?q=ui", "Packages in Acme platform – Quader Bastion", base + "/ui/en/projects/acme/packages", "WebPage", true},
 		// A project with files and no package is a list the start offers (Q-BAS-400, Q-BAS-498).
 		{"/ui/en/projects/tools/packages", "Packages in tools – Quader Bastion", base + "/ui/en/projects/tools/packages", "WebPage", false},
@@ -170,9 +171,9 @@ func TestR_BAS_121_APagesHeadAndTextComeFromTheCatalogue(t *testing.T) {
 			t.Errorf("%s = %d, want %q, %q, %s, noindex %t:\n%s", c.target, rec.Code, c.title, c.canonical, c.ldType, c.noindex, body)
 		}
 	}
-	if body := do(h, http.MethodGet, "/ui/en/").Body.String(); !strings.Contains(body, `<a href="/ui/en/projects/acme/packages">Acme platform</a> – The packages Acme publishes.`) ||
-		!strings.Contains(body, `<a href="/ui/en/projects/web/packages">Web</a>`) || strings.Contains(body, ">upstream<") ||
-		!strings.Contains(body, `<a href="/ui/en/projects/tools/packages">tools</a>`) ||
+	if body := do(h, http.MethodGet, "/ui/en/").Body.String(); !strings.Contains(body, `<a href="/ui/en/projects/acme/repositories">Acme platform</a> – The packages Acme publishes.`) ||
+		!strings.Contains(body, `<a href="/ui/en/projects/web/repositories">Web</a>`) || strings.Contains(body, ">upstream<") ||
+		!strings.Contains(body, `<a href="/ui/en/projects/tools/repositories">tools</a>`) ||
 		!strings.Contains(body, `<h2>Files</h2><ul><li><a href="/ui/en/projects/tools/repositories/downloads">tools/downloads</a>`) {
 		t.Errorf("the start's text:\n%s", body)
 	}
@@ -188,16 +189,16 @@ func TestR_BAS_121_APagesHeadAndTextComeFromTheCatalogue(t *testing.T) {
 		t.Errorf("the imprint's text:\n%s", body)
 	}
 	// A folder's text links its entries, whether the listing names an entry by its path or by its name; a file's way leads back
-	// through its folders.
+	// through its folders. The root says the repository's description (R-BAS-132).
 	if body := do(h, http.MethodGet, "/ui/en/projects/tools/repositories/downloads").Body.String(); !strings.Contains(body, `<a href="/ui/en/projects/tools/repositories/downloads/files/tools">tools</a>`) ||
-		!strings.Contains(body, "The files published in this repository.") {
+		!strings.Contains(body, "<p>Agents to download</p>") {
 		t.Errorf("the root's text:\n%s", body)
 	}
 	if body := do(h, http.MethodGet, "/ui/de/projects/tools/repositories/downloads/files/tools").Body.String(); !strings.Contains(body, `<a href="/ui/de/projects/tools/repositories/downloads/files/tools/agent.tar.gz">agent.tar.gz</a>`) ||
 		!strings.Contains(body, "<h2>Dateien</h2>") {
 		t.Errorf("the folder's text:\n%s", body)
 	}
-	if body := do(h, http.MethodGet, "/ui/en/projects/tools/repositories/downloads/files/tools/agent.tar.gz").Body.String(); !strings.Contains(body, `<a href="/ui/en/projects/tools/repositories/downloads">tools/downloads</a>`) ||
+	if body := do(h, http.MethodGet, "/ui/en/projects/tools/repositories/downloads/files/tools/agent.tar.gz").Body.String(); !strings.Contains(body, `<a href="/ui/en/projects/tools/repositories/downloads">downloads</a>`) ||
 		!strings.Contains(body, `<a href="/ui/en/projects/tools/repositories/downloads/files/tools">tools</a>`) || !strings.Contains(body, "<h1>agent.tar.gz</h1>") {
 		t.Errorf("the file's text:\n%s", body)
 	}
@@ -207,7 +208,8 @@ func TestR_BAS_121_APagesHeadAndTextComeFromTheCatalogue(t *testing.T) {
 		"/ui/en/nothing", "/ui/en/index.html", "/ui/en/projects/web/packages/npm/@acme/ui", "/ui/en/projects/acme/packages/npm/@acme/gone",
 		"/ui/en" + pkg + "@9.9.9", "/ui/en/projects/upstream/packages", "/ui/en/projects/nobody/packages", "/ui/en/legal/privacy",
 		"/ui/en/projects/acme/packages/npm/@acme/ui@1.0.0/-/versions", "/ui/en/projects/acme/repositories/internal/setup",
-		"/ui/en/projects/tools/repositories/downloads/files/gone.bin", "/ui/en/projects/acme/repositories/npm",
+		"/ui/en/projects/tools/repositories/downloads/files/gone.bin", "/ui/en/projects/acme/repositories/internal",
+		"/ui/en/projects/nobody/repositories", "/ui/en/projects/nobody",
 		"/ui/en/projects/tools/repositories/hidden/files/tools",
 	} {
 		rec := do(h, http.MethodGet, target)
@@ -304,13 +306,20 @@ func TestR_BAS_122_RobotsAndTheSitemapAtTheHostsRoot(t *testing.T) {
 	for _, u := range set.URLs {
 		locs = append(locs, u.Loc)
 	}
+	// While the repositories are shown (R-BAS-132): each project's repositories before its list, and the page of every public
+	// repository of the projects listed, by name; the root of a repository's files is its page (Q-BAS-498).
 	want := []string{
 		base + "/ui/en/", base + "/ui/de/",
+		base + "/ui/en/projects/acme/repositories", base + "/ui/de/projects/acme/repositories",
 		base + "/ui/en/projects/acme/packages", base + "/ui/de/projects/acme/packages",
+		base + "/ui/en/projects/tools/repositories", base + "/ui/de/projects/tools/repositories",
 		base + "/ui/en/projects/tools/packages", base + "/ui/de/projects/tools/packages",
+		base + "/ui/en/projects/web/repositories", base + "/ui/de/projects/web/repositories",
 		base + "/ui/en/projects/web/packages", base + "/ui/de/projects/web/packages",
-		// The root of a repository's files (Q-BAS-498): its folders and files are linked from there.
+		base + "/ui/en/projects/acme/repositories/images", base + "/ui/de/projects/acme/repositories/images",
+		base + "/ui/en/projects/acme/repositories/npm", base + "/ui/de/projects/acme/repositories/npm",
 		base + "/ui/en/projects/tools/repositories/downloads", base + "/ui/de/projects/tools/repositories/downloads",
+		base + "/ui/en/projects/web/repositories/galaxy", base + "/ui/de/projects/web/repositories/galaxy",
 		base + "/ui/en/projects/acme/packages/npm/@acme/ui", base + "/ui/de/projects/acme/packages/npm/@acme/ui",
 		base + "/ui/en/projects/web/packages/ansible/acme.web", base + "/ui/de/projects/web/packages/ansible/acme.web",
 		// The newest version's documentation entries while docs is on (R-BAS-125): each page's canonical address.
@@ -320,19 +329,38 @@ func TestR_BAS_122_RobotsAndTheSitemapAtTheHostsRoot(t *testing.T) {
 	if strings.Join(locs, "\n") != strings.Join(want, "\n") {
 		t.Errorf("the sitemap lists\n%s\nwant\n%s", strings.Join(locs, "\n"), strings.Join(want, "\n"))
 	}
-	if u := set.URLs[10]; u.Lastmod != "2026-11-20T08:00:00Z" || len(u.Links) != 3 || u.Links[0].Hreflang != "en" ||
+	if u := set.URLs[22]; u.Lastmod != "2026-11-20T08:00:00Z" || len(u.Links) != 3 || u.Links[0].Hreflang != "en" ||
 		u.Links[1].Href != base+"/ui/de/projects/acme/packages/npm/@acme/ui" || u.Links[2].Hreflang != "x-default" ||
 		u.Links[2].Href != base+"/ui/projects/acme/packages/npm/@acme/ui" {
 		t.Errorf("a package's address = %+v", u)
 	}
-	if set.URLs[0].Lastmod != "2026-11-21T08:00:00Z" || set.URLs[16].Lastmod != "" || set.URLs[4].Lastmod != "" || set.URLs[8].Lastmod != "" {
+	if set.URLs[0].Lastmod != "2026-11-21T08:00:00Z" || set.URLs[28].Lastmod != "" || set.URLs[8].Lastmod != "" || set.URLs[18].Lastmod != "" {
 		t.Errorf("the start's, the imprint's, the list's of files alone and a root's lastmod = %q %q %q %q",
-			set.URLs[0].Lastmod, set.URLs[16].Lastmod, set.URLs[4].Lastmod, set.URLs[8].Lastmod)
+			set.URLs[0].Lastmod, set.URLs[28].Lastmod, set.URLs[8].Lastmod, set.URLs[18].Lastmod)
 	}
-	if u := set.URLs[14]; u.Lastmod != "2026-11-21T08:00:00Z" || len(u.Links) != 3 ||
+	// A project's repositories carry the newest time of its packages, a repository's page the newest of its index's, none for one
+	// without a package.
+	if set.URLs[2].Lastmod != "2026-11-20T08:00:00Z" || set.URLs[16].Lastmod != "2026-11-20T08:00:00Z" || set.URLs[14].Lastmod != "" ||
+		set.URLs[20].Lastmod != "2026-11-21T08:00:00Z" {
+		t.Errorf("the repositories' lastmod = %q %q %q %q", set.URLs[2].Lastmod, set.URLs[16].Lastmod, set.URLs[14].Lastmod, set.URLs[20].Lastmod)
+	}
+	if u := set.URLs[26]; u.Lastmod != "2026-11-21T08:00:00Z" || len(u.Links) != 3 ||
 		u.Links[1].Href != base+"/ui/de/projects/web/packages/ansible/acme.web?"+docQuery {
 		t.Errorf("a documentation entry's address = %+v", u)
 	}
+	// Hidden (R-BAS-131): a set of its own under the same revision of the packages, without the projects' repositories and a
+	// repository's page but the root of its files.
+	r.mu.Lock()
+	r.state.HideRepositories = true
+	r.mu.Unlock()
+	hiddenSet := do(h, http.MethodGet, "/sitemap/0.xml").Body.String()
+	if strings.Count(hiddenSet, "<url>") != 18 || strings.Contains(hiddenSet, "/repositories</loc>") ||
+		strings.Contains(hiddenSet, "/repositories/npm</loc>") || !strings.Contains(hiddenSet, "/repositories/downloads</loc>") {
+		t.Errorf("the sitemap while the repositories are hidden lists %s", hiddenSet)
+	}
+	r.mu.Lock()
+	r.state.HideRepositories = false
+	r.mu.Unlock()
 	// docs off (a new revision, as the reader's for the switch): no documentation entry, the packages' pages stay.
 	r.mu.Lock()
 	r.state.Docs, r.revision = false, "rev-1-docs-off"
@@ -389,7 +417,7 @@ func TestR_BAS_122_RobotsAndTheSitemapAtTheHostsRoot(t *testing.T) {
 	if err := xml.Unmarshal(rec.Body.Bytes(), &index); err != nil || len(index.Sitemaps) != 2 || index.Sitemaps[1].Loc != base+"/sitemap/1.xml" {
 		t.Fatalf("the split index = %v %s", err, rec.Body.String())
 	}
-	for n, count := range []int{50000, 2 + 4 + 2 + 50002 + 2 - 50000} {
+	for n, count := range []int{50000, 2 + 8 + 6 + 50002 + 2 - 50000} {
 		if got := bytes.Count(do(h, http.MethodGet, fmt.Sprintf("/sitemap/%d.xml", n)).Body.Bytes(), []byte("<url><loc>")); got != count {
 			t.Errorf("file %d holds %d addresses, want %d", n, got, count)
 		}

@@ -151,11 +151,11 @@ type Catalogue struct {
 	wake chan struct{}
 }
 
-// switches are the switches the replica applies: gui and docs of its configuration (R-BAS-102). decided is false while the
-// replica applies the built-in configuration, before any handshake and without a stored one: the stored state's switches hold
-// then, and nothing is deleted (R-BAS-111).
+// switches are the switches the replica applies: gui and docs of its configuration (R-BAS-102) and hideRepositories (R-BAS-131).
+// decided is false while the replica applies the built-in configuration, before any handshake and without a stored one: the stored
+// state's switches hold then, and nothing is deleted (R-BAS-111).
 type switches struct {
-	gui, docs, decided bool
+	gui, docs, hide, decided bool
 }
 
 // New returns the catalogue in the state of a replica that holds nothing yet; [Catalogue.Load] reads what is stored.
@@ -183,12 +183,13 @@ func New(o Options) *Catalogue {
 	return c
 }
 
-// SetSwitches applies the switches of the configuration the replica applies (R-BAS-093, R-BAS-102); decided is false for the
-// built-in configuration. The switch gui off, decided, makes the state unreadable at once; the loop deletes the tree.
+// SetSwitches applies the switches of the configuration the replica applies (R-BAS-093, R-BAS-102, R-BAS-131); decided is false for
+// the built-in configuration. The switch gui off, decided, makes the state unreadable at once; the loop deletes the tree. The switch
+// hideRepositories hides the repositories' indexes at once, before the builder's next run deletes them.
 func (c *Catalogue) SetSwitches(sw iface.Switches, decided bool) {
 	c.swMu.Lock()
 	prev := c.sw
-	c.sw = switches{gui: sw.GUI, docs: sw.Docs, decided: decided}
+	c.sw = switches{gui: sw.GUI, docs: sw.Docs, hide: sw.HideRepositories, decided: decided}
 	c.swMu.Unlock()
 	gui, _ := c.effective()
 	if decided && !sw.GUI {
@@ -212,6 +213,20 @@ func (c *Catalogue) effective() (gui, docs bool) {
 		return s.gui, s.docs
 	}
 	return false, false
+}
+
+// hidden is the switch hideRepositories in force (R-BAS-131): the configuration's once decided, else the stored state's.
+func (c *Catalogue) hidden() bool {
+	c.swMu.Lock()
+	sw := c.sw
+	c.swMu.Unlock()
+	if sw.decided {
+		return sw.hide
+	}
+	if s := c.cur.Load(); s != nil {
+		return s.hide
+	}
+	return false
 }
 
 func (c *Catalogue) decided() bool {

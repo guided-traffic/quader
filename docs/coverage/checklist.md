@@ -15,8 +15,8 @@ rendered from it ([checklist.md there](https://github.com/guided-traffic/quader/
 requirement lists the feature in its `Covers:` line. *open*: no requirement does. For entries with priority
 *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,412 spec requirements:
-812 cover catalog features, 600 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,413 spec requirements:
+812 cover catalog features, 601 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>600 requirements</summary>
+<summary>601 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3257,6 +3257,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-BAS-129 | The page Set up client at the Bastion | P1 | [bastion.md](../spec/bastion.md) |
 | R-BAS-130 | The catalogue of the project view: the indexes per project and repository, an image's list by content, the set-ups of every holder | P1 | [bastion.md](../spec/bastion.md) |
 | R-BAS-131 | Hide repositories | P1 | [bastion.md](../spec/bastion.md) |
+| R-BAS-132 | A crawler finds the project view | P1 | [bastion.md](../spec/bastion.md) |
 | R-EP-002 | Endpoint identity comes from the listener | MVP | [endpoints.md](../spec/endpoints.md) |
 | R-EP-004 | TLS on endpoint listeners: certificates by SNI, wildcard certificates, reload | MVP | [endpoints.md](../spec/endpoints.md) |
 | R-EP-006 | Host-root binding: the reserved mechanism | MVP | [endpoints.md](../spec/endpoints.md) |

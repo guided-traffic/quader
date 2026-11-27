@@ -16,7 +16,8 @@ func TestR_BAS_121_TheAddressGrammarIsTheApplicationsRoutes(t *testing.T) {
 		route       string
 	}{
 		{"", "", Address{Kind: Start}, ""},
-		{"projects/web", "", Address{Kind: List, Project: "web"}, "projects/web/packages"},
+		{"projects/web", "", Address{Kind: Project, Project: "web"}, "projects/web"},
+		{"projects/web/repositories/", "q=npm", Address{Kind: Repositories, Project: "web"}, "projects/web/repositories"},
 		{"projects/web/packages/", "q=ui", Address{Kind: List, Project: "web", Filtered: true}, "projects/web/packages"},
 		{
 			"projects/web/packages/npm/@team-a/ui", "",
@@ -45,10 +46,10 @@ func TestR_BAS_121_TheAddressGrammarIsTheApplicationsRoutes(t *testing.T) {
 			"projects/web/repositories/raw%20files/setup",
 		},
 		{"projects/web/repositories/raw/setup/x", "", Address{Project: "web"}, ""},
-		// A public generic repository's folders and files (R-UI-229, Q-BAS-483): the repository's address and `files` alone are the
-		// root, whose one spelling is the repository's; a folder named setup is a folder.
-		{"projects/web/repositories/raw%20files", "", Address{Kind: Files, Project: "web", Repository: "raw files"}, "projects/web/repositories/raw%20files"},
-		{"projects/web/repositories/raw/files/", "", Address{Kind: Files, Project: "web", Repository: "raw"}, "projects/web/repositories/raw"},
+		// A repository's page (R-BAS-132), and the root of a public generic repository's files (R-UI-229, Q-BAS-483): the repository's
+		// address and `files` alone are the root, whose one spelling is the repository's; a folder named setup is a folder.
+		{"projects/web/repositories/raw%20files", "", Address{Kind: Repository, Project: "web", Repository: "raw files"}, "projects/web/repositories/raw%20files"},
+		{"projects/web/repositories/raw/files/", "", Address{Kind: Repository, Project: "web", Repository: "raw"}, "projects/web/repositories/raw"},
 		{
 			"projects/web/repositories/raw/files/tools/setup/agent%20v1.tar.gz", "sort=name",
 			Address{Kind: Files, Project: "web", Repository: "raw", Path: "tools/setup/agent v1.tar.gz"},
