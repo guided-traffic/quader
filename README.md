@@ -3202,6 +3202,7 @@ The operations of the vulnerability scanning ([docs/developer/vulnerabilities.md
 
 | Method and path | Operation | Permission |
 |---|---|---|
+| `GET /api/v1/vulnerabilities/database` | `getVulnerabilityDatabase` | public; today's database of the image scanning (scanner, digest, build time, sync time, stale), `503` while the image scanning is off ([R-VULN-052](docs/spec/vulnerability-scanning.md)) |
 | `GET /api/v1/vulnerabilities/findings` | `listVulnerabilityFindings` | authenticated; the readable findings; without a `status` filter the resolved ones are left out |
 | `GET /api/v1/vulnerabilities/findings/export` | `exportVulnerabilityFindings` | authenticated; the list's filters as CSV; above `vulnerabilities.export.max_rows` `422 export_too_large` |
 | `POST /api/v1/vulnerabilities/findings/set-status` | `setVulnerabilityFindingsStatus` | `vulnerabilities:triage` and `read` on each finding · idempotent; up to 500 ids in one transaction, one result per id |
