@@ -45,6 +45,12 @@ import { signatureBadge } from './signature-words';
     .note.secondary {
       flex-basis: 100%;
     }
+    /* In a version's cell of the list of versions the line under the version counts for no width of its own: a wrapping row's widest
+       content is all its items on one line, so "signer not trusted" beside the badges made the column ask for 416 px it never shows,
+       and the table took them from the grade, whose statement wrapped beside the version's unused room at 1,440 px (2026-11-27). */
+    :host-context(.version-cell) .note.secondary {
+      contain: inline-size;
+    }
   `,
 })
 export class SignatureBadge {

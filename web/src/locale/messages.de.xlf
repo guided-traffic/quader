@@ -68422,7 +68422,7 @@
     </unit>
     <unit id="sig.badge.stale">
       <notes>
-        <note category="location">src/app/views/signatures/signature-badge.ts:59</note>
+        <note category="location">src/app/views/signatures/signature-badge.ts:65</note>
       </notes>
       <segment>
         <source>Trust is being recomputed after a change of trust anchors.</source>

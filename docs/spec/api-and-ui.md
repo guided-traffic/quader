@@ -26318,7 +26318,9 @@ badge short and says the rest after it, as text that may wrap; a fact says the w
 `package-version-signatures-untrusted-files` joins the German pass. Rendered: that screen and `package-version-signatures-files`,
 `package-version-oci`, in English and German, both schemes, 1,440, 1,024 and 390 px, and every screen of the signatures in English.
 At 1,024 px the files' table keeps its form in German with the state's words on the cell's second line, where the pill of 269 px
-had left it a few pixels from blocks (Q-UI-1051).
+had left it a few pixels from blocks (Q-UI-1051). In a version's cell of the list of versions the words' line counts for no width of
+its own (`contain: inline-size`, 2026-11-27): a wrapping row's widest content is all its items on one line, so the column asked for the
+words beside the badges, 416 px it never showed, and the table took the room from the grade, whose statement wrapped at 1,440 px.
 
 ### Q-UI-1077 · Below 36 rem of content a fact's term stands above its value
 
