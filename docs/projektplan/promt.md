@@ -1560,6 +1560,21 @@ records the recorder that tells such a stall apart).
   `ui-states`, the whole render set (754 passed, 1 failed: `admin-permissions`, fixed by batch B-1127j higher in the stack),
   `bastion`, `bastionreg`, `backup`, `postgres`. Still on the stack: W41-C1 and C2, W40-P7 and P5, batch B-1127j; W41-B2 held
   back until the owner has granted (C2 and D1 land first, so his Bastion never serves nothing).
+  **Landed on 2026-11-27, 17:39: W41-C1, C2 and D1, W40-P5 and P7, batch B-1127j, and a test fix.** W41-C1: each Bastion's card
+  folds to its head, which names it, the hosts its replicas report in grey and one of the six states, with **Disable ▾** (soft,
+  hard) and **Enable** at its right; the token's acts are **Rotate token** and **Invalidate** (Q-UI-1640 to 1643). W41-C2: the
+  card's **Projects** allows projects with a project search, and the Bastion's projects page lists them (R-UI-272, Q-UI-1637 to
+  1639). W41-D1: a repository's Owner ticks the Bastions that distribute it under **Settings › Visibility › Bastions**, and
+  every reader sees the tower beside its visibility, its tooltip naming them (R-UI-271, Q-UI-1644, Q-UI-1645); nothing is
+  decided on either yet. W40-P5: a project at the Bastion opens on its repositories, each repository lists what it holds with a
+  Pull or Install per row, and every page shows the way back (R-UI-273, R-UI-274, Q-UI-1646 to 1652). W40-P7: the project
+  Upstream's description, its registries' and the clients' names in the reader's language. Batch B-1127j: the replica's
+  download-limits gauge from its start, the renders' walks without the stale calls of a reload, a project's name unbroken in
+  the permission lists, the malware, download-link and signature settings rendered in German. The test fix: the registry
+  token's test looks for names only in the readable part (a short name turned up by chance in the sealed bytes). Gates on the
+  stack: the landing gates, charts, `ui-states`, the whole render set (766 passed, 0 failed), `bastion`, `bastionreg`,
+  `upstream`, `authz`. Still on the stack: batch B-1127k (five commits, gates running). Held back until the owner has granted:
+  W41-B2, E, D2 and D1's seed.
 
 - **Open since 2026-11-27, 11:18, the owner on the Bastions page of his installation (the card before W39-P2): "Ich weiß nicht
   wie du es schaffst, dass jede Seite immer so gnadenlos überladen aussieht, wenn du mit ihr fertig bist."** His points: the page
@@ -1585,7 +1600,19 @@ records the recorder that tells such a stall apart).
   limit twice; with Disable no longer refusing the token, **Invalidate** must work on the declared token too; a healthy card
   shows fifteen lines, each justified, against W39-P2's sixteen. Decided at landing: B2 lands together with C2 and D1, so the
   owner can grant on the screen the moment his Bastion starts serving only what is granted (D25: nothing until a project is
-  allowed and its repositories chosen, `upstream/clamav` included).
+  allowed and its repositories chosen). Changed at 15:56: C2 and D1 land first, the owner grants, then B2. D25's
+  "`upstream/clamav` included" was the plan's assumption, not his installation's: no ClamAV in his repositories updates through
+  the Bastion (his updater fetches inside the cluster). His Bastion's public catalogue held, read anonymously at 17:22, one
+  project with one repository, `upstream/docker-hub`; he was told then to allow `upstream` and tick `artifacts` there, and
+  to do the same for any repository he reads from outside with a token (D15: every level needs the opt-in), which the Bastion's
+  logs do not show.
+
+- **Read on 2026-11-27, 17:25: the owner's installation on v0.167.0** (the release of 15:56's landing: W40-P2 and P4b, W39-P5,
+  W41-A, B1 and C0, batch K, interface 13). Every deployment on 0.167.0 and ready, main installation and Bastion both on
+  interface 13; the Bastion's one error "interface version differs" (13 against 12) was at 15:24, while the main installation
+  rolled. In the last hour each Bastion replica logged four or five warnings "TLS handshake error" (connection reset, i/o
+  timeout) from two cluster addresses, at 15:30 and 16:17; not verified whether they are the external ingress controller's
+  checks. Found: his Flux repository's `apps/quader/README.md` still says the Bastion "has no web interface".
 
 - **Read on 2026-11-27, 15:20: the owner's installation on v0.166.0** (the release of 13:48's landing: W39-P2's card, W40-P3's
   set-up without a login, W40-P1's catalogue with interface version 12, W40-P4a). Main installation and Bastion both on 0.166.0,
