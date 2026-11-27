@@ -611,7 +611,11 @@ Acceptance criteria:
   `visibility: {artifacts: "internal", wiki: "internal"}`.
 - `format=oci&class=remote` answers `remote.url: "https://registry-1.docker.io/"`, `extraHosts` with `auth.docker.io` receiving the
   credential, `cache.metadataTtlSeconds: 300` and `mirror.intervalSeconds: 3600`.
-- With `npm-local` in the project, `format=npm&class=local` suggests `npm-local-2`. A reader of the project gets 403.
+- With `npm-local` in the project, `format=npm&class=local` suggests `npm-local-2`. A reader of the project gets 403. The test's
+  reader names the epoch of the write that made it a member (`Quader-Authz-Min-Epoch`, R-AUTHZ-032): the replicas of the
+  integration stack learn of each other's writes from the change-log poll alone, and since an index ahead of the poll is no longer
+  rebuilt every 50 ms (R-AUTHZ-028) a replica that made the Owner a member answered the reader 404 until its poll came
+  (`TestR_REPO_063_TheDefaultsOfANewRepository`, integration, failed in every `integration (shard b)` from 2026-11-26 17:47 on).
 
 ### R-REPO-010 · Read a repository configuration
 Priority: **MVP** · Covers: REPO-055, REPO-056, API-057, API-058

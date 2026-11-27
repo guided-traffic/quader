@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"testing"
 	"time"
+
+	"github.com/guided-traffic/quader/internal/authz"
 )
 
 // TestR_REPO_063_TheDefaultsOfANewRepository: over HTTP, with real roles and the installation's settings, an Owner of an internal
@@ -18,7 +20,11 @@ func TestR_REPO_063_TheDefaultsOfANewRepository(t *testing.T) {
 		"Content-Type", "application/merge-patch+json", "If-Match", "*"), 200, "")
 	f.create("web", map[string]any{"visibility": "internal"})
 	wantStatus(t, f.member("web", "user:alice", "owner"), 201, "")
-	wantStatus(t, f.member("web", "user:bob", "reader"), 201, "")
+	reader := f.member("web", "user:bob", "reader")
+	wantStatus(t, reader, 201, "")
+	// The stack's replicas learn of each other's writes from the change-log poll alone: the reader's role is a later epoch
+	// than the Owner's, so the reader's request names it (R-AUTHZ-028), whichever replica answers.
+	readerEpoch := fmt.Sprint(reader.Epoch())
 	defaults := func(format, class string) string {
 		return fmt.Sprintf("%s/web/repository-defaults?format=%s&class=%s", base, format, class)
 	}
@@ -70,7 +76,7 @@ func TestR_REPO_063_TheDefaultsOfANewRepository(t *testing.T) {
 		}
 	})
 	t.Run("R-REPO-063 a reader of the project gets 403, an unknown project 404, a class the format lacks 422", func(t *testing.T) {
-		wantStatus(t, f.do(f.bob, "GET", defaults("oci", "remote"), nil), 403, "")
+		wantStatus(t, f.do(f.bob, "GET", defaults("oci", "remote"), nil, authz.HeaderMinEpoch, readerEpoch), 403, "")
 		wantStatus(t, f.do(f.admin, "GET", base+"/nope/repository-defaults?format=oci&class=remote", nil), 404, "")
 		wantStatus(t, f.do(f.admin, "GET", defaults("generic", "remote"), nil), 422, "unsupported_class")
 		wantStatus(t, f.do(f.admin, "GET", defaults("cobol", "local"), nil), 422, "unknown_format")
