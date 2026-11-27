@@ -272,7 +272,9 @@ UPDATE api_token t SET last_used_at = now(), last_used_addr = '192.0.2.41'
  * administrator allows a project and its Owner chooses the repository. The profile's own Bastion `ui-dev` (deploy/ui-dev/bastion.sh)
  * distributes every public repository of the installation, the project upstream's included, so its web interface keeps the catalogue its
  * renders show; the seed's registration `dmz-berlin` distributes the npm repository and the image repository whose **Set up client**
- * offers it as the place to install from (`setup-npm-bastion`, `setup-oci-bastion`) and whose panels offer it as **From**. A registration that does not exist (a run with UI_BASTION=0 has no `ui-dev`) is left out. Every
+ * offers it as the place to install from (`setup-npm-bastion`, `setup-oci-bastion`) and whose panels offer it as **From**, and the
+ * well-known `upstream/ubuntu`, whose tower stands beside its level on **Upstream registries** (R-UI-271). A registration that does not
+ * exist (a run with UI_BASTION=0 has no `ui-dev`) is left out. Every
  * write is idempotent: a second run changes nothing.
  */
 export async function seedDistribution(admin: Api): Promise<void> {
@@ -293,6 +295,7 @@ export async function seedDistribution(admin: Api): Promise<void> {
   choose(`${mainProject}/npm`, seededBastion.name);
   // An image repository too: Set up client's Install from and every Pull panel's From (W-41's D2, setup-oci-bastion).
   choose(`${mainProject}/images`, seededBastion.name);
+  choose('upstream/ubuntu', seededBastion.name);
   for (const [repository, bastions] of chosen) {
     const [project, key] = repository.split('/');
     for (const bastion of bastions) {
