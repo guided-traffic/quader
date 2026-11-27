@@ -1179,8 +1179,10 @@ Acceptance criteria:
   answers `421` there ([endpoints.md](endpoints.md) R-EP-002, R-EP-003, R-EP-005).
 - A replica with `runtime.memory_limit_bytes` of 384 MiB and 1,000 concurrent downloads of a 1 MiB
   file whose clients do not read: at most 417 complete with their bytes once the clients read, every
-  other one answers `503` `server_busy` with `Retry-After: 1`, the memory the Go runtime holds stays
-  below 384 MiB, and the process does not exit ([Q-ARCH-1073](#q-arch-1073--the-memory-admission-test-runs-in-a-container-of-384-mib)). Afterwards a download answers `200` again
+  other one answers `503` `server_busy` with `Retry-After: 1`, counted by `quader_http_requests_shed_total`, an admitted one that a
+  dependency failed is named by its code and fails the case, the memory the Go runtime holds stays
+  below 384 MiB, and the process does not exit ([Q-ARCH-1073](#q-arch-1073--the-memory-admission-test-runs-in-a-container-of-384-mib),
+  [Q-ARCH-1075](#q-arch-1075--the-memory-admission-test-tells-a-shed-from-a-dependencys-503)). Afterwards a download answers `200` again
   (`test/integration/overload`, `TestMemoryAdmission`).
 - A replica with `runtime.memory_limit_bytes` of 1 GiB and the default caches, still empty, and 300
   concurrent downloads of a 1 MiB file whose clients do not read: none is shed, although the
@@ -13445,8 +13447,34 @@ shed for the slots, but 684 and 802 clients saw `503` in two runs, the rest not 
 | (c) Keep 256 MiB and compare the held memory with `L` plus a fixed allowance | No change of the scenario | — | An allowance is the same headroom under another name, and it hides what the replica's own size costs |
 | (d) Subtract the replica's measured idle heap from what the slots may take | The guard would know the replica's own size | Small containers would get fewer slots instead of a thin margin | A product change of the admission's arithmetic for a container below every default; not a finding of this test |
 
-**Choice:** (a). **Revisit** when the runtime holds more than 345 MiB here (90 % of the container), or when the cause of (b)'s uncounted
-`503` is read.
+**Choice:** (a). **Revisit** when the runtime holds more than 345 MiB here (90 % of the container). The cause of (b)'s uncounted `503`
+was read by [Q-ARCH-1075](#q-arch-1075--the-memory-admission-test-tells-a-shed-from-a-dependencys-503).
+
+### Q-ARCH-1075 · The memory admission test tells a shed from a dependency's 503
+
+Status: **Decided by the development agent** on 2026-11-27 (batch H, the third finding of batch F); the owner reviews it at the walkthrough.
+
+Context: Q-ARCH-1073 (b). At 512 MiB, 557 slots, clients saw `503` with `Retry-After: 1` that `quader_http_requests_shed_total`
+did not count. `TestMemoryAdmission` took every `503` with `Retry-After: 1` for a shed, whatever its problem code.
+
+**Measured** [this machine, macOS arm64, load average 14 to 19 from other builders, `-run TestMemoryAdmission` with the container at
+512 MiB, one run each]: six runs; the first failed as in Q-ARCH-1073 (131 complete, 869 answered `503` with `Retry-After: 1`, 443 of
+them counted as shed for the slots; the replica's last lines showed the readiness check `objectStore` passing again after failing; the
+codes of the 426 others were not recorded), the next five passed (557 complete, 443 shed, all counted; 402 to 412 MiB held). With the
+database pool cut to 3 connections (`database.pool.max_conns`), 15 admitted downloads answered `503 database_unavailable` with
+`Retry-After: 1` ("context deadline exceeded" while waiting for a connection), uncounted, and the old test counted them as shed; at
+384 MiB the same cut gave 105. **Derived:** the uncounted `503` are admitted downloads that a dependency failed under the burst of 557
+requests on a loaded host: the database pool's wait and the object store's answers, whose `503` the shed counter rightly does not count,
+since the guard admitted them. Which dependency failed in the first run was not recorded.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The test counts a `503` as shed only with the code `server_busy`, and names every other `5xx` by its status and code as a dependency's failure (chosen) | The test says what it saw | A failure names the dependency instead of a counter mismatch; the shed counter is compared with the sheds alone | A dependency that fails under the burst still fails the test, as it should: the admitted downloads must complete |
+| (b) The shed counter counts every `503` | One number | — | A dependency's failure is no admission; the counter would stop telling the operator why requests were refused |
+| (c) Bound the admitted requests by the database pool as well | Fewer admitted at once | — | A download holds no connection while it streams; the burst's wait is the pool's design (R-HA-016), and the guard bounds memory |
+
+**Choice:** (a). Not a defect of the product: the guard admitted no more than its slots, and every refusal it made was counted.
+**Applied in the spec:** R-ARCH-005's test; code: [overload_test.go](../../test/integration/overload/overload_test.go).
 
 ## What this does not cover
 

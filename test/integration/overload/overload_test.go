@@ -3,6 +3,7 @@
 package overload
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -115,16 +116,26 @@ func TestMemoryAdmission(t *testing.T) {
 		wg.Wait()
 		stopSampler()
 
+		// A shed is the admission's 503 server_busy. An admitted download that a dependency failed under the burst answers 503 with
+		// Retry-After 1 as well, with the dependency's code (database_unavailable when the pool's wait ran out), which the shed counter
+		// rightly does not count: it is named here, not taken for a shed (Q-ARCH-1075).
 		ok, busy := 0, 0
+		failed := map[string]int{}
 		for i, res := range results {
+			code := problemCode(res.refusal)
 			switch {
 			case res.err == nil && res.status == http.StatusOK && res.sum == big && res.n == 1<<20:
 				ok++
-			case res.err == nil && res.status == http.StatusServiceUnavailable && res.retryAfter == "1":
+			case res.err == nil && res.status == http.StatusServiceUnavailable && res.retryAfter == "1" && code == "server_busy":
 				busy++
+			case res.err == nil && res.status >= 500:
+				failed[strconv.Itoa(res.status)+" "+code]++
 			default:
-				t.Errorf("download %d: status %d, %d bytes, Retry-After %q, err %v", i, res.status, res.n, res.retryAfter, res.err)
+				t.Errorf("download %d: status %d, %d bytes, Retry-After %q, err %v, refusal %q", i, res.status, res.n, res.retryAfter, res.err, res.refusal)
 			}
+		}
+		if len(failed) > 0 {
+			t.Errorf("admitted downloads failed on a dependency, not on the memory guard: %v", failed)
 		}
 		// The in-flight gauge counts a request from the request log on, so it also holds the ones being shed.
 		m := r.metrics(t, bySlots, byHeap)
@@ -152,6 +163,15 @@ func TestMemoryAdmission(t *testing.T) {
 			return res.status == http.StatusOK && res.sum == big
 		})
 	})
+}
+
+// problemCode is the code of a problem document's body, "" for a body that is none.
+func problemCode(body string) string {
+	var p struct {
+		Code string `json:"code"`
+	}
+	_ = json.Unmarshal([]byte(body), &p)
+	return p.Code
 }
 
 // metrics reads several series of one scrape; an absent one is missing from the map.
