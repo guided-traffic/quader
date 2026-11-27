@@ -347,6 +347,8 @@
         <td>
           @if (r.malware; as m) {
             <quader-malware-mark [malware]="m" kind="version" [image]="image()" />
+          } @else {
+            <quader-no-value />
           }
         </td>
       }

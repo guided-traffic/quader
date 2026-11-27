@@ -11117,7 +11117,9 @@ es heute von diesem Scanner gibt? Welche Version hat der Stand heute und wann ha
   row; a folder has none); on a version's page beside its grade, in its **Files** tab per file and in an image's parts per manifest,
   config and layer; at the end of each line of **Used by**; and on a file's page as its fact **Malware scan**, with the sentence it had.
   A list shows the column while its answer carries the member, which it does while the scanning is on (Q-MAL-130); the ClamAV
-  definitions, a `.deb`'s files and an upstream's search hits carry none (R-MAL-001, nothing stored).
+  definitions, a `.deb`'s files and an upstream's search hits carry none (R-MAL-001, nothing stored). A row of such a list whose answer
+  carries no member (a folder, a version not stored) shows the dash in the column
+  (`<quader-no-value>`, R-UI-146), never an empty cell.
 - **Plain users** see the word and its details; there is nothing to set (CLAUDE.md, "simple by default").
 - **The Bastion's application** shows the same mark at the same places, with what a visitor can judge (R-UI-258).
 
@@ -11133,7 +11135,7 @@ Acceptance criteria:
   class gives its word, tone, glyph and accessible name, and no word is "Checking"; the mark is a button with its glyph hidden; the details
   of a clean, an infected, a pending and a released file, of a version of three files, of a package, of an image with parts not stored
   and of an index with its platforms; every absolute time in the reader's form; the replica only where the answer names it; a list of
-  packages has the column only while its rows carry the member, and a row without one an empty cell; three marks share one read of
+  packages has the column only while its rows carry the member, and a row without one the dash; three marks share one read of
   today's signatures. [malware-status.spec.ts](../../web/src/app/shared/malware/malware-status.spec.ts): the file's
   fact is its mark and its sentence.
 - Renders, looked at and never committed: the package list, a repository's packages, a versions table with image tags, a version's

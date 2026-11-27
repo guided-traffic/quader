@@ -1,5 +1,6 @@
 import { Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { MalwareMark, malwareColumn, malwareShown } from '../../shared/malware/malware-mark';
+import { NoValue } from '../../shared/ui/no-value';
 import { MalwareSignaturesStore } from '../../core/malware-signatures';
 import { RouterLink } from '@angular/router';
 import { Child, FileReads } from '../../api/file-reads';
@@ -29,7 +30,7 @@ export const FILES_PAGE = 200;
  */
 @Component({
   selector: 'quader-folder-view',
-  imports: [ClientCommandMenu, TimeAgo, RouterLink, CopyButton, DataTable, MalwareMark],
+  imports: [ClientCommandMenu, TimeAgo, RouterLink, CopyButton, DataTable, MalwareMark, NoValue],
   template: `
     <div class="toolbar files-toolbar">
       <div class="filter">
@@ -89,7 +90,7 @@ export const FILES_PAGE = 200;
               @if (c.kind === 'file' && c.malware; as m) {
                 <quader-malware-mark [malware]="m" [digest]="c.sha256 ?? null" />
               } @else {
-                –
+                <quader-no-value />
               }
             </td>
           }

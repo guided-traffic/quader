@@ -169,6 +169,8 @@ const PAGE = 25;
                   <td>
                     @if (row.malware; as m) {
                       <quader-malware-mark [malware]="m" kind="package" [newest]="row.latestVersion" [image]="row.format === 'oci'" />
+                    } @else {
+                      <quader-no-value />
                     }
                   </td>
                 }

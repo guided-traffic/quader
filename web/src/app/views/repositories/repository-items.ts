@@ -10,6 +10,7 @@ import { DataTable, TableColumn, TableSort } from '../../shared/ui/data-table';
 import { DeprecationMark } from '../../shared/ui/deprecation-mark';
 import { GradeLabel } from '../../shared/vulnerability/grade';
 import { MalwareMark, malwareColumn, malwareShown } from '../../shared/malware/malware-mark';
+import { NoValue } from '../../shared/ui/no-value';
 import { MalwareSignaturesStore } from '../../core/malware-signatures';
 import { gradeColumnHelp, gradeRank } from '../../shared/vulnerability/grade-words';
 import { systemClosed } from '../../core/system-clients';
@@ -41,7 +42,7 @@ export const GRADE_SORT_MAX = 1000;
  */
 @Component({
   selector: 'quader-repository-items',
-  imports: [TimeAgo, DecimalPipe, RouterLink, DataTable, DeprecationMark, GradeLabel, MalwareMark, RepositoryItemVersions, ClientCommandMenu],
+  imports: [TimeAgo, DecimalPipe, RouterLink, DataTable, DeprecationMark, GradeLabel, MalwareMark, NoValue, RepositoryItemVersions, ClientCommandMenu],
   template: `
     <div class="toolbar">
       <div class="filter">
@@ -113,6 +114,8 @@ export const GRADE_SORT_MAX = 1000;
             <td>
               @if (p.malware; as m) {
                 <quader-malware-mark [malware]="m" kind="package" [newest]="p.latestVersion" [image]="p.format === 'oci'" />
+              } @else {
+                <quader-no-value />
               }
             </td>
           }

@@ -214,6 +214,8 @@
           <td>
             @if (v.malware; as m) {
               <quader-malware-mark [malware]="m" kind="version" [image]="actions.format() === 'oci'" />
+            } @else {
+              <quader-no-value />
             }
           </td>
         }

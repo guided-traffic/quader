@@ -15,6 +15,7 @@ import { DataTable, TableColumn } from '../../shared/ui/data-table';
 import { DeprecationMark } from '../../shared/ui/deprecation-mark';
 import { GradeLabel } from '../../shared/vulnerability/grade';
 import { MalwareMark, malwareColumn, malwareShown } from '../../shared/malware/malware-mark';
+import { NoValue } from '../../shared/ui/no-value';
 import { MalwareSignaturesStore } from '../../core/malware-signatures';
 import { checkWaits, gradeColumnHelp } from '../../shared/vulnerability/grade-words';
 import { ClientCommandMenu } from '../packages/client-command-menu';
@@ -45,7 +46,7 @@ export const OPENED_OTHER_TAGS = 4;
  */
 @Component({
   selector: 'quader-repository-item-versions',
-  imports: [TimeAgo, RouterLink, CopyButton, DataTable, DeprecationMark, GradeLabel, MalwareMark, ClientCommandMenu, VersionSize, ImageTags],
+  imports: [TimeAgo, RouterLink, CopyButton, DataTable, DeprecationMark, GradeLabel, MalwareMark, NoValue, ClientCommandMenu, VersionSize, ImageTags],
   template: `
     <quader-data-table
       [caption]="caption()"
@@ -101,6 +102,8 @@ export const OPENED_OTHER_TAGS = 4;
             <td>
               @if (v.malware; as m) {
                 <quader-malware-mark [malware]="m" kind="version" [image]="pkg().format === 'oci'" />
+              } @else {
+                <quader-no-value />
               }
             </td>
           }

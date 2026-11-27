@@ -1,5 +1,6 @@
 import { Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { MalwareMark, malwareColumn, malwareShown } from '../../../shared/malware/malware-mark';
+import { NoValue } from '../../../shared/ui/no-value';
 import { MalwareSignaturesStore } from '../../../core/malware-signatures';
 import { UpstreamPopularity } from './upstream-popularity';
 import { RouterLink } from '@angular/router';
@@ -59,7 +60,7 @@ export function groupedCount(n: number): string {
  */
 @Component({
   selector: 'quader-upstream-package',
-  imports: [Loading, DataTable, DeprecationMark, DistTags, ErrorNotice, MalwareMark, RouterLink, Switch, TimeAgo, UpstreamDocs, UpstreamPopularity],
+  imports: [Loading, DataTable, DeprecationMark, DistTags, ErrorNotice, MalwareMark, NoValue, RouterLink, Switch, TimeAgo, UpstreamDocs, UpstreamPopularity],
   templateUrl: './upstream-package.html',
   styleUrl: './upstream-package.scss',
 })

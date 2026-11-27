@@ -7,6 +7,7 @@ import { DataTable, TableColumn, TableSort } from '../../shared/ui/data-table';
 import { DeprecationMark } from '../../shared/ui/deprecation-mark';
 import { TimeAgo } from '../../shared/ui/time-ago';
 import { MalwareMark, malwareColumn, malwareShown } from '../../shared/malware/malware-mark';
+import { NoValue } from '../../shared/ui/no-value';
 import { MalwareSignaturesStore } from '../../core/malware-signatures';
 import { packageCommands } from '../../features/packages/package-links';
 import { PackageName } from './package-name';
@@ -18,7 +19,7 @@ import { PackageTags } from './package-tags';
  */
 @Component({
   selector: 'quader-package-table',
-  imports: [DataTable, DeprecationMark, FormatIconView, MalwareMark, PackageName, PackageTags, SignatureBadge, TimeAgo],
+  imports: [DataTable, DeprecationMark, FormatIconView, MalwareMark, NoValue, PackageName, PackageTags, SignatureBadge, TimeAgo],
   template: `
     <quader-data-table
       [caption]="tableCaption"
@@ -73,6 +74,8 @@ import { PackageTags } from './package-tags';
             <td>
               @if (row.malware; as m) {
                 <quader-malware-mark [malware]="m" kind="package" [newest]="row.latestVersion" [image]="row.format === 'oci'" />
+              } @else {
+                <quader-no-value />
               }
             </td>
           }

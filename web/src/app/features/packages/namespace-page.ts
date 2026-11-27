@@ -1,5 +1,6 @@
 import { Component, computed, effect, inject, input, resource, untracked } from '@angular/core';
 import { MalwareMark, malwareColumn, malwareShown } from '../../shared/malware/malware-mark';
+import { NoValue } from '../../shared/ui/no-value';
 import { MalwareSignaturesStore } from '../../core/malware-signatures';
 import { RouterLink } from '@angular/router';
 import { NamespaceClaim, NamespaceRepository, PackageSummary, PackagesApi } from '../../api/packages-api';
@@ -29,7 +30,7 @@ import { collectionUpload } from '../repositories/content/ansible-upload-targets
  */
 @Component({
   selector: 'quader-namespace-page',
-  imports: [DataTable, DeprecationMark, ErrorNotice, Loading, MalwareMark, PackageName, PackageTags, PageHeader, ProjectLink, RouterLink, SignatureBadge, TimeAgo],
+  imports: [DataTable, DeprecationMark, ErrorNotice, Loading, MalwareMark, NoValue, PackageName, PackageTags, PageHeader, ProjectLink, RouterLink, SignatureBadge, TimeAgo],
   templateUrl: './namespace-page.html',
   styleUrl: './namespace-page.scss',
 })
