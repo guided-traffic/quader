@@ -6434,7 +6434,10 @@ Priority: **P1** · Covers: quader-only
   the catalogue's state, [Q-BAS-491](#q-bas-491--a-new-set-and-a-change-of-the-rescan-settings-start-the-builder-and-only-the-state-changes)),
   and `bastion_configuration`, which a change of a registration's switches `gui` and `docs` raises (R-BAS-102): switching the web interface
   on builds its first catalogue within the debounce and a run, off deletes it, without waiting for the hourly run. That change also drops
-  the trigger's cached answer to whether some web interface is on, since the switch it carries may be what turned one on.
+  the trigger's cached answer to whether some web interface is on, since the switch it carries may be what turned one on. And the signal
+  `bastion_base_url`, which a Bastion's contact raises when it brings the registration a base URL the builder does not read yet (R-BAS-010):
+  a Bastion that first connects after its web interface was switched on, or whose base URL changed, has its catalogue built within seconds
+  of that contact ([Q-BAS-499](#q-bas-499--a-contact-that-brings-a-new-base-url-starts-the-builder-through-a-signal)).
   A replica enqueues only while some registration's web interface is on or some registration still holds a catalogue, so an
   installation without one queues nothing ([Q-BAS-361](#q-bas-361--every-change-starts-the-same-run-after-5-s-and-the-hourly-run-is-the-reconciliation)).
 - **At a start.** What a run reads of the configuration file (the default endpoint's `auth.anonymous`, `server.additional_base_urls`)
@@ -6461,6 +6464,7 @@ feed entry of the kind `catalogue` (R-BAS-101): a Bastion learns of a change at 
 debounce (R-BAS-112, [Q-BAS-378](#q-bas-378--no-feed-entry-of-the-kind-catalogue-the-follow-up-round-after-the-builders-debounce-carries-a-change); [Q-BAS-369](#q-bas-369--the-builder-writes-no-feed-entry-yet-a-bastion-learns-a-change-at-its-poll),
 [H-2314](../security/bastion.md#h-2314--a-narrowing-reaches-a-bastions-pages-only-at-its-next-poll-after-the-run)). *Built on 2026-11-27
 (W35-P9f):* the run at a start (`Builder.Drift`, the trigger's `drift`); the change area `bastion_configuration` among the triggers.
+*Built on 2026-11-27 (batch I):* the signal `bastion_base_url` of a contact among the triggers (Q-BAS-499).
 
 Acceptance criteria:
 
@@ -6469,8 +6473,13 @@ Acceptance criteria:
   ([wire_bastion_catalogue_test.go](../../internal/app/wire_bastion_catalogue_test.go))
   `TestR_BAS_105_AReplicaThatStartsWithAChangedConfigurationStartsARun` (a start with a drift starts one run, one without none),
   `TestR_BAS_102_SwitchingTheWebInterfaceOnStartsTheBuilder` (a change of `bastion_configuration` right after an answer that no web
-  interface is on starts a run), and
+  interface is on starts a run), `TestR_BAS_105_AContactWithANewBaseURLStartsTheBuilder` (the signal `bastion_base_url` starts a run,
+  0.01 s, no data), and
   `Drift` in `TestR_BAS_104_NothingIsBuiltWhileTheDefaultEndpointRefusesAnonymousRequests`, milliseconds.
+- Integration (`bastioniface`): `TestR_BAS_105_AContactThatBringsANewBaseURLRaisesTheBuildersSignal`
+  ([contact_signal_test.go](../../test/integration/bastioniface/contact_signal_test.go): the first contact and a move raise
+  `bastion_base_url`; a new replica with the registration's base URL, a contact without one and a repeat within the minute do not), about
+  1 s, five contact rows.
 - The task table of R-OPS-019 ([operations-and-observability.md](operations-and-observability.md)) and the role table of R-ARCH-001 (the
   areas `packages-api`, `vuln-api` and `bastion-catalogue` of the role `worker`): `TestR_OPS_019_TheTaskTableIsTheRegistry`,
   `TestR_ARCH_001_RoleTableIsData`.
@@ -15302,6 +15311,27 @@ while the application showed it.
 
 **Choice:** (a). **Applied in the spec:** R-BAS-121, R-BAS-122; code: `fileRepositories`, `startPage`, `listPage` of
 [seo.go](../../internal/bastion/gui/seo.go), `sitemaps` and `sitemapURLs` of [crawl.go](../../internal/bastion/gui/crawl.go).
+
+### Q-BAS-499 · A contact that brings a new base URL starts the builder through a signal
+
+Status: **Decided by the development agent on 2026-11-27** (batch I, W35-P9f's open point 2) — selected from the options below; the owner
+reviews it at the walkthrough.
+
+Context: R-BAS-105. Since W35-P9f switching `gui` on starts a run within seconds, but a Bastion that connected for the first time after
+the switch, or whose base URL changed, waited for the hourly run: the contact wrote its row (R-BAS-010) and no trigger heard it, while
+the builder reads the registration's base URL from that row and builds nothing without it (`bastion_base_url_unknown`).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The contact's statement answers whether the written row brings a base URL that the replica did not report before and that differs from the registration's current one (`base_url_moved`); the recorder then raises the signal `bastion_base_url`, which the trigger hears like its other signals (chosen) | A signal, as `metadata_changed` and the verdicts are | No migration and no epoch row; one more column of the statement the contact already runs; a new replica of a rollout that reports the registration's base URL, and replicas that keep reporting different ones, raise nothing | A lost signal waits for the hourly run, as every signal of the trigger does |
+| (b) A change area `bastion_contact` notified in the contact's transaction | Delivered with the change log's guarantee | A gap is caught by the epoch | A migration for its row, and every replica's caches hear an area raised by a Bastion's traffic |
+| (c) The contact raises `bastion_configuration` | No new area | Nothing to add | Every replica reloads its snapshot of the registrations at a Bastion's contact, for a change that is no configuration |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-105; code: `BastionContactUpsert` of
+[bastion_contact.sql](../../internal/meta/postgres/queries/bastion_contact.sql), `Contacts.Record` of
+[contact.go](../../internal/bastionmain/contact.go), `catalogueTriggerSignals` of
+[wire_bastion_catalogue.go](../../internal/app/wire_bastion_catalogue.go), `AreaBastionBaseURL` of
+[areas.go](../../internal/cluster/areas.go).
 
 ## What this does not cover
 

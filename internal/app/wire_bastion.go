@@ -16,6 +16,7 @@ import (
 	"github.com/guided-traffic/quader/internal/bastion/iface"
 	"github.com/guided-traffic/quader/internal/bastionmain"
 	"github.com/guided-traffic/quader/internal/bastionmain/catalogue"
+	"github.com/guided-traffic/quader/internal/cluster"
 	"github.com/guided-traffic/quader/internal/config"
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/formathost"
@@ -291,7 +292,7 @@ func (a *App) bastionServices(rt *endpointRuntime) v1.BastionServices {
 		Feed: bastionmain.NewFeed(bastionmain.FeedOptions{
 			DB: in.db, Lookback: cfg.Bastions.Feed.Lookback, MaxPage: cfg.Bastions.Feed.MaxPage, Endpoint: rt.cfg.Name, Log: a.log,
 		}),
-		Contacts: bastionmain.NewContacts(bastionmain.ContactOptions{DB: in.db, Audit: rec}),
+		Contacts: bastionmain.NewContacts(bastionmain.ContactOptions{DB: in.db, Audit: rec, Signals: contactSignals(in.signals)}),
 		Downloads: bastionmain.NewIntake(bastionmain.IntakeOptions{
 			DB: in.db, Audit: rec, MaxBatch: cfg.Bastions.Downloads.MaxBatch, MaxAge: cfg.Bastions.Downloads.MaxAge, Record: cfg.Audit.RecordDownloads,
 			Events: a.bastionEventBudget(), Unit: a.downloadUnitOf, Usage: a.bastionUsage(),
@@ -445,3 +446,11 @@ func (a *App) bastionBoundRepository() func(*http.Request) (qname.Repo, bool, er
 }
 
 // <<< package 2
+
+// contactSignals is the signal path of the contact recorder: none on a replica without one (no typed nil).
+func contactSignals(s *cluster.Signals) bastionmain.Signaler {
+	if s == nil {
+		return nil
+	}
+	return s
+}

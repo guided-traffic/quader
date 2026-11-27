@@ -10729,10 +10729,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-BAS
 
-409 questions on [spec/bastion.md](spec/bastion.md).
+410 questions on [spec/bastion.md](spec/bastion.md).
 
 <details>
-<summary>Q-BAS: 409 questions</summary>
+<summary>Q-BAS: 410 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -11145,6 +11145,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-BAS-496](spec/bastion.md#q-bas-496--a-replica-that-claims-jobs-starts-a-run-at-its-start-only-when-the-store-differs-from-what-a-run-would-leave) | A replica that claims jobs starts a run at its start only when the store differs from what a run would leave | Decided by the development agent on 2026-11-27 (W35-P9f) | (a) At its start the trigger compares each registration's stored state with what a run would leave (`Builder.Drift`) and starts a run only when they differ | — |
 | [Q-BAS-497](spec/bastion.md#q-bas-497--the-registration-carries-the-builders-last-outcome-and-the-card-says-a-stop-in-plain-view) | The registration carries the builder's last outcome, and the card says a stop in plain view | Decided by the development agent on 2026-11-27 (W35-P9f) | (a) A member `catalogue` of the registration (`outcome` built, stopped or pending, `reason`, `checkedAt`, `builtAt`) in the read of one and the list, read with the registration in one statement; on the card, a stop's reason with what to do among the plain view's warnings, and a line under the switch **Web interface** with the last build | — |
 | [Q-BAS-498](spec/bastion.md#q-bas-498--the-start-the-projects-lists-and-the-sitemap-lead-to-a-repositorys-files) | The start, the projects' lists and the sitemap lead to a repository's files | Decided by the development agent on 2026-11-27 | (a) The start's text links the projects the application offers (with a package or with files) and a section **Files** with every repository whose files the catalogue holds, by its qualified name; a project's list links its own by their keys above its packages and is `200` with files alone; the sitemap lists each repository's root and each such project's list, without `lastmod` | — |
+| [Q-BAS-499](spec/bastion.md#q-bas-499--a-contact-that-brings-a-new-base-url-starts-the-builder-through-a-signal) | A contact that brings a new base URL starts the builder through a signal | Decided by the development agent on 2026-11-27 | (a) The contact's statement answers whether the written row brings a base URL that the replica did not report before and that differs from the registration's current one (`base_url_moved`); the recorder then raises the signal `bastion_base_url`, which the trigger hears like its other signals | — |
 
 </details>
 

@@ -7524,8 +7524,8 @@
         <note category="location">src/app/features/bastions/bastion-limits.ts:118,120</note>
       </notes>
       <segment>
-        <source>The main installation does not build this Bastion&apos;s web interface: the Bastion has not connected yet, or the address it reported is not in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">server.additional_base_urls</pc>. Connect it, or add its address there; the next build, within the hour, builds it.</source>
-        <target>Die Hauptinstallation erstellt die Weboberfläche dieser Bastion nicht: Die Bastion hat sich noch nicht verbunden, oder die Adresse, die sie gemeldet hat, steht nicht in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">server.additional_base_urls</pc>. Verbinden Sie sie, oder tragen Sie ihre Adresse dort ein; die nächste Erstellung, spätestens nach einer Stunde, erstellt sie.</target>
+        <source>The main installation does not build this Bastion&apos;s web interface: the Bastion has not connected yet, or the address it reported is not in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">server.additional_base_urls</pc>. Connect it, or add its address there and restart the main installation: it is built within seconds of either.</source>
+        <target>Die Hauptinstallation erstellt die Weboberfläche dieser Bastion nicht: Die Bastion hat sich noch nicht verbunden, oder die Adresse, die sie gemeldet hat, steht nicht in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">server.additional_base_urls</pc>. Verbinden Sie sie, oder tragen Sie ihre Adresse dort ein und starten Sie die Hauptinstallation neu: Sie wird jeweils innerhalb von Sekunden erstellt.</target>
       </segment>
     </unit>
     <unit id="bastion.preset.label">

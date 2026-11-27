@@ -136,6 +136,12 @@ WITH old AS (
     SELECT client_address, release, interface_version, base_url, edge_limit, catalogue_kept
       FROM bastion_contact
      WHERE bastion_id = $7::text::uuid AND replica = $8::text
+), last AS (
+    SELECT base_url
+      FROM bastion_contact
+     WHERE bastion_id = $7::text::uuid AND base_url <> ''
+     ORDER BY contact_at DESC
+     LIMIT 1
 ), up AS (
     INSERT INTO bastion_contact AS c (bastion_id, replica, contact_at, client_address, release, interface_version, base_url, token_id,
                                       edge_limit, catalogue_kept)
@@ -159,7 +165,10 @@ SELECT (SELECT count(*) FROM up)::bigint AS written,
                     WHERE o.client_address IS DISTINCT FROM NULLIF($1::text, '')::inet
                        OR o.release <> $2::text OR o.interface_version <> $3::int
                        OR o.base_url <> $4::text OR o.edge_limit <> $5::text
-                       OR o.catalogue_kept IS DISTINCT FROM NULLIF($6::text, '')::boolean))::boolean AS changed
+                       OR o.catalogue_kept IS DISTINCT FROM NULLIF($6::text, '')::boolean))::boolean AS changed,
+       ($4::text <> ''
+        AND NOT EXISTS (SELECT 1 FROM old o WHERE o.base_url = $4::text)
+        AND NOT EXISTS (SELECT 1 FROM last l WHERE l.base_url = $4::text))::boolean AS base_url_moved
 `
 
 type BastionContactUpsertParams struct {
@@ -175,8 +184,9 @@ type BastionContactUpsertParams struct {
 }
 
 type BastionContactUpsertRow struct {
-	Written int64
-	Changed bool
+	Written      int64
+	Changed      bool
+	BaseUrlMoved bool
 }
 
 // Queries of the last contact of a Bastion replica (R-BAS-010, R-BAS-007; work package 2 writes, work package
@@ -186,6 +196,11 @@ type BastionContactUpsertRow struct {
 // whether a row was written; changed says whether a reported value differs from the stored row (or there was
 // none), which is the condition of the asynchronous event bastion.contact (R-BAS-010). edge_limit is the edge figure the
 // replica reports (” for none) and catalogue_kept whether its catalogue survives a restart (NULL for none, R-BAS-093, 00147).
+// base_url_moved says whether the replica reports a base URL it did not report before (a new row, or another base URL than its row's)
+// that also differs from the registration's base URL as the builder of its public catalogue reads it (BastionLastBaseURL: the one of
+// its most recent contact), which the written row then becomes: such a contact starts the builder (R-BAS-105, Q-BAS-499). It is false
+// for a contact that reports none, for a new replica of a rollout that reports the registration's base URL, and for replicas that keep
+// reporting different ones, which would otherwise start a run at each of their writes.
 func (q *Queries) BastionContactUpsert(ctx context.Context, arg BastionContactUpsertParams) (BastionContactUpsertRow, error) {
 	row := q.db.QueryRow(ctx, bastionContactUpsert,
 		arg.ClientAddress,
@@ -199,7 +214,7 @@ func (q *Queries) BastionContactUpsert(ctx context.Context, arg BastionContactUp
 		arg.TokenID,
 	)
 	var i BastionContactUpsertRow
-	err := row.Scan(&i.Written, &i.Changed)
+	err := row.Scan(&i.Written, &i.Changed, &i.BaseUrlMoved)
 	return i, err
 }
 

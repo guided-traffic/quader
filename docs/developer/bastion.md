@@ -149,7 +149,7 @@ What the Recognize stage decides, in order (Q-BAS-115, Q-BAS-116):
 |---|---|
 | [bastionmain/recognize.go](../../internal/bastionmain/recognize.go) | `Recognize`, `RecognizeOptions`, `Throttle`, the interface metrics, the removal of the Bastion token from the request behind it; the offer of a handover per blob read into `Recognition.Offer` and `Quader-Bastion-Handover` taken out of every request (R-BAS-073) |
 | [bastionmain/feed.go](../../internal/bastionmain/feed.go) | `Feed` (`Read`, `Position`; a cursor older than `system_state` `restored_at` answers reset, because the replay of a restore writes no audit event, `mustReset`, and the position of a handshake or a reset is the database clock then, `Feed.now`), `mapEvent`: the table of R-BAS-015 (`mappers`, one function per action) (`repository.narrowed` yields `content` for its repository and the virtual ones above it; `repository.claims_changed` goes through `claimsEntries`: a `global` claim among the added ones yields `grants`, claims of scope `members` yield `content`, a change that only removed or narrowed claims none, Q-BAS-146), `noFeedEntry`: the journaled events without an entry and why, the cursor, the resets |
-| [bastionmain/contact.go](../../internal/bastionmain/contact.go) | `Contacts.Record`: the contact upsert, the memory gate, the cap of 256 rows, `bastion.contact`; `Release` |
+| [bastionmain/contact.go](../../internal/bastionmain/contact.go) | `Contacts.Record`: the contact upsert, the memory gate, the cap of 256 rows, `bastion.contact`, the signal `bastion_base_url` of a new base URL (Q-BAS-499); `Release` |
 | [bastionmain/downloads.go](../../internal/bastionmain/downloads.go) | `Intake.Accept`: the budget of the registration (`EventBudget`; the composition root charges units of 100 events), `artifact.downloaded` per event, `bastion.downloads.dropped` |
 | [bastionmain/snapshot.go](../../internal/bastionmain/snapshot.go) | `RegistrationSnapshot`: the replica's snapshot of the registrations, each one's switch of the handover per blob (R-BAS-071) and the networks its Bastion connects from (R-BAS-017), read by one statement (`BastionSnapshot`) at the start, on a change of the areas `bastion_handover` and `bastion_egress` and once a minute; the link checks asked again when a handover turns on; a network that overlaps `server.trusted_proxies` logged (Q-BAS-433) |
 | [bastionmain/egress.go](../../internal/bastionmain/egress.go) | `ParseEgress`: the rules of a registration's networks (Q-BAS-431); `InEgress`, `EgressText` |
@@ -1862,7 +1862,9 @@ registration whose `gui` is off loses its catalogue; documents no row names go a
 catalogue is dropped once and its state records `anonymous_requests_refused` (`stopReason`, `stop`; R-BAS-104, Q-BAS-495).
 
 **The trigger** enqueues the job 5 s after a signal or a change area (R-BAS-105; `catalogueTriggerAreas`, among them
-`bastion_configuration`, which a change of a registration's switches raises and which also drops the cached answer of `active`) while
+`bastion_configuration`, which a change of a registration's switches raises and which also drops the cached answer of `active`; and
+`catalogueTriggerSignals`, among them `bastion_base_url`, which `Contacts.Record` raises after a contact whose statement answers
+`base_url_moved`: the Bastion's first contact, or a base URL that changed, Q-BAS-499) while
 some registration has a catalogue to build or to drop, and once when its replica starts if `Builder.Drift` finds that the stored states differ from what a run would leave: the
 configuration a run reads changes only with a restart (Q-BAS-496). Its answers (`active`, `enqueue`, `drift`) are functions the wiring
 fills, so [wire_bastion_catalogue_test.go](../../internal/app/wire_bastion_catalogue_test.go) drives it without a database or a queue.

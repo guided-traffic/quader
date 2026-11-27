@@ -392,3 +392,18 @@ func init() {
 }
 
 // <<< bastion configuration
+
+// >>> bastion base url
+
+// AreaBastionBaseURL is the signal raised after a Bastion replica's contact that reports a base URL the registration's builder of its
+// public catalogue does not read yet: a Bastion that connects for the first time, or that moved to another address (bastion.md
+// R-BAS-105, Q-BAS-499). The trigger of the builder starts a run, so a web interface switched on before the Bastion connected is built
+// within seconds of the contact instead of at the hourly run. The payload is the registration's principal ID. A signal has no
+// cluster_epoch row: a lost one waits for the hourly run.
+const AreaBastionBaseURL = "bastion_base_url"
+
+func init() {
+	RegisterArea(Area{Name: AreaBastionBaseURL, Owner: "R-BAS-105", Class: SignalArea})
+}
+
+// <<< bastion base url

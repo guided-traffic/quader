@@ -10,6 +10,7 @@ import (
 
 	"github.com/guided-traffic/quader/internal/audit"
 	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/cluster"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/meta/postgres"
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
@@ -49,11 +50,19 @@ type Report struct {
 	CatalogueKept *bool
 }
 
+// Signaler raises a signal after a commit; *cluster.Signals implements it.
+type Signaler interface {
+	Publish(area, payload string)
+}
+
 // ContactOptions configure [NewContacts].
 type ContactOptions struct {
 	DB    meta.Runner
 	Audit audit.Recorder
-	Now   func() time.Time
+	// Signals carries the signal bastion_base_url of a contact that reports a base URL the builder of the registration's public
+	// catalogue does not read yet (R-BAS-105); nil raises none, and the hourly run takes it.
+	Signals Signaler
+	Now     func() time.Time
 }
 
 // Contacts records the last contact of a Bastion replica (R-BAS-010).
@@ -94,7 +103,8 @@ func Release(userAgent string) string {
 // Record stores the contact of the replica the recognition names, at most once a minute (R-BAS-010): the memory
 // of this replica skips a repeat of unchanged values, and the statement itself writes a row only when it is a
 // minute old or a value differs, so replicas that share a registration never write more often. It records
-// bastion.contact (asynchronous) when the row is new or a reported value changed.
+// bastion.contact (asynchronous) when the row is new or a reported value changed, and raises bastion_base_url when the written row
+// brings the registration a base URL its catalogue's builder does not read yet (R-BAS-105).
 func (c *Contacts) Record(ctx context.Context, rec Recognition, rep Report) error {
 	replica := rec.Replica
 	if replica == "" {
@@ -168,6 +178,9 @@ func (c *Contacts) Record(ctx context.Context, rec Recognition, rep Report) erro
 			_, err := q.New(ptx).BastionContactPrune(ctx, contactRetention.Seconds())
 			return err
 		})
+	}
+	if row.Written > 0 && row.BaseUrlMoved && c.o.Signals != nil {
+		c.o.Signals.Publish(cluster.AreaBastionBaseURL, rec.BastionID)
 	}
 	if row.Written > 0 && row.Changed {
 		c.o.Audit.Record(ctx, audit.Event{

@@ -82,6 +82,30 @@ func TestR_BAS_102_SwitchingTheWebInterfaceOnStartsTheBuilder(t *testing.T) {
 	}
 }
 
+// TestR_BAS_105_AContactWithANewBaseURLStartsTheBuilder: a Bastion that connects for the first time, or moves, after its web interface
+// was switched on raises bastion_base_url at its contact (Q-BAS-499), and the trigger starts a run within the debounce instead of
+// leaving the web interface empty until the hourly run.
+func TestR_BAS_105_AContactWithANewBaseURLStartsTheBuilder(t *testing.T) {
+	signals, err := cluster.NewSignals(cluster.SignalsOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	tr, started := fakeTrigger(true, false)
+	tr.signals = signals
+	if err := tr.Start(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = tr.Stop(context.Background()) })
+	signals.Publish(cluster.AreaBastionBaseURL, "0192f1c4-0000-7000-8000-0000000000b1")
+	deadline := time.Now().Add(2 * time.Second)
+	for started.Load() == 0 && time.Now().Before(deadline) {
+		time.Sleep(5 * time.Millisecond)
+	}
+	if started.Load() == 0 {
+		t.Fatal("a contact with a new base URL started no run")
+	}
+}
+
 // TestR_BAS_105_AReplicaThatStartsWithAChangedConfigurationStartsARun: a change of the configuration a run reads (the default
 // endpoint's auth.anonymous, server.additional_base_urls) applies only with a restart, so the trigger starts a run when its replica
 // starts while the store does not hold what a run would leave, and none while it does.

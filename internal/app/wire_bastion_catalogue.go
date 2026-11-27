@@ -347,6 +347,13 @@ func catalogueTriggerAreas() []string {
 	}
 }
 
+// catalogueTriggerSignals are the signals after which the trigger starts a run: a package's metadata, a malware or a signature verdict,
+// and a Bastion's contact that brought its registration a base URL the builder does not read yet (bastion_base_url, Q-BAS-499): a
+// web interface switched on before its Bastion first connected, or whose Bastion moved, is built within seconds of the contact.
+func catalogueTriggerSignals() []string {
+	return []string{cluster.AreaMetadataChanged, cluster.AreaMalwareVerdict, cluster.AreaSignatureVerdict, cluster.AreaBastionBaseURL}
+}
+
 // register hears the change areas through the cache registry. A change of a registration's configuration forgets the cached answer
 // of active first: the switch it carries may be what turns a web interface on.
 func (t *catalogueTrigger) register(caches *cache.Registry) {
@@ -387,7 +394,7 @@ func (t *catalogueTrigger) Start(ctx context.Context) error {
 	lctx, cancel := context.WithCancel(context.WithoutCancel(ctx))
 	t.cancel = cancel
 	if t.signals != nil {
-		for _, area := range []string{cluster.AreaMetadataChanged, cluster.AreaMalwareVerdict, cluster.AreaSignatureVerdict} {
+		for _, area := range catalogueTriggerSignals() {
 			unsub, err := t.signals.Subscribe(lctx, area, func([]string, bool) { t.fire() })
 			if err != nil {
 				t.log.Warn("the public catalogue's builder does not hear a signal; its hourly run takes the change", "area", area, "error", err)

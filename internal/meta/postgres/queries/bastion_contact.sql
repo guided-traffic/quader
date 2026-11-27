@@ -7,10 +7,21 @@
 -- whether a row was written; changed says whether a reported value differs from the stored row (or there was
 -- none), which is the condition of the asynchronous event bastion.contact (R-BAS-010). edge_limit is the edge figure the
 -- replica reports ('' for none) and catalogue_kept whether its catalogue survives a restart (NULL for none, R-BAS-093, 00147).
+-- base_url_moved says whether the replica reports a base URL it did not report before (a new row, or another base URL than its row's)
+-- that also differs from the registration's base URL as the builder of its public catalogue reads it (BastionLastBaseURL: the one of
+-- its most recent contact), which the written row then becomes: such a contact starts the builder (R-BAS-105, Q-BAS-499). It is false
+-- for a contact that reports none, for a new replica of a rollout that reports the registration's base URL, and for replicas that keep
+-- reporting different ones, which would otherwise start a run at each of their writes.
 WITH old AS (
     SELECT client_address, release, interface_version, base_url, edge_limit, catalogue_kept
       FROM bastion_contact
      WHERE bastion_id = sqlc.arg(bastion_id)::text::uuid AND replica = sqlc.arg(replica)::text
+), last AS (
+    SELECT base_url
+      FROM bastion_contact
+     WHERE bastion_id = sqlc.arg(bastion_id)::text::uuid AND base_url <> ''
+     ORDER BY contact_at DESC
+     LIMIT 1
 ), up AS (
     INSERT INTO bastion_contact AS c (bastion_id, replica, contact_at, client_address, release, interface_version, base_url, token_id,
                                       edge_limit, catalogue_kept)
@@ -34,7 +45,10 @@ SELECT (SELECT count(*) FROM up)::bigint AS written,
                     WHERE o.client_address IS DISTINCT FROM NULLIF(sqlc.arg(client_address)::text, '')::inet
                        OR o.release <> sqlc.arg(release)::text OR o.interface_version <> sqlc.arg(interface_version)::int
                        OR o.base_url <> sqlc.arg(base_url)::text OR o.edge_limit <> sqlc.arg(edge_limit)::text
-                       OR o.catalogue_kept IS DISTINCT FROM NULLIF(sqlc.arg(catalogue_kept)::text, '')::boolean))::boolean AS changed;
+                       OR o.catalogue_kept IS DISTINCT FROM NULLIF(sqlc.arg(catalogue_kept)::text, '')::boolean))::boolean AS changed,
+       (sqlc.arg(base_url)::text <> ''
+        AND NOT EXISTS (SELECT 1 FROM old o WHERE o.base_url = sqlc.arg(base_url)::text)
+        AND NOT EXISTS (SELECT 1 FROM last l WHERE l.base_url = sqlc.arg(base_url)::text))::boolean AS base_url_moved;
 
 -- name: BastionContactList :many
 -- The contacts of one registration, the most recent first (the registration's document, R-BAS-004).
