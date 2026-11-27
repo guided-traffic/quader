@@ -18,9 +18,9 @@ import (
 // requestOverhead is what a request holds besides a download's buffer and the
 // object store's receive window: the connection, the goroutine stacks, the
 // request and the object-store call. It is charged to every admitted request
-// (Q-ARCH-328). 100 downloads of 1, 2 and 5 MiB held open measured 110 KiB of
-// heap beside the buffer and the window and 73 KiB of stacks each, 636 to
-// 659 KiB in all against the 640 KiB charged.
+// (Q-ARCH-328). 100 downloads of 5 and 8 MiB held open at GOGC=1 measured 615
+// to 638 KiB of live heap and stacks each against the 640 KiB charged; the
+// garbage beside them is the Go limit's, so the charge stays (Q-ARCH-1072).
 const requestOverhead = 128 << 10
 
 // applyMemoryLimit applies R-HA-036: unless GOMEMLIMIT is set, the Go runtime's

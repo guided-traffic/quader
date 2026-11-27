@@ -1058,7 +1058,8 @@ a replica admits is bounded by its memory as well as by `max_in_flight`:
   (`storage.download.buffer_size`, at least twice `storage.download.hold_back` and 4 KiB, rounded up
   to a power of two), the object store's receive window `storage.object_store.http.receive_window` and 128 KiB
   for the rest (connection, TLS state, stacks, the object-store call), 640 KiB with the defaults;
-  100 downloads of 1, 2 and 5 MiB held open measured 636 to 659 KiB each.
+  100 downloads of 1, 2 and 5 MiB held open measured 636 to 659 KiB each, and of 5 and 8 MiB at `GOGC=1` 615 to 638 KiB of live
+  heap and stacks on 2026-11-27, so the charge stays ([Q-ARCH-1072](#q-arch-1072--the-charge-of-a-held-download-stays-640-kib-its-live-cost-is-within-it-and-the-garbage-is-the-go-limits)).
   - **A download settles.** The blob store knows the size of the object before it asks the object
     store (`blob.Store.Open`), and tells the request's charge what the download will hold: the
     buffer class of that size plus the bytes the store can send ahead, at most the window
@@ -13388,6 +13389,39 @@ the thing to cut.
 (`ui-renders` `SHARD=i/n`); [renders.sh](../../deploy/ui-dev/renders.sh); [render.spec.ts](../../web/e2e/renders/render.spec.ts);
 [releasing.md](../developer/releasing.md#ci), [web-ui.md](../developer/web-ui.md#renders-of-every-screen),
 [test-cost.md](../developer/test-cost.md#35d-the-parts-of-the-render-set-q-arch-1071-2026-11-26).
+
+### Q-ARCH-1072 · The charge of a held download stays 640 KiB: its live cost is within it, and the garbage is the Go limit's
+
+Status: **Decided by the development agent** on 2026-11-27; the owner reviews it at the walkthrough. Confirms
+[Q-ARCH-328](#q-arch-328--admission-charges-the-bytes-a-request-holds-and-the-caches-hold-now-not-a-worst-case-per-request-and-the-caches-budgets)'s
+128 KiB beside the buffer and the window (`requestOverhead`, [memory.go](../../internal/app/memory.go)).
+
+Context: `TestHeldDownloadCost` ([cost_test.go](../../test/integration/overload/cost_test.go)) failed in `integration (shard b)` of runs
+45884484258 and 45891257094 with 705 and 706 KiB of heap and stacks per held download against the 640 KiB charged (its bound is 10 %
+above, 704 KiB); the test then read the heap at `GOGC=10`, whose garbage alone could be 100 KiB per download, and reads it at `GOGC=1`
+since 2026-11-27 (about 638 KiB measured then). Whether the charge has room enough was measured on the base `35b577707`.
+
+**Measured** [this machine, macOS arm64, under other builders' load, 100 downloads held per size, `GOGC=1`, three runs]: heap in use 541 to
+560 KiB and stacks 72 to 74 KiB per held download, **615 to 633 KiB together**, resident 620 to 643 KiB (5 MiB: 615, 628, 628; 8 MiB: 625,
+631, 633). The CI's `integration (shard b)` of the nine runs from 45862116462 to 45915578060 [Linux, `GOGC=10`, read from the jobs' logs]:
+heap 579 to 629 KiB, stacks 75 to 81 KiB, together 655 to 707 KiB with the garbage of up to 10 %, resident 655 to 689 KiB.
+`TestMemoryAdmission` (256 MiB container, caches off, 278 slots): the runtime held at most 216.4, 235.5 and 238.3 MiB here and 247.0 to
+253.6 MiB in those nine CI runs.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Keep 128 KiB, charge 640 KiB (chosen) | The charge is the live bytes of a held download; the garbage stays the Go limit's (0.8 × `L` for the charges, the rest of `L` for the collector) | The live cost is within it on both machines (615 to 638 KiB); every slot stays; `TestHeldDownloadCost` fails at 704 KiB, so a path that grows by 10 % is found | 1 to 4 % of room between the live cost and the charge |
+| (b) 192 KiB, charge 704 KiB | Above the highest resident reading on Linux (689 KiB) | Room of 10 % over the live cost | 9 % fewer downloads of a large object per replica (1,114 to 1,012 slots for 1 GiB), 21 % fewer small ones (a 50 KiB tarball settles to 306 KiB instead of 242); a full-cache 1 GiB pod falls from 77 to 70 slots, 6 above the chart's floor of 64; the resident reading charged holds garbage that the Go limit already bounds, so it would be counted twice |
+| (c) 160 KiB, charge 672 KiB | Half of (b) | 5 % of room | The same costs at half the size, and still below the resident readings it would answer |
+
+**Choice:** (a). **Rationale:** the guard's arithmetic charges live bytes and leaves the garbage to `GOMEMLIMIT` (Q-ARCH-240); the live cost of
+a held download is 615 to 638 KiB against the 640 KiB charged, and the resident readings above it include the garbage of `GOGC=10`.
+Raising the charge would buy room against a cost that is not there with a tenth of every replica's downloads. The thin margin of
+`TestMemoryAdmission` (247.0 to 253.6 MiB of 256 MiB on Linux) is not the charge's: there what the replica holds beside the held
+downloads, its own heap and the garbage, about 61 to 67 MiB [derived: the held peak less 278 × the resident per held download], is 28 to
+31 % of `L` (217.6 MiB), more than the 20 % the slots leave, in a container far below what the chart admits; at 1 GiB the same bytes are
+7 to 8 % of `L`. **Revisit** when `TestHeldDownloadCost` reads
+more than 640 KiB at `GOGC=1`, or when `TestMemoryAdmission` passes 250 MiB here.
 
 ## What this does not cover
 
