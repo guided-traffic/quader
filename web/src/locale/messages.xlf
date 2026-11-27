@@ -11334,7 +11334,7 @@
         <note category="location">src/app/features/system/tasks-card.ts:123</note>
         <note category="location">src/app/views/files/folder-view.ts:190</note>
         <note category="location">src/app/views/packages/package-detail-view.ts:263</note>
-        <note category="location">src/app/views/packages/package-table.ts:149</note>
+        <note category="location">src/app/views/packages/package-table.ts:152</note>
         <note category="location">src/app/views/repositories/repository-item-versions.ts:250</note>
         <note category="location">src/app/views/repositories/repository-items.ts:245</note>
       </notes>
@@ -16131,7 +16131,7 @@
       <notes>
         <note category="location">src/app/features/packages/namespace-page.ts:80</note>
         <note category="location">src/app/features/search/search-results.ts:360</note>
-        <note category="location">src/app/views/packages/package-table.ts:134</note>
+        <note category="location">src/app/views/packages/package-table.ts:137</note>
       </notes>
       <segment>
         <source>Package</source>
@@ -16154,7 +16154,7 @@
       <notes>
         <note category="location">src/app/features/packages/namespace-page.ts:84</note>
         <note category="location">src/app/features/search/search-results.ts:366</note>
-        <note category="location">src/app/views/packages/package-table.ts:139</note>
+        <note category="location">src/app/views/packages/package-table.ts:142</note>
       </notes>
       <segment>
         <source>Latest</source>
@@ -16164,7 +16164,7 @@
       <notes>
         <note category="location">src/app/features/packages/namespace-page.ts:85</note>
         <note category="location">src/app/features/search/search-results.ts:367</note>
-        <note category="location">src/app/views/packages/package-table.ts:140</note>
+        <note category="location">src/app/views/packages/package-table.ts:143</note>
       </notes>
       <segment>
         <source>The highest stable version you may see. A pre-release is shown only while no stable version exists.</source>
@@ -16174,7 +16174,7 @@
       <notes>
         <note category="location">src/app/features/packages/namespace-page.ts:90</note>
         <note category="location">src/app/features/search/search-results.ts:373</note>
-        <note category="location">src/app/views/packages/package-table.ts:145</note>
+        <note category="location">src/app/views/packages/package-table.ts:148</note>
       </notes>
       <segment>
         <source>Updated</source>
@@ -16184,7 +16184,7 @@
       <notes>
         <note category="location">src/app/features/packages/namespace-page.ts:91</note>
         <note category="location">src/app/features/search/search-results.ts:374</note>
-        <note category="location">src/app/views/packages/package-table.ts:147</note>
+        <note category="location">src/app/views/packages/package-table.ts:150</note>
       </notes>
       <segment>
         <source>When the latest version you may see was published.</source>
@@ -31918,7 +31918,7 @@
     <unit id="pkg.col.format">
       <notes>
         <note category="location">src/app/features/search/search-results.ts:363</note>
-        <note category="location">src/app/views/packages/package-table.ts:135</note>
+        <note category="location">src/app/views/packages/package-table.ts:138</note>
       </notes>
       <segment>
         <source>Format</source>

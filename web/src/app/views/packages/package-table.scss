@@ -1,3 +1,9 @@
+// The row's command at the row's end (R-UI-269): the button needs no gap of its own before it, the cell before ends with its padding,
+// and half the end's: the list keeps its columns at 1,024 px in German (Installieren) without the side bar.
+:host td.actions {
+  padding-inline: 0 var(--quader-space-2);
+}
+
 .type-cell {
   display: inline-flex;
   align-items: center;

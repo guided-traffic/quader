@@ -131,7 +131,10 @@ export class PackageTable {
   /** The rows carry the malware state of their newest version (R-MAL-039): the column **Malware scan** (R-UI-255). */
   protected readonly malware = computed(() => malwareShown(this.malwareMarks, this.list().items()));
   protected readonly columns = computed<readonly TableColumn[]>(() => [
-    { id: 'name', label: $localize`:@@pkg.col.package:Package`, sortable: true, width: '14rem' },
+    // 12 rem, not 14: the column of a row's command (R-UI-269) took the room, and the Bastion's German list (no side bar) needed 994 px
+    // of its 945 at 1,024 px; with the command's cell's narrower padding it needs about 938. At 11 rem "Acme.Logging.Abstractions" broke
+    // before its last letter.
+    { id: 'name', label: $localize`:@@pkg.col.package:Package`, sortable: true, width: '12rem' },
     { id: 'type', label: $localize`:@@pkg.col.format:Format`, stackLabel: false },
     // The words of the repository page's package table (Q-UI-432): **Latest**, not **Latest version**.
     {
