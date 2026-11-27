@@ -4,6 +4,7 @@ import { DownloadLinksSwitchStore } from '../../core/download-links-switch';
 import { ErrorNotice } from '../../shared/error-notice';
 import { Checkbox } from '../../shared/ui/checkbox';
 import { Disclosure } from '../../shared/ui/disclosure';
+import { Help } from '../../shared/ui/help';
 import { Busy } from '../../shared/ui/busy';
 
 /**
@@ -17,7 +18,7 @@ import { Busy } from '../../shared/ui/busy';
  */
 @Component({
   selector: 'quader-repository-download-links',
-  imports: [Busy, Checkbox, Disclosure, ErrorNotice],
+  imports: [Busy, Checkbox, Disclosure, ErrorNotice, Help],
   template: `
     <quader-disclosure
       i18n-heading="@@repo.links.heading"
@@ -35,17 +36,21 @@ import { Busy } from '../../shared/ui/busy';
             [checked]="applicable() && allowed()"
             [disabled]="locked() || saving()"
             [describedBy]="'repo-links-note'"
+            [help]="help()"
+            [about]="name"
             (checkedChange)="allowed.set($event)"
           >
             <ng-container i18n="@@repo.links.allowed">Downloads of this repository may go by signed links of the object store</ng-container>
           </quader-checkbox>
         } @else {
           <p data-testid="repo-links-state">
-            @if (applicable() && stored()) {
-              <ng-container i18n="@@repo.links.state-allowed">Downloads of this repository may go by signed links of the object store.</ng-container>
-            } @else {
-              <ng-container i18n="@@repo.links.state-quader">Quader delivers every download of this repository itself.</ng-container>
-            }
+            <span [class.help-anchor]="help()">
+              @if (applicable() && stored()) {
+                <ng-container i18n="@@repo.links.state-allowed">Downloads of this repository may go by signed links of the object store.</ng-container>
+              } @else {
+                <ng-container i18n="@@repo.links.state-quader">Quader delivers every download of this repository itself.</ng-container>
+              }</span
+            ><quader-help [text]="help()" [about]="name" />
           </p>
         }
         <div id="repo-links-note" class="notes">
@@ -64,9 +69,6 @@ import { Busy } from '../../shared/ui/busy';
                 The installation does not hand downloads to links at the moment; your choice takes effect when an administrator switches
                 them on.
               </p>
-            }
-            @if (virtual()) {
-              <p class="hint" data-testid="repo-links-virtual" i18n="@@repo.links.virtual">A member that does not allow it is delivered by Quader.</p>
             }
           }
         </div>
@@ -121,6 +123,11 @@ export class RepositoryDownloadLinksSection {
   /** The box cannot act: not every client of the format checks. The installation's switch never disables it. */
   protected readonly locked = computed(() => !this.applicable());
   protected readonly dirty = computed(() => !this.locked() && this.allowed() !== this.stored());
+  protected readonly name = $localize`:@@repo.links.allowed:Downloads of this repository may go by signed links of the object store`;
+  /** For a virtual repository, what its members' own choice does, behind the box's help sign (R-UI-267); none for another. */
+  protected readonly help = computed(() =>
+    this.virtual() && this.applicable() ? $localize`:@@repo.links.virtual:A member that does not allow it is delivered by Quader.` : '',
+  );
   protected readonly unsavedNote = $localize`:@@repo.settings.unsaved:Unsaved changes`;
 
   constructor() {

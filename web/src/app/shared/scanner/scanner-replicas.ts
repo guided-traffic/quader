@@ -103,12 +103,12 @@ export function scannerReasonText(reason: string): string | null {
               <span i18n="@@scanners.none.reporting">No replica of <code translate="no">{{ g.deployment }}</code> has reported itself, so no {{ g.tool }} scanner is known to run.</span>
             }
             @case ('unverified') {
-              <span class="material-icons inline" aria-hidden="true">info</span>
+              <!-- This line and the two below inform: no icon, as ⓘ is the help sign alone (Q-UI-1628). -->
               <span i18n="@@scanners.none.unverified">The replicas of <code translate="no">{{ g.deployment }}</code> are not listed: without TLS, or without the name of their certificate, the scan listener cannot tell their kind.</span>
             }
             @case ('none') {
-              <span class="material-icons inline" aria-hidden="true">info</span>
-              <!-- The updater is no scanner and has a setting of its own (R-MAL-032): it said "no freshclam scanner is configured
+              <!-- No icon (above).
+                   The updater is no scanner and has a setting of its own (R-MAL-032): it said "no freshclam scanner is configured
                    (malware.scanner.url is empty)" on a start without it (Q-UI-1003). The pod's name is wrapped for the German sentence,
                    which puts its colon right after it (Q-UI-1615). -->
               @if (updater()) {
@@ -118,7 +118,7 @@ export function scannerReasonText(reason: string): string | null {
               }
             }
             @default {
-              <span class="material-icons inline" aria-hidden="true">info</span>
+              <!-- No icon (above). -->
               <span i18n="@@scanners.none.off">No replica of <code translate="no">{{ g.deployment }}</code> is listed.</span>
             }
           }

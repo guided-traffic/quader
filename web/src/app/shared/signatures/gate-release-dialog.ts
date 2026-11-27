@@ -38,7 +38,7 @@ export interface GateReleaseData {
       <div class="dialog-body">
         @if (conflict(); as text) {
           <p class="banner-warning" role="alert" data-testid="release-conflict">
-            <span class="material-icons inline warn" aria-hidden="true">info</span><span>{{ text }}</span>
+            <span class="material-icons inline warn" aria-hidden="true">warning</span><span>{{ text }}</span>
           </p>
         } @else if (error(); as e) {
           @if (reasonError() === null) {

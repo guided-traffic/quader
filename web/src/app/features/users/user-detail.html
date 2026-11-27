@@ -35,16 +35,16 @@
     <quader-checkbox
       [checked]="external()"
       [disabled]="!canEditExternal()"
-      describedBy="external-note"
+      [describedBy]="editable() ? null : 'external-system'"
+      [help]="externalHelp"
+      [about]="externalName"
       (checkedChange)="external.set($event)"
     >
       <ng-container i18n="@@user.external">External user</ng-container>
     </quader-checkbox>
-    <p id="external-note" class="muted" i18n="@@user.external-note">
-      Sees only the projects it is a member of, what a policy grants it, and what is public. Internal projects and repositories stay hidden.
-    </p>
+    <!-- What the flag means is its help (R-UI-267); why the box is off stays visible, one line (Q-UI-1628). -->
     @if (!editable()) {
-      <p class="muted" i18n="@@user.external-system">The break-glass account is never external.</p>
+      <p id="external-system" class="muted" i18n="@@user.external-system">The break-glass account is never external.</p>
     }
     @if (canEditExternal()) {
       <button class="btn btn-confirm" type="submit" [disabled]="busy() || !externalDirty()" [quaderBusy]="busy()">

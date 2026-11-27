@@ -13438,10 +13438,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-834 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+835 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 834 questions</summary>
+<summary>Q-UI: 835 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -14276,6 +14276,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1624](spec/api-and-ui.md#q-ui-1624--every-warning-of-a-bastions-card-is-one-line-under-what-it-concerns) | Every warning of a Bastion's card is one line under what it concerns | Decided by the development agent on 2026-11-27 | (a) The texts of W-39's section 2.7, each warning under its row or at the head of **Limits**, the reason of a stop with the key named as its path in the Helm configuration; the documentation-idle line, the block reasons and the repeated read rate cut; the empty addresses warning only after a contact that no offer covers | — |
 | [Q-UI-1625](spec/api-and-ui.md#q-ui-1625--helm-configuration-one-wording-the-key-as-its-path-in-the-charts-values) | "Helm configuration", one wording, the key as its path in the chart's values | Decided by the development agent on 2026-11-27 | (a) Every screen and server text that marks a fixed value says "Helm configuration" / "Helm-Konfiguration" and names the key as the chart's values have it (`config.server.base_url`, `endpoints.default.auth.anonymous`, `bastions.declared`); the "configuration file" variants go | — |
 | [Q-UI-1627](spec/api-and-ui.md#q-ui-1627--the-bastions-pages-paragraph-becomes-the-headers-one-sentence) | The Bastions page's paragraph becomes the header's one sentence | Decided by the development agent on 2026-11-27 | (a): "A read-only cache of this installation for clients outside your network." | — |
+| [Q-UI-1628](spec/api-and-ui.md#q-ui-1628--the-help-sign-on-every-settings-page-and-no-info-icon-beside-a-status) | The help sign on every settings page, and no info icon beside a status | Decided by the development agent on 2026-11-27 | (a) Every paragraph that explains a checkbox becomes its help (`<quader-checkbox [help] [about]>`, the sign after the label's last word and outside the label), or the sign beside its section's heading; a warning, a refusal, what becomes public or is given away, and a line that says why a control is off or does not act now stay visible, one line each; a status line carries the `warning` icon where it needs action and none otherwise, a state of work in progress the `autorenew` of a running job | — |
 | [Q-UI-1629](spec/api-and-ui.md#q-ui-1629--a-declared-bastion-registration-shows-a-badge-helm-configuration-with-its-help) | A declared Bastion registration shows a badge "Helm configuration" with its help | Decided by the development agent on 2026-11-27 | (a), built as a lock and the words "Helm configuration" in the muted colour beside the state, not as a pill: the help sign explains the name before it (R-UI-267), and beside a badge's word, which is no name, the layout check found the sign apart from its text at 390 px. | — |
 | [Q-UI-1630](spec/api-and-ui.md#q-ui-1630--a-repositorys-lists-are-views) | A repository's lists are views | Decided by the development agent on 2026-11-27 | (b) Move `repository-items.ts`, `repository-item-versions.ts`, `clamav-databases.ts`, `content-shape.ts` and `repository-lists.scss` to `views/repositories/`; they read through `PackageReads` and `VulnerabilityReads`, ask no session (Q-UI-1631), take the toolbar's act as the page's projected `[listActs]` (Q-UI-1402) and an input `downloads` (false at the Bastion, Q-UI-1449) | — |
 | [Q-UI-1631](spec/api-and-ui.md#q-ui-1631--an-opened-items-versions-show-their-grades-to-a-reader-without-a-session) | An opened item's versions show their grades to a reader without a session | Decided by the development agent on 2026-11-27 | (b) Read the package's report for every reader whose list carries grades | — |

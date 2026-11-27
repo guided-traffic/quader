@@ -49,7 +49,7 @@
     }
     @for (c of notes(st); track c.kind) {
       <span class="condition note">
-        <span class="material-icons" aria-hidden="true">info</span>
+        @if (c.kind === 'replacing') {<span class="material-icons" aria-hidden="true">autorenew</span>}
         @switch (c.kind) {
           @case ('replacing') {
             <span i18n="@@system.summary.replacing"
@@ -135,7 +135,7 @@
 
   @if (versions().length > 0) {
     <p class="info-notice" role="note">
-      <span class="material-icons" aria-hidden="true">info</span>
+      <span class="material-icons" aria-hidden="true">autorenew</span>
       <span i18n="@@system.versions.mixed"
         >Replicas of two versions run side by side:
         <span translate="no">{{ versions().join(', ') }}</span
@@ -195,9 +195,9 @@
                 <p class="warning" role="note">
                   @if (w === 'no-live-pool') {
                     <span class="material-icons warn" aria-hidden="true">warning</span>
-                  } @else {
-                    <span class="material-icons" aria-hidden="true">info</span>
                   }
+                  <!-- Fewer than two ready replicas, all on one node: the drain safety informs, so these carry no icon, as ⓘ is
+                       the help sign alone (Q-UI-1628). -->
                   @switch (w) {
                     @case ('fewer-than-two-ready') {
                       <span i18n="@@system.role.fewer"
@@ -351,7 +351,7 @@
               @if (databaseLag(g); as lag) {
                 @if (lag.lagging > 0) {
                   <p class="warning" role="note" data-testid="scanner-database-lag">
-                    <span class="material-icons" aria-hidden="true">info</span>
+                    <span class="material-icons" aria-hidden="true">autorenew</span>
                     <span i18n="@@system.scanner.database-lag"
                       >{lag.lagging, plural, =1 {1 of {{ lag.ready }} ready replicas does not hold the database in use yet: the detections it is asked for wait until it has loaded it.} other {{{ lag.lagging }} of {{ lag.ready }} ready replicas do not hold the database in use yet: the detections they are asked for wait until they have loaded it.}}</span
                     >

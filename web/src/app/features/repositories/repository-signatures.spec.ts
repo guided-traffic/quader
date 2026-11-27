@@ -1,7 +1,7 @@
 import { Item } from '../../api/files-api';
 import { SignaturesApi } from '../../api/signatures-api';
 import { FakeSignaturesApi, fileReport } from '../../api/testing/fakes-signatures';
-import { button, expectAccessible, openSection, renderScreen, settle, text } from '../../testing/screen';
+import { button, expectAccessible, helpSigns, openSection, renderScreen, settle, text } from '../../testing/screen';
 import { RepositoryFile } from './content/repository-file';
 import { RepositorySignaturesSection } from './repository-signatures';
 
@@ -59,8 +59,16 @@ describe('The fetch of a remote\'s signatures (R-SIG-040)', () => {
     });
     const saved = vi.spyOn(fixture.componentInstance.save, 'emit');
     await openSection(fixture, root, 'Signatures');
-    const box = [...root.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')].find((i) => text(i.closest('label')!).startsWith('Fetch'))!;
+    const box = [...root.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')].find((i) => text(i.labels![0]!).startsWith('Fetch'))!;
     expect(box.checked).toBe(true);
+    // What the fetch does and when to switch it off is its help (R-UI-267); nothing stands under the box.
+    expect(helpSigns(box.closest('quader-checkbox')!)).toEqual([
+      [
+        "About Fetch the upstream's signatures",
+        'Quader asks the upstream in the background for the signatures of what this repository stores, at most 600 requests an hour. Switch it off for an upstream with tight rate limits, such as Docker Hub without an account.',
+      ],
+    ]);
+    expect(root.querySelector('#repo-signatures-note')).toBeNull();
     box.click();
     await settle(fixture);
     button(root, /^\s*Save changes/).click();

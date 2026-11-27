@@ -4,7 +4,7 @@ import { FakeSessionApi } from '../../api/testing/fakes';
 import { FakeSignaturesApi, signatureAnchor, signatureBlock, signatureSettings } from '../../api/testing/fakes-signatures';
 import { Navigation, areaItems } from '../../core/navigation';
 import { ProjectSignatureAnchors } from '../projects/project-signature-anchors';
-import { button, buttonByText, expectAccessible, renderScreen, settle, text } from '../../testing/screen';
+import { button, buttonByText, expectAccessible, helpSigns, renderScreen, settle, text } from '../../testing/screen';
 import { SignatureSettingsPage } from './signature-settings';
 
 const overlay = (): HTMLElement => document.querySelector('.cdk-overlay-container') as HTMLElement;
@@ -48,9 +48,19 @@ describe('Admin area › Settings › Signatures (R-SIG-036)', () => {
 
   it('R-SIG-036 the switch is a check box for the security settings\' writer and text for an auditor, who is offered no action', async () => {
     const admin = await render(ADMIN);
-    expect(admin.root.querySelector('section[aria-labelledby="sig-project-anchors"] input[type="checkbox"]')).not.toBeNull();
+    const section = admin.root.querySelector('section[aria-labelledby="sig-project-anchors"]')!;
+    expect(section.querySelector('input[type="checkbox"]')).not.toBeNull();
+    // What the switch means is its help (R-UI-267), not a paragraph under it.
+    const help: [string, string] = [
+      'About Project owners may add trust anchors for their project',
+      'Project anchors apply only to the repositories of their project. A project cannot switch off an anchor of the installation.',
+    ];
+    expect(helpSigns(section.querySelector('form')!)).toEqual([help]);
+    expect(section.querySelector('form p.muted:not(:has(quader-time-ago))')).toBeNull();
     const auditor = await render(AUDITOR);
-    expect(text(auditor.root.querySelector('[data-testid="project-anchors-state"]')!)).toBe('Project owners may add trust anchors for their project is off.');
+    const state = auditor.root.querySelector('[data-testid="project-anchors-state"]')!;
+    expect(text(state.querySelector('.help-anchor')!)).toBe('Project owners may add trust anchors for their project is off.');
+    expect(helpSigns(state)).toEqual([help]);
     expect(auditor.root.querySelector('quader-switch')).toBeNull();
     expect([...auditor.root.querySelectorAll('button')].map((b) => text(b))).not.toContain('Add trust anchor');
   });
@@ -211,7 +221,7 @@ describe('Trust anchors in a project (R-SIG-037)', () => {
         (get(SignaturesApi) as FakeSignaturesApi).projectList = { web: [signatureAnchor({ id: 9, scope: 'project', project: 'web', title: 'Team key', applied: false })] };
       },
     });
-    expect(text(root.querySelector('[data-testid="project-anchors-off"]')!)).toBe('infoNot applied: project anchors are switched off by an administrator.');
+    expect(text(root.querySelector('[data-testid="project-anchors-off"]')!)).toBe('warningNot applied: project anchors are switched off by an administrator.');
     expect([...root.querySelectorAll('button')].map((b) => text(b))).not.toContain('Add trust anchor');
   });
 });

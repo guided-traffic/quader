@@ -308,7 +308,7 @@
             <ol class="steps">
               @for (s of x.steps; track $index) {
                 <li>
-                  <span class="material-icons" aria-hidden="true">{{ s.outcome === 'pass' ? 'check' : s.outcome === 'fail' ? 'close' : 'info' }}</span>
+                  <span class="material-icons" aria-hidden="true">{{ s.outcome === 'pass' ? 'check' : s.outcome === 'fail' ? 'close' : 'remove' }}</span>
                   {{ s.text }}
                 </li>
               }

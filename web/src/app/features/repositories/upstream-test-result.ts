@@ -6,7 +6,8 @@ import { TechnicalDetails } from '../../shared/technical-details';
 import { upstreamBodyFacts, upstreamTestFacts, upstreamTestReport } from './upstream-test-report';
 import { upstreamVerdictText, upstreamVerdictTone } from './upstream-test-words';
 
-const ICONS = { ok: 'check_circle', info: 'info', warn: 'warning', error: 'error' } as const;
+/** The icon of a verdict's tone; the tone that judges nothing has none, as ⓘ means an explanation behind the sign (R-UI-267). */
+const ICONS = { ok: 'check_circle', info: '', warn: 'warning', error: 'error' } as const;
 
 /**
  * The result of **Test connection** (R-UI-082, Q-UI-1226), one component for every place that tests an upstream: a project's remote
@@ -23,7 +24,9 @@ const ICONS = { ok: 'check_circle', info: 'info', warn: 'warning', error: 'error
   template: `
     <div class="result" [class]="'tone-' + tone()" data-testid="upstream-test-result">
       <p class="verdict">
-        <span class="material-icons" aria-hidden="true">{{ icon() }}</span>
+        @if (icon(); as i) {
+          <span class="material-icons" aria-hidden="true">{{ i }}</span>
+        }
         <strong>{{ sentence() }}</strong>
       </p>
       <ng-content />

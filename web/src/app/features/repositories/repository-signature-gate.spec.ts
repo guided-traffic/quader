@@ -3,7 +3,7 @@ import { PackagesApi } from '../../api/packages-api';
 import { RepositorySignatureSettings, SignaturesApi } from '../../api/signatures-api';
 import { FakePackagesApi } from '../../api/testing/fakes-packages';
 import { FakeSignaturesApi, gatePreview, signatureAnchor, signatureRefusal } from '../../api/testing/fakes-signatures';
-import { button, buttonByText, expectAccessible, inProject, openSection, renderScreen, settle, text } from '../../testing/screen';
+import { button, buttonByText, expectAccessible, helpSigns, inProject, openSection, renderScreen, settle, text } from '../../testing/screen';
 import { PackageVersionPage } from '../packages/package-version';
 import { SignatureRefusals } from '../vulnerabilities/signature-refusals';
 import { RepositorySignaturesSection } from './repository-signatures';
@@ -59,13 +59,19 @@ async function section(
 }
 
 const box = (root: HTMLElement): HTMLInputElement =>
-  [...root.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')].find((i) => text(i.closest('label')!).startsWith('Only artifacts'))!;
+  [...root.querySelectorAll<HTMLInputElement>('input[type="checkbox"]')].find((i) => text(i.labels![0]!).startsWith('Only artifacts'))!;
 
 describe('The gate of a repository in its settings (R-SIG-074, R-SIG-061)', () => {
   it('R-SIG-074 off by default: the box unchecked with its sentence, no anchors, and the preview of switching it on; passes axe', async () => {
     const { root } = await section({}, { setup: (api) => (api.previewAnswer = gatePreview({ pass: 940, refused: { ...gatePreview().refused, missing: 60 } })) });
     expect(box(root).checked).toBe(false);
-    expect(text(root)).toContain('A signature says who signed an artifact, not that it is safe.');
+    // What the gate does is the box's help (R-UI-267).
+    expect(helpSigns(box(root).closest('quader-checkbox')!)).toEqual([
+      [
+        'About Only artifacts with a verified signature can be downloaded from this repository',
+        'Artifacts without a signature that a trust anchor of this repository knows are refused. A signature says who signed an artifact, not that it is safe.',
+      ],
+    ]);
     expect(root.querySelector('[data-testid="gate-anchors"]')).toBeNull();
     expect(text(root.querySelector('[data-testid="gate-state"]')!)).toBe('Switched on with the stored anchors: 940 of 1,000 artifacts pass. 60 are refused.');
     await expectAccessible(root);

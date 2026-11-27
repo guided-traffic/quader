@@ -255,4 +255,8 @@ export class AuthSettings {
       this.adopt(theirs, part);
     }
   }
+
+  /** The switch's name and what it does, behind its help sign (R-UI-267). */
+  protected readonly newUsersExternalName = $localize`:@@auth-settings.new-users-external:New users are external`;
+  protected readonly newUsersExternalHelp = $localize`:@@auth-settings.new-users-external-note:Users created from now on start as external users; existing users keep their flag.`;
 }

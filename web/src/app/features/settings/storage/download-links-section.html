@@ -58,27 +58,23 @@
           <quader-error-notice [error]="e" />
         }
         @if (canWrite()) {
-          <quader-checkbox [checked]="enabled()" [describedBy]="'links-note links-limits'" (checkedChange)="enabled.set($event)">
+          <quader-checkbox [checked]="enabled()" [help]="switchHelp" [about]="switchName" describedBy="links-bytes" (checkedChange)="enabled.set($event)">
             <ng-container i18n="@@links.switch">Deliver large downloads by signed links of the object store</ng-container>
           </quader-checkbox>
         } @else {
           <p data-testid="links-switch-state">
-            @if (s.enabled) {
-              <ng-container i18n="@@links.switch-on"><strong>Deliver large downloads by signed links of the object store</strong> is on.</ng-container>
-            } @else {
-              <ng-container i18n="@@links.switch-off"><strong>Deliver large downloads by signed links of the object store</strong> is off.</ng-container>
-            }
+            <span class="help-anchor">
+              @if (s.enabled) {
+                <ng-container i18n="@@links.switch-on"><strong>Deliver large downloads by signed links of the object store</strong> is on.</ng-container>
+              } @else {
+                <ng-container i18n="@@links.switch-off"><strong>Deliver large downloads by signed links of the object store</strong> is off.</ng-container>
+              }</span
+            ><quader-help [text]="switchHelp" [about]="switchName" />
           </p>
         }
-        <p id="links-note" class="muted" i18n="@@links.note">
-          A client then fetches the file from the object store with a link that is valid for a short time. Quader still decides who may
-          download, but it no longer sees the bytes: the client checks them, and the clients must be able to reach the object store.
-        </p>
-        <!-- The speed limits (Q-LIM-99): one sentence, no notice and no profile. -->
-        <p id="links-limits" class="muted" i18n="@@links.limits">
-          A download handed to a link is not slowed by the caller's speed limit; its size is charged to the caller's hourly and daily
-          budgets when the link is issued.
-        </p>
+        <!-- What the switch does and the speed limits (Q-LIM-99) are its help (R-UI-267); what the switch gives away stays visible, one
+             line, before acting (Q-UI-1628). -->
+        <p id="links-bytes" class="muted" i18n="@@links.bytes">Quader no longer sees the bytes: the client checks them, and must reach the object store.</p>
         <p>
           <a routerLink="/help/admin/download-links" fragment="what-a-link-costs" i18n="@@links.costs">What a link costs</a>
         </p>

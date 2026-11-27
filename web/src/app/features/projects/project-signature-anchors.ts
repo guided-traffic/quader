@@ -34,7 +34,7 @@ import { Disclosure } from '../../shared/ui/disclosure';
         }
         @if (!l.projectAnchors) {
           <p class="banner-warning" role="note" data-testid="project-anchors-off">
-            <span class="material-icons inline warn" aria-hidden="true">info</span>
+            <span class="material-icons inline warn" aria-hidden="true">warning</span>
             <span i18n="@@sig.anchor.not-applied">Not applied: project anchors are switched off by an administrator.</span>
           </p>
         } @else if (canAdd()) {

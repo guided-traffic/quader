@@ -82,7 +82,7 @@ export class Banner {
 
   protected icon(n: Notice): string {
     if (n.kind === 'maintenance') return 'construction';
-    return n.severity === 'info' ? 'info' : n.severity === 'warning' ? 'warning' : 'error';
+    return n.severity === 'info' ? 'campaign' : n.severity === 'warning' ? 'warning' : 'error'; // ⓘ is the help sign alone (Q-UI-1628)
   }
 
   protected label(n: Notice): string {

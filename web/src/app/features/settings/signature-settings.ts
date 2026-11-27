@@ -20,6 +20,7 @@ import { BlockDialog } from '../../shared/signatures/block-dialog';
 import { GateActions } from '../../shared/signatures/gate-releases';
 import { blockKindWords, signaturePromise } from '../../views/signatures/signature-words';
 import { Checkbox } from '../../shared/ui/checkbox';
+import { Help } from '../../shared/ui/help';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
 import { QuaderDialog } from '../../shared/ui/dialog';
 import { Disclosure } from '../../shared/ui/disclosure';
@@ -41,7 +42,7 @@ import { Loading } from '../../shared/ui/loading';
  */
 @Component({
   selector: 'quader-signature-settings',
-  imports: [Loading, Busy, AnchorTable, Checkbox, DataTable, TimePipe, DecimalPipe, Disclosure, ErrorNotice, Needs, PageHeader, RouterLink, SigningIdentitySection, TechnicalDetails, TimeAgo],
+  imports: [Loading, Busy, AnchorTable, Checkbox, DataTable, TimePipe, DecimalPipe, Disclosure, ErrorNotice, Help, Needs, PageHeader, RouterLink, SigningIdentitySection, TechnicalDetails, TimeAgo],
   templateUrl: './signature-settings.html',
   styleUrl: '../../shared/access/access.scss',
   styles: `
@@ -136,6 +137,9 @@ export class SignatureSettingsPage {
   protected readonly projectControls = (): AnchorRowControls => ({ toggle: false, remove: this.canWrite() });
 
   protected readonly promise = signaturePromise();
+  /** The switch's name and what it means, behind its help sign (R-UI-267). */
+  protected readonly switchName = $localize`:@@sig.settings.switch:Project owners may add trust anchors for their project`;
+  protected readonly switchHelp = $localize`:@@sig.settings.switch-note:Project anchors apply only to the repositories of their project. A project cannot switch off an anchor of the installation.`;
   protected readonly principal = personName;
   protected readonly blockKind = blockKindWords;
   protected readonly anchorsCaption = $localize`:@@sig.settings.anchors-caption:Trust anchors of the installation`;

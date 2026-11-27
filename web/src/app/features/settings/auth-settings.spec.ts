@@ -1,6 +1,6 @@
 import { AuthSettingsApi } from '../../api/auth-settings-api';
 import { FakeAuthSettingsApi, problem, sampleAuthSettings } from '../../api/testing/access-fakes';
-import { browserStorage, button, buttonByText, renderScreen, settle, text, typeInto, sleep } from '../../testing/screen';
+import { browserStorage, button, buttonByText, helpSigns, renderScreen, settle, text, typeInto, sleep } from '../../testing/screen';
 import { seriousViolations } from '../../testing/axe';
 import { AuthSettings } from './auth-settings';
 
@@ -48,7 +48,8 @@ describe('Authentication settings (R-UI-031)', () => {
 
     const missing = await renderScreen(AuthSettings, withPassword('not_configured'));
     expect(text(missing.root)).toContain('No password is configured');
-    expect(text(missing.root)).toContain('auth.break_glass.password_file');
+    // The key as the Helm configuration has it (R-UI-268): the chart sets the password file from this Secret.
+    expect(text(missing.root)).toContain('secrets.breakGlass of the Helm configuration names no Secret');
     expect(text(missing.root)).toContain('Every local sign-in is refused');
 
     const unusable = await renderScreen(AuthSettings, withPassword('unusable'));
@@ -99,7 +100,10 @@ describe('Authentication settings (R-UI-031)', () => {
   it('R-AUTH-044 without settings:write the flag for new users is shown but cannot be changed', async () => {
     const { root } = await renderScreen(AuthSettings, { capabilities: ['settings:read'] });
     expect(root.querySelector<HTMLInputElement>('quader-checkbox input')!.disabled).toBe(true);
-    expect(text(root)).toContain('existing users keep their flag');
+    // What the flag does is the help of its box, for a reader too (R-UI-267).
+    expect(helpSigns(root.querySelector('quader-checkbox')!)).toEqual([
+      ['About New users are external', 'Users created from now on start as external users; existing users keep their flag.'],
+    ]);
   });
 
   it('R-UI-042 a 412 opens the conflict dialog; Overwrite sends my patch with the ETag read now', async () => {

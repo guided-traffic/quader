@@ -92,25 +92,19 @@ export function anchorOptions(
         } @else {
           @if (checksOff()) {
             <p class="banner-warning" role="note" data-testid="gate-checks-off">
-              <span class="material-icons inline warn" aria-hidden="true">info</span>
+              <span class="material-icons inline warn" aria-hidden="true">warning</span>
               <span i18n="@@repo.gate.checks-off">Signature checks are switched off in this installation. This setting does not apply.</span>
             </p>
           }
-          <quader-checkbox [checked]="onlyVerified()" [disabled]="readOnly() || (storedOn() && !canWeaken())" [describedBy]="'repo-gate-note'" (checkedChange)="setOn($event)">
+          <quader-checkbox [checked]="onlyVerified()" [disabled]="readOnly() || (storedOn() && !canWeaken())" [describedBy]="lockedOn() ? 'repo-gate-note' : null" [help]="gateHelp()" [about]="gateName" (checkedChange)="setOn($event)">
             <ng-container i18n="@@repo.gate.only-verified">Only artifacts with a verified signature can be downloaded from this repository</ng-container>
           </quader-checkbox>
-          <div id="repo-gate-note" class="notes">
-            <p class="hint" i18n="@@repo.gate.what">
-              Artifacts without a signature that a trust anchor of this repository knows are refused. A signature says who signed an
-              artifact, not that it is safe.
-            </p>
-            @if (virtual()) {
-              <p class="hint" data-testid="gate-virtual" i18n="@@repo.gate.virtual">Applies to everything this repository serves from its members.</p>
-            }
-            @if (lockedOn()) {
+          <!-- What the box does is its help (R-UI-267); who may loosen it stays visible, one line (Q-UI-1628). -->
+          @if (lockedOn()) {
+            <div id="repo-gate-note" class="notes">
               <p class="hint" data-testid="gate-locked" i18n="@@repo.gate.locked">Only an administrator or someone who triages security findings can loosen this.</p>
-            }
-          </div>
+            </div>
+          }
 
           @if (onlyVerified()) {
             <fieldset class="anchors" data-testid="gate-anchors">
@@ -187,24 +181,24 @@ export function anchorOptions(
 
         @if (remote()) {
           <div class="fetch">
-            <quader-checkbox [checked]="fetch()" [disabled]="readOnly()" [describedBy]="'repo-signatures-note'" (checkedChange)="fetch.set($event)">
+            <quader-checkbox
+              [checked]="fetch()"
+              [disabled]="readOnly()"
+              [describedBy]="fetchOffWarns() ? 'repo-signatures-note' : null"
+              [help]="fetchHelp"
+              [about]="fetchName"
+              (checkedChange)="fetch.set($event)"
+            >
               <ng-container i18n="@@repo.signatures.fetch">Fetch the upstream's signatures</ng-container>
             </quader-checkbox>
-            <div id="repo-signatures-note" class="notes">
-              <p class="hint" i18n="@@repo.signatures.what">
-                Quader asks the upstream in the background for the signatures of what this repository stores, at most 600 requests an hour,
-                so that the badge is right before any client asks. A client's own request for signatures passes through either way.
-              </p>
-              <p class="hint" i18n="@@repo.signatures.off">
-                Switch it off for an upstream with tight rate limits: on Docker Hub without an account, fetching a signature counts as a pull.
-              </p>
-              @if (onlyVerified() && !fetch() && format() === 'oci') {
+            @if (fetchOffWarns()) {
+              <div id="repo-signatures-note" class="notes">
                 <p class="hint warn-line" data-testid="gate-fetch-off">
                   <span class="material-icons inline warn" aria-hidden="true">warning</span
                   ><span i18n="@@repo.gate.fetch-off">Signatures of images are not fetched: an image whose signature no client pulled is refused.</span>
                 </p>
-              }
-            </div>
+              </div>
+            }
           </div>
         }
 
@@ -468,6 +462,18 @@ export class RepositorySignaturesSection {
       this.asking.set(false);
     }
   }
+
+  protected readonly gateName = $localize`:@@repo.gate.only-verified:Only artifacts with a verified signature can be downloaded from this repository`;
+  /** What the gate does, and for a virtual repository what it applies to, behind its help sign (R-UI-267). */
+  protected readonly gateHelp = computed(() => {
+    const what = $localize`:@@repo.gate.what:Artifacts without a signature that a trust anchor of this repository knows are refused. A signature says who signed an artifact, not that it is safe.`;
+    return this.virtual() ? `${what} ${$localize`:@@repo.gate.virtual:Applies to everything this repository serves from its members.`}` : what;
+  });
+  protected readonly fetchName = $localize`:@@repo.signatures.fetch:Fetch the upstream's signatures`;
+  /** What the fetch does and when to switch it off, behind its help sign (R-UI-267). */
+  protected readonly fetchHelp = $localize`:@@repo.signatures.help:Quader asks the upstream in the background for the signatures of what this repository stores, at most 600 requests an hour. Switch it off for an upstream with tight rate limits, such as Docker Hub without an account.`;
+  /** The gate refuses images whose signatures are not fetched: the one line that stays under the fetch's box. */
+  protected readonly fetchOffWarns = computed(() => this.onlyVerified() && !this.fetch() && this.format() === 'oci');
 }
 
 /** The line before the preview's examples. */

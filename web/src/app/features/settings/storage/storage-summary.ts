@@ -56,7 +56,7 @@ interface Tile {
       <span class="label">{{ t.label }}</span>
       @if (t.word) {
         <span class="state" [attr.data-tone]="t.tone"
-          ><span class="material-icons" aria-hidden="true">{{ icon(t.tone) }}</span>{{ t.word }}</span
+          >@if (icon(t.tone); as i) {<span class="material-icons" aria-hidden="true">{{ i }}</span>}{{ t.word }}</span
         >
       }
       @let o = overview();

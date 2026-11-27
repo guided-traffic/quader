@@ -140,7 +140,7 @@ export function ciFailureText(failure: string): string {
       }
       @if (fromToken()) {
         <p class="hint" role="status" id="ci-t-token-note">
-          <span class="material-icons" aria-hidden="true">info</span>
+          <!-- Nothing to act on: no icon, as ⓘ is the help sign alone (Q-UI-1628). -->
           <span i18n="@@ci.test.token-decoded">The pasted token was decoded in your browser and discarded. Only its claims are used, and the signature was not checked.</span>
         </p>
       }

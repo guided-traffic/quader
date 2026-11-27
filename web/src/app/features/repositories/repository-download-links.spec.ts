@@ -2,7 +2,7 @@ import { DownloadLinksApi } from '../../api/download-links-api';
 import { RepositoriesApi } from '../../api/repositories-api';
 import { FakeDownloadLinksApi, downloadLinkSettings } from '../../api/testing/fakes-download-links';
 import { FakeRepositoriesApi, GENERIC_FORMAT, NUGET_FORMAT, OCI_FORMAT } from '../../api/testing/fakes-catalog';
-import { expectAccessible, openSection, renderScreen, saveButton, sectionHeadings, settle, text } from '../../testing/screen';
+import { expectAccessible, helpSigns, openSection, renderScreen, saveButton, sectionHeadings, settle, text } from '../../testing/screen';
 import { RepositoryDetail } from './repository-detail';
 import { RepositoryDownloadLinksSection } from './repository-download-links';
 
@@ -15,7 +15,7 @@ async function section(inputs: Record<string, unknown>, enabled = true) {
   });
 }
 
-const box = (root: ParentNode): HTMLInputElement | null => root.querySelector<HTMLInputElement>('label.check-row input');
+const box = (root: ParentNode): HTMLInputElement | null => root.querySelector<HTMLInputElement>('.check-row input');
 const note = (root: ParentNode): string => text(root.querySelector('#repo-links-note')!);
 
 describe("The repository's section Download links (R-UI-201)", () => {
@@ -33,7 +33,13 @@ describe("The repository's section Download links (R-UI-201)", () => {
 
   it('R-UI-201 a virtual repository says that a member which does not allow it is delivered by Quader', async () => {
     const r = await section({ virtual: true });
-    expect(text(r.root.querySelector('[data-testid="repo-links-virtual"]')!)).toBe('A member that does not allow it is delivered by Quader.');
+    // Behind the box's help sign (R-UI-267), while the installation's state stays the visible line.
+    expect(helpSigns(r.root)).toEqual([
+      ['About Downloads of this repository may go by signed links of the object store', 'A member that does not allow it is delivered by Quader.'],
+    ]);
+    expect(note(r.root)).toBe('The installation delivers large downloads by link.');
+    const reader = await section({ virtual: true, canChange: false });
+    expect(helpSigns(reader.root).map(([, sentence]) => sentence)).toEqual(['A member that does not allow it is delivered by Quader.']);
   });
 
   it('R-UI-201 with the installation switched off the box stays usable, says when the choice takes effect, and saves', async () => {

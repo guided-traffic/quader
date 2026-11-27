@@ -41,12 +41,9 @@ import { Busy } from '../../shared/ui/busy';
         />
         <quader-text-field width="name" i18n-label="@@user-create.display-name" label="Display name" name="displayName" [(value)]="displayName" [error]="fieldError('/displayName')" />
         <quader-text-field width="name" i18n-label="@@user-create.email" label="Email" name="email" type="email" [(value)]="email" [error]="fieldError('/email')" />
-        <quader-checkbox [checked]="shownExternal()" describedBy="user-create-external-note" (checkedChange)="chosenExternal.set($event)">
+        <quader-checkbox [checked]="shownExternal()" [help]="externalHelp" [about]="externalName" (checkedChange)="chosenExternal.set($event)">
           <ng-container i18n="@@user-create.external">External user</ng-container>
         </quader-checkbox>
-        <p id="user-create-external-note" class="muted" i18n="@@user-create.external-note">
-          Sees only the projects it is a member of, what a policy grants it, and what is public. Internal projects and repositories stay hidden.
-        </p>
         @if (providers().length > 1) {
           <quader-select-field
             i18n-label="@@user-create.provider"
@@ -82,6 +79,9 @@ export class UserCreateDialog {
   /** The installation's `newUsersExternal` (R-UI-056); unknown to a caller without `settings:read`, then the server applies it. */
   private readonly presetExternal = signal<boolean | null>(null);
   protected readonly chosenExternal = signal<boolean | null>(null);
+  /** The flag's name and what it means, behind its help sign (R-UI-267). */
+  protected readonly externalName = $localize`:@@user-create.external:External user`;
+  protected readonly externalHelp = $localize`:@@user-create.external-note:Sees only the projects it is a member of, what a policy grants it, and what is public. Internal projects and repositories stay hidden.`;
   protected readonly shownExternal = computed(() => this.chosenExternal() ?? this.presetExternal() ?? false);
   protected readonly busy = signal(false);
   protected readonly error = signal<ApiError | null>(null);

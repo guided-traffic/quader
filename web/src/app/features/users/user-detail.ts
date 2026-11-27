@@ -383,4 +383,8 @@ export class UserDetail {
       this.busy.set(false);
     }
   }
+
+  /** The flag's name and what it means, behind its help sign (R-UI-267). */
+  protected readonly externalName = $localize`:@@user.external:External user`;
+  protected readonly externalHelp = $localize`:@@user.external-note:Sees only the projects it is a member of, what a policy grants it, and what is public. Internal projects and repositories stay hidden.`;
 }

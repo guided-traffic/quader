@@ -5330,8 +5330,8 @@ Acceptance criteria:
 ### R-UI-031 · Authentication settings
 Priority: **MVP** · Covers: UI-043
 
-`/admin/settings/auth` (the sidebar's **Settings › Authentication**, Q-UI-326) renders `GET /api/v1/settings/auth`: **New users are external** (`newUsersExternal`, a checkbox with
-the sentence "Users created from now on start as external users; existing users keep their flag.", R-AUTH-044), token default
+`/admin/settings/auth` (the sidebar's **Settings › Authentication**, Q-UI-326) renders `GET /api/v1/settings/auth`: **New users are external** (`newUsersExternal`, a checkbox whose help
+behind its sign is "Users created from now on start as external users; existing users keep their flag.", R-AUTH-044, R-UI-267), token default
 and maximum lifetimes per token type, expiry notices, and the read-only status block (providers and discovery state, break-glass state, session
 timeouts, client switches including Basic, the command-line login poll binding mode, SCIM state).
 YAML-pinned and ceiling-bounded values show their source. Hiding unauthorized resources
@@ -5424,12 +5424,12 @@ default, the minimum size, the link's life and the public host behind a disclosu
      change of the page.
   2. Which connections serve links, as two facts: **Can serve links** with the connections that can serve links now, and **Cannot serve
      links** with the others and "(Details says why)". When none can, the warning notice of Q-UI-954 stands here instead.
-  3. The checkbox **Deliver large downloads by signed links of the object store**, with the note "A client then fetches the file from the
-     object store with a link that is valid for a short time. Quader still decides who may download, but it no longer sees the bytes: the
-     client checks them, and the clients must be able to reach the object store.", the sentence of the speed limits
-     ([Q-LIM-99](usage-and-limits.md#q-lim-99--a-speed-limit-does-not-stop-a-link-the-budgets-are-charged-at-the-issue)): "A download
-     handed to a link is not slowed by the caller's speed limit; its size is charged to the caller's hourly and daily budgets when the link
-     is issued.", and a link **What a link costs** to the manual's page. The page shows no notice about speed limits and names no limit
+  3. The checkbox **Deliver large downloads by signed links of the object store**, its help behind the sign after its label (R-UI-267,
+     [Q-UI-1628](#q-ui-1628--the-help-sign-on-every-settings-page-and-no-info-icon-beside-a-status)), which holds the sentence of the speed limits
+     ([Q-LIM-99](usage-and-limits.md#q-lim-99--a-speed-limit-does-not-stop-a-link-the-budgets-are-charged-at-the-issue)): "A client fetches
+     the file from the object store by a short-lived link; Quader still decides who may download. No speed limit slows the download; its
+     size counts against the caller's budgets."; under it the one line of what the switch gives away, "Quader no longer sees the bytes: the
+     client checks them, and must reach the object store."; and a link **What a link costs** to the manual's page. The page shows no notice about speed limits and names no limit
      profile ([Q-UI-953](#q-ui-953--the-page-says-who-gets-no-link-because-of-a-speed-limit) is superseded).
   4. A closed disclosure **Details** (R-UI-087's closed section form, a heading of the third level), its fields with their values filled
      in, never empty with a hint ([Q-UI-951](#q-ui-951--the-details-are-fields-with-their-values-sized-to-them)):
@@ -5489,8 +5489,8 @@ default, the minimum size, the link's life and the public host behind a disclosu
   | Can serve links | Können Links ausgeben |
   | Cannot serve links | Können keine Links ausgeben |
   | (Details says why) | (Details nennen den Grund) |
-  | A client then fetches the file from the object store with a link that is valid for a short time. Quader still decides who may download, but it no longer sees the bytes: the client checks them, and the clients must be able to reach the object store. | Ein Client holt die Datei dann mit einem kurz gültigen Link aus dem Objektspeicher. Quader entscheidet weiter, wer herunterladen darf, sieht die Bytes aber nicht mehr: Der Client prüft sie, und die Clients müssen den Objektspeicher erreichen können. |
-  | A download handed to a link is not slowed by the caller's speed limit; its size is charged to the caller's hourly and daily budgets when the link is issued. | Ein Download über einen Link wird nicht durch das Tempolimit des Aufrufers gebremst; seine Größe wird beim Ausgeben des Links auf dessen Stunden- und Tagesbudget angerechnet. |
+  | A client fetches the file from the object store by a short-lived link; Quader still decides who may download. No speed limit slows the download; its size counts against the caller's budgets. | Ein Client holt die Datei mit einem kurz gültigen Link aus dem Objektspeicher; Quader entscheidet weiter, wer herunterladen darf. Kein Tempolimit bremst den Download; seine Größe zählt zum Budget des Aufrufers. |
+  | Quader no longer sees the bytes: the client checks them, and must reach the object store. | Quader sieht die Bytes nicht mehr: Der Client prüft sie und muss den Objektspeicher erreichen. |
   | What a link costs | Was ein Link kostet |
   | Details | Details |
   | Minimum size in MiB | Mindestgröße in MiB |
@@ -6060,8 +6060,9 @@ Acceptance criteria (`repository-visibility.spec.ts`, `project-visibility.spec.t
 ### R-UI-056 · The external flag on the user page
 Priority: **MVP** · Covers: quader-only
 
-- The user detail (R-UI-024) gains the checkbox **External user** with the muted sentence "Sees only the projects it is a member
-  of, what a policy grants it, and what is public. Internal projects and repositories stay hidden.", edited in place with its
+- The user detail (R-UI-024) gains the checkbox **External user** whose help behind its sign (R-UI-267, [Q-UI-1628](#q-ui-1628--the-help-sign-on-every-settings-page-and-no-info-icon-beside-a-status))
+  is "Sees only the projects it is a member of, what a policy grants it, and what is public. Internal projects and repositories stay
+  hidden.", the same in **New user**; edited in place with its
   own **Save changes** ([Q-UI-232](#q-ui-232--the-external-flag-is-a-checkbox-in-place-on-the-user-page-and-a-badge-in-the-list)).
   It is editable for a holder of `identities:write`; saving needs recent authentication; the break-glass account shows it
   disabled with "The break-glass account is never external."
@@ -11192,14 +11193,20 @@ behind one sign after its label, the same for the pointer, the keyboard, the tou
   sign never takes a line alone (the layout checks treat it as attached to its text). In a list's header it is the header's own item.
 - **"?" keeps one meaning.** `help_outline` is a link that opens the manual (the top bar's **Documentation**, the storage sections'
   headings); ⓘ explains in place.
+- **ⓘ is the help sign and nothing else** ([Q-UI-1628](#q-ui-1628--the-help-sign-on-every-settings-page-and-no-info-icon-beside-a-status)): no status line, notice, badge or tone carries the `info`
+  icon. A line that needs action carries `warning`, work that runs and ends by itself `autorenew`, the system banner's **Notice**
+  `campaign`; any other line carries none.
 - **What stays visible** ([Q-UI-1619](#q-ui-1619--what-stays-visible-beside-a-setting)): behind the sign stands what the setting does.
   Visible, one line each: the input's format while typing (a field's `hint`: a list separated by commas, a name's characters), what
-  becomes public or leaves for the DMZ, a refusal, a warning or a state that needs action, and the next step of a new object.
+  becomes public or leaves for the DMZ, a refusal, a warning or a state that needs action, the next step of a new object, and a line that
+  says why a control is off or does not act now ([Q-UI-1628](#q-ui-1628--the-help-sign-on-every-settings-page-and-no-info-icon-beside-a-status)).
 - **The parts.** `<quader-setting [label] [help] [for]>` ([setting.ts](../../web/src/app/shared/ui/setting.ts)) is one row of a settings
   card: the name at weight 600 with its sign in a column of `--quader-setting-label` (16 rem), the control beside it, the name above
   its control below 40 rem of content; `for` makes the name the control's `<label>`, otherwise `labelId` names a control by
   `aria-labelledby`; the slot `[below]` holds the lines under the control; a warning of the row is its next sibling. `<quader-text-field>`
-  takes `help` beside its `hint` ([fields.ts](../../web/src/app/shared/access/fields.ts)). `<quader-disclosure>` takes `noteTone="warn"`:
+  takes `help` beside its `hint` ([fields.ts](../../web/src/app/shared/access/fields.ts)). `<quader-checkbox>` takes `help` and `about`
+  ([checkbox.ts](../../web/src/app/shared/ui/checkbox.ts)): the label then names the box by `for`, and the sign follows it outside the
+  label, so its tap never toggles the box. `<quader-disclosure>` takes `noteTone="warn"`:
   a section's one line that needs action stands in the warning's colour with its icon. The data table's column help is this sign.
 
 *Built on 2026-11-27 (W-39 P1):* [help.ts](../../web/src/app/shared/ui/help.ts), the pin of
@@ -11207,8 +11214,13 @@ behind one sign after its label, the same for the pointer, the keyboard, the tou
 [fields.ts](../../web/src/app/shared/access/fields.ts), `noteTone` of [disclosure.ts](../../web/src/app/shared/ui/disclosure.ts),
 `.help-sign` and `.help-anchor` of [_controls.scss](../../web/src/styles/_controls.scss); every column help of
 [data-table.ts](../../web/src/app/shared/ui/data-table.ts) and the two help buttons of Settings › Storage (the target of
-**Availability**, the families of **What Quader encrypts**) use it. The Bastion card's rows follow (W-39 P2), and the other settings
-pages' paragraphs (W-39 P5).
+**Availability**, the families of **What Quader encrypts**) use it. The Bastion card's rows follow (W-39 P2).
+
+*Built on 2026-11-27 (W-39 P5, [Q-UI-1628](#q-ui-1628--the-help-sign-on-every-settings-page-and-no-info-icon-beside-a-status)):* `help` and `about` of [checkbox.ts](../../web/src/app/shared/ui/checkbox.ts);
+the checkboxes of Settings › Storage (**Download links**), **Malware scanning**, **Signatures** and **Authentication**, of a user and of
+**New user**, and of a repository's **Malware scan**, **Download links**, **Signatures**, **Delivery** and **Kept in sync** carry their
+help behind the sign, as does the heading **Scanning** and the line of R-MAL-003; the `info` icon beside a status is gone from every
+screen of `web/src/app`.
 
 Acceptance criteria:
 
@@ -11220,6 +11232,9 @@ Acceptance criteria:
   [fields.spec.ts](../../web/src/app/shared/access/fields.spec.ts): the hint is the input's description, the help the sign's, outside
   the label. [disclosure.spec.ts](../../web/src/app/shared/ui/disclosure.spec.ts): the warning tone's class and icon.
   [data-table.spec.ts](../../web/src/app/shared/ui/data-table.spec.ts): a column's sign is named "About the column Detail" with `info`.
+  [checkbox.spec.ts](../../web/src/app/shared/ui/checkbox.spec.ts): the sign follows the label outside it, the label still names the box,
+  the sign's tap does not toggle it. Each page's spec asserts its sign's name and sentence instead of the paragraph (`helpSigns` of
+  [screen.ts](../../web/src/app/testing/screen.ts)).
 - State `help-pinned` ([tooltip.states.spec.ts](../../web/src/app/shared/ui/tooltip.states.spec.ts), `make ui-states`): a setting
   row's sign at the window's right edge, pinned, its bubble inside the window at 390 and 1,440 px.
 - Layout fixture ([layout-checks.spec.ts](../../web/e2e/renders/layout-checks.spec.ts), `make ui-layout-test`, three engines): an anchored
@@ -24230,6 +24245,8 @@ status names the formats; Q-LIM-99 asked for one sentence about speed limits bes
 
 **Choice:** (a). The labels name their unit ("Minimum size in MiB", "Link valid for, in seconds"), as R-UI-088 asks of a label.
 **Applied in the spec:** R-UI-200; code: [download-links-section.html](../../web/src/app/features/settings/storage/download-links-section.html).
+*Amended on 2026-11-27 by [Q-UI-1628](#q-ui-1628--the-help-sign-on-every-settings-page-and-no-info-icon-beside-a-status):* the switch's note and the speed limits' sentence are its help behind the
+info sign; the bytes the switch gives away stay one visible line.
 
 ### Q-UI-958 · An encrypted connection has its address and its test link for a Bastion, and says what it serves today
 
@@ -28249,7 +28266,7 @@ sentence and how it stands.
 | (a) One table in `upstream-test-words.ts`: a sentence and a tone per verdict, `ok` (green, check), `info` (neutral, info), `warn` (warning) and `error` (chosen) | Every screen of the test reads it | One place; the registry that asks for a login without an account is neither green nor a warning | Four tones where there were two |
 | (b) Green or warning, as before | Two tones | Simple | `login_asked` is neither a success to be green about (nothing was judged) nor a warning (nothing is wrong) |
 
-**Choice:** (a). `accepted` and `answered` are `ok`; `login_asked` is `info`; `credential_withheld`, `login_required` and
+**Choice:** (a). `accepted` and `answered` are `ok`; `login_asked` is `info` (without an icon since [Q-UI-1628](#q-ui-1628--the-help-sign-on-every-settings-page-and-no-info-icon-beside-a-status)); `credential_withheld`, `login_required` and
 `token_service_denied` are `warn` (the upstream answers, a setting keeps it from working as meant); every other verdict is `error`.
 Green stays for a positive status only.
 
@@ -31337,6 +31354,69 @@ the walkthrough. R-UI-267.
 | (c) Only paragraphs longer than one line move | | Mechanical | Keeps one-line slop; a line's length is not its worth |
 
 **Choice:** (a). A field's `hint` keeps the format, its `help` the meaning. **Applied in the spec:** R-UI-267.
+*Amended on 2026-11-27 by [Q-UI-1628](#q-ui-1628--the-help-sign-on-every-settings-page-and-no-info-icon-beside-a-status):* a line that says why a control is off or does not act now stays visible too.
+
+### Q-UI-1628 · The help sign on every settings page, and no info icon beside a status
+
+Status: **Decided by the development agent on 2026-11-27** (W-39's plan, package P5, section 6 of the plan) — selected from the options
+below; the owner reviews it at the walkthrough. R-UI-267, R-UI-268.
+
+Context: the owner's rule of R-UI-267 was said on the Bastion card ("Info-Texte zu Settings gehören als Hover hinter ein kleines
+Info-Zeichen"); a pattern he decides at one place holds wherever the same thing shows (his rule of 2026-11-19, sharpened on 2026-11-25).
+Seven more pages carried paragraphs under a checkbox that say what it does, and 21 places used the plain `info` icon beside a status line,
+a notice or a state: the sign that means "an explanation behind this sign" meant "a notice" there.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Every paragraph that explains a checkbox becomes its help (`<quader-checkbox [help] [about]>`, the sign after the label's last word and outside the label), or the sign beside its section's heading; a warning, a refusal, what becomes public or is given away, and a line that says why a control is off or does not act now stay visible, one line each; a status line carries the `warning` icon where it needs action and none otherwise, a state of work in progress the `autorenew` of a running job (chosen) | | One sign with one meaning on every page; a setting reads the same wherever it stands | A reader who wants the sentence hovers or taps; three places needed a judgement which line is a consequence |
+| (b) The Bastion card alone (W-39 P2) | | The least change | Two patterns for the same thing, against the owner's rule of 2026-11-19 |
+| (c) Keep `info` beside notices as a second meaning | | No icon to choose | ⓘ means two things; whoever learned to tap it finds nothing to open |
+
+**Choice:** (a). The help texts keep their words and their units where they were one or two sentences; where two paragraphs became one help,
+it was cut to the bubble's 200 characters. The texts:
+
+| Page · unit | Before | Now |
+|---|---|---|
+| Settings › Storage, **Download links** · `links.note`, `links.limits` | two paragraphs of two lines under the checkbox | one help (`links.help`, the speed limits of Q-LIM-99 in its second sentence); "Quader no longer sees the bytes: the client checks them, and must reach the object store." (`links.bytes`) stays one line: what the switch gives away |
+| Settings › **Malware scanning** · `malware.settings.only-checked-note` | a paragraph under the checkbox | the box's help; a reader finds the sign after the state's sentence |
+| Settings › **Malware scanning** · `malware.settings.backlog-note` | a paragraph after the replicas, away from the switch it explains | the sign beside the heading **Scanning** |
+| Settings › **Malware scanning**, Security audit › **Malware** · `malware.promise` (R-MAL-003) | three lines at the page's end and above the finds | one line, what the scan does not find (a limit to read before relying on it), and its help (`malware.promise.help`) |
+| Settings › **Signatures** · `sig.settings.switch-note` | a paragraph under the checkbox | the box's help, also after a reader's state sentence |
+| Settings › **Authentication** · `auth-settings.new-users-external-note` | a paragraph under the checkbox | the box's help |
+| Settings › **Authentication** · `auth-settings.tokens-note` | the hint of **Token lifetimes**, two sentences | the input's format alone, "In days; fractions are allowed, at least 60 seconds." (R-UI-267 keeps a format visible); the ceiling's sentence goes, as every field's hint names its ceiling from the Helm configuration |
+| Settings › **Authentication** · `auth-settings.break-glass-no-password` | named `auth.break_glass.password_file`, a key of the configuration file | names `secrets.breakGlass` of the Helm configuration (R-UI-268): the chart sets the file from that Secret |
+| Users › a user, **New user** · `user.external-note`, `user-create.external-note` | a paragraph under the checkbox | the box's help; "The break-glass account is never external." stays: why the box is off |
+| A repository's **Malware scan** · `repo.malware.what`, `repo.malware.virtual` | lines under the box | the box's help; `repo.malware.installation-on` and `repo.malware.locked` stay: why the box is off |
+| A repository's **Download links** · `repo.links.virtual` | a line under the box | the box's help, and after a reader's state sentence; `repo.links.not-applicable`, `installation-on` and `installation-off` stay: whether the choice acts now |
+| A repository's **Signatures** · `repo.gate.what`, `repo.gate.virtual` | lines under the box | the box's help; `repo.gate.locked` and `repo.gate.fetch-off` stay |
+| A repository's **Signatures** · `repo.signatures.what`, `repo.signatures.off` | two paragraphs under **Fetch the upstream's signatures** | one help (`repo.signatures.help`) |
+| A repository's **Delivery** · `delivery.examine-hint` | a line under the box | the box's help |
+| A repository's **Kept in sync** · `syncs.settings.paused-hint` | a line under the box | the box's help |
+
+The icons that were `info` and were no help sign:
+
+| Place | Line | Now |
+|---|---|---|
+| Settings › Malware scanning, Signatures, Signing (the identity), Vulnerability scanning | the feature is off in the Helm configuration, a warning notice | `warning` |
+| A project's **Trust anchors** | "Not applied: project anchors are switched off by an administrator." | `warning` |
+| A repository's **Signatures** | the installation's checks are off: the setting does not apply | `warning` |
+| Set up client | the snippets hold a placeholder until a token is pasted | `warning`: they work only with one |
+| The release dialog of a refused download | a conflict with another release | `warning` |
+| Settings › Storage, **Availability** | "One store: no copy elsewhere" | no icon |
+| The CI claim tester | the pasted token was decoded in the browser and discarded | no icon |
+| New repository, a format the installation creates itself; a repository for a consumer | why there is no form, no settings | no icon |
+| The scanners' replicas | not listed, no pod configured, none listed | no icon |
+| System status, a role's pool | fewer than two ready replicas, all on one node (informing, Q-UI-603) | no icon |
+| System status, the summary | **Not drain-safe** | no icon |
+| System status, the summary and the notice of two versions; an image scanner's database being loaded; the dashboard's badge **Replicas are being replaced** | work that runs and ends by itself | `autorenew`, the sign of a running job |
+| Settings › Storage, the overview's tiles | a neutral state (One store, Catching up, …) | no icon (`toneIcon`) |
+| A connection test | `login_asked`, the verdict that judges nothing (Q-UI-1225) | no icon |
+| The system banner | the severity **Notice** | `campaign`: R-UI-044 gives each severity an icon besides its word |
+| The policy editor's explanation | a step neither passed nor failed | `remove` |
+
+**Applied in the spec:** R-UI-267 (the parts, what stays visible, the one meaning of ⓘ), R-UI-200, R-UI-031, R-UI-056, Q-UI-957,
+Q-UI-1225; [malware-scanning.md](malware-scanning.md) R-MAL-003, R-MAL-023, R-MAL-024; [signatures.md](signatures.md) R-SIG-036,
+R-SIG-074; code: `help` and `about` of [checkbox.ts](../../web/src/app/shared/ui/checkbox.ts), the pages named above.
 
 ### Q-UI-1513 · A column Malware scan in every list of artifacts, its help said for the list's rows
 

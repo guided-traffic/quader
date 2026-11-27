@@ -42,7 +42,7 @@ export function matchingFormats(formats: readonly FormatDescriptor[], query: str
     @if (systemOnly(); as f) {
       <!-- A system-only format at the form's address (Q-UI-1201): no form, one sentence, and its repository where the reader sees it. -->
       <p class="banner-warning" role="note">
-        <span class="material-icons inline" aria-hidden="true">info</span>
+        <!-- Why there is no form, nothing to act on: no icon, as ⓘ is the help sign alone (Q-UI-1628). -->
         <span>
           <ng-container i18n="@@repo.new.system-only"
             >This installation creates the repository of <span translate="no">{{ f.displayName ?? f.name }}</span> itself; it is not

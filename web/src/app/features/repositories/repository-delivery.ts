@@ -68,12 +68,11 @@ export function deliveryOf(stored: Partial<DeliverySettings> | undefined | null)
           <a [routerLink]="upstreamLink()" i18n="@@delivery.rules-link">The rules are set on the tab Upstream</a>
         </p>
         <fieldset class="plain examination" [disabled]="!canChange() || saving()">
-          <quader-checkbox [checked]="examine()" [disabled]="!canChange() || saving()" (checkedChange)="examine.set($event)" describedBy="delivery-examine-hint">
+          <quader-checkbox [checked]="examine()" [disabled]="!canChange() || saving()" [help]="examineHelp" [about]="examineName" (checkedChange)="examine.set($event)">
             <ng-container i18n="@@delivery.examine">Fetch for examination when someone asks</ng-container>
           </quader-checkbox>
-          <p class="hint" id="delivery-examine-hint" i18n="@@delivery.examine-hint">
-            A request downloads what it asks for at once, so that it is scanned before anyone decides; it is not delivered until allowed.
-          </p>
+          <!-- What the box does is its help (R-UI-267): a request downloads at once, so that it is scanned before anyone decides,
+               and it is not delivered until allowed. -->
           <div class="days">
             <label class="field-label" for="delivery-days" i18n="@@delivery.days">Remove what was examined and not allowed after this many days</label>
             <input
@@ -254,4 +253,8 @@ export class RepositoryDeliverySection {
     }
     this.save.emit({ settings, allowStored });
   }
+
+  /** The box's name and what it does, behind its help sign (R-UI-267). */
+  protected readonly examineName = $localize`:@@delivery.examine:Fetch for examination when someone asks`;
+  protected readonly examineHelp = $localize`:@@delivery.examine-hint:A request downloads what it asks for at once, so that it is scanned before anyone decides; it is not delivered until allowed.`;
 }

@@ -31,8 +31,8 @@
 <div class="loss" role="status">
   @if (o.availability.state === 'one_store') {
     <p class="loss-line">
-      <span class="material-icons muted-icon" aria-hidden="true">info</span
-      ><ng-container i18n="@@storage.loss.one-store">One store: no copy elsewhere</ng-container>
+      <!-- A state, nothing to act on: no icon, as ⓘ is the help sign alone (Q-UI-1628). -->
+      <ng-container i18n="@@storage.loss.one-store">One store: no copy elsewhere</ng-container>
     </p>
   } @else if (worst(); as w) {
     <p class="loss-line warn">

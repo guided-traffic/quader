@@ -275,7 +275,8 @@ describe('System status screen', () => {
       expect(head).toContain('Not drain-safe');
       expect(summary(root).querySelector('.material-icons.bad, .material-icons.warn')).toBeNull();
       const note = [...root.querySelectorAll('p.warning')].find((p) => p.textContent?.includes('Fewer than two ready replicas'))!;
-      expect(note.querySelector('.material-icons')?.textContent).toBe('info');
+      // Informing (Q-UI-603): no icon, as ⓘ means an explanation behind the sign (Q-UI-1628).
+      expect(note.querySelector('.material-icons')).toBeNull();
     });
   });
 
@@ -372,7 +373,7 @@ describe('System status screen', () => {
     const note = group.querySelector<HTMLElement>('[data-testid="scanner-database-lag"]')!;
     expect(text(note)).toContain('1 of 2 ready replicas does not hold the database in use yet');
     // Informing, not a warning: every new database leaves the pods on the one before for the seconds of the load.
-    expect(note.querySelector('.material-icons')!.textContent).toBe('info');
+    expect(note.querySelector('.material-icons')!.textContent).toBe('autorenew');
     expect([...group.querySelectorAll('.database-state')].map((c) => word(c.querySelector<HTMLElement>('.ok, .badge')!))).toEqual([
       'Database in use',
       'Older database',

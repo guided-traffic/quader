@@ -15,12 +15,12 @@
       <quader-checkbox
         [checked]="newUsersExternal()"
         [disabled]="!canWrite()"
-        [describedBy]="'new-users-external-note'"
+        [help]="newUsersExternalHelp"
+        [about]="newUsersExternalName"
         (checkedChange)="newUsersExternal.set($event)"
       >
         <ng-container i18n="@@auth-settings.new-users-external">New users are external</ng-container>
       </quader-checkbox>
-      <p id="new-users-external-note" class="muted" i18n="@@auth-settings.new-users-external-note">Users created from now on start as external users; existing users keep their flag.</p>
       @if (canWrite()) {
         <button class="btn btn-confirm" type="submit" [disabled]="busy() || !dirtyExternal()" [quaderBusy]="busy()">
           <ng-container i18n="@@auth-settings.save-changes">Save changes</ng-container>
@@ -33,7 +33,7 @@
       i18n-heading="@@auth-settings.tokens"
       heading="Token lifetimes"
       i18n-hint="@@auth-settings.tokens-note"
-      hint="Values are in days (fractions allowed, at least 60 seconds). The ceiling comes from the Helm configuration and cannot be exceeded here."
+      hint="In days; fractions are allowed, at least 60 seconds."
       [(expanded)]="tokensOpen"
     >
       <form (submit)="save($event, 'tokens')" novalidate>
@@ -145,7 +145,7 @@
         @case ('not_configured') {
           <p class="bad">
             <span class="material-icons" aria-hidden="true">error</span>
-            <ng-container i18n="@@auth-settings.break-glass-no-password">No password is configured: <code>auth.break_glass.password_file</code> is empty. Every local sign-in is refused.</ng-container>
+            <ng-container i18n="@@auth-settings.break-glass-no-password">No password is configured: <code translate="no">secrets.breakGlass</code> of the Helm configuration names no Secret. Every local sign-in is refused.</ng-container>
           </p>
         }
         @case ('unusable') {

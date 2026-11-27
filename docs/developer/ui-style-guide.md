@@ -320,6 +320,8 @@ The button has `aria-expanded` and `aria-controls`. A closed region is `visibili
 - A check box is `<quader-checkbox>`, its box a direct child of `.check-row`, which keeps it at 16 px beside a label of several
   lines ([Q-UI-575](../spec/api-and-ui.md#q-ui-575--a-check-box-keeps-its-size-beside-a-long-label)); so does a radio of
   `<quader-visibility-level>` beside a sentence of two lines (its box shrank to 13 px and pulled its option 3 px left, 2026-11-25).
+  What the box does is its `help` (with `about`, the label's words), behind the sign after the label; the line under it is only one
+  that stays visible: why the box is off or does not act now, what it gives away ([Q-UI-1628](../spec/api-and-ui.md#q-ui-1628--the-help-sign-on-every-settings-page-and-no-info-icon-beside-a-status)).
 - A thing that is on or off and changes at once, without a save (a public registry of **Upstream registries**), is a switch,
   `<quader-switch [checked] [label] (checkedChange)>` ([switch.ts](../../web/src/app/shared/ui/switch.ts),
   [Q-UI-830](../spec/api-and-ui.md#q-ui-830--upstream-registries-is-one-list-grouped-by-format-with-a-switch-and-a-level-in-each-row)).
@@ -588,6 +590,8 @@ Before a screen is committed:
 - [ ] A row's one action is its quiet word, several are its menu **Actions for &lt;name&gt;**; no menu of one entry. A row that sets a state by a switch has the switch in that state's cell beside its badge and an act of one cell as that cell's one word, and no menu ([Q-CUR-201](../spec/remote-curation.md#q-cur-201--a-versions-acts-stand-where-their-state-stands)).
 - [ ] No paragraph explains a setting: its help is behind the info sign; what becomes public, a refusal and a state that needs action
       stay visible, one line each ([R-UI-267](../spec/api-and-ui.md#r-ui-267--help-behind-an-info-sign)).
+- [ ] No `info` icon outside `<quader-help>`: a line that needs action carries `warning`, any other none
+      ([Q-UI-1628](../spec/api-and-ui.md#q-ui-1628--the-help-sign-on-every-settings-page-and-no-info-icon-beside-a-status)).
 - [ ] A column's help and a description above a table say what holds for every row; what holds for one row, one format or one special
       case is said in that row, in words seen without hover ([Q-UI-1500](../spec/api-and-ui.md#q-ui-1500--a-columns-help-says-what-the-column-means-for-every-row-what-holds-for-one-row-is-said-at-that-row)).
 - [ ] Every value to copy of one line is an address field; a page shows one client address, further ones labelled in Details.

@@ -23,6 +23,7 @@ import { linkCheckClause } from '../../../shared/link-check';
 import { asApiError, valueOf } from '../../../shared/paged-resource';
 import { Checkbox } from '../../../shared/ui/checkbox';
 import { Disclosure } from '../../../shared/ui/disclosure';
+import { Help } from '../../../shared/ui/help';
 import { TimeAgo } from '../../../shared/ui/time-ago';
 import { Busy } from '../../../shared/ui/busy';
 import { Loading } from '../../../shared/ui/loading';
@@ -111,7 +112,7 @@ interface TestOutcome {
  */
 @Component({
   selector: 'quader-storage-download-links',
-  imports: [Loading, Busy, AddressField, Checkbox, Disclosure, ErrorNotice, RouterLink, TimeAgo],
+  imports: [Loading, Busy, AddressField, Checkbox, Disclosure, ErrorNotice, Help, RouterLink, TimeAgo],
   templateUrl: './download-links-section.html',
   styleUrl: '../../../shared/access/access.scss',
   styles: `
@@ -249,6 +250,10 @@ export class DownloadLinksSection {
   protected readonly dirty = computed(() => Object.keys(this.patch()).length > 0 || this.minSizeError() !== null || this.linkLifeError() !== null);
 
   protected readonly principal = personName;
+  /** The switch's name, for its help sign ("About …"). */
+  protected readonly switchName = $localize`:@@links.switch:Deliver large downloads by signed links of the object store`;
+  /** What the switch does, behind its help sign (R-UI-267); the speed limits of Q-LIM-99 in its second sentence. */
+  protected readonly switchHelp = $localize`:@@links.help:A client fetches the file from the object store by a short-lived link; Quader still decides who may download. No speed limit slows the download; its size counts against the caller's budgets.`;
   private readonly addressInvalidText = $localize`:@@links.address.invalid:Enter an https address without a path, such as https://objects.example.com.`;
 
   constructor() {

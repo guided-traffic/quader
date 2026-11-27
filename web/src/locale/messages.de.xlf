@@ -12726,7 +12726,7 @@
     <unit id="copy.done">
       <notes>
         <note category="location">src/app/features/endpoints/endpoint-detail.ts:129</note>
-        <note category="location">src/app/features/repositories/upstream-test-result.ts:144</note>
+        <note category="location">src/app/features/repositories/upstream-test-result.ts:147</note>
         <note category="location">src/app/shared/copy-button.ts:36</note>
         <note category="location">src/app/shared/error-notice.ts:410</note>
       </notes>
@@ -12738,7 +12738,7 @@
     <unit id="copy.failed">
       <notes>
         <note category="location">src/app/features/endpoints/endpoint-detail.ts:131</note>
-        <note category="location">src/app/features/repositories/upstream-test-result.ts:146</note>
+        <note category="location">src/app/features/repositories/upstream-test-result.ts:149</note>
         <note category="location">src/app/shared/copy-button.ts:39</note>
         <note category="location">src/app/shared/error-notice.ts:412</note>
       </notes>
@@ -13332,11 +13332,11 @@
     <unit id="repo.edit.reset">
       <notes>
         <note category="location">src/app/features/endpoints/exposure-rule-editor.html:419,421</note>
-        <note category="location">src/app/features/repositories/repository-delivery.ts:103,105</note>
+        <note category="location">src/app/features/repositories/repository-delivery.ts:102,104</note>
         <note category="location">src/app/features/repositories/repository-detail.html:37,40</note>
-        <note category="location">src/app/features/repositories/repository-download-links.ts:80,82</note>
-        <note category="location">src/app/features/repositories/repository-malware.ts:66,68</note>
-        <note category="location">src/app/features/repositories/repository-signatures.ts:218,220</note>
+        <note category="location">src/app/features/repositories/repository-download-links.ts:82,84</note>
+        <note category="location">src/app/features/repositories/repository-malware.ts:60,62</note>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:212,214</note>
         <note category="location">src/app/features/repositories/repository-syncs.ts:103,105</note>
         <note category="location">src/app/features/upstream/upstream-registry.html:347,349</note>
         <note category="location">src/app/features/upstream/upstream-registry.html:451,453</note>
@@ -21580,8 +21580,8 @@
       <notes>
         <note category="location">src/app/features/projects/project-settings.ts:197,200</note>
         <note category="location">src/app/features/settings/auth-settings.html:182,184</note>
-        <note category="location">src/app/features/settings/malware-settings.html:217,219</note>
-        <note category="location">src/app/features/settings/signature-settings.html:196,198</note>
+        <note category="location">src/app/features/settings/malware-settings.html:213,215</note>
+        <note category="location">src/app/features/settings/signature-settings.html:195,197</note>
       </notes>
       <segment>
         <source>Loading the settings.</source>
@@ -21828,7 +21828,7 @@
     <unit id="sig.anchor.remove-title">
       <notes>
         <note category="location">src/app/features/projects/project-signature-anchors.ts:143</note>
-        <note category="location">src/app/features/settings/signature-settings.ts:234</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:238</note>
       </notes>
       <segment>
         <source>Remove the trust anchor <ph id="0" equiv="title" disp="title"/>?</source>
@@ -21838,7 +21838,7 @@
     <unit id="sig.anchor.remove-text">
       <notes>
         <note category="location">src/app/features/projects/project-signature-anchors.ts:144</note>
-        <note category="location">src/app/features/settings/signature-settings.ts:236</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:240</note>
       </notes>
       <segment>
         <source>The signatures it knows read &quot;Signed · signer not trusted&quot; unless another anchor knows their signer.</source>
@@ -21848,7 +21848,7 @@
     <unit id="sig.anchor.remove-confirm">
       <notes>
         <note category="location">src/app/features/projects/project-signature-anchors.ts:145</note>
-        <note category="location">src/app/features/settings/signature-settings.ts:238</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:242</note>
       </notes>
       <segment>
         <source>Remove trust anchor</source>
@@ -21858,7 +21858,7 @@
     <unit id="sig.anchor.removed">
       <notes>
         <note category="location">src/app/features/projects/project-signature-anchors.ts:156</note>
-        <note category="location">src/app/features/settings/signature-settings.ts:249</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:253</note>
       </notes>
       <segment>
         <source>Trust anchor removed.</source>
@@ -28979,24 +28979,16 @@
     <unit id="delivery.examine">
       <notes>
         <note category="location">src/app/features/repositories/repository-delivery.ts:72,73</note>
+        <note category="location">src/app/features/repositories/repository-delivery.ts:258</note>
       </notes>
       <segment>
         <source>Fetch for examination when someone asks</source>
         <target>Zur Prüfung holen, wenn jemand einen Antrag stellt</target>
       </segment>
     </unit>
-    <unit id="delivery.examine-hint">
-      <notes>
-        <note category="location">src/app/features/repositories/repository-delivery.ts:75,77</note>
-      </notes>
-      <segment>
-        <source> A request downloads what it asks for at once, so that it is scanned before anyone decides; it is not delivered until allowed. </source>
-        <target> Ein Antrag lädt das Beantragte sofort herunter, damit es geprüft ist, bevor jemand entscheidet; ausgeliefert wird es erst, wenn es erlaubt ist. </target>
-      </segment>
-    </unit>
     <unit id="delivery.days">
       <notes>
-        <note category="location">src/app/features/repositories/repository-delivery.ts:78,80</note>
+        <note category="location">src/app/features/repositories/repository-delivery.ts:77,79</note>
       </notes>
       <segment>
         <source>Remove what was examined and not allowed after this many days</source>
@@ -29005,11 +28997,11 @@
     </unit>
     <unit id="repo.settings.save">
       <notes>
-        <note category="location">src/app/features/repositories/repository-delivery.ts:99,100</note>
+        <note category="location">src/app/features/repositories/repository-delivery.ts:98,99</note>
         <note category="location">src/app/features/repositories/repository-detail.html:31,32</note>
-        <note category="location">src/app/features/repositories/repository-download-links.ts:76,77</note>
-        <note category="location">src/app/features/repositories/repository-malware.ts:62,63</note>
-        <note category="location">src/app/features/repositories/repository-signatures.ts:214,215</note>
+        <note category="location">src/app/features/repositories/repository-download-links.ts:78,79</note>
+        <note category="location">src/app/features/repositories/repository-malware.ts:56,57</note>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:208,209</note>
         <note category="location">src/app/features/repositories/repository-syncs.ts:99,100</note>
         <note category="location">src/app/features/repositories/virtual-members.html:55,56</note>
       </notes>
@@ -29020,7 +29012,7 @@
     </unit>
     <unit id="delivery.save-for">
       <notes>
-        <note category="location">src/app/features/repositories/repository-delivery.ts:100,102</note>
+        <note category="location">src/app/features/repositories/repository-delivery.ts:99,101</note>
       </notes>
       <segment>
         <source> (delivery)</source>
@@ -29029,11 +29021,11 @@
     </unit>
     <unit id="repo.settings.unsaved">
       <notes>
-        <note category="location">src/app/features/repositories/repository-delivery.ts:195</note>
+        <note category="location">src/app/features/repositories/repository-delivery.ts:194</note>
         <note category="location">src/app/features/repositories/repository-detail.ts:380</note>
-        <note category="location">src/app/features/repositories/repository-download-links.ts:124</note>
-        <note category="location">src/app/features/repositories/repository-malware.ts:105</note>
-        <note category="location">src/app/features/repositories/repository-signatures.ts:329</note>
+        <note category="location">src/app/features/repositories/repository-download-links.ts:131</note>
+        <note category="location">src/app/features/repositories/repository-malware.ts:99</note>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:323</note>
         <note category="location">src/app/features/repositories/repository-syncs.ts:163</note>
         <note category="location">src/app/features/repositories/repository-visibility.ts:216</note>
       </notes>
@@ -29044,7 +29036,7 @@
     </unit>
     <unit id="delivery.days-error">
       <notes>
-        <note category="location">src/app/features/repositories/repository-delivery.ts:204</note>
+        <note category="location">src/app/features/repositories/repository-delivery.ts:203</note>
       </notes>
       <segment>
         <source>Enter a whole number of days from 1 to 365.</source>
@@ -29053,7 +29045,7 @@
     </unit>
     <unit id="delivery.mode.only-allowed.hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-delivery.ts:230</note>
+        <note category="location">src/app/features/repositories/repository-delivery.ts:229</note>
       </notes>
       <segment>
         <source>Nothing is delivered unless a rule allows it. Readers ask for what they need, and those who manage the repository decide.</source>
@@ -29062,11 +29054,20 @@
     </unit>
     <unit id="delivery.mode.all-except-blocked.hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-delivery.ts:231</note>
+        <note category="location">src/app/features/repositories/repository-delivery.ts:230</note>
       </notes>
       <segment>
         <source>Every package and version is delivered unless a rule blocks it. This is the default.</source>
         <target>Jedes Paket und jede Version wird ausgeliefert, außer eine Regel sperrt es. Das ist die Voreinstellung.</target>
+      </segment>
+    </unit>
+    <unit id="delivery.examine-hint">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-delivery.ts:259</note>
+      </notes>
+      <segment>
+        <source>A request downloads what it asks for at once, so that it is scanned before anyone decides; it is not delivered until allowed.</source>
+        <target>Ein Antrag lädt das Beantragte sofort herunter, damit es geprüft ist, bevor jemand entscheidet; ausgeliefert wird es erst, wenn es erlaubt ist.</target>
       </segment>
     </unit>
     <unit id="repo.settings.heading">
@@ -29986,7 +29987,7 @@
     </unit>
     <unit id="repo.links.heading">
       <notes>
-        <note category="location">src/app/features/repositories/repository-download-links.ts:24,25</note>
+        <note category="location">src/app/features/repositories/repository-download-links.ts:25,26</note>
       </notes>
       <segment>
         <source>Download links</source>
@@ -29995,7 +29996,7 @@
     </unit>
     <unit id="repo.links.hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-download-links.ts:26,27</note>
+        <note category="location">src/app/features/repositories/repository-download-links.ts:27,28</note>
       </notes>
       <segment>
         <source>Whether large downloads of this repository may go directly from the object store.</source>
@@ -30004,7 +30005,8 @@
     </unit>
     <unit id="repo.links.allowed">
       <notes>
-        <note category="location">src/app/features/repositories/repository-download-links.ts:40,41</note>
+        <note category="location">src/app/features/repositories/repository-download-links.ts:43,44</note>
+        <note category="location">src/app/features/repositories/repository-download-links.ts:126</note>
       </notes>
       <segment>
         <source>Downloads of this repository may go by signed links of the object store</source>
@@ -30013,7 +30015,7 @@
     </unit>
     <unit id="repo.links.state-allowed">
       <notes>
-        <note category="location">src/app/features/repositories/repository-download-links.ts:45,47</note>
+        <note category="location">src/app/features/repositories/repository-download-links.ts:49,50</note>
       </notes>
       <segment>
         <source>Downloads of this repository may go by signed links of the object store.</source>
@@ -30022,7 +30024,7 @@
     </unit>
     <unit id="repo.links.state-quader">
       <notes>
-        <note category="location">src/app/features/repositories/repository-download-links.ts:47,49</note>
+        <note category="location">src/app/features/repositories/repository-download-links.ts:51,53</note>
       </notes>
       <segment>
         <source>Quader delivers every download of this repository itself.</source>
@@ -30031,7 +30033,7 @@
     </unit>
     <unit id="repo.links.not-applicable">
       <notes>
-        <note category="location">src/app/features/repositories/repository-download-links.ts:54,56</note>
+        <note category="location">src/app/features/repositories/repository-download-links.ts:59,61</note>
       </notes>
       <segment>
         <source> Not every <ph id="0" equiv="INTERPOLATION" disp="{{ formatLabel() }}"/> client checks the bytes it downloads against a digest, so Quader delivers every download of this repository itself. </source>
@@ -30040,7 +30042,7 @@
     </unit>
     <unit id="repo.links.installation-on">
       <notes>
-        <note category="location">src/app/features/repositories/repository-download-links.ts:60,62</note>
+        <note category="location">src/app/features/repositories/repository-download-links.ts:65,67</note>
       </notes>
       <segment>
         <source> The installation delivers large downloads by link. </source>
@@ -30049,29 +30051,29 @@
     </unit>
     <unit id="repo.links.installation-off">
       <notes>
-        <note category="location">src/app/features/repositories/repository-download-links.ts:64,66</note>
+        <note category="location">src/app/features/repositories/repository-download-links.ts:69,71</note>
       </notes>
       <segment>
         <source> The installation does not hand downloads to links at the moment; your choice takes effect when an administrator switches them on. </source>
         <target> Die Installation gibt derzeit keine Downloads an Links ab; Ihre Wahl wirkt, sobald ein Administrator sie einschaltet. </target>
       </segment>
     </unit>
-    <unit id="repo.links.virtual">
-      <notes>
-        <note category="location">src/app/features/repositories/repository-download-links.ts:69,72</note>
-      </notes>
-      <segment>
-        <source>A member that does not allow it is delivered by Quader.</source>
-        <target>Ein Mitglied, das es nicht erlaubt, wird von Quader ausgeliefert.</target>
-      </segment>
-    </unit>
     <unit id="repo.links.save-for">
       <notes>
-        <note category="location">src/app/features/repositories/repository-download-links.ts:77,79</note>
+        <note category="location">src/app/features/repositories/repository-download-links.ts:79,81</note>
       </notes>
       <segment>
         <source> (download links)</source>
         <target> (Download-Links)</target>
+      </segment>
+    </unit>
+    <unit id="repo.links.virtual">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-download-links.ts:129</note>
+      </notes>
+      <segment>
+        <source>A member that does not allow it is delivered by Quader.</source>
+        <target>Ein Mitglied, das es nicht erlaubt, wird von Quader ausgeliefert.</target>
       </segment>
     </unit>
     <unit id="repo.field.notes-text">
@@ -30459,7 +30461,8 @@
     </unit>
     <unit id="repo.malware.only-checked">
       <notes>
-        <note category="location">src/app/features/repositories/repository-malware.ts:39,40</note>
+        <note category="location">src/app/features/repositories/repository-malware.ts:41,42</note>
+        <note category="location">src/app/features/repositories/repository-malware.ts:100</note>
       </notes>
       <segment>
         <source>Only checked artifacts can be downloaded from this repository</source>
@@ -30468,34 +30471,16 @@
     </unit>
     <unit id="repo.malware.installation-on">
       <notes>
-        <note category="location">src/app/features/repositories/repository-malware.ts:43,45</note>
+        <note category="location">src/app/features/repositories/repository-malware.ts:46,48</note>
       </notes>
       <segment>
         <source>The installation lets only checked artifacts be downloaded.</source>
         <target>Die Installation lässt nur geprüfte Artefakte herunterladen.</target>
       </segment>
     </unit>
-    <unit id="repo.malware.what">
-      <notes>
-        <note category="location">src/app/features/repositories/repository-malware.ts:46,48</note>
-      </notes>
-      <segment>
-        <source> Artifacts that are not checked yet wait for their scan; artifacts that could not be checked are refused until an instance auditor releases them. </source>
-        <target> Artefakte, die noch nicht geprüft sind, warten auf ihre Prüfung; Artefakte, die nicht geprüft werden konnten, werden abgelehnt, bis ein Instanz-Auditor sie zulässt. </target>
-      </segment>
-    </unit>
-    <unit id="repo.malware.virtual">
-      <notes>
-        <note category="location">src/app/features/repositories/repository-malware.ts:50,52</note>
-      </notes>
-      <segment>
-        <source>Applies to everything this repository serves from its members.</source>
-        <target>Gilt für alles, was dieses Repository aus seinen Mitgliedern ausliefert.</target>
-      </segment>
-    </unit>
     <unit id="repo.malware.locked">
       <notes>
-        <note category="location">src/app/features/repositories/repository-malware.ts:54,55</note>
+        <note category="location">src/app/features/repositories/repository-malware.ts:49,51</note>
       </notes>
       <segment>
         <source> Only an administrator or someone who triages vulnerabilities can switch this off. </source>
@@ -30504,11 +30489,29 @@
     </unit>
     <unit id="repo.malware.save-for">
       <notes>
-        <note category="location">src/app/features/repositories/repository-malware.ts:63,65</note>
+        <note category="location">src/app/features/repositories/repository-malware.ts:57,59</note>
       </notes>
       <segment>
         <source> (malware scan)</source>
         <target> (Malware-Prüfung)</target>
+      </segment>
+    </unit>
+    <unit id="repo.malware.what">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-malware.ts:103</note>
+      </notes>
+      <segment>
+        <source>Artifacts that are not checked yet wait for their scan; artifacts that could not be checked are refused until an instance auditor releases them.</source>
+        <target>Artefakte, die noch nicht geprüft sind, warten auf ihre Prüfung; Artefakte, die nicht geprüft werden konnten, werden abgelehnt, bis ein Instanz-Auditor sie zulässt.</target>
+      </segment>
+    </unit>
+    <unit id="repo.malware.virtual">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-malware.ts:104</note>
+      </notes>
+      <segment>
+        <source>Applies to everything this repository serves from its members.</source>
+        <target>Gilt für alles, was dieses Repository aus seinen Mitgliedern ausliefert.</target>
       </segment>
     </unit>
     <unit id="repo.signatures.heading">
@@ -30541,33 +30544,16 @@
     <unit id="repo.gate.only-verified">
       <notes>
         <note category="location">src/app/features/repositories/repository-signatures.ts:100,101</note>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:466</note>
       </notes>
       <segment>
         <source>Only artifacts with a verified signature can be downloaded from this repository</source>
         <target>Aus diesem Repository können nur Artefakte mit verifizierter Signatur heruntergeladen werden</target>
       </segment>
     </unit>
-    <unit id="repo.gate.what">
-      <notes>
-        <note category="location">src/app/features/repositories/repository-signatures.ts:104,106</note>
-      </notes>
-      <segment>
-        <source> Artifacts without a signature that a trust anchor of this repository knows are refused. A signature says who signed an artifact, not that it is safe. </source>
-        <target> Artefakte ohne eine Signatur, deren Unterzeichner ein Vertrauensanker dieses Repositorys kennt, werden verweigert. Eine Signatur sagt, wer ein Artefakt signiert hat, nicht, dass es sicher ist. </target>
-      </segment>
-    </unit>
-    <unit id="repo.gate.virtual">
-      <notes>
-        <note category="location">src/app/features/repositories/repository-signatures.ts:108,110</note>
-      </notes>
-      <segment>
-        <source>Applies to everything this repository serves from its members.</source>
-        <target>Gilt für alles, was dieses Repository aus seinen Mitgliedern ausliefert.</target>
-      </segment>
-    </unit>
     <unit id="repo.gate.locked">
       <notes>
-        <note category="location">src/app/features/repositories/repository-signatures.ts:111,113</note>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:105,107</note>
       </notes>
       <segment>
         <source>Only an administrator or someone who triages security findings can loosen this.</source>
@@ -30576,7 +30562,7 @@
     </unit>
     <unit id="repo.gate.accepted">
       <notes>
-        <note category="location">src/app/features/repositories/repository-signatures.ts:117,118</note>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:111,112</note>
       </notes>
       <segment>
         <source>Accepted trust anchors</source>
@@ -30585,7 +30571,7 @@
     </unit>
     <unit id="repo.gate.any">
       <notes>
-        <note category="location">src/app/features/repositories/repository-signatures.ts:121,122</note>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:115,116</note>
       </notes>
       <segment>
         <source>Any trust anchor of this repository</source>
@@ -30594,7 +30580,7 @@
     </unit>
     <unit id="repo.gate.any-warning">
       <notes>
-        <note category="location">src/app/features/repositories/repository-signatures.ts:125,127</note>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:119,121</note>
       </notes>
       <segment>
         <source>This includes the public Sigstore, where anyone can sign. Choose anchors to accept only your own signers.</source>
@@ -30603,7 +30589,7 @@
     </unit>
     <unit id="repo.gate.these">
       <notes>
-        <note category="location">src/app/features/repositories/repository-signatures.ts:132,133</note>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:126,127</note>
       </notes>
       <segment>
         <source>These trust anchors</source>
@@ -30612,7 +30598,7 @@
     </unit>
     <unit id="repo.gate.no-anchors">
       <notes>
-        <note category="location">src/app/features/repositories/repository-signatures.ts:138,140</note>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:132,134</note>
       </notes>
       <segment>
         <source>No trust anchor applies to this repository yet.</source>
@@ -30621,7 +30607,7 @@
     </unit>
     <unit id="sig.gate.removed">
       <notes>
-        <note category="location">src/app/features/repositories/repository-signatures.ts:153</note>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:147</note>
         <note category="location">src/app/views/signatures/signature-gate.ts:50,51</note>
       </notes>
       <segment>
@@ -30631,7 +30617,7 @@
     </unit>
     <unit id="repo.gate.off">
       <notes>
-        <note category="location">src/app/features/repositories/repository-signatures.ts:157,158</note>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:151,152</note>
       </notes>
       <segment>
         <source>switched off, matches nothing</source>
@@ -30640,7 +30626,7 @@
     </unit>
     <unit id="repo.gate.choose">
       <notes>
-        <note category="location">src/app/features/repositories/repository-signatures.ts:166,168</note>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:160,162</note>
       </notes>
       <segment>
         <source>Choose at least one trust anchor.</source>
@@ -30649,7 +30635,7 @@
     </unit>
     <unit id="repo.gate.if-on">
       <notes>
-        <note category="location">src/app/features/repositories/repository-signatures.ts:177</note>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:171</note>
       </notes>
       <segment>
         <source>Switched on with the stored anchors:</source>
@@ -30658,7 +30644,7 @@
     </unit>
     <unit id="repo.gate.refusals-link">
       <notes>
-        <note category="location">src/app/features/repositories/repository-signatures.ts:180,183</note>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:174,177</note>
       </notes>
       <segment>
         <source>Refused downloads</source>
@@ -30667,7 +30653,7 @@
     </unit>
     <unit id="repo.gate.counting">
       <notes>
-        <note category="location">src/app/features/repositories/repository-signatures.ts:184,188</note>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:178,182</note>
       </notes>
       <segment>
         <source>Counting what the setting lets pass.</source>
@@ -30676,34 +30662,17 @@
     </unit>
     <unit id="repo.signatures.fetch">
       <notes>
-        <note category="location">src/app/features/repositories/repository-signatures.ts:191,192</note>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:192,193</note>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:472</note>
       </notes>
       <segment>
         <source>Fetch the upstream&apos;s signatures</source>
         <target>Signaturen des Upstreams holen</target>
       </segment>
     </unit>
-    <unit id="repo.signatures.what">
-      <notes>
-        <note category="location">src/app/features/repositories/repository-signatures.ts:195,197</note>
-      </notes>
-      <segment>
-        <source> Quader asks the upstream in the background for the signatures of what this repository stores, at most 600 requests an hour, so that the badge is right before any client asks. A client&apos;s own request for signatures passes through either way. </source>
-        <target> Quader fragt den Upstream im Hintergrund nach den Signaturen dessen, was dieses Repository speichert, höchstens 600 Anfragen pro Stunde, damit das Abzeichen stimmt, bevor ein Client fragt. Die eigene Anfrage eines Clients nach Signaturen wird in jedem Fall durchgereicht. </target>
-      </segment>
-    </unit>
-    <unit id="repo.signatures.off">
-      <notes>
-        <note category="location">src/app/features/repositories/repository-signatures.ts:199,200</note>
-      </notes>
-      <segment>
-        <source> Switch it off for an upstream with tight rate limits: on Docker Hub without an account, fetching a signature counts as a pull. </source>
-        <target> Schalten Sie es für einen Upstream mit knappen Ratenlimits aus: Bei Docker Hub ohne Konto zählt das Holen einer Signatur als Pull. </target>
-      </segment>
-    </unit>
     <unit id="repo.gate.fetch-off">
       <notes>
-        <note category="location">src/app/features/repositories/repository-signatures.ts:204,206</note>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:198,200</note>
       </notes>
       <segment>
         <source>Signatures of images are not fetched: an image whose signature no client pulled is refused.</source>
@@ -30712,7 +30681,7 @@
     </unit>
     <unit id="repo.signatures.save-for">
       <notes>
-        <note category="location">src/app/features/repositories/repository-signatures.ts:215,217</note>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:209,211</note>
       </notes>
       <segment>
         <source> (signatures)</source>
@@ -30721,7 +30690,7 @@
     </unit>
     <unit id="repo.signatures.hint-gate-remote">
       <notes>
-        <note category="location">src/app/features/repositories/repository-signatures.ts:333</note>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:327</note>
       </notes>
       <segment>
         <source>Whether only artifacts with a verified signature can be downloaded, and whether Quader fetches the upstream&apos;s signatures.</source>
@@ -30730,7 +30699,7 @@
     </unit>
     <unit id="repo.signatures.hint-gate">
       <notes>
-        <note category="location">src/app/features/repositories/repository-signatures.ts:334</note>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:328</note>
       </notes>
       <segment>
         <source>Whether only artifacts with a verified signature can be downloaded from this repository.</source>
@@ -30739,7 +30708,7 @@
     </unit>
     <unit id="repo.gate.ask-title">
       <notes>
-        <note category="location">src/app/features/repositories/repository-signatures.ts:461</note>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:455</note>
       </notes>
       <segment>
         <source>Refuse downloads of artifacts without an accepted signature?</source>
@@ -30748,16 +30717,43 @@
     </unit>
     <unit id="repo.gate.ask-confirm">
       <notes>
-        <note category="location">src/app/features/repositories/repository-signatures.ts:464</note>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:458</note>
       </notes>
       <segment>
         <source>Save and refuse them</source>
         <target>Speichern und verweigern</target>
       </segment>
     </unit>
+    <unit id="repo.gate.what">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:469</note>
+      </notes>
+      <segment>
+        <source>Artifacts without a signature that a trust anchor of this repository knows are refused. A signature says who signed an artifact, not that it is safe.</source>
+        <target>Artefakte ohne eine Signatur, deren Unterzeichner ein Vertrauensanker dieses Repositorys kennt, werden verweigert. Eine Signatur sagt, wer ein Artefakt signiert hat, nicht, dass es sicher ist.</target>
+      </segment>
+    </unit>
+    <unit id="repo.gate.virtual">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:470</note>
+      </notes>
+      <segment>
+        <source>Applies to everything this repository serves from its members.</source>
+        <target>Gilt für alles, was dieses Repository aus seinen Mitgliedern ausliefert.</target>
+      </segment>
+    </unit>
+    <unit id="repo.signatures.help">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:474</note>
+      </notes>
+      <segment>
+        <source>Quader asks the upstream in the background for the signatures of what this repository stores, at most 600 requests an hour. Switch it off for an upstream with tight rate limits, such as Docker Hub without an account.</source>
+        <target>Quader fragt den Upstream im Hintergrund nach den Signaturen dessen, was dieses Repository speichert, höchstens 600 Anfragen pro Stunde. Schalten Sie es für einen Upstream mit knappen Ratenlimits aus, etwa Docker Hub ohne Konto.</target>
+      </segment>
+    </unit>
     <unit id="repo.gate.examples">
       <notes>
-        <note category="location">src/app/features/repositories/repository-signatures.ts:475</note>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:481</note>
       </notes>
       <segment>
         <source>The newest <ph id="0" equiv="count" disp="count"/> of them:</source>
@@ -30794,19 +30790,11 @@
     <unit id="syncs.settings.paused">
       <notes>
         <note category="location">src/app/features/repositories/repository-syncs.ts:71,72</note>
+        <note category="location">src/app/features/repositories/repository-syncs.ts:233</note>
       </notes>
       <segment>
         <source>Pause every sync of this repository</source>
         <target>Jede Synchronisierung dieses Repositorys pausieren</target>
-      </segment>
-    </unit>
-    <unit id="syncs.settings.paused-hint">
-      <notes>
-        <note category="location">src/app/features/repositories/repository-syncs.ts:73,75</note>
-      </notes>
-      <segment>
-        <source>No sync starts a run; a run in progress goes on.</source>
-        <target>Keine Synchronisierung startet einen Lauf; ein laufender Lauf geht weiter.</target>
       </segment>
     </unit>
     <unit id="syncs.settings.max-bytes">
@@ -30861,6 +30849,15 @@
       <segment>
         <source>Enter a size of at least 0.001 GiB (1 MiB), or leave the field empty.</source>
         <target>Geben Sie eine Größe von mindestens 0,001 GiB (1 MiB) ein, oder lassen Sie das Feld leer.</target>
+      </segment>
+    </unit>
+    <unit id="syncs.settings.paused-hint">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-syncs.ts:234</note>
+      </notes>
+      <segment>
+        <source>No sync starts a run; a run in progress goes on.</source>
+        <target>Keine Synchronisierung startet einen Lauf; ein laufender Lauf geht weiter.</target>
       </segment>
     </unit>
     <unit id="repo.visibility.wiki-text">
@@ -31617,7 +31614,7 @@
     </unit>
     <unit id="error.copy-report">
       <notes>
-        <note category="location">src/app/features/repositories/upstream-test-result.ts:71,72</note>
+        <note category="location">src/app/features/repositories/upstream-test-result.ts:74,75</note>
         <note category="location">src/app/shared/error-notice.ts:202,203</note>
       </notes>
       <segment>
@@ -37103,21 +37100,13 @@
     </unit>
     <unit id="auth-settings.new-users-external">
       <notes>
-        <note category="location">src/app/features/settings/auth-settings.html:21,23</note>
+        <note category="location">src/app/features/settings/auth-settings.html:22,24</note>
         <note category="location">src/app/features/settings/auth-settings.ts:230</note>
+        <note category="location">src/app/features/settings/auth-settings.ts:260</note>
       </notes>
       <segment>
         <source>New users are external</source>
         <target>Neue Benutzer sind extern</target>
-      </segment>
-    </unit>
-    <unit id="auth-settings.new-users-external-note">
-      <notes>
-        <note category="location">src/app/features/settings/auth-settings.html:23,25</note>
-      </notes>
-      <segment>
-        <source>Users created from now on start as external users; existing users keep their flag.</source>
-        <target>Ab jetzt angelegte Benutzer beginnen als externe Benutzer; bestehende Benutzer behalten ihr Kennzeichen.</target>
       </segment>
     </unit>
     <unit id="auth-settings.save-changes">
@@ -37153,8 +37142,8 @@
         <note category="location">src/app/features/settings/auth-settings.html:36,39</note>
       </notes>
       <segment>
-        <source>Values are in days (fractions allowed, at least 60 seconds). The ceiling comes from the Helm configuration and cannot be exceeded here.</source>
-        <target>Die Werte sind in Tagen angegeben (Bruchteile erlaubt, mindestens 60 Sekunden). Die Obergrenze stammt aus der Helm-Konfiguration und kann hier nicht überschritten werden.</target>
+        <source>In days; fractions are allowed, at least 60 seconds.</source>
+        <target>In Tagen; Bruchteile sind erlaubt, mindestens 60 Sekunden.</target>
       </segment>
     </unit>
     <unit id="auth-settings.pat">
@@ -37340,8 +37329,8 @@
         <note category="location">src/app/features/settings/auth-settings.html:148,149</note>
       </notes>
       <segment>
-        <source>No password is configured: <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code&gt;" dispEnd="&lt;/code&gt;">auth.break_glass.password_file</pc> is empty. Every local sign-in is refused.</source>
-        <target>Es ist kein Passwort konfiguriert: <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code&gt;" dispEnd="&lt;/code&gt;">auth.break_glass.password_file</pc> ist leer. Jede lokale Anmeldung wird abgelehnt.</target>
+        <source>No password is configured: <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">secrets.breakGlass</pc> of the Helm configuration names no Secret. Every local sign-in is refused.</source>
+        <target>Es ist kein Passwort konfiguriert: <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">secrets.breakGlass</pc> der Helm-Konfiguration nennt kein Secret. Jede lokale Anmeldung wird abgelehnt.</target>
       </segment>
     </unit>
     <unit id="auth-settings.break-glass-bad-password">
@@ -37451,6 +37440,15 @@
       <segment>
         <source>Settings saved.</source>
         <target>Einstellungen gespeichert.</target>
+      </segment>
+    </unit>
+    <unit id="auth-settings.new-users-external-note">
+      <notes>
+        <note category="location">src/app/features/settings/auth-settings.ts:261</note>
+      </notes>
+      <segment>
+        <source>Users created from now on start as external users; existing users keep their flag.</source>
+        <target>Ab jetzt angelegte Benutzer beginnen als externe Benutzer; bestehende Benutzer behalten ihr Kennzeichen.</target>
       </segment>
     </unit>
     <unit id="general.heading">
@@ -38562,7 +38560,7 @@
     <unit id="malware.settings.save">
       <notes>
         <note category="location">src/app/features/settings/malware-rescans.ts:138,139</note>
-        <note category="location">src/app/features/settings/malware-settings.html:53,54</note>
+        <note category="location">src/app/features/settings/malware-settings.html:51,52</note>
       </notes>
       <segment>
         <source>Save changes</source>
@@ -38626,7 +38624,8 @@
     <unit id="malware.settings.only-checked">
       <notes>
         <note category="location">src/app/features/settings/malware-settings.html:28,29</note>
-        <note category="location">src/app/features/settings/malware-settings.ts:324</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:219</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:334</note>
       </notes>
       <segment>
         <source>Only checked artifacts can be downloaded</source>
@@ -38635,7 +38634,7 @@
     </unit>
     <unit id="malware.settings.only-checked-on">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:33,34</note>
+        <note category="location">src/app/features/settings/malware-settings.html:34,35</note>
       </notes>
       <segment>
         <source><pc id="0" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">Only checked artifacts can be downloaded</pc> is on.</source>
@@ -38644,25 +38643,16 @@
     </unit>
     <unit id="malware.settings.only-checked-off">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:35,36</note>
+        <note category="location">src/app/features/settings/malware-settings.html:36,37</note>
       </notes>
       <segment>
         <source><pc id="0" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">Only checked artifacts can be downloaded</pc> is off.</source>
         <target><pc id="0" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">Nur geprüfte Artefakte können heruntergeladen werden</pc> ist ausgeschaltet.</target>
       </segment>
     </unit>
-    <unit id="malware.settings.only-checked-note">
-      <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:40,43</note>
-      </notes>
-      <segment>
-        <source> Artifacts that are not checked yet wait for their scan; artifacts that could not be checked are refused until an instance auditor releases them under Security audit › Malware. </source>
-        <target> Artefakte, die noch nicht geprüft sind, warten auf ihre Prüfung; Artefakte, die nicht geprüft werden konnten, werden abgelehnt, bis ein Instanz-Auditor sie unter Sicherheitsaudit › Malware zulässt. </target>
-      </segment>
-    </unit>
     <unit id="malware.settings.changed-by">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:45</note>
+        <note category="location">src/app/features/settings/malware-settings.html:43</note>
       </notes>
       <segment>
         <source>Last changed by</source>
@@ -38671,7 +38661,7 @@
     </unit>
     <unit id="malware.settings.save-for">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:54,56</note>
+        <note category="location">src/app/features/settings/malware-settings.html:52,54</note>
       </notes>
       <segment>
         <source> (downloads)</source>
@@ -38680,7 +38670,8 @@
     </unit>
     <unit id="malware.settings.scanning">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:62,63</note>
+        <note category="location">src/app/features/settings/malware-settings.html:62</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:222</note>
       </notes>
       <segment>
         <source>Scanning</source>
@@ -38733,19 +38724,10 @@
         <target>gezählt</target>
       </segment>
     </unit>
-    <unit id="malware.settings.backlog-note">
-      <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:101,104</note>
-      </notes>
-      <segment>
-        <source> Under the switch, an artifact without a verdict waits for its scan when it is downloaded; one that could not be checked is refused. </source>
-        <target> Mit dem Schalter wartet ein Artefakt ohne Prüfergebnis beim Download auf seine Prüfung; eines, das nicht geprüft werden konnte, wird abgelehnt. </target>
-      </segment>
-    </unit>
     <unit id="malware.rescan.confirm">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:109,112</note>
-        <note category="location">src/app/features/settings/malware-settings.ts:348</note>
+        <note category="location">src/app/features/settings/malware-settings.html:105,108</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:358</note>
       </notes>
       <segment>
         <source>Scan everything again</source>
@@ -38754,7 +38736,7 @@
     </unit>
     <unit id="malware.settings.finds-link">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:117,120</note>
+        <note category="location">src/app/features/settings/malware-settings.html:113,116</note>
       </notes>
       <segment>
         <source>Finds are under Security audit › Malware</source>
@@ -38763,7 +38745,7 @@
     </unit>
     <unit id="malware.settings.database">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:123,125</note>
+        <note category="location">src/app/features/settings/malware-settings.html:119,121</note>
       </notes>
       <segment>
         <source>Signature database</source>
@@ -38772,7 +38754,7 @@
     </unit>
     <unit id="malware.db.error.when">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:132,133</note>
+        <note category="location">src/app/features/settings/malware-settings.html:128,129</note>
       </notes>
       <segment>
         <source>{VAR_PLURAL, plural, =1 {Failed once,} other {Failed <ph id="0" equiv="INTERPOLATION"/> times in a row,}}</source>
@@ -38781,7 +38763,7 @@
     </unit>
     <unit id="malware.db.error.last">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:133</note>
+        <note category="location">src/app/features/settings/malware-settings.html:129</note>
       </notes>
       <segment>
         <source>last</source>
@@ -38790,7 +38772,7 @@
     </unit>
     <unit id="malware.db.version">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:144,145</note>
+        <note category="location">src/app/features/settings/malware-settings.html:140,141</note>
       </notes>
       <segment>
         <source>Version</source>
@@ -38799,7 +38781,7 @@
     </unit>
     <unit id="malware.db.date">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:146,148</note>
+        <note category="location">src/app/features/settings/malware-settings.html:142,144</note>
       </notes>
       <segment>
         <source>Date</source>
@@ -38808,7 +38790,7 @@
     </unit>
     <unit id="malware.db.stale">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:152,153</note>
+        <note category="location">src/app/features/settings/malware-settings.html:148,149</note>
       </notes>
       <segment>
         <source>Stale</source>
@@ -38817,7 +38799,7 @@
     </unit>
     <unit id="malware.db.current">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:154,155</note>
+        <note category="location">src/app/features/settings/malware-settings.html:150,151</note>
       </notes>
       <segment>
         <source>Current</source>
@@ -38826,7 +38808,7 @@
     </unit>
     <unit id="malware.db.stored">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:158,159</note>
+        <note category="location">src/app/features/settings/malware-settings.html:154,155</note>
       </notes>
       <segment>
         <source>Stored</source>
@@ -38835,8 +38817,8 @@
     </unit>
     <unit id="malware.db.repository">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:161,163</note>
-        <note category="location">src/app/features/settings/malware-settings.html:192,194</note>
+        <note category="location">src/app/features/settings/malware-settings.html:157,159</note>
+        <note category="location">src/app/features/settings/malware-settings.html:188,190</note>
       </notes>
       <segment>
         <source>Repository</source>
@@ -38845,7 +38827,7 @@
     </unit>
     <unit id="malware.db.stale-note">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:172,174</note>
+        <note category="location">src/app/features/settings/malware-settings.html:168,170</note>
       </notes>
       <segment>
         <source> The database is older than two days. Scanning goes on with it; new signatures arrive when the next update succeeds. </source>
@@ -38854,7 +38836,7 @@
     </unit>
     <unit id="malware.db.none-badge">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:177,178</note>
+        <note category="location">src/app/features/settings/malware-settings.html:173,174</note>
       </notes>
       <segment>
         <source>None yet</source>
@@ -38863,7 +38845,7 @@
     </unit>
     <unit id="malware.db.none">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:179,181</note>
+        <note category="location">src/app/features/settings/malware-settings.html:175,177</note>
       </notes>
       <segment>
         <source>No signature database is in use yet, so nothing is scanned. Under the switch, downloads wait and are refused as not checked yet.</source>
@@ -38872,7 +38854,7 @@
     </unit>
     <unit id="malware.db.no-updater">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:187,189</note>
+        <note category="location">src/app/features/settings/malware-settings.html:183,185</note>
       </notes>
       <segment>
         <source> No updater is set in the Helm configuration (<pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">config.malware.updater.url</pc> is empty), so no database arrives until one is. The database task waits for it and records no failure. </source>
@@ -38881,7 +38863,7 @@
     </unit>
     <unit id="malware.db.offline">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:204,205</note>
+        <note category="location">src/app/features/settings/malware-settings.html:200,201</note>
       </notes>
       <segment>
         <source>Fill the repository</source>
@@ -38890,7 +38872,7 @@
     </unit>
     <unit id="malware.db.offline-note">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.html:206,208</note>
+        <note category="location">src/app/features/settings/malware-settings.html:202,204</note>
       </notes>
       <segment>
         <source> This installation fetches no database itself. On a machine that reaches the internet, fetch the files with ClamAV&apos;s mirror tool and upload the whole files to the root of the repository; Quader reads them at its next run. </source>
@@ -38899,7 +38881,7 @@
     </unit>
     <unit id="malware.db.error.missing">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:40</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:41</note>
       </notes>
       <segment>
         <source>No signature database was found.</source>
@@ -38908,7 +38890,7 @@
     </unit>
     <unit id="malware.db.error.invalid">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:42</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:43</note>
       </notes>
       <segment>
         <source>A file of the signature database was refused.</source>
@@ -38917,7 +38899,7 @@
     </unit>
     <unit id="malware.db.error.repository">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:44</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:45</note>
       </notes>
       <segment>
         <source>The repository the Helm configuration names cannot hold the database.</source>
@@ -38926,7 +38908,7 @@
     </unit>
     <unit id="malware.db.error.store">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:46</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:47</note>
       </notes>
       <segment>
         <source>A file of the signature database could not be stored.</source>
@@ -38935,16 +38917,34 @@
     </unit>
     <unit id="malware.db.error.other">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:48</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:49</note>
       </notes>
       <segment>
         <source>The last update of the signature database failed.</source>
         <target>Die letzte Aktualisierung der Signaturdatenbank ist fehlgeschlagen.</target>
       </segment>
     </unit>
+    <unit id="malware.settings.only-checked-note">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.ts:220</note>
+      </notes>
+      <segment>
+        <source>Artifacts that are not checked yet wait for their scan; artifacts that could not be checked are refused until an instance auditor releases them under Security audit › Malware.</source>
+        <target>Artefakte, die noch nicht geprüft sind, warten auf ihre Prüfung; Artefakte, die nicht geprüft werden konnten, werden abgelehnt, bis ein Instanz-Auditor sie unter Sicherheitsaudit › Malware zulässt.</target>
+      </segment>
+    </unit>
+    <unit id="malware.settings.backlog-note">
+      <notes>
+        <note category="location">src/app/features/settings/malware-settings.ts:223</note>
+      </notes>
+      <segment>
+        <source>Under the switch, an artifact without a verdict waits for its scan when it is downloaded; one that could not be checked is refused.</source>
+        <target>Mit dem Schalter wartet ein Artefakt ohne Prüfergebnis beim Download auf seine Prüfung; eines, das nicht geprüft werden konnte, wird abgelehnt.</target>
+      </segment>
+    </unit>
     <unit id="malware.settings.backlog-uncounted">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:270</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:280</note>
       </notes>
       <segment>
         <source>Quader has not counted yet how many artifacts have no verdict or could not be checked. They will wait or be refused until they are scanned or released.</source>
@@ -38953,7 +38953,7 @@
     </unit>
     <unit id="malware.settings.backlog-question">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:274</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:284</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="unchecked" disp="n"/> artifacts have no verdict yet and <ph id="1" equiv="notCheckable" disp="m"/> could not be checked. They will wait or be refused until they are scanned or released.</source>
@@ -38962,7 +38962,7 @@
     </unit>
     <unit id="malware.settings.confirm-title">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:284</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:294</note>
       </notes>
       <segment>
         <source>Let only checked artifacts be downloaded?</source>
@@ -38971,7 +38971,7 @@
     </unit>
     <unit id="malware.settings.confirm">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:286</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:296</note>
       </notes>
       <segment>
         <source>Switch on</source>
@@ -38980,7 +38980,7 @@
     </unit>
     <unit id="malware.settings.saved-on">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:296</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:306</note>
       </notes>
       <segment>
         <source>Only checked artifacts can be downloaded now.</source>
@@ -38989,7 +38989,7 @@
     </unit>
     <unit id="malware.settings.saved-off">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:297</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:307</note>
       </notes>
       <segment>
         <source>Artifacts that are not checked can be downloaded again.</source>
@@ -38998,7 +38998,7 @@
     </unit>
     <unit id="malware.rescan.title">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:344</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:354</note>
       </notes>
       <segment>
         <source>Scan every artifact again?</source>
@@ -39007,7 +39007,7 @@
     </unit>
     <unit id="malware.rescan.text">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:346</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:356</note>
       </notes>
       <segment>
         <source>Every verdict is scanned again with the signature database in use, after the work that waits. Each verdict stays in force until its new scan.</source>
@@ -39016,7 +39016,7 @@
     </unit>
     <unit id="malware.rescan.done">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:356</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:366</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="count" disp="n"/> verdicts are marked to be scanned again.</source>
@@ -39161,7 +39161,8 @@
     <unit id="sig.settings.switch">
       <notes>
         <note category="location">src/app/features/settings/signature-settings.html:71,72</note>
-        <note category="location">src/app/features/settings/signature-settings.ts:315</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:141</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:319</note>
       </notes>
       <segment>
         <source>Project owners may add trust anchors for their project</source>
@@ -39170,7 +39171,7 @@
     </unit>
     <unit id="sig.settings.switch-on">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.html:76,77</note>
+        <note category="location">src/app/features/settings/signature-settings.html:77,78</note>
       </notes>
       <segment>
         <source><pc id="0" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">Project owners may add trust anchors for their project</pc> is on.</source>
@@ -39179,25 +39180,16 @@
     </unit>
     <unit id="sig.settings.switch-off">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.html:78,79</note>
+        <note category="location">src/app/features/settings/signature-settings.html:79,80</note>
       </notes>
       <segment>
         <source><pc id="0" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">Project owners may add trust anchors for their project</pc> is off.</source>
         <target><pc id="0" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">Projekteigentümer dürfen Vertrauensanker für ihr Projekt hinzufügen</pc> ist ausgeschaltet.</target>
       </segment>
     </unit>
-    <unit id="sig.settings.switch-note">
-      <notes>
-        <note category="location">src/app/features/settings/signature-settings.html:83,85</note>
-      </notes>
-      <segment>
-        <source> Project anchors apply only to the repositories of their project. A project cannot switch off an anchor of the installation. </source>
-        <target> Projekt-Anker gelten nur für die Repositories ihres Projekts. Ein Projekt kann keinen Anker der Installation ausschalten. </target>
-      </segment>
-    </unit>
     <unit id="sig.settings.changed-by">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.html:87</note>
+        <note category="location">src/app/features/settings/signature-settings.html:86</note>
       </notes>
       <segment>
         <source>Last changed by</source>
@@ -39206,7 +39198,7 @@
     </unit>
     <unit id="sig.settings.save">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.html:95,96</note>
+        <note category="location">src/app/features/settings/signature-settings.html:94,95</note>
       </notes>
       <segment>
         <source>Save changes</source>
@@ -39215,7 +39207,7 @@
     </unit>
     <unit id="sig.settings.save-for">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.html:96,98</note>
+        <note category="location">src/app/features/settings/signature-settings.html:95,97</note>
       </notes>
       <segment>
         <source> (project trust anchors)</source>
@@ -39224,7 +39216,7 @@
     </unit>
     <unit id="sig.settings.project-list">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.html:102,104</note>
+        <note category="location">src/app/features/settings/signature-settings.html:101,103</note>
       </notes>
       <segment>
         <source>Anchors of the projects</source>
@@ -39233,7 +39225,7 @@
     </unit>
     <unit id="sig.settings.blocks">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.html:115</note>
+        <note category="location">src/app/features/settings/signature-settings.html:114</note>
       </notes>
       <segment>
         <source>Blocked signers</source>
@@ -39242,7 +39234,7 @@
     </unit>
     <unit id="sig.block.heading">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.html:118,120</note>
+        <note category="location">src/app/features/settings/signature-settings.html:117,119</note>
         <note category="location">src/app/shared/signatures/block-dialog.ts:23,24</note>
       </notes>
       <segment>
@@ -39252,7 +39244,7 @@
     </unit>
     <unit id="sig.block.lift">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.html:144</note>
+        <note category="location">src/app/features/settings/signature-settings.html:143</note>
       </notes>
       <segment>
         <source>Lift block</source>
@@ -39261,7 +39253,7 @@
     </unit>
     <unit id="sig.root.source">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.html:156,158</note>
+        <note category="location">src/app/features/settings/signature-settings.html:155,157</note>
       </notes>
       <segment>
         <source>Source</source>
@@ -39270,7 +39262,7 @@
     </unit>
     <unit id="sig.root.refreshed">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.html:159,160</note>
+        <note category="location">src/app/features/settings/signature-settings.html:158,159</note>
       </notes>
       <segment>
         <source>Refreshed from the Sigstore update repository</source>
@@ -39279,7 +39271,7 @@
     </unit>
     <unit id="sig.root.release">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.html:161,163</note>
+        <note category="location">src/app/features/settings/signature-settings.html:160,162</note>
       </notes>
       <segment>
         <source>The snapshot this release of Quader ships</source>
@@ -39288,7 +39280,7 @@
     </unit>
     <unit id="sig.root.fetched">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.html:164,166</note>
+        <note category="location">src/app/features/settings/signature-settings.html:163,165</note>
       </notes>
       <segment>
         <source>Fetched</source>
@@ -39297,7 +39289,7 @@
     </unit>
     <unit id="sig.root.version">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.html:172,173</note>
+        <note category="location">src/app/features/settings/signature-settings.html:171,172</note>
       </notes>
       <segment>
         <source>Version</source>
@@ -39306,7 +39298,7 @@
     </unit>
     <unit id="sig.root.failure">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.html:174,176</note>
+        <note category="location">src/app/features/settings/signature-settings.html:173,175</note>
       </notes>
       <segment>
         <source>Last failure</source>
@@ -39315,7 +39307,7 @@
     </unit>
     <unit id="sig.root.failed">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.html:178,179</note>
+        <note category="location">src/app/features/settings/signature-settings.html:177,178</note>
       </notes>
       <segment>
         <source>Failed</source>
@@ -39324,7 +39316,7 @@
     </unit>
     <unit id="sig.root.failed-sentence">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.html:182,183</note>
+        <note category="location">src/app/features/settings/signature-settings.html:181,182</note>
       </notes>
       <segment>
         <source>The last refresh of the public root failed; the root in use stays until a refresh succeeds.</source>
@@ -39333,7 +39325,7 @@
     </unit>
     <unit id="sig.root.no-failure">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.html:185,188</note>
+        <note category="location">src/app/features/settings/signature-settings.html:184,187</note>
       </notes>
       <segment>
         <source>None since the last refresh</source>
@@ -39342,16 +39334,25 @@
     </unit>
     <unit id="sig.root.note">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.html:190,193</note>
+        <note category="location">src/app/features/settings/signature-settings.html:189,192</note>
       </notes>
       <segment>
         <source> Without internet, the release&apos;s snapshot holds and ages with the release; an operator can point the refresh at a mirror of the company. </source>
         <target> Ohne Internet gilt der Schnappschuss des Releases und altert mit dem Release; ein Betreiber kann die Aktualisierung auf einen Mirror des Unternehmens richten. </target>
       </segment>
     </unit>
+    <unit id="sig.settings.switch-note">
+      <notes>
+        <note category="location">src/app/features/settings/signature-settings.ts:142</note>
+      </notes>
+      <segment>
+        <source>Project anchors apply only to the repositories of their project. A project cannot switch off an anchor of the installation.</source>
+        <target>Projekt-Anker gelten nur für die Repositories ihres Projekts. Ein Projekt kann keinen Anker der Installation ausschalten.</target>
+      </segment>
+    </unit>
     <unit id="sig.settings.anchors-caption">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:141</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:145</note>
       </notes>
       <segment>
         <source>Trust anchors of the installation</source>
@@ -39360,7 +39361,7 @@
     </unit>
     <unit id="sig.settings.project-caption">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:142</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:146</note>
       </notes>
       <segment>
         <source>Trust anchors of the projects</source>
@@ -39369,7 +39370,7 @@
     </unit>
     <unit id="sig.settings.project-empty">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:143</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:147</note>
       </notes>
       <segment>
         <source>No project has a trust anchor of its own.</source>
@@ -39378,7 +39379,7 @@
     </unit>
     <unit id="sig.settings.blocks-caption">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:144</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:148</note>
       </notes>
       <segment>
         <source>Blocked signers</source>
@@ -39387,7 +39388,7 @@
     </unit>
     <unit id="sig.settings.blocks-empty">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:145</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:149</note>
       </notes>
       <segment>
         <source>No signer is blocked.</source>
@@ -39396,7 +39397,7 @@
     </unit>
     <unit id="sig.settings.blocks-hint">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:146</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:150</note>
       </notes>
       <segment>
         <source>Signers whose signatures read as not trusted, whatever anchor knows them.</source>
@@ -39405,7 +39406,7 @@
     </unit>
     <unit id="sig.settings.root">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:147</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:151</note>
       </notes>
       <segment>
         <source>Public Sigstore root</source>
@@ -39414,7 +39415,7 @@
     </unit>
     <unit id="sig.settings.root-hint">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:148</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:152</note>
       </notes>
       <segment>
         <source>Where the public Sigstore root and npm&apos;s registry keys in use come from.</source>
@@ -39423,7 +39424,7 @@
     </unit>
     <unit id="sig.block.col.signer">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:150</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:154</note>
       </notes>
       <segment>
         <source>Signer</source>
@@ -39432,7 +39433,7 @@
     </unit>
     <unit id="sig.anchor.col.signatures">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:151</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:155</note>
         <note category="location">src/app/shared/signatures/anchor-table.ts:130</note>
       </notes>
       <segment>
@@ -39442,7 +39443,7 @@
     </unit>
     <unit id="sig.block.col.blocked">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:152</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:156</note>
       </notes>
       <segment>
         <source>Blocked</source>
@@ -39451,7 +39452,7 @@
     </unit>
     <unit id="sig.anchor.col.actions">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:153</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:157</note>
         <note category="location">src/app/shared/signatures/anchor-table.ts:135</note>
       </notes>
       <segment>
@@ -39461,7 +39462,7 @@
     </unit>
     <unit id="sig.anchor.off-title">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:205</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:209</note>
       </notes>
       <segment>
         <source>Switch off the trust anchor <ph id="0" equiv="title" disp="title"/>?</source>
@@ -39470,7 +39471,7 @@
     </unit>
     <unit id="sig.anchor.off-confirm">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:206</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:210</note>
       </notes>
       <segment>
         <source>Switch off</source>
@@ -39479,7 +39480,7 @@
     </unit>
     <unit id="sig.anchor.switched-on">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:218</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:222</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="title" disp="title"/> applies again. Its signatures are judged again in the background.</source>
@@ -39488,7 +39489,7 @@
     </unit>
     <unit id="sig.anchor.switched-off">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:219</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:223</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="title" disp="title"/> no longer applies. Its signatures are judged again in the background.</source>
@@ -39497,7 +39498,7 @@
     </unit>
     <unit id="sig.switch.off-title">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:267</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:271</note>
       </notes>
       <segment>
         <source>Switch project trust anchors off?</source>
@@ -39506,7 +39507,7 @@
     </unit>
     <unit id="sig.switch.off-confirm">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:268</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:272</note>
       </notes>
       <segment>
         <source>Switch off</source>
@@ -39515,7 +39516,7 @@
     </unit>
     <unit id="sig.switch.off-text">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:275</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:279</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="count" disp="n"/> project anchors stay stored and stop applying. The signatures only they know read &quot;Signed · signer not trusted&quot;.</source>
@@ -39524,7 +39525,7 @@
     </unit>
     <unit id="sig.switch.saved-on">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:288</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:292</note>
       </notes>
       <segment>
         <source>Project owners may add trust anchors for their project now.</source>
@@ -39533,7 +39534,7 @@
     </unit>
     <unit id="sig.switch.saved-off">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:289</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:293</note>
       </notes>
       <segment>
         <source>Project trust anchors are switched off.</source>
@@ -39542,7 +39543,7 @@
     </unit>
     <unit id="sig.block.lift-title">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:336</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:340</note>
       </notes>
       <segment>
         <source>Lift this block?</source>
@@ -39551,7 +39552,7 @@
     </unit>
     <unit id="sig.block.lift-text">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:337</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:341</note>
       </notes>
       <segment>
         <source>The signer&apos;s signatures are judged by the trust anchors again.</source>
@@ -39560,7 +39561,7 @@
     </unit>
     <unit id="sig.block.lift-confirm">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:338</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:342</note>
       </notes>
       <segment>
         <source>Lift block</source>
@@ -39569,7 +39570,7 @@
     </unit>
     <unit id="sig.block.lifted">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:346</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:350</note>
       </notes>
       <segment>
         <source>Block lifted.</source>
@@ -41817,7 +41818,8 @@
     <unit id="links.switch">
       <notes>
         <note category="location">src/app/features/settings/storage/download-links-section.html:62,63</note>
-        <note category="location">src/app/features/settings/storage/download-links-section.ts:409</note>
+        <note category="location">src/app/features/settings/storage/download-links-section.ts:254</note>
+        <note category="location">src/app/features/settings/storage/download-links-section.ts:414</note>
       </notes>
       <segment>
         <source>Deliver large downloads by signed links of the object store</source>
@@ -41826,7 +41828,7 @@
     </unit>
     <unit id="links.switch-on">
       <notes>
-        <note category="location">src/app/features/settings/storage/download-links-section.html:67,68</note>
+        <note category="location">src/app/features/settings/storage/download-links-section.html:68,69</note>
       </notes>
       <segment>
         <source><pc id="0" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">Deliver large downloads by signed links of the object store</pc> is on.</source>
@@ -41835,34 +41837,25 @@
     </unit>
     <unit id="links.switch-off">
       <notes>
-        <note category="location">src/app/features/settings/storage/download-links-section.html:69,70</note>
+        <note category="location">src/app/features/settings/storage/download-links-section.html:70,71</note>
       </notes>
       <segment>
         <source><pc id="0" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">Deliver large downloads by signed links of the object store</pc> is off.</source>
         <target><pc id="0" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">Große Downloads über signierte Links des Objektspeichers ausliefern</pc> ist aus.</target>
       </segment>
     </unit>
-    <unit id="links.note">
+    <unit id="links.bytes">
       <notes>
-        <note category="location">src/app/features/settings/storage/download-links-section.html:74,76</note>
+        <note category="location">src/app/features/settings/storage/download-links-section.html:77,79</note>
       </notes>
       <segment>
-        <source> A client then fetches the file from the object store with a link that is valid for a short time. Quader still decides who may download, but it no longer sees the bytes: the client checks them, and the clients must be able to reach the object store. </source>
-        <target> Ein Client holt die Datei dann mit einem kurz gültigen Link aus dem Objektspeicher. Quader entscheidet weiter, wer herunterladen darf, sieht die Bytes aber nicht mehr: Der Client prüft sie, und die Clients müssen den Objektspeicher erreichen können. </target>
-      </segment>
-    </unit>
-    <unit id="links.limits">
-      <notes>
-        <note category="location">src/app/features/settings/storage/download-links-section.html:79,81</note>
-      </notes>
-      <segment>
-        <source> A download handed to a link is not slowed by the caller&apos;s speed limit; its size is charged to the caller&apos;s hourly and daily budgets when the link is issued. </source>
-        <target> Ein Download über einen Link wird nicht durch das Tempolimit des Aufrufers gebremst; seine Größe wird beim Ausgeben des Links auf dessen Stunden- und Tagesbudget angerechnet. </target>
+        <source>Quader no longer sees the bytes: the client checks them, and must reach the object store.</source>
+        <target>Quader sieht die Bytes nicht mehr: Der Client prüft sie und muss den Objektspeicher erreichen.</target>
       </segment>
     </unit>
     <unit id="links.costs">
       <notes>
-        <note category="location">src/app/features/settings/storage/download-links-section.html:83,86</note>
+        <note category="location">src/app/features/settings/storage/download-links-section.html:79,82</note>
       </notes>
       <segment>
         <source>What a link costs</source>
@@ -41871,7 +41864,7 @@
     </unit>
     <unit id="links.details">
       <notes>
-        <note category="location">src/app/features/settings/storage/download-links-section.html:89</note>
+        <note category="location">src/app/features/settings/storage/download-links-section.html:85</note>
       </notes>
       <segment>
         <source>Details</source>
@@ -41880,7 +41873,7 @@
     </unit>
     <unit id="links.details.hint">
       <notes>
-        <note category="location">src/app/features/settings/storage/download-links-section.html:90,92</note>
+        <note category="location">src/app/features/settings/storage/download-links-section.html:86,88</note>
       </notes>
       <segment>
         <source>The minimum size, how long a link is valid, and where clients reach the object store.</source>
@@ -41889,7 +41882,7 @@
     </unit>
     <unit id="links.details.legend">
       <notes>
-        <note category="location">src/app/features/settings/storage/download-links-section.html:95,96</note>
+        <note category="location">src/app/features/settings/storage/download-links-section.html:91,92</note>
       </notes>
       <segment>
         <source>Download link details</source>
@@ -41898,8 +41891,8 @@
     </unit>
     <unit id="links.min-size">
       <notes>
-        <note category="location">src/app/features/settings/storage/download-links-section.html:97,98</note>
-        <note category="location">src/app/features/settings/storage/download-links-section.ts:411</note>
+        <note category="location">src/app/features/settings/storage/download-links-section.html:93,94</note>
+        <note category="location">src/app/features/settings/storage/download-links-section.ts:416</note>
       </notes>
       <segment>
         <source>Minimum size in MiB</source>
@@ -41908,7 +41901,7 @@
     </unit>
     <unit id="links.min-size.hint">
       <notes>
-        <note category="location">src/app/features/settings/storage/download-links-section.html:112,113</note>
+        <note category="location">src/app/features/settings/storage/download-links-section.html:108,109</note>
       </notes>
       <segment>
         <source>Smaller files are always delivered by Quader.</source>
@@ -41917,8 +41910,8 @@
     </unit>
     <unit id="links.life">
       <notes>
-        <note category="location">src/app/features/settings/storage/download-links-section.html:118,119</note>
-        <note category="location">src/app/features/settings/storage/download-links-section.ts:413</note>
+        <note category="location">src/app/features/settings/storage/download-links-section.html:114,115</note>
+        <note category="location">src/app/features/settings/storage/download-links-section.ts:418</note>
       </notes>
       <segment>
         <source>Link valid for, in seconds</source>
@@ -41927,7 +41920,7 @@
     </unit>
     <unit id="links.life.hint">
       <notes>
-        <note category="location">src/app/features/settings/storage/download-links-section.html:133,134</note>
+        <note category="location">src/app/features/settings/storage/download-links-section.html:129,130</note>
       </notes>
       <segment>
         <source>A link can be passed on while it is valid.</source>
@@ -41936,7 +41929,7 @@
     </unit>
     <unit id="links.address">
       <notes>
-        <note category="location">src/app/features/settings/storage/download-links-section.html:144,145</note>
+        <note category="location">src/app/features/settings/storage/download-links-section.html:140,141</note>
       </notes>
       <segment>
         <source>Public address of <ph id="0" equiv="INTERPOLATION" disp="{{ c.name }}"/></source>
@@ -41945,7 +41938,7 @@
     </unit>
     <unit id="links.address.hint-encrypted">
       <notes>
-        <note category="location">src/app/features/settings/storage/download-links-section.html:160,162</note>
+        <note category="location">src/app/features/settings/storage/download-links-section.html:156,158</note>
       </notes>
       <segment>
         <source> The address a Bastion reaches the object store at. It must not be an address of Quader. No client gets a link to an encrypted connection; a Bastion whose direct reads from the object store are on reads each file there with a link and that file&apos;s key. </source>
@@ -41954,7 +41947,7 @@
     </unit>
     <unit id="links.address.hint">
       <notes>
-        <note category="location">src/app/features/settings/storage/download-links-section.html:166,167</note>
+        <note category="location">src/app/features/settings/storage/download-links-section.html:162,163</note>
       </notes>
       <segment>
         <source> The address your clients reach the object store at. It must not be an address of Quader. </source>
@@ -41963,7 +41956,7 @@
     </unit>
     <unit id="links.test">
       <notes>
-        <note category="location">src/app/features/settings/storage/download-links-section.html:185,186</note>
+        <note category="location">src/app/features/settings/storage/download-links-section.html:181,182</note>
       </notes>
       <segment>
         <source>Test link</source>
@@ -41972,7 +41965,7 @@
     </unit>
     <unit id="links.test.open">
       <notes>
-        <note category="location">src/app/features/settings/storage/download-links-section.html:195,196</note>
+        <note category="location">src/app/features/settings/storage/download-links-section.html:191,192</note>
       </notes>
       <segment>
         <source>Open test link</source>
@@ -41981,7 +41974,7 @@
     </unit>
     <unit id="links.test.command">
       <notes>
-        <note category="location">src/app/features/settings/storage/download-links-section.html:200,201</note>
+        <note category="location">src/app/features/settings/storage/download-links-section.html:196,197</note>
       </notes>
       <segment>
         <source>Command that fetches the test link</source>
@@ -41990,7 +41983,7 @@
     </unit>
     <unit id="links.test.copy">
       <notes>
-        <note category="location">src/app/features/settings/storage/download-links-section.html:202,204</note>
+        <note category="location">src/app/features/settings/storage/download-links-section.html:198,200</note>
       </notes>
       <segment>
         <source>Copy the command</source>
@@ -41999,7 +41992,7 @@
     </unit>
     <unit id="links.test.text-encrypted">
       <notes>
-        <note category="location">src/app/features/settings/storage/download-links-section.html:206,207</note>
+        <note category="location">src/app/features/settings/storage/download-links-section.html:202,203</note>
       </notes>
       <segment>
         <source> Valid for 60 seconds. When your network reaches the object store, the file quader-link-test.txt reads &apos;Quader download link test: this link works.&apos; Run the command on a machine of a Bastion&apos;s network to test that network. </source>
@@ -42008,7 +42001,7 @@
     </unit>
     <unit id="links.test.text">
       <notes>
-        <note category="location">src/app/features/settings/storage/download-links-section.html:211,212</note>
+        <note category="location">src/app/features/settings/storage/download-links-section.html:207,208</note>
       </notes>
       <segment>
         <source> Valid for 60 seconds. When your network reaches the object store, the file quader-link-test.txt reads &apos;Quader download link test: this link works.&apos; Run the command on a machine of your clients or of a Bastion&apos;s network to test that network. </source>
@@ -42017,7 +42010,7 @@
     </unit>
     <unit id="links.routes">
       <notes>
-        <note category="location">src/app/features/settings/storage/download-links-section.html:223,224</note>
+        <note category="location">src/app/features/settings/storage/download-links-section.html:219,220</note>
       </notes>
       <segment>
         <source>Downloads that can go by link</source>
@@ -42026,7 +42019,7 @@
     </unit>
     <unit id="links.routes.hint">
       <notes>
-        <note category="location">src/app/features/settings/storage/download-links-section.html:224,225</note>
+        <note category="location">src/app/features/settings/storage/download-links-section.html:220,221</note>
       </notes>
       <segment>
         <source>Only downloads whose clients all check the bytes against a digest themselves; every other download is delivered by Quader.</source>
@@ -42035,7 +42028,7 @@
     </unit>
     <unit id="links.changed-by">
       <notes>
-        <note category="location">src/app/features/settings/storage/download-links-section.html:234</note>
+        <note category="location">src/app/features/settings/storage/download-links-section.html:230</note>
       </notes>
       <segment>
         <source>Last changed by</source>
@@ -42044,7 +42037,7 @@
     </unit>
     <unit id="links.save">
       <notes>
-        <note category="location">src/app/features/settings/storage/download-links-section.html:242,243</note>
+        <note category="location">src/app/features/settings/storage/download-links-section.html:238,239</note>
       </notes>
       <segment>
         <source>Save changes</source>
@@ -42053,7 +42046,7 @@
     </unit>
     <unit id="links.save-for">
       <notes>
-        <note category="location">src/app/features/settings/storage/download-links-section.html:243,244</note>
+        <note category="location">src/app/features/settings/storage/download-links-section.html:239,240</note>
       </notes>
       <segment>
         <source> (download links)</source>
@@ -42062,7 +42055,7 @@
     </unit>
     <unit id="links.loading">
       <notes>
-        <note category="location">src/app/features/settings/storage/download-links-section.html:251,253</note>
+        <note category="location">src/app/features/settings/storage/download-links-section.html:247,249</note>
       </notes>
       <segment>
         <source>Loading the download links.</source>
@@ -42071,7 +42064,7 @@
     </unit>
     <unit id="links.reason.encrypted">
       <notes>
-        <note category="location">src/app/features/settings/storage/download-links-section.ts:42</note>
+        <note category="location">src/app/features/settings/storage/download-links-section.ts:43</note>
       </notes>
       <segment>
         <source>The connection <ph id="0" equiv="name" disp="name"/> is encrypted. Quader delivers its content to clients itself.</source>
@@ -42080,7 +42073,7 @@
     </unit>
     <unit id="links.reason.not-https">
       <notes>
-        <note category="location">src/app/features/settings/storage/download-links-section.ts:44</note>
+        <note category="location">src/app/features/settings/storage/download-links-section.ts:45</note>
       </notes>
       <segment>
         <source>The address of <ph id="0" equiv="name" disp="name"/> does not use https. Links need https.</source>
@@ -42089,7 +42082,7 @@
     </unit>
     <unit id="links.reason.quader-host">
       <notes>
-        <note category="location">src/app/features/settings/storage/download-links-section.ts:46</note>
+        <note category="location">src/app/features/settings/storage/download-links-section.ts:47</note>
       </notes>
       <segment>
         <source>The address of <ph id="0" equiv="name" disp="name"/> lies under <ph id="1" equiv="host" disp="detail"/>, an address of Quader. Image clients would send their credentials to it, and the object store refuses such a link.</source>
@@ -42098,7 +42091,7 @@
     </unit>
     <unit id="links.reason.link-check">
       <notes>
-        <note category="location">src/app/features/settings/storage/download-links-section.ts:48</note>
+        <note category="location">src/app/features/settings/storage/download-links-section.ts:49</note>
       </notes>
       <segment>
         <source>The object store of <ph id="0" equiv="name" disp="name"/> did not answer a test link as expected: <ph id="1" equiv="detail" disp="detail"/>. Quader delivers its content itself.</source>
@@ -42107,7 +42100,7 @@
     </unit>
     <unit id="links.reason.quader-host-bastion">
       <notes>
-        <note category="location">src/app/features/settings/storage/download-links-section.ts:60</note>
+        <note category="location">src/app/features/settings/storage/download-links-section.ts:61</note>
       </notes>
       <segment>
         <source>The address of <ph id="0" equiv="name" disp="name"/> lies under <ph id="1" equiv="host" disp="detail"/>, an address of Quader. A Bastion refuses a link there.</source>
@@ -42116,7 +42109,7 @@
     </unit>
     <unit id="links.min-size.invalid">
       <notes>
-        <note category="location">src/app/features/settings/storage/download-links-section.ts:215</note>
+        <note category="location">src/app/features/settings/storage/download-links-section.ts:216</note>
       </notes>
       <segment>
         <source>Enter a size from 0 to 1,048,576 MiB.</source>
@@ -42125,16 +42118,25 @@
     </unit>
     <unit id="links.life.invalid">
       <notes>
-        <note category="location">src/app/features/settings/storage/download-links-section.ts:222</note>
+        <note category="location">src/app/features/settings/storage/download-links-section.ts:223</note>
       </notes>
       <segment>
         <source>Enter a number of seconds from 10 to 3,600.</source>
         <target>Geben Sie eine Anzahl Sekunden von 10 bis 3.600 ein.</target>
       </segment>
     </unit>
+    <unit id="links.help">
+      <notes>
+        <note category="location">src/app/features/settings/storage/download-links-section.ts:256</note>
+      </notes>
+      <segment>
+        <source>A client fetches the file from the object store by a short-lived link; Quader still decides who may download. No speed limit slows the download; its size counts against the caller&apos;s budgets.</source>
+        <target>Ein Client holt die Datei mit einem kurz gültigen Link aus dem Objektspeicher; Quader entscheidet weiter, wer herunterladen darf. Kein Tempolimit bremst den Download; seine Größe zählt zum Budget des Aufrufers.</target>
+      </segment>
+    </unit>
     <unit id="links.address.invalid">
       <notes>
-        <note category="location">src/app/features/settings/storage/download-links-section.ts:252</note>
+        <note category="location">src/app/features/settings/storage/download-links-section.ts:257</note>
       </notes>
       <segment>
         <source>Enter an https address without a path, such as https://objects.example.com.</source>
@@ -42143,7 +42145,7 @@
     </unit>
     <unit id="links.saved">
       <notes>
-        <note category="location">src/app/features/settings/storage/download-links-section.ts:363</note>
+        <note category="location">src/app/features/settings/storage/download-links-section.ts:368</note>
       </notes>
       <segment>
         <source>Download link settings saved.</source>
@@ -42152,7 +42154,7 @@
     </unit>
     <unit id="conflict.links.address">
       <notes>
-        <note category="location">src/app/features/settings/storage/download-links-section.ts:416</note>
+        <note category="location">src/app/features/settings/storage/download-links-section.ts:421</note>
       </notes>
       <segment>
         <source>Public address of <ph id="0" equiv="connection" disp="c.name"/></source>
@@ -52539,24 +52541,16 @@
     <unit id="user-create.external">
       <notes>
         <note category="location">src/app/features/users/user-create-dialog.ts:45,46</note>
+        <note category="location">src/app/features/users/user-create-dialog.ts:83</note>
       </notes>
       <segment>
         <source>External user</source>
         <target>Externer Benutzer</target>
       </segment>
     </unit>
-    <unit id="user-create.external-note">
-      <notes>
-        <note category="location">src/app/features/users/user-create-dialog.ts:48,50</note>
-      </notes>
-      <segment>
-        <source> Sees only the projects it is a member of, what a policy grants it, and what is public. Internal projects and repositories stay hidden. </source>
-        <target>Sieht nur die Projekte, in denen er Mitglied ist, was eine Richtlinie ihm erlaubt, und was öffentlich ist. Interne Projekte und Repositories bleiben verborgen.</target>
-      </segment>
-    </unit>
     <unit id="user-create.provider">
       <notes>
-        <note category="location">src/app/features/users/user-create-dialog.ts:53,55</note>
+        <note category="location">src/app/features/users/user-create-dialog.ts:50,52</note>
       </notes>
       <segment>
         <source>Link to the identity provider</source>
@@ -52565,7 +52559,7 @@
     </unit>
     <unit id="user-create.cancel">
       <notes>
-        <note category="location">src/app/features/users/user-create-dialog.ts:62,63</note>
+        <note category="location">src/app/features/users/user-create-dialog.ts:59,60</note>
       </notes>
       <segment>
         <source>Cancel</source>
@@ -52574,11 +52568,20 @@
     </unit>
     <unit id="user-create.submit">
       <notes>
-        <note category="location">src/app/features/users/user-create-dialog.ts:63,65</note>
+        <note category="location">src/app/features/users/user-create-dialog.ts:60,62</note>
       </notes>
       <segment>
         <source>Create user</source>
         <target>Benutzer anlegen</target>
+      </segment>
+    </unit>
+    <unit id="user-create.external-note">
+      <notes>
+        <note category="location">src/app/features/users/user-create-dialog.ts:84</note>
+      </notes>
+      <segment>
+        <source>Sees only the projects it is a member of, what a policy grants it, and what is public. Internal projects and repositories stay hidden.</source>
+        <target>Sieht nur die Projekte, in denen er Mitglied ist, was eine Richtlinie ihm erlaubt, und was öffentlich ist. Interne Projekte und Repositories bleiben verborgen.</target>
       </segment>
     </unit>
     <unit id="user-create.no-provider">
@@ -52649,21 +52652,13 @@
     </unit>
     <unit id="user.external">
       <notes>
-        <note category="location">src/app/features/users/user-detail.html:41,42</note>
+        <note category="location">src/app/features/users/user-detail.html:43,44</note>
         <note category="location">src/app/features/users/user-detail.ts:225</note>
+        <note category="location">src/app/features/users/user-detail.ts:388</note>
       </notes>
       <segment>
         <source>External user</source>
         <target>Externer Benutzer</target>
-      </segment>
-    </unit>
-    <unit id="user.external-note">
-      <notes>
-        <note category="location">src/app/features/users/user-detail.html:44,46</note>
-      </notes>
-      <segment>
-        <source> Sees only the projects it is a member of, what a policy grants it, and what is public. Internal projects and repositories stay hidden. </source>
-        <target>Sieht nur die Projekte, in denen er Mitglied ist, was eine Richtlinie ihm erlaubt, und was öffentlich ist. Interne Projekte und Repositories bleiben verborgen.</target>
       </segment>
     </unit>
     <unit id="user.external-system">
@@ -53458,6 +53453,15 @@
         <target>keinen Gruppen-Claim</target>
       </segment>
     </unit>
+    <unit id="user.external-note">
+      <notes>
+        <note category="location">src/app/features/users/user-detail.ts:389</note>
+      </notes>
+      <segment>
+        <source>Sees only the projects it is a member of, what a policy grants it, and what is public. Internal projects and repositories stay hidden.</source>
+        <target>Sieht nur die Projekte, in denen er Mitglied ist, was eine Richtlinie ihm erlaubt, und was öffentlich ist. Interne Projekte und Repositories bleiben verborgen.</target>
+      </segment>
+    </unit>
     <unit id="user.origin.jit">
       <notes>
         <note category="location">src/app/features/users/user-labels.ts:7</note>
@@ -54141,7 +54145,7 @@
     <unit id="malware.filter.state">
       <notes>
         <note category="location">src/app/features/vulnerabilities/malware-finds.html:35</note>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:214</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:218</note>
       </notes>
       <segment>
         <source>State</source>
@@ -54152,7 +54156,7 @@
       <notes>
         <note category="location">src/app/features/vulnerabilities/malware-finds.html:42,43</note>
         <note category="location">src/app/features/vulnerabilities/malware-finds.html:43</note>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:221</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:225</note>
       </notes>
       <segment>
         <source>Release</source>
@@ -54171,7 +54175,7 @@
     <unit id="malware.filter.released">
       <notes>
         <note category="location">src/app/features/vulnerabilities/malware-finds.html:45,46</note>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:222</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:226</note>
       </notes>
       <segment>
         <source>Released</source>
@@ -54181,7 +54185,7 @@
     <unit id="malware.filter.not-released">
       <notes>
         <note category="location">src/app/features/vulnerabilities/malware-finds.html:46,48</note>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:222</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:226</note>
       </notes>
       <segment>
         <source>Not released</source>
@@ -54192,7 +54196,7 @@
       <notes>
         <note category="location">src/app/features/vulnerabilities/malware-finds.html:49,50</note>
         <note category="location">src/app/features/vulnerabilities/malware-finds.html:50</note>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:226</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:230</note>
         <note category="location">src/app/features/vulnerabilities/signature-findings.ts:72,73</note>
         <note category="location">src/app/features/vulnerabilities/signature-findings.ts:73</note>
         <note category="location">src/app/features/vulnerabilities/signature-findings.ts:219</note>
@@ -54322,7 +54326,7 @@
     </unit>
     <unit id="malware.search">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:231</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:235</note>
       </notes>
       <segment>
         <source>Search by path or signature</source>
@@ -54331,7 +54335,7 @@
     </unit>
     <unit id="malware.list.caption">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:232</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:236</note>
       </notes>
       <segment>
         <source>Malware finds</source>
@@ -54340,7 +54344,7 @@
     </unit>
     <unit id="malware.list.empty-filtered">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:233</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:237</note>
       </notes>
       <segment>
         <source>No find matches the filters.</source>
@@ -54349,7 +54353,7 @@
     </unit>
     <unit id="malware.list.empty">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:237</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:241</note>
       </notes>
       <segment>
         <source>No malware found.</source>
@@ -54358,7 +54362,7 @@
     </unit>
     <unit id="malware.list.empty-dated">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:239</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:243</note>
       </notes>
       <segment>
         <source>No malware found. The signature database in use is ClamAV&apos;s of <ph id="0" equiv="date" disp="date"/>.</source>
@@ -54367,7 +54371,7 @@
     </unit>
     <unit id="malware.col.file">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:245</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:249</note>
       </notes>
       <segment>
         <source>File</source>
@@ -54376,7 +54380,7 @@
     </unit>
     <unit id="malware.col.verdict">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:250</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:254</note>
       </notes>
       <segment>
         <source>Verdict</source>
@@ -54385,7 +54389,7 @@
     </unit>
     <unit id="malware.col.actions">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:251</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:255</note>
         <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:284</note>
         <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:307</note>
       </notes>
@@ -54396,7 +54400,7 @@
     </unit>
     <unit id="malware.row.open">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:298</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:302</note>
       </notes>
       <segment>
         <source>Every file of <ph id="0" equiv="file" disp="findName(f)"/></source>
@@ -54405,8 +54409,8 @@
     </unit>
     <unit id="malware.withdraw">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:323</note>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:388</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:327</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:392</note>
       </notes>
       <segment>
         <source>Withdraw release</source>
@@ -54415,7 +54419,7 @@
     </unit>
     <unit id="malware.release">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:323</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:327</note>
       </notes>
       <segment>
         <source>Release</source>
@@ -54424,7 +54428,7 @@
     </unit>
     <unit id="malware.released">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:379</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:383</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="file" disp="findName(f)"/> is released in every repository that holds it.</source>
@@ -54433,7 +54437,7 @@
     </unit>
     <unit id="malware.withdraw.title">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:385</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:389</note>
       </notes>
       <segment>
         <source>Withdraw the release of <ph id="0" equiv="file" disp="findName(f)"/>?</source>
@@ -54442,7 +54446,7 @@
     </unit>
     <unit id="malware.withdraw.text">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:386</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:390</note>
       </notes>
       <segment>
         <source>Every repository that holds these bytes refuses them again from the next download.</source>
@@ -54451,7 +54455,7 @@
     </unit>
     <unit id="malware.withdrawn">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:393</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:397</note>
       </notes>
       <segment>
         <source>The release of <ph id="0" equiv="file" disp="findName(f)"/> is withdrawn.</source>
@@ -59352,8 +59356,8 @@
         <note category="location">src/app/shared/malware/malware-words.ts:13</note>
       </notes>
       <segment>
-        <source>The malware scan compares every artifact with ClamAV&apos;s signatures of known malware. It does not find malware that no signature describes yet, such as a malicious install script published today; for npm and NuGet, the vulnerability scanning blocks known malicious packages by name.</source>
-        <target>Die Malware-Prüfung vergleicht jedes Artefakt mit den Signaturen bekannter Malware von ClamAV. Sie findet keine Malware, die noch keine Signatur beschreibt, etwa ein heute veröffentlichtes bösartiges Installationsskript; für npm und NuGet sperrt die Schwachstellen&#xAD;prüfung bekannte bösartige Pakete nach ihrem Namen.</target>
+        <source>The malware scan finds only malware that a ClamAV signature already describes, not one published today.</source>
+        <target>Die Malware-Prüfung findet nur Malware, die eine Signatur von ClamAV schon beschreibt, keine, die heute erschienen ist.</target>
       </segment>
     </unit>
     <unit id="malware.state.clean">
@@ -59625,6 +59629,24 @@
       <segment>
         <source>every scan failed</source>
         <target>jede Prüfung ist fehlgeschlagen</target>
+      </segment>
+    </unit>
+    <unit id="malware.promise.help">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-words.ts:150</note>
+      </notes>
+      <segment>
+        <source>It compares every artifact with ClamAV&apos;s signatures of known malware. For npm and NuGet, the vulnerability scanning also blocks known malicious packages by name.</source>
+        <target>Sie vergleicht jedes Artefakt mit den Signaturen bekannter Malware von ClamAV. Für npm und NuGet sperrt die Schwachstellen&#xAD;prüfung zudem bekannte bösartige Pakete nach ihrem Namen.</target>
+      </segment>
+    </unit>
+    <unit id="malware.promise.subject">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-words.ts:155</note>
+      </notes>
+      <segment>
+        <source>the malware scan</source>
+        <target>der Malware-Prüfung</target>
       </segment>
     </unit>
     <unit id="notice.close">

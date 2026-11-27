@@ -25,7 +25,7 @@ The section **Download links** shows:
 
 - the state: **Off** ("Quader delivers every download itself."), **On** with the formats whose large downloads now go from the store, or **On, but no link is issued** when no connection can serve one;
 - **Can serve links** and **Cannot serve links**: which connections give links now, as the replica that answered the page decides it;
-- the switch with what it means, the sentence on speed limits, and the link to this page.
+- the switch, with what it means and the sentence on speed limits behind the info sign after its label, the line that Quader no longer sees the bytes (the client checks them and must reach the object store), and the link to this page.
 
 **Details**, closed, holds:
 

@@ -61,7 +61,7 @@
 @if (overview(); as ov) {
   @if (!ov.enabled) {
     <p class="banner-warning" role="note" data-testid="signing-off">
-      <span class="material-icons inline warn" aria-hidden="true">info</span>
+      <span class="material-icons inline warn" aria-hidden="true">warning</span>
       <span i18n="@@signing.off"
         >Signing is off in this installation: <code translate="no">config.signing.enabled</code> is false in the Helm configuration.
         Quader signs nothing, also with an identity. What it signed stays and is served.</span

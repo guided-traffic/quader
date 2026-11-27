@@ -144,6 +144,17 @@ export function inProject(options: RenderOptions = {}, url = '/projects/web/pack
 /** The text content of an element with whitespace collapsed. */
 export const text = (root: Element): string => root.textContent?.replace(/\s+/g, ' ').trim() ?? '';
 
+/** The help signs in `root` (R-UI-267): each one's name and the sentence it is described by, through the tooltip's description. */
+export const helpSigns = (root: ParentNode): [string, string][] =>
+  [...root.querySelectorAll('button.help-sign')].map((b) => [
+    b.getAttribute('aria-label') ?? '',
+    (b.getAttribute('aria-describedby') ?? '')
+      .split(' ')
+      .map((id) => (id ? (document.getElementById(id)?.textContent?.replace(/\s+/g, ' ').trim() ?? '') : ''))
+      .join(' ')
+      .trim(),
+  ]);
+
 /** The addresses of the `quader-address-field`s in `root`: the field holds the address as its value, not as text (R-UI-065). */
 export const addressValues = (root: ParentNode): string[] =>
   [...root.querySelectorAll<HTMLInputElement>('quader-address-field input')].map((i) => i.value);

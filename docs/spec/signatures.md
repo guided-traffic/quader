@@ -1511,9 +1511,9 @@ Priority: **P1** · Covers: quader-only
      Helm values", "Added by an administrator"), fingerprints, expiry, the signatures it knows, and on/off; **Add trust anchor** opens a form
      whose first field is the kind and whose fields follow the kind (a CA certificate's subject restriction and its use behind **More
      options**); a shipped anchor has only its switch, a Helm one nothing.
-  2. **Project trust anchors**, open: the checkbox **Project owners may add trust anchors for their project** (off by default) with the
-     sentence "Project anchors apply only to the repositories of their project. A project cannot switch off an anchor of the installation.",
-     and below it every project's anchors with their project and **Remove**.
+  2. **Project trust anchors**, open: the checkbox **Project owners may add trust anchors for their project** (off by default) with its
+     help behind the sign after its label ([api-and-ui.md](api-and-ui.md) R-UI-267, [Q-UI-1628](api-and-ui.md#q-ui-1628--the-help-sign-on-every-settings-page-and-no-info-icon-beside-a-status)): "Project anchors apply
+     only to the repositories of their project. A project cannot switch off an anchor of the installation.", and below it every project's anchors with their project and **Remove**.
   3. **Blocked signers**, closed: the blocks with their reason; **Block signer** asks for the kind, the value and a reason.
   4. **Public Sigstore root**, closed: where the root comes from (refreshed, or the release's snapshot), when it was fetched, and the last
      failure.
@@ -3519,15 +3519,18 @@ Simple by default ([CLAUDE.md](../../CLAUDE.md#product-simple-by-default-details
 in the main view of a repository; a plain user sees why a download is refused where the file is.
 
 - **The repository's settings page** ([api-and-ui.md](api-and-ui.md) R-UI-087): the closed section **Signatures** (R-SIG-040) holds, before
-  `fetch`, the checkbox **Only artifacts with a verified signature can be downloaded from this repository**, unchecked by default, with the
-  sentence "Artifacts without a signature that a trust anchor of this repository knows are refused. A signature says who signed an artifact,
-  not that it is safe." Checked, it shows **Accepted trust anchors** with two choices: **Any trust anchor of this repository** (the default),
+  `fetch`, the checkbox **Only artifacts with a verified signature can be downloaded from this repository**, unchecked by default, with its
+  help behind the sign after its label ([api-and-ui.md](api-and-ui.md) R-UI-267, [Q-UI-1628](api-and-ui.md#q-ui-1628--the-help-sign-on-every-settings-page-and-no-info-icon-beside-a-status)): "Artifacts without a
+  signature that a trust anchor of this repository knows are refused. A signature says who signed an artifact, not that it is safe."
+  Checked, it shows **Accepted trust anchors** with two choices: **Any trust anchor of this repository** (the default),
   with "This includes the public Sigstore, where anyone can sign. Choose anchors to accept only your own signers.", and **These trust
   anchors**, a list of the scope's anchors with title, kind, scope and fingerprint to tick, a removed one shown as **Removed trust anchor**
   in red. Under them the stored setting's state when the section opens: "<n> of <m> artifacts pass. <k> are refused." (R-SIG-072), with a
   link to the refused downloads on the page Signatures under Security audit for its readers.
-  - On a virtual repository it adds "Applies to everything this repository serves from its members."; on a remote with `fetch` off, "Signatures
-    of images are not fetched: an image whose signature no client pulled is refused."
+  - On a virtual repository its help adds "Applies to everything this repository serves from its members."; on a remote with `fetch` off,
+    the visible line under **Fetch the upstream's signatures** "Signatures of images are not fetched: an image whose signature no client
+    pulled is refused." The fetch's own help: "Quader asks the upstream in the background for the signatures of what this repository
+    stores, at most 600 requests an hour. Switch it off for an upstream with tight rate limits, such as Docker Hub without an account."
   - On a Debian repository the section says "apt checks the signature of this repository's index, not of a package. This setting is not
     available for Debian repositories." and offers nothing.
   - For a writer who may not weaken it (an Owner), a gate that is on is shown checked and read-only with its anchors, and "Only an

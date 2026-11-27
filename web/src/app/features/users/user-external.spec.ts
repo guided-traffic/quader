@@ -4,7 +4,7 @@ import { IdentityApi } from '../../api/identity-api';
 import { FakeAuthSettingsApi, FakeIdentityApi, sampleUser } from '../../api/testing/access-fakes';
 import { QuaderDialog } from '../../shared/ui/dialog';
 import { seriousViolations } from '../../testing/axe';
-import { button, buttonByText, openFilters, renderScreen, settle, text, typeInto, chipTexts } from '../../testing/screen';
+import { button, buttonByText, helpSigns, openFilters, renderScreen, settle, text, typeInto, chipTexts } from '../../testing/screen';
 import { UserCreateDialog } from './user-create-dialog';
 import { UserDetail } from './user-detail';
 import { UserList } from './user-list';
@@ -19,7 +19,13 @@ describe('The external flag of a user (R-UI-056)', () => {
     const { fixture, root, get } = await renderScreen(UserDetail, { inputs: { username: 'alice' } });
     const box = externalBox(root);
     expect(box.checked).toBe(false);
-    expect(text(root)).toContain('Sees only the projects it is a member of, what a policy grants it, and what is public.');
+    // What the flag means is the help of its box (R-UI-267), not a paragraph under it.
+    expect(helpSigns(box.closest('quader-checkbox')!)).toEqual([
+      [
+        'About External user',
+        'Sees only the projects it is a member of, what a policy grants it, and what is public. Internal projects and repositories stay hidden.',
+      ],
+    ]);
     const save = () => button(root, /Save changes\s+\(external user\)/);
     expect(save().disabled).toBe(true);
     box.click();
@@ -85,6 +91,7 @@ describe('The external flag of a user (R-UI-056)', () => {
     await settle(r.fixture);
     const dialog = overlay().querySelector('quader-user-create-dialog') as HTMLElement;
     expect(externalBox(dialog).checked).toBe(true);
+    expect(helpSigns(dialog).map(([name]) => name)).toEqual(['About External user']);
     typeInto(dialog, 'User name', 'erin');
     await settle(r.fixture);
     buttonByText(dialog, 'Create user').click();

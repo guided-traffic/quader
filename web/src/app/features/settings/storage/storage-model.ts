@@ -13,10 +13,10 @@ export const BACKLOG_BEHIND_SECONDS = 3_600;
 export const NEARLY_FULL = 0.8;
 export const FULL = 0.95;
 
-/** The tone of a state: green only for a positive one (B.14), every tone with a word and an icon. */
+/** The tone of a state: green only for a positive one (B.14), every tone with a word; no icon for the neutral one (Q-UI-1628). */
 export type Tone = 'ok' | 'neutral' | 'warn' | 'bad';
 
-/** The icon of a tone. */
+/** The icon of a tone; empty for the neutral one. */
 export function toneIcon(tone: Tone): string {
   switch (tone) {
     case 'ok':
@@ -26,7 +26,7 @@ export function toneIcon(tone: Tone): string {
     case 'bad':
       return 'error';
   }
-  return 'info';
+  return '';
 }
 
 /** The state of a connection in words, with the one figure its badge carries. */

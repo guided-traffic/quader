@@ -67,10 +67,10 @@ const GIB = 1024 ** 3;
               <p class="field-error" id="syncs-interval-error">{{ e }}</p>
             }
           </div>
-          <quader-checkbox [checked]="paused()" [disabled]="!canChange() || saving()" (checkedChange)="paused.set($event)" describedBy="syncs-paused-hint">
+          <quader-checkbox [checked]="paused()" [disabled]="!canChange() || saving()" [help]="pausedHelp" [about]="pausedName" (checkedChange)="paused.set($event)">
             <ng-container i18n="@@syncs.settings.paused">Pause every sync of this repository</ng-container>
           </quader-checkbox>
-          <p class="hint" id="syncs-paused-hint" i18n="@@syncs.settings.paused-hint">No sync starts a run; a run in progress goes on.</p>
+          <!-- What the box does is its help (R-UI-267). -->
           <div class="field">
             <label class="field-label" for="syncs-max" i18n="@@syncs.settings.max-bytes">Stop at this many GiB stored</label>
             <input
@@ -228,4 +228,8 @@ export class RepositorySyncsSection {
     if (!this.dirty() || this.saving() || this.minutesError() || this.gibError()) return;
     this.save.emit({ intervalSeconds: this.minutesValue() * 60, paused: this.paused(), maxBytes: this.bytesValue() });
   }
+
+  /** The box's name and what it does, behind its help sign (R-UI-267). */
+  protected readonly pausedName = $localize`:@@syncs.settings.paused:Pause every sync of this repository`;
+  protected readonly pausedHelp = $localize`:@@syncs.settings.paused-hint:No sync starts a run; a run in progress goes on.`;
 }

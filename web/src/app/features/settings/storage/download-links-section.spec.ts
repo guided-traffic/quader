@@ -6,7 +6,7 @@ import { ANSIBLE_FORMAT, FakeRepositoriesApi, OCI_FORMAT } from '../../../api/te
 import { FakeDownloadLinksApi, downloadLinkSettings, linkConnection } from '../../../api/testing/fakes-download-links';
 import { DownloadLinksSwitchStore } from '../../../core/download-links-switch';
 import { Navigation, areaItems } from '../../../core/navigation';
-import { addressValues, button, expectAccessible, renderScreen, settle, text } from '../../../testing/screen';
+import { addressValues, button, expectAccessible, helpSigns, renderScreen, settle, text } from '../../../testing/screen';
 import { DownloadLinksSection, isHttpsOrigin } from './download-links-section';
 
 const ADMIN = ['settings:read', 'settings:write'];
@@ -31,7 +31,7 @@ const words = (el: Element): string => {
 };
 
 const box = (root: ParentNode): HTMLInputElement | null =>
-  [...root.querySelectorAll<HTMLLabelElement>('label.check-row')]
+  [...root.querySelectorAll<HTMLElement>('.check-row')]
     .find((l) => text(l).startsWith('Deliver large downloads by signed links'))
     ?.querySelector('input') ?? null;
 const field = (root: ParentNode, id: string): HTMLInputElement => root.querySelector<HTMLInputElement>(`#${id}`)!;
@@ -67,7 +67,15 @@ describe('Admin area › Settings › Storage: the section Download links (R-UI-
     expect(status(root)).toBe('Off Quader delivers every download itself.');
     expect(root.querySelector('[data-testid="links-status"] .ok')).toBeNull();
     expect(box(root)?.checked).toBe(false);
-    expect(text(root)).toContain("A download handed to a link is not slowed by the caller's speed limit");
+    // What the switch does and the speed limits are its help (R-UI-267); what it gives away stays one visible line (Q-UI-1628).
+    expect(helpSigns(root.querySelector('form')!).filter(([name]) => name.startsWith('About Deliver'))).toEqual([
+      [
+        'About Deliver large downloads by signed links of the object store',
+        "A client fetches the file from the object store by a short-lived link; Quader still decides who may download. No speed limit slows the download; its size counts against the caller's budgets.",
+      ],
+    ]);
+    expect(text(root.querySelector('#links-bytes')!)).toBe('Quader no longer sees the bytes: the client checks them, and must reach the object store.');
+    expect(box(root)?.getAttribute('aria-describedby')).toBe('links-bytes');
     expect(text(root)).not.toMatch(/profile/i);
     expect([...root.querySelectorAll('[data-testid="links-connections"] :is(dt, dd)')].map(text)).toEqual(['Can serve links', 'default']);
     const details = root.querySelector('quader-disclosure button')!;
@@ -276,7 +284,9 @@ describe('Admin area › Settings › Storage: the section Download links (R-UI-
   it('R-UI-200 the auditor reads the state as text, the fields read-only, and is offered no action', async () => {
     const { root } = await render(AUDITOR, mixed);
     expect(box(root)).toBeNull();
-    expect(text(root.querySelector('[data-testid="links-switch-state"]')!)).toBe('Deliver large downloads by signed links of the object store is on.');
+    const state = root.querySelector('[data-testid="links-switch-state"]')!;
+    expect(text(state.querySelector('.help-anchor')!)).toBe('Deliver large downloads by signed links of the object store is on.');
+    expect(helpSigns(state).map(([name]) => name)).toEqual(['About Deliver large downloads by signed links of the object store']);
     expect(field(root, 'links-address-default').readOnly).toBe(true);
     expect(root.querySelector('button[type="submit"]')).toBeNull();
     expect([...root.querySelectorAll('button')].map((b) => text(b))).not.toContain('Test link (default)');

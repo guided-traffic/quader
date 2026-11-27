@@ -11,7 +11,7 @@
     @if (!s.enabled) {
       <!-- The configuration switched the signatures off (R-SIG-040): nothing is detected or checked, and no badge is shown. -->
       <p class="banner-warning" role="note" data-testid="signatures-off">
-        <span class="material-icons inline warn" aria-hidden="true">info</span>
+        <span class="material-icons inline warn" aria-hidden="true">warning</span>
         <span i18n="@@sig.settings.off"
           >Signatures are off in this installation: <code translate="no">config.signatures.enabled</code> is false in the Helm
           configuration. Nothing is checked, and no badge is shown. The stored signatures and anchors stay.</span
@@ -67,21 +67,20 @@
       }
       <form (submit)="saveSwitch($event)" novalidate>
         @if (canWrite()) {
-          <quader-checkbox [checked]="projectAnchors()" [describedBy]="'project-anchors-note'" (checkedChange)="projectAnchors.set($event)">
+          <quader-checkbox [checked]="projectAnchors()" [help]="switchHelp" [about]="switchName" (checkedChange)="projectAnchors.set($event)">
             <ng-container i18n="@@sig.settings.switch">Project owners may add trust anchors for their project</ng-container>
           </quader-checkbox>
         } @else {
           <p data-testid="project-anchors-state">
-            @if (s.projectAnchors) {
-              <ng-container i18n="@@sig.settings.switch-on"><strong>Project owners may add trust anchors for their project</strong> is on.</ng-container>
-            } @else {
-              <ng-container i18n="@@sig.settings.switch-off"><strong>Project owners may add trust anchors for their project</strong> is off.</ng-container>
-            }
+            <span class="help-anchor">
+              @if (s.projectAnchors) {
+                <ng-container i18n="@@sig.settings.switch-on"><strong>Project owners may add trust anchors for their project</strong> is on.</ng-container>
+              } @else {
+                <ng-container i18n="@@sig.settings.switch-off"><strong>Project owners may add trust anchors for their project</strong> is off.</ng-container>
+              }</span
+            ><quader-help [text]="switchHelp" [about]="switchName" />
           </p>
         }
-        <p id="project-anchors-note" class="muted" i18n="@@sig.settings.switch-note">
-          Project anchors apply only to the repositories of their project. A project cannot switch off an anchor of the installation.
-        </p>
         @if (s.updatedBy; as by) {
           <p class="muted">
             <ng-container i18n="@@sig.settings.changed-by">Last changed by</ng-container>&ngsp;<span translate="no">{{ principal(by) }}</span>&ngsp;<quader-time-ago

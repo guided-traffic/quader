@@ -11,10 +11,21 @@ import { Checkbox } from './checkbox';
     <p id="note">Only for admins.</p>
     <quader-checkbox [checked]="false" [disabled]="true">Locked</quader-checkbox>
     <quader-checkbox [checked]="false" ariaLabel="Select row 1" />
+    <quader-checkbox
+      class="helped"
+      [checked]="helped()"
+      (checkedChange)="helped.set($event)"
+      describedBy="why"
+      help="Artifacts that are not checked yet wait for their scan."
+      about="Only checked artifacts"
+      >Only checked artifacts</quader-checkbox
+    >
+    <p id="why">The installation lets only checked artifacts be downloaded.</p>
   `,
 })
 class Host {
   readonly on = signal(false);
+  readonly helped = signal(false);
 }
 
 describe('Quader checkbox', () => {
@@ -38,7 +49,25 @@ describe('Quader checkbox', () => {
 
   it('R-UI-145 the box is a direct child of its .check-row, which keeps it at its size beside a long label', async () => {
     const { boxes } = await render();
-    for (const box of boxes) expect(box.parentElement!.matches('label.check-row')).toBe(true);
+    for (const box of boxes) expect(box.parentElement!.matches('.check-row')).toBe(true);
+  });
+
+  it('R-UI-267 a help sign follows the label outside it: the label still names the box, the sign pins and never toggles', async () => {
+    const { fixture, root, boxes } = await render();
+    const box = boxes[3]!;
+    expect(box.labels?.[0]?.textContent?.trim()).toBe('Only checked artifacts');
+    expect(box.getAttribute('aria-describedby')).toBe('why');
+    const sign = root.querySelector<HTMLButtonElement>('.helped button.help-sign')!;
+    expect(sign.closest('label')).toBeNull();
+    expect(sign.getAttribute('aria-label')).toBe('About Only checked artifacts');
+    sign.click();
+    await settle(fixture);
+    expect(box.checked).toBe(false);
+    expect(fixture.componentInstance.helped()).toBe(false);
+    box.labels![0]!.click();
+    await settle(fixture);
+    expect(fixture.componentInstance.helped()).toBe(true);
+    expect(await seriousViolations(root)).toEqual([]);
   });
 
   it('a click toggles it and reports the new state', async () => {
