@@ -125,9 +125,11 @@ test('R-UI-041 an administrator creates a project; a member of its Owner group a
     await expect(bob.getByRole('heading', { name: 'Members', level: 1 })).toBeVisible();
     const members = bob.locator('quader-project-members');
     await expect(members.getByRole('rowheader', { name: groupName })).toBeVisible();
-    // A member's one action is the row's word **Remove**, named for the member (R-UI-163).
-    await members.getByRole('button', { name: `Remove group:${groupName}`, exact: true }).click();
-    await expect(members.getByText('A project keeps at least one Owner')).toBeVisible();
+    // A member's one action is the row's word **Remove**, named for the member (R-UI-163); the last Owner's stays, unavailable, with
+    // the reason as its tooltip and accessible description, before the server would refuse it (R-UI-270, R-UI-005).
+    const remove = members.getByRole('button', { name: `Remove group:${groupName}`, exact: true });
+    await expect(remove).toHaveAttribute('aria-disabled', 'true');
+    await expect(remove).toHaveAccessibleDescription(/A project keeps at least one Owner/);
     await expectAccessible(bob, 'project members (Owner)');
 
     await nav.getByRole('link', { name: 'Permission policies', exact: true }).click();
