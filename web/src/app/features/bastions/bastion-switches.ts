@@ -12,19 +12,21 @@ import { catalogueLine } from './bastion-state';
 type SwitchName = 'gui' | 'docs';
 
 /**
- * The switches **Web interface** and **Documentation** of a registration (W-35, bastion.md R-BAS-102, R-UI-240's **Details**): each with
- * its sentence; **Documentation** takes effect only while the web interface is on, and says so. Who may change a registration
- * (`endpoints:write`, Q-BAS-325) switches it with a merge patch of `switches` and the `ETag` it read; a refusal stands under the switches
- * and each keeps the state the server has. Who may only read gets each state as a sentence (Q-UI-960). While the web interface is on, a
- * line says what the main installation last built for it (`catalogue` of the registration, R-BAS-104); why it builds nothing stands in
- * the card's plain view (`<quader-bastion-limits>`).
+ * The section **Web interface** of a registration's card (W-35, bastion.md R-BAS-102, R-UI-240, Q-UI-1616): in the card's plain view,
+ * after **Direct reads from the object store** and before **Limits**, since a public web interface is the card's decision about what the
+ * internet sees, not a tuning detail. The switches **Web interface** and **Documentation**, each with its sentence; **Documentation**
+ * takes effect only while the web interface is on, and says so. Who may change a registration (`endpoints:write`, Q-BAS-325) switches it
+ * with a merge patch of `switches` and the `ETag` it read; a refusal stands under the switches and each keeps the state the server has.
+ * Who may only read gets each state as a sentence (Q-UI-960). While the web interface is on, a line says what the main installation last
+ * built for it (`catalogue` of the registration, R-BAS-104), or in its place why it builds nothing, with what to do (Q-BAS-497); and a
+ * warning stands where a replica said its copy of the catalogue does not survive a restart.
  */
 @Component({
   selector: 'quader-bastion-switches',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ErrorNotice, Switch, TimeAgo],
   template: `
-    <h4 i18n="@@bastion.switches.heading">Web interface</h4>
+    <h3 i18n="@@bastion.switches.heading">Web interface</h3>
     @if (canWrite()) {
       <div class="state">
         <quader-switch
@@ -52,20 +54,43 @@ type SwitchName = 'gui' | 'docs';
     <p class="hint note" [id]="guiRemote()" i18n="@@bastion.switches.gui-remote">
       A public remote repository shows here every package and version your builds fetched through it.
     </p>
-    <!-- What the main installation last built for the web interface (R-BAS-104); a stop's reason and what to do stand in plain view. -->
+    <!-- What the main installation last built for the web interface (R-BAS-104), or in its place why it builds nothing, with what to do. -->
     @if (catalogue(); as c) {
-      <p class="state-text note" data-testid="bastion-catalogue-line">
-        @switch (c.kind) {
-          @case ('built') {
+      @if (c.kind === 'stopped') {
+        <p class="hint warn note line" data-testid="bastion-catalogue-stopped">
+          <span class="material-icons inline" aria-hidden="true">warning</span>
+          @if (c.reason === 'anonymous_requests_refused') {
+            <span i18n="@@bastion.switches.catalogue-refused"
+              >This Bastion's web interface shows nothing: <code translate="no">endpoints.default.auth.anonymous</code> is false, so the main
+              installation admits no request without a credential and nothing is public. Admit such requests there to show your public
+              repositories, or switch the web interface off.</span
+            >
+          } @else {
+            <span i18n="@@bastion.switches.catalogue-base-url"
+              >The main installation does not build this Bastion's web interface: the Bastion has not connected yet, or the address it reported
+              is not in <span class="with-stop"><code translate="no">server.additional_base_urls</code>.</span> Connect it, or add its address there and restart the main
+              installation: it is built within seconds of either.</span
+            >
+          }
+        </p>
+      } @else {
+        <p class="state-text note" data-testid="bastion-catalogue-line">
+          @if (c.kind === 'built') {
             <ng-container i18n="@@bastion.switches.catalogue-built">Last built <quader-time-ago [at]="c.at" absolute="title" />.</ng-container>
-          }
-          @case ('stopped') {
-            <ng-container i18n="@@bastion.switches.catalogue-stopped">Not built: the warning above says why.</ng-container>
-          }
-          @default {
+          } @else {
             <ng-container i18n="@@bastion.switches.catalogue-pending">Not built yet. The first build follows within seconds.</ng-container>
           }
-        }
+        </p>
+      }
+    }
+    <!-- A web interface whose catalogue a restart loses (W-35 B.2b): the replica's volume does not keep it. -->
+    @if (catalogueLost()) {
+      <p class="hint warn note line" data-testid="bastion-catalogue-lost">
+        <span class="material-icons inline" aria-hidden="true">warning</span
+        ><span i18n="@@bastion.switches.catalogue-lost"
+          >After a restart while the connection to it is down, this Bastion's web interface shows nothing until the connection returns. A
+          bucket or persistent volumes keep it.</span
+        >
       </p>
     }
     @if (canWrite()) {
@@ -101,14 +126,14 @@ type SwitchName = 'gui' | 'docs';
     :host {
       display: block;
     }
-    h4 {
-      margin: var(--quader-space-4) 0 var(--quader-space-2);
-      font: var(--quader-type-title-small);
-    }
     .state {
       display: flex;
       align-items: flex-start;
       margin-block-start: var(--quader-space-2);
+    }
+    /* Under the heading the switch stands as the direct reads' switch stands under theirs. */
+    h3 + .state {
+      margin-block-start: 0;
     }
     .state-text {
       margin-block: var(--quader-space-2) 0;
@@ -119,6 +144,9 @@ type SwitchName = 'gui' | 'docs';
     }
     .note {
       max-inline-size: var(--quader-settings-measure);
+    }
+    .line {
+      margin-block: var(--quader-space-2) 0;
     }
     quader-error-notice {
       display: block;
@@ -143,6 +171,8 @@ export class BastionSwitches {
   protected readonly docs = linkedSignal(() => this.bastion().switches.docs);
   /** The builder's last run while the web interface is on, as the registration read last says it. */
   protected readonly catalogue = computed(() => catalogueLine({ switches: { ...this.bastion().switches, gui: this.gui() }, catalogue: this.bastion().catalogue }));
+  /** The web interface is on and a replica said its copy of the catalogue does not survive a restart (W-35 B.2b). */
+  protected readonly catalogueLost = computed(() => this.gui() && this.bastion().contacts.some((c) => c.catalogueKept === false));
   protected readonly guiNote = computed(() => `bastion-gui-note-${this.bastion().name}`);
   protected readonly guiRemote = computed(() => `bastion-gui-remote-${this.bastion().name}`);
   protected readonly docsNote = computed(() => `bastion-docs-note-${this.bastion().name}`);

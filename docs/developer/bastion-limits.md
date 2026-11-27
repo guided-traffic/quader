@@ -283,8 +283,10 @@ At most four builders at once (rule 10 of the project plan). The waves are the o
   the day's findings of 2026-11-26, Q-UI-1485), the preset's dialog, the details' form
   ([bastion-limit-details.ts](../../web/src/app/features/bastions/bastion-limit-details.ts)), the switches
   ([bastion-switches.ts](../../web/src/app/features/bastions/bastion-switches.ts); since W35-P9f with the line of the catalogue's last
-  build, and the warning of a stop's reason among the plain view's, both from `catalogueLine` of `bastion-state.ts` over the registration's
-  `catalogue`, Q-BAS-497) and `<quader-bastion-egress>` in two parts (warnings on the card, the list in **Details**); `BastionsApi.configure`, a merge patch of `switches` and `limits`; the mode's dialog of
+  build, and the warning of a stop's reason, both from `catalogueLine` of `bastion-state.ts` over the registration's
+  `catalogue`, Q-BAS-497; since B-1127h not in **Details** but a section of the card's own between the direct reads and **Limits**,
+  `bastion-card.ts` placing it, with the stop's reason in place of the line and the warning of a catalogue a restart loses,
+  [Q-UI-1616](../spec/api-and-ui.md#q-ui-1616--a-bastions-web-interface-is-a-section-of-the-cards-plain-view-not-a-detail-of-its-limits)) and `<quader-bastion-egress>` in two parts (warnings on the card, the list in **Details**); `BastionsApi.configure`, a merge patch of `switches` and `limits`; the mode's dialog of
   [limit-mode.ts](../../web/src/app/features/limits/limit-mode.ts) for a Bastion; the page `/admin/bastions/{name}/limits`
   ([bastion-limits-page.ts](../../web/src/app/features/bastions/bastion-limits-page.ts)) with `orderBastionRules` of `limit-rules.ts`; the
   overview's **Place** and **By place** of a caller's page and of the profile's own usage ([usage-places.ts](../../web/src/app/features/usage/usage-places.ts)). Decisions

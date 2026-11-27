@@ -6261,7 +6261,8 @@ Acceptance criteria:
 ### R-BAS-102 · The switches gui and docs
 Priority: **P1** · Covers: quader-only
 
-- `switches.gui` and `switches.docs` are members of the registration's configuration (R-BAS-093), set on the card (R-UI-240), off for a new
+- `switches.gui` and `switches.docs` are members of the registration's configuration (R-BAS-093), set on the card in its section **Web
+  interface** in plain view (R-UI-240, [Q-UI-1616](api-and-ui.md#q-ui-1616--a-bastions-web-interface-is-a-section-of-the-cards-plain-view-not-a-detail-of-its-limits)), off for a new
   registration, delivered with the handshake and changed by a `settings` entry of the feed in about 3 s.
 - **gui** switches the Bastion's web interface: while it is off, every catalogue route answers `404 not_found` and the Bastion serves no
   page (its pages answer `404` as every path outside the package families does, R-BAS-003), stops its sync, makes its `catalogue/` tree
@@ -15288,9 +15289,11 @@ administrator whose web interface stayed empty learned nothing of why.
 | (c) The job's result (`GET /api/v1/system/jobs/{id}`) | — | Nothing to build | The administrator would have to find the job; a stop names no registration's reason |
 
 **Choice:** (a). The list reads every few seconds while a web interface waits for its first build (R-UI-213's fast interval), every
-minute otherwise. **Applied in the spec:** R-BAS-104, [api-and-ui.md](api-and-ui.md) R-UI-240; code:
+minute otherwise. *Since 2026-11-27 (B-1127h,
+[api-and-ui.md](api-and-ui.md#q-ui-1616--a-bastions-web-interface-is-a-section-of-the-cards-plain-view-not-a-detail-of-its-limits)
+Q-UI-1616)* the switches are a section of the card's plain view, and a stop's reason stands there in place of the line of the last
+build, no longer among the warnings of **Limits**. **Applied in the spec:** R-BAS-104, [api-and-ui.md](api-and-ui.md) R-UI-240; code:
 [bastion_registrations_api.go](../../internal/api/v1/bastion_registrations_api.go),
-[bastion-limits.ts](../../web/src/app/features/bastions/bastion-limits.ts),
 [bastion-switches.ts](../../web/src/app/features/bastions/bastion-switches.ts).
 
 ### Q-BAS-498 · The start, the projects' lists and the sitemap lead to a repository's files

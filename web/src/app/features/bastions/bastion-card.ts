@@ -18,6 +18,7 @@ import { DownloadLinkConnection } from '../../api/download-links-api';
 import { BastionTokenDialog, BastionTokenDialogData, BastionTokenDraft } from './bastion-dialogs';
 import { BastionHandover } from './bastion-handover';
 import { BastionLimits } from './bastion-limits';
+import { BastionSwitches } from './bastion-switches';
 import { ADDRESS_MARKS, PartsText } from '../../shared/break-parts';
 import { Busy } from '../../shared/ui/busy';
 
@@ -37,8 +38,9 @@ export function tokenExpiry(token: Pick<BastionTokenSummary, 'expiresAt'>, now: 
 
 /**
  * One Bastion registration (R-BAS-007): its facts and actions, the switch of its direct reads from the object
- * store (R-BAS-071, `<quader-bastion-handover>`), its limits, throughput, switches and state with the addresses its Bastion connects
- * from (R-UI-240, R-UI-243, `<quader-bastion-limits>`), the last contact of each replica and its tokens. Disable
+ * store (R-BAS-071, `<quader-bastion-handover>`), the switches of its web interface with what the main installation last built for it
+ * (R-BAS-102, R-BAS-104, `<quader-bastion-switches>`, in plain view by Q-UI-1616), its limits, throughput and state with the addresses
+ * its Bastion connects from (R-UI-240, R-UI-243, `<quader-bastion-limits>`), the last contact of each replica and its tokens. Disable
  * and enable read the registration for its `ETag` first, because the list carries none
  * (R-API-012). A token's value is shown once through `<quader-token-secret>` and lives in this card's
  * signal only (R-UI-043). Which actions show follows the capabilities of R-BAS-004: `endpoints:write`
@@ -46,7 +48,7 @@ export function tokenExpiry(token: Pick<BastionTokenSummary, 'expiresAt'>, now: 
  */
 @Component({
   selector: 'quader-bastion-card',
-  imports: [Busy, BastionHandover, BastionLimits, TimePipe, DataTable, ErrorNotice, NoValue, PartsText, TimeAgo, TokenSecret],
+  imports: [Busy, BastionHandover, BastionLimits, BastionSwitches, TimePipe, DataTable, ErrorNotice, NoValue, PartsText, TimeAgo, TokenSecret],
   template: `
     <section class="card" [attr.aria-labelledby]="headingId()">
       <h2 [id]="headingId()" translate="no">{{ bastion().name }}</h2>
@@ -120,6 +122,9 @@ export function tokenExpiry(token: Pick<BastionTokenSummary, 'expiresAt'>, now: 
       }
 
       <quader-bastion-handover [bastion]="bastion()" [connections]="connections()" (changed)="changed.emit()" />
+
+      <!-- What the internet sees of this Bastion is the card's decision, not a detail of its limits (Q-UI-1616): a section of its own. -->
+      <quader-bastion-switches [bastion]="bastion()" (changed)="changed.emit()" />
 
       <quader-bastion-limits [bastion]="bastion()" (changed)="changed.emit()" />
 

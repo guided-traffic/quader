@@ -20,8 +20,7 @@ import { stateOfRatio } from '../usage/usage-words';
 import { BastionEgress } from './bastion-egress';
 import { BastionLimitDetails } from './bastion-limit-details';
 import { BastionPresetDialog, PresetDialogData } from './bastion-preset-dialog';
-import { bastionState, blockReasons, blockedText, catalogueLine, edgeBelowFigures, limitedText, megabytesPerSecond, stateParts } from './bastion-state';
-import { BastionSwitches } from './bastion-switches';
+import { bastionState, blockReasons, blockedText, edgeBelowFigures, limitedText, megabytesPerSecond, stateParts } from './bastion-state';
 import { PRESET_NAMES, PresetName, modeName, presetLabel, presetSentence } from './presets';
 
 const MB = 1e6;
@@ -32,23 +31,22 @@ const MB = 1e6;
  * - **In plain view**: the replicas' state as one line, live with the list (R-UI-213), the throughput against its cap as a meter, the
  *   callers limited and the addresses blocked now with a link to the Bastion's **Blocks**, or "No report in the last 5 minutes"; the
  *   warnings an administrator has to see (the edge figure below a request figure, Q-UI-1486; the addresses the Bastion connects from,
- *   Q-UI-1483; a web interface whose catalogue a restart loses; why the main installation builds nothing for the web interface, with
- *   what to do, R-BAS-104); the preset as a segmented control with its sentence, **Custom** shown and
+ *   Q-UI-1483); the preset as a segmented control with its sentence, **Custom** shown and
  *   not offered, a change through the dialog that names what it replaces (Q-UI-1481); the mode with its switch, the dialog of R-UI-182
  *   for this Bastion, after recent authentication (R-LIM-044); the maximum throughput in MB/s, 200 for a new registration, empty for
  *   unlimited (Q-BAS-455).
  * - **Details**, closed: the flood figures, the slots, the anonymous ceiling and the throughput by class (`<quader-bastion-limit-details>`),
- *   the addresses the Bastion connects from (R-UI-243), the switches of the web interface (R-BAS-102) and the link to the rules of the
- *   Bastion's place (R-UI-241).
+ *   the addresses the Bastion connects from (R-UI-243) and the link to the rules of the Bastion's place (R-UI-241).
  *
- * Who changes what follows Q-BAS-325: `limits:write` the preset, the mode, the throughput and the figures; `endpoints:write` the switches
- * and the addresses; a reader sees each as text (Q-UI-960). Every change reads the registration for its `ETag` and sends the merge patch;
+ * The switches of the web interface and their warnings are the card's section of their own before this one (`<quader-bastion-switches>`,
+ * Q-UI-1616). Who changes what follows Q-BAS-325: `limits:write` the preset, the mode, the throughput and the figures; `endpoints:write`
+ * the addresses; a reader sees each as text (Q-UI-960). Every change reads the registration for its `ETag` and sends the merge patch;
  * a refusal stands under its control with every fact of its answer (R-UI-216), and the control keeps the server's value.
  */
 @Component({
   selector: 'quader-bastion-limits',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [BastionEgress, BastionLimitDetails, BastionSwitches, Busy, Disclosure, ErrorNotice, RouterLink, TextField, UsageMeter],
+  imports: [BastionEgress, BastionLimitDetails, Busy, Disclosure, ErrorNotice, RouterLink, TextField, UsageMeter],
   template: `
     <h3 [id]="headingId()" i18n="@@bastion.limits.heading">Limits</h3>
 
@@ -92,34 +90,6 @@ const MB = 1e6;
       <p class="hint warn line" data-testid="bastion-edge-warning">
         <span class="material-icons inline" aria-hidden="true">warning</span
         ><span i18n="@@bastion.limits.edge">The ingress of this Bastion refuses more than {{ edgeText(e) }} requests a second per address before these figures apply.</span>
-      </p>
-    }
-    @if (catalogueLost()) {
-      <p class="hint warn line" data-testid="bastion-catalogue-lost">
-        <span class="material-icons inline" aria-hidden="true">warning</span
-        ><span i18n="@@bastion.limits.catalogue-lost"
-          >After a restart while the connection to it is down, this Bastion's web interface shows nothing until the connection returns. A
-          bucket or persistent volumes keep it.</span
-        >
-      </p>
-    }
-    <!-- Why the main installation builds nothing for this web interface (R-BAS-104): in plain view, with what to do. -->
-    @if (catalogueStop(); as reason) {
-      <p class="hint warn line" data-testid="bastion-catalogue-stopped">
-        <span class="material-icons inline" aria-hidden="true">warning</span>
-        @if (reason === 'anonymous_requests_refused') {
-          <span i18n="@@bastion.limits.catalogue-refused"
-            >This Bastion's web interface shows nothing: <code translate="no">endpoints.default.auth.anonymous</code> is false, so the main
-            installation admits no request without a credential and nothing is public. Admit such requests there to show your public
-            repositories, or switch the web interface off.</span
-          >
-        } @else {
-          <span i18n="@@bastion.limits.catalogue-base-url"
-            >The main installation does not build this Bastion's web interface: the Bastion has not connected yet, or the address it reported
-            is not in <span class="with-stop"><code translate="no">server.additional_base_urls</code>.</span> Connect it, or add its address there and restart the main
-            installation: it is built within seconds of either.</span
-          >
-        }
       </p>
     }
     <quader-bastion-egress part="warnings" [bastion]="bastion()" (changed)="changed.emit()" />
@@ -200,7 +170,6 @@ const MB = 1e6;
     <quader-disclosure class="details" i18n-heading="@@bastion.details.heading" heading="Details" [level]="3" [(expanded)]="detailsOpen">
       <quader-bastion-limit-details [bastion]="bastion()" [canWrite]="canLimits()" (changed)="changed.emit()" />
       <quader-bastion-egress part="list" [bastion]="bastion()" (changed)="changed.emit()" />
-      <quader-bastion-switches [bastion]="bastion()" (changed)="changed.emit()" />
       @if (canReadRules()) {
         <p class="rules-link">
           <a [routerLink]="rulesLink()" i18n="@@bastion.limits.rules-link">Rules of this Bastion</a>
@@ -352,13 +321,6 @@ export class BastionLimits {
   /** Why the reported addresses are blocked, in words, each with its number (the closed list of R-LIM-045). */
   protected readonly reasons = computed(() => blockReasons(this.bastion(), this.now()));
   protected readonly edge = computed(() => edgeBelowFigures(this.bastion()));
-  /** The web interface is on and a replica said its catalogue does not survive a restart (W-35 B.2b). */
-  protected readonly catalogueLost = computed(() => this.bastion().switches.gui && this.bastion().contacts.some((c) => c.catalogueKept === false));
-  /** Why the builder builds nothing while the web interface is on, null while it builds or the web interface is off. */
-  protected readonly catalogueStop = computed(() => {
-    const line = catalogueLine(this.bastion());
-    return line?.kind === 'stopped' ? line.reason : null;
-  });
 
   private readonly cap = computed(() => this.bastion().limits.throughput.bytesPerSecond);
   protected readonly meterRatio = computed(() => {

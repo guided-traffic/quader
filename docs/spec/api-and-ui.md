@@ -10378,7 +10378,12 @@ The screen of the owner's decisions of 2026-11-26 on a Bastion (W-34; [bastion.m
 ([bastion.md](bastion.md#q-bas-323--a-bastion-is-configured-on-its-card-at-the-main-installation) Q-BAS-323). Simple by default, details on
 demand ([Q-UI-1480](#q-ui-1480--a-bastions-card-shows-the-preset-the-mode-and-the-throughput-everything-else-is-behind-details)).
 
-- **The plain path**, a section **Limits** on every card (R-BAS-007), after the card's actions and the handover's section:
+- **The web interface**, a section of its own in the card's plain view, after the handover's section and before **Limits**
+  ([Q-UI-1616](#q-ui-1616--a-bastions-web-interface-is-a-section-of-the-cards-plain-view-not-a-detail-of-its-limits)): W-35's switches
+  **Web interface** and **Documentation** with that package's sentences, the line of the last build or in its place why nothing is built,
+  and the warning of a catalogue a restart loses ([bastion.md](bastion.md) R-BAS-102, R-BAS-104).
+- **The plain path**, a section **Limits** on every card (R-BAS-007), after the card's actions, the handover's section and the web
+  interface's:
   - **Preset**: a segmented control **Internet**, **Partner network**, **Internal**, with one sentence under it for the chosen one
     ("Strict limits for callers from the internet; administrators too." / "The installation's own profiles for known partners." / "No
     limits, everything counted."), and **Custom** shown, not offered, once a kind rule or a flood figure differs. A change opens the dialog
@@ -10392,7 +10397,7 @@ demand ([Q-UI-1480](#q-ui-1480--a-bastions-card-shows-the-preset-the-mode-and-th
 - **Details** (a closed disclosure): the flood figures per address (anonymous, signed-in and pages: requests per second, burst, misses a
   minute; the failed-authentication timeout; the blocks; the exempt networks), the slots to the main installation, the anonymous ceiling,
   the throughput's anonymous share and GB per hour per class, the egress addresses (R-UI-243), and the link **Rules of this Bastion** to
-  R-UI-241. W-35's switches **Web interface** and **Documentation** stand in the same section with that package's sentences.
+  R-UI-241.
 - **The state, live** (R-UI-213's `live()`, from the replicas' reported status, R-LIM-045): per card one line "Cache 14.0 of 20.0 GB ·
   97 % hits · 9.0 GB protected · 41 MB/s from the main installation", the throughput against its cap where one is set as a meter (warning
   and danger colours, never green), and "4 callers limited now · 1 address blocked" linking to R-UI-241's **Blocks**. "No report in the
@@ -10406,7 +10411,8 @@ demand ([Q-UI-1480](#q-ui-1480--a-bastions-card-shows-the-preset-the-mode-and-th
   its answer (R-UI-216), and the field keeps the server's value.
 
 *Built (package E12, 2026-11-26)*, as the card's section `<quader-bastion-limits>`
-([bastion-limits.ts](../../web/src/app/features/bastions/bastion-limits.ts)) after the switch of the direct reads, in this order: the heading
+([bastion-limits.ts](../../web/src/app/features/bastions/bastion-limits.ts)) after the switch of the direct reads (*since B-1127h* after
+the section **Web interface**), in this order: the heading
 **Limits**; the state line, live with the list's read every minute (R-UI-213), summed over the replicas that reported in the last five
 minutes ([bastion-state.ts](../../web/src/app/features/bastions/bastion-state.ts),
 [Q-UI-1489](#q-ui-1489--the-state-line-takes-the-cache-once-adds-up-each-replicas-own-figures-and-counts-a-blocked-address-once); *since
@@ -10415,11 +10421,8 @@ as each report's `cache.shared` says, [Q-BAS-480](bastion.md#q-bas-480--a-replic
 usage overview's `<quader-usage-meter>`, so the data colour below 70 %, then warning and danger, never green) and "4 callers limited now ·
 1 address blocked" linking to `/admin/bastions/{name}/limits/blocks` for a holder of `limits:read`, and under it why, each reason of the
 closed list (`refusals`, `failed_auth`, `refused_requests`) in words with its number of addresses (`blockReasons`); the warnings in plain view, the edge
-warning ([Q-UI-1486](#q-ui-1486--the-edge-warning-stands-in-plain-view-not-under-the-flood-figures-in-details)), W-35's sentence of a
-catalogue a restart loses (while `gui` is on and a contact reported `catalogueKept: false`), *since W35-P9f* why the main installation
-builds nothing for the web interface while `gui` is on, with what to do (the registration's `catalogue.reason`,
-[bastion.md](bastion.md) R-BAS-104, [Q-BAS-497](bastion.md#q-bas-497--the-registration-carries-the-builders-last-outcome-and-the-card-says-a-stop-in-plain-view)),
-and R-UI-243's warnings; the preset (a
+warning ([Q-UI-1486](#q-ui-1486--the-edge-warning-stands-in-plain-view-not-under-the-flood-figures-in-details)) and R-UI-243's warnings;
+the preset (a
 segmented control of three pressed buttons, **Custom** a pressed segment that is no button), its dialog
 ([bastion-preset-dialog.ts](../../web/src/app/features/bastions/bastion-preset-dialog.ts), with the presets' table it reads from `GET /api/v1/bastions/presets`,
 [Q-UI-1485](#q-ui-1485--the-screen-holds-the-presets-table-to-name-what-a-preset-replaces)); the mode with R-UI-182's dialog
@@ -10429,12 +10432,21 @@ preview, H-2365), whose `401 reauthentication_required` stands in the dialog whi
 ([bastion-limit-details.ts](../../web/src/app/features/bastions/bastion-limit-details.ts): the flood figures in five groups, the exempt
 networks as one field, the slots, the anonymous ceiling, the throughput's share and GB an hour per class, one **Save changes**,
 [Q-UI-1487](#q-ui-1487--the-details-are-one-form-whose-refusal-keeps-what-was-typed-and-the-exempt-networks-are-one-field)), R-UI-243's
-list, `<quader-bastion-switches>` ([bastion-switches.ts](../../web/src/app/features/bastions/bastion-switches.ts), each switch with its
-sentence; **Documentation** says that it takes effect only with the web interface, and a line says so where it is on without it; *since
-W35-P9f* a second line under **Web interface**, which describes the switch with its sentence, says that a public remote repository shows
-every package and version the builds fetched through it ([manual](../manual/admin/bastion.md#what-becomes-public)); while the web interface is on a line says "Last built" with the time of the builder's last run, "Not built yet" before its
-first, or that the warning above says why it is not built) and the link **Rules of this Bastion**. The list reads again every few seconds
-while a web interface waits for its first build (R-UI-213), every minute otherwise. English and German.
+list and the link **Rules of this Bastion**. The list reads again every few seconds while a web interface waits for its first build
+(R-UI-213), every minute otherwise. English and German.
+
+The section **Web interface** is `<quader-bastion-switches>` ([bastion-switches.ts](../../web/src/app/features/bastions/bastion-switches.ts)),
+built by E12 in **Details** and *since 2026-11-27 (B-1127h,
+[Q-UI-1616](#q-ui-1616--a-bastions-web-interface-is-a-section-of-the-cards-plain-view-not-a-detail-of-its-limits))* the card's own
+section between the switch of the direct reads and **Limits** ([bastion-card.ts](../../web/src/app/features/bastions/bastion-card.ts)),
+under the heading **Web interface**, for a reader too: each switch with its sentence, or for a reader its state as a sentence (Q-UI-960);
+**Documentation** says that it takes effect only with the web interface, and a line says so where it is on without it; *since W35-P9f* a
+second line under **Web interface**, which describes the switch with its sentence, says that a public remote repository shows every package
+and version the builds fetched through it ([manual](../manual/admin/bastion.md#what-becomes-public)); while the web interface is on a line
+says "Last built" with the time of the builder's last run or "Not built yet" before its first, and in its place, *since W35-P9f*, why the
+main installation builds nothing, with what to do (the registration's `catalogue.reason`, [bastion.md](bastion.md) R-BAS-104,
+[Q-BAS-497](bastion.md#q-bas-497--the-registration-carries-the-builders-last-outcome-and-the-card-says-a-stop-in-plain-view)), in the
+warning colour; and W-35's sentence of a catalogue a restart loses (while `gui` is on and a contact reported `catalogueKept: false`).
 
 Acceptance criteria:
 
@@ -10446,9 +10458,12 @@ Acceptance criteria:
   field, the details' merge patch, both halves of the permission split and the switches' sentences. *Since W35-P9f* also
   "R-BAS-104 the card says what the main installation last built for the web interface, and why it builds nothing with what to do"
   (both reasons, built, not built yet, nothing with the web interface off), and the switch **Web interface** described by the line of a
-  public remote ("R-UI-240 R-BAS-093 endpoints:write alone …").
+  public remote ("R-UI-240 R-BAS-093 endpoints:write alone …"). *Since B-1127h* the first case also holds the section **Web interface**
+  between the direct reads and **Limits**, with its heading and its switch while **Details** is closed and nothing of it inside
+  **Details**; a reason of a stop stands in that section in place of the line of the last build, and none under **Limits**.
 - Rendered (rule 11): the card in both schemes, wide and narrow, with Internet, Custom and an Audit mode, the details open and closed;
-  since W35-P9f with both reasons of a stop and a built catalogue (`admin-bastions`, `admin-bastions-limits` in English and German).
+  since W35-P9f with both reasons of a stop and a built catalogue (`admin-bastions`, `admin-bastions-limits` in English and German);
+  since B-1127h with a registration that never made contact, its web interface off.
 
 ### R-UI-241 · A Bastion's limits page
 Priority: **MVP** · Covers: quader-only
@@ -29930,7 +29945,35 @@ Aufrufer".
 | (b) Everything on the card | | One place | A card of thirty fields per Bastion |
 | (c) Everything on a page of its own | The card links | A clean card | The one figure the owner named on the card is a click away |
 
-**Choice:** (a). **Applied in the spec:** R-UI-240, R-UI-241, R-UI-243.
+**Choice:** (a). **Applied in the spec:** R-UI-240, R-UI-241, R-UI-243. *Amended on 2026-11-27 by
+[Q-UI-1616](#q-ui-1616--a-bastions-web-interface-is-a-section-of-the-cards-plain-view-not-a-detail-of-its-limits):* the switches of
+W-35 are no longer behind **Details**; they are a section of the card's plain view.
+
+### Q-UI-1616 · A Bastion's web interface is a section of the card's plain view, not a detail of its limits
+
+Status: **Decided by the development agent on 2026-11-27** (B-1127h) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: told to switch a Bastion's web interface on, the owner asked: "Wo soll der Schalter sein?" The switches **Web interface** and
+**Documentation** stood at the end of the card's **Details**, after every flood figure and the list of addresses
+([Q-UI-1480](#q-ui-1480--a-bastions-card-shows-the-preset-the-mode-and-the-throughput-everything-else-is-behind-details)), while the
+switch **Direct reads from the object store** stood in plain view. Whether anonymous visitors from the internet see a read-only web
+interface is the card's main decision about what the internet sees, not a tuning detail (CLAUDE.md "simple by default, details on demand";
+the owner's Bastion principles, "read-only GUI … switchable from main").
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The section **Web interface** with both switches, their sentences, **Last built** and the refusal in the card's plain view, after **Direct reads from the object store** and before **Limits**, under its own heading; the warnings of the web interface (why nothing is built, a catalogue a restart loses) in that section, the reason of a stop in place of the line of the last build (chosen) | Two switches of the card side by side with the third | Found where the owner looked, without opening anything; every word about the web interface in one place; **Details** keeps only figures, addresses and the link to the rules | The plain view grows by a heading, two switches and their sentences |
+| (b) The switches stay in **Details**, which opens by itself while the web interface is off | — | The plain view stays as it was | A switch nobody finds while **Details** is closed, and a disclosure that opens by itself |
+| (c) Only **Web interface** in plain view, **Documentation** in **Details** | — | A smaller plain view | The two switches that decide what visitors read stand apart, and **Documentation** says it depends on a switch elsewhere |
+| (d) The switches under the card's actions, before the direct reads | — | The first thing on the card | Between the actions and the facts the card's sections lose their order: the direct reads concern what clients read, the web interface what visitors read, the limits both |
+
+**Choice:** (a). Who holds only read permission reads each state as a sentence under the same heading (Q-UI-960). The texts of the
+switches, their sentences and their warnings stay; the line "Not built: the warning above says why." is gone, since the warning now
+stands in its place. **Applied in the spec:** R-UI-240, [bastion.md](bastion.md) Q-BAS-497; code:
+[bastion-card.ts](../../web/src/app/features/bastions/bastion-card.ts),
+[bastion-switches.ts](../../web/src/app/features/bastions/bastion-switches.ts),
+[bastion-limits.ts](../../web/src/app/features/bastions/bastion-limits.ts).
 
 ### Q-UI-1481 · A preset is applied after a dialog that names what it replaces
 

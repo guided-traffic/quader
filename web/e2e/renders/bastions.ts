@@ -75,7 +75,7 @@ function token(id: string, description: string, hint: string, createdDays: numbe
  * longest name of the rule but two, on, with long ones: a pod name of 63 characters (the most Kubernetes allows), a base URL of 51, an
  * IPv6 address of 39, a token that expires in 20 days beside one of a year. The tables keep one form at a width whatever they hold
  * (Q-UI-959). The addresses each Bastion connects from (R-UI-243): `partners` lists none, `dmz-frankfurt-edge` the /64 of one replica
- * and not the IPv4 address of the other.
+ * and not the IPv4 address of the other. `dmz-hamburg` is registered and never contacted: no token, no replica, its web interface off.
  */
 function registrations(frankfurtOn: boolean): Json {
   return {
@@ -142,6 +142,23 @@ function registrations(frankfurtOn: boolean): Json {
           token('0192f0d1-1c2a-7c3e-8a51-6f7d2b9c4e41', 'partners 2026', 'qdr_bst_3kQ9', 165, 200),
         ],
         contacts: [contact('quader-bastion-7d9c5b8f6-p4r7t', '203.0.113.7', 'https://packages.example.com', 1)],
+      },
+      {
+        id: '0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a42',
+        name: 'dmz-hamburg',
+        description: '',
+        enabled: true,
+        declared: null,
+        // Registered a moment ago and never contacted: no token, no replica, no report, the web interface off, nothing built (Q-UI-1616:
+        // its section in plain view all the same).
+        switches: { handover: false, gui: false, docs: false },
+        catalogue: null,
+        limits: limits(),
+        status: [],
+        egress: [],
+        createdAt: at(-0.01),
+        tokens: [],
+        contacts: [],
       },
     ],
   };
@@ -301,7 +318,7 @@ async function answerLimits(page: Page): Promise<void> {
   );
   await page.reload();
   await page.waitForLoadState('networkidle');
-  await expect(page.locator('main quader-bastion-card')).toHaveCount(2);
+  await expect(page.locator('main quader-bastion-card')).toHaveCount(3);
 }
 
 /**
@@ -367,7 +384,7 @@ async function answer(page: Page, frankfurtOn: boolean, connections: readonly Js
   });
   await page.reload();
   await page.waitForLoadState('networkidle');
-  await expect(page.locator('main quader-bastion-card')).toHaveCount(2);
+  await expect(page.locator('main quader-bastion-card')).toHaveCount(3);
 }
 
 /**

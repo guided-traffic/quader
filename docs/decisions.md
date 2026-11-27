@@ -13426,10 +13426,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-820 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+821 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 820 questions</summary>
+<summary>Q-UI: 821 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -14253,6 +14253,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1613](spec/api-and-ui.md#q-ui-1613--the-findings-columns-are-as-wide-as-their-cells) | The findings' columns are as wide as their cells | Decided by the development agent on 2026-11-27 | (a) The least widths of what the cells hold: When 11 rem, Connection 5.5 (a longer id widens it), Blob 10 (it takes the rest), Bytes 4.5, Found by 11.5, State 9 rem: 1,080 px | — |
 | [Q-UI-1614](spec/api-and-ui.md#q-ui-1614--a-claim-of-an-idle-checkout-is-taken-over) | A claim of an idle checkout is taken over | Decided by the development agent on 2026-11-27 | (a) A claim whose checkout has no process (working directory or command line in it, read with `lsof`, else `/proc`), no changed file outside `node_modules`, `.angular`, `.out` and `.bin`, and no use of the claim (each `ui_instance` of its owner touches it) for `UI_CLAIM_IDLE_MINUTES` (default 60) is taken over by the next claimer when no instance is free, or when named, after its containers and volumes are removed | — |
 | [Q-UI-1615](spec/api-and-ui.md#q-ui-1615--a-value-and-the-punctuation-after-it-stay-on-one-line) | A value and the punctuation after it stay on one line | Decided by the development agent on 2026-11-27 (batch H, from the render of batch F) | (a), on the set-up page's two sentences that end with `QUADER_TOKEN` (`setup.cred.line-env`, `setup.token.read-ci`); since batch I at every other place where a marked value stands before a mark, in English or only in German ([H-2438](spec/api-and-ui.md#h-2438--a-marked-value-before-a-punctuation-mark-can-leave-the-mark-at-the-start-of-a-line), closed). | — |
+| [Q-UI-1616](spec/api-and-ui.md#q-ui-1616--a-bastions-web-interface-is-a-section-of-the-cards-plain-view-not-a-detail-of-its-limits) | A Bastion's web interface is a section of the card's plain view, not a detail of its limits | Decided by the development agent on 2026-11-27 | (a) The section **Web interface** with both switches, their sentences, **Last built** and the refusal in the card's plain view, after **Direct reads from the object store** and before **Limits**, under its own heading; the warnings of the web interface (why nothing is built, a catalogue a restart loses) in that section, the reason of a stop in place of the line of the last build | — |
 
 </details>
 
