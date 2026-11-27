@@ -53520,7 +53520,7 @@
       <notes>
         <note category="location">src/app/features/vulnerabilities/malware-finds.html:149</note>
         <note category="location">src/app/features/vulnerabilities/malware-release-dialog.ts:46</note>
-        <note category="location">src/app/shared/malware/malware-mark.ts:345</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:365</note>
         <note category="location">src/app/shared/malware/malware-status.ts:79</note>
       </notes>
       <segment>
@@ -58104,7 +58104,7 @@
     </unit>
     <unit id="malware.mark.age.current">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:58</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:65</note>
       </notes>
       <segment>
         <source>under today&apos;s signatures</source>
@@ -58113,7 +58113,7 @@
     </unit>
     <unit id="malware.mark.age.older">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:60</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:67</note>
       </notes>
       <segment>
         <source>under older signatures</source>
@@ -58122,7 +58122,7 @@
     </unit>
     <unit id="malware.mark.age.due">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:62</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:69</note>
       </notes>
       <segment>
         <source>recheck due</source>
@@ -58131,7 +58131,7 @@
     </unit>
     <unit id="malware.mark.age.overdue">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:64</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:71</note>
       </notes>
       <segment>
         <source>recheck overdue</source>
@@ -58140,7 +58140,7 @@
     </unit>
     <unit id="malware.mark.released">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:80</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:87</note>
       </notes>
       <segment>
         <source>Released</source>
@@ -58149,7 +58149,7 @@
     </unit>
     <unit id="malware.mark.malware">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:82</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:89</note>
       </notes>
       <segment>
         <source>Malware</source>
@@ -58158,7 +58158,7 @@
     </unit>
     <unit id="malware.mark.not-checkable">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:84</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:91</note>
       </notes>
       <segment>
         <source>Not checkable</source>
@@ -58167,7 +58167,7 @@
     </unit>
     <unit id="malware.mark.unchecked">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:86</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:93</note>
       </notes>
       <segment>
         <source>Unchecked</source>
@@ -58176,7 +58176,7 @@
     </unit>
     <unit id="malware.mark.phrase.no-scanner">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:88</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:95</note>
       </notes>
       <segment>
         <source>no scanner is connected</source>
@@ -58185,7 +58185,7 @@
     </unit>
     <unit id="malware.mark.phrase.no-database">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:91</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:98</note>
       </notes>
       <segment>
         <source>no signatures yet</source>
@@ -58194,7 +58194,7 @@
     </unit>
     <unit id="malware.mark.checked">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:96</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:103</note>
       </notes>
       <segment>
         <source>Checked</source>
@@ -58203,7 +58203,7 @@
     </unit>
     <unit id="malware.mark.name">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:113</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:120</note>
       </notes>
       <segment>
         <source>Malware scan: <ph id="0" equiv="word" disp="look.word"/>. Details</source>
@@ -58212,7 +58212,7 @@
     </unit>
     <unit id="malware.mark.name-phrase">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:114</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:121</note>
       </notes>
       <segment>
         <source>Malware scan: <ph id="0" equiv="word" disp="look.word"/>, <ph id="1" equiv="phrase" disp="look.phrase"/>. Details</source>
@@ -58221,7 +58221,7 @@
     </unit>
     <unit id="malware.col.help.package">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:138</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:145</note>
       </notes>
       <segment>
         <source>Whether the files of the newest version were checked for malware, and how current the check is. Open the word for the details.</source>
@@ -58230,7 +58230,7 @@
     </unit>
     <unit id="malware.col.help.version">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:140</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:147</note>
       </notes>
       <segment>
         <source>Whether the files of the version were checked for malware, and how current the check is. Open the word for the details.</source>
@@ -58239,7 +58239,7 @@
     </unit>
     <unit id="malware.col.help.file">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:141</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:148</note>
       </notes>
       <segment>
         <source>Whether the file was checked for malware, and how current the check is. Open the word for the details.</source>
@@ -58248,7 +58248,7 @@
     </unit>
     <unit id="malware.col">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:142</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:149</note>
       </notes>
       <segment>
         <source>Malware scan</source>
@@ -58257,7 +58257,7 @@
     </unit>
     <unit id="malware.details.newest">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:195,196</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:202,203</note>
       </notes>
       <segment>
         <source>Newest version <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ newest() }}"/></pc></source>
@@ -58266,7 +58266,7 @@
     </unit>
     <unit id="malware.details.parts">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:199,201</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:206,208</note>
       </notes>
       <segment>
         <source>{VAR_PLURAL, plural, other {<ph id="0" equiv="INTERPOLATION"/> parts}}</source>
@@ -58275,7 +58275,7 @@
     </unit>
     <unit id="malware.details.files">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:201,202</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:208,209</note>
       </notes>
       <segment>
         <source>{VAR_PLURAL, plural, other {<ph id="0" equiv="INTERPOLATION"/> files}}</source>
@@ -58284,7 +58284,7 @@
     </unit>
     <unit id="malware.details.current-count">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:203,205</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:210,212</note>
       </notes>
       <segment>
         <source>{VAR_PLURAL, plural, =0 {none under today&apos;s signatures} =1 {1 of them under today&apos;s signatures} other {<ph id="0" equiv="INTERPOLATION"/> of them under today&apos;s signatures}}</source>
@@ -58293,7 +58293,7 @@
     </unit>
     <unit id="malware.details.decided-by">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:206,207</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:213,214</note>
       </notes>
       <segment>
         <source>decided by <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ d }}"/></pc></source>
@@ -58302,7 +58302,7 @@
     </unit>
     <unit id="malware.details.platforms-stored">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:213,214</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:220,221</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="INTERPOLATION" disp="{{ p.stored }}"/> of <ph id="1" equiv="INTERPOLATION_1" disp="{{ p.total }}"/> platforms stored. The others were never fetched, so never served and never checked.</source>
@@ -58311,7 +58311,7 @@
     </unit>
     <unit id="malware.details.parts-not-stored">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:215,220</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:222,227</note>
       </notes>
       <segment>
         <source>{VAR_PLURAL, plural, =1 {1 part is not stored: never fetched, so never served and never checked.} other {<ph id="0" equiv="INTERPOLATION"/> parts are not stored: never fetched, so never served and never checked.}}</source>
@@ -58320,7 +58320,7 @@
     </unit>
     <unit id="malware.details.released">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:222,223</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:229,230</note>
       </notes>
       <segment>
         <source>Released by <ph id="0" equiv="INTERPOLATION" disp="{{ releasedBy() }}"/></source>
@@ -58329,7 +58329,7 @@
     </unit>
     <unit id="malware.details.released-found">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:226</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:233</note>
       </notes>
       <segment>
         <source>Malware found:</source>
@@ -58338,7 +58338,7 @@
     </unit>
     <unit id="malware.details.released-not-checkable">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:229,230</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:236,237</note>
       </notes>
       <segment>
         <source>Could not be checked:</source>
@@ -58347,7 +58347,7 @@
     </unit>
     <unit id="malware.details.clean">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:234,236</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:241,243</note>
         <note category="location">src/app/shared/malware/malware-status.ts:48,50</note>
       </notes>
       <segment>
@@ -58357,7 +58357,7 @@
     </unit>
     <unit id="malware.details.infected">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:237</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:244</note>
       </notes>
       <segment>
         <source>Malware found:</source>
@@ -58366,7 +58366,7 @@
     </unit>
     <unit id="malware.in-part">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:239</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:246</note>
         <note category="location">src/app/shared/malware/malware-status.ts:55</note>
       </notes>
       <segment>
@@ -58376,7 +58376,7 @@
     </unit>
     <unit id="malware.details.not-checkable">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:243,244</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:250,251</note>
       </notes>
       <segment>
         <source>Could not be checked:</source>
@@ -58385,7 +58385,7 @@
     </unit>
     <unit id="malware.details.unchecked">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:246,247</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:253,254</note>
       </notes>
       <segment>
         <source>Not checked yet:</source>
@@ -58394,7 +58394,7 @@
     </unit>
     <unit id="malware.details.refused">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:252,254</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:259,261</note>
       </notes>
       <segment>
         <source>Downloads are refused here.</source>
@@ -58403,7 +58403,7 @@
     </unit>
     <unit id="malware.details.when">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:256,257</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:263,264</note>
       </notes>
       <segment>
         <source>Checked</source>
@@ -58412,7 +58412,7 @@
     </unit>
     <unit id="malware.details.scanner">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:260,262</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:267,269</note>
       </notes>
       <segment>
         <source>Scanner</source>
@@ -58421,7 +58421,7 @@
     </unit>
     <unit id="malware.details.then">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:269,271</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:276,278</note>
       </notes>
       <segment>
         <source>Signatures then</source>
@@ -58430,8 +58430,8 @@
     </unit>
     <unit id="malware.details.daily">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:272,273</note>
-        <note category="location">src/app/shared/malware/malware-mark.ts:286,287</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:279,280</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:293,294</note>
       </notes>
       <segment>
         <source>daily <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ d }}"/></pc></source>
@@ -58440,8 +58440,8 @@
     </unit>
     <unit id="malware.details.of">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:277,278</note>
-        <note category="location">src/app/shared/malware/malware-mark.ts:291,292</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:284,285</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:298,299</note>
       </notes>
       <segment>
         <source>of <pc id="0" equivStart="START_TAG_TIME" equivEnd="CLOSE_TAG_TIME" type="other" dispStart="&lt;time class=&quot;nowrap&quot; [attr.datetime]=&quot;at&quot;&gt;" dispEnd="&lt;/time&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ at | time: &apos;date&apos; }}"/></pc></source>
@@ -58450,7 +58450,7 @@
     </unit>
     <unit id="malware.details.today">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:283,285</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:290,292</note>
       </notes>
       <segment>
         <source>Signatures today</source>
@@ -58459,7 +58459,7 @@
     </unit>
     <unit id="malware.details.fetched">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:292,293</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:299,300</note>
       </notes>
       <segment>
         <source>, fetched <pc id="0" equivStart="START_TAG_TIME" equivEnd="CLOSE_TAG_TIME" type="other" dispStart="&lt;time class=&quot;nowrap&quot; [attr.datetime]=&quot;at&quot;&gt;" dispEnd="&lt;/time&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ at | time }}"/></pc></source>
@@ -58468,7 +58468,7 @@
     </unit>
     <unit id="malware.details.stale">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:297,299</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:304,306</note>
       </notes>
       <segment>
         <source>No newer signatures have arrived for a while.</source>
@@ -58477,7 +58477,7 @@
     </unit>
     <unit id="malware.details.current">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:303,305</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:310,312</note>
       </notes>
       <segment>
         <source>How current</source>
@@ -58486,7 +58486,7 @@
     </unit>
     <unit id="malware.details.age.current">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:307,309</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:314,316</note>
       </notes>
       <segment>
         <source>Under today&apos;s signatures</source>
@@ -58495,7 +58495,7 @@
     </unit>
     <unit id="malware.details.age.older-days">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:311,313</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:318,320</note>
       </notes>
       <segment>
         <source>{VAR_PLURAL, plural, =1 {Under signatures 1 day older} other {Under signatures <ph id="0" equiv="INTERPOLATION"/> days older}}</source>
@@ -58504,7 +58504,7 @@
     </unit>
     <unit id="malware.details.age.older">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:313,315</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:320,322</note>
       </notes>
       <segment>
         <source>Under older signatures</source>
@@ -58513,7 +58513,7 @@
     </unit>
     <unit id="malware.details.age.due">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:317,319</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:324,326</note>
       </notes>
       <segment>
         <source>Recheck due</source>
@@ -58522,7 +58522,7 @@
     </unit>
     <unit id="malware.details.age.overdue">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:320,323</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:327,330</note>
       </notes>
       <segment>
         <source>Recheck overdue</source>
@@ -58531,7 +58531,7 @@
     </unit>
     <unit id="malware.details.next">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:324,326</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:333,335</note>
       </notes>
       <segment>
         <source>Next check</source>
@@ -58540,7 +58540,7 @@
     </unit>
     <unit id="malware.details.next.now">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:327,328</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:336,337</note>
       </notes>
       <segment>
         <source>Due now</source>
@@ -58549,7 +58549,7 @@
     </unit>
     <unit id="malware.details.next.days">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:330,332</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:339,340</note>
       </notes>
       <segment>
         <source>{VAR_PLURAL, plural, =1 {In about a day, sooner the more it is downloaded} other {In about <ph id="0" equiv="INTERPOLATION"/> days, sooner the more it is downloaded}}</source>
@@ -58558,16 +58558,34 @@
     </unit>
     <unit id="malware.details.next.newer">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:333,335</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:342,344</note>
       </notes>
       <segment>
         <source>When newer signatures arrive</source>
         <target>Wenn neuere Signaturen eintreffen</target>
       </segment>
     </unit>
+    <unit id="malware.details.elsewhere.newest">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:352,354</note>
+      </notes>
+      <segment>
+        <source>The page of the newest version says when it was checked and under which signatures.</source>
+        <target>Wann und unter welchen Signaturen geprüft wurde, steht auf der Seite der neuesten Version.</target>
+      </segment>
+    </unit>
+    <unit id="malware.details.elsewhere.version">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-mark.ts:354,358</note>
+      </notes>
+      <segment>
+        <source>The version&apos;s page says when it was checked and under which signatures.</source>
+        <target>Wann und unter welchen Signaturen geprüft wurde, steht auf der Seite der Version.</target>
+      </segment>
+    </unit>
     <unit id="malware.details.tech.then">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:348,349</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:368,369</note>
       </notes>
       <segment>
         <source>Set then</source>
@@ -58576,7 +58594,7 @@
     </unit>
     <unit id="malware.details.tech.today">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:352,353</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:372,373</note>
       </notes>
       <segment>
         <source>Set today</source>
@@ -58585,7 +58603,7 @@
     </unit>
     <unit id="malware.details.tech.replica">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:356,357</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:376,377</note>
       </notes>
       <segment>
         <source>Replica</source>
@@ -58594,7 +58612,7 @@
     </unit>
     <unit id="malware.details.tech.digest">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:360,361</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:380,381</note>
       </notes>
       <segment>
         <source>Digest</source>
@@ -58603,7 +58621,7 @@
     </unit>
     <unit id="malware.details.nothing-stored">
       <notes>
-        <note category="location">src/app/shared/malware/malware-mark.ts:511</note>
+        <note category="location">src/app/shared/malware/malware-mark.ts:555</note>
       </notes>
       <segment>
         <source>nothing of it is stored, so nothing of it was served.</source>

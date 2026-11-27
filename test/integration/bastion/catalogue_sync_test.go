@@ -72,6 +72,7 @@ func TestR_BAS_109_TheBastionMirrorsTheCatalogueAndServesOnWhileTheLinkIsCut(t *
 		t.Fatalf("the states: bucket %+v, volume %+v", st, v.srv.Catalogue().State())
 	}
 	walkWebInterface(t, b, entry.ID)
+	markOfAVersion(t, w, b, entry.ID)
 	crawlWebInterface(t, w, b)
 
 	// The link cut: both serve on with the time of their last confirmation.
@@ -161,6 +162,63 @@ func walkWebInterface(t *testing.T, r *replica, id string) {
 		}
 	}
 	downloadFromVersionPage(t, r, versionBody)
+}
+
+// markOfAVersion reads what the malware mark of a public version says at the Bastion (malware-scanning.md R-MAL-042, api-and-ui.md
+// R-UI-258): with a set in use and the version's tarball checked with it (both written by SQL, as the job and the import write them; the
+// job is not part of this suite), the next run of the builder carries today's set into the catalogue's state, the Bastion answers it in
+// the main installation's shape without the time of its import and the engine, and the version's page reads Checked with the
+// signatures then from the version's state: the set in use, so under today's signatures. Bytes.
+func markOfAVersion(t *testing.T, w *world, r *replica, id string) {
+	t.Helper()
+	start := time.Now()
+	defer func() {
+		t.Logf("the malware mark at the Bastion took %s", time.Since(start).Round(100*time.Millisecond))
+	}()
+	const set = "main-63.daily-28201.bytecode-339"
+	w.st.Exec(`UPDATE malware_database SET version = $1, built_at = date_trunc('second', now()) - interval '6 hours',
+		imported_at = now() - interval '5 hours', updated_at = now()`, set)
+	sha := w.st.Text(`SELECT encode(i.blob_sha256, 'hex') FROM items i WHERE i.kind = 'file' AND i.path LIKE '%plain-lib-1.0.0.tgz' AND i.trashed_at IS NULL`)
+	w.st.Exec(`INSERT INTO malware_scan (sha256, state, db_version, db_built_at, holder_repo_id, size, due, scanned_at, scanner, engine_version,
+		                          scanner_instance, rank_base)
+		VALUES (decode($1, 'hex'), 'clean', $2, (SELECT built_at FROM malware_database), 0, 1, false, now(), 'malware-scanner-clamav', '1.5.5',
+		        'quader-malware-scanner-clamav-0', (SELECT built_at FROM malware_database))
+		ON CONFLICT (sha256) DO UPDATE SET state = 'clean', db_version = EXCLUDED.db_version, db_built_at = EXCLUDED.db_built_at, due = false,
+		        scanned_at = EXCLUDED.scanned_at, scanner = EXCLUDED.scanner, engine_version = EXCLUDED.engine_version,
+		        scanner_instance = EXCLUDED.scanner_instance, rank_base = EXCLUDED.rank_base`, sha, set)
+	w.mustAPI("POST", "/api/v1/system/tasks/bastion-catalogue/run", 202, nil)
+
+	var today struct {
+		Version    *string `json:"version"`
+		BuiltAt    *string `json:"builtAt"`
+		ImportedAt *string `json:"importedAt"`
+		Engine     *string `json:"engine"`
+		Scanner    string  `json:"scanner"`
+		Cycle      float64 `json:"cycleDays"`
+	}
+	testenv.WaitFor(t, "today's signatures at the Bastion", 30*time.Second, func() bool {
+		a := r.get(t, "/ui/data/v1/malware/signatures", "")
+		return a.Status == http.StatusOK && json.Unmarshal(a.Body, &today) == nil && today.Version != nil && *today.Version == set
+	})
+	if today.BuiltAt == nil || today.ImportedAt != nil || today.Engine != nil || today.Scanner != "malware-scanner-clamav" || today.Cycle != 30 {
+		t.Errorf("today's signatures at the Bastion: %+v", today)
+	}
+	version := "/ui/data/v1/packages/" + id + "/versions/1.0.0"
+	var state struct {
+		Times map[string]map[string]any `json:"times"`
+	}
+	testenv.WaitFor(t, "the version's check at the Bastion", 30*time.Second, func() bool {
+		a := r.get(t, version+"/state", "")
+		return a.Status == http.StatusOK && json.Unmarshal(a.Body, &state) == nil && state.Times["version"]["/malware/database"] == set
+	})
+	if state.Times["version"]["/malware/databaseBuiltAt"] != *today.BuiltAt || state.Times["version"]["/malware/scannedAt"] == nil {
+		t.Errorf("the version's check: %v, today's set built at %s", state.Times["version"], *today.BuiltAt)
+	}
+	v := r.get(t, version, "")
+	if v.Status != http.StatusOK || !bytes.Contains(v.Body, []byte(`"malware":{`)) || !bytes.Contains(v.Body, []byte(`"state":"clean"`)) ||
+		bytes.Contains(v.Body, []byte(`"engine"`)) || bytes.Contains(v.Body, []byte("quader-malware-scanner-clamav-0")) {
+		t.Errorf("the version at the Bastion: %d %.400s", v.Status, v.Body)
+	}
 }
 
 // crawlWebInterface reads the Bastion as a crawler that runs no script does (R-BAS-121, R-BAS-122, W-35's B.11): robots.txt names the

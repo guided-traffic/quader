@@ -1,15 +1,18 @@
 package catalogue_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/guided-traffic/quader/internal/bastion/iface"
 	"github.com/guided-traffic/quader/internal/bastionmain/catalogue"
 	"github.com/guided-traffic/quader/internal/bastionmain/catalogue/cataloguetest"
 )
@@ -37,10 +40,12 @@ type fakeAPI struct {
 	gone bool
 	// latest is the package's latest version, which a publish moves.
 	latest string
+	// daily is the daily of the signatures in use (R-MAL-040), 0 while the scanning is off.
+	daily int
 }
 
 func newFake() *fakeAPI {
-	return &fakeAPI{now: "2026-11-26T10:00:00Z", bases: map[string]bool{}, reads: map[string]int{}, latest: "1.0.0"}
+	return &fakeAPI{now: "2026-11-26T10:00:00Z", bases: map[string]bool{}, reads: map[string]int{}, latest: "1.0.0", daily: 28201}
 }
 
 func (f *fakeAPI) Get(_ context.Context, base, target string) (catalogue.Answer, error) {
@@ -54,6 +59,8 @@ func (f *fakeAPI) Get(_ context.Context, base, target string) (catalogue.Answer,
 	f.reads[u.Path]++
 	body, ok := f.body(base, u)
 	switch {
+	case (u.Path == "/api/v1/malware/signatures" || u.Path == "/api/v1/vulnerabilities/database") && f.daily == 0:
+		return catalogue.Answer{Status: http.StatusServiceUnavailable, ContentType: "application/problem+json", Body: []byte(`{"status":503}`)}, nil
 	case !ok:
 		return catalogue.Answer{Status: http.StatusNotFound, ContentType: "application/problem+json", Body: []byte(`{"status":404}`)}, nil
 	case strings.HasPrefix(u.Path, "/api/v1/signatures/objects/"):
@@ -65,6 +72,14 @@ func (f *fakeAPI) Get(_ context.Context, base, target string) (catalogue.Answer,
 func (f *fakeAPI) body(base string, u *url.URL) (string, bool) {
 	v := "/api/v1/packages/" + pkgID + "/versions/1.0.0"
 	switch u.Path {
+	case "/api/v1/malware/signatures":
+		d := strconv.Itoa(f.daily)
+		return `{"version":"main-63.daily-` + d + `.bytecode-339","daily":` + d + `,"builtAt":"2026-11-26T07:58:00Z",
+			"importedAt":"2026-11-26T09:14:05Z","stale":false,"scanner":"malware-scanner-clamav","engine":"1.5.5","cycleDays":30,
+			"overdueAfterDays":7}`, true
+	case "/api/v1/vulnerabilities/database":
+		return `{"scanner":"vuln-scanner-trivy","digest":"sha256:5a0c` + strconv.Itoa(f.daily) + `","builtAt":"2026-11-26T06:12:40Z",
+			"syncedAt":"2026-11-26T06:23:05Z","stale":false}`, true
 	case "/api/v1/formats":
 		return `{"formats":[{"name":"npm","wiki":true,"clients":[{"id":"npm"}],"upstreamPresets":[{"url":"https://registry.npmjs.org"}]},
 			{"name":"generic","patternSubject":"path","clients":[{"id":"curl"}],"upstreamPresets":[]}]}`, true
@@ -312,6 +327,55 @@ func TestR_BAS_105_TheReconciliationRendersOnlyWhatChanged(t *testing.T) {
 	ch, err := store.Changes(context.Background(), regID, seq, 1000)
 	if err != nil || ch.Validate(seq) != nil {
 		t.Fatalf("the change list after the deletion: %+v %v", ch, err)
+	}
+}
+
+// TestR_MAL_042_TheStateCarriesTodaysSignaturesAndNothingOfTheInstallation: the catalogue's state document carries the set in use,
+// its daily, its build time, the unit that checks and the two bounds of a check's class, never the engine, the time of the import or
+// whether the set is stale (W-36's B.15); a run that finds the same set writes nothing, a new set writes the state alone with the time
+// of the last run that changed a document, and the scanning switched off leaves the member null.
+func TestR_MAL_042_TheStateCarriesTodaysSignaturesAndNothingOfTheInstallation(t *testing.T) {
+	store, api := cataloguetest.New(), newFake()
+	store.Packages[catalogue.PackageKey{Format: "npm", Name: "left-pad"}] = "f1"
+	b := builder(store, api)
+	run(t, b, reg(true, true))
+	read := func() iface.CatalogueStateDocument {
+		t.Helper()
+		var st iface.CatalogueStateDocument
+		if err := iface.DecodeStrict(bytes.NewReader(store.Raw(regID)["state"]), &st); err != nil {
+			t.Fatalf("the state: %v %s", err, store.Raw(regID)["state"])
+		}
+		return st
+	}
+	st := read()
+	if m := st.Malware; m == nil || m.Version == nil || *m.Version != "main-63.daily-28201.bytecode-339" || m.Daily == nil || *m.Daily != 28201 ||
+		m.BuiltAt == nil || *m.BuiltAt != "2026-11-26T07:58:00Z" || m.Scanner != "malware-scanner-clamav" || m.CycleDays != 30 || m.OverdueAfterDays != 7 {
+		t.Fatalf("the state's signatures: %+v", st.Malware)
+	}
+	// Today's vulnerability database beside it, in the same raise (R-VULN-052): the unit, the digest, the build time; not when it was
+	// confirmed, not whether that is stale.
+	if v := st.Vulnerabilities; v == nil || v.Scanner != "vuln-scanner-trivy" || v.Digest == nil || *v.Digest != "sha256:5a0c28201" ||
+		v.BuiltAt == nil || *v.BuiltAt != "2026-11-26T06:12:40Z" {
+		t.Fatalf("the state's vulnerability database: %+v", st.Vulnerabilities)
+	}
+	for _, bad := range []string{"engine", "importedAt", "stale", "1.5.5", "syncedAt"} {
+		if bytes.Contains(store.Raw(regID)["state"], []byte(bad)) {
+			t.Errorf("the state names %q: %s", bad, store.Raw(regID)["state"])
+		}
+	}
+	builtAt, seq := st.BuiltAt, store.Seq(regID)
+	if rep := run(t, b, reg(true, true)); rep.Documents != 0 || store.Seq(regID) != seq {
+		t.Fatalf("the same set wrote %+v", rep)
+	}
+	api.set(func(f *fakeAPI) { f.daily = 28202 })
+	rep := run(t, b, reg(true, true))
+	if st := read(); rep.Rendered != 0 || rep.Documents != 1 || *st.Malware.Daily != 28202 || st.BuiltAt != builtAt {
+		t.Fatalf("a new set: %+v, the state %+v", rep, st)
+	}
+	api.set(func(f *fakeAPI) { f.daily = 0 })
+	run(t, b, reg(true, true))
+	if st := read(); st.Malware != nil || st.Vulnerabilities != nil {
+		t.Fatalf("the scanning off: %+v %+v", st.Malware, st.Vulnerabilities)
 	}
 }
 

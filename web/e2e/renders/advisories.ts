@@ -115,7 +115,19 @@ export const publicPackages: readonly VendorVersion[] = [
     readme:
       '# yaml-lines\n\nReads a YAML stream line by line and keeps the line numbers of every value.\n\n## Install\n\n```shell\nnpm install yaml-lines\n```\n\n## Use\n\n| Option | Default | What it does |\n|---|---|---|\n| `strict` | `true` | Refuses duplicate keys. |\n| `maxDepth` | `64` | Stops at nested values deeper than this. |\n',
   },
+  // A public package whose versions hold every malware state a Bastion's visitor meets (R-UI-258; malware.ts writes the verdicts).
+  ...['1.0.0', '1.1.0', '1.2.0', '1.3.0', '1.4.0'].map((version) => ({
+    project: 'platform',
+    repo: 'npm-open-source',
+    name: 'checksum-stream',
+    version,
+    counts: {},
+    grade: 'S',
+  })),
 ];
+
+/** The public package whose versions carry the malware states of the Bastion's renders (R-UI-258). */
+export const publicMalwarePackage = { format: 'npm', name: 'checksum-stream', versions: ['1.0.0', '1.1.0', '1.2.0', '1.3.0', '1.4.0'] } as const;
 
 /** The public package with a README (R-UI-232). */
 export const publicReadmePackage = { format: 'npm', name: 'yaml-lines', version: '1.2.0' } as const;

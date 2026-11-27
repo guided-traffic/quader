@@ -1,4 +1,4 @@
-interface version 10
+interface version 11
 const APIPrefix = "/api/"
 const APIv1Prefix = "/api/v1/"
 const BearerScheme = "Bearer"
@@ -252,6 +252,13 @@ type CatalogueFrame: field Path string `json:"path"`
 type CatalogueFrame: field SHA256 string `json:"sha256"`
 type CatalogueFrame: field Size int64 `json:"size"`
 type CatalogueKind string
+type CatalogueMalware struct
+type CatalogueMalware: field BuiltAt *string `json:"builtAt"`
+type CatalogueMalware: field CycleDays float64 `json:"cycleDays"`
+type CatalogueMalware: field Daily *int64 `json:"daily"`
+type CatalogueMalware: field OverdueAfterDays float64 `json:"overdueAfterDays"`
+type CatalogueMalware: field Scanner string `json:"scanner"`
+type CatalogueMalware: field Version *string `json:"version"`
 type CataloguePath struct
 type CataloguePath: field Client string
 type CataloguePath: field EntryName string
@@ -278,6 +285,14 @@ type CatalogueRepository: field Class string `json:"class"`
 type CatalogueRepository: field Format string `json:"format"`
 type CatalogueRepository: field Name string `json:"name"`
 type CatalogueRepository: field Wiki bool `json:"wiki"`
+type CatalogueStateDocument struct
+type CatalogueStateDocument: field BuiltAt string `json:"builtAt"`
+type CatalogueStateDocument: field Malware *CatalogueMalware `json:"malware"`
+type CatalogueStateDocument: field Vulnerabilities *CatalogueVulnerabilityDatabase `json:"vulnerabilities"`
+type CatalogueVulnerabilityDatabase struct
+type CatalogueVulnerabilityDatabase: field BuiltAt *string `json:"builtAt"`
+type CatalogueVulnerabilityDatabase: field Digest *string `json:"digest"`
+type CatalogueVulnerabilityDatabase: field Scanner string `json:"scanner"`
 type Ceiling struct
 type Ceiling: field Burst *int64 `json:"burst"`
 type Ceiling: field RequestsPerHour *int64 `json:"requestsPerHour"`

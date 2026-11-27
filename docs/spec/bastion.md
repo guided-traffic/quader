@@ -608,7 +608,10 @@ The Bastion interface has a version of its own, separate from the release number
   header `Quader-Bastion-For-Head` of a `GET` that answers a `HEAD` and the status's `cache.shared`
   ([the wire of interface version 9](#the-interface-version-9-a-head-is-no-download-and-a-replica-says-whose-cache-it-reports), built on
   2026-11-26 by W34-E19); 10, the catalogue's document of a package's open findings per version, the public set's projects with their
-  names and the configuration's `display` with the installation's form of a time (R-BAS-128, built on 2026-11-27 by W35-P9e). The version
+  names and the configuration's `display` with the installation's form of a time (R-BAS-128, built on 2026-11-27 by W35-P9e); 11, the
+  catalogue's state document with today's signatures of the malware scan and today's vulnerability database of the image scanning
+  ([malware-scanning.md](malware-scanning.md) R-MAL-042, [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-052,
+  [Q-BAS-494](#q-bas-494--the-state-documents-shape-is-part-of-the-interface-version-11), built on 2026-11-27 by W-36's P8). The version
   is `iface.InterfaceVersion`; the comment beside it names the same list.
 
 Acceptance criteria:
@@ -6300,7 +6303,7 @@ A document of the catalogue is named by a path of this grammar (`iface.Catalogue
 | `packages/<id>/versions/<v>/docs/entries/<type>/<name>` | an entry of the docs tree |
 | `packages/<id>/versions/<v>/docs/files/<file...>` | a file of the docs tree |
 | `packages/<id>/versions/<v>/state` | the times of the version's documents (built, checked, scanned) |
-| `state` | the times of the catalogue as a whole |
+| `state` | the catalogue's state (`iface.CatalogueStateDocument`): the time of the last run that changed a document, today's signatures of the malware scan ([malware-scanning.md](malware-scanning.md) R-MAL-042) and today's vulnerability database of the image scanning ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-052) |
 | `setup/<project>/<repo>/<client>[/<id>/<v>]` | the client set-up of a repository, or of a package's version (by the package's catalogue ID) |
 | `files/<project>/<repo>/folder[/<path...>]` | a folder's listing of a generic repository (the root without a path) |
 | `files/<project>/<repo>/file/<path...>` | a generic file's description |
@@ -6328,7 +6331,7 @@ A document of the catalogue is named by a path of this grammar (`iface.Catalogue
 - **Nor the database or the analyser's version of a grade** ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-051,
   Q-VULN-296; W-36's P7): a grade's `database` moves into the version's `state` with its `checkedAt`, as a scanned manifest's does with
   its `scannedAt`, since it changes with every rescan under a new database; `scannerVersion` is dropped from every document, as a malware
-  state's `engine` is ([H-2407](#h-2407--a-bastions-grade-says-nothing-of-when-and-against-which-database-it-was-checked)).
+  state's `engine` is ([H-2407](#h-2407--a-bastions-grade-in-a-list-says-nothing-of-when-and-against-which-database-it-was-checked)).
 
 *Built on 2026-11-26 (P5 with E7):* the grammar as pure functions. *Built on 2026-11-26 (P6):* the builder's documents and its duty
 above: every time member goes into the version's state by JSON pointer (R-BAS-106, Q-BAS-359; `TestR_BAS_103_NoDocumentCarriesATimeOfItsCheck`).
@@ -6366,7 +6369,8 @@ The priority is the one of R-BAS-101 to R-BAS-103.
   documentation and every file (`docs` on), the set-up of every client of the format for the version in its first public repository, and
   its state; per public repository the set-up of every client; per generic repository (a format whose items are paths) every folder's
   listing, every file's description and its set-up per client; the signature objects the signatures name; `signing/trusted-root.json` and
-  `signing/chain.pem` where the installation has a signing identity; and the catalogue's `state`. A set-up is rendered with
+  `signing/chain.pem` where the installation has a signing identity; and the catalogue's `state` with today's malware signatures
+  ([malware-scanning.md](malware-scanning.md) R-MAL-042). A set-up is rendered with
   `credentials=none` and `bastion=<name>`: the Bastion's addresses, no login line, no publish snippet. The public set of the routes is the
   projects and repositories the anonymous caller lists, with the wiki public where the repository's wiki level is `public`, and each
   project with the display name and the description the anonymous caller reads (R-BAS-128).
@@ -6396,8 +6400,10 @@ Priority: **P1** · Covers: quader-only
   the changes that arrive during a run wait as the one job behind it. A replica that claims jobs (`worker`, `all`) runs it; it renders the
   packages of a registration with four workers in parallel.
 - **Triggers.** A run starts 5 s after a change that can change a catalogue (the debounce: one publish arrives as several signals and change
-  areas): the signals `metadata_changed`, `malware_verdict` and `signature_verdict`, and the change areas `repo_config`, `authz` and
-  `vuln_data`. A replica enqueues only while some registration's web interface is on or some registration still holds a catalogue, so an
+  areas): the signals `metadata_changed`, `malware_verdict` and `signature_verdict`, and the change areas `repo_config`, `authz`,
+  `vuln_data`, `malware_database` and `malware_settings` (a new signature set in use and a change of the rescan settings, which change
+  the catalogue's state, [Q-BAS-491](#q-bas-491--a-new-set-and-a-change-of-the-rescan-settings-start-the-builder-and-only-the-state-changes)).
+  A replica enqueues only while some registration's web interface is on or some registration still holds a catalogue, so an
   installation without one queues nothing ([Q-BAS-361](#q-bas-361--every-change-starts-the-same-run-after-5-s-and-the-hourly-run-is-the-reconciliation)).
 - **The reconciliation.** The task `bastion-catalogue` runs the same job every hour (`41 * * * *`, `maintenance.tasks.bastion-catalogue`,
   R-OPS-019), so a change a trigger missed stays at most an hour. A run renders only what changed: a unit (a package, a generic repository)
@@ -6810,6 +6816,8 @@ to (R-BAS-107), in the main installation's JSON shapes, so that the shared views
 | `packages/lookup?format&name` | the public package of the format by its name, else by its key ([Q-BAS-395](#q-bas-395--the-lookup-finds-a-package-by-its-name-then-by-its-key)), or `404` |
 | `packages/<id>/versions?cursor&limit` | a page of the package's versions in the main installation's order; the application sorts, searches and groups them in the browser, as the main installation's view does ([Q-BAS-396](#q-bas-396--the-versions-are-paged-in-the-main-installations-order-and-sorted-in-the-browser)) |
 | `search/documentation?q&project&cursor&limit` | the documentation of the public packages' newest versions searched across packages, in the shape of `GET /api/v1/search/documentation` (R-BAS-125; added by W-35's P11) |
+| `malware/signatures` | today's signatures of the malware scan from the catalogue's state, in the shape of `GET /api/v1/malware/signatures` with `importedAt` and `engine` null and `stale` false, or `404` while the state holds no set ([malware-scanning.md](malware-scanning.md) R-MAL-042, [Q-BAS-492](#q-bas-492--the-bastion-answers-todays-signatures-in-the-main-installations-shape-from-its-catalogue); added by W-36's P8) |
+| `vulnerabilities/database` | today's vulnerability database of the image scanning from the catalogue's state, in the shape of `GET /api/v1/vulnerabilities/database` with `syncedAt` null and `stale` false, or `404` while the state holds none ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-052, Q-BAS-492; added by W-36's P8) |
 | every other path of the grammar (R-BAS-103) | the document as the builder stored it, by `Reader.Document`: a package, its open findings per version, a version, its README, findings, signatures, contents, documentation, a set-up, a generic folder or file, a signature object, `signing/trusted-root.json` and `signing/chain.pem` (the last three as attachments); an index page and the catalogue's own `state` are not answered |
 
 - **One spelling.** A path is read segment by segment and written in the grammar's one spelling before it is looked up, so a browser that
@@ -15058,6 +15066,93 @@ Context: R-BAS-093 moves `handover` into the configuration's `switches`; Q-BAS-3
 **Choice:** (a). **Applied in the spec:** R-BAS-071, R-BAS-093; code: [bastion_registrations_api.go](../../internal/api/v1/bastion_registrations_api.go)
 (`bastionPatchAllowed`).
 
+### Q-BAS-490 · Today's signatures travel in the catalogue's state, without the import, the engine and staleness
+
+Status: **Decided by the development agent** on 2026-11-27 (W-36's B.15, package P8) — selected from the options below; the owner reviews
+it at the walkthrough.
+
+Context: a malware mark's details compare the signatures a check was made with to today's (R-MAL-040); a Bastion's pages never ask the
+main installation (R-BAS-118), and its catalogue keeps nothing that changes with a new set in a public document (Q-MAL-133).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The catalogue's state document carries the set in use, its daily, its build time, the unit and the bounds `cycleDays` and `overdueAfterDays`, once per registration; the builder reads them as the anonymous caller reads `GET /api/v1/malware/signatures` (chosen) | One small member of a document that changes anyway | One document changes at a new set, never a package's; what a visitor needs to judge a check | — |
+| (b) Today's set in every version's state | — | — | Every public version's state changes at every new set |
+| (c) A document of its own (`malware/signatures`) | A new kind | — | A new kind of the grammar for six members of a document that exists |
+
+**Choice:** (a). The time of the set's import ("wann haben wir … heruntergeladen") is the operator's question, not the visitor's; the
+engine is a fact of the main installation's infrastructure and a help to someone shaping content against one engine; `stale` is the
+installation's `malware.database.stale_after`. All three stay out (W-36's B.15). In the same raise, at the coordinator's request after
+W-36's P7, the state carries today's vulnerability database of the image scanning beside the set (`vulnerabilities`: the unit, the digest,
+the build time, read as the anonymous caller reads `GET /api/v1/vulnerabilities/database`), so that an image's grade on a version's page
+at a Bastion compares its database then with today's; its `syncedAt` and `stale` stay out by the same rule
+([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-052). **Applied in the spec:** R-BAS-103,
+[malware-scanning.md](malware-scanning.md) R-MAL-042, [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-052.
+
+### Q-BAS-491 · A new set and a change of the rescan settings start the builder, and only the state changes
+
+Status: **Decided by the development agent** on 2026-11-27 (W-36's package P8) — selected from the options below; the owner reviews it at
+the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The trigger hears the change areas `malware_database` and `malware_settings`; a run that changed no document keeps the state's time and writes the state only when the set or the bounds changed (chosen) | A new set reaches the Bastions within the debounce and a poll | One document written; no unit rendered, as no fingerprint changed | A run of the builder per new set (one to two a day) |
+| (b) The hourly reconciliation alone | — | Nothing to wire | A Bastion compares with yesterday's set for up to an hour |
+
+**Choice:** (a). The state's time stays "the last run that changed a document": a new set is no change of a package. A new vulnerability
+database of the image scanning raises no change area the trigger could hear (only `vuln_data` of the advisory data does): it reaches the
+state at the builder's next run, at the latest the hourly reconciliation. **Applied in the spec:** R-BAS-105,
+[malware-scanning.md](malware-scanning.md) R-MAL-042.
+
+### Q-BAS-492 · The Bastion answers today's signatures in the main installation's shape, from its catalogue
+
+Status: **Decided by the development agent** on 2026-11-27 (W-36's package P8) — selected from the options below; the owner reviews it at
+the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `/ui/data/v1/malware/signatures` in the shape of `GET /api/v1/malware/signatures`, `importedAt` and `engine` null, `stale` false, read from the catalogue's state; `404` while it holds no set (chosen) | The data path's rule: the main installation's shapes below `/ui/data/v1/` | The shared mark and its one read of today's set work unchanged (R-UI-255's `MalwareSignaturesStore`) | `stale` false says nothing: a Bastion knows no `stale_after`; a visitor reads the set's date |
+| (b) A member of the Bastion's own `state` | One read less | — | A shape of the Bastion's own that the shared store would have to know; the state is read by every page, the set only by a page with a mark |
+| (c) The catalogue's `state` document itself | — | — | Its time is the reader's, and the address is not answered (R-BAS-112) |
+
+**Choice:** (a), and by the same rule `/ui/data/v1/vulnerabilities/database` in the shape of `GET /api/v1/vulnerabilities/database`,
+`syncedAt` null and `stale` false, `404` while the state holds no database (R-VULN-052). **Applied in the spec:** R-BAS-118,
+[malware-scanning.md](malware-scanning.md) R-MAL-042; code: [data.go](../../internal/bastion/gui/data.go).
+
+### Q-BAS-493 · A generic file at a Bastion carries no time of its check
+
+Status: **Decided by the development agent** on 2026-11-27 (W-36's package P8) — selected from the options below; the owner reviews it at
+the walkthrough.
+
+Context: the strip takes a check's times out of every document (R-BAS-103); a version keeps them in its state, a generic repository's
+documents (a folder's listing, a file's description) have no state, so the times are dropped there.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A generic file's mark at a Bastion says the word in its state's tone and the scanner, without when, the set then or a class (chosen) | As built | No kind more | A visitor of a generic file learns that it was checked, not when |
+| (b) A state per generic file | Same as a version's page | — | A new kind of the grammar and one document more per file |
+
+**Choice:** (a); the gap stays [H-2329](../security/bastion.md#h-2329--a-generic-files-malware-verdict-at-the-bastion-shows-no-date-of-its-database),
+which a state for a repository's files would close. **Applied in the spec:** [malware-scanning.md](malware-scanning.md) R-MAL-042,
+Q-MAL-139.
+
+### Q-BAS-494 · The state document's shape is part of the interface, version 11
+
+Status: **Decided by the development agent** on 2026-11-27 (W-36's plan J.4, package P8) — selected from the options below; the owner
+reviews it at the walkthrough.
+
+Context: the plan left open whether the catalogue's state document's shape is in the interface's surface
+(`internal/bastion/iface/testdata/interface.txt`). It was not: the builder wrote it as a map and the Bastion never read it. Since P8 the
+Bastion reads its member `malware`, so the shape is an agreement between the two sides.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `iface.CatalogueStateDocument` with `iface.CatalogueMalware` and `iface.CatalogueVulnerabilityDatabase`, written by the builder and read by the Bastion, in the surface; the version rises to 11 (chosen) | The shape is guarded as every other body | A change of a member fails `TestR_BAS_009_TheInterfaceChangesOnlyWithItsVersion`; a Bastion of another version never misreads it | A raise; before the first stable release it costs nothing |
+| (b) The shape outside the interface, as the documents of the main installation's answers are | No raise | — | A shape only the two sides read, unguarded |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-009's list of raises, R-BAS-103; code: [catalogue.go](../../internal/bastion/iface/catalogue.go),
+[version.go](../../internal/bastion/iface/version.go), the operations' `x-quader-bastion-interface: 11`.
+
 ## What this does not cover
 
 ### H-2304 · A Bastion serves its imprint and privacy notice only with its web interface
@@ -16068,15 +16163,19 @@ person's under the preset Internet. *Today:* live as described; since E9a the fi
 sets them on the registration, and since E9b each caller with a credential is also charged its own budget at the Bastion's place, which
 does not lift the per-address figures.
 
-### H-2407 · A Bastion's grade says nothing of when and against which database it was checked
+### H-2407 · A Bastion's grade in a list says nothing of when and against which database it was checked
 
-Stage: the catalogue's documents of a version's and a package's vulnerabilities (R-BAS-103, Q-BAS-403) and the Bastion's grade in the shared
-views. Subject: a visitor who wants to judge how current an image's grade is, not a confidentiality or integrity property.
+Stage: the catalogue's documents of a package's grades per version (`packages/<id>/vulnerabilities`, Q-BAS-403) and of the index, and the
+Bastion's grade in the shared lists. Subject: a visitor who wants to judge how current an image's grade is, not a confidentiality or
+integrity property.
 
-Live on every Bastion since W-36's P7. The main installation's grade names when an image was scanned, by `vuln-scanner-trivy` and against
-which database, and its screens compare that database with today's (R-VULN-051, R-VULN-052). The catalogue keeps the time of a check and the
-database out of its documents, so that a rescan under a new database changes none of them (Q-VULN-296), and it carries no database of today;
-the Bastion's grade therefore opens its details with the rule and the counts only. What would close it: the database then in the version's
-state document (the strip puts it there already for a version's report, by JSON pointer; a package's grades per version keep it nowhere)
-and today's database once per registration in the catalogue's state document, which is an interface change of the Bastion's wire; the
-analyser's version stays out, as the malware scan's engine does (B.15 of W-36's plan).
+Live on every Bastion, narrowed by W-36's P8. The main installation's grade names when an image was scanned, by `vuln-scanner-trivy` and
+against which database, and its screens compare that database with today's (R-VULN-051, R-VULN-052). The catalogue keeps the time of a
+check and the database out of its documents, so that a rescan under a new database changes none of them (Q-VULN-296). On a version's page
+the Bastion puts them back from the version's state and compares them with today's database, which the catalogue's state carries since
+interface version 11 ([Q-BAS-490](#q-bas-490--todays-signatures-travel-in-the-catalogues-state-without-the-import-the-engine-and-staleness)):
+its details say when, by which unit, the database then and today and how current. A list's grade has no state to read them from: the
+versions table's and a package list's grade open with the rule and the counts only, as a list's malware mark names no class
+([malware-scanning.md](malware-scanning.md) Q-MAL-139). The analyser's version and the time the installation fetched today's database stay
+out everywhere (B.15 of W-36's plan). What would close it: the check's time and database of every version in a state of the package (a new
+kind of the catalogue's grammar), which a list then reads once.

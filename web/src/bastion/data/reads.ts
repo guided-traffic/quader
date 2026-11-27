@@ -30,6 +30,10 @@ import {
 } from '../../app/api/vulnerabilities-api';
 import { VulnerabilityReads } from '../../app/api/vulnerability-reads';
 import { LegalApi, LegalPages } from '../../app/api/legal-api';
+import type { MalwareSignatures } from '../../app/api/malware-api';
+import { MALWARE_SIGNATURES_READ } from '../../app/core/malware-signatures';
+import type { VulnerabilityDatabase } from '../../app/api/vulnerabilities-api';
+import { VULNERABILITY_DATABASE_READ } from '../../app/core/vulnerability-database';
 import { FormatDescriptor } from '../../app/api/repositories-api';
 import { FormatCatalog } from '../../app/core/format-names';
 import { SIGNED_IN } from '../../app/core/signed-in';
@@ -330,9 +334,29 @@ export class BastionSystemClients extends SystemClients {
 }
 
 /**
+ * Today's signatures of the malware scan at the Bastion (R-UI-258, malware-scanning.md R-MAL-042): what the catalogue's state carries of
+ * the main installation's set in use and the bounds of a check's class, in the main installation's shape, without the time of its
+ * import and the engine. The marks of every page share it (`MalwareSignaturesStore`), as the main installation's do.
+ */
+function bastionMalwareSignatures(): () => Promise<MalwareSignatures> {
+  const data = inject(BastionData);
+  return () => data.get<MalwareSignatures>('malware/signatures');
+}
+
+/**
+ * Today's vulnerability database of the image scanning at the Bastion (R-UI-258, vulnerability-scanning.md R-VULN-052): the unit, the
+ * digest and the build time the catalogue's state carries, in the main installation's shape, without when the installation last
+ * confirmed it. The grades of an image share it (`VulnerabilityDatabaseStore`), so their details say the database then and today.
+ */
+function bastionVulnerabilityDatabase(): () => Promise<VulnerabilityDatabase> {
+  const data = inject(BastionData);
+  return () => data.get<VulnerabilityDatabase>('vulnerabilities/database');
+}
+
+/**
  * The reads of the Bastion's application, bound to the catalogue (R-UI-228): the views' abstract reads, the legal pages, the format
- * catalogue, the system repositories' switch, and a reader who is never signed in. A panel of commands leads to the Bastion's own page
- * Set up client (bastion.md R-BAS-129), so `SETUP_PAGES` keeps its default.
+ * catalogue, the system repositories' switch, today's malware signatures, and a reader who is never signed in. A panel of commands leads
+ * to the Bastion's own page Set up client (bastion.md R-BAS-129), so `SETUP_PAGES` keeps its default.
  */
 export function provideBastionReads(): Provider[] {
   return [
@@ -344,6 +368,8 @@ export function provideBastionReads(): Provider[] {
     { provide: LegalApi, useClass: BastionLegalApi },
     { provide: FormatCatalog, useClass: BastionFormatCatalog },
     { provide: SystemClients, useClass: BastionSystemClients },
+    { provide: MALWARE_SIGNATURES_READ, useFactory: bastionMalwareSignatures },
+    { provide: VULNERABILITY_DATABASE_READ, useFactory: bastionVulnerabilityDatabase },
     { provide: SIGNED_IN, useValue: signal(false).asReadonly() },
   ];
 }

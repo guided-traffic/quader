@@ -1,5 +1,7 @@
 import { Page, Route, expect, request } from '@playwright/test';
-import { publicGradedPackage, publicReadmePackage } from './advisories';
+import { publicGradedPackage, publicMalwarePackage, publicReadmePackage } from './advisories';
+import { markedVersion } from './malware-marks';
+import { bastionGradeDetails } from './grade-details';
 import { docsDeb } from './debdocs';
 import { factsNugetReadme } from './facts';
 import { bastionEdge, locale } from './paths';
@@ -118,6 +120,41 @@ async function* setupSteps(page: Page): AsyncGenerator<string> {
 
 const notReadyAnswer = [{ match: /^GET \/ui\/data\/v1\/state answered 503$/, why: 'the walk answers the state as a replica without a catalogue does' }];
 
+/** The public package whose versions carry every malware state (malware.ts, R-UI-258). */
+const checksums = { format: publicMalwarePackage.format, name: publicMalwarePackage.name } as const;
+
+const markDetails = (page: Page) => page.locator('.cdk-overlay-container [data-testid="malware-details"]');
+
+/**
+ * A package's versions at the Bastion with their marks (R-UI-258): the table as it opens, then the details of a checked version (the word
+ * without a class and the page that tells when, Q-UI-1541), of the infected one and of the released one, each opened by its tap.
+ */
+async function* markedVersions(page: Page): AsyncGenerator<string> {
+  await expect(page.locator('main [data-testid="malware-mark"]').first()).toBeVisible();
+  yield '';
+  for (const [name, state] of [
+    ['checked', 'checked'],
+    ['malware', 'malware'],
+    ['released', 'released'],
+  ] as const) {
+    await page.locator(`main [data-testid="malware-mark"][data-state="${state}"]`).first().click();
+    await expect(markDetails(page)).toBeVisible();
+    yield name;
+    await page.keyboard.press('Escape');
+    await expect(markDetails(page)).toBeHidden();
+  }
+}
+
+/** A version's header at the Bastion with its mark, then its details opened by a tap: the class computed from the dates (Q-UI-1540). */
+async function* markedHead(page: Page): AsyncGenerator<string> {
+  const head = page.locator('main .facts-malware [data-testid="malware-mark"]');
+  await expect(head).toBeVisible();
+  yield '';
+  await head.click();
+  await expect(markDetails(page)).toBeVisible();
+  yield 'details';
+}
+
 /** Every page of the Bastion's web interface the renders hold (R-UI-230), each as the anonymous visitor, in the German pass too. */
 export const bastionScreens: readonly Screen[] = [
   { id: 'bastion-start', path: `${B}/`, kinds: ['anonymous'], de: true },
@@ -181,6 +218,18 @@ export const bastionScreens: readonly Screen[] = [
   { id: 'bastion-time-iso', path: `${P}/packages`, kinds: ['anonymous'], walk: isoTime, de: true },
   { id: 'bastion-not-ready', path: `${B}/`, kinds: ['anonymous'], walk: notReady, expected: notReadyAnswer, de: true },
   { id: 'bastion-not-found', path: `${B}/projects/${otherProject}/nothing-here`, kinds: ['anonymous'], de: true },
+  // The malware mark at the Bastion (R-UI-258): a package's versions with their marks and their details; the newest version's header,
+  // details and Files tab under today's signatures; a version under older signatures, an overdue one, an infected and a released one; and
+  // a remote image's tag of which one platform is stored, with its parts.
+  { id: 'bastion-malware-versions', path: `${pkg(checksums)}/-/versions`, kinds: ['anonymous'], walk: markedVersions, de: true },
+  { id: 'bastion-malware-current', path: ver(checksums, '1.4.0'), kinds: ['anonymous'], expected: lookups, walk: markedVersion, de: true },
+  { id: 'bastion-malware-older', path: ver(checksums, '1.3.0'), kinds: ['anonymous'], expected: lookups, walk: markedHead, de: true },
+  { id: 'bastion-malware-overdue', path: ver(checksums, '1.2.0'), kinds: ['anonymous'], expected: lookups, walk: markedHead, de: true },
+  { id: 'bastion-malware-infected', path: ver(checksums, '1.1.0'), kinds: ['anonymous'], expected: lookups, walk: markedHead, de: true },
+  { id: 'bastion-malware-released', path: ver(checksums, '1.0.0'), kinds: ['anonymous'], expected: lookups, walk: markedHead, de: true },
+  { id: 'bastion-malware-image', path: ver(image, remoteImage.partial), kinds: ['anonymous'], walk: markedVersion, de: true },
+  // An image's grade at the Bastion (R-UI-258, R-VULN-052): scanned under a database six days older than today's, its details opened.
+  { id: 'bastion-grade-details-image', path: ver(image, remoteImage.single), kinds: ['anonymous'], walk: bastionGradeDetails, de: true },
 ];
 
 /** The state a job ended in, after at most five minutes. */
@@ -205,6 +254,7 @@ const shown: readonly { readonly format: string; readonly name: string }[] = [
   docsDeb,
   image,
   collection,
+  { format: publicMalwarePackage.format, name: publicMalwarePackage.name },
 ];
 
 /**

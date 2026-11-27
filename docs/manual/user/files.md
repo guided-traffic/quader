@@ -60,6 +60,14 @@ them. They say:
 - under **Technical details**: the whole names of both signature sets, the scanner's replica (for a signed-in user of the installation),
   the scanner's own name of what tripped and the file's SHA-256.
 
+**At a Bastion.** The pages of a Bastion's web interface show the same word at the same places, and its details say what a visitor can
+judge: what the scan found, when it was checked, the scanner, the signatures then and today, each with its date, and how current the
+check is. They name no ClamAV version, no replica, no next check and not when the installation fetched today's signatures. The colour
+follows the signatures' dates alone: a new check is due once today's signatures are the installation's rescan cycle newer (30 days unless
+an administrator changed it) and overdue a week after that (or as configured), whatever the downloads. In a list the word stands without
+that colour, and its details say which page tells when it was checked: the version's page, for a package its newest version's. A file of
+a generic repository shows the word and the scanner only.
+
 **Downloads are refused.** after the state says that the file cannot be downloaded from this repository now; the page then offers no
 **Download**, and a version's **Files** tab none in the file's row. The download address stays: a client that asks gets the refusal and
 its reason. What to do then is in

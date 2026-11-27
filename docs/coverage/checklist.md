@@ -15,8 +15,8 @@ rendered from it ([checklist.md there](https://github.com/guided-traffic/quader/
 requirement lists the feature in its `Covers:` line. *open*: no requirement does. For entries with priority
 *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,404 spec requirements:
-810 cover catalog features, 594 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,406 spec requirements:
+812 cover catalog features, 594 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -1309,7 +1309,7 @@ Catalog page: [security-scanning-and-curation.md](../features/security-scanning-
 | SEC-046 | File-name exclusion from indexing | Later | open | – |
 | SEC-047 | Scan status | MVP | specified | [R-MAL-002](../spec/malware-scanning.md), [R-VULN-011](../spec/vulnerability-scanning.md), [R-VULN-012](../spec/vulnerability-scanning.md), [R-VULN-037](../spec/vulnerability-scanning.md) |
 | SEC-048 | Continuous re-evaluation | MVP | specified | [R-MAL-009](../spec/malware-scanning.md), [R-MAL-037](../spec/malware-scanning.md), [R-VULN-011](../spec/vulnerability-scanning.md) |
-| SEC-049 | Scan results view | MVP | specified | [R-UI-255](../spec/api-and-ui.md), [R-MAL-024](../spec/malware-scanning.md), [R-MAL-039](../spec/malware-scanning.md), [R-MAL-025](../spec/malware-scanning.md), [R-VULN-012](../spec/vulnerability-scanning.md), [R-VULN-020](../spec/vulnerability-scanning.md), [R-VULN-022](../spec/vulnerability-scanning.md), [R-VULN-023](../spec/vulnerability-scanning.md), [R-VULN-037](../spec/vulnerability-scanning.md) |
+| SEC-049 | Scan results view | MVP | specified | [R-UI-255](../spec/api-and-ui.md), [R-UI-258](../spec/api-and-ui.md), [R-MAL-024](../spec/malware-scanning.md), [R-MAL-039](../spec/malware-scanning.md), [R-MAL-042](../spec/malware-scanning.md), [R-MAL-025](../spec/malware-scanning.md), [R-VULN-012](../spec/vulnerability-scanning.md), [R-VULN-020](../spec/vulnerability-scanning.md), [R-VULN-022](../spec/vulnerability-scanning.md), [R-VULN-023](../spec/vulnerability-scanning.md), [R-VULN-037](../spec/vulnerability-scanning.md) |
 | SEC-050 | Scan policy model | Later | open | – |
 | SEC-051 | Security rule criteria | Later | open | – |
 | SEC-052 | License rule criteria | Later | open | – |

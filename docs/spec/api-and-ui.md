@@ -11014,8 +11014,7 @@ es heute von diesem Scanner gibt? Welche Version hat der Stand heute und wann ha
   A list shows the column while its answer carries the member, which it does while the scanning is on (Q-MAL-130); the ClamAV
   definitions, a `.deb`'s files and an upstream's search hits carry none (R-MAL-001, nothing stored).
 - **Plain users** see the word and its details; there is nothing to set (CLAUDE.md, "simple by default").
-- **The Bastion's application** shows no column and no mark in its lists, its version header and its image parts until W-36's P8
-  builds its mark ([Q-UI-1518](#q-ui-1518--the-bastions-lists-show-no-mark-until-its-own-is-built)).
+- **The Bastion's application** shows the same mark at the same places, with what a visitor can judge (R-UI-258).
 
 *Built on 2026-11-27 (W-36 P4):* the mark and its words ([malware-mark.ts](../../web/src/app/shared/malware/malware-mark.ts)), today's
 signatures ([malware-signatures.ts](../../web/src/app/core/malware-signatures.ts)), the file's fact
@@ -11064,6 +11063,53 @@ Acceptance criteria:
   focus opens it at once and Escape closes it with the focus back; a pointer's focus does not open it, its tap does and keeps it after
   the pointer leaves, a press inside the card keeps it, a second tap and a tap outside close it; the focus moving elsewhere closes it.
 - Not verified locally: a tap on a real phone; the renders emulate it with a click.
+
+### R-UI-258 · The Bastion's pages show the malware mark
+Priority: **P1** · Covers: SEC-049
+
+The owner, 2026-11-26: the Bastion's web interface shows anonymous visitors the published images and what was found in them "um Vertrauen
+in die ausgelieferten Images zu schaffen", and "Ich will pro Artefakt direkt erkennen, ob es untersucht wurde und virenfrei war". A visitor
+sees the main installation's word and the details a visitor can judge, nothing of the installation (W-36's B.15,
+[malware-scanning.md](malware-scanning.md) R-MAL-042).
+
+- **The same mark at the same places** (R-UI-255): the column **Malware scan** of a project's packages and of a package's versions or image
+  tags, a version's header beside its grade, its **Files** tab, an image's parts, a folder's files and a file's page. The shared views show
+  it as they do at the main installation, since the Bastion's application binds the read of today's signatures to its own data
+  (`/ui/data/v1/malware/signatures`, [bastion/data/reads.ts](../../web/src/bastion/data/reads.ts)); its bundle still holds no client of the
+  management API (R-UI-228).
+- **How current a check is** ([Q-UI-1540](#q-ui-1540--the-mark-classes-a-check-itself-where-its-member-carries-no-class)): where a member
+  carries no class, as every copy at a Bastion does (Q-MAL-133), the mark computes it from the check's set's build time, today's and the
+  bounds ([Q-MAL-138](malware-scanning.md#q-mal-138--a-bastion-classes-a-check-by-the-dates-of-the-signatures-alone),
+  `ageBySignatures` of [malware-age.ts](../../web/src/app/shared/malware/malware-age.ts)), in R-UI-255's tones and glyphs. A version's page
+  carries the check's times from the version's state (Q-UI-1451) and is classed; a list's copy carries none and its mark stands without a
+  class, its details naming the page that says when it was checked and under which signatures
+  ([Q-UI-1541](#q-ui-1541--a-lists-mark-at-a-bastion-says-which-page-tells-when-it-was-checked),
+  [Q-MAL-139](malware-scanning.md#q-mal-139--a-list-at-a-bastion-names-no-class-the-versions-page-does)).
+- **The details leave out what the copy lacks** ([Q-UI-1542](#q-ui-1542--the-details-at-a-bastion-leave-out-what-its-copy-lacks)): no
+  ClamAV version, no replica, no next check, no "fetched" of today's set and no count of parts under today's signatures; they keep the
+  verdict, when it was checked, the scanner, the signatures then and today with their dates, how current, the parts not stored and the
+  deciding part on a version's page.
+- **An image's grade the same way** (R-UI-091, [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-051, R-VULN-052): the
+  Bastion's application binds the read of today's vulnerability database to `/ui/data/v1/vulnerabilities/database`, so a version's page
+  says when the image was scanned, by `vuln-scanner-trivy`, the database then and today with their dates and how current; no Trivy version
+  and no "fetched". A list's grade has the rule and the counts only (H-2407).
+- **Every time** is the installation's form (R-UI-250, bastion.md R-BAS-128).
+
+*Built on 2026-11-27 (W-36 P8):* the binding ([reads.ts](../../web/src/bastion/data/reads.ts)), the class
+([malware-age.ts](../../web/src/app/shared/malware/malware-age.ts)), the mark's handling of a copy
+([malware-mark.ts](../../web/src/app/shared/malware/malware-mark.ts)). English and German.
+
+Acceptance criteria:
+
+- Vitest ([malware.spec.ts](../../web/src/bastion/malware.spec.ts), six cases, about 0.2 s): today's signatures are the Bastion's own read;
+  the class by the dates (current, older, due at the cycle, overdue after its bound, a `too_large` verdict never due, none without a set);
+  a version's page in each class with its facts and without the engine, the replica or a next check; a list's mark without a class, with
+  the page that tells and for a package its newest version's, malware and a release in their words; an image of which one platform is
+  stored; a version read through the catalogue carries its check from the version's state.
+- Renders against the profile's Bastion ([bastion-gui.ts](../../web/e2e/renders/bastion-gui.ts),
+  [Q-UI-1543](#q-ui-1543--the-bastions-marks-are-rendered-on-the-profiles-public-artifacts)), looked at and never committed: a package's
+  versions with marks, a version's header and its Files tab, an image's parts with a platform not stored, and the details open under
+  today's signatures, older, overdue, malware and released; both schemes, 390, 1,024 and 1,440 px, English and German.
 
 ### R-UI-262 · Admin area › Settings › Storage is one page of the stored content
 Priority: **P1** · Covers: quader-only
@@ -30799,8 +30845,8 @@ platform's config and layers are not known, so the count is not one of platforms
 
 ### Q-UI-1518 · The Bastion's lists show no mark until its own is built
 
-Status: **Decided by the development agent on 2026-11-27** — selected from the options below; the owner reviews it at the walkthrough.
-R-UI-255; W-36's P8 builds the Bastion's mark (B.15).
+Status: **Superseded by R-UI-258** (W-36's P8, 2026-11-27): the Bastion's application shows the mark at every place. Decided by the
+development agent on 2026-11-27. R-UI-255; W-36's P8 builds the Bastion's mark (B.15).
 
 Context: the Bastion's application reuses the package table, the folder view and the version's page; its catalogue keeps the word but not
 what a new set changes (Q-MAL-133), and it has no `GET /api/v1/malware/signatures`.
@@ -30838,7 +30884,8 @@ walkthrough. R-UI-091, R-UI-213, [vulnerability-scanning.md](vulnerability-scann
 | (a) A store (`VulnerabilityDatabaseStore`) that an image's grade naming a database attaches to: the first reads `GET /api/v1/vulnerabilities/database`, the store reads again every 60 s while one is shown and the window is seen; a screen of packages reads nothing (chosen) | As the malware marks' today's signatures (Q-UI-1515) | One request for a hundred grades; none where no grade names a database | A store more |
 | (b) A read when a card opens | | No read before it is wanted | The card's lines arrive after it opened, a load in a card (R-UI-217) |
 
-**Choice:** (a). The Bastion's application binds no read: its cards leave today's database out (H-2407). **Applied in the spec:** R-UI-091.
+**Choice:** (a). The Bastion's application binds the read to its own data since W-36's P8 (R-UI-258): a version's page compares the
+database then with today's there too; a list's grade names neither (H-2407). **Applied in the spec:** R-UI-091.
 
 ### Q-UI-1537 · What a grade's details say
 
@@ -30876,6 +30923,55 @@ Context: the repository's list of packages had a help for its grades; the packag
 none. **Choice:** every column of grades has a help that speaks of each row of its list (a package's latest version, a version) and ends
 "Open the grade for when, by what and against which data it was checked." (`gradeColumnHelp`,
 [grade-words.ts](../../web/src/app/shared/vulnerability/grade-words.ts)). **Applied in the spec:** R-UI-091.
+
+### Q-UI-1540 · The mark classes a check itself where its member carries no class
+
+Status: **Decided by the development agent on 2026-11-27** (W-36's package P8) — selected from the options below; the owner reviews it at
+the walkthrough. R-UI-258, [malware-scanning.md](malware-scanning.md) Q-MAL-138.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The shared mark takes the member's `age` where the member has one, and otherwise computes it from the check's set's date, today's and the bounds (`ageBySignatures`), so it follows today's set as the store reads it again (chosen) | One mark for both applications | The class moves when a new set arrives without the page reading its documents again; the main installation's marks, whose members always carry `age`, are unchanged | A member without the key `age` is how the mark knows it is a Bastion's copy |
+| (b) The Bastion's reads write `age` into every member they read | The mark untouched | — | The reads would have to wait for today's set before answering, and a page would keep the class of the set it was read with |
+
+**Choice:** (a). **Applied in the spec:** R-UI-258.
+
+### Q-UI-1541 · A list's mark at a Bastion says which page tells when it was checked
+
+Status: **Decided by the development agent on 2026-11-27** (W-36's package P8) — selected from the options below; the owner reviews it at
+the walkthrough. R-UI-258, [malware-scanning.md](malware-scanning.md) Q-MAL-139.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The details of a mark whose copy carries no time of its check, of a version or a package, end with "The version's page says when it was checked and under which signatures." (for a package: "The page of the newest version …"); a file's say nothing, as its page carries no time either (chosen) | One line where a visitor would look for the date | The visitor learns where the answer is instead of missing a line | A line more in a list's details |
+| (b) Nothing | — | Shorter | The details of the same word read differently on the version's page and in the list without a reason |
+
+**Choice:** (a). **Applied in the spec:** R-UI-258.
+
+### Q-UI-1542 · The details at a Bastion leave out what its copy lacks
+
+Status: **Decided by the development agent on 2026-11-27** (W-36's B.15, package P8) — selected from the options below; the owner reviews it
+at the walkthrough. R-UI-258.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A line or a part of one stands only where the copy carries its member: no ClamAV version, no replica, no next check, no "fetched" for today's set, no count of parts under today's signatures, no deciding part in a list; a member that is absent is no fact (chosen) | The details by what the answer holds | No guessed fact; the same component at both | — |
+| (b) The Bastion's own details component | — | — | A second component to keep in step with R-UI-255 |
+
+**Choice:** (a). A copy's absent member is told from a member that is null by its key: the main installation's answers carry every member,
+null where it is not known. **Applied in the spec:** R-UI-258.
+
+### Q-UI-1543 · The Bastion's marks are rendered on the profile's public artifacts
+
+Status: **Decided by the development agent on 2026-11-27** (W-36's package P8) — selected from the options below; the owner reviews it at
+the walkthrough. R-UI-258.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The render seed gives the public npm package of the Bastion's screens a verdict per version (under today's signatures, older, overdue, malware, released) by SQL, as Q-UI-881's way writes the main installation's; the screens open the versions table with its marks, then each version's page with its details, the Files tab, and the remote image with a platform not stored (chosen) | The profile's own Bastion and data | Every state a visitor can meet, on screens that already exist at the Bastion | The npm package's versions carry verdicts no scan made |
+| (b) Answers stubbed in the browser | — | No seed | The catalogue's strip and the state are not what is rendered |
+
+**Choice:** (a). **Applied in the spec:** R-UI-258.
 
 ### Q-UI-1560 · The form of a time is the reader's preference, else the installation's default, else the owner's form
 

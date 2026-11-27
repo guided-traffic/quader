@@ -76,8 +76,11 @@ func (a *App) wireBastionCatalogue(_ context.Context, in infra, co coordArea, _ 
 	a.catalogue.set(catalogueRuntime{builder: b, regs: a.catalogueRegistrations})
 	t := &catalogueTrigger{a: a, queue: co.queue, signals: co.signals, store: store, kick: make(chan struct{}, 1)}
 	if co.caches != nil {
+		// A new signature set in use and a change of the rescan settings change the catalogue's state (R-MAL-042, Q-BAS-491).
 		cache.Register(co.caches, "bastion_catalogue_trigger", cache.Options[struct{}, struct{}]{
-			MaxEntries: 1, SafetyTTL: time.Hour, Areas: []string{cluster.AreaRepoConfig, cluster.AreaAuthz, cluster.AreaVulnData},
+			MaxEntries: 1, SafetyTTL: time.Hour, Areas: []string{
+				cluster.AreaRepoConfig, cluster.AreaAuthz, cluster.AreaVulnData, cluster.AreaMalwareDatabase, cluster.AreaMalwareSettings,
+			},
 			OnChange: func(*cache.Cache[struct{}, struct{}], string, int, json.RawMessage) { t.fire() },
 			OnFlush:  func(string) { t.fire() },
 		})

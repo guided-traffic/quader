@@ -856,7 +856,7 @@ export class PackageVersionView {
   protected readonly malwareShown = computed(() => (this.detail()?.files ?? []).some((f) => f.malware !== undefined));
   /** The version's member `malware`, its worst stored part's (R-MAL-039): the mark beside its grade (R-UI-255). */
   protected readonly versionMalware = computed<MalwareSummary | null>(() => (this.malwareMarks.available ? (this.detail()?.malware ?? null) : null));
-  /** Today's signatures for the marks; absent in the Bastion's application, whose header and parts carry no mark yet (W-36 P8). */
+  /** Today's signatures for the marks, the main installation's or at a Bastion its catalogue's (R-UI-258). */
   private readonly malwareMarks = inject(MalwareSignaturesStore);
   /**
    * An image index's platforms, stored of named (Q-MAL-134): the details say "3 of 10 platforms stored", counted from the index's

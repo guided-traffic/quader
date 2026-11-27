@@ -130,3 +130,35 @@ export function gradeDetailsVersion(image: boolean): (page: Page) => AsyncGenera
     await close(page);
   };
 }
+
+/**
+ * An image's version page at a Bastion (R-UI-258, R-VULN-052): the version's report as the catalogue keeps it with its check's time and
+ * database put back from the version's state, without the analyser's version (Q-VULN-296), and today's database as the Bastion answers
+ * it, without when the installation fetched it. Its header, then the grade's details opened by the keyboard.
+ */
+export async function* bastionGradeDetails(page: Page): AsyncGenerator<string> {
+  await page.route('**/ui/data/v1/vulnerabilities/database', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', json: { ...today(), syncedAt: null } }),
+  );
+  await page.route('**/ui/data/v1/packages/*/versions/*/vulnerabilities', async (route) => {
+    const res = await route.fetch();
+    const body = (await res.json()) as { repositories?: { grade: Grade; evaluation: string }[] };
+    for (const r of body.repositories ?? []) {
+      const g = scannedImage(r.grade, 'C', { high: 2, low: 1 }, older(), 6 * 24 + 2);
+      delete g['scannerVersion'];
+      r.grade = g;
+      r.evaluation = 'evaluated';
+    }
+    await route.fulfill({ response: res, body: JSON.stringify(body) });
+  });
+  await page.reload();
+  const grade = page.locator('main .facts-grade button.grade');
+  await expect(grade).toBeVisible();
+  await expect(page.locator('main quader-grade-card').first()).toBeVisible();
+  await page.waitForLoadState('networkidle');
+  yield '';
+  await grade.focus();
+  await expect(details(page)).toBeVisible();
+  yield 'details';
+  await close(page);
+}

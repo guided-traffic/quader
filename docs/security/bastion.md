@@ -580,8 +580,8 @@ marked [derived] are calculated from the defaults, not measured.
   withdrawals and automatic blocks the feed does not carry;
 - [H-1102](../spec/bastion.md#h-1102--the-bastion-serves-what-it-cached-for-up-to-ten-minutes-after-the-switch-is-turned-on):
   the malware scanning's switch turned on, until the cached artifact's next revalidation;
-- [H-2407](../spec/bastion.md#h-2407--a-bastions-grade-says-nothing-of-when-and-against-which-database-it-was-checked): a grade at a
-  Bastion names no time of its check and no database (W-36's P7);
+- [H-2407](../spec/bastion.md#h-2407--a-bastions-grade-in-a-list-says-nothing-of-when-and-against-which-database-it-was-checked): a grade in a
+  Bastion's list names no time of its check and no database; a version's page does since W-36's P8;
 - [H-386](../spec/bastion.md#h-386--whoever-holds-the-bastion-token-can-test-credentials-name-client-addresses-and-add-download-events):
   what the holder of the Bastion token can do;
 - [H-387](../spec/bastion.md#h-387--the-signing-key-and-write-access-to-the-bastions-valkey-or-bucket-together-forge-answers-and-entries):
@@ -1351,8 +1351,24 @@ document, and puts them into the state of a package's version, from which the Ba
 generic repository has no version and no state document: its description keeps the verdict and loses the database's date, which the
 main installation's file page shows beside it. Live for every public generic file a scan has judged. What would close it: a state document
 per repository's files that holds the times by path, or keeping the times in a file's description at the cost of a changed document
-after every database update; either is a change of what the catalogue holds, which W-36 (the form of the malware and vulnerability state
-everywhere) is the place for.
+after every database update; either is a change of what the catalogue holds. W-36's P8, which brought the malware mark to the Bastion's
+pages, left it ([Q-BAS-493](../spec/bastion.md#q-bas-493--a-generic-file-at-a-bastion-carries-no-time-of-its-check)): the mark of a
+generic file says its word and the scanner, no date and no class.
+
+### H-2408 · The Bastion's class ignores demand
+
+Stage: the malware mark of the Bastion's web interface ([api-and-ui.md](../spec/api-and-ui.md) R-UI-258,
+[malware-scanning.md](../spec/malware-scanning.md) R-MAL-042). Subject: a visitor who reads from the mark's colour how current a check of a
+public artifact is. The main installation classes a check by its scan pressure: the signatures' age plus the demand since the check plus a
+request (R-MAL-037). The catalogue keeps neither the class nor the downloads (Q-MAL-133, Q-BAS-358), so the Bastion classes by the
+signatures' dates and the bounds alone ([Q-MAL-138](../spec/malware-scanning.md#q-mal-138--a-bastion-classes-a-check-by-the-dates-of-the-signatures-alone)):
+a much-downloaded artifact whose check the main installation calls due reads "under older signatures" at the Bastion, and the part that
+decides a unit's word is the main installation's choice, made with demand. Live by design for every public artifact that is downloaded. The
+mark never says more than the dates show: "Checked" and "No malware found" are the main installation's verdict either way, and the details
+name the set then and today with their dates. A list at a Bastion carries no time of a check and its mark no class at all
+([Q-MAL-139](../spec/malware-scanning.md#q-mal-139--a-list-at-a-bastion-names-no-class-the-versions-page-does)); the version's page says
+it. What would close it: the main installation's class in each version's state, which changes every public version's state at every new
+set and carries a trace of demand to the Bastion (W-36's B.15, option b).
 
 ### H-2356 · The anonymous ceiling is a share per replica without Valkey, and requests in flight pass its hour
 

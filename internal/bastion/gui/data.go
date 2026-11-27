@@ -33,6 +33,12 @@ const (
 	pathRepositories = "repositories"
 	// pathDocs is the documentation searched across packages (R-BAS-125): the main installation's GET /api/v1/search/documentation.
 	pathDocs = "search/documentation"
+	// pathMalwareSignatures is today's signatures of the malware scan (malware-scanning.md R-MAL-042): the main installation's GET
+	// /api/v1/malware/signatures as the catalogue's state carries it.
+	pathMalwareSignatures = "malware/signatures"
+	// pathVulnerabilityDatabase is today's vulnerability database of the image scanning (vulnerability-scanning.md R-VULN-052): the
+	// main installation's GET /api/v1/vulnerabilities/database as the catalogue's state carries it.
+	pathVulnerabilityDatabase = "vulnerabilities/database"
 )
 
 // projectsBody is the answer of /ui/data/v1/projects: the projects the catalogue shows, in the order of their keys, each with its key,
@@ -129,7 +135,7 @@ func (h *Handler) repositories(w http.ResponseWriter, r *http.Request) {
 }
 
 // data answers an address below /ui/data/v1/ (R-BAS-118): the state, the legal pages, the projects, the repositories with files,
-// the search, the lookup, a page of a package's versions, and every other document of the catalogue by its path of the grammar (R-BAS-103). Only the legal pages are
+// the search, the lookup, today's malware signatures (R-MAL-042) and vulnerability database (R-VULN-052), a page of a package's versions, and every other document of the catalogue by its path of the grammar (R-BAS-103). Only the legal pages are
 // served while the replica is not ready.
 func (h *Handler) data(w http.ResponseWriter, r *http.Request, ready bool) {
 	rest := strings.TrimPrefix(r.URL.EscapedPath(), dataRoot)
@@ -162,6 +168,12 @@ func (h *Handler) data(w http.ResponseWriter, r *http.Request, ready bool) {
 		return
 	case pathDocs:
 		h.searchDocs(w, r)
+		return
+	case pathMalwareSignatures:
+		h.malwareSignatures(w, r)
+		return
+	case pathVulnerabilityDatabase:
+		h.vulnerabilityDatabase(w, r)
 		return
 	}
 	path, ok := canonical(rest)
@@ -253,6 +265,84 @@ func (h *Handler) state(w http.ResponseWriter, r *http.Request) {
 		ConfirmedAt: st.ConfirmedAt.UTC(), StaleAfterSeconds: int64(st.StaleAfter / time.Second), Stale: st.Stale, Docs: st.Docs,
 		TimeFormat: format,
 	})
+}
+
+// signaturesBody is the main installation's shape of GET /api/v1/malware/signatures (R-MAL-040) as a Bastion answers it (R-MAL-042,
+// Q-BAS-492): the set, its daily, its build time, the unit and the bounds from the catalogue's state; the time of the import and the
+// engine are the main installation's and null here, and no set is called stale, since a Bastion knows no stale_after (W-36's B.15).
+type signaturesBody struct {
+	Version          *string `json:"version"`
+	Daily            *int64  `json:"daily"`
+	BuiltAt          *string `json:"builtAt"`
+	ImportedAt       *string `json:"importedAt"`
+	Stale            bool    `json:"stale"`
+	Scanner          string  `json:"scanner"`
+	Engine           *string `json:"engine"`
+	CycleDays        float64 `json:"cycleDays"`
+	OverdueAfterDays float64 `json:"overdueAfterDays"`
+}
+
+// malwareSignatures answers today's signatures from the catalogue's state document (R-MAL-042): 404 while the catalogue holds none
+// (the main installation's scanning is off), as the main installation's 503 tells its own pages that it is off.
+func (h *Handler) malwareSignatures(w http.ResponseWriter, r *http.Request) {
+	st, ok := h.catalogueState(w, r)
+	if !ok {
+		return
+	}
+	if st.Malware == nil {
+		h.problem(w, r, errNotFound())
+		return
+	}
+	m := st.Malware
+	h.json(w, r, signaturesBody{
+		Version: m.Version, Daily: m.Daily, BuiltAt: m.BuiltAt, Scanner: m.Scanner, CycleDays: m.CycleDays, OverdueAfterDays: m.OverdueAfterDays,
+	})
+}
+
+// databaseBody is the main installation's shape of GET /api/v1/vulnerabilities/database (R-VULN-052) as a Bastion answers it
+// (Q-BAS-492): the unit, the digest and the build time from the catalogue's state; when the main installation last confirmed it is its
+// own and null here, and no database is called stale.
+type databaseBody struct {
+	Scanner  string  `json:"scanner"`
+	Digest   *string `json:"digest"`
+	BuiltAt  *string `json:"builtAt"`
+	SyncedAt *string `json:"syncedAt"`
+	Stale    bool    `json:"stale"`
+}
+
+// vulnerabilityDatabase answers today's vulnerability database from the catalogue's state document: 404 while it holds none (the
+// main installation's image scanning is off).
+func (h *Handler) vulnerabilityDatabase(w http.ResponseWriter, r *http.Request) {
+	st, ok := h.catalogueState(w, r)
+	if !ok {
+		return
+	}
+	if st.Vulnerabilities == nil {
+		h.problem(w, r, errNotFound())
+		return
+	}
+	v := st.Vulnerabilities
+	h.json(w, r, databaseBody{Scanner: v.Scanner, Digest: v.Digest, BuiltAt: v.BuiltAt})
+}
+
+// catalogueState reads the catalogue's state document for an address that takes no parameter; false when it answered already (a
+// parameter, no state, a failure of the reader).
+func (h *Handler) catalogueState(w http.ResponseWriter, r *http.Request) (iface.CatalogueStateDocument, bool) {
+	var st iface.CatalogueStateDocument
+	if len(r.URL.Query()) != 0 {
+		h.problem(w, r, errs.E(errs.Invalid, errs.CodeInvalid, "This address takes no parameter."))
+		return st, false
+	}
+	d, ok, err := h.o.Catalogue.Document(r.Context(), iface.CataloguePath{Kind: iface.CatalogueState}.String())
+	if err != nil {
+		h.readerError(w, r, err)
+		return st, false
+	}
+	if !ok || json.Unmarshal(d.Raw, &st) != nil {
+		h.problem(w, r, errNotFound())
+		return st, false
+	}
+	return st, true
 }
 
 // legalPage and legalBody are the main installation's shape of GET /api/v1/legal (R-UI-225).

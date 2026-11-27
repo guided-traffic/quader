@@ -207,8 +207,10 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 		// R-UI-265, two P1 requirements of W-37, P4).
 		// 1404 since a grade names when, by which scanner and against which database it was checked, and today's database is
 		// one read (R-VULN-051, R-VULN-052, two P1 requirements of W-36, P7).
-		if len(m.Reqs) != 1404 || count[prioMVP] != 743 || count[prioP1] != 622 || count[prioP2] != 39 {
-			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1404 (743, 622, 39)",
+		// 1406 since the Bastion shows the malware state of a public artifact (R-MAL-042, R-UI-258, two P1 requirements of W-36,
+		// P8).
+		if len(m.Reqs) != 1406 || count[prioMVP] != 743 || count[prioP1] != 624 || count[prioP2] != 39 {
+			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1406 (743, 624, 39)",
 				len(m.Reqs), count[prioMVP], count[prioP1], count[prioP2])
 		}
 	})

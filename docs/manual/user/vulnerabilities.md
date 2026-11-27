@@ -79,7 +79,8 @@ What the details say of the check:
   today** (the date of the database in use and when Quader fetched it) and **How current**: **Under today's database**, or **Under a
   database 6 days older**, which means the image waits for its scan under the new database; every image is scanned again after each new
   database, about every six hours. Of an image of several platforms, the platform scanned longest ago speaks for the grade. The
-  databases' digests are under **Technical details**.
+  databases' digests are under **Technical details**. At a Bastion a version's page says the same without Trivy's version and without
+  when the installation fetched today's database; a grade in a list there shows the rule and the counts only.
 - **A package** names no scanner: it is checked against the advisories of a time, **Checked against the advisories of** that time, from
   the GitHub Advisory Database and OpenSSF malicious-packages through osv.dev. Its grade is computed again from today's advisories every
   time it is shown.

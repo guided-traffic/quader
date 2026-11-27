@@ -6052,7 +6052,8 @@ export interface paths {
          *     the two bounds of how current a check is (`cycleDays`, `overdueAfterDays`, R-MAL-037). Every caller reads it, an anonymous
          *     one included where the endpoint admits anonymous callers: the set is ClamAV's public one (Q-MAL-27), and the answer names
          *     no host and no address of the installation (Q-MAL-132). `version`, `daily`, `builtAt` and `importedAt` are null while no
-         *     set is in use; `503` while the scanning is off.
+         *     set is in use; `503` while the scanning is off. The public catalogue of a Bastion carries this answer without `importedAt`,
+         *     `stale` and `engine` in its state, and the Bastion's pages read it there (R-MAL-042).
          */
         get: operations["getMalwareSignatures"];
         put?: never;

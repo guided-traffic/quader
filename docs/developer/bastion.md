@@ -1825,6 +1825,15 @@ reported base URL `server.additional_base_urls` lists, read `GET /api/v1/formats
 at; write what changed; delete the units no longer listed; render and write the registration's own documents; record the state. A
 registration whose `gui` is off loses its catalogue; documents no row names go at the end.
 
+**The catalogue's state** (`state`, `iface.CatalogueStateDocument`, interface version 11): `builtAt`, the time of the last run that
+changed a document; `malware`, today's signatures as the anonymous caller reads `GET /api/v1/malware/signatures` without the engine,
+the import and `stale` (W-36's P8, R-MAL-042, Q-BAS-490), null while the scanning is off; and `vulnerabilities`, today's database of the
+image scanning as the anonymous caller reads `GET /api/v1/vulnerabilities/database` without `syncedAt` and `stale` (R-VULN-052), null
+while the image scanning is off. A run that changed no document keeps `builtAt`, so the state is written only when a set, a database or
+the bounds changed; the change areas `malware_database` and `malware_settings` start a run, a new vulnerability database waits for the
+next run (Q-BAS-491). The Bastion answers the members at `/ui/data/v1/malware/signatures` and `/ui/data/v1/vulnerabilities/database`
+(Q-BAS-492).
+
 **The renderer** runs every read through the management API's handlers as the anonymous caller of the default endpoint: an
 `http.Request` from `127.0.0.1` with `X-Forwarded-Proto` and `X-Forwarded-Host` of the Bastion's base URL, which the renderer's own
 resolver (trusting only the loopback) turns into the response base URL, so every link a handler renders is the Bastion's. It never
@@ -1838,7 +1847,7 @@ the tests and the measurement below may set them through `app.Options.BastionSwi
 
 | Test | Tier | Time | Data |
 |---|---|---|---|
-| `TestR_BAS_104_TheBuilderRendersEveryDocumentOnTheBastionsBase`, `TestR_BAS_104_TheBaseURLIsAnEntryOfTheAdditionalBaseURLs`, `TestR_BAS_106_NoDocumentNamesAnInternalIdentityOrTheMainInstallation`, `TestR_BAS_103_NoDocumentCarriesATimeOfItsCheck`, `TestR_BAS_105_TheReconciliationRendersOnlyWhatChanged`, `TestR_BAS_102_TheSwitchesDecideWhatIsBuilt`, `TestR_BAS_107_LinksAreTheBastionsAndItsDataPath`, `TestR_BAS_108_ACatalogueBuiltAgainAnswersReset` ([internal/bastionmain/catalogue](../../internal/bastionmain/catalogue)) | unit, a fake management API and the store in memory | 0.4 s for the package | one npm package, one generic file, bytes |
+| `TestR_BAS_104_TheBuilderRendersEveryDocumentOnTheBastionsBase`, `TestR_BAS_104_TheBaseURLIsAnEntryOfTheAdditionalBaseURLs`, `TestR_BAS_106_NoDocumentNamesAnInternalIdentityOrTheMainInstallation`, `TestR_BAS_103_NoDocumentCarriesATimeOfItsCheck`, `TestR_BAS_105_TheReconciliationRendersOnlyWhatChanged`, `TestR_BAS_102_TheSwitchesDecideWhatIsBuilt`, `TestR_BAS_107_LinksAreTheBastionsAndItsDataPath`, `TestR_BAS_108_ACatalogueBuiltAgainAnswersReset`, `TestR_MAL_042_TheStateCarriesTodaysSignaturesAndNothingOfTheInstallation` ([internal/bastionmain/catalogue](../../internal/bastionmain/catalogue)) | unit, a fake management API and the store in memory | 0.4 s for the package | one npm package, one generic file, bytes |
 | `TestR_BAS_101_TheCatalogueRoutesServeTheKeptDocuments`, `TestR_BAS_101_TheBatchStopsAtItsBound`, `TestR_BAS_102_TheCatalogueRoutesAnswerByTheSwitches` (`internal/api/v1`) | unit, the handlers in process | milliseconds each | three documents |
 | `TestR_BAS_104_TheCatalogueFollowsPublishesLevelsAndTheSwitch` ([test/integration/bastion](../../test/integration/bastion/catalogue_test.go)) | integration, the role all on the stack | about 11 s with the world's set-up | two npm packages and a NuGet package of bytes |
 
@@ -1950,7 +1959,7 @@ package's changelog reach a Bastion's pages while its switch `docs` is on and th
 | [app/wire_bastion_catalogue.go](../../internal/app/wire_bastion_catalogue.go) | `docsPolicy`: `readme.Version` and `docgen.MarkupVersion` |
 | [bastion/catalogue/docs.go](../../internal/bastion/catalogue/docs.go) | the index of the documentation (`docsOf`, built in `sync` and `take` from the trees of the index's `latestVersion`, a tree parsed once by its SHA-256), `SearchDocs` (R-ANS-058's rule and order), `DocEntries` (the sitemap's source for P10), `DocHit` |
 | [bastion/gui/crawl_docs.go](../../internal/bastion/gui/crawl_docs.go) | the sitemap's documentation entries: `docsByPackage` from `DocEntries`, `docRoutes` each entry's canonical address in the project its tree was read from |
-| [bastion/gui/data.go](../../internal/bastion/gui/data.go) | `search/documentation`; a Debian package's contents without its changelog and copyright while `docs` is off (`withoutDocumentation`) |
+| [bastion/gui/data.go](../../internal/bastion/gui/data.go) | `search/documentation`; a Debian package's contents without its changelog and copyright while `docs` is off (`withoutDocumentation`); `malware/signatures` and `vulnerabilities/database` from the catalogue's state (`iface.CatalogueStateDocument`, W-36's P8, R-MAL-042, R-VULN-052) |
 | [web/src/app/views/packages/docs-model.ts](../../web/src/app/views/packages/docs-model.ts) | `narrowDocTree`, `docEntryMatches`, `docTerms`: the main installation's search of a version, in the browser |
 | [web/src/bastion/](../../web/src/bastion) | `docs` of `data/reads.ts` (narrows with `q`), `pages/documentation-hits.ts` (the section below a project's packages), the version page's `documentation` from the state |
 

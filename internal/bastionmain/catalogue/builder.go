@@ -2,13 +2,16 @@ package catalogue
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
 	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"io"
 	"log/slog"
+	"net/http"
 	"net/url"
 	"slices"
 	"sort"
@@ -1088,8 +1091,10 @@ func (r *run) write(ctx context.Context, unit string, docs []rendered, fp []byte
 	return refs, nil
 }
 
-// writeGlobal keeps the documents of the registration as a whole, and the catalogue's state document with the time of the last run
-// that changed a document (R-BAS-103: the documents carry no time; the state does). A run that changed nothing keeps the state.
+// writeGlobal keeps the documents of the registration as a whole, and the catalogue's state document (iface.CatalogueStateDocument)
+// with the time of the last run that changed a document (R-BAS-103: the documents carry no time; the state does) and today's
+// signatures of the malware scan (R-MAL-042, Q-BAS-490). A run that changed no document keeps the state's time, so a run that changed
+// neither a document nor the signatures writes nothing.
 func (r *run) writeGlobal(ctx context.Context, docs []rendered) error {
 	statePath := iface.CataloguePath{Kind: iface.CatalogueState}.String()
 	old, err := r.b.o.Store.UnitRows(ctx, r.reg.ID, "")
@@ -1108,16 +1113,103 @@ func (r *run) writeGlobal(ctx context.Context, docs []rendered) error {
 	for p, sha := range old {
 		changed = changed || (sha != "" && !seen[p])
 	}
-	if !changed && old[statePath] != "" {
-		_, err := r.write(ctx, "", docs, []byte{}, statePath)
-		return err
-	}
-	sb, err := json.Marshal(map[string]any{"builtAt": r.b.o.Now().UTC().Format(time.RFC3339)})
+	malware, err := r.malware(ctx)
 	if err != nil {
 		return err
 	}
+	vulns, err := r.vulnerabilityDatabase(ctx)
+	if err != nil {
+		return err
+	}
+	state := iface.CatalogueStateDocument{BuiltAt: r.b.o.Now().UTC().Format(time.RFC3339), Malware: malware, Vulnerabilities: vulns}
+	if !changed && old[statePath] != "" {
+		prev, err := r.state(ctx, statePath)
+		if err != nil {
+			return err
+		}
+		if prev != nil && prev.BuiltAt != "" {
+			state.BuiltAt = prev.BuiltAt
+		}
+	}
+	sb, err := json.Marshal(state)
+	if err != nil {
+		return err
+	}
+	// write keeps no document whose bytes are the kept ones: a state that is the same is no change of the list.
 	_, err = r.write(ctx, "", append(docs, rendered{path: statePath, body: sb}), []byte{})
 	return err
+}
+
+// state reads the catalogue's state document as it is kept; nil when none is or it does not read, and it is written anew.
+func (r *run) state(ctx context.Context, statePath string) (*iface.CatalogueStateDocument, error) {
+	kept, err := r.b.o.Store.Documents(ctx, r.reg.ID, []string{statePath})
+	if err != nil {
+		return nil, err
+	}
+	d, ok := kept[statePath]
+	if !ok {
+		return nil, nil
+	}
+	var st iface.CatalogueStateDocument
+	if zr, zerr := gzip.NewReader(bytes.NewReader(d.Gzip)); zerr == nil && json.NewDecoder(io.LimitReader(zr, cataloguebounds.DocumentMaxBytes)).Decode(&st) == nil {
+		return &st, nil
+	}
+	// A state that does not read is written anew.
+	return nil, nil
+}
+
+// malwareSignatures is what the builder reads of GET /api/v1/malware/signatures (R-MAL-040): the members a Bastion shows. The
+// answer's engine, the time of the set's import and whether it is stale stay at the main installation (W-36's B.15, Q-BAS-490).
+type malwareSignatures struct {
+	Version          *string `json:"version"`
+	Daily            *int64  `json:"daily"`
+	BuiltAt          *string `json:"builtAt"`
+	Scanner          string  `json:"scanner"`
+	CycleDays        float64 `json:"cycleDays"`
+	OverdueAfterDays float64 `json:"overdueAfterDays"`
+}
+
+// malware reads today's signatures as the anonymous caller reads them (R-MAL-040, Q-MAL-132) for the catalogue's state (R-MAL-042):
+// nil while the main installation answers none, a 503 while its scanning is off or a 401 where the anonymous caller is not admitted.
+func (r *run) malware(ctx context.Context) (*iface.CatalogueMalware, error) {
+	var s malwareSignatures
+	ok, err := r.today(ctx, "/api/v1/malware/signatures", &s)
+	if err != nil || !ok {
+		return nil, err
+	}
+	m := iface.CatalogueMalware(s)
+	return &m, nil
+}
+
+// vulnerabilityDatabase is what the builder reads of GET /api/v1/vulnerabilities/database (R-VULN-052): the members a Bastion shows.
+// When the main installation last confirmed it and whether that is stale stay there (Q-BAS-490).
+type vulnerabilityDatabase struct {
+	Scanner string  `json:"scanner"`
+	Digest  *string `json:"digest"`
+	BuiltAt *string `json:"builtAt"`
+}
+
+// vulnerabilityDatabase reads today's vulnerability database of the image scanning as the anonymous caller reads it (R-VULN-052) for
+// the catalogue's state: nil while the main installation answers none (a 503 while its image scanning is off).
+func (r *run) vulnerabilityDatabase(ctx context.Context) (*iface.CatalogueVulnerabilityDatabase, error) {
+	var d vulnerabilityDatabase
+	ok, err := r.today(ctx, "/api/v1/vulnerabilities/database", &d)
+	if err != nil || !ok {
+		return nil, err
+	}
+	v := iface.CatalogueVulnerabilityDatabase(d)
+	return &v, nil
+}
+
+// today reads one of the public answers of what the main installation checks with today into v; false for none: a 503 while the
+// scanning is off, a 404 or a 401 where the anonymous caller is not admitted.
+func (r *run) today(ctx context.Context, target string, v any) (bool, error) {
+	_, ok, err := r.rd.json(ctx, target, v)
+	var e errRender
+	if errors.As(err, &e) && e.status == http.StatusServiceUnavailable {
+		return false, nil
+	}
+	return ok, err
 }
 
 // digest is the SHA-256 of the parts, each prefixed with its length.

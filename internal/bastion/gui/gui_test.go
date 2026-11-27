@@ -740,3 +740,41 @@ func TestR_BAS_128_TheDataNameTheProjectsGradeTheVersionsAndWriteTheInstallation
 		t.Errorf("repositories while off = %d", rec.Code)
 	}
 }
+
+// TestR_MAL_042_TheBastionAnswersTodaysSignaturesFromTheCatalogue: the data address of today's signatures answers the main
+// installation's shape from the catalogue's state document, with no time of the import, no engine and no set called stale, and 404
+// while the state holds no set (the main installation's scanning off) or the catalogue no state.
+func TestR_MAL_042_TheBastionAnswersTodaysSignaturesFromTheCatalogue(t *testing.T) {
+	r := newReader()
+	h := newGUI(t, r, nil)
+	if rec := do(h, http.MethodGet, "/ui/data/v1/malware/signatures"); rec.Code != 404 {
+		t.Errorf("no state = %d %s", rec.Code, rec.Body.String())
+	}
+	r.docs["state"] = []byte(`{"builtAt":"2026-11-26T09:00:00Z","malware":{"version":"main-63.daily-28201.bytecode-339","daily":28201,` +
+		`"builtAt":"2026-11-26T07:58:00Z","scanner":"malware-scanner-clamav","cycleDays":30,"overdueAfterDays":7}}`)
+	want := `{"version":"main-63.daily-28201.bytecode-339","daily":28201,"builtAt":"2026-11-26T07:58:00Z","importedAt":null,"stale":false,` +
+		`"scanner":"malware-scanner-clamav","engine":null,"cycleDays":30,"overdueAfterDays":7}`
+	if rec := do(h, http.MethodGet, "/ui/data/v1/malware/signatures"); rec.Code != 200 || rec.Body.String() != want || rec.Header().Get("ETag") == "" {
+		t.Errorf("signatures = %d %s", rec.Code, rec.Body.String())
+	}
+	if rec := do(h, http.MethodGet, "/ui/data/v1/malware/signatures?x=1"); rec.Code != 400 {
+		t.Errorf("a parameter = %d", rec.Code)
+	}
+	// The catalogue's state document itself stays the reader's (R-BAS-112).
+	if rec := do(h, http.MethodGet, "/ui/data/v1/state"); strings.Contains(rec.Body.String(), "malware") {
+		t.Errorf("the Bastion's state names the catalogue's: %s", rec.Body.String())
+	}
+	// Today's vulnerability database beside it (R-VULN-052): the main installation's shape, no time of its confirmation, nothing stale.
+	if rec := do(h, http.MethodGet, "/ui/data/v1/vulnerabilities/database"); rec.Code != 404 {
+		t.Errorf("no database = %d %s", rec.Code, rec.Body.String())
+	}
+	r.docs["state"] = []byte(`{"builtAt":"2026-11-26T09:00:00Z","malware":null,` +
+		`"vulnerabilities":{"scanner":"vuln-scanner-trivy","digest":"sha256:5a0c","builtAt":"2026-11-26T06:12:40Z"}}`)
+	if rec := do(h, http.MethodGet, "/ui/data/v1/vulnerabilities/database"); rec.Code != 200 ||
+		rec.Body.String() != `{"scanner":"vuln-scanner-trivy","digest":"sha256:5a0c","builtAt":"2026-11-26T06:12:40Z","syncedAt":null,"stale":false}` {
+		t.Errorf("database = %d %s", rec.Code, rec.Body.String())
+	}
+	if rec := do(h, http.MethodGet, "/ui/data/v1/malware/signatures"); rec.Code != 404 {
+		t.Errorf("the scanning off = %d %s", rec.Code, rec.Body.String())
+	}
+}

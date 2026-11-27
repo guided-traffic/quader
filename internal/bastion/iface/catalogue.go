@@ -134,6 +134,48 @@ type CatalogueRepository struct {
 	Wiki   bool   `json:"wiki"`
 }
 
+// CatalogueStateDocument is the document of the catalogue's state ([CatalogueState], path "state"): the time of the builder's last
+// run that changed a document, today's signatures of the malware scan (malware-scanning.md R-MAL-042) and today's vulnerability
+// database of the image scanning, which the Bastion's web interface compares every malware state and every image's grade of a page
+// with. The main installation writes it; the Bastion reads Malware and Vulnerabilities.
+type CatalogueStateDocument struct {
+	BuiltAt string `json:"builtAt"`
+	// Malware is null while the main installation answers no set (its scanning is off, or its anonymous caller may not read it).
+	Malware *CatalogueMalware `json:"malware"`
+	// Vulnerabilities is today's vulnerability database of the image scanning (vulnerability-scanning.md R-VULN-052), which the Bastion's
+	// grades compare an image's scan with; null while the main installation answers none (its image scanning is off).
+	Vulnerabilities *CatalogueVulnerabilityDatabase `json:"vulnerabilities"`
+}
+
+// CatalogueVulnerabilityDatabase is what a Bastion shows of the main installation's vulnerability database in use (Q-BAS-490): the unit
+// that scans with it, the digest of its layer and its build time. When the main installation last confirmed it and whether that is stale
+// are facts of its operation and stay there, as the malware scan's time of import does.
+type CatalogueVulnerabilityDatabase struct {
+	// Scanner is the unit that scans images, `vuln-scanner-trivy`.
+	Scanner string `json:"scanner"`
+	// Digest is the database's digest (`sha256:<hex>`) and BuiltAt its build time (RFC 3339); each null while none is in use.
+	Digest  *string `json:"digest"`
+	BuiltAt *string `json:"builtAt"`
+}
+
+// CatalogueMalware is what a Bastion shows of the main installation's signatures in use (R-MAL-042, Q-BAS-490): the set, its daily
+// and its build time, the unit that checks, and the two bounds of the classes of a check (malware-scanning.md R-MAL-037), from which
+// the Bastion's pages class every check themselves. It holds no time of an import, no engine version and no replica: those are
+// facts of the main installation's operation (W-36's B.15).
+type CatalogueMalware struct {
+	// Version is the set in use (`main-63.daily-28201.bytecode-339`), Daily the number of its daily, BuiltAt the daily's build time
+	// (RFC 3339); each null while no set is in use.
+	Version *string `json:"version"`
+	Daily   *int64  `json:"daily"`
+	BuiltAt *string `json:"builtAt"`
+	// Scanner is the unit that checks, `malware-scanner-clamav`.
+	Scanner string `json:"scanner"`
+	// CycleDays is `rescan_cycle` and OverdueAfterDays `rescan_overdue_after` in days: a check whose signatures are CycleDays older
+	// than the set in use is due, and overdue OverdueAfterDays after that.
+	CycleDays        float64 `json:"cycleDays"`
+	OverdueAfterDays float64 `json:"overdueAfterDays"`
+}
+
 // CatalogueKind is the kind of a document of the catalogue.
 type CatalogueKind string
 
@@ -161,7 +203,7 @@ const (
 	// CatalogueVersionState is the times of a version's documents (built, checked, scanned) that the documents themselves do not
 	// carry, so that a document changes only with its content (R-BAS-103).
 	CatalogueVersionState CatalogueKind = "versionState" // packages/<id>/versions/<v>/state
-	// CatalogueState is the times of the catalogue as a whole.
+	// CatalogueState is the state of the catalogue as a whole, a [CatalogueStateDocument].
 	CatalogueState CatalogueKind = "state" // state
 	// The generic files of a raw repository (/files/): a folder's listing, a file's description and a file's set-up per client.
 	// <path...> is the file's or folder's path in the repository, one segment per path segment.

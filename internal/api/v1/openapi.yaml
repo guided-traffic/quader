@@ -14875,7 +14875,7 @@ paths:
         last contact at most once a minute, with the edge figure (`Quader-Bastion-Edge-Limit`) and whether its catalogue is kept
         (`Quader-Bastion-Catalogue-Kept`) when the replica reports them; a malformed value of either answers `400
         malformed_request`. Not part of the management API's v1 promise but of the interface version (R-ARCH-025, R-BAS-009).
-      x-quader-bastion-interface: 10
+      x-quader-bastion-interface: 11
       x-quader-permission:
         bastion: true
       parameters:
@@ -14929,7 +14929,7 @@ paths:
         (`npm-all` instead of `web/npm-all`) answers `400 malformed_request`, like a body that does not read; a pair that
         breaks a rule of R-BAS-083 answers `422` with a field error at `/packages/<i>`; another interface version answers
         `400 bastion_interface_mismatch`.
-      x-quader-bastion-interface: 10
+      x-quader-bastion-interface: 11
       x-quader-permission:
         bastion: true
       parameters:
@@ -14979,7 +14979,7 @@ paths:
         `cursor` of an earlier answer or a synthetic `t:<RFC 3339>`; the answer holds every entry newer than the cursor and the
         entries within `bastions.feed.lookback` behind it, which the Bastion skips by ID. `reset: true` tells the Bastion to
         drop every answer.
-      x-quader-bastion-interface: 10
+      x-quader-bastion-interface: 11
       x-quader-permission:
         bastion: true
       parameters:
@@ -15035,7 +15035,7 @@ paths:
         events stores neither, so a batch sent again is never counted twice. The body is at most `bastions.downloads.max_batch` ×
         10 KiB for the events, 640 bytes for each of 100,000 usage rows and 256 KiB for the rest (Q-BAS-442), about 71 MiB with
         the defaults.
-      x-quader-bastion-interface: 10
+      x-quader-bastion-interface: 11
       x-quader-permission:
         bastion: true
       parameters:
@@ -15080,7 +15080,7 @@ paths:
         `after` (a `seq`, 0 for the start), at most `limit` (the main installation's page when absent, clamped to its largest).
         `reset: true` tells the Bastion to read the list again from 0. While the registration's switch `gui` is off the answer is
         `404 not_found`. Until the catalogue is built (W-35's package P6) the list is empty.
-      x-quader-bastion-interface: 10
+      x-quader-bastion-interface: 11
       x-quader-permission:
         bastion: true
       parameters:
@@ -15134,7 +15134,7 @@ paths:
         `400 malformed_request`; while the
         registration's switch `gui` is off, and for a documentation path while `docs` is off, the answer is `404 not_found`. Until
         the catalogue is built (W-35's package P6) every document answers `404 not_found`.
-      x-quader-bastion-interface: 10
+      x-quader-bastion-interface: 11
       x-quader-permission:
         bastion: true
       parameters:
@@ -15190,7 +15190,7 @@ paths:
         twice or more paths than the bound answer `400 malformed_request`; while the registration's switch `gui` is off the
         answer is `404 not_found`; a document the catalogue does not hold, and a documentation path while `docs` is off, is a
         frame with `missing: true`. Until the catalogue is built (W-35's package P6) every frame is missing.
-      x-quader-bastion-interface: 10
+      x-quader-bastion-interface: 11
       x-quader-permission:
         bastion: true
       parameters:
@@ -15248,7 +15248,7 @@ paths:
         The Bastion interface (R-BAS-101). The projects and repositories the calling registration's catalogue shows, each
         repository with its format, class and whether its wiki is public. While the registration's switch `gui` is off the
         answer is `404 not_found`. Until the catalogue is built (W-35's package P6) the set is empty.
-      x-quader-bastion-interface: 10
+      x-quader-bastion-interface: 11
       x-quader-permission:
         bastion: true
       parameters:
@@ -15955,7 +15955,8 @@ paths:
         the two bounds of how current a check is (`cycleDays`, `overdueAfterDays`, R-MAL-037). Every caller reads it, an anonymous
         one included where the endpoint admits anonymous callers: the set is ClamAV's public one (Q-MAL-27), and the answer names
         no host and no address of the installation (Q-MAL-132). `version`, `daily`, `builtAt` and `importedAt` are null while no
-        set is in use; `503` while the scanning is off.
+        set is in use; `503` while the scanning is off. The public catalogue of a Bastion carries this answer without `importedAt`,
+        `stale` and `engine` in its state, and the Bastion's pages read it there (R-MAL-042).
       x-quader-permission:
         public: true
       responses:
