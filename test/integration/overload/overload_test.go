@@ -14,8 +14,10 @@ import (
 	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
-// budget is the replica's container memory limit in this test.
-const budget = 256 << 20
+// budget is the replica's container memory limit in this test (Q-ARCH-1073). At 256 MiB the replica's own 61 to 67 MiB beside the held
+// downloads were 28 to 31 % of the Go limit, more than the 20 % the slots leave, and the runtime held 247 to 254 MiB of 256 on Linux;
+// at 384 MiB they are 19 to 21 %, and the runtime held 315 MiB here, 69 MiB below the limit.
+const budget = 384 << 20
 
 func TestMemoryAdmission(t *testing.T) {
 	in := newInstall(t)
@@ -34,8 +36,8 @@ func TestMemoryAdmission(t *testing.T) {
 			t.Fatalf("go_gc_gomemlimit_bytes = %.0f, want %.0f", got, want)
 		}
 		// 0.8 × the Go limit over 640 KiB per request (internal/app/memory.go)
-		if slots != 278 {
-			t.Fatalf("quader_http_memory_slots = %.0f, want 278", slots)
+		if slots != 417 {
+			t.Fatalf("quader_http_memory_slots = %.0f, want 417", slots)
 		}
 	})
 

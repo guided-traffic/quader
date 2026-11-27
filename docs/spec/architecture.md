@@ -1177,10 +1177,10 @@ Acceptance criteria:
 - With a further endpoint configured (R-EP-001), `:8080` and the endpoint's port each answer with
   their own route families, and a request whose host is not one of the further endpoint's hosts
   answers `421` there ([endpoints.md](endpoints.md) R-EP-002, R-EP-003, R-EP-005).
-- A replica with `runtime.memory_limit_bytes` of 256 MiB and 1,000 concurrent downloads of a 1 MiB
-  file whose clients do not read: at most 278 complete with their bytes once the clients read, every
+- A replica with `runtime.memory_limit_bytes` of 384 MiB and 1,000 concurrent downloads of a 1 MiB
+  file whose clients do not read: at most 417 complete with their bytes once the clients read, every
   other one answers `503` `server_busy` with `Retry-After: 1`, the memory the Go runtime holds stays
-  below 256 MiB, and the process does not exit. Afterwards a download answers `200` again
+  below 384 MiB, and the process does not exit ([Q-ARCH-1073](#q-arch-1073--the-memory-admission-test-runs-in-a-container-of-384-mib)). Afterwards a download answers `200` again
   (`test/integration/overload`, `TestMemoryAdmission`).
 - A replica with `runtime.memory_limit_bytes` of 1 GiB and the default caches, still empty, and 300
   concurrent downloads of a 1 MiB file whose clients do not read: none is shed, although the
@@ -13421,7 +13421,32 @@ Raising the charge would buy room against a cost that is not there with a tenth 
 downloads, its own heap and the garbage, about 61 to 67 MiB [derived: the held peak less 278 × the resident per held download], is 28 to
 31 % of `L` (217.6 MiB), more than the 20 % the slots leave, in a container far below what the chart admits; at 1 GiB the same bytes are
 7 to 8 % of `L`. **Revisit** when `TestHeldDownloadCost` reads
-more than 640 KiB at `GOGC=1`, or when `TestMemoryAdmission` passes 250 MiB here.
+more than 640 KiB at `GOGC=1`. `TestMemoryAdmission`'s container is 384 MiB since [Q-ARCH-1073](#q-arch-1073--the-memory-admission-test-runs-in-a-container-of-384-mib).
+
+### Q-ARCH-1073 · The memory admission test runs in a container of 384 MiB
+
+Status: **Decided by the development agent** on 2026-11-27; the owner reviews it at the walkthrough.
+
+Context: `TestMemoryAdmission` ([overload_test.go](../../test/integration/overload/overload_test.go)) passed in CI with 1 to 3.5 % of room:
+the runtime held 247.0 to 253.6 MiB of its 256 MiB container in the nine runs that Q-ARCH-1072 read. What the replica holds beside the
+held downloads, its own heap and the garbage, about 61 to 67 MiB [derived, Q-ARCH-1072], does not scale with the container, while the
+slots take 0.8 of the Go limit `L` whatever the container: at 256 MiB those bytes are 28 to 31 % of `L` against the 20 % the slots leave,
+so the test measured the replica's own size more than its admission, and every MiB the replica grows by eats the room.
+
+**Measured** [this machine, macOS arm64, under other builders' load, one run each, `-run TestMemoryAdmission`]: 384 MiB, 417 slots: 417
+complete, 583 shed for the slots, the runtime held at most 314.9 MiB (69 MiB, 18 %, below the container), 8.7 s. 512 MiB, 557 slots: 443
+shed for the slots, but 684 and 802 clients saw `503` in two runs, the rest not counted by `quader_http_requests_shed_total` (neither
+`in_flight` nor `kernel`), with the object store's health probe failing meanwhile; its cause was not read.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) 384 MiB, 417 slots (chosen) | The replica's own bytes are 19 to 21 % of `L`, about what the slots leave | 69 MiB of room measured here, about 50 MiB expected in CI [derived: CI held 10 to 15 MiB more than here at 256 MiB]; 1,000 downloads still more than twice the slots; the run stays under 10 s | The test no longer shows a container as small as 256 MiB, which no default of the chart has (the API pod requests 512 MiB) |
+| (b) 512 MiB, the chart's memory request of an API pod | More room | 85 to 95 MiB of room expected | 557 concurrent downloads ran into a limit outside the guard in both runs, so the test failed on what it does not test |
+| (c) Keep 256 MiB and compare the held memory with `L` plus a fixed allowance | No change of the scenario | — | An allowance is the same headroom under another name, and it hides what the replica's own size costs |
+| (d) Subtract the replica's measured idle heap from what the slots may take | The guard would know the replica's own size | Small containers would get fewer slots instead of a thin margin | A product change of the admission's arithmetic for a container below every default; not a finding of this test |
+
+**Choice:** (a). **Revisit** when the runtime holds more than 345 MiB here (90 % of the container), or when the cause of (b)'s uncounted
+`503` is read.
 
 ## What this does not cover
 

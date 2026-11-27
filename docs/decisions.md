@@ -10058,10 +10058,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-ARCH
 
-290 questions on [spec/architecture.md](spec/architecture.md).
+291 questions on [spec/architecture.md](spec/architecture.md).
 
 <details>
-<summary>Q-ARCH: 290 questions</summary>
+<summary>Q-ARCH: 291 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10355,6 +10355,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-ARCH-1070](spec/architecture.md#q-arch-1070--the-role-api-writes-what-a-format-decides-through-a-host-of-its-own-with-the-virtual-engine-as-its-resolver) | The role `api` writes what a format decides through a Host of its own with the virtual engine as its Resolver | Decided by the development agent on 2026-11-26 | (a) The area `management-host` on the roles of the management API: the format host where the role builds one, else (`api`) the Host of the serve check built after the virtual engine with that engine as its Resolver | — |
 | [Q-ARCH-1071](spec/architecture.md#q-arch-1071--the-layout-checks-render-the-screens-in-parallel-legs-each-every-n-th-pair-of-screen-and-kind-of-user) | The layout checks render the screens in parallel legs, each every n-th pair of screen and kind of user | Decided by the development agent on 2026-11-26 | (a) with five legs on `self-hosted`, `fail-fast: false`, 45 minutes each, and the job `ui-layout-fixtures` ("UI layout checks (fixtures and dialog states)", no stack, no Go, 30 minutes) for what runs once. | — |
 | [Q-ARCH-1072](spec/architecture.md#q-arch-1072--the-charge-of-a-held-download-stays-640-kib-its-live-cost-is-within-it-and-the-garbage-is-the-go-limits) | The charge of a held download stays 640 KiB: its live cost is within it, and the garbage is the Go limit's | Decided by the development agent on 2026-11-27 | (a) Keep 128 KiB, charge 640 KiB | — |
+| [Q-ARCH-1073](spec/architecture.md#q-arch-1073--the-memory-admission-test-runs-in-a-container-of-384-mib) | The memory admission test runs in a container of 384 MiB | Decided by the development agent on 2026-11-27 | (a) 384 MiB, 417 slots | — |
 
 </details>
 
