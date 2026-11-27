@@ -62,8 +62,11 @@ func TestR_BAS_115_ARegistryTokenReadsOnlyItsAnonymityExpiryAndGrant(t *testing.
 		t.Errorf("the grant is not readable: %s", payload)
 	}
 	hash := base64.RawURLEncoding.EncodeToString(c.Binding.SecretSHA256[:])
+	// The sealed part is random bytes in base64: a short name such as "k1" turns up in it by chance about once in fifteen tokens,
+	// so the names are looked for in what is readable, the version, the key ID and the readable claims.
+	clear := payload[:len(payload)-len(sealed)]
 	for _, secret := range []string{"k1", c.PrincipalID, c.Binding.TokenID, `"pat"`, hash, "default", `"user"`, `"e"`, `"iat"`, `"c"`} {
-		if bytes.Contains(payload, []byte(secret)) {
+		if bytes.Contains(clear, []byte(secret)) {
 			t.Errorf("the payload names %q", secret)
 		}
 	}
