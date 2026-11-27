@@ -490,7 +490,10 @@ running and stops only what it started: Quader with the sign-in provider (`serve
    a real malware scanner wrote (a backend of `make ui-dev-backend` runs one) goes back to waiting and every request for a check ends. A part
    left without a seeded verdict read Unchecked, or Checked under the real signatures when the run found such a backend, and a seeded one
    turned to Recheck due under the real scanner's newer signatures or the seed's own pulls of earlier runs, so the two images' screens
-   (`malware-marks-image-partial`, and the Bastion's `image-source` image with both platforms stored) showed what the instance had run before. **Grades** ([advisories.ts](../../web/e2e/renders/advisories.ts), R-VULN-038): the profile's OSV
+   (`malware-marks-image-partial`, and the Bastion's `image-source` image with both platforms stored) showed what the instance had run before.
+   The image scanning goes back the same way (`resetImageScans` of [scanners.ts](../../web/e2e/renders/scanners.ts)): every image's
+   scan waits again and the image database's source row is gone, as on an instance no `vuln-scanner-trivy` has seen, so the images read
+   **No database** with the render's backend, which runs no scanner; on an instance where one had run they read a grade with no findings. **Grades** ([advisories.ts](../../web/e2e/renders/advisories.ts), R-VULN-038): the profile's OSV
    source reads npm advisories from the generic repository `platform/advisory-mirror` instead of the network (`mode: repository`
    in `up.sh`, R-VULN-005); the seed uploads an archive of its own `DEMO-…` records there that affect the packages it vendors into
    `web-frontend/npm-vendor` (`matchPublicAdvisories: always`), runs `vuln-sync-osv` and waits until `image-convert-tools@4.0.1`

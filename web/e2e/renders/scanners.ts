@@ -92,3 +92,24 @@ export function seedScannerReplicas(): void {
     ].join('\n'),
   );
 }
+
+/**
+ * The image scanning as the profile's backend of the renders has it, which runs no image scanner and fetches no database
+ * (`UI_SCANNERS=0`, Q-ARCH-1064): no database for images, and every image's scan waiting, as on a database no scanner has seen. A
+ * backend that once ran `vuln-scanner-trivy` on the instance (`make ui-dev-backend` runs it) left its database recorded and its scans
+ * done, and the image pages read a grade with no findings instead of **No database**: the seed puts both back, so a screen shows the
+ * same whichever backend the instance ran before. The states a list shows of a scan are answered in the browser (scan-states.ts).
+ */
+export function resetImageScans(): void {
+  psql(
+    [
+      'BEGIN;',
+      `UPDATE vuln_image_scan SET state = 'pending', not_before = now(), attempts = 0, db_digest = NULL, scanned_at = NULL, error_code = NULL,
+         error_detail = NULL, judged = NULL, started_at = NULL, os_family = NULL, os_name = NULL, os_eosl = false, packages = 0,
+         db_built_at = NULL, tool_version = NULL
+       WHERE state <> 'pending' OR db_digest IS NOT NULL OR started_at IS NOT NULL;`,
+      `DELETE FROM vuln_source_state WHERE source = 'trivy';`,
+      'COMMIT;',
+    ].join('\n'),
+  );
+}
