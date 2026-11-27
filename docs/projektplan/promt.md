@@ -1176,7 +1176,7 @@ order is what a user or an operator meets first. The state is kept here.
   change under load; R-AUTHZ-028 does not list the case; proposal: skip a build when the index's epochs are at or
   above what the poll applied).
 
-- **Open since 2026-11-26, 08:32: to read at the next pipeline window (17:00), the runs of this morning's pushes.**
+- **Closed on 2026-11-26, 19:49 (read with every run since 08:32, the entry "What was red at 19:49"), open since 2026-11-26, 08:32: to read at the next pipeline window (17:00), the runs of this morning's pushes.**
   The window of the night ended at 08:00. Not yet read: the run of 08:29 (the upstream's documentation, with the
   corrected journey of the deprecated NuGet package: its last step, `dotnet list package --deprecated`, has never run
   green or red), the runs of 07:10 and 07:40, and the runs of the landings that follow. Known from the run of 06:59:
@@ -1221,7 +1221,10 @@ order is what a user or an operator meets first. The state is kept here.
   1.67 s against a bound of 1.4 s (`TestR_REPO_051_NpmPublicRegistryFeed`,
   `TestR_REPO_054_SlowDownWithoutAHintBacksOffExponentially`) and passed alone; with
   `TestR_REPO_054_ALongWaitEndsTheJobDeferredAndTheNextJobContinuesAtThatTime` of the evening that is three tests of
-  the mirror's back-off whose bounds are wall-clock; not read to a fix.
+  the mirror's back-off whose bounds are wall-clock; not read to a fix. Corrected on 2026-11-27 by B-1127f: the third
+  was no wall-clock bound; it counted the next pass, which the every-minute dispatch may start once the continuation
+  completes the pass (R-REPO-053's "or now when that has passed"), and counts only the jobs up to the pass's end now.
+  The two pauses of 1.67 s against 1.4 s stay open.
 
 - **Closed on 2026-11-25, 23:55: a unit test of the tab Downloads failed every night from 23:20 to midnight.** The case
   "an upstream's rate limit is said above the list, on its waiting rows and on the bulk" sets the limit's end 40 minutes
@@ -1412,6 +1415,71 @@ records the recorder that tells such a stall apart).
   that failed between 07:39 and 09:00 is no finding of the code.
 
 ### Product
+
+- **Open since 2026-11-27, 07:42, read in the window of 22:00 to 08:00: the runs of main of 06:04, 06:10 and 06:39 are red
+  with the same failures, so none is a flake.** (1) A crash: `fatal error: concurrent map read and map write` in
+  `integration (shard d)` (`test/integration/vulnfindings`): the catalogue trigger's first comparison, started since W35-P9f
+  and B-1127e, reads the wiring's map of parts from its own goroutine while the wiring still writes it; a replica can die
+  at start. Not seen on the owner's installation (every pod ready at 07:05). (2) `e2e (vuln)`: the journey waits for
+  `a.facts-grade`, which the grade's details made a `span`. (3) `integration (shard a)`: R-REPO-054's long wait counts three
+  mirror passes where it wants two, in each of the three runs (recorded on 2026-11-26 01:25 as rare). (4) All five parts of
+  `UI layout checks (screens)`: the column Malware scan leaves a cell empty in the package lists, the search results and an
+  upstream's lookup (8b1b10679 fixed only the files' table); the files table stacks at 1,024 px though its columns fit by
+  3 px; the walk of `package-npm-many` finds the column help's button beside the sort button; `profile-usage` and
+  `admin-usage-caller` stop at 390 px on the walk's timeout. Batch J (B-1127f: 1 to 3) and batch K (B-1127g: 4, and the whole
+  render set once) build since 07:42. The gates of the night's landings rendered only the screens a package touched, which
+  is how 4 reached main.
+  **(1) to (3) closed on 2026-11-27, 09:10 by B-1127f** (five commits): the catalogue trigger reads nothing of the wiring's map
+  any more (what it needs is resolved once when it is wired; a unit test showed the race under `-race` and keeps it shut), and
+  the audit of every `Start` of the wiring found a second one, the scheduler's first tick reading the read-only mode through
+  the same map, fixed alike; the vulnerability journey finds the grade by its role and name; R-REPO-054 counted the next pass,
+  which the every-minute dispatch may start once the continuation completes the pass, and now counts the jobs up to the pass's
+  end (no product change). On the way: `malware-mark.spec.ts` failed from today on, because its fixed date of 20.11. now reads
+  "last week"; it accepts any relative part now. Gates on the stack: the landing gates, chart lint and test, the renders,
+  `vulnfindings`, `mirror`, `bastion`, `bastionreg` and `go test -race ./internal/app/`, all green. Open from it: the limits
+  index's `onInstall` is set after its component starts (a race not reproduced, a few lines), and the scheduler's first tick
+  may run a mutating task before the read-only state is known (tiny window); both for a later batch.
+
+- **Open since 2026-11-27, 08:16, from the owner switching his Bastion's web interface on: two defects of W-35 he found at
+  once.** (1) "Wo soll der Schalter sein?": the switches **Web interface** and **Documentation** stand at the end of the card's
+  **Details**, after every flood figure and the addresses, while **Direct reads from the object store** stands in the plain
+  view; decided: the block moves into the plain view after the direct reads (batch L, B-1127h). (2) "Im UI vom Bastion steht
+  oben das Quader Icon? Warum nicht das Bastion Icon?": the Bastion app's top bar, its favicon and the Go refusal page show
+  Quader's wall, although the owner gave the Bastion its tower and the lockup "Quader Bastion" on 2026-11-17 (ADR-199) and the
+  generator writes them; decided: every place a visitor of a Bastion sees a mark shows the tower, the spinner stays the one
+  the owner picked (batch M, B-1127i). Read without signing in at 08:05: his installation admits requests without a
+  credential and shows no public project, so the web interface he switched on lists nothing until a project and its
+  repositories are **Public**; told him so, with the warning about public remote repositories.
+
+- **Open since 2026-11-27, 08:41, from the owner's screenshot of an image reading "No database": the admin area says nothing
+  of the vulnerability scanning** ("ich habe keine Ahnung was mit meinem Trivy los ist, und wieso nicht gescannt wird"). It was
+  his instance 1 of the development profile: the render seed's `resetImageScans`, which I ran at 08:20 to give him his example
+  projects back (the instance had been empty since 2026-11-26), deletes the Trivy database's state, and `vuln-sync-trivy-db`
+  runs every six hours; the loader of the database container waits silently while none is in use. A manual run of the task
+  (08:36) recorded the database and every one of the 77 images was scanned within minutes. His cluster had a database in use
+  throughout. The malware scanning has its admin page, the vulnerability scanning only the Trivy replicas on **Advisory
+  sources**; and an image whose detection is not complete reads **No database** whatever the reason. Decided, batch N (W-38): a
+  page **Settings › Vulnerability scanning** built as **Malware scanning** (scanners, database in use with **Import now**, the
+  image scanning's state by reason), the grade's word says the scan row's state and links there, the renders run the import
+  at their end, the loader says once why it waits.
+
+- **Open since 2026-11-27, 08:52, the owner on Admin area › Bastions: "Die ganze Seite ist ein UX Albtraum. Überall massig Text
+  Slop. Info-Texte zu Settings gehören als Hover hinter ein kleines Info-Zeichen. Sortiere die Seite neu."** Also: **Last
+  contact** takes more than half the page though it matters only when something is wrong; **Web interface** and
+  **Documentation** are main settings and were hidden in **Details** (batch L moves them); a value fixed by the chart must say
+  "Helm-Konfiguration", not "Konfiguration"; and the declared token's name is English inside the German UI. At his word a
+  planner with a UX profile plans the page (W-39, `.dev/briefs/w39-plan.md`): the inventory, the new order with mock-ups, one
+  help component for settings and columns, the packages, the "Helm configuration" sweep across the UI and the server-made
+  names, and the other admin pages with the same faults.
+
+- **Open since 2026-11-27, 09:00, the owner on his Bastion's web interface: "der Bastion braucht eine Projektansicht" and
+  "außerdem fehlt im Bastion komplett der Pull-Button".** A project's page at the Bastion lists its packages flat; repository
+  pages exist only for a generic repository's files, and no list offers a command (the main installation's **Pull ▾** sits in a
+  repository's list of images). The built-in project's description is English inside the German interface. Decided and given
+  to a planner (W-40, `.dev/briefs/w40-plan.md`): the project view with its repositories is the default and the flat list a
+  second view; an administrator may hide the repositories per Bastion (behind the card's details, shown by default); every
+  list a client fetches from offers its command with the Bastion's address and no credential, for every format; server-made
+  texts in the reader's language.
 
 - **Read on 2026-11-27, 07:37: the owner's installation on v0.163.0** (the release of 06:39's push, the night's last batch B-1127e included: the malware mark and its details
   everywhere, the controller's screens, the grade's details, the Bastion's marks, the storage page's history, the Bastion's last fixes;
@@ -2707,7 +2775,7 @@ records the recorder that tells such a stall apart).
   Not verified: a real pull of one image over several replicas; clients of npm, NuGet, Debian and Ansible end to end
   (they go the engine's same road); the write load, measured with a row per file.
 
-- **Open since 2026-11-26, 12:06: the final plans of W-34 and W-35 after the owner's answers, and the order of their packages.**
+- **Closed on 2026-11-27, 07:42 (every package of both plans landed: W-34's E1 to E19, W-35's P1 to P12 with P9b to P9f), open since 2026-11-26, 12:06: the final plans of W-34 and W-35 after the owner's answers, and the order of their packages.**
   `.dev/w34-plan.md` (decisions D1 to D13, packages E1 to E17) and `.dev/w35-plan.md` (decisions B.1 to B.14, packages
   P1 to P12), not in git. New in them, decided by the planners on my word or by me: a Bastion stores its last
   configuration in its cache backend, so that a replica restarted during an outage serves the GUI (follows from
@@ -2841,7 +2909,7 @@ records the recorder that tells such a stall apart).
   anonyme User aus dem Netz die sich über die publizierten Inhalte informieren wollen." No credential enters a
   browser; token, PAT and certificate identify clients at the package API only.
 
-- **Open since 2026-11-26, 10:45, the owner's task (W-34): a Bastion's download limits are configured by the administrator,
+- **Closed on 2026-11-26, 22:23 by W34-E19, the last of W-34's packages (E1 to E19), open since 2026-11-26, 10:45, the owner's task (W-34): a Bastion's download limits are configured by the administrator,
   per Bastion, and the throughput between the main installation and a Bastion has a maximum.** His words: "Die
   Download-Limits müssen sich durch den Administrator detailiert konfigurieren lassen. Ich denke es ist auch
   Sinnvoll, eine angepasste Konfiguration pro Bastion zuzulassen. Intern könnten die Limits deaktiviert sein und auf
