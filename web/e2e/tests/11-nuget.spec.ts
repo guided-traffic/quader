@@ -52,7 +52,7 @@ test('R-UI-018 R-UI-019 the NuGet clients, their snippets with the index.json UR
     await expect(page.getByRole('heading', { name: 'Set up client', level: 1 })).toBeVisible();
     // Opened from the repository, the page asks neither its format nor the repository (R-UI-120): the header names them.
     await expect(page.locator('.context')).toContainText(qualified(virtualKey));
-    for (const label of ['.NET CLI (dotnet)', 'nuget.exe', 'Visual Studio 2022']) {
+    for (const label of ['.NET CLI (dotnet)', 'NuGet CLI (nuget.exe)', 'Visual Studio']) {
       await expect(client.getByRole('option', { name: label, exact: true })).toBeAttached();
     }
   });
@@ -78,9 +78,9 @@ test('R-UI-018 R-UI-019 the NuGet clients, their snippets with the index.json UR
   });
 
   await test.step('nuget.exe and Visual Studio', async () => {
-    await client.selectOption({ label: 'nuget.exe' });
+    await client.selectOption({ label: 'NuGet CLI (nuget.exe)' });
     await expect(configure.filter({ hasText: 'nuget sources add' }).first()).toContainText(feed(virtualKey));
-    await client.selectOption({ label: 'Visual Studio 2022' });
+    await client.selectOption({ label: 'Visual Studio' });
     await expect(configure.first()).toContainText(`<add key="quader" value="${feed(virtualKey)}" protocolVersion="3" />`);
   });
 
