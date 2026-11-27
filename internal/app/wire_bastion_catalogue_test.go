@@ -4,6 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"log/slog"
+	"reflect"
+	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -11,6 +14,8 @@ import (
 	"github.com/guided-traffic/quader/internal/cache"
 	"github.com/guided-traffic/quader/internal/cluster"
 	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/jobs"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
 )
 
 // The trigger of the public catalogue's builder (bastion.md R-BAS-105) without a database or a queue: what it enqueues when its replica
@@ -122,6 +127,50 @@ func TestR_BAS_105_AReplicaThatStartsWithAChangedConfigurationStartsARun(t *test
 		_ = tr.Stop(context.Background())
 		if want := map[bool]int64{true: 1, false: 0}[drift]; started.Load() != want {
 			t.Errorf("drift %v: %d runs started, want %d", drift, started.Load(), want)
+		}
+	}
+}
+
+// comparedHandler is a log handler that closes compared at the trigger's warning that its first comparison failed.
+type comparedHandler struct {
+	once     *sync.Once
+	compared chan struct{}
+}
+
+func (h comparedHandler) Enabled(context.Context, slog.Level) bool { return true }
+func (h comparedHandler) WithAttrs([]slog.Attr) slog.Handler       { return h }
+func (h comparedHandler) WithGroup(string) slog.Handler            { return h }
+func (h comparedHandler) Handle(_ context.Context, r slog.Record) error {
+	if strings.Contains(r.Message, "could not compare") {
+		h.once.Do(func() { close(h.compared) })
+	}
+	return nil
+}
+
+// TestR_BAS_105_TheTriggerReadsNothingTheWiringStillWrites: the trigger's first comparison runs on its own goroutine as soon as its
+// step has run, while the wiring goes on and puts the results of the later steps into the replica's parts. It compares over what its
+// step was handed and reads nothing of those parts (a replica crashed at start-up with a concurrent map read and map write). The test
+// goes on putting parts until the comparison has run; run with -race. Milliseconds, no data, no database: the step is handed no token
+// service, so the comparison ends before its first query.
+func TestR_BAS_105_TheTriggerReadsNothingTheWiringStillWrites(t *testing.T) {
+	compared := make(chan struct{})
+	a := appFor(t, "worker")
+	a.log = slog.New(comparedHandler{once: &sync.Once{}, compared: compared})
+	out, err := a.wireBastionCatalogue(t.Context(), infra{db: &postgres.DB{}}, coordArea{queue: &jobs.Queue{}}, identityArea{}, packagesAPIArea{}, vulnAPIArea{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = out.trigger.Stop(context.Background()) })
+	deadline := time.After(5 * time.Second)
+	for {
+		select {
+		case <-compared:
+			return
+		case <-deadline:
+			t.Fatal("the trigger's first comparison did not run")
+		default:
+			// A later step of the wiring puts its result.
+			a.parts.put(reflect.ValueOf(sessionsArea{}))
 		}
 	}
 }

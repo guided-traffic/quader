@@ -62,9 +62,11 @@ type catalogueRuntime struct {
 }
 
 // wireBastionCatalogue builds the builder over the store of 00146 and the renderer of the management API, and the trigger that
-// starts its job after a change (R-BAS-105). The renderer and the API services it reads are built at the first run: every area
-// they read exists by then.
-func (a *App) wireBastionCatalogue(_ context.Context, in infra, co coordArea, _ packagesAPIArea, _ vulnAPIArea) (bastionCatalogueArea, error) {
+// starts its job after a change (R-BAS-105). The renderer and the API services it reads are built at the first run, a job the worker
+// claims only once the replica is ready: every area they read exists by then. The trigger is different: its goroutine compares the
+// store at once and answers changes from the moment it starts, while the wiring still puts the later steps' results into a.parts, so
+// what it lists the registrations over is resolved here, from the step's inputs, and it reads nothing of a.parts.
+func (a *App) wireBastionCatalogue(_ context.Context, in infra, co coordArea, id identityArea, _ packagesAPIArea, _ vulnAPIArea) (bastionCatalogueArea, error) {
 	if err := requireInputs(AreaBastionCatalogue, given("database", in.db), given("job queue", co.queue)); err != nil {
 		return bastionCatalogueArea{}, err
 	}
@@ -74,14 +76,15 @@ func (a *App) wireBastionCatalogue(_ context.Context, in infra, co coordArea, _ 
 		Store: store, Renderer: lateRenderer{render}, Main: a.mainOrigins(), PolicyHash: a.readmePolicy(), DocsPolicy: docsPolicy(),
 		AnonymousRefused: anonymousRefused(a.cfg), Workers: catalogueWorkers, Log: a.log.With("component", "bastion-catalogue"),
 	})
-	a.catalogue.set(catalogueRuntime{builder: b, regs: a.catalogueRegistrations})
+	registrations := a.catalogueRegistrations(in, id)
+	a.catalogue.set(catalogueRuntime{builder: b, regs: registrations})
 	t := &catalogueTrigger{
 		signals: co.signals, log: a.log,
 		active: func(ctx context.Context) bool {
 			if held, err := store.Held(ctx); err == nil && len(held) > 0 {
 				return true
 			}
-			regs, err := a.catalogueRegistrations(ctx)
+			regs, err := registrations(ctx)
 			return err == nil && slices.ContainsFunc(regs, func(r catalogue.Registration) bool { return r.GUI })
 		},
 		enqueue: func(ctx context.Context) error {
@@ -89,7 +92,7 @@ func (a *App) wireBastionCatalogue(_ context.Context, in infra, co coordArea, _ 
 			return err
 		},
 		drift: func(ctx context.Context) (bool, error) {
-			regs, err := a.catalogueRegistrations(ctx)
+			regs, err := registrations(ctx)
 			if err != nil {
 				return false, err
 			}
@@ -141,38 +144,40 @@ func (a *App) registerBastionCatalogueJobs(r *jobs.Registry) {
 	r.RegisterTask(KindBastionCatalogue, task)
 }
 
-// catalogueRegistrations lists every registration with its switches and the base URL its documents are rendered on (R-BAS-104): the
-// base URL the registration reported at its last handshake, when it is an entry of server.additional_base_urls. A disabled
-// registration builds nothing.
-func (a *App) catalogueRegistrations(ctx context.Context) ([]catalogue.Registration, error) {
-	in := part[infra](a.parts)
-	regs := a.bastionRegistrations()
-	if in.db == nil || regs == nil {
-		return nil, errors.New("the public catalogue needs the database and the registrations")
-	}
-	list, err := catalogue.NewDB(in.db).Registrations(ctx)
-	if err != nil {
-		return nil, err
-	}
-	reported := bastionBaseURLs{db: in.db}
-	out := make([]catalogue.Registration, 0, len(list))
-	for _, l := range list {
-		reg, err := regs.Get(ctx, l.Name)
+// catalogueRegistrations returns the list of every registration with its switches and the base URL its documents are rendered on
+// (R-BAS-104): the base URL the registration reported at its last handshake, when it is an entry of server.additional_base_urls. A
+// disabled registration builds nothing. The list reads the database and the registration service it is built over here, never
+// a.parts: the trigger calls it on its own goroutine while the wiring still writes them.
+func (a *App) catalogueRegistrations(in infra, id identityArea) func(context.Context) ([]catalogue.Registration, error) {
+	regs := a.registrationsOver(in, id)
+	return func(ctx context.Context) ([]catalogue.Registration, error) {
+		if in.db == nil || regs == nil {
+			return nil, errors.New("the public catalogue needs the database and the registrations")
+		}
+		list, err := catalogue.NewDB(in.db).Registrations(ctx)
 		if err != nil {
 			return nil, err
 		}
-		sw := a.bastionSwitches(l.Name, reg.Switches)
-		r := catalogue.Registration{ID: l.ID, Name: l.Name, GUI: l.Enabled && sw.GUI, Docs: sw.Docs}
-		if r.GUI {
-			base, _, err := reported.ReportedBaseURL(ctx, l.Name)
+		reported := bastionBaseURLs{db: in.db}
+		out := make([]catalogue.Registration, 0, len(list))
+		for _, l := range list {
+			reg, err := regs.Get(ctx, l.Name)
 			if err != nil {
 				return nil, err
 			}
-			r.BaseURL, _ = catalogue.BaseURL(base, a.cfg.Server.AdditionalBaseURLs)
+			sw := a.bastionSwitches(l.Name, reg.Switches)
+			r := catalogue.Registration{ID: l.ID, Name: l.Name, GUI: l.Enabled && sw.GUI, Docs: sw.Docs}
+			if r.GUI {
+				base, _, err := reported.ReportedBaseURL(ctx, l.Name)
+				if err != nil {
+					return nil, err
+				}
+				r.BaseURL, _ = catalogue.BaseURL(base, a.cfg.Server.AdditionalBaseURLs)
+			}
+			out = append(out, r)
 		}
-		out = append(out, r)
+		return out, nil
 	}
-	return out, nil
 }
 
 // bastionSwitches are a registration's switches gui and docs: the stored ones of its configuration (R-BAS-093, R-BAS-102), or the

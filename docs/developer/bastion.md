@@ -1868,6 +1868,8 @@ catalogue is dropped once and its state records `anonymous_requests_refused` (`s
 some registration has a catalogue to build or to drop, and once when its replica starts if `Builder.Drift` finds that the stored states differ from what a run would leave: the
 configuration a run reads changes only with a restart (Q-BAS-496). Its answers (`active`, `enqueue`, `drift`) are functions the wiring
 fills, so [wire_bastion_catalogue_test.go](../../internal/app/wire_bastion_catalogue_test.go) drives it without a database or a queue.
+They list the registrations over the database and the registration service the step was handed (`catalogueRegistrations`), never
+over `a.parts`: the comparison runs on the trigger's goroutine while the wiring still writes the later steps' results.
 
 **The catalogue's state** (`state`, `iface.CatalogueStateDocument`, interface version 11): `builtAt`, the time of the last run that
 changed a document; `malware`, today's signatures as the anonymous caller reads `GET /api/v1/malware/signatures` without the engine,

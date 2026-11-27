@@ -453,6 +453,14 @@ area: `SubsystemsFor` asks it (`areasFor`).
 - **Reading a result.** Everything that serves a request reads the results through `part[T](a.parts)`; the zero value of
   an area has nil members, which is how code reads an area the role does not build. A nil pointer must not become a
   non-nil interface: `decider()`, `Repositories()` and `Authorizer()` answer an untyped nil.
+- **No other goroutine reads `a.parts` during the wiring.** `a.parts` is a plain map the bootstrap goroutine writes until
+  `runSteps` returns. A request reads it after (the listeners open later), and so does a job handler (the worker claims only once the
+  `startup` check passes). A component a step starts runs before that: its goroutines, timers, cache `OnChange` callbacks and signal
+  subscriptions work with what the step was handed as typed inputs or resolved before `Start`, never with `part[T](a.parts)` or an
+  `App` method that reads it, because a read beside a `put` ends the process (`fatal error: concurrent map read and map write`).
+  The trigger of the public catalogue takes the registrations over its `infra` and `identityArea` inputs for that reason
+  (`catalogueRegistrations`, [wire_bastion_catalogue.go](../../internal/app/wire_bastion_catalogue.go)); its test puts parts while the
+  trigger's first comparison runs and fails under `-race` if it reads one.
 
 ### How to add a wiring step
 

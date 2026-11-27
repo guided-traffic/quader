@@ -24,8 +24,11 @@ import (
 // prerequisite is therefore an error naming the step, the type and the role
 // before anything starts, never a nil component that answers 503 later.
 
-// wiring holds the results of the steps run so far, by type. Only the bootstrap
-// goroutine reads and writes it.
+// wiring holds the results of the steps run so far, by type. It is a plain map:
+// the bootstrap goroutine writes it until runSteps returns, and no other goroutine
+// reads it before then. A component a step starts (its goroutines, its cache and
+// signal callbacks) works with the step's inputs, never with part or lookup;
+// requests and job handlers, which run once the replica is started, read it.
 type wiring struct {
 	vals map[reflect.Type]reflect.Value
 }

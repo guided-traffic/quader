@@ -83,7 +83,11 @@ func (a *App) bastionStages(rt *endpointRuntime) (bastionmain.Stages, error) {
 // bastionRegistrations builds the registration service behind /api/v1/bastions (R-BAS-004). It is nil on a
 // replica that has no identity area (a worker), whose API operations then answer 503.
 func (a *App) bastionRegistrations() *bastionmain.Registrations {
-	in, id := part[infra](a.parts), part[identityArea](a.parts)
+	return a.registrationsOver(part[infra](a.parts), part[identityArea](a.parts))
+}
+
+// registrationsOver builds the registration service over the given parts, nil without the database or the token service.
+func (a *App) registrationsOver(in infra, id identityArea) *bastionmain.Registrations {
 	if in.db == nil || id.tokens == nil {
 		return nil
 	}
