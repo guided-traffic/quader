@@ -30,7 +30,7 @@ import { TimeAgo } from '../../shared/ui/time-ago';
 import { ClientCommandMenu } from './client-command-menu';
 import { VersionSwitch } from './version-switch';
 import { clamavInstallNote, versionCommand } from './version-command';
-import { arrivedLabel, contentShapeOf, leadsWithDocumentation } from '../../features/repositories/content/content-shape';
+import { arrivedLabel, contentShapeOf, leadsWithDocumentation } from '../repositories/content-shape';
 import { EXTERNAL_REL, packageCommands, versionCommands } from '../../features/packages/package-links';
 import { ImageDetails } from './image-details';
 import { ImagePart, chartOf, chartValues, cutDigest, heldReason, imageFact, imageFactList, imageLinks, imageParts, kindWord } from './image-facts';

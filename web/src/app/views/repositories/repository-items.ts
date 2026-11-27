@@ -1,20 +1,21 @@
 import { DecimalPipe } from '@angular/common';
 import { Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { TimeAgo } from '../../../shared/ui/time-ago';
-import { PackageSort, PackageSummary, PackagesApi } from '../../../api/packages-api';
-import { splitRef } from '../../../api/repositories-api';
-import { PagedResource } from '../../../shared/paged-resource';
-import { DataTable, TableColumn, TableSort } from '../../../shared/ui/data-table';
-import { DeprecationMark } from '../../../shared/ui/deprecation-mark';
-import { GradeLabel } from '../../../shared/vulnerability/grade';
-import { MalwareMark, malwareColumn, malwareShown } from '../../../shared/malware/malware-mark';
-import { MalwareSignaturesStore } from '../../../core/malware-signatures';
-import { gradeColumnHelp, gradeRank } from '../../../shared/vulnerability/grade-words';
-import { systemClosed } from '../../../core/system-clients';
-import { LIVE_SLOW_MS, live } from '../../../core/live-refresh';
-import { ClientCommandMenu } from '../../../views/packages/client-command-menu';
-import { packageCommands } from '../../packages/package-links';
+import { TimeAgo } from '../../shared/ui/time-ago';
+import { PackageSort, PackageSummary } from '../../api/packages-api';
+import { PackageReads } from '../../api/package-reads';
+import { splitRef } from '../../api/refs';
+import { PagedResource } from '../../shared/paged-resource';
+import { DataTable, TableColumn, TableSort } from '../../shared/ui/data-table';
+import { DeprecationMark } from '../../shared/ui/deprecation-mark';
+import { GradeLabel } from '../../shared/vulnerability/grade';
+import { MalwareMark, malwareColumn, malwareShown } from '../../shared/malware/malware-mark';
+import { MalwareSignaturesStore } from '../../core/malware-signatures';
+import { gradeColumnHelp, gradeRank } from '../../shared/vulnerability/grade-words';
+import { systemClosed } from '../../core/system-clients';
+import { LIVE_SLOW_MS, live } from '../../core/live-refresh';
+import { ClientCommandMenu } from '../packages/client-command-menu';
+import { packageCommands } from '../../features/packages/package-links';
 import { ContentShape, emptyContentText } from './content-shape';
 import { RepositoryItemVersions } from './repository-item-versions';
 
@@ -29,12 +30,14 @@ const GRADE_SORT_PAGE = 500;
 export const GRADE_SORT_MAX = 1000;
 
 /**
- * The items of a repository of a package format (R-UI-052): its images or packages, with a filter and paging on the server
+ * The items of a repository of a package format (R-UI-052), a view both applications compose (R-UI-223, Q-UI-1630): its images or
+ * packages, with a filter and paging on the server
  * (R-API-029; `repository` expands a virtual repository to its members, and a remote repository answers with what it has cached),
  * the latest version, the number of versions, the grade of each item's latest version (R-UI-094), the button of the latest version's
  * commands (Pull, Install; Q-UI-1066), and a row that opens the item's versions, each with the same button. The filter and the sort live in the URL (R-UI-003), owned by the content page. The column of
  * grades appears only when the answer carries them (Q-UI-377), and sorting by it loads the list up to 1,000 entries and sorts in the
- * browser, worst last ascending and first descending (Q-UI-373).
+ * browser, worst last ascending and first descending (Q-UI-373). It reads through `PackageReads` and acts nowhere: the act that fills the
+ * list (Upload collection, Upload package) is the page's, projected as `[listActs]` at the end of the toolbar (Q-UI-1402).
  */
 @Component({
   selector: 'quader-repository-items',
@@ -52,16 +55,9 @@ export const GRADE_SORT_MAX = 1000;
         />
         <span class="material-icons" aria-hidden="true">search</span>
       </div>
-      @if (action(); as a) {
-        <!-- The act that fills the list from the screen (Upload collection, R-ANS-061), where a generic repository's folder has Upload
-             files: at the end of the toolbar (Q-UI-512, Q-UI-1320). -->
-        <div class="files-actions">
-          <button class="btn btn-default" type="button" (click)="act.emit()">
-            <span class="material-icons" aria-hidden="true">{{ a.icon }}</span>
-            {{ a.label }}
-          </button>
-        </div>
-      }
+      <!-- The act that fills the list from the screen (Upload collection, R-ANS-061), where a generic repository's folder has Upload
+           files: the page's, projected at the end of the toolbar (Q-UI-512, Q-UI-1320, Q-UI-1630). -->
+      <ng-content select="[listActs]" />
     </div>
 
     <quader-data-table
@@ -123,7 +119,9 @@ export const GRADE_SORT_MAX = 1000;
           <td>
             <quader-time-ago [at]="p.updatedAt" absolute="title" />
           </td>
-          <td class="num">{{ p.downloadCount | number }}</td>
+          @if (downloads()) {
+            <td class="num">{{ p.downloadCount | number }}</td>
+          }
           <!-- The commands of the item's latest version, the version of the column Latest, without opening the row (Q-UI-1066); none
                where no client is answered (Q-UI-898, Q-UI-965). -->
           @if (!closed()) {
@@ -161,7 +159,7 @@ export const GRADE_SORT_MAX = 1000;
   styleUrl: './repository-lists.scss',
 })
 export class RepositoryItems {
-  private readonly api = inject(PackagesApi);
+  private readonly api = inject(PackageReads);
 
   /** The qualified name of the repository. */
   readonly repository = input.required<string>();
@@ -179,9 +177,11 @@ export class RepositoryItems {
   readonly fill = input<'publisher' | 'other' | 'none'>('other');
   /** The repository is disabled: no row offers an install or pull command (Q-UI-965). */
   readonly disabled = input(false);
-  /** The act of the toolbar the page offers this caller, null for none: its label and its icon; a press is `act` (Q-UI-1320). */
-  readonly action = input<{ readonly label: string; readonly icon: string } | null>(null);
-  readonly act = output<void>();
+  /**
+   * The rows say how often each item was downloaded: the column **Downloads**. An application whose data carry no download count (the
+   * Bastion's) passes false (Q-UI-1449).
+   */
+  readonly downloads = input(true);
   /** Counts the changes the page made itself (a collection uploaded): the list is read again on each. */
   readonly revision = input(0);
   /** No client reaches the items: a system repository that answers no client (Q-UI-898), or a disabled one. */
@@ -237,10 +237,8 @@ export class RepositoryItems {
       });
     }
     if (this.malware()) columns.push(malwareColumn('package'));
-    columns.push(
-      { id: 'updatedAt', label: $localize`:@@repo.content.col.updated:Updated`, sortable: true },
-      { id: 'downloads', label: $localize`:@@repo.content.col.downloads:Downloads`, numeric: true },
-    );
+    columns.push({ id: 'updatedAt', label: $localize`:@@repo.content.col.updated:Updated`, sortable: true });
+    if (this.downloads()) columns.push({ id: 'downloads', label: $localize`:@@repo.content.col.downloads:Downloads`, numeric: true });
     if (!this.closed()) columns.push({ id: 'actions', label: $localize`:@@repo.col.actions:Actions`, hideLabel: true });
     return columns;
   });
@@ -275,7 +273,7 @@ export class RepositoryItems {
   }
 
   /** The whole list up to GRADE_SORT_MAX entries, so that the browser sorts it by grade (Q-UI-373). */
-  private async loadForGrade(fetcher: ReturnType<PackagesApi['list']>): Promise<void> {
+  private async loadForGrade(fetcher: ReturnType<PackageReads['list']>): Promise<void> {
     await this.list.start(fetcher, GRADE_SORT_PAGE);
     while (this.list.hasMore() && !this.list.error() && this.list.items().length < GRADE_SORT_MAX) await this.list.more();
   }

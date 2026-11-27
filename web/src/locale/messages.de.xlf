@@ -12680,8 +12680,6 @@
       <notes>
         <note category="location">src/app/features/endpoints/endpoint-detail.ts:112</note>
         <note category="location">src/app/features/guides/guide-format.ts:159</note>
-        <note category="location">src/app/features/repositories/content/repository-item-versions.ts:244</note>
-        <note category="location">src/app/features/repositories/content/repository-items.ts:244</note>
         <note category="location">src/app/features/repositories/repository-list.ts:411</note>
         <note category="location">src/app/features/settings/storage/damaged-blobs.ts:119</note>
         <note category="location">src/app/features/settings/storage/findings-list.ts:195</note>
@@ -12689,6 +12687,8 @@
         <note category="location">src/app/features/system/job-table.ts:151</note>
         <note category="location">src/app/features/system/tasks-card.ts:123</note>
         <note category="location">src/app/views/files/folder-view.ts:189</note>
+        <note category="location">src/app/views/repositories/repository-item-versions.ts:247</note>
+        <note category="location">src/app/views/repositories/repository-items.ts:242</note>
       </notes>
       <segment>
         <source>Actions</source>
@@ -22872,439 +22872,6 @@
         <target>Der Upload wurde abgelehnt.</target>
       </segment>
     </unit>
-    <unit id="clamav.set.in-use">
-      <notes>
-        <note category="location">src/app/features/repositories/content/clamav-databases.ts:51</note>
-      </notes>
-      <segment>
-        <source>Set in use:</source>
-        <target>Satz in Verwendung:</target>
-      </segment>
-    </unit>
-    <unit id="clamav.set.before">
-      <notes>
-        <note category="location">src/app/features/repositories/content/clamav-databases.ts:53</note>
-      </notes>
-      <segment>
-        <source>The set before it:</source>
-        <target>Der Satz davor:</target>
-      </segment>
-    </unit>
-    <unit id="clamav.databases.loading">
-      <notes>
-        <note category="location">src/app/features/repositories/content/clamav-databases.ts:62,63</note>
-      </notes>
-      <segment>
-        <source>Loading the databases.</source>
-        <target>Die Datenbanken werden geladen.</target>
-      </segment>
-    </unit>
-    <unit id="clamav.databases">
-      <notes>
-        <note category="location">src/app/features/repositories/content/clamav-databases.ts:137</note>
-      </notes>
-      <segment>
-        <source>Databases</source>
-        <target>Datenbanken</target>
-      </segment>
-    </unit>
-    <unit id="clamav.databases.empty">
-      <notes>
-        <note category="location">src/app/features/repositories/content/clamav-databases.ts:138</note>
-      </notes>
-      <segment>
-        <source>Quader has stored no ClamAV definitions yet. The malware scan&apos;s updater fills this repository.</source>
-        <target>Quader hat noch keine ClamAV-Definitionen gespeichert. Der Updater der Malware-Prüfung füllt dieses Repository.</target>
-      </segment>
-    </unit>
-    <unit id="clamav.col.database">
-      <notes>
-        <note category="location">src/app/features/repositories/content/clamav-databases.ts:142</note>
-      </notes>
-      <segment>
-        <source>Database</source>
-        <target>Datenbank</target>
-      </segment>
-    </unit>
-    <unit id="clamav.col.in-use">
-      <notes>
-        <note category="location">src/app/features/repositories/content/clamav-databases.ts:143</note>
-      </notes>
-      <segment>
-        <source>In use</source>
-        <target>In Verwendung</target>
-      </segment>
-    </unit>
-    <unit id="clamav.col.built">
-      <notes>
-        <note category="location">src/app/features/repositories/content/clamav-databases.ts:144</note>
-      </notes>
-      <segment>
-        <source>Built</source>
-        <target>Gebaut</target>
-      </segment>
-    </unit>
-    <unit id="clamav.col.age">
-      <notes>
-        <note category="location">src/app/features/repositories/content/clamav-databases.ts:145</note>
-      </notes>
-      <segment>
-        <source>Age</source>
-        <target>Alter</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.versions">
-      <notes>
-        <note category="location">src/app/features/repositories/content/clamav-databases.ts:146</note>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:143</note>
-      </notes>
-      <segment>
-        <source>Versions</source>
-        <target>Versionen</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.no-scanning.ansible">
-      <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:75</note>
-      </notes>
-      <segment>
-        <source>Collections are not checked for vulnerabilities: no public advisory source lists Ansible collections by version.</source>
-        <target>Collections werden nicht auf Schwachstellen geprüft: Keine öffentliche Advisory-Quelle führt Ansible-Collections nach Version.</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.no-scanning.deb">
-      <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:77</note>
-      </notes>
-      <segment>
-        <source>Debian packages are not checked for vulnerabilities yet: Debian&apos;s advisories name source packages and releases, and matching a package against them is not built yet.</source>
-        <target>Debian-Pakete werden noch nicht auf Schwachstellen geprüft: Die Advisories von Debian nennen Quellpakete und Releases, und der Abgleich eines Pakets mit ihnen ist noch nicht gebaut.</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.no-scanning.generic">
-      <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:79</note>
-      </notes>
-      <segment>
-        <source>Files are not checked for vulnerabilities: a file has no package name and version that an advisory could name.</source>
-        <target>Dateien werden nicht auf Schwachstellen geprüft: Eine Datei hat keinen Paketnamen und keine Version, die ein Advisory nennen könnte.</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.no-scanning">
-      <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:81</note>
-      </notes>
-      <segment>
-        <source>This package type is not scanned for vulnerabilities yet.</source>
-        <target>Dieser Pakettyp wird noch nicht auf Schwachstellen geprüft.</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.oci.fill-remote">
-      <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:99</note>
-      </notes>
-      <segment>
-        <source>It fills as clients pull images through it; Set up client shows how.</source>
-        <target>Es füllt sich, wenn Clients Images darüber herunterladen; Client einrichten zeigt, wie.</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.oci.fill">
-      <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:100</note>
-      </notes>
-      <segment>
-        <source>Push an image with your client; Set up client shows how.</source>
-        <target>Pushen Sie ein Image mit Ihrem Client; Client einrichten zeigt, wie.</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.oci.items">
-      <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:102</note>
-      </notes>
-      <segment>
-        <source>Images</source>
-        <target>Images</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.oci.item">
-      <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:103</note>
-      </notes>
-      <segment>
-        <source>Image</source>
-        <target>Image</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.oci.versions">
-      <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:104</note>
-      </notes>
-      <segment>
-        <source>Tags</source>
-        <target>Tags</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.oci.version">
-      <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:105</note>
-      </notes>
-      <segment>
-        <source>Tag</source>
-        <target>Tag</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.oci.filter">
-      <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:106</note>
-      </notes>
-      <segment>
-        <source>Filter images</source>
-        <target>Images filtern</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.oci.empty-remote3">
-      <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:108</note>
-      </notes>
-      <segment>
-        <source>This repository has cached no images yet.</source>
-        <target>Dieses Repository hat noch keine Images zwischengespeichert.</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.oci.empty3">
-      <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:109</note>
-      </notes>
-      <segment>
-        <source>This repository holds no images yet.</source>
-        <target>Dieses Repository enthält noch keine Images.</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.oci.fill-others">
-      <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:111</note>
-      </notes>
-      <segment>
-        <source>Members who may push to it fill it with their client.</source>
-        <target>Mitglieder, die darin pushen dürfen, füllen es mit ihrem Client.</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.oci.empty-filtered">
-      <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:112</note>
-      </notes>
-      <segment>
-        <source>No image matches the filter.</source>
-        <target>Kein Image passt zum Filter.</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.oci.fetched">
-      <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:114</note>
-      </notes>
-      <segment>
-        <source>Fetched</source>
-        <target>Abgerufen</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.oci.published">
-      <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:115</note>
-      </notes>
-      <segment>
-        <source>Pushed</source>
-        <target>Gepusht</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.oci.verb">
-      <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:117</note>
-      </notes>
-      <segment>
-        <source>Pull</source>
-        <target>Pull</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.oci.all-versions">
-      <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:120</note>
-      </notes>
-      <segment>
-        <source>All <ph id="0" equiv="count" disp="count"/> tags</source>
-        <target>Alle <ph id="0" equiv="count" disp="count"/> Tags</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.fill-remote">
-      <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:123</note>
-      </notes>
-      <segment>
-        <source>It fills as clients fetch through it; Set up client shows how.</source>
-        <target>Es füllt sich, wenn Clients darüber abrufen; Client einrichten zeigt, wie.</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.files.fill">
-      <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:125</note>
-      </notes>
-      <segment>
-        <source>Upload files with your client; Set up client shows how.</source>
-        <target>Laden Sie Dateien mit Ihrem Client hoch; Client einrichten zeigt, wie.</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.files">
-      <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:128</note>
-      </notes>
-      <segment>
-        <source>Files</source>
-        <target>Dateien</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.files.empty-remote">
-      <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:130</note>
-      </notes>
-      <segment>
-        <source>This repository has cached no files yet.</source>
-        <target>Dieses Repository hat noch keine Dateien zwischengespeichert.</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.files.empty3">
-      <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:131</note>
-      </notes>
-      <segment>
-        <source>This repository holds no files yet.</source>
-        <target>Dieses Repository enthält noch keine Dateien.</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.files.fill-others">
-      <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:133</note>
-      </notes>
-      <segment>
-        <source>Members who may upload to it fill it with their client.</source>
-        <target>Mitglieder, die darin hochladen dürfen, füllen es mit ihrem Client.</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.files.verb">
-      <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:134</note>
-      </notes>
-      <segment>
-        <source>Download</source>
-        <target>Herunterladen</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.fill">
-      <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:139</note>
-      </notes>
-      <segment>
-        <source>Publish a package with your client; Set up client shows how.</source>
-        <target>Veröffentlichen Sie ein Paket mit Ihrem Client; Client einrichten zeigt, wie.</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.items">
-      <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:141</note>
-      </notes>
-      <segment>
-        <source>Packages</source>
-        <target>Pakete</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.item">
-      <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:142</note>
-      </notes>
-      <segment>
-        <source>Package</source>
-        <target>Paket</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.version">
-      <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:144</note>
-      </notes>
-      <segment>
-        <source>Version</source>
-        <target>Version</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.filter">
-      <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:145</note>
-      </notes>
-      <segment>
-        <source>Filter packages</source>
-        <target>Pakete filtern</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.empty-remote3">
-      <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:147</note>
-      </notes>
-      <segment>
-        <source>This repository has cached no packages yet.</source>
-        <target>Dieses Repository hat noch keine Pakete zwischengespeichert.</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.empty3">
-      <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:148</note>
-      </notes>
-      <segment>
-        <source>This repository holds no packages yet.</source>
-        <target>Dieses Repository enthält noch keine Pakete.</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.fill-others">
-      <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:150</note>
-      </notes>
-      <segment>
-        <source>Members who may publish to it fill it with their client.</source>
-        <target>Mitglieder, die darin veröffentlichen dürfen, füllen es mit ihrem Client.</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.empty-filtered">
-      <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:151</note>
-      </notes>
-      <segment>
-        <source>No package matches the filter.</source>
-        <target>Kein Paket passt zum Filter.</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.published">
-      <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:152</note>
-      </notes>
-      <segment>
-        <source>Published</source>
-        <target>Veröffentlicht</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.verb">
-      <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:154</note>
-      </notes>
-      <segment>
-        <source>Install</source>
-        <target>Installieren</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.all-versions">
-      <notes>
-        <note category="location">src/app/features/repositories/content/content-shape.ts:157</note>
-      </notes>
-      <segment>
-        <source>All <ph id="0" equiv="count" disp="count"/> versions</source>
-        <target>Alle <ph id="0" equiv="count" disp="count"/> Versionen</target>
-      </segment>
-    </unit>
     <unit id="folder.title">
       <notes>
         <note category="location">src/app/features/repositories/content/folder-dialog.ts:20,21</note>
@@ -23654,7 +23221,7 @@
     <unit id="repo.content.loading">
       <notes>
         <note category="location">src/app/features/repositories/content/repository-content.html:100,102</note>
-        <note category="location">src/app/features/repositories/content/repository-items.ts:74,75</note>
+        <note category="location">src/app/views/repositories/repository-items.ts:70,71</note>
       </notes>
       <segment>
         <source>Loading the repository&apos;s content.</source>
@@ -23681,7 +23248,7 @@
     </unit>
     <unit id="files.virtual-note">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:160,162</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:168,170</note>
       </notes>
       <segment>
         <source>A virtual repository stores only what it generates itself, such as an index; the files of its members are on their pages.</source>
@@ -23690,7 +23257,7 @@
     </unit>
     <unit id="files.raw-note">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:162,165</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:170,173</note>
       </notes>
       <segment>
         <source>The raw files of the repository, as Quader stores them.</source>
@@ -23699,7 +23266,7 @@
     </unit>
     <unit id="files.delete">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:181,182</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:189,190</note>
       </notes>
       <segment>
         <source>Delete</source>
@@ -23708,7 +23275,7 @@
     </unit>
     <unit id="repo.deleting">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:191,192</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:199,200</note>
         <note category="location">src/app/features/repositories/repository-detail.html:587,588</note>
         <note category="location">src/app/features/repositories/repository-list.html:261,262</note>
       </notes>
@@ -23719,7 +23286,7 @@
     </unit>
     <unit id="repo.item.loading">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:219,221</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:227,229</note>
       </notes>
       <segment>
         <source>Loading the item.</source>
@@ -23728,7 +23295,7 @@
     </unit>
     <unit id="repo.loading.repository">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:226,228</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:234,236</note>
         <note category="location">src/app/features/repositories/repository-detail.html:46,47</note>
       </notes>
       <segment>
@@ -24042,107 +23609,6 @@
       <segment>
         <source>Folder <ph id="0" equiv="path" disp="created"/> created.</source>
         <target>Ordner <ph id="0" equiv="path" disp="created"/> erstellt.</target>
-      </segment>
-    </unit>
-    <unit id="repo.versions.loading">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-item-versions.ts:54,55</note>
-      </notes>
-      <segment>
-        <source>Loading the versions.</source>
-        <target>Die Versionen werden geladen.</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.prerelease">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-item-versions.ts:79,81</note>
-      </notes>
-      <segment>
-        <source>Pre-release</source>
-        <target>Vorabversion</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.copy-digest">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-item-versions.ts:210</note>
-      </notes>
-      <segment>
-        <source>Copy digest</source>
-        <target>Digest kopieren</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.col.digest">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-item-versions.ts:235</note>
-      </notes>
-      <segment>
-        <source>Digest</source>
-        <target>Digest</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.col.size">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-item-versions.ts:237</note>
-        <note category="location">src/app/views/files/folder-view.ts:184</note>
-      </notes>
-      <segment>
-        <source>Size</source>
-        <target>Größe</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.col.vulnerabilities">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-item-versions.ts:242</note>
-        <note category="location">src/app/features/repositories/content/repository-items.ts:234</note>
-      </notes>
-      <segment>
-        <source>Vulnerabilities</source>
-        <target>Schwachstellen</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.grade-sort-partial">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-items.ts:157,160</note>
-      </notes>
-      <segment>
-        <source> Sorted by grade among the first <ph id="0" equiv="INTERPOLATION" disp="{{ list.items().length }}"/> entries; the list holds more. </source>
-        <target>Nach Bewertung sortiert unter den ersten <ph id="0" equiv="INTERPOLATION" disp="{{ list.items().length }}"/> Einträgen; die Liste enthält mehr.</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.col.latest">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-items.ts:228</note>
-      </notes>
-      <segment>
-        <source>Latest</source>
-        <target>Neueste</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.col.updated">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-items.ts:241</note>
-      </notes>
-      <segment>
-        <source>Updated</source>
-        <target>Aktualisiert</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.col.downloads">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-items.ts:242</note>
-      </notes>
-      <segment>
-        <source>Downloads</source>
-        <target>Downloads</target>
-      </segment>
-    </unit>
-    <unit id="repo.content.open-versions">
-      <notes>
-        <note category="location">src/app/features/repositories/content/repository-items.ts:299</note>
-      </notes>
-      <segment>
-        <source>Show the versions of <ph id="0" equiv="name" disp="p.name"/></source>
-        <target>Versionen von <ph id="0" equiv="name" disp="p.name"/> anzeigen</target>
       </segment>
     </unit>
     <unit id="repo.tabs">
@@ -63752,6 +63218,16 @@
         <target>Name</target>
       </segment>
     </unit>
+    <unit id="repo.content.col.size">
+      <notes>
+        <note category="location">src/app/views/files/folder-view.ts:184</note>
+        <note category="location">src/app/views/repositories/repository-item-versions.ts:240</note>
+      </notes>
+      <segment>
+        <source>Size</source>
+        <target>Größe</target>
+      </segment>
+    </unit>
     <unit id="repo.content.col.modified">
       <notes>
         <note category="location">src/app/views/files/folder-view.ts:186</note>
@@ -68114,6 +67590,530 @@
       <segment>
         <source>Version <ph id="0" equiv="version" disp="this.shown()"/>, switch the version</source>
         <target>Version <ph id="0" equiv="version" disp="this.shown()"/>, Version wechseln</target>
+      </segment>
+    </unit>
+    <unit id="clamav.set.in-use">
+      <notes>
+        <note category="location">src/app/views/repositories/clamav-databases.ts:53</note>
+      </notes>
+      <segment>
+        <source>Set in use:</source>
+        <target>Satz in Verwendung:</target>
+      </segment>
+    </unit>
+    <unit id="clamav.set.before">
+      <notes>
+        <note category="location">src/app/views/repositories/clamav-databases.ts:55</note>
+      </notes>
+      <segment>
+        <source>The set before it:</source>
+        <target>Der Satz davor:</target>
+      </segment>
+    </unit>
+    <unit id="clamav.databases.loading">
+      <notes>
+        <note category="location">src/app/views/repositories/clamav-databases.ts:64,65</note>
+      </notes>
+      <segment>
+        <source>Loading the databases.</source>
+        <target>Die Datenbanken werden geladen.</target>
+      </segment>
+    </unit>
+    <unit id="clamav.databases">
+      <notes>
+        <note category="location">src/app/views/repositories/clamav-databases.ts:139</note>
+      </notes>
+      <segment>
+        <source>Databases</source>
+        <target>Datenbanken</target>
+      </segment>
+    </unit>
+    <unit id="clamav.databases.empty">
+      <notes>
+        <note category="location">src/app/views/repositories/clamav-databases.ts:140</note>
+      </notes>
+      <segment>
+        <source>Quader has stored no ClamAV definitions yet. The malware scan&apos;s updater fills this repository.</source>
+        <target>Quader hat noch keine ClamAV-Definitionen gespeichert. Der Updater der Malware-Prüfung füllt dieses Repository.</target>
+      </segment>
+    </unit>
+    <unit id="clamav.col.database">
+      <notes>
+        <note category="location">src/app/views/repositories/clamav-databases.ts:144</note>
+      </notes>
+      <segment>
+        <source>Database</source>
+        <target>Datenbank</target>
+      </segment>
+    </unit>
+    <unit id="clamav.col.in-use">
+      <notes>
+        <note category="location">src/app/views/repositories/clamav-databases.ts:145</note>
+      </notes>
+      <segment>
+        <source>In use</source>
+        <target>In Verwendung</target>
+      </segment>
+    </unit>
+    <unit id="clamav.col.built">
+      <notes>
+        <note category="location">src/app/views/repositories/clamav-databases.ts:146</note>
+      </notes>
+      <segment>
+        <source>Built</source>
+        <target>Gebaut</target>
+      </segment>
+    </unit>
+    <unit id="clamav.col.age">
+      <notes>
+        <note category="location">src/app/views/repositories/clamav-databases.ts:147</note>
+      </notes>
+      <segment>
+        <source>Age</source>
+        <target>Alter</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.versions">
+      <notes>
+        <note category="location">src/app/views/repositories/clamav-databases.ts:148</note>
+        <note category="location">src/app/views/repositories/content-shape.ts:143</note>
+      </notes>
+      <segment>
+        <source>Versions</source>
+        <target>Versionen</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.no-scanning.ansible">
+      <notes>
+        <note category="location">src/app/views/repositories/content-shape.ts:75</note>
+      </notes>
+      <segment>
+        <source>Collections are not checked for vulnerabilities: no public advisory source lists Ansible collections by version.</source>
+        <target>Collections werden nicht auf Schwachstellen geprüft: Keine öffentliche Advisory-Quelle führt Ansible-Collections nach Version.</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.no-scanning.deb">
+      <notes>
+        <note category="location">src/app/views/repositories/content-shape.ts:77</note>
+      </notes>
+      <segment>
+        <source>Debian packages are not checked for vulnerabilities yet: Debian&apos;s advisories name source packages and releases, and matching a package against them is not built yet.</source>
+        <target>Debian-Pakete werden noch nicht auf Schwachstellen geprüft: Die Advisories von Debian nennen Quellpakete und Releases, und der Abgleich eines Pakets mit ihnen ist noch nicht gebaut.</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.no-scanning.generic">
+      <notes>
+        <note category="location">src/app/views/repositories/content-shape.ts:79</note>
+      </notes>
+      <segment>
+        <source>Files are not checked for vulnerabilities: a file has no package name and version that an advisory could name.</source>
+        <target>Dateien werden nicht auf Schwachstellen geprüft: Eine Datei hat keinen Paketnamen und keine Version, die ein Advisory nennen könnte.</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.no-scanning">
+      <notes>
+        <note category="location">src/app/views/repositories/content-shape.ts:81</note>
+      </notes>
+      <segment>
+        <source>This package type is not scanned for vulnerabilities yet.</source>
+        <target>Dieser Pakettyp wird noch nicht auf Schwachstellen geprüft.</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.oci.fill-remote">
+      <notes>
+        <note category="location">src/app/views/repositories/content-shape.ts:99</note>
+      </notes>
+      <segment>
+        <source>It fills as clients pull images through it; Set up client shows how.</source>
+        <target>Es füllt sich, wenn Clients Images darüber herunterladen; Client einrichten zeigt, wie.</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.oci.fill">
+      <notes>
+        <note category="location">src/app/views/repositories/content-shape.ts:100</note>
+      </notes>
+      <segment>
+        <source>Push an image with your client; Set up client shows how.</source>
+        <target>Pushen Sie ein Image mit Ihrem Client; Client einrichten zeigt, wie.</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.oci.items">
+      <notes>
+        <note category="location">src/app/views/repositories/content-shape.ts:102</note>
+      </notes>
+      <segment>
+        <source>Images</source>
+        <target>Images</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.oci.item">
+      <notes>
+        <note category="location">src/app/views/repositories/content-shape.ts:103</note>
+      </notes>
+      <segment>
+        <source>Image</source>
+        <target>Image</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.oci.versions">
+      <notes>
+        <note category="location">src/app/views/repositories/content-shape.ts:104</note>
+      </notes>
+      <segment>
+        <source>Tags</source>
+        <target>Tags</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.oci.version">
+      <notes>
+        <note category="location">src/app/views/repositories/content-shape.ts:105</note>
+      </notes>
+      <segment>
+        <source>Tag</source>
+        <target>Tag</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.oci.filter">
+      <notes>
+        <note category="location">src/app/views/repositories/content-shape.ts:106</note>
+      </notes>
+      <segment>
+        <source>Filter images</source>
+        <target>Images filtern</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.oci.empty-remote3">
+      <notes>
+        <note category="location">src/app/views/repositories/content-shape.ts:108</note>
+      </notes>
+      <segment>
+        <source>This repository has cached no images yet.</source>
+        <target>Dieses Repository hat noch keine Images zwischengespeichert.</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.oci.empty3">
+      <notes>
+        <note category="location">src/app/views/repositories/content-shape.ts:109</note>
+      </notes>
+      <segment>
+        <source>This repository holds no images yet.</source>
+        <target>Dieses Repository enthält noch keine Images.</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.oci.fill-others">
+      <notes>
+        <note category="location">src/app/views/repositories/content-shape.ts:111</note>
+      </notes>
+      <segment>
+        <source>Members who may push to it fill it with their client.</source>
+        <target>Mitglieder, die darin pushen dürfen, füllen es mit ihrem Client.</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.oci.empty-filtered">
+      <notes>
+        <note category="location">src/app/views/repositories/content-shape.ts:112</note>
+      </notes>
+      <segment>
+        <source>No image matches the filter.</source>
+        <target>Kein Image passt zum Filter.</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.oci.fetched">
+      <notes>
+        <note category="location">src/app/views/repositories/content-shape.ts:114</note>
+      </notes>
+      <segment>
+        <source>Fetched</source>
+        <target>Abgerufen</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.oci.published">
+      <notes>
+        <note category="location">src/app/views/repositories/content-shape.ts:115</note>
+      </notes>
+      <segment>
+        <source>Pushed</source>
+        <target>Gepusht</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.oci.verb">
+      <notes>
+        <note category="location">src/app/views/repositories/content-shape.ts:117</note>
+      </notes>
+      <segment>
+        <source>Pull</source>
+        <target>Pull</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.oci.all-versions">
+      <notes>
+        <note category="location">src/app/views/repositories/content-shape.ts:120</note>
+      </notes>
+      <segment>
+        <source>All <ph id="0" equiv="count" disp="count"/> tags</source>
+        <target>Alle <ph id="0" equiv="count" disp="count"/> Tags</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.fill-remote">
+      <notes>
+        <note category="location">src/app/views/repositories/content-shape.ts:123</note>
+      </notes>
+      <segment>
+        <source>It fills as clients fetch through it; Set up client shows how.</source>
+        <target>Es füllt sich, wenn Clients darüber abrufen; Client einrichten zeigt, wie.</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.files.fill">
+      <notes>
+        <note category="location">src/app/views/repositories/content-shape.ts:125</note>
+      </notes>
+      <segment>
+        <source>Upload files with your client; Set up client shows how.</source>
+        <target>Laden Sie Dateien mit Ihrem Client hoch; Client einrichten zeigt, wie.</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.files">
+      <notes>
+        <note category="location">src/app/views/repositories/content-shape.ts:128</note>
+      </notes>
+      <segment>
+        <source>Files</source>
+        <target>Dateien</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.files.empty-remote">
+      <notes>
+        <note category="location">src/app/views/repositories/content-shape.ts:130</note>
+      </notes>
+      <segment>
+        <source>This repository has cached no files yet.</source>
+        <target>Dieses Repository hat noch keine Dateien zwischengespeichert.</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.files.empty3">
+      <notes>
+        <note category="location">src/app/views/repositories/content-shape.ts:131</note>
+      </notes>
+      <segment>
+        <source>This repository holds no files yet.</source>
+        <target>Dieses Repository enthält noch keine Dateien.</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.files.fill-others">
+      <notes>
+        <note category="location">src/app/views/repositories/content-shape.ts:133</note>
+      </notes>
+      <segment>
+        <source>Members who may upload to it fill it with their client.</source>
+        <target>Mitglieder, die darin hochladen dürfen, füllen es mit ihrem Client.</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.files.verb">
+      <notes>
+        <note category="location">src/app/views/repositories/content-shape.ts:134</note>
+      </notes>
+      <segment>
+        <source>Download</source>
+        <target>Herunterladen</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.fill">
+      <notes>
+        <note category="location">src/app/views/repositories/content-shape.ts:139</note>
+      </notes>
+      <segment>
+        <source>Publish a package with your client; Set up client shows how.</source>
+        <target>Veröffentlichen Sie ein Paket mit Ihrem Client; Client einrichten zeigt, wie.</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.items">
+      <notes>
+        <note category="location">src/app/views/repositories/content-shape.ts:141</note>
+      </notes>
+      <segment>
+        <source>Packages</source>
+        <target>Pakete</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.item">
+      <notes>
+        <note category="location">src/app/views/repositories/content-shape.ts:142</note>
+      </notes>
+      <segment>
+        <source>Package</source>
+        <target>Paket</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.version">
+      <notes>
+        <note category="location">src/app/views/repositories/content-shape.ts:144</note>
+      </notes>
+      <segment>
+        <source>Version</source>
+        <target>Version</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.filter">
+      <notes>
+        <note category="location">src/app/views/repositories/content-shape.ts:145</note>
+      </notes>
+      <segment>
+        <source>Filter packages</source>
+        <target>Pakete filtern</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.empty-remote3">
+      <notes>
+        <note category="location">src/app/views/repositories/content-shape.ts:147</note>
+      </notes>
+      <segment>
+        <source>This repository has cached no packages yet.</source>
+        <target>Dieses Repository hat noch keine Pakete zwischengespeichert.</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.empty3">
+      <notes>
+        <note category="location">src/app/views/repositories/content-shape.ts:148</note>
+      </notes>
+      <segment>
+        <source>This repository holds no packages yet.</source>
+        <target>Dieses Repository enthält noch keine Pakete.</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.fill-others">
+      <notes>
+        <note category="location">src/app/views/repositories/content-shape.ts:150</note>
+      </notes>
+      <segment>
+        <source>Members who may publish to it fill it with their client.</source>
+        <target>Mitglieder, die darin veröffentlichen dürfen, füllen es mit ihrem Client.</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.empty-filtered">
+      <notes>
+        <note category="location">src/app/views/repositories/content-shape.ts:151</note>
+      </notes>
+      <segment>
+        <source>No package matches the filter.</source>
+        <target>Kein Paket passt zum Filter.</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.published">
+      <notes>
+        <note category="location">src/app/views/repositories/content-shape.ts:152</note>
+      </notes>
+      <segment>
+        <source>Published</source>
+        <target>Veröffentlicht</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.verb">
+      <notes>
+        <note category="location">src/app/views/repositories/content-shape.ts:154</note>
+      </notes>
+      <segment>
+        <source>Install</source>
+        <target>Installieren</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.all-versions">
+      <notes>
+        <note category="location">src/app/views/repositories/content-shape.ts:157</note>
+      </notes>
+      <segment>
+        <source>All <ph id="0" equiv="count" disp="count"/> versions</source>
+        <target>Alle <ph id="0" equiv="count" disp="count"/> Versionen</target>
+      </segment>
+    </unit>
+    <unit id="repo.versions.loading">
+      <notes>
+        <note category="location">src/app/views/repositories/repository-item-versions.ts:55,56</note>
+      </notes>
+      <segment>
+        <source>Loading the versions.</source>
+        <target>Die Versionen werden geladen.</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.prerelease">
+      <notes>
+        <note category="location">src/app/views/repositories/repository-item-versions.ts:80,82</note>
+      </notes>
+      <segment>
+        <source>Pre-release</source>
+        <target>Vorabversion</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.copy-digest">
+      <notes>
+        <note category="location">src/app/views/repositories/repository-item-versions.ts:213</note>
+      </notes>
+      <segment>
+        <source>Copy digest</source>
+        <target>Digest kopieren</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.col.digest">
+      <notes>
+        <note category="location">src/app/views/repositories/repository-item-versions.ts:238</note>
+      </notes>
+      <segment>
+        <source>Digest</source>
+        <target>Digest</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.col.vulnerabilities">
+      <notes>
+        <note category="location">src/app/views/repositories/repository-item-versions.ts:245</note>
+        <note category="location">src/app/views/repositories/repository-items.ts:234</note>
+      </notes>
+      <segment>
+        <source>Vulnerabilities</source>
+        <target>Schwachstellen</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.grade-sort-partial">
+      <notes>
+        <note category="location">src/app/views/repositories/repository-items.ts:155,158</note>
+      </notes>
+      <segment>
+        <source> Sorted by grade among the first <ph id="0" equiv="INTERPOLATION" disp="{{ list.items().length }}"/> entries; the list holds more. </source>
+        <target>Nach Bewertung sortiert unter den ersten <ph id="0" equiv="INTERPOLATION" disp="{{ list.items().length }}"/> Einträgen; die Liste enthält mehr.</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.col.latest">
+      <notes>
+        <note category="location">src/app/views/repositories/repository-items.ts:228</note>
+      </notes>
+      <segment>
+        <source>Latest</source>
+        <target>Neueste</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.col.updated">
+      <notes>
+        <note category="location">src/app/views/repositories/repository-items.ts:240</note>
+      </notes>
+      <segment>
+        <source>Updated</source>
+        <target>Aktualisiert</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.col.downloads">
+      <notes>
+        <note category="location">src/app/views/repositories/repository-items.ts:241</note>
+      </notes>
+      <segment>
+        <source>Downloads</source>
+        <target>Downloads</target>
+      </segment>
+    </unit>
+    <unit id="repo.content.open-versions">
+      <notes>
+        <note category="location">src/app/views/repositories/repository-items.ts:297</note>
+      </notes>
+      <segment>
+        <source>Show the versions of <ph id="0" equiv="name" disp="p.name"/></source>
+        <target>Versionen von <ph id="0" equiv="name" disp="p.name"/> anzeigen</target>
       </segment>
     </unit>
     <unit id="setup.tab.configure">

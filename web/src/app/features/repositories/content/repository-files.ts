@@ -3,7 +3,7 @@ import { Component, computed, inject, input, output, viewChild } from '@angular/
 import { firstValueFrom } from 'rxjs';
 import { Notifier } from '../../../core/notifier';
 import { QuaderDialog } from '../../../shared/ui/dialog';
-import { ContentShape, contentShapeOf } from './content-shape';
+import { ContentShape, contentShapeOf } from '../../../views/repositories/content-shape';
 import { FilePermissions, NO_FILE_PERMISSIONS, nameOf } from './file-paths';
 import { ClientCommandMenu } from '../../../views/packages/client-command-menu';
 import { FolderView } from '../../../views/files/folder-view';
@@ -85,7 +85,7 @@ import { UploadDialog, UploadDialogData } from './upload-dialog';
       }
     </quader-folder-view>
   `,
-  styleUrl: './repository-lists.scss',
+  styleUrl: '../../../views/repositories/repository-lists.scss',
 })
 export class RepositoryFiles {
   private readonly dialog = inject(QuaderDialog);

@@ -4331,7 +4331,9 @@ Priority: **MVP** · Covers: quader-only
 `/projects/{project}/repositories/{key}` is what a repository holds, on the logical level (Q-UI-216), and the one way to its
 folders and files (`…/{key}/files/{path…}`, R-UI-010, [ADR-203](../decisions.md#adr-203--browse-goes-a-repositorys-files-live-on-its-page));
 its settings moved to `…/settings`. One shell serves every format; what differs per format is a small table of words and columns,
-not a screen per format ([content-shape.ts](../../web/src/app/features/repositories/content/content-shape.ts)).
+not a screen per format ([content-shape.ts](../../web/src/app/views/repositories/content-shape.ts)). The lists of the page (the items, an
+opened item's versions, the ClamAV databases) are views of `views/repositories/` that the page composes with its acts (R-UI-223,
+[Q-UI-1630](#q-ui-1630--a-repositorys-lists-are-views)).
 
 - Header (the shared page header of R-UI-067): the key (the `h1`), one muted sentence (the repository's description, else what
   the class means), the format and the class as badges (and **Disabled** for a disabled repository); a repository of a system-only
@@ -7280,12 +7282,14 @@ their severity (R-VULN-022). The list shows the grade; the bar and the facts are
 
 - A caller who gets no grades (an installation that does not scan, Q-VULN-158) sees no grade column, no card and no header grade,
   not a column of dashes ([Q-UI-377](#q-ui-377--a-list-without-grades-has-no-grade-column)). A visitor without a session gets the grades
-  of what the public levels admit and sees every place of this table (R-UI-224).
+  of what the public levels admit and sees every place of this table (R-UI-224), the versions of an opened item of a repository's
+  content included ([Q-UI-1631](#q-ui-1631--an-opened-items-versions-show-their-grades-to-a-reader-without-a-session); built by W-40's P4a
+  on 2026-11-27).
 
 Acceptance criteria:
 
 - Unit: the repository content list shows `<quader-grade>` for each row and sorts by grade, worst first, on its second click; the
-  opened row grades each version; the version page's grade links to the tab, the tab shows one card per repository and the
+  opened row grades each version, for a visitor without a session too; the version page's grade links to the tab, the tab shows one card per repository and the
   package page's versions table a grade per version; the tab asks the findings API for 25 open findings of the version, worst first, says their
   number, and a segment of the card's bar narrows them to its severity; the report's header shows the bar with five filter links;
   without grades no column.
@@ -9837,7 +9841,7 @@ finished scan keeps the open tab ([package-version.spec.ts](../../web/src/app/fe
 repository's images read again in place with a pushed image, an open row and its new tag
 ([repository-content.spec.ts](../../web/src/app/features/repositories/content/repository-content.spec.ts)); an open upstream package
 every 3 s while a version downloads ([remote-upstream.spec.ts](../../web/src/app/features/repositories/upstream/remote-upstream.spec.ts));
-the ClamAV databases' cheap read first ([clamav-databases.spec.ts](../../web/src/app/features/repositories/content/clamav-databases.spec.ts));
+the ClamAV databases' cheap read first ([clamav-databases.spec.ts](../../web/src/app/views/repositories/clamav-databases.spec.ts));
 the audit log's moving range ([audit-log.spec.ts](../../web/src/app/features/audit/audit-log.spec.ts)); the jobs in place, at 5 s and
 30 s, and paused, and a running job's progress not read while hidden and read at once when seen again
 ([system-jobs.spec.ts](../../web/src/app/features/system/system-jobs.spec.ts)); the tab Downloads not read while hidden and at once
@@ -10142,7 +10146,7 @@ Metainformationen vorhanden sind, soll sie von uns verwendet und dargestellt wer
 regelmäßig vorhanden ist, soll auch bei uns umgesetzt werden. Schau zum Beispiel bei Ansible Galaxy: hier wird erst die Doku eingeblendet
 (neuste Version) und man von dort aus in den Versionen zurück blättern wenn gewünscht."
 
-*Built*: `leadsWithDocumentation` of [content-shape.ts](../../web/src/app/features/repositories/content/content-shape.ts), the routes of
+*Built*: `leadsWithDocumentation` of [content-shape.ts](../../web/src/app/views/repositories/content-shape.ts), the routes of
 [packages.routes.ts](../../web/src/app/features/packages/packages.routes.ts), `versionsCommands` of
 [package-links.ts](../../web/src/app/features/packages/package-links.ts),
 [package-version.ts](../../web/src/app/features/packages/package-version.ts),
@@ -10288,8 +10292,9 @@ installation sees changes.
   `packages/` (the page of a version, of a package's versions, the table of a list of packages, the documentation tree and its entries,
   an image's facts and layers, a version's facts, metadata, files, signatures, Debian contents, the ClamAV definitions, the clients'
   commands, Used by, the README), `vulnerabilities/` (the tab Vulnerabilities and a version's findings), `signatures/` (the badge,
-  the report, the gate's decision and their words) and `files/` (a repository's folder, a file, and the path of either with a file's
-  Download; W-35's P9d). What is the same in every format is one view; what a format shows differently stays that format's part of it.
+  the report, the gate's decision and their words), `files/` (a repository's folder, a file, and the path of either with a file's
+  Download; W-35's P9d) and `repositories/` (a repository's list of images or packages, an opened item's versions, the ClamAV databases
+  and the words of each format's content, [Q-UI-1630](#q-ui-1630--a-repositorys-lists-are-views)). What is the same in every format is one view; what a format shows differently stays that format's part of it.
 - **Reads.** A view reads through abstract classes of `web/src/app/api/`: `PackageReads`, `VulnerabilityReads`, `SignatureReads`,
   `ClientSetupReads` and `FileReads` (a folder's entries and an item, [Q-UI-1454](#q-ui-1454--the-files-views-read-a-folder-and-an-item-through-filereads-a-files-commands-stay-the-client-set-ups)).
   The main installation's `PackagesApi`, `VulnerabilitiesApi`, `SignaturesApi` and `FilesApi` extend them with their writes and
@@ -10320,7 +10325,13 @@ take from API modules live in `api/refs.ts`; the check is `bastion-bundle-rule.m
 2026-11-26:* the views of a repository's files, [folder-view.ts](../../web/src/app/views/files/folder-view.ts),
 [file-view.ts](../../web/src/app/views/files/file-view.ts) and [files-head.ts](../../web/src/app/views/files/files-head.ts), read through
 [file-reads.ts](../../web/src/app/api/file-reads.ts); the main installation's `repository-files.ts`, `repository-file.ts` and
-`repository-content.html` compose them with their acts.
+`repository-content.html` compose them with their acts. *Built by W-40's P4a on 2026-11-27:* a repository's lists,
+[repository-items.ts](../../web/src/app/views/repositories/repository-items.ts),
+[repository-item-versions.ts](../../web/src/app/views/repositories/repository-item-versions.ts),
+[clamav-databases.ts](../../web/src/app/views/repositories/clamav-databases.ts) and
+[content-shape.ts](../../web/src/app/views/repositories/content-shape.ts), read through `PackageReads` and `VulnerabilityReads`; the
+repository's page projects its Upload collection or Upload package as `[listActs]`, and the list's column **Downloads** stands while
+its input `downloads` is true, as at the main installation (Q-UI-1630, Q-UI-1449).
 
 Acceptance criteria:
 
@@ -16534,7 +16545,7 @@ columns; the column of the findings is shown when the format is scanned, as for 
 **Rationale:** the screen should not call a fetch a push. The development agent would revisit it if the page gains a "checked" time from the entry's validation,
 which would be a second column beside Fetched.
 
-**Applied in the spec:** R-UI-052, Q-UI-216. Code: [content-shape.ts](../../web/src/app/features/repositories/content/content-shape.ts), [repository-content.html](../../web/src/app/features/repositories/content/repository-content.html). Tests: `R-OCI-036` in [repository-content.spec.ts](../../web/src/app/features/repositories/content/repository-content.spec.ts).
+**Applied in the spec:** R-UI-052, Q-UI-216. Code: [content-shape.ts](../../web/src/app/views/repositories/content-shape.ts), [repository-content.html](../../web/src/app/features/repositories/content/repository-content.html). Tests: `R-OCI-036` in [repository-content.spec.ts](../../web/src/app/features/repositories/content/repository-content.spec.ts).
 
 ### Q-UI-220 · The form of a service-account token offers the administrator choice for an account that holds the role
 
@@ -20499,7 +20510,7 @@ list where folders and files stand together.
 inside itself beside the icon. The rule of the style guide: a field is as wide as its expected input.
 
 **Applied in the spec:** R-UI-010, R-UI-052. Code: `.name-cell`, `.entry` and `.filter` in
-[repository-lists.scss](../../web/src/app/features/repositories/content/repository-lists.scss).
+[repository-lists.scss](../../web/src/app/views/repositories/repository-lists.scss).
 
 ### Q-UI-521 · The path of a folder or a file stands once, and its middle folders collapse where it is narrow
 
@@ -20835,7 +20846,7 @@ here, so the empty state's job is to say what to do with it and whether it is th
 (b) if readers miss the action at an empty repository.
 
 **Applied in the spec:** R-UI-144, R-UI-052, R-UI-126; Q-UI-309 and Q-UI-217 revised. Code: `emptyContentText` in
-[content-shape.ts](../../web/src/app/features/repositories/content/content-shape.ts), `fill` in
+[content-shape.ts](../../web/src/app/views/repositories/content-shape.ts), `fill` in
 [repository-content.ts](../../web/src/app/features/repositories/content/repository-content.ts).
 
 ### Q-UI-556 · A repository's list of packages says a grade as the versions table does
@@ -23809,7 +23820,7 @@ has not occurred: `RepositorySummary` and `Repository` carry no kind, only the a
 **Applied in the spec:** R-UI-193. Code: [repository-list.ts](../../web/src/app/features/repositories/repository-list.ts),
 [repository-file.ts](../../web/src/app/features/repositories/content/repository-file.ts),
 [repository-files.ts](../../web/src/app/features/repositories/content/repository-files.ts),
-[repository-item-versions.ts](../../web/src/app/features/repositories/content/repository-item-versions.ts),
+[repository-item-versions.ts](../../web/src/app/views/repositories/repository-item-versions.ts),
 [version-command.ts](../../web/src/app/views/packages/version-command.ts), [package-version.ts](../../web/src/app/features/packages/package-version.ts).
 
 ### Q-UI-899 · Where a download or a command is left out, one sentence names the work that reads it
@@ -24769,7 +24780,7 @@ Status: **Decided by the development agent** — selected from the options below
 | (c) A screen of its own with an API of its own | — | Exact | Against Q-UI-904's choice of the package screens |
 
 **Choice:** (a). **Applied in the spec:** R-API-029, R-UI-194. Code:
-[clamav-databases.ts](../../web/src/app/features/repositories/content/clamav-databases.ts),
+[clamav-databases.ts](../../web/src/app/views/repositories/clamav-databases.ts),
 [clamav-definitions.ts](../../web/src/app/views/packages/clamav-definitions.ts).
 
 ### Q-UI-911 · The install panel of a definitions' version leads to the client setup
@@ -25028,7 +25039,7 @@ callers (an administrator's `content:bypass`, Q-AUTHZ-162, applies to deletes on
 [repository-content.ts](../../web/src/app/features/repositories/content/repository-content.ts),
 [repository-file.ts](../../web/src/app/features/repositories/content/repository-file.ts),
 [repository-files.ts](../../web/src/app/features/repositories/content/repository-files.ts),
-[repository-item-versions.ts](../../web/src/app/features/repositories/content/repository-item-versions.ts), `ConsumerView` of
+[repository-item-versions.ts](../../web/src/app/views/repositories/repository-item-versions.ts), `ConsumerView` of
 [document.go](../../internal/repository/document.go); on a version's page
 [version-command.ts](../../web/src/app/views/packages/version-command.ts),
 [package-version.ts](../../web/src/app/features/packages/package-version.ts) and `addAvailable` of
@@ -25898,7 +25909,7 @@ Two fixed dates of the render set changed with the calendar as well and count fr
 (`files-system`, its times are "… ago") and the Notation certificate of the signatures (it would read "expired on …" from
 2027-04-30 on).
 
-**Applied in the spec:** R-UI-194. Code: [clamav-databases.ts](../../web/src/app/features/repositories/content/clamav-databases.ts)
+**Applied in the spec:** R-UI-194. Code: [clamav-databases.ts](../../web/src/app/views/repositories/clamav-databases.ts)
 (the cell without an age shows the dash too), `.no-time` in [_list-screens.scss](../../web/src/styles/_list-screens.scss) with
 [token-table.ts](../../web/src/app/shared/access/token-table.ts),
 [technical-token-table.ts](../../web/src/app/features/service-accounts/technical-token-table.ts) and
@@ -25992,9 +26003,9 @@ would revisit (b) of the panel if a format comes with more than four clients, so
 **Applied in the spec:** R-UI-052 (the versions, the row of an item, the acceptance criteria), R-UI-010 and R-UI-193 (no button where no
 client is answered). Code: [client-command-menu.ts](../../web/src/app/views/packages/client-command-menu.ts),
 [client-command.ts](../../web/src/app/views/packages/client-command.ts) (one client's command, which the head of the version page
-uses too since Q-UI-1241), `commandVerb` of [content-shape.ts](../../web/src/app/features/repositories/content/content-shape.ts),
-[repository-item-versions.ts](../../web/src/app/features/repositories/content/repository-item-versions.ts),
-[repository-items.ts](../../web/src/app/features/repositories/content/repository-items.ts). Tests:
+uses too since Q-UI-1241), `commandVerb` of [content-shape.ts](../../web/src/app/views/repositories/content-shape.ts),
+[repository-item-versions.ts](../../web/src/app/views/repositories/repository-item-versions.ts),
+[repository-items.ts](../../web/src/app/views/repositories/repository-items.ts). Tests:
 [client-command-menu.spec.ts](../../web/src/app/views/packages/client-command-menu.spec.ts) (open, the sections, the copy, Escape,
 the button and a click outside with the focus back),
 [repository-content.spec.ts](../../web/src/app/features/repositories/content/repository-content.spec.ts) (a tag's and an image row's
@@ -26512,8 +26523,8 @@ has no page of its own to link to, and the list grows the page. **Rationale:** t
 the package's page already is the list of all of them. The development agent revisits the bound of ten if the walkthrough shows rows
 that need more at hand.
 
-**Applied in the spec:** R-UI-052, R-UI-215. Code: [repository-item-versions.ts](../../web/src/app/features/repositories/content/repository-item-versions.ts),
-`allVersionsText` in [content-shape.ts](../../web/src/app/features/repositories/content/content-shape.ts).
+**Applied in the spec:** R-UI-052, R-UI-215. Code: [repository-item-versions.ts](../../web/src/app/views/repositories/repository-item-versions.ts),
+`allVersionsText` in [content-shape.ts](../../web/src/app/views/repositories/content-shape.ts).
 
 ### Q-UI-1112 · A navigation column sticks beside the page with a scroll of its own; any other side column sticks only while it fits
 
@@ -27088,7 +27099,7 @@ portal/web 1.4.0:" before the first of them. The link **All N tags** under the o
 rows show: the list goes on past the ten (its cursor is set) or a row leaves a tag out; an image of three images whose rows name all
 twelve of its tags has none (Q-UI-1111's "where the item holds more", read for rows that are images). **Applied in the spec:** R-UI-052,
 R-UI-110. Code: [image-tags.ts](../../web/src/app/views/packages/image-tags.ts), `more` of
-[repository-item-versions.ts](../../web/src/app/features/repositories/content/repository-item-versions.ts). Tests:
+[repository-item-versions.ts](../../web/src/app/views/repositories/repository-item-versions.ts). Tests:
 `R-UI-052 R-SIG-035 an opened image is one row per image…`, `R-UI-215 an opened image whose rows name every tag has no link…`
 ([repository-content.spec.ts](../../web/src/app/features/repositories/content/repository-content.spec.ts)), `R-UI-052 R-UI-110 a row names its
 image's other tags…` ([package-versions-model.spec.ts](../../web/src/app/views/packages/package-versions-model.spec.ts)); rendered
@@ -27112,7 +27123,7 @@ on their own are `queued` and `scanning` (`checkWaits`, Q-UI-1122).
 **Choice:** (a). Rows that are images make the reason smaller (an image's tags have one scan), not gone: an opened item shows ten
 images whose scans run in turn. A scan that waits for what the installation lacks (no scanner, no database) does not pass on its own
 and reads nothing. **Applied in the spec:** R-UI-052. Code: `waiting` and its `live()` in
-[repository-item-versions.ts](../../web/src/app/features/repositories/content/repository-item-versions.ts). Test:
+[repository-item-versions.ts](../../web/src/app/views/repositories/repository-item-versions.ts). Test:
 `R-UI-213 an opened image is read again every 3 s while a version it shows waits for its scan…` (repository-content.spec.ts).
 
 ### Q-UI-1140 · The states of the overlays are measured at the component tier, in the unit-test builder's browser mode
@@ -28883,7 +28894,7 @@ the development agent**. The owner asked why collections are not scanned and cho
 | Another, or where the screen does not know the format | "Packages of this type are not scanned for vulnerabilities." |
 
 The sentence is the format's content shape's (`notScannedText` of
-[content-shape.ts](../../web/src/app/features/repositories/content/content-shape.ts)): the note of a repository's list and the
+[content-shape.ts](../../web/src/app/views/repositories/content-shape.ts)): the note of a repository's list and the
 sentence of `format_not_scanned` beside a version's N/A (the tooltip in a list, the rule of the version page's card), which
 `<quader-grade>`, `<quader-grade-card>` and the tab of findings take with the format. The malware scan is not named: no place had room
 for a second sentence that helps, and it runs whatever the vulnerability scanning does. No date is promised.
@@ -28949,8 +28960,8 @@ Status: **Decided by the development agent** on 2026-11-25 — selected from the
 [client-command-menu.ts](../../web/src/app/views/packages/client-command-menu.ts),
 [client-command.ts](../../web/src/app/views/packages/client-command.ts) (the digest line), the head of
 [package-version-view.html](../../web/src/app/views/packages/package-version-view.html) (`artifactKind`, `imageDigest`), the menus of a repository's rows
-[repository-items.ts](../../web/src/app/features/repositories/content/repository-items.ts) and
-[repository-item-versions.ts](../../web/src/app/features/repositories/content/repository-item-versions.ts) (`[kind]`). The product-wide
+[repository-items.ts](../../web/src/app/views/repositories/repository-items.ts) and
+[repository-item-versions.ts](../../web/src/app/views/repositories/repository-item-versions.ts) (`[kind]`). The product-wide
 package list and the search offer no command and need no kind.
 
 ### Q-UI-1260 · A version a remote holds and does not deliver says so at the top of its page, for every format
@@ -29248,7 +29259,7 @@ Status: **Decided by the development agent** on 2026-11-26 — selected from the
 
 **Choice:** (a). A virtual repository holds nothing of its own and does not count. The Repositories table of a version's page takes the
 same word. Gap: [H-2172](#h-2172--an-images-date-word-follows-the-versions-holders-not-each-row). **Applied in the spec:** R-UI-110,
-R-UI-111, R-UI-222. Code: `arrivedLabel` of [content-shape.ts](../../web/src/app/features/repositories/content/content-shape.ts).
+R-UI-111, R-UI-222. Code: `arrivedLabel` of [content-shape.ts](../../web/src/app/views/repositories/content-shape.ts).
 
 ### Q-UI-1315 · An install script is said under the facts, where a person decides
 
@@ -29328,7 +29339,7 @@ end of its toolbar (Q-UI-512). The owner's rule: one pattern for the reader, an 
 **Choice:** (a), for a caller the page's batched check allows `deploy`, in a local or virtual repository that is neither disabled nor a system one.
 **Applied in the spec:** R-ANS-061, R-UI-012. Code: `collectionUpload` of
 [repository-content.ts](../../web/src/app/features/repositories/content/repository-content.ts), the `action` of
-[repository-items.ts](../../web/src/app/features/repositories/content/repository-items.ts).
+[repository-items.ts](../../web/src/app/views/repositories/repository-items.ts).
 
 ### Q-UI-1321 · Upload collection is one file, the repository and the import log, and reads nothing again
 
@@ -32138,6 +32149,44 @@ line of its own, "From the Helm configuration. Change or remove it there.", sinc
 sentence says both. **Applied in the spec:** R-UI-268; R-SIG-046's and R-SIG-056's quoted words
 ([signatures.md](signatures.md)), R-AUTHZ-038's table ([authorization.md](authorization.md)), R-UI-188's declared account and Q-UI-1160's
 sentences.
+
+### Q-UI-1630 · A repository's lists are views
+
+Status: **Decided by the development agent on 2026-11-27** (W-40, D6) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-UI-223 (one piece of code, the same picture). A Bastion's project shows its repositories as the main installation's project
+does (W-40), so a repository's list of images or packages, an opened item's versions and the ClamAV databases are needed by both
+applications. They were features: they read through `PackagesApi`, `VulnerabilitiesApi` and `SessionStore` and drew the page's
+Upload collection themselves, which the views' rule and the Bastion's bundle rule refuse.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The Bastion writes its own list of a repository's items | — | No change at the main installation | Two lists that drift apart, against R-UI-223 |
+| (b) Move `repository-items.ts`, `repository-item-versions.ts`, `clamav-databases.ts`, `content-shape.ts` and `repository-lists.scss` to `views/repositories/`; they read through `PackageReads` and `VulnerabilityReads`, ask no session (Q-UI-1631), take the toolbar's act as the page's projected `[listActs]` (Q-UI-1402) and an input `downloads` (false at the Bastion, Q-UI-1449) (chosen) | One list for both applications | The same pictures at the main installation; the rules pass without an exception | The page styles the act it projects (projected content carries the page's styles) |
+
+**Choice:** (b). The main installation's repository page projects Upload collection or Upload package (`<div listActs>`); its pages look
+and behave as before, compared picture by picture. **Applied in the spec:** R-UI-223, R-UI-052. Code:
+[repository-items.ts](../../web/src/app/views/repositories/repository-items.ts),
+[repository-content.html](../../web/src/app/features/repositories/content/repository-content.html).
+
+### Q-UI-1631 · An opened item's versions show their grades to a reader without a session
+
+Status: **Decided by the development agent on 2026-11-27** (W-40, D7) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-UI-224 says every place of R-UI-094 shows the grade to a visitor without a session. The opened row of a repository's item read
+its versions' grades only for a session (`session.state() !== 'anonymous'`), a condition older than R-UI-224: a visitor saw the column
+**Vulnerabilities** of the opened row with empty cells, while the item's own row had its grade.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Keep the condition | — | One request less for a visitor | An empty column; against R-UI-224; a view may not ask the session (R-UI-223) |
+| (b) Read the package's report for every reader whose list carries grades (chosen) | The same request for everyone | R-UI-224 holds at the last place of R-UI-094; the view needs no session and no `SIGNED_IN` | One request per opened item for a visitor, as for a signed-in reader |
+
+**Choice:** (b). The main installation's visitor without a session gains the grades of an opened item's versions; the API answers him
+those the public levels admit (Q-VULN-280). **Applied in the spec:** R-UI-094 (R-UI-224 says it already). Code:
+[repository-item-versions.ts](../../web/src/app/views/repositories/repository-item-versions.ts).
 
 ## What this does not cover
 

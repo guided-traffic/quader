@@ -1,5 +1,7 @@
-// The list of a package format's items (repository-items.ts) and the list of a folder (repository-files.ts): their head, the
-// names of their rows and their figures.
+// The list of a package format's items (repository-items.ts) and the list of a folder (views/files/folder-view.ts, with the main
+// installation's acts in features/repositories/content/repository-files.ts): their head, the names of their rows and their figures.
+// Projected acts carry the styles of the component that projects them: `.files-actions` here serves repository-files.ts, and the
+// repository's page styles the act it projects into the items' toolbar itself (repository-content.scss).
 
 .content-note {
   margin: var(--quader-space-3) 0 0;

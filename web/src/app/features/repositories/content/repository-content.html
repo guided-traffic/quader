@@ -142,12 +142,20 @@
       [sortParam]="order()"
       [fill]="fill()"
       [disabled]="disabled()"
-      [action]="collectionUpload()"
       [revision]="revision()"
-      (act)="uploadCollection()"
       (filterChange)="setFilter($event)"
       (sortParamChange)="setSort($event)"
-    />
+    >
+      @if (collectionUpload(); as a) {
+        <!-- The page's act at the end of the list's toolbar (Q-UI-1320, Q-UI-1630): Upload collection or Upload package. -->
+        <div listActs class="files-actions">
+          <button class="btn btn-default" type="button" (click)="uploadCollection()">
+            <span class="material-icons" aria-hidden="true">{{ a.icon }}</span>
+            {{ a.label }}
+          </button>
+        </div>
+      }
+    </quader-repository-items>
     }
   } @else {
     @if (!isGeneric()) {

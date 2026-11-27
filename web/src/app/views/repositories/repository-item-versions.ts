@@ -1,25 +1,26 @@
 import { Component, LOCALE_ID, computed, effect, inject, input, resource, untracked } from '@angular/core';
 import { formatNumber } from '@angular/common';
-import { LIVE_FAST_MS, live, refreshResource } from '../../../core/live-refresh';
+import { LIVE_FAST_MS, live, refreshResource } from '../../core/live-refresh';
 import { RouterLink } from '@angular/router';
-import { TimeAgo } from '../../../shared/ui/time-ago';
-import { PackageSummary, PackageVersionSummary, PackagesApi } from '../../../api/packages-api';
-import { splitRef } from '../../../api/repositories-api';
-import { VulnerabilitiesApi, VulnerabilityGrade } from '../../../api/vulnerabilities-api';
-import { SessionStore } from '../../../core/session-store';
-import { systemClosed } from '../../../core/system-clients';
-import { CopyButton } from '../../../shared/copy-button';
-import { PagedResource } from '../../../shared/paged-resource';
-import { DataTable, TableColumn } from '../../../shared/ui/data-table';
-import { DeprecationMark } from '../../../shared/ui/deprecation-mark';
-import { GradeLabel } from '../../../shared/vulnerability/grade';
-import { MalwareMark, malwareColumn, malwareShown } from '../../../shared/malware/malware-mark';
-import { MalwareSignaturesStore } from '../../../core/malware-signatures';
-import { checkWaits, gradeColumnHelp } from '../../../shared/vulnerability/grade-words';
-import { ClientCommandMenu } from '../../../views/packages/client-command-menu';
-import { VersionSize } from '../../../views/packages/version-size';
-import { versionCommands, versionsCommands } from '../../packages/package-links';
-import { ImageTags } from '../../../views/packages/image-tags';
+import { TimeAgo } from '../../shared/ui/time-ago';
+import { PackageSummary, PackageVersionSummary } from '../../api/packages-api';
+import { PackageReads } from '../../api/package-reads';
+import { splitRef } from '../../api/refs';
+import { VulnerabilityGrade } from '../../api/vulnerabilities-api';
+import { VulnerabilityReads } from '../../api/vulnerability-reads';
+import { systemClosed } from '../../core/system-clients';
+import { CopyButton } from '../../shared/copy-button';
+import { PagedResource } from '../../shared/paged-resource';
+import { DataTable, TableColumn } from '../../shared/ui/data-table';
+import { DeprecationMark } from '../../shared/ui/deprecation-mark';
+import { GradeLabel } from '../../shared/vulnerability/grade';
+import { MalwareMark, malwareColumn, malwareShown } from '../../shared/malware/malware-mark';
+import { MalwareSignaturesStore } from '../../core/malware-signatures';
+import { checkWaits, gradeColumnHelp } from '../../shared/vulnerability/grade-words';
+import { ClientCommandMenu } from '../packages/client-command-menu';
+import { VersionSize } from '../packages/version-size';
+import { versionCommands, versionsCommands } from '../../features/packages/package-links';
+import { ImageTags } from '../packages/image-tags';
 import { ContentShape } from './content-shape';
 
 /**
@@ -40,7 +41,7 @@ export const OPENED_OTHER_TAGS = 4;
  * the format's client verb (**Pull**, **Install**) that opens the version's commands, one per client (`<quader-client-command-menu>`,
  * Q-UI-1066). A command is the server's install snippet (R-API-030) for this repository, so it carries this installation's real
  * address. A system repository of the project `upstream` and a disabled repository have no command: they answer no client (Q-UI-898,
- * Q-UI-965).
+ * Q-UI-965). A view both applications compose (R-UI-223, Q-UI-1630): it reads through `PackageReads` and `VulnerabilityReads`.
  */
 @Component({
   selector: 'quader-repository-item-versions',
@@ -168,9 +169,8 @@ export const OPENED_OTHER_TAGS = 4;
   `,
 })
 export class RepositoryItemVersions {
-  private readonly api = inject(PackagesApi);
-  private readonly vulnerabilities = inject(VulnerabilitiesApi);
-  private readonly session = inject(SessionStore);
+  private readonly api = inject(PackageReads);
+  private readonly vulnerabilities = inject(VulnerabilityReads);
 
   readonly pkg = input.required<PackageSummary>();
   /** The qualified name of the repository whose versions are shown. */
@@ -185,7 +185,6 @@ export class RepositoryItemVersions {
   protected readonly versions = new PagedResource<PackageVersionSummary>(OPENED_VERSIONS);
   private readonly locale = inject(LOCALE_ID);
 
-  /** The grade of every version in this repository, in one request for the item (R-VULN-039). */
   /** The item's ID alone: the list above reads its rows again (R-UI-213), and a new row object is no new item. */
   private readonly pkgId = computed(() => this.pkg().id);
   /**
@@ -197,8 +196,12 @@ export class RepositoryItemVersions {
     const g = p.vulnerabilityGrade;
     return `${p.versionCount} ${p.latestVersion} ${p.updatedAt} ${g?.grade ?? ''} ${g?.checkedAt ?? ''} ${g?.state ?? ''}`;
   });
+  /**
+   * The grade of every version in this repository, in one request for the item (R-VULN-039), for every reader whose list carries grades:
+   * a visitor without a session gets those the public levels admit (R-UI-224, Q-UI-1631).
+   */
   protected readonly report = resource({
-    params: () => (this.scanned() && this.session.state() !== 'anonymous' ? { id: this.pkgId(), repository: this.repository() } : undefined),
+    params: () => (this.scanned() ? { id: this.pkgId(), repository: this.repository() } : undefined),
     loader: ({ params }) => this.vulnerabilities.packageReport(params.id, [params.repository]),
   });
   private readonly gradeByVersion = computed(() => {

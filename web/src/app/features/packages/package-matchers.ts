@@ -1,5 +1,5 @@
 import { CanMatchFn, UrlMatcher, UrlSegment } from '@angular/router';
-import { leadsWithDocumentation } from '../repositories/content/content-shape';
+import { leadsWithDocumentation } from '../../views/repositories/content-shape';
 import { VERSIONS_SEGMENTS, splitVersion } from './package-links';
 
 /*

@@ -11,7 +11,7 @@ import {
   upstreamReadme,
 } from '../../../api/testing/fakes-upstream-catalogue';
 import { expectAccessible, renderScreen, settle, text } from '../../../testing/screen';
-import { contentShapeOf } from '../content/content-shape';
+import { contentShapeOf } from '../../../views/repositories/content-shape';
 import { RemoteUpstream } from './remote-upstream';
 import { aboutDependencies, aboutLinks, licenseHref } from './upstream-docs';
 

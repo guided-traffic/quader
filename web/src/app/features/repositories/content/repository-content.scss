@@ -1,5 +1,5 @@
 // The page of a repository and of its folders and files (R-UI-052, R-UI-010): its own parts. The list of the items or of a
-// folder is repository-lists.scss, the view of one file views/files/file-view.scss, the path of a folder or a file
+// folder is views/repositories/repository-lists.scss, the view of one file views/files/file-view.scss, the path of a folder or a file
 // views/files/files-head.scss: one sheet per component, so that no component carries the rules of the others and each stays under
 // the 4 kB budget of a component's styles.
 
@@ -58,6 +58,21 @@
   align-items: center;
   gap: var(--quader-space-2);
   margin-block-start: var(--quader-space-3);
+}
+
+// The page's act in the items list's toolbar (Upload collection, Upload package), projected into the view
+// (views/repositories/repository-items.ts): projected content carries this page's styles, so they stand here, as the lists' sheet has
+// them for a folder's acts (Q-UI-512).
+.files-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--quader-space-2);
+  margin-inline-start: auto;
+
+  .btn .material-icons {
+    font-size: 1.125rem;
+    margin-inline-end: var(--quader-space-1);
+  }
 }
 
 // The page's Delete of a file, at the end of the path's row (views/files/files-head.ts), its icon as the row's Download has it.

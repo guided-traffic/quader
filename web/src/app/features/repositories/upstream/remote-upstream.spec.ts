@@ -28,7 +28,7 @@ import {
 } from '../../../api/testing/fakes-upstream-catalogue';
 import { Notifier } from '../../../core/notifier';
 import { expectAccessible, holdCalls, renderScreen, settle, text, waitUntil } from '../../../testing/screen';
-import { contentShapeOf } from '../content/content-shape';
+import { contentShapeOf } from '../../../views/repositories/content-shape';
 import { RepositoryContent } from '../content/repository-content';
 import { RemoteUpstream } from './remote-upstream';
 import { catalogueState, clockAfter, searchHintText } from './upstream-words';

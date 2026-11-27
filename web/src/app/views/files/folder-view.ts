@@ -11,7 +11,7 @@ import { PagedResource } from '../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
 import { TimeAgo } from '../../shared/ui/time-ago';
 import { formatSize } from '../../features/packages/format-size';
-import { ContentShape, contentShapeOf, emptyContentText } from '../../features/repositories/content/content-shape';
+import { ContentShape, contentShapeOf, emptyContentText } from '../repositories/content-shape';
 import { iconOf } from '../../features/repositories/content/file-paths';
 import { ClientCommandMenu } from '../packages/client-command-menu';
 
@@ -125,7 +125,7 @@ export const FILES_PAGE = 200;
       }
     </quader-data-table>
   `,
-  styleUrl: '../../features/repositories/content/repository-lists.scss',
+  styleUrl: '../repositories/repository-lists.scss',
 })
 export class FolderView {
   private readonly files = inject(FileReads);

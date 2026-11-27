@@ -1,12 +1,13 @@
-import { TimePipe } from '../../../shared/time-pipe';
+import { TimePipe } from '../../shared/time-pipe';
 import { Component, computed, inject, input, resource } from '@angular/core';
-import { LIVE_IDLE_MS, live, refreshResource } from '../../../core/live-refresh';
+import { LIVE_IDLE_MS, live, refreshResource } from '../../core/live-refresh';
 import { RouterLink } from '@angular/router';
-import { PackageSummary, PackagesApi } from '../../../api/packages-api';
-import { collectAll } from '../../../api/pagination';
-import { splitRef } from '../../../api/repositories-api';
-import { failureOf, valueOf } from '../../../shared/paged-resource';
-import { DataTable, TableColumn } from '../../../shared/ui/data-table';
+import { PackageSummary } from '../../api/packages-api';
+import { PackageReads } from '../../api/package-reads';
+import { collectAll } from '../../api/pagination';
+import { splitRef } from '../../api/refs';
+import { failureOf, valueOf } from '../../shared/paged-resource';
+import { DataTable, TableColumn } from '../../shared/ui/data-table';
 import {
   CLAMAV_FORMAT,
   DatabaseVersion,
@@ -17,8 +18,8 @@ import {
   outdatedBadge,
   outdatedNote,
   setName,
-} from '../../../views/packages/clamav-definitions';
-import { packageCommands, versionCommands } from '../../packages/package-links';
+} from '../packages/clamav-definitions';
+import { packageCommands, versionCommands } from '../../features/packages/package-links';
 
 /** What tells that a database got a version or lost one. */
 function stampOf(packages: readonly PackageSummary[]): string {
@@ -40,7 +41,8 @@ export interface DatabaseRow {
  * The databases of `upstream/clamav` on the repository's page (R-UI-194, Q-UI-904): one row per database (`bytecode`, `daily`,
  * `main`), each with the version in use, its build time and its age, `daily` marked **Outdated** past 7 days (Q-UI-912); above the table one muted
  * line names the set in use and, where it differs, the set before it. The versions come with their state (`include=state`), and the
- * one version in use of each database is read for its build time: four reads per database at most, three databases.
+ * one version in use of each database is read for its build time: four reads per database at most, three databases. A view both
+ * applications compose (R-UI-223, Q-UI-1630), read through `PackageReads`.
  */
 @Component({
   selector: 'quader-clamav-databases',
@@ -127,7 +129,7 @@ export interface DatabaseRow {
   `,
 })
 export class ClamavDatabases {
-  private readonly api = inject(PackagesApi);
+  private readonly api = inject(PackageReads);
 
   /** The qualified name of the repository, `upstream/clamav`. */
   readonly repository = input.required<string>();

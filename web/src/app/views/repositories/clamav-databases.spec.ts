@@ -1,7 +1,7 @@
-import { PackagesApi } from '../../../api/packages-api';
-import { CLAMAV_NOW, clamavFixture } from '../../../api/testing/fakes-clamav';
-import { FakePackagesApi } from '../../../api/testing/fakes-packages';
-import { expectAccessible, renderScreen, settle, text } from '../../../testing/screen';
+import { PackagesApi } from '../../api/packages-api';
+import { CLAMAV_NOW, clamavFixture } from '../../api/testing/fakes-clamav';
+import { FakePackagesApi } from '../../api/testing/fakes-packages';
+import { expectAccessible, renderScreen, settle, text } from '../../testing/screen';
 import { vi } from 'vitest';
 import { ClamavDatabases } from './clamav-databases';
 

@@ -15,7 +15,7 @@ import { DeprecationMark } from '../../../shared/ui/deprecation-mark';
 import { QuaderDialog } from '../../../shared/ui/dialog';
 import { NoValue } from '../../../shared/ui/no-value';
 import { Switch } from '../../../shared/ui/switch';
-import { ContentShape } from '../content/content-shape';
+import { ContentShape } from '../../../views/repositories/content-shape';
 import { DeliveryRequestsPanel } from './delivery-requests-panel';
 import { DeliveryRulesData, DeliveryRulesDialog } from './delivery-rules-dialog';
 import { UpstreamActions } from './upstream-actions';

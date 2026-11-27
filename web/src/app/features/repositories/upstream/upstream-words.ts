@@ -1,5 +1,5 @@
 import { ApiError } from '../../../api/problem';
-import { notScannedText } from '../content/content-shape';
+import { notScannedText } from '../../../views/repositories/content-shape';
 import { DeliveryDecision, UpstreamCatalogue, UpstreamVerdict } from '../../../api/upstream-catalogue-api';
 import { formatTime } from '../../../shared/time-format';
 

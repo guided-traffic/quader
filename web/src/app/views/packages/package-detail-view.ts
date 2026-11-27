@@ -36,7 +36,7 @@ import { VersionSize } from './version-size';
 import { DistTags } from './dist-tags';
 import { SignatureBadge } from '../signatures/signature-badge';
 import { CLAMAV_FORMAT, clamavState, stateRank, stateText } from './clamav-definitions';
-import { arrivedLabel } from '../../features/repositories/content/content-shape';
+import { arrivedLabel } from '../repositories/content-shape';
 import { PackageTags } from './package-tags';
 import { ImageTags, listsByContent } from './image-tags';
 import { DeprecationMark } from '../../shared/ui/deprecation-mark';

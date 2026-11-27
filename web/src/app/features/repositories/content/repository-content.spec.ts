@@ -13,11 +13,12 @@ import { FakeUpstreamApi } from '../../../api/testing/fakes-upstream';
 import { SessionApi } from '../../../api/session-api';
 import { FakeSessionApi } from '../../../api/testing/fakes';
 import { FrequentPlaces } from '../../../core/frequent-places';
+import { SessionStore } from '../../../core/session-store';
 import { spokenText } from '../../../testing/axe';
 import { browserStorage, expectAccessible, renderScreen, settle, text } from '../../../testing/screen';
 import { RepositoryContent } from './repository-content';
-import { RepositoryItems } from './repository-items';
-import { contentShapeOf } from './content-shape';
+import { RepositoryItems } from '../../../views/repositories/repository-items';
+import { contentShapeOf } from '../../../views/repositories/content-shape';
 import { Component, signal } from '@angular/core';
 import { ComponentFixture } from '@angular/core/testing';
 import { Router } from '@angular/router';
@@ -343,6 +344,23 @@ describe('Repository content page', () => {
     await expectAccessible(panel);
   });
 
+  it('R-UI-094 R-UI-224 a visitor without a session reads the grades of the versions of an opened row', async () => {
+    const r = await open(NPM_REPO, ({ packages, vulnerabilities, session }) => {
+      session.whoamiResult = new ApiError(401, null, null);
+      packages.packages = packages.packages.map((p) => ({ ...p, repositories: ['web/npm-local'], vulnerabilityGrade: sampleGrade('C', { high: 2, low: 3 }, { fixable: 1 }) }));
+      vulnerabilities.packageReports.set('pkg_01JBQ6V7S3K9', {
+        packageId: 'pkg_01JBQ6V7S3K9',
+        versions: [{ version: '1.4.0', grade: sampleGrade('C', { high: 2, low: 3 }, { fixable: 1 }) }],
+      });
+    });
+    expect(r.get(SessionStore).state()).toBe('anonymous');
+    const row = [...r.root.querySelectorAll('tbody tr')].find((tr) => tr.textContent?.includes('@team-a/ui'))!;
+    row.querySelector<HTMLButtonElement>('.name-cell button[aria-expanded]')!.click();
+    await settle(r.fixture);
+    expect((r.get(VulnerabilitiesApi) as FakeVulnerabilitiesApi).calls).toEqual(expect.arrayContaining(['packageReport pkg_01JBQ6V7S3K9 in web/npm-local']));
+    expect(text(r.root.querySelector('quader-repository-item-versions quader-grade .grade-text')!)).toBe('Grade C · 5 findings · 1 fixable');
+  });
+
   it('R-UI-094 the column of grades sorts the list by grade, worst first descending, after the name', async () => {
     const r = await open(NPM_REPO, ({ packages }) => {
       const grades = [sampleGrade('A', { low: 2 }), sampleGrade('E', { critical: 7 }), sampleGrade('N/A')];
@@ -375,6 +393,22 @@ describe('Repository content page', () => {
     r.fixture.componentInstance.scanned.set(true);
     await settle(r.fixture);
     expect(packages.listFilters.at(-1)).toMatchObject({ include: ['vulnerabilities'] });
+  });
+
+  it('R-UI-229 a repository list without download figures has no column Downloads', async () => {
+    @Component({
+      imports: [RepositoryItems],
+      template: `<quader-repository-items repository="web/npm-local" format="npm" [shape]="shape" [downloads]="false" />`,
+    })
+    class Host {
+      readonly shape = contentShapeOf('npm');
+    }
+    const r = await renderScreen(Host, {});
+    const headers = [...r.root.querySelectorAll('thead th')].map((th) => th.textContent ?? '');
+    expect(headers.some((h) => h.includes('Updated'))).toBe(true);
+    expect(headers.some((h) => h.includes('Downloads'))).toBe(false);
+    const row = r.root.querySelector('tbody tr')!;
+    expect(row.children.length).toBe(headers.length);
   });
 
   it('R-UI-094 a list without grades has no column of grades', async () => {

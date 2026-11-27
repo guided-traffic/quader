@@ -1,7 +1,7 @@
 import { Component, computed, inject, input, resource } from '@angular/core';
 import { FileReads, Item } from '../../app/api/file-reads';
 import { filesAddress } from '../../app/api/refs';
-import { contentShapeOf } from '../../app/features/repositories/content/content-shape';
+import { contentShapeOf } from '../../app/views/repositories/content-shape';
 import { ErrorNotice } from '../../app/shared/error-notice';
 import { failureOf, valueOf } from '../../app/shared/paged-resource';
 import { Loading } from '../../app/shared/ui/loading';
