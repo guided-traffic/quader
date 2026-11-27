@@ -137,12 +137,23 @@ type VersionGrade struct {
 	OS   string
 	// CheckedAt is, for an image, the oldest scan of its manifests, for every other format when the advisory data the evaluation
 	// used was synchronised; nil for N/A.
-	CheckedAt  *time.Time
+	CheckedAt *time.Time
+	// Scan is, for an image, who scanned the manifest whose scan is the oldest (CheckedAt) and against which database (R-VULN-051,
+	// Q-VULN-290); nil for every other format, whose grade the worker matches against the advisory data, and for N/A.
+	Scan       *ScanFacts
 	Evaluation vuln.Evaluation
 	// Check is the state of the check by its cause (R-VULN-039, Q-VULN-274): checked, or why not and what comes.
 	Check Check
 	// Repository is the qualified name of the repository.
 	Repository string
+}
+
+// ScanFacts are who scanned an image and against which database (R-VULN-051).
+type ScanFacts struct {
+	// Scanner is the unit, vuln.UnitScannerTrivy; ToolVersion the analyser's version its answer stated, "" for a scan recorded before.
+	Scanner, ToolVersion string
+	// Database is the database the scan ran with; its build time is nil for a scan recorded before.
+	Database Database
 }
 
 // Rank is the grade's order (Rank).
@@ -189,10 +200,13 @@ func gradeIn(repository string, evaluation vuln.Evaluation, found tally, images 
 		g.CheckedAt = syncedAt
 		return g
 	}
+	// The manifest scanned longest ago decides the time and names the scanner and the database (Q-VULN-290): the grade is as current as its
+	// oldest part.
 	for _, m := range images {
 		if m.ScannedAt != nil && (g.CheckedAt == nil || m.ScannedAt.Before(*g.CheckedAt)) {
 			at := *m.ScannedAt
 			g.CheckedAt = &at
+			g.Scan = &ScanFacts{Scanner: vuln.UnitScannerTrivy, ToolVersion: m.ToolVersion, Database: m.Database}
 		}
 	}
 	return g

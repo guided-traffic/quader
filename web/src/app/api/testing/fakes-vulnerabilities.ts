@@ -1,4 +1,5 @@
 import { Provider } from '@angular/core';
+import { VULNERABILITY_DATABASE_READ } from '../../core/vulnerability-database';
 import { Page, PageFetcher } from '../pagination';
 import { ApiError } from '../problem';
 import { Versioned } from '../repositories-api';
@@ -10,6 +11,7 @@ import {
   VulnerabilitiesApi,
   VulnerabilityAdvisory,
   VulnerabilityAdvisoryDetail,
+  VulnerabilityDatabase,
   VulnerabilityFinding,
   VulnerabilityFindingDetail,
   VulnerabilityFindingPatch,
@@ -23,6 +25,7 @@ import {
   VulnerabilitySummary,
   VulnerabilityTrend,
   VulnerabilityVersionReport,
+  vulnerabilityDatabaseRead,
 } from '../vulnerabilities-api';
 
 /*
@@ -461,6 +464,15 @@ export class FakeVulnerabilitiesApi extends VulnerabilitiesApi {
     };
   }
 
+  /** Today's database of the image scanning (R-VULN-052): the one SAMPLE_DATABASE_TODAY names. */
+  databaseToday: VulnerabilityDatabase = { ...SAMPLE_DATABASE_TODAY };
+
+  override async database(): Promise<VulnerabilityDatabase> {
+    this.fail();
+    this.calls.push('database');
+    return this.databaseToday;
+  }
+
   override async sources(): Promise<readonly VulnerabilitySourceState[]> {
     this.fail();
     this.calls.push('sources');
@@ -531,7 +543,24 @@ export function severityCounts(over: Partial<VulnerabilitySeverityCounts> = {}):
 }
 
 export function provideVulnerabilityFakes(): Provider[] {
-  return [{ provide: VulnerabilitiesApi, useClass: FakeVulnerabilitiesApi }];
+  return [
+    { provide: VulnerabilitiesApi, useClass: FakeVulnerabilitiesApi },
+    { provide: VULNERABILITY_DATABASE_READ, useFactory: vulnerabilityDatabaseRead },
+  ];
+}
+
+/** Today's database of the fakes (R-VULN-052): built on 26 November, confirmed an hour later. */
+export const SAMPLE_DATABASE_TODAY: VulnerabilityDatabase = {
+  scanner: 'vuln-scanner-trivy',
+  digest: 'sha256:7f3a9c51e2d84b6a0c1f5e9d2b7a4c8e6f0d3b5a9c7e1f2d4b6a8c0e2f4a6b8c',
+  builtAt: '2026-11-26T06:12:40Z',
+  syncedAt: '2026-11-26T07:23:05Z',
+  stale: false,
+};
+
+/** An image's scan facts on its grade (R-VULN-051): Trivy 0.76.2 against the database of `builtAt`, today's when no date is given. */
+export function sampleImageScan(builtAt = SAMPLE_DATABASE_TODAY.builtAt!, digest = SAMPLE_DATABASE_TODAY.digest!): Partial<VulnerabilityGrade> {
+  return { scanner: 'vuln-scanner-trivy', scannerVersion: '0.76.2', database: { digest, builtAt } };
 }
 
 /** A version's grade as the API answers it (R-VULN-039): evaluated with the given open findings, or N/A not covered. */

@@ -10,7 +10,7 @@ import { DeprecationMark } from '../../../shared/ui/deprecation-mark';
 import { GradeLabel } from '../../../shared/vulnerability/grade';
 import { MalwareMark, malwareColumn, malwareShown } from '../../../shared/malware/malware-mark';
 import { MalwareSignaturesStore } from '../../../core/malware-signatures';
-import { gradeRank } from '../../../shared/vulnerability/grade-words';
+import { gradeColumnHelp, gradeRank } from '../../../shared/vulnerability/grade-words';
 import { systemClosed } from '../../../core/system-clients';
 import { LIVE_SLOW_MS, live } from '../../../core/live-refresh';
 import { ClientCommandMenu } from '../../../views/packages/client-command-menu';
@@ -232,7 +232,7 @@ export class RepositoryItems {
       columns.push({
         id: 'grade',
         label: $localize`:@@repo.content.col.vulnerabilities:Vulnerabilities`,
-        help: $localize`:@@repo.content.help.grade:The grade of the latest version in this repository, from S (no known vulnerabilities) to E (more than 5 Critical); N/A when it is not checked, with the reason beside it.`,
+        help: gradeColumnHelp('package'),
         sortable: true,
       });
     }

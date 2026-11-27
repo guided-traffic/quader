@@ -40,6 +40,11 @@ func malwareInternal() map[string]bool {
 	}
 }
 
+// scannerVersions are the members that name the version of a third-party tool that checked something on the main installation: the
+// analyser's version of an image's grade and scan (R-VULN-051, Q-VULN-296), as the ClamAV engine of a malware state (malwareInternal), a
+// fact of the main installation's infrastructure that changes with an upgrade of the scanner and helps no visitor judge the artifact.
+func scannerVersions() map[string]bool { return map[string]bool{"scannerVersion": true} }
+
 // triageMembers are the members of a finding that name its triage: the person, the note and the history (B.10). The anonymous
 // answer of the main installation carries none of them already (R-VULN-019 as P3 revised it); the strip holds that for every
 // document, so a later member of the same name cannot reach a Bastion.
@@ -182,20 +187,25 @@ func (rw Rewrite) value(s string) any {
 }
 
 func stripObject(o map[string]any, at string, times map[string]any, rw Rewrite) map[string]any {
-	st, counters, triage, internal := stateTimes(), downloadCounters(), triageMembers(), malwareInternal()
+	st, counters, triage, internal, tools := stateTimes(), downloadCounters(), triageMembers(), malwareInternal(), scannerVersions()
 	_, malwareCheck := o["scannedAt"]
 	_, malwareState := o["databaseBuiltAt"]
 	malwareState = malwareCheck && malwareState
+	// A grade's database is the one its check ran with (R-VULN-051): it changes with every rescan under a new database, so it moves with
+	// the check's time, as an image's scan's does (scannedAt).
+	_, gradeCheck := o["checkedAt"]
+	_, isGrade := o["grade"]
+	gradeCheck = gradeCheck && isGrade
 	for k, val := range o {
 		ptr := at + "/" + escapePointer(k)
 		switch {
 		// The part that decides a unit's word moves with its check: which part is worst changes as the set in use ages the checks.
-		case st[k] || (malwareCheck && (k == "database" || k == "databaseBuiltAt" || k == "decidedBy")):
+		case st[k] || (malwareCheck && (k == "database" || k == "databaseBuiltAt" || k == "decidedBy")) || (gradeCheck && k == "database"):
 			if val != nil {
 				times[ptr] = val
 			}
 			delete(o, k)
-		case counters[k] || triage[k] || (malwareState && internal[k]):
+		case counters[k] || triage[k] || tools[k] || (malwareState && internal[k]):
 			delete(o, k)
 		case k == "releasedBy":
 			o[k] = nil // the principal who released a blob or a version (B.10); the member is nullable in every shape

@@ -65,18 +65,9 @@ dl.digests {
   display: inline-flex;
   text-decoration: none;
 }
+/* The grade is the button of its details, which end with the link to the tab of the findings (Q-UI-1538). */
 .facts-grade {
   color: var(--quader-on-surface);
-  text-decoration: none;
-
-  &:hover {
-    color: var(--quader-link);
-  }
-
-  &:focus-visible {
-    outline: var(--quader-focus-ring);
-    outline-offset: 2px;
-  }
 }
 
 .nowrap {

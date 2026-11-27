@@ -37,6 +37,7 @@ import { gradedPackage, manyVersionsPackage, publicGradedPackage, zipArchive } f
 import { anonymousCard, anonymousEndOfLife, anonymousFindings } from './anonymous-vulnerabilities';
 import { bastionScreens } from './bastion-gui';
 import { malwarePackage, quarantine } from './malware';
+import { gradeDetailsVersion, gradeDetailsVersions } from './grade-details';
 import { markedFile, markedFolder, markedList, markedVersion } from './malware-marks';
 import { malwareWaiting, scanFailedCard, scanStatesList, scanStatesPackage } from './scan-states';
 import { trivyDatabases } from './scanners';
@@ -3375,6 +3376,11 @@ export const screens: readonly Screen[] = [
   { id: 'package-ansible-thirty', path: pkg(O, { format: 'ansible', name: collectionName }), kinds: ['plain'], walk: manyVersionsHead(), de: true },
   // The head of a version's page per format: the verb's button and its panel (Q-UI-1241).
   { id: 'package-version-oci-head', path: ver(P, ociPackage, '1.4.0'), kinds: ['plain'], walk: versionHead, de: true },
+  // The details of a grade (R-UI-091, R-VULN-051, R-VULN-052): an image's tags, one under today's database and one under an older one, an
+  // image's version page and a package's, each opened by a tap or the keyboard; the answers are made in the browser (grade-details.ts).
+  { id: 'grade-details-versions', path: pkg(P, ociPackage), kinds: ['plain'], walk: gradeDetailsVersions, de: true },
+  { id: 'grade-details-image', path: ver(P, ociPackage, '1.4.0'), kinds: ['plain'], walk: gradeDetailsVersion(true), de: true },
+  { id: 'grade-details-package', path: ver(P, gradedPackage, gradedPackage.version), kinds: ['plain'], walk: gradeDetailsVersion(false), de: true },
   // An image's head with its other tags and the panel's pull by digest; a chart's with Helm alone (R-OCI-041, R-OCI-042).
   { id: 'package-version-oci-facts-head', path: ver(P, { format: 'oci', name: factsImages.index }, factsImages.tags[0]), kinds: ['plain'], walk: versionHead, de: true },
   { id: 'package-version-oci-chart-head', path: ver(P, { format: 'oci', name: factsImages.chart }, '0.3.0'), kinds: ['plain'], walk: versionHead, de: true },

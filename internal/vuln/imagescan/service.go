@@ -569,6 +569,7 @@ func (s *Service) recordDetection(ctx context.Context, ref ImageRef, det Detecti
 		}
 		return images.Scanned(ctx, store.ImageApplied{
 			RepoID: ref.RepoID, Name: ref.Name, Digest: ref.Digest, DBDigest: digest, OSFamily: det.OSFamily, OSName: det.OSName, EOSL: det.EOSL, Packages: packages,
+			ToolVersion: det.Analyser,
 		})
 	})
 }

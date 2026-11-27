@@ -66,10 +66,24 @@ If someone else changed the finding while you had it open, the change is refused
 
 Lists and the page of a version show a version as a **grade**: a shield with a letter and beside it the number of open findings
 and how many of them have a fix, for example the shield **E** and **1,145 findings · 112 fixable**, or **OS end of life** for an
-image whose operating system is no longer supported; hover over it for the rule of the letter and every count. The card on the
+image whose operating system is no longer supported. Point at the grade, tap it or reach it with the keyboard to open its details:
+the rule of the letter and every count, then when, by what and against which data it was checked. The card on the
 **Vulnerabilities** tab of a version names the count that decides the letter, for example **13 Critical**. A finding has a fix when its
 advisory names a version that is no longer affected. The grade comes from the version's open findings; a dismissed or resolved
 finding does not count.
+
+What the details say of the check:
+
+- **An image** is scanned by `vuln-scanner-trivy` against a vulnerability database of a date. The details name **Scanned** (how long ago,
+  with the date and time), **Scanner** with Trivy's version, **Database then** (the date the database of the scan was built), **Database
+  today** (the date of the database in use and when Quader fetched it) and **How current**: **Under today's database**, or **Under a
+  database 6 days older**, which means the image waits for its scan under the new database; every image is scanned again after each new
+  database, about every six hours. Of an image of several platforms, the platform scanned longest ago speaks for the grade. The
+  databases' digests are under **Technical details**.
+- **A package** names no scanner: it is checked against the advisories of a time, **Checked against the advisories of** that time, from
+  the GitHub Advisory Database and OpenSSF malicious-packages through osv.dev. Its grade is computed again from today's advisories every
+  time it is shown.
+- **N/A** says why the version is not checked and what comes.
 
 | Grade | When | The rule under it |
 |---|---|---|
@@ -79,7 +93,7 @@ finding does not count.
 | **C** | High findings and no Critical; also an image whose operating system has reached its end of life, however few findings it has | High found, no Critical; OS end of life: no more security updates, the scan may miss vulnerabilities |
 | **D** | 1 to 5 Critical findings | 1 to 5 Critical |
 | **E** | More than 5 Critical findings | More than 5 Critical |
-| **N/A** | Not checked. The word beside the shield says why, and its sentence (hover the cell, or open the version) says what comes: **Queued** (the image waits for its scan, since the time named) and **Scanning** pass on their own; **No scanner**, **No database** and **No advisory data** wait for what the installation lacks and pass once an administrator provides it; **Scan failed** is tried again, or waits for an administrator to raise the limits or for a release that reads the image (the code is under **Technical details** on the version's page); **Scanning off**, **Not matched**, **Internal**, **Not scanned** and **Not an image** are settings or what the artifact is, and do not change by themselves. **Not scanned** says the reason of the package type: no public advisory source lists Ansible collections by version; Debian's advisories name source packages and releases, and matching a package against them is not built yet; a file of a generic repository has no package name and version an advisory could name | Why it is not checked, and what comes |
+| **N/A** | Not checked. The word beside the shield says why, and its sentence (open the grade's details, or open the version) says what comes: **Queued** (the image waits for its scan, since the time named) and **Scanning** pass on their own; **No scanner**, **No database** and **No advisory data** wait for what the installation lacks and pass once an administrator provides it; **Scan failed** is tried again, or waits for an administrator to raise the limits or for a release that reads the image (the code is under **Technical details** on the version's page); **Scanning off**, **Not matched**, **Internal**, **Not scanned** and **Not an image** are settings or what the artifact is, and do not change by themselves. **Not scanned** says the reason of the package type: no public advisory source lists Ansible collections by version; Debian's advisories name source packages and releases, and matching a package against them is not built yet; a file of a generic repository has no package name and version an advisory could name | Why it is not checked, and what comes |
 
 A version held by several repositories you may read shows the worst of their grades. A package in a list shows the grade of its
 latest version: an older version you pin can be worse, so look at the versions table of the package before you keep an old one.
@@ -88,8 +102,8 @@ all. Without signing in you see the grades of what is **Public**; see [Without s
 
 ## On the page of a version
 
-The line under the version's name shows its grade with the number of findings and how many have a fix; select it to open the
-**Vulnerabilities** tab. A version that is checked opens on that tab.
+The line under the version's name shows its grade with the number of findings and how many have a fix; select it to open its
+details, whose last line, **Show the findings**, opens the **Vulnerabilities** tab. A version that is checked opens on that tab.
 
 The **Vulnerabilities** tab of a version shows, per repository you may read that holds the version, a card: the grade and
 its rule, the open findings as the severity bar, and a line of facts. For an image the facts are its operating system, **end of

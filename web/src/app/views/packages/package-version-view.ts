@@ -305,6 +305,8 @@ export class PackageVersionView {
   protected readonly vulnerabilityReport = computed(() => valueOf(this.vulnerabilities) ?? null);
   /** The version's grade, the worst of its repositories (R-VULN-038, Q-UI-375): the same grade the row of the versions table shows. */
   protected readonly grade = computed(() => worstGrade((this.vulnerabilityReport()?.repositories ?? []).map((r) => r.grade)));
+  /** The link the grade's details end with: the tab of the version's findings, on this page (Q-UI-1538). */
+  protected readonly findingsTab = { commands: [], query: { tab: 'vulnerabilities' } } as const;
   protected readonly blockedIn = computed(() => blockedRepositories(this.vulnerabilityReport()));
   protected readonly severityFilter = computed(() => barSeverityOf(this.severity()));
 

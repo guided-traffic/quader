@@ -93,10 +93,11 @@
     <p class="facts-line">
       <span class="dot-separated">
         @if (grade(); as g) {
-          <!-- The grade is no snippet of a search engine: a result outlives a fix by the crawler's revisit (R-UI-231). -->
-          <a class="facts-grade" [routerLink]="[]" [queryParams]="{ tab: 'vulnerabilities' }" queryParamsHandling="merge">
-            <span data-nosnippet><quader-grade [grade]="g" [image]="format() === 'oci'" [format]="format()" /></span>
-          </a>
+          <!-- The grade is no snippet of a search engine: a result outlives a fix by the crawler's revisit (R-UI-231). Its details open on
+               hover, focus and tap, and end with the link to the tab of the findings (Q-UI-1538). -->
+          <span class="facts-grade"
+            ><span data-nosnippet><quader-grade [grade]="g" [image]="format() === 'oci'" [format]="format()" [findingsLink]="findingsTab" /></span
+          ></span>
         }
         <!-- The version's malware scan in one word beside its grade, its details on demand (R-UI-255): its worst stored part decides. -->
         @if (versionMalware(); as m) {

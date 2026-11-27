@@ -243,6 +243,8 @@ type ImageDB struct {
 	Digest string
 	// BuiltAt is the build time; zero for a row recorded before the run recorded it.
 	BuiltAt time.Time
+	// SyncedAt is when a run last confirmed it (R-VULN-052); zero before one did.
+	SyncedAt time.Time
 }
 
 // DB reads the database in use; found is false before a run recorded one.
@@ -255,6 +257,9 @@ func (s *Images) DB(ctx context.Context) (db ImageDB, found bool, err error) {
 		db, found = ImageDB{Digest: rows[0].Digest}, true
 		if rows[0].BuiltUs > 0 {
 			db.BuiltAt = time.UnixMicro(rows[0].BuiltUs).UTC()
+		}
+		if rows[0].SyncedUs > 0 {
+			db.SyncedAt = time.UnixMicro(rows[0].SyncedUs).UTC()
 		}
 		return nil
 	})
@@ -335,6 +340,10 @@ type ImageManifest struct {
 	CreatedAt, StartedAt *time.Time
 	// Kind is what the manifest is when it stands for its tag alone (Q-VULN-275): ImageKindImage, ImageKindIndex or ImageKindOther.
 	Kind string
+	// DBDigest is the database of the last detection, DBBuiltAt its build time and ToolVersion the analyser's version the scanner's answer
+	// stated (R-VULN-051); empty and nil before the first detection, and the last two for a row detected before they were recorded.
+	DBDigest, ToolVersion string
+	DBBuiltAt             *time.Time
 }
 
 // The kinds of a manifest that stands for its tag alone (VulnImageManifests, VulnImageGradeScans): an image to scan (or a manifest the
@@ -367,7 +376,7 @@ func (s *Images) Manifests(ctx context.Context, repos []int64, name, tag string)
 			m := ImageManifest{
 				RepoID: r.RepoID, Digest: r.Digest, Platform: r.Platform, State: r.State, ErrorCode: r.ErrorCode, OSFamily: r.OsFamily, OSName: r.OsName,
 				EOSL: r.OsEosl, Packages: int(r.Packages), Detected: r.Detected, Judged: r.Judged, CreatedAt: microTimePtr(r.CreatedUs),
-				StartedAt: microTimePtr(r.StartedUs), Kind: r.Kind,
+				StartedAt: microTimePtr(r.StartedUs), Kind: r.Kind, DBDigest: r.DbDigest, DBBuiltAt: microTimePtr(r.DbBuiltUs), ToolVersion: r.ToolVersion,
 			}
 			if r.ScannedUs > 0 {
 				at := microTime(r.ScannedUs)
@@ -418,6 +427,7 @@ func (s *Images) GradeScans(ctx context.Context, repos []int64, pairs []NameVers
 			m := TagManifest{Name: r.Name, Tag: r.Version, ImageManifest: ImageManifest{
 				RepoID: r.RepoID, Digest: r.Digest, Platform: r.Platform, State: r.State, OSFamily: r.OsFamily, OSName: r.OsName, EOSL: r.OsEosl,
 				ErrorCode: r.ErrorCode, Judged: r.Judged, CreatedAt: microTimePtr(r.CreatedUs), StartedAt: microTimePtr(r.StartedUs), Kind: r.Kind,
+				DBDigest: r.DbDigest, DBBuiltAt: microTimePtr(r.DbBuiltUs), ToolVersion: r.ToolVersion,
 			}}
 			if r.ScannedUs > 0 {
 				at := microTime(r.ScannedUs)
@@ -452,6 +462,8 @@ type ImageApplied struct {
 	OSFamily, OSName string
 	EOSL             bool
 	Packages         int
+	// ToolVersion is the analyser's version the scanner's answer stated (R-VULN-051); empty for a row written without a detection.
+	ToolVersion string
 }
 
 // ImageTx is the part of a detection's transaction that belongs to the image tables.
@@ -534,7 +546,8 @@ func (t *ImageTx) SetComponents(ctx context.Context, repoID int64, name, version
 func (t *ImageTx) Scanned(ctx context.Context, a ImageApplied) error {
 	return t.qs.VulnImageScanned(ctx, q.VulnImageScannedParams{
 		RepoID: a.RepoID, Name: a.Name, Digest: a.Digest[:], DbDigest: a.DBDigest, OsFamily: a.OSFamily, OsName: a.OSName, OsEosl: a.EOSL,
-		Packages: int32(a.Packages), //nolint:gosec // bounded by the analyser's report
+		Packages:    int32(a.Packages), //nolint:gosec // bounded by the analyser's report
+		ToolVersion: a.ToolVersion,
 	})
 }
 

@@ -87,6 +87,16 @@ type ImageState struct {
 	// and what a terminal failure was judged under.
 	Detected bool
 	Judged   string
+	// Database is the database of the last detection with its build time, and ToolVersion the analyser's version its answer stated
+	// (R-VULN-051); zero before the first detection.
+	Database    Database
+	ToolVersion string
+}
+
+// Database names a vulnerability database of the image scanning: the digest of its layer and its build time (nil when not known).
+type Database struct {
+	Digest  string
+	BuiltAt *time.Time
 }
 
 func imagesOf(all []store.ImageManifest, repoID int64) []ImageState {
@@ -110,6 +120,7 @@ func imageStateOf(m store.ImageManifest, state string) ImageState {
 	return ImageState{
 		Digest: m.Digest, Platform: m.Platform, State: state, ErrorCode: m.ErrorCode, ScannedAt: m.ScannedAt, OSFamily: m.OSFamily, OSName: m.OSName,
 		EOSL: m.EOSL, Packages: m.Packages, Detected: m.Detected, Judged: m.Judged, CreatedAt: m.CreatedAt, StartedAt: m.StartedAt, Kind: m.Kind,
+		Database: Database{Digest: m.DBDigest, BuiltAt: m.DBBuiltAt}, ToolVersion: m.ToolVersion,
 	}
 }
 
@@ -340,12 +351,50 @@ func publicImage(m ImageState) ImageState {
 }
 
 // publicGrade is a grade as an anonymous caller is told it (Q-VULN-280): the letter, the counts, the fixable count, the OS and its end
-// of life and the time of the check as every reader reads them; the evaluation and the state in their public form, without the time a
-// wait began and without a scan's code.
+// of life, the time of the check, the scanner and the database as every reader reads them (Q-VULN-291); the evaluation and the state in
+// their public form, without the time a wait began and without a scan's code.
 func publicGrade(g VersionGrade) VersionGrade {
 	g.Evaluation = vuln.PublicEvaluation(g.Evaluation)
 	g.Check = Check{State: g.Check.State.Public()}
 	return g
+}
+
+// TodaysDatabase is the image scanning's database in use (R-VULN-052): the database a grade's own is compared with.
+type TodaysDatabase struct {
+	// Database has the digest "" and no build time before a run recorded one.
+	Database Database
+	// SyncedAt is when a run last confirmed it; Stale says that this was longer ago than vulnerabilities.stale_after.
+	SyncedAt *time.Time
+	Stale    bool
+}
+
+// ImageScanning says whether the image scanning is on and wired: TodaysDatabase answers only then.
+func (s *Service) ImageScanning() bool {
+	return s.cfg.Enabled && s.cfg.ImagesEnabled && s.images != nil
+}
+
+// TodaysDatabase reads the database in use, in one statement (R-VULN-052). It names no repository and no host: the database is the
+// analyser's public one, and where the installation keeps it is the sources screen's (R-VULN-045).
+func (s *Service) TodaysDatabase(ctx context.Context) (TodaysDatabase, error) {
+	var out TodaysDatabase
+	if s.images == nil {
+		return out, nil
+	}
+	db, found, err := s.images.DB(ctx)
+	if err != nil || !found {
+		return out, err
+	}
+	out.Database.Digest = db.Digest
+	if !db.BuiltAt.IsZero() {
+		at := db.BuiltAt
+		out.Database.BuiltAt = &at
+	}
+	if !db.SyncedAt.IsZero() {
+		at := db.SyncedAt
+		out.SyncedAt = &at
+		out.Stale = s.stale(out.SyncedAt, s.now())
+	}
+	return out, nil
 }
 
 // versionCounts counts the open findings of the version per repository for its grade, from the counts and not from the listed

@@ -147,3 +147,30 @@ func TestR_VULN_040_GradeCarriesTheFixableFindings(t *testing.T) {
 		t.Errorf("pending data: %+v", g)
 	}
 }
+
+// R-VULN-051, Q-VULN-290: an image's grade names the unit, the analyser's version and the database of the platform image scanned longest
+// ago, the scan its checkedAt is; a package's grade names no scanner and no database, only when its advisory data was synchronised; N/A
+// names neither. Microseconds.
+func TestR_VULN_051_AGradeNamesWhenByWhichScannerAndAgainstWhichDatabase(t *testing.T) {
+	older, newer := time.Date(2026, 11, 20, 6, 0, 0, 0, time.UTC), time.Date(2026, 11, 26, 6, 0, 0, 0, time.UTC)
+	builtThen, builtToday := time.Date(2026, 11, 20, 0, 12, 0, 0, time.UTC), time.Date(2026, 11, 26, 0, 12, 0, 0, time.UTC)
+	images := []ImageState{
+		{Platform: "linux/amd64", State: store.ImageScanScanned, ScannedAt: &newer, ToolVersion: "0.76.2", Database: Database{Digest: "sha256:b", BuiltAt: &builtToday}},
+		{Platform: "linux/arm64", State: store.ImageScanScanned, ScannedAt: &older, ToolVersion: "0.76.1", Database: Database{Digest: "sha256:a", BuiltAt: &builtThen}},
+	}
+	g := gradeIn("web/images", vuln.EvaluationEvaluated, tally{}, images, nil)
+	if g.CheckedAt == nil || !g.CheckedAt.Equal(older) || g.Scan == nil || g.Scan.Scanner != "vuln-scanner-trivy" || g.Scan.ToolVersion != "0.76.1" ||
+		g.Scan.Database.Digest != "sha256:a" || g.Scan.Database.BuiltAt == nil || !g.Scan.Database.BuiltAt.Equal(builtThen) {
+		t.Errorf("the image's grade: %+v %+v", g, g.Scan)
+	}
+	synced := time.Date(2026, 11, 26, 9, 0, 0, 0, time.UTC)
+	if p := gradeIn("web/npm", vuln.EvaluationEvaluated, tally{}, nil, &synced); p.Scan != nil || p.CheckedAt == nil || !p.CheckedAt.Equal(synced) {
+		t.Errorf("a package's grade: %+v", p)
+	}
+	if na := gradeIn("web/images", vuln.EvaluationPendingScan, tally{}, images, nil); na.Scan != nil || na.CheckedAt != nil {
+		t.Errorf("N/A: %+v", na)
+	}
+	if pub := publicGrade(g); pub.Scan == nil || pub.Scan.Database.Digest != "sha256:a" {
+		t.Errorf("an anonymous caller's grade: %+v", pub)
+	}
+}

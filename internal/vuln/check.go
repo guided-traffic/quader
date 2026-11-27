@@ -102,3 +102,7 @@ func NoScannerCode(code string) bool {
 	}
 	return false
 }
+
+// UnitScannerTrivy is the unit that scans an image for vulnerabilities, the name a grade names of who checked it (R-VULN-051): the scanner
+// of the kind trivy with its analyser. A package is matched by the worker against the advisory data, which is no scanner unit.
+const UnitScannerTrivy = "vuln-scanner-trivy"

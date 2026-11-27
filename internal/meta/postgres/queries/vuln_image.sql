@@ -89,10 +89,14 @@ SELECT s.repo_id::bigint AS repo_id, s.name::text AS name, s.digest AS digest, s
  LIMIT sqlc.arg(max_rows)::int;
 
 -- name: VulnImageScanned :exec
--- The record of a finished detection.
+-- The record of a finished detection, with the facts a grade names (R-VULN-051): the analyser's version the scanner's answer stated, and the
+-- build time of the database the detection ran with, the watermark its run recorded beside the digest on the source row (null once the row
+-- names another digest).
 UPDATE vuln_image_scan
    SET state = 'scanned', db_digest = sqlc.arg(db_digest)::text, scanned_at = now(), attempts = 0, error_code = NULL, error_detail = NULL, judged = NULL,
-       started_at = NULL,
+       started_at = NULL, tool_version = NULLIF(sqlc.arg(tool_version)::text, ''),
+       db_built_at = (SELECT v.watermark FROM vuln_source_state v
+                       WHERE v.source = 'trivy' AND v.ecosystem = 'OCI' AND v.etag = sqlc.arg(db_digest)::text),
        os_family = NULLIF(sqlc.arg(os_family)::text, ''), os_name = NULLIF(sqlc.arg(os_name)::text, ''), os_eosl = sqlc.arg(os_eosl)::boolean,
        packages = sqlc.arg(packages)::int
  WHERE repo_id = sqlc.arg(repo_id)::bigint AND name = sqlc.arg(name)::text AND digest = sqlc.arg(digest);
@@ -174,8 +178,10 @@ DELETE FROM vuln_image_sbom b
 -- name: VulnImageDBGet :many
 -- The database in use (R-VULN-044, Q-VULN-173): the row of the source trivy, ecosystem OCI, once a run recorded a layer. etag is the
 -- layer's digest "sha256:<hex>" (archive_sha256 holds the same bytes); the layer itself is an item of the database's repository. The
--- watermark is the build time of its metadata.json, which the run records with it (Q-VULN-208); a row recorded before has none.
-SELECT s.etag::text AS digest, COALESCE((EXTRACT(EPOCH FROM s.watermark) * 1000000)::bigint, 0)::bigint AS built_us
+-- watermark is the build time of its metadata.json, which the run records with it (Q-VULN-208); a row recorded before has none. synced_us
+-- is when a run last confirmed it, the time today's database names (R-VULN-052).
+SELECT s.etag::text AS digest, COALESCE((EXTRACT(EPOCH FROM s.watermark) * 1000000)::bigint, 0)::bigint AS built_us,
+       COALESCE((EXTRACT(EPOCH FROM s.synced_at) * 1000000)::bigint, 0)::bigint AS synced_us
   FROM vuln_source_state s
  WHERE s.source = 'trivy' AND s.ecosystem = 'OCI' AND s.state = 'complete' AND s.etag LIKE 'sha256:%';
 
@@ -308,6 +314,8 @@ SELECT g.repo_id::bigint AS repo_id, ('sha256:' || encode(g.digest, 'hex'))::tex
        COALESCE((extract(epoch FROM s.started_at) * 1000000)::bigint, 0)::bigint AS started_us,
        COALESCE(s.os_family, '')::text AS os_family, COALESCE(s.os_name, '')::text AS os_name, COALESCE(s.os_eosl, false)::boolean AS os_eosl,
        COALESCE(s.packages, 0)::int AS packages, (s.db_digest IS NOT NULL)::boolean AS detected, COALESCE(s.judged, '')::text AS judged,
+       COALESCE(s.db_digest, '')::text AS db_digest, COALESCE((extract(epoch FROM s.db_built_at) * 1000000)::bigint, 0)::bigint AS db_built_us,
+       COALESCE(s.tool_version, '')::text AS tool_version,
        (CASE WHEN g.child OR m.digest IS NULL THEN 'image'
              WHEN m.media_type IN ('application/vnd.oci.image.index.v1+json', 'application/vnd.docker.distribution.manifest.list.v2+json') THEN 'index'
              WHEN m.media_type IN ('application/vnd.oci.image.manifest.v1+json', 'application/vnd.docker.distribution.manifest.v2+json')
@@ -360,7 +368,8 @@ SELECT g.repo_id::bigint AS repo_id, g.name::text AS name, g.tag::text AS versio
 
 -- name: VulnImageGradeScans :many
 -- The manifests the given (name, tag) pairs stand for in the repositories, with how far each is scanned, its OS and whether that OS is at
--- its end of life: the scan facts of the grades of R-VULN-038 and of the list's grade (R-VULN-039). As VulnImageManifests, for many tags at
+-- its end of life, the database it was scanned against and the analyser's version (R-VULN-051): the scan facts of the grades of R-VULN-038
+-- and of the list's grade (R-VULN-039). As VulnImageManifests, for many tags at
 -- once: for an index its platform images, the children the repository stores that VulnImageDiscover's selection scans (Q-VULN-269), and
 -- the index alone only while no platform image is stored. created_us, started_us, error_code and judged say why a manifest is not scanned
 -- (R-VULN-039, Q-VULN-274), and kind what the tag's own manifest is when it stands alone: an image (or one the repository holds no row of
@@ -399,6 +408,8 @@ SELECT g.repo_id::bigint AS repo_id, g.name::text AS name, g.tag::text AS versio
        COALESCE((extract(epoch FROM s.started_at) * 1000000)::bigint, 0)::bigint AS started_us,
        COALESCE(s.error_code, '')::text AS error_code, COALESCE(s.judged, '')::text AS judged,
        COALESCE(s.os_family, '')::text AS os_family, COALESCE(s.os_name, '')::text AS os_name, COALESCE(s.os_eosl, false)::boolean AS os_eosl,
+       COALESCE(s.db_digest, '')::text AS db_digest, COALESCE((extract(epoch FROM s.db_built_at) * 1000000)::bigint, 0)::bigint AS db_built_us,
+       COALESCE(s.tool_version, '')::text AS tool_version,
        (CASE WHEN g.child OR m.digest IS NULL THEN 'image'
              WHEN m.media_type IN ('application/vnd.oci.image.index.v1+json', 'application/vnd.docker.distribution.manifest.list.v2+json') THEN 'index'
              WHEN m.media_type IN ('application/vnd.oci.image.manifest.v1+json', 'application/vnd.docker.distribution.manifest.v2+json')

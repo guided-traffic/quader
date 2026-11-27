@@ -22116,6 +22116,33 @@ type VulnerabilityDataFactsSourcesSource string
 // VulnerabilityDataFactsSourcesState defines model for VulnerabilityDataFacts.Sources.State.
 type VulnerabilityDataFactsSourcesState string
 
+// VulnerabilityDatabase Today's vulnerability database of the image scanning (R-VULN-052).
+type VulnerabilityDatabase struct {
+	// BuiltAt Its build time, the database's date; null while none is in use or before its run recorded one.
+	BuiltAt *time.Time `json:"builtAt"`
+
+	// Digest The digest of the database in use, `sha256:<hex>`; null while none is.
+	Digest *string `json:"digest"`
+
+	// Scanner The unit that scans images with it, `vuln-scanner-trivy`.
+	Scanner string `json:"scanner"`
+
+	// Stale The last confirmation is older than `vulnerabilities.stale_after`.
+	Stale bool `json:"stale"`
+
+	// SyncedAt When Quader's run last confirmed it ("fetched"); null while none is in use.
+	SyncedAt *time.Time `json:"syncedAt"`
+}
+
+// VulnerabilityDatabaseRef A vulnerability database of the image scanning (R-VULN-051), the analyser's public one.
+type VulnerabilityDatabaseRef struct {
+	// BuiltAt Its build time, the database's date; null for a detection recorded before the build time was.
+	BuiltAt *time.Time `json:"builtAt"`
+
+	// Digest The digest of its layer, `sha256:<hex>`.
+	Digest string `json:"digest"`
+}
+
 // VulnerabilityDismissalReason defines model for VulnerabilityDismissalReason.
 type VulnerabilityDismissalReason string
 
@@ -22244,6 +22271,9 @@ type VulnerabilityGrade struct {
 	// CheckedAt An image: the oldest scan of its manifests in the repository. Every other format: when the advisory data it was evaluated against was synchronised. null for N/A.
 	CheckedAt *time.Time `json:"checkedAt"`
 
+	// Database An image: the database that scan ran with (R-VULN-051), the database then; `GET /api/v1/vulnerabilities/database` answers today's. Absent for every other format, whose grade is computed from today's advisory data at every read, and for N/A.
+	Database *VulnerabilityDatabaseRef `json:"database,omitempty"`
+
 	// Eosl An image whose OS is at its end of life; false for every other format.
 	Eosl bool `json:"eosl"`
 
@@ -22266,6 +22296,12 @@ type VulnerabilityGrade struct {
 
 	// Repository The qualified name of the repository whose grade it is.
 	Repository string `json:"repository"`
+
+	// Scanner An image: the unit that scanned the manifest whose scan is `checkedAt`, the one scanned longest ago, `vuln-scanner-trivy` (R-VULN-051, Q-VULN-290). Absent for every other format, whose grade the worker matches against the advisory data of `checkedAt`, which is no scanner, and for N/A.
+	Scanner *string `json:"scanner,omitempty"`
+
+	// ScannerVersion An image: the analyser's version (Trivy's) the scanner stated for that scan, shown for information only (H-2406); absent otherwise and for a scan recorded before the version was.
+	ScannerVersion *string `json:"scannerVersion,omitempty"`
 
 	// State Whether a version is checked for vulnerabilities and, when it is not, why and what comes (R-VULN-039, Q-VULN-274): the one state
 	// every list cell, the version page's card and the security screens say, in the reader's language. `checked`: evaluated, the grade
@@ -22311,7 +22347,9 @@ type VulnerabilityImageComponent struct {
 
 // VulnerabilityImageState One manifest of an image version, and how far it has been scanned (R-VULN-034).
 type VulnerabilityImageState struct {
-	Digest string `json:"digest"`
+	// Database The vulnerability database of the last detection (R-VULN-051); absent before the first detection.
+	Database *VulnerabilityDatabaseRef `json:"database,omitempty"`
+	Digest   string                    `json:"digest"`
 
 	// Eosl The distribution no longer provides security updates, so an absence of findings says little.
 	Eosl *bool `json:"eosl,omitempty"`
@@ -22325,9 +22363,12 @@ type VulnerabilityImageState struct {
 	Packages *int `json:"packages,omitempty"`
 
 	// Platform os/arch[/variant] for a child of a multi-platform image.
-	Platform  *string                      `json:"platform,omitempty"`
-	ScannedAt *time.Time                   `json:"scannedAt,omitempty"`
-	State     VulnerabilityImageStateState `json:"state"`
+	Platform  *string    `json:"platform,omitempty"`
+	ScannedAt *time.Time `json:"scannedAt,omitempty"`
+
+	// ScannerVersion The analyser's version (Trivy's) the scanner's answer stated for the last detection (R-VULN-051); the scanner's own statement, shown for information only (H-2406). Absent before the first detection and for one recorded before the version was.
+	ScannerVersion *string                      `json:"scannerVersion,omitempty"`
+	State          VulnerabilityImageStateState `json:"state"`
 }
 
 // VulnerabilityImageStateState defines model for VulnerabilityImageState.State.
@@ -27849,6 +27890,9 @@ type ServerInterface interface {
 	// ListClaimedNameMatches Public advisories that name an internal name
 	// (GET /api/v1/vulnerabilities/claimed-name-matches)
 	ListClaimedNameMatches(w http.ResponseWriter, r *http.Request, params ListClaimedNameMatchesParams)
+	// GetVulnerabilityDatabase Today's vulnerability database of the image scanning
+	// (GET /api/v1/vulnerabilities/database)
+	GetVulnerabilityDatabase(w http.ResponseWriter, r *http.Request)
 	// ListVulnerabilityFindings List vulnerability findings
 	// (GET /api/v1/vulnerabilities/findings)
 	ListVulnerabilityFindings(w http.ResponseWriter, r *http.Request, params ListVulnerabilityFindingsParams)
@@ -48234,6 +48278,20 @@ func (siw *ServerInterfaceWrapper) ListClaimedNameMatches(w http.ResponseWriter,
 	handler.ServeHTTP(w, r)
 }
 
+// GetVulnerabilityDatabase operation middleware
+func (siw *ServerInterfaceWrapper) GetVulnerabilityDatabase(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetVulnerabilityDatabase(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListVulnerabilityFindings operation middleware
 func (siw *ServerInterfaceWrapper) ListVulnerabilityFindings(w http.ResponseWriter, r *http.Request) {
 
@@ -49482,6 +49540,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/vulnerabilities/summary", wrapper.GetVulnerabilitySummary)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/vulnerabilities/trend", wrapper.GetVulnerabilityTrend)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/vulnerabilities/sources", wrapper.ListVulnerabilitySources)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/vulnerabilities/database", wrapper.GetVulnerabilityDatabase)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/vulnerabilities/claimed-name-matches", wrapper.ListClaimedNameMatches)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/packages/{packageId}/versions/{version}/vulnerabilities", wrapper.GetPackageVersionVulnerabilities)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/packages/{packageId}/vulnerabilities", wrapper.GetPackageVulnerabilities)

@@ -5883,6 +5883,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/vulnerabilities/database": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Today's vulnerability database of the image scanning
+         * @description The database the image scanning detects with today, for the details of an image's grade (R-VULN-052): the digest of its layer,
+         *     its build time (`builtAt`), when Quader's run last confirmed it (`syncedAt`), whether that is stale (`vulnerabilities.stale_after`)
+         *     and the unit that scans with it (`vuln-scanner-trivy`). Every caller reads it, an anonymous one included where the endpoint admits
+         *     anonymous callers: the database is the analyser's public one, and the answer names no repository, no host and no address of the
+         *     installation (Q-VULN-293). `digest`, `builtAt` and `syncedAt` are null while no database is in use; `503` while the image
+         *     scanning is off.
+         */
+        get: operations["getVulnerabilityDatabase"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/vulnerabilities/claimed-name-matches": {
         parameters: {
             query?: never;
@@ -17765,6 +17790,20 @@ export interface components {
             eosl?: boolean;
             /** @description The packages the analysis found. None for an image without a known distribution and language packages. */
             packages?: number;
+            /** @description The analyser's version (Trivy's) the scanner's answer stated for the last detection (R-VULN-051); the scanner's own statement, shown for information only (H-2406). Absent before the first detection and for one recorded before the version was. */
+            scannerVersion?: string;
+            /** @description The vulnerability database of the last detection (R-VULN-051); absent before the first detection. */
+            database?: components["schemas"]["VulnerabilityDatabaseRef"];
+        };
+        /** @description A vulnerability database of the image scanning (R-VULN-051), the analyser's public one. */
+        VulnerabilityDatabaseRef: {
+            /** @description The digest of its layer, `sha256:<hex>`. */
+            digest: string;
+            /**
+             * Format: date-time
+             * @description Its build time, the database's date; null for a detection recorded before the build time was.
+             */
+            builtAt: string | null;
         };
         /**
          * @description One finding: one canonical advisory affects one stored version in one repository (R-VULN-012). `blocked` and
@@ -18016,6 +18055,31 @@ export interface components {
             stateCode: string | null;
             /** @description The qualified name of the repository whose grade it is. */
             repository: string;
+            /** @description An image: the unit that scanned the manifest whose scan is `checkedAt`, the one scanned longest ago, `vuln-scanner-trivy` (R-VULN-051, Q-VULN-290). Absent for every other format, whose grade the worker matches against the advisory data of `checkedAt`, which is no scanner, and for N/A. */
+            scanner?: string;
+            /** @description An image: the analyser's version (Trivy's) the scanner stated for that scan, shown for information only (H-2406); absent otherwise and for a scan recorded before the version was. */
+            scannerVersion?: string;
+            /** @description An image: the database that scan ran with (R-VULN-051), the database then; `GET /api/v1/vulnerabilities/database` answers today's. Absent for every other format, whose grade is computed from today's advisory data at every read, and for N/A. */
+            database?: components["schemas"]["VulnerabilityDatabaseRef"];
+        };
+        /** @description Today's vulnerability database of the image scanning (R-VULN-052). */
+        VulnerabilityDatabase: {
+            /** @description The unit that scans images with it, `vuln-scanner-trivy`. */
+            scanner: string;
+            /** @description The digest of the database in use, `sha256:<hex>`; null while none is. */
+            digest: string | null;
+            /**
+             * Format: date-time
+             * @description Its build time, the database's date; null while none is in use or before its run recorded one.
+             */
+            builtAt: string | null;
+            /**
+             * Format: date-time
+             * @description When Quader's run last confirmed it ("fetched"); null while none is in use.
+             */
+            syncedAt: string | null;
+            /** @description The last confirmation is older than `vulnerabilities.stale_after`. */
+            stale: boolean;
         };
         /**
          * @description Whether a version is checked for vulnerabilities and, when it is not, why and what comes (R-VULN-039, Q-VULN-274): the one state
@@ -33484,6 +33548,39 @@ export interface operations {
             };
             401: components["responses"]["Unauthenticated"];
             403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getVulnerabilityDatabase: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The database in use. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "scanner": "vuln-scanner-trivy",
+                     *       "digest": "sha256:5a0c0b8e6c1f4d2a9e7b3c6d8f0a1b2c3d4e5f60718293a4b5c6d7e8f9012345",
+                     *       "builtAt": "2026-11-26T06:12:40Z",
+                     *       "syncedAt": "2026-11-26T06:23:05Z",
+                     *       "stale": false
+                     *     }
+                     */
+                    "application/json": components["schemas"]["VulnerabilityDatabase"];
+                };
+            };
+            401: components["responses"]["Unauthenticated"];
             429: components["responses"]["TooManyRequests"];
             500: components["responses"]["Internal"];
             503: components["responses"]["Unavailable"];

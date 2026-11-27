@@ -306,8 +306,15 @@ func (f *flow) setDB(d string) {
 		}
 	}
 	f.db.digest.Store(&d)
-	f.st.Exec(`INSERT INTO vuln_source_state (source, ecosystem, state, etag, synced_at, full_synced_at) VALUES ('trivy', 'OCI', 'complete', $1, now(), now())
-		ON CONFLICT (source, ecosystem) DO UPDATE SET state = 'complete', etag = $1, synced_at = now()`, d)
+	// The run records the database's build time beside its digest (Q-VULN-208): the n-th database is built on the n-th day.
+	f.st.Exec(`INSERT INTO vuln_source_state (source, ecosystem, state, etag, watermark, synced_at, full_synced_at)
+		VALUES ('trivy', 'OCI', 'complete', $1, $2::timestamptz, now(), now())
+		ON CONFLICT (source, ecosystem) DO UPDATE SET state = 'complete', etag = $1, watermark = $2::timestamptz, synced_at = now()`, d, dbBuiltAt(d))
+}
+
+// dbBuiltAt is the build time setDB records for a database of dbDigest: the n-th is built on the n-th of November 2026.
+func dbBuiltAt(digest string) string {
+	return time.Date(2026, 11, 1+int(digest[len(digest)-1]-'0'), 6, 0, 0, 0, time.UTC).Format(time.RFC3339)
 }
 
 func (f *flow) setReport(r string) { f.an.report.Store(&r) }
@@ -369,9 +376,11 @@ type versionReport struct {
 			} `json:"components"`
 		} `json:"findings"`
 		Images []struct {
-			Digest, State string
-			OsFamily      string `json:"osFamily"`
-			Packages      int    `json:"packages"`
+			Digest, State  string
+			OsFamily       string       `json:"osFamily"`
+			Packages       int          `json:"packages"`
+			ScannerVersion string       `json:"scannerVersion"`
+			Database       *databaseRef `json:"database"`
 		} `json:"images"`
 		Grade imageGrade `json:"grade"`
 	} `json:"repositories"`
@@ -390,6 +399,15 @@ type imageGrade struct {
 	Open       struct {
 		Critical int64 `json:"critical"`
 	} `json:"open"`
+	Scanner        string       `json:"scanner"`
+	ScannerVersion string       `json:"scannerVersion"`
+	Database       *databaseRef `json:"database"`
+}
+
+// databaseRef is a vulnerability database as an answer names it (R-VULN-051).
+type databaseRef struct {
+	Digest  string  `json:"digest"`
+	BuiltAt *string `json:"builtAt"`
 }
 
 func (f *flow) versionReport(name, tag string) versionReport {
@@ -713,4 +731,52 @@ func etagOf(t *testing.T, f *flow, id string) string {
 		t.Fatalf("finding %s: %d %s", id, a.Status, a.Body)
 	}
 	return a.Header.Get("ETag")
+}
+
+// TestR_VULN_051_R_VULN_052_AnImagesGradeNamesItsScanAndTodaysDatabase: a scanned image's grade names the unit that scanned it, the
+// analyser's version its answer stated and the database it ran with, with that database's build time from the source row, in the version
+// report (its manifest the same) and in the list; GET /api/v1/vulnerabilities/database answers today's database to a signed-in and to an
+// anonymous caller, and after a new database it answers the new one while the grade still names the one it was scanned against. About
+// 2 s; the stack's image of kilobytes.
+func TestR_VULN_051_R_VULN_052_AnImagesGradeNamesItsScanAndTodaysDatabase(t *testing.T) {
+	f := newFlowWith(t, options{seed: public})
+	f.push("app", "1.0", newImage(t))
+	f.runScan()
+	rv := f.waitEvaluation("app", "1.0", "evaluated").Repositories[0]
+	then := dbBuiltAt(dbDigest(1))
+	g := rv.Grade
+	if g.Scanner != "vuln-scanner-trivy" || g.ScannerVersion != "0.0.0-test" || g.Database == nil || g.Database.Digest != dbDigest(1) ||
+		g.Database.BuiltAt == nil || *g.Database.BuiltAt != then {
+		t.Fatalf("the grade: %+v %+v", g, g.Database)
+	}
+	if len(rv.Images) != 1 || rv.Images[0].ScannerVersion != "0.0.0-test" || rv.Images[0].Database == nil || rv.Images[0].Database.Digest != dbDigest(1) {
+		t.Fatalf("the manifest: %+v", rv.Images)
+	}
+	if l := f.listGrade(); l.Scanner != "vuln-scanner-trivy" || l.Database == nil || l.Database.Digest != dbDigest(1) {
+		t.Fatalf("the list's grade: %+v", l)
+	}
+
+	today := func(anonymous bool) map[string]any {
+		t.Helper()
+		var a testenv.Answer
+		if anonymous {
+			a = f.st.Do(f.api, "GET", "/api/v1/vulnerabilities/database", "", nil)
+		} else {
+			a = f.do("GET", "/api/v1/vulnerabilities/database", nil)
+		}
+		if a.Status != http.StatusOK {
+			t.Fatalf("today's database (anonymous %v): %d %s", anonymous, a.Status, a.Body)
+		}
+		return a.JSON(t)
+	}
+	if d := today(false); d["scanner"] != "vuln-scanner-trivy" || d["digest"] != dbDigest(1) || d["builtAt"] != then || d["syncedAt"] == nil || d["stale"] != false {
+		t.Fatalf("today's database: %v", d)
+	}
+	f.setDB(dbDigest(2))
+	if d := today(true); d["digest"] != dbDigest(2) || d["builtAt"] != dbBuiltAt(dbDigest(2)) || len(d) != 5 {
+		t.Fatalf("today's database after a new one, to an anonymous caller: %v", d)
+	}
+	if g := f.anonymousReport("app", "1.0").Repositories[0].Grade; g.Database == nil || g.Database.Digest != dbDigest(1) || g.ScannerVersion != "0.0.0-test" {
+		t.Fatalf("the grade names the database it was scanned against, to an anonymous caller too: %+v", g)
+	}
 }

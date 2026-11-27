@@ -82,6 +82,8 @@ type ImageReader interface {
 	Manifests(ctx context.Context, repos []int64, name, tag string) ([]store.ImageManifest, error)
 	// GradeScans reads the manifests of many tags at once, for their grades (R-VULN-038).
 	GradeScans(ctx context.Context, repos []int64, pairs []store.NameVersion) ([]store.TagManifest, error)
+	// DB reads the database in use, today's (R-VULN-052); found is false before a run recorded one.
+	DB(ctx context.Context) (db store.ImageDB, found bool, err error)
 }
 
 // Service is the report.

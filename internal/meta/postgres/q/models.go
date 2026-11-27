@@ -2367,6 +2367,8 @@ type VulnImageScan struct {
 	Judged      pgtype.Text
 	CreatedAt   pgtype.Timestamptz
 	StartedAt   pgtype.Timestamptz
+	DbBuiltAt   pgtype.Timestamptz
+	ToolVersion pgtype.Text
 }
 
 type VulnKev struct {

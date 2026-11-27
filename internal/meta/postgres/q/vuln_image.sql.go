@@ -71,19 +71,22 @@ func (q *Queries) VulnImageComponentsOf(ctx context.Context, ids []string) ([]Vu
 }
 
 const vulnImageDBGet = `-- name: VulnImageDBGet :many
-SELECT s.etag::text AS digest, COALESCE((EXTRACT(EPOCH FROM s.watermark) * 1000000)::bigint, 0)::bigint AS built_us
+SELECT s.etag::text AS digest, COALESCE((EXTRACT(EPOCH FROM s.watermark) * 1000000)::bigint, 0)::bigint AS built_us,
+       COALESCE((EXTRACT(EPOCH FROM s.synced_at) * 1000000)::bigint, 0)::bigint AS synced_us
   FROM vuln_source_state s
  WHERE s.source = 'trivy' AND s.ecosystem = 'OCI' AND s.state = 'complete' AND s.etag LIKE 'sha256:%'
 `
 
 type VulnImageDBGetRow struct {
-	Digest  string
-	BuiltUs int64
+	Digest   string
+	BuiltUs  int64
+	SyncedUs int64
 }
 
 // The database in use (R-VULN-044, Q-VULN-173): the row of the source trivy, ecosystem OCI, once a run recorded a layer. etag is the
 // layer's digest "sha256:<hex>" (archive_sha256 holds the same bytes); the layer itself is an item of the database's repository. The
-// watermark is the build time of its metadata.json, which the run records with it (Q-VULN-208); a row recorded before has none.
+// watermark is the build time of its metadata.json, which the run records with it (Q-VULN-208); a row recorded before has none. synced_us
+// is when a run last confirmed it, the time today's database names (R-VULN-052).
 func (q *Queries) VulnImageDBGet(ctx context.Context) ([]VulnImageDBGetRow, error) {
 	rows, err := q.db.Query(ctx, vulnImageDBGet)
 	if err != nil {
@@ -93,7 +96,7 @@ func (q *Queries) VulnImageDBGet(ctx context.Context) ([]VulnImageDBGetRow, erro
 	items := []VulnImageDBGetRow{}
 	for rows.Next() {
 		var i VulnImageDBGetRow
-		if err := rows.Scan(&i.Digest, &i.BuiltUs); err != nil {
+		if err := rows.Scan(&i.Digest, &i.BuiltUs, &i.SyncedUs); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -584,6 +587,8 @@ SELECT g.repo_id::bigint AS repo_id, g.name::text AS name, g.tag::text AS versio
        COALESCE((extract(epoch FROM s.started_at) * 1000000)::bigint, 0)::bigint AS started_us,
        COALESCE(s.error_code, '')::text AS error_code, COALESCE(s.judged, '')::text AS judged,
        COALESCE(s.os_family, '')::text AS os_family, COALESCE(s.os_name, '')::text AS os_name, COALESCE(s.os_eosl, false)::boolean AS os_eosl,
+       COALESCE(s.db_digest, '')::text AS db_digest, COALESCE((extract(epoch FROM s.db_built_at) * 1000000)::bigint, 0)::bigint AS db_built_us,
+       COALESCE(s.tool_version, '')::text AS tool_version,
        (CASE WHEN g.child OR m.digest IS NULL THEN 'image'
              WHEN m.media_type IN ('application/vnd.oci.image.index.v1+json', 'application/vnd.docker.distribution.manifest.list.v2+json') THEN 'index'
              WHEN m.media_type IN ('application/vnd.oci.image.manifest.v1+json', 'application/vnd.docker.distribution.manifest.v2+json')
@@ -607,25 +612,29 @@ type VulnImageGradeScansParams struct {
 }
 
 type VulnImageGradeScansRow struct {
-	RepoID    int64
-	Name      string
-	Version   string
-	Digest    string
-	Platform  string
-	State     string
-	ScannedUs int64
-	CreatedUs int64
-	StartedUs int64
-	ErrorCode string
-	Judged    string
-	OsFamily  string
-	OsName    string
-	OsEosl    bool
-	Kind      string
+	RepoID      int64
+	Name        string
+	Version     string
+	Digest      string
+	Platform    string
+	State       string
+	ScannedUs   int64
+	CreatedUs   int64
+	StartedUs   int64
+	ErrorCode   string
+	Judged      string
+	OsFamily    string
+	OsName      string
+	OsEosl      bool
+	DbDigest    string
+	DbBuiltUs   int64
+	ToolVersion string
+	Kind        string
 }
 
 // The manifests the given (name, tag) pairs stand for in the repositories, with how far each is scanned, its OS and whether that OS is at
-// its end of life: the scan facts of the grades of R-VULN-038 and of the list's grade (R-VULN-039). As VulnImageManifests, for many tags at
+// its end of life, the database it was scanned against and the analyser's version (R-VULN-051): the scan facts of the grades of R-VULN-038
+// and of the list's grade (R-VULN-039). As VulnImageManifests, for many tags at
 // once: for an index its platform images, the children the repository stores that VulnImageDiscover's selection scans (Q-VULN-269), and
 // the index alone only while no platform image is stored. created_us, started_us, error_code and judged say why a manifest is not scanned
 // (R-VULN-039, Q-VULN-274), and kind what the tag's own manifest is when it stands alone: an image (or one the repository holds no row of
@@ -654,6 +663,9 @@ func (q *Queries) VulnImageGradeScans(ctx context.Context, arg VulnImageGradeSca
 			&i.OsFamily,
 			&i.OsName,
 			&i.OsEosl,
+			&i.DbDigest,
+			&i.DbBuiltUs,
+			&i.ToolVersion,
 			&i.Kind,
 		); err != nil {
 			return nil, err
@@ -722,6 +734,8 @@ SELECT g.repo_id::bigint AS repo_id, ('sha256:' || encode(g.digest, 'hex'))::tex
        COALESCE((extract(epoch FROM s.started_at) * 1000000)::bigint, 0)::bigint AS started_us,
        COALESCE(s.os_family, '')::text AS os_family, COALESCE(s.os_name, '')::text AS os_name, COALESCE(s.os_eosl, false)::boolean AS os_eosl,
        COALESCE(s.packages, 0)::int AS packages, (s.db_digest IS NOT NULL)::boolean AS detected, COALESCE(s.judged, '')::text AS judged,
+       COALESCE(s.db_digest, '')::text AS db_digest, COALESCE((extract(epoch FROM s.db_built_at) * 1000000)::bigint, 0)::bigint AS db_built_us,
+       COALESCE(s.tool_version, '')::text AS tool_version,
        (CASE WHEN g.child OR m.digest IS NULL THEN 'image'
              WHEN m.media_type IN ('application/vnd.oci.image.index.v1+json', 'application/vnd.docker.distribution.manifest.list.v2+json') THEN 'index'
              WHEN m.media_type IN ('application/vnd.oci.image.manifest.v1+json', 'application/vnd.docker.distribution.manifest.v2+json')
@@ -744,21 +758,24 @@ type VulnImageManifestsParams struct {
 }
 
 type VulnImageManifestsRow struct {
-	RepoID    int64
-	Digest    string
-	Platform  string
-	State     string
-	ErrorCode string
-	ScannedUs int64
-	CreatedUs int64
-	StartedUs int64
-	OsFamily  string
-	OsName    string
-	OsEosl    bool
-	Packages  int32
-	Detected  bool
-	Judged    string
-	Kind      string
+	RepoID      int64
+	Digest      string
+	Platform    string
+	State       string
+	ErrorCode   string
+	ScannedUs   int64
+	CreatedUs   int64
+	StartedUs   int64
+	OsFamily    string
+	OsName      string
+	OsEosl      bool
+	Packages    int32
+	Detected    bool
+	Judged      string
+	DbDigest    string
+	DbBuiltUs   int64
+	ToolVersion string
+	Kind        string
 }
 
 // The manifests a tag stands for in the repositories, with how far each is scanned (detected and judged as the gate of a pull reads them,
@@ -792,6 +809,9 @@ func (q *Queries) VulnImageManifests(ctx context.Context, arg VulnImageManifests
 			&i.Packages,
 			&i.Detected,
 			&i.Judged,
+			&i.DbDigest,
+			&i.DbBuiltUs,
+			&i.ToolVersion,
 			&i.Kind,
 		); err != nil {
 			return nil, err
@@ -979,27 +999,33 @@ func (q *Queries) VulnImageSBOMPut(ctx context.Context, arg VulnImageSBOMPutPara
 const vulnImageScanned = `-- name: VulnImageScanned :exec
 UPDATE vuln_image_scan
    SET state = 'scanned', db_digest = $1::text, scanned_at = now(), attempts = 0, error_code = NULL, error_detail = NULL, judged = NULL,
-       started_at = NULL,
-       os_family = NULLIF($2::text, ''), os_name = NULLIF($3::text, ''), os_eosl = $4::boolean,
-       packages = $5::int
- WHERE repo_id = $6::bigint AND name = $7::text AND digest = $8
+       started_at = NULL, tool_version = NULLIF($2::text, ''),
+       db_built_at = (SELECT v.watermark FROM vuln_source_state v
+                       WHERE v.source = 'trivy' AND v.ecosystem = 'OCI' AND v.etag = $1::text),
+       os_family = NULLIF($3::text, ''), os_name = NULLIF($4::text, ''), os_eosl = $5::boolean,
+       packages = $6::int
+ WHERE repo_id = $7::bigint AND name = $8::text AND digest = $9
 `
 
 type VulnImageScannedParams struct {
-	DbDigest string
-	OsFamily string
-	OsName   string
-	OsEosl   bool
-	Packages int32
-	RepoID   int64
-	Name     string
-	Digest   []byte
+	DbDigest    string
+	ToolVersion string
+	OsFamily    string
+	OsName      string
+	OsEosl      bool
+	Packages    int32
+	RepoID      int64
+	Name        string
+	Digest      []byte
 }
 
-// The record of a finished detection.
+// The record of a finished detection, with the facts a grade names (R-VULN-051): the analyser's version the scanner's answer stated, and the
+// build time of the database the detection ran with, the watermark its run recorded beside the digest on the source row (null once the row
+// names another digest).
 func (q *Queries) VulnImageScanned(ctx context.Context, arg VulnImageScannedParams) error {
 	_, err := q.db.Exec(ctx, vulnImageScanned,
 		arg.DbDigest,
+		arg.ToolVersion,
 		arg.OsFamily,
 		arg.OsName,
 		arg.OsEosl,

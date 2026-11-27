@@ -88,6 +88,9 @@ type Detection struct {
 	// EOSL says that the distribution no longer provides security updates, so that an absence of findings says little.
 	EOSL       bool
 	Advisories []Advisory
+	// Analyser is the analyser's version the answer stated (AnalyserVersionHeader), the one the call named: the version a grade names
+	// (R-VULN-051). The scanner states it of itself (H-2406).
+	Analyser string
 }
 
 // report is the part of the analyser's JSON report that is read: schema version 2 of Trivy.

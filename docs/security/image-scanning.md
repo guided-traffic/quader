@@ -393,3 +393,15 @@ arm64, 63.4 MB on amd64; 13.5 and 15.6 s by the nodes of a kind cluster of the d
 its init phase, and the images wait as `scanner_unavailable` (the alert of R-VULN-024). The pull is the node's, outside every egress rule of
 the chart, as the pull of ClamAV's image is. What makes it real: rescheduled scanner pods on nodes that never ran one, during an outage or
 behind a registry's limit; a mirror or images loaded on the nodes beforehand avoids it (Q-HA-383).
+
+### H-2406 · The analyser's version of a scan is the scanner's own statement
+
+Component: the members `scannerVersion` of an image's grade and of its manifests
+([R-VULN-051](../spec/vulnerability-scanning.md#r-vuln-051--a-grade-names-when-by-which-scanner-and-against-which-database-it-was-checked)),
+recorded as `tool_version` from the header `Quader-Analyser-Version` of a detection's answer. Subject: every reader of an image's grade, an
+anonymous one included. Dormant, and shown for information only: the worker refuses an answer whose version differs from the stored
+analysis's, so a scanner process states a version it was asked for, but a taken-over process can state that version over findings of any
+analyser, as it can answer any report ([H-1181](#h-1181--a-scanner-pod-whose-own-process-is-taken-over-answers-every-detection-it-serves));
+nothing decides on the version. What makes it real: a compromised pod of `vuln-scanner-trivy`, which then has worse to offer than a wrong
+version. The database a grade names is Quader's own record (the digest the job called with, and the build time its run recorded), not the
+scanner's statement; a Bastion carries neither (Q-VULN-296).

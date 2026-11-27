@@ -6325,6 +6325,10 @@ A document of the catalogue is named by a path of this grammar (`iface.Catalogue
   `nextCheckInDays`, `downloadsSince` and `currentFiles` are dropped from every document, and its `decidedBy` moves into the version's
   `state` with the check's `scannedAt`, `database` and `databaseBuiltAt`: the engine and the replica are facts of the main installation's
   infrastructure, the rest changes with every set and carries a trace of demand (Q-BAS-358).
+- **Nor the database or the analyser's version of a grade** ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-051,
+  Q-VULN-296; W-36's P7): a grade's `database` moves into the version's `state` with its `checkedAt`, as a scanned manifest's does with
+  its `scannedAt`, since it changes with every rescan under a new database; `scannerVersion` is dropped from every document, as a malware
+  state's `engine` is ([H-2407](#h-2407--a-bastions-grade-says-nothing-of-when-and-against-which-database-it-was-checked)).
 
 *Built on 2026-11-26 (P5 with E7):* the grammar as pure functions. *Built on 2026-11-26 (P6):* the builder's documents and its duty
 above: every time member goes into the version's state by JSON pointer (R-BAS-106, Q-BAS-359; `TestR_BAS_103_NoDocumentCarriesATimeOfItsCheck`).
@@ -16063,3 +16067,16 @@ Bastion for a build fleet takes the preset Partner network or a higher `authenti
 person's under the preset Internet. *Today:* live as described; since E9a the figures are the configuration's, since E8 an administrator
 sets them on the registration, and since E9b each caller with a credential is also charged its own budget at the Bastion's place, which
 does not lift the per-address figures.
+
+### H-2407 · A Bastion's grade says nothing of when and against which database it was checked
+
+Stage: the catalogue's documents of a version's and a package's vulnerabilities (R-BAS-103, Q-BAS-403) and the Bastion's grade in the shared
+views. Subject: a visitor who wants to judge how current an image's grade is, not a confidentiality or integrity property.
+
+Live on every Bastion since W-36's P7. The main installation's grade names when an image was scanned, by `vuln-scanner-trivy` and against
+which database, and its screens compare that database with today's (R-VULN-051, R-VULN-052). The catalogue keeps the time of a check and the
+database out of its documents, so that a rescan under a new database changes none of them (Q-VULN-296), and it carries no database of today;
+the Bastion's grade therefore opens its details with the rule and the counts only. What would close it: the database then in the version's
+state document (the strip puts it there already for a version's report, by JSON pointer; a package's grades per version keep it nowhere)
+and today's database once per registration in the catalogue's state document, which is an interface change of the Bastion's wire; the
+analyser's version stays out, as the malware scan's engine does (B.15 of W-36's plan).

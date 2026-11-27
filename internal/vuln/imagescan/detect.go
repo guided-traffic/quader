@@ -167,6 +167,7 @@ func readReport(res *http.Response, call DetectCall) (Detection, error) {
 	case err != nil:
 		return Detection{}, &ScanError{Code: CodeAnalyserFailed, Detail: err.Error()}
 	}
+	det.Analyser = res.Header.Get(AnalyserVersionHeader)
 	return det, nil
 }
 

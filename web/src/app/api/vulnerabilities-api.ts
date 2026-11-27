@@ -37,6 +37,8 @@ export type VulnerabilityVersionReport = Schema<'VulnerabilityVersionReport'>;
 export type VulnerabilityPackageReport = Schema<'VulnerabilityPackageReport'>;
 export type VulnerabilityGrade = Schema<'VulnerabilityGrade'>;
 export type VulnerabilityCheckState = Schema<'VulnerabilityCheckState'>;
+export type VulnerabilityDatabase = Schema<'VulnerabilityDatabase'>;
+export type VulnerabilityDatabaseRef = Schema<'VulnerabilityDatabaseRef'>;
 
 export const SEVERITIES: readonly VulnerabilitySeverity[] = ['critical', 'high', 'medium', 'low', 'none', 'unknown'];
 export const STATUSES: readonly VulnerabilityStatus[] = ['needs_triage', 'confirmed', 'blocked', 'dismissed', 'resolved'];
@@ -119,6 +121,14 @@ export abstract class VulnerabilitiesApi extends VulnerabilityReads {
   abstract sources(): Promise<readonly VulnerabilitySourceState[]>;
   /** The CSV document of a filter; `422 export_too_large` rejects before anything is streamed. */
   abstract exportCsv(filters: FindingFilters): Promise<string>;
+  /** `GET /api/v1/vulnerabilities/database`: public, every grade of a screen shares one read (R-VULN-052, R-UI-091). */
+  abstract database(): Promise<VulnerabilityDatabase>;
+}
+
+/** The read of today's vulnerability database the grades share (`VULNERABILITY_DATABASE_READ`), bound to the application's API. */
+export function vulnerabilityDatabaseRead(): () => Promise<VulnerabilityDatabase> {
+  const api = inject(VulnerabilitiesApi);
+  return () => api.database();
 }
 
 @Injectable()
@@ -170,6 +180,10 @@ export class HttpVulnerabilitiesApi extends VulnerabilitiesApi {
 
   override async exportCsv(filters: FindingFilters): Promise<string> {
     return (await this.client.getText('/api/v1/vulnerabilities/findings/export', { params: cleanQuery(filters), accept: 'text/csv' })).body;
+  }
+
+  override async database(): Promise<VulnerabilityDatabase> {
+    return (await this.client.getJson<VulnerabilityDatabase>('/api/v1/vulnerabilities/database')).body;
   }
 
   override async versionReport(packageId: string, version: string): Promise<VulnerabilityVersionReport> {

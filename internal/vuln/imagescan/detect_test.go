@@ -176,7 +176,8 @@ func TestR_VULN_048_EveryAnswerOfADetectionMapsToItsCodeAttemptAndWait(t *testin
 			reportAnswer(testDB, testAnalyser, goodReport)(w, r)
 		}
 		det, err := s.client(t).Detect(t.Context(), call)
-		if err != nil || det.OSFamily != "alpine" || len(det.Advisories) != 1 || det.Advisories[0].ID != "CVE-2021-1" {
+		// The analyser's version the answer states is the one the grade names (R-VULN-051).
+		if err != nil || det.OSFamily != "alpine" || len(det.Advisories) != 1 || det.Advisories[0].ID != "CVE-2021-1" || det.Analyser != testAnalyser {
 			t.Fatalf("%+v %v", det, err)
 		}
 		mu.Lock()

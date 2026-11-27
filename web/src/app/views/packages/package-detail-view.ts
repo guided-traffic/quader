@@ -31,6 +31,7 @@ import {
   versionSortParam,
 } from './package-versions-model';
 import { GradeLabel } from '../../shared/vulnerability/grade';
+import { gradeColumnHelp } from '../../shared/vulnerability/grade-words';
 import { VersionSize } from './version-size';
 import { DistTags } from './dist-tags';
 import { SignatureBadge } from '../signatures/signature-badge';
@@ -229,7 +230,7 @@ export class PackageDetailView {
     },
     { id: 'size', label: $localize`:@@pkg.ver.size:Size`, numeric: true, sortable: true },
     ...(this.graded()
-      ? [{ id: 'vulnerabilities', label: $localize`:@@pkg.ver.vulnerabilities:Vulnerabilities`, sortable: true }]
+      ? [{ id: 'vulnerabilities', label: $localize`:@@pkg.ver.vulnerabilities:Vulnerabilities`, help: gradeColumnHelp('version'), sortable: true }]
       : []),
     ...(this.malwareShown() ? [malwareColumn('version')] : []),
     { id: 'published', label: this.arrived(), sortable: true },

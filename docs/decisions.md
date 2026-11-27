@@ -13407,10 +13407,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-799 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+804 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 799 questions</summary>
+<summary>Q-UI: 804 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -14176,6 +14176,11 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1516](spec/api-and-ui.md#q-ui-1516--a-versions-page-shows-the-mark-beside-its-grade-its-files-and-each-image-part-the-file-page-keeps-its-sentence) | A version's page shows the mark beside its grade, its files and each image part; the file page keeps its sentence | Decided by the development agent on 2026-11-27 | (a) The version's facts line: "Malware scan" and the version's mark after the grade; the tab **Files**: the mark alone in each file's cell, its sentence in the details; the tab **Details** of an image: a column **Malware scan** per manifest, config and layer from the version's `malwareParts`; a file's page: the mark, then the sentence it had | — |
 | [Q-UI-1517](spec/api-and-ui.md#q-ui-1517--an-indexs-platforms-are-counted-from-the-index-on-the-versions-page) | An index's platforms are counted from the index on the version's page | Decided by the development agent on 2026-11-27 | (a) On the version's page the details say "3 of 10 platforms stored", counted from the index's platforms; in a list, where the index is not read, "2 parts are not stored" from `partsNotStored` | — |
 | [Q-UI-1518](spec/api-and-ui.md#q-ui-1518--the-bastions-lists-show-no-mark-until-its-own-is-built) | The Bastion's lists show no mark until its own is built | Decided by the development agent on 2026-11-27 | (a) The new places (a list's column, a version's header, an image's parts, **Used by**) show only where the application has the malware API; the Bastion's keeps what it showed (a version's files, a file's page), now as the mark without today's set | — |
+| [Q-UI-1535](spec/api-and-ui.md#q-ui-1535--the-grade-is-the-button-of-its-details-with-the-malware-marks-card) | The grade is the button of its details, with the malware mark's card | Decided by the development agent on 2026-11-27 | (a) The grade's statement is a `<button>` with `quaderDetailPopover`; the card (`<quader-grade-details>`) holds the rule, every count and when, by what and against which data it was checked; the rule and the counts stay the button's accessible description | — |
+| [Q-UI-1536](spec/api-and-ui.md#q-ui-1536--todays-database-is-read-once-for-every-grade-that-names-one-and-only-while-one-is-shown) | Today's database is read once for every grade that names one, and only while one is shown | Decided by the development agent on 2026-11-27 | (a) A store (`VulnerabilityDatabaseStore`) that an image's grade naming a database attaches to: the first reads `GET /api/v1/vulnerabilities/database`, the store reads again every 60 s while one is shown and the window is seen; a screen of packages reads nothing | — |
+| [Q-UI-1537](spec/api-and-ui.md#q-ui-1537--what-a-grades-details-say) | What a grade's details say | Decided by the development agent on 2026-11-27 | (a) The rule and every count; an image: **Scanned** (how long ago, with the time), **Scanner** (`vuln-scanner-trivy · Trivy 0.76.2`), **Database then** (built on its date), **Database today** (built on its date, fetched at its time), **How current** ("Under today's database", "Under a database 6 days older"), the two digests under **Technical details**; a package: "Checked against the advisories of <time>." and **Sources**; N/A: its sentence and a failed scan's code | — |
+| [Q-UI-1538](spec/api-and-ui.md#q-ui-1538--the-version-pages-grade-opens-its-details-their-last-line-links-to-the-findings) | The version page's grade opens its details; their last line links to the findings | Decided by the development agent on 2026-11-27 | (a) The grade is the button of its details, which end with **Show the findings**, the link to the tab | — |
+| [Q-UI-1539](spec/api-and-ui.md#q-ui-1539--a-column-of-grades-says-in-its-help-that-the-grade-opens-its-details) | A column of grades says in its help that the grade opens its details | Decided by the development agent on 2026-11-27 | every column of grades has a help that speaks of each row of its list (a package's latest version, a version) and ends "Open the grade for when, by what and against which data it was checked." (`gradeColumnHelp`, [grade-words.ts](../web/src/app/shared/vulnerability/grade-words.ts)). | — |
 | [Q-UI-1560](spec/api-and-ui.md#q-ui-1560--the-form-of-a-time-is-the-readers-preference-else-the-installations-default-else-the-owners-form) | The form of a time is the reader's preference, else the installation's default, else the owner's form | Decided by the owner on 2026-11-26 | (a) A preference of the reader (`timeFormat`, R-API-021) beside the language, and a default of the installation an administrator sets; the reader's wins, the factory default is the owner's form | — |
 | [Q-UI-1561](spec/api-and-ui.md#q-ui-1561--six-forms-each-offered-with-the-time-of-now-as-its-example) | Six forms, each offered with the time of now as its example | Decided by the development agent on 2026-11-26 | (a) The owner's form, the same without the weekday, ISO 8601, the British and the American form, and the language's own (what `Intl` writes); each option the time of now in it and a short name, "2026-11-26 21:39:22 — ISO 8601", the example first because a closed select at 390 px cuts the end | — |
 | [Q-UI-1562](spec/api-and-ui.md#q-ui-1562--one-formatter-and-one-pipe-held-by-a-lint-rule) | One formatter and one pipe, held by a lint rule | Decided by the development agent on 2026-11-26 | (a), in [time-format-rule.mjs](../web/scripts/time-format-rule.mjs), tested by one case of [lint-rules.test.mjs](../web/scripts/lint-rules.test.mjs). | — |
@@ -14218,10 +14223,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-VULN
 
-201 questions on [spec/vulnerability-scanning.md](spec/vulnerability-scanning.md).
+209 questions on [spec/vulnerability-scanning.md](spec/vulnerability-scanning.md).
 
 <details>
-<summary>Q-VULN: 201 questions</summary>
+<summary>Q-VULN: 209 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -14426,6 +14431,14 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-VULN-282](spec/vulnerability-scanning.md#q-vuln-282--an-analysis-waits-for-the-blobs-of-its-manifest-without-a-call-and-without-an-attempt) | An analysis waits for the blobs of its manifest, without a call and without an attempt | Decided by the development agent on 2026-11-26 | (a) The job reads, before an analysis, whether the repository holds every blob the manifest names; while one is missing and the manifest is younger than 30 minutes the row is put off by `scan_delay` (`blobs_pending`), without a call and without an attempt, and the run wakes for it | — |
 | [Q-VULN-283](spec/vulnerability-scanning.md#q-vuln-283--the-malware-check-needs-no-wait-for-an-image-it-checks-each-file-at-its-own-commit) | The malware check needs no wait for an image: it checks each file at its own commit | Decided by the development agent on 2026-11-26 | no change. | — |
 | [Q-VULN-284](spec/vulnerability-scanning.md#q-vuln-284--v-4-is-the-median-of-three-rounds-p99) | V-4 is the median of three rounds' p99 | Decided by the development agent on 2026-11-26 | (a) Three rounds of 300 publishes, each of new names and versions; V-4 is the median of the three p99 | — |
+| [Q-VULN-290](spec/vulnerability-scanning.md#q-vuln-290--the-platform-image-scanned-longest-ago-names-the-scanner-and-the-database) | The platform image scanned longest ago names the scanner and the database | Decided by the development agent on 2026-11-27 | (a) The manifest scanned longest ago names the unit, the version and the database | — |
+| [Q-VULN-291](spec/vulnerability-scanning.md#q-vuln-291--every-caller-reads-the-scanner-its-version-and-the-database-then) | Every caller reads the scanner, its version and the database then | Decided by the development agent on 2026-11-27 | (a) Every caller, as `checkedAt` | — |
+| [Q-VULN-292](spec/vulnerability-scanning.md#q-vuln-292--the-database-of-a-scan-is-dated-by-the-source-row-in-the-statement-that-records-the-scan) | The database of a scan is dated by the source row, in the statement that records the scan | Decided by the development agent on 2026-11-27 | (a) `VulnImageScanned` reads the watermark of the source row whose digest is the scan's | — |
+| [Q-VULN-293](spec/vulnerability-scanning.md#q-vuln-293--todays-database-is-one-public-read) | Today's database is one public read | Decided by the development agent on 2026-11-27 | (a) `GET /api/v1/vulnerabilities/database`, public, read once per screen | — |
+| [Q-VULN-294](spec/vulnerability-scanning.md#q-vuln-294--the-analysers-version-of-a-scan-is-the-one-the-detections-answer-stated) | The analyser's version of a scan is the one the detection's answer stated | Decided by the development agent on 2026-11-27 | (a) `tool_version` on the scan row, from the answer of its detection | — |
+| [Q-VULN-295](spec/vulnerability-scanning.md#q-vuln-295--a-packages-sources-are-the-products-words) | A package's sources are the product's words | Decided by the development agent on 2026-11-27 | (a) The screens' words: "GitHub Advisory Database and OpenSSF malicious-packages, through osv.dev" | — |
+| [Q-VULN-296](spec/vulnerability-scanning.md#q-vuln-296--a-bastions-documents-carry-no-database-and-no-analysers-version-of-a-grade) | A Bastion's documents carry no database and no analyser's version of a grade | Decided by the development agent on 2026-11-27 | (a) The strip moves a grade's `database` out with its check's time, as a scan's (`scannedAt`), and drops `scannerVersion` everywhere, as a malware state's `engine` | — |
+| [Q-VULN-297](spec/vulnerability-scanning.md#q-vuln-297--how-current-a-scan-is-is-the-screens-comparison-in-words) | How current a scan is, is the screens' comparison in words | Decided by the development agent on 2026-11-27 | (a) The screens compare the digests and the build times and say it in words: "Under today's database", "Under a database 6 days older" | — |
 
 </details>
 <!-- coverage-gen:end decisions -->

@@ -128,8 +128,9 @@ at the top shows how; otherwise, who fills it. A remote repository fills as clie
 Select a package or image name to open the [package page](packages.md), the table of its versions and the README; a version opens its own page. A virtual repository lists what it resolves through its members, which are named above the list. A remote repository lists what has been fetched through it, marked in a note.
 
 The **Vulnerabilities** column shows a shield with the grade's letter and beside it the number of open findings and how many of them
-have a fix, for example the shield **E** and **1,145 findings · 112 fixable**, as the versions table of a package does; point at it
-for the rule of the letter and every count. Select its heading to sort by grade: once ascending, from N/A and S to E, and again for the worst first. Sorting by
+have a fix, for example the shield **E** and **1,145 findings · 112 fixable**, as the versions table of a package does; point at it,
+tap it or reach it with the keyboard for the rule of the letter, every count, and when, by what and against which data it was checked
+([Grades](vulnerabilities.md#grades)). Select its heading to sort by grade: once ascending, from N/A and S to E, and again for the worst first. Sorting by
 grade loads up to 1,000 entries first; in a larger repository the list says that it sorted only those. The column is not shown when
 you are signed out, or when the installation does not scan.
 

@@ -7140,8 +7140,8 @@ Priority: **P1** · Covers: quader-only
   [Q-UI-1244](#q-ui-1244--not-checked-for-vulnerabilities-says-the-reason-of-the-format)): an Ansible collection has no public advisory source that lists it by version, Debian's advisories
   name source packages and releases and the matching is not built yet, a file has no package name and version an advisory could name.
   Its sentence, why and what comes ("Waits for its
-  vulnerability scan since 25 Nov 2026, 08:31. It is scanned in turn, without anyone having to act."), is the cell's tooltip and
-  accessible description, and the rule of the version page's card, which folds a failed or put-off scan's `stateCode` under
+  vulnerability scan since 25 Nov 2026, 08:31. It is scanned in turn, without anyone having to act."), is the cell's accessible
+  description and the first line of its details, and the rule of the version page's card, which folds a failed or put-off scan's `stateCode` under
   **Technical details** ([technical-details.ts](../../web/src/app/shared/technical-details.ts), R-UI-214). One component says it in every
   list of every format (`<quader-grade>`), so a list's new rows take it as it is. `<quader-grade>` and `<quader-grade-card>` take
   `image` (the format is OCI), for the rule of S. A state an administrator must repair ("No scanner", "No database", "No advisory data",
@@ -7154,11 +7154,23 @@ Priority: **P1** · Covers: quader-only
   sort) the text keeps its letter. The shield is centred on the line it stands in, whatever that line's height, and adds
   nothing to it; in a table cell a badge is too, so that the text of every cell of a row stands on one line (Q-UI-308).
 - **Revised on 2026-11-18 (R-UI-143, Q-UI-556):** beside the shield, in every list and on a version's page, the text is the
-  statement of R-UI-112, the total and the fixable findings; the deciding count ("13 Critical") and the rule are the tooltip's and
+  statement of R-UI-112, the total and the fixable findings; the deciding count ("13 Critical") and the rule are the details' and
   the card's.
 - `<quader-grade>` ([grade.ts](../../web/src/app/shared/vulnerability/grade.ts)) is the shield of 20 px and the text on one line,
-  for a list cell, a header and a tab. Its tooltip (`[quaderTooltip]`) names every count, "13 Critical · 160 High · 113 Medium ·
-  16 Low · 843 Unknown", and "OS end of life" when it is; the text stays the accessible name of the cell.
+  for a list cell, a header and a tab. **Revised on 2026-11-27 (W-36 P7, [Q-UI-1535](#q-ui-1535--the-grade-is-the-button-of-its-details-with-the-malware-marks-card)):**
+  the statement is a button whose details open on hover, focus and tap (`quaderDetailPopover`, R-UI-256), so a keyboard reaches them;
+  the text stays its accessible name, and the rule with every count, "More than 5 Critical: 13 Critical · 160 High · 113 Medium · 16
+  Low · 843 Unknown", and "OS end of life" when it is, its accessible description. **The details** (`<quader-grade-details>`,
+  [grade-details.ts](../../web/src/app/shared/vulnerability/grade-details.ts), [Q-UI-1537](#q-ui-1537--what-a-grades-details-say)) say
+  the rule and every count, then when, by what and against which data the grade was checked ([vulnerability-scanning.md](vulnerability-scanning.md)
+  R-VULN-051): an image when it was scanned, by `vuln-scanner-trivy` with Trivy's version, the database then and today with their dates
+  and when today's was fetched, and how current the scan is; a package the advisories of which time it was checked against and their
+  sources; N/A its sentence and a failed scan's code. Today's database is one read for every grade of a screen that names one
+  (`VulnerabilityDatabaseStore`, [Q-UI-1536](#q-ui-1536--todays-database-is-read-once-for-every-grade-that-names-one-and-only-while-one-is-shown)).
+  On a version's page the details end with the link to the tab of its findings
+  ([Q-UI-1538](#q-ui-1538--the-version-pages-grade-opens-its-details-their-last-line-links-to-the-findings)); the card of the tab opens
+  the same details from its text. Every column of grades says in its help that the grade opens them
+  ([Q-UI-1539](#q-ui-1539--a-column-of-grades-says-in-its-help-that-the-grade-opens-its-details)).
 - The words are the UI's, translated (`vuln.grade.*`); the grade is the server's (R-VULN-039). `gradeText`, `gradeRule` and
   `gradeRank` ([grade-words.ts](../../web/src/app/shared/vulnerability/grade-words.ts)) derive them from the grade, its counts and
   its end of life and never decide the grade again.
@@ -7167,9 +7179,14 @@ Acceptance criteria:
 
 - A table test of the text, the rule and the rank over the boundaries of R-VULN-038 (0, 10 and 11 Low, 1, 5 and 6 Critical, the
   end of life, N/A) and of the order E · 13 > E · 6 > D · 4 > D · 2 > C · 120 > S > N/A.
-- Unit: `<quader-grade>` shows the shield and the text, its tooltip names every count; axe finds no serious violation.
-- Unit (Vitest, milliseconds): every `state`'s word and sentence, in English and in the German build; the cell's tooltip and accessible
+- Unit: `<quader-grade>` shows the shield and the text, its description names every count; axe finds no serious violation.
+- Unit (Vitest, milliseconds): every `state`'s word and sentence, in English and in the German build; the cell's accessible
   description; the card's code under **Technical details**.
+- Unit (Vitest, about 1 s, `grade-details.spec.ts`): the details open on the keyboard's focus and close on Escape; an image's lines under
+  today's database, under one six days older and with a stale one; a package's advisories and sources without a read of today's database;
+  N/A with a code; a Bastion without the read; the version page's link to the findings.
+- Renders (W-36 P7): the screens `grade-details-versions`, `grade-details-image` and `grade-details-package`, the details opened by a tap
+  and by the keyboard, in both schemes, at 390, 1,024 and 1,440 px, in English and German.
 
 ### R-UI-092 · The severity bar
 Priority: **P1** · Covers: quader-only
@@ -30794,6 +30811,71 @@ what a new set changes (Q-MAL-133), and it has no `GET /api/v1/malware/signature
 | (b) The marks everywhere at once | | One rule | A class computed from members the Bastion strips (R-MAL-039) |
 
 **Choice:** (a). **Applied in the spec:** R-UI-255.
+
+### Q-UI-1535 · The grade is the button of its details, with the malware mark's card
+
+Status: **Decided by the development agent on 2026-11-27** (W-36's plan, B.14, P7) — selected from the options below; the owner reviews it
+at the walkthrough. R-UI-091, R-UI-256.
+
+Context: the grade's rule and counts were a tooltip (`quaderTooltip`) on a `<span>`, which a keyboard never reaches (a subagent's finding
+of W-36's plan). The owner's questions of the malware scan (when, which scanner, its state then and today) hold for the grade.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The grade's statement is a `<button>` with `quaderDetailPopover`; the card (`<quader-grade-details>`) holds the rule, every count and when, by what and against which data it was checked; the rule and the counts stay the button's accessible description (chosen) | One form for two kinds of check | The keyboard reaches the details; the same card on hover, focus and tap as the malware mark's; a screen reader hears what it heard | A list's cell holds a button more |
+| (b) Keep the tooltip and add lines to it | | Nothing new | Plain text of 200 px; still out of a keyboard's reach |
+
+**Choice:** (a). The button looks like the statement it was: no frame and no fill, its text underlined dotted, the mark of details on
+demand. The card on a version's card (`<quader-grade-card>`) opens from the text beside the shield. **Applied in the spec:** R-UI-091.
+
+### Q-UI-1536 · Today's database is read once for every grade that names one, and only while one is shown
+
+Status: **Decided by the development agent on 2026-11-27** (W-36 P7) — selected from the options below; the owner reviews it at the
+walkthrough. R-UI-091, R-UI-213, [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-052.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A store (`VulnerabilityDatabaseStore`) that an image's grade naming a database attaches to: the first reads `GET /api/v1/vulnerabilities/database`, the store reads again every 60 s while one is shown and the window is seen; a screen of packages reads nothing (chosen) | As the malware marks' today's signatures (Q-UI-1515) | One request for a hundred grades; none where no grade names a database | A store more |
+| (b) A read when a card opens | | No read before it is wanted | The card's lines arrive after it opened, a load in a card (R-UI-217) |
+
+**Choice:** (a). The Bastion's application binds no read: its cards leave today's database out (H-2407). **Applied in the spec:** R-UI-091.
+
+### Q-UI-1537 · What a grade's details say
+
+Status: **Decided by the development agent on 2026-11-27** (W-36 P7) — selected from the options below; the owner reviews it at the
+walkthrough. R-UI-091.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The rule and every count; an image: **Scanned** (how long ago, with the time), **Scanner** (`vuln-scanner-trivy · Trivy 0.76.2`), **Database then** (built on its date), **Database today** (built on its date, fetched at its time), **How current** ("Under today's database", "Under a database 6 days older"), the two digests under **Technical details**; a package: "Checked against the advisories of <time>." and **Sources**; N/A: its sentence and a failed scan's code (chosen) | The malware card's lines for the same questions | One form; the owner's "welcher Stand damals, welcher heute, wann heruntergeladen" answered for images | Two digests a reader rarely needs, folded |
+| (b) The digests in the lines | | Exact | Seventy characters a line on a phone |
+
+**Choice:** (a). No colour but the warning's for a stale database ("No newer database has arrived for a while."); the grade's shield keeps
+its colours (Q-VULN-297). Every absolute time is the reader's form (R-UI-250). **Applied in the spec:** R-UI-091.
+
+### Q-UI-1538 · The version page's grade opens its details; their last line links to the findings
+
+Status: **Decided by the development agent on 2026-11-27** (W-36 P7) — selected from the options below; the owner reviews it at the
+walkthrough. R-UI-091, R-UI-112.
+
+Context: on a version's page the grade of the facts line was a link to the tab **Vulnerabilities**. A button inside a link is no valid
+control.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The grade is the button of its details, which end with **Show the findings**, the link to the tab (chosen) | | One control; the details and the way to the findings in one place | The tab is a step further |
+| (b) The link beside the grade | | One click to the tab | Two controls for one statement on a line of facts |
+
+**Choice:** (a). **Applied in the spec:** R-UI-091.
+
+### Q-UI-1539 · A column of grades says in its help that the grade opens its details
+
+Status: **Decided by the development agent on 2026-11-27** (W-36 P7) — by the owner's rule of Q-UI-1500. R-UI-091.
+
+Context: the repository's list of packages had a help for its grades; the package's versions table and a repository's opened item had
+none. **Choice:** every column of grades has a help that speaks of each row of its list (a package's latest version, a version) and ends
+"Open the grade for when, by what and against which data it was checked." (`gradeColumnHelp`,
+[grade-words.ts](../../web/src/app/shared/vulnerability/grade-words.ts)). **Applied in the spec:** R-UI-091.
 
 ### Q-UI-1560 · The form of a time is the reader's preference, else the installation's default, else the owner's form
 

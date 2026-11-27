@@ -15,8 +15,8 @@ rendered from it ([checklist.md there](https://github.com/guided-traffic/quader/
 requirement lists the feature in its `Covers:` line. *open*: no requirement does. For entries with priority
 *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,402 spec requirements:
-810 cover catalog features, 592 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,404 spec requirements:
+810 cover catalog features, 594 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>592 requirements</summary>
+<summary>594 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3552,6 +3552,8 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-VULN-038 | The grade of a version | P1 | [vulnerability-scanning.md](../spec/vulnerability-scanning.md) |
 | R-VULN-039 | The grade in the API | P1 | [vulnerability-scanning.md](../spec/vulnerability-scanning.md) |
 | R-VULN-040 | How many open findings of a version have a fix | P1 | [vulnerability-scanning.md](../spec/vulnerability-scanning.md) |
+| R-VULN-051 | A grade names when, by which scanner and against which database it was checked | P1 | [vulnerability-scanning.md](../spec/vulnerability-scanning.md) |
+| R-VULN-052 | Today's vulnerability database | P1 | [vulnerability-scanning.md](../spec/vulnerability-scanning.md) |
 | R-VULN-024 | Metrics, audit events, alerts and status | MVP | [vulnerability-scanning.md](../spec/vulnerability-scanning.md) |
 | R-VULN-026 | Vulnerability data in backups and restores | MVP | [vulnerability-scanning.md](../spec/vulnerability-scanning.md) |
 | R-VULN-027 | Across replicas, without Valkey and during a drain | MVP | [vulnerability-scanning.md](../spec/vulnerability-scanning.md) |

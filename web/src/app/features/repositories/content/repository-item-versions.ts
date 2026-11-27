@@ -15,7 +15,7 @@ import { DeprecationMark } from '../../../shared/ui/deprecation-mark';
 import { GradeLabel } from '../../../shared/vulnerability/grade';
 import { MalwareMark, malwareColumn, malwareShown } from '../../../shared/malware/malware-mark';
 import { MalwareSignaturesStore } from '../../../core/malware-signatures';
-import { checkWaits } from '../../../shared/vulnerability/grade-words';
+import { checkWaits, gradeColumnHelp } from '../../../shared/vulnerability/grade-words';
 import { ClientCommandMenu } from '../../../views/packages/client-command-menu';
 import { VersionSize } from '../../../views/packages/version-size';
 import { versionCommands, versionsCommands } from '../../packages/package-links';
@@ -238,7 +238,9 @@ export class RepositoryItemVersions {
       { id: 'published', label: s.publishedLabel },
     );
     if (this.malwareCells()) columns.push(malwareColumn('version'));
-    if (this.scanned()) columns.push({ id: 'vulnerabilities', label: $localize`:@@repo.content.col.vulnerabilities:Vulnerabilities` });
+    if (this.scanned()) {
+      columns.push({ id: 'vulnerabilities', label: $localize`:@@repo.content.col.vulnerabilities:Vulnerabilities`, help: gradeColumnHelp('version') });
+    }
     if (!this.closed()) columns.push({ id: 'actions', label: $localize`:@@repo.col.actions:Actions`, hideLabel: true });
     return columns;
   });

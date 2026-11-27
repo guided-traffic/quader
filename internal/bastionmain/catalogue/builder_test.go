@@ -85,7 +85,8 @@ func (f *fakeAPI) body(base string, u *url.URL) (string, bool) {
 	case "/api/v1/packages/" + pkgID + "/vulnerabilities":
 		return `{"packageId":"` + pkgID + `","versions":[{"version":"1.0.0","grade":{"grade":"B","open":{"critical":0,"high":0,"medium":1,
 			"low":0,"none":0,"unknown":0},"fixable":1,"eosl":false,"checkedAt":"` + f.now + `","state":"checked","stateSince":null,
-			"stateCode":null,"repository":"acme/npm-local"}}]}`, true
+			"stateCode":null,"repository":"acme/npm-local","scanner":"vuln-scanner-trivy","scannerVersion":"0.76.2",
+			"database":{"digest":"sha256:d1","builtAt":"` + f.now + `"}}}]}`, true
 	case "/api/v1/packages/" + pkgID + "/versions":
 		return `{"items":[{"version":"1.0.0","downloadCount":3,"lastDownloadedAt":"` + f.now + `"}]}`, true
 	case v:
@@ -103,7 +104,10 @@ func (f *fakeAPI) body(base string, u *url.URL) (string, bool) {
 	case v + "/readme":
 		return `{"html":"<p>See <a href=\"` + otherBase + `/api/v1/packages\">the API</a></p>"}`, true
 	case v + "/vulnerabilities":
-		return `{"syncedAt":"` + f.now + `","grade":{"grade":"B","open":1,"checkedAt":"` + f.now + `","stateCode":"evaluated"},
+		return `{"syncedAt":"` + f.now + `","grade":{"grade":"B","open":1,"checkedAt":"` + f.now + `","stateCode":"evaluated",
+			"scanner":"vuln-scanner-trivy","scannerVersion":"0.76.2","database":{"digest":"sha256:d1","builtAt":"` + f.now + `"}},
+			"images":[{"digest":"sha256:aa","state":"scanned","scannedAt":"` + f.now + `","scannerVersion":"0.76.2",
+				"database":{"digest":"sha256:d1","builtAt":"` + f.now + `"}}],
 			"findings":[{"id":"GHSA-1","status":"confirmed","statusChangedBy":"user:bob","comment":"we know","history":[]}]}`, true
 	case v + "/signatures":
 		return `{"repositories":[{"repository":"acme/npm-local","origin":{"kind":"uploaded","principalKind":"user","principalName":"alice",
@@ -249,9 +253,10 @@ func TestR_BAS_103_NoDocumentCarriesATimeOfItsCheck(t *testing.T) {
 			continue
 		}
 		// Nor what a malware state says of the main installation's scanners, its demand or the set in use (B.15, R-MAL-039); the part that
-		// decides a unit moves with its check.
+		// decides a unit moves with its check. A grade's database moves with its check, and the analyser's version is the main
+		// installation's (R-VULN-051, Q-VULN-296).
 		for _, k := range []string{
-			`"scannedAt"`, `"checkedAt"`, `"syncedAt"`, `"builtAt"`, `"computedAt"`, `"databaseBuiltAt"`, `"database"`,
+			`"scannedAt"`, `"checkedAt"`, `"syncedAt"`, `"builtAt"`, `"computedAt"`, `"databaseBuiltAt"`, `"database"`, `"scannerVersion"`,
 			`"engine"`, `"scannerInstance"`, `"age"`, `"pressure"`, `"due"`, `"nextCheckInDays"`, `"downloadsSince"`, `"currentFiles"`, `"decidedBy"`,
 		} {
 			if strings.Contains(string(d), k) {
@@ -264,7 +269,8 @@ func TestR_BAS_103_NoDocumentCarriesATimeOfItsCheck(t *testing.T) {
 	}
 	if err := json.Unmarshal(docs["packages/"+pkgID+"/versions/1.0.0/state"], &st); err != nil ||
 		st.Times["version"]["/files/0/malware/scannedAt"] != "2026-11-26T10:00:00Z" || st.Times["vulnerabilities"]["/grade/checkedAt"] == nil ||
-		st.Times["version"]["/malware/decidedBy"] == nil {
+		st.Times["version"]["/malware/decidedBy"] == nil || st.Times["vulnerabilities"]["/grade/database"] == nil ||
+		st.Times["vulnerabilities"]["/images/0/database"] == nil {
 		t.Fatalf("the version's state: %+v %v", st, err)
 	}
 }

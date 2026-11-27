@@ -42,7 +42,41 @@ func toGrade(g report.VersionGrade) gen.VulnerabilityGrade {
 	if g.OS != "" {
 		out.Os = &g.OS
 	}
+	if f := g.Scan; f != nil {
+		out.Scanner, out.ScannerVersion, out.Database = &f.Scanner, optionalText(f.ToolVersion), toDatabaseRef(f.Database)
+	}
 	return out
+}
+
+// toDatabaseRef is a vulnerability database in the answer (R-VULN-051); nil for none.
+func toDatabaseRef(d report.Database) *gen.VulnerabilityDatabaseRef {
+	if d.Digest == "" {
+		return nil
+	}
+	return &gen.VulnerabilityDatabaseRef{Digest: d.Digest, BuiltAt: d.BuiltAt}
+}
+
+// GetVulnerabilityDatabase implements GET /api/v1/vulnerabilities/database (R-VULN-052): the image scanning's database in use, its dates
+// and the unit that scans with it. Every caller reads it, an anonymous one where the endpoint admits one (the permission layer decides that
+// from the document's public mark); it names no repository and no host (Q-VULN-293). 503 while the image scanning is off.
+func (s *Server) GetVulnerabilityDatabase(w http.ResponseWriter, r *http.Request) {
+	rep, err := s.vulnReport()
+	if err == nil && !rep.ImageScanning() {
+		err = unavailable("The image scanning")
+	}
+	var today report.TodaysDatabase
+	if err == nil {
+		today, err = rep.TodaysDatabase(r.Context())
+	}
+	if err != nil {
+		httpserver.Problem(w, r, err)
+		return
+	}
+	out := gen.VulnerabilityDatabase{Scanner: vuln.UnitScannerTrivy, BuiltAt: today.Database.BuiltAt, SyncedAt: today.SyncedAt, Stale: today.Stale}
+	if today.Database.Digest != "" {
+		out.Digest = &today.Database.Digest
+	}
+	writeJSON(w, r, http.StatusOK, out)
 }
 
 // GetVulnerabilitySummary implements GET /api/v1/vulnerabilities/summary (R-VULN-021): per request, over the findings the
@@ -383,6 +417,7 @@ func toImageState(m report.ImageState) gen.VulnerabilityImageState {
 	if m.Packages > 0 {
 		out.Packages = &m.Packages
 	}
+	out.ScannerVersion, out.Database = optionalText(m.ToolVersion), toDatabaseRef(m.Database)
 	return out
 }
 
