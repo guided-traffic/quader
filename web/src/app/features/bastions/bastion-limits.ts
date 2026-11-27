@@ -34,10 +34,10 @@ const MB = 1e6;
  *   names what it replaces (Q-UI-1481); **Mode**, its word and the dialog of R-UI-182 for this Bastion, after recent authentication
  *   (R-LIM-044); **Maximum throughput** in MB/s, 200 for a new registration, empty for unlimited (Q-BAS-455), the meter of the
  *   throughput against it under the field; **Now**, the replicas' state, live with the list (R-UI-213), the read rate only where no
- *   maximum is set, and the callers limited and the addresses blocked with a link to the Bastion's **Blocks**, or "No report in the
- *   last 5 minutes".
- * - **Details**, closed, with its note: the flood figures, the slots, the anonymous ceiling and the throughput by class
- *   (`<quader-bastion-limit-details>`), the addresses the Bastion connects from (R-UI-243), the link to the rules of the Bastion's
+ *   maximum is set, and the callers limited and the addresses blocked with a link to the Bastion's **Blocks**, all on one line of
+ *   parts (W-41 D27), or "No report in the last 5 minutes".
+ * - **Details**, closed, with its note: what the card puts first (`[details-start]`: the web interface's **Hide repositories**), the
+ *   flood figures, the slots, the anonymous ceiling and the throughput by class (`<quader-bastion-limit-details>`), the addresses the Bastion connects from (R-UI-243), the link to the rules of the Bastion's
  *   place (R-UI-241), and what the card puts at its end (`[details-end]`: **Created**).
  *
  * Who changes what follows Q-BAS-325: `limits:write` the preset, the mode, the throughput and the figures; `endpoints:write` the
@@ -140,14 +140,13 @@ const MB = 1e6;
     <!-- What the replicas reported in the last five minutes, live with the list (R-UI-213). -->
     <quader-setting label="Now" i18n-label="@@bastion.row.now" [help]="nowHelp" data-testid="bastion-state">
       @if (state(); as s) {
+        <!-- One line of parts (W-41 D27), each whole, the callers' link the last of them; a narrow card breaks between two parts. -->
         <p class="state-line">
           @for (p of parts(); track $index) {
             <span>{{ p }}</span>
           }
-        </p>
-        <p class="state-line">
           @if (canReadRules()) {
-            <a [routerLink]="blocksLink()" data-testid="bastion-state-callers">{{ callersText() }}</a>
+            <span><a [routerLink]="blocksLink()" data-testid="bastion-state-callers">{{ callersText() }}</a></span>
           } @else {
             <span data-testid="bastion-state-callers">{{ callersText() }}</span>
           }
@@ -162,10 +161,12 @@ const MB = 1e6;
       i18n-heading="@@bastion.details.heading"
       heading="Details"
       i18n-note="@@bastion.details.note"
-      note="Flood protection, addresses, rules"
+      note="Web interface, flood protection, addresses, rules"
       [level]="3"
       [(expanded)]="detailsOpen"
     >
+      <!-- What the card puts first into Details: the web interface's expert setting (R-BAS-131). -->
+      <ng-content select="[details-start]" />
       <quader-bastion-limit-details [bastion]="bastion()" [canWrite]="canLimits()" (changed)="changed.emit()" />
       <quader-bastion-egress part="list" [bastion]="bastion()" (changed)="changed.emit()" />
       @if (canReadRules()) {

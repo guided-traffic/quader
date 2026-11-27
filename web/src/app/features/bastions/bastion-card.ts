@@ -1,4 +1,3 @@
-import { NoValue } from '../../shared/ui/no-value';
 import { Component, DestroyRef, LOCALE_ID, computed, effect, inject, input, linkedSignal, output, signal, untracked } from '@angular/core';
 import { QuaderDialog } from '../../shared/ui/dialog';
 import { firstValueFrom } from 'rxjs';
@@ -11,30 +10,64 @@ import { TokenSecret } from '../../shared/access/token-secret';
 import { Confirm } from '../../shared/confirm-dialog';
 import { ErrorNotice } from '../../shared/error-notice';
 import { asApiError } from '../../shared/paged-resource';
+import { formatTime } from '../../shared/time-format';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
 import { Disclosure } from '../../shared/ui/disclosure';
 import { Help } from '../../shared/ui/help';
 import { TimeAgo } from '../../shared/ui/time-ago';
+import { Tooltip } from '../../shared/ui/tooltip';
+import { Unavailable } from '../../shared/ui/unavailable';
 import { relativeTime } from '../packages/format-time';
 import { DownloadLinkConnection } from '../../api/download-links-api';
+import { BastionDisableDialog, BastionDisableDialogData } from './bastion-disable-dialog';
 import { BastionTokenDialog, BastionTokenDialogData, BastionTokenDraft } from './bastion-dialogs';
+import { BastionFold, cardWarns } from './bastion-fold';
 import { BastionHandover } from './bastion-handover';
 import { BastionLimits } from './bastion-limits';
 import { BastionSwitches } from './bastion-switches';
-import { ContactHealth, TokenHealth, contactHealth, tokenExpiry, tokenHealth } from './bastion-state';
+import { ContactHealth, Deployment, TokenHealth, contactHealth, deployments, headHosts, newestContact, tokenExpiry, tokenHealth } from './bastion-state';
 import { ADDRESS_MARKS, PartsText } from '../../shared/break-parts';
 import { Busy } from '../../shared/ui/busy';
 
+/** The badge of a Bastion's state (bastion.md Q-BAS-511): its word, its tone and its icon; green only for the one positive state. */
+interface StateBadge {
+  readonly word: string;
+  readonly tone: 'ok' | 'warn' | 'neutral';
+  readonly icon: string;
+}
+
+/** The badge of each of the six states the main installation computes (R-BAS-133, R-UI-240). */
+export function stateBadge(state: Bastion['state']): StateBadge {
+  switch (state) {
+    case 'connected':
+      return { word: $localize`:@@bastion.state.connected:Connected`, tone: 'ok', icon: 'check_circle' };
+    case 'noContact':
+      return { word: $localize`:@@bastion.state.no-contact:No contact yet`, tone: 'neutral', icon: 'schedule' };
+    case 'contactLost':
+      return { word: $localize`:@@bastion.state.lost:Contact lost`, tone: 'warn', icon: 'warning' };
+    case 'disabling':
+      return { word: $localize`:@@bastion.state.disabling:Disabling`, tone: 'neutral', icon: 'pause_circle' };
+    case 'disabled':
+      return { word: $localize`:@@bastion.state.disabled:Disabled`, tone: 'neutral', icon: 'block' };
+    case 'disableUnconfirmed':
+      return { word: $localize`:@@bastion.state.unconfirmed:Disable not confirmed`, tone: 'warn', icon: 'warning' };
+  }
+}
+
 /**
- * One Bastion registration (R-BAS-007, R-UI-240), top to bottom (Q-UI-1620): the head with the name, the state, the mark **Helm
- * configuration** of a declared registration with its help (Q-UI-1629) and the actions, the description under it; the main settings,
- * the rows of its web interface (`<quader-bastion-switches>`, R-BAS-102, R-BAS-104) and of its direct reads from the object store
- * (`<quader-bastion-handover>`, R-BAS-071); **Limits** with **Details** and, at their end, **Created** (`<quader-bastion-limits>`,
- * R-UI-240, R-UI-243); and the closed sections **Replicas** and **Tokens**, one line each, which turn into a warning and open by
- * themselves when a replica is silent or the replicas disagree (Q-UI-1622), or a token expires within 30 days or has expired (Q-UI-1623).
- * Disable and enable read the registration for its `ETag` first, because the list carries none (R-API-012). A token's value is shown
- * once through `<quader-token-secret>` and lives in this card's signal only (R-UI-043). Which actions show follows the capabilities of
- * R-BAS-004: `endpoints:write` for the registration and for issuing a token, `endpoints:write` or `tokens:revoke` for revoking one.
+ * One Bastion registration (R-BAS-007, R-UI-240), a card that folds to its head (Q-UI-1640), top to bottom (Q-UI-1620): the head with the
+ * fold's chevron and the name, the host of each deployment in grey (Q-UI-1641, Q-UI-1643), the Bastion's state as one badge (bastion.md
+ * Q-BAS-511) with the downloads a soft disable still lets run, the mark **Helm configuration** of a declared registration with its help
+ * (Q-UI-1629), and at its end the Bastion's own acts: **Disable…** (soft or hard, R-BAS-133), **Enable**, **Disable hard…** while a soft
+ * disable drains, and **Delete**, offered unavailable with its reason on a declared registration (R-UI-270). Under the head, folding with
+ * the card, the description; the main settings, the rows of its web interface (`<quader-bastion-switches>`, R-BAS-102, R-BAS-104) and of
+ * its direct reads from the object store (`<quader-bastion-handover>`, R-BAS-071); **Limits** with **Details** (its first group the web
+ * interface's **Hide repositories**, R-BAS-131) and, at their end, **Created** (`<quader-bastion-limits>`, R-UI-240, R-UI-243); and the
+ * closed sections **Replicas**, grouped by deployment where there are several, and **Tokens** with **Issue token** or **Rotate token** and
+ * **Invalidate** per token (Q-UI-1642), one line each, which turn into a warning and open by themselves (Q-UI-1622, Q-UI-1623). A change
+ * reads the registration for its `ETag` first, because the list carries none (R-API-012). A token's value is shown once through
+ * `<quader-token-secret>` and lives in this card's signal only (R-UI-043). Which acts show follows the capabilities of R-BAS-004:
+ * `endpoints:write` for the registration and for issuing a token, `endpoints:write` or `tokens:revoke` for invalidating one.
  */
 @Component({
   selector: 'quader-bastion-card',
@@ -47,20 +80,40 @@ import { Busy } from '../../shared/ui/busy';
     Disclosure,
     ErrorNotice,
     Help,
-    NoValue,
     PartsText,
     TimeAgo,
     TokenSecret,
+    Tooltip,
+    Unavailable,
   ],
   template: `
-    <section class="card" [attr.aria-labelledby]="headingId()">
+    <section class="card" [class.folded]="!open()" [attr.aria-labelledby]="nameId()">
       <div class="head">
         <div class="title">
-          <h2 [id]="headingId()" translate="no">{{ bastion().name }}</h2>
-          @if (!bastion().disabled) {
-            <span class="ok state"><span class="material-icons" aria-hidden="true">check_circle</span> <ng-container i18n="@@bastion.enabled">Enabled</ng-container></span>
-          } @else {
-            <span class="bad state"><span class="material-icons" aria-hidden="true">block</span> <ng-container i18n="@@bastion.disabled">Disabled</ng-container></span>
+          <!-- The name and the hosts are the heading; the fold's button holds the chevron and the name, so the region and the button are
+               named by the Bastion alone (Q-UI-1640, Q-UI-1641). -->
+          <h2>
+            <button class="fold" type="button" [attr.aria-expanded]="open()" [attr.aria-controls]="bodyId()" (click)="toggle()">
+              <span class="material-icons chevron" aria-hidden="true">chevron_right</span
+              ><span [id]="nameId()" translate="no" data-testid="bastion-name">{{ bastion().name }}</span>
+            </button>
+            @if (hosts().length > 0) {
+              <span class="hosts" translate="no" data-testid="bastion-hosts"
+                >@for (h of hosts(); track h; let last = $last) {<span class="host"><quader-parts-text [value]="h" [marks]="addressMarks" /></span
+                  >@if (!last) {<span class="visually-hidden">, </span>}}</span
+              >
+            }
+          </h2>
+          <span
+            [class]="badgeClass()"
+            data-testid="bastion-state"
+            [attr.tabindex]="stateTip() ? 0 : null"
+            [quaderTooltip]="stateTip()"
+            [quaderTooltipPin]="true"
+            ><span class="material-icons" aria-hidden="true">{{ badge().icon }}</span>{{ badge().word }}</span
+          >
+          @if (runningText(); as running) {
+            <span class="running" data-testid="bastion-running">{{ running }}</span>
           }
           @if (bastion().declared) {
             <!-- A registration of the Helm configuration (R-BAS-127, Q-UI-1629): a lock and two words, what they mean behind the sign.
@@ -72,37 +125,44 @@ import { Busy } from '../../shared/ui/busy';
           }
         </div>
         @if (canWrite()) {
+          <!-- The Bastion's own acts (Q-UI-1641); the token's stand in Tokens (Q-UI-1642). Enable is the primary act while it is disabled. -->
           <div class="row-actions">
-            <button class="btn btn-confirm" type="button" [disabled]="busy()" [quaderBusy]="busy()" (click)="issue()">
-              <ng-container i18n="@@bastion.issue">Issue token</ng-container>
-              <span class="visually-hidden"> {{ bastion().name }}</span>
-            </button>
-            @if (!bastion().disabled) {
-              <button class="btn btn-tertiary" type="button" [disabled]="busy()" [quaderBusy]="busy()" (click)="disable()">
-                <ng-container i18n="@@bastion.disable">Disable</ng-container>
-                <span class="visually-hidden"> {{ bastion().name }}</span>
-              </button>
-            } @else {
-              <button class="btn btn-tertiary" type="button" [disabled]="busy()" [quaderBusy]="busy()" (click)="enable()">
+            @if (bastion().disabled; as d) {
+              <button class="btn btn-confirm" type="button" [disabled]="busy()" [quaderBusy]="busy()" (click)="enable()">
                 <ng-container i18n="@@bastion.enable">Enable</ng-container>
-                <span class="visually-hidden"> {{ bastion().name }}</span>
+                <span class="visually-hidden" translate="no"> {{ bastion().name }}</span>
+              </button>
+              @if (bastion().state === 'disabling' && d.mode === 'soft') {
+                <button class="btn btn-default" type="button" [disabled]="busy()" [quaderBusy]="busy()" (click)="disableHard()">
+                  <ng-container i18n="@@bastion.disable-hard">Disable hard…</ng-container>
+                  <span class="visually-hidden" translate="no"> {{ bastion().name }}</span>
+                </button>
+              }
+            } @else {
+              <button class="btn btn-default" type="button" [disabled]="busy()" [quaderBusy]="busy()" (click)="disable()">
+                <ng-container i18n="@@bastion.disable">Disable…</ng-container>
+                <span class="visually-hidden" translate="no"> {{ bastion().name }}</span>
               </button>
             }
-            <!-- A declared registration is not deleted here (Q-UI-1498): the next run of quader migrate would create it again. -->
-            @if (!bastion().declared) {
-              <button class="btn btn-tertiary" type="button" [disabled]="busy()" [quaderBusy]="busy()" (click)="remove()">
-                <ng-container i18n="@@bastion.delete">Delete</ng-container>
-                <span class="visually-hidden"> {{ bastion().name }}</span>
-              </button>
-            }
+            <!-- A declared registration is not deleted here (Q-UI-1498): the next run of quader migrate would create it again. The
+                 button stays, unavailable, its reason its tooltip (R-UI-270). -->
+            <button
+              class="btn btn-tertiary"
+              type="button"
+              data-testid="bastion-delete"
+              [disabled]="busy()"
+              [quaderBusy]="busy()"
+              [quaderUnavailable]="bastion().declared ? deleteReason : ''"
+              (click)="remove()"
+            >
+              <ng-container i18n="@@bastion.delete">Delete</ng-container>
+              <span class="visually-hidden" translate="no"> {{ bastion().name }}</span>
+            </button>
           </div>
         }
       </div>
-      @if (bastion().description) {
-        <!-- What the administrator wrote, in their language: never translated (R-UI-214). -->
-        <p class="description" translate="no" data-testid="bastion-description">{{ bastion().description }}</p>
-      }
 
+      <!-- An act's refusal and a token shown once stand under the head, also while the card is folded. -->
       @if (actionError(); as e) {
         <quader-error-notice [error]="e" />
       }
@@ -110,143 +170,184 @@ import { Busy } from '../../shared/ui/busy';
         <quader-token-secret [value]="s.token" [description]="secretNote(s)" (closed)="secret.set(null)" />
       }
 
-      <!-- The main settings, rows of name and control (Q-UI-1620, Q-UI-1621): what the internet sees first (Q-UI-1616), then the
-           direct reads. -->
-      <div class="main-settings">
-        <quader-bastion-switches [bastion]="bastion()" (changed)="changed.emit()" />
-        <quader-bastion-handover [bastion]="bastion()" [connections]="connections()" (changed)="changed.emit()" />
+      <div class="collapse-region" [class.open]="open()" [id]="bodyId()">
+        <div>
+          @if (bastion().description) {
+            <!-- What the administrator wrote, in their language: never translated (R-UI-214). -->
+            <p class="description" translate="no" data-testid="bastion-description">{{ bastion().description }}</p>
+          }
+
+          <!-- The main settings, rows of name and control (Q-UI-1620, Q-UI-1621): what the internet sees first (Q-UI-1616), then the
+               direct reads. -->
+          <div class="main-settings">
+            <quader-bastion-switches [bastion]="bastion()" (changed)="changed.emit()" />
+            <quader-bastion-handover [bastion]="bastion()" [connections]="connections()" (changed)="changed.emit()" />
+          </div>
+
+          <quader-bastion-limits [bastion]="bastion()" (changed)="changed.emit()">
+            <!-- The first group of Details: what the web interface hides (R-BAS-131, W-40's P6). -->
+            <quader-bastion-switches details-start part="details" [bastion]="bastion()" (changed)="changed.emit()" />
+            <p details-end class="created" data-testid="bastion-created" i18n="@@bastion.created">Created <quader-time-ago [at]="bastion().createdAt" absolute="title" /></p>
+          </quader-bastion-limits>
+
+          <!-- The replicas, one line (Q-UI-1622): a warning opens the section by itself; none yet is a plain line in its place. -->
+          @if (contacts().kind === 'none') {
+            <div class="section-plain" data-testid="bastion-replicas">
+              <h3 i18n="@@bastion.replicas.heading">Replicas</h3>
+              <p class="muted" i18n="@@bastion.replicas.none">No replica has made contact yet.</p>
+            </div>
+          } @else {
+            <quader-disclosure
+              data-testid="bastion-replicas"
+              i18n-heading="@@bastion.replicas.heading"
+              heading="Replicas"
+              [level]="3"
+              [count]="bastion().contacts.length"
+              [note]="contactsNote()"
+              [noteTone]="contactsWarn() ? 'warn' : 'muted'"
+              [(expanded)]="replicasOpen"
+            >
+              <quader-data-table [caption]="contactsCaption()" [columns]="contactColumns" [empty]="false">
+                @for (d of groups(); track d.baseUrl) {
+                  <!-- A pair of deployments under one registration (Q-UI-1643): the replicas grouped by the base URL they report. -->
+                  @if (groups().length > 1) {
+                    <tr class="group-row">
+                      <th scope="rowgroup" colspan="2" data-testid="bastion-deployment">{{ groupLabel(d) }}</th>
+                    </tr>
+                  }
+                  @for (c of d.contacts; track c.replica) {
+                    <tr>
+                      <!-- The replica's name, and under it what is the same for most rows (Q-UI-959): the address it connected from and its
+                           version. A name of 63 characters breaks after its hyphens. -->
+                      <th scope="row" class="wrap-name replica">
+                        <span translate="no">{{ c.replica }}</span>
+                        <span class="secondary"
+                          ><span class="dot-separated" data-testid="bastion-contact-facts"
+                            >@if (c.clientAddress; as v) {<span translate="no"><quader-parts-text [value]="v" [marks]="addressMarks" /></span>}<span
+                              i18n="@@bastion.contact.release"
+                              >Version <span translate="no">{{ c.release }}</span></span
+                            ></span
+                          ></span
+                        >
+                      </th>
+                      <td><quader-time-ago [at]="c.contactAt" absolute="title" /></td>
+                    </tr>
+                  }
+                }
+              </quader-data-table>
+            </quader-disclosure>
+          }
+
+          <!-- The tokens, one line (Q-UI-1623): a token that expires within 30 days or has expired opens the section by itself. The
+               token's acts stand here, never in the head (Q-UI-1642). -->
+          @if (tokens().kind === 'none') {
+            <div class="section-plain" data-testid="bastion-tokens">
+              <h3 i18n="@@bastion.tokens">Tokens</h3>
+              <p class="muted" i18n="@@bastion.tokens-empty">No token yet.</p>
+              @if (canWrite()) {
+                <button
+                  class="btn btn-confirm on-line"
+                  type="button"
+                  [disabled]="busy()"
+                  [quaderBusy]="busy()"
+                  [quaderUnavailable]="bastion().declared ? rotateReason : ''"
+                  (click)="issue()"
+                >
+                  <ng-container i18n="@@bastion.token.issue">Issue token</ng-container>
+                  <span class="visually-hidden" translate="no"> {{ bastion().name }}</span>
+                </button>
+              }
+            </div>
+          } @else {
+            <quader-disclosure
+              data-testid="bastion-tokens"
+              i18n-heading="@@bastion.tokens"
+              heading="Tokens"
+              [level]="3"
+              [count]="bastion().tokens.length"
+              [note]="tokensNote()"
+              [noteTone]="tokensWarn() ? 'warn' : 'muted'"
+              [(expanded)]="tokensOpen"
+            >
+              @if (canWrite()) {
+                <div class="section-actions">
+                  <button
+                    class="btn btn-default"
+                    type="button"
+                    data-testid="bastion-rotate"
+                    [disabled]="busy()"
+                    [quaderBusy]="busy()"
+                    [quaderUnavailable]="bastion().declared ? rotateReason : ''"
+                    (click)="issue()"
+                  >
+                    <ng-container i18n="@@bastion.token.rotate">Rotate token</ng-container>
+                    <span class="visually-hidden" translate="no"> {{ bastion().name }}</span>
+                  </button>
+                </div>
+              }
+              <quader-data-table [caption]="tokensCaption()" [columns]="tokenColumns" [empty]="false">
+                @for (t of bastion().tokens; track t.id) {
+                  <tr>
+                    <!-- The name, and under it the hint, the Secret of the declared token and when the token was created (Q-UI-959). -->
+                    <th scope="row">
+                      @if (t.declared) {
+                        <span data-testid="bastion-token-declared">{{ helmTokenName }}</span>
+                      } @else {
+                        <span translate="no">{{ t.description }}</span>
+                      }
+                      <span class="secondary"
+                        ><span class="dot-separated"
+                          ><code translate="no">{{ t.hint }}</code
+                          >@if (t.declared && bastion().declared?.secretName; as secretName) {<span i18n="@@bastion.token.secret"
+                              >Secret <code translate="no">{{ secretName }}</code></span
+                            >}<span i18n="@@bastion.token.created">Created <quader-time-ago [at]="t.createdAt" absolute="title" /></span></span
+                        ></span
+                      >
+                    </th>
+                    <td>
+                      @if (t.expiresAt; as at) {
+                        <quader-time-ago [at]="at" absolute="title" />
+                      } @else {
+                        <span i18n="@@bastion.token.never">Never</span>
+                      }
+                      @switch (expiry(t)) {
+                        @case ('expired') {
+                          <span class="expiry-mark"><span class="badge bad"><span class="material-icons" aria-hidden="true">error</span><ng-container i18n="@@bastion.token.expired">Expired</ng-container></span></span>
+                        }
+                        @case ('soon') {
+                          <span class="expiry-mark"><span class="badge warn"><span class="material-icons" aria-hidden="true">schedule</span><ng-container i18n="@@bastion.token.soon">Expires soon</ng-container></span></span>
+                        }
+                      }
+                    </td>
+                    <td>
+                      @if (t.lastUsedAt; as at) {
+                        <quader-time-ago [at]="at" absolute="title" />
+                      } @else {
+                        <span class="muted no-time" i18n="@@bastion.token.unused">Not used yet</span>
+                      }
+                    </td>
+                    <td class="actions">
+                      <!-- Every token, the declared one included: the last resort of a leak (R-BAS-133, Q-UI-1642). -->
+                      @if (canRevoke()) {
+                        <button class="btn btn-tertiary" type="button" [disabled]="busy()" [quaderBusy]="busy()" (click)="invalidate(t)">
+                          <ng-container i18n="@@bastion.token.invalidate">Invalidate</ng-container>
+                          <span class="visually-hidden" translate="no"> {{ tokenName(t) }}</span>
+                        </button>
+                      }
+                    </td>
+                  </tr>
+                }
+              </quader-data-table>
+            </quader-disclosure>
+          }
+        </div>
       </div>
-
-      <quader-bastion-limits [bastion]="bastion()" (changed)="changed.emit()">
-        <p details-end class="created" data-testid="bastion-created" i18n="@@bastion.created">Created <quader-time-ago [at]="bastion().createdAt" absolute="title" /></p>
-      </quader-bastion-limits>
-
-      <!-- The replicas, one line (Q-UI-1622): a warning opens the section by itself; none yet is a plain line in its place. -->
-      @if (contacts().kind === 'none') {
-        <div class="section-plain" data-testid="bastion-replicas">
-          <h3 i18n="@@bastion.replicas.heading">Replicas</h3>
-          <p class="muted" i18n="@@bastion.replicas.none">No replica has made contact yet.</p>
-        </div>
-      } @else {
-        <quader-disclosure
-          data-testid="bastion-replicas"
-          i18n-heading="@@bastion.replicas.heading"
-          heading="Replicas"
-          [level]="3"
-          [count]="bastion().contacts.length"
-          [note]="contactsNote()"
-          [noteTone]="contactsWarn() ? 'warn' : 'muted'"
-          [(expanded)]="replicasOpen"
-        >
-          <quader-data-table [caption]="contactsCaption()" [columns]="contactColumns" [empty]="false">
-            @for (c of bastion().contacts; track c.replica) {
-              <tr>
-                <!-- The replica's name, and under it what is the same for most rows (Q-UI-959): the address it connected from and its
-                     version. A name of 63 characters breaks after its hyphens. -->
-                <th scope="row" class="wrap-name replica">
-                  <span translate="no">{{ c.replica }}</span>
-                  <span class="secondary"
-                    ><span class="dot-separated" data-testid="bastion-contact-facts"
-                      >@if (c.clientAddress; as v) {<span translate="no"><quader-parts-text [value]="v" [marks]="addressMarks" /></span>}<span
-                        i18n="@@bastion.contact.release"
-                        >Version <span translate="no">{{ c.release }}</span></span
-                      ></span
-                    ></span
-                  >
-                </th>
-                <td><quader-time-ago [at]="c.contactAt" absolute="title" /></td>
-                <!-- The URL takes the room the other columns leave and breaks after a dot or a slash there. -->
-                <td translate="no" class="wrap base-url">
-                  @if (c.baseUrl; as v) {
-                    <quader-parts-text [value]="v" [marks]="addressMarks" />
-                  } @else {
-                    <quader-no-value />
-                  }
-                </td>
-              </tr>
-            }
-          </quader-data-table>
-        </quader-disclosure>
-      }
-
-      <!-- The tokens, one line (Q-UI-1623): a token that expires within 30 days or has expired opens the section by itself. -->
-      @if (tokens().kind === 'none') {
-        <div class="section-plain" data-testid="bastion-tokens">
-          <h3 i18n="@@bastion.tokens">Tokens</h3>
-          <p class="muted" i18n="@@bastion.tokens-empty">No token yet: issue one for the Bastion's chart.</p>
-        </div>
-      } @else {
-        <quader-disclosure
-          data-testid="bastion-tokens"
-          i18n-heading="@@bastion.tokens"
-          heading="Tokens"
-          [level]="3"
-          [count]="bastion().tokens.length"
-          [note]="tokensNote()"
-          [noteTone]="tokensWarn() ? 'warn' : 'muted'"
-          [(expanded)]="tokensOpen"
-        >
-          <quader-data-table [caption]="tokensCaption()" [columns]="tokenColumns" [empty]="false">
-            @for (t of bastion().tokens; track t.id) {
-              <tr>
-                <!-- The name, and under it the hint, the Secret of the declared token and when the token was created (Q-UI-959). -->
-                <th scope="row">
-                  @if (t.declared) {
-                    <span data-testid="bastion-token-declared">{{ helmTokenName }}</span>
-                  } @else {
-                    <span translate="no">{{ t.description }}</span>
-                  }
-                  <span class="secondary"
-                    ><span class="dot-separated"
-                      ><code translate="no">{{ t.hint }}</code
-                      >@if (t.declared && bastion().declared?.secretName; as secretName) {<span i18n="@@bastion.token.secret"
-                          >Secret <code translate="no">{{ secretName }}</code></span
-                        >}<span i18n="@@bastion.token.created">Created <quader-time-ago [at]="t.createdAt" absolute="title" /></span></span
-                    ></span
-                  >
-                </th>
-                <td>
-                  @if (t.expiresAt; as at) {
-                    <quader-time-ago [at]="at" absolute="title" />
-                  } @else {
-                    <span i18n="@@bastion.token.never">Never</span>
-                  }
-                  @switch (expiry(t)) {
-                    @case ('expired') {
-                      <span class="expiry-mark"><span class="badge bad"><span class="material-icons" aria-hidden="true">error</span><ng-container i18n="@@bastion.token.expired">Expired</ng-container></span></span>
-                    }
-                    @case ('soon') {
-                      <span class="expiry-mark"><span class="badge warn"><span class="material-icons" aria-hidden="true">schedule</span><ng-container i18n="@@bastion.token.soon">Expires soon</ng-container></span></span>
-                    }
-                  }
-                </td>
-                <td>
-                  @if (t.lastUsedAt; as at) {
-                    <quader-time-ago [at]="at" absolute="title" />
-                  } @else {
-                    <span class="muted no-time" i18n="@@bastion.token.unused">Not used yet</span>
-                  }
-                </td>
-                <td class="actions">
-                  <!-- The declared token ends with a change of its Secret (Q-UI-1499): no Revoke. -->
-                  @if (!t.declared && canRevoke()) {
-                    <button class="btn btn-tertiary" type="button" [disabled]="busy()" [quaderBusy]="busy()" (click)="revoke(t)">
-                      <ng-container i18n="@@bastion.token.revoke">Revoke</ng-container>
-                      <span class="visually-hidden"> {{ t.description }}</span>
-                    </button>
-                  }
-                </td>
-              </tr>
-            }
-          </quader-data-table>
-        </quader-disclosure>
-      }
     </section>
   `,
   styleUrl: '../../shared/access/access.scss',
   styles: `
-    /* The head: the name with its state and source on the left, the actions at its end; the actions take a line of their own where the
-       card is narrow. The buttons stand on the middle of the name's line (R-UI-175). */
+    /* The head: the fold, the name, the hosts, the state and the source on the left, the acts at its end; the acts take a line of their
+       own where the card is narrow. The buttons stand on the middle of the name's line (R-UI-175). */
     .head {
       display: flex;
       flex-wrap: wrap;
@@ -261,9 +362,74 @@ import { Busy } from '../../shared/ui/busy';
       gap: var(--quader-space-1) var(--quader-space-3);
       min-inline-size: 0;
     }
+    /* The fold's button and the hosts on the middle of one line (R-UI-175): the heading's line, 24 px, holds both, so the badge and the
+       acts beside it stand on the same middle. */
     .card .title h2 {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0 var(--quader-space-3);
+      min-inline-size: 0;
       margin: 0;
       overflow-wrap: anywhere;
+    }
+    /* The fold's button reads as the heading: the chevron before the name, the heading's colour and weight. */
+    .fold {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--quader-space-1);
+      min-inline-size: 0;
+      padding: 0;
+      border: 0;
+      background: none;
+      color: var(--quader-heading);
+      font: inherit;
+      text-align: start;
+      cursor: pointer;
+    }
+    .fold:focus-visible {
+      outline: var(--quader-focus-ring);
+      outline-offset: 2px;
+    }
+    .chevron {
+      font-size: 1.25rem;
+      transition: transform var(--quader-motion-duration) var(--quader-motion-easing);
+    }
+    [aria-expanded='true'] > .chevron {
+      transform: rotate(90deg);
+    }
+    /* The hosts of its deployments, in the muted colour of a fact beside the name at the text's size; separated by a dot, each on a
+       line of its own where the card is narrow (Q-UI-1641). */
+    .hosts {
+      display: inline-flex;
+      flex-wrap: wrap;
+      column-gap: 0.25em;
+      min-inline-size: 0;
+      color: var(--quader-text-muted);
+      font-size: var(--quader-text-size);
+      font-weight: 400;
+    }
+    .host:not(:last-child)::after {
+      content: ' ·';
+    }
+    /* Narrow: the name on a line of its own, each host on a line of its own under it, where the name starts; the state and the mark on
+       the next line, the acts on theirs (W-41's 390 px). */
+    @container content (max-width: 40rem) {
+      .card .title h2 {
+        flex-basis: 100%;
+      }
+      .hosts {
+        flex-basis: 100%;
+        flex-direction: column;
+        padding-inline-start: calc(1.25rem + var(--quader-space-1));
+      }
+      .host:not(:last-child)::after {
+        content: none;
+      }
+    }
+    .running {
+      color: var(--quader-text-muted);
+      font-size: var(--quader-text-muted-size);
     }
     .head .row-actions {
       margin: 0;
@@ -278,6 +444,10 @@ import { Busy } from '../../shared/ui/busy';
     .source > .material-icons {
       margin-inline-end: var(--quader-space-1);
     }
+    /* What folds starts where the name starts, after the chevron. */
+    .collapse-region > div {
+      padding-inline-start: calc(1.25rem + var(--quader-space-1));
+    }
     .description {
       margin: var(--quader-space-1) 0 0;
       max-inline-size: var(--quader-settings-measure);
@@ -289,7 +459,12 @@ import { Busy } from '../../shared/ui/busy';
     .created {
       margin-block: var(--quader-space-4) 0;
     }
-    /* A section without entries: its heading and its one line where the fold would stand. */
+    quader-error-notice,
+    quader-token-secret {
+      display: block;
+      margin-block-start: var(--quader-space-3);
+    }
+    /* A section without entries: its heading and its one line where the fold would stand, and the act that fills it after them. */
     .section-plain {
       display: flex;
       flex-wrap: wrap;
@@ -309,12 +484,20 @@ import { Busy } from '../../shared/ui/busy';
       margin: 0;
       font-size: var(--quader-text-muted-size);
     }
-    /* A replica's name (a pod name has up to 63 characters) breaks after its hyphens, an address (IPv6 has 39) and a reported base URL
-       after their colons, dots and slashes (breakParts), and anywhere where a part is still longer than its room, so that no value
-       widens its column: at 390 px a base URL of 38 characters pushed the page sideways, and at 1440 px it stacked one card's rows
-       while the next card kept its table. */
-    th.replica,
-    td.base-url {
+    .section-plain .btn {
+      margin-inline-start: var(--quader-space-2);
+    }
+    .section-actions {
+      margin-block-end: var(--quader-space-3);
+    }
+    /* A replica's name (a pod name has up to 63 characters) breaks after its hyphens, an address (IPv6 has 39) after its colons and
+       dots (breakParts), and anywhere where a part is still longer than its room, so that no value widens its column. */
+    th.replica {
+      overflow-wrap: anywhere;
+    }
+    tr.group-row > th {
+      padding-block-start: var(--quader-space-3);
+      font-weight: 600;
       overflow-wrap: anywhere;
     }
     /* A token's mark stands on a line of its own under the expiry: after a line break the badge, 20 px on a line of 16, touched the
@@ -327,6 +510,8 @@ import { Busy } from '../../shared/ui/busy';
 })
 export class BastionCard {
   readonly bastion = input.required<Bastion>();
+  /** The page holds this one Bastion: its card opens by itself (Q-UI-1640). */
+  readonly single = input(false);
   /** Entries of the token dialog kept across a re-authentication; the card opens the dialog with them once. */
   readonly draft = input<BastionTokenDraft | null>(null);
   /** The connections' states of the download link settings, for the reasons of the direct reads (R-BAS-071); null when not read. */
@@ -340,6 +525,7 @@ export class BastionCard {
   private readonly notifier = inject(Notifier);
   private readonly session = inject(SessionStore);
   private readonly locale = inject(LOCALE_ID);
+  private readonly fold = inject(BastionFold);
 
   protected readonly busy = signal(false);
   protected readonly actionError = signal<ApiError | null>(null);
@@ -347,22 +533,27 @@ export class BastionCard {
   protected readonly secret = signal<BastionTokenCreated | null>(null);
 
   protected readonly helmName = $localize`:@@bastion.source.helm:Helm configuration`;
-  protected readonly declaredHelp = $localize`:@@bastion.source.helm-help:Its description, its addresses and one token are set in bastions.declared of the Helm configuration and changed there. To delete the Bastion, remove it there first.`;
+  protected readonly declaredHelp = $localize`:@@bastion.source.helm-help:Its description, its addresses and its token are set in bastions.declared of the Helm configuration and changed there.`;
+  /** Why a declared registration's Delete cannot act (R-UI-270, Q-UI-1636). */
+  protected readonly deleteReason = $localize`:@@bastion.delete.helm:Set in bastions.declared of the Helm configuration: remove it there first, then delete it here.`;
+  /** Why a declared registration's token is not issued or rotated here (R-BAS-133, Q-BAS-517). */
+  protected readonly rotateReason = $localize`:@@bastion.token.rotate.helm:Its token is set in bastions.declared of the Helm configuration: put a new value into its Secret.`;
   /** The declared token's name, the screen's whatever the server stored (Q-UI-1629). */
   protected readonly helmTokenName = $localize`:@@bastion.token.helm:Token of the Helm configuration`;
 
   protected readonly canWrite = computed(() => this.session.has('endpoints:write'));
   protected readonly canRevoke = computed(() => this.session.has('endpoints:write') || this.session.has('tokens:revoke'));
-  protected readonly headingId = computed(() => `bastion-${this.bastion().name}`);
+  protected readonly nameId = computed(() => `bastion-${this.bastion().name}`);
+  protected readonly bodyId = computed(() => `bastion-${this.bastion().name}-body`);
   protected readonly contactsCaption = computed(() => $localize`:@@bastion.contacts-caption:Replicas of ${this.bastion().name}:name:`);
   protected readonly tokensCaption = computed(() => $localize`:@@bastion.tokens-caption:Tokens of ${this.bastion().name}:name:`);
 
   /*
    * The tables have one form at every width but the narrow one (Q-UI-959): each column declares its least width and its values fit it
    * or break inside it, so the rows stack by the card's width alone, never by a long value. What is the same for most rows stands
-   * under the row's name, as the reference's list of runners does: a replica's address and version, a token's hint and creation. The
-   * reported base URL and a token's description take the room the others leave. A time is relative, its date and time its title
-   * (Q-UI-431).
+   * under the row's name, as the reference's list of runners does: a replica's address and version, a token's hint and creation. A
+   * token's description takes the room the others leave. A time is relative, its date and time its title (Q-UI-431). The replicas'
+   * base URL is their deployment's: the head names its host and a pair's groups name it (Q-UI-1643).
    */
   protected readonly contactColumns: readonly TableColumn[] = [
     {
@@ -370,15 +561,9 @@ export class BastionCard {
       label: $localize`:@@bastion.col.replica:Replica`,
       help: $localize`:@@bastion.help.replica:Under its name: the address the main installation saw it connect from, and its version.`,
       width: '16rem',
-    },
-    { id: 'time', label: $localize`:@@bastion.col.time:Last contact`, width: '7.5rem' },
-    {
-      id: 'base',
-      label: $localize`:@@bastion.col.base:Reported base URL`,
-      help: $localize`:@@bastion.help.base:The address the Bastion says clients reach it on. Set up client offers it while it is in config.server.additional_base_urls of the Helm configuration.`,
-      width: '10rem',
       prefer: true,
     },
+    { id: 'time', label: $localize`:@@bastion.col.time:Last contact`, width: '7.5rem' },
   ];
   protected readonly tokenColumns: readonly TableColumn[] = [
     { id: 'description', label: $localize`:@@bastion.col.token:Token`, width: '9rem', prefer: true },
@@ -387,7 +572,7 @@ export class BastionCard {
     {
       id: 'lastUsed',
       label: $localize`:@@bastion.col.last-used:Last used`,
-      help: $localize`:@@bastion.help.last-used:The last time the token authenticated a request. When you renew, revoke the old token once the new one shows a recent time.`,
+      help: $localize`:@@bastion.help.last-used:The last time the token authenticated a request. When you rotate, invalidate the old token once the new one shows a recent time.`,
       width: '7.5rem',
     },
     { id: 'actions', label: $localize`:@@bastion.col.actions:Actions`, hideLabel: true },
@@ -402,11 +587,50 @@ export class BastionCard {
     return Date.now();
   });
 
+  protected readonly hosts = computed(() => headHosts(this.bastion(), this.now()));
+  protected readonly groups = computed<Deployment[]>(() => deployments(this.bastion()));
+  protected readonly badge = computed(() => stateBadge(this.bastion().state));
+  protected readonly badgeClass = computed(() => {
+    const tone = this.badge().tone;
+    return tone === 'neutral' ? 'badge state' : `badge state ${tone}`;
+  });
+  /** What the badge's tooltip says (Q-BAS-511): how long the contact is lost, the way and time of a disable, an unconfirmed one's reason. */
+  protected readonly stateTip = computed(() => {
+    const b = this.bastion();
+    switch (b.state) {
+      case 'contactLost': {
+        const newest = newestContact(b.contacts);
+        return newest ? $localize`:@@bastion.state.lost-tip:No replica has made contact for ${this.duration(newest.contactAt)}:duration:.` : '';
+      }
+      case 'disabling':
+      case 'disabled': {
+        const d = b.disabled;
+        if (!d) return '';
+        const since = formatTime(d.at, { part: 'datetime' });
+        return d.mode === 'hard'
+          ? $localize`:@@bastion.state.disabled-hard-tip:Hard, since ${since}:time:`
+          : $localize`:@@bastion.state.disabled-soft-tip:Soft, since ${since}:time:`;
+      }
+      case 'disableUnconfirmed':
+        return $localize`:@@bastion.state.unconfirmed-tip:No replica has confirmed it yet. The main installation refuses its requests; its replicas serve from their cache until their next contact, at most their grace period.`;
+      default:
+        return '';
+    }
+  });
+  /** "3 downloads still running" after the badge while a soft disable lets them finish (R-BAS-133). */
+  protected readonly runningText = computed(() => {
+    const b = this.bastion();
+    if (b.state !== 'disabling' || b.running <= 0) return '';
+    return b.running === 1
+      ? $localize`:@@bastion.state.running-one:1 download still running`
+      : $localize`:@@bastion.state.running:${b.running}:count: downloads still running`;
+  });
+
   protected readonly contacts = computed<ContactHealth>(() => contactHealth(this.bastion(), this.now()));
   protected readonly tokens = computed<TokenHealth>(() => tokenHealth(this.bastion(), this.now()));
   protected readonly contactsWarn = computed(() => {
     const h = this.contacts();
-    return (h.kind === 'silent' && h.warn) || (h.kind === 'current' && (h.releases.length > 1 || h.baseUrls));
+    return (h.kind === 'silent' && h.warn) || (h.kind === 'current' && (h.releases.length > 1 || h.silentDeployments.length > 0));
   });
   protected readonly tokensWarn = computed(() => {
     const k = this.tokens().kind;
@@ -425,6 +649,21 @@ export class BastionCard {
     computation: (warn, previous) => warn || (previous?.value ?? false),
   });
 
+  /** The card shows a warning somewhere (Q-UI-1640): it is never folded away. */
+  private readonly warns = computed(() => cardWarns(this.bastion(), this.now(), this.connections()));
+  /**
+   * The card's fold (Q-UI-1640): at first the viewer's kept choice, or open where the page holds one Bastion and folded where it holds
+   * several; open whatever was kept while it warns. Later a change into a warning opens it, a live read keeps what the viewer chose, and
+   * the screen never folds a card.
+   */
+  protected readonly open = linkedSignal<boolean, boolean>({
+    source: () => this.warns(),
+    computation: (warn, previous) => {
+      if (previous === undefined) return warn || (this.fold.choice(untracked(this.bastion).name) ?? untracked(this.single));
+      return (warn && !previous.source) || previous.value;
+    },
+  });
+
   protected readonly contactsNote = computed(() => {
     const h = this.contacts();
     switch (h.kind) {
@@ -439,9 +678,12 @@ export class BastionCard {
         if (h.releases.length > 1) {
           warnings.push($localize`:@@bastion.replicas.releases:The replicas run different versions: ${h.releases.join(', ')}:versions:.`);
         }
-        if (h.baseUrls) warnings.push($localize`:@@bastion.replicas.base-urls:The replicas report different base URLs.`);
-        return warnings.length > 0
-          ? warnings.join(' ')
+        for (const d of h.silentDeployments) {
+          warnings.push($localize`:@@bastion.replicas.address-silent:${d.host}:host:: no contact for ${this.duration(d.since)}:duration:.`);
+        }
+        if (warnings.length > 0) return warnings.join(' ');
+        return h.deployments > 1
+          ? $localize`:@@bastion.replicas.ok-many:${h.deployments}:count: addresses · last contact ${this.ago(h.last)}:time: · version ${h.release}:release:`
           : $localize`:@@bastion.replicas.ok:Last contact ${this.ago(h.last)}:time: · version ${h.release}:release:`;
       }
     }
@@ -478,12 +720,27 @@ export class BastionCard {
     });
   }
 
+  /** The viewer folds or opens the card; the choice is kept for the next visit (Q-UI-1640). */
+  protected toggle(): void {
+    const open = !this.open();
+    this.open.set(open);
+    this.fold.set(this.bastion().name, open);
+  }
+
   protected expiry(t: BastionTokenSummary): 'expired' | 'soon' | 'ok' {
     return tokenExpiry(t, this.now());
   }
 
+  /** "pkgs-eu.example.com · 2 replicas": the head of a deployment's rows. */
+  protected groupLabel(d: Deployment): string {
+    const host = d.host || $localize`:@@bastion.replicas.no-base-url:No base URL reported`;
+    return d.contacts.length === 1
+      ? $localize`:@@bastion.replicas.group-one:${host}:host: · 1 replica`
+      : $localize`:@@bastion.replicas.group:${host}:host: · ${d.contacts.length}:count: replicas`;
+  }
+
   /** A token as the screen names it: the declared one by the screen's words, every other by its description. */
-  private tokenName(t: BastionTokenSummary): string {
+  protected tokenName(t: BastionTokenSummary): string {
     return t.declared ? this.helmTokenName : t.description;
   }
 
@@ -503,9 +760,10 @@ export class BastionCard {
     return $localize`:@@bastion.secret-note:For ${this.bastion().name}:name:: ${s.description}:description:`;
   }
 
+  /** **Issue token** while the registration has none, **Rotate token** once it has one (Q-UI-1642): a new token beside the old. */
   protected async issue(draft?: BastionTokenDraft): Promise<void> {
     const ref = this.dialog.open<BastionTokenDialog, BastionTokenDialogData, BastionTokenCreated>(BastionTokenDialog, {
-      data: { name: this.bastion().name, draft },
+      data: { name: this.bastion().name, rotate: this.bastion().tokens.length > 0, draft },
       maxWidth: '36rem',
     });
     const created = await firstValueFrom(ref.closed);
@@ -514,20 +772,38 @@ export class BastionCard {
     this.changed.emit();
   }
 
+  /** **Disable…**: the dialog asks soft or hard (R-BAS-133); the Bastion is told over its connection. */
   protected async disable(): Promise<void> {
+    const name = this.bastion().name;
+    const ref = this.dialog.open<BastionDisableDialog, BastionDisableDialogData, BastionDisableMode>(BastionDisableDialog, {
+      data: { name },
+      maxWidth: '36rem',
+    });
+    const mode = await firstValueFrom(ref.closed);
+    if (!mode) return;
+    await this.setDisabled(mode, $localize`:@@bastion.disabled-done:${name}:name: is being disabled.`);
+  }
+
+  /** **Disable hard…** while a soft disable lets downloads finish: they are cut (R-BAS-133). */
+  protected async disableHard(): Promise<void> {
+    const name = this.bastion().name;
+    const running = this.bastion().running;
     const answer = await this.confirmer.ask({
-      title: $localize`:@@bastion.disable-title:Disable this Bastion?`,
+      title: $localize`:@@bastion.disable-hard-title:Disable ${name}:name: hard?`,
       lines: [
-        $localize`:@@bastion.disable-text:Its replicas stop within seconds. Clients get 503 Service Unavailable until you enable it again.`,
+        running === 1
+          ? $localize`:@@bastion.disable-hard-text-one:1 running download is cut.`
+          : $localize`:@@bastion.disable-hard-text:${running}:count: running downloads are cut.`,
       ],
-      confirmLabel: $localize`:@@bastion.disable-confirm:Disable`,
+      confirmLabel: $localize`:@@bastion.disable-hard-confirm:Disable hard`,
     });
     if (answer === null) return;
-    await this.setDisabled('soft', $localize`:@@bastion.disabled-done:Bastion disabled.`);
+    await this.setDisabled('hard', $localize`:@@bastion.disabled-done:${name}:name: is being disabled.`);
   }
 
   protected async enable(): Promise<void> {
-    await this.setDisabled(null, $localize`:@@bastion.enabled-done:Bastion enabled.`);
+    const name = this.bastion().name;
+    await this.setDisabled(null, $localize`:@@bastion.enabled-done:${name}:name: is enabled.`);
   }
 
   private async setDisabled(disabled: BastionDisableMode | null, done: string): Promise<void> {
@@ -549,16 +825,22 @@ export class BastionCard {
     await this.act(() => this.api.delete(name), $localize`:@@bastion.deleted:Bastion deleted.`);
   }
 
-  protected async revoke(t: BastionTokenSummary): Promise<void> {
+  /** **Invalidate** a token, the declared one included (R-BAS-133): it stops working at once, for good. */
+  protected async invalidate(t: BastionTokenSummary): Promise<void> {
+    const description = this.tokenName(t);
+    const lines = [
+      $localize`:@@bastion.invalidate-text:“${description}:description:” stops working at once on every replica, for good. A replica that still uses it can no longer reach the main installation.`,
+    ];
+    if (t.declared) {
+      lines.push($localize`:@@bastion.invalidate-helm:The next rollout stops at its migration until the Secret of bastions.declared holds a new value.`);
+    }
     const answer = await this.confirmer.ask({
-      title: $localize`:@@bastion.revoke-title:Revoke this token?`,
-      lines: [
-        $localize`:@@bastion.revoke-text:“${t.description}:description:” stops working at once on every replica. A replica that still uses it treats the main installation as unreachable. When you renew, revoke the old token only after the new one shows a recent time in Last used. This cannot be undone.`,
-      ],
-      confirmLabel: $localize`:@@bastion.revoke-confirm:Revoke`,
+      title: $localize`:@@bastion.invalidate-title:Invalidate this token?`,
+      lines,
+      confirmLabel: $localize`:@@bastion.invalidate-confirm:Invalidate`,
     });
     if (answer === null) return;
-    await this.act(() => this.api.revokeToken(this.bastion().name, t.id), $localize`:@@bastion.revoked:Token revoked.`);
+    await this.act(() => this.api.invalidateToken(this.bastion().name, t.id), $localize`:@@bastion.invalidated:Token invalidated.`);
   }
 
   private async act(run: () => Promise<void>, done: string): Promise<void> {

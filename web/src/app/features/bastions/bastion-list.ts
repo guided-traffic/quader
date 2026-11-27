@@ -11,19 +11,25 @@ import { Needs } from '../../shared/access/needs';
 import { ErrorNotice } from '../../shared/error-notice';
 import { asApiError } from '../../shared/paged-resource';
 import { BastionCard } from './bastion-card';
+import { BastionFold } from './bastion-fold';
 import { catalogueLine } from './bastion-state';
 import { BastionCreateDialog, BastionTokenDraft } from './bastion-dialogs';
 import { PageHeader } from '../../shared/ui/page-header';
 import { EmptyState } from '../../shared/ui/empty-state';
 import { Loading } from '../../shared/ui/loading';
 
+/** A state the page reads fast while it lasts (R-UI-213): a web interface waiting for its first build, a disable waiting for its replicas. */
+function fastState(b: Bastion): boolean {
+  return catalogueLine(b)?.kind === 'pending' || b.state === 'disabling' || b.state === 'disableUnconfirmed';
+}
+
 /**
  * Administration → Bastions (R-BAS-007): the registrations of the Quader Bastions in front of this
  * installation, under the header's one sentence (Q-UI-1627), each as a card with its settings, its replicas, its tokens and the actions
- * (R-BAS-004). There are at most `bastions.max_registrations` registrations, so the list is one page
- * and the screen holds all of them. A registration the caller may not change shows no action; the
- * API decides in any case (R-UI-005). While a registration's direct reads from the object store are
- * on, the page reads the connections' states once for the cards' reasons (R-BAS-071).
+ * (R-BAS-004), which folds to its head (Q-UI-1640): open where the page holds one Bastion, folded where it holds several unless it
+ * warns. There are at most `bastions.max_registrations` registrations, so the list is one page and the screen holds all of them. A
+ * registration the caller may not change shows no action; the API decides in any case (R-UI-005). While a registration's direct reads
+ * from the object store are on, the page reads the connections' states once for the cards' reasons (R-BAS-071).
  */
 @Component({
   selector: 'quader-bastion-list',
@@ -52,7 +58,7 @@ import { Loading } from '../../shared/ui/loading';
       <quader-empty-state text="There is no Bastion yet." i18n-text="@@bastions.empty" />
     } @else {
       @for (b of items(); track b.name) {
-        <quader-bastion-card [bastion]="b" [draft]="restored()" [connections]="connections()" (changed)="load()" />
+        <quader-bastion-card [bastion]="b" [single]="items().length === 1" [draft]="restored()" [connections]="connections()" (changed)="load()" />
       }
     }
   `,
@@ -63,6 +69,7 @@ export class BastionList {
   private readonly links = inject(DownloadLinksApi);
   private readonly dialog = inject(QuaderDialog);
   private readonly session = inject(SessionStore);
+  private readonly fold = inject(BastionFold);
 
   protected readonly items = signal<readonly Bastion[]>([]);
   protected readonly loaded = signal(false);
@@ -81,7 +88,8 @@ export class BastionList {
   constructor() {
     void this.load();
     // A Bastion's state (seen, its handovers) changes without the viewer: read again every minute in place (R-UI-213), every few
-    // seconds while a web interface waits for its first build; a card keeps a token it shows once, as with every load.
+    // seconds while a web interface waits for its first build or a disable waits for its replicas (R-BAS-133: the badge turns from
+    // Disabling to Disabled about a second after the last download); a card keeps a token it shows once, as with every load.
     live({
       reload: async () => {
         if (!this.loaded()) return;
@@ -89,7 +97,7 @@ export class BastionList {
         this.items.set(items);
         await this.loadConnections(items);
       },
-      every: () => (this.items().some((b) => catalogueLine(b)?.kind === 'pending') ? LIVE_FAST_MS : LIVE_IDLE_MS),
+      every: () => (this.items().some((b) => fastState(b)) ? LIVE_FAST_MS : LIVE_IDLE_MS),
     });
   }
 
@@ -123,6 +131,9 @@ export class BastionList {
   protected async add(): Promise<void> {
     const ref = this.dialog.open<BastionCreateDialog, undefined, Bastion>(BastionCreateDialog, { maxWidth: '36rem' });
     const created = await firstValueFrom(ref.closed);
-    if (created) await this.load();
+    if (!created) return;
+    // The card of a Bastion just created opens: its next step, the token, is in it (Q-UI-1640).
+    this.fold.set(created.name, true);
+    await this.load();
   }
 }

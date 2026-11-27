@@ -83,7 +83,8 @@ export abstract class BastionsApi {
   abstract delete(name: string): Promise<void>;
   /** The secret is in this answer only (R-AUTH-022). */
   abstract createToken(name: string, body: NewBastionToken, idempotencyKey: string): Promise<BastionTokenCreated>;
-  abstract revokeToken(name: string, id: string): Promise<void>;
+  /** Invalidates a token at once, for good, the declared one included (R-BAS-133, Q-UI-1642): the last resort of a leak. */
+  abstract invalidateToken(name: string, id: string): Promise<void>;
   /** The three presets in the card's order, each with what applying it writes (`limits:read`; R-LIM-046, Q-UI-1485). */
   abstract presets(): Promise<readonly BastionPreset[]>;
 }
@@ -134,7 +135,7 @@ export class HttpBastionsApi extends BastionsApi {
       .body;
   }
 
-  override async revokeToken(name: string, id: string): Promise<void> {
+  override async invalidateToken(name: string, id: string): Promise<void> {
     await this.client.delete(`/api/v1/bastions/${seg(name)}/tokens/${seg(id)}`);
   }
 

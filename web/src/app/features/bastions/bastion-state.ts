@@ -39,35 +39,46 @@ export function freshReports(bastion: Pick<Bastion, 'status'>, now: number): Rep
 
 /**
  * The cache's figure f over the reports (R-UI-240, Q-BAS-480): a replica on the volume backend reports a cache of its own, and those
- * are added up; the replicas on the bucket backend (`shared`) report the whole Bastion's bucket alike, which counts once, as the
- * largest of their values.
+ * are added up; the replicas on the bucket backend (`shared`) report their deployment's bucket alike, which counts once per deployment,
+ * as the largest of their values, and the deployments' buckets add up (Q-UI-1643: a pair of deployments has two buckets). A report's
+ * deployment is the base URL of its replica's contact.
  */
-function cacheFigure(reports: readonly ReplicaStatus[], f: (s: ReplicaStatus) => number): number {
-  const shared = reports.filter((s) => s.cache.shared).map(f);
-  const own = reports.filter((s) => !s.cache.shared).reduce((t, s) => t + f(s), 0);
-  return own + (shared.length > 0 ? Math.max(...shared) : 0);
+function cacheFigure(reports: readonly ReplicaStatus[], deploymentOf: (replica: string) => string, f: (s: ReplicaStatus) => number): number {
+  const shared = new Map<string, number>();
+  let own = 0;
+  for (const s of reports) {
+    if (!s.cache.shared) {
+      own += f(s);
+      continue;
+    }
+    const d = deploymentOf(s.replica);
+    shared.set(d, Math.max(shared.get(d) ?? 0, f(s)));
+  }
+  return own + [...shared.values()].reduce((t, v) => t + v, 0);
 }
 
 /**
  * The card's state (R-UI-240, Q-UI-1489): the cache's fill, capacity and protected bytes are the sum of the replicas' own caches on
- * the volume backend and the bucket's figure once on the bucket backend, as each report says (Q-BAS-480); the hits and misses, the
+ * the volume backend and each deployment's bucket once on the bucket backend, as each report says (Q-BAS-480, Q-UI-1643); the hits and misses, the
  * reads and the callers limited are each replica's own and are added up. An address blocked at several replicas counts once; where
  * the replicas name fewer blocks than they count (a replica names at most 100), the larger count stands. Null where no replica
  * reported in the last five minutes.
  */
-export function bastionState(bastion: Pick<Bastion, 'status'>, now: number): BastionState | null {
+export function bastionState(bastion: Pick<Bastion, 'status' | 'contacts'>, now: number): BastionState | null {
   const reports = freshReports(bastion, now);
   if (reports.length === 0) return null;
+  const urls = new Map(bastion.contacts.map((c) => [c.replica, c.baseUrl]));
+  const deploymentOf = (replica: string): string => urls.get(replica) ?? '';
   const sum = (f: (s: ReplicaStatus) => number): number => reports.reduce((t, s) => t + f(s), 0);
   const hits = sum((s) => s.cache.hits);
   const misses = sum((s) => s.cache.misses);
   const addresses = new Set(reports.flatMap((s) => s.blocks.map((b) => b.address)));
   return {
     replicas: reports.length,
-    cacheBytes: cacheFigure(reports, (s) => s.cache.bytes),
-    capacityBytes: cacheFigure(reports, (s) => s.cache.capacityBytes),
+    cacheBytes: cacheFigure(reports, deploymentOf, (s) => s.cache.bytes),
+    capacityBytes: cacheFigure(reports, deploymentOf, (s) => s.cache.capacityBytes),
     hitRatio: hits + misses > 0 ? hits / (hits + misses) : null,
-    protectedBytes: cacheFigure(reports, (s) => s.cache.protectedBytes),
+    protectedBytes: cacheFigure(reports, deploymentOf, (s) => s.cache.protectedBytes),
     bytesPerSecond: sum((s) => s.throughput.bytesPerSecondByClass.anonymous + s.throughput.bytesPerSecondByClass.signedIn + s.throughput.bytesPerSecondByClass.catalogue),
     throughputLimited: reports.some((s) => s.throughput.limited),
     limited: sum((s) => s.limited),
@@ -228,12 +239,63 @@ export function tokenExpiry(token: Pick<BastionTokenSummary, 'expiresAt'>, now: 
   return left < BASTION_TOKEN_WARN_DAYS * DAY_MS ? 'soon' : 'ok';
 }
 
+/** How long a deployment's address stands in the card's head after its last contact (Q-UI-1641): a deployment taken down drops out a day later. */
+export const DEPLOYMENT_HEARD_MS = 24 * 3_600_000;
+
+/** The host of a base URL as the card names it: no scheme, no default port, no path ("pkgs.example.com", "pkgs.example.com:8443"). */
+export function hostOf(baseUrl: string): string {
+  try {
+    return new URL(baseUrl).host || baseUrl;
+  } catch {
+    return baseUrl;
+  }
+}
+
 /**
- * What the section **Replicas** says (R-UI-240, Q-UI-1622): `none` before a contact; `silent` when no replica made contact in the last
- * five minutes (`REPORT_FRESH_MS`), since the newest contact, a warning only while the registration is enabled; otherwise `current` with
- * the replicas heard in the last five minutes, the newest contact and its version, the versions those replicas run (newest contact's
- * first, each once) and whether they report more than one base URL. A replica not heard beside current ones is no warning: every
- * rollout leaves its old pods' contacts for 30 days.
+ * One deployment of a registration (Q-UI-1643): the replicas that report one base URL. A pair of deployments under one registration
+ * (two clusters, two addresses, one token) is legitimate. `baseUrl` is empty for the replicas that reported none.
+ */
+export interface Deployment {
+  readonly baseUrl: string;
+  readonly host: string;
+  /** Its replicas' contacts, the most recent first. */
+  readonly contacts: readonly BastionContact[];
+  /** The time of its most recent contact. */
+  readonly last: string;
+}
+
+type BastionContact = Bastion['contacts'][number];
+
+/** The registration's contacts grouped by the base URL they report, by host; the replicas that reported none last. */
+export function deployments(bastion: Pick<Bastion, 'contacts'>): Deployment[] {
+  const groups = new Map<string, BastionContact[]>();
+  for (const c of bastion.contacts) groups.set(c.baseUrl, [...(groups.get(c.baseUrl) ?? []), c]);
+  return [...groups.entries()]
+    .map(([baseUrl, contacts]) => {
+      const sorted = [...contacts].sort((a, b) => Date.parse(b.contactAt) - Date.parse(a.contactAt));
+      return { baseUrl, host: baseUrl === '' ? '' : hostOf(baseUrl), contacts: sorted, last: sorted[0]!.contactAt };
+    })
+    .sort((a, b) => (a.host === '') !== (b.host === '') ? (a.host === '' ? 1 : -1) : a.host.localeCompare(b.host));
+}
+
+/**
+ * The hosts the card's head names (R-UI-240, Q-UI-1641): each deployment that reported a base URL and made contact within the last 24
+ * hours, by host; none before the first contact. Neither a registration nor its declaration holds the Bastion's public address: the base
+ * URL its replicas report is the one the main installation knows.
+ */
+export function headHosts(bastion: Pick<Bastion, 'contacts'>, now: number): string[] {
+  return deployments(bastion)
+    .filter((d) => d.host !== '' && now - Date.parse(d.last) <= DEPLOYMENT_HEARD_MS)
+    .map((d) => d.host);
+}
+
+/**
+ * What the section **Replicas** says (R-UI-240, Q-UI-1622, Q-UI-1643): `none` before a contact; `silent` when no replica made contact in
+ * the last five minutes (`REPORT_FRESH_MS`), since the newest contact, a warning only while the registration is not disabled; otherwise
+ * `current` with the replicas heard in the last five minutes, the newest contact and its version, the versions those replicas run (newest
+ * contact's first, each once), the number of deployments they report, and the deployments heard within 24 hours but not in the last five
+ * minutes beside a current one (`silentDeployments`, each a warning). A replica not heard beside current ones of its deployment is no
+ * warning: every rollout leaves its old pods' contacts for 30 days. Different base URLs are no warning: they are a pair of deployments.
  */
 export type ContactHealth =
   | { readonly kind: 'none' }
@@ -244,7 +306,8 @@ export type ContactHealth =
       readonly last: string;
       readonly release: string;
       readonly releases: readonly string[];
-      readonly baseUrls: boolean;
+      readonly deployments: number;
+      readonly silentDeployments: readonly { readonly host: string; readonly since: string }[];
     };
 
 export function contactHealth(bastion: Pick<Bastion, 'contacts' | 'disabled'>, now: number): ContactHealth {
@@ -255,8 +318,23 @@ export function contactHealth(bastion: Pick<Bastion, 'contacts' | 'disabled'>, n
     .sort((a, b) => Date.parse(b.contactAt) - Date.parse(a.contactAt));
   if (current.length === 0) return { kind: 'silent', since: newest.contactAt, warn: !bastion.disabled };
   const releases = [...new Set(current.map((c) => c.release))];
-  const baseUrls = new Set(current.map((c) => c.baseUrl).filter((u) => u !== '')).size > 1;
-  return { kind: 'current', count: current.length, last: newest.contactAt, release: newest.release, releases, baseUrls };
+  const silentDeployments = deployments(bastion)
+    .filter((d) => d.host !== '')
+    .filter((d) => {
+      const age = now - Date.parse(d.last);
+      return age > REPORT_FRESH_MS && age <= DEPLOYMENT_HEARD_MS;
+    })
+    .map((d) => ({ host: d.host, since: d.last }));
+  const live = new Set(current.map((c) => c.baseUrl).filter((u) => u !== '')).size;
+  return {
+    kind: 'current',
+    count: current.length,
+    last: newest.contactAt,
+    release: newest.release,
+    releases,
+    deployments: live,
+    silentDeployments,
+  };
 }
 
 /**

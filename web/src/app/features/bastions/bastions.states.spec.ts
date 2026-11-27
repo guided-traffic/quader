@@ -6,6 +6,8 @@ import { sampleBastion } from '../../api/testing/fakes-bastions';
 import { FakeLimitsApi, sampleBastionProfiles, sampleProfiles } from '../../api/testing/fakes-limits';
 import { REQUEST_ID, expectState, failAlways, failNext, openDialog, serverFailure, until } from '../../testing/states';
 import { LimitModeDialog, ModeDialogData } from '../limits/limit-mode';
+import { BastionDisableDialog, BastionDisableDialogData } from './bastion-disable-dialog';
+import { BastionTokenDialog, BastionTokenDialogData } from './bastion-dialogs';
 import { BastionPresetDialog, PresetDialogData } from './bastion-preset-dialog';
 
 /** A registration in Audit with a changed flood figure: the preset's dialog names a change in each of its three groups. */
@@ -49,6 +51,18 @@ describe("dialogs of a Bastion's limits in a browser (R-UI-240, R-UI-042, R-UI-2
         data: { bastion: tuned(), preset: 'internal' },
         setup: (g) => failAlways(g(LimitsApi), 'rules', serverFailure()),
       });
+    });
+  });
+
+  it('the dialog Disable… with its two ways, Soft chosen (R-BAS-133)', async () => {
+    await expectState('bastion-disable', async () => {
+      await openDialog<BastionDisableDialog, BastionDisableDialogData>(BastionDisableDialog, { maxWidth: '36rem', data: { name: 'dmz-frankfurt-edge' } });
+    });
+  });
+
+  it('Rotate token: the token dialog of a registration that has one, a new token beside the old', async () => {
+    await expectState('bastion-token-rotate', async () => {
+      await openDialog<BastionTokenDialog, BastionTokenDialogData>(BastionTokenDialog, { maxWidth: '36rem', data: { name: 'dmz-frankfurt-edge', rotate: true } });
     });
   });
 

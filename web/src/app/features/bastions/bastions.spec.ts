@@ -21,14 +21,14 @@ import { seriousViolations } from '../../testing/axe';
 import { DraftStore } from '../../shared/drafts';
 import { browserStorage, button, buttonByText, renderScreen, settle, sleep, storedText, text, type, typeAndLeave, typeInto, unavailableReason } from '../../testing/screen';
 import { ADDRESS_MARKS, breakParts } from '../../shared/break-parts';
-import { BASTION_TOKEN_WARN_DAYS, contactHealth, tokenExpiry, tokenHealth } from './bastion-state';
+import { BASTION_TOKEN_WARN_DAYS, bastionState, contactHealth, deployments, headHosts, hostOf, tokenExpiry, tokenHealth } from './bastion-state';
 import { handoverLines } from './bastion-handover';
 import { inNetworks, unlistedContacts } from './egress';
 import { BastionList } from './bastion-list';
 
 const overlay = (): HTMLElement => document.querySelector('.cdk-overlay-container') as HTMLElement;
 const card = (root: HTMLElement, name: string): HTMLElement =>
-  [...root.querySelectorAll<HTMLElement>('quader-bastion-card')].find((c) => c.querySelector('h2')?.textContent?.trim() === name)!;
+  [...root.querySelectorAll<HTMLElement>('quader-bastion-card')].find((c) => c.querySelector('[data-testid="bastion-name"]')?.textContent?.trim() === name)!;
 /** The sentence an element is described by (a help sign's, through the tooltip's hidden description). */
 const described = (el: Element): string =>
   (el.getAttribute('aria-describedby') ?? '')
@@ -45,7 +45,7 @@ describe('Bastions screen (R-BAS-007)', () => {
     const { fixture, root } = await renderScreen(BastionList);
     expect(root.querySelector('h1')?.textContent).toContain('Bastions');
     const partners = card(root, 'partners');
-    expect(text(partners)).toContain('Enabled');
+    expect(text(partners.querySelector('[data-testid="bastion-state"]')!)).toBe('check_circleConnected');
     expect(text(partners)).toContain('The partner network');
     // Healthy, the section Replicas is closed and one line (Q-UI-1622); its table opens with it.
     const toggle = partners.querySelector<HTMLButtonElement>('[data-testid="bastion-replicas"] button[aria-expanded]')!;
@@ -57,40 +57,43 @@ describe('Bastions screen (R-BAS-007)', () => {
     const rows = partners.querySelectorAll('table')[0]!.querySelectorAll('tbody tr');
     expect(rows).toHaveLength(2);
     const first = text(rows[0]!);
-    for (const part of ['quader-bastion-7d9c-x2k4q', '198.51.100.20', '0.15.0', 'https://packages.example.com']) {
+    for (const part of ['quader-bastion-7d9c-x2k4q', '198.51.100.20', '0.15.0']) {
       expect(first).toContain(part);
     }
-    // Q-UI-959: three columns; the address and the version stand under the replica's name (no interface version, which every
-    // recorded contact shares), the time is relative with its date and time as the title, and the URL keeps its text whole.
+    // Q-UI-959: two columns; the address and the version stand under the replica's name (no interface version, which every
+    // recorded contact shares), the time is relative with its date and time as the title. The base URL is the deployment's: the head
+    // names its host, and one deployment has no group row (Q-UI-1643).
     expect([...partners.querySelectorAll('table')[0]!.querySelectorAll('thead th')].map((th) => text(th).replace(/info$/, '').trim())).toEqual([
       'Replica',
       'Last contact',
-      'Reported base URL',
     ]);
+    expect(partners.querySelector('tr.group-row')).toBeNull();
     const facts = rows[0]!.querySelector('th [data-testid="bastion-contact-facts"]')!;
     expect([...facts.children].map((c) => text(c))).toEqual(['198.51.100.20', 'Version 0.15.0']);
     expect(partners.querySelector('table caption')?.textContent?.trim()).toBe('Replicas of partners');
     const time = rows[0]!.querySelector('td time')!;
     expect(text(time)).toMatch(/minutes? ago|now/);
     expect(time.getAttribute('title')).toMatch(/\d{4}/);
-    const url = rows[0]!.querySelectorAll('td')[1]!;
-    expect(text(url)).toBe('https://packages.example.com');
-    expect(url.querySelectorAll('wbr').length).toBeGreaterThan(1);
     const standby = card(root, 'standby');
-    expect(text(standby)).toContain('Disabled');
-    // Without a contact and a token, each section is its plain line.
+    expect(text(standby.querySelector('[data-testid="bastion-state"]')!)).toBe('warningDisable not confirmed');
+    // Without a contact and a token, each section is its plain line, the token's with the act that fills it.
     expect(text(standby.querySelector('[data-testid="bastion-replicas"]')!)).toMatch(/^Replicas\s*No replica has made contact yet\.$/);
-    expect(text(standby.querySelector('[data-testid="bastion-tokens"]')!)).toMatch(/^Tokens\s*No token yet: issue one for the Bastion's chart\.$/);
+    expect(text(standby.querySelector('[data-testid="bastion-tokens"]')!)).toMatch(/^Tokens\s*No token yet\.\s*Issue token standby$/);
     expect(await seriousViolations(root)).toEqual([]);
   });
 
-  it('R-UI-240 W-39 the head holds the name, the state and the actions; the description is one line under it, Created the last of Details', async () => {
+  it('R-UI-240 W-41 the head holds the fold, the name, the host, the state and its own acts; the description under it, Created the last of Details', async () => {
     const { root } = await renderScreen(BastionList);
     const partners = card(root, 'partners');
     const head = partners.querySelector('.head')!;
-    expect(text(head.querySelector('h2')!)).toBe('partners');
-    expect(text(head)).toContain('Enabled');
-    expect([...head.querySelectorAll('.row-actions button')].map((b) => text(b))).toEqual(['Issue token partners', 'Disable partners', 'Delete partners']);
+    // The heading is the name and the host in grey; the fold's button and the region are named by the Bastion alone (Q-UI-1641).
+    expect(text(head.querySelector('h2')!)).toBe('chevron_rightpartnerspackages.example.com');
+    expect(text(head.querySelector('h2 button')!)).toBe('chevron_rightpartners');
+    expect(text(head.querySelector('[data-testid="bastion-hosts"]')!)).toBe('packages.example.com');
+    expect(document.getElementById(partners.querySelector('section')!.getAttribute('aria-labelledby')!)!.textContent).toBe('partners');
+    expect(text(head)).toContain('Connected');
+    // The token's acts are no longer the head's (Q-UI-1642).
+    expect([...head.querySelectorAll('.row-actions button')].map((b) => text(b))).toEqual(['Disable… partners', 'Delete partners']);
     expect(text(partners.querySelector('[data-testid="bastion-description"]')!)).toBe('The partner network');
     // No term for the obvious: no Status, no Description, no facts' list.
     expect(partners.querySelector('dl.facts')).toBeNull();
@@ -213,12 +216,12 @@ describe('Bastions screen (R-BAS-007)', () => {
   it('R-BAS-004 issues a token, shows it once and never stores it', async () => {
     const { fixture, root, get } = await renderScreen(BastionList);
     const partners = card(root, 'partners');
-    buttonByText(partners, 'Issue token').click();
+    buttonByText(partners, 'Rotate token').click();
     await settle(fixture);
     const dialog = overlay().querySelector('quader-bastion-token-dialog') as HTMLElement;
     typeInto(dialog, 'Description', 'partners 2027');
     typeInto(dialog, 'Lifetime in days', '365');
-    buttonByText(dialog, 'Issue token').click();
+    buttonByText(dialog, 'Rotate token').click();
     await sleep(fixture, 100);
     const api = get(BastionsApi) as FakeBastionsApi;
     expect(api.calls).toContain('createToken partners partners 2027 31536000');
@@ -241,17 +244,17 @@ describe('Bastions screen (R-BAS-007)', () => {
 
   it('R-BAS-004 an empty lifetime takes the default, and a lifetime that is no number is refused before the request', async () => {
     const { fixture, root, get } = await renderScreen(BastionList);
-    buttonByText(card(root, 'partners'), 'Issue token').click();
+    buttonByText(card(root, 'partners'), 'Rotate token').click();
     await settle(fixture);
     const dialog = overlay().querySelector('quader-bastion-token-dialog') as HTMLElement;
     typeInto(dialog, 'Lifetime in days', '0');
-    buttonByText(dialog, 'Issue token').click();
+    buttonByText(dialog, 'Rotate token').click();
     await settle(fixture);
     const api = get(BastionsApi) as FakeBastionsApi;
     expect(api.calls.filter((c) => c.startsWith('createToken'))).toEqual([]);
     expect(text(dialog)).toContain('greater than zero');
     typeInto(dialog, 'Lifetime in days', '');
-    buttonByText(dialog, 'Issue token').click();
+    buttonByText(dialog, 'Rotate token').click();
     await sleep(fixture, 100);
     expect(api.lastTokenRequest).toEqual({ description: '' });
   });
@@ -259,10 +262,10 @@ describe('Bastions screen (R-BAS-007)', () => {
   it('R-BAS-004 a registration at its token limit answers token_limit_reached and keeps the dialog', async () => {
     const { fixture, root, get } = await renderScreen(BastionList);
     (get(BastionsApi) as FakeBastionsApi).tokenLimit = 1;
-    buttonByText(card(root, 'partners'), 'Issue token').click();
+    buttonByText(card(root, 'partners'), 'Rotate token').click();
     await settle(fixture);
     const dialog = overlay().querySelector('quader-bastion-token-dialog') as HTMLElement;
-    buttonByText(dialog, 'Issue token').click();
+    buttonByText(dialog, 'Rotate token').click();
     await settle(fixture);
     expect(overlay().querySelector('quader-bastion-token-dialog')).toBeTruthy();
     expect(root.querySelector('quader-token-secret')).toBeNull();
@@ -273,11 +276,11 @@ describe('Bastions screen (R-BAS-007)', () => {
     const api = get(BastionsApi) as FakeBastionsApi;
     api.failure = new ApiError(409, { code: 'token_already_issued', tokenId: 't-lost' }, 'req-1');
     api.bastions = [sampleBastion({ tokens: [sampleBastionToken({ id: 't-lost', description: 'lost' })] })];
-    buttonByText(card(root, 'partners'), 'Issue token').click();
+    buttonByText(card(root, 'partners'), 'Rotate token').click();
     await settle(fixture);
-    buttonByText(overlay().querySelector('quader-bastion-token-dialog') as HTMLElement, 'Issue token').click();
+    buttonByText(overlay().querySelector('quader-bastion-token-dialog') as HTMLElement, 'Rotate token').click();
     await sleep(fixture, 100);
-    expect(api.calls.filter((c) => c.startsWith('revokeToken'))).toEqual(['revokeToken partners t-lost']);
+    expect(api.calls.filter((c) => c.startsWith('invalidateToken'))).toEqual(['invalidateToken partners t-lost']);
     expect(api.keys).toHaveLength(1);
     expect(root.querySelector('quader-token-secret')).toBeTruthy();
   });
@@ -287,12 +290,12 @@ describe('Bastions screen (R-BAS-007)', () => {
     const { fixture, root, get } = await renderScreen(BastionList);
     const api = get(BastionsApi) as FakeBastionsApi;
     api.failure = new ApiError(401, { code: 'reauthentication_required' }, 'req-1');
-    buttonByText(card(root, 'partners'), 'Issue token').click();
+    buttonByText(card(root, 'partners'), 'Rotate token').click();
     await settle(fixture);
     const dialog = overlay().querySelector('quader-bastion-token-dialog') as HTMLElement;
     typeInto(dialog, 'Description', 'partners 2027');
     typeInto(dialog, 'Lifetime in days', '365');
-    buttonByText(dialog, 'Issue token').click();
+    buttonByText(dialog, 'Rotate token').click();
     await settle(fixture);
     const stored = browserStorage.entries('session').filter(([k]) => k.startsWith('quader.draft:'));
     expect(stored).toHaveLength(1);
@@ -317,28 +320,114 @@ describe('Bastions screen (R-BAS-007)', () => {
     expect((dialog.querySelector('input[name="description"]') as HTMLInputElement).value).toBe('partners 2027');
     expect((dialog.querySelector('input[name="days"]') as HTMLInputElement).value).toBe('365');
     expect(browserStorage.entries('session').filter(([k]) => k.startsWith('quader.draft:'))).toHaveLength(0);
-    buttonByText(dialog, 'Issue token').click();
+    buttonByText(dialog, 'Rotate token').click();
     await sleep(fixture, 100);
     expect((get(BastionsApi) as FakeBastionsApi).calls).toContain('createToken partners partners 2027 31536000');
     expect(card(root, 'partners').querySelector('quader-token-secret')).toBeTruthy();
     expect(overlay().querySelectorAll('quader-bastion-token-dialog')).toHaveLength(0);
   });
 
-  it('R-BAS-004 disables a registration after a confirmation, with the ETag it read, and enables it again', async () => {
+  it('R-BAS-133 Disable… asks soft or hard with the ETag it read, the badge says Disabling, and Enable enables it again', async () => {
     const { fixture, root, get } = await renderScreen(BastionList);
     const api = get(BastionsApi) as FakeBastionsApi;
-    buttonByText(card(root, 'partners'), 'Disable').click();
+    buttonByText(card(root, 'partners'), 'Disable…').click();
     await settle(fixture);
-    buttonByText(overlay().querySelector('quader-confirm-dialog') as HTMLElement, 'Disable').click();
+    const dialog = overlay().querySelector('quader-bastion-disable-dialog') as HTMLElement;
+    expect(text(dialog.querySelector('h2')!)).toBe('Disable partners?');
+    // The two ways, soft chosen, each with its sentence as the radio's description.
+    const radios = [...dialog.querySelectorAll<HTMLInputElement>('input[type="radio"]')];
+    expect(radios.map((r) => [r.value, r.checked, described(r)])).toEqual([
+      ['soft', true, 'No new requests. Downloads that have started finish.'],
+      ['hard', false, 'No new requests, and running downloads are cut.'],
+    ]);
+    expect(text(dialog)).toContain('Clients get 503 Service Unavailable until you enable it again.');
+    expect(await seriousViolations(dialog)).toEqual([]);
+    buttonByText(dialog, 'Disable').click();
     await sleep(fixture, 100);
     expect(api.calls).toContain('setDisabled partners soft');
     expect(api.ifMatch).toEqual(['"1"']);
-    expect(text(card(root, 'partners'))).toContain('Disabled');
-    buttonByText(card(root, 'partners'), 'Enable').click();
+    const partners = card(root, 'partners');
+    expect(text(partners.querySelector('[data-testid="bastion-state"]')!)).toBe('pause_circleDisabling');
+    // Enable is the primary act while it is disabled; Disable hard… stands while the soft disable drains.
+    expect([...partners.querySelectorAll('.head .row-actions button')].map((b) => text(b))).toEqual([
+      'Enable partners',
+      'Disable hard… partners',
+      'Delete partners',
+    ]);
+    buttonByText(partners, 'Enable').click();
     await sleep(fixture, 100);
     expect(api.calls).toContain('setDisabled partners null');
     expect(api.ifMatch).toEqual(['"1"', '"2"']);
-    expect(text(card(root, 'partners'))).toContain('Enabled');
+    expect(text(card(root, 'partners').querySelector('[data-testid="bastion-state"]')!)).toBe('check_circleConnected');
+  });
+
+  it('R-BAS-133 the hard way: chosen in the dialog, or Disable hard… while a soft disable lets downloads finish', async () => {
+    const { fixture, root, get } = await renderScreen(BastionList);
+    const api = get(BastionsApi) as FakeBastionsApi;
+    buttonByText(card(root, 'partners'), 'Disable…').click();
+    await settle(fixture);
+    const dialog = overlay().querySelector('quader-bastion-disable-dialog') as HTMLElement;
+    dialog.querySelectorAll<HTMLInputElement>('input[type="radio"]')[1]!.click();
+    buttonByText(dialog, 'Disable').click();
+    await sleep(fixture, 100);
+    expect(api.calls).toContain('setDisabled partners hard');
+    void fixture;
+  });
+
+  it('R-BAS-133 Disable hard… while a soft disable lets three downloads finish names what it cuts', async () => {
+    const { fixture, root, get } = await renderScreen(BastionList, {
+      setup: (get) => {
+        (get(BastionsApi) as FakeBastionsApi).bastions = [
+          sampleBastion({ disabled: { mode: 'soft', at: inDays(-1 / 1440) }, state: 'disabling', running: 3 }),
+        ];
+      },
+    });
+    const partners = card(root, 'partners');
+    expect(text(partners.querySelector('[data-testid="bastion-running"]')!)).toBe('3 downloads still running');
+    buttonByText(partners, 'Disable hard…').click();
+    await settle(fixture);
+    const confirm = overlay().querySelector('quader-confirm-dialog') as HTMLElement;
+    expect(text(confirm)).toContain('Disable partners hard?');
+    expect(text(confirm)).toContain('3 running downloads are cut.');
+    buttonByText(confirm, 'Disable hard').click();
+    await sleep(fixture, 100);
+    expect((get(BastionsApi) as FakeBastionsApi).calls).toContain('setDisabled partners hard');
+  });
+
+  it('R-BAS-133 each state is one badge with its tone and its tooltip; green only while connected', async () => {
+    const at = inDays(-2 / 1440);
+    const { root } = await renderScreen(BastionList, {
+      setup: (get) => {
+        (get(BastionsApi) as FakeBastionsApi).bastions = [
+          sampleBastion({ name: 'a-connected' }),
+          sampleBastion({ name: 'b-new', state: 'noContact', contacts: [] }),
+          sampleBastion({ name: 'c-lost', state: 'contactLost', contacts: [sampleBastionContact({ contactAt: inDays(-20 / 1440) })] }),
+          sampleBastion({ name: 'd-draining', state: 'disabling', running: 1, disabled: { mode: 'soft', at } }),
+          sampleBastion({ name: 'e-off', state: 'disabled', disabled: { mode: 'hard', at } }),
+          sampleBastion({ name: 'f-unconfirmed', state: 'disableUnconfirmed', disabled: { mode: 'soft', at } }),
+        ];
+      },
+    });
+    const badge = (name: string): HTMLElement => card(root, name).querySelector<HTMLElement>('[data-testid="bastion-state"]')!;
+    const look = (name: string): [string, string, string] => [text(badge(name)), [...badge(name).classList].sort().join(' '), described(badge(name))];
+    expect(look('a-connected')).toEqual(['check_circleConnected', 'badge ok state', '']);
+    expect(look('b-new')).toEqual(['scheduleNo contact yet', 'badge state', '']);
+    expect(look('c-lost')).toEqual(['warningContact lost', 'badge state warn', 'No replica has made contact for 20 minutes.']);
+    expect(look('d-draining')[0]).toBe('pause_circleDisabling');
+    expect(look('d-draining')[2]).toMatch(/^Soft, since \d/);
+    expect(text(card(root, 'd-draining').querySelector('[data-testid="bastion-running"]')!)).toBe('1 download still running');
+    expect(look('e-off').slice(0, 2)).toEqual(['blockDisabled', 'badge state']);
+    expect(look('e-off')[2]).toMatch(/^Hard, since \d/);
+    expect(card(root, 'e-off').querySelector('[data-testid="bastion-running"]')).toBeNull();
+    expect(look('f-unconfirmed')).toEqual([
+      'warningDisable not confirmed',
+      'badge state warn',
+      'No replica has confirmed it yet. The main installation refuses its requests; its replicas serve from their cache until their next contact, at most their grace period.',
+    ]);
+    // A badge with a tooltip is reached by the keyboard; one without is not.
+    expect(badge('c-lost').getAttribute('tabindex')).toBe('0');
+    expect(badge('a-connected').getAttribute('tabindex')).toBeNull();
+    expect(await seriousViolations(root)).toEqual([]);
   });
 
   it('R-BAS-004 a change made by someone else in between is a 412 and is shown', async () => {
@@ -352,7 +441,7 @@ describe('Bastions screen (R-BAS-007)', () => {
     };
     buttonByText(card(root, 'standby'), 'Enable').click();
     await sleep(fixture, 100);
-    expect(text(card(root, 'standby'))).toContain('Disabled');
+    expect(text(card(root, 'standby').querySelector('[data-testid="bastion-state"]')!)).toBe('warningDisable not confirmed');
     expect(text(card(root, 'standby'))).toContain('Changed by someone else');
   });
 
@@ -371,16 +460,40 @@ describe('Bastions screen (R-BAS-007)', () => {
     expect(card(root, 'standby')).toBeTruthy();
   });
 
-  it('R-BAS-006 revokes a token after a confirmation that names the renewal order', async () => {
+  it('R-BAS-006 R-BAS-133 invalidates a token after a confirmation; then the section offers Issue token', async () => {
     const { fixture, root, get } = await renderScreen(BastionList);
-    buttonByText(card(root, 'partners'), 'Revoke').click();
+    buttonByText(card(root, 'partners'), 'Invalidate').click();
     await settle(fixture);
     const dialog = overlay().querySelector('quader-confirm-dialog') as HTMLElement;
-    expect(text(dialog)).toContain('Last used');
-    buttonByText(dialog, 'Revoke').click();
+    expect(text(dialog)).toContain('Invalidate this token?');
+    expect(text(dialog)).toContain('“partners 2026” stops working at once on every replica, for good.');
+    buttonByText(dialog, 'Invalidate').click();
     await sleep(fixture, 100);
-    expect((get(BastionsApi) as FakeBastionsApi).calls).toContain('revokeToken partners 0192f0d1-1c2a-7c3e-8a51-6f7d2b9c4e41');
-    expect(text(card(root, 'partners'))).toContain("No token yet: issue one for the Bastion's chart.");
+    expect((get(BastionsApi) as FakeBastionsApi).calls).toContain('invalidateToken partners 0192f0d1-1c2a-7c3e-8a51-6f7d2b9c4e41');
+    expect(text(card(root, 'partners').querySelector('[data-testid="bastion-tokens"]')!)).toMatch(/^Tokens\s*No token yet\.\s*Issue token partners$/);
+  });
+
+  it('R-BAS-007 Issue token while there is none, Rotate token once there is one: the dialog says the new one works beside the old', async () => {
+    const { fixture, root, get } = await renderScreen(BastionList, {
+      setup: (get) => {
+        (get(BastionsApi) as FakeBastionsApi).bastions = [sampleBastion({ tokens: [] }), sampleBastion({ name: 'standby', description: '' })];
+      },
+    });
+    buttonByText(card(root, 'partners'), 'Issue token').click();
+    await settle(fixture);
+    let dialog = overlay().querySelector('quader-bastion-token-dialog') as HTMLElement;
+    expect(text(dialog.querySelector('h2')!)).toBe('Issue a token for the Bastion');
+    buttonByText(dialog, 'Issue token').click();
+    await sleep(fixture, 100);
+    expect((get(BastionsApi) as FakeBastionsApi).calls.filter((c) => c.startsWith('createToken'))).toHaveLength(1);
+    // With a token the act is Rotate token, inside Tokens; the head holds none of the token's acts.
+    expect([...card(root, 'partners').querySelectorAll('.head button')].map((b) => text(b)).some((t) => t.includes('token'))).toBe(false);
+    buttonByText(card(root, 'standby'), 'Rotate token').click();
+    await settle(fixture);
+    dialog = overlay().querySelector('quader-bastion-token-dialog') as HTMLElement;
+    expect(text(dialog.querySelector('h2')!)).toBe('Rotate the token of standby');
+    expect(text(dialog)).toContain('The new token works beside the old one.');
+    expect(buttonByText(dialog, 'Rotate token')).toBeTruthy();
   });
 
   it('R-BAS-004 endpoints:read alone shows the list and offers no action', async () => {
@@ -397,8 +510,8 @@ describe('Bastions screen (R-BAS-007)', () => {
   it('R-BAS-004 tokens:revoke alone may revoke a token and nothing else', async () => {
     const { root } = await renderScreen(BastionList, { capabilities: ['endpoints:read', 'tokens:revoke'] });
     const partners = card(root, 'partners');
-    expect(buttonByText(partners, 'Revoke')).toBeTruthy();
-    expect([...partners.querySelectorAll('button')].map((b) => text(b)).filter((t) => !/^info$|^chevron_right/.test(t))).toEqual(['Revoke partners 2026']);
+    expect(buttonByText(partners, 'Invalidate')).toBeTruthy();
+    expect([...partners.querySelectorAll('button')].map((b) => text(b)).filter((t) => !/^info$|^chevron_right/.test(t))).toEqual(['Invalidate partners 2026']);
   });
 
   it('R-BAS-007 shows the empty state, the loading failure with a retry, and recovers', async () => {
@@ -818,7 +931,7 @@ describe('A registration the configuration declares (R-BAS-127)', () => {
       ],
     });
 
-  it('R-BAS-127 the card shows Helm configuration in its head with its help, keeps the declared members and the declared token, and offers no Delete', async () => {
+  it('R-BAS-127 R-UI-270 the card shows Helm configuration in its head with its help; Delete and Rotate token stand unavailable with their reasons; every token is invalidated', async () => {
     const { root } = await renderScreen(BastionList, {
       setup: (g) => void ((g(BastionsApi) as FakeBastionsApi).bastions = [declared()]),
     });
@@ -829,13 +942,16 @@ describe('A registration the configuration declares (R-BAS-127)', () => {
     expect(signs(source)).toEqual([
       [
         'About Helm configuration',
-        'Its description, its addresses and one token are set in bastions.declared of the Helm configuration and changed there. To delete the Bastion, remove it there first.',
+        'Its description, its addresses and its token are set in bastions.declared of the Helm configuration and changed there.',
       ],
     ]);
+    // The owner: "Der Button gehört zurückgeholt, ausgegraut und mit diesem Tooltip versehen" (R-UI-270, Q-UI-1636).
+    const remove = partners.querySelector<HTMLButtonElement>('[data-testid="bastion-delete"]')!;
+    expect(unavailableReason(remove)).toBe('Set in bastions.declared of the Helm configuration: remove it there first, then delete it here.');
+    const rotate = partners.querySelector<HTMLButtonElement>('[data-testid="bastion-rotate"]')!;
+    expect(unavailableReason(rotate)).toBe('Its token is set in bastions.declared of the Helm configuration: put a new value into its Secret.');
     const buttons = [...partners.querySelectorAll('button')].map((b) => text(b)).filter((t) => !/^info$/.test(t));
-    expect(buttons.some((b) => b.startsWith('Delete'))).toBe(false);
-    expect(buttons.some((b) => b.startsWith('Issue token'))).toBe(true);
-    expect(buttons.filter((b) => b.startsWith('Revoke'))).toEqual(['Revoke partners 2026']);
+    expect(buttons.filter((b) => b.startsWith('Invalidate'))).toEqual(['Invalidate Token of the Helm configuration', 'Invalidate partners 2026']);
     const rows = partners.querySelectorAll('table')[1]!.querySelectorAll('tbody tr');
     expect(text(rows[0]!)).toContain('Never');
     // The networks are the configuration's (R-UI-270): their field and Add address unavailable with where they are set, no Remove,
@@ -849,6 +965,33 @@ describe('A registration the configuration declares (R-BAS-127)', () => {
     expect(list.querySelector('.row button')).toBeNull();
     expect(partners.querySelector('[data-testid="bastion-egress-list"]')).toBeNull();
     expect(await seriousViolations(root)).toEqual([]);
+  });
+
+  it('R-BAS-127 R-UI-270 Delete and Rotate token of a declared registration act on nothing; a tap pins the reason', async () => {
+    const { fixture, root, get } = await renderScreen(BastionList, {
+      setup: (g) => void ((g(BastionsApi) as FakeBastionsApi).bastions = [declared()]),
+    });
+    const partners = card(root, 'partners');
+    partners.querySelector<HTMLButtonElement>('[data-testid="bastion-delete"]')!.click();
+    partners.querySelector<HTMLButtonElement>('[data-testid="bastion-rotate"]')!.click();
+    await sleep(fixture, 100);
+    expect(overlay().querySelector('quader-confirm-dialog, quader-bastion-token-dialog')).toBeNull();
+    expect((get(BastionsApi) as FakeBastionsApi).calls.filter((c) => /^(delete|createToken)/.test(c))).toEqual([]);
+    expect(overlay().querySelector('quader-tooltip')).toBeTruthy();
+  });
+
+  it('R-BAS-133 invalidating the declared token says the next rollout stops until its Secret holds a new value', async () => {
+    const { fixture, root, get } = await renderScreen(BastionList, {
+      setup: (g) => void ((g(BastionsApi) as FakeBastionsApi).bastions = [declared()]),
+    });
+    buttonByText(card(root, 'partners'), 'Invalidate Token of the Helm configuration').click();
+    await settle(fixture);
+    const dialog = overlay().querySelector('quader-confirm-dialog') as HTMLElement;
+    expect(text(dialog)).toContain('“Token of the Helm configuration” stops working at once on every replica, for good.');
+    expect(text(dialog)).toContain('The next rollout stops at its migration until the Secret of bastions.declared holds a new value.');
+    buttonByText(dialog, 'Invalidate').click();
+    await sleep(fixture, 100);
+    expect((get(BastionsApi) as FakeBastionsApi).calls).toContain('invalidateToken partners t-declared');
   });
 
   it('R-BAS-127 R-UI-270 the offer of a contact\'s address on a declared registration stays, unavailable, and sends nothing', async () => {
@@ -941,12 +1084,14 @@ describe("A Bastion's limits, throughput, switches and state on its card (R-UI-2
     expect(throughput.getAttribute('aria-label')).toBe('Maximum throughput of partners in MB/s');
     expect(text(throughput.parentElement!.querySelector('.unit[aria-hidden="true"]')!)).toBe('MB/s');
     expect(details(root, 'partners').querySelector('button[aria-expanded]')!.getAttribute('aria-expanded')).toBe('false');
-    expect(text(details(root, 'partners').querySelector('button[aria-expanded]')!)).toContain('Flood protection, addresses, rules');
+    expect(text(details(root, 'partners').querySelector('button[aria-expanded]')!)).toContain('Web interface, flood protection, addresses, rules');
     // The main settings first, the web interface's rows before the direct reads', then the limits; never in Details (Q-UI-1616, Q-UI-1620).
     const sections = [...card(root, 'partners').querySelectorAll('quader-bastion-handover, quader-bastion-switches, quader-bastion-limits')];
-    expect(sections.map((s) => s.localName)).toEqual(['quader-bastion-switches', 'quader-bastion-handover', 'quader-bastion-limits']);
+    expect(sections.map((s) => s.localName)).toEqual(['quader-bastion-switches', 'quader-bastion-handover', 'quader-bastion-limits', 'quader-bastion-switches']);
     expect(switchesOf(root, 'partners').querySelector('[role="switch"][aria-label="Web interface of partners"]')).not.toBeNull();
-    expect(details(root, 'partners').querySelector('quader-bastion-switches')).toBeNull();
+    // Details holds only the web interface's expert setting, first (R-BAS-131).
+    expect(details(root, 'partners').querySelector('[data-testid="bastion-gui-row"], [data-testid="bastion-docs-row"]')).toBeNull();
+    expect(details(root, 'partners').querySelector('.body > quader-bastion-switches:first-child [data-testid="bastion-hide-row"]')).not.toBeNull();
     expect(text(limits.querySelector('[data-testid="bastion-no-report"]')!)).toBe('No report in the last 5 minutes');
     expect(limits.querySelector('[data-testid="bastion-edge-warning"]')).toBeNull();
     expect(await seriousViolations(root)).toEqual([]);
@@ -964,6 +1109,7 @@ describe("A Bastion's limits, throughput, switches and state on its card (R-UI-2
       'Mode',
       'Maximum throughput',
       'Now',
+      'Hide repositories',
     ]);
     expect(rows.map((r) => signs(r)[0]?.[0])).toEqual([
       'About Web interface',
@@ -973,17 +1119,22 @@ describe("A Bastion's limits, throughput, switches and state on its card (R-UI-2
       'About Mode',
       'About Maximum throughput',
       'About Now',
+      'About Hide repositories',
     ]);
     const help = Object.fromEntries(rows.map((r) => signs(r)[0]!));
+    // What a remote's page lists is the web interface's help now (W-41 D26): the choice to send it out is the repository's.
     expect(help['About Web interface']).toBe(
-      'A read-only web interface of this Bastion that shows anyone the packages of public repositories, without signing in. Off, its pages answer “not found” within seconds.',
+      "A read-only web interface of this Bastion that shows anyone the packages of the public repositories distributed through it, without signing in; a remote's page lists what your builds fetched through it. Off, its pages answer “not found” within seconds.",
+    );
+    expect(help['About Hide repositories']).toBe(
+      "Visitors see the projects and their packages, not the repositories that hold them. Commands and download addresses still name a repository's key: clients need it.",
     );
     expect(help['About Preset']).toBe(
       "Internet: strict limits, administrators too. Partner network: the installation's own profiles. Internal: no limits, everything counted. A choice first shows what it replaces.",
     );
     expect(help['About Now']).toBe("What the Bastion's replicas reported in the last 5 minutes, added up.");
-    // What becomes public stays visible, one line in the control's column; nothing that explains a setting is a paragraph.
-    expect(text(rows[0]!.querySelector('[below]')!)).toBe('It also shows every package your builds fetched through a public remote repository.');
+    // Nothing that explains a setting is a paragraph: the web interface's row has no line under it.
+    expect(rows[0]!.querySelector('[below]')).toBeNull();
     const body = text(partners);
     for (const moved of ['Strict limits', 'Set this to', 'Takes effect only', 'Limits are counted, not applied', 'Large files go']) {
       expect(body).not.toContain(moved);
@@ -991,6 +1142,7 @@ describe("A Bastion's limits, throughput, switches and state on its card (R-UI-2
     // The details' groups carry their help beside their heading, the exempt field its format as the hint and its meaning as help.
     const d = details(root, 'partners');
     expect(signs(d).map(([name]) => name)).toEqual([
+      'About Hide repositories',
       'About Networks without flood protection',
       'About Slots to the main installation',
       'About Anonymous ceiling',
@@ -1014,7 +1166,7 @@ describe("A Bastion's limits, throughput, switches and state on its card (R-UI-2
       },
     });
     const parts = (name: string): string[] =>
-      [...limitsOf(root, name).querySelectorAll('[data-testid="bastion-state"] .state-line')[0]!.querySelectorAll('span')].map((s) => text(s));
+      [...limitsOf(root, name).querySelectorAll('[data-testid="bastion-state"] .state-line')[0]!.querySelectorAll(':scope > span')].map((s) => text(s));
     expect(parts('partners')).not.toContain('21 MB/s from the main installation');
     expect(text(limitsOf(root, 'partners').querySelector('[data-testid="bastion-throughput-row"]')!)).toContain('21 MB/s of 200 MB/s');
     expect(parts('standby')).toContain('21 MB/s from the main installation');
@@ -1032,10 +1184,13 @@ describe("A Bastion's limits, throughput, switches and state on its card (R-UI-2
         ]),
     });
     const state = limitsOf(root, 'partners').querySelector('[data-testid="bastion-state"]')!;
-    expect([...state.querySelectorAll('.state-line')[0]!.querySelectorAll('span')].map((s) => text(s))).toEqual([
+    // One line of parts (W-41 D27): the callers are its last part, no second line.
+    expect(state.querySelectorAll('.state-line')).toHaveLength(1);
+    expect([...state.querySelector('.state-line')!.querySelectorAll(':scope > span')].map((s) => text(s))).toEqual([
       'Cache 12.0 of 20.0 GB',
       '97 % hits',
       '4.0 GB protected',
+      '4 callers limited · 1 address blocked',
     ]);
   });
 
@@ -1049,10 +1204,11 @@ describe("A Bastion's limits, throughput, switches and state on its card (R-UI-2
         ]),
     });
     const state = limitsOf(root, 'partners').querySelector('[data-testid="bastion-state"]')!;
-    expect([...state.querySelectorAll('.state-line')[0]!.querySelectorAll('span')].map((s) => text(s))).toEqual([
+    expect([...state.querySelector('.state-line')!.querySelectorAll(':scope > span')].map((s) => text(s))).toEqual([
       'Cache 7.0 of 10.0 GB',
       '97 % hits',
       '4.5 GB protected',
+      '4 callers limited · 1 address blocked',
     ]);
     // The meter stands under the field it measures (W-39 D13).
     const row = limitsOf(root, 'partners').querySelector('[data-testid="bastion-throughput-row"]')!;
@@ -1255,8 +1411,8 @@ describe("A Bastion's limits, throughput, switches and state on its card (R-UI-2
     const web = switchesOf(root, 'partners');
     const gui = web.querySelector<HTMLElement>('[role="switch"][aria-label="Web interface of partners"]')!;
     expect(gui.getAttribute('aria-checked')).toBe('false');
-    // The switch is described by what a public remote shows through it (W35-P9f), the line that stays visible under it.
-    expect(described(gui)).toBe('It also shows every package your builds fetched through a public remote repository.');
+    // What a public remote shows through it is the row's help now (W-41 D26): the switch has no line under it to be described by.
+    expect(described(gui)).toBe('');
     gui.click();
     await sleep(fixture, 100);
     expect(api.patches).toEqual([{ switches: { gui: true } }]);
@@ -1351,6 +1507,91 @@ describe("A Bastion's limits, throughput, switches and state on its card (R-UI-2
   });
 });
 
+describe('Several Bastions, each a card that folds (R-UI-240)', () => {
+  const fold = (root: HTMLElement, name: string): HTMLButtonElement => card(root, name).querySelector<HTMLButtonElement>('.head h2 button.fold')!;
+  const reload = async (fixture: { componentInstance: unknown }): Promise<void> =>
+    (fixture.componentInstance as { load(): Promise<void> }).load();
+
+  it('R-UI-240 one Bastion opens by itself; of several only the one that warns is open, and a folded card is its head alone', async () => {
+    browserStorage.clear('local');
+    const one = await renderScreen(BastionList, { setup: (g) => void ((g(BastionsApi) as FakeBastionsApi).bastions = [sampleBastion()]) });
+    expect(fold(one.root, 'partners').getAttribute('aria-expanded')).toBe('true');
+    const { root } = await renderScreen(BastionList);
+    // partners is healthy, standby's disable is not confirmed: a warning is never folded away.
+    expect(fold(root, 'partners').getAttribute('aria-expanded')).toBe('false');
+    expect(fold(root, 'standby').getAttribute('aria-expanded')).toBe('true');
+    const body = card(root, 'partners').querySelector(`#${fold(root, 'partners').getAttribute('aria-controls')}`)!;
+    expect(body.classList).not.toContain('open');
+    // The head stays whole while folded: the name, the host, the state and the acts.
+    expect(text(card(root, 'partners').querySelector('.head')!)).toMatch(/^chevron_rightpartnerspackages\.example\.comcheck_circleConnected.*Disable… partners.*Delete partners$/);
+    expect(await seriousViolations(root)).toEqual([]);
+  });
+
+  it('R-UI-240 the viewer\'s choice is kept per Bastion in the browser, a live read keeps it, and a change into a warning opens the card', async () => {
+    browserStorage.clear('local');
+    const first = await renderScreen(BastionList);
+    fold(first.root, 'partners').click();
+    fold(first.root, 'standby').click();
+    await settle(first.fixture);
+    expect(fold(first.root, 'partners').getAttribute('aria-expanded')).toBe('true');
+    expect(fold(first.root, 'standby').getAttribute('aria-expanded')).toBe('false');
+    const kept = browserStorage.entries('local').filter(([k]) => k.startsWith('quader.admin.bastions.open.'));
+    expect(kept).toHaveLength(1);
+    expect(JSON.parse(kept[0]![1])).toEqual({ partners: true, standby: false });
+    // A live read changes nothing the viewer chose, also of a card that warns.
+    await reload(first.fixture);
+    await settle(first.fixture);
+    expect(fold(first.root, 'standby').getAttribute('aria-expanded')).toBe('false');
+    // The next visit opens partners as the viewer left it.
+    const { fixture, root, get } = await renderScreen(BastionList);
+    expect(fold(root, 'partners').getAttribute('aria-expanded')).toBe('true');
+    fold(root, 'partners').click();
+    await settle(fixture);
+    // partners turns into a warning (a replica on another version): the next read opens it, whatever was kept.
+    const api = get(BastionsApi) as FakeBastionsApi;
+    api.bastions[0] = { ...api.bastions[0]!, contacts: [sampleBastionContact(), sampleBastionContact({ replica: 'quader-bastion-7d9c-m8v2j', release: '0.14.2' })] };
+    await reload(fixture);
+    await settle(fixture);
+    expect(fold(root, 'partners').getAttribute('aria-expanded')).toBe('true');
+    browserStorage.clear('local');
+  });
+
+  it('R-UI-240 a Bastion just created opens: its next step, the token, is in it', async () => {
+    browserStorage.clear('local');
+    const { fixture, root } = await renderScreen(BastionList);
+    buttonByText(root, 'New Bastion').click();
+    await settle(fixture);
+    const dialog = overlay().querySelector('quader-bastion-create-dialog') as HTMLElement;
+    typeInto(dialog, 'Name', 'newcomer');
+    buttonByText(dialog, 'Create Bastion').click();
+    await sleep(fixture, 100);
+    expect(fold(root, 'newcomer').getAttribute('aria-expanded')).toBe('true');
+    expect(fold(root, 'partners').getAttribute('aria-expanded')).toBe('false');
+    browserStorage.clear('local');
+  });
+
+  it('R-BAS-131 Hide repositories is the first row of Details, under the web interface, and sends its merge patch', async () => {
+    const { fixture, root, get } = await renderScreen(BastionList, { setup: (g) => void ((g(BastionsApi) as FakeBastionsApi).bastions = [sampleBastion()]) });
+    const details = card(root, 'partners').querySelector<HTMLElement>('quader-bastion-limits quader-disclosure')!;
+    const group = details.querySelector<HTMLElement>('.body > quader-bastion-switches:first-child')!;
+    expect(text(group.querySelector('h4')!)).toBe('Web interface');
+    const hide = group.querySelector<HTMLElement>('[role="switch"]')!;
+    expect(hide.getAttribute('aria-label')).toBe('Hide repositories in the web interface of partners');
+    expect(hide.getAttribute('aria-checked')).toBe('false');
+    hide.click();
+    await sleep(fixture, 100);
+    const api = get(BastionsApi) as FakeBastionsApi;
+    expect(api.patches).toEqual([{ switches: { hideRepositories: true } }]);
+    expect(api.bastions[0]!.switches.hideRepositories).toBe(true);
+    // A reader sees the word.
+    const reader = await renderScreen(BastionList, {
+      capabilities: ['endpoints:read'],
+      setup: (g) => void ((g(BastionsApi) as FakeBastionsApi).bastions = [sampleBastion()]),
+    });
+    expect(text(card(reader.root, 'partners').querySelector('[data-testid="bastion-hide-state"]')!)).toBe('Off');
+  });
+});
+
 describe("A Bastion's replicas and tokens, one line each (R-UI-240)", () => {
   const now = Date.parse('2026-11-27T10:00:00Z');
   const minutesAgo = (m: number): string => new Date(now - m * 60_000).toISOString();
@@ -1361,7 +1602,7 @@ describe("A Bastion's replicas and tokens, one line each (R-UI-240)", () => {
     card(root, name).querySelector<HTMLElement>(`[data-testid="bastion-${which}"]`)!;
   const toggleOf = (el: HTMLElement): HTMLButtonElement => el.querySelector<HTMLButtonElement>('button[aria-expanded]')!;
 
-  it('R-UI-240 W-39 the replicas: none, current with the newest version, silent while enabled and disabled, two versions, two base URLs', () => {
+  it('R-UI-240 W-41 the replicas: none, current with the newest version, silent while enabled and disabled, two versions, a pair of deployments', () => {
     const enabled = { disabled: null };
     expect(contactHealth({ ...enabled, contacts: [] }, now)).toEqual({ kind: 'none' });
     expect(contactHealth({ ...enabled, contacts: [contact('a', 1, { release: '0.42.0' }), contact('b', 2, { release: '0.42.0' })] }, now)).toEqual({
@@ -1370,21 +1611,63 @@ describe("A Bastion's replicas and tokens, one line each (R-UI-240)", () => {
       last: minutesAgo(1),
       release: '0.42.0',
       releases: ['0.42.0'],
-      baseUrls: false,
+      deployments: 1,
+      silentDeployments: [],
     });
-    // A replica of an earlier rollout beside current ones is no warning: only the current ones are compared.
-    const rollout = contactHealth({ ...enabled, contacts: [contact('new', 1, { release: '0.42.0' }), contact('old', 600, { release: '0.41.3', baseUrl: 'https://old.example.com' })] }, now);
-    expect(rollout).toMatchObject({ kind: 'current', count: 1, releases: ['0.42.0'], baseUrls: false });
+    // A replica of an earlier rollout beside current ones is no warning: only the current ones are compared; a deployment last heard
+    // more than a day ago is no deployment of the warning either.
+    const rollout = contactHealth({ ...enabled, contacts: [contact('new', 1, { release: '0.42.0' }), contact('old', 26 * 60, { release: '0.41.3', baseUrl: 'https://old.example.com' })] }, now);
+    expect(rollout).toMatchObject({ kind: 'current', count: 1, releases: ['0.42.0'], deployments: 1, silentDeployments: [] });
     expect(contactHealth({ ...enabled, contacts: [contact('a', 20), contact('b', 30)] }, now)).toEqual({ kind: 'silent', since: minutesAgo(20), warn: true });
     expect(contactHealth({ disabled: { mode: 'soft', at: minutesAgo(1) }, contacts: [contact('a', 20)] }, now)).toEqual({ kind: 'silent', since: minutesAgo(20), warn: false });
     expect(contactHealth({ ...enabled, contacts: [contact('a', 1, { release: '0.42.0' }), contact('b', 2, { release: '0.41.3' })] }, now)).toMatchObject({
       releases: ['0.42.0', '0.41.3'],
     });
-    // A replica that reported no base URL is not another address.
+    // A pair of deployments under one registration is legitimate (Q-UI-1643): two base URLs are no warning, a replica that reported no
+    // base URL is no other deployment, and a deployment silent for 12 minutes beside a current one warns with its host.
     expect(
       contactHealth({ ...enabled, contacts: [contact('a', 1), contact('b', 2, { baseUrl: 'https://other.example.com' }), contact('c', 3, { baseUrl: '' })] }, now),
-    ).toMatchObject({ baseUrls: true });
-    expect(contactHealth({ ...enabled, contacts: [contact('a', 1), contact('c', 3, { baseUrl: '' })] }, now)).toMatchObject({ baseUrls: false });
+    ).toMatchObject({ deployments: 2, silentDeployments: [], releases: ['0.15.0'] });
+    expect(contactHealth({ ...enabled, contacts: [contact('a', 1), contact('c', 3, { baseUrl: '' })] }, now)).toMatchObject({ deployments: 1 });
+    expect(
+      contactHealth({ ...enabled, contacts: [contact('a', 1), contact('us', 12, { baseUrl: 'https://pkgs-us.example.com:443/' })] }, now),
+    ).toMatchObject({ deployments: 1, silentDeployments: [{ host: 'pkgs-us.example.com', since: minutesAgo(12) }] });
+  });
+
+  it('R-UI-240 the deployments: grouped by base URL, the hosts of the last 24 hours in the head, each bucket counted once', () => {
+    const contacts = [
+      contact('eu-1', 1, { baseUrl: 'https://pkgs-eu.example.com' }),
+      contact('us-1', 2, { baseUrl: 'https://pkgs-us.example.com:8443/bastion' }),
+      contact('eu-2', 3, { baseUrl: 'https://pkgs-eu.example.com' }),
+      contact('none', 4, { baseUrl: '' }),
+      contact('gone', 25 * 60, { baseUrl: 'https://old.example.com' }),
+    ];
+    expect(deployments({ contacts }).map((d) => [d.host, d.contacts.map((c) => c.replica)])).toEqual([
+      ['old.example.com', ['gone']],
+      ['pkgs-eu.example.com', ['eu-1', 'eu-2']],
+      ['pkgs-us.example.com:8443', ['us-1']],
+      ['', ['none']],
+    ]);
+    // The head: each host heard within 24 hours, no scheme, no default port; none before the first contact.
+    expect(headHosts({ contacts }, now)).toEqual(['pkgs-eu.example.com', 'pkgs-us.example.com:8443']);
+    expect(headHosts({ contacts: [] }, now)).toEqual([]);
+    expect(hostOf('https://pkgs.example.com:443/')).toBe('pkgs.example.com');
+    // The bucket of each deployment once, the two deployments' buckets added (F1 of W-41): 7 + 5 GB, not the larger alone.
+    const shared = (replica: string, bytes: number): Bastion['status'][number] => ({
+      replica,
+      reportedAt: new Date(Date.now() - 60_000).toISOString(),
+      cache: { shared: true, bytes, capacityBytes: 10e9, hits: 1, misses: 0, evictions: 0, protectedBytes: 0 },
+      throughput: { limited: false, bytesPerSecondByClass: { anonymous: 0, signedIn: 0, catalogue: 0 } },
+      limited: 0,
+      blocked: 0,
+      blocks: [],
+      operation: { disabled: null, running: 0 },
+    });
+    const state = bastionState(
+      { contacts, status: [shared('eu-1', 7e9), shared('eu-2', 7e9), shared('us-1', 5e9)] },
+      Date.now(),
+    )!;
+    expect([state.cacheBytes, state.capacityBytes]).toEqual([12e9, 20e9]);
   });
 
   it('R-UI-240 W-39 the tokens: none, none expires, the next expiry, soon, expired', () => {
@@ -1425,7 +1708,7 @@ describe("A Bastion's replicas and tokens, one line each (R-UI-240)", () => {
     expect(await seriousViolations(root)).toEqual([]);
   });
 
-  it('R-UI-240 W-39 a silent Bastion warns while it is enabled and says its last contact while disabled; two base URLs warn', async () => {
+  it('R-UI-240 W-41 a silent Bastion warns while it is enabled and says its last contact while disabled; a pair of deployments is grouped and does not warn', async () => {
     const old = (replica: string, minutes: number, over: Partial<Bastion['contacts'][number]> = {}) =>
       sampleBastionContact({ replica, contactAt: inDays(-minutes / 1440), ...over });
     const { root } = await renderScreen(BastionList, {
@@ -1442,7 +1725,13 @@ describe("A Bastion's replicas and tokens, one line each (R-UI-240)", () => {
     expect(note('standby').classList).not.toContain('warning');
     expect(text(note('standby'))).toBe('Last contact 20 minutes ago');
     expect(toggleOf(section(root, 'standby', 'replicas')).getAttribute('aria-expanded')).toBe('false');
-    expect(text(note('edge'))).toBe('warningThe replicas report different base URLs.');
+    // Two deployments: their hosts in the head, one muted line, a group row per deployment.
+    expect(text(note('edge'))).toBe('2 addresses · last contact 1 minute ago · version 0.15.0');
+    expect(text(card(root, 'edge').querySelector('[data-testid="bastion-hosts"]')!)).toBe('other.example.com, packages.example.com');
+    expect([...section(root, 'edge', 'replicas').querySelectorAll('[data-testid="bastion-deployment"]')].map((g) => text(g))).toEqual([
+      'other.example.com · 1 replica',
+      'packages.example.com · 1 replica',
+    ]);
   });
 
   it('R-UI-240 W-39 a token expiring within 30 days warns with its name and one time, the declared one by the screen\'s name', async () => {

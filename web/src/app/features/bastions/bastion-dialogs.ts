@@ -104,14 +104,19 @@ export interface BastionTokenDraft {
   readonly days: string;
 }
 
-/** What the token dialog is opened with: the registration the token is for, and a draft to fill it with. */
+/**
+ * What the token dialog is opened with: the registration the token is for, whether it rotates a token the registration has (Q-UI-1642:
+ * **Rotate token**, a new token beside the old one) or issues its first, and a draft to fill it with.
+ */
 export interface BastionTokenDialogData {
   readonly name: string;
+  readonly rotate?: boolean;
   readonly draft?: BastionTokenDraft;
 }
 
 /**
- * "Issue token" for one registration (R-BAS-004, R-BAS-006). The lifetime is a number of days; empty
+ * "Issue token" for one registration (R-BAS-004, R-BAS-006), or **Rotate token** once it has one (Q-UI-1642): the same request, worded
+ * as a new token beside the old one for the overlap. The lifetime is a number of days; empty
  * takes the installation's default (`auth.tokens.bst.default_ttl`). The secret comes back to the card,
  * which shows it once (R-UI-043). A repeated request whose first answer was lost answers
  * `token_already_issued`: the token whose value was lost is revoked and the request is made again with a
@@ -123,13 +128,24 @@ export interface BastionTokenDialogData {
   selector: 'quader-bastion-token-dialog',
   imports: [Busy, DialogTitle, DialogClose, ErrorNotice, TextField],
   template: `
-    <h2 quaderDialogTitle i18n="@@bastion-token.title">Issue a token for the Bastion</h2>
+    @if (data.rotate) {
+      <h2 quaderDialogTitle i18n="@@bastion.token.rotate-title">Rotate the token of <span translate="no">{{ data.name }}</span></h2>
+    } @else {
+      <h2 quaderDialogTitle i18n="@@bastion-token.title">Issue a token for the Bastion</h2>
+    }
     <form (submit)="submit($event)" novalidate>
       <div class="dialog-body">
-        <p class="subject" translate="no">{{ data.name }}</p>
-        <p i18n="@@bastion-token.text">
-          The token goes into the Secret of the Bastion's chart. It is shown once, when you create it.
-        </p>
+        @if (data.rotate) {
+          <p i18n="@@bastion.token.rotate-text">
+            The new token works beside the old one. Put it into the Bastion's Secret, and invalidate the old one once the new one shows a
+            recent Last used.
+          </p>
+        } @else {
+          <p class="subject" translate="no">{{ data.name }}</p>
+          <p i18n="@@bastion-token.text">
+            The token goes into the Secret of the Bastion's chart. It is shown once, when you create it.
+          </p>
+        }
         @if (error(); as e) {
           <quader-error-notice [error]="e" />
         }
@@ -155,7 +171,13 @@ export interface BastionTokenDialogData {
       </div>
       <div class="dialog-actions">
         <button class="btn btn-tertiary" type="button" quaderDialogClose i18n="@@bastion-token.cancel">Cancel</button>
-        <button class="btn btn-confirm" type="submit" [disabled]="busy()" [quaderBusy]="busy()" i18n="@@bastion-token.submit">Issue token</button>
+        <button class="btn btn-confirm" type="submit" [disabled]="busy()" [quaderBusy]="busy()">
+          @if (data.rotate) {
+            <ng-container i18n="@@bastion.token.rotate">Rotate token</ng-container>
+          } @else {
+            <ng-container i18n="@@bastion-token.submit">Issue token</ng-container>
+          }
+        </button>
       </div>
     </form>
   `,
@@ -223,7 +245,7 @@ export class BastionTokenDialog {
     } catch (e) {
       const lost = e instanceof ApiError && e.code === 'token_already_issued' ? e.problem?.['tokenId'] : null;
       if (typeof lost !== 'string') throw e;
-      await this.api.revokeToken(this.data.name, lost);
+      await this.api.invalidateToken(this.data.name, lost);
       this.key = newIdempotencyKey();
       return this.api.createToken(this.data.name, body, this.key);
     }

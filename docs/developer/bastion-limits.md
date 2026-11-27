@@ -307,6 +307,16 @@ At most four builders at once (rule 10 of the project plan). The waves are the o
   theirs, and at its end the card's **Created** (`[details-end]`). The card (`bastion-card.ts`, Q-UI-1622, Q-UI-1623, Q-UI-1629) has a
   head with the state, the mark **Helm configuration** (a lock and the words) and the actions, and ends with the closed sections **Replicas** and **Tokens**,
   whose line is `contactHealth` and `tokenHealth` of `bastion-state.ts` (`tokenExpiry` and `BASTION_TOKEN_WARN_DAYS` moved there too).
+- **Reworked by W-41 C1** (2026-11-27, R-UI-240, Q-UI-1640 to Q-UI-1643, bastion.md R-BAS-133, R-BAS-131): the card folds to its head
+  (`open`, a `linkedSignal` of `cardWarns` in [bastion-fold.ts](../../web/src/app/features/bastions/bastion-fold.ts), which also holds
+  `BastionFold`, the viewer's choices in local storage; the list passes `single` and reads fast while a card is `disabling` or
+  `disableUnconfirmed`). The head names the hosts of `headHosts`, the server's `state` as `stateBadge` with its tooltip, and the Bastion's
+  own acts: **Disable…** opens [bastion-disable-dialog.ts](../../web/src/app/features/bastions/bastion-disable-dialog.ts), **Disable
+  hard…** a confirmation, **Delete** of a declared registration is `[quaderUnavailable]`. **Tokens** holds **Issue token** or **Rotate
+  token** (the token dialog's `rotate`) and **Invalidate** (`invalidateToken`). **Replicas** groups its rows by `deployments` (a base
+  URL each); `contactHealth` reports `deployments` and `silentDeployments` instead of a base-URL warning, and `bastionState` takes each
+  deployment's shared bucket once and adds them. **Now** is one line of parts; **Hide repositories** is `bastion-switches.ts` with
+  `part="details"`, projected first into **Details** (`[details-start]`).
 
 ### E13 · Egress addresses on the registration
 

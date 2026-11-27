@@ -62,6 +62,8 @@ function report(replica: string, blocks: readonly Json[], over: Json = {}): Json
     limited: 2,
     blocked: blocks.length,
     blocks,
+    // Working (R-BAS-133): no disable applied, nothing to confirm.
+    operation: { disabled: null, running: 0 },
     ...over,
   };
 }
@@ -86,9 +88,11 @@ function registrations(frankfurtOn: boolean): { items: Json[] } {
         id: '0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a40',
         name: 'dmz-frankfurt-edge',
         description: 'The DMZ of the Frankfurt data centre, for the build agents of our partners',
-        enabled: true,
+        disabled: null,
+        state: 'connected',
+        running: 0,
         declared: null,
-        switches: { handover: frankfurtOn, gui: true, docs: true },
+        switches: { handover: frankfurtOn, gui: true, docs: true, hideRepositories: false },
         // What the main installation last built for its web interface (R-BAS-104): built a few minutes ago in the walks of the direct
         // reads, nothing while the main installation admits no request without a credential in the walk of the limits.
         catalogue: frankfurtOn
@@ -131,13 +135,15 @@ function registrations(frankfurtOn: boolean): { items: Json[] } {
         id: '0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a41',
         name: 'partners',
         description: 'The partner network',
-        enabled: true,
+        disabled: null,
+        state: 'connected',
+        running: 0,
         // Declared in the Helm values (R-BAS-127, Q-UI-1497 to Q-UI-1499): the lock line with the Secret, no Delete, the networks in
         // their fields and the warning of its replica's unlisted address with its Add, unavailable (R-UI-270), the declared token
         // without an expiry and without Revoke beside one issued on the screen.
         declared: { since: at(-2), secretName: 'quader-bastion-token' },
         // The web interface on, but the address its replica reported is not listed: the builder stops and says why (R-BAS-104).
-        switches: { handover: false, gui: true, docs: false },
+        switches: { handover: false, gui: true, docs: false, hideRepositories: false },
         catalogue: { outcome: 'stopped', reason: 'bastion_base_url_unknown', checkedAt: at(-3 / 1440), builtAt: null },
         // A new registration's limits, and no replica that reported its state (R-UI-240).
         limits: limits(),
@@ -156,11 +162,13 @@ function registrations(frankfurtOn: boolean): { items: Json[] } {
         id: '0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a42',
         name: 'dmz-hamburg',
         description: '',
-        enabled: true,
+        disabled: null,
+        state: 'noContact',
+        running: 0,
         declared: null,
         // Registered a moment ago and never contacted: no token, no replica, no report, the web interface off, nothing built (Q-UI-1616:
         // its section in plain view all the same).
-        switches: { handover: false, gui: false, docs: false },
+        switches: { handover: false, gui: false, docs: false, hideRepositories: false },
         catalogue: null,
         limits: limits(),
         status: [],
@@ -173,11 +181,13 @@ function registrations(frankfurtOn: boolean): { items: Json[] } {
         id: '0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a43',
         name: 'dmz-munich',
         description: 'The DMZ of the Munich office',
-        enabled: true,
+        disabled: null,
+        state: 'connected',
+        running: 0,
         declared: null,
         // Healthy (W-39's 2.2): one replica a minute ago, its address listed, a token a year away, the web interface built, the direct
         // reads off, Internet in Enforce at 200 MB/s: every section closed and one line.
-        switches: { handover: false, gui: true, docs: true },
+        switches: { handover: false, gui: true, docs: true, hideRepositories: false },
         catalogue: { outcome: 'built', reason: null, checkedAt: at(-3 / 1440), builtAt: at(-60 / 1440) },
         limits: limits(),
         status: [report('quader-bastion-dmz-munich-5c7d9f8b6-q7w3n', [], { limited: 0, throughput: { limited: false, bytesPerSecondByClass: { anonymous: 9_000_000, signedIn: 32_000_000, catalogue: 0 } } })],
@@ -419,6 +429,142 @@ export async function* bastionLimits(page: Page): AsyncGenerator<string> {
   await page.keyboard.press('Escape');
   await page.unroute('**/api/v1/bastions');
   await page.unroute('**/api/v1/bastions/partners/limits/assignments**');
+}
+
+/**
+ * A healthy registration (W-41's 3.1): its replicas heard a minute ago from the networks it lists, an edge above its flood figures, its
+ * web interface built, a token a year away, its direct reads off, Internet in Enforce at 200 MB/s. `over` changes what a state needs.
+ */
+function healthy(name: string, id: string, contacts: Json[], over: Json = {}): Json {
+  return {
+    id,
+    name,
+    description: '',
+    disabled: null,
+    state: 'connected',
+    running: 0,
+    declared: null,
+    switches: { handover: false, gui: true, docs: true, hideRepositories: false },
+    catalogue: { outcome: 'built', reason: null, checkedAt: at(-1 / 1440), builtAt: at(-3 / 1440) },
+    limits: limits(),
+    status: [],
+    egress: ['192.0.2.64/28', '198.51.100.32/28', '203.0.113.0/24'],
+    createdAt: at(-90),
+    tokens: [token(`${id}-token`, `${name} 2027`, 'qdr_bst_T4kd', 30, 365)],
+    contacts,
+    ...over,
+  };
+}
+
+/** What a replica of a deployment on the bucket backend reports: its deployment's bucket, which each of its replicas reports alike. */
+function bucketReport(replica: string, bytesPerSecond: number, operation: Json = { disabled: null, running: 0 }): Json {
+  return report(replica, [], {
+    cache: { shared: true, bytes: 3_500_000_000, capacityBytes: 5_000_000_000, hits: 9_700, misses: 300, evictions: 12, protectedBytes: 2_250_000_000 },
+    throughput: { limited: false, bytesPerSecondByClass: { anonymous: bytesPerSecond / 4, signedIn: (bytesPerSecond * 3) / 4, catalogue: 0 } },
+    limited: 0,
+    operation,
+  });
+}
+
+/**
+ * The page of several Bastions (W-41, R-UI-240, Q-UI-1640): `artifacts`, healthy, a pair of deployments under one token (two replicas
+ * behind pkgs-eu.example.com, one behind pkgs-us.example.com, each with its bucket: the card adds the two, 7.0 of 10.0 GB); `dmz-bonn`,
+ * disabled softly three minutes ago and not confirmed (its replicas silent since before), which opens by itself; `dmz-cologne`, disabled
+ * hard two hours ago and confirmed; `dmz-leipzig`, disabling softly with three downloads still running; `partners`, declared in the Helm
+ * configuration, healthy: **Delete** unavailable with its reason.
+ */
+function stateRegistrations(): { items: Json[] } {
+  const soft = (minutes: number): Json => ({ mode: 'soft', at: at(-minutes / 1440) });
+  return {
+    items: [
+      healthy(
+        'artifacts',
+        '0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a60',
+        [
+          contact('quader-bastion-6f8b9c7d4f-x2k4q', '192.0.2.70', 'https://pkgs-eu.example.com', 1),
+          contact('quader-bastion-6f8b9c7d4f-m8v2j', '192.0.2.71', 'https://pkgs-eu.example.com', 2),
+          contact('quader-bastion-5d7c8b6f9-q7w3n', '198.51.100.40', 'https://pkgs-us.example.com', 1),
+        ],
+        {
+          description: 'Packages for our customers and partners',
+          status: [
+            bucketReport('quader-bastion-6f8b9c7d4f-x2k4q', 15_000_000),
+            bucketReport('quader-bastion-6f8b9c7d4f-m8v2j', 14_000_000),
+            bucketReport('quader-bastion-5d7c8b6f9-q7w3n', 12_000_000),
+          ],
+          tokens: [
+            token('0192f0d1-1c2a-7c3e-8a51-6f7d2b9c4e61', 'artifacts 2027', 'qdr_bst_T4kd', 30, 365),
+            token('0192f0d1-1c2a-7c3e-8a51-6f7d2b9c4e62', 'artifacts 2027, us', 'qdr_bst_W8mr', 28, 367),
+          ],
+        },
+      ),
+      healthy('dmz-bonn', '0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a61', [contact('quader-bastion-4c6d8e9f7-b2n5k', '192.0.2.72', 'https://packages.dmz-bonn.example.com', 7)], {
+        disabled: soft(3),
+        state: 'disableUnconfirmed',
+      }),
+      healthy('dmz-cologne', '0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a62', [contact('quader-bastion-8e9f7c6d5-c4l7p', '192.0.2.73', 'https://packages.dmz-cologne.example.com', 0.1)], {
+        disabled: { mode: 'hard', at: at(-2 / 24) },
+        state: 'disabled',
+        status: [bucketReport('quader-bastion-8e9f7c6d5-c4l7p', 0, { disabled: 'hard', running: 0 })],
+      }),
+      healthy('dmz-leipzig', '0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a63', [contact('quader-bastion-9f7e6d5c4-l3p8z', '192.0.2.74', 'https://packages.dmz-leipzig.example.com', 0.1)], {
+        disabled: soft(0.7),
+        state: 'disabling',
+        running: 3,
+        status: [bucketReport('quader-bastion-9f7e6d5c4-l3p8z', 9_000_000, { disabled: 'soft', running: 3 })],
+      }),
+      healthy('partners', '0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a64', [contact('quader-bastion-7d9c5b8f6-p4r7t', '203.0.113.7', 'https://pkgs.partner.example.com', 1)], {
+        description: 'The partner network',
+        declared: { since: at(-2), secretName: 'quader-bastion-token' },
+        tokens: [{ ...token('0192f0d1-1c2a-7c3e-8a51-6f7d2b9c4e64', 'Bastion partners (declared in the configuration)', 'qdr_bst_Lm4c', 2, 0), expiresAt: null, declared: true }],
+      }),
+    ],
+  };
+}
+
+/**
+ * **Admin area › Bastions** with several Bastions (W-41, R-UI-240): the page as it opens (every card folded to its head but `dmz-bonn`,
+ * whose disable is not confirmed); `artifacts` opened, the healthy card whose default lines W-41's 3.1 counts; its **Disable…** dialog with
+ * the two ways, cancelled; the declared `partners`' **Delete** tapped, its reason pinned (R-UI-270). Locators are the markup's: the walk
+ * renders in German too. The viewer's folds are cleared first, so every run opens on the page's rule. Nothing is saved.
+ */
+export async function* bastionStates(page: Page): AsyncGenerator<string> {
+  const clearFolds = (): Promise<void> =>
+    page.evaluate(() => {
+      for (const k of Object.keys(localStorage)) if (k.startsWith('quader.admin.bastions.open.')) localStorage.removeItem(k);
+    });
+  await clearFolds();
+  await page.route('**/api/v1/bastions', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(stateRegistrations()) }),
+  );
+  await page.reload();
+  await page.waitForLoadState('networkidle');
+  const cards = page.locator('main quader-bastion-card');
+  await expect(cards).toHaveCount(stateRegistrations().items.length);
+  const named = (name: string) => cards.filter({ has: page.locator('[data-testid="bastion-name"]', { hasText: new RegExp(`^${name}$`) }) });
+  const fold = (name: string) => named(name).locator('.head button.fold');
+  await expect(fold('artifacts')).toHaveAttribute('aria-expanded', 'false');
+  await expect(fold('dmz-bonn')).toHaveAttribute('aria-expanded', 'true');
+  yield '';
+  await fold('artifacts').click();
+  await expect(fold('artifacts')).toHaveAttribute('aria-expanded', 'true');
+  await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
+  yield 'open';
+  await named('artifacts').locator('.head .row-actions button').first().click();
+  const dialog = page.locator('quader-bastion-disable-dialog');
+  await expect(dialog.locator('input[type="radio"]')).toHaveCount(2);
+  yield 'disable';
+  await dialog.locator('.dialog-actions button').first().click();
+  await expect(dialog).toHaveCount(0);
+  const remove = named('partners').locator('[data-testid="bastion-delete"]');
+  await remove.scrollIntoViewIfNeeded();
+  // Playwright holds an aria-disabled control for not enabled and waits; the tap a person makes reaches it.
+  await remove.click({ force: true });
+  await expect(page.locator('.cdk-overlay-container quader-tooltip')).toBeVisible();
+  yield 'declared';
+  await page.keyboard.press('Escape');
+  await clearFolds();
+  await page.unroute('**/api/v1/bastions');
 }
 
 /**

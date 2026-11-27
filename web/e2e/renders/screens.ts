@@ -70,7 +70,7 @@ import {
   severalConnections,
   twoForThePage,
 } from './storage';
-import { auditDataKeys, bastionLimits, bastionLimitsPage, bastionsHandover, bastionsRead, forbiddenLink, seededBastion } from './bastions';
+import { auditDataKeys, bastionLimits, bastionLimitsPage, bastionStates, bastionsHandover, bastionsRead, forbiddenLink, seededBastion } from './bastions';
 import { auditRows } from './audit-rows';
 import { downloadsWalk } from './downloads';
 import { cachedDeb, cachedNpm } from './cached';
@@ -3969,6 +3969,8 @@ export const screens: readonly Screen[] = [
   // A Bastion's limits, throughput, switches and state on its card, and its limits page (R-UI-240, R-UI-241), answered in the browser and
   // seeded (bastions.ts); in German too.
   { id: 'admin-bastions-limits', path: '/ui/admin/bastions', kinds: admins, walk: bastionLimits, de: true },
+  // Several Bastions, each a card that folds; the head's state, the disable's dialog and a declared registration's Delete (W-41, R-UI-240).
+  { id: 'admin-bastions-states', path: '/ui/admin/bastions', kinds: admins, walk: bastionStates, de: true },
   {
     id: 'admin-bastion-limits',
     path: `/ui/admin/bastions/${seededBastion.name}/limits`,

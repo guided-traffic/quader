@@ -13450,10 +13450,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-840 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+844 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 840 questions</summary>
+<summary>Q-UI: 844 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -14297,6 +14297,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1634](spec/api-and-ui.md#q-ui-1634--a-rows-command-is-resolved-when-its-panel-opens) | A row's command is resolved when its panel opens | Decided by the development agent on 2026-11-27 | (b) Read the version's details when the panel first opens and decide with the head's rule (`versionCommandFacts`) | — |
 | [Q-UI-1635](spec/api-and-ui.md#q-ui-1635--the-order-of-a-panels-repositories-is-unchanged) | The order of a panel's repositories is unchanged | Decided by the development agent on 2026-11-27 | (a) `clientRepositories` as it is | — |
 | [Q-UI-1636](spec/api-and-ui.md#q-ui-1636--a-control-that-cannot-act-shows-greyed-out-with-its-reason-as-its-tooltip-never-a-paragraph) | A control that cannot act shows greyed out, with its reason as its tooltip; never a paragraph | Decided by the development agent on 2026-11-27 | (a) A directive on the control | — |
+| [Q-UI-1640](spec/api-and-ui.md#q-ui-1640--a-bastions-card-folds-to-its-head-the-viewers-choice-is-kept-in-the-browser) | A Bastion's card folds to its head; the viewer's choice is kept in the browser | Decided by the development agent on 2026-11-27 | (a) Each card folds to its head (chevron before the name; the head keeps its badge and acts); open where the page holds one Bastion, folded where it holds several, except a card that shows a warning; the viewer's choice per Bastion kept in the browser, and a change *into* a warning opens a card whatever was kept | — |
+| [Q-UI-1641](spec/api-and-ui.md#q-ui-1641--a-bastions-head-names-its-host-in-grey-one-state-badge-and-its-own-acts-at-the-right) | A Bastion's head names its host in grey, one state badge, and its own acts at the right | Decided by the development agent on 2026-11-27 | (a) The host of each base URL the replicas reported within 24 hours, the scheme and a default port left out, joined by a dot, in the muted colour; none before the first contact; the state of [Q-BAS-511](spec/bastion.md#q-bas-511--the-bastions-state-is-one-of-six-computed-by-the-main-installation) as one badge; the Bastion's acts **Disable…**, **Enable**, **Disable hard…**, **Delete** at the head's end | — |
+| [Q-UI-1642](spec/api-and-ui.md#q-ui-1642--the-tokens-acts-say-what-they-do-and-stand-among-the-tokens) | The token's acts say what they do, and stand among the tokens | Decided by the development agent on 2026-11-27 | (a) In **Tokens**: **Issue token** while the registration has none (the plain line's act), **Rotate token** / **Token erneuern** once it has one, and **Invalidate** / **Ungültig machen** per token; the head holds none of them | — |
+| [Q-UI-1643](spec/api-and-ui.md#q-ui-1643--a-pair-of-deployments-under-one-registration-is-legitimate-on-the-card) | A pair of deployments under one registration is legitimate on the card | Decided by the development agent on 2026-11-27 | (a) A *deployment* is the replicas that report one base URL: the head names each host; **Replicas** groups its rows by deployment ("pkgs-eu.example.com · 2 replicas", no group row for one); the base-URL warning goes; kept or new: the replicas heard in 5 minutes run more than one version, and a deployment heard within 24 hours but not in 5 minutes beside a current one ("pkgs-us.example.com: no contact for 12 minutes."); **Now** adds each deployment's bucket once | — |
 
 </details>
 

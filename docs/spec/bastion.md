@@ -7551,8 +7551,9 @@ installation's address space ([Q-BAS-504](#q-bas-504--hide-repositories-hides-ev
 - **Still named, and why** (Q-BAS-504): the key inside a command, a download address, Set up client's snippets and address (a client needs
   them); a generic repository's files under their root folder, which is the key as every download address of them has it; the data a
   browser reads keep a version's holders with their keys and classes, which the shared views' rules read.
-- **On the card** (api-and-ui.md R-UI-240): the switch **Hide repositories** behind the closed **Details** of the section **Web
-  interface**.
+- **On the card** (api-and-ui.md R-UI-240): the switch **Hide repositories**, the first row of the card's closed **Details**, under the
+  group's heading **Web interface** (W-41's plan, D24: not a fold of its own in the plain view, so the default card gains no line); its
+  sentence is the row's help.
 
 *Built on 2026-11-27 (W-40's P1):* the column ([00157_bastion_hide_repositories.sql](../../internal/meta/postgres/migrations/00157_bastion_hide_repositories.sql)),
 the statements of [bastion_registration.sql](../../internal/meta/postgres/queries/bastion_registration.sql), the service's `Patch` and
@@ -7574,8 +7575,9 @@ the statements of [bastion_registration.sql](../../internal/meta/postgres/querie
 *Built on 2026-11-27 (W-40's P4b):* what the shared views leave out while the token `REPOSITORIES_SHOWN` is false (the column and the fact
 **Repositories** of a package's page, the table of a version's Details, the select of a command's panel, a findings card's heading and its
 table's caption, the documentation's line "Repository: …", the keys of a delivery note; api-and-ui.md R-UI-269,
-[repositories-shown.ts](../../web/src/app/core/repositories-shown.ts)). *Not built:* the Bastion's binding of the token and the pages'
-flat view (W-40's P5) and the card's switch (W-40's P6).
+[repositories-shown.ts](../../web/src/app/core/repositories-shown.ts)). *Built on 2026-11-27 (W-41's C1, W-40's P6 absorbed):* the card's
+switch, `part="details"` of [bastion-switches.ts](../../web/src/app/features/bastions/bastion-switches.ts) projected first into the
+limits' **Details**. *Not built:* the Bastion's binding of the token and the pages' flat view (W-40's P5).
 
 Acceptance criteria:
 
@@ -7733,8 +7735,12 @@ Priority: **MVP** · Covers: DIST-025
 [recognize.go](../../internal/bastionmain/recognize.go) with [inflight.go](../../internal/bastionmain/inflight.go); the wire's
 `DisableMode`, `Operation` and `CodeDisabled` of [iface](../../internal/bastion/iface/configuration.go); the API of
 [bastion_registrations_api.go](../../internal/api/v1/bastion_registrations_api.go); the commands of
-[admin_bastion.go](../../cmd/quader/admin_bastion.go). The card reads `disabled` and disables soft; its head, the hard way and the
-state's badge are W-41's C1.
+[admin_bastion.go](../../cmd/quader/admin_bastion.go). *Built on 2026-11-27 (W-41's C1), the card:* the state's badge with its tooltip,
+"3 downloads still running" after **Disabling**, **Disable…** with its dialog of the two ways, **Disable hard…** while a soft disable
+drains, **Enable**, and **Invalidate** on every token, the declared one included (api-and-ui.md R-UI-240,
+[bastion-card.ts](../../web/src/app/features/bastions/bastion-card.ts),
+[bastion-disable-dialog.ts](../../web/src/app/features/bastions/bastion-disable-dialog.ts)); the list reads every few seconds while a
+card is disabling or not confirmed.
 
 Acceptance criteria:
 
@@ -15937,6 +15943,10 @@ walkthrough.
 
 **Choice:** (b), named **Hide repositories**, on = hidden: off, the default, is the zero value of the wire's `hideRepositories`, so no
 default can go missing. **Applied in the spec:** R-BAS-131, api-and-ui.md R-UI-240 (with W-40's P6).
+
+*Amended on 2026-11-27 (W-41's plan, D24, built by C1):* the switch is the first row of the card's **Details** (of its limits), under the
+group's heading **Web interface**, not a closed fold of its own beside the main settings: the default card gains no line, and the limits'
+**Details** note reads "Web interface, flood protection, addresses, rules".
 
 ### Q-BAS-506 · The project view raises the interface to version 12 and the Bastion's state record to form 3
 

@@ -10411,20 +10411,41 @@ demand ([Q-UI-1480](#q-ui-1480--a-bastions-card-shows-the-preset-the-mode-and-th
 Info-Zeichen", "sortiere neu", "Haupt-Settings"):* the card reads top to bottom
 ([Q-UI-1620](#q-ui-1620--a-bastions-card-reads-head-main-settings-limits-details-replicas-tokens)):
 
-- **Head**: the name, the state (**Enabled** or **Disabled**), for a registration of the Helm configuration the mark **Helm
-  configuration** with a lock and its help ("Its description, its addresses and one token are set in bastions.declared of the Helm
-  configuration and changed there. To delete the Bastion, remove it there first.",
-  [Q-UI-1629](#q-ui-1629--a-declared-bastion-registration-shows-a-badge-helm-configuration-with-its-help)), and the actions at the
-  head's end (**Issue token**, **Disable** or **Enable**, **Delete**); under it the description, one muted line. Under the head, only when
-  there is one: an action's refusal, and the token shown once. **Created** is the last line of **Details**.
+*Rewritten on 2026-11-27 (W-41's C1, the owner: "Die aktuelle komplette Übersicht über artifacts sollte sich einklappen lassen. Im Kopf
+dieser Karte sollte der Name des Bastion stehen, … gefolgt von der Ingress-Domain des Bastion in einem Grau", "Es muss eine Möglichkeit
+geben, … den Bastion sekundenschnell zu deaktivieren", "Ich weiß nicht wie du es schaffst, dass jede Seite immer so gnadenlos überladen
+aussieht, wenn du mit ihr fertig bist."):* the page is a list of cards that fold to their head, and the head says the Bastion's state.
+
+- **The fold** ([Q-UI-1640](#q-ui-1640--a-bastions-card-folds-to-its-head-the-viewers-choice-is-kept-in-the-browser)): each card folds to
+  its head with the chevron before the name. A card opens by itself where the page holds one Bastion and while it shows a warning (the
+  state **Contact lost** or **Disable not confirmed**, a warning line of a row, of **Limits**, of **Replicas** or of **Tokens**); where the
+  page holds several, the others are folded. The viewer's choice is kept per Bastion in the browser; a change *into* a warning opens a card
+  whatever was kept; a live read keeps the viewer's choice, and the screen never folds a card. A Bastion just created opens.
+- **Head** ([Q-UI-1641](#q-ui-1641--a-bastions-head-names-its-host-in-grey-one-state-badge-and-its-own-acts-at-the-right)): the fold's
+  chevron and the name; the host of each deployment in the muted colour (each base URL its replicas reported within the last 24 hours, the
+  host alone, "pkgs-eu.example.com · pkgs-us.example.com", each on a line of its own at 390 px; none before the first contact); the state
+  as one badge ([bastion.md](bastion.md) [Q-BAS-511](bastion.md#q-bas-511--the-bastions-state-is-one-of-six-computed-by-the-main-installation)):
+  **Connected** (green, the one positive state), **No contact yet**, **Contact lost** (warning; its tooltip "No replica has made contact
+  for 12 minutes."), **Disabling** with "3 downloads still running" muted after it, **Disabled** (its tooltip "Soft, since …" or "Hard,
+  since …"), **Disable not confirmed** (warning; its tooltip says the main installation refuses its requests and its replicas serve from
+  their cache until their next contact); for a registration of the Helm configuration the mark **Helm configuration** with a lock and its
+  help ("Its description, its addresses and its token are set in bastions.declared of the Helm configuration and changed there.",
+  [Q-UI-1629](#q-ui-1629--a-declared-bastion-registration-shows-a-badge-helm-configuration-with-its-help)); and at the head's end the
+  Bastion's own acts: **Disable…** (its dialog asks **Soft**, "No new requests. Downloads that have started finish.", or **Hard**, "No new
+  requests, and running downloads are cut.", [bastion.md](bastion.md) R-BAS-133), or while disabled **Enable** (the primary act) and,
+  while a soft disable drains, **Disable hard…** naming the downloads it cuts; then **Delete**, which a declared registration offers
+  unavailable with its reason as its tooltip (R-UI-270). The token's acts are not the head's. Under the head, only when there is one,
+  also while folded: an act's refusal, and the token shown once.
+- **Under the head**, folding with the card: the description, one muted line; **Created** is the last line of **Details**.
 - **Main settings**, rows of name and control ([Q-UI-1621](#q-ui-1621--a-bastions-main-settings-are-rows-of-name-and-control-a-reader-reads-the-word),
   `<quader-setting>` of R-UI-267), each with its help behind the info sign after its name: **Web interface** and **Documentation**
   (W-35's switches, [bastion.md](bastion.md) R-BAS-102, in the card's plain view by
   [Q-UI-1616](#q-ui-1616--a-bastions-web-interface-is-a-section-of-the-cards-plain-view-not-a-detail-of-its-limits)), then **Direct
-  reads from the object store** (R-BAS-071). Visible stays, one muted line under the control: what a public remote repository shows
-  through the web interface, and, while a connection is encrypted, that the direct reads hand the Bastion each file's key (R-UI-267's
-  "what becomes public or leaves for the DMZ"). After the web interface's switch its word and the time of the last build ("Last built 3
-  minutes ago"), "Not built yet", or "Built once the Bastion has made contact" while no replica made contact.
+  reads from the object store** (R-BAS-071). Visible stays, one muted line under the control, while a connection is encrypted: that the
+  direct reads hand the Bastion each file's key (R-UI-267's "what leaves for the DMZ"). What a public remote's page lists through the web
+  interface is the row's help since W-41: the act that sends a remote's cache out through a Bastion is its repository's choice. After the
+  web interface's switch its word and the time of the last build ("Last built 3 minutes ago"), "Not built yet", or "Built once the Bastion
+  has made contact" while no replica made contact.
 - **Limits** (`h3`): first the section's warnings, then the rows **Preset** (a segmented control **Internet**, **Partner network**,
   **Internal**, **Custom** shown and not offered once a kind rule or a flood figure differs; a change opens the dialog of
   [Q-UI-1481](#q-ui-1481--a-preset-is-applied-after-a-dialog-that-names-what-it-replaces)), **Mode** (the word **Enforce** or **Audit**
@@ -10433,30 +10454,44 @@ Info-Zeichen", "sortiere neu", "Haupt-Settings"):* the card reads top to bottom
   200 by default, [bastion.md](bastion.md) Q-BAS-455, emptied "Unlimited", with **Save changes**; under it the meter of the throughput
   against it, warning and danger colours, never green) and **Now** (from the replicas' reported status of the last 5 minutes, R-LIM-045,
   live with R-UI-213's `live()`: "Cache 14.0 of 20.0 GB · 97 % hits · 9.0 GB protected", the read rate "41 MB/s from the main
-  installation" only where no maximum is set, and "4 callers limited · 1 address blocked" linking to R-UI-241's **Blocks**, or "No report
-  in the last 5 minutes").
-- **Details** (a closed disclosure with the note "Flood protection, addresses, rules"): the flood figures per address (anonymous,
+  installation" only where no maximum is set, and "4 callers limited · 1 address blocked" linking to R-UI-241's **Blocks**, one line of
+  parts that breaks between two parts and never inside one (W-41), or "No report in the last 5 minutes"). The cache's figures add each
+  deployment's bucket once ([Q-UI-1643](#q-ui-1643--a-pair-of-deployments-under-one-registration-is-legitimate-on-the-card)).
+- **Details** (a closed disclosure with the note "Web interface, flood protection, addresses, rules"): first the group **Web interface**
+  with the row **Hide repositories** ([bastion.md](bastion.md) R-BAS-131, its help "Visitors see the projects and their packages, not the
+  repositories that hold them. Commands and download addresses still name a repository's key: clients need it."); the flood figures per address (anonymous,
   signed-in and pages: requests per second, burst, misses a minute; the failed-authentication timeout; the blocks; the exempt networks,
   their format the field's hint and their meaning its help), the slots to the main installation, the anonymous ceiling, the throughput's
   anonymous share and GB per hour per class (each group's help behind the sign beside its heading), the egress addresses (R-UI-243), and
   the link **Rules of this Bastion** to R-UI-241.
-- **Replicas** ([Q-UI-1622](#q-ui-1622--a-bastions-replicas-are-one-line-it-warns-when-the-bastion-is-silent-or-its-replicas-disagree)),
-  a closed section with the count of the replicas the server keeps and one line: "Last contact 1 minute ago · version 0.42.0", or a
-  warning, which opens the section by itself: "No replica has made contact for 20 minutes." (no replica heard in the last 5 minutes while
-  the registration is enabled; a disabled one says "Last contact …" muted), "The replicas run different versions: 0.42.0, 0.41.3.", "The
-  replicas report different base URLs." (each among the replicas heard in the last 5 minutes). Inside, the table **Replica** (the
-  address it connected from and "Version 0.42.0" under its name), **Last contact**, **Reported base URL**. Without a contact, "No replica
-  has made contact yet." in the section's place.
-- **Tokens** ([Q-UI-1623](#q-ui-1623--a-bastions-tokens-are-one-line-the-mark-says-expires-soon-without-a-number)), a closed section
-  with the count and one line: "The next expires in 12 months", "None expires", or a warning, which opens the section by itself:
-  "“partners 2026” expires in 3 weeks." (within 30 days), "“partners 2026” has expired.". Inside, the table **Token**, **Expires** (its
-  relative time and, within 30 days, the mark **Expires soon**, past it **Expired**), **Last used**, **Revoke**; the declared token is
-  named "Token of the Helm configuration" with "Secret quader-bastion-token" beside its hint. Without a token, "No token yet: issue one for
-  the Bastion's chart." in the section's place.
+- **Replicas** ([Q-UI-1622](#q-ui-1622--a-bastions-replicas-are-one-line-it-warns-when-the-bastion-is-silent-or-its-replicas-disagree),
+  [Q-UI-1643](#q-ui-1643--a-pair-of-deployments-under-one-registration-is-legitimate-on-the-card)), a closed section with the count of
+  the replicas the server keeps and one line: "Last contact 1 minute ago · version 0.42.0", for a pair of deployments "2 addresses · last
+  contact 1 minute ago · version 0.42.0", or a warning, which opens the section by itself: "No replica has made contact for 20 minutes."
+  (no replica heard in the last 5 minutes while the registration is not disabled; a disabled one says "Last contact …" muted), "The
+  replicas run different versions: 0.42.0, 0.41.3.", "pkgs-us.example.com: no contact for 12 minutes." (a deployment heard within 24
+  hours but not in the last 5 minutes beside a current one). Different base URLs are no warning: they are a pair of deployments. Inside,
+  the table **Replica** (the address it connected from and "Version 0.42.0" under its name) and **Last contact**, its rows grouped by
+  deployment under a row "pkgs-eu.example.com · 2 replicas" where there are several. Without a contact, "No replica has made contact yet."
+  in the section's place.
+- **Tokens** ([Q-UI-1623](#q-ui-1623--a-bastions-tokens-are-one-line-the-mark-says-expires-soon-without-a-number),
+  [Q-UI-1642](#q-ui-1642--the-tokens-acts-say-what-they-do-and-stand-among-the-tokens)), a closed section with the count and one line:
+  "The next expires in 12 months", "None expires", or a warning, which opens the section by itself: "“partners 2026” expires in 3 weeks."
+  (within 30 days), "“partners 2026” has expired.". Inside, **Rotate token** (a new token beside the old one for the overlap; unavailable
+  on a declared registration, its reason "Its token is set in bastions.declared of the Helm configuration: put a new value into its
+  Secret."), then the table **Token**, **Expires** (its relative time and, within 30 days, the mark **Expires soon**, past it
+  **Expired**), **Last used**, and **Invalidate** on every token, the declared one included (its dialog adds that the next rollout stops
+  at its migration until the Secret holds a new value). The declared token is named "Token of the Helm configuration" with "Secret
+  quader-bastion-token" beside its hint. Without a token, "No token yet." and **Issue token** in the section's place.
 - A section that turns into a warning opens by itself on that change; a live read never closes what the viewer opened, and the screen
   never closes a section.
 - **The list page**: the header **Bastions** with its one sentence, "A read-only cache of this installation for clients outside your
-  network." ([Q-UI-1627](#q-ui-1627--the-bastions-pages-paragraph-becomes-the-headers-one-sentence)), and **New Bastion**.
+  network." ([Q-UI-1627](#q-ui-1627--the-bastions-pages-paragraph-becomes-the-headers-one-sentence)), and **New Bastion**. It reads the
+  list every few seconds while a card is **Disabling** or **Disable not confirmed** (the badge turns to **Disabled** about a second after the
+  last download), every minute otherwise.
+- **What a healthy card shows** (W-41's count): opened, with no help pinned and no section open, the head, the description, the three main
+  settings, the heading **Limits** and its four rows with the meter, and the closed sections **Details**, **Replicas** and **Tokens**, one
+  line each; every sentence that explains stands behind a sign or a tooltip.
 - **Help behind the sign** (R-UI-267): what each row, group and list does; the help texts are those of W-39's plan, section 2.7. A
   sentence that only explains a setting is never a paragraph of the card.
 - **The warnings**, one line each in the warning colour with its icon, under what they concern
@@ -10503,6 +10538,23 @@ open state a `linkedSignal` of the warning that only a change into it sets true;
 (`[details-end]` of `<quader-bastion-limits>`); the page's sentence is the header's `description`
 ([bastion-list.ts](../../web/src/app/features/bastions/bastion-list.ts)). English and German.
 
+*Built on 2026-11-27 (W-41's C1):* the fold, the head and the token's acts in
+[bastion-card.ts](../../web/src/app/features/bastions/bastion-card.ts): the fold's button around the chevron and the name inside the
+`h2`, the region named by the name alone, the body a `.collapse-region` of the style guide; its open state a `linkedSignal` of
+`cardWarns` ([bastion-fold.ts](../../web/src/app/features/bastions/bastion-fold.ts)), first the viewer's choice of `BastionFold`
+(`quader.admin.bastions.open.<principal>` in local storage) or the page's rule (`single`), then opened only by a change into a warning;
+the hosts of `headHosts`, the replicas' groups of `deployments` and the cache figures per deployment of `bastionState`
+([bastion-state.ts](../../web/src/app/features/bastions/bastion-state.ts)); `stateBadge` for the server's `state` with its tooltip
+(`quaderTooltip`, pinned by a tap, the badge focusable only while it has one); the dialog **Disable…** of
+[bastion-disable-dialog.ts](../../web/src/app/features/bastions/bastion-disable-dialog.ts); **Delete** and **Rotate token** of a declared
+registration through `[quaderUnavailable]` (R-UI-270); the token dialog's **Rotate token** wording in
+[bastion-dialogs.ts](../../web/src/app/features/bastions/bastion-dialogs.ts); `setDisabled` and `invalidateToken` of
+[bastions-api.ts](../../web/src/app/api/bastions-api.ts). **Hide repositories** is `<quader-bastion-switches part="details">`
+([bastion-switches.ts](../../web/src/app/features/bastions/bastion-switches.ts)), projected first into **Details** (`[details-start]`
+of [bastion-limits.ts](../../web/src/app/features/bastions/bastion-limits.ts)); **Now**'s callers are the last part of its one line. The
+list passes `single` and reads fast while a card is disabling or unconfirmed, and opens a card just created
+([bastion-list.ts](../../web/src/app/features/bastions/bastion-list.ts)).
+
 Acceptance criteria:
 
 - Vitest ([bastions.spec.ts](../../web/src/app/features/bastions/bastions.spec.ts), "A Bastion's limits, throughput, switches and state
@@ -10524,9 +10576,19 @@ Acceptance criteria:
   unit cases; the sections closed and one line while healthy, a warning that opens its section by itself and a live read that does not
   close what the viewer opened, with axe; the silent and the disabled Bastion and two base URLs; a token within 30 days named with one
   time, the declared one by the screen's name.
+- Vitest, W-41's C1 (about 1 s more): "Several Bastions, each a card that folds (R-UI-240)", four cases (one Bastion open, several folded
+  but the one that warns, the head whole while folded, axe; the viewer's choice kept per Bastion and kept by a live read, a change into a
+  warning opening a card kept folded; a Bastion just created opens; **Hide repositories** first in **Details**, its merge patch, a reader's
+  word); "R-BAS-133 Disable… asks soft or hard …", "… the hard way …", "… Disable hard… while a soft disable lets three downloads finish
+  …", "R-BAS-133 each state is one badge …" (six states, their words, tones and tooltips, axe); "R-BAS-006 R-BAS-133 invalidates a token
+  …", "R-BAS-007 Issue token while there is none, Rotate token once there is one …"; the declared registration's unavailable **Delete**
+  and **Rotate token** and the declared token's **Invalidate**; `deployments`, `headHosts`, `hostOf` and a pair's two buckets added as
+  plain unit cases; a pair of deployments grouped and without a warning.
 - Rendered (rule 11): `admin-bastions`, `admin-bastions-read`, `admin-bastions-limits` in both schemes, at 1,440, 1,024 and 390 px,
   `admin-bastions-limits` in English and German, with the states `replicas-open` (a section its warning opened) and `help` (a help
-  sign tapped) and four registrations: one with warnings in every row, one declared, one never contacted, one healthy.
+  sign tapped) and four registrations: one with warnings in every row, one declared, one never contacted, one healthy;
+  `admin-bastions-states` in English and German, light and dark, at the three widths: five Bastions folded but the unconfirmed one, the
+  healthy pair `artifacts` opened, the dialog **Disable…**, and a declared registration's **Delete** with its reason pinned.
 
 ### R-UI-241 · A Bastion's limits page
 Priority: **MVP** · Covers: quader-only
@@ -11763,7 +11825,8 @@ the Helm configuration" and its note under the table, the last administrator's l
 and half of its sentence before a pair passed. **Import key and certificate** behind **More options** is not offered while the Helm
 configuration names the identity: the act in view says the reason once.
 
-*Not built:* a declared Bastion's **Delete** and **Rotate token** (W-41's C1, with the card's head and its tokens' acts).
+*Built on 2026-11-27 (W-41's C1):* a declared Bastion's **Delete** and **Rotate token** (or **Issue token** while it has none) in
+[bastion-card.ts](../../web/src/app/features/bastions/bastion-card.ts); the help of its mark no longer says how to delete it.
 
 Acceptance criteria (Vitest, about 3 s; [unavailable.spec.ts](../../web/src/app/shared/ui/unavailable.spec.ts) and the specs of the places:
 [role-bindings.spec.ts](../../web/src/app/features/roles/role-bindings.spec.ts),
@@ -30309,6 +30372,12 @@ stands in its place. **Applied in the spec:** R-UI-240, [bastion.md](bastion.md)
 [bastion-switches.ts](../../web/src/app/features/bastions/bastion-switches.ts),
 [bastion-limits.ts](../../web/src/app/features/bastions/bastion-limits.ts).
 
+*Amended on 2026-11-27 (W-41's C1, the plan's D26 and D24):* the visible line under **Web interface**, "It also shows every package your
+builds fetched through a public remote repository.", joins the row's help: the act that sends a remote's cache out through a Bastion is
+its repository's choice (W-41's D1 puts the same sentence under that choice; not built yet). The web interface's expert setting **Hide repositories**
+([bastion.md](bastion.md) R-BAS-131) is the first group of the limits' **Details**, not a fold of its own in the plain view, so the default
+card gains no line.
+
 ### Q-UI-1620 · A Bastion's card reads head, main settings, Limits, Details, Replicas, Tokens
 
 Status: **Decided by the development agent on 2026-11-27** (W-39's plan, D3) — selected from the options below; the owner reviews it at
@@ -30390,6 +30459,11 @@ edge; the screen never closes what the viewer opened, and a live read keeps the 
 [bastion.md](bastion.md) R-BAS-007; code: `contactHealth` of [bastion-state.ts](../../web/src/app/features/bastions/bastion-state.ts),
 [bastion-card.ts](../../web/src/app/features/bastions/bastion-card.ts).
 
+*Amended on 2026-11-27 (W-41's C1, [Q-UI-1643](#q-ui-1643--a-pair-of-deployments-under-one-registration-is-legitimate-on-the-card)):*
+"report more than one base URL" is no warning any more: it is a pair of deployments under one registration. Its place takes a deployment
+heard within 24 hours but not in the last 5 minutes beside a current one; the column **Reported base URL** goes and a pair's rows are
+grouped by deployment.
+
 ### Q-UI-1623 · A Bastion's tokens are one line; the mark says "Expires soon" without a number
 
 Status: **Decided by the development agent on 2026-11-27** (W-39's plan, D6) — selected from the options below; the owner reviews it at
@@ -30408,6 +30482,10 @@ one expiry (F1 of W-39's plan).
 declared one by the screen's name. A registration without a token says "No token yet: issue one for the Bastion's chart." in the
 section's place. **Applied in the spec:** R-UI-240, [bastion.md](bastion.md) R-BAS-007; code: `tokenHealth` of
 [bastion-state.ts](../../web/src/app/features/bastions/bastion-state.ts), [bastion-card.ts](../../web/src/app/features/bastions/bastion-card.ts).
+
+*Amended on 2026-11-27 (W-41's C1, [Q-UI-1642](#q-ui-1642--the-tokens-acts-say-what-they-do-and-stand-among-the-tokens)):* the token's
+acts stand in the section: without a token its place says "No token yet." with **Issue token**; with one, **Rotate token** above the
+table; **Revoke** is **Invalidate**, on every token.
 
 ### Q-UI-1629 · A declared Bastion registration shows a badge "Helm configuration" with its help
 
@@ -30430,6 +30508,10 @@ text at 390 px. The declared token is named "Token of the Helm configuration" by
 <name>" under it beside its hint, and keeps **Never** under **Expires** and no **Revoke**. The wording "Helm configuration" is R-UI-268's
 (Q-UI-1625). **Applied in the spec:** R-UI-240, [bastion.md](bastion.md) R-BAS-127; code:
 [bastion-card.ts](../../web/src/app/features/bastions/bastion-card.ts).
+
+*Amended on 2026-11-27 (W-41's C1, R-UI-270):* the rule to delete leaves the help ("Its description, its addresses and its token are set
+in bastions.declared of the Helm configuration and changed there."): **Delete** is back, unavailable, with it as its tooltip; the
+declared token has **Invalidate** ([bastion.md](bastion.md) Q-BAS-517), and **Rotate token** is unavailable with its reason.
 
 ### Q-UI-1627 · The Bastions page's paragraph becomes the header's one sentence
 
@@ -32504,6 +32586,101 @@ configuration fixes, each with a paragraph of its own.
 before the control's own handlers and a router link's. A switch has no place in the audit and no input for it yet; the first place that
 needs one gives `<quader-switch>` the reason for its inner button. **Applied in the spec:** R-UI-270 (new), R-UI-268 (its pointer). The
 style guide's "A disabled destructive action says why it is disabled, next to the button" now says "in its tooltip (`quaderUnavailable`)".
+
+### Q-UI-1640 · A Bastion's card folds to its head; the viewer's choice is kept in the browser
+
+Status: **Decided by the development agent on 2026-11-27** (W-41's plan, D1, built by C1) — selected from the options below; the owner
+reviews it at the walkthrough. R-UI-240.
+
+Context: the owner, looking at the Bastions page: "dass es danach aussieht als könnte es nur einen Bastion geben. Die aktuelle komplette
+Übersicht über artifacts sollte sich einklappen lassen."
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Each card folds to its head (chevron before the name; the head keeps its badge and acts); open where the page holds one Bastion, folded where it holds several, except a card that shows a warning; the viewer's choice per Bastion kept in the browser, and a change *into* a warning opens a card whatever was kept (chosen) | | Several Bastions read as a list of one line each; a Bastion that needs action is never folded away; nothing new on the server | The choice does not follow the viewer to another browser |
+| (b) Not kept: every load folds by the rule | | Simplest | A viewer who opens the same card every day opens it every day |
+| (c) Kept per user on the server | | Follows the user | A preference API for one page |
+
+**Choice:** (a). A warning is any warning the card shows: the state **Contact lost** or **Disable not confirmed**, a warning line of a
+main setting, of **Limits**, of **Replicas** or of **Tokens** (`cardWarns`, the same rules as the lines). The edge into a warning opens the
+card as the sections open (a `linkedSignal`) and is not written to the store; a live read keeps the viewer's choice; the screen never folds
+a card. The store is keyed by the signed-in principal (`quader.admin.bastions.open.<name>`), as the open Details are (Q-UI-967): two
+people on one browser keep their own. A Bastion just created opens, since its next step, the token, is inside it. An act's refusal and a
+token shown once stand under the head, outside the fold. **Applied in the spec:** R-UI-240; code:
+[bastion-fold.ts](../../web/src/app/features/bastions/bastion-fold.ts), [bastion-card.ts](../../web/src/app/features/bastions/bastion-card.ts),
+[bastion-list.ts](../../web/src/app/features/bastions/bastion-list.ts).
+
+### Q-UI-1641 · A Bastion's head names its host in grey, one state badge, and its own acts at the right
+
+Status: **Decided by the development agent on 2026-11-27** (W-41's plan, D2 and D5's screen part, built by C1) — selected from the
+options below; the owner reviews it at the walkthrough. R-UI-240, [bastion.md](bastion.md) R-BAS-133.
+
+Context: the owner: "Im Kopf dieser Karte sollte der Name des Bastion stehen, hier „artifacts", gefolgt von der Ingress-Domain des Bastion
+in einem Grau", "Im Kopf der Karte sollte zusätzlich zum Namen auch noch der aktuelle Status des Bastion angezeigt werden", and the
+disable "gehört auch nicht zu den Eigenschaften des Tokens und ist deshalb vielleicht besser oben rechts auf der Karte anzuzeigen".
+Neither a registration nor its declaration holds the Bastion's public address: the base URL each replica reports is the only one the
+main installation knows.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The host of each base URL the replicas reported within 24 hours, the scheme and a default port left out, joined by a dot, in the muted colour; none before the first contact; the state of [Q-BAS-511](bastion.md#q-bas-511--the-bastions-state-is-one-of-six-computed-by-the-main-installation) as one badge; the Bastion's acts **Disable…**, **Enable**, **Disable hard…**, **Delete** at the head's end (chosen) | | The one address the main installation knows; a deployment taken down drops out of the head a day after its last contact, not after the 30 days contacts are kept | The head has no address until the Bastion reported one |
+| (b) A member "expected address" on the registration and in `bastions.declared` | | An address before the first contact | Configuration the owner did not ask for; two addresses to keep equal |
+| (c) The networks of `egress` | | Present from the start | Where it connects from, not where clients reach it |
+
+**Choice:** (a). The name and the hosts are the `h2`; the fold's button holds the chevron and the name, and the card's region is named by
+the name alone, so a reader and a test address the card by the Bastion. The hosts break after their dots and each takes a line of its own
+in a narrow content column. The badge's tones: green only for **Connected** (the owner's rule of 2026-11-02), the warning's for **Contact
+lost** and **Disable not confirmed**, neutral otherwise; its tooltip (pinned by a tap) says how long the contact is lost, the way and time
+of a disable ("Soft, since …"), or why a disable is not confirmed, and the badge is focusable only while it has one. "3 downloads still
+running" stands muted after **Disabling**. **Disable…** is a default button that opens the dialog of the two ways; while disabled
+**Enable** is the primary act and, while a soft disable drains, **Disable hard…** names the downloads it cuts. **Delete** stays at the
+end, unavailable on a declared registration (R-UI-270). **Applied in the spec:** R-UI-240; code: `stateBadge`, the head of
+[bastion-card.ts](../../web/src/app/features/bastions/bastion-card.ts), `headHosts` of
+[bastion-state.ts](../../web/src/app/features/bastions/bastion-state.ts),
+[bastion-disable-dialog.ts](../../web/src/app/features/bastions/bastion-disable-dialog.ts).
+
+### Q-UI-1642 · The token's acts say what they do, and stand among the tokens
+
+Status: **Decided by the development agent on 2026-11-27** (W-41's plan, D10, built by C1) — selected from the options below; the owner
+reviews it at the walkthrough. R-UI-240, [bastion.md](bastion.md) R-BAS-133, R-BAS-127.
+
+Context: the owner: "Hier war vielleicht der Token gemeint, dann sollte der Button aber „invalidate Token" heißen. Und „Token ausstellen"
+sollte wohl besser „Token erneuern" oder „rotieren" heißen."
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) In **Tokens**: **Issue token** while the registration has none (the plain line's act), **Rotate token** / **Token erneuern** once it has one, and **Invalidate** / **Ungültig machen** per token; the head holds none of them (chosen) | | The owner's words; the Bastion's acts and the token's are apart; "renew" of nothing does not exist | **Rotate token** is inside a closed section (it opens by itself 30 days before an expiry) |
+| (b) **Rotate token** always, also for the first | | One word | Rotating nothing |
+| (c) Keep **Issue token** in the head | | One click from the head | The owner: the token's acts are not the Bastion's |
+
+**Choice:** (a). **Rotate token**'s dialog: "The new token works beside the old one. Put it into the Bastion's Secret, and invalidate the old
+one once the new one shows a recent Last used." **Invalidate** works on every token, the declared one included
+([bastion.md](bastion.md) Q-BAS-517): with the disable no longer refusing the token it is the last resort of a leak; the declared token's
+dialog adds "The next rollout stops at its migration until the Secret of bastions.declared holds a new value." A declared registration's
+**Rotate token** (or **Issue token**) is unavailable with "Its token is set in bastions.declared of the Helm configuration: put a new
+value into its Secret." (R-UI-270), as the API refuses the issue there. **Applied in the spec:** R-UI-240, R-UI-270; code:
+[bastion-card.ts](../../web/src/app/features/bastions/bastion-card.ts), [bastion-dialogs.ts](../../web/src/app/features/bastions/bastion-dialogs.ts).
+
+### Q-UI-1643 · A pair of deployments under one registration is legitimate on the card
+
+Status: **Decided by the development agent on 2026-11-27** (W-41's plan, D4's screen part, built by C1; the wire's part is W-41's E) —
+selected from the options below; the owner reviews it at the walkthrough. R-UI-240.
+
+Context: the owner: "Es gibt hier noch zu bedenken, dass es auch ein Pärchen von Bastion-Instanzen sein könnte, die deployt wurden und
+sich mit dem gleichen Token zur Hauptinstanz verbinden." W-39's card warned "The replicas report different base URLs." for exactly that
+case, and took the cache figure of the shared bucket once, though a pair has two buckets (F1 of W-41's plan).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A *deployment* is the replicas that report one base URL: the head names each host; **Replicas** groups its rows by deployment ("pkgs-eu.example.com · 2 replicas", no group row for one); the base-URL warning goes; kept or new: the replicas heard in 5 minutes run more than one version, and a deployment heard within 24 hours but not in 5 minutes beside a current one ("pkgs-us.example.com: no contact for 12 minutes."); **Now** adds each deployment's bucket once (chosen) | | The owner's case reads right: two addresses, the figures of two caches, a silent half named | The screen alone cannot keep the pair's pages apart (W-41's E) |
+| (b) Keep the warning, call it a hint | | Less change | Warns about a legitimate setup |
+| (c) One registration per deployment | | No pair to handle | The owner's words: the pair connects with the same token |
+
+**Choice:** (a). The column **Reported base URL** goes: the head names each host and a pair's group rows name it; the replicas that
+reported none group under "No base URL reported". The section's line for a pair is "2 addresses · last contact 1 minute ago · version
+0.42.0". A report's deployment is its replica's contact's base URL; a report whose replica has no contact counts as one more deployment.
+**Applied in the spec:** R-UI-240; code: `deployments`, `headHosts`, `contactHealth`, `bastionState` of
+[bastion-state.ts](../../web/src/app/features/bastions/bastion-state.ts), [bastion-card.ts](../../web/src/app/features/bastions/bastion-card.ts).
 
 ## What this does not cover
 

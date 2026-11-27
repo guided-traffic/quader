@@ -1,9 +1,10 @@
 import { expect, expectAccessible, signInLocal, test, unique } from '../support';
 
-// R-BAS-007 journey "Bastions" (R-BAS-049): an administrator opens Admin area > Bastions, opens the section Replicas of the e2e
-// Bastion and sees the last contact of its replicas, registers a Bastion, issues a token that expires in 20 days, copies it once,
-// and sees the section Tokens open by itself with the warning and the mark on the token afterwards. The token's value is never shown
-// again.
+// R-BAS-007 journey "Bastions" (R-BAS-049): an administrator opens Admin area > Bastions, opens the card of the e2e Bastion where the
+// page folded it (R-UI-240), sees its host in the head and the last contact of its replicas, registers a Bastion, whose card opens,
+// issues a token that expires in 20 days, copies it once, and sees the section Tokens open by itself with the warning and the mark on the
+// token afterwards. The token's value is never shown again. Then the new Bastion is disabled softly and enabled again from its head
+// (R-BAS-133: with no replica the badge says Disable not confirmed at once), and its token is invalidated.
 
 const registration = process.env['QUADER_E2E_BASTION_REGISTRATION'];
 
@@ -22,6 +23,12 @@ test('R-BAS-007 the Bastions screen shows the last contact of the replicas, issu
   // the Bastion of the e2e cluster: both replicas have made contact
   const e2e = page.getByRole('region', { name: registration, exact: true });
   await expect(e2e).toBeVisible();
+  // a page of several Bastions folds the cards that do not warn (Q-UI-1640): open it
+  const fold = e2e.locator('.head button.fold');
+  if ((await fold.getAttribute('aria-expanded')) !== 'true') await fold.click();
+  await expect(fold).toHaveAttribute('aria-expanded', 'true');
+  // the head names the host its replicas reported, in grey after the name (Q-UI-1641)
+  await expect(e2e.locator('[data-testid="bastion-hosts"]')).toContainText('bastion-');
   // the section Replicas is one line while the replicas agree (Q-UI-1622): open it for the table
   const replicas = e2e.locator('[data-testid="bastion-replicas"] button[aria-expanded]');
   if ((await replicas.getAttribute('aria-expanded')) !== 'true') await replicas.click();
@@ -31,7 +38,6 @@ test('R-BAS-007 the Bastions screen shows the last contact of the replicas, issu
   for (const replica of (process.env['QUADER_E2E_BASTION_REPLICAS'] ?? '').split(',').filter((r) => r !== '')) {
     await expect(contacts).toContainText(replica);
   }
-  await expect(contacts).toContainText('https://bastion-');
   await expectAccessible(page, 'Bastions, the e2e registration with its contacts');
 
   // a registration of the journey
@@ -73,6 +79,22 @@ test('R-BAS-007 the Bastions screen shows the last contact of the replicas, issu
     const row = tokens.getByRole('row', { name: /expires in 20 days|qdr_bst_/ }).last();
     await expect(row).toContainText('Expires soon');
     await expectAccessible(page, 'Bastions, a token with the warning mark');
+
+    // disable it softly from its head and enable it again (R-BAS-133): no replica was heard, so the badge says so at once
+    const state = again.locator('[data-testid="bastion-state"]');
+    await again.getByRole('button', { name: `Disable… ${name}` }).click();
+    const disable = page.locator('quader-bastion-disable-dialog');
+    await expect(disable.getByRole('radio', { name: /^Soft/ })).toBeChecked();
+    await expectAccessible(page, 'the dialog that disables a Bastion');
+    await disable.getByRole('button', { name: 'Disable', exact: true }).click();
+    await expect(state).toHaveText(/Disable not confirmed/);
+    await again.getByRole('button', { name: `Enable ${name}` }).click();
+    await expect(state).toHaveText(/No contact yet/);
+
+    // invalidate the token: the section offers Issue token again
+    await tokens.getByRole('button', { name: 'Invalidate expires in 20 days' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Invalidate', exact: true }).click();
+    await expect(again.locator('[data-testid="bastion-tokens"]')).toContainText('No token yet.');
   } finally {
     await admin.delete(`/api/v1/bastions/${name}`);
   }

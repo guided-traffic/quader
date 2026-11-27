@@ -228,7 +228,9 @@ export class FakeBastionsApi extends BastionsApi {
     const current = this.find(name);
     if (etag !== this.etagOf(name)) throw problem(412, 'precondition_failed', { currentEtag: this.etagOf(name) });
     this.bumpRevision(name);
-    const changed: Bastion = { ...current, disabled: disabled === null ? null : { mode: disabled, at: new Date().toISOString() } };
+    // The state the server answers right after the change (R-BAS-133): disabling until a replica confirms, connected again on enable.
+    const state: Bastion['state'] = disabled !== null ? 'disabling' : current.contacts.length > 0 ? 'connected' : 'noContact';
+    const changed: Bastion = { ...current, state, disabled: disabled === null ? null : { mode: disabled, at: new Date().toISOString() } };
     this.bastions = this.bastions.map((b) => (b.name === name ? changed : b));
     return { value: changed, etag: this.etagOf(name) };
   }
@@ -348,9 +350,9 @@ export class FakeBastionsApi extends BastionsApi {
     };
   }
 
-  override async revokeToken(name: string, id: string): Promise<void> {
+  override async invalidateToken(name: string, id: string): Promise<void> {
     this.fail();
-    this.calls.push(`revokeToken ${name} ${id}`);
+    this.calls.push(`invalidateToken ${name} ${id}`);
     const current = this.find(name);
     if (!current.tokens.some((t) => t.id === id)) throw problem(404, 'not_found');
     this.bastions = this.bastions.map((b) => (b.name === name ? { ...b, tokens: b.tokens.filter((t) => t.id !== id) } : b));
