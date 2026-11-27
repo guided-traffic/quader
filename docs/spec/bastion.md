@@ -624,8 +624,9 @@ The Bastion interface has a version of its own, separate from the release number
   catalogue of the project view: a public repository's description, a project's and a repository's index, an image's list by content,
   the set-up path of a package without a version, and the switch `hideRepositories` (R-BAS-130, R-BAS-131,
   [Q-BAS-506](#q-bas-506--the-project-view-raises-the-interface-to-version-12-and-the-bastions-state-record-to-form-3), built on
-  2026-11-27 by W-40's P1), which before its release also took the disable of a Bastion: the configuration's `disabled`, the status's
-  `operation` and the problem `bastion_disabled` (R-BAS-133, built on 2026-11-27 by W-41's A1). The version is `iface.InterfaceVersion`;
+  2026-11-27 by W-40's P1, released in v0.166.0); 13, the disable of a Bastion: the configuration's `disabled`, the status's
+  `operation` and the problem `bastion_disabled` (R-BAS-133, built on 2026-11-27 by W-41's A1, first folded into 12 while it was
+  unreleased and raised to 13 at landing, since 12 had been released before it). The version is `iface.InterfaceVersion`;
   the comment beside it names the same list.
 
 Acceptance criteria:

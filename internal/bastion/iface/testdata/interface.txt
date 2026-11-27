@@ -1,4 +1,4 @@
-interface version 12
+interface version 13
 const APIPrefix = "/api/"
 const APIv1Prefix = "/api/v1/"
 const BearerScheme = "Bearer"
