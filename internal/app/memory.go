@@ -23,6 +23,19 @@ import (
 // garbage beside them is the Go limit's, so the charge stays (Q-ARCH-1072).
 const requestOverhead = 128 << 10
 
+// replicaOwnBytes is what a replica holds beside its requests and its caches: 61 to 67 MiB measured idle with the caches off
+// (Q-ARCH-1072, Q-ARCH-1073), rounded down, so a limit it finds too small surely is. The memory slots take 0.8 of the Go limit, and the
+// 0.2 they leave must hold it (Q-ARCH-1074). The chart's check of a serving pod's memory limit uses the same figure
+// (deploy/helm/quader/templates/_validate_roles.tpl).
+const replicaOwnBytes = 64 << 20
+
+// ownMemoryLeft is what the memory slots leave of the Go limit for the replica itself, whether that is less than replicaOwnBytes, and the
+// least Go limit that would hold it.
+func ownMemoryLeft(goLimit int64) (left int64, short bool, least int64) {
+	left = int64(0.2 * float64(goLimit))
+	return left, left < replicaOwnBytes, int64(math.Ceil(replicaOwnBytes / 0.2))
+}
+
 // applyMemoryLimit applies R-HA-036: unless GOMEMLIMIT is set, the Go runtime's
 // limit is runtime.memory_limit_ratio × runtime.memory_limit_bytes. It returns
 // the limit in effect, 0 when none is known, and where it came from.
@@ -172,6 +185,12 @@ func (a *App) startMemoryGuard(ctx context.Context) *httpserver.MemoryGuard {
 	if float64(budgets) >= 0.8*float64(limit) {
 		a.log.Error("the caches' byte budgets take the memory the requests need once the caches are full: one request at a time is then admitted; lower cache.rendition_bytes, proxy.metadata_cache_bytes, proxy.merged_metadata_cache_bytes and proxy.query_cache_bytes or raise the memory limit",
 			"cache_budget_bytes", budgets, "go_memory_limit_bytes", limit)
+	}
+	if left, short, least := ownMemoryLeft(limit); short {
+		// A warning, not a refusal: the figure is a measurement, and the heap gate still sheds what the slots let through
+		// (Q-ARCH-1074).
+		a.log.Warn("the memory slots leave the replica less than it holds itself, so they admit more downloads than the memory holds; raise the memory limit",
+			"left_bytes", left, "replica_own_bytes", replicaOwnBytes, "go_memory_limit_bytes", limit, "least_go_memory_limit_bytes", least, "source", source)
 	}
 	a.log.Info("memory limit", "go_memory_limit_bytes", limit, "source", source, "memory_slots", g.Slots(), "request_bytes", per, "cache_budget_bytes", budgets,
 		"kernel_budget_bytes", kernelBudget, "kernel_request_bytes", kernelPer, "kernel_writers", g.Writers())

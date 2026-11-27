@@ -119,6 +119,12 @@ than 64 requests cannot serve a handful of clients at once.
 {{- if lt $kernelSlots 64 -}}
 {{- fail (printf "quader: %s.resources.limits.memory (%v) writes %d responses at once, fewer than 64: 0.8 × (1 − config.runtime.memory_limit_ratio (%v)) × the limit, the kernel's share, / %d bytes of send buffer per response (twice config.server.send_buffer, or 4 MiB with autotuning; Q-ARCH-500); raise the limit, lower the ratio or lower config.server.send_buffer" $u.key $mem $kernelSlots $ratio $kernelPerRequest) -}}
 {{- end -}}
+{{- /* The replica's own share (Q-ARCH-1074): the slots take 0.8 of the Go limit, so the 0.2 they leave hold what the replica holds beside its requests, at least 64 MiB idle (61 to 67 MiB measured, Q-ARCH-1073); the formula and the figure are the binary's ownMemoryWarning of internal/app/memory.go. */ -}}
+{{- $own := 67108864 -}}
+{{- $left := mulf 0.2 $ratio (include "quader.quantityBytes" $mem | float64) | int64 -}}
+{{- if lt $left $own -}}
+{{- fail (printf "quader: %s.resources.limits.memory (%v) leaves the replica %d bytes beside its requests, less than the %d bytes it holds itself: the memory slots take 0.8 of the Go limit, config.runtime.memory_limit_ratio (%v) × the limit, and leave the rest (Q-ARCH-1074); raise the limit to at least %d bytes" $u.key $mem $left $own $ratio (ceil (divf $own (mulf 0.2 $ratio)) | int64)) -}}
+{{- end -}}
 {{- end -}}
 {{- end -}}
 {{- end -}}

@@ -597,7 +597,7 @@ tests in `chart_test.go` assert both, row by row.
 | pools: a repeated name or path prefix or queue, a name starting `ep-` or too long, a path outside the families of the role or equal to the role's own prefixes, a queue that does not exist | implemented, naming `<role>.pools[<name>]` and the value |
 | `config.storage.upload.max_size` larger than the spool budget of a `packages` Deployment; the UI's upload limit (`config.ui.deploy.max_upload_bytes`, `config.storage.upload.max_size` when 0) larger than that of an `api` Deployment | implemented, naming both values |
 | `terminationGracePeriodSeconds` below `config.health.shutdown_drain_delay` + 15 s | implemented, per Deployment |
-| a serving Deployment (`api`, `packages`, a path pool or an endpoint pool) without `resources.limits.memory`, or with a limit that admits fewer than 64 requests (Q-HA-70); a limit that is not an integer with an optional binary or decimal unit | implemented, naming the limit and the values the request bytes come from |
+| a serving Deployment (`api`, `packages`, a path pool or an endpoint pool) without `resources.limits.memory`, or with a limit that admits fewer than 64 requests (Q-HA-70), or whose 0.2 × the ratio × the limit is below the replica's own 64 MiB (Q-ARCH-1074, the binary's `replicaOwnBytes`); a limit that is not an integer with an optional binary or decimal unit | implemented, naming the limit and the values the request bytes come from |
 | Sentinel mode without addresses or `primary_name`; fewer than 3 addresses under `enforce`; standalone under `enforce` | implemented |
 | `secrets.valkey.existingSecret` empty | implemented |
 | `secrets.oidc[]`: an invalid or repeated `providerId`, an empty `existingSecret`, a `providerId` without a provider of that ID in `config.auth.oidc.providers`, `client_secret_file` set in `config` for it; `config.auth.break_glass.password_file` set | implemented, each naming the value |
@@ -853,7 +853,7 @@ is where the coverage generator reads the IDs from.
 | `R-HA-025` (`TestR_HA_025_PostRestoreJob`) | the hook annotations, the arguments, the account, the policy, the scoped Secrets (the journal credential reaches this Job only), the three credential sources, the validation rows |
 | `R-HA-059` (`TestR_HA_059_NoDisruptionBudgetForTheJobs`) | no PodDisruptionBudget selects a Job's pods |
 | `R-HA-042` (`TestR_HA_042_JobsAdmitNothing`) | the Jobs' policies: ingress only, an explicit empty list, selecting exactly their pods; no egress in any set |
-| `R-HA-029` (memory) | a serving pod (`api`, `packages`, a pool) without a memory limit, or one whose memory slots (`quader.requestBytes` and the three cache budgets, the formula of `internal/app/memory.go`) are fewer than 64, fails; `2G`, `64Mi` and a plain integer render |
+| `R-HA-029` (memory) | a serving pod (`api`, `packages`, a pool) without a memory limit, or one whose memory slots (`quader.requestBytes` and the three cache budgets, the formula of `internal/app/memory.go`) are fewer than 64, or whose share beside the slots is below the replica's own 64 MiB (376 MiB at the default ratio), fails; `2G`, `377Mi` and a plain integer render |
 | `R-HA-032` | PDB, spread, tolerations, default replica counts and rolling update |
 | `R-HA-037`, `R-ARCH-032` | `sessionAffinity: None` everywhere, no affinity annotations, every Ingress rule `Prefix` and never the operations port, `ingress.path` fails naming `path` |
 | `R-HA-019` | hook annotations and weights, `podFailurePolicy`, same `quader.yaml`, nothing from Valkey or S3; disabled renders no Job |

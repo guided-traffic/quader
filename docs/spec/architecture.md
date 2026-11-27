@@ -13450,6 +13450,27 @@ shed for the slots, but 684 and 802 clients saw `503` in two runs, the rest not 
 **Choice:** (a). **Revisit** when the runtime holds more than 345 MiB here (90 % of the container). The cause of (b)'s uncounted `503`
 was read by [Q-ARCH-1075](#q-arch-1075--the-memory-admission-test-tells-a-shed-from-a-dependencys-503).
 
+### Q-ARCH-1074 · A memory limit that leaves the replica less than it holds itself is refused by the chart and named at start
+
+Status: **Decided by the development agent** on 2026-11-27 (batch H, the fourth finding of batch F; Q-ARCH-1073's option (d) as a
+check instead of a change of the arithmetic); the owner reviews it at the walkthrough.
+
+Context: the memory slots take 0.8 of the Go limit `L` (`memoryHighWater`), and the caches' budgets come out of that share; the 0.2 they
+leave hold what the replica holds beside its requests, 61 to 67 MiB measured idle with the caches off (Q-ARCH-1072, Q-ARCH-1073). At a
+256 MiB container that is 43.5 MiB, so the slots admit downloads the memory does not hold. The chart refused a serving pod below 64 slots
+or 64 send buffers, which lets a limit as small as 137 MiB through with the caches off.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The chart refuses a serving pod whose 0.2 × `runtime.memory_limit_ratio` × `limits.memory` is below 64 MiB, naming the bytes left, the 64 MiB and the least limit (377 MiB at the default ratio); the binary logs a warning at start with the same figures for a limit set outside the chart (chosen) | A refusal where the operator sets the limit, a warning where nobody else checks | Fails at `helm install`, as the neighbouring rules of the slots and the send buffers do; a replica started by other means still says it; one figure in both places | 64 MiB is a measurement of today's replica, rounded down; a replica that grows needs the figure raised |
+| (b) A refusal at start | The binary decides | Every way of running is covered | An estimate turns into an outage at start, while the heap gate still sheds what the slots let through |
+| (c) Subtract the replica's own bytes from the slots' share (Q-ARCH-1073 (d)) | Fewer slots | Small containers get a true count | Changes the admission's arithmetic for containers below every default of the chart |
+
+**Choice:** (a). The figure is `replicaOwnBytes` of [memory.go](../../internal/app/memory.go) (`ownMemoryLeft`) and `$own` of
+[_validate_roles.tpl](../../deploy/helm/quader/templates/_validate_roles.tpl). **Revisit** when a measurement of the idle replica exceeds
+64 MiB by more than its spread, or when the admission's arithmetic changes. **Applied in the spec:** R-HA-036, R-HA-029's table
+([ha-and-helm.md](ha-and-helm.md)).
+
 ### Q-ARCH-1075 · The memory admission test tells a shed from a dependency's 503
 
 Status: **Decided by the development agent** on 2026-11-27 (batch H, the third finding of batch F); the owner reviews it at the walkthrough.

@@ -73,6 +73,16 @@ func TestMemoryLimit(t *testing.T) {
 			t.Fatalf("a cgroup with another limit gave a kernel gate (%q)", off)
 		}
 	})
+	t.Run("R-HA-036 the 0.2 of the Go limit the memory slots leave must hold the replica's own 64 MiB", func(t *testing.T) {
+		ratio := 0.85
+		// 256 MiB at the default ratio leaves 43.5 MiB, the container of the old admission test (Q-ARCH-1073); 384 MiB leaves 65.3 MiB.
+		if left, short, least := ownMemoryLeft(int64(ratio * (256 << 20))); !short || left != 45634027 || least != 335544320 {
+			t.Errorf("256 MiB: %d left, short %t, least %d", left, short, least)
+		}
+		if left, short, _ := ownMemoryLeft(int64(ratio * (384 << 20))); short || left != 68451041 {
+			t.Errorf("384 MiB: %d left, short %t", left, short)
+		}
+	})
 	t.Run("R-ARCH-005 a request may hold the download buffer, the object store's receive window and the overhead", func(t *testing.T) {
 		c := &config.Config{}
 		c.Storage.Download = config.StorageDownload{BufferSize: 256 << 10, HoldBack: 64 << 10}

@@ -10058,10 +10058,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-ARCH
 
-292 questions on [spec/architecture.md](spec/architecture.md).
+293 questions on [spec/architecture.md](spec/architecture.md).
 
 <details>
-<summary>Q-ARCH: 292 questions</summary>
+<summary>Q-ARCH: 293 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10356,6 +10356,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-ARCH-1071](spec/architecture.md#q-arch-1071--the-layout-checks-render-the-screens-in-parallel-legs-each-every-n-th-pair-of-screen-and-kind-of-user) | The layout checks render the screens in parallel legs, each every n-th pair of screen and kind of user | Decided by the development agent on 2026-11-26 | (a) with five legs on `self-hosted`, `fail-fast: false`, 45 minutes each, and the job `ui-layout-fixtures` ("UI layout checks (fixtures and dialog states)", no stack, no Go, 30 minutes) for what runs once. | — |
 | [Q-ARCH-1072](spec/architecture.md#q-arch-1072--the-charge-of-a-held-download-stays-640-kib-its-live-cost-is-within-it-and-the-garbage-is-the-go-limits) | The charge of a held download stays 640 KiB: its live cost is within it, and the garbage is the Go limit's | Decided by the development agent on 2026-11-27 | (a) Keep 128 KiB, charge 640 KiB | — |
 | [Q-ARCH-1073](spec/architecture.md#q-arch-1073--the-memory-admission-test-runs-in-a-container-of-384-mib) | The memory admission test runs in a container of 384 MiB | Decided by the development agent on 2026-11-27 | (a) 384 MiB, 417 slots | — |
+| [Q-ARCH-1074](spec/architecture.md#q-arch-1074--a-memory-limit-that-leaves-the-replica-less-than-it-holds-itself-is-refused-by-the-chart-and-named-at-start) | A memory limit that leaves the replica less than it holds itself is refused by the chart and named at start | Decided by the development agent on 2026-11-27 (batch H, the fourth finding of batch F; Q-ARCH-1073's option (d) as a check instead of a change of the arithmetic) | (a) The chart refuses a serving pod whose 0.2 × `runtime.memory_limit_ratio` × `limits.memory` is below 64 MiB, naming the bytes left, the 64 MiB and the least limit (377 MiB at the default ratio); the binary logs a warning at start with the same figures for a limit set outside the chart | — |
 | [Q-ARCH-1075](spec/architecture.md#q-arch-1075--the-memory-admission-test-tells-a-shed-from-a-dependencys-503) | The memory admission test tells a shed from a dependency's 503 | Decided by the development agent on 2026-11-27 (batch H, the third finding of batch F) | (a) The test counts a `503` as shed only with the code `server_busy`, and names every other `5xx` by its status and code as a dependency's failure | — |
 
 </details>
