@@ -77,6 +77,8 @@ export function repositoryConflictFields(nodes: readonly SettingNode[]): (pointe
         return { label: $localize`:@@repo.visibility.level:Visibility level`, show: (v) => levelName(v as VisibilityLevel) };
       case '/wiki':
         return { label: $localize`:@@repo.visibility.wiki-fold:Wiki visibility`, show: (v) => levelName(v as VisibilityLevel) };
+      case '/bastions':
+        return { label: $localize`:@@repo.bastions.label:Bastions` };
       case '/remote/url':
         return { label: $localize`:@@upstream.url:Upstream URL` };
       case '/remote/authMode':

@@ -13121,8 +13121,10 @@ export interface components {
          *     **ClamAV definition updates** of `clamav` (R-REPO-075, Q-API-382), `null` for every other repository. `visibility` is the one
          *     level of both parts. `listedBy` is the number of virtual
          *     repositories whose member lists or pin rules name the repository and `listedByProjects` the number of their projects;
-         *     `listedByNames` names them on every answer but `listUpstreamRepositories` (Q-API-363). `warnings` are those of the write that
-         *     answered.
+         *     `listedByNames` names them on every answer but `listUpstreamRepositories` (Q-API-363). `bastions` are the Bastions that
+         *     distribute the repository, as the repository document's member (R-BAS-134), read here so that the page and the list show the
+         *     distribution mark beside the level (R-UI-271); an administrator chooses them in the repository's settings. `warnings` are those
+         *     of the write that answered.
          */
         UpstreamRepository: {
             /** @description The repository key in the project `upstream`, the preset's id. */
@@ -13139,6 +13141,7 @@ export interface components {
             inUse: boolean | null;
             clients: components["schemas"]["UpstreamRepositoryClients"] | null;
             visibility: components["schemas"]["VisibilityLevel"];
+            bastions: components["schemas"]["RepositoryBastions"];
             fixed: components["schemas"]["UpstreamRepositoryFixed"][];
             address: components["schemas"]["UpstreamRepositoryAddressInfo"];
             account: components["schemas"]["UpstreamRepositoryAccountInfo"];

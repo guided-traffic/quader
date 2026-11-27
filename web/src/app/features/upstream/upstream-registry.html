@@ -58,7 +58,10 @@
           </div>
           <div class="field">
             <span class="field-label" i18n="@@repo.visibility.level">Visibility level</span>
-            <p class="level-now"><quader-visibility-icon [level]="r.visibility" /><span>{{ levelText(r.visibility) }}</span></p>
+            <p class="level-now">
+              <quader-visibility-icon [level]="r.visibility" /><span>{{ levelText(r.visibility) }}</span>
+              <quader-distribution-mark [bastions]="r.bastions" />
+            </p>
             @if (lowered()) {
               <p class="banner-warning" role="note">
                 <span class="material-icons inline warn" aria-hidden="true">warning</span>
@@ -216,6 +219,7 @@
               } @else {
                 <span id="wk-level">{{ levelText(r.visibility) }}</span>
               }
+              <quader-distribution-mark [bastions]="r.bastions" />
             </div>
             @if (levelError(); as message) {
               <p class="field-error" id="wk-level-error" role="alert">{{ message }}</p>

@@ -4,6 +4,7 @@
       <quader-visibility-icon [level]="level" />
     }
     <strong>{{ ref() }}</strong>
+    <quader-distribution-mark [bastions]="bastions()" />
     @if (wellKnownBadge(); as b) {
       <span class="badge warn" translate="yes"><span class="material-icons" aria-hidden="true">warning</span>{{ b }}</span>
     } @else if (stored()?.disabled) {
@@ -106,8 +107,23 @@
           <p class="fixed-level">
             <quader-visibility-icon [level]="systemLevelValue()" /><span>{{ systemLevel() }}</span>
           </p>
-          <!-- clamav's level is set with its switch in the admin area (R-UI-190, Q-UI-903). -->
+          <!-- clamav's level is set with its switch in the admin area (R-UI-190, Q-UI-903). Its Bastions are an administrator's here:
+               a Bastion's ClamAV installations update through it only while it is distributed there (R-BAS-134, R-UI-271). -->
           @if (clientsCapable()) {
+            @if (repo.visibility && ((offeredBastions()?.length ?? 0) > 0 || storedBastions().length > 0)) {
+              <quader-repository-visibility
+                [stored]="repo.visibility"
+                [levelsShown]="false"
+                [managed]="true"
+                [storedBastions]="storedBastions()"
+                [offered]="offeredBastions()"
+                [canChooseBastions]="canChange()"
+                [repositoryClass]="repo.class"
+                [saving]="visibilitySaving()"
+                [failure]="visibilityFailure()"
+                (save)="saveVisibility($event)"
+              />
+            }
             <ng-container *ngTemplateOutlet="managedLine" />
           }
         </section>
@@ -122,6 +138,11 @@
             [saving]="visibilitySaving()"
             [failure]="visibilityFailure()"
             [warnings]="visibilityWarnings()"
+            [storedBastions]="storedBastions()"
+            [offered]="offeredBastions()"
+            [canChooseBastions]="canChange()"
+            [repositoryClass]="repo.class"
+            [missingMembers]="missingMembers()"
             (save)="saveVisibility($event)"
           />
           @if (managed()) {

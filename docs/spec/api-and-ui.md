@@ -5988,7 +5988,10 @@ Priority: **MVP** · Covers: quader-only
   R-REPO-063 (the lower of the installation's default and the project's level); the wiki follows the artifacts at create.
 - A warning `public_populates_remote` of the answer is shown as a warning at the block, with its sentence (R-AUTHZ-008).
 - The repository list, the repository's header and the client setup dialog show the artifacts level's icon before the
-  repository's name (Q-UI-230).
+  repository's name (Q-UI-230), and the distribution mark beside it while a Bastion distributes the repository (R-UI-271).
+- **The group Bastions** under the level and the wiki's fold, while a Bastion allows the project: the Bastions that distribute the
+  repository, saved with the same **Save changes** (R-UI-271,
+  [Q-UI-1645](#q-ui-1645--the-bastions-of-a-repository-are-a-group-of-its-section-visibility-saved-with-the-level)).
 - Editable for the project's Owner and for `repositories:write-config`; read-only otherwise. A level the installation restricts is
   disabled for whoever may not choose it, after the project's reason, and kept where the part has it (R-UI-141).
 
@@ -11889,6 +11892,77 @@ Acceptance criteria (Vitest, about 3 s; [unavailable.spec.ts](../../web/src/app/
   acting, without a tooltip; axe finds nothing serious.
 - Each place of the table shows its control with its reason and no paragraph that says it again; a click on it sends nothing.
 - An unavailable button at the window's right edge at 390 px, pinned: its bubble inside the window.
+
+### R-UI-271 · A repository says where it is distributed
+Priority: **P1** · Covers: quader-only
+
+The owner on 2026-11-27: "Es muss für die Viewer von Repos neben der Visibility direkt ersichtlich sein, ob das Repo zusätzlich auch über
+einen Bastion (per Tooltip auch welcher Bastion) verteilt wird." What a repository's Owner chooses (the member `bastions`,
+[bastion.md](bastion.md) R-BAS-134) is shown to every reader beside the level, and chosen in the repository's section **Visibility**.
+
+- **The mark** ([Q-UI-1644](#q-ui-1644--one-small-mark-a-tower-beside-the-visibility-the-bastions-in-its-tooltip)).
+  `<quader-distribution-mark [bastions]>` of [distribution-mark.ts](../../web/src/app/shared/ui/distribution-mark.ts): the tower
+  (`fort`) with role `img`, focusable, its accessible name and tooltip "Also distributed through the Bastion artifacts (pkgs.example.com)"
+  *(example)*, "Also distributed through the Bastions artifacts (pkgs.example.com), partners (pkgs.partner.example.com)" for several, the
+  hosts of every listed address of a Bastion, its name alone before its first contact, and "(disabled now)" after a Bastion that is
+  disabled. A tap pins the tooltip (R-UI-267). Nothing while the repository is distributed through no Bastion.
+- **Its places**, every place that shows a repository's level: after the key in the repository lists of a project and of the
+  installation, in the search's repositories and in a format's guide; after the name in the head of a repository's settings and of
+  **Set up client**; in a repository's head the badge "Bastion" with the tower, right after the level's badge, the same sentence as its
+  tooltip; on the admin area's **Upstream registries** and a well-known repository's page, after the level (its select, or its word).
+  The Bastion's own pages show no level and no mark: everything there is public. The member is read with the repository (a document, a
+  reader's view, a list's row, a well-known repository's item); the views send no `If-None-Match` and the API answers every read
+  `no-store`, so a Bastion's new address or its disable is shown with the next read although the repository's `ETag` does not change.
+  The repository lists read themselves again while they are seen (R-UI-213); a repository's own pages show the change with their next
+  read.
+- **The group Bastions** of the section **Visibility** (R-UI-055,
+  [Q-UI-1645](#q-ui-1645--the-bastions-of-a-repository-are-a-group-of-its-section-visibility-saved-with-the-level)): under the level and
+  the wiki's fold, the legend **Bastions** with its help sign ("Also serve this repository through a Bastion, outside your network. Who
+  may read it there is decided by its visibility, as here. An administrator decides which Bastions this project may use."), one check box
+  per Bastion that allows the project (`GET /api/v1/projects/{projectKey}/bastions`, read once per page), its name and its hosts in grey,
+  "(disabled now)" after a disabled one. **The group is absent while no Bastion allows the project.** The section's one **Save changes**
+  sends `bastions` with the names in the same merge patch as the levels that changed, or alone. A refusal at `/bastions/<i>`
+  (`bastion_not_allowed`) stands under the group: "The Bastion does not allow this project; an administrator allows it on the Bastion's
+  card."
+  - Under a checked Bastion stands, visible, what it makes leave the network: for a remote that is Public (in the form) while that
+    Bastion's web interface is on, "Its web interface also lists every package your builds fetched through this remote."; for a virtual,
+    with the warning sign, "Through artifacts it serves only members distributed there too; not: npm-cache." *(example)*, the members
+    that Bastion does not distribute (they take no part through it, [bastion.md](bastion.md) R-BAS-134), read from the list of repositories by their
+    names; a member the caller cannot read is left out.
+  - The boxes are the project's Owner's and a holder of `repositories:write-config`'s. Anyone else who reads the settings sees
+    "Distributed through artifacts." *(example)* while the repository is distributed, and nothing while it is not.
+  - On a repository of the project `upstream` the level is set in the admin area and the group stays the administrator's; on
+    `upstream/clamav` the section's statement of its level is followed by the group and its **Save changes** alone.
+- **The problems' sentences:** `repository_not_distributed` (409 of `client-setup?bastion=`) "This Bastion does not distribute the
+  repository."; `bastion_not_allowed` the sentence above.
+
+*Built on 2026-11-27 (W-41's D1):* [distribution-mark.ts](../../web/src/app/shared/ui/distribution-mark.ts) and its places in
+[repository-list.html](../../web/src/app/features/repositories/repository-list.html),
+[repository-content.html](../../web/src/app/features/repositories/content/repository-content.html),
+[repository-detail.html](../../web/src/app/features/repositories/repository-detail.html),
+[search-results.ts](../../web/src/app/features/search/search-results.ts), [guide-format.ts](../../web/src/app/features/guides/guide-format.ts),
+[client-setup.html](../../web/src/app/features/setup/client-setup.html),
+[upstream-registries.ts](../../web/src/app/features/upstream/upstream-registries.ts) and
+[upstream-registry.html](../../web/src/app/features/upstream/upstream-registry.html); the group in
+[repository-bastions.ts](../../web/src/app/features/repositories/repository-bastions.ts) and
+[repository-visibility.ts](../../web/src/app/features/repositories/repository-visibility.ts), the offer and the members' read in
+[repository-detail.ts](../../web/src/app/features/repositories/repository-detail.ts); the member `bastions` of a well-known repository's item
+(`UpstreamRepository`, [upstream_repositories_api.go](../../internal/api/v1/upstream_repositories_api.go)); the problems' sentences in
+[problem-messages-bastion.ts](../../web/src/app/core/http/problem-messages-bastion.ts). *Not built:* **Install from** in **Set up client**
+and **From** in every command panel (W-41's D2).
+
+Acceptance criteria (Vitest, under a second; no data beyond a few rows):
+
+- [distribution-mark.spec.ts](../../web/src/app/shared/ui/distribution-mark.spec.ts): nothing for none; the tower named by one Bastion
+  and its host, focusable, axe; several Bastions with their hosts, one without an address by its name, "(disabled now)"; the head's badge
+  described by the sentence, axe; a tap pins the tooltip.
+- [repository-bastions.spec.ts](../../web/src/app/features/repositories/repository-bastions.spec.ts): the group absent without an offer;
+  the boxes with their hosts, the save sends `{"bastions": ["artifacts"]}` alone, axe; a Public remote's line under a Bastion whose web
+  interface is on, none while it is Internal; a virtual's warning names its undistributed member; a reader sees the sentence and the
+  head's mark; `bastion_not_allowed` stands under the group.
+- Renders: `repositories` (a project's list with distributed rows), `repository-oci-signed` (the head's badge), `repository-settings-npm-local`,
+  `repository-settings-npm-remote`, `repository-settings-npm-virtual` (the group, the remote's line, the virtual's warning), `search-results`,
+  `admin-upstream` (a distributed well-known repository), both schemes, 1,440 and 390 px, English and German.
 
 ### R-UI-272 · A text the product writes is shown in the reader's language
 Priority: **P1** · Covers: quader-only
@@ -32958,6 +33032,49 @@ Context: besides the texts of Q-UI-1638, a Bastion's visitor reads further texts
 party's content stays as written.
 
 **Applied in the spec:** R-UI-272.
+
+### Q-UI-1644 · One small mark: a tower beside the visibility, the Bastions in its tooltip
+
+Status: **Decided by the development agent on 2026-11-27** (W-41's plan, D20, built by D1) — selected from the options below; the owner
+reviews it at the walkthrough. R-UI-271.
+
+Context: the owner: "Es muss für die Viewer von Repos neben der Visibility direkt ersichtlich sein, ob das Repo zusätzlich auch über einen
+Bastion (per Tooltip auch welcher Bastion) verteilt wird." A level is shown as an icon before a name (Q-UI-230); a list's keys keep one
+column (Q-UI-425), and the owner's sharpest words of the same day were about overloaded pages.
+
+| Option | For | Against |
+|---|---|---|
+| (a) `<quader-distribution-mark>`: the tower `fort` with role `img`, its accessible name and tooltip naming each Bastion with its host, pinned by a tap; in lists after the key, in a repository's head a badge "Bastion" right after the level's badge, in a heading after the name; nothing while the repository is distributed nowhere (chosen) | One mark everywhere, the owner's tooltip, one icon's width | Two marks to learn (globe, tower) |
+| (b) A help sign ⓘ | Exists | ⓘ means "an explanation here" (R-UI-267), not a fact |
+| (c) A column **Bastions** | Sortable | A column for what most rows lack |
+
+**Choice:** (a). A Bastion that is disabled stays in the sentence with "(disabled now)": the repository is still chosen for it, and it
+serves again when enabled. A Bastion without a listed address (before its first contact, or with an address not in
+`server.additional_base_urls`) is named alone. The tower has the level icon's colour, not a status colour. **Applied in the spec:**
+R-UI-271; code: [distribution-mark.ts](../../web/src/app/shared/ui/distribution-mark.ts).
+
+### Q-UI-1645 · The Bastions of a repository are a group of its section Visibility, saved with the level
+
+Status: **Decided by the development agent on 2026-11-27** (W-41's plan, D13's screen part, built by D1) — selected from the options
+below; the owner reviews it at the walkthrough. R-UI-271, R-UI-055, [Q-REPO-491](repositories-and-proxy.md#q-repo-491--the-projects-owner-chooses-per-repository-the-bastions-that-distribute-it).
+
+Context: the project's Owner chooses per repository among the Bastions an administrator allowed for the project (R-BAS-134); the owner's
+rule "simple by default, details on demand" (R-UI-067) and his words that every distribution beyond the network is configured
+separately.
+
+| Option | For | Against |
+|---|---|---|
+| (a) A group **Bastions** of the section **Visibility**, under the level and the wiki's fold: a box per allowing Bastion with its host in grey, saved by the section's **Save changes**; absent while no Bastion allows the project; under a checked Bastion, visible, what it makes leave the network (chosen) | Who reads where is one section, one save; an installation without a Bastion sees nothing new | The section grows by a group where Bastions exist |
+| (b) A section **Bastions** of its own | Its own save | Two saves for one question (who reads, and where) |
+| (c) Behind **Advanced settings** | Out of the way | The owner wants it configured by the Owner, deliberately: hidden is not deliberate |
+
+**Choice:** (a). The lines under a box are W-39's rule that what makes something leave the network stands visible (W-39's D2): a Public
+remote's cache listed by the Bastion's web interface, and a virtual's members that Bastion does not distribute (they take no part through
+it, R-BAS-134). The members are read from the list of repositories by their names, in pages of 50, once per page and only while a
+Bastion is offered. On `upstream/clamav`, whose level is a statement, the group and its save stand under the statement: a Bastion's ClamAV
+installations update through it only while `upstream/clamav` is distributed there. **Applied in the spec:** R-UI-271, R-UI-055; code:
+[repository-bastions.ts](../../web/src/app/features/repositories/repository-bastions.ts),
+[repository-visibility.ts](../../web/src/app/features/repositories/repository-visibility.ts).
 
 ### Q-UI-1646 · A Bastion's project opens on its repositories, its packages the second tab
 

@@ -13,6 +13,7 @@ import { NoValue } from '../../shared/ui/no-value';
 import { PageHeader } from '../../shared/ui/page-header';
 import { Switch } from '../../shared/ui/switch';
 import { VisibilityIcon, installationReasons, levelName } from '../../shared/ui/visibility-level';
+import { DistributionMark } from '../../shared/ui/distribution-mark';
 import { RegistryPresets } from './registry-presets';
 import { UpstreamActions } from './upstream-actions';
 import { clientsSwitchLabel, clientsWord, inUseBadge, levelOptions, onOffWord, privateRowNote, rowBadge, rowNotes, switchLabel } from './upstream-words';
@@ -40,7 +41,7 @@ function replaced(items: readonly UpstreamRepository[], next: readonly UpstreamR
  */
 @Component({
   selector: 'quader-upstream-registries',
-  imports: [Busy, DataTable, ErrorNotice, FormatIconView, ListHead, NoValue, PageHeader, RegistryPresets, RouterLink, Switch, VisibilityIcon],
+  imports: [Busy, DataTable, ErrorNotice, FormatIconView, DistributionMark, ListHead, NoValue, PageHeader, RegistryPresets, RouterLink, Switch, VisibilityIcon],
   template: `
     <quader-page-header [heading]="heading" [count]="items() === null ? null : presets().length" [description]="description">
       @if (canWrite()) {
@@ -142,9 +143,11 @@ function replaced(items: readonly UpstreamRepository[], next: readonly UpstreamR
                     </option>
                   }
                 </select>
+                <quader-distribution-mark [bastions]="r.bastions" />
                 </span>
               } @else {
                 <quader-visibility-icon [level]="r.visibility" />{{ levelText(r.visibility) }}
+                <quader-distribution-mark [bastions]="r.bastions" />
               }
               @if (levelErrors().get(r.key); as message) {
                 <span class="field-error" role="alert" [id]="'level-error-' + r.key">{{ message }}</span>
@@ -208,7 +211,10 @@ function replaced(items: readonly UpstreamRepository[], next: readonly UpstreamR
                 <span class="secondary" i18n="@@wellknown.clients.none">Not offered: Quader alone reads it.</span>
               }
             </td>
-            <td class="level-cell"><quader-visibility-icon [level]="r.visibility" />{{ levelText(r.visibility) }}</td>
+            <td class="level-cell">
+              <quader-visibility-icon [level]="r.visibility" />{{ levelText(r.visibility) }}
+              <quader-distribution-mark [bastions]="r.bastions" />
+            </td>
             <td class="actions">
               <a class="btn btn-tertiary" [routerLink]="[r.key]"
                 ><ng-container i18n="@@wellknown.details">Details</ng-container

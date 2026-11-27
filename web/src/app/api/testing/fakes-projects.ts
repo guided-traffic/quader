@@ -8,6 +8,7 @@ import {
   ProjectPrincipal,
   ProjectRole,
   ProjectVisibilityResult,
+  ProjectBastion,
   ProjectsApi,
   PROJECT_KEY_PATTERN,
 } from '../projects-api';
@@ -81,6 +82,10 @@ export class FakeProjectsApi extends ProjectsApi {
   lookupFailure: ApiError | null = null;
   /** Rejects the next write once. */
   failure: ApiError | null = null;
+  /** The Bastions that allow each project (R-BAS-134); a project without an entry is allowed by none. */
+  bastionOffers: Record<string, ProjectBastion[]> = {};
+  /** The answer of the offer's read for a caller who may not read it (a 403), or another failure. */
+  bastionsFailure: ApiError | null = null;
 
   private fail(): void {
     if (this.failure) {
@@ -287,6 +292,12 @@ export class FakeProjectsApi extends ProjectsApi {
     return this.principals
       .filter((p) => (!kinds?.length || kinds.includes(p.kind)) && words(p).some((w) => w.startsWith(text)))
       .slice(0, 20);
+  }
+
+  override async bastions(key: string): Promise<readonly ProjectBastion[]> {
+    this.find(key);
+    if (this.bastionsFailure) throw this.bastionsFailure;
+    return this.bastionOffers[key] ?? [];
   }
 }
 

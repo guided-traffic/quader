@@ -11,6 +11,7 @@
       @if (r.visibility; as levels) {
         <span class="badge"><quader-visibility-icon [level]="levels.artifacts" />{{ levelText(levels.artifacts) }}</span>
       }
+      <quader-distribution-mark [bastions]="r.bastions" [badge]="true" />
       @if (retired()) {
         <span class="badge warn">{{ retiredBadge }}</span>
       } @else if (disabled()) {

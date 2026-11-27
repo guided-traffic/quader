@@ -1,5 +1,6 @@
 import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
 import { VisibilityIcon, levelName } from '../../../shared/ui/visibility-level';
+import { DistributionMark } from '../../../shared/ui/distribution-mark';
 import { Component, computed, effect, inject, input, resource, signal, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { newIdempotencyKey } from '../../../api/client';
@@ -73,7 +74,7 @@ export const TYPE_TO_CONFIRM_ABOVE = 100;
   selector: 'quader-repository-content',
   imports: [Busy, Loading, 
     FormatIconView,
-    VisibilityIcon,
+    DistributionMark, VisibilityIcon,
     CdkMenu,
     CdkMenuItem,
     CdkMenuTrigger,

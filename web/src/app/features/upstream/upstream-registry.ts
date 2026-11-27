@@ -29,6 +29,7 @@ import { Disclosure } from '../../shared/ui/disclosure';
 import { PageHeader } from '../../shared/ui/page-header';
 import { Switch } from '../../shared/ui/switch';
 import { VisibilityIcon, VisibilityLevel, VisibilityLevelControl, installationReasons, levelName } from '../../shared/ui/visibility-level';
+import { DistributionMark } from '../../shared/ui/distribution-mark';
 import { AddressField } from '../../shared/address-field';
 import { CodeWindow } from '../../shared/code/code-window';
 import { DOWNLOAD_SCRIPT, FRESHCLAM_CONF, FRESHCLAM_DROP_IN, freshclamCertificate, freshclamLines, plainDownload } from './clamav-setup';
@@ -81,6 +82,7 @@ function needsAccount(e: ApiError): boolean {
   imports: [Busy, Loading, 
     AddressField,
     CodeWindow,
+    DistributionMark,
     TimePipe,
     Disclosure,
     ErrorNotice,

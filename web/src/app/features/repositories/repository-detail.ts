@@ -12,9 +12,11 @@ import {
   RepositoriesApi,
   Repository,
   RepositoryConsumerView,
+  RepositorySummary,
   RepositoryVisibility,
   Versioned,
   isConsumerView,
+  refOf,
   repoRef,
   repositoryUrl,
 } from '../../api/repositories-api';
@@ -56,7 +58,8 @@ import {
   maskSecrets,
   mirrorDefaultsOf,
 } from './repository-model';
-import { RepositoryVisibilityBlock } from './repository-visibility';
+import { RepositoryVisibilityBlock, VisibilityChange } from './repository-visibility';
+import { DistributionMark, distributingBastions } from '../../shared/ui/distribution-mark';
 import { SETTINGS_SECTIONS, SettingsSection, rebaseForm, sectionMembers, sectionPatch, withSection } from './settings-sections';
 import { SettingSchema, errorTarget, settingNodes } from './settings-schema';
 import { upstreamDefaultsOf } from './upstream-model';
@@ -121,6 +124,7 @@ type LazySection = 'deb-keys' | 'deb-index' | 'ansible-imports' | 'ansible-tombs
     RepositoryMalwareSection,
     RepositorySignaturesSection,
     RepositoryVisibilityBlock,
+    DistributionMark,
     RouterLink,
     SelectField,
     UpstreamSettings,
@@ -653,11 +657,65 @@ export class RepositoryDetail implements HasUnsavedChanges {
   protected readonly visibilityFailure = signal<ApiError | null>(null);
   protected readonly visibilityWarnings = signal<readonly string[]>([]);
 
+  // ---- The Bastions that distribute the repository (R-UI-271, bastion.md R-BAS-134) ----
+
+  /** The member `bastions` of the read, of the full document and of the reader's view alike: the head's mark and the group. */
+  protected readonly bastions = computed(() => (this.stored() ?? this.consumer())?.bastions ?? []);
+  protected readonly storedBastions = computed(() => distributingBastions(this.bastions()));
+  /**
+   * The Bastions that allow the project, read once per project for a caller who may change the repository: what the group Bastions
+   * offers. A reader who may not read them (a 403) and a failed read leave them unknown, and the group says the stored names instead.
+   */
+  private readonly bastionOffers = resource({
+    params: () => (this.canChange() ? this.project() : undefined),
+    loader: async ({ params }) => {
+      try {
+        return await this.projectsApi.bastions(params);
+      } catch {
+        return null;
+      }
+    },
+  });
+  protected readonly offeredBastions = computed(() => valueOf(this.bastionOffers) ?? null);
+  /**
+   * The member repositories of a virtual repository, as the list reads them (each with its member `bastions`): read while a Bastion is
+   * offered, in pages of the list's 50 names (R-API-063).
+   */
+  private readonly memberRows = resource({
+    params: () => {
+      const repo = this.stored();
+      if (repo?.class !== 'virtual' || (this.offeredBastions()?.length ?? 0) === 0) return undefined;
+      return (repo.virtual?.members ?? []).map((m) => (m.includes('/') ? m : `${this.project()}/${m}`));
+    },
+    loader: async ({ params }) => {
+      const rows: RepositorySummary[] = [];
+      for (let i = 0; i < params.length; i += 50) {
+        rows.push(...(await collectAll(this.api.list({ name: params.slice(i, i + 50) }))));
+      }
+      return rows;
+    },
+  });
+  /**
+   * The members each offered Bastion does not distribute, by the Bastion's name: a member a Bastion does not distribute takes no part
+   * in the virtual's resolution through it (bastion.md R-BAS-134). A member the caller cannot read is left out.
+   */
+  protected readonly missingMembers = computed(() => {
+    const out = new Map<string, readonly string[]>();
+    const rows = valueOf(this.memberRows) ?? [];
+    for (const b of this.offeredBastions() ?? []) {
+      const missing = rows
+        .filter((r) => !distributingBastions(r.bastions).some((d) => d.name === b.name))
+        .map((r) => (r.project === this.project() ? r.key : refOf(r)));
+      if (missing.length > 0) out.set(b.name, missing);
+    }
+    return out;
+  });
+
   /**
    * Stores the levels of the Visibility block (R-UI-055) with the loaded `ETag`. The patch names the changed parts only and the
    * levels are not part of the form, so other unsaved edits stay; a 412 is settled like a save (R-UI-042).
    */
-  protected async saveVisibility(change: Partial<RepositoryVisibility>): Promise<void> {
+  protected async saveVisibility(change: VisibilityChange): Promise<void> {
     if (this.visibilitySaving() || !this.stored()) return;
     this.visibilitySaving.set(true);
     this.visibilityFailure.set(null);
@@ -670,8 +728,8 @@ export class RepositoryDetail implements HasUnsavedChanges {
     }
   }
 
-  private async sendVisibility(change: Partial<RepositoryVisibility>, etag: string): Promise<void> {
-    const saved = await this.api.patch(this.ref(), { visibility: change }, etag);
+  private async sendVisibility(change: VisibilityChange, etag: string): Promise<void> {
+    const saved = await this.api.patch(this.ref(), visibilityPatch(change), etag);
     this.takeStored(saved.value, saved.etag);
     this.visibilityWarnings.set(
       (saved.value.warnings ?? []).filter((w) => w.code === 'public_populates_remote').map((w) => repositoryWarningText(w)),
@@ -679,7 +737,7 @@ export class RepositoryDetail implements HasUnsavedChanges {
     this.notifier.status($localize`:@@repo.visibility.saved:Visibility saved.`);
   }
 
-  private async handleVisibilityError(error: ApiError, change: Partial<RepositoryVisibility>): Promise<void> {
+  private async handleVisibilityError(error: ApiError, change: VisibilityChange): Promise<void> {
     if (error.status !== 412) {
       this.visibilityFailure.set(error);
       return;
@@ -695,8 +753,8 @@ export class RepositoryDetail implements HasUnsavedChanges {
       this.visibilityFailure.set(error);
       return;
     }
-    const current = theirs.value.visibility;
-    const wanted = { ...current, ...change };
+    const current = visibilityPart(theirs.value.visibility, theirs.value.bastions);
+    const wanted = { ...current, ...change.visibility, ...(change.bastions ? { bastions: [...change.bastions] } : {}) };
     if (JSON.stringify(current) === JSON.stringify(wanted)) {
       this.takeStored(theirs.value, theirs.etag);
       return;
@@ -1150,4 +1208,17 @@ function signaturesSavedText(change: SignatureSettingsChange): string {
   return change.fetch === false
     ? $localize`:@@repo.signatures.saved-off:Quader no longer fetches the upstream's signatures for this repository.`
     : $localize`:@@repo.signatures.saved-on:Quader fetches the upstream's signatures for this repository again.`;
+}
+
+/** The patch of the section Visibility's Save changes: the levels that changed, and the member `bastions` by name (R-UI-271). */
+function visibilityPatch(change: VisibilityChange): Record<string, unknown> {
+  return {
+    ...(change.visibility ? { visibility: change.visibility } : {}),
+    ...(change.bastions ? { bastions: [...change.bastions] } : {}),
+  };
+}
+
+/** What the section shows of a stored repository, in the shape the conflict dialog compares: its levels and the names of its Bastions. */
+function visibilityPart(levels: RepositoryVisibility | undefined, bastions: Repository['bastions']): Record<string, unknown> {
+  return { ...levels, bastions: distributingBastions(bastions).map((b) => b.name).sort() };
 }

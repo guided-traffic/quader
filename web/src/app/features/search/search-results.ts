@@ -23,6 +23,7 @@ import { DataTable, TableColumn } from '../../shared/ui/data-table';
 import { PageHeader } from '../../shared/ui/page-header';
 import { TabContent, TabGroup, TabPage } from '../../shared/ui/tabs';
 import { VisibilityIcon } from '../../shared/ui/visibility-level';
+import { DistributionMark } from '../../shared/ui/distribution-mark';
 import { ProjectLink } from '../../shared/ui/project-link';
 import { ProjectLevel, ProjectMark } from '../../shared/ui/project-mark';
 import { TimeAgo } from '../../shared/ui/time-ago';
@@ -70,7 +71,7 @@ const PAGE = 25;
     TabPage,
     TimeAgo,
     Tooltip,
-    VisibilityIcon,
+    DistributionMark, VisibilityIcon,
   ],
   template: `
     <quader-page-header [heading]="heading" [description]="description()" />
@@ -101,6 +102,7 @@ const PAGE = 25;
                     <quader-visibility-icon [level]="row.visibility.artifacts" />
                     <span class="icon-name-text">
                       <a [routerLink]="['/projects', row.project, 'repositories', row.key]" translate="no">{{ row.key }}</a>
+                      <quader-distribution-mark [bastions]="row.bastions" />
                       <!-- A system repository of upstream is found and marked, so that it does not read as one more repository of
                            its project (R-UI-193, Q-UI-902); where its class cell says System, that is the mark (Q-UI-1203). -->
                       @if (system(row) && shownClassOf(row) !== 'system') {

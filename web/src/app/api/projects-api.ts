@@ -20,6 +20,8 @@ export type VisibilityLevel = Schema<'VisibilityLevel'>;
 export type ProjectMember = Schema<'Member'>;
 /** A project the caller is a member of, with the role in force for the credential (`authz/me`). */
 export type Membership = Schema<'Membership'>;
+/** A Bastion that allows a project, as its Owner chooses among them for a repository (bastion.md R-BAS-134). */
+export type ProjectBastion = Schema<'ProjectBastion'>;
 
 /** The roles of a member from the weakest to the strongest (Q-AUTHZ-208). */
 export const PROJECT_ROLES: readonly ProjectRole[] = ['reader', 'developer', 'maintainer', 'owner'];
@@ -66,6 +68,11 @@ export abstract class ProjectsApi {
     q: string,
     kinds?: readonly ProjectPrincipal['kind'][],
   ): Promise<readonly ProjectPrincipal[]>;
+  /**
+   * `GET /api/v1/projects/{key}/bastions` (R-BAS-134): the Bastions an administrator allowed for the project, what its Owner may choose
+   * in a repository's member `bastions`. The project's Owner, or a holder of `repositories:read-config`; anyone else gets a 403.
+   */
+  abstract bastions(key: string): Promise<readonly ProjectBastion[]>;
 }
 
 function versioned(r: { readonly body: Project; readonly etag: string | null }): Versioned<Project> {
@@ -132,5 +139,9 @@ export class HttpProjectsApi extends ProjectsApi {
       { params: cleanQuery({ q, kind: kinds?.length ? kinds.join(',') : undefined }) },
     );
     return r.body.items;
+  }
+
+  override async bastions(key: string): Promise<readonly ProjectBastion[]> {
+    return (await this.client.getJson<{ items: ProjectBastion[] }>(`/api/v1/projects/${seg(key)}/bastions`)).body.items;
   }
 }

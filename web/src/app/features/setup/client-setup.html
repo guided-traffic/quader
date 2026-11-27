@@ -13,6 +13,7 @@
             <quader-visibility-icon [level]="level" />
           }
           <a [routerLink]="repositoryLink()">{{ r }}</a>
+          <quader-distribution-mark [bastions]="repository()?.bastions" />
         </span>
       }
       @if (descriptor(); as d) {

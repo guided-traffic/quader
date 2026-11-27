@@ -107,6 +107,21 @@ func (s *Server) listedBastions(st repository.Stored) repository.Stored {
 	return st
 }
 
+// genBastions renders a well-known repository's member bastions as the repository document does (R-BAS-134, R-UI-271): each Bastion
+// with its listed addresses and whether it is disabled, [] for none.
+func (s *Server) genBastions(refs []repository.BastionRef) gen.RepositoryBastions {
+	out := make(gen.RepositoryBastions, 0, len(refs))
+	for _, b := range refs {
+		addresses := listedAddresses(b.Addresses, s.o.Packages.AdditionalBaseURLs)
+		disabled := b.Disabled
+		var entry gen.RepositoryBastion
+		// The object form of the union always marshals: a name, a slice of strings and a bool.
+		_ = entry.FromRepositoryBastion1(gen.RepositoryBastion1{Name: b.Name, Addresses: &addresses, Disabled: &disabled})
+		out = append(out, entry)
+	}
+	return out
+}
+
 // listedAddresses are the reported base URLs that are entries of listed, in the listed spelling without a trailing slash, in the order
 // reported.
 func listedAddresses(reported, listed []string) []string {

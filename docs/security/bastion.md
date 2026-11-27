@@ -1631,4 +1631,6 @@ of `server.additional_base_urls`. The base URLs are the Bastion's public address
 reader on the intranet learns which registration serves which repository, and that a registration is disabled. What makes it real: a
 reader of a public repository who should not know the names an administrator gave the Bastions; no secret, network or token is in it. The
 owner asked for it ("Es muss für die Viewer von Repos … direkt ersichtlich sein, ob das Repo zusätzlich auch über einen Bastion (per
-Tooltip auch welcher Bastion) verteilt wird"), so it is not closed; an administrator who minds names a registration for its users.
+Tooltip auch welcher Bastion) verteilt wird"), so it is not closed; an administrator who minds names a registration for its users. Since
+W-41's D1 every screen that shows the repository's level shows it in the tooltip of the distribution mark ([api-and-ui.md](../spec/api-and-ui.md)
+R-UI-271); a well-known repository's item of the admin area carries the same member, for the readers of `repositories:read-config` only.

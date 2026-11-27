@@ -21375,8 +21375,10 @@ type UpstreamReadmeState string
 // **ClamAV definition updates** of `clamav` (R-REPO-075, Q-API-382), `null` for every other repository. `visibility` is the one
 // level of both parts. `listedBy` is the number of virtual
 // repositories whose member lists or pin rules name the repository and `listedByProjects` the number of their projects;
-// `listedByNames` names them on every answer but `listUpstreamRepositories` (Q-API-363). `warnings` are those of the write that
-// answered.
+// `listedByNames` names them on every answer but `listUpstreamRepositories` (Q-API-363). `bastions` are the Bastions that
+// distribute the repository, as the repository document's member (R-BAS-134), read here so that the page and the list show the
+// distribution mark beside the level (R-UI-271); an administrator chooses them in the repository's settings. `warnings` are those
+// of the write that answered.
 type UpstreamRepository struct {
 	// Account The account of the repository's upstream, without its secret (R-REPO-033, R-REPO-073): the one an administrator stored
 	// (`source: api`), or the one the configuration of the replica that answers declares in `repositories.upstream_accounts`
@@ -21391,7 +21393,16 @@ type UpstreamRepository struct {
 	// Address The stored address (`remote.url`, `remote.extraHosts`, for an APT archive the keys of `deb.upstreamKeys`), whether it differs
 	// from the product's, and the product's (R-REPO-069, R-REPO-073).
 	Address UpstreamRepositoryAddressInfo `json:"address"`
-	Clients *UpstreamRepositoryClients    `json:"clients"`
+
+	// Bastions The Bastions that distribute the repository beyond the main installation's network (bastion.md R-BAS-134, Q-REPO-491), by
+	// name; empty for none. `visibility` is the main installation's level: a repository leaves the network through a Bastion only
+	// while it is named here, whatever its level. Its project's Owner, or a holder of `repositories:write-config`, chooses among
+	// the Bastions that allow the project (`GET /api/v1/projects/{projectKey}/bastions`); another name answers `422
+	// validation_failed` with `bastion_not_allowed` at `/bastions/<i>`. A Bastion added records `repository.bastion.added`, one
+	// taken off `repository.bastion.removed`, journaled (Q-BAS-521). A move to another project, and an administrator taking the
+	// project off the Bastion's list, delete the choices.
+	Bastions RepositoryBastions         `json:"bastions"`
+	Clients  *UpstreamRepositoryClients `json:"clients"`
 
 	// ConfigVersion The repository's `config_version`, the value of the `ETag`.
 	ConfigVersion int `json:"configVersion"`

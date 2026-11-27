@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { Component, computed, inject, input, linkedSignal, output, resource } from '@angular/core';
 import { RepositoryVisibility } from '../../api/repositories-api';
 import { VisibilityApi, VisibilityChoices } from '../../api/visibility-api';
@@ -14,9 +15,18 @@ import {
 } from '../../shared/ui/visibility-level';
 import { ApiError } from '../../api/problem';
 import { ErrorNotice } from '../../shared/error-notice';
-import { fieldErrorAt } from '../../shared/field-errors';
+import { fieldErrorAt, fieldMessage, problemsAt } from '../../shared/field-errors';
 import { Disclosure } from '../../shared/ui/disclosure';
 import { Busy } from '../../shared/ui/busy';
+import { ProjectBastion } from '../../api/projects-api';
+import { DistributingBastion } from '../../shared/ui/distribution-mark';
+import { RepositoryBastions } from './repository-bastions';
+
+/** What the section's Save changes stores: the levels that changed, and the Bastions while their choice changed (R-UI-271). */
+export interface VisibilityChange {
+  readonly visibility?: Partial<RepositoryVisibility>;
+  readonly bastions?: readonly string[];
+}
 
 /**
  * The section Visibility of a repository's settings page (R-UI-055, Q-UI-770 to Q-UI-773): one radio group, **Visibility level**,
@@ -35,45 +45,69 @@ import { Busy } from '../../shared/ui/busy';
  *
  * What the server answers for one level (`/visibility/artifacts`, `/visibility/wiki` of a 422 or a 403) stands under that
  * level's group; an answer that names no level (409 `public_not_allowed`) is the block's notice.
+ *
+ * Under the level and the wiki's fold stands the group **Bastions** (R-UI-271, Q-REPO-491): the Bastions that distribute the repository
+ * beyond the network, chosen among those an administrator allowed for the project, saved with the same Save changes; absent while no
+ * Bastion allows the project. On a repository of `upstream` the level is set in the admin area, the group stays the administrator's.
  */
 @Component({
   selector: 'quader-repository-visibility',
-  imports: [Busy, Disclosure, ErrorNotice, VisibilityLevelControl],
+  imports: [Busy, Disclosure, ErrorNotice, NgTemplateOutlet, RepositoryBastions, VisibilityLevelControl],
   template: `
-    <section class="visibility" aria-labelledby="repo-visibility">
-      <h2 id="repo-visibility" i18n="@@repo.visibility.heading">Visibility</h2>
+    @if (levelsShown()) {
+      <section class="visibility" aria-labelledby="repo-visibility">
+        <h2 id="repo-visibility" i18n="@@repo.visibility.heading">Visibility</h2>
+        <ng-container [ngTemplateOutlet]="body" />
+      </section>
+    } @else if (bastionsChoosable() || storedBastions().length > 0) {
+      <ng-container [ngTemplateOutlet]="body" />
+    }
+    <ng-template #body>
       <form (submit)="submit($event)" novalidate>
-        <quader-visibility-level
-          i18n-label="@@repo.visibility.level"
-          label="Visibility level"
-          [subject]="managed() ? 'upstream' : 'artifacts'"
-          [value]="artifacts()"
-          (valueChange)="artifacts.set($event)"
-          [reasons]="artifactReasons()"
-          [notes]="artifactNotes()"
-          [error]="artifactsError()"
-          [disabled]="!canWrite()"
-        />
-        <!-- A well-known repository has one level for its packages and its documentation, set in the admin area: no fold. -->
-        @if (hasWiki() && !managed()) {
-          <quader-disclosure class="wiki" [inline]="true" [heading]="wikiHeading" [note]="wikiNote()" [(expanded)]="wikiOpen">
-            <p class="muted wiki-text" i18n="@@repo.visibility.wiki-text">
-              The wiki is the README and the documentation of the packages. It has the repository's visibility level unless a lower
-              one is chosen here.
-            </p>
-            <quader-visibility-level
-              [label]="wikiHeading"
-              [labelHidden]="true"
-              subject="wiki"
-              [value]="wiki()"
-              (valueChange)="wikiChoice.set($event)"
-              [reasons]="wikiReasons()"
-              [notes]="wikiNotes()"
-              [error]="wikiError()"
-              [disabled]="!canWrite()"
-            />
-          </quader-disclosure>
+        @if (levelsShown()) {
+          <quader-visibility-level
+            i18n-label="@@repo.visibility.level"
+            label="Visibility level"
+            [subject]="managed() ? 'upstream' : 'artifacts'"
+            [value]="artifacts()"
+            (valueChange)="artifacts.set($event)"
+            [reasons]="artifactReasons()"
+            [notes]="artifactNotes()"
+            [error]="artifactsError()"
+            [disabled]="!canWrite()"
+          />
+          <!-- A well-known repository has one level for its packages and its documentation, set in the admin area: no fold. -->
+          @if (hasWiki() && !managed()) {
+            <quader-disclosure class="wiki" [inline]="true" [heading]="wikiHeading" [note]="wikiNote()" [(expanded)]="wikiOpen">
+              <p class="muted wiki-text" i18n="@@repo.visibility.wiki-text">
+                The wiki is the README and the documentation of the packages. It has the repository's visibility level unless a lower
+                one is chosen here.
+              </p>
+              <quader-visibility-level
+                [label]="wikiHeading"
+                [labelHidden]="true"
+                subject="wiki"
+                [value]="wiki()"
+                (valueChange)="wikiChoice.set($event)"
+                [reasons]="wikiReasons()"
+                [notes]="wikiNotes()"
+                [error]="wikiError()"
+                [disabled]="!canWrite()"
+              />
+            </quader-disclosure>
+          }
         }
+        <quader-repository-bastions
+          [offered]="offered()"
+          [stored]="storedBastions()"
+          [(chosen)]="chosen"
+          [canChoose]="canChooseBastions()"
+          [disabled]="saving()"
+          [repositoryClass]="repositoryClass()"
+          [level]="artifacts()"
+          [missingMembers]="missingMembers()"
+          [error]="bastionsError()"
+        />
         @for (w of warnings(); track w) {
           <p class="banner-warning" role="status">
             <span class="material-icons inline warn" aria-hidden="true">warning</span>
@@ -84,7 +118,7 @@ import { Busy } from '../../shared/ui/busy';
           <quader-error-notice [error]="f" />
         }
         <div class="foot">
-          @if (canWrite()) {
+          @if (canWrite() || bastionsChoosable()) {
             <button class="btn btn-confirm" type="submit" [disabled]="saving() || !dirty()" [quaderBusy]="saving()">
               <ng-container i18n="@@repo.visibility.save">Save changes</ng-container>
               <span class="visually-hidden" i18n="@@repo.visibility.save-for"> (visibility)</span>
@@ -96,7 +130,7 @@ import { Busy } from '../../shared/ui/busy';
           }
         </div>
       </form>
-    </section>
+    </ng-template>
   `,
   styles: `
     .visibility {
@@ -144,8 +178,31 @@ export class RepositoryVisibilityBlock {
   readonly failure = input<ApiError | null>(null);
   /** The sentences of the answer's warnings, shown at the block. */
   readonly warnings = input<readonly string[]>([]);
-  /** Only the parts that differ from the stored levels. */
-  readonly save = output<Partial<RepositoryVisibility>>();
+  /** The Bastions that distribute the repository now (its member `bastions`). */
+  readonly storedBastions = input<readonly DistributingBastion[]>([]);
+  /** The Bastions that allow the project; `null` while unknown or not readable by the caller. */
+  readonly offered = input<readonly ProjectBastion[] | null>(null);
+  /** The caller chooses the Bastions: the project's Owner, `repositories:write-config`, an administrator on `upstream`. */
+  readonly canChooseBastions = input(false);
+  readonly repositoryClass = input<'local' | 'remote' | 'virtual'>('local');
+  /** A virtual's members each offered Bastion does not distribute, by the Bastion's name. */
+  readonly missingMembers = input<ReadonlyMap<string, readonly string[]>>(new Map());
+  /**
+   * The level's group and the wiki's fold, under the section's own heading. Off for a system repository, whose level is a statement of
+   * its page (R-UI-190): the block is then the group Bastions and its Save changes alone, shown while there is something to choose or
+   * to say.
+   */
+  readonly levelsShown = input(true);
+  /** Only the parts that differ from the stored levels and Bastions. */
+  readonly save = output<VisibilityChange>();
+
+  /** The group has boxes: the caller chooses and a Bastion allows the project. */
+  protected readonly bastionsChoosable = computed(() => this.canChooseBastions() && (this.offered()?.length ?? 0) > 0);
+  /** The Bastions chosen in the form: the stored ones until the person changes them. */
+  protected readonly chosen = linkedSignal<readonly string[]>(() => this.storedBastions().map((b) => b.name).sort());
+  private readonly bastionsDirty = computed(
+    () => this.chosen().join('\n') !== this.storedBastions().map((b) => b.name).sort().join('\n'),
+  );
 
   /** The visibility level of the repository, the level of its artifacts: the stored one until the person chooses another. */
   protected readonly artifacts = linkedSignal<VisibilityLevel>(() => this.stored().artifacts);
@@ -196,10 +253,17 @@ export class RepositoryVisibilityBlock {
   /** What the server answered for one level, under its group; the wiki's only where the format shows the wiki. */
   protected readonly artifactsError = computed(() => fieldErrorAt(this.failure(), '/visibility/artifacts'));
   protected readonly wikiError = computed(() => (this.hasWiki() ? fieldErrorAt(this.failure(), '/visibility/wiki') : null));
-  /** A refusal that names no level shown here is the block's. */
+  /** The server's refusal of a chosen Bastion (`bastion_not_allowed` at `/bastions/<i>`), under the group. */
+  protected readonly bastionsError = computed(() => {
+    const failure = this.failure();
+    if (!failure) return null;
+    const messages = problemsAt(failure.fieldErrors, '/bastions').map((p) => fieldMessage(p));
+    return messages.length > 0 ? [...new Set(messages)].join(' ') : null;
+  });
+  /** A refusal that names no level and no Bastion shown here is the block's. */
   protected readonly blockFailure = computed(() => {
     const failure = this.failure();
-    return failure && this.artifactsError() === null && this.wikiError() === null ? failure : null;
+    return failure && this.artifactsError() === null && this.wikiError() === null && this.bastionsError() === null ? failure : null;
   });
 
   /**
@@ -216,14 +280,18 @@ export class RepositoryVisibilityBlock {
     !this.wikiFollows() && this.wiki() !== this.stored().wiki ? $localize`:@@repo.settings.unsaved:Unsaved changes` : '',
   );
 
-  protected readonly dirty = computed(() => this.artifacts() !== this.stored().artifacts || this.wiki() !== this.stored().wiki);
+  private readonly levelsDirty = computed(() => this.artifacts() !== this.stored().artifacts || this.wiki() !== this.stored().wiki);
+  protected readonly dirty = computed(() => this.levelsDirty() || this.bastionsDirty());
 
   protected submit(event: Event): void {
     event.preventDefault();
     if (!this.dirty() || this.saving()) return;
-    const change: { artifacts?: VisibilityLevel; wiki?: VisibilityLevel } = {};
-    if (this.artifacts() !== this.stored().artifacts) change.artifacts = this.artifacts();
-    if (this.wiki() !== this.stored().wiki) change.wiki = this.wiki();
-    this.save.emit(change);
+    const levels: { artifacts?: VisibilityLevel; wiki?: VisibilityLevel } = {};
+    if (this.artifacts() !== this.stored().artifacts) levels.artifacts = this.artifacts();
+    if (this.wiki() !== this.stored().wiki) levels.wiki = this.wiki();
+    this.save.emit({
+      ...(this.levelsDirty() ? { visibility: levels } : {}),
+      ...(this.bastionsDirty() ? { bastions: this.chosen() } : {}),
+    });
   }
 }

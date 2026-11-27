@@ -83,7 +83,7 @@ func (s *Server) toUpstream(r *http.Request, it repository.UpstreamItem) gen.Ups
 				Url: it.Address.Product.URL, ExtraHosts: genHosts(it.Address.Product.ExtraHosts), UpstreamKeys: genKeys(it.Address.Product.UpstreamKeys),
 			},
 		},
-		Account: genAccount(it.Account), AccountRaisesLimit: it.AccountRaisesLimit,
+		Account: genAccount(it.Account), AccountRaisesLimit: it.AccountRaisesLimit, Bastions: s.genBastions(it.Bastions),
 	}
 	for _, f := range it.Fixed {
 		out.Fixed = append(out.Fixed, gen.UpstreamRepositoryFixed(f))

@@ -24,6 +24,7 @@ import { asApiError, failureOf, valueOf } from '../../shared/paged-resource';
 import { Disclosure } from '../../shared/ui/disclosure';
 import { PageHeader } from '../../shared/ui/page-header';
 import { VisibilityIcon } from '../../shared/ui/visibility-level';
+import { DistributionMark } from '../../shared/ui/distribution-mark';
 import { GuideView } from '../guides/guide-view';
 import { classIcon, classLabel, classTip, isSystemOnly } from '../repositories/repository-class';
 import { Tooltip } from '../../shared/ui/tooltip';
@@ -89,7 +90,7 @@ type Step = 'configure' | 'install' | 'publish' | 'verify';
     PageHeader,
     ErrorNotice,
     Disclosure,
-    VisibilityIcon,
+    DistributionMark, VisibilityIcon,
     FormatIconView,
     AddressField,
     CodeWindow,

@@ -132,7 +132,7 @@ The entry must equal the Bastion's `config.server.base_url`: the same scheme and
 
 **Public** is your main installation's level: public on its network, usually your intranet. What leaves it through a Bastion is granted twice. You, as an administrator, allow the projects whose repositories may be distributed through a Bastion; a new Bastion allows none. A project's Owner then chooses, per repository, the Bastions that distribute it, among those that allow the project. Not every repository that is public on the intranet goes to the internet, and a private repository that a partner reads through a Bastion with his token needs the same choice.
 
-**This release stores the two lists; it does not yet hold a Bastion to them.** Until the next step lands, a Bastion still serves what each caller's credential may read on the main installation, as before. The repository's **Bastions** in its settings is not there yet either: an Owner's choice is made through the API (`bastions` of the repository).
+**This release stores the two lists; it does not yet hold a Bastion to them.** Until the next step lands, a Bastion still serves what each caller's credential may read on the main installation, as before. An Owner chooses in the repository's **Settings › Visibility › Bastions**, a box per Bastion that allows the project, and every reader then sees a tower beside the repository's level, which names the Bastion and its address when pointed at or tapped.
 
 On the Bastion's card in **Admin area › Bastions**, the closed section **Projects** says how many projects it allows and how many repositories it distributes. Open it:
 
@@ -146,7 +146,7 @@ The same through the API:
 - **Allow a project:** `PUT /api/v1/bastions/<name>/projects/<project>` (the permission `endpoints:write`). It distributes nothing by itself; a second call changes nothing. The audit event is `bastion.project.allowed`.
 - **See what is allowed:** `GET /api/v1/bastions/<name>/projects` (`endpoints:read`) lists the projects with the keys of the repositories whose Owner chose the Bastion, and `totals` counts them all.
 - **Take a project off:** `DELETE /api/v1/bastions/<name>/projects/<project>`. Its repositories' choices of that Bastion are deleted with it, in the same step; allowing the project again distributes nothing until its Owner chooses again. The audit event `bastion.project.removed` names the repositories whose choice went, and a restore to an earlier point takes the project off again.
-- **The project upstream's repositories** are yours to choose, as their other open settings: a Bastion's ClamAV installations update through it only while `upstream/clamav` is distributed there, so allow the project `upstream` and choose the Bastion in `upstream/clamav`.
+- **The project upstream's repositories** are yours to choose, as their other open settings: a Bastion's ClamAV installations update through it only while `upstream/clamav` is distributed there, so allow the project `upstream` and tick the Bastion in the **Settings › Visibility** of `upstream/clamav`. The tower beside a well-known repository's level on **Admin area › Upstream registries** shows where each one is distributed.
 
 A repository that moves to another project loses its choices: the new project's Owner chooses again.
 

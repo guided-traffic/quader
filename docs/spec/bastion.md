@@ -7795,8 +7795,8 @@ while it is chosen there ([Q-BAS-520](#q-bas-520--every-level-needs-the-choice-n
   name of a Bastion that does not allow the project answers `422 validation_failed` with `bastion_not_allowed` at `/bastions/<i>`.
   `GET /api/v1/projects/{projectKey}/bastions` (the Owner, or `repositories:read-config`) lists what may be chosen: each Bastion that
   allows the project with whether it is disabled, whether its web interface is on, and its `addresses`. Every reader of a repository reads
-  the member, in the full document, the consumer view and the list of repositories (R-REPO-012); the search and the package views do not
-  carry it yet (W-41's D1): `{name, addresses, disabled}`, `addresses` being the base URLs its
+  the member, in the full document, the consumer view, the list of repositories (R-REPO-012, which the search's repositories are) and a
+  well-known repository's item (`UpstreamRepository`): `{name, addresses, disabled}`, `addresses` being the base URLs its
   deployments reported within the last 24 hours that are entries of `server.additional_base_urls` (as R-BAS-007 holds a client setup's).
   A write takes a name or that object, whose `addresses` and `disabled` are ignored; the repositories of the project `upstream` take it
   from an administrator as their other open members (R-REPO-069).
@@ -7820,8 +7820,10 @@ and the OpenAPI document, the events of [events_bastion_distribution.go](../../i
 **Projects of <name>** ([api-and-ui.md](api-and-ui.md) R-UI-240,
 [Q-UI-1637](api-and-ui.md#q-ui-1637--a-bastions-projects-are-a-closed-section-of-its-card-of-ten-rows-and-a-page-of-all),
 [bastion-projects.ts](../../web/src/app/features/bastions/bastion-projects.ts)).
+*Built on 2026-11-27 (W-41's D1):* the repository's group **Bastions** in its section **Visibility** and the distribution mark beside every
+level ([api-and-ui.md](api-and-ui.md) R-UI-271), the member on a well-known repository's item.
 *Not built:* the ceiling (W-41's B2, [authorization.md](authorization.md)): nothing decides a request through a Bastion on the
-distribution yet, so a Bastion serves what it served before; the repository's group **Bastions** with its mark (W-41's D1).
+distribution yet, so a Bastion serves what it served before.
 
 Acceptance criteria:
 

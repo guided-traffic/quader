@@ -8,6 +8,7 @@ import { failureOf, valueOf } from '../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
 import { PageHeader } from '../../shared/ui/page-header';
 import { VisibilityIcon } from '../../shared/ui/visibility-level';
+import { DistributionMark } from '../../shared/ui/distribution-mark';
 import { ProjectLink } from '../../shared/ui/project-link';
 import { classIcon, classLabel, shownClass } from '../repositories/repository-class';
 import { Loading } from '../../shared/ui/loading';
@@ -21,7 +22,7 @@ import { Loading } from '../../shared/ui/loading';
  */
 @Component({
   selector: 'quader-guide-format',
-  imports: [Loading, RouterLink, PageHeader, ErrorNotice, DataTable, VisibilityIcon, ProjectLink],
+  imports: [Loading, RouterLink, PageHeader, ErrorNotice, DataTable, DistributionMark, VisibilityIcon, ProjectLink],
   template: `
     @if (formatFailure(); as f) {
       <quader-error-notice [error]="f" (retry)="formatFailure.retry()" />
@@ -53,6 +54,7 @@ import { Loading } from '../../shared/ui/loading';
                 <quader-visibility-icon [level]="r.visibility.artifacts" />
                 <span class="icon-name-text">
                   <a [routerLink]="repositoryLink(r)" translate="no">{{ r.key }}</a>
+                  <quader-distribution-mark [bastions]="r.bastions" />
                   @if (r.class === 'virtual') {
                     <span class="badge" i18n="@@guides.format.recommended">Recommended</span>
                   }

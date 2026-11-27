@@ -1,6 +1,7 @@
 import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
 import { NgTemplateOutlet } from '@angular/common';
 import { VisibilityIcon } from '../../shared/ui/visibility-level';
+import { DistributionMark } from '../../shared/ui/distribution-mark';
 import {
   Component,
   computed,
@@ -113,7 +114,7 @@ export function listAdmits(
     ProjectLink,
     TimeAgo,
     Tooltip,
-    VisibilityIcon,
+    DistributionMark, VisibilityIcon,
   ],
   templateUrl: './repository-list.html',
   styleUrl: './repository-list.scss',

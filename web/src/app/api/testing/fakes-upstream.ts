@@ -78,6 +78,7 @@ export function presetRepository(format: string, p: UpstreamPreset, over: Partia
     inUse: null,
     clients: null,
     visibility: 'internal',
+    bastions: [],
     fixed: [],
     address: {
       url: p.url,
@@ -108,6 +109,7 @@ export function scannerTrivy(over: Partial<UpstreamRepository> = {}): UpstreamRe
     inUse: true,
     clients: null,
     visibility: 'private',
+    bastions: [],
     fixed: ['state', 'visibility'],
     address: { ...product, overridden: false, product },
     account: noAccount(),
@@ -138,6 +140,7 @@ export function clamavRepository(over: Partial<UpstreamRepository> = {}): Upstre
     inUse: true,
     clients: { enabled: false, address: CLAMAV_ENDPOINT, certificateAddresses: [] },
     visibility: 'private',
+    bastions: [],
     fixed: ['state', 'visibility', 'address', 'account'],
     address: { ...product, overridden: false, product },
     account: noAccount(),

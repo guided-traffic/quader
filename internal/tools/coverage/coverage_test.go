@@ -224,8 +224,9 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 		// 1418 since a text the product writes is shown in the reader's language (R-UI-272, one P1 requirement of W-40, P7).
 		// 1420 since a Bastion has a project view and shows it without repositories while they are hidden (R-UI-273, R-UI-274, two P1
 		// requirements of W-40, P5).
-		if len(m.Reqs) != 1420 || count[prioMVP] != 744 || count[prioP1] != 637 || count[prioP2] != 39 {
-			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1420 (744, 637, 39)",
+		// 1421 since a repository says where it is distributed (R-UI-271, one P1 requirement of W-41, D1).
+		if len(m.Reqs) != 1421 || count[prioMVP] != 744 || count[prioP1] != 638 || count[prioP2] != 39 {
+			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1421 (744, 638, 39)",
 				len(m.Reqs), count[prioMVP], count[prioP1], count[prioP2])
 		}
 	})

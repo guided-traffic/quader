@@ -47,6 +47,8 @@ type UpstreamItem struct {
 	// ListedByNames is the qualified names of those virtual repositories, in byte order, at most 100; nil in the list, which answers
 	// the numbers only (Q-API-363).
 	ListedByNames []string
+	// Bastions are the repository's member bastions (bastion.md R-BAS-134): the screens show the distribution mark beside the level.
+	Bastions      []BastionRef
 	ConfigVersion int64
 	Warnings      []Warning
 	// AccountRaisesLimit is whether an account would lift the upstream's limit: the preset its address matches says so and the
@@ -141,6 +143,14 @@ func (s *Service) UpstreamItems(ctx context.Context) ([]UpstreamItem, error) {
 		if err != nil {
 			return err
 		}
+		ids := make([]int64, 0, len(rows))
+		for _, row := range rows {
+			ids = append(ids, row.ID)
+		}
+		bastions, err := loadBastions(ctx, qs, ids...)
+		if err != nil {
+			return err
+		}
 		for _, row := range rows {
 			if Lifecycle(row.Lifecycle) == Deleting {
 				continue // a system repository whose removal runs (Q-REPO-490) is gone for every reader
@@ -149,6 +159,7 @@ func (s *Service) UpstreamItems(ctx context.Context) ([]UpstreamItem, error) {
 			if err != nil {
 				return err
 			}
+			it.Bastions = orNone(bastions[row.ID])
 			out = append(out, it)
 		}
 		return nil
@@ -276,6 +287,11 @@ func (s *Service) upstreamItemTx(ctx context.Context, tx meta.Tx, key string, wa
 	if err != nil {
 		return UpstreamItem{}, err
 	}
+	bastions, err := loadBastions(ctx, qs, rows[0].ID)
+	if err != nil {
+		return UpstreamItem{}, err
+	}
+	it.Bastions = orNone(bastions[rows[0].ID])
 	if it.ListedByNames, err = listedByNames(ctx, qs, rows[0].ID); err != nil {
 		return UpstreamItem{}, err
 	}
