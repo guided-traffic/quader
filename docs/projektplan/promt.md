@@ -1595,6 +1595,20 @@ records the recorder that tells such a stall apart).
   when they move a module the Bastion's views reach. Gates on the stack: the landing gates, charts, `ui-states`, the whole render set (766
   passed, 0 failed), `identity`, `go test -race ./internal/jobs/`. On the stack: batch B-1127m (the API services provided where they are
   used, the first page 795.9 to 763.7 kB; the downloads tab's limit notice a component of its own), its gates next.
+  **Landed on 2026-11-27, 23:10: batch B-1127m and H-2448.** B-1127m: each service that talks to the server is provided with the pages
+  that use it (the first page 795.9 to 763.7 kB), the downloads tab's limit notice a component of its own. H-2448 (built 21:33 to 21:57,
+  `.dev/briefs/batch-h2448.md`): every request a Bastion answers past the host and the block list takes one token of its address's
+  request limit, `404`, `405`, `403 read_only` and an oversized token form included, so a scanner that asks only unserved paths gets
+  `429 rate_limited` after its burst and is blocked at the threshold (R-BAS-018, R-BAS-035, R-BAS-037, Q-BAS-525 to Q-BAS-528); the web
+  interface's pages, files and data stay in the page class (a cold first load 17 to 29 requests against its burst of 100, measured once
+  with headless Chromium); a foreign host's `421` takes no token; the limit adds 0.7 µs to a `404` in memory, and with Valkey one round
+  trip more until the block (derived from the code, not measured). The security page's H-2448 is closed; H-2447 is a one-line change now
+  (`q.hasAuth && q.credOK` in `limitClass`). Gates: M on the stack: the landing gates, charts, `ui-states`, the whole render set (766
+  passed, 0 failed), `conventions`, the bundle budgets; H-2448 by its builder: the Go gates, `bastion`, `bastionreg`, and on the stack
+  the full unit run (its tree equal to the builder's apart from the plan). On the stack now: W41-B2, E, D2 and D1's seed (the owner after
+  the attack: "Natürlich soll B2 landen, go.", superseding the order of 15:56 that held B2 until he had granted; his Bastion serves
+  nothing from that release until he allows `upstream` and ticks `artifacts` at `upstream/docker-hub`, told him), and the renders'
+  declared Bastion token without the old phrase (K's open point); their gates next.
 
 - **Open since 2026-11-27, 11:18, the owner on the Bastions page of his installation (the card before W39-P2): "Ich weiß nicht
   wie du es schaffst, dass jede Seite immer so gnadenlos überladen aussieht, wenn du mit ihr fertig bist."** His points: the page
