@@ -475,7 +475,7 @@ probes' admission; a write costs the Bastion its request limit and nothing of th
 ## Disabling a Bastion
 
 Built on the main installation's side ([R-BAS-133](../spec/bastion.md#r-bas-133--disabling-a-bastion-soft-or-hard-told-over-its-connection),
-W-41's A1); the Bastion's own part (its `503`, the pause of its sync and the cut of what it runs) is **specified and not built** (W-41's A2).
+W-41's A1) and on the Bastion's (its `503`, the pause of its sync and the cut of what it runs, W-41's A2).
 The owner's words of 2026-11-27: the Bastion is told at once to stop work, soft (what started finishes) or hard (what runs is cut), not by
 a refused token and a grace period.
 
@@ -487,7 +487,7 @@ a refused token and a grace period.
   catalogue answer `503 bastion_disabled`, a problem the Bastion never passes on; a hard disable cancels the Bastion's forwards in flight on
   every main replica. A Bastion that ignores its disable gets nothing new, but keeps what it holds
   ([H-2440](#h-2440--a-disabled-bastion-that-ignores-the-disable-serves-what-it-holds)).
-- **What an outsider sees** (A2): a temporary outage, `503` with `Retry-After`, in the format's shape and the Bastion's page, naming no
+- **What an outsider sees**: a temporary outage, `503` with `Retry-After`, in the format's shape and the Bastion's page, naming no
   administrator's act (R-BAS-099).
 - **The line stays open.** The handshake, the feed and the download intake answer while disabled, so the Bastion confirms and learns the
   enable, and a soft disable's last downloads are reported. That is also what a leaked token of a disabled registration can still do

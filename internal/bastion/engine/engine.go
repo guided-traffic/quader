@@ -26,6 +26,7 @@ import (
 	"github.com/guided-traffic/quader/internal/bastion/downloads"
 	"github.com/guided-traffic/quader/internal/bastion/guard"
 	"github.com/guided-traffic/quader/internal/bastion/handover"
+	"github.com/guided-traffic/quader/internal/bastion/iface"
 	"github.com/guided-traffic/quader/internal/bastion/link"
 	"github.com/guided-traffic/quader/internal/bastion/mainclient"
 	"github.com/guided-traffic/quader/internal/bastion/metrics"
@@ -95,6 +96,9 @@ type Engine interface {
 	// (R-BAS-043); the server calls it after the listeners stopped accepting and the in-flight requests
 	// finished or were cut, and then drains the download buffer.
 	Drain(ctx context.Context) error
+	// Operation is the way of the disable the replica applies and the requests of its callers it runs (R-BAS-133), which its
+	// status reports.
+	Operation() iface.Operation
 	// Ready reports what the engine contributes to readiness: nil, or an error naming what is missing. It
 	// does not depend on the main installation (R-BAS-043, Q-BAS-44); it fails before the cache backend's
 	// first check passed.
@@ -138,6 +142,10 @@ type engine struct {
 	volatile *lruCache[time.Time]
 
 	checks, fetches *group
+
+	// op is the replica's own account of its work while its registration is disabled (R-BAS-133): the requests it runs and the
+	// context a hard disable cancels.
+	op *operation
 
 	// The bounds of the transfers that must not depend on a client's speed (Q-BAS-123); the defaults are the
 	// constants below, tests shorten them.
@@ -229,6 +237,8 @@ func newFlow(d Deps) (*engine, error) {
 	e.priv = newLRU[*privDoc](0, int64(e.cfg.Cache.PrivateDocumentsMaxBytes), nil)
 	e.vary = newLRU[[]string](varyEntries, 0, nil)
 	e.volatile = newLRU[time.Time](volatileEntries, 0, nil)
+	e.op = newOperation()
+	e.watchDisable()
 	return e, nil
 }
 

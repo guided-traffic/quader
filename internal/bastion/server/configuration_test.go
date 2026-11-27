@@ -61,3 +61,40 @@ func TestR_BAS_093_ARestartDuringAnOutageAppliesTheStoredConfiguration(t *testin
 		t.Errorf("a replica of an empty volume answers npm: %d %q", status, h.Get("Content-Type"))
 	}
 }
+
+// TestR_BAS_133_ARestartDuringAnOutageKeepsTheDisable: the disable is a member of the configuration a replica stores, so a replica
+// restarted while the main installation cannot be reached is still disabled: quader_bastion_disabled{mode="hard"} is 1 and a package
+// request is answered 503 before any handshake; its status reports the way. A cache volume of a few files, two starts.
+func TestR_BAS_133_ARestartDuringAnOutageKeepsTheDisable(t *testing.T) {
+	main := maintest.New(t)
+	hard := iface.DisableHard
+	main.SetConfiguration(func(c *iface.Configuration) {
+		c.Revision = 41
+		c.Disabled = &hard
+	})
+	dir := t.TempDir()
+	cfg := linkedConfig(main, dir, tokenFileFor(t, dir, main.NewToken()), "")
+	first, logs := newLinked(t, cfg, nil)
+	run(t, first, logs)
+	eventually(t, 10*time.Second, "the disable applied", func() bool {
+		return strings.Contains(metricsBody(t, first), `quader_bastion_disabled{mode="hard"} 1`)
+	})
+	if err := first.Shutdown(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	main.SetDown(true)
+	again, logs := newLinked(t, cfg, nil)
+	run(t, again, logs)
+	body := metricsBody(t, again)
+	if !strings.Contains(body, `quader_bastion_configuration_source{source="stored"} 1`) || !strings.Contains(body, `quader_bastion_disabled{mode="hard"} 1`) {
+		t.Fatalf("the restarted replica forgot the disable:\n%s", grepLines(body, "quader_bastion_disabled"))
+	}
+	if status, h, b := get(t, "http://"+again.ClientAddr().String()+"/api/npm/web/npm-all/lodash"); status != 503 ||
+		h.Get("Retry-After") != "300" || !strings.Contains(b, `"code":"unavailable"`) {
+		t.Errorf("the restarted replica's npm answer: %d %q %s", status, h.Get("Retry-After"), b)
+	}
+	if op := again.reporting.status().Operation; op.Disabled == nil || *op.Disabled != iface.DisableHard {
+		t.Errorf("the status reports %+v, want hard", op)
+	}
+}

@@ -89,6 +89,9 @@ type Options struct {
 	Log          *slog.Logger
 	// Now is the clock; nil is time.Now.
 	Now func() time.Time
+	// Paused reports whether the replica applies a disable of its registration (R-BAS-133): the sync then reads nothing of the main
+	// installation and the state it holds stays as it is. nil never pauses.
+	Paused func() bool
 }
 
 // Errors of the reader.
@@ -300,6 +303,9 @@ func (c *Catalogue) Run(ctx context.Context) {
 func (c *Catalogue) Tick(ctx context.Context) {
 	gui, _ := c.effective()
 	c.export(gui)
+	if c.o.Paused != nil && c.o.Paused() {
+		return
+	}
 	if !gui {
 		if c.decided() {
 			c.clear(ctx)

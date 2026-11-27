@@ -31,6 +31,8 @@ type reporting struct {
 	// sharedCache is the bucket backend: the cache's figures are the whole Bastion's, which every replica reports alike (Q-BAS-480).
 	sharedCache bool
 	now         func() time.Time
+	// operation is the engine's account of the disable (R-BAS-133); nil reports none.
+	operation func() iface.Operation
 }
 
 // report drains the usage and builds the state.
@@ -41,6 +43,9 @@ func (r *reporting) report() (iface.UsageReport, iface.ReplicaStatus) {
 // status is the replica's state now (R-LIM-045, R-UI-240).
 func (r *reporting) status() iface.ReplicaStatus {
 	st := iface.ReplicaStatus{Replica: r.replica, At: r.now().UTC()}
+	if r.operation != nil {
+		st.Operation = r.operation()
+	}
 	st.Cache.Shared = r.sharedCache
 	m := r.m
 	// The cache: what the replica's view of its backend holds and may hold, and what of it is protected (the Bastion's own figure

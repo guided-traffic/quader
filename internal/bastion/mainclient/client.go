@@ -417,6 +417,8 @@ func (c *HTTPClient) classify(status int, p problem, own bool) error {
 	switch {
 	case status == http.StatusBadRequest && p.Code == iface.CodeInterfaceMismatch:
 		return &MismatchError{Main: p.InterfaceVersion}
+	case status == http.StatusServiceUnavailable && p.Code == iface.CodeDisabled:
+		return ErrDisabled
 	case status == http.StatusUnauthorized && p.Code == iface.CodeTokenInvalid:
 		if !own {
 			return &AnswerError{Status: status, Code: p.Code}
@@ -550,7 +552,8 @@ func (c *HTTPClient) accept(resp *http.Response, release func(), offered bool) (
 		return nil, err
 	}
 	body := resp.Body
-	if (resp.StatusCode == http.StatusBadRequest || resp.StatusCode == http.StatusUnauthorized) &&
+	if (resp.StatusCode == http.StatusBadRequest || resp.StatusCode == http.StatusUnauthorized ||
+		(resp.StatusCode == http.StatusServiceUnavailable && !marked)) &&
 		strings.HasPrefix(resp.Header.Get("Content-Type"), iface.ProblemMediaType) {
 		p, buf := readProblem(body)
 		if err := c.classify(resp.StatusCode, p, false); err != nil {

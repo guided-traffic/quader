@@ -214,4 +214,11 @@ func (h *Holder) export(a *Applied) {
 		}
 		m.ConfigSource.WithLabelValues(string(s)).Set(v)
 	}
+	for _, d := range []iface.DisableMode{iface.DisableSoft, iface.DisableHard} {
+		v := 0.0
+		if a.Disabled == d {
+			v = 1
+		}
+		m.Disabled.WithLabelValues(string(d)).Set(v)
+	}
 }

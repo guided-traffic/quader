@@ -64,7 +64,7 @@ func (e *engine) ask(q *rq, kind mainclient.Kind, validator string, bl *baseline
 	sent := e.now()
 	// The request to the main installation does not end with the client: an artifact fill reads on at the
 	// main installation's speed when the client is slow or gone (Q-BAS-123). Everything else ends with the client.
-	hold := newHold(q.ctx())
+	hold := e.newHold(q.ctx())
 	q.hold = hold
 	q.offer = e.offerFor(q, kind, bl)
 	resp, err := e.d.Main.Do(hold.ctx, mainclient.Forward{
@@ -101,9 +101,13 @@ type mainHold struct {
 	taken  bool
 }
 
-func newHold(client context.Context) *mainHold {
+// newHold binds the request to the main installation to the client's request and to the next hard disable, which also ends the
+// fill that took it over (R-BAS-133).
+func (e *engine) newHold(client context.Context) *mainHold {
 	ctx, cancel := context.WithCancel(context.WithoutCancel(client))
-	return &mainHold{ctx: ctx, cancel: cancel, stop: context.AfterFunc(client, cancel)}
+	stopClient := context.AfterFunc(client, cancel)
+	stopCut := context.AfterFunc(e.op.current(), cancel)
+	return &mainHold{ctx: ctx, cancel: func() { stopCut(); cancel() }, stop: stopClient}
 }
 
 // release ends the request to the main installation with the client's, unless a fill took it over.

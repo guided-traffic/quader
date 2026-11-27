@@ -58,6 +58,7 @@ const (
 	HandoverCooldown         = "quader_bastion_handover_cooldown"
 	ConfigurationRevision    = "quader_bastion_configuration_revision"
 	ConfigurationSource      = "quader_bastion_configuration_source"
+	Disabled                 = "quader_bastion_disabled"
 	ThroughputLimit          = "quader_bastion_throughput_limit_bytes_per_second"
 	ThroughputWaitTotal      = "quader_bastion_throughput_wait_seconds_total"
 	ThroughputRefusedTotal   = "quader_bastion_throughput_refused_total"
@@ -206,6 +207,13 @@ const (
 	ConfigurationFromStored  = "stored"
 	ConfigurationFromBuiltin = "builtin"
 
+	// mode of quader_bastion_disabled (R-BAS-133): the way of the disable the replica applies.
+	DisabledSoft = "soft"
+	DisabledHard = "hard"
+
+	// RefusedDisabled: a request while the replica applies a disable of its registration, answered 503 unavailable (R-BAS-133).
+	RefusedDisabled = "disabled"
+
 	// outcome of quader_bastion_catalogue_sync_total (R-BAS-109): a round of this replica's own that read the public set and the
 	// change list to its end and kept every document it named; a round that failed; a round that took the state another replica
 	// of a shared bucket synced (the lease's follower).
@@ -325,6 +333,9 @@ type Metrics struct {
 	// came from (main, stored, builtin) and 0 for the others (R-BAS-093).
 	ConfigRevision prometheus.Gauge
 	ConfigSource   *prometheus.GaugeVec
+	// Disabled is 1 for the way of the disable the replica applies (soft, hard) and 0 for the other, both 0 while it works
+	// (R-BAS-133).
+	Disabled *prometheus.GaugeVec
 	// ThroughputLimit is the configured byte rate of the whole Bastion by bucket (total, anonymous), 0 while unlimited;
 	// ThroughputWait counts the seconds this replica's reads waited for the cap, by class; ThroughputRefused counts the misses
 	// the throughput did not admit, by class and reason (busy, hour) (R-BAS-097).
@@ -405,6 +416,7 @@ func New(reg prometheus.Registerer) (*Metrics, error) {
 		HandoverCooldown:     prometheus.NewGauge(prometheus.GaugeOpts{Name: HandoverCooldown, Help: "1 while this replica sends no offer after a failure of the object store's path (R-BAS-075)."}),
 		ConfigRevision:       prometheus.NewGauge(prometheus.GaugeOpts{Name: ConfigurationRevision, Help: "The revision of the configuration this replica applies (R-BAS-093)."}),
 		ConfigSource:         gauge(ConfigurationSource, "1 for where the configuration this replica applies came from (main, stored, builtin), 0 for the others (R-BAS-093).", "source"),
+		Disabled:             gauge(Disabled, "1 for the way of the disable this replica applies (soft, hard), 0 for the other; both 0 while it works (R-BAS-133).", "mode"),
 		ThroughputLimit:      gauge(ThroughputLimit, "The configured byte rate between the main installation and the whole Bastion, by bucket (total, anonymous); 0 while unlimited (R-BAS-097).", "bucket"),
 		ThroughputWait:       counter(ThroughputWaitTotal, "Seconds this replica's reads from the main installation and the object store waited for the throughput cap, by class (anonymous, signed_in, catalogue) (R-BAS-097).", "class"),
 		ThroughputRefused:    counter(ThroughputRefusedTotal, "Misses the throughput did not admit, by class and reason (busy, hour) (R-BAS-097).", "class", "reason"),
@@ -510,6 +522,9 @@ func (m *Metrics) seed() {
 	for _, s := range []string{ConfigurationFromMain, ConfigurationFromStored, ConfigurationFromBuiltin} {
 		m.ConfigSource.WithLabelValues(s)
 	}
+	for _, d := range []string{DisabledSoft, DisabledHard} {
+		m.Disabled.WithLabelValues(d)
+	}
 	for _, b := range []string{BucketTotal, BucketAnonymous} {
 		m.ThroughputLimit.WithLabelValues(b)
 	}
@@ -532,7 +547,7 @@ func (m *Metrics) collectors() []prometheus.Collector {
 		m.TokenRemaining, m.TokenWarnBefore, m.MainTokenRefused, m.TokenReloads,
 		m.CacheBytes, m.CacheCapacity, m.CacheEvictions, m.CacheCorrupt, m.CacheErrors, m.CacheSweeps, m.CacheNoRoom,
 		m.CacheProtected, m.Refused, m.Blocks, m.Blocked, m.AuditEvents, m.AuditBuffer, m.AuditDropped,
-		m.Handovers, m.FillBytes, m.HandoverEnabled, m.HandoverCooldown, m.ConfigRevision, m.ConfigSource,
+		m.Handovers, m.FillBytes, m.HandoverEnabled, m.HandoverCooldown, m.ConfigRevision, m.ConfigSource, m.Disabled,
 		m.ThroughputLimit, m.ThroughputWait, m.ThroughputRefused, m.LimitsMode, m.BudgetEvents,
 		m.GUIEnabled, m.CatalogueConfirmed, m.CatalogueStaleAfter, m.CatalogueBytes, m.CatalogueMaxBytes, m.CatalogueDocuments, m.CatalogueSync,
 	}
@@ -548,7 +563,7 @@ func Names() []string {
 		TokenReloadsTotal, CacheBytes, CacheCapacityBytes, CacheEvictionsTotal, CacheCorruptTotal, CacheErrorsTotal,
 		CacheSweepsTotal, CacheNoRoomTotal, CacheProtectedBytes,
 		RefusedTotal, BlocksTotal, BlockedAddresses, AuditEventsTotal, AuditBufferEvents, AuditEventsDroppedTotal,
-		HandoversTotal, FillBytesTotal, HandoverEnabled, HandoverCooldown, ConfigurationRevision, ConfigurationSource,
+		HandoversTotal, FillBytesTotal, HandoverEnabled, HandoverCooldown, ConfigurationRevision, ConfigurationSource, Disabled,
 		ThroughputLimit, ThroughputWaitTotal, ThroughputRefusedTotal, LimitsMode, BudgetEventsTotal,
 		GUIEnabled, CatalogueConfirmed, CatalogueStaleAfterSeconds, CatalogueBytes, CatalogueMaxBytes, CatalogueDocuments, CatalogueSyncTotal,
 	}

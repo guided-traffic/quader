@@ -48,6 +48,9 @@ type Applied struct {
 	Enforce bool
 	// Place is the table of the Bastion's place with its address rules parsed, the longest prefix first (R-BAS-096).
 	Place Place
+	// Disabled is the way the registration is disabled (R-BAS-133), empty while it works: the replica answers every new request
+	// 503, and with hard it cuts what runs.
+	Disabled iface.DisableMode
 }
 
 // Place is the rule table of the Bastion's place (R-BAS-096, Q-LIM-302): the main installation names a signed-in caller's rule,
@@ -190,6 +193,9 @@ func FromConfiguration(c iface.Configuration, src Source) (*Applied, error) {
 		Throughput: throughputOf(c.Limits.Throughput),
 		Enforce:    c.Limits.Mode == iface.ModeEnforce,
 		Place:      Place{Rules: c.Limits.Place.Rules, Kinds: c.Limits.Place.KindRules},
+	}
+	if c.Disabled != nil {
+		a.Disabled = *c.Disabled
 	}
 	for _, r := range c.Limits.Place.AddressRules {
 		p, err := netip.ParsePrefix(r.Prefix)

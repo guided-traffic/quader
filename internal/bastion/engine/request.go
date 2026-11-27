@@ -32,6 +32,10 @@ type rq struct {
 	e    *engine
 	span trace.Span
 
+	// unbind releases the context a hard disable cancels; running says the request counts as running (R-BAS-133).
+	unbind  func()
+	running bool
+
 	start      time.Time
 	peer       netip.Addr
 	client     netip.Addr
@@ -148,7 +152,7 @@ func (q *rq) finish(class, result string) {
 func (e *engine) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	q := e.newRq(w, r)
 	defer q.end()
-	if !e.stepHost(q) || !e.stepBlocked(q) || !e.stepPath(q) || !e.stepTokenForm(q) || !e.stepLimits(q) {
+	if !e.stepHost(q) || !e.stepBlocked(q) || !e.stepPath(q) || !e.stepDisabled(q) || !e.stepTokenForm(q) || !e.stepLimits(q) {
 		return
 	}
 	switch r.Method {
@@ -198,8 +202,11 @@ func (e *engine) newRq(w http.ResponseWriter, r *http.Request) *rq {
 	// The request reads the configuration once, at its start: every decision it makes is made with the same figures, the old
 	// ones or the new ones of a handshake that swaps them meanwhile (R-BAS-093).
 	r = r.WithContext(settings.With(r.Context(), e.d.Link.Configuration().Current()))
+	// A hard disable cuts the request wherever it is (R-BAS-133).
+	ctx, unbind := e.op.bind(r.Context())
+	r = r.WithContext(ctx)
 	sw := &statusWriter{ResponseWriter: w}
-	q := &rq{w: sw, sw: sw, r: r, e: e, start: e.now(), span: trace.SpanFromContext(r.Context())}
+	q := &rq{w: sw, sw: sw, r: r, e: e, start: e.now(), span: trace.SpanFromContext(r.Context()), unbind: unbind}
 	q.out = &countingWriter{ResponseWriter: sw, q: q, source: metrics.SourceMain}
 	q.peer, q.client = e.addresses(r)
 	if q.client.IsValid() {
@@ -239,6 +246,10 @@ func (e *engine) addresses(r *http.Request) (peer, client netip.Addr) {
 
 // end finishes the request: the counter, the request log fields and the span of R-BAS-042.
 func (q *rq) end() {
+	defer q.unbind()
+	if q.running {
+		q.e.op.running.Add(-1)
+	}
 	q.e.endCharge(q)
 	if !q.counted {
 		q.finish(metrics.ClassPass, metrics.ResultError)

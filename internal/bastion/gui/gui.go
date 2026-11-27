@@ -107,6 +107,9 @@ type Options struct {
 	Flood func(ctx context.Context) settings.Rate
 	// Quiet marks a request that is not logged one by one (a blocked address, R-BAS-037); nil does nothing.
 	Quiet func(ctx context.Context)
+	// Disabled reports whether the replica applies a disable of its registration (R-BAS-133): every request is then answered 503.
+	// nil is never disabled.
+	Disabled func() bool
 	// TimeFormat is the installation's default form of a time of the configuration the replica applies (R-BAS-128), which the state
 	// answers for the application's times; nil answers the factory form.
 	TimeFormat func() string
@@ -176,6 +179,10 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	secure(w.Header())
 	if r.Method != http.MethodGet && r.Method != http.MethodHead {
 		h.problem(w, r, errs.E(errs.MethodNotAllowed, errs.CodeMethodNotAllowed, textMethod, errs.WithAllow(http.MethodGet, http.MethodHead)))
+		return
+	}
+	if h.o.Disabled != nil && h.o.Disabled() {
+		h.unavailable(w, r)
 		return
 	}
 	if !h.admit(w, r) {

@@ -79,6 +79,10 @@ var (
 	// quader_bastion_main_token_refused (R-BAS-006). On a forward the same answer is an *AnswerError: the path of
 	// a forward is the caller's (Q-BAS-121).
 	ErrTokenRefused = errors.New("mainclient: the main installation refused the Bastion token")
+	// ErrDisabled: 503 bastion_disabled in the answer to a forward or a call of the interface (R-BAS-133): an administrator
+	// disabled the registration, and the request raced its handshake. The link handshakes at once; the engine answers the caller
+	// as a disabled replica does. It is no statement about reachability.
+	ErrDisabled = errors.New("mainclient: the main installation says the Bastion is disabled")
 	// ErrInterfaceMismatch: 400 bastion_interface_mismatch, or an answer whose Quader-Bastion-Interface differs
 	// (R-BAS-009, R-BAS-028). The wrapping error is *MismatchError.
 	ErrInterfaceMismatch = errors.New("mainclient: the interface versions differ")

@@ -599,10 +599,14 @@ func (l *Link) fail(what string, err error) {
 
 // Note tells the link of an error a request of the flow got. Only a refused token and an interface mismatch
 // matter: they make the replica unreachable at once (R-BAS-006, R-BAS-028); a failing forward alone does not
-// (R-BAS-027).
+// (R-BAS-027). A 503 bastion_disabled asks for the handshake that brings the disable (R-BAS-133).
 func (l *Link) Note(err error) {
 	var mm *mainclient.MismatchError
 	switch {
+	case errors.Is(err, mainclient.ErrDisabled):
+		// The request raced a disable (R-BAS-133): the handshake brings it at once; the main installation stays reachable.
+		l.RequestHandshake()
+		return
 	case errors.As(err, &mm):
 		l.mismatch(mm.Main)
 	case errors.Is(err, mainclient.ErrTokenRefused):

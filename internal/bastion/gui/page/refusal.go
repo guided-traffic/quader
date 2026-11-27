@@ -16,6 +16,8 @@ type Refusal struct {
 	Seconds int64
 	// Blocked is a refusal of an address on the block list (R-BAS-037) rather than one over the class's rate.
 	Blocked bool
+	// Unavailable is the page of a disabled Bastion (R-BAS-133): "Not available", as an outage reads.
+	Unavailable bool
 	// Legal are the footer's links: the imprint and the privacy notice that have a text.
 	Legal []Link
 }
@@ -70,8 +72,11 @@ const refusalTemplate = `<!doctype html>` +
 func (rd *Renderer) RefusalPage(r Refusal, nonce string) []byte {
 	t := TextsOf(r.Locale)
 	secs := max(r.Seconds, 1)
-	text := t.TooManyText(secs)
-	if r.Blocked {
+	heading, text := t.TooManyHeading, t.TooManyText(secs)
+	switch {
+	case r.Unavailable:
+		heading, text = t.UnavailableHeading, t.UnavailableText
+	case r.Blocked:
 		text = t.BlockedText(secs)
 	}
 	var b bytes.Buffer
@@ -82,7 +87,7 @@ func (rd *Renderer) RefusalPage(r Refusal, nonce string) []byte {
 		Colored                                             [4]int
 		Legal                                               []Link
 	}{
-		r.Locale, strconv.FormatInt(secs, 10), FullTitle(t.TooManyHeading), nonce, t.TooManyHeading, text, t.Again,
+		r.Locale, strconv.FormatInt(secs, 10), FullTitle(heading), nonce, heading, text, t.Again,
 		template.CSS(refusalCSS), markStones(), markColored(), r.Legal, //nolint:gosec // the package's own constant rules
 	})
 	if err != nil {

@@ -128,6 +128,10 @@ func (e *engine) mainError(q *rq, err error) {
 			errs.WithRetryAfter(max(ceiling.RetryAfter, retryBusy))), metrics.RefusedCeiling)
 	case errors.Is(err, mainclient.ErrBusy):
 		e.refuse(q, errBusy(), metrics.RefusedBusy)
+	case errors.Is(err, mainclient.ErrDisabled):
+		// The request raced the disable (R-BAS-133): the link handshakes at once, and the caller is answered as a disabled
+		// replica answers.
+		e.refuse(q, errDisabled(), metrics.RefusedDisabled)
 	case errors.Is(err, mainclient.ErrTokenRefused), errors.Is(err, mainclient.ErrInterfaceMismatch):
 		// The client Deps.Main is wrapped by Link.Guard, which has made the replica unreachable already.
 		e.refuse(q, errUnreachable(), metrics.RefusedUnreachable)

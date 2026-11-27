@@ -1695,6 +1695,7 @@ The Bastion produces only these answers itself; every other body comes from the 
 | `503` | `not_ready` | an address of the web interface while the replica holds no catalogue to show, with `Retry-After: 30` (R-BAS-117) |
 | `429` | `rate_limited`, `auth_timeout`, `address_blocked` | R-BAS-035 to R-BAS-037, with `Retry-After` and the `RateLimit-Policy` and `RateLimit` fields of R-API-016 |
 | `502`, `503`, `504` | `bad_gateway`, `unavailable`, `busy`, `gateway_timeout` | R-BAS-021, R-BAS-025, R-BAS-027 |
+| `503` | `unavailable` with `Retry-After: 300`, capped by the format | every request while the replica applies a disable of its registration, and a forward or a check the main installation answered `503 bastion_disabled` (R-BAS-133); a page of the web interface is the page "Not available" (R-BAS-123) |
 
 - Package clients act on the status and the challenge; the body is Quader's, not the format's. The difference is functional
   and shows only in the client's message.
@@ -2378,7 +2379,7 @@ carries an address, a token, a path or a repository's name):
 | `quader_bastion_cache_sweeps_total` | counter | `trigger` (`interval`, `size`) |
 | `quader_bastion_cache_no_room_total` | counter | `area` (`artifacts`, `documents`) |
 | `quader_bastion_cache_protected_bytes` | gauge | `area` (`artifacts`, `documents`) |
-| `quader_bastion_refused_total` | counter | `reason` (`blocked`, `rate_limited`, `miss_limited`, `auth_timeout`, `invalid_token`, `busy`, `unreachable`, `not_served`, `read_only`, `foreign_location`, `anonymous_ceiling`, `throughput`, `budget`) |
+| `quader_bastion_refused_total` | counter | `reason` (`blocked`, `rate_limited`, `miss_limited`, `auth_timeout`, `invalid_token`, `busy`, `unreachable`, `not_served`, `read_only`, `foreign_location`, `anonymous_ceiling`, `throughput`, `budget`, `disabled`) |
 | `quader_bastion_blocks_total` | counter | `reason` (`refusals`, `failed_auth`, `refused_requests`) |
 | `quader_bastion_blocked_addresses` | gauge | — |
 | `quader_bastion_audit_events_total` | counter | `outcome` (`sent`, `spooled`, `dropped`) |
@@ -2389,6 +2390,7 @@ carries an address, a token, a path or a repository's name):
 | `quader_bastion_handover_enabled`, `quader_bastion_handover_cooldown` | gauge | — |
 | `quader_bastion_configuration_revision` | gauge | — |
 | `quader_bastion_configuration_source` | gauge | `source` (`main`, `stored`, `builtin`) |
+| `quader_bastion_disabled` | gauge | `mode` (`soft`, `hard`) |
 | `quader_bastion_throughput_limit_bytes_per_second` | gauge | `bucket` (`total`, `anonymous`) |
 | `quader_bastion_throughput_wait_seconds_total` | counter | `class` (`anonymous`, `signed_in`, `catalogue`) |
 | `quader_bastion_throughput_refused_total` | counter | `class`, `reason` (`busy`, `hour`) |
@@ -2431,6 +2433,8 @@ carries an address, a token, a path or a repository's name):
 - `quader_bastion_configuration_revision` is the revision of the configuration the replica applies and `quader_bastion_configuration_source`
   is 1 for where it came from: `main` after a handshake, `stored` for the one a replica found in its cache backend at start, `builtin`
   without one (R-BAS-093, Q-BAS-327, since E9a).
+- `quader_bastion_disabled` is 1 for the way of the disable the replica applies and 0 for the other, both 0 while it works;
+  `quader_bastion_refused_total{reason="disabled"}` counts the requests answered while disabled (R-BAS-133, since W-41's A2).
 - The cache hit rate is `quader_bastion_requests_total{result="hit"}` over all; bytes served from the cache are
   `quader_bastion_bytes_served_total{source="cache"}`; requests to the main installation are
   `quader_bastion_main_requests_total` (the observability item of phase 5b).
@@ -6751,6 +6755,9 @@ Priority: **P1** · Covers: quader-only
 - **gui and docs** (R-BAS-102). The replica applies the switches of the configuration it applies (R-BAS-093). `gui` on wakes the sync;
   `gui` off makes every read answer off at once (`ErrOff`, P9's `404 not_found`), stops the sync and deletes the catalogue's tree. `docs`
   off hides the documentation (`CataloguePath.Documentation`) at once, before the builder deletes it.
+- **A disable** (R-BAS-133, *added on 2026-11-27 by W-41's A2*). While the replica applies a disable of its registration the sync reads
+  nothing and the catalogue it holds stays as it is (the main installation answers its catalogue routes `503 bastion_disabled` meanwhile);
+  an enable wakes the sync.
 - **The public set hides** ([Q-BAS-376](#q-bas-376--the-public-set-hides-a-package-while-none-of-its-repositories-is-in-it)). A round reads
   the public set first and swaps it in before it reads anything else. A package is shown while one of its repositories (the index's
   `repositories`) is in the public set, its documentation while one of them has a public wiki and `docs` is on; a repository's set-up and
@@ -7154,6 +7161,11 @@ Acceptance criteria:
 Priority: **P1** · Covers: quader-only
 
 W-35's P9b found that a person whose browser hit the class `gui` read problem details as raw JSON.
+
+*Amended on 2026-11-27 (W-41's A2, R-BAS-133):* while the replica applies a disable of its registration, a page's address is the same
+page with `503` and `Retry-After: 300`, the heading "Not available" ("Nicht verfügbar") and "Not available at the moment. Try again later."
+("Zurzeit nicht verfügbar. Versuchen Sie es später noch einmal."); every other address of the web interface is the problem `503
+unavailable` with the same wait.
 
 - A page's address the guard refuses (the class `gui` or the block list, R-BAS-117) is answered `429` with `Retry-After` and the class's
   RateLimit fields as before, and a page of its own instead of problem details
@@ -7672,7 +7684,13 @@ Priority: **MVP** · Covers: DIST-025
   `robots.txt` and the sitemap `503`. Readiness is unchanged, so the ingress keeps answering in the Bastion's shape. A replica sends the
   main installation nothing but the handshake, the feed and its status batches: the catalogue's sync pauses, the cache stays as it is.
   A `503 bastion_disabled` to a forward or a check (a request that raced the disable) makes the replica handshake at once.
-  `quader_bastion_disabled{mode}` is 1 while it applies a disable. *Not built (package W41-A2).*
+  `quader_bastion_disabled{mode}` is 1 while it applies a disable. *Built on 2026-11-27 (W-41's A2):* `stepDisabled`, `operation` and
+  `Operation` of [disable.go](../../internal/bastion/engine/disable.go) (the gate after the path's family, the requests counted, a hard
+  disable's cut of every request and of the request a fill holds, `newHold`), `ErrDisabled` of the client and the link's handshake at
+  once ([client.go](../../internal/bastion/mainclient/client.go), [link.go](../../internal/bastion/link/link.go)), `unavailable` of the
+  web interface ([refusal.go](../../internal/bastion/gui/refusal.go)) with its words in [texts.go](../../internal/bastion/gui/page/texts.go),
+  the catalogue's `Paused`, the status's `operation` ([status.go](../../internal/bastion/server/status.go)) and the gauge of the
+  [holder](../../internal/bastion/settings/holder.go).
 - **The confirmation and the state** ([Q-BAS-511](#q-bas-511--the-bastions-state-is-one-of-six-computed-by-the-main-installation),
   [Q-BAS-515](#q-bas-515--the-bastion-confirms-with-its-status)). Every replica's status (`iface.ReplicaStatus`, sent with every flush, 1 s)
   carries `operation` `{disabled, running}`: the way of the configuration it applies and the requests of its callers it has in flight. A
@@ -7726,7 +7744,13 @@ Acceptance criteria:
   with its way, the revision, the feed's `settings` entry, the snapshot's configuration the handshake answers, the token still valid on
   two replicas; `null` → enabled); `TestR_BAS_004_PatchDisableAndTheRevision`; the declared token's invalidation in
   `TestR_BAS_127_ADeclaredRegistrationSurvivesAFreshDatabase`. Area `backup`: `TestR_BAS_004_ADisabledOrDeletedRegistrationStaysDisabledAfterARestore`.
-- Integration (area `bastion`, W41-A2): `TestR_BAS_133_ADisableReachesTheBastionWithinSeconds`. *Not built.*
+- Unit, the Bastion (milliseconds, a few KiB held open): [disable_test.go](../../internal/bastion/engine/disable_test.go)
+  `TestR_BAS_133_ADisabledReplicaAnswers503InTheFormatsShape` (problem details, NuGet's capped wait, the registry root's errors),
+  `TestR_BAS_133_ASoftDisableLetsARunningDownloadFinish`, `TestR_BAS_133_AHardDisableCutsIt`,
+  `TestR_BAS_133_ARaceWithTheDisableIsAnsweredAsDisabled`; [disable_test.go](../../internal/bastion/gui/disable_test.go)
+  `TestR_BAS_133_ADisabledReplicasWebInterfaceAnswers503` (the page in English and German, the data, robots.txt and the sitemap);
+  [configuration_test.go](../../internal/bastion/server/configuration_test.go) `TestR_BAS_133_ARestartDuringAnOutageKeepsTheDisable`.
+- Integration (area `bastion`, about 6 s, one tarball): `TestR_BAS_133_ADisableReachesTheBastionWithinSeconds`.
 
 ## A registration the configuration declares
 

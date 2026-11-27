@@ -21,6 +21,8 @@ type Texts struct {
 	// The page of a refusal of the class gui (R-BAS-123).
 	TooManyText, BlockedText func(seconds int64) string
 	TooManyHeading, Again    string
+	// The page of a disabled Bastion (R-BAS-133): it names no administrator's act, as an outage would read.
+	UnavailableHeading, UnavailableText string
 }
 
 func TextsOf(locale string) Texts {
@@ -42,8 +44,10 @@ func TextsOf(locale string) Texts {
 				return "Anfragen von Ihrer Adresse werden nach zu vielen abgewiesenen Anfragen eine Weile abgewiesen. Versuchen Sie es in " +
 					seconds(s, "einer Sekunde", "Sekunden") + " erneut."
 			},
-			TooManyHeading: "Zu viele Anfragen",
-			Again:          "Die Seite versucht es von selbst erneut.",
+			TooManyHeading:     "Zu viele Anfragen",
+			Again:              "Die Seite versucht es von selbst erneut.",
+			UnavailableHeading: "Nicht verfügbar",
+			UnavailableText:    "Zurzeit nicht verfügbar. Versuchen Sie es später noch einmal.",
 		}
 	}
 	return Texts{
@@ -63,8 +67,10 @@ func TextsOf(locale string) Texts {
 			return "Requests from your address are refused for a while after too many refused requests. Try again in " +
 				seconds(s, "one second", "seconds") + "."
 		},
-		TooManyHeading: "Too many requests",
-		Again:          "The page tries again by itself.",
+		TooManyHeading:     "Too many requests",
+		Again:              "The page tries again by itself.",
+		UnavailableHeading: "Not available",
+		UnavailableText:    "Not available at the moment. Try again later.",
 	}
 }
 

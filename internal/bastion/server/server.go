@@ -187,6 +187,10 @@ func New(o Options) (*Server, error) {
 		s.closeAll()
 		return nil, err
 	}
+	if s.reporting != nil {
+		// The status confirms the disable with the way the replica applies and the requests it runs (R-BAS-133).
+		s.reporting.operation = s.engine.Operation
+	}
 	if s.gui, err = s.newGUI(); err != nil {
 		s.closeAll()
 		return nil, err
@@ -205,6 +209,7 @@ func (s *Server) newGUI() (*gui.Handler, error) {
 		Catalogue: s.catalogue, Legal: s.legal, BaseURL: s.cfg.Server.BaseURL, Guard: s.deps.Guard, Quiet: engine.MarkQuiet,
 		Flood:      func(ctx context.Context) settings.Rate { return s.configuration.For(ctx).Flood.GUI },
 		TimeFormat: func() string { return s.configuration.Current().Configuration.Display.TimeFormat },
+		Disabled:   func() bool { return s.configuration.Current().Disabled != "" },
 		Log:        s.log.With("component", "gui"),
 	})
 }
@@ -353,9 +358,16 @@ func (s *Server) wireCatalogue(client *mainclient.HTTPClient, c *cache.Cache, st
 		// A nil lease (no Valkey, or Valkey unavailable) converts to a nil catalogue.Lease: every replica syncs.
 		o.Lease = func() catalogue.Lease { return st.CatalogueLease() }
 	}
+	// A disabled replica's sync pauses and its catalogue stays as it is; an enable wakes the sync (R-BAS-133).
+	o.Paused = func() bool { return s.configuration.Current().Disabled != "" }
 	s.catalogue = catalogue.New(o)
+	var disabled iface.DisableMode
 	s.configuration.Watch(func(a *settings.Applied) {
 		s.catalogue.SetSwitches(a.Configuration.Switches, a.Source != settings.SourceBuiltin)
+		if disabled != "" && a.Disabled == "" {
+			s.catalogue.Wake()
+		}
+		disabled = a.Disabled
 	})
 	s.link.OnFeed(s.catalogue.Feed)
 }
