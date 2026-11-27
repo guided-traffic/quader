@@ -2213,8 +2213,10 @@ async function* usageDetailWalk(page: Page): AsyncGenerator<string> {
   await page.reload();
   await expect(page.locator('main quader-usage-places')).toBeVisible();
   yield 'places';
+  // One reload into Enforce: a reload right after another left the first document's sign-in call in flight when the second began, a
+  // call Chromium cancels without a "failed" that `settle` would hear; every later state then waited out its 15 s, and the screen ran past
+  // its 5 minutes at 390 px on the runners (2026-11-27).
   await page.unroute(detail);
-  await page.reload();
   await inEnforce(page);
   await expect(page.locator('main h1')).toBeVisible();
   yield 'enforce';
