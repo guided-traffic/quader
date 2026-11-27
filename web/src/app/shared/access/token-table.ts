@@ -28,6 +28,16 @@ export function scopeSummary(scope: TokenScope): string {
   return parts.join('; ');
 }
 
+/**
+ * What a token is called on the screen: its description, as its owner wrote it, or for a token the server stores without one the
+ * screen's words from how it was created (Q-UI-1653): the token of an upload from the screen (`createdVia` `upload`, R-ANS-061,
+ * R-NUGET-006), whose scope names the repository.
+ */
+export function tokenName(token: Pick<Token, 'description' | 'createdVia'>): string {
+  if (token.description !== '') return token.description;
+  return token.createdVia === 'upload' ? $localize`:@@token-table.name.upload:Upload from the screen` : '';
+}
+
 /** True for an active token that expires within `EXPIRING_SOON_DAYS` days of `now`. */
 export function expiresSoon(token: Pick<Token, 'state' | 'expiresAt'>, now: number): boolean {
   if (token.state !== 'active' || token.expiresAt === null) return false;
@@ -77,7 +87,7 @@ export function expiresSoon(token: Pick<Token, 'state' | 'expiresAt'>, now: numb
             @if (t.technicalToken; as tt) {
               <span translate="no">{{ tt.name }}</span>
             } @else {
-              {{ t.description }}
+              <span [attr.translate]="t.description === '' ? null : 'no'">{{ name(t) }}</span>
             }
             <code translate="no" class="secondary">{{ t.hint }}</code>
           </th>
@@ -136,13 +146,13 @@ export function expiresSoon(token: Pick<Token, 'state' | 'expiresAt'>, now: numb
                 @if (canRotate()) {
                   <button class="btn btn-tertiary" type="button" [quaderTooltip]="rotateText" (click)="rotate.emit(t)">
                     <ng-container i18n="@@token-table.rotate">Rotate</ng-container>
-                    <span class="visually-hidden"> {{ t.description }}</span>
+                    <span class="visually-hidden"> {{ name(t) }}</span>
                   </button>
                 }
                 @if (canRevoke()) {
                   <button class="btn btn-tertiary" type="button" (click)="revoke.emit(t)">
                     <ng-container i18n="@@token-table.revoke">Revoke</ng-container>
-                    <span class="visually-hidden"> {{ t.description }}</span>
+                    <span class="visually-hidden"> {{ name(t) }}</span>
                   </button>
                 }
               }
@@ -241,8 +251,11 @@ export class TokenTable {
   }
 
   protected selectLabel(t: Token): string {
-    return $localize`:@@token-table.select-one:Select ${t.description}:description:`;
+    const description = tokenName(t);
+    return $localize`:@@token-table.select-one:Select ${description}:description:`;
   }
+
+  protected readonly name = tokenName;
 
   protected toggle(id: string, on: boolean): void {
     this.selected.update((list) => (on ? [...new Set([...list, id])] : list.filter((x) => x !== id)));

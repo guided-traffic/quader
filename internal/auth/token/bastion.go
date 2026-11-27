@@ -244,6 +244,10 @@ func (s *Service) loadBastion(ctx context.Context, hash [32]byte) (cachedToken, 
 // ViaConfiguration is created_via of the token a declaration names: the run of quader migrate that stored it.
 const ViaConfiguration = "configuration"
 
+// ViaUpload is created_via of the token of an upload from the screen (R-ANS-061, R-NUGET-006): a session's personal token of five
+// minutes for one repository, stored without a description, which the screen words from this value (R-UI-214, Q-UI-1653).
+const ViaUpload = "upload"
+
 // DeclaredBastionToken is a value of bastions.declared: its hash and its hint, never the value.
 type DeclaredBastionToken struct {
 	Hash [32]byte
@@ -272,9 +276,9 @@ func (s *Service) InsertDeclaredBastionTx(ctx context.Context, tx meta.Tx, c pri
 		return "", err
 	}
 	id := principal.NewID()
-	desc := "Bastion " + name + " (declared in the configuration)"
+	// No description: the server stores no phrase it makes up; the card words the token from its declaration (R-BAS-127, Q-UI-1653).
 	if _, err := qs.IdentityInsertToken(ctx, q.IdentityInsertTokenParams{
-		ID: id, Type: string(TypeBST), SecretSha256: t.Hash[:], Hint: t.Hint, PrincipalID: bastionID, Description: desc,
+		ID: id, Type: string(TypeBST), SecretSha256: t.Hash[:], Hint: t.Hint, PrincipalID: bastionID, Description: "",
 		Scope: string(sc.Marshal()), CreatedBy: c.Actor.ID, CreatedVia: ViaConfiguration, TtlSecs: -1,
 	}); err != nil {
 		return "", err
@@ -285,7 +289,7 @@ func (s *Service) InsertDeclaredBastionTx(ctx context.Context, tx meta.Tx, c pri
 		Subject: audit.Subject{Kind: "bastion", ID: id, Name: t.Hint},
 		Details: mustJSON(map[string]any{
 			"type": string(TypeBST), "owner": owner.Ref(), "scope": json.RawMessage(sc.Marshal()), "expiresAt": nil,
-			"createdVia": ViaConfiguration, "description": desc, "bastion": name, "tokenId": id,
+			"createdVia": ViaConfiguration, "description": "", "bastion": name, "tokenId": id,
 		}),
 	})
 }

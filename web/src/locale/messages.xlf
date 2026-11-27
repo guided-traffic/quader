@@ -33043,7 +33043,7 @@
     <unit id="tokens.revoke-all-title">
       <notes>
         <note category="location">src/app/features/service-accounts/service-account-detail.ts:360</note>
-        <note category="location">src/app/features/tokens/token-manager.ts:316</note>
+        <note category="location">src/app/features/tokens/token-manager.ts:317</note>
       </notes>
       <segment>
         <source>Revoke all tokens?</source>
@@ -33052,7 +33052,7 @@
     <unit id="tokens.revoke-all-text">
       <notes>
         <note category="location">src/app/features/service-accounts/service-account-detail.ts:361</note>
-        <note category="location">src/app/features/tokens/token-manager.ts:317</note>
+        <note category="location">src/app/features/tokens/token-manager.ts:318</note>
       </notes>
       <segment>
         <source>Every token of this owner stops working at once. This cannot be undone.</source>
@@ -33061,7 +33061,7 @@
     <unit id="tokens.revoke-all-confirm">
       <notes>
         <note category="location">src/app/features/service-accounts/service-account-detail.ts:362</note>
-        <note category="location">src/app/features/tokens/token-manager.ts:318</note>
+        <note category="location">src/app/features/tokens/token-manager.ts:319</note>
       </notes>
       <segment>
         <source>Revoke all</source>
@@ -33070,7 +33070,7 @@
     <unit id="tokens.revoked-all">
       <notes>
         <note category="location">src/app/features/service-accounts/service-account-detail.ts:368</note>
-        <note category="location">src/app/features/tokens/token-manager.ts:325</note>
+        <note category="location">src/app/features/tokens/token-manager.ts:326</note>
       </notes>
       <segment>
         <source>All tokens revoked.</source>
@@ -44647,7 +44647,7 @@
     <unit id="token-table.empty">
       <notes>
         <note category="location">src/app/features/tokens/token-admin.ts:78</note>
-        <note category="location">src/app/shared/access/token-table.ts:166</note>
+        <note category="location">src/app/shared/access/token-table.ts:176</note>
       </notes>
       <segment>
         <source>No token matches.</source>
@@ -44719,7 +44719,7 @@
     </unit>
     <unit id="tokens-admin.revoke-title">
       <notes>
-        <note category="location">src/app/features/tokens/token-admin.ts:148</note>
+        <note category="location">src/app/features/tokens/token-admin.ts:149</note>
       </notes>
       <segment>
         <source>Revoke this token?</source>
@@ -44727,16 +44727,16 @@
     </unit>
     <unit id="tokens-admin.revoke-text">
       <notes>
-        <note category="location">src/app/features/tokens/token-admin.ts:149</note>
+        <note category="location">src/app/features/tokens/token-admin.ts:150</note>
       </notes>
       <segment>
-        <source>“<ph id="0" equiv="description" disp="token.description"/>” of <ph id="1" equiv="owner" disp="token.owner.name"/> stops working at once on every replica.</source>
+        <source>“<ph id="0" equiv="description" disp="description"/>” of <ph id="1" equiv="owner" disp="token.owner.name"/> stops working at once on every replica.</source>
       </segment>
     </unit>
     <unit id="tokens-admin.revoke-confirm">
       <notes>
-        <note category="location">src/app/features/tokens/token-admin.ts:150</note>
-        <note category="location">src/app/features/tokens/token-admin.ts:161</note>
+        <note category="location">src/app/features/tokens/token-admin.ts:151</note>
+        <note category="location">src/app/features/tokens/token-admin.ts:162</note>
       </notes>
       <segment>
         <source>Revoke</source>
@@ -44744,7 +44744,7 @@
     </unit>
     <unit id="tokens-admin.revoke-selected-title">
       <notes>
-        <note category="location">src/app/features/tokens/token-admin.ts:159</note>
+        <note category="location">src/app/features/tokens/token-admin.ts:160</note>
       </notes>
       <segment>
         <source>Revoke the selected tokens?</source>
@@ -44752,7 +44752,7 @@
     </unit>
     <unit id="tokens-admin.revoke-selected-text">
       <notes>
-        <note category="location">src/app/features/tokens/token-admin.ts:160</note>
+        <note category="location">src/app/features/tokens/token-admin.ts:161</note>
       </notes>
       <segment>
         <source>The selected tokens (<ph id="0" equiv="count" disp="ids.length"/>) stop working at once on every replica. This cannot be undone.</source>
@@ -44760,7 +44760,7 @@
     </unit>
     <unit id="tokens-admin.revoked">
       <notes>
-        <note category="location">src/app/features/tokens/token-admin.ts:177</note>
+        <note category="location">src/app/features/tokens/token-admin.ts:178</note>
       </notes>
       <segment>
         <source>Tokens revoked.</source>
@@ -44768,7 +44768,7 @@
     </unit>
     <unit id="tokens-admin.value-revoked">
       <notes>
-        <note category="location">src/app/features/tokens/token-admin.ts:192</note>
+        <note category="location">src/app/features/tokens/token-admin.ts:193</note>
       </notes>
       <segment>
         <source>The token of <ph id="0" equiv="owner" disp="revoked.owner"/> was revoked.</source>
@@ -44776,7 +44776,7 @@
     </unit>
     <unit id="tokens-admin.value-accepted">
       <notes>
-        <note category="location">src/app/features/tokens/token-admin.ts:193</note>
+        <note category="location">src/app/features/tokens/token-admin.ts:194</note>
       </notes>
       <segment>
         <source>The request was accepted. If the value is a token, it is revoked; this answer does not say whether it was one.</source>
@@ -44920,7 +44920,7 @@
     </unit>
     <unit id="tokens.revoke-title">
       <notes>
-        <note category="location">src/app/features/tokens/token-manager.ts:303</note>
+        <note category="location">src/app/features/tokens/token-manager.ts:304</note>
       </notes>
       <segment>
         <source>Revoke this token?</source>
@@ -44928,15 +44928,15 @@
     </unit>
     <unit id="tokens.revoke-text">
       <notes>
-        <note category="location">src/app/features/tokens/token-manager.ts:304</note>
+        <note category="location">src/app/features/tokens/token-manager.ts:305</note>
       </notes>
       <segment>
-        <source>“<ph id="0" equiv="description" disp="token.description"/>” stops working at once on every replica. This cannot be undone.</source>
+        <source>“<ph id="0" equiv="description" disp="description"/>” stops working at once on every replica. This cannot be undone.</source>
       </segment>
     </unit>
     <unit id="tokens.revoke-confirm">
       <notes>
-        <note category="location">src/app/features/tokens/token-manager.ts:305</note>
+        <note category="location">src/app/features/tokens/token-manager.ts:306</note>
       </notes>
       <segment>
         <source>Revoke</source>
@@ -44944,7 +44944,7 @@
     </unit>
     <unit id="tokens.revoked">
       <notes>
-        <note category="location">src/app/features/tokens/token-manager.ts:310</note>
+        <note category="location">src/app/features/tokens/token-manager.ts:311</note>
       </notes>
       <segment>
         <source>Token revoked.</source>
@@ -52216,8 +52216,16 @@
       </segment>
     </unit>
     <unit id="tokens.list.loading">
+    <unit id="token-table.name.upload">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:58,59</note>
+        <note category="location">src/app/shared/access/token-table.ts:38</note>
+      </notes>
+      <segment>
+        <source>Upload from the screen</source>
+      </segment>
+    </unit>
+      <notes>
+        <note category="location">src/app/shared/access/token-table.ts:68,69</note>
       </notes>
       <segment>
         <source>Loading the tokens.</source>
@@ -52225,7 +52233,7 @@
     </unit>
     <unit id="token-table.admin-inactive">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:93,95</note>
+        <note category="location">src/app/shared/access/token-table.ts:103,105</note>
       </notes>
       <segment>
         <source>Administrator rights inactive: the owner is no administrator now</source>
@@ -52233,7 +52241,7 @@
     </unit>
     <unit id="token-table.unknown-endpoints">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:101,103</note>
+        <note category="location">src/app/shared/access/token-table.ts:111,113</note>
       </notes>
       <segment>
         <source>Bound to an endpoint that is not configured:</source>
@@ -52241,7 +52249,7 @@
     </unit>
     <unit id="token-table.soon">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:114,115</note>
+        <note category="location">src/app/shared/access/token-table.ts:124,125</note>
       </notes>
       <segment>
         <source>Expires soon</source>
@@ -52249,7 +52257,7 @@
     </unit>
     <unit id="token-table.never">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:118,120</note>
+        <note category="location">src/app/shared/access/token-table.ts:128,130</note>
       </notes>
       <segment>
         <source>Never</source>
@@ -52257,7 +52265,7 @@
     </unit>
     <unit id="token-table.not-used">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:125,127</note>
+        <note category="location">src/app/shared/access/token-table.ts:135,137</note>
       </notes>
       <segment>
         <source>Not used yet</source>
@@ -52265,7 +52273,7 @@
     </unit>
     <unit id="token-table.rotate">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:138,139</note>
+        <note category="location">src/app/shared/access/token-table.ts:148,149</note>
       </notes>
       <segment>
         <source>Rotate</source>
@@ -52273,7 +52281,7 @@
     </unit>
     <unit id="token-table.revoke">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:144,145</note>
+        <note category="location">src/app/shared/access/token-table.ts:154,155</note>
       </notes>
       <segment>
         <source>Revoke</source>
@@ -52281,7 +52289,7 @@
     </unit>
     <unit id="token-table.state.expired">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:150,152</note>
+        <note category="location">src/app/shared/access/token-table.ts:160,162</note>
       </notes>
       <segment>
         <source>Expired</source>
@@ -52289,7 +52297,7 @@
     </unit>
     <unit id="token-table.state.revoked">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:153,155</note>
+        <note category="location">src/app/shared/access/token-table.ts:163,165</note>
       </notes>
       <segment>
         <source>Revoked</source>
@@ -52297,7 +52305,7 @@
     </unit>
     <unit id="token-table.caption">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:181</note>
+        <note category="location">src/app/shared/access/token-table.ts:191</note>
       </notes>
       <segment>
         <source>Tokens</source>
@@ -52305,7 +52313,7 @@
     </unit>
     <unit id="token-table.rotate-tip">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:182</note>
+        <note category="location">src/app/shared/access/token-table.ts:192</note>
       </notes>
       <segment>
         <source>Rotate: a new value now, the old one ends after the overlap you choose</source>
@@ -52313,7 +52321,7 @@
     </unit>
     <unit id="token-table.select">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:192</note>
+        <note category="location">src/app/shared/access/token-table.ts:202</note>
       </notes>
       <segment>
         <source>Select</source>
@@ -52321,7 +52329,7 @@
     </unit>
     <unit id="token-table.token">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:194</note>
+        <note category="location">src/app/shared/access/token-table.ts:204</note>
       </notes>
       <segment>
         <source>Token</source>
@@ -52329,7 +52337,7 @@
     </unit>
     <unit id="token-table.owner">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:195</note>
+        <note category="location">src/app/shared/access/token-table.ts:205</note>
       </notes>
       <segment>
         <source>Owner</source>
@@ -52337,7 +52345,7 @@
     </unit>
     <unit id="token-table.scope">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:198</note>
+        <note category="location">src/app/shared/access/token-table.ts:208</note>
       </notes>
       <segment>
         <source>Scope</source>
@@ -52345,7 +52353,7 @@
     </unit>
     <unit id="token-table.help.scope">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:199</note>
+        <note category="location">src/app/shared/access/token-table.ts:209</note>
       </notes>
       <segment>
         <source>What the token may do: all permissions of its owner, or only the listed repository grants.</source>
@@ -52353,7 +52361,7 @@
     </unit>
     <unit id="token-table.expires">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:202</note>
+        <note category="location">src/app/shared/access/token-table.ts:212</note>
       </notes>
       <segment>
         <source>Expires</source>
@@ -52361,7 +52369,7 @@
     </unit>
     <unit id="token-table.last-used">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:205</note>
+        <note category="location">src/app/shared/access/token-table.ts:215</note>
       </notes>
       <segment>
         <source>Last used</source>
@@ -52369,7 +52377,7 @@
     </unit>
     <unit id="token-table.help.last-used">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:206</note>
+        <note category="location">src/app/shared/access/token-table.ts:216</note>
       </notes>
       <segment>
         <source>The last time the token authenticated a request. Not every use is recorded immediately.</source>
@@ -52377,7 +52385,7 @@
     </unit>
     <unit id="token-table.created">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:211</note>
+        <note category="location">src/app/shared/access/token-table.ts:221</note>
       </notes>
       <segment>
         <source>Created</source>
@@ -52385,7 +52393,7 @@
     </unit>
     <unit id="token-table.actions">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:213</note>
+        <note category="location">src/app/shared/access/token-table.ts:223</note>
       </notes>
       <segment>
         <source>Actions</source>
@@ -52393,10 +52401,10 @@
     </unit>
     <unit id="token-table.select-one">
       <notes>
-        <note category="location">src/app/shared/access/token-table.ts:244</note>
+        <note category="location">src/app/shared/access/token-table.ts:255</note>
       </notes>
       <segment>
-        <source>Select <ph id="0" equiv="description" disp="t.description"/></source>
+        <source>Select <ph id="0" equiv="description" disp="description"/></source>
       </segment>
     </unit>
     <unit id="address.label">

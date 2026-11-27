@@ -40,7 +40,7 @@ func TestR_ANS_061_TheScreensUploadWithASessionIsGuardedAsEveryManagementWrite(t
 	browser := screenUpload{e: e, api: e.api, pkg: e.pkg, hdr: []string{"Cookie", cookie, "Origin", browserOrigin, "X-CSRF-Token", csrf}}
 	archive := collectiontest.Build(spec("1.0.0"))
 	uploadTokens := func() int64 {
-		return e.st.Number(`SELECT count(*) FROM api_token WHERE description LIKE 'Upload of a package from the screen%'`)
+		return e.st.Number(`SELECT count(*) FROM api_token WHERE created_via = 'upload'`)
 	}
 
 	for name, hdr := range map[string][]string{
@@ -68,8 +68,8 @@ func TestR_ANS_061_TheScreensUploadWithASessionIsGuardedAsEveryManagementWrite(t
 		t.Fatalf("with the session and its token: %d %s", a.Status, a.Body)
 	}
 	if got := e.st.Text(`SELECT a.actor_id::text || ' ' || k.created_via FROM audit_event a JOIN api_token k ON k.id = a.token_id
-	                     WHERE a.action = 'package.published'`); got != e.bob.ID+" ui" {
-		t.Errorf("the event of the session's publish: %q, want bob with a token created via the UI", got)
+	                     WHERE a.action = 'package.published'`); got != e.bob.ID+" upload" {
+		t.Errorf("the event of the session's publish: %q, want bob with the token of an upload from the screen", got)
 	}
 
 	big := bytes.Repeat([]byte{0}, 1<<20+1)

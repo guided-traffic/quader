@@ -2024,7 +2024,10 @@ matched by the scanner pattern above. Consequences for the Quader tokens:
 
 **Attributes.** Every token carries the attributes of TOK-002, adapted:
 
-- ID (UUIDv7), type, owner principal, description;
+- ID (UUIDv7), type, owner principal, description: what the token's creator wrote; a token the server makes for a purpose of its own
+  has none, and the screen words it from `createdVia` (the token of an upload from the screen, `upload`; a Bastion's declared token,
+  `configuration`), as the server stores no phrase it makes up
+  ([api-and-ui.md](api-and-ui.md#q-ui-1653--the-server-stores-no-phrase-it-makes-up-the-screen-words-the-thing-from-a-fact-of-the-api) Q-UI-1653);
 - scope (R-AUTH-024);
 - creation time and creator, `createdVia`;
 - expiry (R-AUTH-026);
@@ -2262,13 +2265,15 @@ CREATE TABLE api_token (
   secret_sha256      bytea       NOT NULL UNIQUE CHECK (octet_length(secret_sha256) = 32),
   hint               text        NOT NULL,
   principal_id       uuid        NOT NULL REFERENCES principal (id) ON DELETE CASCADE,
-  description        text        NOT NULL CHECK (char_length(description) BETWEEN 1 AND 1024),
+  description        text        NOT NULL CHECK (char_length(description) <= 1024
+                                                 AND (char_length(description) >= 1 OR created_via IN ('upload', 'configuration'))),
   scope              jsonb       NOT NULL,                          -- R-AUTH-024
   self_rotatable     boolean     NOT NULL DEFAULT false,            -- R-AUTH-030
   created_at         timestamptz NOT NULL DEFAULT now(),
   created_by         uuid        REFERENCES principal (id) ON DELETE SET NULL,
   created_via        text        NOT NULL CHECK (created_via IN ('ui', 'api', 'npm-web-login', 'device-login',
-                                                                'admin-cli', 'rotation', 'ci-exchange')),
+                                                                'admin-cli', 'rotation', 'ci-exchange', 'configuration',
+                                                                'upload')),
   expires_at         timestamptz,                                    -- NULL only for an allowed non-expiring SAT
   revoked_at         timestamptz,
   revoked_by         uuid        REFERENCES principal (id) ON DELETE SET NULL,

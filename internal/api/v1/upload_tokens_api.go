@@ -58,9 +58,9 @@ func (s *Server) CreateUploadToken(w http.ResponseWriter, r *http.Request, proje
 	var created token.Created
 	if err == nil {
 		created, err = s.o.Auth.Tokens.Create(ctx, token.CreateRequest{
-			Caller: s.caller(r), Type: token.TypePAT, OwnerID: p.ID, Scope: scope, Via: via(p), Parent: parent,
-			Description: "Upload of a package from the screen into " + addressed.String(),
-			TTL:         token.TTLRequest{Seconds: refTo(int64(uploadTokenTTL / time.Second))},
+			// No description: created_via upload is what the screen words the token by, and its scope names the repository (Q-UI-1653).
+			Caller: s.caller(r), Type: token.TypePAT, OwnerID: p.ID, Scope: scope, Via: token.ViaUpload, Parent: parent,
+			TTL: token.TTLRequest{Seconds: refTo(int64(uploadTokenTTL / time.Second))},
 		})
 	}
 	if err != nil {

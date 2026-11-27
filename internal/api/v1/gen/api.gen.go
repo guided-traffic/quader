@@ -20759,8 +20759,13 @@ type Token struct {
 	CreatedAt time.Time               `json:"createdAt"`
 
 	// CreatedBy The ID of the principal that created the token.
-	CreatedBy   *string    `json:"createdBy"`
-	CreatedVia  string     `json:"createdVia"`
+	CreatedBy *string `json:"createdBy"`
+
+	// CreatedVia How the token was made: `ui`, `api`, `npm-web-login`, `device-login`, `admin-cli`, `rotation`, `ci-exchange`, or `upload`, the
+	// token of an upload from the screen, which has no `description` and which a screen words by this value (Q-UI-1653).
+	CreatedVia string `json:"createdVia"`
+
+	// Description What the token's creator wrote, 1 to 1024 characters; empty for the token of an upload from the screen (`createdVia` `upload`).
 	Description string     `json:"description"`
 	ExpiresAt   *time.Time `json:"expiresAt"`
 

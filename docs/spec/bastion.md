@@ -7889,8 +7889,9 @@ The chart renders the map from `bastions.declared` of its values, a list of `{na
   - its description and its networks follow the entry (`bastion.updated` with the field and `reason: configuration`, and the networks'
     lists before and after);
   - the value's hash becomes its declared token (`bastion.declared_token`): the same value writes nothing; a value the database does not
-    hold is stored as an issued token is (its SHA-256 and its hint, R-AUTH-023), with no expiry, `created_via: configuration` and
-    `token.created`; a value that is a token of this registration issued on the screen is taken as the declared token and no longer expires
+    hold is stored as an issued token is (its SHA-256 and its hint, R-AUTH-023), with no expiry, `created_via: configuration`, no
+    description (the card names it from `declared`, [api-and-ui.md](api-and-ui.md#q-ui-1653--the-server-stores-no-phrase-it-makes-up-the-screen-words-the-thing-from-a-fact-of-the-api)
+    Q-UI-1653) and `token.created`; a value that is a token of this registration issued on the screen is taken as the declared token and no longer expires
     (its row becomes `created_via: configuration`, the one form of a Bastion token without an expiry the database admits;
     `bastion.updated` with `fields: [token]`); then a previous declared token is revoked with the reason `rotated`
     (`token.revoked`, journaled), so a rotation is a change of the Secret and a rollout;

@@ -76,7 +76,7 @@ func TestR_ANS_061_TheScreensPublishRunsOnTheRolesTheChartRuns(t *testing.T) {
 		t.Fatalf("the token: %d %v %s", m.Status, m.Header, m.Body)
 	}
 	if got := e.st.Text(`SELECT type || ' ' || created_via || ' ' || (expires_at - created_at <= interval '5 minutes')::text || ' ' || scope::text
-	                     FROM api_token WHERE id = $1::uuid`, m.JSON(t)["id"]); !strings.HasPrefix(got, "pat ui true ") ||
+	                     FROM api_token WHERE id = $1::uuid`, m.JSON(t)["id"]); !strings.HasPrefix(got, "pat upload true ") ||
 		!strings.Contains(got, `"it/ansible-local"`) || strings.Contains(got, "ansible-other") || strings.Contains(got, `"inherit": true`) {
 		t.Errorf("the upload token's row: %q", got)
 	}
@@ -89,8 +89,9 @@ func TestR_ANS_061_TheScreensPublishRunsOnTheRolesTheChartRuns(t *testing.T) {
 	if task.Status != 200 || task.JSON(t)["state"] != "completed" || !strings.Contains(string(task.Body), "No changelog found") {
 		t.Fatalf("the task on the role api: %d %s", task.Status, task.Body)
 	}
-	if got := e.st.Text(`SELECT a.actor_id::text || ' ' || coalesce(a.auth_method, '-') || ' ' || k.description FROM audit_event a
-	                     JOIN api_token k ON k.id = a.token_id WHERE a.action = 'package.published'`); got != e.bob.ID+" bearer Upload of a package from the screen into it/ansible-local" {
+	// The token is created_via upload and stored without a description: the screen words it (Q-UI-1653).
+	if got := e.st.Text(`SELECT a.actor_id::text || ' ' || coalesce(a.auth_method, '-') || ' ' || k.created_via || ' [' || k.description || ']'
+	                     FROM audit_event a JOIN api_token k ON k.id = a.token_id WHERE a.action = 'package.published'`); got != e.bob.ID+" bearer upload []" {
 		t.Errorf("the event of the screen's publish: %q", got)
 	}
 

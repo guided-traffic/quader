@@ -39,10 +39,6 @@ func ConfigurationActor() audit.Actor { return audit.Actor{Kind: "system", Name:
 // as [ConfigurationActor]. Only this package builds a Subject (R-EP-013).
 func ConfigurationSubject() Subject { return Subject{Kind: "system", Name: "configuration"} }
 
-// declaredGroupDescription is the description of a group quader migrate creates
-// for a declaration, shown on the group's page.
-const declaredGroupDescription = "Created for authz.role_bindings of the system configuration."
-
 // GroupCreator creates a declared group that does not exist as a local group, in
 // the caller's transaction (R-AUTH-018). *principal.Manager implements it.
 type GroupCreator interface {
@@ -234,7 +230,8 @@ func resolveOne(ctx context.Context, tx meta.Tx, qs *q.Queries, b config.AuthzRo
 		return d, "", errors.New("no group creator for a declared group")
 	default:
 		g, err := groups.CreateGroupTx(ctx, tx, principal.Caller{Actor: ConfigurationActor()},
-			principal.NewGroup{Name: name, Description: declaredGroupDescription})
+			// No description: the server stores no phrase it makes up; the group's roles say the Helm configuration (Q-UI-1653).
+			principal.NewGroup{Name: name})
 		if err != nil {
 			return d, "", fmt.Errorf("creating group %s: %w", name, err)
 		}

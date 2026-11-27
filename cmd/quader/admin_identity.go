@@ -31,10 +31,6 @@ const (
 	userUsage = "usage: quader admin user disable <username> [--keep-tokens] [--config <file>]"
 )
 
-// adminTokenDescription is the description of a technical token the command creates: the token has no human owner to
-// describe it.
-const adminTokenDescription = "created by quader admin token create"
-
 // identityParts are the identity components a command works with, built over
 // the command's own connection with empty caches.
 type identityParts struct {
@@ -146,7 +142,9 @@ func tokenCreate(args []string, s streams) error {
 		}
 		secs := int64(ttl.Seconds())
 		created, err := id.tokens.IssueTechnical(ctx, acct, token.TechnicalCreate{
-			Name: *name, Description: adminTokenDescription,
+			// No description: the technical token's name (admin-cli unless --name says another) and its secret's created_via admin-cli
+			// say where it came from; the server stores no phrase it makes up (Q-UI-1653).
+			Name:    *name,
 			Request: token.CreateRequest{Caller: id.caller, Scope: scope, TTL: token.TTLRequest{Seconds: &secs}, Via: "admin-cli", Admin: true},
 		})
 		if e, ok := errs.As(err); ok && e.Code == errs.CodeTechnicalTokenActive {

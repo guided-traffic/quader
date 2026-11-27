@@ -158,7 +158,7 @@ type CreateRequest struct {
 	Scope         []byte
 	TTL           TTLRequest
 	SelfRotatable bool
-	// Via is created_via: ui, api, npm-web-login, device-login, admin-cli.
+	// Via is created_via: ui, api, npm-web-login, device-login, admin-cli, upload.
 	Via string
 	// Admin says the caller is an administrator (a session with recent
 	// authentication, a token with admin: true, or the admin CLI): only an
@@ -221,14 +221,23 @@ func notTechnical(r CreateRequest) error {
 	return nil
 }
 
+// checkDescription refuses a description of more than 1024 characters, and an empty one except for the token of an upload from
+// the screen, which has none: the screen words it from created_via upload (R-UI-214, Q-UI-1653).
+func checkDescription(r CreateRequest) error {
+	if n := utf8.RuneCountInString(r.Description); (n < 1 && r.Via != ViaUpload) || n > 1024 {
+		return errs.E(errs.Invalid, errs.CodeDescriptionRequired, "A description of 1 to 1024 characters is required.")
+	}
+	return nil
+}
+
 // prepareCreate validates a creation and resolves its scope and lifetime; it
 // writes nothing.
 func (s *Service) prepareCreate(ctx context.Context, r CreateRequest) (insertSpec, error) {
 	if r.Type != TypePAT && r.Type != TypeSAT {
 		return insertSpec{}, errs.E(errs.Invalid, errs.CodeValidation, "Only personal and service-account tokens are created here.")
 	}
-	if n := utf8.RuneCountInString(r.Description); n < 1 || n > 1024 {
-		return insertSpec{}, errs.E(errs.Invalid, errs.CodeDescriptionRequired, "A description of 1 to 1024 characters is required.")
+	if err := checkDescription(r); err != nil {
+		return insertSpec{}, err
 	}
 	sc, err := scope.Parse(r.Scope, s.o.Scope)
 	if err != nil {

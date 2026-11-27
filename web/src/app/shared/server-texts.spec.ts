@@ -9,6 +9,7 @@ import { previewNoteText } from '../features/repositories/upstream/download-prev
 import { upstreamTestErrorText } from '../features/repositories/upstream-test-words';
 import { jobErrorText } from '../features/system/job-table';
 import { valkeyReasonText } from '../features/system/system-status-model';
+import { tokenName } from './access/token-table';
 import { TechnicalDetails } from './technical-details';
 
 /** Every German target of the translation file, its placeholders as `$localize` writes them (`{$NAME}`). */
@@ -141,13 +142,15 @@ function sentences(): [string, string][] {
     ['connecting', 'no_sentinel', 'timeout', 'auth_failed', 'config_error', 'unsupported', 'circuit_open', 'probe_failed', 'closed'] as const,
     valkeyReasonText,
   );
+  // A name the server stores none of and the screen words from a fact of the API (Q-UI-1653): a token by its created_via.
+  add('token created via', ['upload'], (c) => tokenName({ description: '', createdVia: c }));
   return out;
 }
 
 describe('A server text in the screen\'s language (R-UI-214)', () => {
   it('R-UI-214 every code the server sends has a sentence of the screen, and a German one in the German build', () => {
     const english = sentences();
-    expect(english.length).toBe(87);
+    expect(english.length).toBe(88);
     for (const [code, sentence] of english) {
       expect(sentence, code).not.toBe('');
       expect(sentence, code).not.toContain('the API sentence');

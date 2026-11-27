@@ -28140,6 +28140,7 @@ components:
             (Q-AUTH-428).
         description:
           type: string
+          description: What the token's creator wrote, 1 to 1024 characters; empty for the token of an upload from the screen (`createdVia` `upload`).
         scope:
           $ref: "#/components/schemas/TokenScope"
         unknownEndpoints:
@@ -28158,6 +28159,9 @@ components:
           description: The ID of the principal that created the token.
         createdVia:
           type: string
+          description: |
+            How the token was made: `ui`, `api`, `npm-web-login`, `device-login`, `admin-cli`, `rotation`, `ci-exchange`, or `upload`, the
+            token of an upload from the screen, which has no `description` and which a screen words by this value (Q-UI-1653).
         expiresAt:
           type: [string, "null"]
           format: date-time

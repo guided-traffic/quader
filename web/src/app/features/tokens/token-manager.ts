@@ -14,7 +14,7 @@ import { SelectField } from '../../shared/access/fields';
 import { PagedResource, asApiError } from '../../shared/paged-resource';
 import { TokenDraft, TokenForm } from '../../shared/access/token-form';
 import { TokenSecret } from '../../shared/access/token-secret';
-import { TokenTable } from '../../shared/access/token-table';
+import { TokenTable, tokenName } from '../../shared/access/token-table';
 import { ErrorNotice } from '../../shared/error-notice';
 import { Disclosure } from '../../shared/ui/disclosure';
 import { Loading } from '../../shared/ui/loading';
@@ -299,9 +299,10 @@ export class TokenManager {
   }
 
   protected async revoke(token: Token): Promise<void> {
+    const description = tokenName(token);
     const answer = await this.confirmer.ask({
       title: $localize`:@@tokens.revoke-title:Revoke this token?`,
-      lines: [$localize`:@@tokens.revoke-text:“${token.description}:description:” stops working at once on every replica. This cannot be undone.`],
+      lines: [$localize`:@@tokens.revoke-text:“${description}:description:” stops working at once on every replica. This cannot be undone.`],
       confirmLabel: $localize`:@@tokens.revoke-confirm:Revoke`,
     });
     if (answer === null) return;

@@ -2291,8 +2291,8 @@ on the repository's page, by the client's own publish (the owner, 2026-11-25: "d
      for a virtual repository, on its deployment target, and nothing else. Only a browser's session is answered, with its CSRF token like
      every management write: a caller with a token is refused `403`, so that a client publishes with its own token and a token never mints
      the next one. It answers the token's id, the token, its expiry and `publishPath`, the client's publish route of the repository. The
-     token is an ordinary token: `token.created` is its audit event and it is in the caller's list of tokens (created via `ui`); the dialog
-     revokes it (`DELETE /api/v1/tokens/{id}`) once the publish answered, failed or was cancelled, so five minutes is its longest life and
+     token is an ordinary token: `token.created` is its audit event and it is in the caller's list of tokens (created via `upload`, named
+     **Upload from the screen**); the dialog revokes it (`DELETE /api/v1/tokens/{id}`) once the publish answered, failed or was cancelled, so five minutes is its longest life and
      not its usual one. The token lives in the dialog's call only: it is never shown, written to the console, the address or the browser's
      storage, or put into a command (Q-UI-1336), and the error notice's report holds no request header.
   2. The archive goes as the raw body (`application/gzip`) to `publishPath` with `Authorization: Bearer <token>`; the answer, the address
@@ -2363,8 +2363,8 @@ Acceptance criteria:
 
 - `TestR_ANS_061_TheScreensPublishRunsOnTheRolesTheChartRuns` (integration `ansiblelocal`, about 3 s with the stack's start, archives under
   a kilobyte; a replica of the role `api` and one of the role `packages`, the guard of the split roles): the token is issued to the session on
-  `api`, a personal access token of five minutes created via `ui` whose scope names the repository only, answered with `no-store`; the
-  publish with it on `packages` stores the version and does not echo it, its task with R-ANS-062's warning is read on `api`, and the event
+  `api`, a personal access token of five minutes created via `upload`, without a description (Q-UI-1653), whose scope names the
+  repository only, answered with `no-store`; the publish with it on `packages` stores the version and does not echo it, its task with R-ANS-062's warning is read on `api`, and the event
   names the caller and the upload token; the token publishes into no other repository (`403`), reads none (`404`), mints no personal token
   (`403`) and no next upload token (`403`), and once revoked is refused (`401`); a client's token gets no upload token; an archive that is
   no collection is a failed task; a reader and a generic repository get no token; `packages` serves no management operation.

@@ -22,6 +22,22 @@ describe('Token administration (R-UI-030)', () => {
     expect(await seriousViolations(root)).toEqual([]);
   });
 
+  it('R-UI-214 the token of an upload from the screen, stored without a description, is named by the screen from how it was created', async () => {
+    const { root } = await renderScreen(TokenAdmin, {
+      setup: (api) => {
+        (api(TokensApi) as FakeTokensApi).tokenList = [
+          sampleToken({ id: 't1', description: '', createdVia: 'upload' }),
+          sampleToken({ id: 't2', description: 'laptop npm', createdVia: 'ui' }),
+        ];
+      },
+    });
+    const rows = root.querySelectorAll('tbody tr');
+    expect(text(rows[0]!.querySelector('th')!)).toContain('Upload from the screen');
+    expect(rows[0]!.querySelector('td.actions button')?.textContent).toContain('Upload from the screen');
+    expect(text(rows[1]!.querySelector('th')!)).toContain('laptop npm');
+    expect(rows[1]!.querySelector('th [translate="no"]')?.textContent).toBe('laptop npm');
+  });
+
   it('R-EP-011 a token bound to an endpoint that is not configured says so, and passes axe', async () => {
     const { root } = await renderScreen(TokenAdmin, {
       setup: (api) => {

@@ -8,7 +8,7 @@ import { Confirm } from '../../shared/confirm-dialog';
 import { SelectField, SelectOption, TextField } from '../../shared/access/fields';
 import { Needs } from '../../shared/access/needs';
 import { PagedResource, asApiError } from '../../shared/paged-resource';
-import { TokenTable } from '../../shared/access/token-table';
+import { TokenTable, tokenName } from '../../shared/access/token-table';
 import { ErrorNotice } from '../../shared/error-notice';
 import { FilterPanel } from '../../shared/ui/filter-panel';
 import { ListChip, ListHead } from '../../shared/ui/list-head';
@@ -144,9 +144,10 @@ export class TokenAdmin {
   }
 
   protected async revokeOne(token: Token): Promise<void> {
+    const description = tokenName(token);
     const answer = await this.confirmer.ask({
       title: $localize`:@@tokens-admin.revoke-title:Revoke this token?`,
-      lines: [$localize`:@@tokens-admin.revoke-text:“${token.description}:description:” of ${token.owner.name}:owner: stops working at once on every replica.`],
+      lines: [$localize`:@@tokens-admin.revoke-text:“${description}:description:” of ${token.owner.name}:owner: stops working at once on every replica.`],
       confirmLabel: $localize`:@@tokens-admin.revoke-confirm:Revoke`,
     });
     if (answer !== null) await this.revoke([token.id]);

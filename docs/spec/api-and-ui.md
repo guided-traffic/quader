@@ -9901,6 +9901,14 @@ server knows, it sends as a code with its parameters
   writes them ([usage-and-limits.md](usage-and-limits.md) H-1861). A problem whose code the screen
   does not know is said from its status; its English `detail` is a fact of the notice, marked `lang="en" translate="no"`, with the
   request ID (R-UI-216).
+- **A name the server makes is not stored** ([Q-UI-1653](#q-ui-1653--the-server-stores-no-phrase-it-makes-up-the-screen-words-the-thing-from-a-fact-of-the-api)).
+  Where the server creates a thing for a purpose of its own, it stores no description it would have to word, and the screen words the
+  thing from a fact the API carries, in the reader's language: the token of an upload from the screen has `createdVia` `upload` and no
+  description, and the token lists name it **Upload from the screen** ("Upload über die Oberfläche", `tokenName` of
+  [token-table.ts](../../web/src/app/shared/access/token-table.ts)), its scope naming the repository; a Bastion's declared token has none
+  and its card names it from `declared` ([bastion.md](bastion.md) R-BAS-127); the technical token `quader admin token create` makes has
+  none, its name (`admin-cli` unless `--name` says another) says where it came from; a group `quader migrate` creates for
+  `authz.role_bindings` has none, its system roles say the Helm configuration.
 - **The audit of 2026-11-24** (every binding of a server's text in `web/src/app`, against its source). Each screen exists once for
   every format and class that has it; the preview, the connection test, the mirror and the signatures serve every format through the
   same component:
@@ -33203,6 +33211,32 @@ Context: Q-UI-1617: every mark a visitor of a Bastion sees is the Bastion's towe
 
 **Choice:** (a). **Applied in the spec:** R-UI-273. Code: [setup-flow-art.ts](../../web/src/app/features/setup/setup-flow-art.ts),
 [setup-page.ts](../../web/src/bastion/pages/setup-page.ts).
+
+### Q-UI-1653 · The server stores no phrase it makes up; the screen words the thing from a fact of the API
+
+Status: **Decided by the development agent** (W-39's plan, D10; built on 2026-11-27 by batch B-1127k) — selected from the options below;
+the owner reviews it at the walkthrough. R-UI-214, R-UI-272.
+
+Context: four things the server creates for a purpose of its own were stored with an English description it made up, which every screen
+then showed as a person's words, English on a German page: the token of an upload from the screen ("Upload of a package from the screen
+into <repository>", `upload_tokens_api.go`), the technical token of `quader admin token create` ("created by quader admin token create"),
+the group `quader migrate` creates for `authz.role_bindings` ("Created for authz.role_bindings of the system configuration.") and a
+Bastion's declared token ("Bastion <name> (declared in the configuration)", whose card names it by the screen since W-41's C1).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) None of them is stored; the screen words the thing from `createdVia`, `declared`, the name or the roles (chosen) | `created_via` gains `upload`; an upload's and a declared token's description may be empty | No English in German; no stored sentence outlives its wording | A client of the API reads an empty description and words it from `createdVia` itself |
+| (b) A key in the description | The server stores `token.upload`, which the screen translates | One field | A description that is sometimes prose, sometimes a key |
+| (c) The screen recognises the phrases | The English phrase stays stored; the screen maps it to its words | No server change | Breaks with any change of the phrase; a person could type the same words |
+
+**Choice:** (a). The upload token's scope already names its repository, so the screen's words name only the way it was made; the technical
+token keeps its name, which the command sets; the declared group's roles show the Helm configuration (R-UI-270). A token a person makes
+keeps a description of 1 to 1024 characters (`description_required`). **Applied in the spec:** R-UI-214;
+[identity-and-authentication.md](identity-and-authentication.md) (the token's attributes, `api_token`). Code: migration
+`00160_token_upload_without_description.sql`, `token.ViaUpload` and `checkDescription` of
+[service.go](../../internal/auth/token/service.go), [upload_tokens_api.go](../../internal/api/v1/upload_tokens_api.go),
+[bastion.go](../../internal/auth/token/bastion.go), [admin_identity.go](../../cmd/quader/admin_identity.go),
+[declared.go](../../internal/authz/declared.go), `tokenName` of [token-table.ts](../../web/src/app/shared/access/token-table.ts).
 
 ### Q-UI-1655 · A download's repository and unit in the audit log count their longest piece in the log's least width
 

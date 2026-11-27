@@ -48,7 +48,8 @@ func TestR_NUGET_006_APackageUploadedOnTheScreenIsPushedOnTheRolesTheChartRuns(t
 	if n := e.st.Number(`SELECT count(*) FROM nuget_symbol_package s JOIN nuget_version v ON v.version_id = s.version_id WHERE v.lower_id = 'acme.screen'`); n != 1 {
 		t.Errorf("symbol packages: %d", n)
 	}
-	if got := e.st.Text(`SELECT k.description FROM audit_event a JOIN api_token k ON k.id = a.token_id WHERE a.action = 'package.published' AND a.path = 'acme.screen/1.2.0-beta.1'`); got != "Upload of a package from the screen into it/nuget-local" {
+	// The token is created_via upload and stored without a description: the screen words it (Q-UI-1653).
+	if got := e.st.Text(`SELECT k.created_via || ' [' || k.description || ']' FROM audit_event a JOIN api_token k ON k.id = a.token_id WHERE a.action = 'package.published' AND a.path = 'acme.screen/1.2.0-beta.1'`); got != "upload []" {
 		t.Errorf("the event names the upload token: %q", got)
 	}
 	// The dialog revokes the token once the pushes answered: it is refused from then on.
