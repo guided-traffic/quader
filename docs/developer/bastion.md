@@ -11,8 +11,9 @@ is described in [e2e.md](e2e.md#the-bastion-tests), the client case of R-BAS-060
 [spec/bastion.md](../spec/bastion.md) (R-BAS-001 to R-BAS-049, decisions Q-BAS-1 onward), its security perspective [security/bastion.md](../security/bastion.md), the plan
 [projektplan/BETA.md](../projektplan/BETA.md#phase-5b--quader-bastion-m13).
 
-The Bastion is a role of the one image, `quader serve --role bastion`, with a configuration tree of its own, no PostgreSQL, no UI and a
-client listener that mirrors the main installation's package URL space. This page is for the eight developers who build it in
+The Bastion is a role of the one image, `quader serve --role bastion`, with a configuration tree of its own, no PostgreSQL, no sign-in
+and a client listener that mirrors the main installation's package URL space, beside which it serves, when its registration's switch
+`gui` is on, a read-only web interface of its own for anonymous visitors ([W-35](#w-35-the-web-interface-its-packages-and-where-each-part-lives)). This page is for the eight developers who build it in
 parallel: it says which package owns which file, which seams join them, how a request travels, and how to run the role.
 
 ## What to have in your head first
@@ -1481,12 +1482,44 @@ under `<state>/bastion/` and runs the replica on `https://localhost:19091` (inst
 Bastion's application built into the embed tree ([web-ui.md](web-ui.md#the-profiles-bastion)). `make ui-renders` starts it beside the
 backend and renders its pages.
 
+## W-35: the web interface, its packages and where each part lives
+
+The owner's W-35 (2026-11-26): a Bastion shows anonymous visitors a read-only web interface, switched on per registration at the main
+installation, its documentation switched separately, naming nothing of the main installation, with the smallest footprint. The plan's
+packages, all built on 2026-11-26 and 2026-11-27, and where each part lives:
+
+| Package | What it built | Where it lives | Requirements |
+|---|---|---|---|
+| P1 Measurement | the size of the catalogue and the builder's time ([below](#the-size-of-the-public-catalogue-measured-2026-11-26)); a measurement, no product code | [hack/bastion-catalogue-measure](../../hack/bastion-catalogue-measure/README.md) | — |
+| P2 Views and acts | the package, version, list, documentation and vulnerability screens split into views a second application composes | `web/src/app/views/` ([web-ui.md](web-ui.md)) | R-UI-223 |
+| P3 Anonymous vulnerabilities | the grades and the open findings of public repositories for a caller without a session, at the main installation | `internal/api/v1`, `internal/vuln/report` ([vulnerabilities.md](vulnerabilities.md)) | R-UI-224, R-VULN-019, R-VULN-020 |
+| P4 Imprint and privacy notice | `config.ui.legal` in both charts, rendered at start; `GET /api/v1/legal` and the footer at the main installation | [internal/bastion/legal](../../internal/bastion/legal), `internal/legaltext` | R-BAS-100, R-UI-225, R-UI-226 |
+| P5 The wire (with W-34's E7) | the catalogue's routes, the path grammar, the switches `gui` and `docs`, interface version 8 | [internal/bastion/iface](../../internal/bastion/iface), [cataloguebounds](../../internal/bastion/cataloguebounds) | R-BAS-101 to R-BAS-103 |
+| P6 The builder | the documents per registration, the strip, the link rewrite, the job `bastion-catalogue` ([below](#the-public-catalogues-builder-package-p6)) | [internal/bastionmain/catalogue](../../internal/bastionmain/catalogue), [wire_bastion_catalogue.go](../../internal/app/wire_bastion_catalogue.go) | R-BAS-104 to R-BAS-108 |
+| P7 The catalogue at the Bastion | the sync, the store in the cache backend, the age, the feed's hooks, the reader ([below](#the-public-catalogue-at-the-bastion-package-p7)) | [internal/bastion/catalogue](../../internal/bastion/catalogue), [cache/catalogue.go](../../internal/bastion/cache/catalogue.go) | R-BAS-109 to R-BAS-113 |
+| P8 (with W-34's E17) | the package API's answers and registry tokens name nothing of the main installation | `internal/bastion/engine`, `internal/api/bastionmark` | R-BAS-114, R-BAS-115 |
+| P9 The web interface | serving below `/ui/`, the data below `/ui/data/v1/`, the class `gui`, the headers, the second application ([below](#the-web-interface-package-p9)) | [internal/bastion/gui](../../internal/bastion/gui), `web/src/bastion` | R-BAS-116 to R-BAS-120, R-UI-227 to R-UI-230 |
+| P9b Rendered and looked at | a Bastion in the UI development profile, the render screens `bastion-*`, nine defects fixed | `deploy/ui-dev`, [bastion-gui.ts](../../web/e2e/renders/bastion-gui.ts) | — |
+| P9d Generic files | a public generic repository's folders and files at the Bastion | `web/src/bastion/pages/files-page.ts`, `web/src/app/views/files/` | R-UI-229, R-BAS-118 |
+| P9e What a visitor still missed | the grade per version, the projects' names, the installation's form of a time (interface version 10), the page Set up client | [setup-page.ts](../../web/src/bastion/pages/setup-page.ts), [data.go](../../internal/bastion/gui/data.go) | R-BAS-128, R-BAS-129 |
+| P10 Search engines | a page's head and text, `robots.txt`, the sitemap, the refusal's page | [seo.go](../../internal/bastion/gui/seo.go), [crawl.go](../../internal/bastion/gui/crawl.go), [page/](../../internal/bastion/gui/page) | R-BAS-121 to R-BAS-123, R-UI-231 |
+| P11 Documentation | the documentation by `docs` and the wiki, its search at the Bastion and in the browser ([below](#the-documentation-of-the-web-interface-package-p11)) | [docs.go](../../internal/bastion/catalogue/docs.go), [docs-model.ts](../../web/src/app/views/packages/docs-model.ts) | R-BAS-124 to R-BAS-126, R-UI-232 |
+| P12 Manual and security | [manual/admin/bastion.md](../manual/admin/bastion.md#the-web-interface-for-visitors), [manual/user/browsing-a-bastion.md](../manual/user/browsing-a-bastion.md), [security/bastion.md](../security/bastion.md#the-web-interface) | — | — |
+
+**P1's numbers in short** (measured on the UI development profile with a generated set of 543 public packages and 2,670 public
+versions, under a load of 32 to 56 on 20 cores): 37,376 documents, 14 per public version on the mean; 159.2 MiB raw and 44.7 MiB with
+each document gzip-compressed (42.3 MiB distinct); Ansible documentation entries 63 % of the compressed bytes. The mean per version in the
+set's mix is 15.2 KiB compressed *(derived)*, so `bastion.gui.max_bytes`' default of 4 GiB holds about 290,000 public versions
+*(derived)*. The builder's time: 36 to 45 ms per document through HTTPS for one worker; in process (P6) the render seed's 111 documents in
+1.36 s, at most 12 ms a document, and a reconciliation that finds nothing 0.16 to 0.23 s. The details and what was not measured follow.
+
 ## The size of the public catalogue (measured 2026-11-26)
 
 The Bastion's web interface (W-35) serves anonymous visitors from a **public catalogue**: documents the main installation builds per
 registration and the Bastion mirrors whole, with a change list as the cursor ([the interface version 8](../spec/bastion.md#the-interface-version-8-the-shared-wire)).
-The catalogue is not built yet. This section measures the documents it will be made of, read from the reads the main installation already
-has, so that the builder (P6), the wire (P5) and the store at the Bastion (P7) are sized from numbers. It was run once; it is a
+This section (W-35's P1, before the catalogue was built) measures the documents it is made of, read from the reads the main installation
+already had, so that the builder (P6), the wire (P5) and the store at the Bastion (P7) were sized from numbers; the builder's own time in
+process follows in [The builder in process](#the-builder-in-process-measured-2026-11-26-p6). It was run once; it is a
 measurement, not a test. The scripts and how to run them again are [hack/bastion-catalogue-measure](../../hack/bastion-catalogue-measure/README.md).
 
 Every number is marked: **measured** is read from the running instance; **derived** is computed from measured numbers by the rule given

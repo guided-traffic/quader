@@ -5,8 +5,10 @@ wired into one role ([developer page](../developer/bastion.md#how-the-role-is-wi
 ([internal/bastion/engine](../../internal/bastion/engine)), the guard, the cache backends, the Valkey state and the link to the main
 installation. On the main installation's side the registrations and the Bastion token
 ([below](#the-registration-and-its-token-on-the-main-installation)) and the interface (recognition, check, feed, download intake,
-contact; [its section](#the-main-installations-side-of-the-interface)) are built. This page describes the code, with links to it, and
-the threat model of [spec/bastion.md](../spec/bastion.md).
+contact; [its section](#the-main-installations-side-of-the-interface)) are built, and so is the read-only web interface for anonymous
+visitors (W-35: [the catalogue's wire](#the-public-catalogue-and-the-configuration-on-the-wire), [its builder](#the-builder-of-the-public-catalogue),
+[the copy at the Bastion](#the-public-catalogue-at-the-bastion), [the pages](#the-web-interface), [search engines](#search-engines)).
+This page describes the code, with links to it, and the threat model of [spec/bastion.md](../spec/bastion.md).
 
 This page says what the internet-facing Bastion can do, what an attacker who reaches it can do, what the Bastion's own token
 can do, and where abuse is stopped. The roles and boundaries of the main installation are in
@@ -524,8 +526,40 @@ means for trust:
 
 ## The web interface
 
-W-35's package P9, built on 2026-11-26 ([spec/bastion.md](../spec/bastion.md#the-bastions-web-interface), R-BAS-116 to R-BAS-118).
-Anonymous visitors from the internet read the public catalogue in a browser at the Bastion's own host. What it means for trust:
+W-35's packages P9 to P11 with P9b, P9d and P9e, built on 2026-11-26 and 2026-11-27 ([spec/bastion.md](../spec/bastion.md#the-bastions-web-interface),
+R-BAS-116 to R-BAS-126, R-BAS-128, R-BAS-129; the administrator's side is the manual's
+[The web interface for visitors](../manual/admin/bastion.md#the-web-interface-for-visitors)). Anonymous visitors from the internet read
+the public catalogue in a browser at the Bastion's own host, while the registration's switch `gui` is on (off for a new registration).
+
+**What a visitor can read.** Exactly what the main installation answers its anonymous caller of the default endpoint, through the
+decision point and the exposure ceiling (R-BAS-104): the projects that hold a public package or a public repository of files, with their
+key, display name and description; every repository whose artifacts are `public`, of every class, a remote with what its cache holds;
+per package and version its facts, files (size, SHA-256, a download link on the Bastion's package routes), malware verdict, signatures
+(kind, signer, issuer, time proof, log, trust state), the signature objects and the anchors to verify them offline, and its grade with
+the open findings only (`needs_triage`, `confirmed`, `blocked`); with `docs` on and a public wiki the README, the documentation and
+Debian's changelog and copyright; a public generic repository's folders and files; every public repository's client set-up with
+`credentials=none`; the Bastion's own imprint and privacy notice; and the time of the replica's last round.
+
+**How that is bounded:**
+
+- **Public only.** The builder reads as the anonymous caller and never with a user's or the Bastion's credential, and the replica
+  hides at once what falls out of the public set (R-BAS-104, R-BAS-112). The anonymous caller's reads are the rule; the catalogue has
+  none of its own. One difference is read in the code: the builder's chain applies no endpoint's `auth.anonymous`
+  ([H-2330](#h-2330--the-catalogue-holds-public-content-while-the-default-endpoint-admits-no-request-without-a-credential)).
+- **The strip.** Who published, released, uploaded or triaged, a CI job's claims, every principal's reference, download counts, an
+  internal anchor's title, a state code, the scanner's engine and replica, an upstream that is no public registry, and every origin of
+  the main installation leave every document before it is kept (R-BAS-106, R-BAS-107; [H-2309](#h-2309--the-strip-knows-the-members-the-main-installation-writes-today)).
+- **No request to the main installation.** Every answer comes from the replica's catalogue and its legal pages; an architecture rule
+  keeps the client, the handover and the engine out of the web interface's closure (R-BAS-116).
+- **The flood class `gui`.** Every request of a page, a file of the bundle or the data asks the block list and the class `gui` per
+  address (20 requests a second, a burst of 100, by default), never a miss and never the anonymous class's budget (R-BAS-117).
+- **The CSP and the headers.** A page runs only the Bastion's own scripts under Trusted Types, frames and forms are refused, no
+  referrer leaves, no cookie is set and no `Server` or `Quader-` header is sent (R-BAS-117).
+- **The bundle.** The application is built apart from the main installation's, and its build fails when the main installation's API
+  client (its write methods), its session, a screen of its own or a dialog put a byte into it (R-BAS-119, R-UI-228): a page has no way to
+  write, to sign in or to hold a session.
+
+What it means for trust, mechanism by mechanism:
 
 | Mechanism | What it means for trust | Held by |
 |---|---|---|
@@ -539,6 +573,9 @@ Anonymous visitors from the internet read the public catalogue in a browser at t
 | A rolling upgrade | A replica answers a file of another release's bundle `404`; the page loads itself again ([H-2324](#h-2324--a-page-of-one-release-asks-a-replica-of-another-for-a-file-its-bundle-lacks)) | R-BAS-116 |
 | A generic repository's files | A public generic repository's folders and files are the main installation's views without an act (W-35's P9d): a file downloads through the Bastion's own package route, its commands are the catalogue's set-up of its path, and no upload, delete or statistic is in the bundle. The file's signatures are a badge without their report ([H-2328](#h-2328--a-generic-files-signatures-are-a-badge-alone-at-the-bastion)), and its malware verdict shows no database date ([H-2329](#h-2329--a-generic-files-malware-verdict-at-the-bastion-shows-no-date-of-its-database)) | R-UI-229, R-BAS-118 |
 | The documentation (W-35's P11) | A version's README and documentation travel only while the registration's `docs` is on and a public repository that holds the version has a public wiki; without them the version announces none (`hasReadme` false). With `docs` off the data path answers no documentation, no hit of the documentation's search and no Debian changelog or copyright at once, before the builder's next run. The search inside a version runs in the browser over the tree; the search across packages scans the replica's index ([H-2338](#h-2338--a-search-of-the-documentation-across-packages-scans-every-entry-of-the-newest-versions), [H-2339](#h-2339--a-replica-holds-every-public-packages-newest-documentation-entries-in-memory)) | R-BAS-124 to R-BAS-126 |
+| A package's grades per version (W-35's P9e) | The document `packages/<id>/vulnerabilities` is the main installation's anonymous answer, open findings only, through the strip, which takes each grade's `checkedAt` out ([H-2407](../spec/bastion.md#h-2407--a-bastions-grade-says-nothing-of-when-and-against-which-database-it-was-checked)) | R-BAS-128, Q-BAS-403 |
+| Set up client (W-35's P9e) | The snippets are the catalogue's set-up documents, rendered with `credentials=none` and `bastion=<name>`: the Bastion's address, no login line, no publish step, no token field and no guide of the main installation; a repository the public set does not hold gets none | R-BAS-129, R-BAS-104 |
+| The age | A replica serves its copy whatever its age and every page says how old it is; a narrowing made during an outage stays visible until the link returns ([H-2319](#h-2319--a-narrowing-made-during-an-outage-stays-on-the-pages-until-the-link-returns)) | R-BAS-111, R-BAS-120 |
 
 ## Search engines
 
@@ -562,7 +599,7 @@ that no mechanism of the Bastion holds, because the chart leaves it to the clust
 [H-522](#h-522--the-chart-restricts-no-egress-of-the-bastion-pods). The gaps of the owner's decisions of 2026-11-26 (W-34), specified and
 not built, are recorded on this page as well, each with the package whose mechanism has it: H-2280 to H-2283, H-2285, H-2289 to H-2297,
 H-2348 to H-2351, H-2354, H-2355 (H-2291, H-2348 and H-2349 are E13's, built; H-2281 to H-2283, H-2354 and H-2355 E8's, live); so are the gaps of the public catalogue's wire (W-35, interface version 8),
-H-2305 to H-2307, of its builder (W-35's P6), H-2308 to H-2314, and of the web interface (W-35's P9), H-2324 to H-2327, with its generic files (W-35's P9d), H-2328 and H-2329; so are the gaps of the packages built since: H-2356 and H-2357
+H-2305 to H-2307, of its builder (W-35's P6), H-2308 to H-2314, of the catalogue at the Bastion (W-35's P7), H-2315 to H-2321, of the web interface (W-35's P9), H-2324 to H-2327, with its generic files (W-35's P9d), H-2328 and H-2329, of what the web interface shows (W-35's P12), H-2330, and of its search engines (W-35's P10), H-2334 to H-2337; so are the gaps of the packages built since: H-2356 and H-2357
 (E9a), H-2358 and H-2359 (E15), H-2360 and H-2361 (E10), H-2362 (E11), H-2322 and H-2323 (W-35's P8 with E17), H-2374 and H-2375 (E18;
 H-2375 closed by E19), H-2370 (E19);
 and of a registration the configuration declares (R-BAS-127), H-2366 and H-2367; and of the documentation of the web interface (W-35's
@@ -1091,8 +1128,8 @@ does not carry is H-2292's. What makes it real: an anonymous `npm install` throu
 ### H-2305 · The Bastion token reads its registration's public catalogue in bulk
 
 Stage: the catalogue routes (R-BAS-101, R-BAS-102; W-35's P5, built; the builder P6 fills them). Subject: the public packages, versions,
-open findings, signatures, documentation and set-up snippets of the repositories a registration's catalogue shows. Dormant until P6 builds
-a catalogue and an administrator switches a registration's `gui` on; then live wherever the Bastion token is. Its holder reads the whole
+open findings, signatures, documentation and set-up snippets of the repositories a registration's catalogue shows. Live wherever a registration's `gui` is
+on and its Bastion token is (P6 builds the catalogue since 2026-11-26). Its holder reads the whole
 catalogue at once, with the change list as an index, where an anonymous visitor reads the same pages one at a time through the main
 installation's public reads or the Bastion's pages; nothing in the catalogue is closed to the anonymous caller, so the gain is speed and
 completeness, and, with public remotes in the catalogue, the company's dependency footprint in one pull (W-35's D3). What makes it real: a
@@ -1102,8 +1139,9 @@ off; revoking the token ends it.
 ### H-2306 · Every Bastion learns when some catalogue or some configuration changed
 
 Stage: the feed entries of the kinds `catalogue` and `settings` (R-BAS-015, R-BAS-093, R-BAS-101; Q-BAS-349). Subject: the times at which
-the main installation published into a public repository or changed a Bastion's configuration. Live for `settings` since phase 5b, for
-`catalogue` once P6 writes the entries. An entry names no registration, so a Bastion reads the times of changes that concern other
+the main installation published into a public repository or changed a Bastion's configuration. Live for `settings` since phase 5b (since
+W-35's P9e also for a change of the installation's default form of a time, `system.time_format_changed`); dormant for `catalogue`, since
+the main installation writes no entry of that kind (Q-BAS-378). An entry names no registration, so a Bastion reads the times of changes that concern other
 registrations, and from the catalogue entries the times of publishes into public repositories of any registration's catalogue. What makes it
 real: a holder of any Bastion token reading the feed. What holds: an entry carries no repository, package or registration, and the publish
 itself is public once it is in a catalogue. Naming the registration would tell every Bastion the others' IDs instead.
@@ -1190,7 +1228,7 @@ round of one publish costs a shard, not the map.
 ### H-2316 · Without a signing key the catalogue's state record is not authenticated
 
 Stage: the store (R-BAS-110, Q-BAS-374). Subject: someone who can write the cache volume of a Bastion that runs the volume backend without
-Valkey, where the configuration allows no signing key (Q-BAS-98). The state record is then stored plain, so such a writer can make a
+Valkey and has no signing key, which only the bucket backend and Valkey require (Q-BAS-98). The state record is then stored plain, so such a writer can make a
 replica serve, after its next start, a catalogue of the writer's making: the documents are held to the addresses the record's shards name,
 and the writer writes those too. Dormant: it needs write access to the pod's volume, which is already the cache's (H-460's case). What
 holds: with a signing key, which the bucket backend and Valkey require, the record is signed in the domain `catalogue`; with a cache key it
@@ -1293,6 +1331,21 @@ most 4 KiB of words per entry at the main installation, `rows.MaxDocSearchText`,
 (`bastion.gui.max_bytes`) bounds the documents kept, not the index built from them. What makes it real: a public remote of a large
 Galaxy mirror, whose every collection's newest documentation enters the index.
 
+### H-2330 · The catalogue holds public content while the default endpoint admits no request without a credential
+
+Stage: the builder's renderer (R-BAS-104, Q-BAS-355; `catalogueRenderer` of
+[wire_bastion_catalogue.go](../../internal/app/wire_bastion_catalogue.go)). Subject: the public repositories of an installation whose
+default endpoint sets `auth.anonymous: false`, explicitly or because its listener requires a client certificate (R-EP-010). The renderer's
+chain has no authentication stage, so every read is the anonymous principal's and is decided by the levels alone; the endpoint's
+`auth.anonymous`, which the authentication stage of a real request applies, is never asked. A registration with `gui` on therefore shows
+every repository whose level is `public`, while the same installation answers an anonymous request at its default endpoint `401`, and
+while the Bastion's own package API refuses the anonymous downloads its pages link (R-BAS-019). Read in the code on 2026-11-27, not run.
+Dormant while the default endpoint admits anonymous requests, which it does by default; live where an operator closed it and switches
+`gui` on. What makes it real: an operator who relies on `auth.anonymous: false` to keep `public` repositories closed. What holds: only
+what a `public` level opens is shown, and switching `gui` on is the operator's act. What would close it: the builder asks the default
+endpoint's `AnonymousAllowed` and builds nothing (or `gui` is refused) while it is false, as R-BAS-104's sentence "what an anonymous
+visitor reads through the default endpoint" says.
+
 ### H-2334 · A search engine keeps a page after its content became private, until it visits again
 
 Stage: the pages' status and the sitemap (R-BAS-121, R-BAS-122, W-35's D15). Subject: a package or a project whose level an administrator
@@ -1317,8 +1370,9 @@ the builder renders the document again.
 Stage: the sitemap (R-BAS-122, W-35's D3). Subject: the company's public packages and, with a public remote, the dependency footprint of its
 builds. The catalogue's search and the pages already enumerate what is public; the sitemap lists it in one file of up to 50,000 addresses,
 and a search engine makes it findable by a web search. Live by the owner's answer that public remotes are part of the catalogue: a public
-npmjs.com or Docker Hub remote lists everything internal builds pulled. The only mitigation is not to make such a remote public; the card's
-sentence and the manual say so (W-35's P12).
+npmjs.com or Docker Hub remote lists everything internal builds pulled. The only mitigation is not to make such a remote public; the manual says so
+([What becomes public](../manual/admin/bastion.md#what-becomes-public), W-35's P12), the card's sentence of the switch does not name
+remotes.
 
 ### H-2337 · A page a crawler reads costs the Bastion its reads, and a crawler that ignores robots.txt reaches the package API
 

@@ -1,10 +1,10 @@
 # The Quader Bastion
 
-How to run a read-only, internet-facing cache of your installation for clients outside your network: declare a Bastion in the values of an installation run from Git, or register it and issue its token on the screen, set up the main installation, install the Bastion chart with a minimal or a highly available configuration, check that it works, renew its token without an outage, let it read large files from the object store directly, and what each alert of its monitoring means.
+How to run a read-only, internet-facing cache of your installation for clients outside your network: declare a Bastion in the values of an installation run from Git, or register it and issue its token on the screen, set up the main installation, install the Bastion chart with a minimal or a highly available configuration, check that it works, switch on its web interface for visitors and decide what it shows, renew its token without an outage, let it read large files from the object store directly, and what each alert of its monitoring means.
 
 ## What a Bastion is
 
-A Bastion is the same Quader image started as `quader serve --role bastion`, installed with its own chart, `quader-bastion`, in its own namespace or cluster. It has no database and no web interface. It serves what clients read from your repositories, for every format, as the main installation's own address serves it: the package paths (`/api/<format>/<repository>/…`: npm, NuGet, Debian (APT), Ansible Galaxy and the ClamAV definitions), the raw files (`/files/<repository>/…`) and the container registry at the root of its own address (`/v2/…`), so that an image is pulled as `<Bastion host>/<project>/<repository>/<image>:<tag>`. Every other path answers `404` with the code `not_found`. It holds no repository list and no permissions. For every read it asks the main installation whether the caller may read the repository, with the caller's own token, and serves the bytes from its cache when the answer is yes. A write through a Bastion is refused with `403` `read_only`.
+A Bastion is the same Quader image started as `quader serve --role bastion`, installed with its own chart, `quader-bastion`, in its own namespace or cluster. It has no database, no sign-in and no administration screen. It serves what clients read from your repositories, for every format, as the main installation's own address serves it: the package paths (`/api/<format>/<repository>/…`: npm, NuGet, Debian (APT), Ansible Galaxy and the ClamAV definitions), the raw files (`/files/<repository>/…`) and the container registry at the root of its own address (`/v2/…`), so that an image is pulled as `<Bastion host>/<project>/<repository>/<image>:<tag>`. When you switch it on, it also serves a read-only web interface for visitors at `/` and `/ui/…`, with a sitemap for search engines ([The web interface for visitors](#the-web-interface-for-visitors)); `/robots.txt` is always answered. Every other path answers `404` with the code `not_found`. It holds no repository list and no permissions. For every read it asks the main installation whether the caller may read the repository, with the caller's own token, and serves the bytes from its cache when the answer is yes. A write through a Bastion is refused with `403` `read_only`.
 
 | | The main installation | The Bastion |
 |---|---|---|
@@ -229,8 +229,8 @@ metrics:
 A Bastion has an imprint and a privacy notice of its own: `config.ui.legal.imprint.en`, `.de` and `config.ui.legal.privacy.en`, `.de`
 of the chart `quader-bastion`, Markdown, at most 64 KiB each, as for the main installation
 ([Imprint and privacy notice](configuration.md#imprint-and-privacy-notice)). The Bastion's administrator answers for them; they name
-whoever operates this Bastion and are never taken from the main installation. The Bastion renders them when it starts; it shows them
-once it has a web interface for visitors, which it does not have yet.
+whoever operates this Bastion and are never taken from the main installation. The Bastion renders them when it starts and shows them
+in the footer of its web interface while that is on ([Imprint and privacy notice of the web interface](#imprint-and-privacy-notice-of-the-web-interface)).
 
 The chart's `ingress` values carry annotations of HAProxy Ingress (a request limit per client address and a limit of connections). Another ingress controller ignores them: the Bastion's own limits and blocking still hold, the coarse limit in front of them does not. HAProxy Ingress counts per TCP peer address, so behind a load balancer that hides the client address, every client shares one budget until you switch on its proxy protocol or turn `edgeLimit.enabled` off.
 
@@ -296,6 +296,121 @@ What stays: the address of the repository the client asked for, the package it a
 | `quader_bastion_token_remaining_seconds` | a positive number | The seconds left of the token in use |
 
 3. From a machine outside your network, read a package through the Bastion with your own token, for example with the snippets that the page **Set up client** of a repository shows for the Bastion (see [Connecting a package client](../user/client-setup.md#install-through-a-bastion)). The first read of a package is a miss and goes to the main installation; the second is served from the cache.
+
+## The web interface for visitors
+
+A Bastion can show anonymous visitors from the internet a read-only web interface at its own address: the projects, packages, images and files of your public repositories, every version with its open vulnerabilities, its signatures and its malware scan, the documentation if you want it, and the commands to install them. Nobody signs in to it, nothing on its pages changes anything, and no page view reaches the main installation: the main installation builds the public content as a **public catalogue** after every change, each replica of the Bastion keeps a copy in its cache, and the pages are served from that copy alone. A new registration has the web interface off. What a visitor sees is described in [Browsing a Bastion](../user/browsing-a-bastion.md).
+
+### Switch it on
+
+1. Check that the Bastion has made contact and that its `config.server.base_url` is listed in `server.additional_base_urls` of the main installation ([Verify](#verify)). The main installation writes every link of the catalogue on that address, and builds nothing for a Bastion whose address it does not list.
+2. Decide what to show. The web interface shows exactly what a visitor without a session reads on the main installation: the repositories whose visibility is **Public**, in projects that are **Public** ([What becomes public](#what-becomes-public)). Read the warning about public remote repositories there first.
+3. Open **Admin area › Bastions**, the card of the Bastion, **Details**, and switch **Web interface** on (permission `endpoints:write`). Switch **Documentation** on as well if visitors should read the READMEs and the documentation of the packages.
+4. Start the first build: **Admin area › System › System status**, **Scheduled tasks**, the task `bastion-catalogue`, **Run now** (permission `settings:write`). Switching on does not start a build by itself: without **Run now** the first build waits for the next change of public content, or for the hourly run at minute 41 (UTC), and until then the pages say "No package is published here yet.".
+5. Open the Bastion's address, for example `https://packages.example.com/` *(example)*. It leads to `/ui/en/` or `/ui/de/` by the browser's language. A build of a few hundred packages takes seconds, and every replica takes it over within its next round (`config.bastion.gui.poll_interval`, default `10s`).
+
+Through the API the switches are `PATCH /api/v1/bastions/<name>` with `{"switches": {"gui": true, "docs": true}}` and the registration's `ETag` in `If-Match`. Each change is the audit event `bastion.configuration.changed` and reaches every replica of the Bastion within a few seconds.
+
+**Switch it off** the same way. Within a few seconds every address of the web interface answers **not found**, `robots.txt` tells every crawler `Disallow: /`, and each replica deletes its copy of the catalogue; the main installation deletes the registration's catalogue at its next build. **Documentation** off takes the READMEs, the documentation, Debian's changelogs and the search of the documentation off the pages at once; the next build deletes them from the catalogue.
+
+### What becomes public
+
+The main installation builds the catalogue by reading its own answers as a visitor without a session reads them, on the Bastion's address. So the web interface shows nothing that the levels do not already make public, and it shows all of it:
+
+| A visitor reads | Left out, whatever the level |
+|---|---|
+| The projects that hold a public package or a public repository of files, with their display names and descriptions | The projects' owners, members and sizes |
+| Every repository whose visibility is **Public**, local, remote and virtual alike; a remote shows what its cache holds | A remote's upstream address, unless it is one of the well-known public registries (Docker Hub, Quay, ghcr.io, GitLab, npmjs.com, nuget.org, Galaxy) |
+| Each package and version: description, keywords, licences, tags, dependencies, deprecation, files with their sizes and SHA-256, the platforms and layers of an image | Who published, uploaded or released it (the person, the service account, the CI job and its claims) |
+| Each version's malware scan and its signatures (kind, signer, issuer, time proof, log, trust) | The titles of your own installation's trust anchors (the trust state stays); the scanner's engine and replica |
+| Each version's vulnerability grade and its open findings (needs triage, confirmed, blocked) with identifiers, severities, fixed versions and an image's components | Dismissed and resolved findings, every triage note, who triaged, and any internal state code |
+| With **Documentation** on: the README, an Ansible collection's documentation, a Debian package's changelog and copyright; only where the repository's **Wiki visibility** is **Public** (Debian's follow the switch alone) | Download counts and the time of the last download |
+| The files and folders of a public generic repository, and the client set-up of every public repository on the Bastion's address, without a sign-in line and without a publish step | The main installation's own addresses: every occurrence of its base URLs in any text is written as the Bastion's |
+| Your imprint and privacy notice | Anything of the main installation's configuration |
+
+**A public remote repository shows what your builds pulled.** A public remote of npmjs.com, nuget.org or Docker Hub lists on the web interface, and in its sitemap for search engines, every package and version its cache holds: the dependencies your builds fetched through it, with their versions. If that is not meant to be public, keep the remote at **Internal** and let a public local or virtual repository hold what you publish. The card does not warn about it.
+
+Making a repository **Public** opens it on the main installation as well, to every endpoint that admits requests without a credential ([Public content](sign-in-and-identity.md#public-content-and-requests-without-a-credential)). Downloads through the Bastion are still decided by the main installation for every request; the catalogue only shows.
+
+### Kept or lost across a restart
+
+Each replica keeps its copy of the catalogue, and the record of what it holds, in its cache backend. Whether that survives a new pod depends on the cache:
+
+| Cache | Kept across a new pod | On the card |
+|---|---|---|
+| `config.bastion.cache.backend: bucket` | yes, one copy for every replica; with Valkey one replica syncs and the others take its state | no warning |
+| `cacheVolume.type: persistent` (a StatefulSet, a claim per pod) | yes, per pod | no warning |
+| `cacheVolume.type: ephemeral` *(default)* or `emptyDir` | no: a new pod (an upgrade, a rollout, a drain, an eviction) starts with an empty volume | "After a restart while the connection to it is down, this Bastion's web interface shows nothing until the connection returns. A bucket or persistent volumes keep it." |
+
+A replica that starts without a copy answers every page **Not available right now** ("This page is not available right now. Try again in a few minutes.", status `503` with `Retry-After: 30`) until its first round has read the catalogue from the main installation; the page tries again by itself, and search engines do not index a `503`. While the main installation is reachable that is the seconds of one round. A replica that starts while the main installation is unreachable shows **Not available right now** until the connection returns, and `QuaderBastionCatalogueMissing` fires after 15 minutes. A replica that did not restart serves on, with the age of its copy.
+
+For example, a Bastion with two replicas on `emptyDir` volumes, without Valkey *(example)*:
+
+```yaml
+cacheVolume:
+  type: emptyDir                  # example; default: ephemeral
+  size: 6Gi                       # example; above config.bastion.cache.max_bytes
+config:
+  bastion:
+    cache:
+      max_bytes: 4GiB             # example; default: 20GiB
+      documents_max_bytes: 512MiB # example; default: 2GiB
+      max_object_bytes: 1GiB      # example; default: 2GiB
+      spool_max_bytes: 1GiB       # example; default: 2GiB
+    gui:
+      max_bytes: 512MiB           # example; default: 4GiB
+```
+
+Its visitors see this after a restart: during an upgrade the chart replaces one pod after the other, and a visitor whose request reaches the new pod reads **Not available right now** for the seconds until that pod has read the catalogue, then the pages again; each replica fetches the whole catalogue once, through the main installation's catalogue routes. If the main installation is unreachable while a pod is replaced, that pod shows **Not available right now** until the connection returns, while the other one serves its copy with the age it has; once both are replaced, every visitor reads **Not available right now** until the connection returns. The package clients are not affected by the copy: they are served from the cache as the grace period allows ([What the alerts mean](#what-the-alerts-mean)). To keep the pages through such a restart, use the bucket backend (it needs `secrets.signingKey`, which also signs the record of the catalogue) or `cacheVolume.type: persistent`. With the volume backend and without Valkey `secrets.signingKey` is optional; without it the record a replica keeps on its volume is not signed, so whoever can write that volume can change what the replica shows after its next start.
+
+<details>
+<summary>The catalogue's share of the cache</summary>
+
+The catalogue is kept compressed in a share of `config.bastion.cache.max_bytes`: `config.bastion.gui.max_bytes` (default `4GiB`), reserved whether or not the web interface is on, so the artifacts get `max_bytes` less `documents_max_bytes` and `gui.max_bytes`, and that must hold one `max_object_bytes` ([A highly available install](#a-highly-available-install)). Measured on a development installation: about 14 documents per public version, about 15 KiB compressed per version in a mix of npm, NuGet, images, Debian, Ansible and files; Ansible collections with documentation take about 70 KiB per version. By that mix the default share holds about 290,000 public versions and 512 MiB about 34,000 *(derived)*. Nothing evicts the catalogue: one above its share is kept whole and `QuaderBastionCatalogueOverBound` fires; raise `gui.max_bytes`, and `cache.max_bytes` with it. The sync reads only what changed, through the Bastion's throughput cap in a class of its own below the clients' misses (**Web interface, GB an hour** under **Details** bounds it per hour; empty, the default, is unbounded).
+
+</details>
+
+### How old the pages are
+
+Each page ends with **As of** and how long ago the replica last completed a round with the main installation (hold the pointer on it for the date and time). The pages are served whatever the age: when a replica cannot reach the main installation, it serves its last copy, and once the copy is older than `config.bastion.gui.stale_after` (default `1h`) a band above every page says "This information is from <date and time>. Newer information is not available right now." Nothing on a page names the main installation. Each replica has its own age, so two pages of one visit can differ.
+
+A change you make while the Bastion cannot reach the main installation, a repository made private included, stays on the pages until the connection returns; the first round after that takes it off. Downloads are still decided by the main installation and end with the grace period of the package API. `QuaderBastionCatalogueStale` fires when a replica's copy is older than `stale_after`.
+
+While the connection works, a change reaches the pages within seconds: the main installation builds 5 s after a change, and a narrowing (a repository made private, a grant removed, a version deleted) makes each replica read the catalogue at once and again 8 s later. A new version, which sends no such notice, appears at the first round of each replica after the build, within `config.bastion.gui.poll_interval` of it.
+
+### Search engines
+
+The pages are made to be found: every page's address answers with its title, its canonical address and a text a crawler reads without running the application (a package's page also with its description and README), all on the Bastion's `config.server.base_url`. A replica serves:
+
+- `/robots.txt`, while the web interface is on:
+
+  ```text
+  User-agent: *
+  Allow: /ui/
+  Disallow: /ui/data/*vulnerabilit
+  Disallow: /api/
+  Disallow: /files/
+  Disallow: /v2/
+
+  Sitemap: https://packages.example.com/sitemap.xml
+  ```
+
+  The package paths are disallowed and download links are marked `nofollow`, so a crawler that keeps to the rules costs the main installation nothing. While the web interface is off it says `Disallow: /` to every crawler.
+- `/sitemap.xml`, an index of the files `/sitemap/<n>.xml` of at most 50,000 addresses each: the start page, every project's list of packages, every package's page, with **Documentation** on every entry of the newest versions' documentation, and the imprint and privacy notice that have a text, each in English and German. A version's own page is not listed; the package's page links it.
+
+The vulnerabilities never enter a search result: their data is disallowed, an address that opens them is marked `noindex`, and the grade and the findings are excluded from snippets. A page whose package became private answers **not found** at once, but a search engine keeps its entry and snippet until it visits the address again, which can take days; use the search engine's removal tool for an address that must go at once.
+
+Every request of a page counts per client address in the class **Pages of the web interface** under **Details** on the card: `20` requests a second with a burst of `100` *(default)*, never against the misses of the package clients. Above it a visitor reads a page **Too many requests** with the wait, which loads itself again.
+
+### Imprint and privacy notice of the web interface
+
+The footer of every page links **Imprint** and **Privacy notice** when the Bastion's chart has a text for them (`config.ui.legal.imprint.en`, `.de`, `config.ui.legal.privacy.en`, `.de` of the chart `quader-bastion`; [Imprint and privacy notice](configuration.md#imprint-and-privacy-notice) explains the texts). They are this Bastion's values, never the main installation's, and you answer for what they say. The pages are served only while the web interface is on, also while a replica shows **Not available right now**.
+
+### Times, grades and Set up client
+
+- **Times.** The pages write every date and time in the installation's **Default time format** (**Admin area › Settings › General**, section **Time format**); a change reaches every Bastion within seconds and its open pages within a minute. A visitor cannot choose another form.
+- **Grades.** The table of a package's versions shows each version's grade and open findings in the column **Vulnerabilities**, and a version's page its findings, as the main installation shows them to a visitor without a session.
+- **Set up client.** Every panel of commands links **Set up client**: the page of the repository, with a choice of the format's clients, whose snippets name the Bastion's address and need no credential. It has no publish step and no guide.
 
 ## Renew the token with an overlap
 
@@ -401,12 +516,15 @@ When the main installation is unreachable for a replica, the replica serves what
 | `QuaderBastionAuditEventsDropped` | warning | Download events were dropped | The buffer of download events was full, which happens while the main installation stays unreachable or cannot keep up. Those downloads are missing from the audit trail. Raise `bastion.audit.buffer_events` if outages are long |
 | `QuaderBastionCacheCorrupt` | warning | A cached object failed its check | The Bastion deleted it and fetched it again; no client received wrong bytes. Look at the disk or the bucket, and at who can write there |
 | `QuaderBastionHandoverFailing` | warning | Direct reads from the object store failed within 15 minutes and none succeeded, for 15 minutes | The Bastion gets large files through the main installation again, so nothing fails for clients, but the main installation's bandwidth is not spared. The Bastion's log names the reason in the line "a handover is replaced by the forward without the offer". Check that the Bastion's network reaches the object store's public address, that its certificate is trusted through the system roots or `trustedCA`, and that the address's host name is not the main installation's ([Direct reads from the object store](#direct-reads-from-the-object-store)); or switch the registration's direct reads off |
+| `QuaderBastionCatalogueStale` | warning | While the web interface is on, a replica's copy of the public catalogue is older than `config.bastion.gui.stale_after` (default `1h`), for 5 minutes | The replica cannot complete a round with the main installation. Its pages serve on and say how old they are, and a repository made private stays on them until the next round ([How old the pages are](#how-old-the-pages-are)). Check the connection to the main installation, as for `QuaderBastionMainUnreachable` |
+| `QuaderBastionCatalogueMissing` | warning | While the web interface is on, a replica holds no copy of the catalogue, for 15 minutes | Its pages answer **Not available right now**. A replica on an `ephemeral` or `emptyDir` volume that started while the main installation was unreachable cannot get a copy until the connection returns ([Kept or lost across a restart](#kept-or-lost-across-a-restart)) |
+| `QuaderBastionCatalogueOverBound` | warning | The catalogue holds more than `config.bastion.gui.max_bytes`, for 15 minutes | The catalogue is kept whole and nothing is evicted for it, so the cache may hold more than `config.bastion.cache.max_bytes`. Raise `gui.max_bytes`, and `cache.max_bytes` with it |
 | `QuaderBastionValkeyUnavailable` | warning | Valkey is unreachable, for 5 minutes; rendered only with Valkey configured | The replicas use their own state: limits are divided by the number of replicas, blocks are per replica and answers are asked again. Nothing is served wrongly. Restore Valkey |
 | `QuaderBastionReplicasNotReady` | warning | Fewer than 2 replicas are available, for 5 minutes | The Bastion has lost its redundancy; a drain or an upgrade can now cut clients off. Find out why pods are not ready |
 
 ## Disable or delete a Bastion
 
-**Disable** on the card stops the Bastion's token from working, without deleting anything. The replicas then treat the main installation as unreachable and serve from their cache within the grace period. **Enable** reverses it. A registration declared in the values is disabled and enabled here too; to delete it, take it out of the values first. **Delete** asks you to type the name, removes the registration and revokes its tokens at once; the Bastion's pods keep running until you remove them, and answer as for an unreachable main installation.
+**Disable** on the card stops the Bastion's token from working, without deleting anything. The replicas then treat the main installation as unreachable and serve from their cache within the grace period; a web interface that is on serves its last copy on, with its age, and the main installation deletes the registration's catalogue at its next build. To take the pages down at once, switch **Web interface** off before you disable. **Enable** reverses it. A registration declared in the values is disabled and enabled here too; to delete it, take it out of the values first. **Delete** asks you to type the name, removes the registration and revokes its tokens at once; the Bastion's pods keep running until you remove them, and answer as for an unreachable main installation.
 
 A Bastion that is no longer needed is removed with `helm uninstall`, and its registration deleted here. Remove its address from `server.additional_base_urls` afterwards; the addresses it connected from went with the registration.
 

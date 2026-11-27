@@ -299,6 +299,9 @@ config:
 - The text is rendered like a README: tables, lists, links (`https`, `http` and `mailto`) and line breaks (a backslash at a line's
   end) stay; scripts, styles and SVG are removed; an image is shown as a link, never loaded. A relative link is removed.
 - The values are configuration, not a Secret: a change rolls the pods. Open windows show the new text within half a minute.
+- The keys are `config.ui.legal.imprint.en`, `.de`, `config.ui.legal.privacy.en` and `.de` of the chart `quader`. A Bastion's web
+  interface shows its own texts, set with the same keys in the chart `quader-bastion`, never these
+  ([Imprint and privacy notice of the web interface](bastion.md#imprint-and-privacy-notice-of-the-web-interface)).
 
 
 <details>

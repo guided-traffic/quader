@@ -21,13 +21,14 @@ Readers on GitHub can browse the same files here.
 8. [Signatures](user/signatures.md)
 9. [Browsing and transferring files](user/files.md)
 10. [Connecting a package client](user/client-setup.md)
-11. [Container images with Docker and Podman](user/container-images.md)
-12. [Debian packages with APT](user/apt-packages.md)
-13. [Ansible collections and roles with ansible-galaxy](user/ansible-collections.md)
-14. [Personal access tokens](user/access-tokens.md)
-15. [Your usage and download limits](user/usage-and-limits.md)
-16. [GitLab CI pipelines](user/gitlab-ci-pipelines.md)
-17. [Errors and troubleshooting](user/troubleshooting.md)
+11. [Browsing a Bastion](user/browsing-a-bastion.md)
+12. [Container images with Docker and Podman](user/container-images.md)
+13. [Debian packages with APT](user/apt-packages.md)
+14. [Ansible collections and roles with ansible-galaxy](user/ansible-collections.md)
+15. [Personal access tokens](user/access-tokens.md)
+16. [Your usage and download limits](user/usage-and-limits.md)
+17. [GitLab CI pipelines](user/gitlab-ci-pipelines.md)
+18. [Errors and troubleshooting](user/troubleshooting.md)
 
 ## Administrator guide
 
