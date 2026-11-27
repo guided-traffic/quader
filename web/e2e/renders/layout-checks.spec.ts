@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Page, expect, test } from '@playwright/test';
 import { compile } from 'sass';
-import { CODE_BLOCK_SCROLL, LayoutFinding, innerScroll, judge, layoutFindings, loadingPlace } from './layout';
+import { CODE_BLOCK_SCROLL, LayoutFinding, innerScroll, judge, layoutFindings, loadingPlace, stackedFits } from './layout';
 import { root } from './paths';
 
 /**
@@ -337,7 +337,7 @@ test.describe('a table\'s row (R-UI-176)', () => {
 
   // These blocks put their fields side by side, the form of Q-UI-681 before Q-UI-1050: `stacked-place` names that form (its own
   // fixtures below), and the checks of a field's name and value are measured here apart from it.
-  const sideBySide = (f: LayoutFinding): boolean => f.check !== 'stacked-fits' && f.check !== 'stacked-place';
+  const sideBySide = (f: LayoutFinding): boolean => f.check !== 'stacked-place';
 
   test('R-UI-174 a stacked row: names of one line on one line pass, a value of two lines centred against its neighbours is found', async ({ page }) => {
     const centred = await check(page, ...facts('center'));
@@ -375,7 +375,7 @@ test.describe('a table\'s row (R-UI-176)', () => {
   test('R-UI-174 the same blocks with a field a line, names in one column and values in the next, pass', async ({ page }) => {
     const grid = `table.data tbody tr > td { flex: 1 1 100% !important; display: table !important; table-layout: fixed; inline-size: 100%; }
       table.data tbody td[data-label]::before { content: attr(data-label); display: table-cell; box-sizing: border-box; inline-size: 80px; padding-inline-end: 16px; }`;
-    const found = (await check(page, ...twoBlocks(grid))).filter((f) => f.check !== 'stacked-fits');
+    const found = await check(page, ...twoBlocks(grid));
     expect(found, describe(found)).toEqual([]);
   });
 
@@ -693,8 +693,25 @@ test.describe("the shared patterns with the app's stylesheet (R-UI-176)", () => 
   });
 
   test("R-UI-174 a stacked row's facts with the app's stylesheet: names on one line, the meter on its name's line", async ({ page }) => {
-    const found = (await check(page, stackedFacts, '', true)).filter((f) => f.check !== 'stacked-fits');
+    const found = await check(page, stackedFacts, '', true);
     expect(found, describe(found)).toEqual([]);
+  });
+
+  // `stackedFits` runs in the window a person has, apart from the checks of the grown window (2026-11-27).
+  test('R-UI-174 a list stacked although its columns fit its region is found; one whose columns need more room is not', async ({ page }) => {
+    const list = (px: number): string =>
+      `<div class="quader-data-table stacked" style="inline-size:${px}px"><div class="table-frame"><div class="table-scroll"><table class="data">
+        <caption class="visually-hidden">Files</caption>
+        <thead><tr><th scope="col">Name</th><th scope="col">Size</th></tr></thead>
+        <tbody><tr><th scope="row">icon.svg</th><td data-label="Size">14 B</td></tr></tbody></table></div></div></div>`;
+    await check(page, list(600), '', true);
+    const fits = await page.evaluate(stackedFits);
+    expect(fits.map((f) => `${f.check} ${f.text}`), describe(fits)).toEqual(['stacked-fits Files']);
+    // The page is as it was: the measurement put the blocks back in the same task.
+    expect(await page.locator('.quader-data-table').getAttribute('class')).toContain('stacked');
+    await check(page, list(80), '', true);
+    const narrow = await page.evaluate(stackedFits);
+    expect(narrow, describe(narrow)).toEqual([]);
   });
 
   test("R-UI-174 the guard can fail: the stacked row's facts side by side and centred, and the meter as a box after its name", async ({ page }) => {
@@ -720,7 +737,7 @@ test.describe("the shared patterns with the app's stylesheet (R-UI-176)", () => 
         <td data-label="Last activity">1 hour ago</td>
       </tr></tbody></table></div></div></div>`;
   test("R-UI-174 a stacked row's format, class and visibility level with the app's stylesheet: the names on one line", async ({ page }) => {
-    const found = (await check(page, levelFacts, '', true)).filter((f) => f.check !== 'stacked-fits');
+    const found = await check(page, levelFacts, '', true);
     expect(found, describe(found)).toEqual([]);
   });
 
@@ -766,7 +783,7 @@ test.describe("the shared patterns with the app's stylesheet (R-UI-176)", () => 
         <td class="num" data-label="Requests">1,204</td>
       </tr></tbody></table></div></div></div>`;
   test("R-UI-174 a stacked row's name in a number's cell wraps in its column; one that runs over its figure is found", async ({ page }) => {
-    const ok = (await check(page, numberFacts, '', true)).filter((f) => f.check !== 'stacked-fits');
+    const ok = await check(page, numberFacts, '', true);
     expect(ok, describe(ok)).toEqual([]);
     const nowrap = await check(page, numberFacts, '.quader-data-table.stacked table.data td[data-label]::before { white-space: inherit; }', true);
     expect(only(nowrap, 'name-over').map((f) => f.text), describe(nowrap)).toEqual(['From the upstream in the last hour']);

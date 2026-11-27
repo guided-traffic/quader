@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Page, Request, expect, test } from '@playwright/test';
-import { LayoutFinding, emptyScroll, findingLine, innerScroll, judge, layoutFindings, loadingPlace } from './layout';
+import { LayoutFinding, emptyScroll, findingLine, innerScroll, judge, layoutFindings, loadingPlace, stackedFits } from './layout';
 import { inShard, locale, manifestDir, outDir } from './paths';
 import { awaitAnswersOnUnroute, isHeld } from './routes';
 import { Kind } from './seed';
@@ -236,6 +236,8 @@ async function shoot(page: Page, kind: Kind, screen: Screen, tab: string | null,
   const scrolls = view.height <= heightOf(width) && scheme === 'light' ? await page.evaluate(innerScroll) : [];
   // A page's load in the middle of what the page has left, and no scroll while it loads (R-UI-252), in the window a person has.
   const loads = view.height <= heightOf(width) && scheme === 'light' ? await page.evaluate(loadingPlace) : [];
+  // A list stacked although its columns fit (R-UI-174), in the window a person has, where the table decides with the panel's scrollbar.
+  const fits = view.height <= heightOf(width) && scheme === 'light' ? await page.evaluate(stackedFits) : [];
   const overlaid = await page.evaluate(() =>
     Array.from(document.querySelectorAll('.cdk-overlay-pane')).some((p) => {
       const r = p.getBoundingClientRect();
@@ -330,6 +332,7 @@ async function shoot(page: Page, kind: Kind, screen: Screen, tab: string | null,
     }
     findings.push(...scrolls);
     findings.push(...loads);
+    findings.push(...fits);
     if (width >= 1024) {
       for (const r of regions) findings.push({ check: 'sideways', what: r.what, text: '', detail: `the region scrolls ${r.overflowX} px sideways`, count: 1 });
     }

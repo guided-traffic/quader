@@ -989,22 +989,6 @@ export function layoutFindings(): LayoutFinding[] {
     }
   }
 
-  // ---- stacked-fits: a table whose rows stand as blocks although its columns fit (R-UI-174) -------------------------------
-  // Measured as the data table measures it: its columns at their least widths against the room of its scroll region.
-  for (const host of Array.from(document.querySelectorAll<HTMLElement>('.quader-data-table.stacked'))) {
-    const table = host.querySelector<HTMLElement>('table.data');
-    const region = host.querySelector<HTMLElement>('.table-scroll');
-    if (!table || !region || !shown(host)) continue;
-    host.classList.remove('stacked');
-    const width = table.style.inlineSize;
-    table.style.inlineSize = '0px';
-    const need = table.getBoundingClientRect().width;
-    table.style.inlineSize = width;
-    const has = region.clientWidth;
-    host.classList.add('stacked');
-    if (need <= has) add('stacked-fits', host, host.querySelector('caption')?.textContent ?? '', `stacked, but its columns need ${Math.round(need)} px and have ${has}`);
-  }
-
   // One walk over every element's style for the checks below: what stands over the page (a box placed `fixed`, a list in the top
   // layer), what cuts its content (an `overflow-x` of `hidden` or `clip`, a `clip-path: inset(…)`), and the regions of an overlay that
   // scroll sideways.
@@ -1370,6 +1354,48 @@ export function innerScroll(): LayoutFinding[] {
     if (framed && el.clientHeight <= box) continue;
     const why = framed ? `framed, above the ${px(box)} px of a boxed list` : 'no frame';
     add(el, `scrolls ${px(over)} px of its own in the page (${px(el.clientHeight)} px high, ${why}); the page scrolls instead`);
+  }
+  return [...found.values()];
+}
+
+/**
+ * `stacked-fits`: a data table whose rows stand as blocks although its columns fit (R-UI-174, Q-UI-680; run in the page, in the window's
+ * first height, before the render grows it). Measured as the data table measures itself: its columns at their least widths against the
+ * room of its scroll region, the table taken out of its blocks for the measurement and back in the same task. In the window a person
+ * has, as the table decides in it: a long list makes the page scroll whether it stacks or not, and the panel's scrollbar takes its width
+ * from the room. In the window the render grows to the page's length, a list whose blocks reach past the render's cap kept the scrollbar,
+ * and taken out of its blocks it no longer did: the folder of 200 files at 1,024 px needed 709 px and was measured against 712, where
+ * the person's window gives it 697 (2026-11-27).
+ */
+export function stackedFits(): LayoutFinding[] {
+  function pathOf(el: Element): string {
+    const parts: string[] = [];
+    for (let e: Element | null = el; e && e !== document.body && parts.length < 4; e = e.parentElement) {
+      parts.unshift(e.tagName.toLowerCase() + Array.from(e.classList).filter((c) => !c.startsWith('ng-')).slice(0, 2).map((c) => '.' + c).join(''));
+    }
+    return parts.join(' > ');
+  }
+  const found = new Map<string, LayoutFinding & { count: number }>();
+  for (const host of Array.from(document.querySelectorAll<HTMLElement>('.quader-data-table.stacked'))) {
+    const table = host.querySelector<HTMLElement>('table.data');
+    const region = host.querySelector<HTMLElement>('.table-scroll');
+    const box = host.getBoundingClientRect();
+    if (!table || !region || box.width <= 1 || box.height <= 1 || host.closest('.visually-hidden, .cdk-visually-hidden, [hidden]') || getComputedStyle(host).visibility === 'hidden') continue;
+    host.classList.remove('stacked');
+    const width = table.style.inlineSize;
+    table.style.inlineSize = '0px';
+    const need = table.getBoundingClientRect().width;
+    table.style.inlineSize = width;
+    const has = region.clientWidth;
+    host.classList.add('stacked');
+    if (need > has) continue;
+    const what = pathOf(host);
+    const known = found.get(what);
+    if (known) known.count++;
+    else {
+      const text = (host.querySelector('caption')?.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 80);
+      found.set(what, { check: 'stacked-fits', what, text, detail: `stacked, but its columns need ${Math.round(need)} px and have ${has}`, count: 1 });
+    }
   }
   return [...found.values()];
 }
