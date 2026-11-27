@@ -9,8 +9,8 @@ import { Disclosure } from '../../shared/ui/disclosure';
 type Step = 'configure' | 'install' | 'publish' | 'verify';
 
 /**
- * The steps of the page **Set up client** on one rail (R-UI-121, Q-UI-800, Q-UI-804): Configure, Install, Publish where the page offers
- * it, and Verify where the answer holds its snippets, each snippet a window with at most one short sentence, a second way of a step behind
+ * The steps of the page **Set up client** on one rail (R-UI-121, Q-UI-800, Q-UI-804): Configure where the answer holds its snippets,
+ * Install, Publish where the page offers it, and Verify where the answer holds its snippets, each snippet a window with at most one short sentence, a second way of a step behind
  * an inline fold. A view (R-UI-223): the main installation's page and the Bastion's (bastion.md R-BAS-129, Q-UI-1469) compose it with the
  * snippets they read, and the main installation projects what its Publish step says without a target (`[publishWhy]`), which only it
  * has. A snippet that only makes sense with a credential is not shown to an anonymous reader (R-UI-123).
@@ -32,17 +32,19 @@ type Step = 'configure' | 'install' | 'publish' | 'verify';
       }
     </ng-template>
     <div class="steps">
-      <section class="step" aria-labelledby="step-configure">
-        <h2 id="step-configure"><span class="step-no" aria-hidden="true">1</span><span i18n="@@setup.tab.configure">Configure</span></h2>
-        <ng-container [ngTemplateOutlet]="snippetList" [ngTemplateOutletContext]="{ $implicit: byStep().configure }" />
-      </section>
+      @if (byStep().configure.length > 0) {
+        <section class="step" aria-labelledby="step-configure">
+          <h2 id="step-configure"><span class="step-no" aria-hidden="true">1</span><span i18n="@@setup.tab.configure">Configure</span></h2>
+          <ng-container [ngTemplateOutlet]="snippetList" [ngTemplateOutletContext]="{ $implicit: byStep().configure }" />
+        </section>
+      }
       <section class="step" aria-labelledby="step-install">
-        <h2 id="step-install"><span class="step-no" aria-hidden="true">2</span><span i18n="@@setup.tab.install">Install</span></h2>
+        <h2 id="step-install"><span class="step-no" aria-hidden="true">{{ installNumber() }}</span><span i18n="@@setup.tab.install">Install</span></h2>
         <ng-container [ngTemplateOutlet]="snippetList" [ngTemplateOutletContext]="{ $implicit: byStep().install }" />
       </section>
       @if (offerPublish()) {
         <section class="step" aria-labelledby="step-publish">
-          <h2 id="step-publish"><span class="step-no" aria-hidden="true">3</span><span i18n="@@setup.tab.publish">Publish</span></h2>
+          <h2 id="step-publish"><span class="step-no" aria-hidden="true">{{ installNumber() + 1 }}</span><span i18n="@@setup.tab.publish">Publish</span></h2>
           @if (byStep().publish.length === 0) {
             <ng-content select="[publishWhy]" />
           }
@@ -158,6 +160,11 @@ export class SetupSteps {
     };
   });
   protected readonly offerPublish = computed(() => this.publish() || this.byStep().publish.length > 0);
+  /**
+   * The number of the step Install: the first step where nothing is to configure (an OCI repository open to anonymous readers at a
+   * Bastion, formats/oci.md Q-OCI-277), the second otherwise.
+   */
+  protected readonly installNumber = computed(() => (this.byStep().configure.length > 0 ? 2 : 1));
   /** The number of the step Verify: after Publish where the page offers it. */
-  protected readonly verifyNumber = computed(() => (this.offerPublish() ? 4 : 3));
+  protected readonly verifyNumber = computed(() => this.installNumber() + (this.offerPublish() ? 2 : 1));
 }

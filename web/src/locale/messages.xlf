@@ -60656,7 +60656,7 @@
     </unit>
     <unit id="setup.tab.configure">
       <notes>
-        <note category="location">src/app/views/setup/setup-steps.ts:36,37</note>
+        <note category="location">src/app/views/setup/setup-steps.ts:37,38</note>
       </notes>
       <segment>
         <source>Configure</source>
@@ -60664,7 +60664,7 @@
     </unit>
     <unit id="setup.tab.install">
       <notes>
-        <note category="location">src/app/views/setup/setup-steps.ts:40,41</note>
+        <note category="location">src/app/views/setup/setup-steps.ts:42,43</note>
       </notes>
       <segment>
         <source>Install</source>
@@ -60672,7 +60672,7 @@
     </unit>
     <unit id="setup.tab.publish">
       <notes>
-        <note category="location">src/app/views/setup/setup-steps.ts:45,46</note>
+        <note category="location">src/app/views/setup/setup-steps.ts:47,48</note>
       </notes>
       <segment>
         <source>Publish</source>
@@ -60680,7 +60680,7 @@
     </unit>
     <unit id="setup.tab.verify">
       <notes>
-        <note category="location">src/app/views/setup/setup-steps.ts:54,55</note>
+        <note category="location">src/app/views/setup/setup-steps.ts:56,57</note>
       </notes>
       <segment>
         <source>Verify</source>

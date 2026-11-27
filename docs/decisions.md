@@ -12377,10 +12377,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-OCI
 
-128 questions on [spec/formats/oci.md](spec/formats/oci.md).
+129 questions on [spec/formats/oci.md](spec/formats/oci.md).
 
 <details>
-<summary>Q-OCI: 128 questions</summary>
+<summary>Q-OCI: 129 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -12512,6 +12512,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-OCI-274](spec/formats/oci.md#q-oci-274--an-images-description-licence-and-links-come-from-the-annotations-first-and-the-labels-second) | An image's description, licence and links come from the annotations first and the labels second | Decided by the development agent on 2026-11-25 | (a) The keys `org.opencontainers.image.*` of the tag's manifest, then of the first platform's manifest, then of that platform's labels, key by key; the links are the names every format's Links block reads | — |
 | [Q-OCI-275](spec/formats/oci.md#q-oci-275--a-helm-chart-in-an-oci-repository-shows-its-facts-its-readme-and-its-values-read-only) | A Helm chart in an OCI repository shows its facts, its README and its values, read-only | Decided by the owner on 2026-11-25 | (b) Show a chart's facts, README and values in the OCI repository, read-only, with the `helm` command in the panel; no Helm repository format | — |
 | [Q-OCI-276](spec/formats/oci.md#q-oci-276--a-charts-version-page-opens-on-its-readme-an-images-keeps-its-page) | A chart's version page opens on its README; an image's keeps its page | Decided by the development agent on 2026-11-25 | (a) The version page of a chart opens on its tab README where it has one, the page of an image as before, the lists unchanged | — |
+| [Q-OCI-277](spec/formats/oci.md#q-oci-277--a-bastions-set-up-of-a-public-image-repository-has-no-login) | A Bastion's set-up of a public image repository has no login | Decided by the development agent on 2026-11-27 (plan W-40, D13) | (a) The configure templates render nothing for `.Bastion` without `.RequiresAuth`, and the API drops an empty snippet | — |
 
 </details>
 

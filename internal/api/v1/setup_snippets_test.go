@@ -187,3 +187,35 @@ func TestR_API_030_TokenShape(t *testing.T) {
 		}
 	}
 }
+
+// TestR_API_030_AnEmptySnippetIsDropped: a template that renders nothing but white space for the reader and the target, or whose every
+// line held the credential a reader without one does not get, yields no snippet: an empty window would be a step with nothing to do.
+func TestR_API_030_AnEmptySnippetIsDropped(t *testing.T) {
+	in := setupInput{
+		Templates: []formats.SetupTemplate{
+			{ID: "x.empty.configure", Client: "x", Section: "configure", Lang: "shell", Template: "{{if .Bastion}}\n{{else}}x login\n{{end}}"},
+			{ID: "x.token.configure", Client: "x", Section: "configure", Lang: "shell", Template: "x token " + formats.SetupTokenRef + "\n"},
+			{ID: "x.install", Client: "x", Section: "install", Lang: "shell", Template: "x add " + formats.SetupPackageRef + "\n"},
+		},
+		Client: "x", Credentials: credEnv, TokenEnvVar: "MY_TOKEN", Data: testData(),
+	}
+	ids := func() []string {
+		ss, err := renderSnippets(in)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var out []string
+		for _, s := range ss {
+			out = append(out, s.ID)
+		}
+		return out
+	}
+	if got := ids(); strings.Join(got, ",") != "x.configure.empty,x.configure.token,x.install" {
+		t.Errorf("at the main installation with a credential: %v", got)
+	}
+	in.Data.Bastion = true
+	in.Credentials = credNone
+	if got := ids(); strings.Join(got, ",") != "x.install" {
+		t.Errorf("at a Bastion without a credential: %v", got)
+	}
+}

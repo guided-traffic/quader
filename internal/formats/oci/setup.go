@@ -47,7 +47,9 @@ const loginUser = "quader"
 //
 // The login line reads the token from standard input, never from the command line, so it does not land in the process list or the
 // shell history. A repository that is open to anonymous readers (SetupData.RequiresAuth false) needs no login to pull; the snippet
-// then is the interactive login, which a client needs only to push, and which asks for the token itself.
+// then is the interactive login, which a client needs only to push, and which asks for the token itself. At a Bastion (SetupData.Bastion)
+// such a repository's configure snippets render nothing, and the API drops an empty snippet: a Bastion refuses every push (R-BAS-095),
+// so the login would serve nothing a visitor can do there (R-BAS-104, Q-OCI-277).
 //
 // The image reference is "<host>/<projectKey>/<repoKey>/<name>[:<tag>]" and not the registry URL: the URL carries the "/v2" of the
 // protocol, which no image reference has (SetupData.ImagePrefix, Q-OCI-4).
@@ -55,7 +57,7 @@ func (f *Format) SetupTemplates() []formats.SetupTemplate {
 	login := func(tool string) string {
 		return `{{if .RequiresAuth}}printf '%s' "` + formats.SetupTokenRef + `" | ` + tool + ` login ` + loginTarget +
 			` --username ` + loginUser + ` --password-stdin
-{{else}}` + tool + ` login ` + loginTarget + ` --username ` + loginUser + `
+{{else if not .Bastion}}` + tool + ` login ` + loginTarget + ` --username ` + loginUser + `
 {{end}}`
 	}
 	pull := func(tool string) string { return tool + " pull " + loginTarget + "/" + formats.SetupPackageRef + "\n" }
@@ -68,13 +70,13 @@ func (f *Format) SetupTemplates() []formats.SetupTemplate {
 	// would sit on kubectl's command line. A reader who asked for no credential gets a comment: a secret without one is no secret.
 	pullSecret := `{{if .RequiresAuth}}printf '{"auths":{"%s":{"username":"` + loginUser + `","password":"%s"}}}' ` + loginTarget + ` "` + formats.SetupTokenRef + `" | \
   kubectl create secret generic quader-registry --type=kubernetes.io/dockerconfigjson --from-file=.dockerconfigjson=/dev/stdin
-{{else}}# An image pull secret holds a credential: ask for the snippet with one.
+{{else if not .Bastion}}# An image pull secret holds a credential: ask for the snippet with one.
 {{end}}`
 	// Helm signs in to the registry's host, not to a path (`helm registry login`), and names a chart by an oci:// reference with its
 	// version as a flag of its own (R-OCI-042). The release name is the reader's.
 	helmLogin := `{{if .RequiresAuth}}printf '%s' "` + formats.SetupTokenRef + `" | helm registry login {{shell (registryhost .ImagePrefix)}} --username ` +
 		loginUser + ` --password-stdin
-{{else}}helm registry login {{shell (registryhost .ImagePrefix)}} --username ` + loginUser + `
+{{else if not .Bastion}}helm registry login {{shell (registryhost .ImagePrefix)}} --username ` + loginUser + `
 {{end}}`
 	helmInstall := "helm pull oci://" + loginTarget + "/" + formats.SetupPackageRef + "\n" +
 		"helm install " + helmRelease + " oci://" + loginTarget + "/" + formats.SetupPackageRef + "\n"

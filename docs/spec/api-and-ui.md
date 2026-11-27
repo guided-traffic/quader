@@ -1842,7 +1842,10 @@ on:
   `%QUADER_TOKEN%` for `nuget.config` and cmd, `$env:QUADER_TOKEN` for PowerShell, Q-API-187); with `credentials=none` they hold no authentication line (an
   anonymous caller, and the install command panel of R-UI-009): the API drops the line that holds the token's reference, and a template
   whose shape differs without a credential branches on `SetupData.Anonymous`, which is set for this mode alone (wget's function of
-  [formats/generic.md](formats/generic.md) Q-GENERIC-14). The variable name is
+  [formats/generic.md](formats/generic.md) Q-GENERIC-14). A snippet that holds nothing but white space once its template ran and its
+  credential lines were dropped is left out of the answer: a template says nothing for that reader and target (the login of an OCI
+  repository open to anonymous readers at a Bastion, [formats/oci.md](formats/oci.md) Q-OCI-277), and the tab has one snippet less or none
+  (`TestR_API_030_AnEmptySnippetIsDropped`). The variable name is
   `ui.client_setup.token_env_var`. `tokenTtlSeconds` is `ui.client_setup.token_ttl` in seconds, the lifetime
   the setup dialog asks for when it creates a token.
 - Every snippet has a stable `id`; the human-readable explanation lives in the UI, translated per
@@ -7780,7 +7783,8 @@ The owner chose the design on 2026-11-20 (W-27, [Q-UI-800](#q-ui-800--set-up-cli
   options**, closed, inside it (R-UI-122); the steps **1 Configure**, **2 Install** and, for who may publish, **3 Publish** (R-UI-123),
   joined by a rail from one number to the next, each a short heading with the snippets of the client setup's tab of that name
   (R-API-030); then the explanation under the heading **Guide** (R-UI-125). Below 36 rem of content the rail goes and the number
-  stands before the heading.
+  stands before the heading. A client setup without a configure snippet (an OCI repository open to anonymous readers with a Bastion
+  chosen, [formats/oci.md](formats/oci.md) Q-OCI-277) has no step Configure, and Install is step 1.
 - **Less text** ([Q-UI-804](#q-ui-804--a-snippet-says-only-what-its-window-does-not-and-a-second-way-of-a-step-is-a-fold)): a snippet
   has at most one short sentence, by its `id` (the UI's text, R-UI-045), and only what its window does not say already (the window
   names the file and shows the command; an install command has none). A name of a file, a setting or a command in it is code. A

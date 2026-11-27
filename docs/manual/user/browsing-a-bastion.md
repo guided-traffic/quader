@@ -29,7 +29,7 @@ The button **Install**, **Pull** or **Download** of the version opens its comman
 
 ## Set up client
 
-Every panel of commands links **Set up client**: the page of the repository with the steps **Configure** and **Install**, and **Verify** where the installation signs, for the client you choose under **Client**. Everything is public, so the snippets need no token and no sign-in line, and there is no step to publish: a Bastion only serves downloads. Run **Configure** once; the commands of the version pages and of the files rely on it.
+Every panel of commands links **Set up client**: the page of the repository with the steps **Configure** and **Install**, and **Verify** where the installation signs, for the client you choose under **Client**. Everything is public, so the snippets need no token and no sign-in line, and there is no step to publish: a Bastion only serves downloads. Run **Configure** once; the commands of the version pages and of the files rely on it. An image repository has nothing to configure: a public image pulls without signing in, so its page starts at **Install**.
 
 ## How current the pages are
 

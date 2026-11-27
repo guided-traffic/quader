@@ -137,7 +137,10 @@ func snippetID(t formats.SetupTemplate, scoped bool) string {
 // every caller, configure snippets too, publish snippets only for a caller who may
 // publish. With a scope the configure snippets that have a scoped variant come
 // twice: the default registry and the scoped one (Q-API-235); a configure snippet
-// that does not read the variant is rendered once.
+// that does not read the variant is rendered once. A snippet that holds nothing but
+// white space after its template ran and its credential lines were dropped is left out:
+// the template had nothing to say for this reader and target (an OCI repository's login
+// at a Bastion, formats/oci.md Q-OCI-277), and an empty window would be a step to follow.
 func renderSnippets(in setupInput) ([]snippet, error) {
 	data := in.Data
 	if in.Credentials == credNone {
@@ -182,6 +185,9 @@ func renderSnippets(in setupInput) ([]snippet, error) {
 					name = in.DisplayName
 				}
 				content = substitutePackage(content, t, name, in.Version)
+			}
+			if strings.TrimSpace(content) == "" {
+				continue
 			}
 			s := snippet{ID: snippetID(t, scope != ""), Tab: t.Section, FileName: t.File, Language: t.Lang, Content: content}
 			s.Marks = snippetMarks(content, t, in)

@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 
@@ -68,6 +69,8 @@ func (f packagesReader) List(context.Context) ([]repository.Repository, error) {
 type packagesDecider struct {
 	authz.Decider
 	deploy bool
+	// public are the repositories an anonymous reader may read ("it/oci-local"); every other is private.
+	public []string
 }
 
 func (packagesDecider) Begin(context.Context, authz.Subject, ...qname.Repo) (*authz.Index, error) {
@@ -82,8 +85,14 @@ func (f packagesDecider) CheckOn(_ *authz.Index, _ authz.Subject, items []authz.
 	return out, nil
 }
 
-func (packagesDecider) ReadableOn(context.Context, *authz.Index, authz.Subject, []qname.Repo) ([]qname.Repo, error) {
-	return nil, nil
+func (f packagesDecider) ReadableOn(_ context.Context, _ *authz.Index, s authz.Subject, keys []qname.Repo) ([]qname.Repo, error) {
+	var out []qname.Repo
+	for _, k := range keys {
+		if s.Anonymous && slices.Contains(f.public, k.String()) {
+			out = append(out, k)
+		}
+	}
+	return out, nil
 }
 
 type packagesScoper struct{}

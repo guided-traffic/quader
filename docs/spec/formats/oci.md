@@ -1149,6 +1149,12 @@ Priority: **P1** · Covers: PKG-DOCKER-011, PKG-DOCKER-013, PKG-DOCKER-015, PKG-
   image pull secret (`kubectl create secret generic --type=kubernetes.io/dockerconfigjson` reading a docker config file that the shell's `printf` builds from the token variable and hands over on standard input, so the token is in no argument list). The image prefix
   `<host>/<projectKey>/<repoKey>` comes from the new field `SetupData.ImagePrefix`, filled by the core for the format whose
   base path is the registry root (Q-OCI-4).
+- **At a Bastion** (`bastion=<name>`, [bastion.md](../bastion.md) R-BAS-007, R-BAS-104): a repository open to anonymous readers has no
+  configure snippet for Docker, Podman or Helm, not even the interactive login, and no image pull secret: a public image pulls without one,
+  and the login exists only to push, which a Bastion refuses (R-BAS-095). The templates render nothing for `.Bastion` without
+  `.RequiresAuth`, and the API drops the empty snippet (R-API-030), so Set up client starts at Install, at the Bastion and at the main
+  installation's Set up client with a Bastion chosen ([Q-OCI-277](#q-oci-277--a-bastions-set-up-of-a-public-image-repository-has-no-login)).
+  A repository a reader needs a token for keeps the login that sends it.
 - The guide (R-UI-049) covers every class and both clients with the required topics (kit check 8): what each class is, login,
   pull, push and multi-platform push, the Kubernetes secret, the Docker Engine mirror of a bound host, Docker Hub rate limits
   and why a remote of Docker Hub should be authenticated, and troubleshooting (`x509` without the CA, `denied` for a moved tag
@@ -1158,6 +1164,13 @@ Acceptance criteria:
 
 - The setup API for `docker-local` and client `docker` answers snippets whose image references start with
   `quader.example.com/web/docker-local/`; the e2e suite runs every rendered snippet (as the npm matrix does) and each succeeds.
+- With `bastion=<name>` the set-up of a public OCI repository has no configure snippet for `docker`, `podman` and `helm`, with and without a
+  credential; a private repository's keeps the login with the token, and the main installation's own set-up of the public repository keeps
+  the interactive login (`TestR_OCI_030_ABastionsSetUpOfAPublicRepositoryHasNoLogin`, unit, milliseconds).
+
+*Built on 2026-11-27 (W40-P3):* the Bastion's case: `{{else if not .Bastion}}` of the configure templates of
+[setup.go](../../../internal/formats/oci/setup.go), `renderSnippets` of
+[setup_snippets.go](../../../internal/api/v1/setup_snippets.go).
 
 ### R-OCI-031 · Package screens
 Priority: **P1** · Covers: PKG-DOCKER-041, PKG-DOCKER-023
@@ -4520,6 +4533,28 @@ page keeps its first tab (Files, or Vulnerabilities where graded), and the head 
 inside that rule, on its version page only: the README tab is the first a chart's page has, so the page opens on it as R-UI-218's pages
 do; the package's address and the lists do not lead to it. Making OCI a format that leads would send an image's reader to an empty
 README; a per-kind switch of the address waits for the package that unifies the version pages (above).
+
+### Q-OCI-277 · A Bastion's set-up of a public image repository has no login
+
+Status: **Decided by the development agent** on 2026-11-27 (plan W-40, D13) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: the catalogue's set-up of a public OCI repository told a Bastion's visitor under **Configure** to `docker login … --username
+quader` (and `podman login`, `helm registry login`), with "Not needed to pull" beside it, and the Kubernetes fold a comment that a pull
+secret needs a credential. R-BAS-104 promises no login line. The interactive login serves only a push, which a Bastion refuses
+(R-BAS-095).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The configure templates render nothing for `.Bastion` without `.RequiresAuth`, and the API drops an empty snippet (chosen) | No step Configure on a public image repository's page at a Bastion | Nothing to do is not shown as a step; one rule in the format's templates and one in the renderer, for every format | A reader who wants to push learns it from the main installation's page, not the Bastion's |
+| (b) Keep the login and caption it "not needed" | Today's page | No change | A visitor reads a sign-in step for a host that takes no sign-in for a pull and no push; against R-BAS-104 |
+| (c) Drop configure snippets for every format at a Bastion | One switch in the core | Simple | npm's `.npmrc`, NuGet's source, APT's source list and generic's functions are needed to install at all |
+
+**Choice:** (a). **Rationale:** a step that says "not needed" is a step a visitor still reads and copies; the format knows which of its
+snippets are a login. The empty drop is general: any template whose content depends on the reader may now say nothing. **Applied in the
+spec:** R-OCI-030, [bastion.md](../bastion.md) R-BAS-104 and R-BAS-129, [api-and-ui.md](../api-and-ui.md) R-API-030. Code:
+[setup.go](../../../internal/formats/oci/setup.go), `renderSnippets` of [setup_snippets.go](../../../internal/api/v1/setup_snippets.go),
+[setup-steps.ts](../../../web/src/app/views/setup/setup-steps.ts).
 
 ## What this does not cover
 

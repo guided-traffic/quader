@@ -180,3 +180,47 @@ func TestR_BAS_007_ABastionSetupNeedsNoBaseURLOfTheEndpoint(t *testing.T) {
 		t.Errorf("%+v", out)
 	}
 }
+
+// TestR_OCI_030_ABastionsSetUpOfAPublicRepositoryHasNoLogin: at a Bastion an image or a chart of a repository open to anonymous readers
+// pulls without a login, and a Bastion refuses every push (R-BAS-095), so Docker, Podman and Helm have no configure snippet there, with
+// or without a credential asked for (Q-OCI-277). A private repository keeps the login that sends the token, and the main installation's
+// own set-up of the public repository keeps the interactive login a push needs.
+func TestR_OCI_030_ABastionsSetUpOfAPublicRepositoryHasNoLogin(t *testing.T) {
+	server := func(public ...string) http.Handler {
+		return setupServerWith(t, "https://quader.example.com", true, authed, func(ps *PackageServices) {
+			ps.Decider = packagesDecider{deploy: true, public: public}
+			ps.Bastions = reportedURLs{"partners": "https://packages.example.com"}
+			ps.AdditionalBaseURLs = []string{"https://packages.example.com"}
+		})
+	}
+	const path = "/api/v1/projects/it/repositories/oci-local/client-setup?client="
+	configure := func(out gen.ClientSetup) []string {
+		var ids []string
+		for _, sn := range out.Snippets {
+			if sn.Tab == gen.ClientSnippetTabConfigure {
+				ids = append(ids, sn.Id+": "+sn.Content)
+			}
+		}
+		return ids
+	}
+	public, private := server("it/oci-local"), server()
+	for _, client := range []string{"docker", "podman", "helm"} {
+		for _, creds := range []string{"none", "env"} {
+			out := setupFrom(t, public, path+client+"&credentials="+creds+"&bastion=partners")
+			if got := configure(out); len(got) != 0 {
+				t.Errorf("%s, %s: a public repository's set-up at a Bastion configures %q", client, creds, got)
+			}
+			if len(out.Snippets) == 0 {
+				t.Errorf("%s, %s: no snippet at all", client, creds)
+			}
+		}
+		withToken := configure(setupFrom(t, private, path+client+"&credentials=env&bastion=partners"))
+		if len(withToken) == 0 || !strings.Contains(withToken[0], "login") || !strings.Contains(withToken[0], "${MY_TOKEN}") {
+			t.Errorf("%s: a private repository's set-up at a Bastion lost its login: %q", client, withToken)
+		}
+		direct := configure(setupFrom(t, public, path+client+"&credentials=env"))
+		if len(direct) == 0 || !strings.Contains(direct[0], "login") || strings.Contains(direct[0], "MY_TOKEN") {
+			t.Errorf("%s: the main installation's own set-up of a public repository lost its interactive login: %q", client, direct)
+		}
+	}
+}

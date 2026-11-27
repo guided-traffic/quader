@@ -6413,7 +6413,9 @@ The priority is the one of R-BAS-101 to R-BAS-103.
   listing, every file's description and its set-up per client; the signature objects the signatures name; `signing/trusted-root.json` and
   `signing/chain.pem` where the installation has a signing identity; and the catalogue's `state` with today's malware signatures
   ([malware-scanning.md](malware-scanning.md) R-MAL-042). A set-up is rendered with
-  `credentials=none` and `bastion=<name>`: the Bastion's addresses, no login line, no publish snippet. The public set of the routes is the
+  `credentials=none` and `bastion=<name>`: the Bastion's addresses, no login line, no publish snippet; an OCI repository's Docker, Podman
+  and Helm set-ups have no configure snippet at all, since a public image pulls without a login and a Bastion takes no push
+  ([Q-OCI-277](formats/oci.md#q-oci-277--a-bastions-set-up-of-a-public-image-repository-has-no-login)). The public set of the routes is the
   projects and repositories the anonymous caller lists, with the wiki public where the repository's wiki level is `public`, and each
   project with the display name and the description the anonymous caller reads (R-BAS-128).
 - **Bounds.** A document above `cataloguebounds.DocumentMaxBytes` is left out and named in its version's state (`omitted`); a path the
@@ -7350,12 +7352,14 @@ the same gap, since the Bastion had no page Set up client and its panels of comm
   At the main installation's address, `/projects/<project>/repositories/<key>/setup?client=<client>`, the target of **Set up client** in every
   panel of commands of the Bastion's pages. Its header names the repository (a link to its files for a generic repository, to the project's
   packages otherwise), its format and its class, the client address of the set-up; a select **Client** where the format has several (the
-  Bastion's format table, now with the server's clients); one line that the snippets need no credentials; the steps Configure, Install and,
-  where the installation signs, Verify, from the shared view `views/setup/setup-steps.ts` (Q-UI-1469). No token, no **More options**, no
+  Bastion's format table, now with the server's clients); one line that the snippets need no credentials; the steps Configure (where the
+  set-up has configure snippets: an OCI repository's has none, so its page starts at Install, Q-OCI-277), Install and, where the
+  installation signs, Verify, from the shared view `views/setup/setup-steps.ts` (Q-UI-1469). No token, no **More options**, no
   Bastion to choose, no Publish and no guide: the guide describes the main installation (R-BAS-120).
 - **Its data.** The snippets are the catalogue's set-up document of the repository and the client (`setup/<project>/<repo>/<client>`,
   R-BAS-103), which the builder renders for every public repository and every client of its format with `credentials=none` and
-  `bastion=<name>` (R-BAS-104): the Bastion's address, no login, no publish line. So a generic repository's Configure defines the function
+  `bastion=<name>` (R-BAS-104): the Bastion's address, no login, no publish line, and no configure snippet of an OCI repository
+  (Q-OCI-277). So a generic repository's Configure defines the function
   its files' commands call, without the header that would carry a credential. The repository's format and class come from the data path's
   `repositories` (R-BAS-118, [Q-BAS-404](#q-bas-404--the-public-repositories-with-their-format-are-an-address-of-their-own-for-the-page-set-up-client));
   a repository the public set does not hold says "This address offers no repository of that name." and asks for no set-up.
@@ -7369,13 +7373,22 @@ the same gap, since the Bastion had no page Set up client and its panels of comm
 applications), the panel's link of [client-command-menu.ts](../../web/src/app/views/packages/client-command-menu.ts) in both applications
 (`SETUP_PAGES` removed), the clients of [formats.ts](../../web/src/bastion/data/formats.ts), the address `Setup` of
 [address.go](../../internal/bastion/gui/page/address.go) and `setupPage` of [seo.go](../../internal/bastion/gui/seo.go).
+*Built on 2026-11-27 (W40-P3):* an OCI repository's page starts at Install: `{{else if not .Bastion}}` of the configure templates of
+[setup.go](../../internal/formats/oci/setup.go), the empty snippet dropped by `renderSnippets` of
+[setup_snippets.go](../../internal/api/v1/setup_snippets.go), the step Configure only with snippets in
+[setup-steps.ts](../../web/src/app/views/setup/setup-steps.ts).
 
 Acceptance criteria:
 
 - Vitest ([visitor.spec.ts](../../web/src/bastion/visitor.spec.ts), under a second): `R-BAS-129 Set up client of a generic repository …`
   (the format's three clients, the chosen client's set-up from the catalogue with the function the command calls, Configure and Install,
   no token, nothing that names the main installation, the repository's link to its files), `R-BAS-129 Set up client of a repository the
-  Bastion does not offer …`; the main installation's page with the shared view: the specs of `features/setup/` unchanged.
+  Bastion does not offer …`, `R-BAS-129 R-OCI-030 Set up client of a public image repository starts at Install …` (no step Configure, no
+  login, Install numbered 1); the main installation's page with the shared view: the specs of `features/setup/` unchanged.
+- Unit ([bastion_setup_test.go](../../internal/api/v1/bastion_setup_test.go), milliseconds):
+  `TestR_OCI_030_ABastionsSetUpOfAPublicRepositoryHasNoLogin` (Docker, Podman and Helm of a public OCI repository with `bastion=<name>`, with
+  and without a credential: no configure snippet; a private one keeps the login with the token; the main installation's own set-up keeps the
+  interactive login).
 - Unit ([page_test.go](../../internal/bastion/gui/page/page_test.go), [seo_test.go](../../internal/bastion/gui/seo_test.go), microseconds):
   the address read and written; a public repository's page `200`, `noindex`, titled "Client einrichten" in German, canonical without the
   client; a repository the public set does not hold `404`.

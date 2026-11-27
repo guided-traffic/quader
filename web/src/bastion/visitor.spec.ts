@@ -159,6 +159,34 @@ describe("What a Bastion's visitor reads (R-BAS-128, R-BAS-129)", () => {
     expect(root.querySelector('.repo a')?.getAttribute('href')).toBe('/projects/platform/repositories/downloads');
   });
 
+  it('R-BAS-129 R-OCI-030 Set up client of a public image repository starts at Install: a pull needs no login, and a Bastion takes no push', async () => {
+    const http = setup();
+    const fixture = TestBed.createComponent(SetupPage);
+    fixture.componentRef.setInput('project', 'platform');
+    fixture.componentRef.setInput('key', 'images');
+    fixture.componentRef.setInput('client', 'docker');
+    fixture.detectChanges();
+    http.expectOne('/ui/data/v1/repositories').flush({ items: [{ name: 'platform/images', format: 'oci', class: 'local' }] });
+    for (let i = 0; i < 3; i++) {
+      await turn();
+      fixture.detectChanges();
+    }
+    // The catalogue's set-up document as the server renders it now (formats/oci.md Q-OCI-277): no configure snippet.
+    http.expectOne('/ui/data/v1/setup/platform/images/docker').flush({
+      repository: 'platform/images',
+      format: 'oci',
+      client: 'docker',
+      credentials: 'none',
+      registryUrl: 'https://bastion.example.org/v2/platform/images/',
+      snippets: [snippet('docker.install', 'install', 'docker pull bastion.example.org/platform/images/myapp:1.0\n')],
+    });
+    await settled(fixture);
+    const root = fixture.nativeElement as HTMLElement;
+    expect([...root.querySelectorAll('.step h2')].map((h) => h.textContent?.trim())).toEqual(['1Install']);
+    expect(root.querySelector('section[aria-labelledby="step-configure"]')).toBeNull();
+    expect(root.textContent).not.toContain('login');
+  });
+
   it('R-BAS-129 Set up client of a repository the Bastion does not offer says so and asks for no set-up', async () => {
     const http = setup();
     const fixture = TestBed.createComponent(SetupPage);
