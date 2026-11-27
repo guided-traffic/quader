@@ -11145,7 +11145,7 @@ Acceptance criteria:
 - Renders ([malware-controller.ts](../../web/e2e/renders/malware-controller.ts) of the renders), looked at and never committed: the
   settings page as the profile answers (no controller has reported), at work with three replicas working, one paused and one resting,
   the queue of 20 and the replicas' calls opened, far behind with the advice, the rescans opened, idle; the malware page with "Not counted
-  yet" and with the four classes and the 20 oldest opened; both schemes, 390, 1,024 and 1,440 px, English and German.
+  yet" and with the four classes and the 20 oldest opened; both schemes, 390, 1,024 and 1,440 px, in English: the walks of both pages find their controls by English names, so the German pass of the renders does not take them.
 
 ### R-UI-258 · The Bastion's pages show the malware mark
 Priority: **P1** · Covers: SEC-049

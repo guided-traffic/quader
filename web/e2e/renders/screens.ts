@@ -3730,7 +3730,7 @@ export const screens: readonly Screen[] = [
   { id: 'security-search', path: '/ui/security', kinds: ['auditor'], walk: searched('DEMO-2026-00001') },
   { id: 'security-project', path: `/ui/security?project=${mainProject}`, kinds: ['auditor'], tables: 'quader-vulnerability-report > quader-data-table' },
   // The page Malware under Security audit (R-MAL-025, Q-UI-1005): what the auditor assesses and releases; an administrator sees the same.
-  { id: 'security-malware', path: '/ui/security/malware', kinds: ['auditor'], walk: malwareFinds, tables: 'quader-malware-finds > quader-data-table', de: true },
+  { id: 'security-malware', path: '/ui/security/malware', kinds: ['auditor'], walk: malwareFinds, tables: 'quader-malware-finds > quader-data-table' },
   // The find of that Go program and its release (Q-UI-1206): the limit, the false alarm with the manual's page, the scanner's text.
   {
     id: 'security-malware-limit',
@@ -4023,7 +4023,7 @@ export const screens: readonly Screen[] = [
   { id: 'admin-settings-auth', path: '/ui/admin/settings/auth', kinds: admins, de: true },
   { id: 'admin-settings-general', path: '/ui/admin/settings/general', kinds: admins, walk: restrictedLevels },
   // The malware scanning's page (R-MAL-023): every state of the administrator's, and the auditor's read-only page with the link to the finds.
-  { id: 'admin-settings-malware', path: '/ui/admin/settings/malware', kinds: admins, walk: malwareSettings, de: true },
+  { id: 'admin-settings-malware', path: '/ui/admin/settings/malware', kinds: admins, walk: malwareSettings },
   { id: 'admin-settings-malware-read', path: '/ui/admin/settings/malware', kinds: ['auditor'] },
   { id: 'admin-settings-signatures', path: '/ui/admin/settings/signatures', kinds: admins, walk: signatureSettings, tables: 'quader-data-table' },
   // >>> download-links
