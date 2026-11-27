@@ -16,6 +16,7 @@ import { GuideSection } from '../../api/guides-api';
 import { PackageReadme } from '../../api/packages-api';
 import { CopyButton } from '../../shared/copy-button';
 import { Disclosure } from '../../shared/ui/disclosure';
+import { guideTitle } from './guide-titles';
 import { PackageReadmeView } from '../../views/packages/package-readme';
 
 /**
@@ -23,15 +24,16 @@ import { PackageReadmeView } from '../../views/packages/package-readme';
  * a closed row titled with its heading, in the server's topic order, the first one ("What a local repository is") too, so the
  * titles are the contents and nothing stands open above or between them. The HTML is the server's, bound like a README (R-UI-008,
  * the same component and finishing pass); the prose keeps a measure, and every code block of it gets a copy button. The text is the
- * format's and English (Q-UI-86), so it carries `lang="en"`; the frame is translated.
+ * format's and English (Q-UI-86), so it carries `lang="en"`; the frame is translated, the sections' headings too (`guideTitle`).
  */
 @Component({
   selector: 'quader-guide-view',
   imports: [Disclosure, PackageReadmeView],
   template: `
     @for (s of sections(); track s.id) {
-      <quader-disclosure class="guide-more" [level]="3" [heading]="s.title" lang="en" [attr.data-section]="s.id">
-        <quader-package-readme class="guide-prose" [readme]="readmeOf(s)" />
+      @let title = titleOf(s);
+      <quader-disclosure class="guide-more" [level]="3" [heading]="title.text" [attr.lang]="title.english ? 'en' : null" [attr.data-section]="s.id">
+        <quader-package-readme class="guide-prose" [readme]="readmeOf(s)" lang="en" />
       </quader-disclosure>
     }
   `,
@@ -94,6 +96,8 @@ export class GuideView {
       for (const ref of this.buttons) ref.destroy();
     });
   }
+
+  protected readonly titleOf = guideTitle;
 
   protected readmeOf(s: GuideSection): PackageReadme | null {
     return this.readmes().get(s.id) ?? null;

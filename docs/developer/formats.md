@@ -270,7 +270,8 @@ topics `publish` and `maintain` for a reader who may not publish there (`keepsSe
 
 | Field of `GuideSection` | Rule |
 |---|---|
-| `ID` | Stable and unique, `<format>.<name>` |
+| `ID` | Stable and unique, `<format>.<name>`; the screen words the heading by it |
+| `Title` | The heading in English. The screen shows it in the reader's language from `guideTitle` of [guide-titles.ts](../../web/src/app/features/guides/guide-titles.ts), one unit `guide.title.<ID>` per section with this English word for word and its German in `messages.de.xlf`; [guide_titles_test.go](../../internal/formats/all/guide_titles_test.go) fails for a section without them (Q-UI-86) |
 | `Topic` | One of `formats.GuideTopics()`; the required ones (`what`, `configure`, `authenticate`, `install`, `troubleshooting`) must cover every class and client |
 | `Classes`, `Clients` | Whom the section is written for; empty is everyone |
 | `Markdown` | `text/template` over `GuideData`; the text may speak of "the snippet", which the page shows above it (`SetupData` plus `Class`, `Client`, `PublishTarget`, `Anonymous`, `ExposureRules`, `TokenEnvVar`); `.Repository` is empty in the guide of a format, whose addresses carry `<repository>` |
@@ -702,6 +703,8 @@ the item store, [oci.md](oci.md#upload-sessions-r-stor-011); the in-memory host 
    `TestR_ARCH_010_PerClassFormatEnums` fails until they match, then `make generate`.
 6. Write the conformance test with the kit (`formattest.Run`), the fixture of the format and its fuzz targets ([Conformance kit](#conformance-kit)), and the integration tests against the real stack.
    A format with clients writes its setup templates and its guide ([The guide of a format](#the-guide-of-a-format)) in the same change: check 8 fails without them.
+   Each section's heading gets its entry in [guide-titles.ts](../../web/src/app/features/guides/guide-titles.ts) and its German unit (`make web-i18n`, then the
+   target by hand): `TestR_UI_049_EveryGuideHeadingHasAUnitInBothLanguages` fails without them.
    Every format, a system-only one too, adds its client IDs to the table of the subtest "the formats list names the clients" of
    `TestR_API_053_TheGuideThroughTheStack` ([guide_test.go](../../test/integration/packages/guide_test.go)), which fails for a format it does not
    know, and runs the integration area `packages` once.

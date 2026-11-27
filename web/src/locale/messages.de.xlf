@@ -15335,9 +15335,693 @@
         <target>Ein virtuelles Repository: mehrere Repositorys hinter einer Adresse</target>
       </segment>
     </unit>
+    <unit id="guide.title.ansible.local.what">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:14</note>
+      </notes>
+      <segment>
+        <source>What a local repository is</source>
+        <target>Was ein lokales Repository ist</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.ansible.remote.what">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:15</note>
+      </notes>
+      <segment>
+        <source>What a remote repository is</source>
+        <target>Was ein Remote-Repository ist</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.ansible.virtual.what">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:16</note>
+      </notes>
+      <segment>
+        <source>What a virtual repository is</source>
+        <target>Was ein virtuelles Repository ist</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.ansible.configure">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:17</note>
+      </notes>
+      <segment>
+        <source>Point ansible-galaxy at the repository</source>
+        <target>ansible-galaxy auf das Repository richten</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.ansible.authenticate">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:18</note>
+      </notes>
+      <segment>
+        <source>Which credential ansible-galaxy sends</source>
+        <target>Welche Anmeldedaten ansible-galaxy sendet</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.ansible.install">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:19</note>
+      </notes>
+      <segment>
+        <source>Install collections and roles</source>
+        <target>Collections und Rollen installieren</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.ansible.publish">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:20</note>
+      </notes>
+      <segment>
+        <source>Publish a collection</source>
+        <target>Eine Collection veröffentlichen</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.ansible.maintain">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:21</note>
+      </notes>
+      <segment>
+        <source>Remove a version, import tasks and tombstones</source>
+        <target>Eine Version entfernen, Import-Aufgaben und Grabsteine</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.ansible.troubleshooting">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:22</note>
+      </notes>
+      <segment>
+        <source>Troubleshooting</source>
+        <target>Fehlerbehebung</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.clamav.what">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:24</note>
+      </notes>
+      <segment>
+        <source>What this repository is</source>
+        <target>Was dieses Repository ist</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.clamav.configure">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:25</note>
+      </notes>
+      <segment>
+        <source>Point freshclam at Quader</source>
+        <target>freshclam auf Quader richten</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.clamav.authenticate">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:26</note>
+      </notes>
+      <segment>
+        <source>Sign freshclam in</source>
+        <target>freshclam anmelden</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.clamav.install">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:27</note>
+      </notes>
+      <segment>
+        <source>Run freshclam</source>
+        <target>freshclam ausführen</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.clamav.troubleshooting">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:28</note>
+      </notes>
+      <segment>
+        <source>Troubleshooting</source>
+        <target>Fehlerbehebung</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.deb.local.what">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:30</note>
+      </notes>
+      <segment>
+        <source>What a local repository is</source>
+        <target>Was ein lokales Repository ist</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.deb.remote.what">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:31</note>
+      </notes>
+      <segment>
+        <source>What a remote repository is</source>
+        <target>Was ein Remote-Repository ist</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.deb.virtual.what">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:32</note>
+      </notes>
+      <segment>
+        <source>What a virtual repository is</source>
+        <target>Was ein virtuelles Repository ist</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.deb.configure">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:33</note>
+      </notes>
+      <segment>
+        <source>Add the repository as a source</source>
+        <target>Das Repository als Quelle hinzufügen</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.deb.remote.keys">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:34</note>
+      </notes>
+      <segment>
+        <source>Which key the client trusts</source>
+        <target>Welchem Schlüssel der Client vertraut</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.deb.authenticate">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:35</note>
+      </notes>
+      <segment>
+        <source>Which credential APT sends</source>
+        <target>Welche Anmeldedaten APT sendet</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.deb.install">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:36</note>
+      </notes>
+      <segment>
+        <source>Install a package</source>
+        <target>Ein Paket installieren</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.deb.publish">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:37</note>
+      </notes>
+      <segment>
+        <source>Upload a package</source>
+        <target>Ein Paket hochladen</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.deb.maintain">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:38</note>
+      </notes>
+      <segment>
+        <source>Move, delete and re-sign</source>
+        <target>Verschieben, löschen und neu signieren</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.deb.virtual.maintain">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:39</note>
+      </notes>
+      <segment>
+        <source>Members and what a build says about them</source>
+        <target>Mitglieder und was ein Build über sie sagt</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.deb.troubleshooting">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:40</note>
+      </notes>
+      <segment>
+        <source>Troubleshooting</source>
+        <target>Fehlerbehebung</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.generic.local.what">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:42</note>
+      </notes>
+      <segment>
+        <source>What a generic local repository is</source>
+        <target>Was ein lokales generisches Repository ist</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.generic.configure">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:43</note>
+      </notes>
+      <segment>
+        <source>Point curl at the repository</source>
+        <target>curl auf das Repository richten</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.generic.wget.configure">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:44</note>
+      </notes>
+      <segment>
+        <source>Point wget at the repository</source>
+        <target>wget auf das Repository richten</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.generic.powershell.configure">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:45</note>
+      </notes>
+      <segment>
+        <source>Point PowerShell at the repository</source>
+        <target>PowerShell auf das Repository richten</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.generic.authenticate">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:46</note>
+      </notes>
+      <segment>
+        <source>Sign curl in</source>
+        <target>curl anmelden</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.generic.wget.authenticate">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:47</note>
+      </notes>
+      <segment>
+        <source>Sign wget in</source>
+        <target>wget anmelden</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.generic.powershell.authenticate">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:48</note>
+      </notes>
+      <segment>
+        <source>Sign PowerShell in</source>
+        <target>PowerShell anmelden</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.generic.install">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:49</note>
+      </notes>
+      <segment>
+        <source>Download files</source>
+        <target>Dateien herunterladen</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.generic.wget.install">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:50</note>
+      </notes>
+      <segment>
+        <source>Download files</source>
+        <target>Dateien herunterladen</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.generic.powershell.install">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:51</note>
+      </notes>
+      <segment>
+        <source>Download files</source>
+        <target>Dateien herunterladen</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.generic.publish">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:52</note>
+      </notes>
+      <segment>
+        <source>Upload files</source>
+        <target>Dateien hochladen</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.generic.wget.publish">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:53</note>
+      </notes>
+      <segment>
+        <source>Upload files</source>
+        <target>Dateien hochladen</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.generic.powershell.publish">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:54</note>
+      </notes>
+      <segment>
+        <source>Upload files</source>
+        <target>Dateien hochladen</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.generic.maintain">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:55</note>
+      </notes>
+      <segment>
+        <source>Replace and delete files</source>
+        <target>Dateien ersetzen und löschen</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.generic.wget.maintain">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:56</note>
+      </notes>
+      <segment>
+        <source>Replace and delete files</source>
+        <target>Dateien ersetzen und löschen</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.generic.powershell.maintain">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:57</note>
+      </notes>
+      <segment>
+        <source>Replace and delete files</source>
+        <target>Dateien ersetzen und löschen</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.generic.endpoint">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:58</note>
+      </notes>
+      <segment>
+        <source>On this endpoint</source>
+        <target>An diesem Endpunkt</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.generic.troubleshooting">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:59</note>
+      </notes>
+      <segment>
+        <source>Troubleshooting</source>
+        <target>Fehlerbehebung</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.npm.local.what">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:61</note>
+      </notes>
+      <segment>
+        <source>What a local repository is</source>
+        <target>Was ein lokales Repository ist</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.npm.remote.what">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:62</note>
+      </notes>
+      <segment>
+        <source>What a remote repository is</source>
+        <target>Was ein Remote-Repository ist</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.npm.virtual.what">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:63</note>
+      </notes>
+      <segment>
+        <source>What a virtual repository is</source>
+        <target>Was ein virtuelles Repository ist</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.npm.configure">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:64</note>
+      </notes>
+      <segment>
+        <source>Point the client at the repository</source>
+        <target>Den Client auf das Repository richten</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.npm.authenticate">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:65</note>
+      </notes>
+      <segment>
+        <source>Sign the client in</source>
+        <target>Den Client anmelden</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.npm.install">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:66</note>
+      </notes>
+      <segment>
+        <source>Install packages</source>
+        <target>Pakete installieren</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.npm.publish">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:67</note>
+      </notes>
+      <segment>
+        <source>Publish a package</source>
+        <target>Ein Paket veröffentlichen</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.npm.maintain">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:68</note>
+      </notes>
+      <segment>
+        <source>Dist-tags and unpublish</source>
+        <target>Dist-Tags und Zurückziehen</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.npm.audit">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:69</note>
+      </notes>
+      <segment>
+        <source>Security audit</source>
+        <target>Sicherheitsaudit</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.npm.lockfiles">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:70</note>
+      </notes>
+      <segment>
+        <source>Lockfiles</source>
+        <target>Lockfiles</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.npm.endpoint">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:71</note>
+      </notes>
+      <segment>
+        <source>On this endpoint</source>
+        <target>An diesem Endpunkt</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.npm.troubleshooting">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:72</note>
+      </notes>
+      <segment>
+        <source>Troubleshooting</source>
+        <target>Fehlerbehebung</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.nuget.local.what">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:74</note>
+      </notes>
+      <segment>
+        <source>What a local repository is</source>
+        <target>Was ein lokales Repository ist</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.nuget.remote.what">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:75</note>
+      </notes>
+      <segment>
+        <source>What a remote repository is</source>
+        <target>Was ein Remote-Repository ist</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.nuget.virtual.what">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:76</note>
+      </notes>
+      <segment>
+        <source>What a virtual repository is</source>
+        <target>Was ein virtuelles Repository ist</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.nuget.configure">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:77</note>
+      </notes>
+      <segment>
+        <source>Point the client at the repository</source>
+        <target>Den Client auf das Repository richten</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.nuget.authenticate">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:78</note>
+      </notes>
+      <segment>
+        <source>Sign the client in</source>
+        <target>Den Client anmelden</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.nuget.install">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:79</note>
+      </notes>
+      <segment>
+        <source>Restore and install packages</source>
+        <target>Pakete wiederherstellen und installieren</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.nuget.publish">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:80</note>
+      </notes>
+      <segment>
+        <source>Push a package</source>
+        <target>Ein Paket pushen</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.nuget.maintain">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:81</note>
+      </notes>
+      <segment>
+        <source>Unlist, relist and delete</source>
+        <target>Aus der Liste nehmen, wieder aufnehmen und löschen</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.nuget.lockfiles">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:82</note>
+      </notes>
+      <segment>
+        <source>Lock files</source>
+        <target>Lockfiles</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.nuget.endpoint">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:83</note>
+      </notes>
+      <segment>
+        <source>On this endpoint</source>
+        <target>An diesem Endpunkt</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.nuget.troubleshooting">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:84</note>
+      </notes>
+      <segment>
+        <source>Troubleshooting</source>
+        <target>Fehlerbehebung</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.oci.local.what">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:86</note>
+      </notes>
+      <segment>
+        <source>What a local repository is</source>
+        <target>Was ein lokales Repository ist</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.oci.remote.what">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:87</note>
+      </notes>
+      <segment>
+        <source>What a remote repository is</source>
+        <target>Was ein Remote-Repository ist</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.oci.virtual.what">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:88</note>
+      </notes>
+      <segment>
+        <source>What a virtual repository is</source>
+        <target>Was ein virtuelles Repository ist</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.oci.configure">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:89</note>
+      </notes>
+      <segment>
+        <source>Sign the client in</source>
+        <target>Den Client anmelden</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.oci.authenticate">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:90</note>
+      </notes>
+      <segment>
+        <source>Which credential the client sends</source>
+        <target>Welche Anmeldedaten der Client sendet</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.oci.install">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:91</note>
+      </notes>
+      <segment>
+        <source>Pull an image</source>
+        <target>Ein Image ziehen</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.oci.publish">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:92</note>
+      </notes>
+      <segment>
+        <source>Push an image</source>
+        <target>Ein Image pushen</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.oci.maintain">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:93</note>
+      </notes>
+      <segment>
+        <source>Delete tags, images and layers</source>
+        <target>Tags, Images und Layer löschen</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.oci.endpoint">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:94</note>
+      </notes>
+      <segment>
+        <source>On this endpoint</source>
+        <target>An diesem Endpunkt</target>
+      </segment>
+    </unit>
+    <unit id="guide.title.oci.troubleshooting">
+      <notes>
+        <note category="location">src/app/features/guides/guide-titles.ts:95</note>
+      </notes>
+      <segment>
+        <source>Troubleshooting</source>
+        <target>Fehlerbehebung</target>
+      </segment>
+    </unit>
     <unit id="guide.copy-code">
       <notes>
-        <note category="location">src/app/features/guides/guide-view.ts:57</note>
+        <note category="location">src/app/features/guides/guide-view.ts:59</note>
       </notes>
       <segment>
         <source>Copy code</source>

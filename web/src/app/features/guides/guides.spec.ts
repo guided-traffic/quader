@@ -1,3 +1,4 @@
+import { clearTranslations, loadTranslations } from '@angular/localize';
 import { RepositoriesApi } from '../../api/repositories-api';
 import { FakeRepositoriesApi, GENERIC_FORMAT, PACKAGE_FORMAT } from '../../api/testing/fakes-catalog';
 import { GENERIC_REPOSITORY, NPM_REPOSITORIES } from '../../api/testing/fakes-packages';
@@ -113,8 +114,29 @@ describe('Guides', () => {
     const code = r.root.querySelector('[data-section="npm.configure"] .prose-code')!;
     expect(code.querySelector('pre')).toBeTruthy();
     expect(code.querySelector('quader-copy-button button')?.getAttribute('aria-label')).toBe('Copy code');
-    expect(rows[0]!.getAttribute('lang')).toBe('en');
+    // The heading is the frame and the reader's language; the text under it is the format's English (Q-UI-86).
+    expect(rows[0]!.getAttribute('lang')).toBeNull();
+    expect(rows[0]!.querySelector('quader-package-readme')?.getAttribute('lang')).toBe('en');
     await expectAccessible(r.root);
+  });
+
+  it('R-UI-049 a section\'s heading is in the reader\'s language by its ID, a section the table does not know keeps the server\'s English', async () => {
+    loadTranslations({ 'guide.title.oci.install': 'Ein Image ziehen' });
+    try {
+      const r = await renderScreen(GuideView, {
+        inputs: {
+          sections: [
+            { id: 'oci.install', topic: 'install', title: 'Pull an image', html: '<p>docker pull</p>' },
+            { id: 'tf.install', topic: 'install', title: 'Install', html: '<p>tf install</p>' },
+          ],
+        },
+      });
+      const rows = [...r.root.querySelectorAll<HTMLElement>('quader-disclosure.guide-more')];
+      expect(rows.map((d) => text(d.querySelector('h3 button span:last-child')!))).toEqual(['Ein Image ziehen', 'Install']);
+      expect(rows.map((d) => d.getAttribute('lang'))).toEqual([null, 'en']);
+    } finally {
+      clearTranslations();
+    }
   });
 
   it('R-UI-125 every cell of a table carries its column\'s name, which a narrow page shows when the rows stand as blocks', async () => {

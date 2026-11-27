@@ -4816,7 +4816,8 @@ variant, which is a format × a repository class (local, remote, virtual) × a c
 Yarn Classic). A guide tells a developer, accurately for Quader as built, what the repository is and how the client
 configures, signs in, installs, publishes, changes tags, unpublishes, audits and keeps lockfiles through it, what an
 endpoint with exposure rules changes, and what each answer of the protocol means. The text is the format's
-(R-ARCH-008 `Guide()`, kit check 8), rendered by the server (R-API-053); the UI adds no format knowledge.
+(R-ARCH-008 `Guide()`, kit check 8), rendered by the server (R-API-053); the UI adds no format knowledge but the sections' headings
+in the reader's language (Q-UI-86).
 
 - **Where** (owner, 2026-11-18: context instead of choices). The guide of a repository is the explanation of its page **Set up
   client**, below the snippets (R-UI-120, R-UI-121, R-UI-125), for the repository's class and the chosen client. The guide of a class
@@ -4825,7 +4826,10 @@ endpoint with exposure rules changes, and what each answer of the protocol means
 - **Content.** The sections the server sends, laid out by R-UI-125: what a repository of the class is and the endpoint's note open,
   the others closed under their headings; the section's HTML bound like a README (R-UI-008, the same component and its finishing
   pass); every code block with a copy button. The guide's text is the format's and English, marked `lang="en"`; the frame of the
-  page is translated (Q-UI-86).
+  page is translated, each section's heading too: the screen words it by the section's ID (`guideTitle` of
+  [guide-titles.ts](../../web/src/app/features/guides/guide-titles.ts)), and `TestR_UI_049_EveryGuideHeadingHasAUnitInBothLanguages`
+  ([guide_titles_test.go](../../internal/formats/all/guide_titles_test.go), milliseconds) fails for a registered format's section whose
+  heading has no entry with its English word for word or no German unit (Q-UI-86).
 - **Addresses** are the server's (the base URL of the endpoint the page is served from, R-API-053), never the page's
   location (Q-UI-69).
 - **Anonymous readers** of anonymously readable repositories get the guide without credential steps: snippets without
@@ -13678,6 +13682,22 @@ Context: R-UI-045 translates every text of the UI. A guide's text is the format'
 **Choice:** (a), as Q-UI-79 decided for the labels of a settings schema.
 
 **Rationale:** The guide's value is that it is true; one text that the tests pin is worth more than two that drift. The development agent revisits this when the server negotiates languages for format content.
+
+**Amended on 2026-11-27 (batch B-1127l):** the owner's German pass found the headings of the sections English on the German page **Set up
+client** (`formats.GuideSection.Title`, passed as is by `guide_api.go`, shown under `lang="en"`). Decided: **the heading is frame and is
+shown in the reader's language; the body under it stays English with `lang="en"`** (the reason above holds for the body: it is what
+the tests pin). Two forms were weighed:
+
+| Form | What it means | For | Against |
+|---|---|---|---|
+| (a) A UI table `guideTitle(sectionId)`, one unit per section (chosen) | [guide-titles.ts](../../web/src/app/features/guides/guide-titles.ts), as `FORMAT_CLIENTS` is for the clients' names | Each heading keeps its words: "Pull an image", "Dist-tags and unpublish", "Remove a version, import tasks and tombstones" | The UI holds one line per section (76 now); a new format adds its lines and units |
+| (b) The server names each heading by a kind of a small closed vocabulary; the UI words the kinds | A new format adds no unit unless it brings a new kind; format knowledge stays out of the UI | The general headings fit 13 kinds, a client's name as a parameter ("Point curl at the repository"): what a local, remote, virtual repository is, configure, sign in, which credential, which key, members, audit, lockfiles, endpoint, troubleshooting, what this repository is (51 of 76 sections) | The 25 headings of install, publish and maintain name the format's own acts and things (pull and push an image, restore, dist-tags, unpublish, unlist and relist, tombstones, import tasks, re-sign, layers): as one kind each they would say "Install" for a pull and "Maintain" for six different lists, and kept apart they are no closed set, each new format bringing its own |
+
+**Choice:** (a). The test of the choice was whether the headings fall into a closed set of about 20 kinds without losing what a heading
+says; the install, publish and maintain headings do not. R-UI-049's "the UI adds no format knowledge" makes room for the headings'
+table, which only words what the server names by ID: the order, the classes and clients a section is for and its text stay the
+server's. A section the table does not know (a test format's) keeps the server's English heading, marked `lang="en"`.
+`TestR_UI_049_EveryGuideHeadingHasAUnitInBothLanguages` reads the table and the German file against every registered format's sections.
 
 **Applied in the spec:** R-UI-049.
 

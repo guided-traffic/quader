@@ -63,7 +63,8 @@ type GuideSection struct {
 	ID string
 	// Topic is one of [GuideTopics].
 	Topic string
-	// Title is the heading of the section, plain text.
+	// Title is the heading of the section, plain English text. The screen shows it in the reader's language by the section's ID
+	// (guideTitle of web/src/app/features/guides/guide-titles.ts, Q-UI-86); the test of internal/formats/all holds the two equal.
 	Title string
 	// Classes are the classes the section is written for; empty is every class.
 	Classes []Class
