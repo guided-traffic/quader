@@ -277,7 +277,7 @@ func lockAnchor(ctx context.Context, qs *q.Queries, id int64) (anchorRow, error)
 // patchAllowed refuses what the anchor's scope does not let the API change (R-SIG-016, R-SIG-019).
 func patchAllowed(ctx context.Context, qs *q.Queries, cur anchorRow, p signatures.AnchorPatch) error {
 	managed := errs.E(errs.Conflict, errs.CodeAnchorManaged,
-		"The anchor is shipped with Quader or declared in the Helm values: only a shipped anchor's switch can be changed.")
+		"The anchor is shipped with Quader or declared in the Helm configuration: only a shipped anchor's switch can be changed.")
 	other := p.Title != nil || p.Note != nil || p.Material != nil
 	switch cur.Scope {
 	case anchors.ScopeConfiguration:
@@ -371,7 +371,7 @@ func (s *Store) DeleteAnchor(ctx context.Context, actor audit.Actor, id int64) e
 		}
 		if cur.Scope == anchors.ScopeShipped || cur.Scope == anchors.ScopeConfiguration {
 			return errs.E(errs.Conflict, errs.CodeAnchorManaged,
-				"The anchor is shipped with Quader or declared in the Helm values and cannot be removed through the API.")
+				"The anchor is shipped with Quader or declared in the Helm configuration and cannot be removed through the API.")
 		}
 		rec, err := s.anchorRecord(ctx, qs, id)
 		if err != nil {

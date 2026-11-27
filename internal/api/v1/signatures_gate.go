@@ -60,7 +60,7 @@ func (s *Server) gateServices() (SignatureServices, error) {
 	}
 	if !sv.Enabled || !sv.Gate.Enabled() {
 		return sv, errs.E(errs.Conflict, errs.CodeSignaturesNotEnabled,
-			"signatures.enabled is false in this installation: no repository's gate applies.")
+			"config.signatures.enabled is false in the Helm configuration: no repository's gate applies.")
 	}
 	return sv, nil
 }

@@ -190,7 +190,7 @@ func lockIssuer(ctx context.Context, qs *q.Queries, name string, expected int64)
 // managedByConfiguration is the 409 of a write of an issuer that ci.issuers declares (Q-CI-16).
 func managedByConfiguration(is Issuer) error {
 	return errs.E(errs.Conflict, errs.CodeIssuerManagedByConfiguration,
-		fmt.Sprintf("The CI issuer %q is declared in ci.issuers of the system configuration; change or remove it there.", is.Name),
+		fmt.Sprintf("The CI issuer %q is declared in config.ci.issuers of the Helm configuration; change or remove it there.", is.Name),
 		errs.WithExtension("removedFromConfiguration", is.RemovedFromConfiguration))
 }
 

@@ -10,7 +10,7 @@ describe('Endpoint list table (R-EP-017)', () => {
   it('R-UI-145 the sentence under the title is the header\'s description, as on every page', async () => {
     const { root } = await renderScreen(EndpointList);
     const description = root.querySelector('quader-page-header .page-header-description')!;
-    expect(description.textContent).toContain('Endpoints come from the configuration file.');
+    expect(description.textContent).toContain('Endpoints come from the Helm configuration.');
     expect(root.querySelector(':scope > p.hint, quader-endpoint-list > p.hint')).toBeNull();
   });
 

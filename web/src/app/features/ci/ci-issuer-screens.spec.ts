@@ -36,8 +36,8 @@ describe('The CI issuer list (R-UI-035)', () => {
     expect(text(root.querySelectorAll('tbody tr')[1]!.querySelectorAll('td')[3]!)).toBe('1');
     expect(gitlab).toContain('2 usable');
     expect(gitlab).toContain('API');
-    // The issuer of the Helm values says so, and its failed fetch shows with its error, as text and not as colour alone.
-    expect(corp).toContain('Configuration');
+    // The issuer of the Helm configuration says so, and its failed fetch shows with its error, as text and not as colour alone.
+    expect(corp).toContain('Helm configuration');
     expect(corp).toContain('Fetch failed');
     expect(corp).toContain('The issuer answered with the error status 502.');
     expect(corp).not.toContain('status=502');
@@ -113,18 +113,17 @@ describe('A CI issuer (R-UI-035, R-CI-001, R-CI-002)', () => {
     await expectAccessible(root);
   });
 
-  it('R-CI-001 an issuer of the configuration is read-only and names the configuration as its source', async () => {
+  it('R-CI-001 an issuer of the Helm configuration is read-only and names it as its source', async () => {
     const { root, fixture } = await renderScreen(IssuerDetail, { inputs: { issuer: 'corp-gitlab', tab: 'settings' } });
     await settle(fixture);
-    expect(text(root)).toContain('declared in the installation');
-    expect(text(root)).toContain('ci.issuers');
+    expect(text(root)).toContain('From the Helm configuration (config.ci.issuers): its settings are changed there.');
     expect(root.querySelector('form')).toBeNull();
     expect(root.querySelector<HTMLInputElement>('input[name="ro-issuer"]')!.readOnly).toBe(true);
     // Not deletable while it is still declared.
     expect(root.textContent).not.toContain('Delete issuer');
   });
 
-  it('R-CI-001 an issuer that left the configuration says it is disabled and can be deleted', async () => {
+  it('R-CI-001 an issuer that left the Helm configuration says it is disabled and can be deleted', async () => {
     const { root, fixture } = await renderScreen(IssuerDetail, {
       inputs: { issuer: 'corp-gitlab', tab: 'settings' },
       setup: (get) => {
@@ -133,7 +132,7 @@ describe('A CI issuer (R-UI-035, R-CI-001, R-CI-002)', () => {
       },
     });
     await settle(fixture);
-    expect(text(root)).toContain('no longer declared');
+    expect(text(root)).toContain('The issuer is no longer in the Helm configuration.');
     expect(text(root)).toContain('Delete issuer');
   });
 

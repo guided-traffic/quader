@@ -913,7 +913,7 @@ func valueOnly(in *UpstreamAccountInput) error {
 	return addressInvalid(errs.FieldError{
 		Pointer: "/remote/password/secretRef", Code: errs.CodeSecretValueRequired,
 		Detail: "the account of a well-known repository is given as a value; an account read from files is declared in " +
-			"repositories.upstream_accounts (the Helm values' secrets.upstreamAccounts)",
+			"secrets.upstreamAccounts of the Helm configuration",
 	})
 }
 

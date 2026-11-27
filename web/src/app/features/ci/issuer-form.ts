@@ -60,14 +60,14 @@ function issuerConflictFields(): Record<string, string> {
       <p class="source-note" role="note">
         <span class="material-icons" aria-hidden="true">lock</span>
         <span i18n="@@ci.form.configuration-source">
-          This issuer is declared in the installation's configuration (<code translate="no">ci.issuers</code> of the Helm values). Its settings are read-only here; change them there. Its mappings are managed here as for any issuer.
+          From the Helm configuration (<code translate="no">config.ci.issuers</code>): its settings are changed there. Its mappings are managed here.
         </span>
       </p>
       @if (issuer()?.removedFromConfiguration) {
         <p class="source-note warn" role="note">
           <span class="material-icons" aria-hidden="true">warning</span>
           <span i18n="@@ci.form.removed">
-            The issuer is no longer declared in the configuration. It is disabled and kept, so its mappings and issued tokens stay; you can delete it now.
+            The issuer is no longer in the Helm configuration. It is disabled and kept, so its mappings and issued tokens stay; you can delete it now.
           </span>
         </p>
       }

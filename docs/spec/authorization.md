@@ -676,7 +676,7 @@ that cannot be chosen in the same order, so that the UI never names a rule the A
 |---|---|---|---|
 | 1 | The value is a level | 422 `validation_failed`, `invalid_value` | — (the form offers only levels) |
 | 2 | The container: a repository's artifacts at most its project's level, its wiki at most its artifacts (R-AUTHZ-033 rule 2) | 422 `validation_failed` with `visibility_above_project` or `visibility_wiki_above_artifacts` | "The project is internal, so this repository cannot be public." / "The wiki cannot be more open than the artifacts." |
-| 3 | `public` needs an anonymous door (R-AUTHZ-033 rule 5) | 409 `public_not_allowed` | "The installation's configuration admits no request without a credential (endpoints.default.auth.anonymous)." |
+| 3 | `public` needs an anonymous door (R-AUTHZ-033 rule 5) | 409 `public_not_allowed` | "The Helm configuration admits no request without a credential (endpoints.default.auth.anonymous)." |
 | 4 | A restricted level, for a caller who is not an administrator (R-AUTHZ-037) | 403 `visibility_level_restricted` | "Only an administrator of Quader can choose this level." |
 | 5 | A raised level needs a recent authentication (R-AUTHZ-033 rule 4) | 401 `reauthentication_required` | — (the UI asks to sign in again) |
 

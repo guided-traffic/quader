@@ -23,7 +23,7 @@ export function describeCiProblem(code: string | null): string | null {
     case 'kind_not_available':
       return $localize`:@@problem.ci.kind-not-available:This kind of issuer is not available yet. Only GitLab issuers can be created.`;
     case 'issuer_managed_by_configuration':
-      return $localize`:@@problem.ci.issuer-managed-by-configuration:This issuer is declared in the installation's configuration and can only be changed there.`;
+      return $localize`:@@problem.ci.issuer-managed-by-configuration:This issuer is declared in config.ci.issuers of the Helm configuration and can only be changed there.`;
     case 'job_token_fallback_not_available':
       return $localize`:@@problem.ci.job-token-fallback-not-available:The job token fallback is not available.`;
     case 'pin_required':

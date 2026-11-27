@@ -400,7 +400,7 @@ export function anchorScopeWords(scope: SignatureAnchorScope): string {
     case 'shipped':
       return $localize`:@@sig.scope.shipped:Shipped with Quader`;
     case 'configuration':
-      return $localize`:@@sig.scope.configuration:From the Helm values`;
+      return $localize`:@@sig.scope.configuration:From the Helm configuration`;
     case 'installation':
       return $localize`:@@sig.scope.installation:Added by an administrator`;
     default:

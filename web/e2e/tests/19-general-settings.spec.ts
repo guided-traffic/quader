@@ -51,7 +51,7 @@ test('R-UI-033 R-OPS-025 a saved banner shows on the sign-in page and on every s
   await page.goto('/ui/en/admin/settings/general');
   await expect(page.getByRole('heading', { name: 'General settings', level: 1 })).toBeVisible();
   await expect(page.getByLabel('Public base URL')).not.toHaveValue('');
-  await expect(page.getByTestId('base-url-source')).toContainText('configuration file');
+  await expect(page.getByTestId('base-url-source')).toContainText('Set in the Helm configuration (config.server.base_url).');
 
   await test.step('the banner is saved', async () => {
     // The sections of a settings page are closed until opened (Q-UI-215).

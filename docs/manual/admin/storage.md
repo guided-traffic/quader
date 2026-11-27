@@ -25,7 +25,7 @@ Green stands only for a good state. **One store** and **Off** are no faults: an 
 
 ## Connections
 
-One row per connection in the order of the configuration, which is the order uploads try them and reads try their copies:
+One row per connection in the order of the Helm configuration (`config.storage.connections`), which is the order uploads try them and reads try their copies:
 
 - **Connection**: its id, and under it the endpoint's host and `bucket/prefix`.
 - **State**: **Active**; **Filling** with the share of the blobs it holds while the reconciliation copies them to a connection you added; **Draining** with the copies left; **Drained**; **Detached** with the blobs only it holds; **Unreachable on *m* of *n* replicas** while its circuit is open there; **Configured on *m* of *n* replicas** while a rollout runs old and new configurations side by side.

@@ -98,6 +98,6 @@ export function signingStateText(identity: SigningIdentity): string {
 /** Where an identity comes from (R-SIG-046, R-SIG-047). */
 export function signingSourceText(identity: Pick<SigningIdentity, 'source'>): string {
   return identity.source === 'configuration'
-    ? $localize`:@@signing.source.configuration:From the Helm values`
+    ? $localize`:@@signing.source.configuration:From the Helm configuration`
     : $localize`:@@signing.source.upload:Uploaded in the admin area`;
 }

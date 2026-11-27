@@ -40,7 +40,7 @@ describe('Admin area › Settings › Signatures (R-SIG-036)', () => {
     expect(rowOf(root, 'Public Sigstore').querySelector('quader-switch')).not.toBeNull();
     expect(rowOf(root, 'Public Sigstore').querySelector('td.actions button')).toBeNull();
     expect(rowOf(root, 'GitLab CI signing CA').querySelector('quader-switch')).toBeNull();
-    expect(text(rowOf(root, 'GitLab CI signing CA'))).toContain('From the Helm values');
+    expect(text(rowOf(root, 'GitLab CI signing CA'))).toContain('From the Helm configuration');
     expect(rowOf(root, 'Release key').querySelector('quader-switch')).not.toBeNull();
     expect(text(rowOf(root, 'Release key').querySelector('td.actions')!)).toContain('Remove');
     await expectAccessible(root);

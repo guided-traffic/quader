@@ -63,8 +63,8 @@
     <p class="banner-warning" role="note" data-testid="signing-off">
       <span class="material-icons inline warn" aria-hidden="true">info</span>
       <span i18n="@@signing.off"
-        >Signing is off in this installation: <code translate="no">signing.enabled</code> is false in the configuration. Quader signs
-        nothing, also with an identity. What it signed stays and is served.</span
+        >Signing is off in this installation: <code translate="no">config.signing.enabled</code> is false in the Helm configuration.
+        Quader signs nothing, also with an identity. What it signed stays and is served.</span
       >
     </p>
   }
@@ -72,7 +72,7 @@
     <p class="refused" data-testid="signing-refused">
       <span class="material-icons inline" aria-hidden="true">error</span>
       <span>
-        <strong i18n="@@signing.refused">The files of the Helm values were refused</strong>&ngsp;(<quader-time-ago [at]="r.at" absolute="title" />).&ngsp;<span class="reason">{{ refusalText(r.reason) }}</span>&ngsp;@if (ov.current) {
+        <strong i18n="@@signing.refused">The files of the Helm configuration were refused</strong>&ngsp;(<quader-time-ago [at]="r.at" absolute="title" />).&ngsp;<span class="reason">{{ refusalText(r.reason) }}</span>&ngsp;@if (ov.current) {
           <ng-container i18n="@@signing.refused-keeps">The identity in use keeps signing.</ng-container>
         } @else {
           <ng-container i18n="@@signing.refused-nothing">Quader signs nothing until a pair passes.</ng-container>
@@ -94,7 +94,7 @@
           &ngsp;<quader-time-ago [at]="cur.createdAt" absolute="title" />
         }
       } @else {
-        &ngsp;<span class="muted" i18n="@@signing.helm-note">Change it in the values; nothing here changes it.</span>
+        &ngsp;<span class="muted" i18n="@@signing.helm-note">Change it there; nothing here changes it.</span>
       }
     </p>
     <ng-container *ngTemplateOutlet="facts; context: { $implicit: cur }" />
@@ -117,8 +117,8 @@
     }
   } @else if (ov.managed) {
     <p data-testid="signing-managed">
-      <strong i18n="@@signing.source.configuration">From the Helm values</strong>:&ngsp;<ng-container i18n="@@signing.managed-none"
-        >the values name the signing identity, and Quader signs nothing until a pair of its files passes the checks.</ng-container
+      <strong i18n="@@signing.source.configuration">From the Helm configuration</strong>:&ngsp;<ng-container i18n="@@signing.managed-none"
+        >the Helm configuration names the signing identity, and Quader signs nothing until a pair of its files passes the checks.</ng-container
       >
     </p>
   } @else {
@@ -205,7 +205,7 @@
                 <span translate="no">{{ commonName(p.subject) }}</span>
                 <code class="secondary" translate="no" [attr.title]="p.fingerprint">{{ grouped(p.fingerprint).slice(0, 19) }} …</code>
                 @if (ov.managed && p.source === 'upload') {
-                  <span class="secondary unused" i18n="@@signing.unused">Not in use: the Helm values name the signing identity</span>
+                  <span class="secondary unused" i18n="@@signing.unused">Not in use: the Helm configuration names the signing identity</span>
                 }
               </span>
             </th>

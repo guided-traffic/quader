@@ -13426,10 +13426,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-824 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+825 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 824 questions</summary>
+<summary>Q-UI: 825 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -14257,6 +14257,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1617](spec/api-and-ui.md#q-ui-1617--every-mark-a-visitor-of-a-bastion-sees-is-the-bastions-tower) | Every mark a visitor of a Bastion sees is the Bastion's tower | Decided by the owner on 2026-11-27 | (a) The generator writes the tower as `BASTION_MARK` into `mark-geometry.ts` and the Bastion's favicon (SVG and ICO) into `web/src/bastion/public/`, which only the Bastion's build copies (its build skips the main installation's favicon); the top bar draws `<quader-mark [mark]="BASTION_MARK">` and the name "Quader Bastion" as text, "Bastion" in Regular after the bar's Bold; the Go refusal page keeps its coordinates and colours, and a unit test holds them equal to the generated favicon | [ADR-199](#adr-199--the-product-is-renamed-from-trove-to-quader-with-the-token-prefix-qdr_-and-a-new-mark) |
 | [Q-UI-1618](spec/api-and-ui.md#q-ui-1618--one-help-sign-for-settings-and-columns-an-info-sign-whose-tooltip-a-tap-pins) | One help sign for settings and columns: an info sign whose tooltip a tap pins | Decided by the development agent on 2026-11-27 | (a) `<quader-help>`: a button with the `info` icon and the tooltip's bubble, shown on hover and focus, pinned by a tap; the data table's column help uses it; "?" keeps meaning "open the manual" | — |
 | [Q-UI-1619](spec/api-and-ui.md#q-ui-1619--what-stays-visible-beside-a-setting) | What stays visible beside a setting | Decided by the development agent on 2026-11-27 | (a) Behind the sign: what the setting does. Visible, one line each: the input's format (needed while typing), what becomes public or leaves for the DMZ, a refusal, a warning, the next step of a new object | — |
+| [Q-UI-1625](spec/api-and-ui.md#q-ui-1625--helm-configuration-one-wording-the-key-as-its-path-in-the-charts-values) | "Helm configuration", one wording, the key as its path in the chart's values | Decided by the development agent on 2026-11-27 | (a) Every screen and server text that marks a fixed value says "Helm configuration" / "Helm-Konfiguration" and names the key as the chart's values have it (`config.server.base_url`, `endpoints.default.auth.anonymous`, `bastions.declared`); the "configuration file" variants go | — |
 
 </details>
 

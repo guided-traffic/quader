@@ -284,7 +284,7 @@ func (s *SettingsStore) validate(after Settings, p SettingsPatch) error {
 		case *c.v > config.MaxTokenLifetime:
 			return errs.E(errs.Invalid, errs.CodeExceedsCeiling, "A lifetime is at most "+config.MaxTokenLifetime.String()+" (100 years).")
 		case *c.v > c.ceiling:
-			return errs.E(errs.Invalid, errs.CodeExceedsCeiling, "The value exceeds the ceiling in the configuration ("+c.ceiling.String()+").")
+			return errs.E(errs.Invalid, errs.CodeExceedsCeiling, "The value exceeds the ceiling of the Helm configuration ("+c.ceiling.String()+").")
 		}
 	}
 	e := s.effective(after)

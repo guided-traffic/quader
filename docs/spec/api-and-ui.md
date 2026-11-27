@@ -9261,8 +9261,8 @@ Priority: **MVP** · Covers: quader-only
      and its vendor allows more requests with one (`accountRaisesLimit`), a muted line says "Docker Hub allows more requests with an
      account." ([Q-UI-1160](#q-ui-1160--a-limit-an-account-would-lift-offers-one-to-each-reader-where-that-reader-adds-it)). **An account the configuration declares** ([repositories-and-proxy.md](repositories-and-proxy.md)
      R-REPO-077, [Q-UI-1161](#q-ui-1161--an-account-the-configuration-declares-is-read-only-on-the-registrys-page-its-source-and-its-files-state-no-value)) is read-only: no field, no **Save account**, no **Remove account**; a lock line "From the Helm
-     values: Secret quader-upstream-docker-hub. Change or remove it there." ("From the installation's configuration file. …" without a
-     Secret's name), the facts **Authentication** (the mode in the words above), **Files** ("Readable on this server", "Missing …",
+     configuration: Secret quader-upstream-docker-hub. Change or remove it there." ("From the Helm configuration. Change or remove it
+     there." without a Secret's name, R-UI-268), the facts **Authentication** (the mode in the words above), **Files** ("Readable on this server", "Missing …",
      "Empty …", "Not usable …"), **Last download** and **Last failed download** where the item has them, the line of the credential's
      hosts and **Test connection** of the saved repository. Files that are not readable add a warning that says what fails until when
      ([Q-UI-1162](#q-ui-1162--the-files-state-is-a-word-among-the-facts-and-a-warning-that-says-what-fails-until-when)); the username read from a file and the values are never shown. An address whose save would move the hosts
@@ -11525,6 +11525,44 @@ Acceptance criteria (Vitest, [dashboard.spec.ts](../../web/src/app/features/syst
 check and shows the six tiles from the one overview and links the page; it reads the overview once and no list of connections, and words
 each state as the page does; the overall state warns for a degraded overview with an unreachable connection, is the error for an
 unreachable one, and says "Storage degraded" for a detached one.
+
+### R-UI-268 · A fixed value names the Helm configuration
+Priority: **P1** · Covers: quader-only
+
+The owner on 2026-11-27, on **Admin area › Bastions**: "Wenn ein Setting nicht bearbeitet werden kann, weil die Info aus dem Helm
+Install kommt und dort bearbeitet werden muss, dann schreibe auch Helm-Konfiguration und nicht nur Konfiguration. Sonst versteht man es
+nur mit Expertenwissen." The screens said the same thing five ways: "the installation's configuration", "the system configuration", "the
+configuration file", "the Helm values" (German "Helm-Values" and "Helm-Werte") and "Configuration" alone.
+
+- **One wording.** Every screen text and every server text a screen shows (a problem's `detail` under **Technical details**,
+  R-UI-214) that marks a value fixed by the chart, and changed only there, says **Helm configuration** (German **Helm-Konfiguration**):
+  "From the Helm configuration", "Managed in the Helm configuration", a source column's value **Helm configuration**
+  ([Q-UI-1625](#q-ui-1625--helm-configuration-one-wording-the-key-as-its-path-in-the-charts-values)). There is no second text for a
+  run without the chart.
+- **The key as its path in the chart's values.** A text that names the key names it as `values.yaml` of the chart `quader` has it:
+  `config.server.base_url`, `config.authz.role_bindings`, `config.ci.issuers`, `config.malware.enabled`, `config.malware.updater.url`,
+  `config.signatures.enabled`, `config.signing.enabled`, `config.storage.connections`, `config.backup.target.sse`,
+  `endpoints.default.auth.anonymous`, `endpoints`, `bastions.declared`, `secrets.upstreamAccounts`.
+- **What stays.** A text about a runtime setting (the read-only mode's "every change of the configuration"), an object's own settings (a
+  repository's configuration) or an image's configuration is not about the chart and keeps its words. Log lines are no screen text.
+- **The audit.** The texts of the sweep of 2026-11-27: the problems `managed_by_config`, `role_binding_managed_by_configuration`,
+  `exceeds_ceiling`, `public_not_allowed`, `issuer_managed_by_configuration`, `malware_not_enabled`, `anchor_managed`,
+  `signing_identity_managed`, the backup codes `config` and `encryption_mismatch`; the audit action `signing.identity.refused`; the CI
+  issuer's form, list and column help; the endpoint's section and the endpoint list's sentence; the system roles' source, action and
+  note; the authentication settings' notes and ceiling; the general settings' base URL source; the system status' base URL source; the
+  malware page's switch and updater notes and its repository error; the signature, signing and anchor scope texts; Public's reason; the
+  upstream registry's declared account and its held address; the download limit's offer of an account; the storage connections' caption
+  and fold; and the server texts of `internal/errs/codes.go`, `internal/auth/token`, `internal/bastionmain`, `internal/authz`,
+  `internal/ci`, `internal/api/v1` (malware, signatures), `internal/repository` (upstream accounts), `internal/signing/store` and
+  `internal/signatures/store`. The Bastion card's own texts follow in its rework (R-UI-240).
+
+*Built on 2026-11-27 (W-39 P3):* the texts above in both locales and the server; the manual's
+[configuration.md](../manual/admin/configuration.md) says what **Helm configuration** means on the screens.
+
+Acceptance criteria (Vitest, [server-texts.spec.ts](../../web/src/app/shared/server-texts.spec.ts), about 0.1 s): no unit of the
+translation file says "the configuration", "configuration file", "Helm values", "the installation's configuration" or "the system
+configuration" in English, or "Helm-Values", "Helm-Werte", "Konfigurationsdatei", "Konfiguration der Installation" or
+"Systemkonfiguration" in German, outside a short list of allowed units whose every entry must exist in the file.
 
 ## Deferred
 
@@ -27982,7 +28020,7 @@ download queue for hours. Q-UI-1104 had left the remedy unsaid because no preset
 
 | Who reads it | Sentence |
 |---|---|
-| A holder of `repositories:write-config`, a repository of the project `upstream` | "Docker Hub allows more requests with an account. This registry has none: add one on its page, or in the Helm values (secrets.upstreamAccounts)." and the link **Add an account** to the registry's page in the admin area |
+| A holder of `repositories:write-config`, a repository of the project `upstream` | "Docker Hub allows more requests with an account. This registry has none: add one on its page, or in the Helm configuration (secrets.upstreamAccounts)." and the link **Add an account** to the registry's page in the admin area |
 | The writer of a project's own remote (`repositories:write-config` or the project's Owner) | "Docker Hub allows more requests with an account. This repository has none: add one in the repository's settings under Upstream." |
 | Any other reader of a repository of the project `upstream` | "Docker Hub allows more requests with an account; an administrator of Quader can add one." |
 | Any other reader of a project's remote | "Docker Hub allows more requests with an account; an Owner of the project can add one." |
@@ -31878,6 +31916,27 @@ characters, the short digest twelve, and the item's path breaks anywhere.
 
 **Choice:** (a). The layout checks of the renders found "Found by" wrapping "Download · Nicht gefunden" at 9 rem while When, Connection
 and Bytes had room, so they gave it theirs. **Applied in the spec:** R-UI-265; the columns of [findings-list.ts](../../web/src/app/features/settings/storage/findings-list.ts).
+
+### Q-UI-1625 · "Helm configuration", one wording, the key as its path in the chart's values
+
+Status: **Decided by the development agent on 2026-11-27** (W-39, D9) — selected from the options below; the owner reviews it at the
+walkthrough. The owner asked for "Helm-Konfiguration" wherever a setting cannot be changed because it comes from the Helm install
+(R-UI-268); the screens said the installation's configuration, the system configuration, the configuration file and the Helm values for
+the same thing, and named keys as Quader's configuration file has them (`ci.issuers`), which an administrator does not find in the
+chart's `values.yaml` (`config.ci.issuers`).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Every screen and server text that marks a fixed value says "Helm configuration" / "Helm-Konfiguration" and names the key as the chart's values have it (`config.server.base_url`, `endpoints.default.auth.anonymous`, `bastions.declared`); the "configuration file" variants go (chosen) | One wording | The owner's words; the chart is the installation ([installation.md](../manual/admin/installation.md): "Quader installs with its Helm chart"); a key an administrator can find in `values.yaml` | A run of the binary with its own file (the development profile, the tests) reads "Helm configuration" too |
+| (b) The server says whether it runs from the chart and the screen chooses | Two wordings | Exact for every run | Two texts and two tests for every place, for a way nobody installs |
+| (c) "configuration (Helm)" | A suffix | Short | Not the owner's word; the key stays a file key |
+
+**Choice:** (a). The upstream registry's declared account without a Secret's name (a declaration of the file, outside the chart) keeps a
+line of its own, "From the Helm configuration. Change or remove it there.", since the other line names the Secret. The backup's code
+`config` covers a key of the run's settings and a target that does not hold what the run needs (a missing marker or backup), so its
+sentence says both. **Applied in the spec:** R-UI-268; R-SIG-046's and R-SIG-056's quoted words
+([signatures.md](signatures.md)), R-AUTHZ-038's table ([authorization.md](authorization.md)), R-UI-188's declared account and Q-UI-1160's
+sentences.
 
 ## What this does not cover
 

@@ -34,7 +34,7 @@
               <td translate="no" [attr.title]="b.grantedBy || null">{{ b.grantedBy ? person(b.grantedBy) : '' }}</td>
               <td>
                 @if (fromConfiguration(b)) {
-                  <span i18n="@@roles.source-configuration">Configuration</span>
+                  <span i18n="@@roles.source-configuration">Helm configuration</span>
                 } @else {
                   <span i18n="@@roles.source-api">API</span>
                 }
@@ -42,7 +42,7 @@
               @if (canWrite()) {
                 <td class="actions">
                   @if (fromConfiguration(b)) {
-                    <span class="muted" i18n="@@roles.managed-by-configuration">Managed in the configuration</span>
+                    <span class="muted" i18n="@@roles.managed-by-configuration">Managed in the Helm configuration</span>
                   } @else {
                     <button class="btn btn-tertiary"
                       type="button"
@@ -64,8 +64,8 @@
         }
         @if (hasConfigured(r.name)) {
           <p class="muted" i18n="@@roles.configuration-hint">
-            Bindings with the source Configuration are declared in authz.role_bindings of the system configuration and applied when
-            Quader is installed or upgraded. Change or remove them there, not here.
+            Bindings from the Helm configuration are declared in <code translate="no">config.authz.role_bindings</code> and applied at every
+            install and upgrade; change or remove them there.
           </p>
         }
       }

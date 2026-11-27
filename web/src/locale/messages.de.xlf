@@ -710,8 +710,8 @@
         <note category="location">src/app/core/http/problem-messages-access.ts:32</note>
       </notes>
       <segment>
-        <source>This object is managed by the installation&apos;s configuration and cannot be changed here.</source>
-        <target>Dieses Objekt wird über die Konfiguration der Installation verwaltet und kann hier nicht geändert werden.</target>
+        <source>This object is set in the Helm configuration and can only be changed there.</source>
+        <target>Dieses Objekt ist in der Helm-Konfiguration festgelegt und kann nur dort geändert werden.</target>
       </segment>
     </unit>
     <unit id="problem.last_admin">
@@ -746,8 +746,8 @@
         <note category="location">src/app/core/http/problem-messages-access.ts:40</note>
       </notes>
       <segment>
-        <source>This role binding is declared in the system configuration and can only be removed there.</source>
-        <target>Diese Rollenzuweisung ist in der Systemkonfiguration festgelegt und kann nur dort entfernt werden.</target>
+        <source>This role binding is declared in config.authz.role_bindings of the Helm configuration and can only be removed there.</source>
+        <target>Diese Rollenzuweisung ist in config.authz.role_bindings der Helm-Konfiguration festgelegt und kann nur dort entfernt werden.</target>
       </segment>
     </unit>
     <unit id="problem.role_not_allowed">
@@ -809,8 +809,8 @@
         <note category="location">src/app/core/http/problem-messages-access.ts:54</note>
       </notes>
       <segment>
-        <source>The value is above the ceiling set in the installation&apos;s configuration.</source>
-        <target>Der Wert liegt über der Obergrenze aus der Konfiguration der Installation.</target>
+        <source>The value is above the ceiling set in the Helm configuration.</source>
+        <target>Der Wert liegt über der Obergrenze aus der Helm-Konfiguration.</target>
       </segment>
     </unit>
     <unit id="problem.non_expiring_not_allowed">
@@ -1007,8 +1007,8 @@
         <note category="location">src/app/core/http/problem-messages-access.ts:98</note>
       </notes>
       <segment>
-        <source>The installation&apos;s configuration admits no request without a credential, so nothing can be public.</source>
-        <target>Die Konfiguration der Installation lässt keine Anfrage ohne Zugangsdaten zu, daher kann nichts öffentlich sein.</target>
+        <source>The Helm configuration admits no request without a credential (endpoints.default.auth.anonymous), so nothing can be public.</source>
+        <target>Die Helm-Konfiguration lässt keine Anfrage ohne Zugangsdaten zu (endpoints.default.auth.anonymous), daher kann nichts öffentlich sein.</target>
       </segment>
     </unit>
     <unit id="problem.visibility_level_restricted">
@@ -1178,8 +1178,8 @@
         <note category="location">src/app/core/http/problem-messages-backup.ts:22</note>
       </notes>
       <segment>
-        <source>The backup configuration is not valid.</source>
-        <target>Die Backup-Konfiguration ist nicht gültig.</target>
+        <source>A setting of the run in the Helm configuration is not valid, or the target does not hold what the run needs.</source>
+        <target>Eine Einstellung des Laufs in der Helm-Konfiguration ist nicht gültig, oder das Ziel enthält nicht, was der Lauf braucht.</target>
       </segment>
     </unit>
     <unit id="problem.backup.busy">
@@ -1349,8 +1349,8 @@
         <note category="location">src/app/core/http/problem-messages-backup.ts:60</note>
       </notes>
       <segment>
-        <source>The encryption of the target does not match the configuration.</source>
-        <target>Die Verschlüsselung des Ziels passt nicht zur Konfiguration.</target>
+        <source>The encryption of the target does not match config.backup.target.sse of the Helm configuration.</source>
+        <target>Die Verschlüsselung des Ziels passt nicht zu config.backup.target.sse der Helm-Konfiguration.</target>
       </segment>
     </unit>
     <unit id="problem.backup.database-in-recovery">
@@ -1475,8 +1475,8 @@
         <note category="location">src/app/core/http/problem-messages-ci.ts:26</note>
       </notes>
       <segment>
-        <source>This issuer is declared in the installation&apos;s configuration and can only be changed there.</source>
-        <target>Dieser Aussteller ist in der Konfiguration der Installation deklariert und kann nur dort geändert werden.</target>
+        <source>This issuer is declared in config.ci.issuers of the Helm configuration and can only be changed there.</source>
+        <target>Dieser Aussteller ist in config.ci.issuers der Helm-Konfiguration deklariert und kann nur dort geändert werden.</target>
       </segment>
     </unit>
     <unit id="problem.ci.job-token-fallback-not-available">
@@ -2026,8 +2026,8 @@
         <note category="location">src/app/core/http/problem-messages-malware.ts:20</note>
       </notes>
       <segment>
-        <source>The malware scan is off in this installation&apos;s configuration, so there is nothing to scan again.</source>
-        <target>Die Malware-Prüfung ist in der Konfiguration dieser Installation ausgeschaltet, es gibt also nichts erneut zu prüfen.</target>
+        <source>The malware scan is off in the Helm configuration (config.malware.enabled), so there is nothing to scan again.</source>
+        <target>Die Malware-Prüfung ist in der Helm-Konfiguration ausgeschaltet (config.malware.enabled), es gibt also nichts erneut zu prüfen.</target>
       </segment>
     </unit>
     <unit id="problem.secret_material">
@@ -2053,8 +2053,8 @@
         <note category="location">src/app/core/http/problem-messages-signatures.ts:13</note>
       </notes>
       <segment>
-        <source>This trust anchor is shipped with Quader or declared in the Helm values; it cannot be changed here.</source>
-        <target>Dieser Vertrauensanker wird mit Quader ausgeliefert oder in den Helm-Values deklariert; er kann hier nicht geändert werden.</target>
+        <source>This trust anchor is shipped with Quader or declared in the Helm configuration; it cannot be changed here.</source>
+        <target>Dieser Vertrauensanker wird mit Quader ausgeliefert oder in der Helm-Konfiguration deklariert; er kann hier nicht geändert werden.</target>
       </segment>
     </unit>
     <unit id="problem.project_anchors_disabled">
@@ -2116,8 +2116,8 @@
         <note category="location">src/app/core/http/problem-messages-signatures.ts:29</note>
       </notes>
       <segment>
-        <source>The Helm values name the signing identity. Change it in the values; uploads and key requests are refused while they name one.</source>
-        <target>Die Helm-Werte legen die Signaturidentität fest. Ändern Sie sie in den Werten; solange sie eine festlegen, werden Uploads und Schlüssel&#xAD;anforderungen abgelehnt.</target>
+        <source>The Helm configuration names the signing identity. Change it there; uploads and key requests are refused while it names one.</source>
+        <target>Die Helm-Konfiguration legt die Signaturidentität fest. Ändern Sie sie dort; solange sie eine festlegt, werden Uploads und Schlüssel&#xAD;anforderungen abgelehnt.</target>
       </segment>
     </unit>
     <unit id="problem.signing_identity_pending">
@@ -4954,8 +4954,8 @@
         <note category="location">src/app/features/audit/audit-labels.ts:377</note>
       </notes>
       <segment>
-        <source>Signing identity of the Helm values refused</source>
-        <target>Signaturidentität aus den Helm-Werten abgelehnt</target>
+        <source>Signing identity of the Helm configuration refused</source>
+        <target>Signaturidentität aus der Helm-Konfiguration abgelehnt</target>
       </segment>
     </unit>
     <unit id="audit.action.signing.identity.removed">
@@ -10519,8 +10519,8 @@
         <note category="location">src/app/features/ci/issuer-form.ts:63,65</note>
       </notes>
       <segment>
-        <source> This issuer is declared in the installation&apos;s configuration (<pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">ci.issuers</pc> of the Helm values). Its settings are read-only here; change them there. Its mappings are managed here as for any issuer. </source>
-        <target> Dieser Aussteller ist in der Konfiguration der Installation deklariert (<pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">ci.issuers</pc> der Helm-Werte). Seine Einstellungen sind hier schreibgeschützt; ändern Sie sie dort. Seine Zuordnungen werden hier wie bei jedem Aussteller verwaltet.</target>
+        <source> From the Helm configuration (<pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">config.ci.issuers</pc>): its settings are changed there. Its mappings are managed here. </source>
+        <target> Aus der Helm-Konfiguration (<pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">config.ci.issuers</pc>): Seine Einstellungen werden dort geändert. Seine Zuordnungen werden hier verwaltet. </target>
       </segment>
     </unit>
     <unit id="ci.form.removed">
@@ -10528,8 +10528,8 @@
         <note category="location">src/app/features/ci/issuer-form.ts:70,72</note>
       </notes>
       <segment>
-        <source> The issuer is no longer declared in the configuration. It is disabled and kept, so its mappings and issued tokens stay; you can delete it now. </source>
-        <target> Der Aussteller ist in der Konfiguration nicht mehr deklariert. Er ist deaktiviert und bleibt erhalten, damit seine Zuordnungen und ausgestellten Token bestehen; Sie können ihn jetzt löschen.</target>
+        <source> The issuer is no longer in the Helm configuration. It is disabled and kept, so its mappings and issued tokens stay; you can delete it now. </source>
+        <target> Der Aussteller steht nicht mehr in der Helm-Konfiguration. Er ist deaktiviert und bleibt erhalten, damit seine Zuordnungen und ausgestellten Token bestehen; Sie können ihn jetzt löschen. </target>
       </segment>
     </unit>
     <unit id="ci.form.kind">
@@ -11071,8 +11071,8 @@
         <note category="location">src/app/features/ci/issuer-list.ts:83,84</note>
       </notes>
       <segment>
-        <source>Configuration</source>
-        <target>Konfiguration</target>
+        <source>Helm configuration</source>
+        <target>Helm-Konfiguration</target>
       </segment>
     </unit>
     <unit id="ci.source.api">
@@ -11161,8 +11161,8 @@
         <note category="location">src/app/features/ci/issuer-list.ts:123</note>
       </notes>
       <segment>
-        <source>An issuer declared in the installation&apos;s configuration is read-only here.</source>
-        <target>Ein in der Konfiguration der Installation deklarierter Aussteller ist hier schreibgeschützt.</target>
+        <source>An issuer of the Helm configuration is changed there, not here.</source>
+        <target>Ein Aussteller der Helm-Konfiguration wird dort geändert, nicht hier.</target>
       </segment>
     </unit>
     <unit id="ci.editor.heading-new">
@@ -12371,8 +12371,8 @@
         <note category="location">src/app/features/endpoints/endpoint-detail.html:46,47</note>
       </notes>
       <segment>
-        <source>Configuration</source>
-        <target>Konfiguration</target>
+        <source>Helm configuration</source>
+        <target>Helm-Konfiguration</target>
       </segment>
     </unit>
     <unit id="ep.config.hint">
@@ -12380,8 +12380,8 @@
         <note category="location">src/app/features/endpoints/endpoint-detail.html:48,50</note>
       </notes>
       <segment>
-        <source>Read-only: this comes from the configuration file.</source>
-        <target>Nur lesbar: Das kommt aus der Konfigurationsdatei.</target>
+        <source>Read-only: from endpoints of the Helm configuration.</source>
+        <target>Nur lesbar: aus endpoints der Helm-Konfiguration.</target>
       </segment>
     </unit>
     <unit id="ep.col.hosts">
@@ -12812,8 +12812,8 @@
         <note category="location">src/app/features/endpoints/endpoint-list.ts:96</note>
       </notes>
       <segment>
-        <source>Endpoints come from the configuration file. Exposure rules decide what an endpoint in mode &quot;rules&quot; makes retrievable.</source>
-        <target>Endpunkte kommen aus der Konfigurationsdatei. Freigaberegeln bestimmen, was ein Endpunkt im Modus „rules“ abrufbar macht.</target>
+        <source>Endpoints come from the Helm configuration. Exposure rules decide what an endpoint in mode &quot;rules&quot; makes retrievable.</source>
+        <target>Endpunkte kommen aus der Helm-Konfiguration. Freigaberegeln bestimmen, was ein Endpunkt im Modus „rules“ abrufbar macht.</target>
       </segment>
     </unit>
     <unit id="ep.col.name">
@@ -35664,8 +35664,8 @@
         <note category="location">src/app/features/roles/role-bindings.html:37,39</note>
       </notes>
       <segment>
-        <source>Configuration</source>
-        <target>Konfiguration</target>
+        <source>Helm configuration</source>
+        <target>Helm-Konfiguration</target>
       </segment>
     </unit>
     <unit id="roles.source-api">
@@ -35682,8 +35682,8 @@
         <note category="location">src/app/features/roles/role-bindings.html:45,47</note>
       </notes>
       <segment>
-        <source>Managed in the configuration</source>
-        <target>In der Konfiguration verwaltet</target>
+        <source>Managed in the Helm configuration</source>
+        <target>In der Helm-Konfiguration verwaltet</target>
       </segment>
     </unit>
     <unit id="roles.unbind-button">
@@ -35706,11 +35706,11 @@
     </unit>
     <unit id="roles.configuration-hint">
       <notes>
-        <note category="location">src/app/features/roles/role-bindings.html:67,70</note>
+        <note category="location">src/app/features/roles/role-bindings.html:67,69</note>
       </notes>
       <segment>
-        <source> Bindings with the source Configuration are declared in authz.role_bindings of the system configuration and applied when Quader is installed or upgraded. Change or remove them there, not here. </source>
-        <target> Zuweisungen mit der Quelle Konfiguration sind in authz.role_bindings der Systemkonfiguration festgelegt und werden bei der Installation oder Aktualisierung von Quader angewendet. Ändern oder entfernen Sie sie dort, nicht hier. </target>
+        <source> Bindings from the Helm configuration are declared in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">config.authz.role_bindings</pc> and applied at every install and upgrade; change or remove them there. </source>
+        <target> Zuweisungen aus der Helm-Konfiguration sind in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">config.authz.role_bindings</pc> festgelegt und werden bei jeder Installation und Aktualisierung angewendet; ändern oder entfernen Sie sie dort. </target>
       </segment>
     </unit>
     <unit id="roles.bind-principal">
@@ -37626,8 +37626,8 @@
         <note category="location">src/app/features/settings/auth-settings.html:36,39</note>
       </notes>
       <segment>
-        <source>Values are in days (fractions allowed, at least 60 seconds). The ceiling comes from the installation&apos;s configuration and cannot be exceeded here.</source>
-        <target>Die Werte sind in Tagen angegeben (Bruchteile erlaubt, mindestens 60 Sekunden). Die Obergrenze stammt aus der Konfiguration der Installation und kann hier nicht überschritten werden.</target>
+        <source>Values are in days (fractions allowed, at least 60 seconds). The ceiling comes from the Helm configuration and cannot be exceeded here.</source>
+        <target>Die Werte sind in Tagen angegeben (Bruchteile erlaubt, mindestens 60 Sekunden). Die Obergrenze stammt aus der Helm-Konfiguration und kann hier nicht überschritten werden.</target>
       </segment>
     </unit>
     <unit id="auth-settings.pat">
@@ -37732,8 +37732,8 @@
         <note category="location">src/app/features/settings/auth-settings.html:113,115</note>
       </notes>
       <segment>
-        <source>Read only: these values come from the installation&apos;s configuration.</source>
-        <target>Nur lesen: Diese Werte stammen aus der Konfiguration der Installation.</target>
+        <source>Read only: these values come from the Helm configuration.</source>
+        <target>Nur lesen: Diese Werte stammen aus der Helm-Konfiguration.</target>
       </segment>
     </unit>
     <unit id="auth-settings.providers">
@@ -37912,8 +37912,8 @@
         <note category="location">src/app/features/settings/auth-settings.ts:193</note>
       </notes>
       <segment>
-        <source>Ceiling from the configuration: <ph id="0" equiv="duration" disp="this.duration(seconds)"/></source>
-        <target>Obergrenze aus der Konfiguration: <ph id="0" equiv="duration" disp="this.duration(seconds)"/></target>
+        <source>Ceiling from the Helm configuration: <ph id="0" equiv="duration" disp="this.duration(seconds)"/></source>
+        <target>Obergrenze aus der Helm-Konfiguration: <ph id="0" equiv="duration" disp="this.duration(seconds)"/></target>
       </segment>
     </unit>
     <unit id="auth-settings.saved">
@@ -38402,8 +38402,8 @@
         <note category="location">src/app/features/settings/general-settings.ts:222</note>
       </notes>
       <segment>
-        <source>Set in the configuration file (server.base_url).</source>
-        <target>In der Konfigurationsdatei gesetzt (server.base_url).</target>
+        <source>Set in the Helm configuration (config.server.base_url).</source>
+        <target>In der Helm-Konfiguration gesetzt (config.server.base_url).</target>
       </segment>
     </unit>
     <unit id="general.base-url.request">
@@ -38411,8 +38411,8 @@
         <note category="location">src/app/features/settings/general-settings.ts:223</note>
       </notes>
       <segment>
-        <source>Derived from the request, because server.base_url is not set. This is for development only.</source>
-        <target>Aus der Anfrage abgeleitet, weil server.base_url nicht gesetzt ist. Das ist nur für die Entwicklung gedacht.</target>
+        <source>Derived from the request, because config.server.base_url is not set. This is for development only.</source>
+        <target>Aus der Anfrage abgeleitet, weil config.server.base_url nicht gesetzt ist. Das ist nur für die Entwicklung gedacht.</target>
       </segment>
     </unit>
     <unit id="general.banner.message-hint">
@@ -39083,8 +39083,8 @@
         <note category="location">src/app/features/settings/malware-settings.html:15,17</note>
       </notes>
       <segment>
-        <source>The malware scan is off in this installation: <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">malware.enabled</pc> is false in the configuration. Nothing is scanned, and no download is refused for malware.</source>
-        <target>Die Malware-Prüfung ist in dieser Installation ausgeschaltet: <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">malware.enabled</pc> ist in der Konfiguration false. Nichts wird geprüft, und kein Download wird wegen Malware abgelehnt.</target>
+        <source>The malware scan is off in this installation: <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">config.malware.enabled</pc> is false in the Helm configuration. Nothing is scanned, and no download is refused for malware.</source>
+        <target>Die Malware-Prüfung ist in dieser Installation ausgeschaltet: <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">config.malware.enabled</pc> ist in der Helm-Konfiguration false. Nichts wird geprüft, und kein Download wird wegen Malware abgelehnt.</target>
       </segment>
     </unit>
     <unit id="malware.settings.downloads">
@@ -39348,8 +39348,8 @@
         <note category="location">src/app/features/settings/malware-settings.html:187,189</note>
       </notes>
       <segment>
-        <source> No updater is configured (<pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">malware.updater.url</pc> is empty), so no database arrives until one is. The database task waits for it and records no failure. </source>
-        <target> Es ist kein Updater konfiguriert (<pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">malware.updater.url</pc> ist leer), daher kommt keine Datenbank, bis einer konfiguriert ist. Die Datenbank-Aufgabe wartet darauf und verzeichnet keinen Fehler. </target>
+        <source> No updater is set in the Helm configuration (<pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">config.malware.updater.url</pc> is empty), so no database arrives until one is. The database task waits for it and records no failure. </source>
+        <target> Kein Updater ist in der Helm-Konfiguration gesetzt (<pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">config.malware.updater.url</pc> ist leer), daher kommt keine Datenbank an, bis einer gesetzt ist. Die Datenbank-Aufgabe wartet darauf und verzeichnet keinen Fehler. </target>
       </segment>
     </unit>
     <unit id="malware.db.offline">
@@ -39393,8 +39393,8 @@
         <note category="location">src/app/features/settings/malware-settings.ts:44</note>
       </notes>
       <segment>
-        <source>The repository the configuration names cannot hold the database.</source>
-        <target>Das Repository, das die Konfiguration nennt, kann die Datenbank nicht aufnehmen.</target>
+        <source>The repository the Helm configuration names cannot hold the database.</source>
+        <target>Das Repository, das die Helm-Konfiguration nennt, kann die Datenbank nicht aufnehmen.</target>
       </segment>
     </unit>
     <unit id="malware.db.error.store">
@@ -39564,8 +39564,8 @@
         <note category="location">src/app/features/settings/signature-settings.html:16,18</note>
       </notes>
       <segment>
-        <source>Signatures are off in this installation: <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">signatures.enabled</pc> is false in the configuration. Nothing is checked, and no badge is shown. The stored signatures and anchors stay.</source>
-        <target>Signaturen sind in dieser Installation ausgeschaltet: <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">signatures.enabled</pc> ist in der Konfiguration false. Nichts wird geprüft, und kein Abzeichen wird gezeigt. Die gespeicherten Signaturen und Anker bleiben.</target>
+        <source>Signatures are off in this installation: <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">config.signatures.enabled</pc> is false in the Helm configuration. Nothing is checked, and no badge is shown. The stored signatures and anchors stay.</source>
+        <target>Signaturen sind in dieser Installation ausgeschaltet: <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">config.signatures.enabled</pc> ist in der Helm-Konfiguration false. Nichts wird geprüft, und kein Abzeichen wird gezeigt. Die gespeicherten Signaturen und Anker bleiben.</target>
       </segment>
     </unit>
     <unit id="signing.heading">
@@ -40437,8 +40437,8 @@
         <note category="location">src/app/features/settings/signing-identity.html:66,68</note>
       </notes>
       <segment>
-        <source>Signing is off in this installation: <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">signing.enabled</pc> is false in the configuration. Quader signs nothing, also with an identity. What it signed stays and is served.</source>
-        <target>Signieren ist in dieser Installation aus: <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">signing.enabled</pc> ist in der Konfiguration false. Quader signiert nichts, auch nicht mit einer Identität. Was es signiert hat, bleibt und wird ausgeliefert.</target>
+        <source>Signing is off in this installation: <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">config.signing.enabled</pc> is false in the Helm configuration. Quader signs nothing, also with an identity. What it signed stays and is served.</source>
+        <target>Signieren ist in dieser Installation aus: <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">config.signing.enabled</pc> ist in der Helm-Konfiguration false. Quader signiert nichts, auch nicht mit einer Identität. Was es signiert hat, bleibt und wird ausgeliefert.</target>
       </segment>
     </unit>
     <unit id="signing.refused">
@@ -40446,8 +40446,8 @@
         <note category="location">src/app/features/settings/signing-identity.html:75</note>
       </notes>
       <segment>
-        <source>The files of the Helm values were refused</source>
-        <target>Die Dateien der Helm-Werte wurden abgelehnt</target>
+        <source>The files of the Helm configuration were refused</source>
+        <target>Die Dateien der Helm-Konfiguration wurden abgelehnt</target>
       </segment>
     </unit>
     <unit id="signing.refused-keeps">
@@ -40483,8 +40483,8 @@
         <note category="location">src/app/features/settings/signing-identity.html:97,100</note>
       </notes>
       <segment>
-        <source>Change it in the values; nothing here changes it.</source>
-        <target>Ändern Sie sie in den Werten; hier ändert nichts sie.</target>
+        <source>Change it there; nothing here changes it.</source>
+        <target>Ändern Sie sie dort; hier ändert nichts sie.</target>
       </segment>
     </unit>
     <unit id="signing.download-chain">
@@ -40548,8 +40548,8 @@
         <note category="location">src/app/shared/signatures/signing-words.ts:101</note>
       </notes>
       <segment>
-        <source>From the Helm values</source>
-        <target>Aus den Helm-Werten</target>
+        <source>From the Helm configuration</source>
+        <target>Aus der Helm-Konfiguration</target>
       </segment>
     </unit>
     <unit id="signing.managed-none">
@@ -40557,8 +40557,8 @@
         <note category="location">src/app/features/settings/signing-identity.html:121,124</note>
       </notes>
       <segment>
-        <source>the values name the signing identity, and Quader signs nothing until a pair of its files passes the checks.</source>
-        <target>Die Werte legen die Signaturidentität fest, und Quader signiert nichts, bis ein Paar ihrer Dateien die Prüfungen besteht.</target>
+        <source>the Helm configuration names the signing identity, and Quader signs nothing until a pair of its files passes the checks.</source>
+        <target>Die Helm-Konfiguration legt die Signaturidentität fest, und Quader signiert nichts, bis ein Paar ihrer Dateien die Prüfungen besteht.</target>
       </segment>
     </unit>
     <unit id="signing.none">
@@ -40692,8 +40692,8 @@
         <note category="location">src/app/features/settings/signing-identity.html:208,210</note>
       </notes>
       <segment>
-        <source>Not in use: the Helm values name the signing identity</source>
-        <target>Nicht in Gebrauch: Die Helm-Werte legen die Signaturidentität fest</target>
+        <source>Not in use: the Helm configuration names the signing identity</source>
+        <target>Nicht in Gebrauch: Die Helm-Konfiguration legt die Signaturidentität fest</target>
       </segment>
     </unit>
     <unit id="signing.retire">
@@ -41617,8 +41617,8 @@
         <note category="location">src/app/features/settings/storage/connections-section.html:195,196</note>
       </notes>
       <segment>
-        <source>Number <ph id="0" equiv="INTERPOLATION" disp="{{ c.position }}"/> in <pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">storage.connections</pc></source>
-        <target>Nummer <ph id="0" equiv="INTERPOLATION" disp="{{ c.position }}"/> in <pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">storage.connections</pc></target>
+        <source>Number <ph id="0" equiv="INTERPOLATION" disp="{{ c.position }}"/> in <pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">config.storage.connections</pc></source>
+        <target>Nummer <ph id="0" equiv="INTERPOLATION" disp="{{ c.position }}"/> in <pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">config.storage.connections</pc></target>
       </segment>
     </unit>
     <unit id="storage.fold.not-configured">
@@ -41626,8 +41626,8 @@
         <note category="location">src/app/features/settings/storage/connections-section.html:197,199</note>
       </notes>
       <segment>
-        <source>Not in the configuration of the replica that answered</source>
-        <target>Nicht in der Konfiguration des antwortenden Replikats</target>
+        <source>Not in the Helm configuration of the replica that answered</source>
+        <target>Nicht in der Helm-Konfiguration des antwortenden Replikats</target>
       </segment>
     </unit>
     <unit id="storage.fold.region">
@@ -41896,8 +41896,8 @@
         <note category="location">src/app/features/settings/storage/connections-section.ts:50</note>
       </notes>
       <segment>
-        <source>Object-store connections in the order of the configuration</source>
-        <target>Objektspeicher-Verbindungen in der Reihenfolge der Konfiguration</target>
+        <source>Object-store connections in the order of the Helm configuration</source>
+        <target>Objektspeicher-Verbindungen in der Reihenfolge der Helm-Konfiguration</target>
       </segment>
     </unit>
     <unit id="storage.connections.empty">
@@ -48743,8 +48743,8 @@
         <note category="location">src/app/features/system/system-status.html:85,87</note>
       </notes>
       <segment>
-        <source>Configuration</source>
-        <target>Konfiguration</target>
+        <source>Helm configuration</source>
+        <target>Helm-Konfiguration</target>
       </segment>
     </unit>
     <unit id="system.install.source.request">
@@ -51183,17 +51183,17 @@
         <note category="location">src/app/features/upstream/upstream-registry.html:378,379</note>
       </notes>
       <segment>
-        <source>From the Helm values: Secret <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span class=&quot;with-stop&quot;&gt;" dispEnd="&lt;/span&gt;"><pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code class=&quot;secret-name&quot; translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="2" equiv="INTERPOLATION" disp="{{ secret }}"/></pc>.</pc> Change or remove it there.</source>
-        <target>Aus den Helm-Values: Secret <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span class=&quot;with-stop&quot;&gt;" dispEnd="&lt;/span&gt;"><pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code class=&quot;secret-name&quot; translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="2" equiv="INTERPOLATION" disp="{{ secret }}"/></pc>.</pc> Ändern oder entfernen Sie es dort.</target>
+        <source>From the Helm configuration: Secret <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span class=&quot;with-stop&quot;&gt;" dispEnd="&lt;/span&gt;"><pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code class=&quot;secret-name&quot; translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="2" equiv="INTERPOLATION" disp="{{ secret }}"/></pc>.</pc> Change or remove it there.</source>
+        <target>Aus der Helm-Konfiguration: Secret <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span class=&quot;with-stop&quot;&gt;" dispEnd="&lt;/span&gt;"><pc id="1" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code class=&quot;secret-name&quot; translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="2" equiv="INTERPOLATION" disp="{{ secret }}"/></pc>.</pc> Ändern oder entfernen Sie es dort.</target>
       </segment>
     </unit>
-    <unit id="wellknown.account.configured-file">
+    <unit id="wellknown.account.configured">
       <notes>
         <note category="location">src/app/features/upstream/upstream-registry.html:380,383</note>
       </notes>
       <segment>
-        <source>From the installation&apos;s configuration file. Change or remove it there.</source>
-        <target>Aus der Konfigurationsdatei der Installation. Ändern oder entfernen Sie es dort.</target>
+        <source>From the Helm configuration. Change or remove it there.</source>
+        <target>Aus der Helm-Konfiguration. Ändern oder entfernen Sie es dort.</target>
       </segment>
     </unit>
     <unit id="wellknown.account.files">
@@ -51418,8 +51418,8 @@
         <note category="location">src/app/features/upstream/upstream-registry.ts:517</note>
       </notes>
       <segment>
-        <source>The account of this registry comes from the installation&apos;s configuration, so an address that sends it to other hosts is changed there too.</source>
-        <target>Das Konto dieser Registry kommt aus der Konfiguration der Installation, daher wird eine Adresse, die es an andere Hosts sendet, ebenfalls dort geändert.</target>
+        <source>The account of this registry comes from the Helm configuration, so an address that sends it to other hosts is changed there too.</source>
+        <target>Das Konto dieser Registry kommt aus der Helm-Konfiguration, daher wird eine Adresse, die es an andere Hosts sendet, ebenfalls dort geändert.</target>
       </segment>
     </unit>
     <unit id="wellknown.address.saved">
@@ -61793,8 +61793,8 @@
         <note category="location">src/app/shared/ui/visibility-level.ts:34</note>
       </notes>
       <segment>
-        <source>The installation&apos;s configuration admits no request without a credential (endpoints.default.auth.anonymous).</source>
-        <target>Die Konfiguration der Installation lässt keine Anfrage ohne Zugangsdaten zu (endpoints.default.auth.anonymous).</target>
+        <source>The Helm configuration admits no request without a credential (endpoints.default.auth.anonymous).</source>
+        <target>Die Helm-Konfiguration lässt keine Anfrage ohne Zugangsdaten zu (endpoints.default.auth.anonymous).</target>
       </segment>
     </unit>
     <unit id="visibility.restricted">
@@ -62171,8 +62171,8 @@
         <note category="location">src/app/shared/upstream-downloads/limit-words.ts:90</note>
       </notes>
       <segment>
-        <source><ph id="0" equiv="upstream" disp="upstream"/> allows more requests with an account. This registry has none: add one on its page, or in the Helm values (secrets.upstreamAccounts).</source>
-        <target><ph id="0" equiv="upstream" disp="upstream"/> erlaubt mit einem Konto mehr Anfragen. Diese Registry hat keines: Fügen Sie eines auf ihrer Seite oder in den Helm-Values hinzu (secrets.upstreamAccounts).</target>
+        <source><ph id="0" equiv="upstream" disp="upstream"/> allows more requests with an account. This registry has none: add one on its page, or in the Helm configuration (secrets.upstreamAccounts).</source>
+        <target><ph id="0" equiv="upstream" disp="upstream"/> erlaubt mit einem Konto mehr Anfragen. Diese Registry hat keines: Fügen Sie eines auf ihrer Seite oder in der Helm-Konfiguration hinzu (secrets.upstreamAccounts).</target>
       </segment>
     </unit>
     <unit id="downloads.limit.account-writer">
@@ -69729,8 +69729,8 @@
         <note category="location">src/app/views/signatures/signature-words.ts:403</note>
       </notes>
       <segment>
-        <source>From the Helm values</source>
-        <target>Aus den Helm-Values</target>
+        <source>From the Helm configuration</source>
+        <target>Aus der Helm-Konfiguration</target>
       </segment>
     </unit>
     <unit id="sig.scope.installation">

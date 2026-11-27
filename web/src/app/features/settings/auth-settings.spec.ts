@@ -19,7 +19,7 @@ describe('Authentication settings (R-UI-031)', () => {
     const t = text(root);
     expect(t).toContain('New users are external');
     expect(t).not.toContain('without a credential');
-    expect(t).toContain('Ceiling from the configuration: 365 days');
+    expect(t).toContain('Ceiling from the Helm configuration: 365 days');
     expect(t).toContain('Corporate SSO');
     expect(t).toContain('discovery document loaded');
     expect(t).toContain('Idle timeout');

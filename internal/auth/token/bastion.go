@@ -116,7 +116,7 @@ func (s *Service) RevokeBastionToken(ctx context.Context, c principal.Caller, ba
 		if rows[0].Declared {
 			// The token the configuration declares ends with a change of its Secret, or of the declaration (R-BAS-127).
 			return errs.E(errs.Conflict, errs.CodeManagedByConfig,
-				"The token is declared in the installation's configuration (bastions.declared); put another value in its Secret, or remove the declaration, and roll out.")
+				"The token is declared in bastions.declared of the Helm configuration; put another value in its Secret, or remove the declaration, and roll out.")
 		}
 		_, err = s.revokeTree(ctx, tx, qs, c, id, ReasonAdmin, false)
 		return err

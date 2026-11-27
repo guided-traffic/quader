@@ -13,6 +13,8 @@ Quader reads one YAML file, `quader.yaml`, and then the environment. Every key h
 | Environment variables | override the file | `QUADER_<KEY PATH>`, see below |
 | Command-line flags | highest | `--role` sets `process.role`, `--log-level` sets `log.level` |
 
+On the screens, **Helm configuration** means the values of the chart `quader`; a key under `config` is a key of Quader's configuration file.
+
 With the Helm chart, the `config` value is rendered into the ConfigMap `<fullname>-config` and mounted at `/etc/quader/quader.yaml` in every pod and in the migration Job. Environment overrides go into `extraEnv` (or `web.extraEnv`, `worker.extraEnv`, `migrations.extraEnv`). The chart manages some keys itself and fails the render when you set them inside `config`: the file paths of every mounted Secret, `storage.spool.dir`, the encryption key list, `server.tls` and `server.ops_tls` while `tls.enabled` is on (from the `tls` values) and `server.endpoints` (from the `endpoints` values). It also sets a few variables from the pod, such as the memory limit (`QUADER_RUNTIME_MEMORY_LIMIT_BYTES`) and the termination grace period.
 
 Some settings are not configuration at all but data in PostgreSQL, changed through the UI or the management API: repositories, users, groups, service accounts, tokens, permission policies and role bindings, the exposure rules of endpoints, and the runtime authentication settings described [below](configuration.md#settings-in-the-ui-versus-the-configuration-file).

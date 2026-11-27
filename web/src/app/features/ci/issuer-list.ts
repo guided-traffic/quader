@@ -80,7 +80,7 @@ import { PageHeader } from '../../shared/ui/page-header';
           </td>
           <td>
             @if (i.source === 'configuration') {
-              <span class="badge"><span class="material-icons" aria-hidden="true">lock</span><ng-container i18n="@@ci.source.configuration">Configuration</ng-container></span>
+              <span class="badge"><span class="material-icons" aria-hidden="true">lock</span><ng-container i18n="@@ci.source.configuration">Helm configuration</ng-container></span>
             } @else {
               <span class="badge"><ng-container i18n="@@ci.source.api">API</ng-container></span>
             }
@@ -120,7 +120,7 @@ export class IssuerList {
     { id: 'audiences', label: $localize`:@@ci.issuers.col.audiences:Audiences` },
     { id: 'mappings', label: $localize`:@@ci.issuers.col.mappings:Mappings`, numeric: true },
     { id: 'keys', label: $localize`:@@ci.issuers.col.keys:Signing keys` },
-    { id: 'source', label: $localize`:@@ci.issuers.col.source:Source`, help: $localize`:@@ci.issuers.col.source-help:An issuer declared in the installation's configuration is read-only here.` },
+    { id: 'source', label: $localize`:@@ci.issuers.col.source:Source`, help: $localize`:@@ci.issuers.col.source-help:An issuer of the Helm configuration is changed there, not here.` },
   ];
 
   constructor() {

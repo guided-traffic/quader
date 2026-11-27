@@ -47,7 +47,7 @@ export class ConnectionsSection {
 
   protected readonly yes = $localize`:@@storage.yes:Yes`;
   protected readonly no = $localize`:@@storage.no:No`;
-  protected readonly caption = $localize`:@@storage.connections.caption:Object-store connections in the order of the configuration`;
+  protected readonly caption = $localize`:@@storage.connections.caption:Object-store connections in the order of the Helm configuration`;
   protected readonly noConnection = $localize`:@@storage.connections.empty:No replica has recorded a connection yet.`;
   protected readonly columns = computed<readonly TableColumn[]>(() => [
     { id: 'connection', label: $localize`:@@storage.col.connection:Connection`, width: '12rem', prefer: true },

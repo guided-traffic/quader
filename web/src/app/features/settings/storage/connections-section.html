@@ -192,9 +192,9 @@
                   <dt i18n="@@storage.fold.position">Order</dt>
                   <dd>
                     @if (c.position !== null) {
-                      <ng-container i18n="@@storage.fold.position-value">Number {{ c.position }} in <code translate="no">storage.connections</code></ng-container>
+                      <ng-container i18n="@@storage.fold.position-value">Number {{ c.position }} in <code translate="no">config.storage.connections</code></ng-container>
                     } @else {
-                      <ng-container i18n="@@storage.fold.not-configured">Not in the configuration of the replica that answered</ng-container>
+                      <ng-container i18n="@@storage.fold.not-configured">Not in the Helm configuration of the replica that answered</ng-container>
                     }
                   </dd>
                   @if (c.settings; as s) {

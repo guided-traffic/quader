@@ -1950,8 +1950,8 @@ The owner's reading r8: through Helm, a Secret that cert-manager may issue; Helm
 - **The key stays in the worker's memory**, in a type that renders nothing (`observability.Secret`), and in the file; it is written
   nowhere else.
 - **Helm wins.** While `signing.identity.cert_file` is set, the identity of the files is the installation's: the admin page shows it with
-  "From the Helm values" and no controls, an upload or a key request answers `409 signing_identity_managed`, and an uploaded identity that
-  is stored stays unused and marked "Not in use: the Helm values name the signing identity". When the values stop naming one, the identity
+  "From the Helm configuration" and no controls, an upload or a key request answers `409 signing_identity_managed`, and an uploaded
+  identity that is stored stays unused and marked "Not in use: the Helm configuration names the signing identity" (R-UI-268). When the values stop naming one, the identity
   of the files becomes `previous`, and a stored uploaded identity that passes R-SIG-045 is announced; without one Quader signs nothing from
   then on.
 - `api` and `packages` read the public part from the database (the keys endpoint, the chain, the trusted root) and never the files.
@@ -2519,7 +2519,7 @@ Simple by default ([CLAUDE.md](../../CLAUDE.md#product-simple-by-default-details
     address behind **More options**); then the request with **Copy** and **Download**, the sentence "Have your company's CA issue a
     code-signing certificate for this request, then upload it with its chain.", and **Upload certificate**. **Import key and certificate**
     behind the section's **More options**.
-  - **From the Helm values:** "From the Helm values" and the facts, no controls; a refused pair of the files as a line in red with its
+  - **From the Helm configuration:** "From the Helm configuration" and the facts, no controls; a refused pair of the files as a line in red with its
     reason.
   - **Uploaded:** the facts, **Replace** (a new key request; the current identity signs until the new one is current) and **Remove**.
   - **The facts:** subject, issuer, alternative names, valid from and until ("expires in 12 days" amber from 14 days, "expired" red), the

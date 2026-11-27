@@ -493,7 +493,7 @@ describe('The tab Downloads of a remote repository', () => {
     };
     const admin = (await offer('upstream/docker-hub', ['repositories:read-config', 'repositories:write-config']))!;
     expect(text(admin)).toBe(
-      'Docker Hub allows more requests with an account. This registry has none: add one on its page, or in the Helm values (secrets.upstreamAccounts). Add an account',
+      'Docker Hub allows more requests with an account. This registry has none: add one on its page, or in the Helm configuration (secrets.upstreamAccounts). Add an account',
     );
     expect(admin.querySelector('a')!.getAttribute('href')).toBe('/admin/upstream/docker-hub');
     expect(text((await offer('upstream/docker-hub', []))!)).toBe('Docker Hub allows more requests with an account; an administrator of Quader can add one.');

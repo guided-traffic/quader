@@ -244,9 +244,9 @@ type accountChange struct {
 // configuredRefusal is the 409 managed_by_config of a write of the account, or of an address that moves the hosts receiving it, while
 // the configuration declares the account (R-REPO-077, Q-REPO-486).
 func configuredRefusal(key string, a ConfiguredAccount) error {
-	where := "repositories.upstream_accounts." + key + " of the installation's configuration"
+	where := "secrets.upstreamAccounts." + key + " of the Helm configuration"
 	if a.SecretName != "" {
-		where = "the Helm values (secrets.upstreamAccounts." + key + ", Secret " + a.SecretName + ")"
+		where += ", Secret " + a.SecretName
 	}
 	return errs.E(errs.Conflict, errs.CodeManagedByConfig,
 		"The account of upstream/"+key+" comes from "+where+": change or remove it there. An address that moves the hosts receiving it is refused for the same reason.")

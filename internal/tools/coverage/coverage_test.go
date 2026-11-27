@@ -210,10 +210,11 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 		// 1406 since the Bastion shows the malware state of a public artifact (R-MAL-042, R-UI-258, two P1 requirements of W-36,
 		// P8).
 		// 1407 since the scan controller and the coverage stand on their pages (R-UI-257, one P1 requirement of W-36, P6).
-		// 1409 since the image scanning has its page in the admin area (R-VULN-053, W-38) and the help of a setting or a column
-		// stands behind one info sign (R-UI-267, W-39 P1): two P1 requirements.
-		if len(m.Reqs) != 1409 || count[prioMVP] != 743 || count[prioP1] != 627 || count[prioP2] != 39 {
-			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1409 (743, 627, 39)",
+		// 1410 since the image scanning has its page in the admin area (R-VULN-053, W-38), the help of a setting or a column
+		// stands behind one info sign (R-UI-267, W-39 P1) and a fixed value names the Helm configuration (R-UI-268, W-39 P3):
+		// three P1 requirements.
+		if len(m.Reqs) != 1410 || count[prioMVP] != 743 || count[prioP1] != 628 || count[prioP2] != 39 {
+			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1410 (743, 628, 39)",
 				len(m.Reqs), count[prioMVP], count[prioP1], count[prioP2])
 		}
 	})

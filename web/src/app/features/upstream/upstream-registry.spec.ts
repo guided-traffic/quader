@@ -300,7 +300,7 @@ describe('An account the configuration declares on a well-known repository (R-UI
       setup: (a) => a.set('docker-hub', { account: configuredAccount('readable'), accountRaisesLimit: false }),
     });
     const s = section(root);
-    expect(text(s.querySelector('.source-note > span:last-child')!)).toBe('From the Helm values: Secret quader-upstream-docker-hub. Change or remove it there.');
+    expect(text(s.querySelector('.source-note > span:last-child')!)).toBe('From the Helm configuration: Secret quader-upstream-docker-hub. Change or remove it there.');
     expect(text(s.querySelector('.account-facts')!)).toContain('Username and password');
     expect(text(s.querySelector('.account-facts')!)).toContain('Readable on this server');
     expect(text(s)).toContain('The credential is sent to');
@@ -367,7 +367,7 @@ describe('An account the configuration declares on a well-known repository (R-UI
           accountRaisesLimit: false,
         }),
     });
-    expect(text(section(plain.root).querySelector('.source-note > span:last-child')!)).toBe("From the installation's configuration file. Change or remove it there.");
+    expect(text(section(plain.root).querySelector('.source-note > span:last-child')!)).toBe('From the Helm configuration. Change or remove it there.');
     expect(text(section(plain.root).querySelector('.banner-warning > span:last-child')!)).toContain('A file of the account is empty on this server');
   });
 
@@ -383,7 +383,7 @@ describe('An account the configuration declares on a well-known repository (R-UI
     expect(document.querySelector('quader-account-again-dialog')).toBeNull();
     const held = [...root.querySelectorAll<HTMLElement>('.banner-warning > span:last-child')].map((b) => text(b));
     expect(held).toContain(
-      "The account of this registry comes from the installation's configuration, so an address that sends it to other hosts is changed there too.",
+      'The account of this registry comes from the Helm configuration, so an address that sends it to other hosts is changed there too.',
     );
   });
 

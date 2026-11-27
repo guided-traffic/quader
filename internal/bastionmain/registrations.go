@@ -416,7 +416,7 @@ func refuseDeclared(declared bool, cur Registration, p Patch, egress []netip.Pre
 // managedByConfig is the 409 of a change the configuration decides (R-BAS-127).
 func managedByConfig(what string) error {
 	return errs.E(errs.Conflict, errs.CodeManagedByConfig,
-		what+" is declared in the installation's configuration (bastions.declared); change it there and roll out.")
+		what+" is declared in bastions.declared of the Helm configuration; change it there and roll out.")
 }
 
 // notFound is the 404 of a registration that does not exist.
@@ -827,7 +827,7 @@ func (r *Registrations) Delete(ctx context.Context, c principal.Caller, name str
 		}
 		if rows[0].Declared {
 			return errs.E(errs.Conflict, errs.CodeManagedByConfig,
-				name+" is declared in the installation's configuration (bastions.declared), which would create it again; remove the declaration and roll out first.")
+				name+" is declared in bastions.declared of the Helm configuration, which would create it again; remove the declaration and roll out first.")
 		}
 		id := rows[0].ID
 		revoked, err := r.o.Tokens.RevokeAllOfBastionTx(ctx, tx, c, id, token.ReasonAdmin)

@@ -93,7 +93,7 @@ export class EndpointList {
 
   protected readonly sort = signal<TableSort>({ column: 'name', direction: 'asc' });
   protected readonly caption = $localize`:@@ep.list.caption:Endpoints`;
-  protected readonly hint = $localize`:@@ep.list.hint:Endpoints come from the configuration file. Exposure rules decide what an endpoint in mode "rules" makes retrievable.`;
+  protected readonly hint = $localize`:@@ep.list.hint:Endpoints come from the Helm configuration. Exposure rules decide what an endpoint in mode "rules" makes retrievable.`;
   protected readonly columns: readonly TableColumn[] = [
     { id: 'name', label: $localize`:@@ep.col.name:Name`, sortable: true },
     { id: 'baseUrl', label: $localize`:@@ep.col.base-url:Base URL` },

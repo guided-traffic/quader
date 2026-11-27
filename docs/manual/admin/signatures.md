@@ -16,8 +16,8 @@ The first section shows the identity Quader signs with: one per installation, an
 company's CA. Without one Quader signs nothing: packages of local npm repositories carry no registry signature and no artifact gets a
 receipt attestation, and the section says so.
 
-**From the Helm values** (`signing.identity.existingSecret`, or `signing.identity.certManager` for a certificate cert-manager issues): the
-section shows the identity's facts and no control; change it in the values ([Monitoring and operations](operations.md#quaders-signing-identity)).
+**From the Helm configuration** (`signing.identity.existingSecret`, or `signing.identity.certManager` for a certificate cert-manager
+issues): the section shows the identity's facts and no control; change it there ([Monitoring and operations](operations.md#quaders-signing-identity)).
 While the values name an identity, nothing here can replace it. When a worker refuses the files (an RSA key, a certificate without the
 use `codeSigning`, a chain without its root, less than a day left), a red line says why, with the check it failed; the identity in use
 keeps signing.
@@ -71,7 +71,7 @@ what identifies its material and, on a line under it, its kind and where it come
 | From | What you can do |
 |---|---|
 | **Shipped with Quader**: the public Sigstore root (`sigstore-public`), npm's registry keys (`npmjs`), the Debian and Ubuntu archive keys, nuget.org's repository certificates and their timestamping roots | Switch it off and on. It stays listed |
-| **From the Helm values**: `signatures.anchors` of the chart | Nothing here: change the values. They are listed read-only |
+| **From the Helm configuration**: `signatures.anchors` of the chart | Nothing here: change the Helm configuration. They are listed read-only |
 | **Added by an administrator** | Switch it off and on, and **Remove** it |
 
 An anchor change reads no artifact again: the trust of the signatures it concerns is recomputed in the background, and the badges follow

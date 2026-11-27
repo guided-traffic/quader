@@ -87,12 +87,12 @@ describe('System roles (R-UI-024)', () => {
     const rows = Array.from(admin.querySelectorAll('tbody tr')) as HTMLElement[];
     const declared = rows.find((r) => text(r).includes('group gh-wds18-k8s-main-admins'))!;
     const made = rows.find((r) => text(r).includes('group platform'))!;
-    expect(text(declared)).toContain('Configuration');
-    expect(text(declared)).toContain('Managed in the configuration');
+    expect(text(declared)).toContain('Helm configuration');
+    expect(text(declared)).toContain('Managed in the Helm configuration');
     expect(declared.querySelector('button')).toBeNull();
     expect(text(made)).toContain('API');
     expect(made.querySelector('button')).not.toBeNull();
-    expect(text(admin)).toContain('declared in authz.role_bindings of the system configuration');
+    expect(text(admin)).toContain('Bindings from the Helm configuration are declared in config.authz.role_bindings');
     // Two holders of admin: the binding made through the API may go, the configuration's stays.
     expect((made.querySelector('button') as HTMLButtonElement).disabled).toBe(false);
     expect(admin.querySelector('#last-admin-guard')).toBeNull();
@@ -112,7 +112,7 @@ describe('System roles (R-UI-024)', () => {
     await settle(fixture);
     buttonByText(overlay().querySelector('quader-confirm-dialog') as HTMLElement, 'Unbind').click();
     await sleep(fixture, 300);
-    expect(text(root)).toContain('This role binding is declared in the system configuration and can only be removed there.');
+    expect(text(root)).toContain('This role binding is declared in config.authz.role_bindings of the Helm configuration and can only be removed there.');
   });
 
   it('R-UI-005 without roles:write there is no bind or unbind', async () => {

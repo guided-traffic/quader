@@ -515,7 +515,7 @@ once per page load and after each write, and decides every state from that answe
 | `current` null, `managed` false, no `pending` | the sentence that Quader signs nothing; for `security-settings:write` **Create signing key**, and **Import key and certificate** behind **More options** |
 | `pending` set | its subject, when and by whom the key was made, the request in a file window with **Copy** and **Download** (`quader-signing.csr`), the sentence about the company's CA, **Upload certificate** and **Discard** |
 | `current` of the source `upload` | "Uploaded in the admin area" with who and when, the facts, **Download chain**, **Download trusted root**, **Replace** (not while a key is pending or announced) and **Remove**; **Import** behind **More options** (Q-SIG-172) |
-| `current` of the source `configuration`, or `managed` | "From the Helm values" and the facts, no control; a `refused` pair as a red line with its check in plain words (Q-SIG-173) |
+| `current` of the source `configuration`, or `managed` | "From the Helm configuration" and the facts, no control; a `refused` pair as a red line with its check in plain words (Q-SIG-173) |
 | `announced` set | its facts under **Announced**, with the time of its switch |
 | `previous` not empty | **Previous identities**, closed, with **Retire** and the question of R-SIG-056; a stored upload under the Helm values reads "Not in use" |
 | `enabled` false | a note that `signing.enabled` is false |

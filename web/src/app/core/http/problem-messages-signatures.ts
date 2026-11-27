@@ -10,7 +10,7 @@ export function describeSignatureProblem(code: string | null): string | null {
     case 'anchor_exists':
       return $localize`:@@problem.anchor_exists:A trust anchor with this key exists already. Choose another key.`;
     case 'anchor_managed':
-      return $localize`:@@problem.anchor_managed:This trust anchor is shipped with Quader or declared in the Helm values; it cannot be changed here.`;
+      return $localize`:@@problem.anchor_managed:This trust anchor is shipped with Quader or declared in the Helm configuration; it cannot be changed here.`;
     case 'project_anchors_disabled':
       return $localize`:@@problem.project_anchors_disabled:An administrator has switched project trust anchors off, so a project's anchors cannot be changed now.`;
     case 'block_exists':
@@ -26,7 +26,7 @@ export function describeSignatureProblem(code: string | null): string | null {
       return $localize`:@@problem.signatures_not_enabled:Signature checks are switched off in this installation, so no repository refuses anything for its signatures.`;
     // The signing identity (R-SIG-055, Q-SIG-146): each refusal says what to do instead.
     case 'signing_identity_managed':
-      return $localize`:@@problem.signing_identity_managed:The Helm values name the signing identity. Change it in the values; uploads and key requests are refused while they name one.`;
+      return $localize`:@@problem.signing_identity_managed:The Helm configuration names the signing identity. Change it there; uploads and key requests are refused while it names one.`;
     case 'signing_identity_pending':
       return $localize`:@@problem.signing_identity_pending:A signing key is waiting for its certificate. Upload the certificate the CA issued for it, or discard it first.`;
     case 'signing_key_mismatch':

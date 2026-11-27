@@ -50,7 +50,7 @@ describe('Endpoint screen', () => {
   it('R-EP-017 R-UI-066 shows the configuration read-only and the rule list with enable switch, repository, a copy button for the client address and a menu', async () => {
     const { root } = await renderScreen(EndpointDetail, { inputs: { endpoint: 'customers' } });
     const t = text(root);
-    expect(t).toContain('this comes from the configuration file');
+    expect(t).toContain('Read-only: from endpoints of the Helm configuration.');
     expect(t).toContain('releases');
     expect(root.querySelector('input[role="switch"]')).toBeTruthy();
     // An address this endpoint does not serve is a warning glyph named by its sentence; a served one a copy button (Q-UI-331).

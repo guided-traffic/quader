@@ -219,8 +219,8 @@ export class GeneralSettings {
     const info = this.info();
     if (!info) return '';
     return info.baseUrlSource === 'config'
-      ? $localize`:@@general.base-url.config:Set in the configuration file (server.base_url).`
-      : $localize`:@@general.base-url.request:Derived from the request, because server.base_url is not set. This is for development only.`;
+      ? $localize`:@@general.base-url.config:Set in the Helm configuration (config.server.base_url).`
+      : $localize`:@@general.base-url.request:Derived from the request, because config.server.base_url is not set. This is for development only.`;
   });
 
   protected readonly messageHint = $localize`:@@general.banner.message-hint:Plain text. A link is written [text](https://example.com). Other links stay text. At most ${MESSAGE_MAX}:max: characters.`;

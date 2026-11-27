@@ -87,7 +87,7 @@ export type AccountOfferReader = 'upstream-admin' | 'remote-writer' | 'upstream-
 export function accountOfferText(upstream: string, reader: AccountOfferReader): string {
   switch (reader) {
     case 'upstream-admin':
-      return $localize`:@@downloads.limit.account-admin:${upstream}:upstream: allows more requests with an account. This registry has none: add one on its page, or in the Helm values (secrets.upstreamAccounts).`;
+      return $localize`:@@downloads.limit.account-admin:${upstream}:upstream: allows more requests with an account. This registry has none: add one on its page, or in the Helm configuration (secrets.upstreamAccounts).`;
     case 'remote-writer':
       return $localize`:@@downloads.limit.account-writer:${upstream}:upstream: allows more requests with an account. This repository has none: add one in the repository's settings under Upstream.`;
     case 'upstream-reader':

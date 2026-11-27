@@ -31,7 +31,7 @@ export function levelName(level: VisibilityLevel): string {
 /** The reason Public is off while the installation admits no request without a credential (R-UI-053). */
 export function publicUnavailableReason(): Partial<Record<VisibilityLevel, string>> {
   return {
-    public: $localize`:@@visibility.public-unavailable:The installation's configuration admits no request without a credential (endpoints.default.auth.anonymous).`,
+    public: $localize`:@@visibility.public-unavailable:The Helm configuration admits no request without a credential (endpoints.default.auth.anonymous).`,
   };
 }
 

@@ -15,8 +15,8 @@ rendered from it ([checklist.md there](https://github.com/guided-traffic/quader/
 requirement lists the feature in its `Covers:` line. *open*: no requirement does. For entries with priority
 *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,409 spec requirements:
-812 cover catalog features, 597 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,410 spec requirements:
+812 cover catalog features, 598 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>597 requirements</summary>
+<summary>598 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3129,6 +3129,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-UI-264 | The section Encryption | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-265 | The sections Integrity and Problems | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-266 | The dashboard's card Storage is the page's summary | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-UI-268 | A fixed value names the Helm configuration | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-220 | The page of a name: a namespace, a scope or a path prefix, in every format that has one | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-ARCH-037 | The scan listener of `packages` | P1 | [architecture.md](../spec/architecture.md) |
 | R-ARCH-003 | Go module and package layout | MVP | [architecture.md](../spec/architecture.md) |

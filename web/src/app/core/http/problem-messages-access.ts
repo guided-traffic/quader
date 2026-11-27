@@ -29,7 +29,7 @@ export function describeAccessProblem(code: string | null): string | null {
     case 'managed_by_scim':
       return $localize`:@@problem.managed_by_scim:This object is managed by SCIM and cannot be changed here.`;
     case 'managed_by_config':
-      return $localize`:@@problem.managed_by_config:This object is managed by the installation's configuration and cannot be changed here.`;
+      return $localize`:@@problem.managed_by_config:This object is set in the Helm configuration and can only be changed there.`;
     case 'last_admin':
       return $localize`:@@problem.last_admin:The last administrator binding cannot be removed.`;
     case 'auto_join_admin_conflict':
@@ -37,7 +37,7 @@ export function describeAccessProblem(code: string | null): string | null {
     case 'auto_join_member_conflict':
       return $localize`:@@problem.auto_join_member_conflict:A group that is a member of a project cannot be an auto-join group. Remove it from the projects first.`;
     case 'role_binding_managed_by_configuration':
-      return $localize`:@@problem.role_binding_managed_by_configuration:This role binding is declared in the system configuration and can only be removed there.`;
+      return $localize`:@@problem.role_binding_managed_by_configuration:This role binding is declared in config.authz.role_bindings of the Helm configuration and can only be removed there.`;
     case 'role_not_allowed':
       return $localize`:@@problem.role_not_allowed:This role cannot be bound to this kind of principal.`;
     case 'unknown_role':
@@ -51,7 +51,7 @@ export function describeAccessProblem(code: string | null): string | null {
     case 'default_above_maximum':
       return $localize`:@@problem.default_above_maximum:The default lifetime cannot be longer than the maximum.`;
     case 'exceeds_ceiling':
-      return $localize`:@@problem.exceeds_ceiling:The value is above the ceiling set in the installation's configuration.`;
+      return $localize`:@@problem.exceeds_ceiling:The value is above the ceiling set in the Helm configuration.`;
     case 'non_expiring_not_allowed':
       return $localize`:@@problem.non_expiring_not_allowed:A token without an expiry is not allowed here.`;
     case 'non_expiring_restricted':
@@ -95,7 +95,7 @@ export function describeAccessProblem(code: string | null): string | null {
     case 'project_not_empty':
       return $localize`:@@problem.project_not_empty:The project still has repositories or service accounts. Move or delete the repositories and delete the service accounts first.`;
     case 'public_not_allowed':
-      return $localize`:@@problem.public_not_allowed:The installation's configuration admits no request without a credential, so nothing can be public.`;
+      return $localize`:@@problem.public_not_allowed:The Helm configuration admits no request without a credential (endpoints.default.auth.anonymous), so nothing can be public.`;
     case 'visibility_level_restricted':
       return $localize`:@@problem.visibility_level_restricted:Only an administrator of Quader can choose this visibility level. A level that is already set may be kept or lowered.`;
     case 'default_level_restricted':

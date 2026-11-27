@@ -25,6 +25,12 @@ function germanTranslations(): Record<string, string> {
   return Object.fromEntries([...german.matchAll(unit)].map((m) => [m[1]!, xml(m[2]!)]));
 }
 
+/** Every unit of the translation file: its id, its English source and its German target, as they stand in the file. */
+function germanUnits(): { id: string; source: string; target: string }[] {
+  const unit = /<unit id="([^"]+)">[\s\S]*?<source>([\s\S]*?)<\/source>\s*<target>([\s\S]*?)<\/target>/g;
+  return [...german.matchAll(unit)].map((m) => ({ id: m[1]!, source: m[2]!, target: m[3]! }));
+}
+
 /** What the screens say of every code the server sends, as one list of [code, sentence]. */
 function sentences(): [string, string][] {
   const out: [string, string][] = [];
@@ -156,6 +162,31 @@ describe('A server text in the screen\'s language (R-UI-214)', () => {
     } finally {
       clearTranslations();
     }
+  });
+
+  it('R-UI-268 no screen text says the configuration without Helm', () => {
+    // A text that marks a value of the chart says "Helm configuration" ("Helm-Konfiguration"), never the configuration, its file or
+    // the Helm values. Allowed: a screen's text about a runtime setting or an object's own settings, and the Bastion card's words
+    // until its own change rewords them (W-39 P2); an allowed unit that leaves the file leaves this list too.
+    const allowed = new Set([
+      'general.mode.confirm-1', // every change of the runtime configuration
+      'pkg.config.held', // an image's configuration
+      'pkg.config.hidden',
+      'pkg.config.not-read',
+      'pkg.config.too-large',
+      'pkg.config.invalid',
+      'bastion.declared-helm',
+      'bastion.declared-file',
+      'bastion.token.declared',
+    ]);
+    const english = /\bthe configuration\b|configuration file|Helm values|installation's configuration|system configuration/i;
+    const inGerman = /Helm-Values|Helm-Werte|Konfigurationsdatei|Konfiguration der Installation|Systemkonfiguration/;
+    const plain = (s: string): string => s.replace(/<[^>]*>/g, ' ').replace(/&apos;/g, "'");
+    const units = germanUnits();
+    const found = units.filter((u) => !allowed.has(u.id) && (english.test(plain(u.source)) || inGerman.test(plain(u.target)))).map((u) => u.id);
+    expect(found).toEqual([]);
+    const ids = new Set(units.map((u) => u.id));
+    expect([...allowed].filter((id) => !ids.has(id))).toEqual([]);
   });
 
   it('R-UI-214 technical details are folded, English, not translated, and show the text as it came with its code', async () => {

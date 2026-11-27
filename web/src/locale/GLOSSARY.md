@@ -48,8 +48,8 @@ unless the line is too short, and then breaks at the joint with a hyphen; withou
 | download address | Download-Adresse |
 | principal | Prinzipal |
 | role binding | Rollenzuweisung |
-| system configuration (the installation's configuration file) | Systemkonfiguration |
-| source (of a role binding: API, configuration) | Quelle (API, Konfiguration) |
+| Helm configuration (the values of the chart `quader`, wherever a screen marks a value fixed there; never "configuration" alone, "the Helm values" or "the configuration file", R-UI-268) | Helm-Konfiguration (never "Helm-Values", "Helm-Werte" or "Konfigurationsdatei") |
+| source (of a role binding: API, Helm configuration) | Quelle (API, Helm-Konfiguration) |
 | identity provider | Identitätsanbieter |
 | break-glass account | Break-Glass-Konto |
 | ceiling (configuration limit) | Obergrenze |

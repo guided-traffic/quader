@@ -243,8 +243,8 @@ func refuseManaged(l locked, managed bool) error {
 		}
 	}
 	if managed {
-		return errs.E(errs.Conflict, CodeManaged, "The Helm values name the signing identity (signing.identity.existingSecret or signing.identity.certManager); "+
-			"it changes with the values, and uploads are refused while they name one.")
+		return errs.E(errs.Conflict, CodeManaged, "The Helm configuration names the signing identity (signing.identity.existingSecret or signing.identity.certManager); "+
+			"it changes there, and uploads are refused while it names one.")
 	}
 	return nil
 }
@@ -455,7 +455,7 @@ func (s *Store) Remove(ctx context.Context, actor audit.Actor, managed bool) err
 			return errs.E(errs.NotFound, errs.CodeNotFound, "No signing identity is current.")
 		}
 		if cur.Source == signing.SourceConfiguration || managed {
-			return errs.E(errs.Conflict, CodeManaged, "The signing identity comes from the Helm values: take it out of the values to remove it.")
+			return errs.E(errs.Conflict, CodeManaged, "The signing identity comes from the Helm configuration: take it out there to remove it.")
 		}
 		if _, err := qs.SigningMakePrevious(ctx, cur.ID); err != nil {
 			return err

@@ -19,7 +19,7 @@ export function describeBackupProblem(code: string | null): string | null {
     case 'lease_expired':
       return $localize`:@@problem.backup.lease-expired:The run stopped without finishing, and a later run marked it abandoned.`;
     case 'config':
-      return $localize`:@@problem.backup.config:The backup configuration is not valid.`;
+      return $localize`:@@problem.backup.config:A setting of the run in the Helm configuration is not valid, or the target does not hold what the run needs.`;
     case 'busy':
       return $localize`:@@problem.backup.busy:Another backup run was writing to the target.`;
     case 'foreign_target':
@@ -57,7 +57,7 @@ export function describeBackupProblem(code: string | null): string | null {
     case 'target_same_bucket':
       return $localize`:@@problem.backup.target-same-bucket:The backup target is the bucket that holds the blobs. Use a separate bucket.`;
     case 'encryption_mismatch':
-      return $localize`:@@problem.backup.encryption-mismatch:The encryption of the target does not match the configuration.`;
+      return $localize`:@@problem.backup.encryption-mismatch:The encryption of the target does not match config.backup.target.sse of the Helm configuration.`;
     case 'database_in_recovery':
       return $localize`:@@problem.backup.database-in-recovery:The database is a standby in recovery and cannot be exported.`;
     case 'migration_wait':

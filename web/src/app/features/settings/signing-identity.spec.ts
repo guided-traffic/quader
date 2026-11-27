@@ -130,7 +130,7 @@ describe('Signing identity (R-SIG-056)', () => {
     expect(labels(root)).toEqual(['Download chain', 'Download trusted root', 'Previous identities 2']);
   });
 
-  it('R-SIG-046 from the Helm values: the facts and no control; a refused pair as a red line with its check in plain words', async () => {
+  it('R-SIG-046 from the Helm configuration: the facts and no control; a refused pair as a red line with its check in plain words', async () => {
     const { root } = await render(WRITER, (api) => {
       api.current = signingOverview({
         state: 'configuration',
@@ -143,7 +143,7 @@ describe('Signing identity (R-SIG-056)', () => {
         },
       });
     });
-    expect(text(root.querySelector('[data-testid="signing-source"]')!)).toContain('From the Helm values');
+    expect(text(root.querySelector('[data-testid="signing-source"]')!)).toContain('From the Helm configuration');
     expect(labels(root)).toEqual(['Download chain', 'Download trusted root']);
     const refused = text(root.querySelector('[data-testid="signing-refused"]')!);
     expect(refused).toContain('The certificate is not for code signing: ask the CA for the extended key usage codeSigning.');

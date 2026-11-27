@@ -374,7 +374,7 @@ export function auditActionLabel(action: string): string {
     case 'signing.identity.key_created':
       return $localize`:@@audit.action.signing.identity.key_created:Signing key created`;
     case 'signing.identity.refused':
-      return $localize`:@@audit.action.signing.identity.refused:Signing identity of the Helm values refused`;
+      return $localize`:@@audit.action.signing.identity.refused:Signing identity of the Helm configuration refused`;
     case 'signing.identity.removed':
       return $localize`:@@audit.action.signing.identity.removed:Signing identity removed`;
     case 'signing.identity.retired':

@@ -190,7 +190,7 @@ export class AuthSettings {
 
   /** "Configured value: 90 days": the YAML value the runtime value is bound by (R-AUTH-040). */
   protected ceilingHint(seconds: number): string {
-    return $localize`:@@auth-settings.ceiling:Ceiling from the configuration: ${this.duration(seconds)}:duration:`;
+    return $localize`:@@auth-settings.ceiling:Ceiling from the Helm configuration: ${this.duration(seconds)}:duration:`;
   }
 
   protected fieldError(pointer: string): string | null {

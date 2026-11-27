@@ -226,7 +226,7 @@ func notUnbound(ctx context.Context, qs *q.Queries, role Role, id, ref string) e
 	}
 	if len(src) == 1 && src[0] == SourceConfiguration {
 		return errs.E(errs.Conflict, errs.CodeRoleBindingManagedByConfiguration,
-			fmt.Sprintf("The binding of %s to %s is declared in authz.role_bindings of the system configuration; remove it there.", role, ref))
+			fmt.Sprintf("The binding of %s to %s is declared in config.authz.role_bindings of the Helm configuration; remove it there.", role, ref))
 	}
 	return errs.E(errs.NotFound, errs.CodeNotFound, fmt.Sprintf("The role %s is not bound to %s.", role, ref))
 }

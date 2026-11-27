@@ -40,7 +40,7 @@ describe('General settings (R-UI-033)', () => {
     const baseUrl = root.querySelector<HTMLInputElement>('input[name="baseUrl"]')!;
     expect(baseUrl.value).toBe((await api.info()).baseUrl);
     expect(baseUrl.readOnly).toBe(true);
-    expect(text(root.querySelector('[data-testid="base-url-source"]')!)).toContain('configuration file');
+    expect(text(root.querySelector('[data-testid="base-url-source"]')!)).toContain('Set in the Helm configuration (config.server.base_url).');
     expect(text(root)).toContain('Banner');
     expect(text(root.querySelector('[data-testid="mode-state"]')!)).toContain('Normal mode');
     await expectAccessible(root);

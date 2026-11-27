@@ -876,7 +876,7 @@ var registry = []CodeInfo{
 	{CodeIdempotencyKeyReused, Unprocessable, "Idempotency key reused", "The Idempotency-Key was used before with another method, route or body. Use a new key for a different request."},
 	{CodePreconditionRequired, PreconditionRequired, "Precondition required", "The operation needs an If-Match header carrying the ETag the client loaded, or * to overwrite deliberately."},
 	{CodeReservedName, Unprocessable, "Reserved name", "The name is reserved because a route of the collection uses it as a literal path segment."},
-	{CodeManagedByConfig, Conflict, "Managed by configuration", "The value is set in the configuration file or an environment override and cannot be changed through the API; change it where it is set."},
+	{CodeManagedByConfig, Conflict, "Managed by the Helm configuration", "The value is set in the Helm configuration and cannot be changed through the API; change it there."},
 	// <<< M1 api
 	//
 	// >>> M1 identity
@@ -888,7 +888,7 @@ var registry = []CodeInfo{
 	{CodeInvalidTTL, Invalid, "Invalid lifetime", "Give ttlSeconds (at least 60, or 0 for a non-expiring service-account token) or expiresAt, not both, and at least 60 seconds ahead."},
 	{CodeTTLExceedsMaximum, Invalid, "Lifetime exceeds the maximum", "The requested lifetime is above the maximum for the token type; Quader does not clamp it."},
 	{CodeDefaultAboveMaximum, Invalid, "Default above maximum", "A default lifetime must not exceed its maximum."},
-	{CodeExceedsCeiling, Invalid, "Exceeds the configured ceiling", "A runtime value must not exceed the ceiling set in the configuration."},
+	{CodeExceedsCeiling, Invalid, "Exceeds the configured ceiling", "A runtime value must not exceed the ceiling set in the Helm configuration."},
 	{CodeNonExpiringNotAllowed, Invalid, "Non-expiring token not allowed", "Only a service-account token can be non-expiring, and only while the configuration allows it."},
 	{CodeNonExpiringRestricted, Forbidden, "Non-expiring token restricted", "Only an administrator may create a non-expiring service-account token."},
 	{CodePATNotAllowed, Forbidden, "Personal tokens not allowed", "Personal tokens are restricted to members of the configured groups."},
@@ -917,7 +917,7 @@ var registry = []CodeInfo{
 	{CodeFlowExpired, Invalid, "Login expired", "The login flow is unknown, used or older than ten minutes. Start the login again."},
 	{CodeProviderUnavailable, Unavailable, "Login provider unavailable", "The identity provider's discovery document could not be loaded yet; retry after the Retry-After period."},
 	{CodeBreakGlassRestricted, Forbidden, "Not allowed for the break-glass account", "The break-glass account can neither own nor create tokens nor approve command-line logins."},
-	{CodeBreakGlassImmutable, Conflict, "Break-glass account is immutable", "The break-glass account cannot be deleted or renamed through the API; it is configured in the configuration file."},
+	{CodeBreakGlassImmutable, Conflict, "Break-glass account is immutable", "The break-glass account cannot be deleted or renamed through the API; it is set in the Helm configuration."},
 	{CodeBreakGlassRotating, Unavailable, "Break-glass password rotation in progress", "The break-glass password was rotated a moment ago; local login resumes after the Retry-After period."},
 	{CodeLocalLoginDisabled, Forbidden, "Local login disabled", "The break-glass account is disabled or has no password configured."},
 	{CodeBreakGlassLocked, RateLimited, "Break-glass account locked", "Too many failed local logins; the account is locked until the Retry-After period has passed or an administrator unlocks it."},
@@ -938,7 +938,7 @@ var registry = []CodeInfo{
 	{CodeUnknownRepository, Invalid, "Unknown repository", "A key selector names a repository that does not exist."},
 	{CodeDuplicatePrincipal, Invalid, "Duplicate principal", "A policy holds at most one entry per principal."},
 	{CodeVirtualActionNotApplicable, Invalid, "Action not applicable to a virtual repository", "A key selector that names a virtual repository accepts only read and manage."},
-	{CodeRoleBindingManagedByConfiguration, Conflict, "Role binding managed by the configuration", "The binding is declared in authz.role_bindings of the system configuration and is applied by quader migrate; remove it there."},
+	{CodeRoleBindingManagedByConfiguration, Conflict, "Role binding managed by the Helm configuration", "The binding is declared in config.authz.role_bindings of the Helm configuration and is applied by quader migrate; remove it there."},
 	// <<< M1 authz
 	//
 	// >>> M5a projects
@@ -959,7 +959,7 @@ var registry = []CodeInfo{
 	{CodePinClaimNotImmutable, Invalid, "Pin claim not immutable", "pin_claims may name only the immutable ID claims of the issuer kind; a path or name claim changes on rename and transfer."},
 	{CodePublicIssuerRequired, Invalid, "Public issuer required", "An issuer whose URL is public by construction (gitlab.com) is a public issuer."},
 	{CodeKindNotAvailable, Invalid, "Issuer kind not available", "The kinds github and generic are not available in this release."},
-	{CodeIssuerManagedByConfiguration, Conflict, "Issuer managed by the configuration", "The issuer is declared in ci.issuers of the system configuration and applied by quader migrate; change or remove it there. Its mappings stay writable."},
+	{CodeIssuerManagedByConfiguration, Conflict, "Issuer managed by the Helm configuration", "The issuer is declared in config.ci.issuers of the Helm configuration and applied by quader migrate; change or remove it there. Its mappings stay writable."},
 	{CodeDiscoveryUnreachable, Invalid, "Discovery unreachable", "The discovery document or the key set of the issuer could not be fetched; the detail names the failure class, never a response body."},
 	{CodeIssuerMismatch, Invalid, "Issuer mismatch", "The issuer value of the discovery document is not exactly the configured issuer, or the ci_issuer of an exchange names another issuer than the token's iss."},
 	{CodeNoUsableKeys, Invalid, "No usable keys", "The key set of the issuer holds no key that meets the key rules (use, key_ops, key type, 2048-bit RSA)."},
@@ -1012,7 +1012,7 @@ var registry = []CodeInfo{
 	{CodeMalwareWeakeningRefused, Forbidden, "Malware setting cannot be weakened", "The write would switch the repository's setting malware.onlyChecked off. That needs the capability repositories:write-config or vulnerabilities:triage; a project Owner's manageRepositories does not carry it."},
 	{CodeNothingToRelease, Conflict, "Nothing to release", "The blob's verdict is pending or clean: a release is for infected, unscannable and failed content only."},
 	{CodeAlreadyReleased, Conflict, "Already released", "A release already passes the blob; withdraw it first to grant another."},
-	{CodeMalwareNotEnabled, Conflict, "Malware scanning off", "malware.enabled is false in the installation's configuration: no verdict is made, so there is nothing to scan again."},
+	{CodeMalwareNotEnabled, Conflict, "Malware scanning off", "config.malware.enabled is false in the Helm configuration: no verdict is made, so there is nothing to scan again."},
 	// <<< malware
 	//
 	// >>> download-links
@@ -1020,12 +1020,12 @@ var registry = []CodeInfo{
 	// <<< download-links
 	//
 	// >>> signatures
-	{CodeAnchorManaged, Conflict, "Trust anchor managed", "The anchor is shipped with Quader or declared in the Helm values: its material cannot be changed or removed through the API. A shipped anchor can only be switched off and on; an anchor of the Helm values changes with the values."},
+	{CodeAnchorManaged, Conflict, "Trust anchor managed", "The anchor is shipped with Quader or declared in the Helm configuration: its material cannot be changed or removed through the API. A shipped anchor can only be switched off and on; an anchor of the Helm configuration changes there."},
 	{CodeAnchorExists, Conflict, "Trust anchor exists", "An anchor with this key exists in the scope. Choose another key, or change the existing anchor."},
 	{CodeProjectAnchorsDisabled, Forbidden, "Project trust anchors switched off", "An administrator has not allowed project owners to add trust anchors for their project (the switch of the admin page Signatures). Stored project anchors stay listed and do not apply."},
 	{CodeBlockExists, Conflict, "Signer already blocked", "A block of this signer exists. Lift it first to block it with another reason."},
-	{CodeSignaturesNotEnabled, Conflict, "Signatures off", "signatures.enabled is false in the installation's configuration: no signature is detected or checked."},
-	{CodeSigningIdentityManaged, Conflict, "Signing identity managed by the Helm values", "The Helm values name Quader's signing identity (signing.identity.existingSecret or signing.identity.certManager): it changes with the values, and uploads, key requests and removals are refused while they name one."},
+	{CodeSignaturesNotEnabled, Conflict, "Signatures off", "config.signatures.enabled is false in the Helm configuration: no signature is detected or checked."},
+	{CodeSigningIdentityManaged, Conflict, "Signing identity managed by the Helm configuration", "The Helm configuration names Quader's signing identity (signing.identity.existingSecret or signing.identity.certManager): it changes there, and uploads, key requests and removals are refused while it names one."},
 	{CodeSigningIdentityPending, Conflict, "Signing key pending", "A signing key is pending: upload the certificate the CA issued for its request, or discard it first."},
 	{CodeSigningKeyMismatch, Unprocessable, "Certificate for another key", "The certificate's public key is not the key of the pending certificate request."},
 	{CodeSigningNoPendingKey, Conflict, "No signing key pending", "No signing key is pending: create a signing key first, then upload the certificate the CA issued for its request."},
@@ -1117,7 +1117,7 @@ var registry = []CodeInfo{
 	{CodeInvalidVersionRange, Invalid, "Invalid version range", "The format refuses the version range of an exposure rule, or the range is longer than 256 characters."},
 	{CodeDimensionNotSupported, Invalid, "Dimension not supported", "The repository's format has no package names, versions or tags for this exposure rule dimension; generic repositories are exposed through paths."},
 	{CodeFormatNotExposable, Invalid, "Format not exposable", "The repository's format cannot be served on an endpoint with exposure rules yet."},
-	{CodeEndpointNotConfigured, Conflict, "Endpoint not configured", "The endpoint is not in the configuration; its exposure rules can be read and deleted, not created or replaced."},
+	{CodeEndpointNotConfigured, Conflict, "Endpoint not configured", "The endpoint is not in endpoints of the Helm configuration; its exposure rules can be read and deleted, not created or replaced."},
 	{CodeExposureRuleLimit, Conflict, "Exposure rule limit reached", "The endpoint holds 1,000 exposure rules, the most it may hold; delete a rule first."},
 	// <<< M1 endpoints
 	//

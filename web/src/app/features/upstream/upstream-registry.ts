@@ -514,7 +514,7 @@ export class UpstreamRegistry {
     this.addressHeld.set(null);
     if (this.configured() && !sameHosts(before, after)) {
       this.addressHeld.set(
-        $localize`:@@wellknown.address.held:The account of this registry comes from the installation's configuration, so an address that sends it to other hosts is changed there too.`,
+        $localize`:@@wellknown.address.held:The account of this registry comes from the Helm configuration, so an address that sends it to other hosts is changed there too.`,
       );
       return;
     }
