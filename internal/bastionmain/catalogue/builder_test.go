@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -353,6 +354,9 @@ func TestR_MAL_042_TheStateCarriesTodaysSignaturesAndNothingOfTheInstallation(t 
 		return st
 	}
 	st := read()
+	if st.BaseURL != bastionURL {
+		t.Errorf("the state names the base URL %q, rendered on %q (R-BAS-135)", st.BaseURL, bastionURL)
+	}
 	if m := st.Malware; m == nil || m.Version == nil || *m.Version != "main-63.daily-28201.bytecode-339" || m.Daily == nil || *m.Daily != 28201 ||
 		m.BuiltAt == nil || *m.BuiltAt != "2026-11-26T07:58:00Z" || m.Scanner != "malware-scanner-clamav" || m.CycleDays != 30 || m.OverdueAfterDays != 7 {
 		t.Fatalf("the state's signatures: %+v", st.Malware)
@@ -477,13 +481,32 @@ func TestR_BAS_104_NothingIsBuiltWhileTheDefaultEndpointRefusesAnonymousRequests
 // server.additional_base_urls, in its listed spelling.
 func TestR_BAS_104_TheBaseURLIsAnEntryOfTheAdditionalBaseURLs(t *testing.T) {
 	listed := []string{"https://Packages.example.com/", "https://other.example.com"}
-	if got, ok := catalogue.BaseURL("https://packages.example.com", listed); !ok || got != "https://Packages.example.com" {
-		t.Fatalf("%q %v", got, ok)
+	if got := catalogue.StableBaseURL([]string{"https://packages.example.com"}, listed); got != "https://Packages.example.com" {
+		t.Fatalf("%q", got)
 	}
 	for _, r := range []string{"", "https://evil.example.com", "https://packages.example.com/x"} {
-		if _, ok := catalogue.BaseURL(r, listed); ok {
-			t.Errorf("%q counts", r)
+		if got := catalogue.StableBaseURL([]string{r}, listed); got != "" {
+			t.Errorf("%q counts as %q", r, got)
 		}
+	}
+}
+
+// TestR_BAS_135_TheCatalogueIsBuiltOnOneStableBaseURL: a pair of deployments under one registration reports two base URLs; the
+// catalogue is built on the lexically first listed one, whichever order the deployments' contacts come in, an unlisted one never
+// counts, and the list of addresses holds each listed one once.
+func TestR_BAS_135_TheCatalogueIsBuiltOnOneStableBaseURL(t *testing.T) {
+	listed := []string{"https://pkgs-us.example.com", "https://pkgs-eu.example.com/"}
+	a, b := "https://pkgs-us.example.com", "https://PKGS-EU.example.com"
+	for _, reported := range [][]string{{a, b}, {b, a}, {"https://aaa.example.com", b, a, b + "/"}} {
+		if got := catalogue.StableBaseURL(reported, listed); got != "https://pkgs-eu.example.com" {
+			t.Errorf("%q: %q", reported, got)
+		}
+		if got := catalogue.ListedBaseURLs(reported, listed); !slices.Equal(got, []string{"https://pkgs-eu.example.com", a}) {
+			t.Errorf("%q: the addresses %q", reported, got)
+		}
+	}
+	if got := catalogue.ListedBaseURLs(nil, listed); got == nil || len(got) != 0 {
+		t.Errorf("none: %#v", got)
 	}
 }
 

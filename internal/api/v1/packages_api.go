@@ -57,19 +57,20 @@ type PackageServices struct {
 	// TokenEnvVar is ui.client_setup.token_env_var and TokenTTL ui.client_setup.token_ttl.
 	TokenEnvVar string
 	TokenTTL    time.Duration
-	// Bastions answers the base URL a Bastion registration reported at its most recent
-	// contact, and AdditionalBaseURLs is server.additional_base_urls: together they decide
-	// the address of client-setup with bastion=<name> (R-BAS-007). Without Bastions the
-	// parameter answers 503.
+	// Bastions answers the base URLs a Bastion registration's deployments reported, and
+	// AdditionalBaseURLs is server.additional_base_urls: together they decide the addresses of
+	// client-setup with bastion=<name> (R-BAS-007, R-BAS-135). Without Bastions the parameter
+	// answers 503.
 	Bastions           BastionBaseURLs
 	AdditionalBaseURLs []string
 }
 
 // BastionBaseURLs reads the base URL of a Bastion registration and what it distributes (R-BAS-007).
 type BastionBaseURLs interface {
-	// ReportedBaseURL returns the base URL the registration reported at its most recent
-	// contact, "" while none has; registered is false for a name that is no registration.
-	ReportedBaseURL(ctx context.Context, name string) (baseURL string, registered bool, err error)
+	// ReportedBaseURLs returns the distinct base URLs the registration's replicas reported within
+	// the last 24 hours, one per deployment, none while none has; registered is false for a name
+	// that is no registration.
+	ReportedBaseURLs(ctx context.Context, name string) (baseURLs []string, registered bool, err error)
 	// Distributes reports whether the registration distributes the repository (R-BAS-134), whose reads through it are refused
 	// otherwise (R-AUTHZ-043).
 	Distributes(ctx context.Context, name string, repositoryID int64) (bool, error)
@@ -1040,22 +1041,10 @@ func (s *Server) clientSetup(r *http.Request, ps PackageServices, repoKey qname.
 		return gen.ClientSetup{}, err
 	}
 
-	var registry, registryKey string
 	bastion := p.Bastion != nil
-	if bastion {
-		base, err := bastionBase(ctx, ps, *p.Bastion, repo.NumericID())
-		if err != nil {
-			return gen.ClientSetup{}, err
-		}
-		registry, registryKey, err = registryAt(base, f, repoKey)
-		if err != nil {
-			return gen.ClientSetup{}, err
-		}
-	} else {
-		registry, registryKey, err = setupAddress(ctx, f, repoKey, "The client setup")
-		if err != nil {
-			return gen.ClientSetup{}, err
-		}
+	registry, registryKey, err := setupRegistry(ctx, ps, p, f, repoKey, repo.NumericID())
+	if err != nil {
+		return gen.ClientSetup{}, err
 	}
 
 	ctx, acc, err := requestHolder(ctx, ps.Decider, repoKey)
@@ -1195,13 +1184,31 @@ func registryAt(base string, f formats.Format, key qname.Repo) (registry, regist
 // bastionName is the name rule of a registration (R-BAS-004).
 var bastionName = regexp.MustCompile(`^[a-z][a-z0-9-]{0,19}$`)
 
-// bastionBase is the base URL the snippets for a Bastion are rendered on: what the registration
-// reported at its last handshake, provided it is an entry of server.additional_base_urls
-// (R-BAS-007, Q-BAS-97). A name that is no registration answers 404; a registration that does not
-// distribute the repository (its ID) 409 repository_not_distributed, since it would refuse every read
-// of it (R-AUTHZ-043); a registration that has reported nothing, or an address the installation does
-// not list, 409 bastion_base_url_unknown.
-func bastionBase(ctx context.Context, ps PackageServices, name string, repositoryID int64) (string, error) {
+// setupRegistry is the registry address of a client setup and its endpoint path: on a Bastion's address with bastion (R-BAS-007,
+// R-BAS-135), on the installation's own otherwise; address without bastion answers 400.
+func setupRegistry(ctx context.Context, ps PackageServices, p gen.GetClientSetupParams, f formats.Format, repoKey qname.Repo,
+	repositoryID int64,
+) (registry, registryKey string, err error) {
+	if p.Bastion == nil {
+		if p.Address != nil {
+			return "", "", badParam("address", "is an address of a Bastion and needs the parameter bastion")
+		}
+		return setupAddress(ctx, f, repoKey, "The client setup")
+	}
+	base, err := bastionBase(ctx, ps, *p.Bastion, p.Address, repositoryID)
+	if err != nil {
+		return "", "", err
+	}
+	return registryAt(base, f, repoKey)
+}
+
+// bastionBase is the base URL the snippets for a Bastion are rendered on (R-BAS-007, Q-BAS-97, R-BAS-135): one of the base URLs
+// its deployments reported within the last 24 hours that is an entry of server.additional_base_urls, the one address names, or
+// without it the lexically first, which stays the same whichever deployment made contact last. A name that is no registration
+// answers 404; a registration that does not distribute the repository (its ID) 409 repository_not_distributed, since it would refuse
+// every read of it (R-AUTHZ-043); a registration without such an address, or an address that is not one of them, 409
+// bastion_base_url_unknown.
+func bastionBase(ctx context.Context, ps PackageServices, name string, address *string, repositoryID int64) (string, error) {
 	if ps.Bastions == nil {
 		return "", unavailable("The client setup for a Bastion")
 	}
@@ -1209,7 +1216,7 @@ func bastionBase(ctx context.Context, ps PackageServices, name string, repositor
 	if !bastionName.MatchString(name) {
 		return "", notFound
 	}
-	reported, registered, err := ps.Bastions.ReportedBaseURL(ctx, name)
+	reported, registered, err := ps.Bastions.ReportedBaseURLs(ctx, name)
 	if err != nil {
 		return "", errs.Wrap(err, "api.bastionBase")
 	}
@@ -1223,14 +1230,21 @@ func bastionBase(ctx context.Context, ps PackageServices, name string, repositor
 	if !distributes {
 		return "", errs.E(errs.Conflict, errs.CodeRepositoryNotDistributed, "The Bastion "+name+" does not distribute this repository.")
 	}
-	if reported == "" {
-		return "", errs.E(errs.Conflict, errs.CodeBastionBaseURLUnknown, "The Bastion has not reported a base URL yet.")
-	}
-	trimmed := strings.TrimSuffix(reported, "/")
-	for _, listed := range ps.AdditionalBaseURLs {
-		if strings.EqualFold(strings.TrimSuffix(listed, "/"), trimmed) {
-			return strings.TrimSuffix(listed, "/"), nil
+	listed := listedAddresses(reported, ps.AdditionalBaseURLs)
+	switch {
+	case address != nil:
+		want := strings.TrimSuffix(*address, "/")
+		for _, l := range listed {
+			if strings.EqualFold(l, want) {
+				return l, nil
+			}
 		}
+		return "", errs.E(errs.Conflict, errs.CodeBastionBaseURLUnknown,
+			"The address "+strconv.Quote(*address)+" is not one of the addresses of the Bastion "+name+".")
+	case len(listed) > 0:
+		return listed[0], nil
+	case len(reported) == 0:
+		return "", errs.E(errs.Conflict, errs.CodeBastionBaseURLUnknown, "The Bastion has not reported a base URL yet.")
 	}
 	return "", errs.E(errs.Conflict, errs.CodeBastionBaseURLUnknown,
 		"The base URL the Bastion reported is not an entry of server.additional_base_urls; add it there.")

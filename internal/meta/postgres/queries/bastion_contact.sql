@@ -7,21 +7,19 @@
 -- whether a row was written; changed says whether a reported value differs from the stored row (or there was
 -- none), which is the condition of the asynchronous event bastion.contact (R-BAS-010). edge_limit is the edge figure the
 -- replica reports ('' for none) and catalogue_kept whether its catalogue survives a restart (NULL for none, R-BAS-093, 00147).
--- base_url_moved says whether the replica reports a base URL it did not report before (a new row, or another base URL than its row's)
--- that also differs from the registration's base URL as the builder of its public catalogue reads it (BastionLastBaseURL: the one of
--- its most recent contact), which the written row then becomes: such a contact starts the builder (R-BAS-105, Q-BAS-499). It is false
--- for a contact that reports none, for a new replica of a rollout that reports the registration's base URL, and for replicas that keep
--- reporting different ones, which would otherwise start a run at each of their writes.
+-- base_url_moved says whether the replica reports a base URL that none of the registration's replicas reported within the last 24
+-- hours: a new deployment, or one back after a day's silence (R-BAS-135). Such a contact starts the builder of the public catalogue,
+-- whose base URL is the lexically first listed one among the base URLs heard within 24 hours (BastionRecentBaseURLs, Q-BAS-524), so a new
+-- deployment may move it (R-BAS-105, Q-BAS-499). It is false for a contact that reports none, for a new replica of a deployment that is
+-- already heard, and for a pair of deployments whose replicas take turns, which would otherwise start a run at each of their writes.
 WITH old AS (
     SELECT client_address, release, interface_version, base_url, edge_limit, catalogue_kept
       FROM bastion_contact
      WHERE bastion_id = sqlc.arg(bastion_id)::text::uuid AND replica = sqlc.arg(replica)::text
-), last AS (
-    SELECT base_url
+), heard AS (
+    SELECT DISTINCT base_url
       FROM bastion_contact
-     WHERE bastion_id = sqlc.arg(bastion_id)::text::uuid AND base_url <> ''
-     ORDER BY contact_at DESC
-     LIMIT 1
+     WHERE bastion_id = sqlc.arg(bastion_id)::text::uuid AND base_url <> '' AND contact_at > now() - interval '24 hours'
 ), up AS (
     INSERT INTO bastion_contact AS c (bastion_id, replica, contact_at, client_address, release, interface_version, base_url, token_id,
                                       edge_limit, catalogue_kept)
@@ -47,8 +45,7 @@ SELECT (SELECT count(*) FROM up)::bigint AS written,
                        OR o.base_url <> sqlc.arg(base_url)::text OR o.edge_limit <> sqlc.arg(edge_limit)::text
                        OR o.catalogue_kept IS DISTINCT FROM NULLIF(sqlc.arg(catalogue_kept)::text, '')::boolean))::boolean AS changed,
        (sqlc.arg(base_url)::text <> ''
-        AND NOT EXISTS (SELECT 1 FROM old o WHERE o.base_url = sqlc.arg(base_url)::text)
-        AND NOT EXISTS (SELECT 1 FROM last l WHERE l.base_url = sqlc.arg(base_url)::text))::boolean AS base_url_moved;
+        AND NOT EXISTS (SELECT 1 FROM heard h WHERE h.base_url = sqlc.arg(base_url)::text))::boolean AS base_url_moved;
 
 -- name: BastionContactList :many
 -- The contacts of one registration, the most recent first (the registration's document, R-BAS-004).
@@ -66,14 +63,14 @@ SELECT bastion_id::text AS bastion_id, replica, contact_at, coalesce(host(client
   FROM bastion_contact
  ORDER BY bastion_id, contact_at DESC, replica;
 
--- name: BastionLastBaseURL :many
--- The base URL a registration reported at its most recent contact, for client-setup with bastion=<name>
--- (R-BAS-007). No row before the first contact.
-SELECT c.base_url
+-- name: BastionRecentBaseURLs :many
+-- The distinct base URLs a registration's replicas reported within the last 24 hours, one per deployment, in lexical order: what
+-- client-setup with bastion=<name> and the builder of the public catalogue hold to server.additional_base_urls (R-BAS-007, R-BAS-135).
+-- No row before the first contact or after a day without one.
+SELECT DISTINCT c.base_url
   FROM bastion_contact c JOIN principal p ON p.id = c.bastion_id
- WHERE p.kind = 'bastion' AND p.name = sqlc.arg(name)::text AND c.base_url <> ''
- ORDER BY c.contact_at DESC
- LIMIT 1;
+ WHERE p.kind = 'bastion' AND p.name = sqlc.arg(name)::text AND c.base_url <> '' AND c.contact_at > now() - interval '24 hours'
+ ORDER BY c.base_url;
 
 -- name: BastionContactPrune :execrows
 -- Drop the contacts of replicas not heard for older_than_secs seconds (30 days): the pod names of old

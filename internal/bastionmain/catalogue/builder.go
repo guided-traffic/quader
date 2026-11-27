@@ -50,24 +50,44 @@ type Registration struct {
 	// HideRepositories is the switch Hide repositories (R-BAS-131): while it is on the builder builds no repository's index and keeps
 	// no remote's upstream, not even a well-known public registry's.
 	HideRepositories bool
-	// BaseURL is the response base URL the documents are rendered on: the Bastion's reported base URL, an entry of
-	// server.additional_base_urls (BaseURL). Empty stops the builder for the registration with CodeBaseURLUnknown.
+	// BaseURL is the response base URL the documents are rendered on: one base URL of the Bastion's deployments, an entry of
+	// server.additional_base_urls (StableBaseURL). Empty stops the builder for the registration with CodeBaseURLUnknown.
 	BaseURL string
 }
 
-// BaseURL answers the response base URL of a registration that reported reported (R-BAS-104, as client-setup with bastion=<name>
-// decides it, R-BAS-007): the entry of additional that names it, without a trailing slash; ok is false for none.
-func BaseURL(reported string, additional []string) (string, bool) {
-	trimmed := strings.TrimSuffix(reported, "/")
-	if trimmed == "" {
-		return "", false
-	}
-	for _, listed := range additional {
-		if strings.EqualFold(strings.TrimSuffix(listed, "/"), trimmed) {
-			return strings.TrimSuffix(listed, "/"), true
+// ListedBaseURLs are the base URLs a registration's deployments reported that are entries of additional (server.additional_base_urls),
+// each in the listed spelling without a trailing slash, once, in lexical order (R-BAS-104, R-BAS-007, R-BAS-135): the addresses of a
+// Bastion that client-setup, a repository's Bastions and the builder offer. A reported base URL no entry names is left out: a page
+// or a command on it would name a host the installation does not know as its own.
+func ListedBaseURLs(reported, additional []string) []string {
+	out := []string{}
+	for _, rep := range reported {
+		trimmed := strings.TrimSuffix(rep, "/")
+		if trimmed == "" {
+			continue
+		}
+		for _, listed := range additional {
+			l := strings.TrimSuffix(listed, "/")
+			if strings.EqualFold(l, trimmed) {
+				if !slices.Contains(out, l) {
+					out = append(out, l)
+				}
+				break
+			}
 		}
 	}
-	return "", false
+	slices.Sort(out)
+	return out
+}
+
+// StableBaseURL is the base URL a registration's catalogue is built on (R-BAS-135, Q-BAS-524): the lexically first of
+// ListedBaseURLs, "" for none. It is the same whichever deployment of a pair made contact last, so the documents are rendered once,
+// not again at every contact of the other deployment; each Bastion replaces it with its own base URL in what it serves.
+func StableBaseURL(reported, additional []string) string {
+	if l := ListedBaseURLs(reported, additional); len(l) > 0 {
+		return l[0]
+	}
+	return ""
 }
 
 // Options configure [New].
@@ -1285,8 +1305,9 @@ func (r *run) write(ctx context.Context, unit string, docs []rendered, fp []byte
 
 // writeGlobal keeps the documents of the registration as a whole, and the catalogue's state document (iface.CatalogueStateDocument)
 // with the time of the last run that changed a document (R-BAS-103: the documents carry no time; the state does) and today's
-// signatures of the malware scan (R-MAL-042, Q-BAS-490). A run that changed no document keeps the state's time, so a run that changed
-// neither a document nor the signatures writes nothing.
+// signatures of the malware scan (R-MAL-042, Q-BAS-490), and the base URL the documents were rendered on (R-BAS-135), which each
+// Bastion replaces with its own. A run that changed no document keeps the state's time, so a run that changed neither a document nor
+// the signatures writes nothing.
 func (r *run) writeGlobal(ctx context.Context, docs []rendered) error {
 	statePath := iface.CataloguePath{Kind: iface.CatalogueState}.String()
 	old, err := r.b.o.Store.UnitRows(ctx, r.reg.ID, "")
@@ -1313,7 +1334,9 @@ func (r *run) writeGlobal(ctx context.Context, docs []rendered) error {
 	if err != nil {
 		return err
 	}
-	state := iface.CatalogueStateDocument{BuiltAt: r.b.o.Now().UTC().Format(time.RFC3339), Malware: malware, Vulnerabilities: vulns}
+	state := iface.CatalogueStateDocument{
+		BuiltAt: r.b.o.Now().UTC().Format(time.RFC3339), BaseURL: r.reg.BaseURL, Malware: malware, Vulnerabilities: vulns,
+	}
 	if !changed && old[statePath] != "" {
 		prev, err := r.state(ctx, statePath)
 		if err != nil {

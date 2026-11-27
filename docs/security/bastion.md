@@ -483,6 +483,7 @@ probes' admission; a write costs the Bastion its request limit and nothing of th
 | A cap on the bytes between the two (built, E10) | The Bastion paces every body it reads, from the main installation and from the object store, to its registration's throughput, 200 MB/s by default with a quarter for anonymous callers, so a flood of distinct artifacts fills neither the transfer network nor the store's egress beyond it; a Bastion that was taken over ignores its own cap ([H-2289](#h-2289--a-bastion-that-was-taken-over-ignores-its-throughput-cap)); without Valkey each replica holds its share ([H-2360](#h-2360--without-valkey-the-throughputs-replicas-hold-their-shares-as-bastionreplicas-says)); the hourly volume refuses the next miss, not a running transfer ([H-2361](#h-2361--the-throughputs-hourly-volume-is-checked-when-a-miss-is-admitted-not-while-it-reads)) | R-BAS-097, Q-BAS-455 |
 | The Bastion reports usage and state | The main installation stores what a Bastion says it served; it is the Bastion's word ([H-2282](#h-2282--the-usage-and-the-state-a-bastion-reports-are-its-word)) | R-BAS-016, R-LIM-045 |
 | Egress addresses per registration (built, E13) | A Bastion token makes its forwarded client address count only from its own registration's addresses, no longer from any address of one list for all registrations ([who may speak as a Bastion](#who-may-speak-as-a-bastion)) | R-BAS-017, Q-BAS-334 |
+| A pair of deployments under one registration (W-41's E) | Two deployments that connect with the same token hold the figures each: the anonymous ceiling, the slots and the throughput are counted by each deployment's own replicas and Valkey, so the main installation sees up to the figure times the number of deployments ([H-2446](#h-2446--a-pair-of-deployments-holds-the-anonymous-ceiling-the-slots-and-the-throughput-each)) | R-BAS-135, Q-BAS-524 |
 | Nothing names the main installation | No host, base URL, request ID, rule, place, internal repository name or version in a Bastion's answers; what remains tells that an installation stands behind it, not which ([H-2294](#h-2294--a-bastions-answers-still-tell-that-an-installation-stands-behind-it)). *Since W-35's P8 with E17:* the problems the main installation renders for a forward carry their forward texts, every 5xx of a forward the neutral text of its status, and a registry token names only its anonymity, expiry and grant ([H-2297](#h-2297--a-registry-tokens-readable-grant-tells-its-holder-which-of-the-names-it-asked-for-it-may-pull), [H-2322](#h-2322--an-ansible-galaxy-role-served-through-a-virtual-repository-names-the-member-in-its-id), [H-2323](#h-2323--a-4xx-text-written-later-reaches-a-forward-as-written-until-it-is-given-its-forward-text)) | R-BAS-099, R-BAS-114, R-BAS-115 |
 
 ## Disabling a Bastion
@@ -602,6 +603,7 @@ means for trust:
 | The switch gui off | Every read answers off at once, the sync stops and the catalogue's tree is deleted; a replica that does not know its switches (the built-in configuration without a stored state) answers not ready, never off | R-BAS-102, R-BAS-112, Q-BAS-379 |
 | Serving on during an outage | The owner's choice (W-35's B.2b): the pages serve their last state whatever its age and say how old it is, so a narrowing made during an outage stays visible until the link returns ([H-2319](#h-2319--a-narrowing-made-during-an-outage-stays-on-the-pages-until-the-link-returns)) | R-BAS-111 |
 | The catalogue's share | The documents count against `bastion.gui.max_bytes`, which comes off the artifacts' room; a catalogue above it is kept and alerted, never evicted ([H-2317](#h-2317--a-catalogue-above-its-share-is-kept-and-the-cache-may-pass-its-size)) | R-BAS-110, Q-BAS-380 |
+| A pair of deployments serves one catalogue on its own address (W-41's E) | The catalogue is rendered once on the first listed base URL of the registration's deployments, which the state document names; a replica whose own `server.base_url` is another replaces that origin with its own in what it serves, whole origins only, after the document was verified against the SHA-256 the main installation wrote. The rewrite swaps one of the registration's own listed addresses for another; it adds no host the main installation did not render, and the copy kept stays the verified one | R-BAS-135, Q-BAS-524 |
 
 ## The web interface
 
@@ -686,7 +688,8 @@ H-2305 to H-2307, of its builder (W-35's P6), H-2308 to H-2314, of the catalogue
 (E9a), H-2358 and H-2359 (E15), H-2360 and H-2361 (E10), H-2362 (E11), H-2322 and H-2323 (W-35's P8 with E17), H-2374 and H-2375 (E18;
 H-2375 closed by E19), H-2370 (E19);
 and of a registration the configuration declares (R-BAS-127), H-2366 and H-2367; and of the documentation of the web interface (W-35's
-P11), H-2338 and H-2339; and of what a Bastion may distribute (R-BAS-134, W-41's B1), H-2445;
+P11), H-2338 and H-2339; and of what a Bastion may distribute (R-BAS-134, W-41's B1), H-2445; and of a pair of deployments under one
+registration (R-BAS-135, W-41's E), H-2446;
 those of a Bastion's budgets are on [usage-and-limits.md](usage-and-limits.md#what-this-does-not-cover) (H-2284, H-2286 to H-2288, H-2368, H-2369). Numbers
 marked [derived] are calculated from the defaults, not measured.
 
@@ -1659,6 +1662,19 @@ owner asked for it ("Es muss für die Viewer von Repos … direkt ersichtlich se
 Tooltip auch welcher Bastion) verteilt wird"), so it is not closed; an administrator who minds names a registration for its users. Since
 W-41's D1 every screen that shows the repository's level shows it in the tooltip of the distribution mark ([api-and-ui.md](../spec/api-and-ui.md)
 R-UI-271); a well-known repository's item of the admin area carries the same member, for the readers of `repositories:read-config` only.
+
+### H-2446 · A pair of deployments holds the anonymous ceiling, the slots and the throughput each
+
+Stage: the limits a Bastion applies from its registration's configuration (R-BAS-094, R-BAS-025, R-BAS-097) and a pair of deployments
+under one registration (R-BAS-135, Q-BAS-524). Subject: the main installation's capacity behind a registration whose token two or more
+deployments use. Each deployment counts the anonymous ceiling, the download slots and the throughput in its own shared state (its Valkey,
+or its replicas' shares without one), so two deployments admit up to twice each figure, three three times; the main installation sees
+the figure times the number of deployments. Live for every registration with more than one deployment, since W-41's E made the pair a
+supported setup. What makes it real: an administrator who sets the figures as the load the main installation can take from that
+registration, and an anonymous flood or a run of misses that reaches both deployments at once. What would close it: figures the main
+installation divides by the number of deployments it heard (it learns that number only from contacts that come and go, so a deployment
+that falls silent would leave the other at half its figure for a day), or one shared state across the deployments, which their separate
+clusters do not have. The manual tells the administrator to set half the figure for a pair.
 
 ### H-2447 · Any Authorization header puts a caller in the authenticated class of the per-address limit
 

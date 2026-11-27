@@ -46,7 +46,7 @@ func TestR_BAS_134_WhoChangesWhatABastionMayDistribute(t *testing.T) {
 func TestR_BAS_134_TheAddressesAreTheListedOnes(t *testing.T) {
 	listed := []string{"https://pkgs.example.com/", "https://pkgs-b.example.com"}
 	got := listedAddresses([]string{"https://PKGS.example.com", "https://other.example.com", "https://pkgs-b.example.com/"}, listed)
-	if !slices.Equal(got, []string{"https://pkgs.example.com", "https://pkgs-b.example.com"}) {
+	if !slices.Equal(got, []string{"https://pkgs-b.example.com", "https://pkgs.example.com"}) {
 		t.Fatalf("%q", got)
 	}
 	if got := listedAddresses(nil, listed); got == nil || len(got) != 0 {

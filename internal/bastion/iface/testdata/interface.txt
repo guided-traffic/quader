@@ -294,6 +294,7 @@ type CatalogueRepository: field Format string `json:"format"`
 type CatalogueRepository: field Name string `json:"name"`
 type CatalogueRepository: field Wiki bool `json:"wiki"`
 type CatalogueStateDocument struct
+type CatalogueStateDocument: field BaseURL string `json:"baseUrl"`
 type CatalogueStateDocument: field BuiltAt string `json:"builtAt"`
 type CatalogueStateDocument: field Malware *CatalogueMalware `json:"malware"`
 type CatalogueStateDocument: field Vulnerabilities *CatalogueVulnerabilityDatabase `json:"vulnerabilities"`

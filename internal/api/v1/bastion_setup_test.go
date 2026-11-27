@@ -12,12 +12,12 @@ import (
 	"github.com/guided-traffic/quader/internal/errs"
 )
 
-// reportedURLs is a BastionBaseURLs over a map from a registration to what it reported.
+// reportedURLs is a BastionBaseURLs over a map from a registration to the base URLs its deployments reported, separated by spaces.
 type reportedURLs map[string]string
 
-func (r reportedURLs) ReportedBaseURL(_ context.Context, name string) (string, bool, error) {
+func (r reportedURLs) ReportedBaseURLs(_ context.Context, name string) ([]string, bool, error) {
 	v, ok := r[name]
-	return v, ok, nil
+	return strings.Fields(v), ok, nil
 }
 
 // Distributes: every registration of the map distributes every repository, but the one named undistributing.
@@ -31,8 +31,8 @@ const undistributing = "elsewhere"
 
 type failingURLs struct{}
 
-func (failingURLs) ReportedBaseURL(context.Context, string) (string, bool, error) {
-	return "", false, errors.New("database down")
+func (failingURLs) ReportedBaseURLs(context.Context, string) ([]string, bool, error) {
+	return nil, false, errors.New("database down")
 }
 
 func (failingURLs) Distributes(context.Context, string, int64) (bool, error) {
@@ -151,6 +151,34 @@ func TestR_BAS_007_AnAddressThatIsNotListedAnswers409(t *testing.T) {
 	out := setupFrom(t, h, "/api/v1/projects/it/repositories/npm-all/client-setup?client=npm&bastion=partners")
 	if out.RegistryUrl != "https://packages.example.com/api/npm/it/npm-all/" {
 		t.Errorf("the registry URL is the listed entry's form: %s", out.RegistryUrl)
+	}
+}
+
+// TestR_BAS_135_ClientSetupTakesTheAddressOfADeployment: a pair of deployments under one registration has two addresses; address
+// chooses one of the listed ones, without it the lexically first answers whichever deployment made contact last, an address that is
+// not one of the listed ones answers 409, and address without bastion 400.
+func TestR_BAS_135_ClientSetupTakesTheAddressOfADeployment(t *testing.T) {
+	h := bastionServer(t, reportedURLs{"partners": "https://pkgs-us.example.com https://pkgs-eu.example.com https://unlisted.example.com"},
+		"https://pkgs-us.example.com", "https://PKGS-EU.example.com/")
+	const path = "/api/v1/projects/it/repositories/npm-all/client-setup?client=npm&bastion=partners"
+	if out := setupFrom(t, h, path); out.RegistryUrl != "https://PKGS-EU.example.com/api/npm/it/npm-all/" {
+		t.Errorf("without address: %s", out.RegistryUrl)
+	}
+	for addr, want := range map[string]string{
+		"https://pkgs-us.example.com": "https://pkgs-us.example.com/", "https://pkgs-eu.example.com/": "https://PKGS-EU.example.com/",
+	} {
+		if out := setupFrom(t, h, path+"&address="+addr); !strings.HasPrefix(out.RegistryUrl, want) {
+			t.Errorf("%s: %s", addr, out.RegistryUrl)
+		}
+	}
+	for _, addr := range []string{"https://unlisted.example.com", "https://pkgs-us.example.com.evil.example", "https://quader.example.com"} {
+		w := get(h, path+"&address="+addr)
+		if w.Code != 409 || setupProblem(t, w.Body.Bytes()).Code != errs.CodeBastionBaseURLUnknown {
+			t.Errorf("%s: %d %s", addr, w.Code, w.Body.String())
+		}
+	}
+	if w := get(h, "/api/v1/projects/it/repositories/npm-all/client-setup?client=npm&address=https://pkgs-us.example.com"); w.Code != 400 {
+		t.Errorf("address without bastion: %d %s", w.Code, w.Body.String())
 	}
 }
 

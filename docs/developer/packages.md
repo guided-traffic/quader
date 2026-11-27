@@ -286,11 +286,12 @@ adds the `-scoped` copy only for such a template; `GetClientSetup` answers `400 
 (`clientHasScopedVariant`). Today that is the four npm clients. A new format whose client has a scope-like variant reads `.Variant` in its configure template and
 the ids, the refusal and the UI fixture follow; `TestR_API_030_RenderedSnippetIdsMatchTheUIFixture` renders every format with a scope.
 
-With `bastion=<name>` (R-BAS-007, Q-BAS-97) the base URL is the one the registration reported at its last handshake, read through `PackageServices.Bastions`
-(`bastionBaseURLs` in [bastion_baseurl.go](../../internal/app/bastion_baseurl.go): `BastionGet`, then `BastionLastBaseURL`), provided it is an entry of
-`PackageServices.AdditionalBaseURLs` (`server.additional_base_urls`; a trailing slash and the case of the host are ignored, and the listed entry is what the
-snippets carry); `bastionBase` answers `404` for a name that is no registration, `409 bastion_base_url_unknown` for no reported address or an address that is not listed, and `503`
-without the reader. The operation then needs no base URL of the endpoint. The publish templates are not rendered and `publishTarget` is `null`; `SetupData.Bastion` is true,
+With `bastion=<name>` (R-BAS-007, Q-BAS-97, R-BAS-135) the base URL is one of the registration's addresses: the base URLs its deployments reported within the
+last 24 hours, read through `PackageServices.Bastions` (`bastionBaseURLs` in [bastion_baseurl.go](../../internal/app/bastion_baseurl.go): `BastionGet`, then
+`BastionRecentBaseURLs`), that are entries of `PackageServices.AdditionalBaseURLs` (`server.additional_base_urls`; a trailing slash and the case of the host
+are ignored, and the listed entry is what the snippets carry; `listedAddresses`, which is `catalogue.ListedBaseURLs`). `address=<base URL>` picks one,
+without it the lexically first answers; `bastionBase` answers `404` for a name that is no registration, `409 bastion_base_url_unknown` for no reported
+address, none listed or an `address` that is not one of them, `400` for `address` without `bastion`, and `503` without the reader. The operation then needs no base URL of the endpoint. The publish templates are not rendered and `publishTarget` is `null`; `SetupData.Bastion` is true,
 which npm's `npm.npmrc.configure` template turns into `replace-registry-host=always`.
 
 With `path` (R-GENERIC-017, ADR-290), for a format whose `PatternSubject` is a path, `setupFile` encodes each segment, holds the path to

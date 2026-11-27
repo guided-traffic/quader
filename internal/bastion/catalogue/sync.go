@@ -53,6 +53,7 @@ func (c *Catalogue) sync(ctx context.Context) error {
 	gui, docs := c.effective()
 	next.gui, next.docs, next.hide = gui, docs, c.hidden()
 	next.docIndex = c.docsOf(ctx, next, cur, next.index)
+	next.origin = c.originOf(ctx, next, cur)
 	next.confirmedAt = c.o.Now()
 	if !gui {
 		return nil // switched off while the round ran
@@ -368,6 +369,7 @@ func (c *Catalogue) take(ctx context.Context, mode takeMode) bool {
 		return false
 	}
 	next.docIndex = c.docsOf(ctx, next, cur, next.index)
+	next.origin = c.originOf(ctx, next, cur)
 	if gui, _ := c.effective(); c.decided() && !gui {
 		return false
 	}

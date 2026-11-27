@@ -139,9 +139,14 @@ type CatalogueRepository struct {
 // CatalogueStateDocument is the document of the catalogue's state ([CatalogueState], path "state"): the time of the builder's last
 // run that changed a document, today's signatures of the malware scan (malware-scanning.md R-MAL-042) and today's vulnerability
 // database of the image scanning, which the Bastion's web interface compares every malware state and every image's grade of a page
-// with. The main installation writes it; the Bastion reads Malware and Vulnerabilities.
+// with, and the base URL its documents were rendered on. The main installation writes it; the Bastion reads BaseURL, Malware and
+// Vulnerabilities.
 type CatalogueStateDocument struct {
 	BuiltAt string `json:"builtAt"`
+	// BaseURL is the base URL the builder rendered every document of the catalogue on (bastion.md R-BAS-135): one listed base URL of the
+	// registration's deployments, the lexically first, so a pair of deployments under one registration shares one catalogue. A Bastion
+	// whose own server.base_url differs replaces this origin with its own in every document it serves, whole origins only.
+	BaseURL string `json:"baseUrl"`
 	// Malware is null while the main installation answers no set (its scanning is off, or its anonymous caller may not read it).
 	Malware *CatalogueMalware `json:"malware"`
 	// Vulnerabilities is today's vulnerability database of the image scanning (vulnerability-scanning.md R-VULN-052), which the Bastion's

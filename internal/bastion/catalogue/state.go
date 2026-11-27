@@ -44,6 +44,8 @@ type snapshot struct {
 	index    *index
 	scoped   scopedIndexes
 	docIndex *docIndex
+	// origin is the base URL the documents were rendered on (the state document's baseUrl, R-BAS-135), "" while none is known.
+	origin string
 }
 
 // count is the number of documents the snapshot names.

@@ -42,9 +42,13 @@ type reader struct {
 	reads int
 	// revision is what Packages answers as the revision of the packages.
 	revision string
+	// origin is what RenderedOn answers: the base URL the documents were rendered on.
+	origin string
 }
 
 func (r *reader) State() catalogue.State { r.mu.Lock(); defer r.mu.Unlock(); return r.state }
+
+func (r *reader) RenderedOn() string { r.mu.Lock(); defer r.mu.Unlock(); return r.origin }
 
 func (r *reader) ConfirmedAt() time.Time { return r.State().ConfirmedAt }
 

@@ -460,6 +460,34 @@ func TestR_BAS_111_AStoredStateIsServedAfterARestartWithItsAge(t *testing.T) {
 	}
 }
 
+// TestR_BAS_135_TheReaderKnowsTheBaseURLTheCatalogueWasRenderedOn: the state document's baseUrl is what the reader answers after a
+// round, after a restart from the stored state, and anew after the main installation rendered the catalogue on another base URL;
+// a state that names none answers none.
+func TestR_BAS_135_TheReaderKnowsTheBaseURLTheCatalogueWasRenderedOn(t *testing.T) {
+	r := newRig(t)
+	r.publish(leftPad)
+	r.on(true, true)
+	r.tick()
+	if got := r.cat.RenderedOn(); got != "" {
+		t.Fatalf("a state without baseUrl: %q", got)
+	}
+	r.main.PutDocument("state", []byte(`{"builtAt":"2026-11-26T10:00:00Z","baseUrl":"https://pkgs-eu.example.com/"}`))
+	r.tick()
+	if got := r.cat.RenderedOn(); got != "https://pkgs-eu.example.com" {
+		t.Fatalf("after the round: %q", got)
+	}
+	r.restart(filepath.Join(r.dir, "volume"))
+	if !r.cat.Load(context.Background()) || r.cat.RenderedOn() != "https://pkgs-eu.example.com" {
+		t.Fatalf("after a restart: %q", r.cat.RenderedOn())
+	}
+	r.on(true, true)
+	r.main.PutDocument("state", []byte(`{"builtAt":"2026-11-26T11:00:00Z","baseUrl":"https://pkgs-us.example.com"}`))
+	r.tick()
+	if got := r.cat.RenderedOn(); got != "https://pkgs-us.example.com" {
+		t.Fatalf("after the catalogue moved: %q", got)
+	}
+}
+
 // TestR_BAS_118_FilesNamesThePublicRepositoriesWithARootFolder: the repositories whose files a page leads to (Q-BAS-400) are those of
 // the public set whose root folder the catalogue holds; one that leaves the public set leaves the list, and the switch off answers
 // off.

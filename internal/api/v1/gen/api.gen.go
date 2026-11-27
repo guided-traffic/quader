@@ -24482,12 +24482,19 @@ type GetClientSetupParams struct {
 	// instead of returning the unscoped snippets under a scoped id.
 	Scope *string `form:"scope,omitempty" json:"scope,omitempty"`
 
-	// Bastion The name of a Bastion registration (R-BAS-007). The snippets are rendered on the base URL the Bastion reported at its
-	// last handshake, provided it is an entry of `server.additional_base_urls` (`409 bastion_base_url_unknown` otherwise),
-	// and carry no publish snippets, since a Bastion is read-only; for npm the configure snippet sets
-	// `replace-registry-host=always`. An unknown name answers `404`; a Bastion that does not distribute the repository
-	// (R-BAS-134) answers `409 repository_not_distributed`, since it refuses every read of it (R-AUTHZ-043).
+	// Bastion The name of a Bastion registration (R-BAS-007). The snippets are rendered on one of the Bastion's addresses: the base
+	// URLs its replicas reported within the last 24 hours that are entries of `server.additional_base_urls`, one per
+	// deployment (R-BAS-135); `address` chooses one, without it the lexically first. A Bastion without such an address
+	// answers `409 bastion_base_url_unknown`. The snippets carry no publish snippets, since a Bastion is read-only; for npm
+	// the configure snippet sets `replace-registry-host=always`. An unknown name answers `404`; a Bastion that does not
+	// distribute the repository (R-BAS-134) answers `409 repository_not_distributed`, since it refuses every read of it
+	// (R-AUTHZ-043).
 	Bastion *string `form:"bastion,omitempty" json:"bastion,omitempty"`
+
+	// Address With `bastion`: the address of the Bastion's deployment the snippets are rendered on, one of its listed base URLs
+	// (R-BAS-135), compared without regard to case and a trailing slash. An address that is not one of them answers
+	// `409 bastion_base_url_unknown`; without `bastion` it answers `400 malformed_request`.
+	Address *string `form:"address,omitempty" json:"address,omitempty"`
 }
 
 // GetClientSetupParamsCredentials defines parameters for GetClientSetup.
@@ -37894,6 +37901,19 @@ func (siw *ServerInterfaceWrapper) GetClientSetup(w http.ResponseWriter, r *http
 			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "bastion"})
 		} else {
 			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "bastion", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "address" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "address", r.URL.Query(), &params.Address, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "address"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "address", Err: err})
 		}
 		return
 	}

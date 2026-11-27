@@ -235,8 +235,12 @@ func TestBastionMigration(t *testing.T) {
 		if all, err := qs.BastionContactListAll(ctx); err != nil || len(all) != 1 {
 			t.Fatalf("BastionContactListAll: %+v %v", all, err)
 		}
-		if urls, err := qs.BastionLastBaseURL(ctx, "partners"); err != nil || len(urls) != 1 || urls[0] != "https://packages.example.com" {
-			t.Fatalf("BastionLastBaseURL: %v %v", urls, err)
+		if urls, err := qs.BastionRecentBaseURLs(ctx, "partners"); err != nil || len(urls) != 1 || urls[0] != "https://packages.example.com" {
+			t.Fatalf("BastionRecentBaseURLs: %v %v", urls, err)
+		}
+		mustExec(t, admin, "UPDATE quader.bastion_contact SET contact_at = now() - interval '25 hours'")
+		if urls, err := qs.BastionRecentBaseURLs(ctx, "partners"); err != nil || len(urls) != 0 {
+			t.Fatalf("BastionRecentBaseURLs after a day without contact (R-BAS-135): %v %v", urls, err)
 		}
 		mustExec(t, admin, "UPDATE quader.bastion_contact SET contact_at = now() - interval '40 days'")
 		if n, err := qs.BastionContactPrune(ctx, 30*24*3600); err != nil || n != 1 {

@@ -144,6 +144,8 @@ func New(o Options) (*Handler, error) {
 	if o.Assets == nil {
 		o.Assets = Bundle()
 	}
+	// A pair of deployments shares one catalogue rendered on one of their base URLs; this replica serves it on its own (R-BAS-135).
+	o.Catalogue = rebase(o.Catalogue, o.BaseURL)
 	h := &Handler{o: o, log: o.Log, pages: pg.NewRenderer()}
 	if h.log == nil {
 		h.log = slog.New(slog.DiscardHandler)

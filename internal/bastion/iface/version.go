@@ -49,5 +49,6 @@ package iface
 // released (v0.166.0) before the disable landed, so the disable raises to 13. Before its release 13 also took a change of meaning
 // without a change of form, what a Bastion may distribute (R-BAS-134, authorization.md R-AUTHZ-043): the check answers none, with
 // the status of a missing repository, for a repository the registration does not distribute, and the handshake's anonymousReads is
-// the registration's (Q-BAS-522).
+// the registration's (Q-BAS-522); and the catalogue's state document's member baseUrl ([CatalogueStateDocument]), the base URL its
+// documents were rendered on, which each deployment of a pair under one registration replaces with its own (R-BAS-135).
 const InterfaceVersion = 13

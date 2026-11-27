@@ -145,9 +145,10 @@ func (a *App) registerBastionCatalogueJobs(r *jobs.Registry) {
 }
 
 // catalogueRegistrations returns the list of every registration with its switches and the base URL its documents are rendered on
-// (R-BAS-104): the base URL the registration reported at its last handshake, when it is an entry of server.additional_base_urls. A
-// disabled registration's catalogue is built on, so that an enable finds it current (R-BAS-133). The list reads the database and the registration service it is built over here, never
-// a.parts: the trigger calls it on its own goroutine while the wiring still writes them.
+// (R-BAS-104, R-BAS-135): the lexically first of the base URLs its deployments reported within the last 24 hours that are entries of
+// server.additional_base_urls, which stays the same whichever deployment of a pair made contact last. A disabled registration's
+// catalogue is built on, so that an enable finds it current (R-BAS-133). The list reads the database and the registration service it
+// is built over here, never a.parts: the trigger calls it on its own goroutine while the wiring still writes them.
 func (a *App) catalogueRegistrations(in infra, id identityArea) func(context.Context) ([]catalogue.Registration, error) {
 	regs := a.registrationsOver(in, id)
 	return func(ctx context.Context) ([]catalogue.Registration, error) {
@@ -168,11 +169,11 @@ func (a *App) catalogueRegistrations(in infra, id identityArea) func(context.Con
 			sw := a.bastionSwitches(l.Name, reg.Switches)
 			r := catalogue.Registration{ID: l.ID, Name: l.Name, GUI: sw.GUI, Docs: sw.Docs, HideRepositories: sw.HideRepositories}
 			if r.GUI {
-				base, _, err := reported.ReportedBaseURL(ctx, l.Name)
+				bases, _, err := reported.ReportedBaseURLs(ctx, l.Name)
 				if err != nil {
 					return nil, err
 				}
-				r.BaseURL, _ = catalogue.BaseURL(base, a.cfg.Server.AdditionalBaseURLs)
+				r.BaseURL = catalogue.StableBaseURL(bases, a.cfg.Server.AdditionalBaseURLs)
 			}
 			out = append(out, r)
 		}
@@ -359,8 +360,9 @@ func catalogueTriggerAreas() []string {
 }
 
 // catalogueTriggerSignals are the signals after which the trigger starts a run: a package's metadata, a malware or a signature verdict,
-// and a Bastion's contact that brought its registration a base URL the builder does not read yet (bastion_base_url, Q-BAS-499): a
-// web interface switched on before its Bastion first connected, or whose Bastion moved, is built within seconds of the contact.
+// and a Bastion's contact that reported a base URL none of its registration's replicas reported within the last 24 hours
+// (bastion_base_url, Q-BAS-499, R-BAS-135): a web interface switched on before its Bastion first connected, a Bastion that moved, or
+// a new deployment of a pair, which may move the stable base URL, is built within seconds of the contact.
 func catalogueTriggerSignals() []string {
 	return []string{cluster.AreaMetadataChanged, cluster.AreaMalwareVerdict, cluster.AreaSignatureVerdict, cluster.AreaBastionBaseURL}
 }

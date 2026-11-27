@@ -248,6 +248,24 @@ metrics:
 | `autoscaling.enabled: true` | The Bastion's request budget towards the main installation is divided by `autoscaling.maxReplicas` instead of `replicaCount` |
 | `config.bastion.answers.max_entries` | The main installation's answers a replica keeps in memory, least recently used first (default `200000`): per caller its credential, its read on each repository it reads and, for an image client's registry token or a token narrowed to some packages, its read on each package it reads, about three answers per image pull. Size it to the callers of one `bastion.answers.period` (default `5m`) times the repositories and packages each reads; an answer pushed out costs its caller one request to the main installation at its next read, never a wrong answer |
 
+#### Two deployments with one token
+
+Two Bastion deployments, for example one in each of two clusters with an address of its own, may connect with the same token under one registration. Each is installed as above with its own `config.server.base_url`, cache, Valkey and Ingress, and the same `secrets.mainToken`. On the main installation:
+
+```yaml
+config:
+  server:
+    additional_base_urls:                            # example: both deployments' config.server.base_url
+      - https://pkgs-eu.example.com
+      - https://pkgs-us.example.com
+```
+
+- Put the networks both deployments connect from under **Addresses this Bastion connects from** on the card ([The addresses a Bastion connects from](#the-addresses-a-bastion-connects-from)): an address of only one of them makes the other's clients share one budget and one block.
+- The card names both hosts in its head and groups the replicas by deployment under **Replicas**; a deployment that has made no contact for five minutes beside the other is a warning there. A deployment silent for a day drops out of the Bastion's addresses.
+- The web interface's catalogue is built once, on the first of the two addresses in alphabetical order, and each deployment shows it on its own: every page, command and link of `pkgs-us.example.com` names `pkgs-us.example.com`. An address in a description that ends a sentence with a full stop (`… at https://pkgs-eu.example.com.`) keeps the first deployment's host; that link still works.
+- **Set up client** renders a Bastion's commands on the first of its addresses in alphabetical order; through the API, `client-setup?bastion=<name>&address=https://pkgs-us.example.com` *(example)* chooses another, and an address that is not one of the Bastion's answers `409 bastion_base_url_unknown`.
+- **The limits are held per deployment.** The anonymous ceiling, the download slots and the throughput of the card are counted by each deployment's own replicas and Valkey, so the pair admits up to twice each figure at the main installation. Set them to half of what the main installation should see from the registration, or accept twice the load. Each deployment fills its own cache and keeps its own blocks.
+
 A Bastion has an imprint and a privacy notice of its own: `config.ui.legal.imprint.en`, `.de` and `config.ui.legal.privacy.en`, `.de`
 of the chart `quader-bastion`, Markdown, at most 64 KiB each, as for the main installation
 ([Imprint and privacy notice](configuration.md#imprint-and-privacy-notice)). The Bastion's administrator answers for them; they name

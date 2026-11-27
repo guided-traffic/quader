@@ -53,6 +53,10 @@ type Reader interface {
 	SearchDocs(q DocQuery) (DocPage, error)
 	// DocEntries lists every entry SearchDocs could find: the newest versions' documentation pages, for the sitemap (W-35's B.11).
 	DocEntries() ([]DocHit, error)
+	// RenderedOn is the base URL the main installation rendered the documents on, the state document's baseUrl without a trailing
+	// slash (R-BAS-135): one deployment's of a pair under one registration, which the other replaces with its own. "" while the
+	// replica serves no state or its state names none.
+	RenderedOn() string
 }
 
 var _ Reader = (*Catalogue)(nil)

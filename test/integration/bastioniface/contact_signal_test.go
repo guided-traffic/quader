@@ -72,3 +72,39 @@ func TestR_BAS_105_AContactThatBringsANewBaseURLRaisesTheBuildersSignal(t *testi
 		t.Errorf("a repeat within the minute raised %q", got)
 	}
 }
+
+// TestR_BAS_135_APairOfDeploymentsRaisesTheSignalOnceEach: a second deployment under the same registration raises bastion_base_url
+// at its first contact, which may move the catalogue's stable base URL; the two deployments' contacts taking turns afterwards raise
+// nothing, so the builder does not run again at each of them.
+func TestR_BAS_135_APairOfDeploymentsRaisesTheSignalOnceEach(t *testing.T) {
+	e := newEnv(t)
+	s := e.newSite(siteOpts{})
+	bid := e.registration("partners")
+	sig := &recordedSignals{}
+	ctx := context.Background()
+	contact := func(replica, base string) []string {
+		t.Helper()
+		// A recorder per contact: each is a first write of its replica, as a contact a minute after the last one is.
+		c := bastionmain.NewContacts(bastionmain.ContactOptions{DB: s.db, Audit: s.rec, Signals: sig})
+		rec := bastionmain.Recognition{Bastion: "partners", BastionID: bid, Interface: iface.InterfaceVersion, Replica: replica}
+		if err := c.Record(ctx, rec, bastionmain.Report{ClientAddress: "198.51.100.20", UserAgent: "quader-bastion/0.14.0", ResponseBaseURL: base}); err != nil {
+			t.Fatal(err)
+		}
+		return sig.take()
+	}
+	want := []string{cluster.AreaBastionBaseURL + " " + bid}
+	if got := contact("eu-0", "https://pkgs-eu.example.com"); !slices.Equal(got, want) {
+		t.Fatalf("the first deployment raised %q", got)
+	}
+	if got := contact("us-0", "https://pkgs-us.example.com"); !slices.Equal(got, want) {
+		t.Fatalf("the second deployment raised %q", got)
+	}
+	for i := range 2 {
+		e.exec("UPDATE bastion_contact SET contact_at = now() - interval '2 minutes' WHERE bastion_id = $1::uuid", bid)
+		for _, c := range [][2]string{{"eu-0", "https://pkgs-eu.example.com"}, {"us-0", "https://pkgs-us.example.com"}, {"us-1", "https://pkgs-us.example.com"}} {
+			if got := contact(c[0], c[1]); len(got) != 0 {
+				t.Errorf("turn %d: %s raised %q", i, c[0], got)
+			}
+		}
+	}
+}

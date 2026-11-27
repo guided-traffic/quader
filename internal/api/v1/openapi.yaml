@@ -12629,14 +12629,26 @@ paths:
         - name: bastion
           in: query
           description: |
-            The name of a Bastion registration (R-BAS-007). The snippets are rendered on the base URL the Bastion reported at its
-            last handshake, provided it is an entry of `server.additional_base_urls` (`409 bastion_base_url_unknown` otherwise),
-            and carry no publish snippets, since a Bastion is read-only; for npm the configure snippet sets
-            `replace-registry-host=always`. An unknown name answers `404`; a Bastion that does not distribute the repository
-            (R-BAS-134) answers `409 repository_not_distributed`, since it refuses every read of it (R-AUTHZ-043).
+            The name of a Bastion registration (R-BAS-007). The snippets are rendered on one of the Bastion's addresses: the base
+            URLs its replicas reported within the last 24 hours that are entries of `server.additional_base_urls`, one per
+            deployment (R-BAS-135); `address` chooses one, without it the lexically first. A Bastion without such an address
+            answers `409 bastion_base_url_unknown`. The snippets carry no publish snippets, since a Bastion is read-only; for npm
+            the configure snippet sets `replace-registry-host=always`. An unknown name answers `404`; a Bastion that does not
+            distribute the repository (R-BAS-134) answers `409 repository_not_distributed`, since it refuses every read of it
+            (R-AUTHZ-043).
           schema:
             type: string
             pattern: "^[a-z][a-z0-9-]{0,19}$"
+        - name: address
+          in: query
+          description: |
+            With `bastion`: the address of the Bastion's deployment the snippets are rendered on, one of its listed base URLs
+            (R-BAS-135), compared without regard to case and a trailing slash. An address that is not one of them answers
+            `409 bastion_base_url_unknown`; without `bastion` it answers `400 malformed_request`.
+          schema:
+            type: string
+            maxLength: 2048
+          example: https://pkgs-eu.example.com
       responses:
         "200":
           description: The snippets.

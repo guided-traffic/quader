@@ -489,7 +489,11 @@ Priority: **MVP** · Covers: quader-only
   registration answers `404`; [Q-BAS-97](#q-bas-97--the-reported-address-is-matched-against-the-listed-addresses-and-the-setup-needs-no-base-url-of-its-own)),
   and carry no publish snippets, since the Bastion is read-only. *Amended on 2026-11-27 (W-41's B2):* a registration that does not
   distribute the repository (R-BAS-134) answers `409 repository_not_distributed` before its address is looked at, since it refuses every
-  read of the repository ([authorization.md](authorization.md) R-AUTHZ-043). The guide of each format (R-UI-049) and the setup page of
+  read of the repository ([authorization.md](authorization.md) R-AUTHZ-043). *Amended on 2026-11-27 (W-41's E, R-BAS-135):* a registration
+  has one address per deployment, the base URLs its replicas reported within the last 24 hours that are entries of
+  `server.additional_base_urls`; `address=<base URL>` chooses one of them (compared without regard to case and a trailing slash), without
+  it the lexically first answers, which stays the same whichever deployment of a pair made contact last; an `address` that is not one of
+  them answers `409 bastion_base_url_unknown`, and `address` without `bastion` `400 malformed_request`. The guide of each format (R-UI-049) and the setup page of
   R-UI-016 offer the Bastion as a target when a registration has reported a base URL
   ([Q-BAS-96](#q-bas-96--a-bastion-is-a-target-of-the-setup-page-and-of-the-guides-read-only-and-by-link-for-everyone)).
   For npm, the configure snippet sets `replace-registry-host=always`, so that a lockfile written against another host resolves
@@ -514,6 +518,8 @@ Acceptance criteria:
 - A registration that does not distribute the repository answers `409 repository_not_distributed`
   (`TestR_BAS_007_ARepositoryTheBastionDoesNotDistributeAnswers409`, and through the stack the subtest of
   `TestR_BAS_007_ClientSetupForABastionThroughTheStack`).
+- A pair of deployments answers on the address chosen, on the lexically first without one, and `409 bastion_base_url_unknown` for an
+  address that is not one of its listed ones (`TestR_BAS_135_ClientSetupTakesTheAddressOfADeployment`, unit, milliseconds).
 
 ## The Bastion interface of the main installation
 
@@ -638,7 +644,9 @@ The Bastion interface has a version of its own, separate from the release number
   the check answers `none`, with the status of a missing repository, for a repository the registration does not distribute, and the
   handshake's `anonymousReads` is the registration's (R-BAS-134, [authorization.md](authorization.md) R-AUTHZ-043,
   [Q-BAS-522](#q-bas-522--the-handshakes-anonymousreads-is-the-registrations), built on 2026-11-27 by W-41's B2; the surface file is
-  unchanged). The version is `iface.InterfaceVersion`; the comment beside it names the same list.
+  unchanged), and the state document's `baseUrl`, the base URL the catalogue was rendered on, which each deployment of a pair replaces
+  with its own (R-BAS-135, [Q-BAS-524](#q-bas-524--a-pair-of-deployments-shares-one-catalogue-built-on-a-stable-base-url-and-each-bastion-serves-it-on-its-own),
+  built on 2026-11-27 by W-41's E). The version is `iface.InterfaceVersion`; the comment beside it names the same list.
 
 Acceptance criteria:
 
@@ -6476,10 +6484,14 @@ The priority is the one of R-BAS-101 to R-BAS-103.
   file's and applies when a replica starts; a replica that claims jobs starts a run then when the stored state differs from what a run
   would leave (R-BAS-105), so opening the endpoint again builds the catalogues within seconds of the restart
   ([Q-BAS-495](#q-bas-495--while-the-default-endpoint-refuses-anonymous-requests-every-catalogue-is-empty-with-its-reason)).
-- **The base URL.** A registration's documents are rendered on the base URL it reported at its last handshake, provided it is an entry of
-  `server.additional_base_urls` (the rule of client-setup with `bastion=<name>`, R-BAS-007, `catalogue.BaseURL`); a registration that
-  reported none, or one the installation does not list, is not built: the builder records `bastion_base_url_unknown` in its state for the
-  registration's card and keeps what it built before. A disabled registration builds nothing.
+- **The base URL.** A registration's documents are rendered on one base URL: the lexically first of the base URLs its deployments
+  reported within the last 24 hours that are entries of `server.additional_base_urls` (the rule of client-setup with `bastion=<name>`,
+  R-BAS-007, `catalogue.StableBaseURL`). It stays the same whichever deployment of a pair made contact last, so the catalogue is rendered
+  once, not again at each contact of the other deployment; the state document names it (`baseUrl`), and each Bastion serves the catalogue
+  on its own base URL (R-BAS-135). A registration that reported none, or none the installation lists, is not built: the builder records
+  `bastion_base_url_unknown` in its state for the registration's card and keeps what it built before. *Amended on 2026-11-27 (W-41's
+  E):* before, the base URL of the most recent contact, which flipped between the two hosts of a pair. A disabled registration's
+  catalogue is built on, so an enable finds it current (R-BAS-133).
 - **The outcome on the registration.** `GET /api/v1/bastions/{name}` and the list carry the member `catalogue`, the builder's last
   outcome read from its state: `built`, `stopped` with its `reason` (`bastion_base_url_unknown`, `anonymous_requests_refused`), or
   `pending` while no run completed, with the times of the last run (`checkedAt`) and of the last run that changed the catalogue
@@ -6548,7 +6560,11 @@ Priority: **P1** · Covers: quader-only
   the trigger's cached answer to whether some web interface is on, since the switch it carries may be what turned one on. And the signal
   `bastion_base_url`, which a Bastion's contact raises when it brings the registration a base URL the builder does not read yet (R-BAS-010):
   a Bastion that first connects after its web interface was switched on, or whose base URL changed, has its catalogue built within seconds
-  of that contact ([Q-BAS-499](#q-bas-499--a-contact-that-brings-a-new-base-url-starts-the-builder-through-a-signal)).
+  of that contact ([Q-BAS-499](#q-bas-499--a-contact-that-brings-a-new-base-url-starts-the-builder-through-a-signal)). *Amended on
+  2026-11-27 (W-41's E, R-BAS-135):* "a base URL the builder does not read yet" is one none of the registration's replicas reported
+  within the last 24 hours: a new deployment, or one back after a day's silence, which may move the stable base URL; the two deployments
+  of a pair taking turns raise nothing. A deployment that falls silent leaves the base URLs 24 hours after its last contact without a
+  signal; the hourly run builds on the base URL that remains.
   A replica enqueues only while some registration's web interface is on or some registration still holds a catalogue, so an
   installation without one queues nothing ([Q-BAS-361](#q-bas-361--every-change-starts-the-same-run-after-5-s-and-the-hourly-run-is-the-reconciliation)).
 - **At a start.** What a run reads of the configuration file (the default endpoint's `auth.anonymous`, `server.additional_base_urls`)
@@ -6590,7 +6606,8 @@ Acceptance criteria:
 - Integration (`bastioniface`): `TestR_BAS_105_AContactThatBringsANewBaseURLRaisesTheBuildersSignal`
   ([contact_signal_test.go](../../test/integration/bastioniface/contact_signal_test.go): the first contact and a move raise
   `bastion_base_url`; a new replica with the registration's base URL, a contact without one and a repeat within the minute do not), about
-  1 s, five contact rows.
+  1 s, five contact rows; `TestR_BAS_135_APairOfDeploymentsRaisesTheSignalOnceEach` (each deployment's first contact raises it, their
+  turns afterwards do not), about 1 s, three contact rows.
 - The task table of R-OPS-019 ([operations-and-observability.md](operations-and-observability.md)) and the role table of R-ARCH-001 (the
   areas `packages-api`, `vuln-api` and `bastion-catalogue` of the role `worker`): `TestR_OPS_019_TheTaskTableIsTheRegistry`,
   `TestR_ARCH_001_RoleTableIsData`.
@@ -6641,6 +6658,10 @@ The rule of B.13 for what the builder writes:
   ([Q-BAS-398](#q-bas-398--a-versions-file-downloads-through-the-bastions-package-route)).
 - A link of another host (a package's homepage, its repository) stays: public content, readable by pulling the artifact.
 - Text answers (a PEM chain) have their links rewritten the same way; bytes that are no text (a signature object) are kept as they are.
+- *Amended on 2026-11-27 (W-41's E, R-BAS-135):* the base URL of the links is the registration's stable one (R-BAS-104), named in the
+  state document's `baseUrl`. A Bastion whose own `server.base_url` is another (the other deployment of a pair) replaces that origin with
+  its own in every document it serves and every text a crawler reads, whole origins only; the main installation writes nothing per
+  deployment.
 
 *Built on 2026-11-26 (W-35's P6; a file's download through the package route by W-35's P9b):*
 [prepare.go](../../internal/bastionmain/catalogue/prepare.go).
@@ -7920,6 +7941,67 @@ Acceptance criteria:
   allow with its event once, an auditor refused; the Owner's choice and its event; `AI011` for a row around the API; the list with its
   totals and the offered Bastions; the removal deletes the choices, journals its entry, and allowing again brings none back; a move deletes
   the choices with `repository.bastion.removed` (cause `move`); both replays delete restored rows, the second time already in effect).
+
+## A pair of deployments under one registration
+
+The owner's words of 2026-11-27: "Es gibt hier noch zu bedenken, dass es auch ein Pärchen von Bastion-Instanzen sein könnte, die deployt
+wurden und sich mit dem gleichen Token zur Hauptinstanz verbinden." Two Bastion deployments, in two clusters with two addresses, connect
+with the same token; the card names each address and groups the replicas by deployment ([api-and-ui.md](api-and-ui.md)
+[Q-UI-1643](api-and-ui.md#q-ui-1643--a-pair-of-deployments-under-one-registration-is-legitimate-on-the-card)). This section is the wire's
+part ([Q-BAS-524](#q-bas-524--a-pair-of-deployments-shares-one-catalogue-built-on-a-stable-base-url-and-each-bastion-serves-it-on-its-own)).
+
+### R-BAS-135 · A pair of deployments under one registration
+Priority: **P1** · Covers: quader-only
+
+A *deployment* is the replicas that report one base URL at their handshake (R-BAS-010). Several deployments of one registration are
+legitimate and each works as a Bastion of its own, with the one token and the one configuration of the registration.
+
+- **The addresses.** A registration's addresses are the distinct base URLs its replicas reported within the last 24 hours that are entries
+  of `server.additional_base_urls`, in the listed spelling without a trailing slash, in lexical order (`catalogue.ListedBaseURLs`, the
+  statement `BastionRecentBaseURLs`). A deployment silent for a day leaves them; a base URL no entry names is never one. The repository's
+  member `bastions` (R-BAS-134) and the Bastions a project's Owner chooses from carry the same list.
+- **One catalogue.** The public catalogue is built once per registration, on the first of its addresses (R-BAS-104), which stays the same
+  whichever deployment made contact last: the documents are not rendered again when the other deployment's replicas take their turn.
+  Only a contact that reports a base URL none of the registration's replicas reported within the last 24 hours (a new deployment) starts
+  the builder (R-BAS-105). The state document names the base URL the documents were rendered on, `baseUrl`
+  (`iface.CatalogueStateDocument`, the interface version 13, R-BAS-009).
+- **Each Bastion its own address.** A Bastion whose own `server.base_url` differs from the state document's `baseUrl` replaces that origin
+  with its own in every document, summary, version, description and documentation hit it serves and in every text of a crawler's page
+  (R-BAS-121): whole origins only, where the byte after it cannot continue a host, a port or a path segment (the end, `/`, a quote, the
+  backslash of an escape in JSON, `?`, `#`, a space); `https://pkgs-eu.example.com` inside `https://pkgs-eu.example.com.example.net` or
+  before `:8443` is left. The copy it keeps is the main installation's: its SHA-256 stays, and an answer it rewrote carries the SHA-256 of
+  the bytes served as its tag and gzip of the same bytes. The sitemap's addresses are on its own base URL already (R-BAS-122).
+- **Set up client.** `client-setup?bastion=<name>&address=<base URL>` renders on one address of the registration, without `address` on the
+  first (R-BAS-007).
+- **What stays per deployment.** The anonymous ceiling, the download slots and the throughput are held by each deployment's shared state
+  (its own Valkey, or none): a pair admits up to twice each figure at the main installation
+  ([H-2446](../security/bastion.md#h-2446--a-pair-of-deployments-holds-the-anonymous-ceiling-the-slots-and-the-throughput-each)). The
+  catalogue's copy, the cache and the blocks are each deployment's own as well.
+
+*Built on 2026-11-27 (W-41's E):* the statement `BastionRecentBaseURLs` and the signal's condition of `BastionContactUpsert`
+([bastion_contact.sql](../../internal/meta/postgres/queries/bastion_contact.sql)), `ListedBaseURLs` and `StableBaseURL` of
+[builder.go](../../internal/bastionmain/catalogue/builder.go) with the state document's `baseUrl`, the registrations of
+[wire_bastion_catalogue.go](../../internal/app/wire_bastion_catalogue.go), `bastionBase` of
+[packages_api.go](../../internal/api/v1/packages_api.go), the reader's `RenderedOn` ([origin.go](../../internal/bastion/catalogue/origin.go))
+and the Bastion's rewrite ([rebase.go](../../internal/bastion/gui/rebase.go)).
+
+Acceptance criteria:
+
+- Unit ([builder_test.go](../../internal/bastionmain/catalogue/builder_test.go), microseconds, no data):
+  `TestR_BAS_135_TheCatalogueIsBuiltOnOneStableBaseURL` (the first listed base URL whichever order the deployments' contacts come in, an
+  unlisted one never); `TestR_MAL_042_TheStateCarriesTodaysSignaturesAndNothingOfTheInstallation` checks the state's `baseUrl`.
+- Unit ([bastion_setup_test.go](../../internal/api/v1/bastion_setup_test.go), milliseconds):
+  `TestR_BAS_135_ClientSetupTakesTheAddressOfADeployment`.
+- Unit ([catalogue_test.go](../../internal/bastion/catalogue/catalogue_test.go), about 0.05 s, a package of bytes):
+  `TestR_BAS_135_TheReaderKnowsTheBaseURLTheCatalogueWasRenderedOn` (after a round, after a restart from the stored state, after a move).
+- Unit ([rebase_test.go](../../internal/bastion/gui/rebase_test.go), milliseconds, bytes):
+  `TestR_BAS_135_ReplaceOriginReplacesWholeOriginsOnly` (an origin inside a longer host, before a port, in another scheme or before a dot
+  left; a whole one replaced, also inside JSON's escapes); `TestR_BAS_135_ABastionServesThePairsCatalogueOnItsOwnBaseURL` (a document, its
+  gzip, its tag, the search, the lookup, the documentation search and a crawler's description on the replica's own base URL, the kept
+  document's SHA-256 unchanged, the replica it was rendered on serving the kept bytes).
+- Integration (`bastioniface`, [contact_signal_test.go](../../test/integration/bastioniface/contact_signal_test.go), about 1 s, three
+  contact rows): `TestR_BAS_135_APairOfDeploymentsRaisesTheSignalOnceEach`; (`postgres`) the statement `BastionRecentBaseURLs` empty after
+  a day without contact.
 
 ## A registration the configuration declares
 
@@ -16328,6 +16410,35 @@ distribution, the anonymous caller of a Bastion reads only what that Bastion dis
 `bastion_distribution`, R-BAS-105). **Applied in the spec:** R-BAS-101, R-BAS-104; code:
 [render.go](../../internal/bastionmain/catalogue/render.go), [wire_bastion_catalogue.go](../../internal/app/wire_bastion_catalogue.go).
 
+### Q-BAS-524 · A pair of deployments shares one catalogue built on a stable base URL, and each Bastion serves it on its own
+
+Status: **Decided by the development agent** on 2026-11-27 (W-41's plan, D4's wire part, D21's server part) — selected from the options
+below; the owner reviews it at the walkthrough.
+
+Context: R-BAS-104, R-BAS-105, R-BAS-007, R-BAS-135. The owner: "Es gibt hier noch zu bedenken, dass es auch ein Pärchen von
+Bastion-Instanzen sein könnte, die deployt wurden und sich mit dem gleichen Token zur Hauptinstanz verbinden." Before, the builder rendered
+a registration's catalogue on the base URL of its most recent contact: with two deployments it flipped between the two hosts, every flip
+rendered every document again, and each deployment's pages carried the other's addresses half the time; `client-setup?bastion=<name>`
+rendered on whichever host made contact last (W-41's plan, F2 and F3). The screen's part is
+[api-and-ui.md](api-and-ui.md#q-ui-1643--a-pair-of-deployments-under-one-registration-is-legitimate-on-the-card) Q-UI-1643.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One catalogue on a stable base URL (the lexically first listed one among the deployments heard within 24 hours), named in the state document's `baseUrl`; each Bastion replaces that origin with its own in what it serves, whole origins only; the builder starts on a new deployment only; client setup takes `address` (chosen) | One render for any number of deployments; each deployment's pages and commands name its own host; no flip, no run per contact | The Bastion rewrites bytes at serving time (only on the deployment that is not the first), and a sentence that ends in the bare origin and a dot keeps the other's address |
+| (b) One catalogue per deployment | Each rendered on its own host, nothing rewritten at the Bastion | The builder's work and the main installation's store times the number of deployments, and a deployment that falls silent leaves a catalogue to clean up |
+| (c) Documents with relative addresses only | No base URL in a document | The set-ups and the install commands of every format need an absolute address; the clients take no relative one |
+
+**Choice:** (a). The 24 hours are counted from now, as the repository's member `bastions` and the card's head count them (R-BAS-134,
+Q-UI-1643): a registration silent for a day has no address, its catalogue stops with `bastion_base_url_unknown` at the next run and keeps
+what it built, and its first contact builds it again. A whole origin is one followed by a byte that cannot continue a host, a port or a
+path segment, wider than the plan's "followed by `/`, `"` or the end", because a README's link inside JSON is followed by the backslash of
+`\"` and a text's by a space. The SHA-256 a Bastion keeps stays the main installation's, so its sync compares as before; an answer it
+rewrote is tagged by the bytes served. A change of the interface's form (the member `baseUrl`), folded into the unreleased version 13
+(R-BAS-009). **Applied in the spec:** R-BAS-007, R-BAS-009, R-BAS-104, R-BAS-105, R-BAS-107, R-BAS-135; code:
+[bastion_contact.sql](../../internal/meta/postgres/queries/bastion_contact.sql), [builder.go](../../internal/bastionmain/catalogue/builder.go),
+[wire_bastion_catalogue.go](../../internal/app/wire_bastion_catalogue.go), [packages_api.go](../../internal/api/v1/packages_api.go),
+[origin.go](../../internal/bastion/catalogue/origin.go), [rebase.go](../../internal/bastion/gui/rebase.go).
+
 ### Q-BAS-525 · Every request past the host and the block list takes one token of its address's request limit
 
 Status: **Decided by the development agent** on 2026-11-27 (H-2448 of the security page, which the owner asked to be solved after the
@@ -16837,7 +16948,12 @@ alias of the main installation, so a reader who chose that registration is sent 
 meant; no other address can reach a snippet. Separately, the answers `404`, `409` and `200` tell any caller who may read a repository
 whether a registration of that name exists. What makes it real: a stolen Bastion token and a listed address that a reader trusts for a
 different purpose; an attacker who guesses names (at most 16 registrations, each name matching `^[a-z][a-z0-9-]{0,19}$`) learns only
-that a name exists, never a token or a contact.
+that a name exists, never a token or a contact. *Amended on 2026-11-27 (W-41's E, R-BAS-135):* a registration has an address per base URL
+its replicas reported within the last 24 hours, and the snippets without `address` and the public catalogue take the lexically first. A
+holder of the token who reports another listed address adds it beside the real deployments' for a day, and when it sorts first it becomes
+the snippets' default and the base URL the catalogue is rendered on; the real deployments still serve their pages on their own addresses
+(they replace the catalogue's), so what moves is the default of Set up client and the links of a deployment that does not exist. Closing
+it is what closes H-386.
 
 ### H-460 · Without a signing key the entries on the volume are not authenticated
 

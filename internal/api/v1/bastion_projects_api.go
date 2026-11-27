@@ -2,9 +2,9 @@ package v1
 
 import (
 	"net/http"
-	"strings"
 
 	"github.com/guided-traffic/quader/internal/api/v1/gen"
+	"github.com/guided-traffic/quader/internal/bastionmain/catalogue"
 	"github.com/guided-traffic/quader/internal/httpserver"
 	"github.com/guided-traffic/quader/internal/repository"
 )
@@ -122,18 +122,8 @@ func (s *Server) genBastions(refs []repository.BastionRef) gen.RepositoryBastion
 	return out
 }
 
-// listedAddresses are the reported base URLs that are entries of listed, in the listed spelling without a trailing slash, in the order
-// reported.
+// listedAddresses are the reported base URLs that are entries of listed, in the listed spelling without a trailing slash, in lexical
+// order (catalogue.ListedBaseURLs): the first is the one client-setup with bastion=<name> takes without an address (R-BAS-135).
 func listedAddresses(reported, listed []string) []string {
-	out := []string{}
-	for _, rep := range reported {
-		trimmed := strings.TrimSuffix(rep, "/")
-		for _, l := range listed {
-			if strings.EqualFold(strings.TrimSuffix(l, "/"), trimmed) {
-				out = append(out, strings.TrimSuffix(l, "/"))
-				break
-			}
-		}
-	}
-	return out
+	return catalogue.ListedBaseURLs(reported, listed)
 }

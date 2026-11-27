@@ -10731,10 +10731,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-BAS
 
-438 questions on [spec/bastion.md](spec/bastion.md).
+439 questions on [spec/bastion.md](spec/bastion.md).
 
 <details>
-<summary>Q-BAS: 438 questions</summary>
+<summary>Q-BAS: 439 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -11172,6 +11172,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-BAS-521](spec/bastion.md#q-bas-521--a-narrowing-of-the-distribution-is-journaled-and-tells-every-bastion-at-once) | A narrowing of the distribution is journaled and tells every Bastion at once | Decided by the development agent on 2026-11-27 (W-41's plan, D17) | (a) Four events; the two removals journaled (`{bastionId, projectId}`, `{repositoryId, bastionId}`) and replayed by deleting the rows; the feed maps a widening to `settings` and a narrowing to `grants` and `settings`; the change area `bastion_distribution` starts the catalogue's builder | — |
 | [Q-BAS-522](spec/bastion.md#q-bas-522--the-handshakes-anonymousreads-is-the-registrations) | The handshake's anonymousReads is the registration's | Decided by the development agent on 2026-11-27 (W-41's plan, D18) | (a) True while the default endpoint admits anonymous requests and at least one public repository is distributed through this registration | — |
 | [Q-BAS-523](spec/bastion.md#q-bas-523--the-catalogue-shows-the-public-repositories-its-bastion-distributes) | The catalogue shows the public repositories its Bastion distributes | Decided by the development agent on 2026-11-27 (W-41's plan, D19) | (a) The renderer's request carries the registration, so its anonymous subject is the one of a forward through that Bastion and the decision point narrows every read of the run | — |
+| [Q-BAS-524](spec/bastion.md#q-bas-524--a-pair-of-deployments-shares-one-catalogue-built-on-a-stable-base-url-and-each-bastion-serves-it-on-its-own) | A pair of deployments shares one catalogue built on a stable base URL, and each Bastion serves it on its own | Decided by the development agent on 2026-11-27 (W-41's plan, D4's wire part, D21's server part) | (a) One catalogue on a stable base URL (the lexically first listed one among the deployments heard within 24 hours), named in the state document's `baseUrl`; each Bastion replaces that origin with its own in what it serves, whole origins only; the builder starts on a new deployment only; client setup takes `address` | — |
 | [Q-BAS-525](spec/bastion.md#q-bas-525--every-request-past-the-host-and-the-block-list-takes-one-token-of-its-addresss-request-limit) | Every request past the host and the block list takes one token of its address's request limit | Decided by the development agent on 2026-11-27 (H-2448 of the security page, which the owner asked to be solved after the authorized attack of that day) | (a) The request limit right after the block list for every request: the path, its credential and the token form are read first (they choose the class), and what they refuse is answered after the limit; the web interface asks the class `gui` for its application and the anonymous class for the rest | — |
 | [Q-BAS-526](spec/bastion.md#q-bas-526--the-web-interfaces-files-and-data-count-as-pages) | The web interface's files and data count as pages | Decided by the development agent on 2026-11-27 (H-2448) | (a), as built before; the measurement is written into the test that holds it (`TestR_BAS_035_APageFloodTakesThePageLimitAndABrowsersFirstLoadStaysInsideIt`). | — |
 | [Q-BAS-527](spec/bastion.md#q-bas-527--a-request-for-a-foreign-host-takes-no-token) | A request for a foreign host takes no token | Decided by the development agent on 2026-11-27 (H-2448) | (a) The host step stays first and takes no token | — |
