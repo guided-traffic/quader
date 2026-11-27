@@ -338,19 +338,33 @@ type catalogueTrigger struct {
 }
 
 // catalogueTriggerAreas are the change areas after which the trigger starts a run: a repository's settings, the authorization, the
-// advisory data, and a new signature set in use and a change of the rescan settings, which change the catalogue's state (R-MAL-042,
-// Q-BAS-491).
+// advisory data, a new signature set in use and a change of the rescan settings, which change the catalogue's state (R-MAL-042,
+// Q-BAS-491), and a registration's configuration, whose switches gui and docs decide what is built (R-BAS-102).
 var catalogueTriggerAreas = []string{
 	cluster.AreaRepoConfig, cluster.AreaAuthz, cluster.AreaVulnData, cluster.AreaMalwareDatabase, cluster.AreaMalwareSettings,
+	cluster.AreaBastionConfiguration,
 }
 
-// register hears the change areas through the cache registry.
+// register hears the change areas through the cache registry. A change of a registration's configuration forgets the cached answer
+// of active first: the switch it carries may be what turns a web interface on.
 func (t *catalogueTrigger) register(caches *cache.Registry) {
 	cache.Register(caches, "bastion_catalogue_trigger", cache.Options[struct{}, struct{}]{
 		MaxEntries: 1, SafetyTTL: time.Hour, Areas: catalogueTriggerAreas,
-		OnChange: func(*cache.Cache[struct{}, struct{}], string, int, json.RawMessage) { t.fire() },
-		OnFlush:  func(string) { t.fire() },
+		OnChange: func(_ *cache.Cache[struct{}, struct{}], area string, _ int, _ json.RawMessage) {
+			if area == cluster.AreaBastionConfiguration {
+				t.forget()
+			}
+			t.fire()
+		},
+		OnFlush: func(string) { t.forget(); t.fire() },
 	})
+}
+
+// forget drops the cached answer of active, so that the next change asks again.
+func (t *catalogueTrigger) forget() {
+	t.mu.Lock()
+	t.activeAt = time.Time{}
+	t.mu.Unlock()
 }
 
 // Name implements Component.

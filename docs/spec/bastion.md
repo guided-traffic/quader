@@ -6280,12 +6280,17 @@ builds no documentation and deletes what was built (R-BAS-104, R-BAS-108; `TestR
 (2026-11-26):* the switches on the card, each with its sentence (R-UI-240). *Not built:* the pages the switches start and stop (P9).
 *Built on 2026-11-26 (W-35's P7):* at the Bastion: `gui` on starts the sync, off makes the catalogue unreadable at once and deletes its
 tree; `docs` off hides the documentation at once (R-BAS-112). *Built on 2026-11-26 (W-35's P11):* the documentation by `docs` and the
-wiki at the builder, at the data path and on the pages (R-BAS-124 to R-BAS-126).
+wiki at the builder, at the data path and on the pages (R-BAS-124 to R-BAS-126). *Built on 2026-11-27 (W35-P9f):* a change of a
+switch starts the builder's run within its debounce (the change area `bastion_configuration`, R-BAS-105), so the first catalogue follows
+the switch within seconds and `gui` off deletes the catalogue then.
 
 Acceptance criteria:
 
 - Unit (`internal/api/v1`, `TestR_BAS_102_TheCatalogueRoutesAnswerByTheSwitches`, 0.2 s, no data): with `gui` off the four routes answer
   `404 not_found`; with it on and `docs` off a documentation path answers `404` and names the documentation.
+- Unit ([wire_bastion_catalogue_test.go](../../internal/app/wire_bastion_catalogue_test.go),
+  `TestR_BAS_102_SwitchingTheWebInterfaceOnStartsTheBuilder`, 0.1 s, no data): a change of `bastion_configuration` starts a run, also
+  right after the trigger answered that no web interface is on.
 
 ### R-BAS-103 · The grammar of a document's path
 Priority: **P1** · Covers: quader-only
@@ -6417,7 +6422,10 @@ Priority: **P1** · Covers: quader-only
 - **Triggers.** A run starts 5 s after a change that can change a catalogue (the debounce: one publish arrives as several signals and change
   areas): the signals `metadata_changed`, `malware_verdict` and `signature_verdict`, and the change areas `repo_config`, `authz`,
   `vuln_data`, `malware_database` and `malware_settings` (a new signature set in use and a change of the rescan settings, which change
-  the catalogue's state, [Q-BAS-491](#q-bas-491--a-new-set-and-a-change-of-the-rescan-settings-start-the-builder-and-only-the-state-changes)).
+  the catalogue's state, [Q-BAS-491](#q-bas-491--a-new-set-and-a-change-of-the-rescan-settings-start-the-builder-and-only-the-state-changes)),
+  and `bastion_configuration`, which a change of a registration's switches `gui` and `docs` raises (R-BAS-102): switching the web interface
+  on builds its first catalogue within the debounce and a run, off deletes it, without waiting for the hourly run. That change also drops
+  the trigger's cached answer to whether some web interface is on, since the switch it carries may be what turned one on.
   A replica enqueues only while some registration's web interface is on or some registration still holds a catalogue, so an
   installation without one queues nothing ([Q-BAS-361](#q-bas-361--every-change-starts-the-same-run-after-5-s-and-the-hourly-run-is-the-reconciliation)).
 - **At a start.** What a run reads of the configuration file (the default endpoint's `auth.anonymous`, `server.additional_base_urls`)
@@ -6443,14 +6451,16 @@ Priority: **P1** · Covers: quader-only
 feed entry of the kind `catalogue` (R-BAS-101): a Bastion learns of a change at its poll or at the round it runs after the builder's
 debounce (R-BAS-112, [Q-BAS-378](#q-bas-378--no-feed-entry-of-the-kind-catalogue-the-follow-up-round-after-the-builders-debounce-carries-a-change); [Q-BAS-369](#q-bas-369--the-builder-writes-no-feed-entry-yet-a-bastion-learns-a-change-at-its-poll),
 [H-2314](../security/bastion.md#h-2314--a-narrowing-reaches-a-bastions-pages-only-at-its-next-poll-after-the-run)). *Built on 2026-11-27
-(W35-P9f):* the run at a start (`Builder.Drift`, the trigger's `drift`).
+(W35-P9f):* the run at a start (`Builder.Drift`, the trigger's `drift`); the change area `bastion_configuration` among the triggers.
 
 Acceptance criteria:
 
 - Unit: `TestR_BAS_105_TheReconciliationRendersOnlyWhatChanged` (a rescan that moved every time renders and writes nothing; a changed
   fingerprint renders the package and writes only what changed; a package gone is deleted whole), milliseconds;
   ([wire_bastion_catalogue_test.go](../../internal/app/wire_bastion_catalogue_test.go))
-  `TestR_BAS_105_AReplicaThatStartsWithAChangedConfigurationStartsARun` (a start with a drift starts one run, one without none), and
+  `TestR_BAS_105_AReplicaThatStartsWithAChangedConfigurationStartsARun` (a start with a drift starts one run, one without none),
+  `TestR_BAS_102_SwitchingTheWebInterfaceOnStartsTheBuilder` (a change of `bastion_configuration` right after an answer that no web
+  interface is on starts a run), and
   `Drift` in `TestR_BAS_104_NothingIsBuiltWhileTheDefaultEndpointRefusesAnonymousRequests`, milliseconds.
 - The task table of R-OPS-019 ([operations-and-observability.md](operations-and-observability.md)) and the role table of R-ARCH-001 (the
   areas `packages-api`, `vuln-api` and `bastion-catalogue` of the role `worker`): `TestR_OPS_019_TheTaskTableIsTheRegistry`,

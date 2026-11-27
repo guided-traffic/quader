@@ -1861,8 +1861,9 @@ registration whose `gui` is off loses its catalogue; documents no row names go a
 `auth.anonymous` is `false` (`Options.AnonymousRefused`, read by `anonymousRefused` of the wiring) no registration is built: each one's
 catalogue is dropped once and its state records `anonymous_requests_refused` (`stopReason`, `stop`; R-BAS-104, Q-BAS-495).
 
-**The trigger** enqueues the job 5 s after a signal or a change area (R-BAS-105) while some registration has a catalogue to build or to
-drop, and once when its replica starts if `Builder.Drift` finds that the stored states differ from what a run would leave: the
+**The trigger** enqueues the job 5 s after a signal or a change area (R-BAS-105; `catalogueTriggerAreas`, among them
+`bastion_configuration`, which a change of a registration's switches raises and which also drops the cached answer of `active`) while
+some registration has a catalogue to build or to drop, and once when its replica starts if `Builder.Drift` finds that the stored states differ from what a run would leave: the
 configuration a run reads changes only with a restart (Q-BAS-496). Its answers (`active`, `enqueue`, `drift`) are functions the wiring
 fills, so [wire_bastion_catalogue_test.go](../../internal/app/wire_bastion_catalogue_test.go) drives it without a database or a queue.
 

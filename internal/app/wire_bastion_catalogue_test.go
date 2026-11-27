@@ -2,11 +2,14 @@ package app
 
 import (
 	"context"
+	"encoding/json"
 	"log/slog"
 	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/guided-traffic/quader/internal/cache"
+	"github.com/guided-traffic/quader/internal/cluster"
 	"github.com/guided-traffic/quader/internal/config"
 )
 
@@ -36,6 +39,46 @@ func TestR_BAS_104_TheBuilderTakesTheDefaultEndpointsAnonymousSetting(t *testing
 	cfg.Server.Endpoints = map[string]config.Endpoint{config.DefaultEndpoint: {Auth: config.EndpointAuth{Anonymous: &no}}}
 	if !anonymousRefused(cfg) {
 		t.Fatal("auth.anonymous false on the default endpoint, but the builder builds")
+	}
+}
+
+// TestR_BAS_102_SwitchingTheWebInterfaceOnStartsTheBuilder: a change of a registration's configuration (its switches, the change area
+// bastion_configuration) starts a run within the debounce, also right after the trigger answered for another change that no
+// registration had its web interface on: the switch is what made it on, so the trigger asks again instead of its cached answer.
+func TestR_BAS_102_SwitchingTheWebInterfaceOnStartsTheBuilder(t *testing.T) {
+	var on atomic.Bool
+	tr, started := fakeTrigger(false, false)
+	tr.active = func(context.Context) bool { return on.Load() }
+	caches, err := cache.NewRegistry(nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tr.register(caches)
+	if err := tr.Start(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = tr.Stop(context.Background()) })
+	wait := func(want int64, within time.Duration) bool {
+		deadline := time.Now().Add(within)
+		for time.Now().Before(deadline) {
+			if started.Load() >= want {
+				return true
+			}
+			time.Sleep(5 * time.Millisecond)
+		}
+		return false
+	}
+
+	// A repository's settings changed while no web interface is on: nothing starts, and the trigger keeps that answer for a while.
+	caches.ApplyChange(cluster.AreaRepoConfig, 1, json.RawMessage(`{}`))
+	if wait(1, 100*time.Millisecond) {
+		t.Fatal("a run started while no registration has its web interface on")
+	}
+	// The web interface switched on (PATCH /api/v1/bastions/{name} notifies bastion_configuration): a run starts at once.
+	on.Store(true)
+	caches.ApplyChange(cluster.AreaBastionConfiguration, 1, json.RawMessage(`{"bastion":"0192f1c4-0000-7000-8000-0000000000b1"}`))
+	if !wait(1, 2*time.Second) {
+		t.Fatal("switching the web interface on started no run")
 	}
 }
 
