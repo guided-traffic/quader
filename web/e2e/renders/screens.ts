@@ -1544,22 +1544,25 @@ async function* malwareFiles(page: Page): AsyncGenerator<string> {
  * administrator can), then with the installation's switch on, which makes it checked and read-only.
  */
 async function* malwareSection(page: Page): AsyncGenerator<string> {
-  const open = async (): Promise<void> => {
-    const { toggle } = sectionHeaded(page, 'Malware scan');
-    await toggle.click();
-    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
-    await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
-  };
-  await open();
+  // The section by its component, not its heading: the German pass walks the page too (UI_RENDERS_LOCALE=de).
+  await openSectionOf(page, 'quader-repository-malware');
   yield '';
   await answerWith(page, '**/api/v1/malware/switch', (b) => ({ ...b, onlyChecked: true }));
-  await open();
+  await openSectionOf(page, 'quader-repository-malware');
   await expect(page.locator('main [data-testid="repo-malware-installation"]')).toBeVisible();
   yield 'installation-on';
   await page.unroute('**/api/v1/malware/switch');
 }
 
 // >>> download-links
+/** Opens the closed section that the component `host` is, found by its tag and not its heading, and waits for its fold to end. */
+async function openSectionOf(page: Page, host: string): Promise<void> {
+  const toggle = page.locator(`main ${host} quader-disclosure button.toggle`).first();
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
+}
+
 /** Opens the closed section headed `heading` and waits for its fold to end. */
 async function openHeaded(page: Page, heading: string): Promise<void> {
   const { toggle } = sectionHeaded(page, heading);
@@ -1653,17 +1656,18 @@ async function* storageSettings(page: Page): AsyncGenerator<string> {
  * npm repository, not every client of which checks a digest (disabled, with its reason). Nothing is saved.
  */
 async function* downloadLinksSection(page: Page): AsyncGenerator<string> {
-  await openHeaded(page, 'Download links');
+  // The section by its component, not its heading: the German pass walks the page too (UI_RENDERS_LOCALE=de).
+  await openSectionOf(page, 'quader-repository-download-links');
   await expect(page.locator('main [data-testid="repo-links-installation-off"]')).toBeVisible();
   yield '';
   const sw = '**/api/v1/download-links/switch';
   await answerWith(page, sw, (b) => ({ ...b, enabled: true }));
-  await openHeaded(page, 'Download links');
+  await openSectionOf(page, 'quader-repository-download-links');
   await expect(page.locator('main [data-testid="repo-links-installation-on"]')).toBeVisible();
   yield 'on';
   await page.goto(`${P}/repositories/npm-internal/settings`);
   await page.waitForLoadState('networkidle');
-  await openHeaded(page, 'Download links');
+  await openSectionOf(page, 'quader-repository-download-links');
   await expect(page.locator('main [data-testid="repo-links-not-applicable"]')).toBeVisible();
   yield 'not-applicable';
   await page.unroute(sw);
@@ -2321,9 +2325,14 @@ async function* signatureFile(page: Page): AsyncGenerator<string> {
   yield 'sibling';
 }
 
+/** The sections of **Settings › Signatures** by their content, not their headings: the German pass walks the page too. */
+const signatureBlocks = (page: Page): Locator => page.locator('main quader-disclosure[data-testid="signature-blocks"]');
+const signatureRoot = (page: Page): Locator => page.locator('main quader-disclosure', { has: page.locator('[data-testid="signature-root"]') });
+
 /** Opens the section **Public Sigstore root** of **Settings › Signatures**, which a reload closes. */
 async function openRoot(page: Page): Promise<void> {
-  const { section, toggle } = sectionHeaded(page, 'Public Sigstore root');
+  const section = signatureRoot(page);
+  const toggle = section.locator('button.toggle').first();
   await toggle.click();
   await expect(toggle).toHaveAttribute('aria-expanded', 'true');
   await expect(section.locator('[data-testid="signature-root"]')).toBeVisible();
@@ -2340,15 +2349,16 @@ async function* signatureSettings(page: Page): AsyncGenerator<string> {
   const settings = '**/api/v1/signatures/settings';
   await expect(page.locator('main quader-anchor-table tbody tr').first()).toBeVisible();
   yield '';
-  for (const heading of ['Blocked signers', 'Public Sigstore root']) {
-    const { toggle } = sectionHeaded(page, heading);
+  for (const section of [signatureBlocks(page), signatureRoot(page)]) {
+    const toggle = section.locator('button.toggle').first();
     await toggle.click();
     await expect(toggle).toHaveAttribute('aria-expanded', 'true');
   }
   await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
   yield 'sections';
-  await page.getByRole('button', { name: 'Add trust anchor' }).first().click();
-  const dialog = page.getByRole('dialog', { name: 'Add trust anchor' });
+  const blockSigner = signatureBlocks(page).locator('.row-actions button');
+  await page.locator('main section[aria-labelledby="sig-anchors"] .row-actions button').click();
+  const dialog = page.getByRole('dialog');
   await expect(dialog).toBeVisible();
   await dialog.locator('quader-disclosure button.inline-toggle').click();
   yield 'anchor-ca';
@@ -2360,11 +2370,13 @@ async function* signatureSettings(page: Page): AsyncGenerator<string> {
     await dialog.locator('select[name="kind"]').selectOption(kind);
     yield name;
   }
-  await dialog.getByRole('button', { name: 'Cancel' }).click();
-  await page.getByRole('button', { name: 'Block signer' }).first().click();
-  await expect(page.getByRole('dialog', { name: 'Block signer' })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
+  await blockSigner.click();
+  await expect(dialog.locator('form')).toBeVisible();
   yield 'block';
-  await page.getByRole('dialog').getByRole('button', { name: 'Cancel' }).click();
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
   // The impact before a removal and a block (R-SIG-071, R-SIG-074), answered in the browser: the profile gates no repository.
   const impact = '**/api/v1/signatures/impact';
   await page.route(impact, (route) =>
@@ -2383,18 +2395,20 @@ async function* signatureSettings(page: Page): AsyncGenerator<string> {
       },
     }),
   );
-  await page.locator('main quader-anchor-table tr').filter({ hasText: 'Release key 2026' }).getByRole('button', { name: /^Remove/ }).click();
-  await expect(page.getByRole('dialog')).toBeVisible();
+  // The anchor by its name, which is data.
+  await page.locator('main quader-anchor-table tr').filter({ hasText: 'Release key 2026' }).locator('td.actions button').click();
+  await expect(dialog).toBeVisible();
   yield 'impact';
-  await page.getByRole('dialog').getByRole('button', { name: 'Cancel' }).click();
-  await page.getByRole('button', { name: 'Block signer' }).first().click();
-  const blockDialog = page.getByRole('dialog', { name: 'Block signer' });
-  await blockDialog.getByRole('textbox', { name: 'Value' }).fill('9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08');
-  await blockDialog.getByRole('textbox', { name: 'Reason' }).fill('The key of the old build server was copied.');
-  await blockDialog.getByRole('button', { name: 'Block signer' }).click();
-  await expect(blockDialog.locator('[data-testid="block-impact"]')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
+  await blockSigner.click();
+  await dialog.locator('input[name="value"]').fill('9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08');
+  await dialog.locator('textarea[name="reason"]').fill('The key of the old build server was copied.');
+  await dialog.locator('button[type="submit"]').click();
+  await expect(dialog.locator('[data-testid="block-impact"]')).toBeVisible();
   yield 'block-impact';
-  await blockDialog.getByRole('button', { name: 'Cancel' }).click();
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
   await page.unroute(impact);
   // The profile does not refresh the public root (Q-UI-1047): 'sections' shows the release's snapshot, the stack's answer, and a
   // refreshed root is answered here, without a failure, and in 'switch-off' with one.
@@ -3833,10 +3847,10 @@ export const screens: readonly Screen[] = [
   { id: 'project-usage-caller', path: `${P}/usage/user/${kinds.power}`, kinds: owners, walk: usageDetailWalk },
   { id: 'repository-settings-restricted', path: `${P}/repositories/npm-internal/settings`, kinds: owners, walk: restrictedSettings },
   // The strict repository's section Malware scan (R-MAL-020): its Owner may not switch it off, an administrator may.
-  { id: 'repository-settings-malware', path: `${P}/repositories/${malwarePackage.repo}/settings`, kinds: owners, walk: malwareSection },
+  { id: 'repository-settings-malware', path: `${P}/repositories/${malwarePackage.repo}/settings`, kinds: owners, walk: malwareSection, de: true },
   // >>> download-links
   // The repository's section Download links (R-UI-201): the installation's switch off and on, and a format not every client of which checks.
-  { id: 'repository-settings-links', path: `${P}/repositories/images/settings`, kinds: owners, walk: downloadLinksSection },
+  { id: 'repository-settings-links', path: `${P}/repositories/images/settings`, kinds: owners, walk: downloadLinksSection, de: true },
   // <<< download-links
   // The fetch of a remote's signatures (R-SIG-040): a project's remote, and Docker Hub of the project upstream, an administrator's.
   { id: 'repository-settings-signatures', path: `${P}/repositories/npmjs/settings`, kinds: owners, walk: signaturesSection },
@@ -4027,7 +4041,7 @@ export const screens: readonly Screen[] = [
   // The image scanning's page beside it (R-VULN-053): every state of the administrator's, and the auditor's read without Import now.
   { id: 'admin-settings-vulnerabilities', path: '/ui/admin/settings/vulnerabilities', kinds: admins, walk: vulnScanningSettings, de: true },
   { id: 'admin-settings-vulnerabilities-read', path: '/ui/admin/settings/vulnerabilities', kinds: ['auditor'], walk: vulnScanningSettings },
-  { id: 'admin-settings-signatures', path: '/ui/admin/settings/signatures', kinds: admins, walk: signatureSettings, tables: 'quader-data-table' },
+  { id: 'admin-settings-signatures', path: '/ui/admin/settings/signatures', kinds: admins, walk: signatureSettings, tables: 'quader-data-table', de: true },
   // >>> download-links
   { id: 'admin-settings-storage', path: '/ui/admin/settings/storage', kinds: admins, walk: storagePage, de: true },
   { id: 'admin-settings-storage-links', path: '/ui/admin/settings/storage', kinds: admins, walk: storageSettings },

@@ -61025,7 +61025,7 @@
       </notes>
       <segment>
         <source>Block signer and refuse them</source>
-        <target>Unterzeichner sperren und sie verweigern</target>
+        <target>Signierer sperren und Artefakte verweigern</target>
       </segment>
     </unit>
     <unit id="sig.block.submit">

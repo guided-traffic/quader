@@ -111,7 +111,7 @@
       }
     </section>
 
-    <quader-disclosure i18n-heading="@@sig.settings.blocks" heading="Blocked signers" [hint]="blocksHint" [count]="blocks().length">
+    <quader-disclosure data-testid="signature-blocks" i18n-heading="@@sig.settings.blocks" heading="Blocked signers" [hint]="blocksHint" [count]="blocks().length">
       @if (canWrite()) {
         <div class="row-actions">
           <button class="btn btn-default" type="button" (click)="blockSigner()" i18n="@@sig.block.heading">Block signer</button>
