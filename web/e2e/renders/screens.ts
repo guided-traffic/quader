@@ -1354,16 +1354,19 @@ async function answerWith(page: Page, url: string, change: (body: Record<string,
  * internet with its commands; no database yet and the switch on; the scanning off in the configuration.
  */
 async function* malwareSettings(page: Page): AsyncGenerator<string> {
+  // The controls by their place, not their words: the German pass walks the page too (UI_RENDERS_LOCALE=de).
   const settings = '**/api/v1/malware/settings';
   const controller = '**/api/v1/malware/controller';
-  await expect(page.getByRole('heading', { name: 'Signature database' })).toBeVisible();
+  const database = page.locator('main h2#malware-database');
+  const downloads = page.locator('main section[aria-labelledby="malware-downloads"]');
+  await expect(database).toBeVisible();
   yield '';
   // The controller at work (R-MAL-041, R-UI-257): the replicas' calls name rows of its queue, so Working on names their files.
   await routeWith(page, '**/api/v1/system/scanners', scannersWithCalls);
   await answerWith(page, controller, controllerAtWork(false));
   await expect(page.locator('main [data-testid="malware-controller-stopped"]')).toBeVisible();
   yield 'controller';
-  await page.getByRole('button', { name: /^Queue by scan pressure/ }).click();
+  await page.locator('main quader-malware-controller quader-disclosure.queue button.inline-toggle').click();
   await expect(page.locator('main [data-testid="malware-queue"] tbody tr').first()).toBeVisible();
   const clamavFold = page.locator('main quader-scanner-replicas quader-disclosure button.inline-toggle').first();
   await clamavFold.click();
@@ -1372,16 +1375,16 @@ async function* malwareSettings(page: Page): AsyncGenerator<string> {
   await answerWith(page, controller, controllerAtWork(true));
   await expect(page.locator('main [data-testid="malware-controller-advice"]')).toBeVisible();
   yield 'behind';
-  await page.getByRole('button', { name: 'Rescans' }).click();
+  await page.locator('main [data-testid="malware-rescans"] button.toggle').click();
   await expect(page.locator('main [data-testid="malware-rescans"] input[name="recent"]')).toBeVisible();
   yield 'rescans';
   await answerWith(page, controller, controllerIdle);
-  await expect(page.locator('main [data-testid="malware-controller"]')).toContainText('nothing presses');
+  await expect(page.locator('main [data-testid="malware-controller"]')).toHaveAttribute('data-state', 'idle');
   yield 'idle';
   await page.unroute(controller);
   await page.unroute('**/api/v1/system/scanners');
   await page.reload();
-  await expect(page.getByRole('heading', { name: 'Signature database' })).toBeVisible();
+  await expect(database).toBeVisible();
   // The replicas of malware-scanner-clamav under the summary, and those of the updater malware-updater-freshclam, the folds opened
   // (R-OPS-048, Q-UI-897, Q-UI-913).
   const folds = page.locator('main quader-scanner-replicas quader-disclosure button.inline-toggle');
@@ -1397,11 +1400,13 @@ async function* malwareSettings(page: Page): AsyncGenerator<string> {
     ['confirm-uncounted', null],
   ] as const) {
     await answerWith(page, settings, (b) => ({ ...b, onlyChecked: false, backlog, backlogAt: backlog ? b['backlogAt'] : null }));
-    await page.getByRole('checkbox', { name: 'Only checked artifacts can be downloaded' }).check();
-    await page.getByRole('button', { name: /^Save changes/ }).click();
-    await expect(page.getByRole('dialog', { name: 'Let only checked artifacts be downloaded?' })).toBeVisible();
+    await downloads.getByRole('checkbox').check();
+    await downloads.locator('button[type="submit"]').click();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toBeVisible();
     yield state;
-    await page.getByRole('dialog').getByRole('button', { name: 'Cancel' }).click();
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden();
   }
   await answerWith(page, settings, (b) => ({
     ...b,
@@ -1422,7 +1427,7 @@ async function* malwareSettings(page: Page): AsyncGenerator<string> {
       },
     },
   }));
-  await expect(page.getByRole('heading', { name: 'Fill the repository' })).toBeVisible();
+  await expect(page.locator('main section[aria-labelledby="malware-database"] quader-code-window')).toBeVisible();
   yield 'stale';
   await answerWith(page, settings, (b) => ({
     ...b,
@@ -1452,13 +1457,14 @@ async function* malwareSettings(page: Page): AsyncGenerator<string> {
  * drawer; the release dialog of the find in three repositories, sent without a reason; the empty list.
  */
 async function* malwareFinds(page: Page): AsyncGenerator<string> {
+  // The controls by their place, not their words: the German pass walks the page too (UI_RENDERS_LOCALE=de).
   await expect(page.locator('main quader-malware-finds > quader-data-table tbody tr').first()).toBeVisible();
   yield '';
   // How current the checks are (R-MAL-041, R-UI-257): the profile's controller never counts, so the page opens with "Not counted yet";
   // the four classes and the 20 checks made longest ago are the real answer changed in the browser, the fold opened.
   const coverage = '**/api/v1/malware/coverage';
   await answerWith(page, coverage, coverageCounted);
-  await page.getByRole('button', { name: /^Checked longest ago/ }).click();
+  await page.locator('main [data-testid="malware-coverage"] quader-disclosure button.inline-toggle').click();
   await expect(page.locator('main [data-testid="malware-oldest"] tbody tr').first()).toBeVisible();
   yield 'coverage';
   await page.unroute(coverage);
@@ -1469,19 +1475,22 @@ async function* malwareFinds(page: Page): AsyncGenerator<string> {
   yield 'opened';
   await page.locator('main .name-cell button[aria-expanded="true"]').first().click();
   await page.locator('main .filter-toggle').first().click();
-  const drawer = page.getByRole('dialog', { name: 'Filters' });
+  const drawer = page.getByRole('dialog');
   await expect(drawer.locator('form.filter-form')).toBeVisible();
   yield 'filters';
   await page.keyboard.press('Escape');
   await expect(drawer).toBeHidden();
-  await page.getByRole('button', { name: 'Release eicar.com.txt' }).click();
-  const dialog = page.getByRole('dialog', { name: 'Release eicar.com.txt?' });
-  await dialog.getByRole('button', { name: 'Release', exact: true }).click();
-  await expect(dialog.getByText('A release needs a reason.')).toBeVisible();
+  // The find in three repositories by its file's name, which is data.
+  const eicar = page.locator('main quader-malware-finds tbody tr', { has: page.locator('.find-name', { hasText: /^eicar\.com\.txt$/ }) });
+  await eicar.first().locator('td.actions button').click();
+  const dialog = page.getByRole('dialog');
+  await dialog.locator('button[type="submit"]').click();
+  await expect(dialog.locator('textarea[name="reason"]')).toHaveAttribute('aria-invalid', 'true');
   yield 'release';
-  await dialog.getByRole('button', { name: 'Cancel' }).click();
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
   await answerWith(page, '**/api/v1/malware/finds?**', () => ({ items: [], nextCursor: null }));
-  await expect(page.getByText(/^No malware found\./)).toBeVisible();
+  await expect(page.locator('main quader-malware-finds quader-empty-state')).toBeVisible();
   yield 'empty';
   await page.unroute('**/api/v1/malware/finds?**');
 }
@@ -3731,7 +3740,7 @@ export const screens: readonly Screen[] = [
   { id: 'security-search', path: '/ui/security', kinds: ['auditor'], walk: searched('DEMO-2026-00001') },
   { id: 'security-project', path: `/ui/security?project=${mainProject}`, kinds: ['auditor'], tables: 'quader-vulnerability-report > quader-data-table' },
   // The page Malware under Security audit (R-MAL-025, Q-UI-1005): what the auditor assesses and releases; an administrator sees the same.
-  { id: 'security-malware', path: '/ui/security/malware', kinds: ['auditor'], walk: malwareFinds, tables: 'quader-malware-finds > quader-data-table' },
+  { id: 'security-malware', path: '/ui/security/malware', kinds: ['auditor'], walk: malwareFinds, tables: 'quader-malware-finds > quader-data-table', de: true },
   // The find of that Go program and its release (Q-UI-1206): the limit, the false alarm with the manual's page, the scanner's text.
   {
     id: 'security-malware-limit',
@@ -4024,7 +4033,7 @@ export const screens: readonly Screen[] = [
   { id: 'admin-settings-auth', path: '/ui/admin/settings/auth', kinds: admins, de: true },
   { id: 'admin-settings-general', path: '/ui/admin/settings/general', kinds: admins, walk: restrictedLevels },
   // The malware scanning's page (R-MAL-023): every state of the administrator's, and the auditor's read-only page with the link to the finds.
-  { id: 'admin-settings-malware', path: '/ui/admin/settings/malware', kinds: admins, walk: malwareSettings },
+  { id: 'admin-settings-malware', path: '/ui/admin/settings/malware', kinds: admins, walk: malwareSettings, de: true },
   { id: 'admin-settings-malware-read', path: '/ui/admin/settings/malware', kinds: ['auditor'] },
   { id: 'admin-settings-signatures', path: '/ui/admin/settings/signatures', kinds: admins, walk: signatureSettings, tables: 'quader-data-table' },
   // >>> download-links

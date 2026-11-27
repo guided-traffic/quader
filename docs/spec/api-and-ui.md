@@ -11160,7 +11160,9 @@ Acceptance criteria:
 - Renders ([malware-controller.ts](../../web/e2e/renders/malware-controller.ts) of the renders), looked at and never committed: the
   settings page as the profile answers (no controller has reported), at work with three replicas working, one paused and one resting,
   the queue of 20 and the replicas' calls opened, far behind with the advice, the rescans opened, idle; the malware page with "Not counted
-  yet" and with the four classes and the 20 oldest opened; both schemes, 390, 1,024 and 1,440 px, in English: the walks of both pages find their controls by English names, so the German pass of the renders does not take them.
+  yet" and with the four classes and the 20 oldest opened; both schemes, 390, 1,024 and 1,440 px, English and German: the walks of both
+  pages find their controls by their place, test IDs and roles, never by an English name, and the controller's state by its
+  `data-state` (batch I).
 
 ### R-UI-258 · The Bastion's pages show the malware mark
 Priority: **P1** · Covers: SEC-049
@@ -25175,7 +25177,9 @@ rem, **Found**, the action).
 
 **Choice:** (a). *Amended on 2026-11-23* (the coordinator's look at the pictures): the file and the verdict share the room beyond their least
 widths by what they hold, so a file name of 23 characters no longer breaks beside an empty verdict at 1,440 px (the verdict had preferred
-the room); the repositories and the time found stand each on a line of their own, so no separating dot starts a line. **Applied in the
+the room); the repositories and the time found stand each on a line of their own, so no separating dot starts a line. *Amended on
+2026-11-27* (batch I, the German pass of the renders): **Verdict** has 13 rem, not 14, since the German action ("Zulassung zurückziehen")
+made the list need 700 px of the 697 at 1,024 px, and it stood as blocks there in German. **Applied in the
 spec:** R-MAL-025 of [malware-scanning.md](malware-scanning.md). Code:
 [malware-finds.html](../../web/src/app/features/vulnerabilities/malware-finds.html).
 

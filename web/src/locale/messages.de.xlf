@@ -38714,7 +38714,7 @@
     </unit>
     <unit id="malware.controller.slots">
       <notes>
-        <note category="location">src/app/features/settings/malware-controller.ts:166,167</note>
+        <note category="location">src/app/features/settings/malware-controller.ts:167,168</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="INTERPOLATION" disp="{{ c.inFlight | number }}"/> of <ph id="1" equiv="INTERPOLATION_1" disp="{{ c.capacity | number }}"/> slots in use</source>
@@ -38723,7 +38723,7 @@
     </unit>
     <unit id="malware.controller.checks">
       <notes>
-        <note category="location">src/app/features/settings/malware-controller.ts:168,170</note>
+        <note category="location">src/app/features/settings/malware-controller.ts:169,171</note>
       </notes>
       <segment>
         <source>{VAR_PLURAL, plural, =1 {1 check in the last hour} other {<ph id="0" equiv="INTERPOLATION"/> checks in the last hour}}</source>
@@ -38732,7 +38732,7 @@
     </unit>
     <unit id="malware.controller.busy">
       <notes>
-        <note category="location">src/app/features/settings/malware-controller.ts:176,177</note>
+        <note category="location">src/app/features/settings/malware-controller.ts:177,178</note>
       </notes>
       <segment>
         <source>Busy <ph id="0" equiv="INTERPOLATION" disp="{{ busy() }}"/> of the last hour</source>
@@ -38741,7 +38741,7 @@
     </unit>
     <unit id="malware.controller.per-scan">
       <notes>
-        <note category="location">src/app/features/settings/malware-controller.ts:179,180</note>
+        <note category="location">src/app/features/settings/malware-controller.ts:180,181</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="INTERPOLATION" disp="{{ perScan() }}"/> s a check</source>
@@ -38750,7 +38750,7 @@
     </unit>
     <unit id="malware.controller.as-of">
       <notes>
-        <note category="location">src/app/features/settings/malware-controller.ts:182</note>
+        <note category="location">src/app/features/settings/malware-controller.ts:183</note>
       </notes>
       <segment>
         <source>as of</source>
@@ -38759,7 +38759,7 @@
     </unit>
     <unit id="malware.controller.paused">
       <notes>
-        <note category="location">src/app/features/settings/malware-controller.ts:193,194</note>
+        <note category="location">src/app/features/settings/malware-controller.ts:194,195</note>
       </notes>
       <segment>
         <source>Paused</source>
@@ -38768,7 +38768,7 @@
     </unit>
     <unit id="malware.controller.resting">
       <notes>
-        <note category="location">src/app/features/settings/malware-controller.ts:195,197</note>
+        <note category="location">src/app/features/settings/malware-controller.ts:196,198</note>
       </notes>
       <segment>
         <source>Resting</source>
@@ -38777,7 +38777,7 @@
     </unit>
     <unit id="malware.controller.until">
       <notes>
-        <note category="location">src/app/features/settings/malware-controller.ts:203,204</note>
+        <note category="location">src/app/features/settings/malware-controller.ts:204,205</note>
       </notes>
       <segment>
         <source>until <pc id="0" equivStart="START_TAG_TIME" equivEnd="CLOSE_TAG_TIME" type="other" dispStart="&lt;time class=&quot;nowrap&quot; [attr.datetime]=&quot;until&quot;&gt;" dispEnd="&lt;/time&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ until | time: &apos;time&apos; }}"/></pc></source>
@@ -38786,7 +38786,7 @@
     </unit>
     <unit id="malware.controller.advice">
       <notes>
-        <note category="location">src/app/features/settings/malware-controller.ts:213,216</note>
+        <note category="location">src/app/features/settings/malware-controller.ts:214,217</note>
       </notes>
       <segment>
         <source><pc id="0" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">Add scanner replicas.</pc> <ph id="1" equiv="INTERPOLATION" disp="{{ a.waiting | number }}"/> checks wait, about <ph id="2" equiv="INTERPOLATION_1" disp="{{ hours(a) }}"/> hours of work for the <ph id="3" equiv="INTERPOLATION_2" disp="{{ c.capacity | number }}"/> slots, busy <ph id="4" equiv="INTERPOLATION_3" disp="{{ busy() }}"/> of the last hour. About <ph id="5" equiv="INTERPOLATION_4" disp="{{ a.more | number }}"/> more replicas of <ph id="6" equiv="INTERPOLATION_5" disp="{{ a.slotsEach }}"/> slots clear them within an hour.</source>
@@ -38795,7 +38795,7 @@
     </unit>
     <unit id="malware.controller.waiting">
       <notes>
-        <note category="location">src/app/features/settings/malware-controller.ts:220,222</note>
+        <note category="location">src/app/features/settings/malware-controller.ts:221,223</note>
       </notes>
       <segment>
         <source>Waiting</source>
@@ -38804,7 +38804,7 @@
     </unit>
     <unit id="malware.controller.nothing-waits">
       <notes>
-        <note category="location">src/app/features/settings/malware-controller.ts:223,225</note>
+        <note category="location">src/app/features/settings/malware-controller.ts:224,226</note>
       </notes>
       <segment>
         <source>Nothing</source>
@@ -38813,7 +38813,7 @@
     </unit>
     <unit id="malware.controller.lane.asked">
       <notes>
-        <note category="location">src/app/features/settings/malware-controller.ts:227,229</note>
+        <note category="location">src/app/features/settings/malware-controller.ts:228,230</note>
       </notes>
       <segment>
         <source>{VAR_PLURAL, plural, =1 {1 for a download} other {<ph id="0" equiv="INTERPOLATION"/> for a download}}</source>
@@ -38822,7 +38822,7 @@
     </unit>
     <unit id="malware.controller.lane.new">
       <notes>
-        <note category="location">src/app/features/settings/malware-controller.ts:230,231</note>
+        <note category="location">src/app/features/settings/malware-controller.ts:231,232</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="INTERPOLATION" disp="{{ c.lanes.new | number }}"/> new</source>
@@ -38831,7 +38831,7 @@
     </unit>
     <unit id="malware.controller.lane.retry">
       <notes>
-        <note category="location">src/app/features/settings/malware-controller.ts:233,235</note>
+        <note category="location">src/app/features/settings/malware-controller.ts:234,236</note>
       </notes>
       <segment>
         <source>{VAR_PLURAL, plural, =1 {1 to retry} other {<ph id="0" equiv="INTERPOLATION"/> to retry}}</source>
@@ -38840,7 +38840,7 @@
     </unit>
     <unit id="malware.controller.lane.pressure">
       <notes>
-        <note category="location">src/app/features/settings/malware-controller.ts:236,237</note>
+        <note category="location">src/app/features/settings/malware-controller.ts:237,238</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="INTERPOLATION" disp="{{ c.lanes.pressure | number }}"/> by scan pressure</source>
@@ -38849,7 +38849,7 @@
     </unit>
     <unit id="malware.queue.pressure">
       <notes>
-        <note category="location">src/app/features/settings/malware-controller.ts:267,268</note>
+        <note category="location">src/app/features/settings/malware-controller.ts:268,269</note>
       </notes>
       <segment>
         <source>Scan pressure <ph id="0" equiv="INTERPOLATION" disp="{{ e.pressure | number }}"/> %</source>
@@ -38858,7 +38858,7 @@
     </unit>
     <unit id="malware.queue.checked">
       <notes>
-        <note category="location">src/app/features/settings/malware-controller.ts:269</note>
+        <note category="location">src/app/features/settings/malware-controller.ts:270</note>
       </notes>
       <segment>
         <source>checked</source>
@@ -38867,7 +38867,7 @@
     </unit>
     <unit id="malware.queue.due">
       <notes>
-        <note category="location">src/app/features/settings/malware-controller.ts:271</note>
+        <note category="location">src/app/features/settings/malware-controller.ts:272</note>
       </notes>
       <segment>
         <source>due</source>
@@ -38876,7 +38876,7 @@
     </unit>
     <unit id="malware.queue.first">
       <notes>
-        <note category="location">src/app/features/settings/malware-controller.ts:280,282</note>
+        <note category="location">src/app/features/settings/malware-controller.ts:281,283</note>
       </notes>
       <segment>
         <source>The first <ph id="0" equiv="INTERPOLATION" disp="{{ c.queue.length }}"/> of <ph id="1" equiv="INTERPOLATION_1" disp="{{ waiting() | number }}"/>.</source>
@@ -38885,7 +38885,7 @@
     </unit>
     <unit id="malware.queue.heading">
       <notes>
-        <note category="location">src/app/features/settings/malware-controller.ts:351</note>
+        <note category="location">src/app/features/settings/malware-controller.ts:352</note>
       </notes>
       <segment>
         <source>Queue by scan pressure</source>
@@ -38894,7 +38894,7 @@
     </unit>
     <unit id="malware.queue.col.file">
       <notes>
-        <note category="location">src/app/features/settings/malware-controller.ts:353</note>
+        <note category="location">src/app/features/settings/malware-controller.ts:354</note>
       </notes>
       <segment>
         <source>File</source>
@@ -38903,7 +38903,7 @@
     </unit>
     <unit id="malware.queue.col.why">
       <notes>
-        <note category="location">src/app/features/settings/malware-controller.ts:356</note>
+        <note category="location">src/app/features/settings/malware-controller.ts:357</note>
       </notes>
       <segment>
         <source>Why it is due</source>
@@ -38912,7 +38912,7 @@
     </unit>
     <unit id="malware.queue.col.why-help">
       <notes>
-        <note category="location">src/app/features/settings/malware-controller.ts:358</note>
+        <note category="location">src/app/features/settings/malware-controller.ts:359</note>
       </notes>
       <segment>
         <source>Downloads that wait come first, then new files, then retries, then rechecks by scan pressure: how much newer today&apos;s signatures are and how often the file was downloaded since. A recheck is due at 100 %.</source>
@@ -54434,7 +54434,7 @@
     </unit>
     <unit id="malware.col.verdict">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:249</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:250</note>
       </notes>
       <segment>
         <source>Verdict</source>
@@ -54443,7 +54443,7 @@
     </unit>
     <unit id="malware.col.actions">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:250</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:251</note>
         <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:284</note>
         <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:307</note>
       </notes>
@@ -54454,7 +54454,7 @@
     </unit>
     <unit id="malware.row.open">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:297</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:298</note>
       </notes>
       <segment>
         <source>Every file of <ph id="0" equiv="file" disp="findName(f)"/></source>
@@ -54463,8 +54463,8 @@
     </unit>
     <unit id="malware.withdraw">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:322</note>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:387</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:323</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:388</note>
       </notes>
       <segment>
         <source>Withdraw release</source>
@@ -54473,7 +54473,7 @@
     </unit>
     <unit id="malware.release">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:322</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:323</note>
       </notes>
       <segment>
         <source>Release</source>
@@ -54482,7 +54482,7 @@
     </unit>
     <unit id="malware.released">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:378</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:379</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="file" disp="findName(f)"/> is released in every repository that holds it.</source>
@@ -54491,7 +54491,7 @@
     </unit>
     <unit id="malware.withdraw.title">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:384</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:385</note>
       </notes>
       <segment>
         <source>Withdraw the release of <ph id="0" equiv="file" disp="findName(f)"/>?</source>
@@ -54500,7 +54500,7 @@
     </unit>
     <unit id="malware.withdraw.text">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:385</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:386</note>
       </notes>
       <segment>
         <source>Every repository that holds these bytes refuses them again from the next download.</source>
@@ -54509,7 +54509,7 @@
     </unit>
     <unit id="malware.withdrawn">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:392</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:393</note>
       </notes>
       <segment>
         <source>The release of <ph id="0" equiv="file" disp="findName(f)"/> is withdrawn.</source>
