@@ -134,9 +134,10 @@ type record struct {
 	Replica string `json:"replica"`
 }
 
-// recordVersion is the record's form: 2 since the public set names its projects with their names (R-BAS-128). A record of another
-// form is refused, as one that does not decode, and the replica reads the catalogue again from the start.
-const recordVersion = 2
+// recordVersion is the record's form: 3 since the public set carries each repository's description (R-BAS-130, interface version 12;
+// 2 named the projects with their names, R-BAS-128). A record of another form is refused, as one that does not decode, and the replica
+// reads the catalogue again from the start.
+const recordVersion = 3
 
 func (s *snapshot) record(replica string) record {
 	r := record{

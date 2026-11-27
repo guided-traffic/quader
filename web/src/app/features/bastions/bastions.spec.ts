@@ -1258,8 +1258,8 @@ describe("A Bastion's limits, throughput, switches and state on its card (R-UI-2
       capabilities: ADMIN,
       setup: (g) =>
         void ((g(BastionsApi) as FakeBastionsApi).bastions = [
-          sampleBastion({ switches: { handover: false, gui: false, docs: true } }),
-          sampleBastion({ id: 'b-2', name: 'standby', switches: { handover: false, gui: true, docs: false }, contacts: [sampleBastionContact({ catalogueKept: false })] }),
+          sampleBastion({ switches: { handover: false, gui: false, docs: true, hideRepositories: false } }),
+          sampleBastion({ id: 'b-2', name: 'standby', switches: { handover: false, gui: true, docs: false, hideRepositories: false }, contacts: [sampleBastionContact({ catalogueKept: false })] }),
         ]),
     });
     // The rows say Off and On; a line that says so again is gone (Q-UI-1624).
@@ -1272,7 +1272,7 @@ describe("A Bastion's limits, throughput, switches and state on its card (R-UI-2
   });
 
   it("R-BAS-104 the card says what the main installation last built for the web interface, and why it builds nothing with what to do", async () => {
-    const gui = { handover: false, gui: true, docs: false };
+    const gui = { handover: false, gui: true, docs: false, hideRepositories: false };
     const at = inDays(-0.002);
     const { root } = await renderScreen(BastionList, {
       capabilities: ADMIN,

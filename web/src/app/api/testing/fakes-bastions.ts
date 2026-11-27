@@ -108,7 +108,7 @@ export function sampleBastionLimits(): Bastion['limits'] {
 
 /** The switches of a registration with the handover per blob as given (R-BAS-071). */
 export function handoverSwitches(handover: boolean): Bastion['switches'] {
-  return { handover, gui: false, docs: false };
+  return { handover, gui: false, docs: false, hideRepositories: false };
 }
 
 export function sampleBastion(over: Partial<Bastion> = {}): Bastion {
@@ -117,7 +117,7 @@ export function sampleBastion(over: Partial<Bastion> = {}): Bastion {
     name: 'partners',
     description: 'The partner network',
     enabled: true,
-    switches: { handover: false, gui: false, docs: false },
+    switches: { handover: false, gui: false, docs: false, hideRepositories: false },
     catalogue: null,
     limits: sampleBastionLimits(),
     status: [],

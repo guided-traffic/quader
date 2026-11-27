@@ -14875,7 +14875,7 @@ paths:
         last contact at most once a minute, with the edge figure (`Quader-Bastion-Edge-Limit`) and whether its catalogue is kept
         (`Quader-Bastion-Catalogue-Kept`) when the replica reports them; a malformed value of either answers `400
         malformed_request`. Not part of the management API's v1 promise but of the interface version (R-ARCH-025, R-BAS-009).
-      x-quader-bastion-interface: 11
+      x-quader-bastion-interface: 12
       x-quader-permission:
         bastion: true
       parameters:
@@ -14929,7 +14929,7 @@ paths:
         (`npm-all` instead of `web/npm-all`) answers `400 malformed_request`, like a body that does not read; a pair that
         breaks a rule of R-BAS-083 answers `422` with a field error at `/packages/<i>`; another interface version answers
         `400 bastion_interface_mismatch`.
-      x-quader-bastion-interface: 11
+      x-quader-bastion-interface: 12
       x-quader-permission:
         bastion: true
       parameters:
@@ -14979,7 +14979,7 @@ paths:
         `cursor` of an earlier answer or a synthetic `t:<RFC 3339>`; the answer holds every entry newer than the cursor and the
         entries within `bastions.feed.lookback` behind it, which the Bastion skips by ID. `reset: true` tells the Bastion to
         drop every answer.
-      x-quader-bastion-interface: 11
+      x-quader-bastion-interface: 12
       x-quader-permission:
         bastion: true
       parameters:
@@ -15035,7 +15035,7 @@ paths:
         events stores neither, so a batch sent again is never counted twice. The body is at most `bastions.downloads.max_batch` ×
         10 KiB for the events, 640 bytes for each of 100,000 usage rows and 256 KiB for the rest (Q-BAS-442), about 71 MiB with
         the defaults.
-      x-quader-bastion-interface: 11
+      x-quader-bastion-interface: 12
       x-quader-permission:
         bastion: true
       parameters:
@@ -15081,7 +15081,7 @@ paths:
         `reset: true` tells the Bastion to read the list again from 0. While the registration's switch `gui` is off the answer is
         `404 not_found`. The list is what the builder kept at its last run (R-BAS-104, R-BAS-105); before its first run for the
         registration, and while the default endpoint admits no request without a credential, it is empty.
-      x-quader-bastion-interface: 11
+      x-quader-bastion-interface: 12
       x-quader-permission:
         bastion: true
       parameters:
@@ -15135,7 +15135,7 @@ paths:
         `400 malformed_request`; while the
         registration's switch `gui` is off, for a documentation path while `docs` is off, and for a path the builder's last run did
         not keep (R-BAS-104), the answer is `404 not_found`.
-      x-quader-bastion-interface: 11
+      x-quader-bastion-interface: 12
       x-quader-permission:
         bastion: true
       parameters:
@@ -15191,7 +15191,7 @@ paths:
         twice or more paths than the bound answer `400 malformed_request`; while the registration's switch `gui` is off the
         answer is `404 not_found`; a document the catalogue does not hold, and a documentation path while `docs` is off, is a
         frame with `missing: true`; the catalogue holds what the builder kept at its last run (R-BAS-104).
-      x-quader-bastion-interface: 11
+      x-quader-bastion-interface: 12
       x-quader-permission:
         bastion: true
       parameters:
@@ -15250,7 +15250,7 @@ paths:
         repository with its format, class and whether its wiki is public. While the registration's switch `gui` is off the
         answer is `404 not_found`. The set is the one of the builder's last run (R-BAS-104); before its first run for the
         registration, and while the default endpoint admits no request without a credential, it is empty.
-      x-quader-bastion-interface: 11
+      x-quader-bastion-interface: 12
       x-quader-permission:
         bastion: true
       parameters:
@@ -32589,7 +32589,7 @@ components:
         description: The partner network
         enabled: true
         declared: null
-        switches: {handover: false, gui: true, docs: false}
+        switches: {handover: false, gui: true, docs: false, hideRepositories: false}
         catalogue: {outcome: built, reason: null, checkedAt: "2026-11-02T10:06:30Z", builtAt: "2026-11-02T10:06:30Z"}
         limits:
           mode: enforce
@@ -32654,7 +32654,7 @@ components:
     BastionSwitches:
       type: object
       description: The switches of the registration's configuration (R-BAS-093), each off for a new registration.
-      required: [handover, gui, docs]
+      required: [handover, gui, docs, hideRepositories]
       properties:
         handover:
           type: boolean
@@ -32667,6 +32667,12 @@ components:
         docs:
           type: boolean
           description: The documentation of the web interface (R-BAS-102), effective only with `gui`.
+        hideRepositories:
+          type: boolean
+          description: |
+            Hide repositories (R-BAS-131), effective only with `gui`: while it is on the web interface names no repository a visitor
+            reads and the public catalogue holds no repository's index and no remote's upstream; commands and download addresses still
+            contain a repository's key, which clients need.
     BastionLimits:
       type: object
       description: |
@@ -32968,6 +32974,7 @@ components:
             handover: {type: boolean}
             gui: {type: boolean}
             docs: {type: boolean}
+            hideRepositories: {type: boolean}
         limits:
           type: object
           description: |
@@ -33105,7 +33112,7 @@ components:
         switches:
           type: object
           additionalProperties: false
-          required: [handover, gui, docs]
+          required: [handover, gui, docs, hideRepositories]
           properties:
             handover:
               type: boolean
@@ -33116,6 +33123,9 @@ components:
             docs:
               type: boolean
               description: Its documentation, effective only with `gui` (R-BAS-102). Off for a new registration.
+            hideRepositories:
+              type: boolean
+              description: Hide repositories, effective only with `gui` (R-BAS-131). Off for a new registration.
         limits:
           $ref: "#/components/schemas/BastionConfigurationLimits"
         display:
@@ -33617,7 +33627,7 @@ components:
           items:
             type: object
             additionalProperties: false
-            required: [name, format, class, wiki]
+            required: [name, format, class, description, wiki]
             properties:
               name:
                 type: string
@@ -33628,6 +33638,11 @@ components:
               class:
                 type: string
                 enum: [local, remote, virtual]
+              description:
+                type: string
+                description: |
+                  The description an anonymous reader reads of the repository, its links on the Bastion (R-BAS-130); `""` for a
+                  repository without one.
               wiki:
                 type: boolean
     # <<< M13 bastion

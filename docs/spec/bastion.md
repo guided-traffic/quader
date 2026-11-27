@@ -619,8 +619,11 @@ The Bastion interface has a version of its own, separate from the release number
   names and the configuration's `display` with the installation's form of a time (R-BAS-128, built on 2026-11-27 by W35-P9e); 11, the
   catalogue's state document with today's signatures of the malware scan and today's vulnerability database of the image scanning
   ([malware-scanning.md](malware-scanning.md) R-MAL-042, [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-052,
-  [Q-BAS-494](#q-bas-494--the-state-documents-shape-is-part-of-the-interface-version-11), built on 2026-11-27 by W-36's P8). The version
-  is `iface.InterfaceVersion`; the comment beside it names the same list.
+  [Q-BAS-494](#q-bas-494--the-state-documents-shape-is-part-of-the-interface-version-11), built on 2026-11-27 by W-36's P8); 12, the
+  catalogue of the project view: a public repository's description, a project's and a repository's index, an image's list by content,
+  the set-up path of a package without a version, and the switch `hideRepositories` (R-BAS-130, R-BAS-131,
+  [Q-BAS-506](#q-bas-506--the-project-view-raises-the-interface-to-version-12-and-the-bastions-state-record-to-form-3), built on
+  2026-11-27 by W-40's P1). The version is `iface.InterfaceVersion`; the comment beside it names the same list.
 
 Acceptance criteria:
 
@@ -6236,7 +6239,7 @@ The priority is the one of R-BAS-100, the other requirement of W-35's web interf
 | `GET /api/v1/bastion/catalogue?after=<seq>&limit=<n>` | the changes after the cursor `after` (0 for the start), at most `limit`, clamped to the main installation's page | `iface.CatalogueChanges` |
 | `GET /api/v1/bastion/catalogue/document?path=<path>` | one document, gzip-compressed, `application/gzip`, the SHA-256 of its raw bytes as the `ETag` | the document's bytes |
 | `POST /api/v1/bastion/catalogue/documents` `{"paths": [...]}` | several documents in one answer of frames, `application/vnd.quader.catalogue-batch` ([Q-BAS-347](#q-bas-347--the-batch-read-answers-frames-of-a-json-line-and-the-compressed-bytes)) | `iface.CatalogueBatch`, `iface.CatalogueFrame` |
-| `GET /api/v1/bastion/catalogue/public` | the public set: the projects (key, display name, description; R-BAS-128) and the repositories (name, format, class, whether the wiki is public) the catalogue shows | `iface.CataloguePublic` |
+| `GET /api/v1/bastion/catalogue/public` | the public set: the projects (key, display name, description; R-BAS-128) and the repositories (name, format, class, description, whether the wiki is public; R-BAS-130) the catalogue shows | `iface.CataloguePublic` |
 
 - **The change list.** Every entry names a document path (R-BAS-103), its `sha256` and `size`, or `deleted`, and a `seq` above the cursor and
   above the entry before it; `cursor` is the last `seq` answered, `more` says the limit cut the answer, and `reset` that the cursor is no
@@ -6252,8 +6255,8 @@ The priority is the one of R-BAS-100, the other requirement of W-35's web interf
   with `missing: true` and no bytes. The main installation stops before the frame that would take the answer's compressed bytes above
   `cataloguebounds.BatchMaxBytes`, and answers at least one frame; the Bastion asks again for the paths the answer did not reach.
 - **The feed** ([Q-BAS-349](#q-bas-349--a-catalogue-entry-of-the-feed-names-no-registration-and-neither-does-a-configuration-change)). A change of the catalogue writes a feed entry of the kind `catalogue` (R-BAS-015), which names no
-  registration: every Bastion whose web interface is on reads its change list at once instead of at its next poll. A change of `gui` or
-  `docs` is a change of the configuration and travels as `settings` (R-BAS-093).
+  registration: every Bastion whose web interface is on reads its change list at once instead of at its next poll. A change of `gui`,
+  `docs` or `hideRepositories` is a change of the configuration and travels as `settings` (R-BAS-093).
 - **The bounds** ([Q-BAS-345](#q-bas-345--the-catalogues-bounds-are-figures-outside-the-interfaces-shape)) are figures of `internal/bastion/cataloguebounds`, outside the interface's shape, set from the
   measurement of the catalogue's size of 2026-11-26 ([developer/bastion.md](../developer/bastion.md)): a change list's page of 5,000
   entries without a limit and 10,000 at most, a batch of 5,000 paths and 8 MiB of compressed bytes, a document of 16 MiB raw at most.
@@ -6279,6 +6282,8 @@ Acceptance criteria:
 
 ### R-BAS-102 · The switches gui and docs
 Priority: **P1** · Covers: quader-only
+
+A third switch of the web interface, `hideRepositories`, is R-BAS-131's; it is effective only with `gui`, as `docs` is.
 
 - `switches.gui` and `switches.docs` are members of the registration's configuration (R-BAS-093), set on the card in its section **Web
   interface** in plain view (R-UI-240, [Q-UI-1616](api-and-ui.md#q-ui-1616--a-bastions-web-interface-is-a-section-of-the-cards-plain-view-not-a-detail-of-its-limits)), off for a new
@@ -6323,16 +6328,19 @@ A document of the catalogue is named by a path of this grammar (`iface.Catalogue
 | Path | Document |
 |---|---|
 | `index/<n>` | a page of the index of public packages |
+| `projects/<project>/index/<n>` | a page of the index of one project's public packages, the project's own counts (R-BAS-130) |
+| `repositories/<project>/<repo>/index/<n>` | a page of the index of one repository's public packages, the repository's own counts; only while the repositories are shown (R-BAS-130, R-BAS-131) |
 | `packages/<id>` | a package (`<id>` is the package's catalogue ID) |
 | `packages/<id>/versions` | its versions list |
 | `packages/<id>/vulnerabilities` | its open findings per version: each version's grade and counts (R-BAS-128) |
+| `packages/<id>/images` | an image's list by content: one entry per manifest, led by its highest tag, the other tags as `aliases` (R-BAS-130) |
 | `packages/<id>/versions/<v>` | a version |
 | `packages/<id>/versions/<v>/readme`, `…/vulnerabilities`, `…/signatures`, `…/contents`, `…/docs` | the version's README, open findings, signatures, contents and docs tree |
 | `packages/<id>/versions/<v>/docs/entries/<type>/<name>` | an entry of the docs tree |
 | `packages/<id>/versions/<v>/docs/files/<file...>` | a file of the docs tree |
 | `packages/<id>/versions/<v>/state` | the times of the version's documents (built, checked, scanned) |
 | `state` | the catalogue's state (`iface.CatalogueStateDocument`): the time of the last run that changed a document, today's signatures of the malware scan ([malware-scanning.md](malware-scanning.md) R-MAL-042) and today's vulnerability database of the image scanning ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-052) |
-| `setup/<project>/<repo>/<client>[/<id>/<v>]` | the client set-up of a repository, or of a package's version (by the package's catalogue ID) |
+| `setup/<project>/<repo>/<client>[/<id>[/<v>]]` | the client set-up of a repository, of a package without a version (an image's, the pull by digest; R-BAS-130), or of a package's version (by the package's catalogue ID) |
 | `files/<project>/<repo>/folder[/<path...>]` | a folder's listing of a generic repository (the root without a path) |
 | `files/<project>/<repo>/file/<path...>` | a generic file's description |
 | `files/<project>/<repo>/setup/<client>/<path...>` | a generic file's set-up per client |
@@ -6368,7 +6376,8 @@ Acceptance criteria:
 
 - Unit (`internal/bastion/iface`, `TestR_BAS_103_TheCataloguePathGrammarRoundTrips`, milliseconds): every form is written and read back to
   the same value, `+`, `:`, a space, `%`, `?` and non-ASCII letters round-trip, and dot segments, encoded slashes in either case, empty
-  segments, other spellings and unknown forms are refused.
+  segments, other spellings and unknown forms are refused; the forms of the project view (a project's and a repository's index, an image's
+  list by content, a package's set-up without a version) among them.
 
 ## The builder of the public catalogue
 
@@ -6405,19 +6414,24 @@ The priority is the one of R-BAS-101 to R-BAS-103.
   `pending` while no run completed, with the times of the last run (`checkedAt`) and of the last run that changed the catalogue
   (`builtAt`); null while the builder holds no state for the registration. The card says it in words, a stop's reason with what to do
   in plain view (R-UI-240, [Q-BAS-497](#q-bas-497--the-registration-carries-the-builders-last-outcome-and-the-card-says-a-stop-in-plain-view)).
-- **What it builds, per format** (W-35's section C): the index of public packages (`index/<n>`, pages of 100 in the list's order, name),
+- **What it builds, per format** (W-35's section C; W-40's section 2): the index of public packages (`index/<n>`, pages of 100 in the
+  list's order, name), the index of every project and, while the repositories are shown, of every repository of the public set, each
+  the main installation's answer with the scope (R-BAS-130),
   per package its summary, its versions and its open findings per version (R-BAS-128), per version the version, its README (`docs` on and a public wiki, R-BAS-124), its open findings, its signatures, the
   Debian contents (the changelog and the copyright only with `docs` on), the Ansible documentation tree with every entry that has
-  documentation and every file (`docs` on), the set-up of every client of the format for the version in its first public repository, and
-  its state; per public repository the set-up of every client; per generic repository (a format whose items are paths) every folder's
+  documentation and every file (`docs` on), the set-up of every client of the format for the version in every public repository that
+  holds it ([Q-BAS-502](#q-bas-502--a-versions-set-up-is-built-in-every-public-repository-that-holds-it)), and its state; per image its
+  list by content and its set-up without a version per holder and client (R-BAS-130); per public repository the set-up of every
+  client; per generic repository (a format whose items are paths) every folder's
   listing, every file's description and its set-up per client; the signature objects the signatures name; `signing/trusted-root.json` and
   `signing/chain.pem` where the installation has a signing identity; and the catalogue's `state` with today's malware signatures
   ([malware-scanning.md](malware-scanning.md) R-MAL-042). A set-up is rendered with
   `credentials=none` and `bastion=<name>`: the Bastion's addresses, no login line, no publish snippet; an OCI repository's Docker, Podman
   and Helm set-ups have no configure snippet at all, since a public image pulls without a login and a Bastion takes no push
   ([Q-OCI-277](formats/oci.md#q-oci-277--a-bastions-set-up-of-a-public-image-repository-has-no-login)). The public set of the routes is the
-  projects and repositories the anonymous caller lists, with the wiki public where the repository's wiki level is `public`, and each
-  project with the display name and the description the anonymous caller reads (R-BAS-128).
+  projects and repositories the anonymous caller lists, with the wiki public where the repository's wiki level is `public`, each
+  project with the display name and the description the anonymous caller reads (R-BAS-128), and each repository with its description,
+  its links rewritten (R-BAS-130).
 - **Bounds.** A document above `cataloguebounds.DocumentMaxBytes` is left out and named in its version's state (`omitted`); a path the
   grammar does not admit (a generic file's name with a control character) is left out (R-BAS-103).
 
@@ -6457,7 +6471,8 @@ Priority: **P1** · Covers: quader-only
   areas): the signals `metadata_changed`, `malware_verdict` and `signature_verdict`, and the change areas `repo_config`, `authz`,
   `vuln_data`, `malware_database` and `malware_settings` (a new signature set in use and a change of the rescan settings, which change
   the catalogue's state, [Q-BAS-491](#q-bas-491--a-new-set-and-a-change-of-the-rescan-settings-start-the-builder-and-only-the-state-changes)),
-  and `bastion_configuration`, which a change of a registration's switches `gui` and `docs` raises (R-BAS-102): switching the web interface
+  and `bastion_configuration`, which a change of a registration's switches `gui`, `docs` and `hideRepositories` raises (R-BAS-102,
+  R-BAS-131): switching the web interface
   on builds its first catalogue within the debounce and a run, off deletes it, without waiting for the hourly run. That change also drops
   the trigger's cached answer to whether some web interface is on, since the switch it carries may be what turned one on. And the signal
   `bastion_base_url`, which a Bastion's contact raises when it brings the registration a base URL the builder does not read yet (R-BAS-010):
@@ -7394,6 +7409,120 @@ Acceptance criteria:
   client; a repository the public set does not hold `404`.
 - Rendered (rule 11, R-UI-230): Set up client of an npm, an OCI and a generic repository, both schemes, 390, 1,024 and 1,440 px, English
   and German.
+
+## The catalogue of the project view: the interface version 12
+
+W-40 (the owner, 2026-11-27): a Bastion's project opens on its repositories, as the main installation's does, each repository lists what
+it holds with the command of every row, and a switch on the Bastion's card turns the Bastion into the flat view of packages alone. The
+main installation's side of it, W-40's package P1: the catalogue the pages read and the switch, which change the interface between the
+Bastion and the main installation, so it rises to version 12 ([Q-BAS-506](#q-bas-506--the-project-view-raises-the-interface-to-version-12-and-the-bastions-state-record-to-form-3)).
+The Bastion's reader, data path and crawler (P2), the views (P4a, P4b), the pages (P5), the card (P6) and the texts (P7) follow.
+
+### R-BAS-130 · The catalogue of the project view: the indexes per project and repository, an image's list by content, the set-ups of every holder
+Priority: **P1** · Covers: quader-only
+
+The priority is the one of R-BAS-116 to R-BAS-129, whose pages these feed.
+
+- **A repository's description.** A repository of the public set (`iface.CatalogueRepository`) carries the description the anonymous caller
+  reads in `GET /api/v1/projects/<p>/repositories`, its links rewritten as a document's text is (R-BAS-107); `""` for none. The state
+  record a replica keeps holds the public set, so its form rises to 3 and a record of the form before is refused: the replica reads the
+  catalogue again after the upgrade (R-BAS-110).
+- **A project's and a repository's index** ([Q-BAS-500](#q-bas-500--a-projects-and-a-repositorys-list-read-indexes-of-their-own)).
+  `projects/<project>/index/<n>` (kind `projectIndex`) is the main installation's anonymous answer of
+  `GET /api/v1/packages?project=<p>&include=vulnerabilities`, built for every project of the public set; `repositories/<p>/<r>/index/<n>`
+  (kind `repositoryIndex`) the answer of `GET /api/v1/packages?repository=<p>/<r>&include=vulnerabilities`, built for every repository of
+  the public set, and only while the repositories are shown (R-BAS-131): ClamAV's lists its databases, which are packages although its
+  format's items are paths; a generic repository's is an empty page (`{"items":[]}`), its files being documents of their own. Each in pages of 100 in the list's order, page 0 also for an empty list. The main installation
+  aggregates per scope (`internal/packages/view/topology.go`), so a scope's `latestVersion`, `versionCount` and grades are its own: a
+  local repository's index does not count the version a virtual repository over it holds besides. The indexes are documents of the
+  registration as a whole (unit `""`, R-BAS-105), rendered at every run and written only where their bytes changed.
+- **An image's list by content** ([Q-BAS-501](#q-bas-501--an-images-list-by-content-is-the-main-installations-answer-with-groupcontent)).
+  `packages/<id>/images` (kind `packageImages`) is the anonymous answer of `GET /api/v1/packages/<id>/versions?group=content&include=kind`:
+  one entry per manifest, led by its highest tag, the image's other tags as `aliases`, the leading tag and the order the server's
+  (api-and-ui.md Q-UI-1130, Q-API-432). Built for every package of a format whose lists are lists by content (OCI), with the package's unit.
+- **The set-up in every holder** ([Q-BAS-502](#q-bas-502--a-versions-set-up-is-built-in-every-public-repository-that-holds-it)). A
+  version's set-up per client (`setup/<p>/<r>/<client>/<id>/<v>`) is built in every repository of the public set that the version's
+  document names, each once, a local one and a virtual one over it alike, so the command through any repository a page offers finds its
+  document. A repository the main installation answers no set-up for (`404`) has none.
+- **The set-up of an image without a version** ([Q-BAS-503](#q-bas-503--the-pull-by-digest-reads-a-packages-set-up-without-a-version)).
+  `setup/<p>/<r>/<client>/<id>` is the anonymous answer of the client set-up with `package=<name>` and no `version`, per public holder of
+  the image and client of the format: the pull by digest appends `@<digest>` to the image's name, which only this set-up names. OCI only.
+- **Cost** (W-40's section 2.2, derived from the measurement of 2026-11-27 on the render seed: a summary of an index 117 B compressed, a
+  set-up 440 to 455 B, a versions list 354 B): a package of 10 versions in one public repository adds about 23 B per version; an image of
+  10 tags about 150 B per tag; a version held by a further public repository adds its clients' set-ups (0.45 to 1.8 KiB). The measured
+  figures of the catalogue after the change are in [developer/bastion.md](../developer/bastion.md#the-catalogue-of-the-project-view).
+- **Nothing of the main installation** (R-BAS-120): every new document is the builder's, through the strip (R-BAS-106) and the link
+  rewrite (R-BAS-107); the scans of R-BAS-104's and R-BAS-106's tests run over them.
+
+*Built on 2026-11-27 (W-40's P1):* the kinds and the path forms of [catalogue.go](../../internal/bastion/iface/catalogue.go),
+`publicSet`, `scopedIndexes`, `images`, `holders` and `setups` of [builder.go](../../internal/bastionmain/catalogue/builder.go). *Not
+built:* the Bastion's reader of the scoped indexes and of the images list, its data path and crawler (W-40's P2), and the pages
+(W-40's P5).
+
+Acceptance criteria:
+
+- Unit ([project_view_test.go](../../internal/bastionmain/catalogue/project_view_test.go), a fake management API, milliseconds, bytes):
+  `TestR_BAS_130_TheCatalogueHoldsAProjectsAndARepositorysIndex` (an npm package whose 1.0.0 is in a local and a virtual repository and
+  whose 2.0.0 is in the virtual one alone: each repository's index has its own `latestVersion` and `versionCount`, the project's its own; an
+  image with two tags on one manifest is one entry of its list; a generic repository's index an empty page; the public set's descriptions
+  with their links on the Bastion), `TestR_BAS_130_EveryHolderHasItsSetUp` (1.0.0's set-up in both repositories, 2.0.0's in the virtual one alone; the
+  image's set-up without a version per client; none for the npm package; the generic file's set-up as before).
+- Integration (area `bastion`, inside `TestR_BAS_104_TheCatalogueFollowsPublishesLevelsAndTheSwitch`, no world of its own): the change list
+  holds the project's index and the index of the world's npm repository, read back verified by the batch read and scanned with every other
+  document for the main installation's origins and `/api/v1/`.
+
+### R-BAS-131 · Hide repositories
+Priority: **P1** · Covers: quader-only
+
+The owner (W-40): a Bastion may show its projects and their packages without the repositories that hold them. The switch names no
+repository anywhere a visitor reads; a client's address still carries the repository's key, since the Bastion mirrors the main
+installation's address space ([Q-BAS-504](#q-bas-504--hide-repositories-hides-every-repository-a-visitor-reads-and-keeps-the-key-a-client-needs)).
+
+- **Stored.** The column `hide_repositories boolean NOT NULL DEFAULT false` of `bastion` (migration `00157`), a member of the
+  registration's switches beside `gui` and `docs` (R-BAS-102), off for every registration, new and existing, so a missing member is the
+  default ([Q-BAS-505](#q-bas-505--the-switch-is-hide-repositories-off-by-default-behind-the-details-of-the-web-interface)).
+  `GET /api/v1/bastions/{name}` answers it as `switches.hideRepositories`; `PATCH` with `{"switches": {"hideRepositories": true}}` sets it
+  (`endpoints:write`, as the other switches, Q-BAS-325; `If-Match` with the registration's revision, `412` for a stale one), absent and
+  `null` unchanged. A change raises the registration's revision and records `bastion.configuration.changed` with the part
+  `switches.hideRepositories`.
+- **To the Bastion.** `iface.Switches.HideRepositories` (`hideRepositories`) in the handshake's configuration (R-BAS-093), changed by a
+  `settings` entry of the feed within about 3 s.
+- **To the builder.** `catalogue.Registration.HideRepositories`, read from the stored row as `gui` and `docs` are, is part of the salt
+  (R-BAS-105), so a change renders every unit again; the change area `bastion_configuration` starts a run within the debounce. While it is
+  on the builder renders no repository's index (the run that hides them deletes the ones built before), and its rewrite treats no
+  upstream as a well-known public registry: every `upstreamUrl` and `fetchedFrom` is `null` (R-BAS-106's rule with an empty
+  `PublicRegistries`), so a version's page names no remote's upstream. A project's index, the set-ups in every holder (the pages offer
+  the first then) and an image's list are built as while shown.
+- **Still named, and why** (Q-BAS-504): the key inside a command, a download address, Set up client's snippets and address (a client needs
+  them); a generic repository's files under their root folder, which is the key as every download address of them has it; the data a
+  browser reads keep a version's holders with their keys and classes, which the shared views' rules read.
+- **On the card** (api-and-ui.md R-UI-240): the switch **Hide repositories** behind the closed **Details** of the section **Web
+  interface**.
+
+*Built on 2026-11-27 (W-40's P1):* the column ([00157_bastion_hide_repositories.sql](../../internal/meta/postgres/migrations/00157_bastion_hide_repositories.sql)),
+the statements of [bastion_registration.sql](../../internal/meta/postgres/queries/bastion_registration.sql), the service's `Patch` and
+`setConfiguration` of [registrations.go](../../internal/bastionmain/registrations.go), the snapshot of
+[snapshot.go](../../internal/bastionmain/snapshot.go), `patchSwitches` and `toBastion` of
+[bastion_registrations_api.go](../../internal/api/v1/bastion_registrations_api.go) and the OpenAPI document, the wire's
+[configuration.go](../../internal/bastion/iface/configuration.go), the builder's registration in
+[wire_bastion_catalogue.go](../../internal/app/wire_bastion_catalogue.go) and [builder.go](../../internal/bastionmain/catalogue/builder.go).
+*Not built:* what the Bastion does with the switch at once, before the next build (its state, the data path's `404`s, the pages' flat
+view, the sitemap; W-40's P2 and P5), and the card's switch (W-40's P6).
+
+Acceptance criteria:
+
+- Unit ([project_view_test.go](../../internal/bastionmain/catalogue/project_view_test.go), milliseconds):
+  `TestR_BAS_131_HiddenRepositoriesBuildNoRepositoryIndexAndNameNoUpstream` (on: no `repositories/…/index/…`, the ones built before deleted
+  in the change list, the project's index kept, every `upstreamUrl` and `fetchedFrom` null, a public registry's too; off again: the
+  indexes and the public registry's upstream back).
+- Unit (`internal/bastion/iface`): `TestR_BAS_093_TheConfigurationTravelsWholeAndItsRulesHold` with `hideRepositories`;
+  `TestR_BAS_009_TheInterfaceChangesOnlyWithItsVersion` at 12.
+- Unit (`internal/api/v1`, `TestR_BAS_131_TheSwitchHideRepositoriesIsReadAndPatched`, microseconds): the representation's member, the
+  merge patch's true, false, null and absent, a string refused.
+- Integration (area `bastionreg`, inside `TestR_BAS_093_TheConfigurationLivesOnTheRegistration`): off for a new registration, `412` with a
+  stale `ETag`, the patch raises the revision, records the part and reaches the replica's snapshot. Area `bastion`, inside
+  `TestR_BAS_104_TheCatalogueFollowsPublishesLevelsAndTheSwitch`: the switch on drops the repository's index within a run and keeps the
+  project's, off builds it again.
 
 ## A registration the configuration declares
 
@@ -15385,6 +15514,121 @@ the builder reads the registration's base URL from that row and builds nothing w
 [contact.go](../../internal/bastionmain/contact.go), `catalogueTriggerSignals` of
 [wire_bastion_catalogue.go](../../internal/app/wire_bastion_catalogue.go), `AreaBastionBaseURL` of
 [areas.go](../../internal/cluster/areas.go).
+
+### Q-BAS-500 · A project's and a repository's list read indexes of their own
+
+Status: **Decided by the development agent** on 2026-11-27 (plan W-40, D8) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-BAS-130. The Bastion's flat list searched the global index, the main installation's `GET /api/v1/packages` without a filter,
+whose counts and latest version are over every project's repositories; the main installation narrows a project's or a repository's list
+before it aggregates (`internal/packages/view/topology.go`). With a repository's view beside the flat one, a tag count would differ
+between the two otherwise, and while the repositories are hidden the flat list is the only one.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The global index, filtered at the Bastion by repository or project | No new document | Nothing to build | The counts are over every project's repositories: a repository's list shows a version count of another repository |
+| (b) Indexes per scope, the main installation's answers with `project` and `repository` (chosen) | `projects/<p>/index/<n>`, `repositories/<p>/<r>/index/<n>` | Each list counts as the main installation's list of the same scope; no rule copied | About 117 B per package per scope; a list read per scope at every run |
+| (c) An overlay of the members that differ per scope | Smaller | Fewer bytes | Rewrites the main installation's answers, which the catalogue keeps as answered (R-BAS-104), and binds the reader to the summary's members |
+
+**Choice:** (b). **Applied in the spec:** R-BAS-103, R-BAS-104, R-BAS-130; code: `scopedIndexes` of
+[builder.go](../../internal/bastionmain/catalogue/builder.go).
+
+### Q-BAS-501 · An image's list by content is the main installation's answer with group=content
+
+Status: **Decided by the development agent** on 2026-11-27 (plan W-40, D10) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-BAS-130. The Bastion listed an image's tags one per row, the main installation one per image by content (api-and-ui.md
+Q-UI-1130); the catalogue's versions list is read without `group`.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Group the tags by digest in the browser | No document | Nothing to build | The leading tag and the order are the server's rules (Q-UI-1130, Q-API-432), which the browser would copy |
+| (b) A document of the main installation's answer with `group=content` (chosen) | `packages/<id>/images` | The server's rule, once | About 354 B per image |
+
+**Choice:** (b). A repository's opened row keeps the entries whose `repositories` hold the repository; an image's other tags held by a
+second repository stay named (a row is one manifest), accepted. **Applied in the spec:** R-BAS-103, R-BAS-130; code: `images` of
+[builder.go](../../internal/bastionmain/catalogue/builder.go).
+
+### Q-BAS-502 · A version's set-up is built in every public repository that holds it
+
+Status: **Decided by the development agent** on 2026-11-27 (plan W-40, D11) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-BAS-104 built a version's set-up only in its first public repository, while the version's head offers every holder
+(`clientRepositories`, a virtual repository first): a command through any other holder answered 404 (W-40's inventory 1.3, 3).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Every public holder (chosen) | One set-up per holder and client | The head's select, a repository's opened row and the flat list each find their document; no rule has to agree between Go and TypeScript | Clients × 455 B per further holder (3 % to 12 % of a version's 15 KiB where a version is in two public repositories) |
+| (b) Only the first holder by the UI's rule | The builder copies `clientRepositories` | Fewer bytes | Two implementations of one order, which drift |
+
+**Choice:** (a), also while the repositories are hidden (the panel then offers the first). **Applied in the spec:** R-BAS-104, R-BAS-130;
+code: `holders` and `setups` of [builder.go](../../internal/bastionmain/catalogue/builder.go).
+
+### Q-BAS-503 · The pull by digest reads a package's set-up without a version
+
+Status: **Decided by the development agent** on 2026-11-27 (plan W-40, D12) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: the Bastion's pull by digest asked the repository's set-up, whose install line names the placeholder image `myapp:1.0`, and
+appended `@sha256:…` to it (W-40's inventory 1.3, 2).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A package's set-up without a version per holder and client, `setup/<p>/<r>/<c>/<id>` (chosen) | The main installation's answer with `package` and no `version` | No change of the main installation's API or of the shared command view; the cost is per image, not per tag | About 2 × 440 B per image per holder |
+| (b) A `digest` parameter of the client set-up, rendered by the server | The server writes the digest | One document per tag | A change of the API and of the shared view for one client |
+
+**Choice:** (a), for OCI only. **Applied in the spec:** R-BAS-103, R-BAS-130; code: `pkg` and `setups` of
+[builder.go](../../internal/bastionmain/catalogue/builder.go).
+
+### Q-BAS-504 · Hide repositories hides every repository a visitor reads and keeps the key a client needs
+
+Status: **Decided by the development agent** on 2026-11-27 (plan W-40, D14) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: R-BAS-131, the owner: "names no repository anywhere a visitor reads". A client's address carries the project's and the
+repository's key (`/api/npm/<p>/<r>/`, `<host>/<p>/<r>/<image>`, `/files/<p>/<r>/<path>`): the Bastion mirrors the main installation's
+address space (Q-BAS-17), and an address without the repository would need a binding per host the owner has not asked for.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Hide the lists, pages, titles, crumbs, sitemap entries, columns and upstreams that present a repository; keep the key in commands, download addresses, Set up client and the data a browser reads (chosen) | A visitor reads projects and packages | Every client keeps working; the shared views keep one rule | The keys and classes stay in the data a browser reads and in every command |
+| (b) Also strip the class from every document | Fewer facts in the data | Less to read | Forks the views' command order, the word Pushed/Fetched and the delivery note for one mode; the key stays in every command anyway |
+| (c) Hide generic files altogether | No key in a page | Nothing named | A public file vanishes from the Bastion |
+
+**Choice:** (a). The builder's part: no repository's index and no remote's upstream while it is on (R-BAS-131); the Bastion's and the
+pages' parts follow with W-40's P2 and P5, and the data's classes become a gap of [security/bastion.md](../security/bastion.md) there.
+**Applied in the spec:** R-BAS-131; code: `build` and `scopedIndexes` of [builder.go](../../internal/bastionmain/catalogue/builder.go).
+
+### Q-BAS-505 · The switch is Hide repositories, off by default, behind the Details of the web interface
+
+Status: **Decided by the development agent** on 2026-11-27 (plan W-40, D15) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) In the Details of the card's limits | Beside the guard's figures | One disclosure | The limits' Details hold figures of the guard, not what the web interface shows |
+| (b) Behind a closed disclosure **Details** of the section **Web interface** (api-and-ui.md Q-UI-1616) (chosen) | A detail setting of the web interface | Where it belongs; the plain view keeps the two switches | One more disclosure |
+| (c) A main setting beside `gui` and `docs` | In plain view | Seen at once | The owner asked for it behind the card's details, not as a main setting |
+
+**Choice:** (b), named **Hide repositories**, on = hidden: off, the default, is the zero value of the wire's `hideRepositories`, so no
+default can go missing. **Applied in the spec:** R-BAS-131, api-and-ui.md R-UI-240 (with W-40's P6).
+
+### Q-BAS-506 · The project view raises the interface to version 12 and the Bastion's state record to form 3
+
+Status: **Decided by the development agent** on 2026-11-27 (plan W-40, D23) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One raise to 12 for the repository's description, the switch, the kinds `projectIndex`, `repositoryIndex`, `packageImages` and the set-up path of four segments; the state record's form 3, since it holds the public set (chosen) | Every change of the wire raises it (Q-BAS-26) | A Bastion of another version never misreads a member; a replica reads the catalogue again after the upgrade | A lockstep upgrade, which before the first stable release costs nothing |
+| (b) New kinds without a raise | The grammar grows within a version | No upgrade | Against Q-BAS-26: a Bastion of version 11 refuses a path of the new forms and a configuration with the new member |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-009's list of raises, R-BAS-130, R-BAS-131; code:
+[version.go](../../internal/bastion/iface/version.go), `recordVersion` of [state.go](../../internal/bastion/catalogue/state.go), the
+operations' `x-quader-bastion-interface: 12`.
 
 ## What this does not cover
 

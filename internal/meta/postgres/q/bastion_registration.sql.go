@@ -85,8 +85,8 @@ func (q *Queries) BastionDeclaredList(ctx context.Context) ([]BastionDeclaredLis
 
 const bastionGet = `-- name: BastionGet :many
 SELECT p.id::text AS id, p.name, (p.status = 'active')::boolean AS enabled, p.created_at, p.revision, b.description, b.handover,
-       b.egress::text[] AS egress, b.gui, b.docs, b.limits_mode, b.limits_preset, b.limits_flood, b.limits_slots, b.limits_throughput,
-       b.limits_ceiling, b.declared_at, (s.bastion_id IS NOT NULL)::boolean AS catalogue_held,
+       b.egress::text[] AS egress, b.gui, b.docs, b.hide_repositories, b.limits_mode, b.limits_preset, b.limits_flood, b.limits_slots,
+       b.limits_throughput, b.limits_ceiling, b.declared_at, (s.bastion_id IS NOT NULL)::boolean AS catalogue_held,
        coalesce(s.stopped, '')::text AS catalogue_stopped, s.checked_at AS catalogue_checked_at, s.built_at AS catalogue_built_at
   FROM principal p JOIN bastion b ON b.principal_id = p.id
   LEFT JOIN bastion_catalogue_state s ON s.bastion_id = p.id
@@ -104,6 +104,7 @@ type BastionGetRow struct {
 	Egress             []string
 	Gui                bool
 	Docs               bool
+	HideRepositories   bool
 	LimitsMode         string
 	LimitsPreset       string
 	LimitsFlood        json.RawMessage
@@ -119,7 +120,8 @@ type BastionGetRow struct {
 
 // A registration by name. revision is the ETag (R-API-012); enabled is the principal's status; handover is the switch of the
 // handover per blob (R-BAS-071, 00110); egress the networks the Bastion connects from (R-BAS-017, 00145), each in the text form of
-// cidr, which always names the prefix length; gui, docs and the limits_* members the rest of its configuration (R-BAS-093, 00147);
+// cidr, which always names the prefix length; gui, docs, hide_repositories and the limits_* members the rest of its configuration
+// (R-BAS-093, 00147; R-BAS-131, 00157);
 // declared_at the mark of a registration the configuration declares (R-BAS-127, 00148), NULL otherwise; catalogue_* the builder's last
 // outcome for its public catalogue, read from the state the builder keeps (R-BAS-104, 00146): whether one is held, why it stopped, and
 // the times of its last run and of the last run that changed it.
@@ -143,6 +145,7 @@ func (q *Queries) BastionGet(ctx context.Context, name string) ([]BastionGetRow,
 			&i.Egress,
 			&i.Gui,
 			&i.Docs,
+			&i.HideRepositories,
 			&i.LimitsMode,
 			&i.LimitsPreset,
 			&i.LimitsFlood,
@@ -301,8 +304,8 @@ func (q *Queries) BastionKindRulesInsert(ctx context.Context, arg BastionKindRul
 
 const bastionList = `-- name: BastionList :many
 SELECT p.id::text AS id, p.name, (p.status = 'active')::boolean AS enabled, p.created_at, p.revision, b.description, b.handover,
-       b.egress::text[] AS egress, b.gui, b.docs, b.limits_mode, b.limits_preset, b.limits_flood, b.limits_slots, b.limits_throughput,
-       b.limits_ceiling, b.declared_at, (s.bastion_id IS NOT NULL)::boolean AS catalogue_held,
+       b.egress::text[] AS egress, b.gui, b.docs, b.hide_repositories, b.limits_mode, b.limits_preset, b.limits_flood, b.limits_slots,
+       b.limits_throughput, b.limits_ceiling, b.declared_at, (s.bastion_id IS NOT NULL)::boolean AS catalogue_held,
        coalesce(s.stopped, '')::text AS catalogue_stopped, s.checked_at AS catalogue_checked_at, s.built_at AS catalogue_built_at
   FROM principal p JOIN bastion b ON b.principal_id = p.id
   LEFT JOIN bastion_catalogue_state s ON s.bastion_id = p.id
@@ -327,6 +330,7 @@ type BastionListRow struct {
 	Egress             []string
 	Gui                bool
 	Docs               bool
+	HideRepositories   bool
 	LimitsMode         string
 	LimitsPreset       string
 	LimitsFlood        json.RawMessage
@@ -362,6 +366,7 @@ func (q *Queries) BastionList(ctx context.Context, arg BastionListParams) ([]Bas
 			&i.Egress,
 			&i.Gui,
 			&i.Docs,
+			&i.HideRepositories,
 			&i.LimitsMode,
 			&i.LimitsPreset,
 			&i.LimitsFlood,
@@ -638,21 +643,24 @@ func (q *Queries) BastionPlaceRulesOfAll(ctx context.Context) ([]BastionPlaceRul
 }
 
 const bastionSetConfiguration = `-- name: BastionSetConfiguration :many
-UPDATE bastion SET gui = $1::boolean, docs = $2::boolean, limits_mode = $3::text,
-       limits_preset = $4::text, limits_flood = $5::text::jsonb,
-       limits_slots = $6::text::jsonb, limits_throughput = $7::text::jsonb,
-       limits_ceiling = $8::text::jsonb
- WHERE principal_id = $9::text::uuid
-   AND (gui, docs, limits_mode, limits_preset, limits_flood, limits_slots, limits_throughput, limits_ceiling) IS DISTINCT FROM
-       ($1::boolean, $2::boolean, $3::text, $4::text,
-        $5::text::jsonb, $6::text::jsonb, $7::text::jsonb,
-        $8::text::jsonb)
+UPDATE bastion SET gui = $1::boolean, docs = $2::boolean,
+       hide_repositories = $3::boolean, limits_mode = $4::text,
+       limits_preset = $5::text, limits_flood = $6::text::jsonb,
+       limits_slots = $7::text::jsonb, limits_throughput = $8::text::jsonb,
+       limits_ceiling = $9::text::jsonb
+ WHERE principal_id = $10::text::uuid
+   AND (gui, docs, hide_repositories, limits_mode, limits_preset, limits_flood, limits_slots, limits_throughput, limits_ceiling)
+       IS DISTINCT FROM
+       ($1::boolean, $2::boolean, $3::boolean, $4::text,
+        $5::text, $6::text::jsonb, $7::text::jsonb,
+        $8::text::jsonb, $9::text::jsonb)
 RETURNING principal_id::text AS id
 `
 
 type BastionSetConfigurationParams struct {
 	Gui              bool
 	Docs             bool
+	HideRepositories bool
 	LimitsMode       string
 	LimitsPreset     string
 	LimitsFlood      string
@@ -662,12 +670,13 @@ type BastionSetConfigurationParams struct {
 	ID               string
 }
 
-// Replace the switches gui and docs and the limits of a registration (R-BAS-093); the service validated the members as a Bastion does.
-// No row when nothing differs.
+// Replace the switches gui, docs and hide_repositories and the limits of a registration (R-BAS-093, R-BAS-131); the service validated
+// the members as a Bastion does. No row when nothing differs.
 func (q *Queries) BastionSetConfiguration(ctx context.Context, arg BastionSetConfigurationParams) ([]string, error) {
 	rows, err := q.db.Query(ctx, bastionSetConfiguration,
 		arg.Gui,
 		arg.Docs,
+		arg.HideRepositories,
 		arg.LimitsMode,
 		arg.LimitsPreset,
 		arg.LimitsFlood,
@@ -844,8 +853,8 @@ func (q *Queries) BastionSetHandover(ctx context.Context, arg BastionSetHandover
 }
 
 const bastionSnapshot = `-- name: BastionSnapshot :many
-SELECT b.principal_id::text AS id, p.name, p.revision, b.handover, b.egress::text[] AS egress, b.gui, b.docs, b.limits_mode,
-       b.limits_preset, b.limits_flood, b.limits_slots, b.limits_throughput, b.limits_ceiling,
+SELECT b.principal_id::text AS id, p.name, p.revision, b.handover, b.egress::text[] AS egress, b.gui, b.docs, b.hide_repositories,
+       b.limits_mode, b.limits_preset, b.limits_flood, b.limits_slots, b.limits_throughput, b.limits_ceiling,
        COALESCE((SELECT jsonb_agg(jsonb_build_object(
                     'id', a.id::text, 'whoKind', a.who_kind, 'whoRef', a.who_ref, 'profile', lp.key, 'overrides', a.overrides,
                     'builtin', a.builtin,
@@ -871,6 +880,7 @@ type BastionSnapshotRow struct {
 	Egress           []string
 	Gui              bool
 	Docs             bool
+	HideRepositories bool
 	LimitsMode       string
 	LimitsPreset     string
 	LimitsFlood      json.RawMessage
@@ -903,6 +913,7 @@ func (q *Queries) BastionSnapshot(ctx context.Context) ([]BastionSnapshotRow, er
 			&i.Egress,
 			&i.Gui,
 			&i.Docs,
+			&i.HideRepositories,
 			&i.LimitsMode,
 			&i.LimitsPreset,
 			&i.LimitsFlood,

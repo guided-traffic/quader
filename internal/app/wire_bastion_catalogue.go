@@ -166,7 +166,7 @@ func (a *App) catalogueRegistrations(in infra, id identityArea) func(context.Con
 				return nil, err
 			}
 			sw := a.bastionSwitches(l.Name, reg.Switches)
-			r := catalogue.Registration{ID: l.ID, Name: l.Name, GUI: l.Enabled && sw.GUI, Docs: sw.Docs}
+			r := catalogue.Registration{ID: l.ID, Name: l.Name, GUI: l.Enabled && sw.GUI, Docs: sw.Docs, HideRepositories: sw.HideRepositories}
 			if r.GUI {
 				base, _, err := reported.ReportedBaseURL(ctx, l.Name)
 				if err != nil {
@@ -180,13 +180,13 @@ func (a *App) catalogueRegistrations(in infra, id identityArea) func(context.Con
 	}
 }
 
-// bastionSwitches are a registration's switches gui and docs: the stored ones of its configuration (R-BAS-093, R-BAS-102), or the
-// test's when it set them (Options.BastionSwitches).
+// bastionSwitches are a registration's switches gui, docs and hideRepositories: the stored ones of its configuration (R-BAS-093,
+// R-BAS-102, R-BAS-131), or the test's when it set them (Options.BastionSwitches).
 func (a *App) bastionSwitches(name string, stored iface.Switches) iface.Switches {
 	sw := stored
 	if a.o.BastionSwitches != nil {
 		o := a.o.BastionSwitches(name)
-		sw.GUI, sw.Docs = o.GUI, o.Docs
+		sw.GUI, sw.Docs, sw.HideRepositories = o.GUI, o.Docs, o.HideRepositories
 	}
 	return sw
 }

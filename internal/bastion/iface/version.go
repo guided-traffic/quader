@@ -38,4 +38,9 @@ package iface
 // Version 11 (malware-scanning.md R-MAL-042, Q-BAS-490): the catalogue's state document ([CatalogueStateDocument]) carries today's
 // signatures of the malware scan with the bounds of a check's class ([CatalogueMalware]) and today's vulnerability database of the
 // image scanning ([CatalogueVulnerabilityDatabase]), which the Bastion's pages read.
-const InterfaceVersion = 11
+//
+// Version 12 (R-BAS-130, R-BAS-131): the catalogue of the project view. A public repository's description
+// ([CatalogueRepository]), the kinds of a project's and a repository's index ([CatalogueProjectIndex],
+// [CatalogueRepositoryIndex]) and of an image's list by content ([CataloguePackageImages]), the set-up path of a package without a
+// version, and the switch hideRepositories of the configuration ([Switches]).
+const InterfaceVersion = 12

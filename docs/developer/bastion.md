@@ -1899,6 +1899,52 @@ the tests and the measurement below may set them through `app.Options.BastionSwi
 
 The integration test adds about 11 s to the area `bastion`, a constant: it is no format's case, and a new format adds nothing to it.
 
+### The catalogue of the project view
+
+W-40's P1, built on 2026-11-27 ([spec](../spec/bastion.md#the-catalogue-of-the-project-view-the-interface-version-12), R-BAS-130,
+R-BAS-131; interface version 12): what the Bastion's project view reads, all of it in [builder.go](../../internal/bastionmain/catalogue/builder.go).
+
+| Document | Path | Read by the builder | Built |
+|---|---|---|---|
+| A repository's description | member `description` of `iface.CatalogueRepository` in the public set, links rewritten as text | `GET /api/v1/projects/<p>/repositories` (`publicSet`) | always |
+| A project's index | `projects/<p>/index/<n>` (kind `projectIndex`) | `GET /api/v1/packages?include=vulnerabilities&project=<p>` | every project of the public set (`scopedIndexes`) |
+| A repository's index | `repositories/<p>/<r>/index/<n>` (kind `repositoryIndex`) | `GET /api/v1/packages?include=vulnerabilities&repository=<p>/<r>` | every repository of the public set while `hideRepositories` is off |
+| An image's list by content | `packages/<id>/images` (kind `packageImages`) | `GET /api/v1/packages/<id>/versions?group=content&include=kind` | every OCI package (`images`, `listsByContent`) |
+| A package's set-up without a version | `setup/<p>/<r>/<client>/<id>` | the client set-up with `package` and no `version` | every OCI package, per public holder and client (`setups` with an empty version) |
+| A version's set-up in every holder | `setup/<p>/<r>/<client>/<id>/<v>` | as before | every public repository the version's document names (`holders`, `setups`) |
+
+The indexes are documents of the registration as a whole (unit `""`, rendered by `wholeRegistration` at every run and written only where
+their bytes changed); the images list and the set-ups belong to the package's unit. An empty list is the page `{"items":[]}`. The switch
+`hideRepositories` (`Registration.HideRepositories`, read by `catalogueRegistrations` of the wiring from the stored row or
+`app.Options.BastionSwitches`) is part of the salt; while it is on, `scopedIndexes` builds no repository's index (the run deletes the ones
+before) and `build` leaves `Rewrite.PublicRegistries` empty, so every `upstreamUrl` and `fetchedFrom` is `null`.
+
+**Measured on 2026-11-27** on the UI profile's render seed (instance 6, `make ui-renders`, then the tables `bastion_catalogue` and
+`bastion_catalogue_document` read by SQL; two registrations with `gui` on, figures per registration: 20 public packages, 34 versions, 8 public repositories in 2 projects, one
+image of 3 tags on 2 manifests, no version in two public repositories):
+
+| Kind | Documents | Compressed | Per document |
+|---|---|---|---|
+| `projectIndex` | 2 | 2,381 B | 2,344 B for the project of 20 packages, 37 B for the empty page of the project that holds only the ClamAV definitions |
+| `repositoryIndex` | 8 | 4,028 B | 482 to 1,024 B for a repository with packages, 37 B for an empty page (a generic repository, ClamAV without definitions, a remote with nothing cached) |
+| `packageImages` | 1 | 593 B | 593 B |
+| `setup/<p>/<r>/<c>/<id>` (OCI, three clients) | 3 | 876 B | 292 B |
+| The additions together | 14 | 7,878 B | 232 B per version of this seed |
+| The whole catalogue | 371 | 162,722 B (158.9 KiB) | 4.7 KiB per version |
+
+The additions are 4.8 % of this seed's catalogue: with 1.7 versions per package and 8 repositories for 20 packages, the indexes, a cost per
+scope, weigh more than in a catalogue of many versions per package, for which W-40's section 2.2 derives about 1 % *(derived)*. A version in
+a further public repository adds its clients' set-ups (447 B each measured here); the seed has none, so that share is derived only. The
+reader's memory for the scoped indexes is P2's and not measured here.
+
+Tests (tier, time, data): `TestR_BAS_130_TheCatalogueHoldsAProjectsAndARepositorysIndex`, `TestR_BAS_130_EveryHolderHasItsSetUp` and
+`TestR_BAS_131_HiddenRepositoriesBuildNoRepositoryIndexAndNameNoUpstream` ([project_view_test.go](../../internal/bastionmain/catalogue/project_view_test.go),
+unit, a fake management API of one project, about 0.1 s together, bytes); the path forms in
+`TestR_BAS_103_TheCataloguePathGrammarRoundTrips` and the switch in `TestR_BAS_093_TheConfigurationTravelsWholeAndItsRulesHold`
+(`internal/bastion/iface`, milliseconds); `TestR_BAS_131_TheSwitchHideRepositoriesIsReadAndPatched` (`internal/api/v1`, microseconds);
+the switch's store in `TestR_BAS_093_TheConfigurationLivesOnTheRegistration` (area `bastionreg`) and the indexes and the switch at the
+builder in `TestR_BAS_104_TheCatalogueFollowsPublishesLevelsAndTheSwitch` (area `bastion`, two runs of the builder more).
+
 ## The public catalogue at the Bastion (package P7)
 
 W-35's P7, built on 2026-11-26: a Bastion replica mirrors its registration's catalogue and serves the web interface's reads from it alone

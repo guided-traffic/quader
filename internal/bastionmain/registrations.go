@@ -152,10 +152,11 @@ type Patch struct {
 	Description *string
 	Enabled     *bool
 	// Handover switches the handover per blob on or off (R-BAS-071); GUI and Docs the web interface and its documentation
-	// (R-BAS-102).
-	Handover *bool
-	GUI      *bool
-	Docs     *bool
+	// (R-BAS-102); HideRepositories the web interface's switch Hide repositories (R-BAS-131).
+	Handover         *bool
+	GUI              *bool
+	Docs             *bool
+	HideRepositories *bool
 	// Egress replaces the networks the Bastion connects from (R-BAS-017), as the API received them; nil leaves them.
 	Egress *[]string
 	// Preset applies a preset (R-LIM-046) before Limits: the five kind rules of the place, the flood figures and the mode.
@@ -295,7 +296,7 @@ func load(ctx context.Context, qs *q.Queries, name string) (Registration, error)
 	g := rows[0]
 	out := Registration{
 		ID: g.ID, Name: g.Name, Description: g.Description, Enabled: g.Enabled,
-		Switches: iface.Switches{Handover: g.Handover, GUI: g.Gui, Docs: g.Docs},
+		Switches: iface.Switches{Handover: g.Handover, GUI: g.Gui, Docs: g.Docs, HideRepositories: g.HideRepositories},
 		Limits: limitsOf(limitsColumns{
 			mode: g.LimitsMode, preset: g.LimitsPreset, flood: g.LimitsFlood, slots: g.LimitsSlots, throughput: g.LimitsThroughput,
 			ceiling: g.LimitsCeiling,
@@ -466,7 +467,7 @@ func (r *Registrations) List(ctx context.Context) ([]Registration, error) {
 			byID[g.ID] = len(out)
 			out = append(out, Registration{
 				ID: g.ID, Name: g.Name, Description: g.Description, Enabled: g.Enabled,
-				Switches: iface.Switches{Handover: g.Handover, GUI: g.Gui, Docs: g.Docs},
+				Switches: iface.Switches{Handover: g.Handover, GUI: g.Gui, Docs: g.Docs, HideRepositories: g.HideRepositories},
 				Limits: limitsOf(limitsColumns{
 					mode: g.LimitsMode, preset: g.LimitsPreset, flood: g.LimitsFlood, slots: g.LimitsSlots, throughput: g.LimitsThroughput,
 					ceiling: g.LimitsCeiling,
@@ -622,12 +623,13 @@ func (r *Registrations) Update(ctx context.Context, c principal.Caller, name str
 	return out, nil
 }
 
-// setConfiguration writes the switches gui and docs and the limits of the registration cur inside the update's transaction (R-BAS-093):
+// setConfiguration writes the switches gui, docs and hideRepositories and the limits of the registration cur inside the update's
+// transaction (R-BAS-093, R-BAS-131):
 // a preset first (its kind rules, flood figures and mode, R-LIM-046), then the limits the patch computes from the result, held to the
 // rules a Bastion applies them by (ValidateLimits); a change of the mode is asked first (R-LIM-044). It announces the change area of
 // the configuration, and the area limits when a preset rewrote a kind rule, and notes each part it changed in ch.
 func (r *Registrations) setConfiguration(ctx context.Context, tx meta.Tx, c principal.Caller, cur Registration, p Patch, ch *configChange) error {
-	if p.GUI == nil && p.Docs == nil && p.Preset == nil && p.Limits == nil {
+	if p.GUI == nil && p.Docs == nil && p.HideRepositories == nil && p.Preset == nil && p.Limits == nil {
 		return nil
 	}
 	qs := principal.Queries(tx)
@@ -637,6 +639,9 @@ func (r *Registrations) setConfiguration(ctx context.Context, tx meta.Tx, c prin
 	}
 	if p.Docs != nil {
 		sw.Docs = *p.Docs
+	}
+	if p.HideRepositories != nil {
+		sw.HideRepositories = *p.HideRepositories
 	}
 	next := cur.Limits
 	var rewritten []string
@@ -671,7 +676,7 @@ func (r *Registrations) setConfiguration(ctx context.Context, tx meta.Tx, c prin
 	}
 	flood, slots, throughput, ceiling := columnsOf(next)
 	written, err := qs.BastionSetConfiguration(ctx, q.BastionSetConfigurationParams{
-		ID: cur.ID, Gui: sw.GUI, Docs: sw.Docs, LimitsMode: string(next.Mode), LimitsPreset: string(next.Preset), LimitsFlood: flood,
+		ID: cur.ID, Gui: sw.GUI, Docs: sw.Docs, HideRepositories: sw.HideRepositories, LimitsMode: string(next.Mode), LimitsPreset: string(next.Preset), LimitsFlood: flood,
 		LimitsSlots: slots, LimitsThroughput: throughput, LimitsCeiling: ceiling,
 	})
 	if err != nil {
@@ -679,6 +684,7 @@ func (r *Registrations) setConfiguration(ctx context.Context, tx meta.Tx, c prin
 	}
 	ch.compare("switches.gui", cur.Switches.GUI, sw.GUI)
 	ch.compare("switches.docs", cur.Switches.Docs, sw.Docs)
+	ch.compare("switches.hideRepositories", cur.Switches.HideRepositories, sw.HideRepositories)
 	ch.compare("mode", cur.Limits.Mode, next.Mode)
 	ch.compare("preset", cur.Limits.Preset, next.Preset)
 	ch.compare("flood", cur.Limits.Flood, next.Flood)

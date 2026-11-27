@@ -23,7 +23,7 @@ func figure(n int64) *int64 { return &n }
 func configuration() iface.Configuration {
 	return iface.Configuration{
 		Revision: 17,
-		Switches: iface.Switches{Handover: true, GUI: true},
+		Switches: iface.Switches{Handover: true, GUI: true, HideRepositories: true},
 		Limits: iface.Limits{
 			Mode: iface.ModeEnforce, Preset: iface.PresetInternet,
 			Place: iface.PlaceTable{
@@ -53,7 +53,8 @@ func configuration() iface.Configuration {
 }
 
 // TestR_BAS_093_TheConfigurationTravelsWholeAndItsRulesHold: the configuration is one member of the handshake whose figures are
-// null when unlimited, it decodes strictly to what was sent, and Validate refuses every member the specification's rules refuse.
+// null when unlimited, it decodes strictly to what was sent, and Validate refuses every member the specification's rules refuse. The
+// switches carry hideRepositories (R-BAS-131), false unless set and read back as sent.
 func TestR_BAS_093_TheConfigurationTravelsWholeAndItsRulesHold(t *testing.T) {
 	c := configuration()
 	if err := c.Validate(); err != nil {
@@ -64,7 +65,7 @@ func TestR_BAS_093_TheConfigurationTravelsWholeAndItsRulesHold(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, want := range []string{
-		`"switches":{"handover":true,"gui":true,"docs":false}`, `"requestsPerHour":null`, `"bytesPerSecond":null`,
+		`"switches":{"handover":true,"gui":true,"docs":false,"hideRepositories":true}`, `"requestsPerHour":null`, `"bytesPerSecond":null`,
 		`"addressRules":[{"prefix":"198.51.100.0/24","rule":"0193a0c6-signed"}]`, `"queueTimeoutMillis":2000`,
 		`"display":{"timeFormat":"iso"}`,
 	} {
@@ -80,6 +81,7 @@ func TestR_BAS_093_TheConfigurationTravelsWholeAndItsRulesHold(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err := back.Configuration.Validate(); err != nil || back.Configuration.Revision != 17 || !back.Configuration.Switches.Handover ||
+		!back.Configuration.Switches.HideRepositories ||
 		*back.Configuration.Limits.Place.Rules["0193a0c4-anon"].ParallelTransfers != 64 || back.Configuration.Limits.Place.Rules["0193a0c6-signed"].BytesPerDay != nil {
 		t.Fatalf("decoded %+v: %v", back.Configuration, err)
 	}
@@ -226,7 +228,8 @@ func TestR_BAS_093_TheContactReportsTheEdgeAndTheCatalogue(t *testing.T) {
 
 // TestR_BAS_103_TheCataloguePathGrammarRoundTrips: every form of a document's path is written and read back to the same value,
 // a value is percent-encoded once and only one spelling is read, and dot segments, encoded slashes, empty segments, other
-// spellings and unknown forms are refused.
+// spellings and unknown forms are refused. The forms of the project view (R-BAS-130) are among them: a project's and a repository's
+// index, an image's list by content and a package's set-up without a version.
 func TestR_BAS_103_TheCataloguePathGrammarRoundTrips(t *testing.T) {
 	for want, p := range map[string]iface.CataloguePath{
 		"index/0":                                                {Kind: iface.CatalogueIndex},
@@ -244,6 +247,12 @@ func TestR_BAS_103_TheCataloguePathGrammarRoundTrips(t *testing.T) {
 		"packages/p1/versions/v1/docs/files/docs/guide%20one.md": {Kind: iface.CatalogueDocFile, Package: "p1", Version: "v1", File: "docs/guide one.md"},
 		"setup/web/npm-all/npm":                                  {Kind: iface.CatalogueSetup, Project: "web", Repository: "npm-all", Client: "npm"},
 		"setup/web/npm-all/npm/p1/1.0.0%2Bb":                     {Kind: iface.CatalogueSetup, Project: "web", Repository: "npm-all", Client: "npm", SetupPackage: "p1", SetupVersion: "1.0.0+b"},
+		"setup/web/images/docker/p1":                             {Kind: iface.CatalogueSetup, Project: "web", Repository: "images", Client: "docker", SetupPackage: "p1"},
+		"projects/web/index/0":                                   {Kind: iface.CatalogueProjectIndex, Project: "web"},
+		"projects/my%20web/index/3":                              {Kind: iface.CatalogueProjectIndex, Project: "my web", Index: 3},
+		"repositories/web/npm-all/index/0":                       {Kind: iface.CatalogueRepositoryIndex, Project: "web", Repository: "npm-all"},
+		"repositories/web/npm-all/index/12":                      {Kind: iface.CatalogueRepositoryIndex, Project: "web", Repository: "npm-all", Index: 12},
+		"packages/p1/images":                                     {Kind: iface.CataloguePackageImages, Package: "p1"},
 		"signatures/objects/" + strings.Repeat("ab", 32):         {Kind: iface.CatalogueSignatureObject, SHA256: strings.Repeat("ab", 32)},
 		"signing/trusted-root.json":                              {Kind: iface.CatalogueTrustedRoot},
 		"signing/chain.pem":                                      {Kind: iface.CatalogueChain},
@@ -267,7 +276,10 @@ func TestR_BAS_103_TheCataloguePathGrammarRoundTrips(t *testing.T) {
 		"packages/p1/versions/v1/docs/entries/module", "packages/p1/versions/v1/docs/files", "packages/p1/versions/v1/changelog",
 		"packages/../versions", "packages/./versions", "packages/%2E%2E", "packages/a%2Fb", "packages/a%2fb", "packages//versions",
 		"packages/%41", "packages/1.0.0+x", "packages/a%2", "packages/a%00", "signatures/objects/" + strings.Repeat("AB", 32),
-		"signatures/objects/abc", "signing/other.pem", "setup/web/npm-all", "setup/web/npm-all/npm/pkg", "/index/0", "index/0/",
+		"signatures/objects/abc", "signing/other.pem", "setup/web/npm-all", "setup/web/npm-all/npm/p1/1.0/x", "/index/0", "index/0/",
+		"projects/web", "projects/web/index", "projects/web/index/01", "projects/web/pages/0", "projects/web/index/0/x",
+		"repositories/web/npm-all", "repositories/web/npm-all/index", "repositories/web/index/0", "repositories/web/npm-all/index/x",
+		"packages/p1/images/x", "packages/p1/versions/v1/images",
 		"state/x", "files/web/raw", "files/web/raw/file", "files/web/raw/setup/curl", "files/web/raw/folder/a/../b",
 		"files/web/raw/file/a%2Fb", "files/web/raw/file/a//b", "files/web/raw/other/a", "packages/p1/vulnerabilities/x",
 		"packages/p1/signatures",

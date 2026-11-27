@@ -384,7 +384,7 @@ func (a *App) bastionConfiguration() func(context.Context, bastionmain.Recogniti
 		case !ok:
 			return iface.Configuration{}, errs.E(errs.NotFound, errs.CodeNotFound, "The Bastion registration does not exist.")
 		}
-		// The test's switches gui and docs, when it set them (Options.BastionSwitches); the stored ones otherwise.
+		// The test's switches gui, docs and hideRepositories, when it set them (Options.BastionSwitches); the stored ones otherwise.
 		c.Switches = a.bastionSwitches(rec.Bastion, c.Switches)
 		display, err := a.bastionDisplay(ctx)
 		if err != nil {

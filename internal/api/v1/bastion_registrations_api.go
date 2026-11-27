@@ -52,7 +52,9 @@ func toBastion(b bastionmain.Registration) gen.Bastion {
 	tokens := make([]gen.BastionTokenSummary, 0, len(b.Tokens))
 	contacts := make([]gen.BastionContact, 0, len(b.Contacts))
 	out.Description, out.Enabled, out.Egress, out.CreatedAt = &b.Description, &b.Enabled, &egress, refTo(utc(b.CreatedAt))
-	out.Switches = &gen.BastionSwitches{Handover: b.Switches.Handover, Gui: b.Switches.GUI, Docs: b.Switches.Docs}
+	out.Switches = &gen.BastionSwitches{
+		Handover: b.Switches.Handover, Gui: b.Switches.GUI, Docs: b.Switches.Docs, HideRepositories: b.Switches.HideRepositories,
+	}
 	if b.Declared != nil {
 		out.Declared = &gen.BastionDeclaration{Since: utc(b.Declared.Since), SecretName: b.Declared.SecretName}
 	}
@@ -253,9 +255,10 @@ type bastionPatchBody struct {
 
 // bastionSwitchesPatch is the member switches of a merge patch.
 type bastionSwitchesPatch struct {
-	Handover json.RawMessage `json:"handover"`
-	GUI      json.RawMessage `json:"gui"`
-	Docs     json.RawMessage `json:"docs"`
+	Handover         json.RawMessage `json:"handover"`
+	GUI              json.RawMessage `json:"gui"`
+	Docs             json.RawMessage `json:"docs"`
+	HideRepositories json.RawMessage `json:"hideRepositories"`
 }
 
 // bastionLimitsDoc is a registration's limits as a merge patch applies to them (R-BAS-093): the members of the interface's shape.
@@ -369,7 +372,10 @@ func patchSwitches(raw json.RawMessage, patch *bastionmain.Patch) error {
 	if patch.GUI, err = patchEnabled(sw.GUI, "/switches/gui"); err != nil {
 		return err
 	}
-	patch.Docs, err = patchEnabled(sw.Docs, "/switches/docs")
+	if patch.Docs, err = patchEnabled(sw.Docs, "/switches/docs"); err != nil {
+		return err
+	}
+	patch.HideRepositories, err = patchEnabled(sw.HideRepositories, "/switches/hideRepositories")
 	return err
 }
 

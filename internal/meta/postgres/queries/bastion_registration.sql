@@ -16,13 +16,14 @@ VALUES (sqlc.arg(id)::text::uuid, sqlc.arg(description)::text, sqlc.arg(egress):
 -- name: BastionGet :many
 -- A registration by name. revision is the ETag (R-API-012); enabled is the principal's status; handover is the switch of the
 -- handover per blob (R-BAS-071, 00110); egress the networks the Bastion connects from (R-BAS-017, 00145), each in the text form of
--- cidr, which always names the prefix length; gui, docs and the limits_* members the rest of its configuration (R-BAS-093, 00147);
+-- cidr, which always names the prefix length; gui, docs, hide_repositories and the limits_* members the rest of its configuration
+-- (R-BAS-093, 00147; R-BAS-131, 00157);
 -- declared_at the mark of a registration the configuration declares (R-BAS-127, 00148), NULL otherwise; catalogue_* the builder's last
 -- outcome for its public catalogue, read from the state the builder keeps (R-BAS-104, 00146): whether one is held, why it stopped, and
 -- the times of its last run and of the last run that changed it.
 SELECT p.id::text AS id, p.name, (p.status = 'active')::boolean AS enabled, p.created_at, p.revision, b.description, b.handover,
-       b.egress::text[] AS egress, b.gui, b.docs, b.limits_mode, b.limits_preset, b.limits_flood, b.limits_slots, b.limits_throughput,
-       b.limits_ceiling, b.declared_at, (s.bastion_id IS NOT NULL)::boolean AS catalogue_held,
+       b.egress::text[] AS egress, b.gui, b.docs, b.hide_repositories, b.limits_mode, b.limits_preset, b.limits_flood, b.limits_slots,
+       b.limits_throughput, b.limits_ceiling, b.declared_at, (s.bastion_id IS NOT NULL)::boolean AS catalogue_held,
        coalesce(s.stopped, '')::text AS catalogue_stopped, s.checked_at AS catalogue_checked_at, s.built_at AS catalogue_built_at
   FROM principal p JOIN bastion b ON b.principal_id = p.id
   LEFT JOIN bastion_catalogue_state s ON s.bastion_id = p.id
@@ -41,8 +42,8 @@ SELECT p.id::text AS id, p.name, (p.status = 'active')::boolean AS enabled, p.re
 -- Keyset order by name; there are at most bastions.max_registrations of them, so the caller may pass an empty
 -- after and a generous max_rows. The members are BastionGet's.
 SELECT p.id::text AS id, p.name, (p.status = 'active')::boolean AS enabled, p.created_at, p.revision, b.description, b.handover,
-       b.egress::text[] AS egress, b.gui, b.docs, b.limits_mode, b.limits_preset, b.limits_flood, b.limits_slots, b.limits_throughput,
-       b.limits_ceiling, b.declared_at, (s.bastion_id IS NOT NULL)::boolean AS catalogue_held,
+       b.egress::text[] AS egress, b.gui, b.docs, b.hide_repositories, b.limits_mode, b.limits_preset, b.limits_flood, b.limits_slots,
+       b.limits_throughput, b.limits_ceiling, b.declared_at, (s.bastion_id IS NOT NULL)::boolean AS catalogue_held,
        coalesce(s.stopped, '')::text AS catalogue_stopped, s.checked_at AS catalogue_checked_at, s.built_at AS catalogue_built_at
   FROM principal p JOIN bastion b ON b.principal_id = p.id
   LEFT JOIN bastion_catalogue_state s ON s.bastion_id = p.id
@@ -77,8 +78,8 @@ RETURNING principal_id::text AS id;
 -- statement, so that the revision and the rules it reads are of one moment (Q-BAS-320). At most bastions.max_registrations rows, read
 -- at the start, on a change of the area bastion_handover, bastion_egress, bastion_configuration or limits and once a minute; never by a
 -- request.
-SELECT b.principal_id::text AS id, p.name, p.revision, b.handover, b.egress::text[] AS egress, b.gui, b.docs, b.limits_mode,
-       b.limits_preset, b.limits_flood, b.limits_slots, b.limits_throughput, b.limits_ceiling,
+SELECT b.principal_id::text AS id, p.name, p.revision, b.handover, b.egress::text[] AS egress, b.gui, b.docs, b.hide_repositories,
+       b.limits_mode, b.limits_preset, b.limits_flood, b.limits_slots, b.limits_throughput, b.limits_ceiling,
        COALESCE((SELECT jsonb_agg(jsonb_build_object(
                     'id', a.id::text, 'whoKind', a.who_kind, 'whoRef', a.who_ref, 'profile', lp.key, 'overrides', a.overrides,
                     'builtin', a.builtin,
@@ -117,17 +118,19 @@ SELECT a.bastion_id::text AS bastion_id, a.who_ref, lp.key AS profile, a.overrid
  ORDER BY a.bastion_id, a.who_ref;
 
 -- name: BastionSetConfiguration :many
--- Replace the switches gui and docs and the limits of a registration (R-BAS-093); the service validated the members as a Bastion does.
--- No row when nothing differs.
-UPDATE bastion SET gui = sqlc.arg(gui)::boolean, docs = sqlc.arg(docs)::boolean, limits_mode = sqlc.arg(limits_mode)::text,
+-- Replace the switches gui, docs and hide_repositories and the limits of a registration (R-BAS-093, R-BAS-131); the service validated
+-- the members as a Bastion does. No row when nothing differs.
+UPDATE bastion SET gui = sqlc.arg(gui)::boolean, docs = sqlc.arg(docs)::boolean,
+       hide_repositories = sqlc.arg(hide_repositories)::boolean, limits_mode = sqlc.arg(limits_mode)::text,
        limits_preset = sqlc.arg(limits_preset)::text, limits_flood = sqlc.arg(limits_flood)::text::jsonb,
        limits_slots = sqlc.arg(limits_slots)::text::jsonb, limits_throughput = sqlc.arg(limits_throughput)::text::jsonb,
        limits_ceiling = sqlc.arg(limits_ceiling)::text::jsonb
  WHERE principal_id = sqlc.arg(id)::text::uuid
-   AND (gui, docs, limits_mode, limits_preset, limits_flood, limits_slots, limits_throughput, limits_ceiling) IS DISTINCT FROM
-       (sqlc.arg(gui)::boolean, sqlc.arg(docs)::boolean, sqlc.arg(limits_mode)::text, sqlc.arg(limits_preset)::text,
-        sqlc.arg(limits_flood)::text::jsonb, sqlc.arg(limits_slots)::text::jsonb, sqlc.arg(limits_throughput)::text::jsonb,
-        sqlc.arg(limits_ceiling)::text::jsonb)
+   AND (gui, docs, hide_repositories, limits_mode, limits_preset, limits_flood, limits_slots, limits_throughput, limits_ceiling)
+       IS DISTINCT FROM
+       (sqlc.arg(gui)::boolean, sqlc.arg(docs)::boolean, sqlc.arg(hide_repositories)::boolean, sqlc.arg(limits_mode)::text,
+        sqlc.arg(limits_preset)::text, sqlc.arg(limits_flood)::text::jsonb, sqlc.arg(limits_slots)::text::jsonb,
+        sqlc.arg(limits_throughput)::text::jsonb, sqlc.arg(limits_ceiling)::text::jsonb)
 RETURNING principal_id::text AS id;
 
 -- name: BastionKindRulesInsert :exec

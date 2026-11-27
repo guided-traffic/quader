@@ -10729,10 +10729,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-BAS
 
-410 questions on [spec/bastion.md](spec/bastion.md).
+417 questions on [spec/bastion.md](spec/bastion.md).
 
 <details>
-<summary>Q-BAS: 410 questions</summary>
+<summary>Q-BAS: 417 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -11146,6 +11146,13 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-BAS-497](spec/bastion.md#q-bas-497--the-registration-carries-the-builders-last-outcome-and-the-card-says-a-stop-in-plain-view) | The registration carries the builder's last outcome, and the card says a stop in plain view | Decided by the development agent on 2026-11-27 (W35-P9f) | (a) A member `catalogue` of the registration (`outcome` built, stopped or pending, `reason`, `checkedAt`, `builtAt`) in the read of one and the list, read with the registration in one statement; on the card, a stop's reason with what to do among the plain view's warnings, and a line under the switch **Web interface** with the last build | — |
 | [Q-BAS-498](spec/bastion.md#q-bas-498--the-start-the-projects-lists-and-the-sitemap-lead-to-a-repositorys-files) | The start, the projects' lists and the sitemap lead to a repository's files | Decided by the development agent on 2026-11-27 | (a) The start's text links the projects the application offers (with a package or with files) and a section **Files** with every repository whose files the catalogue holds, by its qualified name; a project's list links its own by their keys above its packages and is `200` with files alone; the sitemap lists each repository's root and each such project's list, without `lastmod` | — |
 | [Q-BAS-499](spec/bastion.md#q-bas-499--a-contact-that-brings-a-new-base-url-starts-the-builder-through-a-signal) | A contact that brings a new base URL starts the builder through a signal | Decided by the development agent on 2026-11-27 | (a) The contact's statement answers whether the written row brings a base URL that the replica did not report before and that differs from the registration's current one (`base_url_moved`); the recorder then raises the signal `bastion_base_url`, which the trigger hears like its other signals | — |
+| [Q-BAS-500](spec/bastion.md#q-bas-500--a-projects-and-a-repositorys-list-read-indexes-of-their-own) | A project's and a repository's list read indexes of their own | Decided by the development agent on 2026-11-27 (plan W-40, D8) | (b) Indexes per scope, the main installation's answers with `project` and `repository` | — |
+| [Q-BAS-501](spec/bastion.md#q-bas-501--an-images-list-by-content-is-the-main-installations-answer-with-groupcontent) | An image's list by content is the main installation's answer with group=content | Decided by the development agent on 2026-11-27 (plan W-40, D10) | (b) A document of the main installation's answer with `group=content` | — |
+| [Q-BAS-502](spec/bastion.md#q-bas-502--a-versions-set-up-is-built-in-every-public-repository-that-holds-it) | A version's set-up is built in every public repository that holds it | Decided by the development agent on 2026-11-27 (plan W-40, D11) | (a), also while the repositories are hidden (the panel then offers the first). | — |
+| [Q-BAS-503](spec/bastion.md#q-bas-503--the-pull-by-digest-reads-a-packages-set-up-without-a-version) | The pull by digest reads a package's set-up without a version | Decided by the development agent on 2026-11-27 (plan W-40, D12) | (a), for OCI only. | — |
+| [Q-BAS-504](spec/bastion.md#q-bas-504--hide-repositories-hides-every-repository-a-visitor-reads-and-keeps-the-key-a-client-needs) | Hide repositories hides every repository a visitor reads and keeps the key a client needs | Decided by the development agent on 2026-11-27 (plan W-40, D14) | (a) Hide the lists, pages, titles, crumbs, sitemap entries, columns and upstreams that present a repository; keep the key in commands, download addresses, Set up client and the data a browser reads | — |
+| [Q-BAS-505](spec/bastion.md#q-bas-505--the-switch-is-hide-repositories-off-by-default-behind-the-details-of-the-web-interface) | The switch is Hide repositories, off by default, behind the Details of the web interface | Decided by the development agent on 2026-11-27 (plan W-40, D15) | (b), named **Hide repositories**, on = hidden: off, the default, is the zero value of the wire's `hideRepositories`, so no default can go missing. | — |
+| [Q-BAS-506](spec/bastion.md#q-bas-506--the-project-view-raises-the-interface-to-version-12-and-the-bastions-state-record-to-form-3) | The project view raises the interface to version 12 and the Bastion's state record to form 3 | Decided by the development agent on 2026-11-27 (plan W-40, D23) | (a) One raise to 12 for the repository's description, the switch, the kinds `projectIndex`, `repositoryIndex`, `packageImages` and the set-up path of four segments; the state record's form 3, since it holds the public set | — |
 
 </details>
 

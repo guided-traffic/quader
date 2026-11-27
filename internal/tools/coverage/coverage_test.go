@@ -213,8 +213,10 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 		// 1410 since the image scanning has its page in the admin area (R-VULN-053, W-38), the help of a setting or a column
 		// stands behind one info sign (R-UI-267, W-39 P1) and a fixed value names the Helm configuration (R-UI-268, W-39 P3):
 		// three P1 requirements.
-		if len(m.Reqs) != 1410 || count[prioMVP] != 743 || count[prioP1] != 628 || count[prioP2] != 39 {
-			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1410 (743, 628, 39)",
+		// 1412 since a Bastion's project view has its catalogue and the switch Hide repositories (R-BAS-130, R-BAS-131, two P1
+		// requirements of W-40, P1).
+		if len(m.Reqs) != 1412 || count[prioMVP] != 743 || count[prioP1] != 630 || count[prioP2] != 39 {
+			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1412 (743, 630, 39)",
 				len(m.Reqs), count[prioMVP], count[prioP1], count[prioP2])
 		}
 	})

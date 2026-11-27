@@ -47,6 +47,9 @@ type Registration struct {
 	ID, Name string
 	// GUI and Docs are the registration's switches (R-BAS-102).
 	GUI, Docs bool
+	// HideRepositories is the switch Hide repositories (R-BAS-131): while it is on the builder builds no repository's index and keeps
+	// no remote's upstream, not even a well-known public registry's.
+	HideRepositories bool
 	// BaseURL is the response base URL the documents are rendered on: the Bastion's reported base URL, an entry of
 	// server.additional_base_urls (BaseURL). Empty stops the builder for the registration with CodeBaseURLUnknown.
 	BaseURL string
@@ -274,6 +277,11 @@ func (b *Builder) build(ctx context.Context, reg Registration, rep *Report) erro
 	r.formats = map[string]format{}
 	for _, f := range fl.Formats {
 		r.formats[f.Name] = f
+		if reg.HideRepositories {
+			// No upstream is kept while the repositories are hidden (R-BAS-131): a remote's upstream names where a repository
+			// fetches from, which is a fact of the repository.
+			continue
+		}
 		for _, p := range f.UpstreamPresets {
 			if u, err := url.Parse(p.URL); err == nil && u.Hostname() != "" {
 				r.rw.PublicRegistries[strings.ToLower(u.Hostname())] = true
@@ -292,7 +300,8 @@ func (b *Builder) build(ctx context.Context, reg Registration, rep *Report) erro
 	if err != nil {
 		return err
 	}
-	r.salt = digest(revision, string(pub), boolText(reg.Docs), reg.BaseURL, b.o.PolicyHash, b.o.DocsPolicy, string(formatsDoc))
+	r.salt = digest(revision, string(pub), boolText(reg.Docs), boolText(reg.HideRepositories), reg.BaseURL, b.o.PolicyHash, b.o.DocsPolicy,
+		string(formatsDoc))
 	if !bytes.Equal(st.Salt, r.salt) {
 		b.o.Log.Info("the public catalogue of a Bastion is rendered whole", "bastion", reg.Name)
 	}
@@ -310,7 +319,8 @@ type repo struct {
 
 func (p repo) name() string { return p.project + "/" + p.key }
 
-// publicSet reads the projects and the repositories the anonymous caller reads (R-BAS-101's public set).
+// publicSet reads the projects and the repositories the anonymous caller reads (R-BAS-101's public set), each repository with the
+// description the anonymous caller reads of it, its links rewritten as a document's text is (R-BAS-107, R-BAS-130).
 func (r *run) publicSet(ctx context.Context) (iface.CataloguePublic, []repo, error) {
 	pub := iface.CataloguePublic{Projects: []iface.CatalogueProject{}, Repositories: []iface.CatalogueRepository{}}
 	projects, _, err := r.rd.list(ctx, "/api/v1/projects", listPage)
@@ -340,10 +350,11 @@ func (r *run) publicSet(ctx context.Context) (iface.CataloguePublic, []repo, err
 		pub.Projects = append(pub.Projects, p)
 		for _, raw := range items {
 			var rr struct {
-				Key        string `json:"key"`
-				Format     string `json:"format"`
-				Class      string `json:"class"`
-				Visibility *struct {
+				Key         string `json:"key"`
+				Format      string `json:"format"`
+				Class       string `json:"class"`
+				Description string `json:"description"`
+				Visibility  *struct {
 					Wiki string `json:"wiki"`
 				} `json:"visibility"`
 			}
@@ -353,7 +364,9 @@ func (r *run) publicSet(ctx context.Context) (iface.CataloguePublic, []repo, err
 			x := repo{project: p.Key, key: rr.Key, format: rr.Format, class: rr.Class}
 			x.wiki = rr.Visibility != nil && rr.Visibility.Wiki == "public"
 			repos = append(repos, x)
-			pub.Repositories = append(pub.Repositories, iface.CatalogueRepository{Name: x.name(), Format: x.format, Class: x.class, Wiki: x.wiki})
+			pub.Repositories = append(pub.Repositories, iface.CatalogueRepository{
+				Name: x.name(), Format: x.format, Class: x.class, Description: r.rw.text(rr.Description), Wiki: x.wiki,
+			})
 		}
 	}
 	sort.Slice(pub.Projects, func(i, j int) bool { return pub.Projects[i].Key < pub.Projects[j].Key })
@@ -517,15 +530,42 @@ type rendered struct {
 
 // index reads the index of public packages in pages of indexPage (index/<n>) and answers them with the packages they list.
 func (r *run) index(ctx context.Context) ([]rendered, []entry, error) {
-	items, _, err := r.rd.list(ctx, "/api/v1/packages?include=vulnerabilities", indexPage)
+	out, items, err := r.indexPages(ctx, "/api/v1/packages?include=vulnerabilities", func(i int) iface.CataloguePath {
+		return iface.CataloguePath{Kind: iface.CatalogueIndex, Index: i}
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	var entries []entry
+	for _, raw := range items {
+		var e entry
+		if json.Unmarshal(raw, &e) != nil || e.ID == "" {
+			continue
+		}
+		sp, err := Prepare(raw, "application/json", r.rw)
+		if err != nil {
+			return nil, nil, err
+		}
+		e.raw = sp.Body
+		entries = append(entries, e)
+	}
+	return out, entries, nil
+}
+
+// indexPages reads a list of packages and renders it in pages of indexPage at the paths at names, page 0 also for an empty list
+// (`"items":[]`); it answers the pages with the list's items.
+func (r *run) indexPages(ctx context.Context, target string, at func(int) iface.CataloguePath) ([]rendered, []json.RawMessage, error) {
+	items, _, err := r.rd.list(ctx, target, indexPage)
 	if err != nil {
 		return nil, nil, err
 	}
 	var out []rendered
-	var entries []entry
 	for i := 0; i == 0 || i*indexPage < len(items); i++ {
 		end := min((i+1)*indexPage, len(items))
 		pageItems := items[i*indexPage : end]
+		if pageItems == nil {
+			pageItems = []json.RawMessage{}
+		}
 		doc, err := json.Marshal(page{Items: pageItems})
 		if err != nil {
 			return nil, nil, err
@@ -534,21 +574,45 @@ func (r *run) index(ctx context.Context) ([]rendered, []entry, error) {
 		if err != nil {
 			return nil, nil, err
 		}
-		out = append(out, rendered{path: iface.CataloguePath{Kind: iface.CatalogueIndex, Index: i}.String(), body: p.Body})
-		for _, raw := range pageItems {
-			var e entry
-			if json.Unmarshal(raw, &e) != nil || e.ID == "" {
-				continue
-			}
-			sp, err := Prepare(raw, "application/json", r.rw)
-			if err != nil {
-				return nil, nil, err
-			}
-			e.raw = sp.Body
-			entries = append(entries, e)
+		out = append(out, rendered{path: at(i).String(), body: p.Body})
+	}
+	return out, items, nil
+}
+
+// scopedIndexes renders the index of every project and, while the repositories are shown, of every repository of the public set
+// (R-BAS-130, Q-BAS-500): the main installation's answers with the scope, so that a scope's counts and latest version are its own, as
+// the main installation's lists of a project and of a repository count them. A repository of a format whose items are paths has one
+// too: ClamAV's lists its databases, which are packages, and a generic one's is an empty page of a few bytes.
+func (r *run) scopedIndexes(ctx context.Context, repos []repo) ([]rendered, error) {
+	var out []rendered
+	var projects []string
+	for _, rp := range repos {
+		if !slices.Contains(projects, rp.project) {
+			projects = append(projects, rp.project)
 		}
 	}
-	return out, entries, nil
+	for _, p := range projects {
+		docs, _, err := r.indexPages(ctx, withQuery("/api/v1/packages?include=vulnerabilities", "project", p), func(i int) iface.CataloguePath {
+			return iface.CataloguePath{Kind: iface.CatalogueProjectIndex, Project: p, Index: i}
+		})
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, docs...)
+	}
+	if r.reg.HideRepositories {
+		return out, nil
+	}
+	for _, rp := range repos {
+		docs, _, err := r.indexPages(ctx, withQuery("/api/v1/packages?include=vulnerabilities", "repository", rp.name()), func(i int) iface.CataloguePath {
+			return iface.CataloguePath{Kind: iface.CatalogueRepositoryIndex, Project: rp.project, Repository: rp.key, Index: i}
+		})
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, docs...)
+	}
+	return out, nil
 }
 
 // doc reads one document of a package's version, or none for a 404; it records the times taken out of it in times under kind.
@@ -608,6 +672,14 @@ func (r *run) pkg(ctx context.Context, e entry, repos []repo) ([]rendered, error
 		out = append(out, *pv)
 	}
 	f := r.formats[e.Format]
+	if listsByContent(f) {
+		images, err := r.images(ctx, e, base)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, images...)
+	}
+	var holders []repo
 	for _, raw := range items {
 		var v struct {
 			Version string `json:"version"`
@@ -615,17 +687,54 @@ func (r *run) pkg(ctx context.Context, e entry, repos []repo) ([]rendered, error
 		if json.Unmarshal(raw, &v) != nil || v.Version == "" {
 			continue
 		}
-		docs, err := r.version(ctx, e, f, v.Version, repos)
+		docs, held, err := r.version(ctx, e, f, v.Version, repos)
 		if err != nil {
 			return nil, err
 		}
 		out = append(out, docs...)
+		for _, h := range held {
+			if !slices.ContainsFunc(holders, func(x repo) bool { return x.name() == h.name() }) {
+				holders = append(holders, h)
+			}
+		}
+	}
+	if listsByContent(f) {
+		// A package's set-up without a version in every public holder (R-BAS-130, Q-BAS-503): the pull by digest starts from the image's
+		// name, as the main installation answers a client set-up that names the package and no version.
+		sort.Slice(holders, func(i, j int) bool { return holders[i].name() < holders[j].name() })
+		for _, h := range holders {
+			if err := r.setups(ctx, h, f, e, "", &out); err != nil {
+				return nil, err
+			}
+		}
 	}
 	return out, nil
 }
 
-// version renders the documents of one version.
-func (r *run) version(ctx context.Context, e entry, f format, version string, repos []repo) ([]rendered, error) {
+// listsByContent reports whether a format's lists of versions are lists by content (api-and-ui.md Q-API-432): OCI's, whose versions
+// name an image's manifest. The web interface's rule is the same (listsByContent of views/packages/image-tags.ts).
+func listsByContent(f format) bool { return f.Name == "oci" }
+
+// images renders an image's list by content (R-BAS-130, Q-BAS-501): the main installation's anonymous answer of the package's versions
+// with group=content, one entry per manifest led by its highest tag, the leading tag and the order the server's (Q-UI-1130, Q-API-432).
+func (r *run) images(ctx context.Context, e entry, base string) ([]rendered, error) {
+	items, ok, err := r.rd.list(ctx, base+"/versions?group=content&include=kind", listPage)
+	if err != nil || !ok {
+		return nil, err
+	}
+	b, err := json.Marshal(page{Items: items})
+	if err != nil {
+		return nil, err
+	}
+	p, err := Prepare(b, "application/json", r.rw)
+	if err != nil {
+		return nil, err
+	}
+	return []rendered{{path: iface.CataloguePath{Kind: iface.CataloguePackageImages, Package: e.ID}.String(), body: p.Body}}, nil
+}
+
+// version renders the documents of one version and answers the public repositories that hold it.
+func (r *run) version(ctx context.Context, e entry, f format, version string, repos []repo) ([]rendered, []repo, error) {
 	at := func(k iface.CatalogueKind) iface.CataloguePath {
 		return iface.CataloguePath{Kind: k, Package: e.ID, Version: version}
 	}
@@ -642,7 +751,7 @@ func (r *run) version(ctx context.Context, e entry, f format, version string, re
 	}
 	vd, err := add(at(iface.CatalogueVersion), vt)
 	if err != nil || vd == nil {
-		return nil, err
+		return nil, nil, err
 	}
 	// The documentation of a version travels only while docs is on and a repository that holds it has a public wiki (R-BAS-124):
 	// the main installation's anonymous answer already holds none for a wiki that is not public, and the builder asks the public set
@@ -654,27 +763,30 @@ func (r *run) version(ctx context.Context, e entry, f format, version string, re
 	}
 	if wiki {
 		if _, err := add(at(iface.CatalogueReadme), vt+"/readme"); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
 	if _, err := add(at(iface.CatalogueVulnerabilities), vt+"/vulnerabilities"); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if _, err := add(at(iface.CatalogueSignatures), vt+"/signatures"); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if f.Name == "deb" {
 		if err := r.contents(ctx, at(iface.CatalogueContents), vt+"/contents", times, &omitted, &out); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
 	if wiki && f.Wiki {
 		if err := r.docs(ctx, e, version, vt, times, &omitted, &out); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
-	if err := r.versionSetup(ctx, e, f, version, vd.body, repos, &out); err != nil {
-		return nil, err
+	holders := r.holders(vd.body, repos)
+	for _, h := range holders {
+		if err := r.setups(ctx, h, f, e, version, &out); err != nil {
+			return nil, nil, err
+		}
 	}
 	state := map[string]any{"times": times}
 	if len(omitted) > 0 {
@@ -682,10 +794,10 @@ func (r *run) version(ctx context.Context, e entry, f format, version string, re
 	}
 	sb, err := json.Marshal(state)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	out = append(out, rendered{path: at(iface.CatalogueVersionState).String(), body: sb})
-	return out, nil
+	return out, holders, nil
 }
 
 // contents renders a Debian package's contents: the file list always, the changelog and the copyright only while the documentation
@@ -913,36 +1025,40 @@ func SearchWords(lexemes []string) string {
 	return strings.Join(out, " ")
 }
 
-// versionSetup renders the set-up of every client of the format for the version, in the version's first repository the public set
-// holds (the plan's P6: "per version and client of the version's first client repository").
-func (r *run) versionSetup(ctx context.Context, e entry, f format, version string, versionDoc []byte, repos []repo, out *[]rendered) error {
+// holders are the repositories of the public set that hold a version, in the version's order: every repository its document names
+// that the public set holds, each once.
+func (r *run) holders(versionDoc []byte, repos []repo) []repo {
 	var vd struct {
 		Repositories []struct {
 			Key string `json:"key"`
 		} `json:"repositories"`
 	}
 	if json.Unmarshal(versionDoc, &vd) != nil {
-		return nil //nolint:nilerr // a version of another shape names no repository: it has no set-up
+		return nil // a version of another shape names no repository: it has no set-up
 	}
-	var holder *repo
+	var out []repo
 	for _, h := range vd.Repositories {
-		for i := range repos {
-			if repos[i].name() == h.Key || repos[i].key == h.Key {
-				holder = &repos[i]
+		for _, rp := range repos {
+			if (rp.name() == h.Key || rp.key == h.Key) && !slices.ContainsFunc(out, func(x repo) bool { return x.name() == rp.name() }) {
+				out = append(out, rp)
 				break
 			}
 		}
-		if holder != nil {
-			break
-		}
 	}
-	if holder == nil {
-		return nil
-	}
+	return out
+}
+
+// setups renders the set-up of every client of the format for a package in one repository that holds it: for its version, or without
+// one for an empty version (the pull by digest, R-BAS-130). Every public holder has its set-up (Q-BAS-502), so the command through any
+// repository a page offers finds its document; a repository the main installation answers no set-up for has none.
+func (r *run) setups(ctx context.Context, holder repo, f format, e entry, version string, out *[]rendered) error {
 	for _, c := range f.Clients {
 		p := iface.CataloguePath{Kind: iface.CatalogueSetup, Project: holder.project, Repository: holder.key, Client: c.ID, SetupPackage: e.ID, SetupVersion: version}
 		target := "/api/v1/projects/" + esc(holder.project) + "/repositories/" + esc(holder.key) + "/client-setup?credentials=none&bastion=" +
-			url.QueryEscape(r.reg.Name) + "&client=" + url.QueryEscape(c.ID) + "&package=" + url.QueryEscape(e.Name) + "&version=" + url.QueryEscape(version)
+			url.QueryEscape(r.reg.Name) + "&client=" + url.QueryEscape(c.ID) + "&package=" + url.QueryEscape(e.Name)
+		if version != "" {
+			target += "&version=" + url.QueryEscape(version)
+		}
 		var none []string
 		d, err := r.doc(ctx, p, target, nil, &none)
 		if err != nil {
@@ -1047,10 +1163,13 @@ func (r *run) file(ctx context.Context, rp repo, f format, at, path string) ([]r
 	return out, nil
 }
 
-// wholeRegistration renders the documents that belong to no package: the set-up of every public repository per client, the
-// anchors to verify signatures offline, and the signature objects the units name.
+// wholeRegistration renders the documents that belong to no package: the index of every project and repository (R-BAS-130), the
+// set-up of every public repository per client, the anchors to verify signatures offline, and the signature objects the units name.
 func (r *run) wholeRegistration(ctx context.Context, repos []repo, refs map[string][]string) ([]rendered, error) {
-	var out []rendered
+	out, err := r.scopedIndexes(ctx, repos)
+	if err != nil {
+		return nil, err
+	}
 	var none []string
 	for _, rp := range repos {
 		f := r.formats[rp.format]

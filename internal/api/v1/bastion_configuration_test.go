@@ -153,3 +153,36 @@ func TestR_BAS_104_TheRegistrationSaysTheBuildersLastOutcome(t *testing.T) {
 		}
 	}
 }
+
+// TestR_BAS_131_TheSwitchHideRepositoriesIsReadAndPatched: the registration's representation carries switches.hideRepositories, and a
+// merge patch reads it as the other switches: absent and null are unchanged, a boolean is the switch, any other value is refused. The
+// write, the revision and the 412 of a stale ETag are the service's (test/integration/bastionreg). Microseconds, no database.
+func TestR_BAS_131_TheSwitchHideRepositoriesIsReadAndPatched(t *testing.T) {
+	sw := toBastion(bastionmain.Registration{Switches: iface.Switches{GUI: true, HideRepositories: true}}).Switches
+	if sw == nil || !sw.HideRepositories || !sw.Gui || sw.Docs {
+		t.Fatalf("the representation's switches: %+v", sw)
+	}
+	raw, err := json.Marshal(sw)
+	if err != nil || string(raw) != `{"docs":false,"gui":true,"handover":false,"hideRepositories":true}` {
+		t.Fatalf("the switches as JSON: %s %v", raw, err)
+	}
+	on, off := true, false
+	for body, want := range map[string]*bool{
+		`{"hideRepositories":true}`:  &on,
+		`{"hideRepositories":false}`: &off,
+		`{"hideRepositories":null}`:  nil,
+		`{"gui":true}`:               nil,
+	} {
+		var p bastionmain.Patch
+		if err := patchSwitches(json.RawMessage(body), &p); err != nil {
+			t.Fatalf("%s: %v", body, err)
+		}
+		if !reflect.DeepEqual(p.HideRepositories, want) {
+			t.Errorf("%s reads %v, want %v", body, p.HideRepositories, want)
+		}
+	}
+	var p bastionmain.Patch
+	if err := patchSwitches(json.RawMessage(`{"hideRepositories":"yes"}`), &p); err == nil {
+		t.Error("a string is read as the switch")
+	}
+}

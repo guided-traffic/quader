@@ -10856,10 +10856,14 @@ type BastionCataloguePublic struct {
 		Key         string `json:"key"`
 	} `json:"projects"`
 	Repositories []struct {
-		Class  BastionCataloguePublicRepositoriesClass `json:"class"`
-		Format string                                  `json:"format"`
-		Name   string                                  `json:"name"`
-		Wiki   bool                                    `json:"wiki"`
+		Class BastionCataloguePublicRepositoriesClass `json:"class"`
+
+		// Description The description an anonymous reader reads of the repository, its links on the Bastion (R-BAS-130); `""` for a
+		// repository without one.
+		Description string `json:"description"`
+		Format      string `json:"format"`
+		Name        string `json:"name"`
+		Wiki        bool   `json:"wiki"`
 	} `json:"repositories"`
 }
 
@@ -10926,6 +10930,9 @@ type BastionConfiguration struct {
 
 		// Handover The handover per blob (R-BAS-071, R-BAS-072). Off for a new registration.
 		Handover bool `json:"handover"`
+
+		// HideRepositories Hide repositories, effective only with `gui` (R-BAS-131). Off for a new registration.
+		HideRepositories bool `json:"hideRepositories"`
 	} `json:"switches"`
 }
 
@@ -11293,9 +11300,10 @@ type BastionPatch struct {
 
 	// Switches `endpoints:write`. A switch that is absent or `null` is unchanged (R-BAS-071, R-BAS-102).
 	Switches *struct {
-		Docs     *bool `json:"docs,omitempty"`
-		Gui      *bool `json:"gui,omitempty"`
-		Handover *bool `json:"handover,omitempty"`
+		Docs             *bool `json:"docs,omitempty"`
+		Gui              *bool `json:"gui,omitempty"`
+		Handover         *bool `json:"handover,omitempty"`
+		HideRepositories *bool `json:"hideRepositories,omitempty"`
 	} `json:"switches,omitempty"`
 }
 
@@ -11415,6 +11423,11 @@ type BastionSwitches struct {
 	// Handover The handover per blob (R-BAS-071): while it is on, the main installation may answer a forward of this Bastion for a large
 	// file with a short-lived signed link of the object store, so the Bastion reads the bytes from the store itself (R-STOR-095).
 	Handover bool `json:"handover"`
+
+	// HideRepositories Hide repositories (R-BAS-131), effective only with `gui`: while it is on the web interface names no repository a visitor
+	// reads and the public catalogue holds no repository's index and no remote's upstream; commands and download addresses still
+	// contain a repository's key, which clients need.
+	HideRepositories bool `json:"hideRepositories"`
 }
 
 // BastionThroughput The byte rate the Bastion reads at (R-BAS-097); null is unlimited.

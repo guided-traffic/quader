@@ -683,6 +683,12 @@ The migration opens a finding for every copy damaged before it. The statements: 
 moves `created_at` when a repair wrote the object; the recorder's and the task's statements are in
 [storage_history.sql](../../internal/meta/postgres/queries/storage_history.sql). Expand phase only.
 
+**00157_bastion_hide_repositories** ([bastion.md](../spec/bastion.md) R-BAS-131, Q-BAS-505; W-40's package P1): the switch Hide
+repositories of a Bastion's web interface. `bastion` gains `hide_repositories boolean NOT NULL DEFAULT false`, off for every registration,
+new and existing; `bastion_revision` covers it. `BastionGet`, `BastionList` and `BastionSnapshot` read it, `BastionSetConfiguration`
+writes it with `gui` and `docs` in [bastion_registration.sql](../../internal/meta/postgres/queries/bastion_registration.sql). Expand phase
+only.
+
 ## The database's repository of the image scanning (00089)
 
 [00089_vuln_image_db_drop](../../internal/meta/postgres/migrations/00089_vuln_image_db_drop.sql) removes the private slot of the image

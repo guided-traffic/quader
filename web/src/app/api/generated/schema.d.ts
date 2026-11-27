@@ -15096,7 +15096,8 @@ export interface components {
          *       "switches": {
          *         "handover": false,
          *         "gui": true,
-         *         "docs": false
+         *         "docs": false,
+         *         "hideRepositories": false
          *       },
          *       "catalogue": {
          *         "outcome": "built",
@@ -15251,6 +15252,12 @@ export interface components {
             gui: boolean;
             /** @description The documentation of the web interface (R-BAS-102), effective only with `gui`. */
             docs: boolean;
+            /**
+             * @description Hide repositories (R-BAS-131), effective only with `gui`: while it is on the web interface names no repository a visitor
+             *     reads and the public catalogue holds no repository's index and no remote's upstream; commands and download addresses still
+             *     contain a repository's key, which clients need.
+             */
+            hideRepositories: boolean;
         };
         /**
          * @description The limits of the registration's configuration (R-BAS-093). The rules of the Bastion's place are read and written through
@@ -15513,6 +15520,7 @@ export interface components {
                 handover?: boolean;
                 gui?: boolean;
                 docs?: boolean;
+                hideRepositories?: boolean;
             };
             /**
              * @description `limits:write`. A merge patch of the registration's limits (R-BAS-093): a member that is absent is unchanged, a nested member
@@ -15615,6 +15623,8 @@ export interface components {
                 gui: boolean;
                 /** @description Its documentation, effective only with `gui` (R-BAS-102). Off for a new registration. */
                 docs: boolean;
+                /** @description Hide repositories, effective only with `gui` (R-BAS-131). Off for a new registration. */
+                hideRepositories: boolean;
             };
             limits: components["schemas"]["BastionConfigurationLimits"];
             /** @description How the Bastion's web interface writes what the installation's settings decide (R-BAS-128). */
@@ -15964,6 +15974,11 @@ export interface components {
                 format: string;
                 /** @enum {string} */
                 class: "local" | "remote" | "virtual";
+                /**
+                 * @description The description an anonymous reader reads of the repository, its links on the Bastion (R-BAS-130); `""` for a
+                 *     repository without one.
+                 */
+                description: string;
                 wiki: boolean;
             }[];
         };

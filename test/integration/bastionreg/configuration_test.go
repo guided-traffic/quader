@@ -81,6 +81,28 @@ func TestR_BAS_093_TheConfigurationLivesOnTheRegistration(t *testing.T) {
 			http.StatusUnprocessableEntity, "")
 	})
 
+	t.Run("R-BAS-131 Hide repositories is a switch of the configuration, off for a new registration", func(t *testing.T) {
+		if switchOf(t, got, "hideRepositories") != false {
+			t.Fatalf("a new registration's switches: %v", got["switches"])
+		}
+		cur := r.call("GET", bastions+"/partners", c.admin, nil)
+		want(t, r.call("PATCH", bastions+"/partners", c.admin, map[string]any{"switches": map[string]any{"hideRepositories": true}},
+			"If-Match", created.Header.Get("ETag")), http.StatusPreconditionFailed, "")
+		before := revision()
+		on := r.call("PATCH", bastions+"/partners", c.admin, map[string]any{"switches": map[string]any{"hideRepositories": true}},
+			"If-Match", cur.Header.Get("ETag"))
+		want(t, on, http.StatusOK, "")
+		if switchOf(t, on.json(t), "hideRepositories") != true || revision() <= before {
+			t.Fatalf("after the patch: %v, revision %d after %d", on.json(t)["switches"], revision(), before)
+		}
+		if ev := e.events(audit.EventBastionConfigurationChanged); !hasParts(ev[len(ev)-1].Details, "switches.hideRepositories") {
+			t.Fatalf("bastion.configuration.changed = %+v", ev[len(ev)-1])
+		}
+		waitFor(t, "the switch in the snapshot", 5*time.Second, func() bool { return config().Switches.HideRepositories })
+		want(t, r.call("PATCH", bastions+"/partners", c.admin, map[string]any{"switches": map[string]any{"hideRepositories": false}}, "If-Match", "*"),
+			http.StatusOK, "")
+	})
+
 	t.Run("R-LIM-046 a preset is applied in one request", func(t *testing.T) {
 		p := r.call("PATCH", bastions+"/partners", c.admin, map[string]any{"limits": map[string]any{"preset": "partnerNetwork"}}, "If-Match", "*")
 		want(t, p, http.StatusOK, "")

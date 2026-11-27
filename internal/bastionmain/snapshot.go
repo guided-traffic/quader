@@ -94,7 +94,7 @@ func snapshotRowOf(row q.BastionSnapshotRow) SnapshotRow {
 			mode: row.LimitsMode, preset: row.LimitsPreset, flood: row.LimitsFlood, slots: row.LimitsSlots,
 			throughput: row.LimitsThroughput, ceiling: row.LimitsCeiling,
 		})
-		out.Configuration, err = Configuration(row.Revision, iface.Switches{Handover: row.Handover, GUI: row.Gui, Docs: row.Docs}, l, rules)
+		out.Configuration, err = Configuration(row.Revision, iface.Switches{Handover: row.Handover, GUI: row.Gui, Docs: row.Docs, HideRepositories: row.HideRepositories}, l, rules)
 	}
 	out.ConfigurationErr = err
 	return out

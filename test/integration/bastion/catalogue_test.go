@@ -221,19 +221,49 @@ func (w *world) namesGradesAndTheFormOfATime(docs map[string][]byte) {
 	w.mustAPI("PUT", "/api/v1/system/time-format", 200, map[string]any{"timeFormat": iface.FactoryTimeFormat})
 }
 
+// projectView (R-BAS-130, R-BAS-131): the catalogue holds the project's index and the index of the world's npm repository, each read
+// back verified by the batch read; Hide repositories on drops every repository's index at the next run and keeps the project's, and off
+// again builds them again. Two runs of the builder.
+func (w *world) projectView(docs map[string][]byte, hide *atomic.Bool) {
+	w.t.Helper()
+	project := "projects/" + testenv.DefaultProject + "/index/0"
+	repo := "repositories/" + npmLocal + "/index/0"
+	for _, p := range []string{project, repo} {
+		if !bytes.Contains(docs[p], []byte(`"name":"plain-lib"`)) {
+			w.t.Fatalf("%s: %.300s", p, docs[p])
+		}
+	}
+	hide.Store(true)
+	w.runBuilder()
+	live := w.documents(w.changes(0))
+	if _, ok := live[project]; !ok {
+		w.t.Fatal("hidden: the project's index is gone")
+	}
+	for p := range live {
+		if strings.HasPrefix(p, "repositories/") {
+			w.t.Errorf("hidden: %s is still in the catalogue", p)
+		}
+	}
+	hide.Store(false)
+	w.runBuilder()
+	if _, ok := w.documents(w.changes(0))[repo]; !ok {
+		w.t.Fatal("shown again: no repository's index")
+	}
+}
+
 // TestR_BAS_104_TheCatalogueFollowsPublishesLevelsAndTheSwitch: the catalogue of a registration whose web interface is on holds
 // the public packages within the debounce of their publish, every document is free of the main installation's base URL, of
 // another Bastion's and of the management API's path, a level lowered to private deletes what fell out, and the web interface
 // switched off answers 404 at once and deletes the catalogue at the next run.
 func TestR_BAS_104_TheCatalogueFollowsPublishesLevelsAndTheSwitch(t *testing.T) {
-	var gui, docsOn atomic.Bool
+	var gui, docsOn, hide atomic.Bool
 	gui.Store(true)
 	docsOn.Store(true)
 	w := newWorld(t, worldOptions{
 		Role: "all", Egress: []string{"127.0.0.1/32"},
 		Env: []string{`QUADER_SERVER_ADDITIONAL_BASE_URLS=["` + baseURL + `","` + mirrorURL + `"]`},
 		Switches: func(string) iface.Switches {
-			return iface.Switches{GUI: gui.Load(), Docs: docsOn.Load()}
+			return iface.Switches{GUI: gui.Load(), Docs: docsOn.Load(), HideRepositories: hide.Load()}
 		},
 	})
 	// The handshake of the Bastion, from its egress address with its host forwarded, reports its base URL, which the documents are
@@ -303,6 +333,7 @@ func TestR_BAS_104_TheCatalogueFollowsPublishesLevelsAndTheSwitch(t *testing.T) 
 		t.Errorf("the set-up of a version does not name the Bastion: %s", setup)
 	}
 	w.namesGradesAndTheFormOfATime(docs)
+	w.projectView(docs, &hide)
 	w.documentationFollowsTheWikiAndTheSwitch(&docsOn)
 
 	// A level lowered to private: what fell out is deleted.

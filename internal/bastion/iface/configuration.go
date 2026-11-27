@@ -49,6 +49,10 @@ type Switches struct {
 	// Docs is the documentation of the web interface (R-BAS-102), effective only with GUI: while it is false no
 	// documentation path of the catalogue ([CataloguePath.Documentation]) is served.
 	Docs bool `json:"docs"`
+	// HideRepositories is the web interface's switch Hide repositories (R-BAS-131), effective only with GUI: while it is true the
+	// pages name no repository a visitor reads, the catalogue holds no repository's index and no remote's upstream, and a visitor
+	// sees the projects and their packages alone. Off, the zero value, shows the repositories.
+	HideRepositories bool `json:"hideRepositories"`
 }
 
 // LimitsMode is Audit or Enforce at a Bastion (usage-and-limits.md R-LIM-044).

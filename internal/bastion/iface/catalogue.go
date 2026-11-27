@@ -125,13 +125,15 @@ func (p CataloguePublic) ProjectKeys() []string {
 }
 
 // CatalogueRepository is one public repository of the catalogue: its qualified name "<projectKey>/<repoKey>", its format
-// and class (local, remote or virtual), and whether its wiki is public, so that its documentation is part of the catalogue
-// while docs is on.
+// and class (local, remote or virtual), the description an anonymous reader of the main installation reads of it with its links
+// rewritten as a document's text is ("" for none; R-BAS-130), and whether its wiki is public, so that its documentation is part
+// of the catalogue while docs is on.
 type CatalogueRepository struct {
-	Name   string `json:"name"`
-	Format string `json:"format"`
-	Class  string `json:"class"`
-	Wiki   bool   `json:"wiki"`
+	Name        string `json:"name"`
+	Format      string `json:"format"`
+	Class       string `json:"class"`
+	Description string `json:"description"`
+	Wiki        bool   `json:"wiki"`
 }
 
 // CatalogueStateDocument is the document of the catalogue's state ([CatalogueState], path "state"): the time of the builder's last
@@ -185,6 +187,14 @@ const (
 	CatalogueIndex    CatalogueKind = "index"    // index/<n>
 	CataloguePackage  CatalogueKind = "package"  // packages/<id>
 	CatalogueVersions CatalogueKind = "versions" // packages/<id>/versions
+	// CatalogueProjectIndex and CatalogueRepositoryIndex are the index of one project's and of one repository's public packages
+	// (R-BAS-130), in pages of the global index's size: the main installation's answers with the scope, whose counts and latest
+	// version are the scope's own. A repository's index is built only while the registration shows its repositories (R-BAS-131).
+	CatalogueProjectIndex    CatalogueKind = "projectIndex"    // projects/<project>/index/<n>
+	CatalogueRepositoryIndex CatalogueKind = "repositoryIndex" // repositories/<project>/<repo>/index/<n>
+	// CataloguePackageImages is an image's list by content (R-BAS-130): one entry per manifest, led by its highest tag, the image's
+	// other tags as its aliases, the main installation's anonymous answer of its versions with group=content.
+	CataloguePackageImages CatalogueKind = "packageImages" // packages/<id>/images
 	// CataloguePackageVulnerabilities is a package's open findings per version: the grade and the counts of every version
 	// (R-BAS-128), the main installation's anonymous answer of GET /api/v1/packages/{id}/vulnerabilities.
 	CataloguePackageVulnerabilities CatalogueKind = "packageVulnerabilities" // packages/<id>/vulnerabilities
@@ -196,7 +206,7 @@ const (
 	CatalogueDocs                   CatalogueKind = "docs"                   // packages/<id>/versions/<v>/docs
 	CatalogueDocEntry               CatalogueKind = "docEntry"               // packages/<id>/versions/<v>/docs/entries/<type>/<name>
 	CatalogueDocFile                CatalogueKind = "docFile"                // packages/<id>/versions/<v>/docs/files/<file...>
-	CatalogueSetup                  CatalogueKind = "setup"                  // setup/<project>/<repo>/<client>[/<package>/<version>]
+	CatalogueSetup                  CatalogueKind = "setup"                  // setup/<project>/<repo>/<client>[/<package>[/<version>]]
 	CatalogueSignatureObject        CatalogueKind = "signatureObject"        // signatures/objects/<sha256>
 	CatalogueTrustedRoot            CatalogueKind = "trustedRoot"            // signing/trusted-root.json
 	CatalogueChain                  CatalogueKind = "chain"                  // signing/chain.pem
@@ -247,7 +257,8 @@ const (
 // Kind are set.
 type CataloguePath struct {
 	Kind CatalogueKind
-	// Index is the page of index/<n>.
+	// Index is the page of index/<n>, of a project's index (with Project) and of a repository's index (with Project and
+	// Repository).
 	Index int
 	// Package and Version are the package's catalogue ID and the version of the package documents.
 	Package string
@@ -260,7 +271,8 @@ type CataloguePath struct {
 	File string
 	// Project, Repository, Client and, on demand, SetupPackage and SetupVersion are a set-up document's (setup), the first
 	// three a generic file's too (folder, file, fileSetup); SetupPackage
-	// is the package's catalogue ID, as Package is, since a name may hold a "/" (npm's scopes) that no segment holds.
+	// is the package's catalogue ID, as Package is, since a name may hold a "/" (npm's scopes) that no segment holds. A set-up with
+	// SetupPackage and no SetupVersion is a package's without a version, the form a pull by digest starts from (R-BAS-130).
 	Project      string
 	Repository   string
 	Client       string
@@ -293,6 +305,12 @@ func (p CataloguePath) String() string {
 		return "packages/" + e(p.Package) + "/versions"
 	case CataloguePackageVulnerabilities:
 		return "packages/" + e(p.Package) + "/vulnerabilities"
+	case CataloguePackageImages:
+		return "packages/" + e(p.Package) + "/images"
+	case CatalogueProjectIndex:
+		return "projects/" + e(p.Project) + "/index/" + strconv.Itoa(p.Index)
+	case CatalogueRepositoryIndex:
+		return "repositories/" + e(p.Project) + "/" + e(p.Repository) + "/index/" + strconv.Itoa(p.Index)
 	case CatalogueVersion:
 		return version
 	case CatalogueReadme, CatalogueVulnerabilities, CatalogueSignatures, CatalogueContents, CatalogueDocs:
@@ -318,7 +336,10 @@ func (p CataloguePath) String() string {
 	case CatalogueSetup:
 		s := "setup/" + e(p.Project) + "/" + e(p.Repository) + "/" + e(p.Client)
 		if p.SetupPackage != "" || p.SetupVersion != "" {
-			s += "/" + e(p.SetupPackage) + "/" + e(p.SetupVersion)
+			s += "/" + e(p.SetupPackage)
+		}
+		if p.SetupVersion != "" {
+			s += "/" + e(p.SetupVersion)
 		}
 		return s
 	case CatalogueSignatureObject:
@@ -353,15 +374,8 @@ func ParseCataloguePath(s string) (CataloguePath, error) {
 	}
 	n := len(segs)
 	switch segs[0] {
-	case "index":
-		if n != 2 || raw[1] != segs[1] {
-			return bad()
-		}
-		i, ok := index(segs[1])
-		if !ok {
-			return bad()
-		}
-		return CataloguePath{Kind: CatalogueIndex, Index: i}, nil
+	case "index", "projects", "repositories":
+		return parseIndexPath(raw, segs, bad)
 	case "packages":
 		return parsePackagePath(raw, segs, bad)
 	case "state":
@@ -371,16 +385,7 @@ func ParseCataloguePath(s string) (CataloguePath, error) {
 	case "files":
 		return parseFilesPath(raw, segs, bad)
 	case "setup":
-		p := CataloguePath{Kind: CatalogueSetup}
-		switch n {
-		case 4:
-			p.Project, p.Repository, p.Client = segs[1], segs[2], segs[3]
-		case 6:
-			p.Project, p.Repository, p.Client, p.SetupPackage, p.SetupVersion = segs[1], segs[2], segs[3], segs[4], segs[5]
-		default:
-			return bad()
-		}
-		return p, nil
+		return parseSetupPath(segs, bad)
 	case "signatures":
 		if n != 3 || raw[1] != "objects" || !sha256Hex(raw[2]) {
 			return bad()
@@ -395,6 +400,45 @@ func ParseCataloguePath(s string) (CataloguePath, error) {
 		}
 	}
 	return bad()
+}
+
+// parseIndexPath reads the forms of an index's page: index/<n>, projects/<project>/index/<n> and
+// repositories/<project>/<repo>/index/<n>. The page is a decimal written as itself.
+func parseIndexPath(raw, segs []string, bad func() (CataloguePath, error)) (CataloguePath, error) {
+	n := len(segs)
+	var p CataloguePath
+	switch {
+	case segs[0] == "index" && n == 2:
+		p.Kind = CatalogueIndex
+	case segs[0] == "projects" && n == 4 && raw[2] == "index":
+		p.Kind, p.Project = CatalogueProjectIndex, segs[1]
+	case segs[0] == "repositories" && n == 5 && raw[3] == "index":
+		p.Kind, p.Project, p.Repository = CatalogueRepositoryIndex, segs[1], segs[2]
+	default:
+		return bad()
+	}
+	i, ok := index(raw[n-1])
+	if !ok || raw[n-1] != segs[n-1] {
+		return bad()
+	}
+	p.Index = i
+	return p, nil
+}
+
+// parseSetupPath reads the forms below setup/: a repository's set-up, a package's without a version, and a version's.
+func parseSetupPath(segs []string, bad func() (CataloguePath, error)) (CataloguePath, error) {
+	p := CataloguePath{Kind: CatalogueSetup}
+	switch len(segs) {
+	case 4:
+		p.Project, p.Repository, p.Client = segs[1], segs[2], segs[3]
+	case 5:
+		p.Project, p.Repository, p.Client, p.SetupPackage = segs[1], segs[2], segs[3], segs[4]
+	case 6:
+		p.Project, p.Repository, p.Client, p.SetupPackage, p.SetupVersion = segs[1], segs[2], segs[3], segs[4], segs[5]
+	default:
+		return bad()
+	}
+	return p, nil
 }
 
 // parseFilesPath reads the forms below files/.
@@ -430,6 +474,10 @@ func parsePackagePath(raw, segs []string, bad func() (CataloguePath, error)) (Ca
 	}
 	if n == 3 && raw[2] == "vulnerabilities" {
 		p.Kind = CataloguePackageVulnerabilities
+		return p, nil
+	}
+	if n == 3 && raw[2] == "images" {
+		p.Kind = CataloguePackageImages
 		return p, nil
 	}
 	if raw[2] != "versions" {

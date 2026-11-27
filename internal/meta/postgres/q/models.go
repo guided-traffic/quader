@@ -369,6 +369,7 @@ type Bastion struct {
 	LimitsCeiling    json.RawMessage
 	DeclaredAt       pgtype.Timestamptz
 	DeclaredToken    pgtype.UUID
+	HideRepositories bool
 }
 
 type BastionCatalogue struct {

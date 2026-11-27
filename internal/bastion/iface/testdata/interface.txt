@@ -1,4 +1,4 @@
-interface version 11
+interface version 12
 const APIPrefix = "/api/"
 const APIv1Prefix = "/api/v1/"
 const BearerScheme = "Bearer"
@@ -14,8 +14,11 @@ const CatalogueFileSetup CatalogueKind = "fileSetup"
 const CatalogueFolder CatalogueKind = "folder"
 const CatalogueIndex CatalogueKind = "index"
 const CataloguePackage CatalogueKind = "package"
+const CataloguePackageImages CatalogueKind = "packageImages"
 const CataloguePackageVulnerabilities CatalogueKind = "packageVulnerabilities"
+const CatalogueProjectIndex CatalogueKind = "projectIndex"
 const CatalogueReadme CatalogueKind = "readme"
+const CatalogueRepositoryIndex CatalogueKind = "repositoryIndex"
 const CatalogueSetup CatalogueKind = "setup"
 const CatalogueSignatureObject CatalogueKind = "signatureObject"
 const CatalogueSignatures CatalogueKind = "signatures"
@@ -282,6 +285,7 @@ type CataloguePublic: field Projects []CatalogueProject `json:"projects"`
 type CataloguePublic: field Repositories []CatalogueRepository `json:"repositories"`
 type CatalogueRepository struct
 type CatalogueRepository: field Class string `json:"class"`
+type CatalogueRepository: field Description string `json:"description"`
 type CatalogueRepository: field Format string `json:"format"`
 type CatalogueRepository: field Name string `json:"name"`
 type CatalogueRepository: field Wiki bool `json:"wiki"`
@@ -510,6 +514,7 @@ type Switches struct
 type Switches: field Docs bool `json:"docs"`
 type Switches: field GUI bool `json:"gui"`
 type Switches: field Handover bool `json:"handover"`
+type Switches: field HideRepositories bool `json:"hideRepositories"`
 type Throughput struct
 type Throughput: field AnonymousShare float64 `json:"anonymousShare"`
 type Throughput: field BytesPerHour ThroughputHours `json:"bytesPerHour"`
