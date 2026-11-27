@@ -1413,6 +1413,13 @@ records the recorder that tells such a stall apart).
 
 ### Product
 
+- **Read on 2026-11-27, 07:37: the owner's installation on v0.163.0** (the release of 06:39's push, the night's last batch B-1127e included: the malware mark and its details
+  everywhere, the controller's screens, the grade's details, the Bastion's marks, the storage page's history, the Bastion's last fixes;
+  interface version 11). Both releases upgraded by 07:05, migration to schema 155, every pod ready, no error of the main installation;
+  the Bastion logged the interface's difference once during the rollout and the main installation reachable 24 s later; the headless
+  scanner Service `quader-malware-scanner-clamav-pods` in place since v0.162.0 and the old ClusterIP Service gone without a hand step.
+  His Bastion's switch `gui` stays off (his to set). The release of 06:04's push was overtaken by this one.
+
 - **Closed on 2026-11-27, 06:38: the Debian dependents' integration test** (`TestR_DEB_038_039`, area `deblocal`, red in the run of
   37663de62) looked for one contiguous piece of the answer's JSON; since W36-P3 the answer carries `malware` between `key` and `name`.
   It reads each member on its own now (pushed at 06:10 as 23c159173, the whole area green locally).
@@ -1532,7 +1539,7 @@ records the recorder that tells such a stall apart).
   count, null before it counted; a ClamAV report carries its calls (16 KiB bound). Gates in the landing worktree with the 47 commits stacked above main (W36-P4 to P8, W37-P4, W35-P9e, P9f, P12, B-1127a to B-1127d, the landing's fixes): build, vet, generate-check, coverage, unit, lint, the web gates, the layout test, chart-lint, chart-test, archtest, ui-states, the render parts check (746 screens), 85 render screens (two failed, both fixed and rendered again: a folder's empty malware cell at the Bastion, a walk caught by the closed table of a new fold), eighteen integration areas (malware, vulnimage, vulnfindings, api, authz, conventions, postgres, the six Bastion areas, blob, backup, files, overload, projects) and the image build green; two earlier runs stopped at the base gates (a heading renamed beside its anchor, a time form changed beside its test, a stale decisions index), each fixed in the stack. Tests: three unit cases, two integration cases
   in `malware` (about 3.5 to 6 s).
 
-- **Open since 2026-11-27, 03:37, found by W35-P12 while checking the manual against the code: the Bastion's catalogue does not
+- **Closed on 2026-11-27, 06:03 by W35-P9f (H-2330 closed), open since 03:37, found by W35-P12 while checking the manual against the code: the Bastion's catalogue does not
   respect the default endpoint's `auth.anonymous: false` (H-2330, security).** The catalogue's builder reads without the
   authentication stage; with anonymous access off at the main installation, a Bastion whose switch `gui` is on would publish public
   content the main installation refuses to anonymous callers (R-BAS-104 says the catalogue is what an anonymous visitor reads). Not
@@ -1540,7 +1547,7 @@ records the recorder that tells such a stall apart).
   (until now the first catalogue waited for the hourly run), the builder's stop reason on the card, stale OpenAPI text and a warning
   on the card for public remotes.
 
-- **Open since 2026-11-27, 02:51, found by the gate of W36-P5 with W36-P4, W35-P9e and W37-P4: the gate of only checked artifacts
+- **Closed on 2026-11-27, 06:03 by W36-P6 (Q-UI-1519), open since 02:51, found by the gate of W36-P5 with W36-P4, W35-P9e and W37-P4: the gate of only checked artifacts
   could be switched on without its question.** The render `admin-settings-malware` waits for the dialog "Let only checked artifacts
   be downloaded?" and it never came: since W36-P5 the backlog is the scan controller's count, null until it has counted (Q-MAL-136),
   and the page asked only for a backlog above zero, so an unknown backlog let the switch go on without a word (R-MAL-019's question
@@ -1597,7 +1604,7 @@ records the recorder that tells such a stall apart).
   the target raised from 20 to 60 ms (Q-MAL-129). Gates in the landing worktree with the nine commits stacked above main: build, vet, generate-check, coverage, unit, lint, the web gates, the layout test, chart-lint, chart-test, archtest, ui-states, the render parts check (721 screens), 22 render screens (the storage page, the dashboard, the usage pages, the system page; 0 failed, 0 layout findings, after the first attempt found every UI instance claimed) and twelve integration areas (malware, ocilocal, npm, oci, overload, api, authz, conventions, postgres, bastion, bastioniface, bastionshared) green. Tests: a unit case of the order, three integration cases in `malware` (about
   13 s with a stub registry's two-platform image).
 
-- **Open since 2026-11-27, 01:59, three findings of W35-P9e, for the next batch.** (1) The generic format's `wget` set-up fails on
+- **Closed on 2026-11-27, 06:03 by B-1127b (all three), open since 01:59, three findings of W35-P9e, for the next batch.** (1) The generic format's `wget` set-up fails on
   macOS (wget 1.25: `--config=/dev/stdin <<EOF` fails its "file changed" check; under bash the command errors, under zsh it downloads
   without the configuration, so no token is sent), at the main installation as at a Bastion; the curl set-up works; Linux not
   verified. (2) The generic Configure step's caption says the token stays off curl's command line also to an anonymous reader. (3)
@@ -1693,7 +1700,7 @@ records the recorder that tells such a stall apart).
   4 of the screens (under a second), two Go unit cases, integration steps in `identity` and `api` (about 0.5 s), layout fixtures
   (about 3 s), a render screen `page-loads`.
 
-- **Open since 2026-11-26, 23:26, for the owner's morning: what the floor he kept costs (W36-M1's measurement).** A malware scan in
+- **Closed on 2026-11-27, 07:37 (told the owner in the morning's report; the floor stays on), open since 2026-11-26, 23:26, for the owner's morning: what the floor he kept costs (W36-M1's measurement).** A malware scan in
   the product's scanner costs about 0.75 s per MiB (measured on the shared machine with the pinned ClamAV 1.5.5: real gzip layers
   0.75 s/MiB, zstd 0.53 s/MiB, npm tarballs a median of 0.16 s; a clamd RELOAD blocks a replica's scans for about 40 s). Derived for
   a million blobs of 5 MiB on average: the ranking alone needs about 69,000 scans a day, 3 of the chart's default 4 slots; with
@@ -1788,7 +1795,7 @@ records the recorder that tells such a stall apart).
   reports interface version 9 on its card. Open: a holder of a Bastion token can still mark a counted document as not downloaded
   (H-2370, as a Bastion already decides which of its cache hits it reports).
 
-- **Open since 2026-11-26, 22:08, read in the window of 22:00: the runs of the evening's pushes on `main`, red in four places, each
+- **Closed on 2026-11-27, 02:07 by B-1126d (all four), open since 2026-11-26, 22:08, read in the window of 22:00: the runs of the evening's pushes on `main`, red in four places, each
   caused by a landing of today (the release is not held: Q-ARCH-457; by the owner's words of 22:00 features come first tonight, and
   these go to B-1126d at the next free place).** (1) `integration (shard b)`, area `oci`, red since the run of a04b93c86 (18:37):
   `TestR_AUTHZ_007_OCIActionMap/pull` and `TestProtocol/R-OCI-004_the_token_service_and_the_direct_credential`; the push held W35-P8
@@ -1799,7 +1806,7 @@ records the recorder that tells such a stall apart).
   `profile-usage as power` waits for `quader-usage-places`, which W34-E12 shows only to a reader of the limits (the render walk or
   the screen is wrong). The layout check now runs in five parts within their time (CI-layout works); part 5 green.
 
-- **Open since 2026-11-26, 21:51, the owner's request (W-37): the storage page.** His words: "Ich will im Admin-Backend umfangreich
+- **Closed on 2026-11-27, 06:03 (W-37 landed whole: P1, P2 at 01:13, P3 at 02:07, P4 at 06:03), open since 2026-11-26, 21:51, the owner's request (W-37): the storage page.** His words: "Ich will im Admin-Backend umfangreich
   Informationen, wieviele und welche S3 Speicher verbunden sind, ob es irgendwelche Probleme gibt oder gab, ob und wo wir
   verschlüsseln. Was wir verschlüsseln? Ob die Integrität unser Daten überprüft werden kann. Ob es Probleme mit der integrität in der
   letzten Zeit gab. Wo diese Fehler auftraten und wieviel Speicher betroffen war? Ich will dafür unter Admin > Einstellungen > Speicher
@@ -1819,7 +1826,7 @@ records the recorder that tells such a stall apart).
   blobs below target with their bytes, each connection's life, the reconciliation's passes, reads served from a second copy, and
   whether the loss of any one connection is survived today; both in the summary at the top.
 
-- **Open since 2026-11-26, 21:43, the owner's two requests of about 21:40 (UI-1126).** (1) "Das Datumsformat muss einstellbar
+- **Closed on 2026-11-27, 00:03 by UI-1126, open since 2026-11-26, 21:43, the owner's two requests of about 21:40 (UI-1126).** (1) "Das Datumsformat muss einstellbar
   sein. Nov 26, 2026, 9:39:22 PM kann nicht unser Standard sein! 26.11.2016 21:39:22 (Thu.) soll der Standard sein, gerne kannst du
   auch noch andere gängige Formate einbauen und anbieten." (2016 a slip for 2026.) (2) Of the boot screen and a page whose load
   failed: "Wieso ist im Fehlerfall und allgemein beim laden der Spinner nicht in der Mitte der Seite? Wieso gibt es auf dieser Seite
@@ -1840,7 +1847,7 @@ records the recorder that tells such a stall apart).
   there). My rule since: a cleanup never runs a worktree's own `down.sh`; an instance is ended only by its claim with the main
   checkout's current script, and instance 1 never.
 
-- **Open since 2026-11-26, 21:32, two findings of B-1126c, for the next batch of tools.** (1) The README's API table says it
+- **Closed on 2026-11-27, 06:03 by B-1127a (both), open since 2026-11-26, 21:32, two findings of B-1126c, for the next batch of tools.** (1) The README's API table says it
   lists every operation and misses 154 of them (limits, signatures, remote curation and others): generate it from
   `api/openapi.yaml`, or check it against the file, instead of writing it by hand. (2) The render suite records no console
   warning: it should fail on Angular's and `@angular/aria`'s own development checks (`Violations found on element`, `NG0…`),
@@ -1941,7 +1948,7 @@ records the recorder that tells such a stall apart).
   page's period (Q-UI-1488). Not verified: against a real Bastion's
   reports (none sends them until W34-E9b).
 
-- **Open since 2026-11-26, 21:14, the owner's request (W-36): the malware scan's state at every artifact, scan pressure, and a
+- **Closed on 2026-11-27, 06:03 (W-36 landed whole: M1, P1 at 01:13, P2, P3 at 02:07, P4 to P8 at 06:03), open since 2026-11-26, 21:14, the owner's request (W-36): the malware scan's state at every artifact, scan pressure, and a
   controller of the scans.** His words: "Außerdem muss ich feststellen, dass ich an den einzelnen Artefakten immernoch nicht
   feststellen kann, ob und wann der letzte Virenscan erfolgt ist. Ich möchte wissen wann ein Artefakt das letzte mal von einem
   Malwarescanner untersucht wurde. Welcher Malware-Scanner? Welchen Stand (mit Datum) hatte der Virenscanner zu dieser Zeit? Welcher
@@ -2804,7 +2811,7 @@ records the recorder that tells such a stall apart).
   namespace's avatar, a chart's icon are not shown (the table says so; not built here). Not verified: the forms under
   real clients; Visual Studio reading the icon.
 
-- **Open since 2026-11-26, 11:02, the owner's task (W-35) and his statement of what a Bastion is: a read-only GUI at the
+- **Closed on 2026-11-27, 06:39 (W-35 landed whole: P1 to P12 with P9b, P9d, P9e, P9f and B-1127e), open since 2026-11-26, 11:02, the owner's task (W-35) and his statement of what a Bastion is: a read-only GUI at the
   Bastion, switched on from the main installation, and documentation per repository as a second switch.** His words
   (about 10:55): "Der kerngedanke, des Bastions ist ja, dass er dem Internet ausgesetzt wird und dafür ggf. auf einer
   Edge-Node läuft. Traffic und Angriffe auf dem Bastion, muss nur er aushalten und wir etablieren maßnahmen unsere
