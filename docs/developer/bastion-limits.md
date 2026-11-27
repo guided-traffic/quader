@@ -296,6 +296,15 @@ At most four builders at once (rule 10 of the project plan). The waves are the o
   of its closed list (`refusals`, `failed_auth`, `refused_requests`) in words, on the card and on **Blocks** (`blockReasonText`). A
   declared registration (R-BAS-127) shows the section as every other card; its addresses are text there as well. Tests: Vitest, 19 cases in `bastions.spec.ts`,
   `bastion-limits-page.spec.ts` and `usage.spec.ts`, about 2.5 s together, fixtures only.
+- **Reworked by W-39 P2** (2026-11-27, R-UI-240, R-UI-267, Q-UI-1620, Q-UI-1621, Q-UI-1624): the main settings are `<quader-setting>`
+  rows with their help behind `<quader-help>`, in this order: `bastion-switches.ts` (**Web interface**, **Documentation**; what the
+  builder says is `catalogueNote` of `bastion-state.ts`, which tells the unknown base URL apart by the contacts), `bastion-handover.ts`
+  (the direct reads, the key line while a connection is encrypted), then `bastion-limits.ts`: the warnings (`bastion-egress.ts` part
+  `warnings`, the empty list only after a contact that no offer covers) and the rows **Preset**, **Mode**, **Maximum throughput** (a
+  raw `input` labelled by the row, the meter under it) and **Now** (`stateParts` with the read rate only where no maximum is set). The
+  preset's sentences (`presetSentence`) and the card's block reasons (`blockReasons`) are gone; `blockReasonText` stays for **Blocks**.
+  **Details** carries its note, its groups' help beside their headings (`bastion-limit-details.ts`) and the addresses' help beside
+  theirs.
 
 ### E13 · Egress addresses on the registration
 

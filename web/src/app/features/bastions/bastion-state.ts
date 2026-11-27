@@ -100,21 +100,6 @@ export function blockReasonText(reason: string): string {
   }
 }
 
-/**
- * Why the addresses the replicas reported in the last five minutes are blocked (R-UI-240): each reason in words with its number of
- * addresses, an address blocked at several replicas once, in the order of the closed list.
- */
-export function blockReasons(bastion: Pick<Bastion, 'status'>, now: number): string[] {
-  const byAddress = new Map<string, string>();
-  for (const s of freshReports(bastion, now)) for (const b of s.blocks) if (Date.parse(b.until) > now) byAddress.set(b.address, b.reason);
-  const counts = new Map<string, number>();
-  for (const r of byAddress.values()) counts.set(r, (counts.get(r) ?? 0) + 1);
-  const order = ['refusals', 'refused_requests', 'failed_auth'];
-  return [...counts.entries()]
-    .sort(([a], [b]) => (order.indexOf(a) + 1 || 99) - (order.indexOf(b) + 1 || 99) || a.localeCompare(b))
-    .map(([r, n]) => `${blockReasonText(r)} (${n})`);
-}
-
 /** "14.0 GB": one decimal, as the state line reads (R-UI-240). */
 export function gigabytes(bytes: number, locale: string): string {
   return `${formatNumber(bytes / 1e9, locale, '1.1-1')} GB`;
@@ -125,23 +110,26 @@ export function megabytesPerSecond(bytes: number, locale: string): string {
   return `${formatNumber(bytes / 1e6, locale, '1.0-0')} MB/s`;
 }
 
-/** The parts of the state line, each a phrase of its own (R-UI-240). */
-export function stateParts(s: BastionState, locale: string): string[] {
+/**
+ * The parts of the row **Now**, each a phrase of its own (R-UI-240). The read rate stands only where `withRead` says so: where a maximum
+ * throughput is set, the meter under its field says the rate already.
+ */
+export function stateParts(s: BastionState, locale: string, withRead = true): string[] {
   const used = formatNumber(s.cacheBytes / 1e9, locale, '1.1-1');
   const parts = [$localize`:@@bastion.state.cache:Cache ${used}:used: of ${gigabytes(s.capacityBytes, locale)}:capacity:`];
   if (s.hitRatio !== null) {
     parts.push($localize`:@@bastion.state.hits:${formatNumber(s.hitRatio * 100, locale, '1.0-0')}:percent: % hits`);
   }
   parts.push($localize`:@@bastion.state.protected:${gigabytes(s.protectedBytes, locale)}:bytes: protected`);
-  parts.push($localize`:@@bastion.state.read:${megabytesPerSecond(s.bytesPerSecond, locale)}:rate: from the main installation`);
+  if (withRead) parts.push($localize`:@@bastion.state.read:${megabytesPerSecond(s.bytesPerSecond, locale)}:rate: from the main installation`);
   return parts;
 }
 
-/** "4 callers limited now", "1 caller limited now". */
+/** "4 callers limited", "1 caller limited": the row says **Now**. */
 export function limitedText(n: number, locale: string): string {
   return n === 1
-    ? $localize`:@@bastion.state.limited-one:1 caller limited now`
-    : $localize`:@@bastion.state.limited:${formatCount(n, locale)}:count: callers limited now`;
+    ? $localize`:@@bastion.state.limited-one:1 caller limited`
+    : $localize`:@@bastion.state.limited:${formatCount(n, locale)}:count: callers limited`;
 }
 
 /** "1 address blocked", "3 addresses blocked". */
@@ -193,4 +181,35 @@ export function catalogueLine(bastion: Pick<Bastion, 'switches' | 'catalogue'>):
   if (c?.outcome === 'stopped' && c.reason) return { kind: 'stopped', reason: c.reason };
   if (c?.outcome === 'built' && c.checkedAt) return { kind: 'built', at: c.checkedAt };
   return { kind: 'pending' };
+}
+
+/**
+ * What the row **Web interface** says of the builder while the web interface is on (R-BAS-104, Q-BAS-497): after the switch's word
+ * the time of the last build (`built`), "Not built yet" (`pending`), or, while no replica made contact, that it is built once one has
+ * (`waits`); in their place a warning under the row where the builder stopped: the main installation admits no request without a
+ * credential (`refused`), the base URL the newest contact reported is not an address of the installation (`unlisted`, with that URL),
+ * or the newest contact reported none (`no-url`). Null while the web interface is off.
+ */
+export type CatalogueNote =
+  | { readonly kind: 'built'; readonly at: string }
+  | { readonly kind: 'pending' }
+  | { readonly kind: 'waits' }
+  | { readonly kind: 'refused' }
+  | { readonly kind: 'unlisted'; readonly url: string }
+  | { readonly kind: 'no-url' };
+
+export function catalogueNote(bastion: Pick<Bastion, 'switches' | 'catalogue' | 'contacts'>): CatalogueNote | null {
+  const line = catalogueLine(bastion);
+  if (!line || line.kind !== 'stopped') return line;
+  if (line.reason === 'anonymous_requests_refused') return { kind: 'refused' };
+  const newest = newestContact(bastion.contacts);
+  if (!newest) return { kind: 'waits' };
+  return newest.baseUrl ? { kind: 'unlisted', url: newest.baseUrl } : { kind: 'no-url' };
+}
+
+/** The contact with the latest time; null where no replica made contact. */
+export function newestContact(contacts: Bastion['contacts']): Bastion['contacts'][number] | null {
+  let newest: Bastion['contacts'][number] | null = null;
+  for (const c of contacts) if (!newest || Date.parse(c.contactAt) > Date.parse(newest.contactAt)) newest = c;
+  return newest;
 }

@@ -28,20 +28,6 @@ export function presetLabel(preset: BastionLimits['preset']): string {
   }
 }
 
-/** The one sentence under the segmented control for the chosen preset (R-UI-240). */
-export function presetSentence(preset: BastionLimits['preset']): string {
-  switch (preset) {
-    case 'internet':
-      return $localize`:@@bastion.preset.internet-sentence:Strict limits for callers from the internet; administrators too.`;
-    case 'partnerNetwork':
-      return $localize`:@@bastion.preset.partner-sentence:The installation's own profiles for known partners.`;
-    case 'internal':
-      return $localize`:@@bastion.preset.internal-sentence:No limits, everything counted.`;
-    case 'custom':
-      return $localize`:@@bastion.preset.custom-sentence:The rules or the flood figures differ from every preset.`;
-  }
-}
-
 /** One flood figure: its path in `BastionFlood`, read and named for the dialog of a preset and for the details. */
 export interface FloodFigure {
   readonly key: string;

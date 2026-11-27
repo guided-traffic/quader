@@ -68,9 +68,10 @@ export class BastionList {
   /** The entries of a token dialog kept across a re-authentication (R-UI-042), taken once; the card of its registration reopens the dialog. */
   protected readonly restored = signal<BastionTokenDraft | null>(inject(DraftStore).take<BastionTokenDraft>());
   /**
-   * The connections' states of the download link settings (storage.md R-STOR-096), which the cards whose direct reads are on explain
-   * themselves with (R-BAS-071); read once per load of the list, only while a registration has them on and the viewer holds
-   * `settings:read`, and null otherwise or when they cannot be read: the cards then show the switch and its sentence alone.
+   * The connections' states of the download link settings (storage.md R-STOR-096), which the cards explain their direct reads with
+   * (R-BAS-071): the reasons where they are on, and before they are switched on the line that an encrypted connection hands each file's
+   * key; read once per load of the list while a registration exists and the viewer holds `settings:read`, and null otherwise or when
+   * they cannot be read: the cards then show the switch alone.
    */
   protected readonly connections = signal<readonly DownloadLinkConnection[] | null>(null);
 
@@ -105,7 +106,7 @@ export class BastionList {
   }
 
   private async loadConnections(items: readonly Bastion[]): Promise<void> {
-    if (!this.session.has('settings:read') || !items.some((b) => b.switches.handover)) {
+    if (!this.session.has('settings:read') || items.length === 0) {
       this.connections.set(null);
       return;
     }

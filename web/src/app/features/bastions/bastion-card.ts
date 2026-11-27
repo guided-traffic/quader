@@ -121,10 +121,12 @@ export function tokenExpiry(token: Pick<BastionTokenSummary, 'expiresAt'>, now: 
         <quader-token-secret [value]="s.token" [description]="secretNote(s)" (closed)="secret.set(null)" />
       }
 
-      <quader-bastion-handover [bastion]="bastion()" [connections]="connections()" (changed)="changed.emit()" />
-
-      <!-- What the internet sees of this Bastion is the card's decision, not a detail of its limits (Q-UI-1616): a section of its own. -->
-      <quader-bastion-switches [bastion]="bastion()" (changed)="changed.emit()" />
+      <!-- The main settings, rows of name and control (Q-UI-1620, Q-UI-1621): what the internet sees first (Q-UI-1616), then the
+           direct reads. -->
+      <div class="main-settings">
+        <quader-bastion-switches [bastion]="bastion()" (changed)="changed.emit()" />
+        <quader-bastion-handover [bastion]="bastion()" [connections]="connections()" (changed)="changed.emit()" />
+      </div>
 
       <quader-bastion-limits [bastion]="bastion()" (changed)="changed.emit()" />
 
@@ -252,6 +254,9 @@ export function tokenExpiry(token: Pick<BastionTokenSummary, 'expiresAt'>, now: 
     }
     .source-note .secret-name {
       overflow-wrap: anywhere;
+    }
+    .main-settings {
+      margin-block: var(--quader-space-4);
     }
   `,
 })

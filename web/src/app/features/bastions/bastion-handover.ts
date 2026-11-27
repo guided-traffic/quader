@@ -7,6 +7,7 @@ import { Notifier } from '../../core/notifier';
 import { SessionStore } from '../../core/session-store';
 import { ErrorNotice } from '../../shared/error-notice';
 import { asApiError } from '../../shared/paged-resource';
+import { Setting } from '../../shared/ui/setting';
 import { Switch } from '../../shared/ui/switch';
 import { linkCheckClause } from '../../shared/link-check';
 
@@ -35,10 +36,10 @@ export interface HandoverLine {
 
 function lineOf(name: string, reasons: readonly string[]): string {
   if (reasons.length === 0) {
-    return $localize`:@@bastion.handover.line-plain:A Bastion gets the files of ${name}:name: through the main installation.`;
+    return $localize`:@@bastion.handover.line-plain:Files of ${name}:name: still come through the main installation.`;
   }
   const why = reasons.join('; ');
-  return $localize`:@@bastion.handover.line:A Bastion gets the files of ${name}:name: through the main installation: ${why}:reasons:.`;
+  return $localize`:@@bastion.handover.line:Files of ${name}:name: still come through the main installation: ${why}:reasons:.`;
 }
 
 /**
@@ -53,48 +54,43 @@ export function handoverLines(connections: readonly DownloadLinkConnection[]): H
 }
 
 /**
- * The switch **Direct reads from the object store** of a registration's card (R-BAS-071, the handover per blob): the plain path is the
- * switch and one sentence. Who may change a registration (`endpoints:write`) switches it, which reads the registration for its `ETag`
- * (the list carries none) and sends the merge patch `{"handover": …}` with it; a refusal, the `412` of a change made in between
- * included, stands under the sentence and the switch keeps the state the server has. Who may only read gets the state as a sentence,
- * "**Direct reads from the object store** are on.", as the settings pages give a switch to an auditor (Q-UI-960).
- * While it is on, and only where it helps, a line per connection whose files a Bastion gets through the main installation says why,
- * with one link to the storage settings, where its address and test link stand, a plain or an encrypted connection's alike (Q-BAS-295,
- * Q-BAS-300); `connections` is the answer of
- * `GET /api/v1/download-links/settings`, null where the viewer may not read it, so nothing is shown.
+ * The row **Direct reads from the object store** of a registration's card (R-BAS-071, the handover per blob; R-UI-240, Q-UI-1621): a
+ * setting row whose help stands behind the info sign after its name (R-UI-267). Visible stays what leaves for the DMZ: while a connection
+ * is encrypted, one muted line under the switch says that the Bastion is handed each file's key. Who may change a registration
+ * (`endpoints:write`) switches it, which reads the registration for its `ETag` (the list carries none) and sends the merge patch
+ * `{"handover": …}` with it; a refusal, the `412` of a change made in between included, stands under the row and the switch keeps the
+ * state the server has. Who may only read sees the word **On** or **Off** in the switch's place (Q-UI-960 for a row).
+ * While it is on, and only where it helps, a warning of one line per connection whose files a Bastion gets through the main installation
+ * says why, with one link to the storage settings, where its address and test link stand, a plain or an encrypted connection's alike
+ * (Q-BAS-295, Q-BAS-300); `connections` is the answer of `GET /api/v1/download-links/settings`, null where the viewer may not read it,
+ * so nothing of the connections is shown.
  */
 @Component({
   selector: 'quader-bastion-handover',
-  imports: [ErrorNotice, RouterLink, Switch],
+  imports: [ErrorNotice, RouterLink, Setting, Switch],
   template: `
-    @if (canWrite()) {
-      <h3 i18n="@@bastion.handover.heading">Direct reads from the object store</h3>
-      <div class="state">
-        <quader-switch [checked]="on()" [label]="switchLabel()" [busy]="busy()" [describedBy]="noteId()" (checkedChange)="set($event)" />
-      </div>
-    } @else {
-      <!-- Who may only read gets the state as the settings pages give it to an auditor (Q-UI-960): the switch's name and its state. -->
-      <p class="state-text" data-testid="bastion-handover-state">
-        @if (on()) {
-          <ng-container i18n="@@bastion.handover.state-on"><strong>Direct reads from the object store</strong> are on.</ng-container>
-        } @else {
-          <ng-container i18n="@@bastion.handover.state-off"><strong>Direct reads from the object store</strong> are off.</ng-container>
-        }
-      </p>
-    }
-    <p class="hint note" [id]="noteId()" i18n="@@bastion.handover.note">
-      Large files go from the object store to this Bastion by a link per file, and for an encrypted store with that file's key; the main
-      installation decides and counts every download as before.
-    </p>
+    <quader-setting label="Direct reads from the object store" i18n-label="@@bastion.handover.heading" [help]="help" data-testid="bastion-handover-row">
+      @if (canWrite()) {
+        <quader-switch [checked]="on()" [label]="switchLabel()" [busy]="busy()" [describedBy]="keys() ? keysId() : null" (checkedChange)="set($event)" />
+      } @else {
+        <span data-testid="bastion-handover-state">{{ on() ? onWord : offWord }}</span>
+      }
+      @if (keys()) {
+        <!-- A key that leaves for the DMZ is read before switching (R-UI-267): one line, while an encrypted connection exists. -->
+        <p below class="hint below" [id]="keysId()" data-testid="bastion-handover-keys" i18n="@@bastion.handover.keys">
+          Hands this Bastion the key of each file it reads from an encrypted connection.
+        </p>
+      }
+    </quader-setting>
     @if (error(); as e) {
       <quader-error-notice [error]="e" />
     }
     @if (lines().length > 0) {
       <div class="reasons" data-testid="bastion-handover-reasons">
         @for (l of lines(); track l.connection) {
-          <p class="hint reason"><span class="material-icons inline warn" aria-hidden="true">warning</span>{{ l.text }}</p>
+          <p class="hint warn line"><span class="material-icons inline" aria-hidden="true">warning</span><span>{{ l.text }}</span></p>
         }
-        <p class="hint">
+        <p class="hint line">
           <a routerLink="/admin/settings/storage" fragment="details" i18n="@@bastion.handover.settings">Public addresses in the storage settings</a>
         </p>
       </div>
@@ -104,20 +100,13 @@ export function handoverLines(connections: readonly DownloadLinkConnection[]): H
     :host {
       display: block;
     }
-    .state {
-      display: flex;
-      align-items: flex-start;
+    .below {
+      margin: 0;
     }
-    /* Where the heading stands for who may change it: the card's sections keep their distance. */
-    .state-text {
-      margin-block: var(--quader-space-5) 0;
-    }
-    .note,
-    .reason {
+    /* A warning of the row spans the measure from the label's column. */
+    .line {
       max-inline-size: var(--quader-settings-measure);
-    }
-    .reasons p {
-      margin-block: var(--quader-space-2) 0;
+      margin-block: var(--quader-space-1);
     }
     quader-error-notice {
       display: block;
@@ -142,7 +131,12 @@ export class BastionHandover {
   protected readonly on = linkedSignal(() => this.bastion().switches.handover);
 
   protected readonly canWrite = computed(() => this.session.has('endpoints:write'));
-  protected readonly noteId = computed(() => `bastion-handover-note-${this.bastion().name}`);
+  protected readonly keysId = computed(() => `bastion-handover-keys-${this.bastion().name}`);
+  protected readonly help = $localize`:@@bastion.help.handover:Large files go from the object store to this Bastion by a link per file. The main installation still decides and counts every download.`;
+  protected readonly onWord = $localize`:@@switch.on:On`;
+  protected readonly offWord = $localize`:@@switch.off:Off`;
+  /** An encrypted connection exists, so the direct reads hand the Bastion each file's key (R-STOR-095, Q-BAS-300). */
+  protected readonly keys = computed(() => (this.connections() ?? []).some((c) => c.encrypted));
   protected readonly switchLabel = computed(
     () => $localize`:@@bastion.handover.switch-label:Direct reads from the object store for ${this.bastion().name}:name:`,
   );

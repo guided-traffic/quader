@@ -29,6 +29,16 @@ import { BastionList } from './bastion-list';
 const overlay = (): HTMLElement => document.querySelector('.cdk-overlay-container') as HTMLElement;
 const card = (root: HTMLElement, name: string): HTMLElement =>
   [...root.querySelectorAll<HTMLElement>('quader-bastion-card')].find((c) => c.querySelector('h2')?.textContent?.trim() === name)!;
+/** The sentence an element is described by (a help sign's, through the tooltip's hidden description). */
+const described = (el: Element): string =>
+  (el.getAttribute('aria-describedby') ?? '')
+    .split(' ')
+    .map((id) => document.getElementById(id)?.textContent?.trim() ?? '')
+    .join(' ')
+    .trim();
+/** The help signs of an element: each one's name and sentence. */
+const signs = (el: Element): [string, string][] =>
+  [...el.querySelectorAll('button.help-sign')].map((b) => [b.getAttribute('aria-label') ?? '', described(b)]);
 
 describe('Bastions screen (R-BAS-007)', () => {
   it('R-BAS-007 lists the registrations with the last contact of every replica, and passes axe', async () => {
@@ -336,7 +346,7 @@ describe('Bastions screen (R-BAS-007)', () => {
     const { root } = await renderScreen(BastionList, { capabilities: ['endpoints:read'] });
     expect(card(root, 'partners')).toBeTruthy();
     // The fold of a card's Details is no action (R-UI-240).
-    expect([...root.querySelectorAll('button')].map((b) => text(b)).filter((t) => !/^New Bastion|^info$|Details$/.test(t))).toEqual([]);
+    expect([...root.querySelectorAll('button')].map((b) => text(b)).filter((t) => !/^New Bastion|^info$|^chevron_rightDetails/.test(t))).toEqual([]);
     const create = buttonByText(root, 'New Bastion') as HTMLButtonElement;
     expect(create.disabled).toBe(true);
     expect(text(root)).toContain('endpoints:write');
@@ -347,7 +357,7 @@ describe('Bastions screen (R-BAS-007)', () => {
     const { root } = await renderScreen(BastionList, { capabilities: ['endpoints:read', 'tokens:revoke'] });
     const partners = card(root, 'partners');
     expect(buttonByText(partners, 'Revoke')).toBeTruthy();
-    expect([...partners.querySelectorAll('button')].map((b) => text(b)).filter((t) => !/^info$|Details$/.test(t))).toEqual(['Revoke partners 2026']);
+    expect([...partners.querySelectorAll('button')].map((b) => text(b)).filter((t) => !/^info$|^chevron_rightDetails/.test(t))).toEqual(['Revoke partners 2026']);
   });
 
   it('R-BAS-007 shows the empty state, the loading failure with a retry, and recovers', async () => {
@@ -380,12 +390,12 @@ describe('Bastions screen (R-BAS-007)', () => {
 
 describe('Direct reads from the object store on a Bastion card (R-BAS-071)', () => {
   const toggle = (root: HTMLElement, name: string): HTMLButtonElement | null =>
-    card(root, name).querySelector<HTMLButtonElement>('button[role="switch"]');
+    card(root, name).querySelector<HTMLButtonElement>('[data-testid="bastion-handover-row"] button[role="switch"]');
   const reasons = (root: HTMLElement, name: string): Element | null =>
     card(root, name).querySelector('[data-testid="bastion-handover-reasons"]');
   /** The lines of the reasons without the glyph names of their icons. */
   const lines = (el: Element): string[] =>
-    [...el.querySelectorAll('p.reason')].map((p) => {
+    [...el.querySelectorAll('p.warn')].map((p) => {
       const copy = p.cloneNode(true) as Element;
       copy.querySelectorAll('.material-icons').forEach((i) => i.remove());
       return text(copy);
@@ -419,18 +429,32 @@ describe('Direct reads from the object store on a Bastion card (R-BAS-071)', () 
     return count;
   };
 
-  it('R-BAS-071 a new registration shows the switch off with its one sentence, and nothing of the connections', async () => {
+  it('R-BAS-071 a new registration shows the switch off in its row with the help behind the info sign, and no line of the connections', async () => {
     let count = { reads: 0 };
     const { root } = await renderScreen(BastionList, { setup: (g) => void (count = counted(g(DownloadLinksApi) as FakeDownloadLinksApi)) });
     const sw = toggle(root, 'partners')!;
     expect(sw.getAttribute('aria-checked')).toBe('false');
     expect(sw.getAttribute('aria-label')).toBe('Direct reads from the object store for partners');
-    expect(text(card(root, 'partners'))).toContain(
-      "Large files go from the object store to this Bastion by a link per file, and for an encrypted store with that file's key; the main installation decides and counts every download as before.",
-    );
+    const row = card(root, 'partners').querySelector('[data-testid="bastion-handover-row"]')!;
+    expect(row.contains(sw)).toBe(true);
+    const sign = row.querySelector('button.help-sign')!;
+    expect(sign.getAttribute('aria-label')).toBe('About Direct reads from the object store');
+    expect(described(sign)).toBe('Large files go from the object store to this Bastion by a link per file. The main installation still decides and counts every download.');
+    expect(text(card(root, 'partners'))).not.toContain('Large files go');
+    // Only a plain connection: no key leaves for the DMZ, so no line says so.
+    expect(row.querySelector('[data-testid="bastion-handover-keys"]')).toBeNull();
     expect(reasons(root, 'partners')).toBeNull();
-    // Nothing is on, so the connections' states are not read.
-    expect(count.reads).toBe(0);
+    // The connections are read once for the cards, also while every switch is off (the key line is read before switching on).
+    expect(count.reads).toBe(1);
+  });
+
+  it('R-BAS-071 the line that a Bastion is handed each file\'s key shows only while an encrypted connection exists, before the switch is on too', async () => {
+    const { root } = await renderScreen(BastionList, { setup: (g) => mixed(g(DownloadLinksApi) as FakeDownloadLinksApi) });
+    const row = card(root, 'partners').querySelector('[data-testid="bastion-handover-row"]')!;
+    const keys = row.querySelector('[data-testid="bastion-handover-keys"]')!;
+    expect(text(keys)).toBe('Hands this Bastion the key of each file it reads from an encrypted connection.');
+    expect(toggle(root, 'partners')!.getAttribute('aria-describedby')).toBe(keys.id);
+    expect(reasons(root, 'partners')).toBeNull();
   });
 
   it('R-BAS-071 switching on sends the merge patch with the ETag it read; once on, a connection a Bastion cannot read names its reason and the link to the storage settings', async () => {
@@ -445,7 +469,7 @@ describe('Direct reads from the object store on a Bastion card (R-BAS-071)', () 
     expect(toggle(root, 'partners')!.getAttribute('aria-checked')).toBe('true');
     const why = reasons(root, 'partners')!;
     // archive is encrypted and its address and link check let a Bastion read it with each file's key: no line (Q-BAS-300).
-    expect(lines(why)).toEqual(['A Bastion gets the files of eu-backup through the main installation: its address does not use https.']);
+    expect(lines(why)).toEqual(['Files of eu-backup still come through the main installation: its address does not use https.']);
     const link = why.querySelector<HTMLAnchorElement>('a')!;
     expect(text(link)).toBe('Public addresses in the storage settings');
     expect(link.getAttribute('href')).toBe('/admin/settings/storage#details');
@@ -459,7 +483,7 @@ describe('Direct reads from the object store on a Bastion card (R-BAS-071)', () 
     expect(reasons(root, 'partners')).toBeNull();
   });
 
-  it('R-BAS-071 on while every connection can be read: the switch and its sentence alone', async () => {
+  it('R-BAS-071 on while every connection can be read: the switch alone in its row', async () => {
     const { root } = await renderScreen(BastionList, {
       setup: (g) => {
         (g(BastionsApi) as FakeBastionsApi).bastions = [sampleBastion({ switches: handoverSwitches(true) })];
@@ -489,7 +513,7 @@ describe('Direct reads from the object store on a Bastion card (R-BAS-071)', () 
     });
     const why = reasons(root, 'partners')!;
     expect(lines(why)).toEqual([
-      'A Bastion gets the files of vault through the main installation: its object store did not answer a test link as expected (the test link answered with status 403 and 0 bytes instead of status 200 and 2,048 bytes).',
+      'Files of vault still come through the main installation: its object store did not answer a test link as expected (the test link answered with status 403 and 0 bytes instead of status 200 and 2,048 bytes).',
     ]);
     expect(why.querySelector<HTMLAnchorElement>('a')!.getAttribute('href')).toBe('/admin/settings/storage#details');
   });
@@ -507,12 +531,12 @@ describe('Direct reads from the object store on a Bastion card (R-BAS-071)', () 
         }),
       ]).map((l) => l.text),
     ).toEqual([
-      'A Bastion gets the files of default through the main installation: its address lies under quader.example.com, an address of Quader; its object store did not answer a test link as expected (its answer carries no Content-Disposition instead of “attachment”).',
+      'Files of default still come through the main installation: its address lies under quader.example.com, an address of Quader; its object store did not answer a test link as expected (its answer carries no Content-Disposition instead of “attachment”).',
     ]);
     expect(handoverLines([linkConnection(), linkConnection({ name: 'b', handoverUsable: true })])).toEqual([]);
   });
 
-  it('R-BAS-071 a change made in between is a 412 that stands under the sentence, and the switch keeps the state the server has', async () => {
+  it('R-BAS-071 a change made in between is a 412 that stands under the row, and the switch keeps the state the server has', async () => {
     const { fixture, root, get } = await renderScreen(BastionList);
     const api = get(BastionsApi) as FakeBastionsApi;
     const read = api.get.bind(api);
@@ -529,7 +553,7 @@ describe('Direct reads from the object store on a Bastion card (R-BAS-071)', () 
     expect(toggle(root, 'partners')!.getAttribute('aria-busy')).toBeNull();
   });
 
-  it('R-BAS-071 a refusal of the server stands under the sentence', async () => {
+  it('R-BAS-071 a refusal of the server stands under the row', async () => {
     const { fixture, root, get } = await renderScreen(BastionList);
     (get(BastionsApi) as FakeBastionsApi).failure = new ApiError(403, { code: 'forbidden', detail: 'The caller lacks endpoints:write.' }, 'req-9');
     toggle(root, 'partners')!.click();
@@ -539,7 +563,7 @@ describe('Direct reads from the object store on a Bastion card (R-BAS-071)', () 
     expect(toggle(root, 'partners')!.getAttribute('aria-checked')).toBe('false');
   });
 
-  it('R-BAS-071 who may only read sees the state as the settings pages say it, and the reasons, and is offered no switch', async () => {
+  it('R-BAS-071 who may only read sees the word On or Off in the row, the help and the reasons, and is offered no switch', async () => {
     const { root } = await renderScreen(BastionList, {
       capabilities: ['endpoints:read', 'settings:read'],
       setup: (g) => {
@@ -548,9 +572,11 @@ describe('Direct reads from the object store on a Bastion card (R-BAS-071)', () 
       },
     });
     expect(toggle(root, 'partners')).toBeNull();
-    expect(text(card(root, 'partners').querySelector('[data-testid="bastion-handover-state"]')!)).toBe('Direct reads from the object store are on.');
-    expect(card(root, 'partners').querySelector('[data-testid="bastion-handover-state"] strong')).toBeTruthy();
-    expect(text(card(root, 'standby').querySelector('[data-testid="bastion-handover-state"]')!)).toBe('Direct reads from the object store are off.');
+    expect(text(card(root, 'partners').querySelector('[data-testid="bastion-handover-state"]')!)).toBe('On');
+    expect(text(card(root, 'standby').querySelector('[data-testid="bastion-handover-state"]')!)).toBe('Off');
+    expect(signs(card(root, 'partners').querySelector('[data-testid="bastion-handover-row"]')!).map(([name]) => name)).toEqual([
+      'About Direct reads from the object store',
+    ]);
     // eu-backup's address; the encrypted archive can be read with each file's key and has no line (Q-BAS-300).
     expect(lines(reasons(root, 'partners')!)).toHaveLength(1);
     expect(await seriousViolations(root)).toEqual([]);
@@ -571,7 +597,7 @@ describe('Direct reads from the object store on a Bastion card (R-BAS-071)', () 
     expect(count.reads).toBe(0);
   });
 
-  it('R-BAS-071 connections that cannot be read leave the switch and its sentence alone', async () => {
+  it('R-BAS-071 connections that cannot be read leave the switch alone in its row', async () => {
     const { root } = await renderScreen(BastionList, {
       setup: (g) => {
         (g(BastionsApi) as FakeBastionsApi).bastions = [sampleBastion({ switches: handoverSwitches(true) })];
@@ -606,24 +632,30 @@ describe('The addresses a Bastion connects from (R-UI-243)', () => {
       ],
     });
 
-  it('R-UI-243 an empty list warns, each address a replica came from is offered once, and Add sends one PATCH with the list and that address', async () => {
+  it('R-UI-243 each address a replica came from is offered once with its consequence, and Add sends one PATCH with the list and that address', async () => {
     const { fixture, root, get } = await renderScreen(BastionList, {
       setup: (g) => void ((g(BastionsApi) as FakeBastionsApi).bastions = [unconfigured()]),
     });
     const api = get(BastionsApi) as FakeBastionsApi;
     const egress = section(root, 'partners');
     const warn = warnings(root, 'partners');
-    expect(text(egress.querySelector('h4')!)).toBe('Addresses this Bastion connects from');
+    expect(text(egress.querySelector('h4')!).replace(/info$/, '').trim()).toBe('Addresses this Bastion connects from');
     expect(egress.closest('quader-disclosure')).not.toBeNull();
     expect(warn.closest('quader-disclosure')).toBeNull();
-    expect(text(egress)).toContain("The main installation believes the caller's address a Bastion forwards only from these addresses.");
-    expect(lineText(warn.querySelector('[data-testid="bastion-egress-empty"]')!)).toBe(
-      "No address is listed: every caller through this Bastion counts as the Bastion's own address at the main installation, with one budget and one block for all, and the audit log names the Bastion's address instead of the caller's.",
-    );
+    // The list's help stands behind the sign beside its heading (R-UI-267), and names the group of fields.
+    expect(signs(egress.querySelector('h4')!)).toEqual([
+      [
+        'About Addresses this Bastion connects from',
+        "The main installation believes the caller's address a Bastion forwards only from these addresses. While none is listed, all callers count as the Bastion's own address.",
+      ],
+    ]);
+    expect(text(egress)).not.toContain('The main installation believes');
+    // The offers say what the empty list means: the empty list's own warning would say it twice (Q-UI-1624).
+    expect(warn.querySelector('[data-testid="bastion-egress-empty"]')).toBeNull();
     const offers = [...warn.querySelectorAll('[data-testid="bastion-egress-unlisted"]')];
     expect(offers.map(lineText)).toEqual([
-      'The last contact came from 198.51.100.21, which is not listed.',
-      'The last contact came from 2001:db8:4::7, which is not listed.',
+      'Its last contact came from 198.51.100.21, which is not listed: callers through it share one budget and one block.',
+      'Its last contact came from 2001:db8:4::7, which is not listed: callers through it share one budget and one block.',
     ]);
     // The default of a new registration, the empty list, is one empty field, as wide as a host.
     expect(fields(egress).map((f) => f.value)).toEqual(['']);
@@ -638,9 +670,23 @@ describe('The addresses a Bastion connects from (R-UI-243)', () => {
     expect(api.ifMatch).toEqual(['"1"']);
     expect(warn.querySelector('[data-testid="bastion-egress-empty"]')).toBeNull();
     expect([...warn.querySelectorAll('[data-testid="bastion-egress-unlisted"]')].map(lineText)).toEqual([
-      'The last contact came from 2001:db8:4::7, which is not listed.',
+      'Its last contact came from 2001:db8:4::7, which is not listed: callers through it share one budget and one block.',
     ]);
     expect(fields(egress).map((f) => f.value)).toEqual(['198.51.100.21/32']);
+  });
+
+  it('R-UI-243 the empty list warns only after a contact that no offer covers, never before a contact', async () => {
+    const { root } = await renderScreen(BastionList, {
+      setup: (g) =>
+        void ((g(BastionsApi) as FakeBastionsApi).bastions = [
+          sampleBastion({ egress: [], contacts: [sampleBastionContact({ clientAddress: null })] }),
+          sampleBastion({ id: 'b-2', name: 'standby', egress: [], contacts: [] }),
+        ]),
+    });
+    expect(lineText(warnings(root, 'partners').querySelector('[data-testid="bastion-egress-empty"]')!)).toBe(
+      'No address this Bastion connects from is listed: all its callers share one budget and one block.',
+    );
+    expect(warnings(root, 'standby').querySelector('[data-testid="bastion-egress-empty"]')).toBeNull();
   });
 
   it('R-UI-243 the list is edited field by field and saved with the ETag it read; a refusal stands under its field and the entries stay', async () => {
@@ -675,7 +721,7 @@ describe('The addresses a Bastion connects from (R-UI-243)', () => {
     button(egress, 'Save changes').click();
     await sleep(fixture, 100);
     expect(api.calls.at(-1)).toBe('setEgress partners ');
-    expect(warnings(root, 'partners').querySelector('[data-testid="bastion-egress-empty"]')).not.toBeNull();
+    expect(warnings(root, 'partners').querySelectorAll('[data-testid="bastion-egress-unlisted"]')).toHaveLength(2);
   });
 
   it('R-UI-243 who may only read sees the networks as text and the warnings, and is offered no field and no Add', async () => {
@@ -691,9 +737,13 @@ describe('The addresses a Bastion connects from (R-UI-243)', () => {
     expect(text(partners.querySelector('[data-testid="bastion-egress-list"]')!)).toBe('198.51.100.16/28, 2001:db8:4::/64');
     expect(fields(partners)).toHaveLength(0);
     const partnersWarn = warnings(root, 'partners');
-    expect(lineText(partnersWarn.querySelector('[data-testid="bastion-egress-unlisted"]')!)).toBe('The last contact came from 192.0.2.9, which is not listed.');
+    expect(lineText(partnersWarn.querySelector('[data-testid="bastion-egress-unlisted"]')!)).toBe(
+      'Its last contact came from 192.0.2.9, which is not listed: callers through it share one budget and one block.',
+    );
     expect(partnersWarn.querySelector('[data-testid="bastion-egress-unlisted"] button')).toBeNull();
-    expect(warnings(root, 'standby').querySelector('[data-testid="bastion-egress-empty"]')).not.toBeNull();
+    expect(warnings(root, 'standby').querySelectorAll('[data-testid="bastion-egress-unlisted"]')).toHaveLength(2);
+    // The reader gets the same help sign beside the list's heading.
+    expect(signs(section(root, 'partners').querySelector('h4')!)).toHaveLength(1);
     expect(text(section(root, 'standby').querySelector('[data-testid="bastion-egress-list"]')!)).toBe('No address is listed.');
     expect(await seriousViolations(root)).toEqual([]);
   });
@@ -744,7 +794,7 @@ describe('A registration the configuration declares (R-BAS-127)', () => {
     expect(text(rows[0]!.querySelector('[data-testid="bastion-token-declared"]')!)).toContain('In the configuration');
     // The networks are the configuration's: text, no field, no Save.
     expect(partners.querySelectorAll('quader-bastion-egress input')).toHaveLength(0);
-    expect(text(partners.querySelector('[data-testid="bastion-egress-list"]')!)).toBe('10.252.0.0/16');
+    expect(text(partners.querySelector('[data-testid="bastion-egress-list"]')!)).toBe('10.252.0.0/16 · from the Helm configuration');
     expect(await seriousViolations(root)).toEqual([]);
   });
 
@@ -790,24 +840,98 @@ describe("A Bastion's limits, throughput, switches and state on its card (R-UI-2
       ['Partner network', 'false'],
       ['Internal', 'false'],
     ]);
-    expect(text(limits)).toContain('Strict limits for callers from the internet; administrators too.');
+    // The segmented control is named by its row's name.
+    const group = limits.querySelector('.presets[role="group"]')!;
+    expect(text(document.getElementById(group.getAttribute('aria-labelledby')!)!)).toBe('Preset');
     expect(limits.querySelector('[data-testid="bastion-preset-custom"]')).toBeNull();
-    expect(text(limits.querySelector('[data-testid="bastion-mode"]')!)).toBe('Mode: Enforce');
-    // A default is a value in the field (Q-BAS-455), as wide as five digits.
+    expect(text(limits.querySelector('[data-testid="bastion-mode"]')!)).toBe('Enforce');
+    // A default is a value in the field (Q-BAS-455), as wide as five digits; the row's name is its label, its accessible name says
+    // whose and the unit, which stands after it unheard.
     const throughput = fieldNamed(limits, 'throughput');
     expect(throughput.value).toBe('200');
     expect(throughput.classList).toContain('field-w-number');
-    expect(text(limits)).toContain("Set this to the Bastion's share of the link between the two networks.");
+    expect(text(limits.querySelector(`label[for="${throughput.id}"]`)!)).toBe('Maximum throughput');
+    expect(throughput.getAttribute('aria-label')).toBe('Maximum throughput of partners in MB/s');
+    expect(text(throughput.parentElement!.querySelector('.unit[aria-hidden="true"]')!)).toBe('MB/s');
     expect(details(root, 'partners').querySelector('button[aria-expanded]')!.getAttribute('aria-expanded')).toBe('false');
-    // The web interface is a section of the card's plain view between the direct reads and the limits, never in Details (Q-UI-1616).
+    expect(text(details(root, 'partners').querySelector('button[aria-expanded]')!)).toContain('Flood protection, addresses, rules');
+    // The main settings first, the web interface's rows before the direct reads', then the limits; never in Details (Q-UI-1616, Q-UI-1620).
     const sections = [...card(root, 'partners').querySelectorAll('quader-bastion-handover, quader-bastion-switches, quader-bastion-limits')];
-    expect(sections.map((s) => s.localName)).toEqual(['quader-bastion-handover', 'quader-bastion-switches', 'quader-bastion-limits']);
-    expect(text(switchesOf(root, 'partners').querySelector('h3')!)).toBe('Web interface');
+    expect(sections.map((s) => s.localName)).toEqual(['quader-bastion-switches', 'quader-bastion-handover', 'quader-bastion-limits']);
     expect(switchesOf(root, 'partners').querySelector('[role="switch"][aria-label="Web interface of partners"]')).not.toBeNull();
     expect(details(root, 'partners').querySelector('quader-bastion-switches')).toBeNull();
     expect(text(limits.querySelector('[data-testid="bastion-no-report"]')!)).toBe('No report in the last 5 minutes');
     expect(limits.querySelector('[data-testid="bastion-edge-warning"]')).toBeNull();
     expect(await seriousViolations(root)).toEqual([]);
+  });
+
+  it('R-UI-240 W-39 the main settings are rows with a help sign and no paragraph under them', async () => {
+    const { root } = await renderScreen(BastionList, { capabilities: ADMIN });
+    const partners = card(root, 'partners');
+    const rows = [...partners.querySelectorAll('quader-setting')];
+    expect(rows.map((r) => text(r.querySelector('.setting-name')!))).toEqual([
+      'Web interface',
+      'Documentation',
+      'Direct reads from the object store',
+      'Preset',
+      'Mode',
+      'Maximum throughput',
+      'Now',
+    ]);
+    expect(rows.map((r) => signs(r)[0]?.[0])).toEqual([
+      'About Web interface',
+      'About Documentation',
+      'About Direct reads from the object store',
+      'About Preset',
+      'About Mode',
+      'About Maximum throughput',
+      'About Now',
+    ]);
+    const help = Object.fromEntries(rows.map((r) => signs(r)[0]!));
+    expect(help['About Web interface']).toBe(
+      'A read-only web interface of this Bastion that shows anyone the packages of public repositories, without signing in. Off, its pages answer “not found” within seconds.',
+    );
+    expect(help['About Preset']).toBe(
+      "Internet: strict limits, administrators too. Partner network: the installation's own profiles. Internal: no limits, everything counted. A choice first shows what it replaces.",
+    );
+    expect(help['About Now']).toBe("What the Bastion's replicas reported in the last 5 minutes, added up.");
+    // What becomes public stays visible, one line in the control's column; nothing that explains a setting is a paragraph.
+    expect(text(rows[0]!.querySelector('[below]')!)).toBe('It also shows every package your builds fetched through a public remote repository.');
+    const body = text(partners);
+    for (const moved of ['Strict limits', 'Set this to', 'Takes effect only', 'Limits are counted, not applied', 'Large files go']) {
+      expect(body).not.toContain(moved);
+    }
+    // The details' groups carry their help beside their heading, the exempt field its format as the hint and its meaning as help.
+    const d = details(root, 'partners');
+    expect(signs(d).map(([name]) => name)).toEqual([
+      'About Networks without flood protection',
+      'About Slots to the main installation',
+      'About Anonymous ceiling',
+      'About Throughput by class',
+      'About Addresses this Bastion connects from',
+    ]);
+    expect(text(d)).toContain('Addresses or networks, separated by commas');
+    expect(text(d)).not.toContain('no flood figure, timeout or block applies');
+  });
+
+  it('R-UI-240 W-39 the read rate stands in the row Now only where no maximum is set: the meter under the field says it', async () => {
+    const live = [report('quader-bastion-7d9c-x2k4q')];
+    const { root } = await renderScreen(BastionList, {
+      capabilities: ADMIN,
+      setup: (g) => {
+        const b = sampleBastion({ status: live });
+        (g(BastionsApi) as FakeBastionsApi).bastions = [
+          b,
+          { ...b, id: 'b-2', name: 'standby', limits: { ...b.limits, throughput: { ...b.limits.throughput, bytesPerSecond: null } } },
+        ];
+      },
+    });
+    const parts = (name: string): string[] =>
+      [...limitsOf(root, name).querySelectorAll('[data-testid="bastion-state"] .state-line')[0]!.querySelectorAll('span')].map((s) => text(s));
+    expect(parts('partners')).not.toContain('21 MB/s from the main installation');
+    expect(text(limitsOf(root, 'partners').querySelector('[data-testid="bastion-throughput-row"]')!)).toContain('21 MB/s of 200 MB/s');
+    expect(parts('standby')).toContain('21 MB/s from the main installation');
+    expect(limitsOf(root, 'standby').querySelector('[role="meter"]')).toBeNull();
   });
 
   it("R-UI-240 on the volume backend the state line adds up each replica's own cache", async () => {
@@ -825,7 +949,6 @@ describe("A Bastion's limits, throughput, switches and state on its card (R-UI-2
       'Cache 12.0 of 20.0 GB',
       '97 % hits',
       '4.0 GB protected',
-      '41 MB/s from the main installation',
     ]);
   });
 
@@ -843,17 +966,18 @@ describe("A Bastion's limits, throughput, switches and state on its card (R-UI-2
       'Cache 7.0 of 10.0 GB',
       '97 % hits',
       '4.5 GB protected',
-      '41 MB/s from the main installation',
     ]);
-    const meter = state.querySelector('[role="meter"]')!;
+    // The meter stands under the field it measures (W-39 D13).
+    const row = limitsOf(root, 'partners').querySelector('[data-testid="bastion-throughput-row"]')!;
+    const meter = row.querySelector('[role="meter"]')!;
     expect(meter.getAttribute('aria-valuenow')).toBe('21');
-    expect(text(state)).toContain('41 MB/s of 200 MB/s');
+    expect(text(row)).toContain('41 MB/s of 200 MB/s');
     // The bar is the data colour below 70 %, never green.
-    expect(state.querySelector('.fill.warn, .fill.bad')).toBeNull();
+    expect(row.querySelector('.fill.warn, .fill.bad')).toBeNull();
     const callers = state.querySelector<HTMLAnchorElement>('[data-testid="bastion-state-callers"]')!;
-    expect(text(callers)).toBe('4 callers limited now · 1 address blocked');
-    // Why, in words: the closed list's reason, the address once though both replicas name it.
-    expect(text(state.querySelector('[data-testid="bastion-block-reasons"]')!)).toBe('Too many requests refused by its flood protection (1)');
+    // The address once though both replicas name it; why each is blocked is the tab Blocks' (the card names no reason).
+    expect(text(callers)).toBe('4 callers limited · 1 address blocked');
+    expect(text(state)).not.toContain('Too many requests');
     expect(callers.getAttribute('href')).toBe('/admin/bastions/partners/limits/blocks');
     // A report older than five minutes is no state.
     expect(text(limitsOf(root, 'standby').querySelector('[data-testid="bastion-no-report"]')!)).toBe('No report in the last 5 minutes');
@@ -869,8 +993,10 @@ describe("A Bastion's limits, throughput, switches and state on its card (R-UI-2
         ]),
     });
     const warning = limitsOf(root, 'partners').querySelector('[data-testid="bastion-edge-warning"]')!;
-    expect(text(warning)).toContain('The ingress of this Bastion refuses more than 150 requests a second per address before these figures apply.');
+    expect(text(warning)).toContain("The ingress refuses more than 150 requests a second per address, below this Bastion's flood figures.");
     expect(warning.classList).toContain('warn');
+    // The limits' warnings stand first in the section, before its rows (Q-UI-1624).
+    expect(warning.compareDocumentPosition(limitsOf(root, 'partners').querySelector('quader-setting')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(limitsOf(root, 'standby').querySelector('[data-testid="bastion-edge-warning"]')).toBeNull();
   });
 
@@ -965,21 +1091,23 @@ describe("A Bastion's limits, throughput, switches and state on its card (R-UI-2
     buttonByText(dialog.querySelector('.dialog-actions')!, 'Switch to Audit').click();
     await sleep(fixture, 100);
     expect(api.patches).toEqual([{ limits: { mode: 'audit' } }]);
-    expect(text(limitsOf(root, 'partners').querySelector('[data-testid="bastion-mode"]')!)).toBe(
-      'Mode: Audit. Limits are counted, not applied at this Bastion.',
-    );
+    expect(text(limitsOf(root, 'partners').querySelector('[data-testid="bastion-mode"]')!)).toBe('Audit');
+    expect(buttonByText(limitsOf(root, 'partners'), 'Switch to Enforce…')).toBeTruthy();
   });
 
   it('R-UI-240 the throughput is saved in MB/s, empty is unlimited, a word is refused before the request, a refusal keeps the server value', async () => {
     const { fixture, root, get } = await renderScreen(BastionList, { capabilities: ADMIN });
     const api = get(BastionsApi) as FakeBastionsApi;
     const limits = limitsOf(root, 'partners');
-    const save = (): void => (limits.querySelector('form.field-action-row button[type="submit"]') as HTMLButtonElement).click();
+    const save = (): void => (limits.querySelector('form.throughput-form button[type="submit"]') as HTMLButtonElement).click();
     type(fieldNamed(limits, 'throughput'), 'fast');
     await settle(fixture);
     save();
     await sleep(fixture, 50);
     expect(text(limits)).toContain('A whole number of MB/s from 1, or empty for unlimited.');
+    const field = fieldNamed(limits, 'throughput');
+    expect(field.getAttribute('aria-invalid')).toBe('true');
+    expect(text(document.getElementById(field.getAttribute('aria-describedby')!)!)).toBe('A whole number of MB/s from 1, or empty for unlimited.');
     expect(api.patches).toEqual([]);
     type(fieldNamed(limits, 'throughput'), '');
     await settle(fixture);
@@ -1028,8 +1156,11 @@ describe("A Bastion's limits, throughput, switches and state on its card (R-UI-2
     const limits = limitsOf(root, 'partners');
     expect(presetButtons(limits)).toEqual([]);
     expect(text(limits.querySelector('[data-testid="bastion-preset-text"]')!)).toBe('Internet');
+    expect(text(limits.querySelector('[data-testid="bastion-mode"]')!)).toBe('Enforce');
     expect(limits.querySelector('[data-testid="bastion-mode"] + button')).toBeNull();
-    expect(text(limits.querySelector('[data-testid="bastion-throughput-text"]')!)).toBe('Maximum throughput to this Bastion: 200 MB/s');
+    expect(text(limits.querySelector('[data-testid="bastion-throughput-text"]')!)).toBe('200 MB/s');
+    // The reader's row names no field: the name is no label for a control that is not there.
+    expect(limits.querySelector('[data-testid="bastion-throughput-row"] label')).toBeNull();
     expect(limits.querySelector('quader-bastion-limit-details input')).toBeNull();
     expect(text(limits.querySelector('[data-testid="bastion-details-read"]')!)).toContain('Requests a second 50 · Burst 1,000 · Misses a minute 1,000');
     expect(limits.querySelector('a[href$="/limits"]')).toBeNull();
@@ -1037,9 +1168,8 @@ describe("A Bastion's limits, throughput, switches and state on its card (R-UI-2
     const web = switchesOf(root, 'partners');
     const gui = web.querySelector<HTMLElement>('[role="switch"][aria-label="Web interface of partners"]')!;
     expect(gui.getAttribute('aria-checked')).toBe('false');
-    // The switch is described by its sentence and by what a public remote shows through it (W35-P9f).
-    const described = gui.getAttribute('aria-describedby')!.split(' ').map((id) => text(root.querySelector(`#${id}`)!));
-    expect(described[1]).toBe('A public remote repository shows here every package and version your builds fetched through it.');
+    // The switch is described by what a public remote shows through it (W35-P9f), the line that stays visible under it.
+    expect(described(gui)).toBe('It also shows every package your builds fetched through a public remote repository.');
     gui.click();
     await sleep(fixture, 100);
     expect(api.patches).toEqual([{ switches: { gui: true } }]);
@@ -1055,14 +1185,15 @@ describe("A Bastion's limits, throughput, switches and state on its card (R-UI-2
     expect(limits.querySelector('quader-bastion-limit-details input')).not.toBeNull();
     const web = switchesOf(root, 'partners');
     expect(web.querySelector('[role="switch"]')).toBeNull();
-    expect(text(web.querySelector('h3')!)).toBe('Web interface');
-    expect(text(web.querySelector('[data-testid="bastion-gui-state"]')!)).toBe('The web interface is off.');
-    expect(text(web.querySelector('[data-testid="bastion-docs-state"]')!)).toBe('Documentation is off.');
+    expect(text(web.querySelector('.setting-name')!)).toBe('Web interface');
+    expect(text(web.querySelector('[data-testid="bastion-gui-state"]')!)).toBe('Off');
+    expect(text(web.querySelector('[data-testid="bastion-docs-state"]')!)).toBe('Off');
+    expect(signs(web).map(([name]) => name)).toEqual(['About Web interface', 'About Documentation']);
     expect(limits.querySelector('quader-bastion-egress[part="list"] input')).toBeNull();
     expect(limits.querySelector<HTMLAnchorElement>('a[href="/admin/bastions/partners/limits"]')!.textContent).toContain('Rules of this Bastion');
   });
 
-  it('R-BAS-102 documentation on while the web interface is off says it shows nothing; a web interface whose catalogue a restart loses warns', async () => {
+  it('R-BAS-102 documentation on while the web interface is off is the two words alone; a web interface whose catalogue a restart loses warns under its row', async () => {
     const { root } = await renderScreen(BastionList, {
       capabilities: ADMIN,
       setup: (g) =>
@@ -1071,11 +1202,13 @@ describe("A Bastion's limits, throughput, switches and state on its card (R-UI-2
           sampleBastion({ id: 'b-2', name: 'standby', switches: { handover: false, gui: true, docs: false }, contacts: [sampleBastionContact({ catalogueKept: false })] }),
         ]),
     });
-    expect(switchesOf(root, 'partners').querySelector('[data-testid="bastion-docs-idle"]')).not.toBeNull();
+    // The rows say Off and On; a line that says so again is gone (Q-UI-1624).
+    expect(switchesOf(root, 'partners').querySelectorAll('p.warn')).toHaveLength(0);
     expect(switchesOf(root, 'partners').querySelector('[data-testid="bastion-catalogue-lost"]')).toBeNull();
-    expect(text(switchesOf(root, 'standby').querySelector('[data-testid="bastion-catalogue-lost"]')!)).toContain(
-      "After a restart while the connection to it is down, this Bastion's web interface shows nothing until the connection returns.",
-    );
+    const lost = switchesOf(root, 'standby').querySelector('[data-testid="bastion-catalogue-lost"]')!;
+    expect(text(lost)).toContain('A restart during an outage of the main installation empties the web interface; a bucket or persistent volumes keep it.');
+    // A warning of a row is the row's sibling, so it spans the measure from the label's column.
+    expect(lost.previousElementSibling?.localName).toBe('quader-setting');
   });
 
   it("R-BAS-104 the card says what the main installation last built for the web interface, and why it builds nothing with what to do", async () => {
@@ -1090,21 +1223,41 @@ describe("A Bastion's limits, throughput, switches and state on its card (R-UI-2
           sampleBastion({ id: 'b-3', name: 'edge', switches: gui, catalogue: { outcome: 'built', reason: null, checkedAt: at, builtAt: at } }),
           sampleBastion({ id: 'b-4', name: 'fresh', switches: gui, catalogue: null }),
           sampleBastion({ id: 'b-5', name: 'off', catalogue: { outcome: 'built', reason: null, checkedAt: at, builtAt: at } }),
+          // The base URL unknown: before a contact the row waits; a contact without a base URL, and one with an unlisted one, warn.
+          sampleBastion({ id: 'b-6', name: 'unseen', switches: gui, contacts: [], catalogue: { outcome: 'stopped', reason: 'bastion_base_url_unknown', checkedAt: at, builtAt: null } }),
+          sampleBastion({
+            id: 'b-7',
+            name: 'silent-url',
+            switches: gui,
+            contacts: [sampleBastionContact({ baseUrl: '' })],
+            catalogue: { outcome: 'stopped', reason: 'bastion_base_url_unknown', checkedAt: at, builtAt: null },
+          }),
         ]),
     });
     const stopped = (name: string): Element | null => switchesOf(root, name).querySelector('[data-testid="bastion-catalogue-stopped"]');
     const line = (name: string): Element | null => switchesOf(root, name).querySelector('[data-testid="bastion-catalogue-line"]');
-    // The reasons stand in the section of the web interface, in plain view, each with what to do, in place of the line of the last build.
-    expect(text(stopped('partners')!)).toContain('the main installation admits no request without a credential');
-    expect(text(stopped('partners')!)).toContain('endpoints.default.auth.anonymous');
-    expect(text(stopped('standby')!)).toContain('server.additional_base_urls');
-    expect(text(stopped('standby')!)).toContain('Connect it, or add its address there');
+    const words = (el: Element): string => {
+      const copy = el.cloneNode(true) as Element;
+      copy.querySelectorAll('.material-icons').forEach((i) => i.remove());
+      return text(copy);
+    };
+    // The reasons stand one line each under the row, the key named as its path in the Helm configuration, in place of the last build.
+    expect(words(stopped('partners')!)).toBe(
+      'The web interface shows nothing: the Helm configuration admits no request without a credential (endpoints.default.auth.anonymous).',
+    );
+    // The newest contact's base URL is the one the installation does not list.
+    expect(words(stopped('standby')!)).toBe(
+      'Not built: https://packages.example.com is not in config.server.additional_base_urls of the Helm configuration.',
+    );
+    expect(words(stopped('silent-url')!)).toBe('Not built: the Bastion reported no base URL.');
+    expect(stopped('unseen')).toBeNull();
+    expect(text(line('unseen')!)).toBe('Built once the Bastion has made contact');
     expect(line('partners')).toBeNull();
     expect(limitsOf(root, 'partners').querySelector('[data-testid="bastion-catalogue-stopped"]')).toBeNull();
-    // A built catalogue and one not built yet say so under the switch; no warning.
+    // A built catalogue and one not built yet say so after the switch's word; no warning.
     expect(stopped('edge')).toBeNull();
-    expect(text(line('edge')!)).toMatch(/^Last built .+\.$/);
-    expect(text(line('fresh')!)).toBe('Not built yet. The first build follows within seconds.');
+    expect(text(line('edge')!)).toMatch(/^Last built \S.*ago$/);
+    expect(text(line('fresh')!)).toBe('Not built yet');
     // The web interface off: nothing of a catalogue, also while the builder still holds one until its run.
     expect(stopped('off')).toBeNull();
     expect(line('off')).toBeNull();

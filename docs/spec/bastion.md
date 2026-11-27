@@ -4111,6 +4111,17 @@ page too ([api-and-ui.md](api-and-ui.md) Q-UI-958). The clause "the connection i
 The Vitest cases: an encrypted connection a Bastion can read has no line, one it cannot names its reason with the link
 (`bastions.spec.ts`, "R-BAS-071 an encrypted connection is judged by its handover reasons like a plain one").
 
+*Amended on 2026-11-27 (W-39, [api-and-ui.md](api-and-ui.md) R-UI-240, R-UI-267,
+[Q-UI-1621](api-and-ui.md#q-ui-1621--a-bastions-main-settings-are-rows-of-name-and-control-a-reader-reads-the-word)):* the switch is a
+setting row after the web interface's two rows; its sentence without the key, "Large files go from the object store to this Bastion by a
+link per file. The main installation still decides and counts every download.", stands behind the info sign after the row's name; what
+leaves for the DMZ stays visible as one muted line under the switch, "Hands this Bastion the key of each file it reads from an encrypted
+connection.", while a connection is encrypted, before the switch is on too: the list reads the connections' states once per load while a
+registration exists and the viewer holds `settings:read`. A reader reads **On** or **Off** in the row. A connection's line reads "Files
+of <name> still come through the main installation: <reasons>.", one line in the warning colour with its icon under the row. Vitest:
+"R-BAS-071 the line that a Bastion is handed each file's key shows only while an encrypted connection exists, before the switch is on
+too", and the cases above in their row's words.
+
 ### R-BAS-072 · The Bastion offers to take a handover on a miss
 Priority: **P1** · Covers: quader-only
 
@@ -5648,7 +5659,7 @@ throughput is enforced at the Bastion, on every byte it reads.
   catalogue pull take from the total only, the catalogue below the callers' misses in priority: it reads from a slice only while the slice
   is less than half used ([Q-BAS-458](#q-bas-458--the-catalogue-reads-from-a-slice-only-while-it-is-less-than-half-used)). An anonymous
   share of 0 admits no anonymous miss; a share of 1 is the total alone.
-- **The figures**: `limits.throughput.bytesPerSecond`, the card's "Maximum throughput to this Bastion" in MB/s, **200 MB/s by default**, of
+- **The figures**: `limits.throughput.bytesPerSecond`, the card's row "Maximum throughput" in MB/s, **200 MB/s by default**, of
   which the anonymous share is 50 MB/s ([Q-BAS-455](#q-bas-455--the-throughput-is-200-mbs-by-default-a-quarter-for-anonymous-callers));
   `null` is unlimited. On demand `bytesPerHour` per class (`anonymous`, `signedIn`, `catalogue`), unlimited by default. The card says that
   the figure is the Bastion's share of the real link between the two networks and that only misses cross it (R-UI-240). A new figure holds
@@ -6283,7 +6294,10 @@ builds no documentation and deletes what was built (R-BAS-104, R-BAS-108; `TestR
 tree; `docs` off hides the documentation at once (R-BAS-112). *Built on 2026-11-26 (W-35's P11):* the documentation by `docs` and the
 wiki at the builder, at the data path and on the pages (R-BAS-124 to R-BAS-126). *Built on 2026-11-27 (W35-P9f):* a change of a
 switch starts the builder's run within its debounce (the change area `bastion_configuration`, R-BAS-105), so the first catalogue follows
-the switch within seconds and `gui` off deletes the catalogue then.
+the switch within seconds and `gui` off deletes the catalogue then. *Since 2026-11-27 (W-39,
+[api-and-ui.md](api-and-ui.md#q-ui-1621--a-bastions-main-settings-are-rows-of-name-and-control-a-reader-reads-the-word) Q-UI-1621):*
+the switches are the card's first two setting rows, **Web interface** and **Documentation**, each with its help behind the info sign; a
+reader reads **On** or **Off**; the line that documentation on does nothing while the web interface is off is gone (the two rows say it).
 
 Acceptance criteria:
 
@@ -15297,7 +15311,13 @@ administrator whose web interface stayed empty learned nothing of why.
 minute otherwise. *Since 2026-11-27 (B-1127h,
 [api-and-ui.md](api-and-ui.md#q-ui-1616--a-bastions-web-interface-is-a-section-of-the-cards-plain-view-not-a-detail-of-its-limits)
 Q-UI-1616)* the switches are a section of the card's plain view, and a stop's reason stands there in place of the line of the last
-build, no longer among the warnings of **Limits**. **Applied in the spec:** R-BAS-104, [api-and-ui.md](api-and-ui.md) R-UI-240; code:
+build, no longer among the warnings of **Limits**. *Since 2026-11-27 (W-39,
+[api-and-ui.md](api-and-ui.md#q-ui-1624--every-warning-of-a-bastions-card-is-one-line-under-what-it-concerns) Q-UI-1624)* each reason is
+one line under the row **Web interface**, the key named as its path in the Helm configuration: "The web interface shows nothing: the
+Helm configuration admits no request without a credential (endpoints.default.auth.anonymous)."; `bastion_base_url_unknown` is told apart
+by the contacts, "Built once the Bastion has made contact" (muted, no warning) before the first, "Not built: <the newest contact's base
+URL> is not in config.server.additional_base_urls of the Helm configuration." or "Not built: the Bastion reported no base URL." after it.
+**Applied in the spec:** R-BAS-104, [api-and-ui.md](api-and-ui.md) R-UI-240; code:
 [bastion_registrations_api.go](../../internal/api/v1/bastion_registrations_api.go),
 [bastion-switches.ts](../../web/src/app/features/bastions/bastion-switches.ts).
 

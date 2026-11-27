@@ -7,6 +7,7 @@ import { ErrorNotice } from '../../shared/error-notice';
 import { fieldErrorAt } from '../../shared/field-errors';
 import { asApiError } from '../../shared/paged-resource';
 import { Busy } from '../../shared/ui/busy';
+import { Help } from '../../shared/ui/help';
 import { unlistedContacts } from './egress';
 
 /** One row of the list being edited: a key that survives removing a row above it, and the text. */
@@ -19,10 +20,11 @@ interface Row {
  * **Addresses this Bastion connects from** on a registration's card (R-UI-243, bastion.md R-BAS-017): the main installation believes
  * the caller's address a Bastion forwards, and the address its check names, only from these networks (Q-BAS-334, Q-BAS-430).
  *
- * The plain path is the warning (Q-UI-1483, part `warnings`): it stands on the card while the list is empty, and for every address a
- * replica's last contact came from that the list does not hold, each with **Add <address>**, one `PATCH` of the list with that address
- * (Q-UI-1482), so an administrator who registered a Bastion enters its address in one click after its first handshake. The list itself
- * (part `list`) stands in the card's **Details** (R-UI-240) and is a field per
+ * The plain path is the warning (Q-UI-1483, part `warnings`), one line each (Q-UI-1624): for every address a replica's last contact came
+ * from that the list does not hold, each with **Add <address>**, one `PATCH` of the list with that address (Q-UI-1482), so an
+ * administrator who registered a Bastion enters its address in one click after its first handshake; and while the list is empty, after a
+ * contact that no such offer covers. The list itself (part `list`) stands in the card's **Details** (R-UI-240), its help behind the info
+ * sign beside its heading (R-UI-267), and is a field per
  * network, each as wide as the longest IPv6 network (the width of a host), with **Add address**, **Remove** and **Save changes**; one
  * empty field stands for the empty list, the default of a new registration. Who may change a registration (`endpoints:write`) edits it;
  * who may only read gets the networks as text (Q-UI-960). A refusal stands under the field it names and as a whole under the list
@@ -30,23 +32,24 @@ interface Row {
  */
 @Component({
   selector: 'quader-bastion-egress',
-  imports: [Busy, ErrorNotice],
+  imports: [Busy, ErrorNotice, Help],
   template: `
     @if (part() === 'warnings') {
-      @if (empty()) {
+      <!-- The empty list warns only where it matters and no offer says it already (Q-UI-1624): after a contact. -->
+      @if (emptyWarning()) {
         <p class="hint warn line" data-testid="bastion-egress-empty">
           <span class="material-icons inline" aria-hidden="true">warning</span
-          ><span i18n="@@bastion.egress.empty"
-            >No address is listed: every caller through this Bastion counts as the Bastion's own address at the main installation, with one
-            budget and one block for all, and the audit log names the Bastion's address instead of the caller's.</span
-          >
+          ><span i18n="@@bastion.egress.empty">No address this Bastion connects from is listed: all its callers share one budget and one block.</span>
         </p>
       }
       @for (a of unlisted(); track a) {
         <div class="line offer" data-testid="bastion-egress-unlisted">
           <p class="hint warn">
             <span class="material-icons inline" aria-hidden="true">warning</span
-            ><span i18n="@@bastion.egress.unlisted">The last contact came from <span translate="no">{{ a }}</span>, which is not listed.</span>
+            ><span i18n="@@bastion.egress.unlisted"
+              >Its last contact came from <span translate="no">{{ a }}</span>, which is not listed: callers through it share one budget and one
+              block.</span
+            >
           </p>
           @if (canWrite()) {
             <button class="btn btn-default btn-sm" type="button" [disabled]="busy()" [quaderBusy]="busy()" (click)="add(a)">
@@ -56,12 +59,9 @@ interface Row {
         </div>
       }
     } @else {
-      <h4 [id]="headingId()" i18n="@@bastion.egress.heading">Addresses this Bastion connects from</h4>
-      <p class="hint note" [id]="noteId()" i18n="@@bastion.egress.note">
-        The main installation believes the caller's address a Bastion forwards only from these addresses.
-      </p>
+      <h4><span class="help-anchor" [id]="headingId()">{{ heading }}</span><quader-help [text]="help" [about]="heading" /></h4>
       @if (canWrite()) {
-        <div class="rows" role="group" [attr.aria-labelledby]="headingId()" [attr.aria-describedby]="noteId()">
+        <div class="rows" role="group" [attr.aria-labelledby]="headingId()">
           @for (row of rows(); track row.id; let i = $index) {
             <div class="row">
               <input
@@ -96,7 +96,12 @@ interface Row {
           </button>
         </div>
       } @else {
-        <p class="state-text" data-testid="bastion-egress-list" translate="no">{{ empty() ? noneText : listed().join(', ') }}</p>
+        <p class="state-text" data-testid="bastion-egress-list">
+          <span translate="no">{{ empty() ? noneText : listed().join(', ') }}</span>
+          @if (bastion().declared) {
+            <span class="muted"> · <ng-container i18n="@@bastion.egress.from-helm">from the Helm configuration</ng-container></span>
+          }
+        </p>
       }
     }
     @if (error(); as e) {
@@ -177,12 +182,18 @@ export class BastionEgress {
   /** A registration the configuration declares takes its networks from there (R-BAS-127): the list is text then. */
   protected readonly canWrite = computed(() => this.session.has('endpoints:write') && !this.bastion().declared);
   protected readonly headingId = computed(() => `bastion-egress-${this.bastion().name}`);
-  protected readonly noteId = computed(() => `bastion-egress-note-${this.bastion().name}`);
+  protected readonly heading = $localize`:@@bastion.egress.heading:Addresses this Bastion connects from`;
+  protected readonly help = $localize`:@@bastion.egress.note:The main installation believes the caller's address a Bastion forwards only from these addresses. While none is listed, all callers count as the Bastion's own address.`;
 
   /** The list the server answered last; it follows the registration whenever that is read again. */
   protected readonly listed = computed(() => this.bastion().egress);
   protected readonly empty = computed(() => this.listed().length === 0);
   protected readonly unlisted = computed(() => unlistedContacts(this.bastion()));
+  /**
+   * The empty list's warning: only after a replica made contact, and only where no offer of a contact's address stands, which says
+   * the same with the address to add (Q-UI-1624). Before a contact there is nothing to act on.
+   */
+  protected readonly emptyWarning = computed(() => this.empty() && this.bastion().contacts.length > 0 && this.unlisted().length === 0);
 
   private nextId = 0;
   /**

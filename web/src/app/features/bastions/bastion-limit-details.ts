@@ -7,6 +7,7 @@ import { TextField } from '../../shared/access/fields';
 import { ErrorNotice } from '../../shared/error-notice';
 import { asApiError } from '../../shared/paged-resource';
 import { Busy } from '../../shared/ui/busy';
+import { Help } from '../../shared/ui/help';
 import { BastionLimits } from './presets';
 
 /** How a figure reads in its field: a count, a share in per cent, or gigabytes. */
@@ -118,12 +119,14 @@ function setAt(target: Record<string, unknown>, key: string, value: unknown): vo
  * interface, the timeout after failed sign-ins, the blocks, the networks without flood protection), the slots to the main installation,
  * the anonymous ceiling, the throughput's anonymous share and its GB an hour per class. A holder of `limits:write` changes them in one
  * form with one **Save changes**, a merge patch of `limits` with the registration's `ETag`; a refusal stands under the form with every
- * fact of its answer, and the fields keep what was typed (Q-UI-1487). A reader sees the figures as text (Q-UI-960).
+ * fact of its answer, and the fields keep what was typed (Q-UI-1487). A reader sees the figures as text (Q-UI-960). What a group of
+ * the slots, the ceiling and the throughput means stands behind the info sign beside its heading, what the exempt networks mean behind
+ * the field's sign, whose hint keeps the format (R-UI-267).
  */
 @Component({
   selector: 'quader-bastion-limit-details',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Busy, ErrorNotice, TextField],
+  imports: [Busy, ErrorNotice, Help, TextField],
   template: `
     @if (canWrite()) {
       <form (submit)="save($event)" novalidate>
@@ -145,15 +148,13 @@ function setAt(target: Record<string, unknown>, key: string, value: unknown): vo
           label="Networks without flood protection"
           name="exemptNetworks"
           i18n-hint="@@bastion.details.exempt-hint"
-          hint="Addresses or networks, separated by commas: no flood figure, timeout or block applies to them."
+          hint="Addresses or networks, separated by commas"
+          [help]="exemptHelp"
           [value]="exempt()"
           (valueChange)="exempt.set($event)"
         />
         @for (g of otherGroups; track g) {
-          <h4>{{ legend(g) }}</h4>
-          @if (hintOf(g); as h) {
-            <p class="hint group-hint">{{ h }}</p>
-          }
+          <h4><span class="help-anchor">{{ legend(g) }}</span><quader-help [text]="hintOf(g)" [about]="legend(g)" /></h4>
           <div class="fields">
             @for (f of fieldsOf(g); track f.key) {
               <quader-text-field width="number" [label]="f.label" [name]="f.key" [value]="texts()[f.key] ?? ''" (valueChange)="set(f.key, $event)" [error]="errorOf(f.key)" />
@@ -174,10 +175,10 @@ function setAt(target: Record<string, unknown>, key: string, value: unknown): vo
           <dt>{{ legend(g) }}</dt>
           <dd>{{ readText(g) }}</dd>
         }
-        <dt i18n="@@bastion.flood.exempt">Networks without flood protection</dt>
+        <dt><span class="help-anchor" i18n="@@bastion.flood.exempt">Networks without flood protection</span><quader-help [text]="exemptHelp" [about]="exemptName" /></dt>
         <dd translate="no">{{ exemptText() }}</dd>
         @for (g of otherGroups; track g) {
-          <dt>{{ legend(g) }}</dt>
+          <dt><span class="help-anchor">{{ legend(g) }}</span><quader-help [text]="hintOf(g)" [about]="legend(g)" /></dt>
           <dd>{{ readText(g) }}</dd>
         }
       </dl>
@@ -220,9 +221,6 @@ function setAt(target: Record<string, unknown>, key: string, value: unknown): vo
     .exempt {
       max-inline-size: var(--quader-settings-measure);
     }
-    .group-hint {
-      margin: calc(-1 * var(--quader-space-1)) 0 var(--quader-space-2);
-    }
     .read {
       display: grid;
       grid-template-columns: minmax(0, max-content) minmax(0, 1fr);
@@ -262,7 +260,9 @@ export class BastionLimitDetails {
   private readonly notifier = inject(Notifier);
   private readonly locale = inject(LOCALE_ID);
 
-  protected readonly floodGroups: readonly GroupId[] = ['anonymous', 'authenticated', 'gui', 'failedAuth', 'blocking'];
+  protected readonly exemptName = $localize`:@@bastion.flood.exempt:Networks without flood protection`;
+  protected readonly exemptHelp = $localize`:@@bastion.details.exempt-help:No flood figure, timeout or block applies to them.`;
+  protected readonly floodGroups: readonly GroupId[] =['anonymous', 'authenticated', 'gui', 'failedAuth', 'blocking'];
   protected readonly otherGroups: readonly GroupId[] = ['slots', 'ceiling', 'throughput'];
   private readonly fields = detailFields();
 
@@ -318,9 +318,9 @@ export class BastionLimitDetails {
       case 'slots':
         return $localize`:@@bastion.details.slots-hint:The requests this Bastion's replicas send to the main installation at once, together.`;
       case 'ceiling':
-        return $localize`:@@bastion.details.ceiling-hint:What all anonymous callers of this Bastion together may ask of the main installation. An empty field is unlimited.`;
+        return $localize`:@@bastion.details.ceiling-hint:What all anonymous callers of this Bastion together may ask of the main installation. Empty is unlimited.`;
       case 'throughput':
-        return $localize`:@@bastion.details.throughput-hint:The anonymous callers' share of the maximum throughput, and the volume each class may read an hour. An empty field is unlimited.`;
+        return $localize`:@@bastion.details.throughput-hint:The anonymous callers' share of the maximum throughput, and what each class may read an hour. Empty is unlimited.`;
       default:
         return '';
     }

@@ -10379,92 +10379,91 @@ The screen of the owner's decisions of 2026-11-26 on a Bastion (W-34; [bastion.m
 ([bastion.md](bastion.md#q-bas-323--a-bastion-is-configured-on-its-card-at-the-main-installation) Q-BAS-323). Simple by default, details on
 demand ([Q-UI-1480](#q-ui-1480--a-bastions-card-shows-the-preset-the-mode-and-the-throughput-everything-else-is-behind-details)).
 
-- **The web interface**, a section of its own in the card's plain view, after the handover's section and before **Limits**
-  ([Q-UI-1616](#q-ui-1616--a-bastions-web-interface-is-a-section-of-the-cards-plain-view-not-a-detail-of-its-limits)): W-35's switches
-  **Web interface** and **Documentation** with that package's sentences, the line of the last build or in its place why nothing is built,
-  and the warning of a catalogue a restart loses ([bastion.md](bastion.md) R-BAS-102, R-BAS-104).
-- **The plain path**, a section **Limits** on every card (R-BAS-007), after the card's actions, the handover's section and the web
-  interface's:
-  - **Preset**: a segmented control **Internet**, **Partner network**, **Internal**, with one sentence under it for the chosen one
-    ("Strict limits for callers from the internet; administrators too." / "The installation's own profiles for known partners." / "No
-    limits, everything counted."), and **Custom** shown, not offered, once a kind rule or a flood figure differs. A change opens the dialog
-    of [Q-UI-1481](#q-ui-1481--a-preset-is-applied-after-a-dialog-that-names-what-it-replaces).
-  - **Mode**: the line "Mode: Enforce" or "Mode: Audit. Limits are counted, not applied at this Bastion." with **Switch to Audit…** or
-    **Switch to Enforce…**, the dialogs of R-UI-182 for this Bastion, after recent authentication.
-  - **Maximum throughput to this Bastion**: a number field in MB/s, as wide as five digits, holding the registration's figure, 200 by default
-    ([bastion.md](bastion.md) Q-BAS-455; a default is a value in the field; emptied it is "Unlimited"), with **Save changes**, and below it
-    the sentence "Set this to the Bastion's share of the link between the two networks. Only what the Bastion does not hold crosses it;
-    what it serves from its cache does not."
-- **Details** (a closed disclosure): the flood figures per address (anonymous, signed-in and pages: requests per second, burst, misses a
-  minute; the failed-authentication timeout; the blocks; the exempt networks), the slots to the main installation, the anonymous ceiling,
-  the throughput's anonymous share and GB per hour per class, the egress addresses (R-UI-243), and the link **Rules of this Bastion** to
-  R-UI-241.
-- **The state, live** (R-UI-213's `live()`, from the replicas' reported status, R-LIM-045): per card one line "Cache 14.0 of 20.0 GB ·
-  97 % hits · 9.0 GB protected · 41 MB/s from the main installation", the throughput against its cap where one is set as a meter (warning
-  and danger colours, never green), and "4 callers limited now · 1 address blocked" linking to R-UI-241's **Blocks**. "No report in the
-  last 5 minutes" where no replica reported.
-- **The edge warning**: where a configured per-address request figure lies above the edge figure a replica reported (R-BAS-093), the line
-  "The ingress of this Bastion refuses more than 1,000 requests a second per address before these figures apply." stands under the flood
-  figures, in the warning colour.
-- **Who sees what** (R-UI-067): a holder of `limits:write` changes the limits, the mode and the throughput; a holder of `endpoints:write` the
-  switches and the egress addresses (Q-BAS-325); a reader sees the values as text, as Q-UI-960 says of a card's switch.
-- Every change sends `PATCH /api/v1/bastions/{name}` with the card's `ETag`; a `412` or a refusal stands under the field with every fact of
-  its answer (R-UI-216), and the field keeps the server's value.
+*Rewritten on 2026-11-27 (W-39, the owner: "Überall massig Text Slop. Info-Texte zu Settings gehören als Hover hinter ein kleines
+Info-Zeichen", "sortiere neu", "Haupt-Settings"):* the card reads top to bottom
+([Q-UI-1620](#q-ui-1620--a-bastions-card-reads-head-main-settings-limits-details-replicas-tokens)):
 
-*Built (package E12, 2026-11-26)*, as the card's section `<quader-bastion-limits>`
-([bastion-limits.ts](../../web/src/app/features/bastions/bastion-limits.ts)) after the switch of the direct reads (*since B-1127h* after
-the section **Web interface**), in this order: the heading
-**Limits**; the state line, live with the list's read every minute (R-UI-213), summed over the replicas that reported in the last five
-minutes ([bastion-state.ts](../../web/src/app/features/bastions/bastion-state.ts),
-[Q-UI-1489](#q-ui-1489--the-state-line-takes-the-cache-once-adds-up-each-replicas-own-figures-and-counts-a-blocked-address-once); *since
-W34-E19* the cache's fill, capacity and protected bytes added up over the replicas whose cache is their own and the shared bucket's once,
-as each report's `cache.shared` says, [Q-BAS-480](bastion.md#q-bas-480--a-replicas-status-says-whether-its-cache-is-the-bastions-and-the-card-adds-up-only-caches-of-their-own)), with the throughput's meter (the
-usage overview's `<quader-usage-meter>`, so the data colour below 70 %, then warning and danger, never green) and "4 callers limited now ·
-1 address blocked" linking to `/admin/bastions/{name}/limits/blocks` for a holder of `limits:read`, and under it why, each reason of the
-closed list (`refusals`, `failed_auth`, `refused_requests`) in words with its number of addresses (`blockReasons`); the warnings in plain view, the edge
-warning ([Q-UI-1486](#q-ui-1486--the-edge-warning-stands-in-plain-view-not-under-the-flood-figures-in-details)) and R-UI-243's warnings;
-the preset (a
-segmented control of three pressed buttons, **Custom** a pressed segment that is no button), its dialog
-([bastion-preset-dialog.ts](../../web/src/app/features/bastions/bastion-preset-dialog.ts), with the presets' table it reads from `GET /api/v1/bastions/presets`,
-[Q-UI-1485](#q-ui-1485--the-screen-holds-the-presets-table-to-name-what-a-preset-replaces)); the mode with R-UI-182's dialog
-(`LimitModeDialog` of [limit-mode.ts](../../web/src/app/features/limits/limit-mode.ts) with the Bastion's name and its sentences, no
-preview, H-2365), whose `401 reauthentication_required` stands in the dialog while the session asks for the sign-in; the throughput field
-(`field-w-number`, 200 for a new registration, empty for unlimited). **Details** holds `<quader-bastion-limit-details>`
+- **Main settings**, rows of name and control ([Q-UI-1621](#q-ui-1621--a-bastions-main-settings-are-rows-of-name-and-control-a-reader-reads-the-word),
+  `<quader-setting>` of R-UI-267), each with its help behind the info sign after its name: **Web interface** and **Documentation**
+  (W-35's switches, [bastion.md](bastion.md) R-BAS-102, in the card's plain view by
+  [Q-UI-1616](#q-ui-1616--a-bastions-web-interface-is-a-section-of-the-cards-plain-view-not-a-detail-of-its-limits)), then **Direct
+  reads from the object store** (R-BAS-071). Visible stays, one muted line under the control: what a public remote repository shows
+  through the web interface, and, while a connection is encrypted, that the direct reads hand the Bastion each file's key (R-UI-267's
+  "what becomes public or leaves for the DMZ"). After the web interface's switch its word and the time of the last build ("Last built 3
+  minutes ago"), "Not built yet", or "Built once the Bastion has made contact" while no replica made contact.
+- **Limits** (`h3`): first the section's warnings, then the rows **Preset** (a segmented control **Internet**, **Partner network**,
+  **Internal**, **Custom** shown and not offered once a kind rule or a flood figure differs; a change opens the dialog of
+  [Q-UI-1481](#q-ui-1481--a-preset-is-applied-after-a-dialog-that-names-what-it-replaces)), **Mode** (the word **Enforce** or **Audit**
+  with **Switch to Audit…** or **Switch to Enforce…**, the dialogs of R-UI-182 for this Bastion, after recent authentication), **Maximum
+  throughput** (a number field as wide as five digits, its row's name its `<label>`, "MB/s" after it, holding the registration's figure,
+  200 by default, [bastion.md](bastion.md) Q-BAS-455, emptied "Unlimited", with **Save changes**; under it the meter of the throughput
+  against it, warning and danger colours, never green) and **Now** (from the replicas' reported status of the last 5 minutes, R-LIM-045,
+  live with R-UI-213's `live()`: "Cache 14.0 of 20.0 GB · 97 % hits · 9.0 GB protected", the read rate "41 MB/s from the main
+  installation" only where no maximum is set, and "4 callers limited · 1 address blocked" linking to R-UI-241's **Blocks**, or "No report
+  in the last 5 minutes").
+- **Details** (a closed disclosure with the note "Flood protection, addresses, rules"): the flood figures per address (anonymous,
+  signed-in and pages: requests per second, burst, misses a minute; the failed-authentication timeout; the blocks; the exempt networks,
+  their format the field's hint and their meaning its help), the slots to the main installation, the anonymous ceiling, the throughput's
+  anonymous share and GB per hour per class (each group's help behind the sign beside its heading), the egress addresses (R-UI-243), and
+  the link **Rules of this Bastion** to R-UI-241.
+- **Help behind the sign** (R-UI-267): what each row, group and list does; the help texts are those of W-39's plan, section 2.7. A
+  sentence that only explains a setting is never a paragraph of the card.
+- **The warnings**, one line each in the warning colour with its icon, under what they concern
+  ([Q-UI-1624](#q-ui-1624--every-warning-of-a-bastions-card-is-one-line-under-what-it-concerns)): under the row **Web interface** why
+  nothing is built ("The web interface shows nothing: the Helm configuration admits no request without a credential
+  (endpoints.default.auth.anonymous).", "Not built: https://packages.example.com is not in config.server.additional_base_urls of the Helm
+  configuration." with the base URL of the newest contact, "Not built: the Bastion reported no base URL.") and a catalogue a restart
+  loses; under the row of the direct reads one line per connection whose files still come through the main installation, with the link
+  to the storage settings; at the head of **Limits** the edge ("The ingress refuses more than 60 requests a second per address, below this
+  Bastion's flood figures.") and R-UI-243's.
+- **Who sees what** (R-UI-067): a holder of `limits:write` changes the limits, the mode and the throughput; a holder of `endpoints:write`
+  the switches and the egress addresses (Q-BAS-325); a reader sees the same rows with each control's value in words, **On** or **Off**,
+  the preset's name, the mode, "150 MB/s" or **Unlimited** (Q-UI-960 for a row), the same signs, warnings and **Details** as text.
+- Every change sends `PATCH /api/v1/bastions/{name}` with the card's `ETag`; a `412` or a refusal stands under its row with every fact
+  of its answer (R-UI-216), and the control keeps the server's value.
+
+*Built (package E12, 2026-11-26; W-39 P2, 2026-11-27)*: the rows **Web interface** and **Documentation** are
+`<quader-bastion-switches>` ([bastion-switches.ts](../../web/src/app/features/bastions/bastion-switches.ts), what the builder says
+worded by `catalogueNote` of [bastion-state.ts](../../web/src/app/features/bastions/bastion-state.ts)), the row of the direct reads
+`<quader-bastion-handover>` ([bastion-handover.ts](../../web/src/app/features/bastions/bastion-handover.ts)), in that order in the
+card's plain view ([bastion-card.ts](../../web/src/app/features/bastions/bastion-card.ts)); the list reads the connections' states
+once per load while a registration exists and the viewer holds `settings:read`, for the key line and the reasons. **Limits** is
+`<quader-bastion-limits>` ([bastion-limits.ts](../../web/src/app/features/bastions/bastion-limits.ts)): the edge warning
+([Q-UI-1486](#q-ui-1486--the-edge-warning-stands-in-plain-view-not-under-the-flood-figures-in-details)) and R-UI-243's warnings, then
+the four rows; the state is summed over the replicas that reported in the last five minutes
+([Q-UI-1489](#q-ui-1489--the-state-line-takes-the-cache-once-adds-up-each-replicas-own-figures-and-counts-a-blocked-address-once);
+*since W34-E19* the cache's fill, capacity and protected bytes added up over the replicas whose cache is their own and the shared
+bucket's once, [Q-BAS-480](bastion.md#q-bas-480--a-replicas-status-says-whether-its-cache-is-the-bastions-and-the-card-adds-up-only-caches-of-their-own));
+the meter is the usage overview's `<quader-usage-meter>`; the preset's dialog
+([bastion-preset-dialog.ts](../../web/src/app/features/bastions/bastion-preset-dialog.ts)) reads the presets' table from `GET
+/api/v1/bastions/presets` ([Q-UI-1485](#q-ui-1485--the-screen-holds-the-presets-table-to-name-what-a-preset-replaces)); the mode's
+dialog is `LimitModeDialog` of [limit-mode.ts](../../web/src/app/features/limits/limit-mode.ts) with the Bastion's name and its
+sentences (no preview, H-2365), whose `401 reauthentication_required` stands in the dialog while the session asks for the sign-in.
+**Details** holds `<quader-bastion-limit-details>`
 ([bastion-limit-details.ts](../../web/src/app/features/bastions/bastion-limit-details.ts): the flood figures in five groups, the exempt
 networks as one field, the slots, the anonymous ceiling, the throughput's share and GB an hour per class, one **Save changes**,
 [Q-UI-1487](#q-ui-1487--the-details-are-one-form-whose-refusal-keeps-what-was-typed-and-the-exempt-networks-are-one-field)), R-UI-243's
-list and the link **Rules of this Bastion**. The list reads again every few seconds while a web interface waits for its first build
-(R-UI-213), every minute otherwise. English and German.
-
-The section **Web interface** is `<quader-bastion-switches>` ([bastion-switches.ts](../../web/src/app/features/bastions/bastion-switches.ts)),
-built by E12 in **Details** and *since 2026-11-27 (B-1127h,
-[Q-UI-1616](#q-ui-1616--a-bastions-web-interface-is-a-section-of-the-cards-plain-view-not-a-detail-of-its-limits))* the card's own
-section between the switch of the direct reads and **Limits** ([bastion-card.ts](../../web/src/app/features/bastions/bastion-card.ts)),
-under the heading **Web interface**, for a reader too: each switch with its sentence, or for a reader its state as a sentence (Q-UI-960);
-**Documentation** says that it takes effect only with the web interface, and a line says so where it is on without it; *since W35-P9f* a
-second line under **Web interface**, which describes the switch with its sentence, says that a public remote repository shows every package
-and version the builds fetched through it ([manual](../manual/admin/bastion.md#what-becomes-public)); while the web interface is on a line
-says "Last built" with the time of the builder's last run or "Not built yet" before its first, and in its place, *since W35-P9f*, why the
-main installation builds nothing, with what to do (the registration's `catalogue.reason`, [bastion.md](bastion.md) R-BAS-104,
-[Q-BAS-497](bastion.md#q-bas-497--the-registration-carries-the-builders-last-outcome-and-the-card-says-a-stop-in-plain-view)), in the
-warning colour; and W-35's sentence of a catalogue a restart loses (while `gui` is on and a contact reported `catalogueKept: false`).
+list and the link **Rules of this Bastion**. Why a reported address is blocked is the tab **Blocks**' (R-UI-241); the card no longer
+names the reasons. The list reads again every few seconds while a web interface waits for its first build (R-UI-213), every minute
+otherwise. English and German.
 
 Acceptance criteria:
 
-- Vitest (`bastions.spec.ts`, about 1 s): a new registration shows Internet, "Mode: Enforce" and 200 MB/s; **Details** is closed; a
-  holder of `endpoints:write` alone sees the limits as text; the edge warning for a reported figure below the configured one; the state
-  line from a status fixture and "No report in the last 5 minutes" without one. *As built:* "A Bastion's limits, throughput, switches and
-  state on its card (R-UI-240)", eleven cases, about 1.5 s with fixtures of a few hundred bytes: also the preset's dialog with what it
-  replaces and with nothing to replace, **Custom**, the mode's dialog refused for recent authentication and then sent, the throughput's
-  field, the details' merge patch, both halves of the permission split and the switches' sentences. *Since W35-P9f* also
-  "R-BAS-104 the card says what the main installation last built for the web interface, and why it builds nothing with what to do"
-  (both reasons, built, not built yet, nothing with the web interface off), and the switch **Web interface** described by the line of a
-  public remote ("R-UI-240 R-BAS-093 endpoints:write alone …"). *Since B-1127h* the first case also holds the section **Web interface**
-  between the direct reads and **Limits**, with its heading and its switch while **Details** is closed and nothing of it inside
-  **Details**; a reason of a stop stands in that section in place of the line of the last build, and none under **Limits**.
-- Rendered (rule 11): the card in both schemes, wide and narrow, with Internet, Custom and an Audit mode, the details open and closed;
-  since W35-P9f with both reasons of a stop and a built catalogue (`admin-bastions`, `admin-bastions-limits` in English and German);
-  since B-1127h with a registration that never made contact, its web interface off.
+- Vitest ([bastions.spec.ts](../../web/src/app/features/bastions/bastions.spec.ts), "A Bastion's limits, throughput, switches and state
+  on its card (R-UI-240)", sixteen cases, about 2 s with fixtures of a few hundred bytes): a new registration shows Internet, Enforce and
+  200 MB/s with the field labelled by its row, **Details** closed with its note, the main settings before **Limits** and nothing of them
+  in **Details**, no report, axe; "R-UI-240 W-39 the main settings are rows with a help sign and no paragraph under them" (each row's
+  name, its sign's name and sentence, the line that stays visible, no moved sentence on the card, the details' signs and the exempt
+  field's format); "R-UI-240 W-39 the read rate stands in the row Now only where no maximum is set"; the state from the replicas' reports
+  on both backends with the meter under the field and the callers without reasons; the edge warning first in the section; the preset's
+  dialog with what it replaces and with nothing to replace, **Custom**; the mode's dialog refused for recent authentication and then
+  sent; the throughput's field and its error; the details' merge patch; both halves of the permission split with the reader's words;
+  "R-BAS-102 …" (no line repeats Off, the lost catalogue's warning as the row's sibling); "R-BAS-104 …" (each reason's line with the
+  key as its Helm path, the base URL of the newest contact, no base URL, waiting for a contact, built, not built yet, nothing with the
+  web interface off). The direct reads' row: "Direct reads from the object store on a Bastion card (R-BAS-071)", with the key line only
+  while an encrypted connection exists.
+- Rendered (rule 11): `admin-bastions`, `admin-bastions-read`, `admin-bastions-limits` in both schemes, at 1,440, 1,024 and 390 px,
+  `admin-bastions-limits` in English and German.
 
 ### R-UI-241 · A Bastion's limits page
 Priority: **MVP** · Covers: quader-only
@@ -10549,14 +10548,23 @@ for an empty list) in its **Details** (R-UI-240).
 
 *Amended on 2026-11-26 ([bastion.md](bastion.md) R-BAS-127, [Q-UI-1497](#q-ui-1497--a-declared-bastion-registration-says-where-it-comes-from-with-the-words-of-a-declared-account)):*
 a registration the configuration declares shows its networks as the line of text a reader sees, with the warnings and without **Add**,
-also to a holder of `endpoints:write`: they follow the Helm values.
+also to a holder of `endpoints:write`: they follow the Helm configuration, and the line ends "· from the Helm configuration" (W-39).
+
+*Amended on 2026-11-27 (W-39, [Q-UI-1624](#q-ui-1624--every-warning-of-a-bastions-card-is-one-line-under-what-it-concerns)):* the
+warnings are one line each with their consequence: an offer reads "Its last contact came from 198.51.100.21, which is not listed: callers
+through it share one budget and one block." with **Add 198.51.100.21**; the empty list's line, "No address this Bastion connects from
+is listed: all its callers share one budget and one block.", stands only after a replica made contact and while no offer stands (before
+a contact there is nothing to act on, and an offer says the same with the address to add). The list's help ("The main installation
+believes the caller's address a Bastion forwards only from these addresses. While none is listed, all callers count as the Bastion's own
+address.") stands behind the info sign beside its heading (R-UI-267), for a reader too.
 
 Acceptance criteria:
 
 - Vitest (about 1 s): the empty list's warning; a contact from an unlisted address offers to add it, and **Add** sends one `PATCH` with the
   list ([bastions.spec.ts](../../web/src/app/features/bastions/bastions.spec.ts), "The addresses a Bastion connects from (R-UI-243)": also a
   refused `/0` under its field with the entries kept, the empty list saved as `[]`, the reader's view, and the containment of IPv4 and IPv6
-  addresses in networks).
+  addresses in networks). *Since W-39:* "R-UI-243 the empty list warns only after a contact that no offer covers, never before a
+  contact", the offers' words and the list's help sign.
 
 ### R-UI-225 · The installation serves its own imprint and privacy notice from the chart's Markdown
 Priority: **P1** · Covers: quader-only
@@ -24245,6 +24253,9 @@ table's cell under its column **State** (the upstream registries, the trust anch
 
 **Choice:** (a). **Applied in the spec:** [bastion.md](bastion.md) R-BAS-071 (as built); the style guide's switch
 ([ui-style-guide.md](../developer/ui-style-guide.md#forms)); code: [bastion-handover.ts](../../web/src/app/features/bastions/bastion-handover.ts).
+*Amended on 2026-11-27 by [Q-UI-1621](#q-ui-1621--a-bastions-main-settings-are-rows-of-name-and-control-a-reader-reads-the-word):* in a
+setting row the name stands beside the value, so a reader reads the word alone (**On**, **Off**); the sentence stays for a switch
+outside a row.
 
 ### Q-UI-990 · With the data keys handed, an encrypted connection's field says how a Bastion reads it and why it cannot
 
@@ -30051,7 +30062,10 @@ Aufrufer".
 
 **Choice:** (a). **Applied in the spec:** R-UI-240, R-UI-241, R-UI-243. *Amended on 2026-11-27 by
 [Q-UI-1616](#q-ui-1616--a-bastions-web-interface-is-a-section-of-the-cards-plain-view-not-a-detail-of-its-limits):* the switches of
-W-35 are no longer behind **Details**; they are a section of the card's plain view.
+W-35 are no longer behind **Details**; they are a section of the card's plain view. *Amended on 2026-11-27 by
+[Q-UI-1620](#q-ui-1620--a-bastions-card-reads-head-main-settings-limits-details-replicas-tokens) and
+[Q-UI-1621](#q-ui-1621--a-bastions-main-settings-are-rows-of-name-and-control-a-reader-reads-the-word):* the preset, the mode and the
+throughput are rows of **Limits** beside the row **Now**, their sentences behind the info sign.
 
 ### Q-UI-1616 · A Bastion's web interface is a section of the card's plain view, not a detail of its limits
 
@@ -30078,6 +30092,65 @@ stands in its place. **Applied in the spec:** R-UI-240, [bastion.md](bastion.md)
 [bastion-card.ts](../../web/src/app/features/bastions/bastion-card.ts),
 [bastion-switches.ts](../../web/src/app/features/bastions/bastion-switches.ts),
 [bastion-limits.ts](../../web/src/app/features/bastions/bastion-limits.ts).
+
+### Q-UI-1620 · A Bastion's card reads head, main settings, Limits, Details, Replicas, Tokens
+
+Status: **Decided by the development agent on 2026-11-27** (W-39's plan, D3) — selected from the options below; the owner reviews it at
+the walkthrough. R-UI-240.
+
+Context: the owner, 2026-11-27, on Admin area › Bastions: "sortiere neu", the main settings first, what is "absolute Randinformation"
+last. The card stacked the facts, the direct reads, the web interface, **Limits** with its state line, and the two tables **Last contact**
+and **Tokens**, which took about 40 % of a card's height at 1,440 px.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Head (name, state, actions, description), the three switches, **Limits** with its rows, **Details**, **Replicas**, **Tokens** (chosen) | | Main settings first, as the owner asked; the peripheral lists last, one line each, in the closed sections the guide uses | A lost contact shows at the card's end; its section opens by itself and its line is the warning colour |
+| (b) **Replicas** and **Tokens** right under the head | | A lost contact is the first thing seen | What the owner calls peripheral above the main settings |
+| (c) **Limits** before the switches | | The limits are the largest block | The switches decide what the internet sees; the owner named them main settings |
+
+**Choice:** (a). Within the main settings the web interface's two rows come before the direct reads: what anonymous visitors see is the
+first decision (Q-UI-1616). **Created** stands last in **Details** (W-39's D12): rarely needed, kept. **Applied in the spec:** R-UI-240;
+code: [bastion-card.ts](../../web/src/app/features/bastions/bastion-card.ts).
+
+### Q-UI-1621 · A Bastion's main settings are rows of name and control; a reader reads the word
+
+Status: **Decided by the development agent on 2026-11-27** (W-39's plan, D4) — selected from the options below; the owner reviews it at
+the walkthrough. R-UI-240, R-UI-267.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `<quader-setting>` rows: the name (with its sign) in a column of 16 rem, the control beside it, one column below 40 rem of content; a reader sees **On** or **Off**, the preset's name, the mode, "150 MB/s" (chosen) | | Six settings in six lines; names and states read down two columns; GitLab's rows of project features do the same job this way | A layout the settings pages do not use; they save a form, the card switches at once |
+| (b) The name above the control, as on the settings pages | | One pattern | Twice the height for six settings on every card of the page |
+| (c) A table of settings | | Aligned | A table of controls, stacked at 390 px with every name twice |
+
+**Choice:** (a). In a row the name stands beside the value, so a reader reads the word alone; Q-UI-960's sentence ("**Direct reads from
+the object store** are on.") stays for a switch outside a row. The throughput's row name is the field's `<label>`, and the field's name
+("Maximum throughput of partners in MB/s") holds it (WCAG 2.5.3); the unit stands after the field, unheard. **Applied in the spec:**
+R-UI-240; code: [bastion-switches.ts](../../web/src/app/features/bastions/bastion-switches.ts),
+[bastion-handover.ts](../../web/src/app/features/bastions/bastion-handover.ts),
+[bastion-limits.ts](../../web/src/app/features/bastions/bastion-limits.ts).
+
+### Q-UI-1624 · Every warning of a Bastion's card is one line under what it concerns
+
+Status: **Decided by the development agent on 2026-11-27** (W-39's plan, D7) — selected from the options below; the owner reviews it at
+the walkthrough. R-UI-240, R-UI-243.
+
+Context: the warnings of the card were two to four lines each and the card's largest text; one said what the row above it already said
+("Documentation is on, but the web interface is off"); the state line repeated the throughput the meter under it showed; the block
+reasons repeated what the tab **Blocks** lists.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The texts of W-39's section 2.7, each warning under its row or at the head of **Limits**, the reason of a stop with the key named as its path in the Helm configuration; the documentation-idle line, the block reasons and the repeated read rate cut; the empty addresses warning only after a contact that no offer covers (chosen) | | Every sentence says what the name and the value do not; nothing to act on is not shown | The manual carries what the lines no longer say (the restart, the audit log's address) |
+| (b) Keep the warnings' words, only move the help | | A smaller change | Three-line warnings remain the page's largest text |
+| (c) One block of warnings at the card's top | | One place | A warning away from the switch it concerns |
+
+**Choice:** (a). The stop for an unknown base URL is told apart by the contacts: no contact yet is no warning but the muted "Built once
+the Bastion has made contact"; a contact that reported a base URL names it ("Not built: … is not in
+config.server.additional_base_urls of the Helm configuration."); a contact without one says so. The read rate stands in the row **Now**
+only where no maximum is set (W-39's D13). **Applied in the spec:** R-UI-240, R-UI-243, [bastion.md](bastion.md) Q-BAS-497; code:
+[bastion-state.ts](../../web/src/app/features/bastions/bastion-state.ts) `catalogueNote`,
+[bastion-egress.ts](../../web/src/app/features/bastions/bastion-egress.ts).
 
 ### Q-UI-1481 · A preset is applied after a dialog that names what it replaces
 
@@ -30861,7 +30934,9 @@ details on demand" (CLAUDE.md), and the aim of package E13 ([developer/bastion-l
 | (b) A field of the creation dialog | | Asked at once | No contact exists yet, so no address to offer; an expert setting in the creation flow, against the rule |
 | (c) Everything behind a disclosure now | | E12's final shape | The empty list's fault hidden behind a click |
 
-**Choice:** (a). **Applied in the spec:** R-UI-243.
+**Choice:** (a). **Applied in the spec:** R-UI-243. *Amended on 2026-11-27 by
+[Q-UI-1624](#q-ui-1624--every-warning-of-a-bastions-card-is-one-line-under-what-it-concerns):* each warning is one line with its
+consequence, at the head of **Limits**; the empty list warns only after a contact that no offer covers.
 
 ### Q-UI-1484 · The list is a field per network, and a refused entry keeps what was typed
 
