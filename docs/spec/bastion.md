@@ -7570,7 +7570,11 @@ the statements of [bastion_registration.sql](../../internal/meta/postgres/querie
 *Built on 2026-11-27 (W-40's P2):* the Bastion's part, `SetSwitches` and `hidden` of
 [catalogue.go](../../internal/bastion/catalogue/catalogue.go), the record of [state.go](../../internal/bastion/catalogue/state.go),
 [data.go](../../internal/bastion/gui/data.go), [seo.go](../../internal/bastion/gui/seo.go) and [crawl.go](../../internal/bastion/gui/crawl.go).
-*Not built:* the pages' flat view (W-40's P5) and the card's switch (W-40's P6).
+*Built on 2026-11-27 (W-40's P4b):* what the shared views leave out while the token `REPOSITORIES_SHOWN` is false (the column and the fact
+**Repositories** of a package's page, the table of a version's Details, the select of a command's panel, a findings card's heading and its
+table's caption, the documentation's line "Repository: …", the keys of a delivery note; api-and-ui.md R-UI-269,
+[repositories-shown.ts](../../web/src/app/core/repositories-shown.ts)). *Not built:* the Bastion's binding of the token and the pages'
+flat view (W-40's P5) and the card's switch (W-40's P6).
 
 Acceptance criteria:
 

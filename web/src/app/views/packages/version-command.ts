@@ -1,7 +1,11 @@
+import { inject } from '@angular/core';
+import { PackageReads } from '../../api/package-reads';
 import { PackageVersion } from '../../api/packages-api';
 import { setupCommands } from '../../core/project-links';
+import { SystemClients } from '../../core/system-clients';
 import { CLAMAV_KEY, isSystemRepositoryName, systemClientSentence, upstreamKeyOf, upstreamName } from '../../core/upstream-project';
 import { clientsOf } from '../../features/setup/clients';
+import { roleFacts } from './ansible-role';
 import { CLAMAV_FORMAT } from './clamav-definitions';
 
 /** The qualified name of the repository of ClamAV's definitions (R-REPO-075). */
@@ -78,6 +82,58 @@ export function versionCommand(format: string, version: PackageVersion, clamavCl
   }
   const held = version.repositories[0];
   return held ? { kind: 'note', cause: 'system', note: systemClientSentence(upstreamKeyOf(held.key), 'version') } : { kind: 'none' };
+}
+
+/**
+ * What a client is offered for one version, the head's rule in one place (R-UI-111, R-UI-269, Q-UI-1634): the command (a menu through
+ * the repositories a client can take it from, the note why none can, or ClamAV's Set up client), the name the clients install it by (a
+ * role's `role/<id>`, Q-ANS-114, the version's name otherwise), its kind (`metadata.kind`: an OCI artifact's, a NuGet package's) and an
+ * image's digest (`metadata.digest`, the panel's pull by digest, R-OCI-041; null for any other kind).
+ */
+export interface VersionCommandFacts {
+  readonly command: VersionCommand;
+  readonly name: string;
+  readonly kind: string | null;
+  readonly digest: string | null;
+}
+
+/** The facts of `version`'s command, as the head of its page and the panel of a list's row decide them. */
+export function versionCommandFacts(version: PackageVersion, clamavClosed: boolean): VersionCommandFacts {
+  const k = version.metadata['kind'];
+  const kind = typeof k === 'string' ? k : null;
+  const d = version.metadata['digest'];
+  return {
+    command: versionCommand(version.format, version, clamavClosed),
+    name: roleFacts(version)?.packageName || version.name,
+    kind,
+    digest: kind === 'image' && typeof d === 'string' && d.startsWith('sha256:') ? d : null,
+  };
+}
+
+/**
+ * The reads of a list's rows' commands (R-UI-269, Q-UI-1634): a row of the flat list of packages or of a package's versions knows the
+ * version, not whether its holders are disabled, refused by a remote's rules or a system repository, so its panel reads the version's
+ * details when it opens and decides with the head's rule. Called in an injection context; it gives one function per version and keeps
+ * it, so that a row read again in place (R-UI-213) keeps its panel's answer, and a row whose version changed asks anew.
+ */
+export function versionCommandReads(): (packageId: string, version: string) => () => Promise<VersionCommandFacts> {
+  const reads = inject(PackageReads);
+  const clients = inject(SystemClients);
+  const made = new Map<string, () => Promise<VersionCommandFacts>>();
+  return (packageId, version) => {
+    const key = `${packageId}@${version}`;
+    let read = made.get(key);
+    if (!read) {
+      read = async () => {
+        const v = await reads.version(packageId, version);
+        // ClamAV's definitions answer their clients only while their switch is on (Q-UI-908), as the head's `systemClosed` reads it.
+        const clamavClosed = v.format === CLAMAV_FORMAT && !(await clients.served(CLAMAV_REF));
+        return versionCommandFacts(v, clamavClosed);
+      };
+      made.set(key, read);
+    }
+    return read;
+  };
 }
 
 /** The note beside the button of a version of the ClamAV definitions (R-UI-194, R-CLAMAV-006). */

@@ -71,9 +71,11 @@
   }
 }
 
-// A size keeps its number and unit together, a time its words.
+// A size keeps its number and unit together, a time its words, a grade its counts ("44 findings · 22 fixable"): with the column of a
+// row's command the grade's words broke into two lines at 1,440 px while the column of versions had room to spare (R-UI-269).
 .size,
-.time {
+.time,
+.grade-cell {
   white-space: nowrap;
 }
 

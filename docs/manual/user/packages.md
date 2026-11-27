@@ -180,7 +180,10 @@ You change tags with your package manager, not in the UI, for example `npm dist-
 ## The command of a version
 
 **Install** (**Pull** for a container image) in the head of a version's page, and at the end of a version's row in a repository's list,
-opens the commands of this version:
+opens the commands of this version. The rows of the Packages screen have it too, with the commands of each package's latest version, and
+so has every row of a package's table of versions (an image's row pulls the image by its leading tag and, on a second line, by its
+digest). Such a row's panel reads the version first, which takes a moment the first time it opens (**Loading the commands.**), and then
+offers what the version's own page offers:
 
 1. Where several repositories you can install from hold the version, choose one under **Repository** at the top; Quader preselects a virtual repository, otherwise a local one. A system repository of the project Upstream is never offered: no client can install from it. Nor is a disabled repository, or a virtual one that holds the version only through disabled members. Nor is a remote repository whose delivery rules do not deliver the version: a note at the top of the page names the repository and the reason (a rule blocks it, no rule allows it, or it lies outside the allowed range of versions) with a link to its tab **Upstream**, and when no repository delivers the version the head has no button and a sentence under the facts says so.
 2. Choose your client's tab: **npm**, **pnpm**, **Yarn Berry**, **Yarn Classic** for npm; **.NET CLI**, **NuGet CLI**, **Visual Studio** for NuGet; **Docker** and **Podman** for an image. A package type with one client (APT, ansible-galaxy, curl) names it instead. The arrow keys move between the tabs, and the panel opens again on the tab you chose last.

@@ -240,6 +240,23 @@ export async function* rowCommand(page: Page): AsyncGenerator<string> {
 }
 
 /**
+ * The command of a list's row that knows its version but not its repositories (R-UI-269): the first row's button of the flat list of
+ * packages or of a package's versions, its panel open once the version is read and its first client's command is there (or the note
+ * why none can install it). Found by its place, never by its words: the German pass walks it.
+ */
+export async function* rowCommandFromList(page: Page): AsyncGenerator<string> {
+  const button = page.locator('main table.data tbody td.actions quader-client-command-menu button').first();
+  await expect(button).toBeVisible();
+  await page.waitForLoadState('networkidle');
+  await button.click();
+  const panel = page.locator('.client-command-panel');
+  await expect(panel.locator('quader-address-field input, quader-code-window, .command-note').first()).toBeVisible();
+  await page.waitForLoadState('networkidle');
+  yield 'row-menu';
+  await page.keyboard.press('Escape');
+}
+
+/**
  * The loads of the head (R-UI-217): the panel opened while the clients' commands are held (each tab's place holds the spinner and
  * "Loading the command."), then the switch opened while its ten newest versions are held (the menu's spinner). Each held call is
  * released before the next state. The controls are found by their place, never by their words: the German pass walks it.

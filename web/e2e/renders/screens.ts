@@ -50,7 +50,7 @@ import { withVerify } from './verify';
 import { routeTooMany } from './suggestions';
 import { clamavDatabases, clamavRegistry, clamavRow, definitionsExpected, definitionsWith, switchState } from './clamav';
 import { mirrorFilled } from './mirror';
-import { formsHead, headLoading, longReadmeHead, manyVersionsHead, rowCommand, threeRepositoriesHead, versionHead } from './version-heads';
+import { formsHead, headLoading, longReadmeHead, manyVersionsHead, rowCommand, rowCommandFromList, threeRepositoriesHead, versionHead } from './version-heads';
 import { deprecatedCollection, deprecationActs } from './deprecations';
 import {
   damagedBlobs,
@@ -3359,6 +3359,9 @@ export const screens: readonly Screen[] = [
   { id: 'repository-nuget-upload', path: `${O}/repositories/nuget-internal`, kinds: ['power'], walk: nugetUpload, de: true },
   { id: 'packages', path: `${P}/packages`, kinds: all, walk: filtersOpen(packageChips) },
   { id: 'packages-other-project', path: `${O}/packages`, kinds: all, walk: filtersOpen() },
+  // A row's Pull or Install of the flat list and of an image's versions, its panel open (R-UI-269).
+  { id: 'packages-row-menu', path: `${P}/packages`, kinds: ['plain'], walk: rowCommandFromList, de: true },
+  { id: 'package-oci-row-menu', path: pkg(P, ociPackage), kinds: ['plain'], walk: rowCommandFromList, de: true },
   // Finding collections as on Galaxy (R-ANS-057) and the page of a name (R-UI-220), answered in the browser (namespaces.ts): the list
   // filtered by a namespace with its hits' tags and badges; a namespace of forty collections for a reader of the configuration and for a
   // reader of the packages; an npm scope of one package with a long name; an image path several levels deep across every project.

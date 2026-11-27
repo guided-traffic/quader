@@ -4144,7 +4144,8 @@ Priority: **MVP** · Covers: UI-008, ART-048
   text, never icon alone; the icon is the format owner's logo where the owner's terms allow it, else the neutral package
   glyph, Q-UI-225), **Latest**, the latest version (the word of a repository's package table,
   [Q-UI-432](#q-ui-432--the-package-list-says-latest-as-the-package-table-of-a-repository-does)), updated (relative, with the
-  absolute time in a `<time datetime>` element and its title, R-UI-103). The number of versions, of repositories, the downloads and the first publication are on the package's page (its
+  absolute time in a `<time datetime>` element and its title, R-UI-103), and at the row's end the button of the format's client verb
+  with the latest version's commands ([R-UI-269](#r-ui-269--every-list-of-things-a-client-fetches-offers-its-command)). The number of versions, of repositories, the downloads and the first publication are on the package's page (its
   Details). Sortable by the package and updated in the headers; the sort by first created stays the API's and a saved view's
   (`sort=createdAt`). Every sort is the server's (R-API-029).
 - Paging with an explicit "Load more" button; no infinite scroll.
@@ -7651,8 +7652,11 @@ owner's reference screen's; its look is Quader's own.
   **Pushed**, or **Fetched** where only remote repositories hold its newest version, [Q-UI-1314](#q-ui-1314--an-images-date-is-pushed-or-fetched-on-every-screen)),
   **Last download** (R-API-065, R-API-079; "Never" for a version no client downloaded, with a help text and a title, Q-API-342), under
   it the version's downloads ("410 downloads", [R-UI-222](#r-ui-222--every-table-of-versions-says-each-versions-downloads-and-an-images-digest)), and **Repositories** only when the versions differ in the
-  repositories that hold them ([Q-UI-457](#q-ui-457--the-column-repositories-appears-only-when-the-versions-are-held-by-different-repositories)).
-  An image's digest stands under its tags (R-UI-222).
+  repositories that hold them ([Q-UI-457](#q-ui-457--the-column-repositories-appears-only-when-the-versions-are-held-by-different-repositories);
+  never while the views name no repository, [Q-UI-1632](#q-ui-1632--the-views-learn-whether-they-may-name-a-repository-from-one-token)).
+  An image's digest stands under its tags (R-UI-222). At the row's end the button of the format's client verb, **Pull** or **Install**,
+  whose panel reads the row's version when it opens ([R-UI-269](#r-ui-269--every-list-of-things-a-client-fetches-offers-its-command),
+  [Q-UI-1633](#q-ui-1633--every-list-of-things-a-client-fetches-offers-its-command-in-both-applications)).
 - **Sort**: the highest version first by the format's precedence (the server's order); every column but Repositories sorts both
   ways in the browser over the whole list; equal keys keep the highest version first. The sort is the address's `sort`
   (`-published`, `vulnerabilities`, …), the default left out ([Q-UI-452](#q-ui-452--the-versions-are-searched-sorted-and-paged-in-the-browser-over-the-whole-list)).
@@ -7697,7 +7701,10 @@ page's width. Not chosen by the owner: a row that opens inside the table, and a 
   format's client verb (**Pull**, **Install**) whose panel is R-UI-009's ([Q-UI-1241](#q-ui-1241--a-versions-page-has-its-command-behind-the-verbs-button-in-its-head-the-box-is-gone)); a version of the ClamAV definitions
   has **Set up client** with freshclam instead (R-UI-194). Where no client can install the version (held only by disabled
   repositories, Q-UI-965, or only by system repositories, Q-UI-898, Q-UI-899) the head has no button, and the sentence why stands under
-  the facts.
+  the facts. The rule is one function, `versionCommandFacts` of
+  [version-command.ts](../../web/src/app/views/packages/version-command.ts) (the command, the name the clients install by, the kind and an
+  image's digest), which a list's row resolves its panel with too ([R-UI-269](#r-ui-269--every-list-of-things-a-client-fetches-offers-its-command),
+  [Q-UI-1634](#q-ui-1634--a-rows-command-is-resolved-when-its-panel-opens)).
 - **Facts**, one line with the style guide's separator: the grade with the total and the fixable findings (R-UI-112), a link to
   the tab Vulnerabilities; when it was published (an image's **Pushed** or **Fetched**, Q-UI-1314); its size (R-API-080); when a client
   last downloaded it (R-API-065, "never"); its downloads; its licences, a link to the licence's address where the version declares one.
@@ -10319,7 +10326,8 @@ installation sees changes.
   ([Q-UI-1403](#q-ui-1403--the-rule-reads-a-views-imports-and-one-level-of-features-and-shared)).
 
 What the views still reach through `core/` and `shared/` (the format catalogue, the switch of the system repositories, the memory of an
-opened section, the words of a limit's refusal) are injectables an application binds itself; that the second application's bundle holds
+opened section, the words of a limit's refusal, whether they may name a repository: `REPOSITORIES_SHOWN`, true unless a Bastion hides its
+repositories, [Q-UI-1632](#q-ui-1632--the-views-learn-whether-they-may-name-a-repository-from-one-token)) are injectables an application binds itself; that the second application's bundle holds
 no session and no write is the import-graph check of its build (W-35 P9), not this rule's. *Built by W-35's P9 on 2026-11-26 (R-UI-228):*
 `FormatCatalog` and `SystemClients` are abstract and bound in `provideViewReads`, the memory asks `MEMORY_OWNER`, and the helpers the views
 take from API modules live in `api/refs.ts`; the check is `bastion-bundle-rule.mjs` over the Bastion's metafile. *Built by W-35's P9d on
@@ -11638,6 +11646,66 @@ Acceptance criteria (Vitest, [server-texts.spec.ts](../../web/src/app/shared/ser
 translation file says "the configuration", "configuration file", "Helm values", "the installation's configuration" or "the system
 configuration" in English, or "Helm-Values", "Helm-Werte", "Konfigurationsdatei", "Konfiguration der Installation" or
 "Systemkonfiguration" in German, outside a short list of allowed units whose every entry must exist in the file.
+
+### R-UI-269 · Every list of things a client fetches offers its command
+Priority: **P1** · Covers: quader-only
+
+The owner on 2026-11-27 (W-40): "Außerdem fehlt im Bastion komplett der Pull-Button. Niemand bekommt von dort die Info wie man ein
+öffentliches Image ziehen kann." An image's page listed its tags with nowhere a command to pull one, and the flat list of a project's
+packages had none either, at the Bastion and at the main installation alike (the views are one piece of code, R-UI-223). His rule of
+2026-11-19 (a pattern decided at one place holds at every place showing the same thing) makes it every such list.
+
+- **Where.** Every row of the flat list of a project's packages (`<quader-package-table>`, the command of the row's latest version) and
+  every row of a package's versions table (R-UI-110; an image's row by its leading tag, with the pull by the image's digest, R-OCI-041)
+  ends with the button of the format's client verb, **Pull** or **Install**, and its chevron, in a column **Actions** whose header is for
+  assistive technology only, as a repository's list has it (R-UI-052,
+  [Q-UI-1633](#q-ui-1633--every-list-of-things-a-client-fetches-offers-its-command-in-both-applications)). A format without clients has
+  none, and so has a generic file, whose command needs its path (its list is the files view's, R-UI-229).
+- **Which repository.** Such a row knows the version, not whether its holders are disabled, refused by a remote's rules or a system
+  repository. Its panel reads the version's details when it first opens (`GET /api/v1/packages/{id}/versions/{version}`, at the Bastion its
+  catalogue's document) and offers what the version's own head offers (R-UI-111): the clients' commands through the repositories a
+  client can take it from, a virtual repository first, then the first local one
+  ([Q-UI-1635](#q-ui-1635--the-order-of-a-panels-repositories-is-unchanged)), with the select **Repository** where there are several;
+  or the sentence why no client can install it; or a ClamAV database's **Set up client** with freshclam
+  ([Q-UI-1634](#q-ui-1634--a-rows-command-is-resolved-when-its-panel-opens)). The rule is one function, `versionCommandFacts` of
+  [version-command.ts](../../web/src/app/views/packages/version-command.ts): the command, the name the clients install by (a role's
+  `role/<id>`), the version's kind and an image's digest.
+- **While it reads**, the panel shows the spinner with **Loading the commands.** (R-UI-217); a failure is the error notice with
+  everything the answer carried and **Retry** (R-UI-216). The answer is kept while the row's version is the same: a second open asks
+  nothing; a row whose version changed while its panel was open reads the new one at once.
+- **What it costs.** One request per opened panel and version, and the commands' requests of R-UI-052 after it; a list that is only
+  looked at asks nothing more than before.
+- **The rows of a repository's list** keep their repository, the page's (R-UI-052): they ask nothing before the panel opens.
+- **Where the views name no repository.** A Bastion whose switch **Hide repositories** is on binds the views' token
+  `REPOSITORIES_SHOWN` to false ([Q-UI-1632](#q-ui-1632--the-views-learn-whether-they-may-name-a-repository-from-one-token)): the panel then
+  has no select **Repository** (its commands go through the first), the package's page no column and no fact **Repositories**, a
+  version's Details no table of the repositories that hold it, its findings one card without a repository's heading, an Ansible
+  collection's documentation no line "Repository: …" and a delivery note the reason without the key. A command, a download address and
+  Set up client keep the key: a client needs it ([bastion.md](bastion.md) R-BAS-131).
+
+*Built on 2026-11-27 (W-40 P4b):* [client-command-menu.ts](../../web/src/app/views/packages/client-command-menu.ts) (its input
+`resolve`), [version-command.ts](../../web/src/app/views/packages/version-command.ts) (`versionCommandFacts`, `versionCommandReads`),
+[package-table.ts](../../web/src/app/views/packages/package-table.ts),
+[package-detail-view.html](../../web/src/app/views/packages/package-detail-view.html) and
+[repositories-shown.ts](../../web/src/app/core/repositories-shown.ts); the main installation never binds the token, the Bastion binds it
+with its project view (W-40 P5). The renders `packages-row-menu`, `package-oci-row-menu`, `bastion-packages-menu` and `bastion-image-menu`
+open a row's panel.
+
+Acceptance criteria:
+
+- Unit ([client-command-menu.spec.ts](../../web/src/app/views/packages/client-command-menu.spec.ts), about a second): `R-UI-269 a row's
+  panel reads the version when it opens and offers its repositories, once for two opens`, `… only disabled repositories hold says why
+  instead of a command, and ClamAV's leads to its Set up client`, `… a failed read is the notice with Retry in the panel, and Retry reads
+  again`, `… a row whose version changes while its open panel reads asks the new version at once`, `… no select of repositories while
+  REPOSITORIES_SHOWN is false`.
+- Unit ([package-list.spec.ts](../../web/src/app/features/packages/package-list.spec.ts),
+  [package-detail.spec.ts](../../web/src/app/features/packages/package-detail.spec.ts)): `R-UI-269 every row offers its latest version's
+  command with its format's verb, read when its panel opens` (one npm and one OCI row) and `R-UI-269 every image of an image's page has its
+  Pull, whose panel reads its leading tag and pulls by the image's digest too`.
+- Unit ([repositories-shown.spec.ts](../../web/src/app/views/packages/repositories-shown.spec.ts)): `R-UI-269 the views name no repository
+  while REPOSITORIES_SHOWN is false` (the column, the fact, the Details' table, the findings' card, the docs' line, the delivery note).
+- Rendered (rule 11): the screens above in both applications, both schemes, 1,440, 1,024 and 390 px, English and German; the versions
+  table does not break into blocks at 1,024 px (R-UI-175) and the panel keeps 16 px from the window's edges at 390 px.
 
 ## Deferred
 
@@ -32271,6 +32339,79 @@ its versions' grades only for a session (`session.state() !== 'anonymous'`), a c
 **Choice:** (b). The main installation's visitor without a session gains the grades of an opened item's versions; the API answers him
 those the public levels admit (Q-VULN-280). **Applied in the spec:** R-UI-094 (R-UI-224 says it already). Code:
 [repository-item-versions.ts](../../web/src/app/views/repositories/repository-item-versions.ts).
+
+### Q-UI-1632 · The views learn whether they may name a repository from one token
+
+Status: **Decided by the development agent on 2026-11-27** (W-40, D16) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: a Bastion whose switch **Hide repositories** is on names no repository anywhere a visitor reads (bastion.md R-BAS-131,
+Q-BAS-504), and its pages are the main installation's views (R-UI-223). The views must leave out the places that present a repository
+without a second copy of them.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) An input `repositoriesShown` on every view that has such a place | Each page passes it down | Explicit at each use | Seven views and their composing pages change; a view nested in another (the findings' table) needs it passed through two levels |
+| (b) An injection token `REPOSITORIES_SHOWN` (`Signal<boolean>`, `core/repositories-shown.ts`), true by default; the Bastion binds it to `!state.hideRepositories` (chosen) | The views inject it at the places of Q-BAS-504 | One binding in the Bastion's configuration; the main installation binds nothing; a signal follows the switch while the page is open | A view's dependency that is not visible in its inputs |
+
+**Choice:** (b). The places: the column and the fact **Repositories** of a package's page and its Details' hint, the table of a version's
+Details, the select **Repository** of a command's panel, a findings card's heading and its table's caption (the first card alone), the
+documentation's line "Repository: …", the key and the link of a delivery note. **Applied in the spec:** R-UI-269, R-UI-223. Code:
+[repositories-shown.ts](../../web/src/app/core/repositories-shown.ts).
+
+### Q-UI-1633 · Every list of things a client fetches offers its command, in both applications
+
+Status: **Decided by the development agent on 2026-11-27** (W-40, D17) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: the owner on 2026-11-27: "Außerdem fehlt im Bastion komplett der Pull-Button." An image's page at the Bastion listed its tags
+without a command; so did the main installation's, and the flat list of packages in both applications. His rule of 2026-11-19: a pattern
+decided at one place holds at every place that shows the same thing.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Only at the Bastion | A Bastion's page adds a column of its own | What the owner named | The views are one piece of code (R-UI-223); the main installation's image page has the same gap |
+| (b) The shared views gain it: the package table's rows (the latest version's command) and the versions table of a package's page (each row a version, or an image by content with its digest) (chosen) | Both applications at once | One code, the same picture; the owner's rule | One column more in two tables, which must still fit 1,024 px |
+
+**Choice:** (b), the column **Actions** with its header for assistive technology only, as a repository's list has it. **Applied in the
+spec:** R-UI-269, R-UI-110. Code: [package-table.ts](../../web/src/app/views/packages/package-table.ts),
+[package-detail-view.html](../../web/src/app/views/packages/package-detail-view.html).
+
+### Q-UI-1634 · A row's command is resolved when its panel opens
+
+Status: **Decided by the development agent on 2026-11-27** (W-40, D18) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: a row of the flat list or of a package's versions knows the version, not whether its holders are disabled, refused by a
+remote's rules or a system repository, which the head of a version's page decides with the version's details (R-UI-111, Q-UI-965,
+Q-UI-898, Q-UI-1260).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The first of the row's `repositories` | No request before the commands' own | Nothing to read | A disabled holder, a remote that refuses the version or a system repository gets a command that fails; the row has no repositories at all in the flat list |
+| (b) Read the version's details when the panel first opens and decide with the head's rule (`versionCommandFacts`) (chosen) | `ClientCommandMenu` gains an input `resolve`; **Loading the commands.** while it reads | No command that would fail is offered; the head and the rows say the same | One request when a person opens a panel |
+
+**Choice:** (b). The answer is kept for the row's version (a second open asks nothing), a version that changed while the panel was open
+is read at once, a failure is the error notice with Retry. The head keeps its own path, through the same function. The rows of a
+repository's list keep their repository, the page's. **Applied in the spec:** R-UI-269, R-UI-111. Code:
+[client-command-menu.ts](../../web/src/app/views/packages/client-command-menu.ts),
+[version-command.ts](../../web/src/app/views/packages/version-command.ts).
+
+### Q-UI-1635 · The order of a panel's repositories is unchanged
+
+Status: **Decided by the development agent on 2026-11-27** (W-40, D19) — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: a row's panel offers the repositories a client can take its version from (Q-UI-1634). The head orders them with
+`clientRepositories` (Q-UI-1241): a virtual repository that holds the version first, then the first local one, then the others.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `clientRepositories` as it is (chosen) | The row and the head start at the same repository | One rule; a virtual repository is the address a team configures once | — |
+| (b) The order of the version's `repositories` as the answer has it | — | — | The row and the version's page would offer another first command for the same version |
+
+**Choice:** (a). **Applied in the spec:** R-UI-269. Code: `clientRepositories` of
+[version-command.ts](../../web/src/app/views/packages/version-command.ts).
 
 ## What this does not cover
 

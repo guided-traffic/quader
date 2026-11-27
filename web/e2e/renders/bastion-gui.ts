@@ -6,6 +6,7 @@ import { docsDeb } from './debdocs';
 import { factsNugetReadme } from './facts';
 import { bastionEdge, locale } from './paths';
 import { fileCommands } from './file-commands';
+import { rowCommandFromList } from './version-heads';
 import { Api, ansiblePackage, expectStatus, nugetPackage, otherProject, publicDownloads, remoteImage, remoteSource } from './seed';
 import type { Screen } from './screens';
 
@@ -173,6 +174,9 @@ export const bastionScreens: readonly Screen[] = [
   { id: 'bastion-version-deb', path: ver(debian, debian.version), kinds: ['anonymous'], expected: lookups, de: true },
   // An image of the public remote: its tags, then a tag with its platforms and layers.
   { id: 'bastion-image', path: pkg(image), kinds: ['anonymous'], de: true },
+  // A row's Pull or Install of the flat list and of an image's tags, its panel open (R-UI-269): how a visitor pulls a public image.
+  { id: 'bastion-packages-menu', path: `${P}/packages`, kinds: ['anonymous'], walk: rowCommandFromList, de: true },
+  { id: 'bastion-image-menu', path: pkg(image), kinds: ['anonymous'], walk: rowCommandFromList, de: true },
   { id: 'bastion-image-version', path: ver(image, remoteImage.single), kinds: ['anonymous'], de: true },
   // An Ansible collection opens on its documentation (docs on), its package's own address on its newest version (R-UI-218); a module's
   // page with its tables; the search inside the version with a hit; a project's search that finds a module (R-UI-232).

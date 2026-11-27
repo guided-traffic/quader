@@ -44,6 +44,11 @@ import { Loading } from '../../shared/ui/loading';
 import { NoValue } from '../../shared/ui/no-value';
 import { MalwareMark, malwareColumn, malwareShown } from '../../shared/malware/malware-mark';
 import { MalwareSignaturesStore } from '../../core/malware-signatures';
+import { REPOSITORIES_SHOWN } from '../../core/repositories-shown';
+import { clientsOf } from '../../features/setup/clients';
+import { contentShapeOf } from '../repositories/content-shape';
+import { ClientCommandMenu } from './client-command-menu';
+import { versionCommandReads } from './version-command';
 
 /**
  * A package's page is its versions (R-UI-007, R-UI-110, the owner's walk of 2026-11-18): the name, the format and the
@@ -66,6 +71,7 @@ function sameVersion(a: { id: string; version: string } | undefined, b: { id: st
 @Component({
   selector: 'quader-package-detail-view',
   imports: [Loading, DeprecationMark,
+    ClientCommandMenu,
     MalwareMark,
     NoValue,
     NamespaceOf,
@@ -209,7 +215,16 @@ export class PackageDetailView {
     computation: () => VERSION_PAGE,
   });
   protected readonly shown = computed(() => this.matching().slice(0, this.shownCount()));
-  protected readonly showRepositories = computed(() => repositoriesDiffer(this.rows()));
+  /** Whether the page may name the repositories (a Bastion that hides them does not, Q-UI-1632): the column and the fact. */
+  protected readonly repositoriesShown = inject(REPOSITORIES_SHOWN);
+  protected readonly showRepositories = computed(() => this.repositoriesShown() && repositoriesDiffer(this.rows()));
+  /**
+   * A row's command (R-UI-269, Q-UI-1633): every row of a format a client installs a package of has the verb's button; the panel reads
+   * the row's version when it opens (Q-UI-1634). A file's command needs its path, which a package's version has not.
+   */
+  protected readonly commanded = computed(() => this.format() !== 'generic' && clientsOf(this.format()).length > 0);
+  protected readonly verb = computed(() => contentShapeOf(this.format()).commandVerb);
+  protected readonly readCommand = versionCommandReads();
 
   /**
    * The failure of the package's read, kept while its notice reads it again (R-UI-216); the reads beside the versions are read again
@@ -245,6 +260,7 @@ export class PackageDetailView {
         ]
       : []),
     ...(this.showRepositories() ? [{ id: 'repositories', label: $localize`:@@pkg.ver.repositories:Repositories` }] : []),
+    ...(this.commanded() ? [{ id: 'actions', label: $localize`:@@repo.col.actions:Actions`, hideLabel: true }] : []),
   ]);
   /**
    * The word of the date the versions arrived (Q-UI-1314): an image's Pushed, or Fetched where only remote repositories hold its newest
@@ -263,11 +279,12 @@ export class PackageDetailView {
     this.images() ? $localize`:@@pkg.ver.filter-tags:Filter tags` : $localize`:@@pkg.ver.filter:Filter versions`,
   );
   protected readonly detailsHeading = $localize`:@@pkg.details:Details`;
-  protected readonly detailsText = computed(() =>
-    this.downloads()
+  protected readonly detailsText = computed(() => {
+    if (!this.repositoriesShown()) return $localize`:@@pkg.details-hint-no-repositories:The package's keywords and when it was first published.`;
+    return this.downloads()
       ? $localize`:@@pkg.details-hint:The repositories that hold the package, its keywords and its downloads.`
-      : $localize`:@@pkg.details-hint-no-downloads:The repositories that hold the package and its keywords.`,
-  );
+      : $localize`:@@pkg.details-hint-no-downloads:The repositories that hold the package and its keywords.`;
+  });
   protected readonly emptyText = computed(() =>
     this.images()
       ? $localize`:@@pkg.ver.none-matching-tags:No image has a tag that matches “${this.draft().trim()}:text:”.`

@@ -13450,10 +13450,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-835 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+839 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 835 questions</summary>
+<summary>Q-UI: 839 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -14292,6 +14292,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1629](spec/api-and-ui.md#q-ui-1629--a-declared-bastion-registration-shows-a-badge-helm-configuration-with-its-help) | A declared Bastion registration shows a badge "Helm configuration" with its help | Decided by the development agent on 2026-11-27 | (a), built as a lock and the words "Helm configuration" in the muted colour beside the state, not as a pill: the help sign explains the name before it (R-UI-267), and beside a badge's word, which is no name, the layout check found the sign apart from its text at 390 px. | — |
 | [Q-UI-1630](spec/api-and-ui.md#q-ui-1630--a-repositorys-lists-are-views) | A repository's lists are views | Decided by the development agent on 2026-11-27 | (b) Move `repository-items.ts`, `repository-item-versions.ts`, `clamav-databases.ts`, `content-shape.ts` and `repository-lists.scss` to `views/repositories/`; they read through `PackageReads` and `VulnerabilityReads`, ask no session (Q-UI-1631), take the toolbar's act as the page's projected `[listActs]` (Q-UI-1402) and an input `downloads` (false at the Bastion, Q-UI-1449) | — |
 | [Q-UI-1631](spec/api-and-ui.md#q-ui-1631--an-opened-items-versions-show-their-grades-to-a-reader-without-a-session) | An opened item's versions show their grades to a reader without a session | Decided by the development agent on 2026-11-27 | (b) Read the package's report for every reader whose list carries grades | — |
+| [Q-UI-1632](spec/api-and-ui.md#q-ui-1632--the-views-learn-whether-they-may-name-a-repository-from-one-token) | The views learn whether they may name a repository from one token | Decided by the development agent on 2026-11-27 | (b) An injection token `REPOSITORIES_SHOWN` (`Signal<boolean>`, `core/repositories-shown.ts`), true by default; the Bastion binds it to `!state.hideRepositories` | — |
+| [Q-UI-1633](spec/api-and-ui.md#q-ui-1633--every-list-of-things-a-client-fetches-offers-its-command-in-both-applications) | Every list of things a client fetches offers its command, in both applications | Decided by the development agent on 2026-11-27 | (b), the column **Actions** with its header for assistive technology only, as a repository's list has it. | — |
+| [Q-UI-1634](spec/api-and-ui.md#q-ui-1634--a-rows-command-is-resolved-when-its-panel-opens) | A row's command is resolved when its panel opens | Decided by the development agent on 2026-11-27 | (b) Read the version's details when the panel first opens and decide with the head's rule (`versionCommandFacts`) | — |
+| [Q-UI-1635](spec/api-and-ui.md#q-ui-1635--the-order-of-a-panels-repositories-is-unchanged) | The order of a panel's repositories is unchanged | Decided by the development agent on 2026-11-27 | (a) `clientRepositories` as it is | — |
 
 </details>
 

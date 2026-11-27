@@ -29,7 +29,7 @@ import { formatSize } from '../../features/packages/format-size';
 import { TimeAgo } from '../../shared/ui/time-ago';
 import { ClientCommandMenu } from './client-command-menu';
 import { VersionSwitch } from './version-switch';
-import { clamavInstallNote, versionCommand } from './version-command';
+import { clamavInstallNote, versionCommandFacts } from './version-command';
 import { arrivedLabel, contentShapeOf, leadsWithDocumentation } from '../repositories/content-shape';
 import { EXTERNAL_REL, packageCommands, versionCommands } from '../../features/packages/package-links';
 import { ImageDetails } from './image-details';
@@ -71,6 +71,7 @@ import { VersionSize } from './version-size';
 import { NoValue } from '../../shared/ui/no-value';
 import { MalwareMark, malwareColumn } from '../../shared/malware/malware-mark';
 import { MalwareSignaturesStore } from '../../core/malware-signatures';
+import { REPOSITORIES_SHOWN } from '../../core/repositories-shown';
 import { malwareReasonText } from '../../shared/malware/malware-words';
 import { MalwareStatus, MalwareSummary } from '../../api/malware-api';
 import { SignatureGateRefusedReason, SignatureGateReason, SignatureStatus } from '../../api/signatures-api';
@@ -651,11 +652,15 @@ export class PackageVersionView {
 
   /** The format's client verb, the button's word (Q-UI-1066). */
   protected readonly verb = computed(() => contentShapeOf(this.format()).commandVerb);
-  /** What the head offers a client: the verb's button, ClamAV's Set up client, or the note why no client can install the version. */
-  protected readonly command = computed(() => {
+  /**
+   * What the head offers a client (`versionCommandFacts`, the rule a list's row resolves with too, R-UI-269): the verb's button with the
+   * name the clients install by, the version's kind and an image's digest, ClamAV's Set up client, or the note why no client can install it.
+   */
+  protected readonly commandFacts = computed(() => {
     const d = this.detail();
-    return d ? versionCommand(this.format(), d, this.clamavClosed()) : null;
+    return d ? versionCommandFacts(d, this.clamavClosed()) : null;
   });
+  protected readonly command = computed(() => this.commandFacts()?.command ?? null);
   protected readonly clamavNote = clamavInstallNote();
   /**
    * The newest versions the switch offers (Q-UI-1243): one page of ten by the format's order, read with the page and again while it is
@@ -685,19 +690,6 @@ export class PackageVersionView {
     if (d.licenses.length > 0 || d.format !== 'oci') return d.licenses;
     const labeled = imageFact(d.metadata, 'licenses');
     return labeled !== '' ? [labeled] : [];
-  });
-  /**
-   * The version's kind where its format has one: an OCI artifact's (`image`, `helm-chart`, …, R-OCI-042), a NuGet package's
-   * (`dotnet-tool`, `template`, `msbuild-sdk`, R-NUGET-037); the head's panel offers the kind's clients and forms. null for none.
-   */
-  protected readonly artifactKind = computed(() => {
-    const k = this.metadata()['kind'];
-    return typeof k === 'string' ? k : null;
-  });
-  /** An image's digest, the panel's pull by digest (R-OCI-041). */
-  protected readonly imageDigest = computed(() => {
-    const d = this.metadata()['digest'];
-    return typeof d === 'string' && d.startsWith('sha256:') ? d : null;
   });
   /** The other tags of the image's digest (R-OCI-041), each a link to its page. */
   protected readonly otherTags = computed(() => this.detail()?.aliases ?? []);
@@ -1026,6 +1018,8 @@ export class PackageVersionView {
   protected readonly neverTitle = $localize`:@@pkg.ver.never-title:No client has downloaded this version through Quader yet.`;
   protected readonly copyImageDigest = $localize`:@@pkg.image.copy-digest:Copy digest`;
   protected readonly tableCaptionFiles = $localize`:@@pkg.file.caption:Files of this version`;
+  /** Whether the page may name the repositories (a Bastion that hides them does not, Q-UI-1632): the table of Details and the docs' line. */
+  protected readonly repositoriesShown = inject(REPOSITORIES_SHOWN);
   protected readonly tableCaptionRepositories = $localize`:@@pkg.repo.caption:Repositories that hold this version`;
   protected readonly copySha = $localize`:@@pkg.file.copy-sha:Copy SHA-256`;
   /** A hash's first twelve characters, the form a list shows it in (the style guide's rule of a hash). */

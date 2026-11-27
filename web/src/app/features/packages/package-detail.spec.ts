@@ -6,6 +6,9 @@ import { clamavFixture } from '../../api/testing/fakes-clamav';
 import { FakeVulnerabilitiesApi, sampleGrade } from '../../api/testing/fakes-vulnerabilities';
 import { VulnerabilitiesApi, VulnerabilityGrade } from '../../api/vulnerabilities-api';
 import { buttonByText, expectAccessible, inProject, renderScreen, settle, text } from '../../testing/screen';
+import { ClientSetupReads } from '../../api/package-reads';
+import { FakeClientSetupReads } from '../../api/testing/fakes-packages';
+import { spokenText } from '../../testing/axe';
 import { PackageDetail } from './package-detail';
 import { RepositoriesApi } from '../../api/repositories-api';
 import { FakeRepositoriesApi, GENERIC_FORMAT, OCI_FORMAT } from '../../api/testing/fakes-catalog';
@@ -65,7 +68,7 @@ describe('The package page: its versions (R-UI-110)', () => {
     expect(text(r.root.querySelector('h1')!)).toBe('@team-a/ui');
     expect(text(r.root.querySelector('.page-header-description')!)).toBe('Shared UI components');
     expect(versions(r)).toEqual(['1.5.0-beta.1', '1.4.0', '1.3.0']);
-    expect(headers(r)).toEqual(['Version', 'Size', 'Published', 'Last download']);
+    expect(headers(r)).toEqual(['Version', 'Size', 'Published', 'Last download', 'Actions']);
     expect(r.root.querySelector('[role="tab"]')).toBeNull();
     expect(r.root.querySelector('select')).toBeNull();
     await expectAccessible(r.root);
@@ -117,7 +120,7 @@ describe('The package page: its versions (R-UI-110)', () => {
         ],
       }),
     );
-    expect(headers(graded)).toEqual(['Version', 'Size', 'Vulnerabilities', 'Published', 'Last download']);
+    expect(headers(graded)).toEqual(['Version', 'Size', 'Vulnerabilities', 'Published', 'Last download', 'Actions']);
     const cell = (v: string) => rows(graded).find((tr) => text(tr.querySelector('th a')!) === v)!.querySelectorAll('td')[1]!;
     expect(text(cell('1.4.0').querySelector('.grade-text')!)).toBe('Grade E · 1,145 findings · 112 fixable');
     expect(text(cell('1.3.0').querySelector('.grade-text')!)).toBe('Grade N/A · Scanning off');
@@ -197,7 +200,7 @@ describe('The package page: its versions (R-UI-110)', () => {
       v.repositories = [{ key: 'web/npm-remote', class: 'remote', publishedAt: v.publishedAt, available: true }];
     });
     expect(headers(differ)).toContain('Repositories');
-    const cell = rows(differ).find((tr) => text(tr.querySelector('th a')!) === '1.3.0')!.querySelector('td:last-child')!;
+    const cell = rows(differ).find((tr) => text(tr.querySelector('th a')!) === '1.3.0')!.querySelector('td.wrap')!;
     expect(text(cell)).toBe('npm-remote');
     expect(cell.querySelector('a')?.getAttribute('href')).toBe('/projects/web/repositories/npm-remote');
   });
@@ -244,6 +247,27 @@ describe('The package page: its versions (R-UI-110)', () => {
     expect(text(r.root.querySelector('.type-badge')!)).toBe('OCI (Docker)');
   });
 
+  it('R-UI-269 every image of an image\'s page has its Pull, whose panel reads its leading tag and pulls by the image\'s digest too', async () => {
+    const r = await open({ format: 'oci' }, (fake) => {
+      ociImagesFixture(fake, [['5.4.7', 'latest'], ['5.4.6']]);
+      for (const v of fake.versionList) if (v.format === 'oci') v.metadata = { ...v.metadata, kind: 'image' };
+    }, 'team/app');
+    document.body.appendChild(r.root);
+    const setup = r.get(ClientSetupReads) as FakeClientSetupReads;
+    const buttons = [...r.root.querySelectorAll<HTMLButtonElement>('.pkg-versions tbody quader-client-command-menu button')];
+    expect(buttons.map((b) => spokenText(b))).toEqual(['5.4.7: Pull', '5.4.6: Pull']);
+    buttons[0]!.click();
+    await settle(r.fixture);
+    const panel = document.getElementById(buttons[0]!.getAttribute('aria-controls')!)!;
+    expect([...panel.querySelectorAll('[role="tab"]')].map((t) => text(t))).toEqual(['Docker', 'Podman']);
+    expect(text(panel)).toContain('By digest');
+    // The tag's pull and the pull by digest (the package without a version, the digest after its reference), through its repository.
+    expect(setup.calls.filter((c) => c.query.client === 'docker').map((c) => `${c.repository} ${c.query.version}`)).toEqual(['web/oci-local 5.4.7', 'web/oci-local undefined']);
+    buttons[0]!.click();
+    await settle(r.fixture);
+    r.root.remove();
+  });
+
   it('R-UI-007 an unknown package shows the not-found error', async () => {
     const r = await open({}, undefined, 'no-such-package');
     expect(text(r.root)).toContain('does not exist');
@@ -257,7 +281,7 @@ describe('The package page: its versions (R-UI-110)', () => {
     expect(r.fake.versionFilters.at(-1)).toEqual({ sort: '-version', group: 'content' });
     expect(text(r.root.querySelector('.pkg-meta .dot-separated')!)).toMatch(/^10 tags\s*Latest 5\.4\.7$/);
     // The image's digest as the repository's content lists it, and its date is Pushed (R-UI-222, Q-UI-1314).
-    expect(headers(r)).toEqual(['Tag', 'Size', 'Pushed', 'Last download']);
+    expect(headers(r)).toEqual(['Tag', 'Size', 'Pushed', 'Last download', 'Actions']);
     expect(versions(r)).toEqual(['5.4.7', '5.4.6', '5.4.5']);
     const digest = rows(r)[0]!.querySelector('th .digest-line code')!;
     expect(text(digest)).toMatch(/^[0-9a-f]{12}$/);

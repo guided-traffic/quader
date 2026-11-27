@@ -114,7 +114,7 @@
           </th>
           <td class="num size"><quader-version-size [bytes]="v.sizeBytes" [partial]="v.sizePartial" /></td>
           @if (graded()) {
-            <td>
+            <td class="grade-cell">
               @if (v.grade; as g) {
                 <!-- No snippet of a search engine (R-UI-231). -->
                 <span data-nosnippet><quader-grade [grade]="g" [image]="format() === 'oci'" [format]="format()" /></span>
@@ -155,6 +155,20 @@
               }
             </td>
           }
+          <!-- The row's command (R-UI-269): the version's, an image's by its leading tag with the pull by its digest; the panel reads the
+               version when it opens and offers what the version's head offers. -->
+          @if (commanded()) {
+            <td class="actions">
+              <quader-client-command-menu
+                [format]="format()"
+                [name]="p.name"
+                [version]="v.version"
+                [digest]="v.digest ?? null"
+                [verb]="verb()"
+                [resolve]="readCommand(p.id, v.version)"
+              />
+            </td>
+          }
         </tr>
       }
     </quader-data-table>
@@ -183,14 +197,17 @@
 
   <quader-disclosure class="pkg-details" remember="package.details" [heading]="detailsHeading" [hint]="detailsText()">
     <dl class="facts">
-      <dt i18n="@@pkg.fact.repositories">Repositories</dt>
-      <dd translate="no">
-        <ul class="plain-list">
-          @for (r of p.repositories; track r) {
-            <li><a [routerLink]="repositoryLink(r)">{{ r }}</a></li>
-          }
-        </ul>
-      </dd>
+      <!-- A Bastion that hides its repositories names none (Q-UI-1632). -->
+      @if (repositoriesShown()) {
+        <dt i18n="@@pkg.fact.repositories">Repositories</dt>
+        <dd translate="no">
+          <ul class="plain-list">
+            @for (r of p.repositories; track r) {
+              <li><a [routerLink]="repositoryLink(r)">{{ r }}</a></li>
+            }
+          </ul>
+        </dd>
+      }
       <!-- The keywords as on a version's page: chips to the packages that share one (R-UI-221). -->
       @if (p.keywords.length > 0) {
         <dt i18n="@@pkg.meta.keywords">Keywords</dt>

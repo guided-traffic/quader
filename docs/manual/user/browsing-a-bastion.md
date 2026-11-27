@@ -7,7 +7,7 @@ A Bastion is a read-only copy of an installation's public content at an address 
 Open the Bastion's address in a browser, for example `https://packages.example.com/` *(example)*. It opens in English or German by your browser's language; the link beside the theme button in the top bar switches to the other language, and the theme button chooses light, dark or the system's colours.
 
 - **Projects** lists the projects that publish something here, each by its name with its description. With a single project the start opens that project at once. "No package is published here yet." means there is nothing public yet.
-- **A project** lists its packages and images, with the columns of the main installation's list: the package with its description, its format, its latest version, the malware scan of that version and when it changed. **Search packages** finds a package by its name, its description or a keyword; the column headers sort, and **Load more** loads the next 50. Above the list, **Files** leads to the project's repositories of plain files. While the Bastion shows documentation, a search also lists the matching entries of the documentation below the packages.
+- **A project** lists its packages and images, with the columns of the main installation's list: the package with its description, its format, its latest version, the malware scan of that version and when it changed, and at the row's end **Install** or **Pull** with its commands. **Search packages** finds a package by its name, its description or a keyword; the column headers sort, and **Load more** loads the next 50. Above the list, **Files** leads to the project's repositories of plain files. While the Bastion shows documentation, a search also lists the matching entries of the documentation below the packages.
 
 ## A package and a version
 
@@ -21,7 +21,10 @@ A version's page shows its facts under its name: the grade (point at it for the 
 - **Signatures**, where the version has any: each signature with its kind, signer, issuer, time proof, log and whether it is trusted ([Signatures](signatures.md)).
 - **Details**: the metadata of the package type.
 
-The button **Install**, **Pull** or **Download** of the version opens its commands for each client, on the Bastion's address.
+The button **Install**, **Pull** or **Download** of the version opens its commands for each client, on the Bastion's address. The same
+button stands at the end of every row of a project's list (the commands of the package's latest version) and of a package's table of
+versions: an image's tags each have **Pull**, with the pull by the image's digest under it, so a visitor copies the command of a public
+image without opening the tag.
 
 ## Files
 

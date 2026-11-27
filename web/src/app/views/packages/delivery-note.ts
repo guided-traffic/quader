@@ -1,7 +1,8 @@
-import { Component, computed, input } from '@angular/core';
+import { Component, computed, inject, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { PackageVersion } from '../../api/packages-api';
 import { repositoryCommands } from '../../core/project-links';
+import { REPOSITORIES_SHOWN } from '../../core/repositories-shown';
 
 type Holder = PackageVersion['repositories'][number];
 
@@ -29,15 +30,23 @@ function reasonText(h: Holder): string {
     @for (h of refused(); track h.key) {
       <p class="banner-warning" role="note" data-testid="delivery-note">
         <span class="material-icons inline warn" aria-hidden="true">block</span>
-        <span
-          ><strong i18n="@@pkg.delivery.heading">Not delivered by</strong>{{ ' ' }}<span translate="no">{{ h.key }}</span>: {{ reason(h) }}.
-          <span i18n="@@pkg.delivery.consequence">A client cannot install this version through it.</span>&ngsp;<a
-            [routerLink]="upstream(h)"
-            [queryParams]="{ name: rulesName() }"
-            i18n="@@pkg.delivery.link"
-            >Delivery in the tab Upstream</a
-          ></span
-        >
+        @if (repositoriesShown()) {
+          <span
+            ><strong i18n="@@pkg.delivery.heading">Not delivered by</strong>{{ ' ' }}<span translate="no">{{ h.key }}</span>: {{ reason(h) }}.
+            <span i18n="@@pkg.delivery.consequence">A client cannot install this version through it.</span>&ngsp;<a
+              [routerLink]="upstream(h)"
+              [queryParams]="{ name: rulesName() }"
+              i18n="@@pkg.delivery.link"
+              >Delivery in the tab Upstream</a
+            ></span
+          >
+        } @else {
+          <!-- A Bastion that hides its repositories (Q-UI-1632): the reason, without the repository's key and its tab Upstream. -->
+          <span
+            ><strong i18n="@@pkg.delivery.heading-hidden">Not delivered</strong>: {{ reason(h) }}.
+            <span i18n="@@pkg.delivery.consequence">A client cannot install this version through it.</span></span
+          >
+        }
       </p>
     }
   `,
@@ -45,6 +54,8 @@ function reasonText(h: Holder): string {
 export class DeliveryNote {
   readonly version = input.required<PackageVersion>();
   readonly rulesName = input.required<string>();
+  /** Whether the note may name the repository (a Bastion that hides them does not, Q-UI-1632). */
+  protected readonly repositoriesShown = inject(REPOSITORIES_SHOWN);
   protected readonly refused = computed(() => this.version().repositories.filter((r) => r.class === 'remote' && r.unavailableReason));
   protected reason(h: Holder): string {
     return reasonText(h);

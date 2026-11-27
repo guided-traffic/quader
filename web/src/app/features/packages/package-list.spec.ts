@@ -4,7 +4,8 @@ import { PackageSummary, PackagesApi } from '../../api/packages-api';
 import { ApiError } from '../../api/problem';
 import { RepositoriesApi } from '../../api/repositories-api';
 import { ANSIBLE_FORMAT, FakeRepositoriesApi, GENERIC_FORMAT, PACKAGE_FORMAT } from '../../api/testing/fakes-catalog';
-import { FakePackagesApi, NPM_REPOSITORIES } from '../../api/testing/fakes-packages';
+import { FakeClientSetupReads, FakePackagesApi, NPM_REPOSITORIES, ociFixture } from '../../api/testing/fakes-packages';
+import { ClientSetupReads } from '../../api/package-reads';
 import { BrowserStorage } from '../../core/storage';
 import { spokenText } from '../../testing/axe';
 import {
@@ -80,13 +81,31 @@ function many(n: number): PackageSummary[] {
 }
 
 describe('Packages list', () => {
+  it('R-UI-269 every row offers its latest version\'s command with its format\'s verb, read when its panel opens', async () => {
+    const r = await open({}, (fake) => ociFixture(fake));
+    document.body.appendChild(r.root);
+    const setup = r.get(ClientSetupReads) as FakeClientSetupReads;
+    const menu = (name: string) => rows(r).find((row) => nameOf(row) === name)!.querySelector<HTMLButtonElement>('td.actions quader-client-command-menu button')!;
+    expect(spokenText(menu('@team-a/ui'))).toBe('1.4.0: Install');
+    expect(spokenText(menu('team/app'))).toBe('1.2.0: Pull');
+    expect(setup.calls).toEqual([]);
+    menu('team/app').click();
+    await settle(r.fixture);
+    const panel = document.getElementById(menu('team/app').getAttribute('aria-controls')!)!;
+    expect([...panel.querySelectorAll('[role="tab"]')].map((t) => text(t))).toEqual(['Docker', 'Podman']);
+    expect(setup.calls.map((c) => `${c.repository} ${c.query.client} ${c.query.version}`)).toEqual(['web/oci-local docker 1.2.0', 'web/oci-local podman 1.2.0']);
+    menu('team/app').click();
+    await settle(r.fixture);
+    r.root.remove();
+  });
+
   it('R-UI-006 lists the packages by name with the description under it, format, latest version and updated, and has no serious violation', async () => {
     const r = await open();
     expect(r.root.querySelector('h1')?.textContent).toBe('Packages');
     const headers = [...r.root.querySelectorAll('thead th')].map((th) => text(th.querySelector('.th-sort, .th-inner > span:first-child') ?? th));
     // What a reader chooses by (Q-UI-314); the counts and the first publication are on the package's page.
     // The words of the repository page's package table (Q-UI-432): Latest, not Latest version.
-    expect(headers).toEqual([expect.stringContaining('Package'), 'Format', 'Latest', expect.stringContaining('Updated')]);
+    expect(headers).toEqual([expect.stringContaining('Package'), 'Format', 'Latest', expect.stringContaining('Updated'), 'Actions']);
     expect(names(r)).toHaveLength(3);
     const ui = rows(r).find((row) => text(row).includes('@team-a/ui'))!;
     const cells = [...ui.children].map((c) => text(c));

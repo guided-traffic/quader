@@ -9,6 +9,7 @@ import {
   VulnerabilitySeverityCounts,
 } from '../../api/vulnerabilities-api';
 import { VulnerabilityReads } from '../../api/vulnerability-reads';
+import { REPOSITORIES_SHOWN } from '../../core/repositories-shown';
 import { PagedResource } from '../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
 import { fiveCounts } from '../../shared/vulnerability/grade-words';
@@ -137,7 +138,13 @@ export class VersionFindings {
     { id: 'fixed', label: $localize`:@@pkg.vuln.col-fixed:Fixed in` },
   ]);
   protected readonly emptyText = $localize`:@@pkg.vuln.findings-none:No open finding of this severity.`;
-  protected readonly caption = computed(() => $localize`:@@pkg.vuln.caption-in:Open findings of this version in ${this.repository()}:repository:`);
+  /** The table's caption names its repository, unless the views name none (a Bastion that hides them, Q-UI-1632). */
+  private readonly repositoriesShown = inject(REPOSITORIES_SHOWN);
+  protected readonly caption = computed(() =>
+    this.repositoriesShown()
+      ? $localize`:@@pkg.vuln.caption-in:Open findings of this version in ${this.repository()}:repository:`
+      : $localize`:@@pkg.vuln.caption:Open findings of this version`,
+  );
 
   protected readonly total = computed(() => {
     const c = fiveCounts(this.counts());

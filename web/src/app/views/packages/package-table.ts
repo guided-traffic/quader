@@ -10,8 +10,12 @@ import { MalwareMark, malwareColumn, malwareShown } from '../../shared/malware/m
 import { NoValue } from '../../shared/ui/no-value';
 import { MalwareSignaturesStore } from '../../core/malware-signatures';
 import { packageCommands } from '../../features/packages/package-links';
+import { clientsOf } from '../../features/setup/clients';
+import { contentShapeOf } from '../repositories/content-shape';
+import { ClientCommandMenu } from './client-command-menu';
 import { PackageName } from './package-name';
 import { PackageTags } from './package-tags';
+import { versionCommandReads } from './version-command';
 
 /**
  * The table of a list of packages (R-UI-006, R-UI-223): what a reader chooses a package by (Q-UI-314), a row per package of the list the
@@ -19,7 +23,7 @@ import { PackageTags } from './package-tags';
  */
 @Component({
   selector: 'quader-package-table',
-  imports: [DataTable, DeprecationMark, FormatIconView, MalwareMark, NoValue, PackageName, PackageTags, SignatureBadge, TimeAgo],
+  imports: [ClientCommandMenu, DataTable, DeprecationMark, FormatIconView, MalwareMark, NoValue, PackageName, PackageTags, SignatureBadge, TimeAgo],
   template: `
     <quader-data-table
       [caption]="tableCaption"
@@ -80,6 +84,21 @@ import { PackageTags } from './package-tags';
             </td>
           }
           <td><quader-time-ago [at]="row.updatedAt" absolute="title" /></td>
+          <!-- The latest version's command (R-UI-269): the panel reads the version when it opens and offers what its page's head
+               offers; nothing for a format no client installs from a list. -->
+          @if (actions()) {
+            <td class="actions">
+              @if (commanded(row.format)) {
+                <quader-client-command-menu
+                  [format]="row.format"
+                  [name]="row.name"
+                  [version]="row.latestVersion"
+                  [verb]="verbOf(row.format)"
+                  [resolve]="readCommand(row.id, row.latestVersion)"
+                />
+              }
+            </td>
+          }
         </tr>
       }
     </quader-data-table>
@@ -127,6 +146,19 @@ export class PackageTable {
       sortable: true,
       help: $localize`:@@pkg.help.updated:When the latest version you may see was published.`,
     },
+    ...(this.actions() ? [{ id: 'actions', label: $localize`:@@repo.col.actions:Actions`, hideLabel: true }] : []),
   ]);
+  /** The read of a row's command, one per version, kept (R-UI-269, Q-UI-1634). */
+  protected readonly readCommand = versionCommandReads();
+  /** A row's command: the latest version's, for a format whose clients install a package (not a file, whose command needs its path). */
+  protected commanded(format: string): boolean {
+    return format !== 'generic' && clientsOf(format).length > 0;
+  }
+  /** The column **Actions** stands where a row has a command. */
+  protected readonly actions = computed(() => this.list().items().some((r) => this.commanded(r.format)));
+  /** The format's client verb, the button's word: Pull, Install (Q-UI-1066). */
+  protected verbOf(format: string): string {
+    return contentShapeOf(format).commandVerb;
+  }
   protected commands = (format: string, name: string): string[] => packageCommands(this.project(), format, name);
 }

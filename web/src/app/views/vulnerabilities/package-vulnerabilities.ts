@@ -1,6 +1,7 @@
-import { Component, input } from '@angular/core';
+import { Component, computed, inject, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { VulnerabilityFinding, VulnerabilityVersionReport } from '../../api/vulnerabilities-api';
+import { REPOSITORIES_SHOWN } from '../../core/repositories-shown';
 import { GradeCard } from '../../shared/vulnerability/grade-card';
 import { BAR_SEVERITIES, BarQueries, BarSeverity } from '../../shared/vulnerability/severity-bar';
 import { VersionFindings } from './version-findings';
@@ -50,9 +51,13 @@ export function blockedRepositories(report: VulnerabilityVersionReport | null): 
       @if (r.repositories.length === 0) {
         <p class="empty" i18n="@@pkg.vuln.none-repositories">No repository you can read holds this version.</p>
       }
-      @for (repo of r.repositories; track repo.repository) {
-        <section class="vuln-repo" [attr.aria-labelledby]="'vuln-repo-' + $index">
-          <h2 [id]="'vuln-repo-' + $index" translate="no">{{ repo.repository }}</h2>
+      <!-- A card per repository under its key; a Bastion that hides its repositories shows the first card alone, without its key
+           (Q-UI-1632). -->
+      @for (repo of shownRepositories(); track repo.repository) {
+        <section class="vuln-repo" [attr.aria-labelledby]="repositoriesShown() ? 'vuln-repo-' + $index : null">
+          @if (repositoriesShown()) {
+            <h2 [id]="'vuln-repo-' + $index" translate="no">{{ repo.repository }}</h2>
+          }
           <quader-grade-card
             class="vuln-grade"
             [grade]="repo.grade"
@@ -123,6 +128,13 @@ export class PackageVulnerabilities {
   readonly signedIn = input(true);
   /** Whether a finding's identifier links to its advisory's page; false where the application has none (the Bastion's, Q-UI-1450). */
   readonly advisoryLinks = input(true);
+  /** Whether the tab may name the repositories (a Bastion that hides them does not, Q-UI-1632). */
+  protected readonly repositoriesShown = inject(REPOSITORIES_SHOWN);
+  /** The cards: one per repository, or the first alone where no repository is named. */
+  protected readonly shownRepositories = computed(() => {
+    const all = this.report()?.repositories ?? [];
+    return this.repositoriesShown() ? all : all.slice(0, 1);
+  });
 
   /** Where a finding leads: its detail for a reader with a session, its advisory's page for a visitor without one (R-UI-224). */
   protected findingLink(f: VulnerabilityFinding): string[] {

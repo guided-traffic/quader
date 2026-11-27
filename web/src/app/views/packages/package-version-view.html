@@ -61,19 +61,20 @@
         />
       }
     }
-    @if (command(); as c) {
+    @if (commandFacts(); as cf) {
+      @let c = cf.command;
       @if (c.kind === 'menu' && detail(); as d) {
         <!-- A role is installed by the name the server knows it by, role/<id>, which its snippets write as <owner>.<name> (Q-ANS-114). -->
         <quader-client-command-menu
           size="page"
           [format]="format()"
-          [name]="role()?.packageName || d.name"
+          [name]="cf.name"
           [version]="d.version"
           [repository]="c.repository"
           [repositories]="c.repositories"
           [verb]="verb()"
-          [kind]="artifactKind()"
-          [digest]="artifactKind() === 'image' ? imageDigest() : null"
+          [kind]="cf.kind"
+          [digest]="cf.digest"
         />
       } @else if (c.kind === 'clamav') {
         <a class="btn btn-default" [routerLink]="c.setup" [queryParams]="{ client: 'freshclam' }" i18n="@@repo.content.tab.setup">Set up client</a>
@@ -314,7 +315,7 @@
                   [loading]="docs.isLoading()"
                   [failure]="docsFailure()"
                   [readmeOnly]="docsReadmeOnly()"
-                  [severalRepositories]="d.repositories.length > 1"
+                  [severalRepositories]="repositoriesShown() && d.repositories.length > 1"
                   [doc]="doc()"
                   [q]="q()"
                   (refresh)="docs.reload()"
@@ -806,18 +807,21 @@
                   }
                 </ul>
               }
-              <h2 i18n="@@pkg.repo.heading">Repositories</h2>
-              <quader-data-table [caption]="tableCaptionRepositories" [columns]="repositoryColumns()" [empty]="d.repositories.length === 0">
-                @for (r of d.repositories; track r.key) {
-                  <tr>
-                    <th scope="row" translate="no"><a [routerLink]="repositoryLink(r.key)">{{ r.key }}</a></th>
-                    <td>{{ classText(r.class) }}</td>
-                    <td>
-                      <quader-time-ago [at]="r.publishedAt" absolute="title" />
-                    </td>
-                  </tr>
-                }
-              </quader-data-table>
+              <!-- A Bastion that hides its repositories names none (Q-UI-1632). -->
+              @if (repositoriesShown()) {
+                <h2 i18n="@@pkg.repo.heading">Repositories</h2>
+                <quader-data-table [caption]="tableCaptionRepositories" [columns]="repositoryColumns()" [empty]="d.repositories.length === 0">
+                  @for (r of d.repositories; track r.key) {
+                    <tr>
+                      <th scope="row" translate="no"><a [routerLink]="repositoryLink(r.key)">{{ r.key }}</a></th>
+                      <td>{{ classText(r.class) }}</td>
+                      <td>
+                        <quader-time-ago [at]="r.publishedAt" absolute="title" />
+                      </td>
+                    </tr>
+                  }
+                </quader-data-table>
+              }
             }
           }
         </div>

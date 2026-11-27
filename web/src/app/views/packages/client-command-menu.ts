@@ -1,13 +1,19 @@
 import { CdkTrapFocus } from '@angular/cdk/a11y';
 import { NgTemplateOutlet } from '@angular/common';
-import { CdkConnectedOverlay, CdkOverlayOrigin, ConnectedPosition } from '@angular/cdk/overlay';
-import { Component, DestroyRef, ElementRef, computed, inject, input, linkedSignal, signal, viewChild } from '@angular/core';
+import { CdkConnectedOverlay, CdkOverlayOrigin, ConnectedPosition, FlexibleConnectedPositionStrategy } from '@angular/cdk/overlay';
+import { Component, DestroyRef, ElementRef, computed, effect, inject, input, linkedSignal, signal, untracked, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { ApiError } from '../../api/problem';
 import { setupCommands } from '../../core/project-links';
+import { REPOSITORIES_SHOWN } from '../../core/repositories-shown';
 import { AddressField } from '../../shared/address-field';
+import { ErrorNotice } from '../../shared/error-notice';
+import { asApiError } from '../../shared/paged-resource';
+import { Loading } from '../../shared/ui/loading';
 import { TabGroup, TabPage } from '../../shared/ui/tabs';
 import { ClientChoice, clientsOfKind } from '../../features/setup/clients';
 import { ClientCommand } from './client-command';
+import { VersionCommandFacts, clamavInstallNote } from './version-command';
 
 let nextId = 0;
 
@@ -38,7 +44,9 @@ const POSITIONS: ConnectedPosition[] = [
  * PowerShell, its download address above the row (`address`, Q-UI-1331) and, with its `sha256`, the check of the download as the second
  * line of each tab (Q-UI-1332); a folder's path with a trailing slash and `section="publish"` gives the upload into it. Where the page
  * has a main act of its own (a file's download in the browser, a folder's upload dialog), it is projected as `[mainAct]` and the button
- * is the chevron joined after it (`split`, Q-UI-1330, Q-UI-1334).
+ * is the chevron joined after it (`split`, Q-UI-1330, Q-UI-1334). A row that knows its version but not the repository its command goes
+ * through (the flat list of packages, a package's versions, R-UI-269) gives `resolve`: the panel says **Loading the commands.** while it
+ * reads the version, then offers what the version's head offers (Q-UI-1634).
  *
  * The panel is a non-modal dialog named by the verb, the package and the version: it takes the focus when it opens and keeps Tab
  * inside; Escape, a click outside it and the button close it, and the focus goes back to the button (a click outside on another control
@@ -57,7 +65,19 @@ const MARGIN = { start: 16, end: 0, top: 16, bottom: 16 };
 
 @Component({
   selector: 'quader-client-command-menu',
-  imports: [AddressField, CdkOverlayOrigin, CdkConnectedOverlay, CdkTrapFocus, ClientCommand, NgTemplateOutlet, RouterLink, TabGroup, TabPage],
+  imports: [
+    AddressField,
+    CdkOverlayOrigin,
+    CdkConnectedOverlay,
+    CdkTrapFocus,
+    ClientCommand,
+    ErrorNotice,
+    Loading,
+    NgTemplateOutlet,
+    RouterLink,
+    TabGroup,
+    TabPage,
+  ],
   template: `
     <!-- A split button where the page has a main act of its own (a file's download in the browser, a folder's upload dialog): the act,
          then the chevron that opens the commands, joined as GitLab's download button with its menu (Q-UI-1330). -->
@@ -104,12 +124,43 @@ const MARGIN = { start: 16, end: 0, top: 16, bottom: 16 };
         [attr.aria-label]="panelLabel()"
         cdkTrapFocus
       >
-        @if (repositories().length > 1) {
+        <!-- A list's row reads its version when the panel first opens (R-UI-269): the spinner while it reads, the notice with Retry when
+             the read failed, then what the head of the version's page would offer. -->
+        @if (failure(); as f) {
+          <div class="command-state"><quader-error-notice [error]="f" (retry)="resolveNow()" /></div>
+        } @else if (resolve() && !resolved()) {
+          <div class="command-state">
+            <quader-loading i18n="@@pkg.command-menu.loading">Loading the commands.</quader-loading>
+          </div>
+        } @else if (resolvedCommand(); as rc) {
+          @if (rc.kind === 'note') {
+            <p class="command-note" [attr.data-testid]="'install-' + rc.cause">{{ rc.note }}</p>
+          } @else if (rc.kind === 'clamav') {
+            <!-- ClamAV's definitions: no command per version, freshclam always takes the version in use (R-UI-194). -->
+            <div class="command-row">
+              <p class="command-client" translate="no">freshclam</p>
+              <a class="btn btn-default btn-sm setup-link" [routerLink]="rc.setup" [queryParams]="{ client: 'freshclam' }"
+                ><ng-container i18n="@@repo.content.tab.setup">Set up client</ng-container
+                ><span class="visually-hidden" translate="no">&ngsp;freshclam</span></a
+              >
+            </div>
+            <p class="command-note" data-testid="install-clamav">{{ clamavNote }}</p>
+          } @else {
+            <ng-container *ngTemplateOutlet="commands" />
+          }
+        } @else {
+          <ng-container *ngTemplateOutlet="commands" />
+        }
+      </div>
+    </ng-template>
+    <!-- The clients' commands through the chosen repository. -->
+    <ng-template #commands>
+        @if (repositoriesShown() && offered().length > 1) {
           <!-- The version is held by several repositories a client can use: the command and the setup follow the one picked here. -->
           <label class="command-repository">
             <span i18n="@@pkg.install.repository">Repository</span>
             <select class="select-input" (change)="pickRepository($event)">
-              @for (r of repositories(); track r) {
+              @for (r of offered(); track r) {
                 <option [value]="r" [selected]="r === chosenRepository()" translate="no">{{ r }}</option>
               }
             </select>
@@ -149,7 +200,6 @@ const MARGIN = { start: 16, end: 0, top: 16, bottom: 16 };
           </div>
           <ng-container *ngTemplateOutlet="body; context: { $implicit: c }" />
         }
-      </div>
     </ng-template>
     <!-- One client's commands: the command, and its second line where the thing has one. -->
     <ng-template #body let-c>
@@ -157,23 +207,23 @@ const MARGIN = { start: 16, end: 0, top: 16, bottom: 16 };
         <quader-client-command
           class="in-menu"
           [format]="format()"
-          [name]="name()"
+          [name]="commandName()"
           [version]="version()"
           [repository]="chosenRepository()"
           [client]="c.id"
-          [kind]="kind()"
+          [kind]="commandKind()"
           [path]="path()"
           [tab]="section()"
           [commandLabel]="fieldLabel(c)"
           [copyLabel]="copyLabel(c)"
         />
         <!-- An image pulled by its digest, the second line of Docker's and Podman's tab (R-OCI-041). -->
-        @if (digest(); as d) {
+        @if (commandDigest(); as d) {
           <p class="by-digest" i18n="@@pkg.command-menu.by-digest">By digest</p>
           <quader-client-command
             class="in-menu"
             [format]="format()"
-            [name]="name()"
+            [name]="commandName()"
             [version]="version()"
             [digest]="d"
             [repository]="chosenRepository()"
@@ -188,7 +238,7 @@ const MARGIN = { start: 16, end: 0, top: 16, bottom: 16 };
           <quader-client-command
             class="in-menu"
             [format]="format()"
-            [name]="name()"
+            [name]="commandName()"
             [version]="version()"
             [repository]="chosenRepository()"
             [client]="c.id"
@@ -298,6 +348,18 @@ const MARGIN = { start: 16, end: 0, top: 16, bottom: 16 };
       color: var(--quader-text-muted);
       font-size: 0.8125rem;
     }
+    /* The read of a list's row's version, and its failure, where the commands will stand (R-UI-269). */
+    .command-state {
+      padding-block: var(--quader-space-3) var(--quader-space-1);
+    }
+    /* Why no client can install the version, as the version's page says it under its facts: muted, in the panel's width. */
+    .command-note {
+      max-inline-size: 40rem;
+      margin: var(--quader-space-3) 0 var(--quader-space-1);
+      color: var(--quader-text-muted);
+      font-size: 0.875rem;
+      white-space: normal;
+    }
     /* A file's address above its clients, its label over its field (Q-UI-320). */
     .command-address {
       display: flex;
@@ -311,13 +373,23 @@ export class ClientCommandMenu {
   readonly format = input.required<string>();
   readonly name = input.required<string>();
   readonly version = input.required<string>();
-  /** The qualified name of the repository the commands go through, the one the panel starts at. */
-  readonly repository = input.required<string>();
+  /**
+   * The qualified name of the repository the commands go through, the one the panel starts at; empty where the row knows none and
+   * `resolve` finds it (R-UI-269).
+   */
+  readonly repository = input('');
   /**
    * Every repository a client can take the version from, where there are several (the version's page, Q-UI-1241): the panel offers
-   * them in a select above its row. Empty or one: no select.
+   * them in a select above its row while the views name repositories (`REPOSITORIES_SHOWN`, Q-UI-1632). Empty or one: no select.
    */
   readonly repositories = input<readonly string[]>([]);
+  /**
+   * The read of the version's command where the row knows the version but not its repositories (a row of the flat list of packages or
+   * of a package's versions, R-UI-269, Q-UI-1634): asked when the panel first opens, its answer kept while the same function is given;
+   * the panel then offers what the head of the version's page would (`versionCommandFacts`): the clients through its repositories, the
+   * note why none can install it, or ClamAV's Set up client. null: `repository` and the inputs are the commands' (a repository's list).
+   */
+  readonly resolve = input<(() => Promise<VersionCommandFacts>) | null>(null);
   /** The format's client verb, the button's word: Pull, Install, Download (Q-UI-1066). */
   readonly verb = input.required<string>();
   /** `row`: the small button at the end of a list's row; `page`: the button of a page's head (Q-UI-1241). */
@@ -350,12 +422,43 @@ export class ClientCommandMenu {
    * package's (a .NET tool's and a template's are the .NET CLI's, and each client's forms are those of the kind, R-NUGET-037).
    */
   readonly kind = input<string | null>(null);
-  protected readonly clients = computed<readonly ClientChoice[]>(() => clientsOfKind(this.format(), this.kind()));
+
+  /** The answer of `resolve`, kept while the same function is given; null while none is asked or it has not answered. */
+  protected readonly resolved = linkedSignal<(() => Promise<VersionCommandFacts>) | null, VersionCommandFacts | null>({
+    source: this.resolve,
+    computation: () => null,
+  });
+  /** The failure of `resolve`, shown in the panel with its Retry (R-UI-216). */
+  protected readonly failure = linkedSignal<(() => Promise<VersionCommandFacts>) | null, ApiError | null>({
+    source: this.resolve,
+    computation: () => null,
+  });
+  /** The function whose answer is awaited now: a row whose version changed while it was read asks the new one at once. */
+  private resolvingFor: (() => Promise<VersionCommandFacts>) | null = null;
+  protected readonly resolvedCommand = computed(() => this.resolved()?.command ?? null);
+  /** The name the clients install the version by: a role's `role/<id>` where `resolve` says so, the given name otherwise. */
+  protected readonly commandName = computed(() => this.resolved()?.name ?? this.name());
+  protected readonly commandKind = computed(() => (this.resolve() ? (this.resolved()?.kind ?? null) : this.kind()));
+  protected readonly commandDigest = computed(() => (this.resolve() ? (this.resolved()?.digest ?? null) : this.digest()));
+  /** The repository the panel starts at and the ones it offers: the resolved menu's, or the given ones. */
+  private readonly startRepository = computed(() => {
+    const c = this.resolvedCommand();
+    return c?.kind === 'menu' ? c.repository : this.repository();
+  });
+  protected readonly offered = computed(() => {
+    const c = this.resolvedCommand();
+    return c?.kind === 'menu' ? c.repositories : this.repositories();
+  });
+  /** Whether the panel may name the repositories (a Bastion that hides them does not, Q-UI-1632): the select stands only then. */
+  protected readonly repositoriesShown = inject(REPOSITORIES_SHOWN);
+  protected readonly clamavNote = clamavInstallNote();
+
+  protected readonly clients = computed<readonly ClientChoice[]>(() => clientsOfKind(this.format(), this.commandKind()));
   /** The chosen tab, kept while the button stands (Q-UI-1240): the panel opens again on the client last chosen. */
   protected readonly chosenTab = signal(0);
   protected readonly chosenClient = computed(() => this.clients()[this.chosenTab()] ?? this.clients()[0] ?? null);
   /** The picked repository; another repository given starts at the one given again. */
-  protected readonly chosenRepository = linkedSignal(() => this.repository());
+  protected readonly chosenRepository = linkedSignal(() => this.startRepository());
   /**
    * Set up client of the chosen repository (R-UI-126), in both applications (the Bastion's since bastion.md R-BAS-129, Q-UI-1468); none
    * for a system repository of upstream, which answers no client (Q-UI-896).
@@ -376,10 +479,21 @@ export class ClientCommandMenu {
   private readonly trigger = viewChild.required<ElementRef<HTMLButtonElement>>('trigger');
   private readonly panel = viewChild<ElementRef<HTMLElement>>('panel');
   private readonly overlay = viewChild(CdkConnectedOverlay);
+  private readonly origin = viewChild.required(CdkOverlayOrigin);
+  /** How far the end-aligned positions are shifted towards the end, so that the panel keeps 16 px from the window's start. */
+  private shift = 0;
   private resized: ResizeObserver | null = null;
 
   constructor() {
     inject(DestroyRef).onDestroy(() => this.resized?.disconnect());
+    // The open panel of a row reads its version (R-UI-269): when it first opens, and again at once when the row's version changes while
+    // it is open (the list read again in place, R-UI-213). An answer is kept for the next open; a failure waits for its Retry.
+    effect(() => {
+      if (!this.open() || !this.resolve()) return;
+      untracked(() => {
+        if (!this.resolved() && !this.failure()) this.resolveNow();
+      });
+    });
   }
 
   protected fieldLabel(c: ClientChoice): string {
@@ -411,8 +525,31 @@ export class ClientCommandMenu {
   }
 
   protected toggle(): void {
-    if (this.open()) this.close(true);
-    else this.open.set(true);
+    if (this.open()) {
+      this.close(true);
+      return;
+    }
+    this.open.set(true);
+  }
+
+  /** Reads the version's command through `resolve`, once per function at a time; the notice's Retry calls it again. */
+  protected resolveNow(): void {
+    const resolve = this.resolve();
+    if (!resolve || this.resolvingFor === resolve) return;
+    this.resolvingFor = resolve;
+    this.failure.set(null);
+    void resolve()
+      .then(
+        (facts) => {
+          if (this.resolve() === resolve) this.resolved.set(facts);
+        },
+        (e: unknown) => {
+          if (this.resolve() === resolve) this.failure.set(asApiError(e));
+        },
+      )
+      .finally(() => {
+        if (this.resolvingFor === resolve) this.resolvingFor = null;
+      });
   }
 
   /**
@@ -423,12 +560,36 @@ export class ClientCommandMenu {
     queueMicrotask(() => {
       const panel = this.panel()?.nativeElement ?? document.getElementById(this.panelId);
       panel?.focus({ preventScroll: true });
+      this.place(panel);
       if (panel && typeof ResizeObserver !== 'undefined') {
         this.resized?.disconnect();
-        this.resized = new ResizeObserver(() => this.overlay()?.overlayRef?.updatePosition());
+        this.resized = new ResizeObserver(() => this.place(panel));
         this.resized.observe(panel);
       }
     });
+  }
+
+  /**
+   * Places the panel again, its end on the button's end and never nearer than 16 px to the window's start. The CDK counts a panel as
+   * inside the window from 0 px, not from the margin: a row's button that ends 357 px into a window of 390 px (a stacked list's row)
+   * hung a panel of 358 px at 0 px (R-UI-269). The end-aligned positions are shifted towards the end by what is missing.
+   */
+  private place(panel: HTMLElement | null): void {
+    const ref = this.overlay()?.overlayRef;
+    if (!ref || !panel) return;
+    const end = this.origin().elementRef.nativeElement.getBoundingClientRect().right;
+    // Only where the CDK keeps the end-aligned place (it starts at 0 px or later) but nearer than the margin; a panel that would start
+    // before 0 px is pushed by the CDK itself (the head of a NuGet version, whose button stands mid-line at 390 px).
+    const start = end - panel.offsetWidth;
+    const shift = start > -1.5 && start < MARGIN.start ? Math.ceil(MARGIN.start - start) : 0;
+    if (shift !== this.shift) {
+      this.shift = shift;
+      const strategy = ref.getConfig().positionStrategy;
+      if (strategy instanceof FlexibleConnectedPositionStrategy) {
+        strategy.withPositions(POSITIONS.map((p) => (p.originX === 'end' ? { ...p, offsetX: shift } : p)));
+      }
+    }
+    ref.updatePosition();
   }
 
   /**
