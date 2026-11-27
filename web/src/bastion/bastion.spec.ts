@@ -5,6 +5,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { ClientSetupReads, PackageReads } from '../app/api/package-reads';
 import { ApiError } from '../app/api/problem';
+import { BASTION_MARK } from '../app/shared/brand/mark-geometry';
 import { SignatureReads } from '../app/api/signature-reads';
 import { VulnerabilityReads } from '../app/api/vulnerability-reads';
 import {
@@ -249,6 +250,21 @@ describe('The Bastion shell (R-UI-227)', () => {
     );
     expect(root.querySelector('.not-ready')).not.toBeNull();
     backend?.expectNone('/ui/data/v1/state');
+  });
+
+  it("R-UI-227 the top bar shows the Bastion's tower and the name Quader Bastion, not Quader's wall", async () => {
+    const root = await shell((req) =>
+      req.flush({ confirmedAt: new Date().toISOString(), staleAfterSeconds: 3600, stale: false, docs: false }),
+    );
+    const product = root.querySelector('.topbar .product');
+    const box = (r: Element) => ['x', 'y', 'width', 'height'].map((a) => Number(r.getAttribute(a)));
+    const stones = [...(product?.querySelectorAll('quader-mark rect.stone') ?? [])].map(box);
+    const accent = [...(product?.querySelectorAll('quader-mark rect.accent') ?? [])].map(box);
+    const tower = (s: { x: number; y: number; width: number; height: number }) => [s.x, s.y, s.width, s.height];
+    expect(stones).toEqual(BASTION_MARK.stones.map(tower));
+    expect(accent).toEqual([tower(BASTION_MARK.coloured)]);
+    expect(product?.querySelector('.product-name')?.textContent?.trim()).toBe('Quader Bastion');
+    expect(product?.querySelector('.product-qualifier')?.textContent).toBe('Bastion');
   });
 
   it('R-UI-227 a fresh state shows the page and no band', async () => {

@@ -7077,7 +7077,8 @@ W-35's P9b found that a person whose browser hit the class `gui` read problem de
 
 - A page's address the guard refuses (the class `gui` or the block list, R-BAS-117) is answered `429` with `Retry-After` and the class's
   RateLimit fields as before, and a page of its own instead of problem details
-  ([Q-BAS-413](#q-bas-413--a-refused-pages-address-is-a-page-drawn-by-the-document-alone)): the bar with the mark and the name, the heading
+  ([Q-BAS-413](#q-bas-413--a-refused-pages-address-is-a-page-drawn-by-the-document-alone)): the bar with the Bastion's mark, the tower, and
+  the name "Quader Bastion" ([api-and-ui.md](api-and-ui.md) Q-UI-1617), the heading
   "Too many requests", the sentence of the refusal with the wait ("Too many requests came from your address. Try again in 2 seconds.", or
   the block list's), "The page tries again by itself.", and the footer's legal links. In the address's language; an address without one
   (`/`, `/ui`, an address the handler redirects) in the visitor's (`Accept-Language`), English otherwise.
@@ -7095,6 +7096,9 @@ Acceptance criteria:
 - Unit ([seo_test.go](../../internal/bastion/gui/seo_test.go), microseconds): `TestR_BAS_123_APageOverTheLimitIsAPageInTheBastionsShape`
   (four page addresses in their languages with the headers, the policy's nonce on the styles, the refresh, noindex, no script and no
   link; `HEAD`; the data, a file of the bundle, `robots.txt` and the sitemap keep the problem; the block list's sentence and the footer).
+- Unit ([page/refusal_test.go](../../internal/bastion/gui/page/refusal_test.go), milliseconds):
+  `TestR_BAS_123_TheRefusalPageDrawsTheBastionsMarkAsTheGeneratorWritesIt` (the stones, the coloured merlon and both schemes' colours
+  equal to the Bastion's favicon that `web/scripts/brand-logo.mjs` writes; the name "Quader Bastion" with "Bastion" in Regular).
 - Rendered (both schemes, 390 and 1,440 px, English and German) and looked at; the renders are not committed.
 
 ## The documentation of the Bastion's web interface

@@ -249,21 +249,30 @@ height of 40, centred on the mark's box (the caps from 12 to the baseline at 52)
 after the mark. The lockup's width is rounded up to a multiple of 8 units, so at 16 px of height or a multiple of it the
 lockup is a whole, even number of pixels wide and stays on whole pixels when it is centred.
 
-The favicon is the wall. [web/public/favicon.svg](../../web/public/favicon.svg) is the mark without a tile, its colours
-switching with `prefers-color-scheme`. [web/public/favicon.ico](../../web/public/favicon.ico) holds PNG frames of 16, 32
-and 48 px: the wall at its full size in the dark ground's colours on the dark tile, whose corner radius of 12 (of 64) stays
-clear of the corner stones (a radius above 15 would cut them); at 16 px the tile shows as a border of 1 px. The script
-rasterises the frames itself (8 × 8 samples per pixel), so no image tool is needed and the bytes are deterministic;
-[index.html](../../web/src/index.html) links the SVG first and the ICO as the fallback. The wordmark as paths and the
+The main installation's favicon is the wall. [web/public/favicon.svg](../../web/public/favicon.svg) is the mark without a
+tile, its colours switching with `prefers-color-scheme`. [web/public/favicon.ico](../../web/public/favicon.ico) holds PNG
+frames of 16, 32 and 48 px: the wall at its full size in the dark ground's colours on the dark tile, whose corner radius of
+12 (of 64) stays clear of the corner stones (a radius above 15 would cut them); at 16 px the tile shows as a border of 1 px.
+The script rasterises the frames itself (8 × 8 samples per pixel), so no image tool is needed and the bytes are
+deterministic; [index.html](../../web/src/index.html) links the SVG first and the ICO as the fallback. The Bastion's
+favicon is the tower in the same two forms, [web/src/bastion/public/favicon.svg](../../web/src/bastion/public/favicon.svg)
+and `favicon.ico`, written by the same run; only the Bastion's build (`bastion-gui` in `web/angular.json`) copies that folder,
+and it skips the main installation's favicon of `web/public`
+([Q-UI-1617](../spec/api-and-ui.md#q-ui-1617--every-mark-a-visitor-of-a-bastion-sees-is-the-bastions-tower)). The wordmark as paths and the
 generated ICO are what [Q-UI-145](../spec/api-and-ui.md#q-ui-145--the-logos-wordmark-as-paths-from-inter-bold-and-a-reduced-mark-as-the-favicon)
 chose; its reduced lane mark is gone with ADR-199.
 
 In the app, `<quader-mark>` ([shared/brand/quader-mark.ts](../../web/src/app/shared/brand/quader-mark.ts)) draws the mark
 inline from `shared/brand/mark-geometry.ts`, which the same run of the script writes (formatted with the repository's
-Prettier settings). Its colours are the tokens `--quader-mark-stone` and `--quader-mark-accent`, so it follows the theme the
+Prettier settings): Quader's wall (`MARK`) and its lockup (`LOCKUP`) by default, the Bastion's tower (`BASTION_MARK`) where
+the Bastion's application passes it (`[mark]`); the main installation's bundle never references the tower and drops it. Its colours are the tokens `--quader-mark-stone` and `--quader-mark-accent`, so it follows the theme the
 viewer chose, which an `<img>` of the files above cannot: an image only knows the system's colour scheme. The top bar shows
 the mark at 32 px, as high as the bar's controls, and the name beside it as text, Inter at weight 700; below 360 px the name
-is visually hidden and stays the link's accessible name. The sign-in and signed-out screens show the lockup
+is visually hidden and stays the link's accessible name. The Bastion's top bar is the same with the tower and the name
+"Quader Bastion", "Bastion" at weight 400 as the lockup sets it; its refusal page
+([internal/bastion/gui/page/refusal.go](../../internal/bastion/gui/page/refusal.go), drawn without the application) draws the
+tower and the name the same way from a copy of the coordinates and colours that `refusal_test.go` holds equal to the
+generated favicon. The sign-in and signed-out screens show the lockup
 (`[wordmark]="true"`, an image named Quader) 48 px high (`.bare-logo` in `_shell.scss`). [palette.spec.ts](../../web/src/styles/palette.spec.ts)
 holds both colours at 3:1 against the top bar and the page in both schemes: the stones reach 12.6:1 to 15.1:1, the
 coloured stone 3.6:1 on the light top bar, 4.2:1 on the light page, 6.8:1 and 8.2:1 on the dark ones. To change the
@@ -479,8 +488,9 @@ on it today.
 - The mark's files were checked on rendered frames in headless Chrome (the SVGs from 16 to 64 px, the ICO's frames at
   their own sizes, on light and dark grounds), not in the browser tabs of Firefox or Safari, and not whether a browser that
   ignores `prefers-color-scheme` inside a favicon SVG shows dark stones on a dark tab bar. The files of `public/brand`
-  follow the system's colour scheme, not the theme button; the app draws its mark inline and is not affected. Nothing in
-  the app shows the Bastion's mark yet. Not checked: the pair kerning of the static font files reads as 0.
+  follow the system's colour scheme, not the theme button; the app draws its mark inline and is not affected. The
+  Bastion's refusal page follows the system's scheme alone, as it has no theme button. Not checked: the pair kerning of the
+  static font files reads as 0.
 - The reference's type is Inter with its lower-case l; Quader ships Inter 4 of `@fontsource-variable/inter`, the
   reference's "GitLab Sans" is built on an earlier Inter. Glyph differences between the two versions were not compared.
 - The values of Q-UI-128 come from the reference's admin dashboard and its user list; its forms and dialogs were not

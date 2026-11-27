@@ -7,7 +7,7 @@ import (
 )
 
 // Refusal is the page a visitor reads when the class gui refuses a page's address (R-BAS-123, P9b's open point 3): the Bastion's
-// shape (the bar with the mark, a heading, the sentence, the footer), drawn by the document alone, since every file of the
+// shape (the bar with the Bastion's mark and name, a heading, the sentence, the footer), drawn by the document alone, since every file of the
 // application would be refused as well: its styles carry the page's nonce, it runs no script, and it loads itself again after the
 // wait (a refresh, which no policy of the page forbids and which needs no script).
 type Refusal struct {
@@ -20,15 +20,17 @@ type Refusal struct {
 	Legal []Link
 }
 
-// The mark's stones on its 64 grid (web/src/app/shared/brand/mark-geometry.ts): the plain ones and the coloured one.
+// The stones of the Bastion's mark, the tower, on its 64 grid (Q-UI-1617): the plain ones and the coloured merlon, as
+// web/scripts/brand-logo.mjs writes them (MARKS.bastion); a unit test holds them equal to its web/src/bastion/public/favicon.svg.
 func markStones() [][4]int {
-	return [][4]int{{4, 4, 36, 16}, {44, 4, 16, 16}, {4, 24, 16, 16}, {4, 44, 36, 16}, {44, 44, 16, 16}}
+	return [][4]int{{4, 4, 12, 16}, {48, 4, 12, 16}, {4, 24, 24, 16}, {32, 24, 28, 16}, {12, 44, 24, 16}, {40, 44, 12, 16}}
 }
 
-func markColored() [4]int { return [4]int{24, 24, 36, 16} }
+func markColored() [4]int { return [4]int{24, 4, 16, 16} }
 
 // refusalCSS is the shell's look in a few rules (web/src/styles/_tokens.scss and _shell.scss): the bar's and the surface's colours in
-// both schemes, the system's font, the heading of the not-ready page, the muted footer.
+// both schemes, the system's font, the name's "Bastion" in Regular after the Bold "Quader", the heading of the not-ready page, the
+// muted footer. The mark's two colours are the generator's (the same unit test holds them equal).
 const refusalCSS = `:root{color-scheme:light dark;--bg:#fff;--fg:#3a383f;--nav:#ececef;--navfg:#3a383f;--muted:#626168;` +
 	`--heading:#18171d;--stone:#28272d;--accent:#b4690e}` +
 	`@media (prefers-color-scheme:dark){:root{--bg:#18171d;--fg:#ececef;--nav:#28272d;--navfg:#ececef;--muted:#bfbfc3;` +
@@ -38,7 +40,7 @@ const refusalCSS = `:root{color-scheme:light dark;--bg:#fff;--fg:#3a383f;--nav:#
 	`font:400 .875rem/1.5 system-ui,-apple-system,'Segoe UI',Roboto,'Noto Sans',Ubuntu,sans-serif}` +
 	`header{flex:none;display:flex;align-items:center;block-size:3rem;padding-inline:12px 8px;background:var(--nav);color:var(--navfg)}` +
 	`.product{display:inline-flex;align-items:center;gap:8px;padding:4px 8px;color:inherit;font-size:1.125rem;font-weight:700;` +
-	`text-decoration:none}` +
+	`text-decoration:none}.product .q{font-weight:400}` +
 	`.product svg{block-size:2rem;inline-size:2rem}.stone{fill:var(--stone)}.accent{fill:var(--accent)}` +
 	`main{flex:1 0 auto;display:flex;flex-direction:column;padding:24px 32px}` +
 	`h1{margin:0 0 16px;color:var(--heading);font-size:1.375rem;font-weight:400;line-height:1.75rem}p{margin:0 0 16px}` +
@@ -59,7 +61,7 @@ const refusalTemplate = `<!doctype html>` +
 	`<svg viewBox="0 0 64 64" aria-hidden="true" focusable="false">` +
 	`{{range .Stones}}<rect class="stone" x="{{index . 0}}" y="{{index . 1}}" width="{{index . 2}}" height="{{index . 3}}" rx="1.5"></rect>{{end}}` +
 	`<rect class="accent" x="{{index .Colored 0}}" y="{{index .Colored 1}}" width="{{index .Colored 2}}" height="{{index .Colored 3}}" rx="1.5"></rect>` +
-	`</svg><span translate="no">Quader</span></a></header>` +
+	`</svg><span translate="no">Quader <span class="q">Bastion</span></span></a></header>` +
 	`<main><h1>{{.Heading}}</h1><p>{{.Text}}</p><p class="muted">{{.Again}}</p>` +
 	`{{if .Legal}}<footer><ul>{{range .Legal}}<li><a href="{{.Href}}">{{.Text}}</a></li>{{end}}</ul></footer>{{end}}` +
 	`</main></body></html>`

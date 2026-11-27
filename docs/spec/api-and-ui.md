@@ -10649,7 +10649,8 @@ main installation", for anonymous visitors from the internet who want to know wh
   version (`…/packages/<format>/<name>@<version>`), the versions' table of a format whose packages lead with their documentation
   (`…/-/versions`), a public repository's Set up client (`/projects/<project>/repositories/<key>/setup`, R-BAS-129), the imprint and the privacy notice (`/legal/imprint`, `/legal/privacy`, each only while it has a text), and not found;
   nothing else. A screen whose script the Bastion no longer holds after a rollout is loaded from the server (Q-UI-1370).
-- **The shell.** The mark and the product's name (a link to the start), the other language as a link to the same address in its build
+- **The shell.** The Bastion's mark, the tower, and its name "Quader Bastion" with "Bastion" in Regular (a link to the start;
+  [Q-UI-1617](#q-ui-1617--every-mark-a-visitor-of-a-bastion-sees-is-the-bastions-tower)), the Bastion's favicon, the other language as a link to the same address in its build
   (`/ui/<locale>/…`), the theme (follow the system, light, dark), kept in the browser alone
   ([Q-UI-1439](#q-ui-1439--the-theme-is-kept-in-the-browser-the-language-is-the-address)); one scrolling panel (R-UI-215); the notices
   of the shared views.
@@ -10671,7 +10672,8 @@ Acceptance criteria:
 
 - Unit ([bastion.spec.ts](../../web/src/bastion/bastion.spec.ts), under a second): an old state shows the band, the footer the imprint
   and "As of" and no privacy link without its text, the language link names the same address in German; a Bastion that is not ready
-  shows the sentence in place of the page; a fresh state shows the page and no band.
+  shows the sentence in place of the page; a fresh state shows the page and no band; the top bar draws the tower of `BASTION_MARK` and
+  names "Quader Bastion" (`R-UI-227 the top bar shows the Bastion's tower and the name Quader Bastion, not Quader's wall`).
 
 ### R-UI-228 · The Bastion's reads, and a bundle without a write, a session or a screen of the main installation
 Priority: **P1** · Covers: quader-only
@@ -30637,6 +30639,28 @@ Context: R-UI-229, R-UI-231; [bastion.md](bastion.md) R-BAS-128 carries a projec
 | (b) The heading "Packages" with the name in the trail | — | — | The Bastion has no trail beside its pages; the page would not say whose packages they are |
 
 **Choice:** (a). **Applied in the spec:** R-UI-229, R-UI-231.
+
+### Q-UI-1617 · Every mark a visitor of a Bastion sees is the Bastion's tower
+
+Status: **Decided by the owner on 2026-11-27** (the rule: "Im UI vom Bastion steht oben das Quader Icon? Warum nicht das Bastion Icon?",
+looking at his Bastion's web interface) and **by the development agent** (batch M: how the places draw it) — the owner reviews it at the
+walkthrough.
+
+Context: R-UI-227, [bastion.md](bastion.md) R-BAS-123, ADR-199 and the Logo section of
+[design-language.md](../developer/design-language.md#logo): the owner gave the Quader Bastion a mark of its own on 2026-11-17, a tower of
+three courses with the middle merlon coloured, and the lockup "Quader" Bold with "Bastion" Regular. `brand-logo.mjs` held it, but the
+Bastion's top bar, its favicon and its refusal page drew Quader's wall and the word "Quader".
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The generator writes the tower as `BASTION_MARK` into `mark-geometry.ts` and the Bastion's favicon (SVG and ICO) into `web/src/bastion/public/`, which only the Bastion's build copies (its build skips the main installation's favicon); the top bar draws `<quader-mark [mark]="BASTION_MARK">` and the name "Quader Bastion" as text, "Bastion" in Regular after the bar's Bold; the Go refusal page keeps its coordinates and colours, and a unit test holds them equal to the generated favicon (chosen) | One source, the generator; two marks, each application its own | The bar keeps the main installation's form (mark at 32 px, the name as text that a narrow bar hides and that stays the link's name); the main bundle drops the tower it never references; a drift of the Go copy fails a test of milliseconds | The Go page holds a copy of seven stones and four colours, checked rather than read |
+| (b) The lockup's SVG (`quader-bastion-horizontal.svg`) as the bar's image | — | One file | An `<img>` only knows the system's scheme, not the theme the visitor chose; the main bar sets mark and word apart, and a narrow bar could not drop the word |
+| (c) The generator writes a Go file for the refusal page | No copy in Go | — | A Node script writing Go source into `internal/`, formatted by neither tool's run |
+
+The loading spinner stays the wall's stones in both applications: it is the spinner the owner picked
+([R-UI-217](#r-ui-217--every-load-shows-the-spinner-the-owner-picked)), not the product's mark. The main installation's UI is unchanged.
+
+**Choice:** (a). **Applied in the spec:** R-UI-227, [bastion.md](bastion.md) R-BAS-123.
 
 ### Q-UI-1490 · The audit log holds its German actions by the act's word and a shorter word where it reads right
 

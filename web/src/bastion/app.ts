@@ -8,6 +8,7 @@ import { filter, map } from 'rxjs';
 import { LegalStore } from '../app/core/legal-store';
 import { LIVE_IDLE_MS, LIVE_SLOW_MS, live } from '../app/core/live-refresh';
 import { BrowserStorage } from '../app/core/storage';
+import { BASTION_MARK } from '../app/shared/brand/mark-geometry';
 import { QuaderMark } from '../app/shared/brand/quader-mark';
 import { ErrorNotice } from '../app/shared/error-notice';
 import { Notices } from '../app/shared/notices';
@@ -21,10 +22,10 @@ type Theme = 'light' | 'dark';
 const THEME_KEY = 'quader.theme';
 
 /**
- * The shell of the Bastion's application (R-UI-227): the mark, the theme and the language in the top bar; the band of an old state
- * above the page; the page or, while the Bastion has no catalogue to show, its sentence; and the footer with the imprint, the privacy
- * notice and "As of". It names nothing of the main installation (W-35's B.13). It reads the state at the idle cadence of a live view
- * (R-UI-213), every 30 s while the Bastion is not ready, and never asks for a reload.
+ * The shell of the Bastion's application (R-UI-227): the Bastion's mark and name (Q-UI-1617), the theme and the language in the top
+ * bar; the band of an old state above the page; the page or, while the Bastion has no catalogue to show, its sentence; and the footer
+ * with the imprint, the privacy notice and "As of". It names nothing of the main installation (W-35's B.13). It reads the state at the
+ * idle cadence of a live view (R-UI-213), every 30 s while the Bastion is not ready, and never asks for a reload.
  */
 @Component({
   selector: 'quader-root',
@@ -47,8 +48,8 @@ const THEME_KEY = 'quader.theme';
     <header class="topbar">
       <div class="topbar-start">
         <a class="product" routerLink="/">
-          <quader-mark class="product-mark" />
-          <span class="product-name" translate="no">Quader</span>
+          <quader-mark class="product-mark" [mark]="bastionMark" />
+          <span class="product-name" translate="no">Quader <span class="product-qualifier">Bastion</span></span>
         </a>
       </div>
       <span></span>
@@ -147,6 +148,11 @@ const THEME_KEY = 'quader.theme';
       block-size: 100dvh;
     }
 
+    /* The lockup's words: "Quader" in the bar's Bold, "Bastion" after it in Regular (Q-UI-1617). */
+    .product-qualifier {
+      font-weight: 400;
+    }
+
     /* The banner's form and colours of a warning (shared/banner.ts): the icon a line high on the first line of a text that wraps. */
     .stale-band {
       display: flex;
@@ -216,6 +222,7 @@ const THEME_KEY = 'quader.theme';
   `,
 })
 export class BastionApp {
+  protected readonly bastionMark = BASTION_MARK;
   protected readonly store = inject(BastionStateStore);
   protected readonly legal = inject(LegalStore);
   private readonly storage = inject(BrowserStorage);
