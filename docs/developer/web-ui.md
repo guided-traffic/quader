@@ -484,7 +484,13 @@ running and stops only what it started: Quader with the sign-in provider (`serve
    that meet the rate limit are sent again after its `Retry-After` (`patient`). The remotes of public registries stay empty: nothing is fetched from an
    upstream. Four of the public registries of the project `upstream`, none of them a format's default preset, are switched on
    (`switchedOnRegistries`: `ghcr`, `quay`, `ubuntu`, `debian-security`), so that its page shows some on and some off beside its two
-   system repositories (R-UI-192); switching on fetches nothing, and the plain user reads those four at their level Internal. The remote `platform/image-cache` has this installation as its upstream (`platform/image-source`, under the namespace `vendor`): the seed pushes an image of two platforms there and pulls through the remote one single-platform tag, one platform of an index and an index alone, so that its rows show a known size, a size of the platforms fetched so far and one that is not known (W-24, R-API-080). **Grades** ([advisories.ts](../../web/e2e/renders/advisories.ts), R-VULN-038): the profile's OSV
+   system repositories (R-UI-192); switching on fetches nothing, and the plain user reads those four at their level Internal. The remote `platform/image-cache` has this installation as its upstream (`platform/image-source`, under the namespace `vendor`): the seed pushes an image of two platforms there and pulls through the remote one single-platform tag, one platform of an index and an index alone, so that its rows show a known size, a size of the platforms fetched so far and one that is not known (W-24, R-API-080). The malware
+   verdicts ([malware.ts](../../web/e2e/renders/malware.ts)) mark every stored part of `images`, `image-cache` and `image-source` clean
+   under the seed's signatures, with no download since and one rank, so an image is decided by its lowest digest; before them, a verdict
+   a real malware scanner wrote (a backend of `make ui-dev-backend` runs one) goes back to waiting and every request for a check ends. A part
+   left without a seeded verdict read Unchecked, or Checked under the real signatures when the run found such a backend, and a seeded one
+   turned to Recheck due under the real scanner's newer signatures or the seed's own pulls of earlier runs, so the two images' screens
+   (`malware-marks-image-partial`, and the Bastion's `image-source` image with both platforms stored) showed what the instance had run before. **Grades** ([advisories.ts](../../web/e2e/renders/advisories.ts), R-VULN-038): the profile's OSV
    source reads npm advisories from the generic repository `platform/advisory-mirror` instead of the network (`mode: repository`
    in `up.sh`, R-VULN-005); the seed uploads an archive of its own `DEMO-…` records there that affect the packages it vendors into
    `web-frontend/npm-vendor` (`matchPublicAdvisories: always`), runs `vuln-sync-osv` and waits until `image-convert-tools@4.0.1`

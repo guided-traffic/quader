@@ -220,7 +220,8 @@ export const bastionScreens: readonly Screen[] = [
   { id: 'bastion-not-found', path: `${B}/projects/${otherProject}/nothing-here`, kinds: ['anonymous'], de: true },
   // The malware mark at the Bastion (R-UI-258): a package's versions with their marks and their details; the newest version's header,
   // details and Files tab under today's signatures; a version under older signatures, an overdue one, an infected and a released one; and
-  // a remote image's tag of which one platform is stored, with its parts.
+  // an image's tag of two platforms with its parts. The image is image-source's, both platforms stored: the Bastion shows public
+  // repositories, and the remote image-cache, whose tag has a platform it never fetched (malware-marks-image-partial), is private.
   { id: 'bastion-malware-versions', path: `${pkg(checksums)}/-/versions`, kinds: ['anonymous'], walk: markedVersions, de: true },
   { id: 'bastion-malware-current', path: ver(checksums, '1.4.0'), kinds: ['anonymous'], expected: lookups, walk: markedVersion, de: true },
   { id: 'bastion-malware-older', path: ver(checksums, '1.3.0'), kinds: ['anonymous'], expected: lookups, walk: markedHead, de: true },
