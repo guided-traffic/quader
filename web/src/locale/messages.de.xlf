@@ -7515,8 +7515,8 @@
         <note category="location">src/app/features/bastions/bastion-limits.ts:112,114</note>
       </notes>
       <segment>
-        <source>This Bastion&apos;s web interface shows nothing: the main installation admits no request without a credential (<pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">endpoints.default.auth.anonymous</pc> is false), so nothing is public. Admit such requests there to show your public repositories, or switch the web interface off.</source>
-        <target>Die Weboberfläche dieser Bastion zeigt nichts: Die Hauptinstallation lässt keine Anfrage ohne Zugangsdaten zu (<pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">endpoints.default.auth.anonymous</pc> ist false), daher ist nichts öffentlich. Lassen Sie solche Anfragen dort zu, um Ihre öffentlichen Repositorys zu zeigen, oder schalten Sie die Weboberfläche aus.</target>
+        <source>This Bastion&apos;s web interface shows nothing: <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">endpoints.default.auth.anonymous</pc> is false, so the main installation admits no request without a credential and nothing is public. Admit such requests there to show your public repositories, or switch the web interface off.</source>
+        <target>Die Weboberfläche dieser Bastion zeigt nichts: <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">endpoints.default.auth.anonymous</pc> ist false, daher lässt die Hauptinstallation keine Anfrage ohne Zugangsdaten zu, und nichts ist öffentlich. Lassen Sie solche Anfragen dort zu, um Ihre öffentlichen Repositorys zu zeigen, oder schalten Sie die Weboberfläche aus.</target>
       </segment>
     </unit>
     <unit id="bastion.limits.catalogue-base-url">

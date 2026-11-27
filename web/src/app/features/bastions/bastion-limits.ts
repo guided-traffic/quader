@@ -109,9 +109,9 @@ const MB = 1e6;
         <span class="material-icons inline" aria-hidden="true">warning</span>
         @if (reason === 'anonymous_requests_refused') {
           <span i18n="@@bastion.limits.catalogue-refused"
-            >This Bastion's web interface shows nothing: the main installation admits no request without a credential
-            (<code translate="no">endpoints.default.auth.anonymous</code> is false), so nothing is public. Admit such requests there to show
-            your public repositories, or switch the web interface off.</span
+            >This Bastion's web interface shows nothing: <code translate="no">endpoints.default.auth.anonymous</code> is false, so the main
+            installation admits no request without a credential and nothing is public. Admit such requests there to show your public
+            repositories, or switch the web interface off.</span
           >
         } @else {
           <span i18n="@@bastion.limits.catalogue-base-url"
