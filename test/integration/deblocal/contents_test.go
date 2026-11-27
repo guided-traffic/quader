@@ -68,11 +68,20 @@ func TestR_DEB_038_039_AnUploadedPackageShowsWhatItTellsAboutItself(t *testing.T
 	// upload of quader-docs uses python3 (its qualifier ":any" dropped) or python3-minimal.
 	viewer := build(t, "quader-viewer", "1.0", func(s *debgen.Spec) { s.Depends = "quader-doc-reader" })
 	e.mustUpload(e.tokA, "quader-viewer_1.0_amd64.deb", viewer, http.StatusCreated, []string{"stable"}, "main")
-	for _, c := range []struct{ of, want string }{
-		{"quader-docs", `"key":"quader-viewer","name":"quader-viewer","packageId":"` + view.ID("deb", "quader-viewer") + `","relations":[{"kind":"Depends","range":"","via":"quader-doc-reader"}],"version":"1.0"}`},
-		{"python3", `"key":"quader-docs","name":"quader-docs","packageId":"` + view.ID("deb", "quader-docs") + `","relations":[{"kind":"Depends","range":"","via":"python3"}],"version":"1.2.0-1"}`},
+	// Each member on its own: the answer carries more members (the malware state since W-36's P3) between them.
+	for _, c := range []struct {
+		of   string
+		want []string
+	}{
+		{"quader-docs", []string{`"key":"quader-viewer"`, `"name":"quader-viewer","packageId":"` + view.ID("deb", "quader-viewer") + `","relations":[{"kind":"Depends","range":"","via":"quader-doc-reader"}],"version":"1.0"}`}},
+		{"python3", []string{`"key":"quader-docs"`, `"name":"quader-docs","packageId":"` + view.ID("deb", "quader-docs") + `","relations":[{"kind":"Depends","range":"","via":"python3"}],"version":"1.2.0-1"}`}},
 	} {
-		if a := e.st.Do(apiRep, "GET", "/api/v1/packages/"+view.ID("deb", c.of)+"/dependents", e.tokA, nil); a.Status != http.StatusOK || !strings.Contains(string(a.Body), c.want) {
+		a := e.st.Do(apiRep, "GET", "/api/v1/packages/"+view.ID("deb", c.of)+"/dependents", e.tokA, nil)
+		ok := a.Status == http.StatusOK
+		for _, w := range c.want {
+			ok = ok && strings.Contains(string(a.Body), w)
+		}
+		if !ok {
 			t.Errorf("the users of %s: %d %s", c.of, a.Status, a.Body)
 		}
 	}
