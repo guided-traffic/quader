@@ -3,13 +3,17 @@ import { ApiError } from '../../api/problem';
 import { UpstreamDownloadsApi } from '../../api/upstream-downloads-api';
 import { PageVisibility } from '../../core/page-visibility';
 import { SessionStore } from '../../core/session-store';
-import { countText } from './download-words';
 import { UpstreamDownloadsPanel } from './upstream-downloads-panel';
 
 /** How often the closed panel's button reads the number of running downloads while the window is seen (R-UI-210). */
 export const SUMMARY_POLL_MS = 10_000;
 /** The capability that reads the downloads of every repository (operations-and-observability.md R-OPS-052). */
 export const DOWNLOADS_CAPABILITY = 'content:metadata-read';
+
+/** The badge's number: up to 99, then "99+". Here and not among the panel's words, which load with the panel. */
+export function countText(n: number): string {
+  return n > 99 ? '99+' : String(n);
+}
 
 /**
  * The button **Downloads** of the top bar (api-and-ui.md R-UI-210): shown to a signed-in holder of `content:metadata-read` only,
@@ -38,7 +42,11 @@ export const DOWNLOADS_CAPABILITY = 'content:metadata-read';
           <span class="downloads-count" aria-hidden="true">{{ countText(count()) }}</span>
         }
       </button>
-      <quader-upstream-downloads-panel [(open)]="open" [panelId]="panelId" (counted)="count.set($event)" (refused)="refuse()" />
+      <!-- The panel and its words are a chunk of their own, out of the first page's bundle: fetched when the browser is idle, shown
+           from the first open on (the closed button needs only the count). -->
+      @defer (when open(); prefetch on idle) {
+        <quader-upstream-downloads-panel [(open)]="open" [panelId]="panelId" (counted)="count.set($event)" (refused)="refuse()" />
+      }
     }
   `,
   styles: `

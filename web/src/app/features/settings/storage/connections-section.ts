@@ -28,7 +28,7 @@ export interface LinkRoles {
   selector: 'quader-storage-connections',
   imports: [DataTable, DecimalPipe, NoValue, StorageMeter, TimePipe, Timeline],
   templateUrl: './connections-section.html',
-  styleUrl: './storage-sections.scss',
+  styleUrls: ['./storage-sections.scss', './storage-connections.scss'],
 })
 export class ConnectionsSection {
   readonly connections = input.required<readonly StorageConnection[]>();

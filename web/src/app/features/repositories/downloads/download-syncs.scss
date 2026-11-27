@@ -1,0 +1,21 @@
+// The section Kept in sync of a remote repository's tab Downloads (R-CUR-027), beside the rules of download-lists.scss.
+
+// The section Kept in sync (R-CUR-027): the repository's interval in a sentence under its title, then its syncs as the bulks are.
+.syncs-note {
+  margin: 0 0 var(--quader-space-3);
+  color: var(--quader-text-muted);
+}
+
+.syncs-paused {
+  margin: 0 0 var(--quader-space-3);
+}
+
+.sync-title {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+// A run's failure in words stands under its line and wraps between its words.
+.sync-failure {
+  overflow-wrap: anywhere;
+}

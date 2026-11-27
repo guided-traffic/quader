@@ -21,7 +21,7 @@ import { EncryptsRow, appliedSse, holdingConnections, inFormat, keyRing, percent
   selector: 'quader-storage-encryption',
   imports: [DataTable, DecimalPipe, NoValue, Help, StorageMeter, TimePipe],
   templateUrl: './encryption-section.html',
-  styleUrl: './storage-sections.scss',
+  styleUrls: ['./storage-sections.scss', './storage-encryption.scss'],
 })
 export class EncryptionSection {
   readonly connections = input.required<readonly StorageConnection[]>();

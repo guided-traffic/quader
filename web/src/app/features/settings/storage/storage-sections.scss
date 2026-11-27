@@ -1,15 +1,9 @@
-// The sections of Settings › Storage (R-UI-263, R-UI-264): the cells of their tables, the fold of a connection, the marks and the
-// lines that carry a state with its icon and word (never colour alone, green only for a positive state).
+// The sections of Settings › Storage (R-UI-263, R-UI-264), the rules they share: the cells of their tables, the marks and the lines
+// that carry a state with its icon and word (never colour alone, green only for a positive state). A section's own rules are its
+// file beside this one (storage-connections, -availability, -encryption, -integrity, -problems.scss), so that no component carries
+// the others' (Angular's budget of a component's styles, 4 kB).
 :host {
   display: block;
-}
-
-.muted-mark > .material-icons {
-  margin-inline-end: var(--quader-space-1);
-  font-size: 1.125rem;
-  vertical-align: top;
-  margin-block: calc((var(--quader-line) - 1.125rem) / 2);
-  color: var(--quader-text-muted);
 }
 
 .secondary,
@@ -26,27 +20,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-// The first column: the chevron of the fold beside the connection's name, its place muted under the name.
-.name-cell {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--quader-space-1);
-
-  > .btn {
-    flex: none;
-  }
-}
-
-.name-text {
-  display: grid;
-  min-inline-size: 0;
-  overflow-wrap: break-word;
-}
-
-.connection-name {
-  font-weight: 600;
-}
-
 // A cell of several lines: one line each. In a row that stands as a block the column's name is the cell's first column, so the first
 // line starts on the name's line (Q-UI-762).
 .lines {
@@ -61,13 +34,6 @@
 // A state's badge on a line of its own is as wide as its words, not the cell.
 .lines > :is(.ok, .warn, .bad) {
   justify-self: start;
-}
-
-.state-line {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: start;
-  column-gap: var(--quader-space-2);
 }
 
 .quader-data-table.stacked td.lines-cell:not([data-empty]) {
@@ -87,12 +53,6 @@
   }
 }
 
-.marks {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--quader-space-1) var(--quader-space-3);
-}
-
 .mark {
   color: var(--quader-text-muted);
   white-space: nowrap;
@@ -108,37 +68,6 @@
   }
 }
 
-.pair-label {
-  color: var(--quader-text-muted);
-}
-
-tr.expansion > td {
-  padding: 0;
-  border-block-end: 0;
-}
-
-.fold {
-  padding: 0 var(--quader-space-4) var(--quader-space-4) var(--quader-space-8);
-}
-
-.facts {
-  display: grid;
-  grid-template-columns: fit-content(16rem) minmax(0, 1fr);
-  gap: var(--quader-space-2) var(--quader-space-4);
-  margin: 0;
-  max-inline-size: 64rem;
-
-  dt {
-    display: grid;
-    font-weight: 600;
-  }
-
-  dd {
-    margin: 0;
-    overflow-wrap: anywhere;
-  }
-}
-
 // The key of a value in the configuration, on demand in the fold (Q-UI-1585): muted, under the fact's name.
 code.key {
   font-weight: 400;
@@ -149,194 +78,16 @@ code.key {
   overflow-wrap: anywhere;
 }
 
-// Below 36 rem the facts stand one under the other, the name over its value.
-@media (max-width: 36rem) {
-  .fold {
-    padding-inline-start: var(--quader-space-4);
-  }
-
-  .facts {
-    grid-template-columns: minmax(0, 1fr);
-    row-gap: 0;
-
-    dd {
-      margin-block-end: var(--quader-space-2);
-    }
-  }
-}
-
 ul.plain {
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.key-list li {
-  overflow-wrap: anywhere;
-}
-
-.section-actions {
-  margin-block-start: var(--quader-space-3);
-}
-
-// Availability: the target, the bar of copies per blob with its legend, and the one line of the loss.
-.target-line {
-  margin-block: 0 var(--quader-space-2);
-}
-
-.copies {
-  display: grid;
-  grid-template-columns: max-content minmax(0, 1fr);
-  align-items: center;
-  gap: var(--quader-space-1) var(--quader-space-3);
-  margin-block-end: var(--quader-space-2);
-}
-
-.copies-label {
-  color: var(--quader-text-muted);
-}
-
-.copies-bar {
-  display: flex;
-  gap: 2px;
-  block-size: 10px;
-  overflow: hidden;
-  border-radius: var(--quader-radius-full);
-  background: var(--quader-card-bg);
-}
-
-.copies-part {
-  flex: 1 1 0;
-  min-inline-size: 3px;
-  background: var(--quader-chart-usage);
-
-  &[data-tone='warn'] {
-    background: var(--quader-status-warn);
-  }
-
-  &[data-tone='bad'] {
-    background: var(--quader-status-bad);
-  }
-}
-
-.copies-legend {
-  grid-column: 2;
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--quader-space-1) var(--quader-space-4);
-  font-variant-numeric: tabular-nums;
-
-  .swatch {
-    display: inline-block;
-    inline-size: 10px;
-    block-size: 10px;
-    margin-inline-end: var(--quader-space-1);
-    border-radius: 2px;
-    background: var(--quader-chart-usage);
-  }
-
-  [data-tone='warn'] .swatch {
-    background: var(--quader-status-warn);
-  }
-
-  [data-tone='bad'] .swatch {
-    background: var(--quader-status-bad);
-  }
-}
-
-@media (max-width: 40rem) {
-  .copies {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .copies-legend {
-    grid-column: 1;
-  }
-}
-
-.loss {
-  margin-block-end: var(--quader-space-3);
-}
-
-.loss-line {
-  margin: 0;
-  font-weight: 600;
-
-  &.ok {
-    color: var(--quader-status-ok);
-  }
-
-  &.warn {
-    color: var(--quader-status-warn);
-  }
-
-  > .material-icons {
-    font-size: 1.125rem;
-    vertical-align: top;
-    margin-block: calc((var(--quader-line) - 1.125rem) / 2);
-    margin-inline-end: var(--quader-space-1);
-  }
-
-  .muted-icon {
-    color: var(--quader-text-muted);
-  }
-}
-
-.loss-others {
-  margin-block-start: var(--quader-space-1);
-  padding-inline-start: calc(1.125rem + var(--quader-space-1));
-  color: var(--quader-status-warn);
-}
-
-// Encryption: what Quader encrypts as a list of two columns, and the root key's line.
+// A heading inside a section (Encryption, the findings' lists).
 .sub-heading {
   margin: var(--quader-space-4) 0 var(--quader-space-2);
   font: var(--quader-type-title-small);
-}
-
-.encrypts {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--quader-space-1) var(--quader-space-4);
-
-  li {
-    display: flex;
-    align-items: flex-start;
-    gap: var(--quader-space-2);
-    min-inline-size: 0;
-  }
-
-  li > .material-icons {
-    flex: none;
-    font-size: 1.125rem;
-    margin-block: calc((var(--quader-line) - 1.125rem) / 2);
-  }
-
-  .family {
-    min-inline-size: 0;
-    overflow-wrap: anywhere;
-  }
-
-  [data-mark='yes'] > .material-icons {
-    color: var(--quader-status-ok);
-  }
-
-  [data-mark='no'] > .material-icons,
-  [data-mark='partly'] > .material-icons,
-  [data-mark='plain'] > .material-icons {
-    color: var(--quader-text-muted);
-  }
-
-}
-
-@media (max-width: 48rem) {
-  .encrypts {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-.root-key {
-  margin-block: var(--quader-space-3) 0;
 }
 
 .item-cell {
@@ -346,72 +97,6 @@ ul.plain {
 quader-disclosure {
   display: block;
   margin-block-start: var(--quader-space-4);
-}
-
-// Integrity: the checks of a connection as marks, a check before each that holds (green: a positive state), a dash before each that
-// does not (B.5, Q-UI-1611).
-.checks {
-  display: grid;
-  row-gap: 2px;
-
-  li {
-    display: flex;
-    align-items: flex-start;
-    gap: var(--quader-space-1);
-  }
-
-  li > .material-icons {
-    flex: none;
-    font-size: 1.125rem;
-    margin-block: calc((var(--quader-line) - 1.125rem) / 2);
-    color: var(--quader-text-muted);
-  }
-
-  li.on > .material-icons {
-    color: var(--quader-status-ok);
-  }
-
-  .warn > .material-icons {
-    font-size: 1rem;
-    vertical-align: top;
-    margin-block: calc((var(--quader-line) - 1rem) / 2);
-    margin-inline: var(--quader-space-1);
-  }
-}
-
-// Problems: one strip per connection beside its name, the period's first and last time under the strips (Q-UI-1600). The strips take
-// the width the names leave and never scroll sideways (R-UI-215).
-.strips {
-  display: grid;
-  grid-template-columns: fit-content(10rem) minmax(0, 1fr);
-  align-items: start;
-  gap: var(--quader-space-2) var(--quader-space-3);
-  margin-block-end: var(--quader-space-4);
-}
-
-.strip-name {
-  overflow-wrap: anywhere;
-  line-height: 1.5rem;
-}
-
-.strip-axis {
-  grid-column: 2;
-  display: flex;
-  justify-content: space-between;
-  gap: var(--quader-space-3);
-  color: var(--quader-text-muted);
-  font-size: var(--quader-text-muted-size);
-}
-
-@media (max-width: 40rem) {
-  .strips {
-    grid-template-columns: minmax(0, 1fr);
-    row-gap: var(--quader-space-1);
-  }
-
-  .strip-axis {
-    grid-column: 1;
-  }
 }
 
 .when {

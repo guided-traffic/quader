@@ -1,0 +1,115 @@
+// Availability of Settings › Storage (R-UI-263, R-UI-264), beside the sections' shared rules of storage-sections.scss: each
+// component carries only the rules it uses (the budget of a component's styles).
+
+.section-actions {
+  margin-block-start: var(--quader-space-3);
+}
+
+// Availability: the target, the bar of copies per blob with its legend, and the one line of the loss.
+.target-line {
+  margin-block: 0 var(--quader-space-2);
+}
+
+.copies {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: center;
+  gap: var(--quader-space-1) var(--quader-space-3);
+  margin-block-end: var(--quader-space-2);
+}
+
+.copies-label {
+  color: var(--quader-text-muted);
+}
+
+.copies-bar {
+  display: flex;
+  gap: 2px;
+  block-size: 10px;
+  overflow: hidden;
+  border-radius: var(--quader-radius-full);
+  background: var(--quader-card-bg);
+}
+
+.copies-part {
+  flex: 1 1 0;
+  min-inline-size: 3px;
+  background: var(--quader-chart-usage);
+
+  &[data-tone='warn'] {
+    background: var(--quader-status-warn);
+  }
+
+  &[data-tone='bad'] {
+    background: var(--quader-status-bad);
+  }
+}
+
+.copies-legend {
+  grid-column: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--quader-space-1) var(--quader-space-4);
+  font-variant-numeric: tabular-nums;
+
+  .swatch {
+    display: inline-block;
+    inline-size: 10px;
+    block-size: 10px;
+    margin-inline-end: var(--quader-space-1);
+    border-radius: 2px;
+    background: var(--quader-chart-usage);
+  }
+
+  [data-tone='warn'] .swatch {
+    background: var(--quader-status-warn);
+  }
+
+  [data-tone='bad'] .swatch {
+    background: var(--quader-status-bad);
+  }
+}
+
+@media (max-width: 40rem) {
+  .copies {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .copies-legend {
+    grid-column: 1;
+  }
+}
+
+.loss {
+  margin-block-end: var(--quader-space-3);
+}
+
+.loss-line {
+  margin: 0;
+  font-weight: 600;
+
+  &.ok {
+    color: var(--quader-status-ok);
+  }
+
+  &.warn {
+    color: var(--quader-status-warn);
+  }
+
+  > .material-icons {
+    font-size: 1.125rem;
+    vertical-align: top;
+    margin-block: calc((var(--quader-line) - 1.125rem) / 2);
+    margin-inline-end: var(--quader-space-1);
+  }
+
+  .muted-icon {
+    color: var(--quader-text-muted);
+  }
+}
+
+.loss-others {
+  margin-block-start: var(--quader-space-1);
+  padding-inline-start: calc(1.125rem + var(--quader-space-1));
+  color: var(--quader-status-warn);
+}

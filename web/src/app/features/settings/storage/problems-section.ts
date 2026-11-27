@@ -22,7 +22,7 @@ export const PROBLEMS_PAGE = 10;
   selector: 'quader-storage-problems',
   imports: [DataTable, DecimalPipe, Loading, TimePipe, Timeline],
   templateUrl: './problems-section.html',
-  styleUrl: './storage-sections.scss',
+  styleUrls: ['./storage-sections.scss', './storage-problems.scss'],
 })
 export class ProblemsSection {
   private readonly api = inject(StorageApi);

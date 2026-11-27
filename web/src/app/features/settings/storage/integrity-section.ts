@@ -43,7 +43,7 @@ export function checkMarks(c: StorageConnection, downloadVerify: boolean): reado
   selector: 'quader-storage-integrity',
   imports: [Busy, DataTable, DecimalPipe, FindingsList, Loading, NoValue, StorageMeter, TimePipe],
   templateUrl: './integrity-section.html',
-  styleUrl: './storage-sections.scss',
+  styleUrls: ['./storage-sections.scss', './storage-integrity.scss'],
 })
 export class IntegritySection {
   readonly overview = input.required<StorageOverview>();

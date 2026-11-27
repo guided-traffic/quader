@@ -1,0 +1,33 @@
+// Integrity of Settings › Storage (R-UI-263, R-UI-264), beside the sections' shared rules of storage-sections.scss: each
+// component carries only the rules it uses (the budget of a component's styles).
+
+// Integrity: the checks of a connection as marks, a check before each that holds (green: a positive state), a dash before each that
+// does not (B.5, Q-UI-1611).
+.checks {
+  display: grid;
+  row-gap: 2px;
+
+  li {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--quader-space-1);
+  }
+
+  li > .material-icons {
+    flex: none;
+    font-size: 1.125rem;
+    margin-block: calc((var(--quader-line) - 1.125rem) / 2);
+    color: var(--quader-text-muted);
+  }
+
+  li.on > .material-icons {
+    color: var(--quader-status-ok);
+  }
+
+  .warn > .material-icons {
+    font-size: 1rem;
+    vertical-align: top;
+    margin-block: calc((var(--quader-line) - 1rem) / 2);
+    margin-inline: var(--quader-space-1);
+  }
+}

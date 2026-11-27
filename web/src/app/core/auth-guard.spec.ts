@@ -12,7 +12,7 @@ import { BrowserNavigation } from './browser-navigation';
 import { Layout } from './layout';
 import { SessionStore } from './session-store';
 import { BrowserStorage } from './storage';
-import { settle } from '../testing/screen';
+import { settle, waitUntil } from '../testing/screen';
 
 /**
  * The browser of these specs holds the cookie of a session that has ended. The server answers it with `401 session_expired`,
@@ -93,9 +93,12 @@ describe('authGuard and an ended session (R-UI-004)', () => {
     expect(store.state()).toBe('authenticated');
     endedCookie(TestBed.inject(SessionApi) as FakeSessionApi);
     store.markEnded();
-    await settle(fixture);
+    // The dialog loads when a session first needs it (a dynamic import, not the first page's chunk).
+    const signInAgain = (): HTMLButtonElement | undefined =>
+      [...document.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent?.trim() === 'Sign in again');
+    await waitUntil(fixture, () => signInAgain() !== undefined, 'the dialog of the ended session');
     // The dialog's "Sign in again" opens the sign-in screen without the notice: the dialog has said it.
-    const signIn = [...document.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent?.trim() === 'Sign in again');
+    const signIn = signInAgain();
     expect(signIn).toBeTruthy();
     signIn?.click();
     await settle(fixture);

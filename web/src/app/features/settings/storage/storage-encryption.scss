@@ -1,0 +1,63 @@
+// Encryption of Settings › Storage (R-UI-263, R-UI-264), beside the sections' shared rules of storage-sections.scss: each
+// component carries only the rules it uses (the budget of a component's styles).
+
+.muted-mark > .material-icons {
+  margin-inline-end: var(--quader-space-1);
+  font-size: 1.125rem;
+  vertical-align: top;
+  margin-block: calc((var(--quader-line) - 1.125rem) / 2);
+  color: var(--quader-text-muted);
+}
+
+// What Quader encrypts as a list of two columns, and the root key's line.
+.encrypts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--quader-space-1) var(--quader-space-4);
+
+  li {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--quader-space-2);
+    min-inline-size: 0;
+  }
+
+  li > .material-icons {
+    flex: none;
+    font-size: 1.125rem;
+    margin-block: calc((var(--quader-line) - 1.125rem) / 2);
+  }
+
+  .family {
+    min-inline-size: 0;
+    overflow-wrap: anywhere;
+  }
+
+  [data-mark='yes'] > .material-icons {
+    color: var(--quader-status-ok);
+  }
+
+  [data-mark='no'] > .material-icons,
+  [data-mark='partly'] > .material-icons,
+  [data-mark='plain'] > .material-icons {
+    color: var(--quader-text-muted);
+  }
+}
+
+@media (max-width: 48rem) {
+  .encrypts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.root-key {
+  margin-block: var(--quader-space-3) 0;
+}
+
+.pair-label {
+  color: var(--quader-text-muted);
+}
+
+.key-list li {
+  overflow-wrap: anywhere;
+}

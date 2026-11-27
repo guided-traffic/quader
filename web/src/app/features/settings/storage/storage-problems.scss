@@ -1,0 +1,37 @@
+// Problems of Settings › Storage (R-UI-263, R-UI-264), beside the sections' shared rules of storage-sections.scss: each
+// component carries only the rules it uses (the budget of a component's styles).
+
+// Problems: one strip per connection beside its name, the period's first and last time under the strips (Q-UI-1600). The strips take
+// the width the names leave and never scroll sideways (R-UI-215).
+.strips {
+  display: grid;
+  grid-template-columns: fit-content(10rem) minmax(0, 1fr);
+  align-items: start;
+  gap: var(--quader-space-2) var(--quader-space-3);
+  margin-block-end: var(--quader-space-4);
+}
+
+.strip-name {
+  overflow-wrap: anywhere;
+  line-height: 1.5rem;
+}
+
+.strip-axis {
+  grid-column: 2;
+  display: flex;
+  justify-content: space-between;
+  gap: var(--quader-space-3);
+  color: var(--quader-text-muted);
+  font-size: var(--quader-text-muted-size);
+}
+
+@media (max-width: 40rem) {
+  .strips {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: var(--quader-space-1);
+  }
+
+  .strip-axis {
+    grid-column: 1;
+  }
+}

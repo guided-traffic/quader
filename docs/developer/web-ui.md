@@ -1412,7 +1412,14 @@ from the `h1` to the end of step 2, code excluded, as the power user, measured o
   target in the same change and any new product term to the glossary.
 - **Bundle budget** (R-UI-001): `build:embed` fails when the gzip size of the scripts that
   `index.html` loads exceeds 400 kB. Angular's own budget measures raw bytes, so `angular.json`
-  keeps a loose raw guard (warning 800 kB, error 1500 kB).
+  keeps a loose raw guard (warning 800 kB, error 1500 kB). What only some pages need stays out of the first page's chunk: a route
+  loads lazily, a part of the shell that a click opens is a `@defer` block (the top bar's downloads panel) or a dynamic `import()`
+  (the session dialog), and a helper the shell needs from a large module of a feature lives in a small module of its own
+  (`visibility-icon.ts`, `limit-text.ts`, `leads-with-documentation.ts`): esbuild puts a module that both the first page and a lazy
+  page import whole into the first page's chunk. `ng build --configuration production --stats-json` writes the esbuild metafile
+  that tells what a chunk holds and why. A stylesheet several components share is emitted once per component, so a page's sections
+  share their common rules in one file and keep their own in another (`styleUrls`, Settings › Storage, the tab Downloads), under
+  the 4 kB budget of a component's styles.
 
 ## How a server text reaches the screen (R-UI-214)
 

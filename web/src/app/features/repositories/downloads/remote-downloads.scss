@@ -1,9 +1,6 @@
 // The tab Downloads of a remote repository (R-CUR-018): its head, the bulk it shows and the rows that open. Only Quader's tokens, so
-// both schemes follow; the table is the shared data table.
-
-:host {
-  display: block;
-}
+// both schemes follow; the table is the shared data table. What the section Kept in sync shares with it is download-lists.scss, the
+// section's own rules download-syncs.scss: each component carries only the rules it uses (the budget of a component's styles).
 
 .downloads-note {
   margin: 0 0 var(--quader-space-3);
@@ -132,11 +129,6 @@
   font-weight: 600;
 }
 
-// Origin, state and progress never break (Q-UI-563): the failure is the column that wraps.
-td.keep {
-  white-space: nowrap;
-}
-
 .failure-cell {
   overflow-wrap: anywhere;
 
@@ -202,22 +194,6 @@ quader-technical-details.technical {
 
 .row-facts {
   margin-block-start: var(--quader-space-3);
-}
-
-// The repository's bulks over its rows (Q-CUR-168), and the title of the rows under them: two lists, each named.
-.bulks {
-  margin-block-end: var(--quader-space-6);
-}
-
-.bulks-title {
-  margin: 0 0 var(--quader-space-2);
-  font-size: var(--quader-heading-3);
-  line-height: 1.4;
-}
-
-// A bulk's title is a link to its rows and breaks inside a long name.
-th.wrap-name > a {
-  overflow-wrap: anywhere;
 }
 
 // What failed in words stands first, the class and the engine's sentence under it.
@@ -300,24 +276,4 @@ th.wrap-name > a {
 .limit-line.under {
   display: block;
   font-size: var(--quader-text-muted-size);
-}
-
-// The section Kept in sync (R-CUR-027): the repository's interval in a sentence under its title, then its syncs as the bulks are.
-.syncs-note {
-  margin: 0 0 var(--quader-space-3);
-  color: var(--quader-text-muted);
-}
-
-.syncs-paused {
-  margin: 0 0 var(--quader-space-3);
-}
-
-.sync-title {
-  font-weight: 600;
-  overflow-wrap: anywhere;
-}
-
-// A run's failure in words stands under its line and wraps between its words.
-.sync-failure {
-  overflow-wrap: anywhere;
 }

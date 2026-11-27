@@ -548,6 +548,7 @@ test('R-UI-228 the Bastion bundle check names the client, the session, a screen 
       'src/app/views/packages/package-version-view.ts',
       'src/app/features/packages/package-links.ts',
       'src/app/features/limits/figures.ts',
+      'src/app/features/limits/limit-text.ts',
       'src/bastion/data/reads.ts',
       'node_modules/@angular/core/fesm2022/core.mjs',
     ),

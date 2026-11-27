@@ -7,7 +7,8 @@
 //    of the management API (a module src/app/api/*-api.ts or *-api-http.ts other than the abstract reads the Bastion binds itself);
 //  - the session (src/app/core/session-store.ts, src/app/api/session-api.ts), the authorization epoch (src/app/core/authz-epoch.ts);
 //  - a screen of the main installation that is no page of the Bastion: any module of src/app/features/ outside the folders the views
-//    use (packages, repositories, setup, vulnerabilities, legal, not-found) and features/limits/figures.ts (the words of a limit);
+//    use (packages, repositories, setup, vulnerabilities, legal, not-found) and the words of a limit (features/limits/figures.ts and
+//    limit-text.ts, which a refusal's notice on any page reads);
 //  - a dialog (a module whose name ends in -dialog, src/app/shared/ui/dialog.ts).
 // A module that only esbuild's graph names, with no byte in an output, is tree-shaken and passes. Run by build-embed.mjs after the
 // Bastion's build, tested by lint-rules.test.mjs.
@@ -15,7 +16,7 @@
 /** The modules of src/app/api/ a Bastion's bundle may hold: types, the abstract reads it binds, pure helpers. */
 const API_ALLOWED = /^src\/app\/api\/(problem|pagination|refs|query|types|package-reads|vulnerability-reads|signature-reads|file-reads|legal-api)\.ts$/;
 /** The folders of features/ the shared views reach. */
-const FEATURES_ALLOWED = /^src\/app\/features\/(packages|repositories|setup|vulnerabilities|legal|not-found)\/|^src\/app\/features\/limits\/figures\.ts$/;
+const FEATURES_ALLOWED = /^src\/app\/features\/(packages|repositories|setup|vulnerabilities|legal|not-found)\/|^src\/app\/features\/limits\/(figures|limit-text)\.ts$/;
 
 /**
  * Why a module may not be in the Bastion's bundle, or null when it may.

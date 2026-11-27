@@ -118,8 +118,3 @@ export function outcomeBadge(d: Pick<UpstreamDownloadFinished, 'outcome' | 'fail
       };
   }
 }
-
-/** The count of the badge on the button: the number, "99+" above 99. */
-export function countText(n: number): string {
-  return n > 99 ? '99+' : String(n);
-}

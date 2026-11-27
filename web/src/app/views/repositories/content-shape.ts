@@ -1,3 +1,7 @@
+import { leadsWithDocumentation } from './leads-with-documentation';
+
+export { leadsWithDocumentation } from './leads-with-documentation';
+
 /**
  * What a repository's content is called and what it shows, per format and, for the words that differ, per class (R-UI-052). One shell serves every format; the words and
  * the columns are this small table, not a screen per format.
@@ -51,17 +55,6 @@ export interface ContentShape {
    * `count` is the number as the locale writes it.
    */
   readonly allVersionsText: (count: string) => string;
-}
-
-/**
- * The formats whose packages lead with their documentation (R-UI-218): documentation that belongs to the format and is regularly
- * present is what a package's name opens. One line per format: a format joins by its key here.
- */
-const LEADS_WITH_DOCUMENTATION: ReadonlySet<string> = new Set(['ansible', 'npm', 'nuget']);
-
-/** Whether the packages of `format` lead with their documentation (R-UI-218): the routes and the links ask it without a shape. */
-export function leadsWithDocumentation(format: string | null | undefined): boolean {
-  return !!format && LEADS_WITH_DOCUMENTATION.has(format);
 }
 
 /**

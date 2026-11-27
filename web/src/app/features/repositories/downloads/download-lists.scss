@@ -1,0 +1,27 @@
+// What the tab Downloads of a remote repository (R-CUR-018) and its section Kept in sync (R-CUR-027) share: the lists of bulks and of
+// syncs, each named by its title, and the cells that never break.
+
+:host {
+  display: block;
+}
+
+// The repository's bulks over its rows (Q-CUR-168), and the title of the rows under them: two lists, each named.
+.bulks {
+  margin-block-end: var(--quader-space-6);
+}
+
+.bulks-title {
+  margin: 0 0 var(--quader-space-2);
+  font-size: var(--quader-heading-3);
+  line-height: 1.4;
+}
+
+// A bulk's title is a link to its rows and breaks inside a long name.
+th.wrap-name > a {
+  overflow-wrap: anywhere;
+}
+
+// Origin, state and progress never break (Q-UI-563): the failure is the column that wraps.
+td.keep {
+  white-space: nowrap;
+}

@@ -31,7 +31,7 @@ interface CopiesPart {
   selector: 'quader-storage-availability',
   imports: [Busy, DataTable, DecimalPipe, Loading, NoValue, Help, StorageMeter, TimePipe],
   templateUrl: './availability-section.html',
-  styleUrl: './storage-sections.scss',
+  styleUrls: ['./storage-sections.scss', './storage-availability.scss'],
 })
 export class AvailabilitySection {
   readonly overview = input.required<StorageOverview>();

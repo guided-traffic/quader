@@ -1,6 +1,8 @@
 import {
   Component,
+  DestroyRef,
   ElementRef,
+  Injector,
   computed,
   effect,
   inject,
@@ -12,7 +14,6 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { CdkTrapFocus } from '@angular/cdk/a11y';
 import { OpenSubmenuOnClick } from './shared/ui/open-submenu-on-click';
 import { CdkMenu, CdkMenuItem, CdkMenuItemRadio, CdkMenuTrigger } from '@angular/cdk/menu';
-import { QuaderDialog } from './shared/ui/dialog';
 import {
   ActivatedRouteSnapshot,
   NavigationEnd,
@@ -37,7 +38,6 @@ import { SessionStore } from './core/session-store';
 import { Banner } from './shared/banner';
 import { ErrorNotice } from './shared/error-notice';
 import { Notices } from './shared/notices';
-import { SessionDialog } from './shared/session-dialog';
 import { QuaderMark } from './shared/brand/quader-mark';
 import { QuaderAvatar } from './shared/ui/avatar';
 import { AvatarStore } from './core/avatar-store';
@@ -112,7 +112,8 @@ export class App {
   protected readonly yourWork = YOUR_WORK_SECTION;
   protected readonly recentGroup = 'recent';
   private readonly router = inject(Router);
-  private readonly dialog = inject(QuaderDialog);
+  private readonly injector = inject(Injector);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly main = viewChild.required<ElementRef<HTMLElement>>('main');
   private readonly search = viewChild(SearchField);
 
@@ -211,19 +212,28 @@ export class App {
       untracked(() => void this.recent.confirm(names));
     });
     effect(() => {
-      if (this.session.ended()) {
-        untracked(() => this.dialog.open(SessionDialog, { data: { kind: 'ended' }, disableClose: true }));
-      }
+      if (this.session.ended()) untracked(() => void this.openSessionDialog('ended'));
     });
     effect(() => {
-      if (this.session.reauthRequired()) {
-        untracked(() => {
-          const ref = this.dialog.open(SessionDialog, { data: { kind: 'reauth' } });
-          // `afterClosed` is an observable; the flag only has to be cleared, so use the promise form.
-          void ref.closed.forEach(() => this.session.clearReauthRequired());
-        });
-      }
+      if (this.session.reauthRequired()) untracked(() => void this.openSessionDialog('reauth'));
     });
+  }
+
+  /**
+   * The dialog of an ended session or of a sign-in again (R-UI-004, R-UI-042). It and the dialog service are loaded when a session first needs
+   * them, not with the first page: most visits never show it.
+   */
+  private async openSessionDialog(kind: 'ended' | 'reauth'): Promise<void> {
+    const [{ QuaderDialog }, { SessionDialog }] = await Promise.all([import('./shared/ui/dialog'), import('./shared/session-dialog')]);
+    if (this.destroyRef.destroyed) return;
+    const dialog = this.injector.get(QuaderDialog);
+    if (kind === 'ended') {
+      dialog.open(SessionDialog, { data: { kind }, disableClose: true });
+      return;
+    }
+    const ref = dialog.open(SessionDialog, { data: { kind } });
+    // `afterClosed` is an observable; the flag only has to be cleared, so use the promise form.
+    void ref.closed.forEach(() => this.session.clearReauthRequired());
   }
 
   /** Skip link target: moves focus to the main heading, or to the main region without one. */

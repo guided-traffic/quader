@@ -83,7 +83,7 @@ type FilterState = (typeof FILTER_STATES)[number];
   selector: 'quader-remote-downloads',
   imports: [Busy, Loading, DataTable, DownloadSyncs, ErrorNotice, MalwareMark, NoValue, RouterLink, TechnicalDetails, TimeAgo],
   templateUrl: './remote-downloads.html',
-  styleUrl: './remote-downloads.scss',
+  styleUrls: ['./download-lists.scss', './remote-downloads.scss'],
 })
 export class RemoteDownloads {
   private readonly api = inject(RemoteDownloadsApi);

@@ -1,0 +1,79 @@
+// The connections' table of Settings › Storage and its fold (R-UI-263, R-UI-264), beside the sections' shared rules of
+// storage-sections.scss: each component carries only the rules it uses (the budget of a component's styles).
+
+// The first column: the chevron of the fold beside the connection's name, its place muted under the name.
+.name-cell {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--quader-space-1);
+
+  > .btn {
+    flex: none;
+  }
+}
+
+.name-text {
+  display: grid;
+  min-inline-size: 0;
+  overflow-wrap: break-word;
+}
+
+.connection-name {
+  font-weight: 600;
+}
+
+.state-line {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  column-gap: var(--quader-space-2);
+}
+
+.marks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--quader-space-1) var(--quader-space-3);
+}
+
+tr.expansion > td {
+  padding: 0;
+  border-block-end: 0;
+}
+
+.fold {
+  padding: 0 var(--quader-space-4) var(--quader-space-4) var(--quader-space-8);
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: fit-content(16rem) minmax(0, 1fr);
+  gap: var(--quader-space-2) var(--quader-space-4);
+  margin: 0;
+  max-inline-size: 64rem;
+
+  dt {
+    display: grid;
+    font-weight: 600;
+  }
+
+  dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+}
+
+// Below 36 rem the facts stand one under the other, the name over its value.
+@media (max-width: 36rem) {
+  .fold {
+    padding-inline-start: var(--quader-space-4);
+  }
+
+  .facts {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 0;
+
+    dd {
+      margin-block-end: var(--quader-space-2);
+    }
+  }
+}

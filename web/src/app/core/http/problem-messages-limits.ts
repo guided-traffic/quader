@@ -1,7 +1,7 @@
 import { formatTime } from '../../shared/time-format';
 import { Problem } from '../../api/problem';
 import { Figure } from '../../api/limits-api';
-import { limitText } from '../../features/limits/figures';
+import { limitText } from '../../features/limits/limit-text';
 
 /** The codes of a refusal by the download limits (R-LIM-020). */
 export const LIMIT_REFUSALS: readonly string[] = [

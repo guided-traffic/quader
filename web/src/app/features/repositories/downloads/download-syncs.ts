@@ -84,7 +84,7 @@ export function syncRunWords(s: RemoteDownloadSync, upstream: string | null): Sy
   selector: 'quader-download-syncs',
   imports: [Busy, CdkMenu, CdkMenuItem, CdkMenuTrigger, DataTable, RouterLink, TimeAgo],
   templateUrl: './download-syncs.html',
-  styleUrl: './remote-downloads.scss',
+  styleUrls: ['./download-lists.scss', './download-syncs.scss'],
 })
 export class DownloadSyncs {
   private readonly api = inject(RemoteDownloadsApi);

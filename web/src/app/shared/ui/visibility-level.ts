@@ -1,32 +1,17 @@
 import { Component, computed, input, model } from '@angular/core';
 import { Schema } from '../../api/types';
-import { Tooltip } from './tooltip';
+import { VISIBILITY_ICONS, VisibilityLevel, levelName } from './visibility-icon';
+
+export { VisibilityIcon, levelName } from './visibility-icon';
+export type { VisibilityLevel } from './visibility-icon';
 
 /** What the forms read from `GET /api/v1/visibility-choices` (R-API-076). */
 type Choices = Schema<'VisibilityChoices'>;
-
-/** A visibility level (R-AUTHZ-033), from the most restrictive. */
-export type VisibilityLevel = Schema<'VisibilityLevel'>;
 
 export const VISIBILITY_LEVELS: readonly VisibilityLevel[] = ['private', 'internal', 'public'];
 
 /** What the control is choosing the level of; it decides the sentence under each option (Q-UI-228). */
 export type VisibilitySubject = 'new-projects' | 'project' | 'artifacts' | 'wiki' | 'upstream';
-
-/** The icon of each level, the ones the owner's GitLab uses: a lock, a shield, a globe (Q-UI-230). */
-const ICONS: Readonly<Record<VisibilityLevel, string>> = { private: 'lock', internal: 'shield', public: 'public' };
-
-/** The name of a level as the UI writes it. */
-export function levelName(level: VisibilityLevel): string {
-  switch (level) {
-    case 'private':
-      return $localize`:@@visibility.private:Private`;
-    case 'internal':
-      return $localize`:@@visibility.internal:Internal`;
-    case 'public':
-      return $localize`:@@visibility.public:Public`;
-  }
-}
 
 /** The reason Public is off while the installation admits no request without a credential (R-UI-053). */
 export function publicUnavailableReason(): Partial<Record<VisibilityLevel, string>> {
@@ -299,7 +284,7 @@ export class VisibilityLevelControl {
       const reasonId = `${this.group}-${level}-reason`;
       return {
         level,
-        icon: ICONS[level],
+        icon: VISIBILITY_ICONS[level],
         name: levelName(level),
         sentence: sentence(this.subject(), level),
         reason,
@@ -376,7 +361,7 @@ export class RestrictedLevelsControl {
       return {
         level,
         checked: this.value().includes(level),
-        icon: ICONS[level],
+        icon: VISIBILITY_ICONS[level],
         name: levelName(level),
         sentence: restrictedSentence(level),
         reason,
@@ -393,19 +378,4 @@ export class RestrictedLevelsControl {
     else set.delete(level);
     this.value.set(VISIBILITY_LEVELS.filter((l) => set.has(l)));
   }
-}
-
-/**
- * The level's icon before the name of a project or a repository (Q-UI-230): the level's name is its accessible label and its
- * tooltip. Rendered inline, so it sits in front of the name in a list cell or a header.
- */
-@Component({
-  selector: 'quader-visibility-icon',
-  imports: [Tooltip],
-  template: `<span class="material-icons inline" role="img" [attr.aria-label]="name()" [quaderTooltip]="name()">{{ icon() }}</span>`,
-})
-export class VisibilityIcon {
-  readonly level = input.required<VisibilityLevel>();
-  protected readonly name = computed(() => levelName(this.level()));
-  protected readonly icon = computed(() => ICONS[this.level()]);
 }

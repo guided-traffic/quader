@@ -4,7 +4,7 @@ import { Project } from '../../api/projects-api';
 import { ProjectContext } from '../../core/project-context';
 import { isUpstreamProject, upstreamFirst } from '../../core/upstream-project';
 import { ProjectMark } from '../../shared/ui/project-mark';
-import { VisibilityIcon } from '../../shared/ui/visibility-level';
+import { VisibilityIcon } from '../../shared/ui/visibility-icon';
 
 /** How many matches the switcher lists at once; a longer list is narrowed by typing. */
 const SHOWN = 20;

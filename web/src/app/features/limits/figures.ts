@@ -1,6 +1,9 @@
-import { formatNumber } from '@angular/common';
 import { Figure, FigureOverrides, Figures } from '../../api/limits-api';
 import { ConflictField } from '../../shared/conflict-dialog';
+import { GB, MB, factorOf, formatCount, limitText, n, unitOf } from './limit-text';
+
+export { GB, MB, formatBytes, formatCount, limitText, unitOf } from './limit-text';
+export type { FigureUnit } from './limit-text';
 
 /*
  * The figures of a profile as the screens show and edit them (R-UI-178, Q-UI-736): their groups, names, units and the
@@ -23,12 +26,6 @@ export const FIGURES: readonly Figure[] = [
   'refusedPerHour',
 ];
 
-/** 1 MB and 1 GB are decimal (Q-UI-736). */
-export const MB = 1_000_000;
-export const GB = 1_000_000_000;
-
-/** The unit a field holds: a count, or bytes shown as MB or GB. */
-export type FigureUnit = 'count' | 'mb' | 'gb';
 
 export type FigureGroupId = 'requests' | 'cache' | 'upstream' | 'transfers' | 'refused';
 
@@ -78,24 +75,7 @@ export function figureGroups(): readonly FigureGroup[] {
   ];
 }
 
-export function unitOf(figure: Figure): FigureUnit {
-  switch (figure) {
-    case 'cachedBytesPerSecond':
-    case 'uncachedBytesPerSecond':
-      return 'mb';
-    case 'cachedBytesPerHour':
-    case 'uncachedBytesPerHour':
-    case 'bytesPerDay':
-      return 'gb';
-    default:
-      return 'count';
-  }
-}
 
-function factorOf(figure: Figure): number {
-  const unit = unitOf(figure);
-  return unit === 'mb' ? MB : unit === 'gb' ? GB : 1;
-}
 
 /**
  * How the conflict dialog names and shows the members of a profile, a rule and the ceilings (R-UI-042, Q-UI-1210): a figure by its name
@@ -241,49 +221,9 @@ export function allUnlimited(figures: Figures | FigureOverrides): boolean {
   return FIGURES.every((f) => figures[f] === null || figures[f] === undefined);
 }
 
-function n(value: number, locale: string, digits = '1.0-1'): string {
-  return formatNumber(value, locale, digits);
-}
 
-/** A byte count in decimal units with one decimal (R-UI-183: "1.2 GB"); below 1 kB the bytes. */
-export function formatBytes(bytes: number, locale: string): string {
-  const units: readonly [number, string][] = [
-    [1e12, 'TB'],
-    [GB, 'GB'],
-    [MB, 'MB'],
-    [1e3, 'kB'],
-  ];
-  for (const [size, unit] of units) {
-    if (Math.abs(bytes) >= size) return `${n(bytes / size, locale)} ${unit}`;
-  }
-  return `${n(bytes, locale, '1.0-0')} B`;
-}
 
-/** A count with grouping ("50,000"). */
-export function formatCount(value: number, locale: string): string {
-  return n(value, locale, '1.0-0');
-}
 
-/** A figure's limit in its unit and window: "50,000 per hour", "300 GB per hour", "200 MB per second". */
-export function limitText(figure: Figure, value: number | null | undefined, locale: string): string {
-  if (value === null || value === undefined) return $localize`:@@limits.unlimited:Unlimited`;
-  const unit = unitOf(figure);
-  const amount = unit === 'count' ? formatCount(value, locale) : `${n(value / factorOf(figure), locale, '1.0-3')} ${unit === 'mb' ? 'MB' : 'GB'}`;
-  switch (figure) {
-    case 'requestsPerSecond':
-    case 'cachedBytesPerSecond':
-    case 'uncachedBytesPerSecond':
-      return $localize`:@@limits.limit.per-second:${amount}:amount: per second`;
-    case 'requestsBurst':
-      return $localize`:@@limits.limit.burst:${amount}:amount: burst`;
-    case 'bytesPerDay':
-      return $localize`:@@limits.limit.per-day:${amount}:amount: per day`;
-    case 'parallelTransfers':
-      return $localize`:@@limits.limit.parallel:${amount}:amount: transfers in parallel`;
-    default:
-      return $localize`:@@limits.limit.per-hour:${amount}:amount: per hour`;
-  }
-}
 
 /**
  * The eleven figures in one compact line (R-UI-178): "200/s · 1,000 burst · 50,000/h · cache 200 MB/s, 300 GB/h · upstream 50 MB/s,

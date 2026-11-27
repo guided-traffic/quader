@@ -1,4 +1,4 @@
-import { leadsWithDocumentation } from '../../views/repositories/content-shape';
+import { leadsWithDocumentation } from '../../views/repositories/leads-with-documentation';
 
 /**
  * A link taken from package metadata (npm `homepage`, `repository.url`, `bugs.url`): a package

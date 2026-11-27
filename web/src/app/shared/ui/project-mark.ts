@@ -1,6 +1,6 @@
 import { Component, computed, input } from '@angular/core';
 import { isUpstreamProject } from '../../core/upstream-project';
-import { VisibilityIcon, VisibilityLevel, levelName } from './visibility-level';
+import { VisibilityIcon, VisibilityLevel, levelName } from './visibility-icon';
 
 /** The first letter of a project's display name, or of its key: the letter of the project's mark. */
 export function letterOf(displayName: string | null | undefined, key: string): string {
