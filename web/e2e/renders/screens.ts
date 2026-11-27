@@ -676,7 +676,7 @@ async function* manyEntries(page: Page): AsyncGenerator<string> {
 /** The list as it opens, then sorted by its Detected button: the click fails where the button cannot be reached. */
 async function* sortByDetection(page: Page): AsyncGenerator<string> {
   yield '';
-  await page.locator('th').getByRole('button', { name: 'Detected' }).click();
+  await page.locator('th').getByRole('button', { name: 'Detected', exact: true }).click();
   await expect(page).toHaveURL(/sort=detectedAt/);
   yield 'sorted';
 }
@@ -1000,8 +1000,9 @@ async function* versionsTable(page: Page): AsyncGenerator<string> {
   await expect(table.locator('tbody tr')).toHaveCount(12);
   yield 'filtered';
   await page.getByRole('searchbox', { name: 'Filter versions' }).fill('');
-  await table.locator('th').getByRole('button', { name: 'Vulnerabilities' }).click();
-  await table.locator('th').getByRole('button', { name: 'Vulnerabilities' }).click();
+  // Exact: the column's help button is named "About the column Vulnerabilities", which a name matched as a part also finds.
+  await table.locator('th').getByRole('button', { name: 'Vulnerabilities', exact: true }).click();
+  await table.locator('th').getByRole('button', { name: 'Vulnerabilities', exact: true }).click();
   await expect(page).toHaveURL(/sort=-vulnerabilities/);
   yield 'by-grade';
 }
