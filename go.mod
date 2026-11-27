@@ -22,6 +22,7 @@ require (
 	github.com/jackc/pgx/v5 v5.11.0
 	github.com/klauspost/compress v1.20.2
 	github.com/microcosm-cc/bluemonday v1.0.27
+	github.com/moby/patternmatcher v0.6.1
 	github.com/notaryproject/notation-core-go v1.3.0
 	github.com/notaryproject/tspclient-go v1.0.0
 	github.com/oapi-codegen/runtime v1.8.0
@@ -37,6 +38,7 @@ require (
 	github.com/ulikunitz/xz v0.5.17
 	github.com/valkey-io/valkey-go v1.0.79
 	github.com/veraison/go-cose v1.3.0
+	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78
 	github.com/yuin/goldmark v1.8.7
 	go.etcd.io/bbolt v1.5.0
 	go.opentelemetry.io/otel v1.47.0
@@ -53,6 +55,7 @@ require (
 	golang.org/x/tools v0.52.0
 	google.golang.org/grpc v1.85.0
 	google.golang.org/protobuf v1.36.12
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
@@ -161,7 +164,6 @@ require (
 	github.com/wasilibs/go-pgquery v0.0.0-20261027025405-3048dd293555 // indirect
 	github.com/wasilibs/wazero-helpers v0.0.0-20250123031827-cd30c44769bb // indirect
 	github.com/x448/float16 v0.8.4 // indirect
-	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.47.0 // indirect
 	go.opentelemetry.io/otel/log v1.47.0 // indirect
@@ -177,7 +179,6 @@ require (
 	google.golang.org/genproto/googleapis/api v0.0.0-20261026165753-2ffab32bce7e // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20261026165753-2ffab32bce7e // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/klog/v2 v2.140.0 // indirect
 )
 

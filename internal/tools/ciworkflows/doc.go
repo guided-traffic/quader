@@ -16,4 +16,7 @@
 // The integration packages run in the shards of the job integration (Q-ARCH-544, Q-ARCH-565): the Makefile is asked for the packages
 // of every shard of the matrix, each package runs in exactly one, no shard is empty, a letter past the matrix is refused, and the
 // coverage evidence requires the report of every shard (docs/developer/build-and-test.md).
+//
+// The release image's build context keeps every committed file a stage of the Containerfile reads: .dockerignore is applied with
+// Docker's own matcher to git ls-files (R-ARCH-003, docs/developer/releasing.md).
 package ciworkflows

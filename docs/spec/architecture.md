@@ -823,10 +823,19 @@ quader/
 - `internal/webui/dist/` holds a committed placeholder `index.html`, so `go build` works without a
   UI build. Release builds run the web build first. Built locale directories `dist/<locale>/` are
   not committed; `internal/webui/.gitignore` ignores them (Q-ARCH-20).
+- The release image's build context keeps every committed file a stage of the `Containerfile` reads: every Go source, `go.mod`
+  and `go.sum`, every file at or below a directory that holds a Go source (what `//go:embed` reaches), and every file below a
+  source the `Containerfile` copies by name (`web/`, the placeholders of the embedded bundles). `.dockerignore` may leave out
+  anything else. A unit test applies `.dockerignore` with Docker's own parser and matcher to `git ls-files`, so the fast jobs
+  find a pattern that leaves out what the build needs before the job `image` does (2026-11-26: `internal/webui/dist/*/` left
+  out the package file `embed.go`, because Docker cleans a pattern's trailing slash off, and three pushes made no release).
 
 Acceptance criteria:
 - `go build ./cmd/quader` succeeds on a clean checkout without Node.js installed.
 - `go generate ./... && git diff --exit-code` passes in CI.
+- `TestR_ARCH_003_TheImagesBuildContextHoldsEveryCommittedFileTheBuildReads` (unit,
+  [buildcontext_test.go](../../internal/tools/ciworkflows/buildcontext_test.go)) passes on the checkout, and with the line
+  `internal/webui/dist/*/` in place of the repaired ones it names `internal/webui/dist/embed.go`.
 
 ### R-ARCH-004 · Angular workspace layout
 Priority: **MVP** · Covers: quader-only

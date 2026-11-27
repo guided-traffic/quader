@@ -1091,7 +1091,11 @@ job checks out the tag.
 named in the build's log) and `npm run build:embed` on the Node.js of `web/.nvmrc`; `build` cross-compiles the binary for the target platform on the build platform
 (`CGO_ENABLED=0`), so neither architecture is emulated; the final stage is the distroless base of
 `RUNTIME_BASE_IMAGE`, the binary and nothing else, as UID 65532 (83.3 MB on arm64; 246.5 MB with the analyser it carried until
-2026-11-21, which the scanner pods now copy from `TRIVY_IMAGE`, R-HA-070). `make image` builds the same file for the host architecture.
+2026-11-21, which the scanner pods now copy from `TRIVY_IMAGE`, R-HA-070). `make image` builds the same file for the host architecture. The
+build context is the checkout less [.dockerignore](../../.dockerignore); `TestR_ARCH_003_TheImagesBuildContextHoldsEveryCommittedFileTheBuildReads`
+([buildcontext_test.go](../../internal/tools/ciworkflows/buildcontext_test.go), unit, about 0.1 s) applies it with Docker's own matcher
+to `git ls-files` and fails on a Go source, a file below a Go package or a file below a source the Containerfile copies by name that it
+leaves out (R-ARCH-003). Docker cleans a pattern's trailing slash off: `dir/*/` leaves out every file of `dir`, not only its folders.
 
 **The chart repository** is `https://guided-traffic.github.io/quader/`, served from the `gh-pages`
 branch: every release adds the packages of both charts and the merged `index.yaml`. The release's assets are the
