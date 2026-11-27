@@ -65,6 +65,8 @@ func feedActions() []string {
 		audit.EventSignatureReleaseWithdrawn, audit.EventSignatureAnchorRemoved, audit.EventSignatureAnchorUpdated,
 		audit.EventSignatureSettingsChanged, audit.EventSignatureSignerBlocked,
 		audit.EventBastionConfigurationChanged, audit.EventBastionDisabled, audit.EventBastionEnabled, audit.EventTimeFormatChanged,
+		// What a Bastion may distribute (R-BAS-134, Q-BAS-521).
+		audit.EventBastionProjectAllowed, audit.EventBastionProjectRemoved, audit.EventRepositoryBastionAdded, audit.EventRepositoryBastionRemoved,
 	}
 }
 
@@ -230,6 +232,13 @@ var mappers = sync.OnceValue(func() map[string]mapper {
 		audit.EventSignatureSignerBlocked:    mapGated,
 		audit.EventSignatureAnchorUpdated:    mapAnchorUpdated,
 		audit.EventSignatureSettingsChanged:  mapProjectAnchorsOff,
+		// What a Bastion may distribute (R-BAS-134, Q-BAS-521): a widening asks every Bastion for the handshake again (its anonymousReads
+		// may rise); a narrowing also drops every permission answer, as a lowered level does, since a kept answer for a repository that
+		// left the distribution would serve on for the answers' period.
+		audit.EventBastionProjectAllowed:    mapSettings,
+		audit.EventRepositoryBastionAdded:   mapSettings,
+		audit.EventBastionProjectRemoved:    mapDistributionNarrowed,
+		audit.EventRepositoryBastionRemoved: mapDistributionNarrowed,
 	}
 	// serviceaccount.updated narrows the actions of a repository's service account (R-AUTHZ-039): the answers of that account go.
 	for _, a := range []string{audit.EventUserDisabled, audit.EventUserDeleted, audit.EventSADisabled, audit.EventSADeleted, audit.EventSAUpdated} {
@@ -254,6 +263,12 @@ var mappers = sync.OnceValue(func() map[string]mapper {
 })
 
 func grantsEntry() []rawEntry { return []rawEntry{{kind: iface.FeedGrants}} }
+
+// mapDistributionNarrowed: a project taken off a Bastion's list or a Bastion taken off a repository (R-BAS-134) drops every permission
+// answer (grants) and asks for the handshake again (settings).
+func mapDistributionNarrowed(FeedEvent, *detailsDoc, string) []rawEntry {
+	return []rawEntry{{kind: iface.FeedGrants}, {kind: iface.FeedSettings}}
+}
 
 func mapPrincipal(ev FeedEvent, _ *detailsDoc, _ string) []rawEntry {
 	if ev.ResourceID == "" {

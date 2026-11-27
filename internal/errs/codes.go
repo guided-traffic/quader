@@ -504,6 +504,11 @@ const (
 	CodeNotReady = "not_ready"
 )
 
+// CodeBastionNotAllowed is the field code of a repository's member bastions that names a Bastion which does not allow the
+// repository's project (422 validation_failed at /bastions/<i>, bastion.md R-BAS-134, Q-REPO-491): an administrator allows the
+// project for the Bastion first.
+const CodeBastionNotAllowed = "bastion_not_allowed"
+
 // <<< M13 bastion
 //
 // >>> M1 repository
@@ -1084,6 +1089,7 @@ var registry = []CodeInfo{
 	{CodeAuthTimeout, RateLimited, "Authentication timeout", "Too many failed authentications came from this address; unverified credentials are refused until the Retry-After has passed."},
 	{CodeAddressBlocked, RateLimited, "Address blocked", "The address was blocked for sending too many refused requests; retry after the Retry-After."},
 	{CodeNotReady, Unavailable, "Not ready", "A Bastion's web interface has nothing to show yet: the replica started without a kept state and has not read one. Retry after the Retry-After (R-BAS-117)."},
+	{CodeBastionNotAllowed, Invalid, "Bastion not allowed", "The Bastion named in the repository's member bastions does not allow the repository's project; an administrator allows the project for that Bastion first (R-BAS-134)."},
 	// <<< M13 bastion
 	//
 	// >>> M1 repository

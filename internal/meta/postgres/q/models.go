@@ -422,6 +422,13 @@ type BastionContact struct {
 	CatalogueKept    pgtype.Bool
 }
 
+type BastionProject struct {
+	BastionID pgtype.UUID
+	ProjectID pgtype.UUID
+	AllowedAt pgtype.Timestamptz
+	AllowedBy string
+}
+
 type BastionStatus struct {
 	BastionID  pgtype.UUID
 	Replica    string
@@ -1614,6 +1621,12 @@ type Repository struct {
 	VisibilityArtifacts   string
 	VisibilityWiki        string
 	DeliveryRulesRevision int64
+}
+
+type RepositoryBastion struct {
+	RepositoryID int64
+	BastionID    pgtype.UUID
+	Since        pgtype.Timestamptz
 }
 
 type RepositorySecret struct {

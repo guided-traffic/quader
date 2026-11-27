@@ -144,6 +144,9 @@ type Document struct {
 	// columns of the repository row, not part of repositories.config: the database holds their order and their bound by the
 	// project's level.
 	Visibility Visibility `json:"visibility"`
+	// Bastions are the Bastions that distribute the repository (bastion.md R-BAS-134, Q-REPO-491): rows of repository_bastion, not
+	// part of repositories.config (bastions.go).
+	Bastions []BastionRef `json:"bastions"`
 	Settings
 }
 
@@ -151,6 +154,7 @@ type Document struct {
 // (remote-curation.md R-CUR-002); the shallower members shadow those of the embedded settings and are omitted.
 func (d Document) MarshalJSON() ([]byte, error) {
 	type plain Document
+	d.Bastions = orNone(d.Bastions)
 	if d.Class != Remote {
 		return json.Marshal(plain(d))
 	}
@@ -205,7 +209,10 @@ type ConsumerView struct {
 	Layout      string `json:"layout"`
 	// Visibility is shown in the reduced view as well, so that every reader sees how open a repository is (R-API-057).
 	Visibility Visibility `json:"visibility"`
-	Addresses  []string   `json:"addresses"`
+	// Bastions are shown in the reduced view as well: every reader sees whether and through which Bastions the repository is
+	// distributed beside its level (bastion.md R-BAS-134).
+	Bastions  []BastionRef `json:"bastions"`
+	Addresses []string     `json:"addresses"`
 	// Disabled is shown in the reduced view as well: a disabled repository answers no client, so no reader's screen offers a
 	// client setup, an address or a download of it (R-REPO-010).
 	Disabled bool `json:"disabled"`
@@ -223,7 +230,10 @@ func (d Document) WithoutAdminNotes() Document {
 // ProtocolBasePath template ("/files/{project}/{key}/") and name the repository's; the raw file address is always
 // listed (R-REPO-002).
 func (d Document) ConsumerView(protocolBase string, name qname.Repo) ConsumerView {
-	v := ConsumerView{Project: name.Project, Key: d.Key, Class: d.Class, Format: d.Format, Description: d.Description, Layout: d.Layout, Visibility: d.Visibility}
+	v := ConsumerView{
+		Project: name.Project, Key: d.Key, Class: d.Class, Format: d.Format, Description: d.Description, Layout: d.Layout, Visibility: d.Visibility,
+		Bastions: orNone(d.Bastions),
+	}
 	seen := map[string]bool{}
 	for _, tmpl := range []string{protocolBase, "/files/{project}/{key}/"} {
 		if tmpl == "" {

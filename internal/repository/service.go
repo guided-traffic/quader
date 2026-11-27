@@ -366,6 +366,9 @@ func (s *Service) createTx(ctx context.Context, tx meta.Tx, c Caller, project st
 		}
 	}
 	// <<< M2 virtual
+	if err := s.createBastions(ctx, tx, qs, c, rows[0], project, d.Bastions); err != nil {
+		return Stored{}, err
+	}
 	out, err := s.stored(ctx, qs, rows[0], project, v.warnings)
 	if err != nil {
 		return Stored{}, err
@@ -487,6 +490,10 @@ func (s *Service) updateTx(ctx context.Context, tx meta.Tx, c Caller, name qname
 	if err != nil {
 		return Stored{}, err
 	}
+	bastionIDs, err := allowedBastions(ctx, qs, row.ProjectID.String(), nd.Bastions)
+	if err != nil {
+		return Stored{}, err
+	}
 	newCfg, err := nd.marshalConfig()
 	if err != nil {
 		return Stored{}, err
@@ -515,6 +522,9 @@ func (s *Service) updateTx(ctx context.Context, tx meta.Tx, c Caller, name qname
 	}
 	if len(updated) == 0 {
 		return Stored{}, errors.New("repository: the update matched no row although the row was locked")
+	}
+	if err := s.writeBastions(ctx, tx, c, before, cur.Bastions, nd.Bastions, bastionIDs); err != nil {
+		return Stored{}, err
 	}
 	if nd.Class == Remote {
 		if err := s.writeSecrets(ctx, tx, row.ID, nd.pending); err != nil {
@@ -651,6 +661,10 @@ func updateChanges(cur, nd *Document) ([]string, error) {
 		changes = append(changes, "visibility")
 		sort.Strings(changes)
 	}
+	if bastionsChanged(cur, nd) {
+		changes = append(changes, "bastions")
+		sort.Strings(changes)
+	}
 	return changes, nil
 }
 
@@ -721,7 +735,13 @@ func (s *Service) stored(ctx context.Context, qs *q.Queries, row q.Repository, p
 			return Stored{}, err
 		}
 	}
-	return s.storedRel(row, project, rel, facts, warnings)
+	bastions, err := loadBastions(ctx, qs, row.ID)
+	if err != nil {
+		return Stored{}, err
+	}
+	out, err := s.storedRel(row, project, rel, facts, warnings)
+	out.Document.Bastions = orNone(bastions[row.ID])
+	return out, err
 }
 
 func (s *Service) storedRel(row q.Repository, project string, rel *virtualRel, facts map[int64]q.UpstreamRepository, warnings []Warning) (Stored, error) {
@@ -759,7 +779,9 @@ func (s *Service) document(ctx context.Context, qs *q.Queries, row q.Repository,
 	}
 	d.Project = project
 	d.renderVirtual(rel)
-	return d, rel, nil
+	bastions, err := loadBastions(ctx, qs, row.ID)
+	d.Bastions = orNone(bastions[row.ID])
+	return d, rel, err
 }
 
 // changePayload is the payload of a repo_config change: the repository id and the
@@ -1000,6 +1022,10 @@ func (s *Service) List(ctx context.Context, f ListFilter) (ListResult, error) {
 		return ListResult{}, err
 	}
 	rows, rels, projects := sr.rows, sr.rels, sr.projects
+	bastions, err := loadAllBastions(ctx, s.run)
+	if err != nil {
+		return ListResult{}, err
+	}
 	needle := strings.ToLower(f.Query)
 	var res ListResult
 	for _, row := range rows {
@@ -1029,6 +1055,7 @@ func (s *Service) List(ctx context.Context, f ListFilter) (ListResult, error) {
 		if err != nil {
 			return ListResult{}, err
 		}
+		st.Document.Bastions = orNone(bastions[row.ID])
 		if !queryMatches(needle, project, row.Key, st.Document.Description) {
 			continue
 		}

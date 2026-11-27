@@ -10729,10 +10729,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-BAS
 
-429 questions on [spec/bastion.md](spec/bastion.md).
+432 questions on [spec/bastion.md](spec/bastion.md).
 
 <details>
-<summary>Q-BAS: 429 questions</summary>
+<summary>Q-BAS: 432 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -11165,6 +11165,9 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-BAS-516](spec/bastion.md#q-bas-516--audit-journal-and-restore-of-a-disable) | Audit, journal and restore of a disable | Decided by the development agent on 2026-11-27 (plan W-41, D9) | (a) `bastion.disabled` with `details.mode` and the entry `{principalId, name, mode}`, replayed by disabling the registration in that way and never more lightly; `bastion.deleted` replayed as a hard disable; the replay lives with the registration's other replays in `bastionmain`; `quader admin bastion disable | — |
 | [Q-BAS-517](spec/bastion.md#q-bas-517--the-declared-token-is-invalidated-on-the-api-and-no-token-is-issued-beside-it) | The declared token is invalidated on the API, and no token is issued beside it | Decided by the development agent on 2026-11-27 (plan W-41, D10) | (a) The declared token's revocation is admitted, the last resort (the next `quader migrate` refuses the revoked value until the Secret holds a new one); a declared registration gets no token issued on the API, `409 managed_by_config` | — |
 | [Q-BAS-518](spec/bastion.md#q-bas-518--a-registration-disabled-by-its-principals-status-becomes-disabled-hard) | A registration disabled by its principal's status becomes disabled hard | Decided by the development agent on 2026-11-27 (W-41's A1) | (a): not a compatibility path for a client, but the narrower reading of what an administrator decided. | — |
+| [Q-BAS-519](spec/bastion.md#q-bas-519--an-administrator-allows-projects-per-bastion-and-a-new-bastion-allows-none) | An administrator allows projects per Bastion, and a new Bastion allows none | Decided by the owner on 2026-11-27 | (a) Rows of `bastion_project`; `PUT`/`DELETE /api/v1/bastions/{name}/projects/{project}`, a paged `GET`; `endpoints:write` to change, `endpoints:read` to read, as the registration's other members (Q-BAS-325); a removal deletes the project's choices of that Bastion | — |
+| [Q-BAS-520](spec/bastion.md#q-bas-520--every-level-needs-the-choice-not-only-public) | Every level needs the choice, not only Public | Decided by the development agent on 2026-11-27 (W-41's plan, D15) | (a); no reason against it was found. | — |
+| [Q-BAS-521](spec/bastion.md#q-bas-521--a-narrowing-of-the-distribution-is-journaled-and-tells-every-bastion-at-once) | A narrowing of the distribution is journaled and tells every Bastion at once | Decided by the development agent on 2026-11-27 (W-41's plan, D17) | (a) Four events; the two removals journaled (`{bastionId, projectId}`, `{repositoryId, bastionId}`) and replayed by deleting the rows; the feed maps a widening to `settings` and a narrowing to `grants` and `settings`; the change area `bastion_distribution` starts the catalogue's builder | — |
 
 </details>
 
@@ -12682,10 +12685,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-REPO
 
-245 questions on [spec/repositories-and-proxy.md](spec/repositories-and-proxy.md).
+246 questions on [spec/repositories-and-proxy.md](spec/repositories-and-proxy.md).
 
 <details>
-<summary>Q-REPO: 245 questions</summary>
+<summary>Q-REPO: 246 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -12934,6 +12937,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-REPO-488](spec/repositories-and-proxy.md#q-repo-488--the-upstream-tests-answer-carries-its-verdict) | The upstream test's answer carries its verdict | Decided by the development agent | (a) The answer carries `verdict`, made by one function on the server from everything the test saw | — |
 | [Q-REPO-489](spec/repositories-and-proxy.md#q-repo-489--the-upstream-tests-answer-names-what-it-asked-and-what-came-back) | The upstream test's answer names what it asked and what came back | Decided by the development agent | (a) The answer gains `probeUrl`, `credential`, the token service's `realm`, `service`, `extraHost` and `httpStatus`, and `body`, the upstream's own error answer as redacted text | — |
 | [Q-REPO-490](spec/repositories-and-proxy.md#q-repo-490--a-system-repository-the-product-no-longer-declares-is-removed-not-retired) | A system repository the product no longer declares is removed, not retired | Decided by the development agent | (a) The reconcile removes it by the deletion of every repository (R-REPO-013): lifecycle `deleting` and `repository.deleted` in its transaction, the job removes the items and then its `upstream_repository` row and its repository row | — |
+| [Q-REPO-491](spec/repositories-and-proxy.md#q-repo-491--the-projects-owner-chooses-per-repository-the-bastions-that-distribute-it) | The project's Owner chooses per repository the Bastions that distribute it | Decided by the development agent on 2026-11-27 (W-41's plan, D13) | (a) The project's Owner, or a holder of `repositories:write-config`: the people who set the repository's levels; the document's member `bastions`, written with the document; `422 bastion_not_allowed` for a Bastion that does not allow the project | — |
 
 </details>
 

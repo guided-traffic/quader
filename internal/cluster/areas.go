@@ -407,3 +407,17 @@ func init() {
 }
 
 // <<< bastion base url
+
+// >>> bastion distribution
+
+// AreaBastionDistribution carries a change of what a Bastion may distribute (bastion.md R-BAS-134): a project allowed for a Bastion or
+// taken off its list, a Bastion added to a repository or taken off it, and the choices a repository's move deleted. The public
+// catalogue's builder starts a run after it (R-BAS-105). The payload is {"bastion": "<the registration's principal ID>"}. Its
+// cluster_epoch row is seeded by 00159_bastion_distribution.
+const AreaBastionDistribution = "bastion_distribution"
+
+func init() {
+	RegisterArea(Area{Name: AreaBastionDistribution, Owner: "R-BAS-134", Class: ChangeArea, PayloadVersion: 1})
+}
+
+// <<< bastion distribution

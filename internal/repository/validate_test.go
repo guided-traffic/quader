@@ -280,14 +280,14 @@ func TestGenericSettings(t *testing.T) {
 }
 
 func TestConsumerView(t *testing.T) {
-	t.Run("R-REPO-010 the consumer view has identity, description, layout, visibility, addresses and the disabled flag only", func(t *testing.T) {
+	t.Run("R-REPO-010 the consumer view has identity, description, layout, visibility, the Bastions, addresses and the disabled flag only", func(t *testing.T) {
 		d, _, err := decodeValidate(t, `{"key":"files","class":"local","format":"generic","description":"d","adminNotes":"secret note","includePatterns":["a/**"]}`, true)
 		if err != nil {
 			t.Fatal(err)
 		}
 		d.Visibility = Visibility{Artifacts: LevelInternal, Wiki: LevelPrivate} // a column of the row, set by the reader
 		raw, _ := json.Marshal(d.ConsumerView("/files/{project}/{key}/", qname.Repo{Project: "it", Key: "files"}))
-		want := `{"key":"files","project":"it","class":"local","format":"generic","description":"d","layout":"generic","visibility":{"artifacts":"internal","wiki":"private"},"addresses":["/files/it/files/"],"disabled":false}`
+		want := `{"key":"files","project":"it","class":"local","format":"generic","description":"d","layout":"generic","visibility":{"artifacts":"internal","wiki":"private"},"bastions":[],"addresses":["/files/it/files/"],"disabled":false}`
 		if string(raw) != want {
 			t.Fatalf("view = %s", raw)
 		}

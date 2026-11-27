@@ -156,6 +156,10 @@ repository, while the installation scans for malware; see [Monitoring and operat
 object store's address too, also through a proxy or a firewall; see [Download links](../admin/download-links.md)), the
 format's settings (for example **npm settings**), **Details** and **API**. How a client is configured is not a setting: it is **Set up client** at the top of the repository's page.
 
+### Distribute a repository through a Bastion
+
+A Bastion serves your installation's repositories on the internet or to a partner. A repository's level (**Public**, **Internal**, **Private**) is about your installation's own network; a repository leaves it through a Bastion only when you choose so. As the project's Owner (or with the permission to write repository configuration) you choose, per repository, among the Bastions an administrator allowed for the project; a Maintainer cannot. `GET /api/v1/projects/<project>/bastions` lists them, and the repository's member `bastions` holds your choice: `PATCH` the repository with `{"bastions": ["artifacts"]}` *(example)* and its `ETag` in `If-Match`, or `[]` to stop. A Bastion the project is not allowed for is refused with `bastion_not_allowed`. Every reader of the repository sees which Bastions distribute it and their addresses. The settings page does not show the choice yet, and a Bastion is not yet held to it: it serves what each caller's credential may read, as before, until the next step of this work lands.
+
 ## Set up client and the guides
 
 **Set up client** at the top of a repository's page opens the configuration of your client for this repository, with this installation's addresses, and below it the guide that explains what the repository's class allows, how the client signs in, installs and publishes, and what its errors mean. A guide never contains a token: snippets read it from an environment variable such as `QUADER_TOKEN`, and the page for an anonymous reader uses no credential at all.

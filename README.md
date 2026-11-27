@@ -2952,6 +2952,7 @@ operation in this one table.
 | `GET /api/v1/projects/{projectKey}/members` | `listProjectMembers` | `projects:read` or a member of the project |
 | `PUT /api/v1/projects/{projectKey}/members/{principalRef}` | `setProjectMember` | `projects:write` or Owner of the project; the body `{"role": "<role>"}` with `reader`, `developer`, `maintainer` or `owner`; `201` added, `200` changed; `409 last_owner` unless the caller holds `projects:write` · recent sign-in |
 | `DELETE /api/v1/projects/{projectKey}/members/{principalRef}` | `removeProjectMember` | `projects:write` or Owner of the project; `409 last_owner` unless the caller holds `projects:write` · recent sign-in |
+| `GET /api/v1/projects/{projectKey}/bastions` | `listProjectBastions` | `repositories:read-config` or Owner of the project |
 | `GET /api/v1/projects/{projectKey}/principals` | `lookupProjectPrincipals` | `identities:read` or Owner of the project |
 
 **ci**
@@ -3183,6 +3184,9 @@ The operations of GitLab CI federation ([docs/developer/ci-oidc.md](docs/develop
 | `PATCH /api/v1/bastions/{name}` | `updateBastion` | authenticated; `limits:write` for the member `limits`, `endpoints:write` for every other member, decided in the handler (a patch of both needs both) · `If-Match`; a change of `limits.mode` needs a recent sign-in |
 | `POST /api/v1/bastions/{name}/tokens` | `createBastionToken` | `endpoints:write` · recent sign-in · idempotent · the secret once |
 | `DELETE /api/v1/bastions/{name}/tokens/{id}` | `revokeBastionToken` | authenticated; `endpoints:write` or `tokens:revoke`, decided in the handler |
+| `GET /api/v1/bastions/{name}/projects` | `listBastionProjects` | `endpoints:read` |
+| `PUT /api/v1/bastions/{name}/projects/{projectKey}` | `allowBastionProject` | `endpoints:write` |
+| `DELETE /api/v1/bastions/{name}/projects/{projectKey}` | `removeBastionProject` | `endpoints:write` |
 
 **bastion**
 

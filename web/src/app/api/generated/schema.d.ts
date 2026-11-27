@@ -2871,6 +2871,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{projectKey}/bastions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+            };
+            cookie?: never;
+        };
+        /**
+         * List the Bastions that allow a project
+         * @description The Bastions an administrator allowed for the project (R-BAS-134), by name: what its Owner may choose in a repository's
+         *     member `bastions`. Each with whether it is disabled, whether its web interface is on, and `addresses`, the base URLs its
+         *     deployments reported within the last 24 hours that are entries of `server.additional_base_urls`. An empty list while no
+         *     Bastion allows the project. The project's Owner, or a holder of `repositories:read-config`.
+         */
+        get: operations["listProjectBastions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects/{projectKey}/principals": {
         parameters: {
             query?: never;
@@ -5473,6 +5499,64 @@ export interface paths {
          *     holds a new one.
          */
         delete: operations["revokeBastionToken"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/bastions/{name}/projects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the projects a Bastion allows
+         * @description The projects whose repositories may be distributed through the Bastion (R-BAS-134), by project key: each with its display
+         *     name, since when and by whom it is allowed (the actor's name, or the reference of an actor without one), and the keys of its
+         *     repositories whose Owner chose the Bastion. A new Bastion allows none. `q` keeps the projects whose key or display name holds
+         *     it, case-insensitively. `totals` counts the whole list: the projects allowed and the repositories distributed. The answer
+         *     reads only what an administrator decided; whether a repository is served through the Bastion is decided per request.
+         */
+        get: operations["listBastionProjects"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/bastions/{name}/projects/{projectKey}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                name: string;
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Allow a project for a Bastion
+         * @description Allows the project's repositories to be distributed through the Bastion (R-BAS-134): the project's Owner may then choose the
+         *     Bastion for each repository (the repository's member `bastions`). It distributes nothing by itself. Idempotent: a project
+         *     allowed already answers `204` and records nothing; otherwise records `bastion.project.allowed`. `404` for a registration or a
+         *     project that does not exist.
+         */
+        put: operations["allowBastionProject"];
+        post?: never;
+        /**
+         * Take a project off a Bastion's list
+         * @description Takes the project off the Bastion's list (R-BAS-134) and, in the same transaction, deletes its repositories' choices of the
+         *     Bastion: allowing the project again distributes nothing until its Owner chooses again. Records `bastion.project.removed` with
+         *     the repositories whose choice went, journaled, so a restore to a point before it takes the project off again (R-HA-054,
+         *     Q-BAS-521). `404` for a registration or a project that does not exist, or a project the Bastion does not allow.
+         */
+        delete: operations["removeBastionProject"];
         options?: never;
         head?: never;
         patch?: never;
@@ -13334,6 +13418,7 @@ export interface components {
              *     members, deploy target and pin rules of a virtual repository name repositories of this project by bare key.
              */
             readonly project?: string;
+            bastions?: components["schemas"]["RepositoryBastions"];
             description?: string;
             /** @description Only for holders of `repositories:read-config`. */
             adminNotes?: string;
@@ -13513,6 +13598,7 @@ export interface components {
             description: string;
             layout: string;
             visibility: components["schemas"]["RepositoryVisibility"];
+            bastions: components["schemas"]["RepositoryBastions"];
             /** @description The client addresses: absolute URLs, the public base URL followed by the repository's path. */
             addresses: string[];
             /** @description The repository is disabled and answers no client; its screens offer no client setup, address or download of it. */
@@ -13527,6 +13613,7 @@ export interface components {
             format: string;
             description: string;
             visibility: components["schemas"]["RepositoryVisibility"];
+            bastions: components["schemas"]["RepositoryBastions"];
             /** @description The client addresses: absolute URLs, the public base URL followed by the repository's path. */
             addresses: string[];
             disabled: boolean;
@@ -15590,6 +15677,82 @@ export interface components {
             /** @description Replaces the whole list; `[]` empties it, a `null` reads as absent and changes nothing. */
             egress?: components["schemas"]["BastionEgress"];
         };
+        /**
+         * @description A project a Bastion allows (R-BAS-134).
+         * @example {
+         *       "project": "platform",
+         *       "displayName": "Platform engineering",
+         *       "allowedAt": "2026-11-27T10:00:00.000Z",
+         *       "allowedBy": "root",
+         *       "repositories": [
+         *         "image-source",
+         *         "npm-open-source"
+         *       ]
+         *     }
+         */
+        BastionProject: {
+            /** @description The project's key. */
+            project: string;
+            displayName: string;
+            /** Format: date-time */
+            allowedAt: string;
+            /** @description The name of the administrator who allowed it, or the reference of an actor without a principal. */
+            allowedBy: string;
+            /** @description The keys of the project's repositories whose Owner chose the Bastion, sorted; empty for none yet. */
+            repositories: string[];
+        };
+        BastionProjectList: {
+            items: components["schemas"]["BastionProject"][];
+            nextCursor: string | null;
+            /** @description The whole list's counts, whatever the page and the filter. */
+            totals: {
+                /**
+                 * Format: int64
+                 * @description The projects the Bastion allows.
+                 */
+                projects: number;
+                /**
+                 * Format: int64
+                 * @description The repositories distributed through the Bastion.
+                 */
+                repositories: number;
+            };
+        };
+        /** @description A Bastion that allows a project, as its Owner chooses among them (R-BAS-134). */
+        ProjectBastion: {
+            name: string;
+            disabled: boolean;
+            /** @description The Bastion's web interface is on (`switches.gui`). */
+            webInterface: boolean;
+            /**
+             * @description The base URLs the Bastion's deployments reported within the last 24 hours that are entries of
+             *     `server.additional_base_urls`, one per deployment; empty before its first contact.
+             */
+            addresses: string[];
+        };
+        ProjectBastionList: {
+            items: components["schemas"]["ProjectBastion"][];
+        };
+        /**
+         * @description A Bastion that distributes the repository (R-BAS-134, Q-REPO-491). A read gives the object; a write names the Bastion by its
+         *     name, as a string or as the object a read returned, whose `addresses` and `disabled` are read-only and ignored.
+         */
+        RepositoryBastion: string | {
+            name: string;
+            /** @description The base URLs its deployments reported within the last 24 hours that are entries of `server.additional_base_urls`. */
+            readonly addresses?: string[];
+            readonly disabled?: boolean;
+        };
+        /**
+         * @description The Bastions that distribute the repository beyond the main installation's network (bastion.md R-BAS-134, Q-REPO-491), by
+         *     name; empty for none. `visibility` is the main installation's level: a repository leaves the network through a Bastion only
+         *     while it is named here, whatever its level. Its project's Owner, or a holder of `repositories:write-config`, chooses among
+         *     the Bastions that allow the project (`GET /api/v1/projects/{projectKey}/bastions`); another name answers `422
+         *     validation_failed` with `bastion_not_allowed` at `/bastions/<i>`. A Bastion added records `repository.bastion.added`, one
+         *     taken off `repository.bastion.removed`, journaled (Q-BAS-521). A move to another project, and an administrator taking the
+         *     project off the Bastion's list, delete the choices.
+         */
+        RepositoryBastions: components["schemas"]["RepositoryBastion"][];
         /**
          * @example {
          *       "description": "partners 2026",
@@ -27520,6 +27683,35 @@ export interface operations {
             503: components["responses"]["Unavailable"];
         };
     };
+    listProjectBastions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The Bastions that allow the project. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectBastionList"];
+                };
+            };
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
     lookupProjectPrincipals: {
         parameters: {
             query: {
@@ -33056,6 +33248,99 @@ export interface operations {
             429: components["responses"]["TooManyRequests"];
             500: components["responses"]["Internal"];
             501: components["responses"]["NotImplemented"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    listBastionProjects: {
+        parameters: {
+            query?: {
+                /** @description Keeps the projects whose key or display name holds the text, case-insensitively. */
+                q?: string;
+                /** @description Page size, 1 to `api.page_size_max` (R-API-010). */
+                limit?: components["parameters"]["Limit"];
+                /** @description The `nextCursor` of the previous page. Opaque; valid only with the filters and sort it was issued for. */
+                cursor?: components["parameters"]["Cursor"];
+            };
+            header?: never;
+            path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of the allowed projects. */
+            200: {
+                headers: {
+                    Link: components["headers"]["Link"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BastionProjectList"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    allowBastionProject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                name: string;
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The project is allowed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    removeBastionProject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                name: string;
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The project is off the list. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
             503: components["responses"]["Unavailable"];
         };
     };

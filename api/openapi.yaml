@@ -7936,6 +7936,41 @@ paths:
           $ref: "#/components/responses/Internal"
         "503":
           $ref: "#/components/responses/Unavailable"
+  /api/v1/projects/{projectKey}/bastions:
+    parameters:
+      - $ref: "#/components/parameters/ProjectKey"
+    get:
+      operationId: listProjectBastions
+      tags: [projects]
+      summary: List the Bastions that allow a project
+      description: |
+        The Bastions an administrator allowed for the project (R-BAS-134), by name: what its Owner may choose in a repository's
+        member `bastions`. Each with whether it is disabled, whether its web interface is on, and `addresses`, the base URLs its
+        deployments reported within the last 24 hours that are entries of `server.additional_base_urls`. An empty list while no
+        Bastion allows the project. The project's Owner, or a holder of `repositories:read-config`.
+      x-quader-permission:
+        permission: repositories:read-config
+        project: path.projectKey
+        projectRole: owner
+      responses:
+        "200":
+          description: The Bastions that allow the project.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectBastionList"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
   /api/v1/projects/{projectKey}/principals:
     parameters:
       - name: projectKey
@@ -14862,6 +14897,121 @@ paths:
           $ref: "#/components/responses/Internal"
         "501":
           $ref: "#/components/responses/NotImplemented"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/bastions/{name}/projects:
+    get:
+      operationId: listBastionProjects
+      tags: [bastions]
+      summary: List the projects a Bastion allows
+      description: |
+        The projects whose repositories may be distributed through the Bastion (R-BAS-134), by project key: each with its display
+        name, since when and by whom it is allowed (the actor's name, or the reference of an actor without one), and the keys of its
+        repositories whose Owner chose the Bastion. A new Bastion allows none. `q` keeps the projects whose key or display name holds
+        it, case-insensitively. `totals` counts the whole list: the projects allowed and the repositories distributed. The answer
+        reads only what an administrator decided; whether a repository is served through the Bastion is decided per request.
+      x-quader-permission:
+        permission: endpoints:read
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^[a-z][a-z0-9-]{0,19}$"
+            x-quader-reserved-names: [presets]
+        - name: q
+          in: query
+          description: Keeps the projects whose key or display name holds the text, case-insensitively.
+          schema:
+            type: string
+            maxLength: 128
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: One page of the allowed projects.
+          headers:
+            Link:
+              $ref: "#/components/headers/Link"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BastionProjectList"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/bastions/{name}/projects/{projectKey}:
+    parameters:
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: "^[a-z][a-z0-9-]{0,19}$"
+          x-quader-reserved-names: [presets]
+      - $ref: "#/components/parameters/ProjectKey"
+    put:
+      operationId: allowBastionProject
+      tags: [bastions]
+      summary: Allow a project for a Bastion
+      description: |
+        Allows the project's repositories to be distributed through the Bastion (R-BAS-134): the project's Owner may then choose the
+        Bastion for each repository (the repository's member `bastions`). It distributes nothing by itself. Idempotent: a project
+        allowed already answers `204` and records nothing; otherwise records `bastion.project.allowed`. `404` for a registration or a
+        project that does not exist.
+      x-quader-permission:
+        permission: endpoints:write
+      responses:
+        "204":
+          description: The project is allowed.
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+    delete:
+      operationId: removeBastionProject
+      tags: [bastions]
+      summary: Take a project off a Bastion's list
+      description: |
+        Takes the project off the Bastion's list (R-BAS-134) and, in the same transaction, deletes its repositories' choices of the
+        Bastion: allowing the project again distributes nothing until its Owner chooses again. Records `bastion.project.removed` with
+        the repositories whose choice went, journaled, so a restore to a point before it takes the project off again (R-HA-054,
+        Q-BAS-521). `404` for a registration or a project that does not exist, or a project the Bastion does not allow.
+      x-quader-permission:
+        permission: endpoints:write
+      responses:
+        "204":
+          description: The project is off the list.
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
         "503":
           $ref: "#/components/responses/Unavailable"
   /api/v1/bastion/handshake:
@@ -29692,6 +29842,8 @@ components:
             The key of the project the repository belongs to (Q-AUTHZ-206). Read on every answer; the path names the
             project on a write, and a value that differs from it answers `422`. `POST …/move` moves the repository. The
             members, deploy target and pin rules of a virtual repository name repositories of this project by bare key.
+        bastions:
+          $ref: "#/components/schemas/RepositoryBastions"
         description:
           type: string
           maxLength: 2000
@@ -29915,7 +30067,7 @@ components:
     RepositoryConsumerView:
       type: object
       description: What a caller sees who may read a repository but not its configuration (R-REPO-010).
-      required: [key, class, format, description, layout, addresses, visibility, disabled]
+      required: [key, class, format, description, layout, addresses, visibility, bastions, disabled]
       properties:
         key:
           type: string
@@ -29930,6 +30082,8 @@ components:
           type: string
         visibility:
           $ref: "#/components/schemas/RepositoryVisibility"
+        bastions:
+          $ref: "#/components/schemas/RepositoryBastions"
         addresses:
           type: array
           description: "The client addresses: absolute URLs, the public base URL followed by the repository's path."
@@ -29945,7 +30099,7 @@ components:
         - $ref: "#/components/schemas/RepositoryConsumerView"
     RepositorySummary:
       type: object
-      required: [key, class, format, description, addresses, disabled, lastActivityAt, project, visibility]
+      required: [key, class, format, description, addresses, disabled, lastActivityAt, project, visibility, bastions]
       properties:
         key:
           type: string
@@ -29958,6 +30112,8 @@ components:
           type: string
         visibility:
           $ref: "#/components/schemas/RepositoryVisibility"
+        bastions:
+          $ref: "#/components/schemas/RepositoryBastions"
         addresses:
           type: array
           description: "The client addresses: absolute URLs, the public base URL followed by the repository's path."
@@ -33058,6 +33214,125 @@ components:
           allOf:
             - $ref: "#/components/schemas/BastionEgress"
           description: Replaces the whole list; `[]` empties it, a `null` reads as absent and changes nothing.
+    BastionProject:
+      type: object
+      additionalProperties: false
+      description: A project a Bastion allows (R-BAS-134).
+      required: [project, displayName, allowedAt, allowedBy, repositories]
+      properties:
+        project:
+          type: string
+          description: The project's key.
+        displayName:
+          type: string
+        allowedAt:
+          type: string
+          format: date-time
+        allowedBy:
+          type: string
+          description: The name of the administrator who allowed it, or the reference of an actor without a principal.
+        repositories:
+          type: array
+          maxItems: 10000
+          description: The keys of the project's repositories whose Owner chose the Bastion, sorted; empty for none yet.
+          items:
+            type: string
+      example:
+        project: platform
+        displayName: Platform engineering
+        allowedAt: "2026-11-27T10:00:00.000Z"
+        allowedBy: root
+        repositories: [image-source, npm-open-source]
+    BastionProjectList:
+      type: object
+      additionalProperties: false
+      required: [items, nextCursor, totals]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/BastionProject"
+        nextCursor:
+          type: [string, "null"]
+        totals:
+          type: object
+          additionalProperties: false
+          description: The whole list's counts, whatever the page and the filter.
+          required: [projects, repositories]
+          properties:
+            projects:
+              type: integer
+              format: int64
+              description: The projects the Bastion allows.
+            repositories:
+              type: integer
+              format: int64
+              description: The repositories distributed through the Bastion.
+    ProjectBastion:
+      type: object
+      additionalProperties: false
+      description: A Bastion that allows a project, as its Owner chooses among them (R-BAS-134).
+      required: [name, disabled, webInterface, addresses]
+      properties:
+        name:
+          type: string
+        disabled:
+          type: boolean
+        webInterface:
+          type: boolean
+          description: The Bastion's web interface is on (`switches.gui`).
+        addresses:
+          type: array
+          description: |
+            The base URLs the Bastion's deployments reported within the last 24 hours that are entries of
+            `server.additional_base_urls`, one per deployment; empty before its first contact.
+          items:
+            type: string
+    ProjectBastionList:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProjectBastion"
+    RepositoryBastion:
+      description: |
+        A Bastion that distributes the repository (R-BAS-134, Q-REPO-491). A read gives the object; a write names the Bastion by its
+        name, as a string or as the object a read returned, whose `addresses` and `disabled` are read-only and ignored.
+      oneOf:
+        - type: string
+          pattern: "^[a-z][a-z0-9-]{0,19}$"
+        - type: object
+          additionalProperties: false
+          required: [name]
+          properties:
+            name:
+              type: string
+            addresses:
+              type: array
+              readOnly: true
+              description: |
+                The base URLs its deployments reported within the last 24 hours that are entries of `server.additional_base_urls`.
+              items:
+                type: string
+            disabled:
+              type: boolean
+              readOnly: true
+    RepositoryBastions:
+      type: array
+      maxItems: 256
+      description: |
+        The Bastions that distribute the repository beyond the main installation's network (bastion.md R-BAS-134, Q-REPO-491), by
+        name; empty for none. `visibility` is the main installation's level: a repository leaves the network through a Bastion only
+        while it is named here, whatever its level. Its project's Owner, or a holder of `repositories:write-config`, chooses among
+        the Bastions that allow the project (`GET /api/v1/projects/{projectKey}/bastions`); another name answers `422
+        validation_failed` with `bastion_not_allowed` at `/bastions/<i>`. A Bastion added records `repository.bastion.added`, one
+        taken off `repository.bastion.removed`, journaled (Q-BAS-521). A move to another project, and an administrator taking the
+        project off the Bastion's list, delete the choices.
+      items:
+        $ref: "#/components/schemas/RepositoryBastion"
     NewBastionToken:
       type: object
       properties:

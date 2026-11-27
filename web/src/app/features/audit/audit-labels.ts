@@ -107,6 +107,10 @@ export function auditActionLabel(action: string): string {
       return $localize`:@@audit.action.bastion.handover.disabled:Direct reads of a Bastion from the object store switched off`;
     case 'bastion.handover.enabled':
       return $localize`:@@audit.action.bastion.handover.enabled:Direct reads of a Bastion from the object store switched on`;
+    case 'bastion.project.allowed':
+      return $localize`:@@audit.action.bastion.project.allowed:Project allowed for a Bastion`;
+    case 'bastion.project.removed':
+      return $localize`:@@audit.action.bastion.project.removed:Project taken off a Bastion`;
     case 'bastion.updated':
       return $localize`:@@audit.action.bastion.updated:Bastion changed`;
     case 'ci.exchange.denied':
@@ -301,6 +305,10 @@ export function auditActionLabel(action: string): string {
       return $localize`:@@audit.action.remote.rule.deleted:Delivery rule of a remote repository removed`;
     case 'remote.rule.updated':
       return $localize`:@@audit.action.remote.rule.updated:Delivery rule of a remote repository changed`;
+    case 'repository.bastion.added':
+      return $localize`:@@audit.action.repository.bastion.added:Repository distributed through a Bastion`;
+    case 'repository.bastion.removed':
+      return $localize`:@@audit.action.repository.bastion.removed:Repository no longer distributed through a Bastion`;
     case 'repository.cache_invalidated':
       return $localize`:@@audit.action.repository.cache_invalidated:Repository cache invalidated`;
     case 'repository.claims_changed':

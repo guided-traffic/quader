@@ -344,11 +344,12 @@ type catalogueTrigger struct {
 
 // catalogueTriggerAreas are the change areas after which the trigger starts a run: a repository's settings, the authorization, the
 // advisory data, a new signature set in use and a change of the rescan settings, which change the catalogue's state (R-MAL-042,
-// Q-BAS-491), and a registration's configuration, whose switches gui and docs decide what is built (R-BAS-102).
+// Q-BAS-491), a registration's configuration, whose switches gui and docs decide what is built (R-BAS-102), and what a Bastion may
+// distribute (R-BAS-134).
 func catalogueTriggerAreas() []string {
 	return []string{
 		cluster.AreaRepoConfig, cluster.AreaAuthz, cluster.AreaVulnData, cluster.AreaMalwareDatabase, cluster.AreaMalwareSettings,
-		cluster.AreaBastionConfiguration,
+		cluster.AreaBastionConfiguration, cluster.AreaBastionDistribution,
 	}
 }
 

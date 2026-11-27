@@ -11511,6 +11511,36 @@ type BastionPresetList struct {
 	Items []BastionPreset `json:"items"`
 }
 
+// BastionProject A project a Bastion allows (R-BAS-134).
+type BastionProject struct {
+	AllowedAt time.Time `json:"allowedAt"`
+
+	// AllowedBy The name of the administrator who allowed it, or the reference of an actor without a principal.
+	AllowedBy   string `json:"allowedBy"`
+	DisplayName string `json:"displayName"`
+
+	// Project The project's key.
+	Project string `json:"project"`
+
+	// Repositories The keys of the project's repositories whose Owner chose the Bastion, sorted; empty for none yet.
+	Repositories []string `json:"repositories"`
+}
+
+// BastionProjectList defines model for BastionProjectList.
+type BastionProjectList struct {
+	Items      []BastionProject `json:"items"`
+	NextCursor *string          `json:"nextCursor"`
+
+	// Totals The whole list's counts, whatever the page and the filter.
+	Totals struct {
+		// Projects The projects the Bastion allows.
+		Projects int64 `json:"projects"`
+
+		// Repositories The repositories distributed through the Bastion.
+		Repositories int64 `json:"repositories"`
+	} `json:"totals"`
+}
+
 // BastionReplicaStatus The state a replica reported with its last batch (R-LIM-045), the Bastion's word (H-2282).
 type BastionReplicaStatus struct {
 	Blocked int64 `json:"blocked"`
@@ -17080,6 +17110,23 @@ type Project struct {
 	Visibility VisibilityLevel `json:"visibility"`
 }
 
+// ProjectBastion A Bastion that allows a project, as its Owner chooses among them (R-BAS-134).
+type ProjectBastion struct {
+	// Addresses The base URLs the Bastion's deployments reported within the last 24 hours that are entries of
+	// `server.additional_base_urls`, one per deployment; empty before its first contact.
+	Addresses []string `json:"addresses"`
+	Disabled  bool     `json:"disabled"`
+	Name      string   `json:"name"`
+
+	// WebInterface The Bastion's web interface is on (`switches.gui`).
+	WebInterface bool `json:"webInterface"`
+}
+
+// ProjectBastionList defines model for ProjectBastionList.
+type ProjectBastionList struct {
+	Items []ProjectBastion `json:"items"`
+}
+
 // ProjectInput What a client writes. The read-only members of `Project` are accepted and ignored, so a body obtained by `GET` can be sent back. A create takes the key; a replace needs `displayName`.
 type ProjectInput struct {
 	CreatedAt   *time.Time `json:"createdAt,omitempty"`
@@ -17865,6 +17912,15 @@ type Repository struct {
 	// omitted setting takes its default.
 	Ansible *AnsibleSettings `json:"ansible,omitempty"`
 
+	// Bastions The Bastions that distribute the repository beyond the main installation's network (bastion.md R-BAS-134, Q-REPO-491), by
+	// name; empty for none. `visibility` is the main installation's level: a repository leaves the network through a Bastion only
+	// while it is named here, whatever its level. Its project's Owner, or a holder of `repositories:write-config`, chooses among
+	// the Bastions that allow the project (`GET /api/v1/projects/{projectKey}/bastions`); another name answers `422
+	// validation_failed` with `bastion_not_allowed` at `/bastions/<i>`. A Bastion added records `repository.bastion.added`, one
+	// taken off `repository.bastion.removed`, journaled (Q-BAS-521). A move to another project, and an administrator taking the
+	// project off the Bastion's list, delete the choices.
+	Bastions *RepositoryBastions `json:"bastions,omitempty"`
+
 	// Class Fixed at creation.
 	Class     RepositoryClass `json:"class"`
 	CreatedAt *time.Time      `json:"createdAt,omitempty"`
@@ -17994,6 +18050,32 @@ type RepositoryHideExistence string
 // RepositoryLifecycle defines model for Repository.Lifecycle.
 type RepositoryLifecycle string
 
+// RepositoryBastion A Bastion that distributes the repository (R-BAS-134, Q-REPO-491). A read gives the object; a write names the Bastion by its
+// name, as a string or as the object a read returned, whose `addresses` and `disabled` are read-only and ignored.
+type RepositoryBastion struct {
+	union json.RawMessage
+}
+
+// RepositoryBastion0 defines model for RepositoryBastion.0.
+type RepositoryBastion0 = string
+
+// RepositoryBastion1 defines model for RepositoryBastion.1.
+type RepositoryBastion1 struct {
+	// Addresses The base URLs its deployments reported within the last 24 hours that are entries of `server.additional_base_urls`.
+	Addresses *[]string `json:"addresses,omitempty"`
+	Disabled  *bool     `json:"disabled,omitempty"`
+	Name      string    `json:"name"`
+}
+
+// RepositoryBastions The Bastions that distribute the repository beyond the main installation's network (bastion.md R-BAS-134, Q-REPO-491), by
+// name; empty for none. `visibility` is the main installation's level: a repository leaves the network through a Bastion only
+// while it is named here, whatever its level. Its project's Owner, or a holder of `repositories:write-config`, chooses among
+// the Bastions that allow the project (`GET /api/v1/projects/{projectKey}/bastions`); another name answers `422
+// validation_failed` with `bastion_not_allowed` at `/bastions/<i>`. A Bastion added records `repository.bastion.added`, one
+// taken off `repository.bastion.removed`, journaled (Q-BAS-521). A move to another project, and an administrator taking the
+// project off the Bastion's list, delete the choices.
+type RepositoryBastions = []RepositoryBastion
+
 // RepositoryClaim defines model for RepositoryClaim.
 type RepositoryClaim struct {
 	CreatedAt time.Time `json:"createdAt"`
@@ -18036,7 +18118,16 @@ type RepositoryClaimsInputClaimsScope string
 // RepositoryConsumerView What a caller sees who may read a repository but not its configuration (R-REPO-010).
 type RepositoryConsumerView struct {
 	// Addresses The client addresses: absolute URLs, the public base URL followed by the repository's path.
-	Addresses   []string                    `json:"addresses"`
+	Addresses []string `json:"addresses"`
+
+	// Bastions The Bastions that distribute the repository beyond the main installation's network (bastion.md R-BAS-134, Q-REPO-491), by
+	// name; empty for none. `visibility` is the main installation's level: a repository leaves the network through a Bastion only
+	// while it is named here, whatever its level. Its project's Owner, or a holder of `repositories:write-config`, chooses among
+	// the Bastions that allow the project (`GET /api/v1/projects/{projectKey}/bastions`); another name answers `422
+	// validation_failed` with `bastion_not_allowed` at `/bastions/<i>`. A Bastion added records `repository.bastion.added`, one
+	// taken off `repository.bastion.removed`, journaled (Q-BAS-521). A move to another project, and an administrator taking the
+	// project off the Bastion's list, delete the choices.
+	Bastions    RepositoryBastions          `json:"bastions"`
 	Class       RepositoryConsumerViewClass `json:"class"`
 	Description string                      `json:"description"`
 
@@ -18227,7 +18318,16 @@ type RepositorySuggestions struct {
 // RepositorySummary defines model for RepositorySummary.
 type RepositorySummary struct {
 	// Addresses The client addresses: absolute URLs, the public base URL followed by the repository's path.
-	Addresses      []string               `json:"addresses"`
+	Addresses []string `json:"addresses"`
+
+	// Bastions The Bastions that distribute the repository beyond the main installation's network (bastion.md R-BAS-134, Q-REPO-491), by
+	// name; empty for none. `visibility` is the main installation's level: a repository leaves the network through a Bastion only
+	// while it is named here, whatever its level. Its project's Owner, or a holder of `repositories:write-config`, chooses among
+	// the Bastions that allow the project (`GET /api/v1/projects/{projectKey}/bastions`); another name answers `422
+	// validation_failed` with `bastion_not_allowed` at `/bastions/<i>`. A Bastion added records `repository.bastion.added`, one
+	// taken off `repository.bastion.removed`, journaled (Q-BAS-521). A move to another project, and an administrator taking the
+	// project off the Bastion's list, delete the choices.
+	Bastions       RepositoryBastions     `json:"bastions"`
 	Class          RepositorySummaryClass `json:"class"`
 	Description    string                 `json:"description"`
 	Disabled       bool                   `json:"disabled"`
@@ -23357,6 +23457,18 @@ type ReplaceBastionLimitAssignmentParams struct {
 	IfMatch IfMatch `json:"If-Match"`
 }
 
+// ListBastionProjectsParams defines parameters for ListBastionProjects.
+type ListBastionProjectsParams struct {
+	// Q Keeps the projects whose key or display name holds the text, case-insensitively.
+	Q *string `form:"q,omitempty" json:"q,omitempty"`
+
+	// Limit Page size, 1 to `api.page_size_max` (R-API-010).
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Cursor The `nextCursor` of the previous page. Opaque; valid only with the filters and sort it was issued for.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+}
+
 // CreateBastionTokenParams defines parameters for CreateBastionToken.
 type CreateBastionTokenParams struct {
 	// IdempotencyKey 1 to 255 printable ASCII characters, preferably a UUID (R-API-014).
@@ -26580,6 +26692,68 @@ func (t *LimitWho) UnmarshalJSON(b []byte) error {
 	return err
 }
 
+// AsRepositoryBastion0 returns the union data inside the RepositoryBastion as a RepositoryBastion0
+func (t RepositoryBastion) AsRepositoryBastion0() (RepositoryBastion0, error) {
+	var body RepositoryBastion0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromRepositoryBastion0 overwrites any union data inside the RepositoryBastion as the provided RepositoryBastion0
+func (t *RepositoryBastion) FromRepositoryBastion0(v RepositoryBastion0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeRepositoryBastion0 performs a merge with any union data inside the RepositoryBastion, using the provided RepositoryBastion0
+func (t *RepositoryBastion) MergeRepositoryBastion0(v RepositoryBastion0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsRepositoryBastion1 returns the union data inside the RepositoryBastion as a RepositoryBastion1
+func (t RepositoryBastion) AsRepositoryBastion1() (RepositoryBastion1, error) {
+	var body RepositoryBastion1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromRepositoryBastion1 overwrites any union data inside the RepositoryBastion as the provided RepositoryBastion1
+func (t *RepositoryBastion) FromRepositoryBastion1(v RepositoryBastion1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeRepositoryBastion1 performs a merge with any union data inside the RepositoryBastion, using the provided RepositoryBastion1
+func (t *RepositoryBastion) MergeRepositoryBastion1(v RepositoryBastion1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t RepositoryBastion) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *RepositoryBastion) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
 // AsRepositorySummary returns the union data inside the RepositoryList_Items_Item as a RepositorySummary
 func (t RepositoryList_Items_Item) AsRepositorySummary() (RepositorySummary, error) {
 	var body RepositorySummary
@@ -27053,6 +27227,15 @@ type ServerInterface interface {
 	// ReplaceBastionLimitAssignment Replace a rule of a Bastion's place
 	// (PUT /api/v1/bastions/{name}/limits/assignments/{id})
 	ReplaceBastionLimitAssignment(w http.ResponseWriter, r *http.Request, name string, id string, params ReplaceBastionLimitAssignmentParams)
+	// ListBastionProjects List the projects a Bastion allows
+	// (GET /api/v1/bastions/{name}/projects)
+	ListBastionProjects(w http.ResponseWriter, r *http.Request, name string, params ListBastionProjectsParams)
+	// RemoveBastionProject Take a project off a Bastion's list
+	// (DELETE /api/v1/bastions/{name}/projects/{projectKey})
+	RemoveBastionProject(w http.ResponseWriter, r *http.Request, name string, projectKey ProjectKey)
+	// AllowBastionProject Allow a project for a Bastion
+	// (PUT /api/v1/bastions/{name}/projects/{projectKey})
+	AllowBastionProject(w http.ResponseWriter, r *http.Request, name string, projectKey ProjectKey)
 	// CreateBastionToken Issue a Bastion token
 	// (POST /api/v1/bastions/{name}/tokens)
 	CreateBastionToken(w http.ResponseWriter, r *http.Request, name string, params CreateBastionTokenParams)
@@ -27371,6 +27554,9 @@ type ServerInterface interface {
 	// ReplaceProject Replace a project's display name and description
 	// (PUT /api/v1/projects/{projectKey})
 	ReplaceProject(w http.ResponseWriter, r *http.Request, projectKey string, params ReplaceProjectParams)
+	// ListProjectBastions List the Bastions that allow a project
+	// (GET /api/v1/projects/{projectKey}/bastions)
+	ListProjectBastions(w http.ResponseWriter, r *http.Request, projectKey ProjectKey)
 	// ListProjectCiIssuances List the CI tokens issued through a project's mappings
 	// (GET /api/v1/projects/{projectKey}/ci/issuances)
 	ListProjectCiIssuances(w http.ResponseWriter, r *http.Request, projectKey string, params ListProjectCiIssuancesParams)
@@ -29838,6 +30024,144 @@ func (siw *ServerInterfaceWrapper) ReplaceBastionLimitAssignment(w http.Response
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ReplaceBastionLimitAssignment(w, r, name, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListBastionProjects operation middleware
+func (siw *ServerInterfaceWrapper) ListBastionProjects(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "name", r.PathValue("name"), &name, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "name", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListBastionProjectsParams
+
+	// ------------- Optional query parameter "q" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "q", r.URL.Query(), &params.Q, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "q"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "q", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListBastionProjects(w, r, name, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RemoveBastionProject operation middleware
+func (siw *ServerInterfaceWrapper) RemoveBastionProject(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "name", r.PathValue("name"), &name, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "name", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RemoveBastionProject(w, r, name, projectKey)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AllowBastionProject operation middleware
+func (siw *ServerInterfaceWrapper) AllowBastionProject(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "name", r.PathValue("name"), &name, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "name", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AllowBastionProject(w, r, name, projectKey)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -34755,6 +35079,32 @@ func (siw *ServerInterfaceWrapper) ReplaceProject(w http.ResponseWriter, r *http
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ReplaceProject(w, r, projectKey, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListProjectBastions operation middleware
+func (siw *ServerInterfaceWrapper) ListProjectBastions(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListProjectBastions(w, r, projectKey)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -49780,6 +50130,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/projects/{projectKey}/members/{principalRef}", wrapper.RemoveProjectMember)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/projects/{projectKey}/members/{principalRef}", wrapper.SetProjectMember)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/projects/{projectKey}/visibility", wrapper.SetProjectVisibility)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/bastions", wrapper.ListProjectBastions)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/principals", wrapper.LookupProjectPrincipals)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/repositories", wrapper.ListRepositories)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repository-defaults", wrapper.GetRepositoryDefaults)
@@ -49885,6 +50236,9 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/api/v1/bastions/{name}", wrapper.UpdateBastion)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/bastions/{name}/tokens", wrapper.CreateBastionToken)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/bastions/{name}/tokens/{id}", wrapper.RevokeBastionToken)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/bastions/{name}/projects", wrapper.ListBastionProjects)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/bastions/{name}/projects/{projectKey}", wrapper.RemoveBastionProject)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/bastions/{name}/projects/{projectKey}", wrapper.AllowBastionProject)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/bastion/handshake", wrapper.BastionHandshake)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/bastion/check", wrapper.BastionCheck)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/bastion/feed", wrapper.BastionFeed)

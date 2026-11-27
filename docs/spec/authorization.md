@@ -349,6 +349,7 @@ Where a level is set and who sets it ([Q-AUTHZ-264](#q-authz-264--a-level-is-sto
 | The installation | `defaultLevel` of `/api/v1/settings/visibility` ([api-and-ui.md](api-and-ui.md) R-API-056), and the levels only an administrator may choose, `restrictedLevels` (R-AUTHZ-037, R-API-075) | `security-settings:write` | `private`; nothing restricted |
 | A project | `visibility`, read with the project, set through `PUT /api/v1/projects/{projectKey}/visibility` (R-API-057) and in the body of `POST /api/v1/projects` | `projects:write` | the installation's `defaultLevel` |
 | A repository | `visibility.artifacts` and `visibility.wiki` of the repository document ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-004) | the project's Owner, or `repositories:write-config` | both: the lower of the installation's `defaultLevel` and the project's level |
+| Beyond the network, through a Bastion | the projects a Bastion allows (`/api/v1/bastions/{name}/projects`), then `bastions` of the repository document ([bastion.md](bastion.md) R-BAS-134, [Q-REPO-491](repositories-and-proxy.md#q-repo-491--the-projects-owner-chooses-per-repository-the-bastions-that-distribute-it)) | the projects: `endpoints:write`; a repository's Bastions among them: the project's Owner, or `repositories:write-config` | no project allowed, no Bastion chosen |
 
 1. **Stored, not inherited.** A level is stored on its object. Nothing inherits a level when a request is decided; the
    installation's default is read once, in the transaction that creates a project or a repository.

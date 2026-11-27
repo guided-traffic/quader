@@ -27,9 +27,12 @@ func managedByProduct(detail string) error {
 // repository the include patterns, vulnerabilities, malware and signatures are the product's as well (R-REPO-070, R-REPO-075). The
 // spec's remote.offline is remote.availability.mode. On a well-known repository the whole member signatures is an administrator's:
 // signatures.fetch switches the background fetch of its upstream's signatures off, for Docker Hub without an account (R-SIG-026,
-// R-SIG-040), and onlyVerified and anchors set its gate (R-SIG-061); one rule for the member (Q-SIG-128, Q-SIG-138).
+// R-SIG-040), and onlyVerified and anchors set its gate (R-SIG-061); one rule for the member (Q-SIG-128, Q-SIG-138). The member
+// bastions is an administrator's on every kind, system repositories included: a Bastion's ClamAV installations update through it only
+// while upstream/clamav is distributed there (bastion.md R-BAS-134).
 func patchableTop(k string) bool {
-	return k == "adminNotes" || k == "includePatterns" || k == "excludePatterns" || k == "vulnerabilities" || k == "malware" || k == "signatures"
+	return k == "adminNotes" || k == "includePatterns" || k == "excludePatterns" || k == "vulnerabilities" || k == "malware" || k == "signatures" ||
+		k == "bastions"
 }
 
 // systemFixedTop are the members a system repository of upstream keeps at the product's value: its content is the product's, never

@@ -15,6 +15,9 @@ import "github.com/guided-traffic/quader/internal/backup/tables"
 //     R-BAS-108).
 //   - bastion_status (00147): transient. The state each replica reported with its last batch, with the addresses it blocks now
 //     (R-LIM-045); the next batch writes it again, and a restore must not bring back addresses of blocks that ended (Q-BAS-443).
+//   - bastion_project, repository_bastion (00159): data. What a Bastion may distribute (R-BAS-134): the projects an administrator
+//     allowed and the repositories their Owners chose. A restore brings them back as they were at its point; the journaled removals
+//     after it are replayed (Q-BAS-521), so a restore never widens what a Bastion distributes.
 //
 // The registration has no revision column of its own: principal.revision is its ETag (00013).
 func init() {
@@ -24,4 +27,6 @@ func init() {
 		tables.Register(t, tables.Transient, tables.Options{})
 	}
 	tables.Register("bastion_status", tables.Transient, tables.Options{})
+	tables.Register("bastion_project", tables.Data, tables.Options{})
+	tables.Register("repository_bastion", tables.Data, tables.Options{})
 }

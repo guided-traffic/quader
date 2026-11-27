@@ -38,6 +38,8 @@ var ifMatchExempt = map[string]string{
 	// R-API-085: a deprecation is one state of one version or package; a repeat changes nothing and the last write wins, as npm
 	// deprecate's write of the same message does.
 	"setPackageDeprecation": "sets one state of one version or package; the last write wins and a repeat changes nothing (R-API-085)",
+	// R-BAS-134: allowing a project for a Bastion binds one pair; a repeat changes nothing.
+	"allowBastionProject": "binds one pair (R-API-012, R-BAS-134)",
 }
 
 // ifMatchOnReplace are the PUT operations that create a resource where none exists and replace it where one does (Q-API-354):

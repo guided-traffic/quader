@@ -222,13 +222,18 @@ type summaryRep struct {
 	Project        *string    `json:"project"`
 	// Visibility is how open the repository is (R-API-057), shown in every view so that every reader sees it.
 	Visibility repository.Visibility `json:"visibility"`
+	// Bastions are the Bastions that distribute the repository (bastion.md R-BAS-134), shown beside its level in every view.
+	Bastions []repository.BastionRef `json:"bastions"`
 }
 
 func toSummary(base string, st repository.Stored, showLifecycle bool) summaryRep {
 	r := summaryRep{
 		Key: st.Document.Key, Class: string(st.Document.Class), Format: st.Document.Format,
 		Description: st.Document.Description, Addresses: addresses(base, st.Repository.Name, st.Document), Disabled: st.Repository.Disabled,
-		Project: optString(st.Repository.Name.Project), Visibility: st.Document.Visibility,
+		Project: optString(st.Repository.Name.Project), Visibility: st.Document.Visibility, Bastions: st.Document.Bastions,
+	}
+	if r.Bastions == nil {
+		r.Bastions = []repository.BastionRef{}
 	}
 	if t := st.Repository.LastActivityAt; !t.IsZero() {
 		u := t.UTC()
@@ -636,10 +641,12 @@ func (s *Server) listRepositories(w http.ResponseWriter, r *http.Request, projec
 	base := httpserver.InfoFrom(ctx).BaseURL
 	page := NewPage(lq, rows, func(st repository.Stored) []string { return []string{st.Repository.Name.String()} })
 	if view == "full" {
-		WritePage(w, r, MapPage(page, func(st repository.Stored) any { return toRep(st, true, false) }))
+		WritePage(w, r, MapPage(page, func(st repository.Stored) any { return toRep(s.listedBastions(st), true, false) }))
 		return
 	}
-	WritePage(w, r, MapPage(page, func(st repository.Stored) any { return toSummary(base, st, own.sees(st.Repository.Name.Project)) }))
+	WritePage(w, r, MapPage(page, func(st repository.Stored) any {
+		return toSummary(base, s.listedBastions(st), own.sees(st.Repository.Name.Project))
+	}))
 }
 
 // projectSeen decides the empty list of a project's repositories (R-REPO-012) as hideProject decides a refusal
@@ -855,7 +862,7 @@ func (s *Server) CreateProjectRepository(w http.ResponseWriter, r *http.Request,
 		return Outcome{
 			Status: http.StatusCreated,
 			Header: map[string]string{"Location": repositoryURL(r, st.Repository.Name), "ETag": ETag(st.Repository.Version, "")},
-			Body:   toRep(st, cfg, true),
+			Body:   toRep(s.listedBastions(st), cfg, true),
 		}, nil
 	}})
 	if err != nil {
@@ -951,10 +958,10 @@ func (s *Server) GetRepository(w http.ResponseWriter, r *http.Request, projectKe
 	}
 	w.Header().Set("ETag", tag)
 	if !cfg {
-		writeJSON(w, r, http.StatusOK, consumerRep(httpserver.InfoFrom(ctx).BaseURL, st))
+		writeJSON(w, r, http.StatusOK, consumerRep(httpserver.InfoFrom(ctx).BaseURL, s.listedBastions(st)))
 		return
 	}
-	writeJSON(w, r, http.StatusOK, toRep(st, true, false))
+	writeJSON(w, r, http.StatusOK, toRep(s.listedBastions(st), true, false))
 }
 
 // ReplaceRepository implements PUT /api/v1/projects/{projectKey}/repositories/{repoKey} (R-REPO-011).
@@ -1015,7 +1022,7 @@ func (s *Server) writeRepository(w http.ResponseWriter, r *http.Request, name qn
 		return
 	}
 	SetETag(w, st.Repository.Version, "")
-	writeJSON(w, r, http.StatusOK, toRep(st, cfg, true))
+	writeJSON(w, r, http.StatusOK, toRep(s.listedBastions(st), cfg, true))
 }
 
 // DeleteRepository implements DELETE /api/v1/projects/{projectKey}/repositories/{repoKey} (R-REPO-013).
@@ -1098,7 +1105,7 @@ func (s *Server) MoveRepository(w http.ResponseWriter, r *http.Request, projectK
 	setEpoch(w, epoch)
 	w.Header().Set("Location", repositoryURL(r, to))
 	w.Header().Set("ETag", repositoryETag(st, ""))
-	writeJSON(w, r, http.StatusOK, toRep(st, true, false))
+	writeJSON(w, r, http.StatusOK, toRep(s.listedBastions(st), true, false))
 }
 
 // checkMoveTarget is the second half of the move's permission: the holder of repositories:write-config moves to

@@ -499,6 +499,28 @@ a refused token and a grace period.
 - **Without a connection** nothing reaches the Bastion: it serves its cache for its grace period as an unreachable Bastion does, and applies
   the disable at its first handshake ([H-2441](#h-2441--a-disable-reaches-a-bastion-only-over-its-connection)). A soft disable has no
   time bound ([H-2444](#h-2444--a-soft-disable-has-no-time-bound)).
+## What a Bastion may distribute
+
+The owner's words of 2026-11-27 ([spec/bastion.md](../spec/bastion.md#what-a-bastion-may-distribute) R-BAS-134, superseding Q-BAS-6):
+`public` is the main installation's level, on its network; what leaves it through a Bastion is granted twice. **Stored and built** (W-41's
+B1): the lists and the choices, who changes them, and what a restore keeps. **Not built yet** (W-41's B2): the ceiling that holds every
+request through a Bastion to them; until it lands a Bastion serves what it served before, decided per request on the caller's credential
+alone.
+
+| Who | Changes what | With |
+|---|---|---|
+| An administrator (`endpoints:write`) | the projects a Bastion allows; a new Bastion allows none | `PUT`/`DELETE /api/v1/bastions/{name}/projects/{projectKey}` |
+| The project's Owner, or `repositories:write-config` | the Bastions among those that allow the project that distribute a repository; never a Maintainer | the repository document's member `bastions` |
+| Nobody around the API | a choice whose project the Bastion does not allow: the database refuses it (`AI011`), deletes the choices with a project taken off a list and with a repository's move | migration `00159` |
+
+- **What an administrator can no longer do by accident** (once the ceiling holds): make a repository Public on the intranet and have it on
+  the internet; allow a project and send every repository of it out (the Owner chooses per repository); allow a project again and bring
+  back its old choices (the removal deleted them).
+- **A restore never widens it.** Taking a project off a list and taking a Bastion off a repository are journaled, and the replay deletes
+  the restored rows again (Q-BAS-521). An allow and a choice are not journaled: a restore to a point before them takes them back, which
+  narrows.
+- **Every reader learns it.** A repository's readers see the names of the Bastions that distribute it and their public base URLs
+  ([H-2445](#h-2445--a-repositorys-readers-learn-the-names-and-addresses-of-the-bastions-that-distribute-it)).
 
 ## The public catalogue and the configuration on the wire
 
@@ -639,7 +661,7 @@ H-2305 to H-2307, of its builder (W-35's P6), H-2308 to H-2314, of the catalogue
 (E9a), H-2358 and H-2359 (E15), H-2360 and H-2361 (E10), H-2362 (E11), H-2322 and H-2323 (W-35's P8 with E17), H-2374 and H-2375 (E18;
 H-2375 closed by E19), H-2370 (E19);
 and of a registration the configuration declares (R-BAS-127), H-2366 and H-2367; and of the documentation of the web interface (W-35's
-P11), H-2338 and H-2339;
+P11), H-2338 and H-2339; and of what a Bastion may distribute (R-BAS-134, W-41's B1), H-2445;
 those of a Bastion's budgets are on [usage-and-limits.md](usage-and-limits.md#what-this-does-not-cover) (H-2284, H-2286 to H-2288, H-2368, H-2369). Numbers
 marked [derived] are calculated from the defaults, not measured.
 
@@ -1599,3 +1621,14 @@ but replaced since is accepted again until that run revokes it. What makes it re
 which is the case where the old value was rotated because it may have leaked. The upgrade that turns `restore.enabled` off closes it: its
 migration Job is a pre-upgrade hook and runs before the roles' new replicas start.
 
+### H-2445 · A repository's readers learn the names and addresses of the Bastions that distribute it
+
+Stage: R-BAS-134, the repository document's member `bastions` in every view ([repositories-and-proxy.md](../spec/repositories-and-proxy.md)
+R-REPO-004, Q-REPO-491). Subject: the names of Bastion registrations and the base URLs of their deployments. Live since W-41's B1 wherever a
+repository is distributed through a Bastion. Every caller who reads the repository, its consumer view and the lists included, reads each
+distributing Bastion's name, whether it is disabled, and the base URLs its deployments reported within the last 24 hours that are entries
+of `server.additional_base_urls`. The base URLs are the Bastion's public addresses, which its users are meant to use; what is new is that a
+reader on the intranet learns which registration serves which repository, and that a registration is disabled. What makes it real: a
+reader of a public repository who should not know the names an administrator gave the Bastions; no secret, network or token is in it. The
+owner asked for it ("Es muss für die Viewer von Repos … direkt ersichtlich sein, ob das Repo zusätzlich auch über einen Bastion (per
+Tooltip auch welcher Bastion) verteilt wird"), so it is not closed; an administrator who minds names a registration for its users.

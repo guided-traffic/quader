@@ -689,6 +689,17 @@ new and existing; `bastion_revision` covers it. `BastionGet`, `BastionList` and 
 writes it with `gui` and `docs` in [bastion_registration.sql](../../internal/meta/postgres/queries/bastion_registration.sql). Expand phase
 only.
 
+**00159_bastion_distribution** ([bastion.md](../spec/bastion.md) R-BAS-134, Q-BAS-519 to Q-BAS-521, Q-REPO-491; W-41's package B1): what a
+Bastion may distribute. `bastion_project` (`bastion_id`, `project_id`, `allowed_at`, `allowed_by`; both foreign keys cascade) holds the
+projects an administrator allows per Bastion, `repository_bastion` (`repository_id`, `bastion_id`, `since`; both cascade) the Bastions a
+repository's Owner chose. Three triggers hold the rule that a choice exists only while its Bastion allows the repository's project:
+`repository_bastion_allowed` refuses a row otherwise (`AI011`, after locking the repository and the allow row `FOR SHARE`),
+`bastion_project_removed` deletes a removed project's choices of that Bastion, and `repository_bastion_moved` deletes a repository's
+choices when its project changes. Both tables are data in backups ([tables_bastion.go](../../internal/meta/postgres/tables_bastion.go));
+the journaled removals are replayed ([distribution_replay.go](../../internal/bastionmain/distribution_replay.go)). It seeds the change area
+`bastion_distribution`. The statements are in [bastion_distribution.sql](../../internal/meta/postgres/queries/bastion_distribution.sql). Expand
+phase only.
+
 ## The database's repository of the image scanning (00089)
 
 [00089_vuln_image_db_drop](../../internal/meta/postgres/migrations/00089_vuln_image_db_drop.sql) removes the private slot of the image
@@ -1334,6 +1345,7 @@ Guards that the database enforces whatever the API checked. Together with the ea
 | `AI005` | `project_account_principal_guard` on `authz_role_binding`, `authz_policy_entry` and `authz_project_policy_entry` | a project service account as the principal of a role binding or of an entry of a global policy, and of an entry of a policy of another project (Q-AUTHZ-175); a global service account and the project's own accounts pass |
 | `AI006` | `virtual_same_project_guard` on `virtual_members`, `virtual_deploy_targets`, `virtual_pin_members` | a member, pin member or deployment target of another project than the virtual repository's (Q-AUTHZ-206); a move that would leave one is refused by the service (409 `repository_in_use`); the function locks both repositories `FOR SHARE` before it reads their projects (00045, Q-REPO-234); since 00086 a member or pin member of the built-in project `upstream` passes (R-REPO-071), a deployment target of it does not ([virtual_members_test.go](../../test/integration/upstream/virtual_members_test.go)) |
 | `AI010` | the guards of [00086_upstream.sql](../../internal/meta/postgres/migrations/00086_upstream.sql) | a delete of the built-in project `upstream` or a change of its display name, description or level; a member, policy, service account or CI mapping of it; a repository of it without its row in `upstream_repository` (at commit), a change of such a repository's project, key, class or format, a move into it ([wellknown.md](wellknown.md)); tested in the integration area [upstream](../../test/integration/upstream/) |
+| `AI011` | `repository_bastion_allowed_guard` of [00159_bastion_distribution.sql](../../internal/meta/postgres/migrations/00159_bastion_distribution.sql) | a Bastion chosen for a repository whose project the Bastion does not allow ([bastion.md](../spec/bastion.md) R-BAS-134); tested in the integration area [bastionreg](../../test/integration/bastionreg/) |
 
 Tested in [projects_test.go](../../test/integration/postgres/projects_test.go).
 

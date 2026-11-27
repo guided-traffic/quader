@@ -278,6 +278,7 @@ read (R-REPO-010) and the object body of configuration as code
 | `includePatterns`, `excludePatterns` | R-REPO-005; local and virtual repositories only (a remote's delivery rules, [remote-curation.md](remote-curation.md) R-CUR-002) | `[]` (everything), `[]` | this page |
 | `disabled` | Takes no part in resolution, download or deploy. Setting it records `repository.disabled`, journaled, so a restore keeps it set ([authorization.md](authorization.md) R-AUTHZ-031, Q-AUTHZ-238) | `false` | this page |
 | `visibility` | `{"artifacts": "<level>", "wiki": "<level>"}`, each `private`, `internal` or `public`: who reads the repository's artifacts and its wiki besides members and grants; never above the project's level, the wiki never above the artifacts; a level the installation restricts is chosen by an administrator only (R-AUTHZ-037). Stored in two columns, not in `config` ([Q-REPO-307](#q-repo-307--requireauthentication-goes-and-the-repository-document-shows-its-two-levels-as-one-member)) | both the lower of the installation's default and the project's level | [R-AUTHZ-033](authorization.md) |
+| `bastions` | The Bastions that distribute the repository beyond the main installation's network, by name, among those that allow its project; the project's Owner or a holder of `repositories:write-config` chooses ([Q-REPO-491](#q-repo-491--the-projects-owner-chooses-per-repository-the-bastions-that-distribute-it)). A read gives `{name, addresses, disabled}` in every view of the document, the consumer view and the list of R-REPO-012 included; a write a name or that object. Rows of `repository_bastion`, not in `config`; a move deletes them (R-REPO-060) | `[]` | [bastion.md](bastion.md) R-BAS-134 |
 | `priorityMember` | R-REPO-022; local and remote only | `false` | this page |
 | `hideExistence` | `inherit`, `true`, `false` | `inherit` | [R-AUTHZ-017](authorization.md) |
 | `layout` | R-REPO-006, read-only | the format's layout | this page |
@@ -810,6 +811,10 @@ operation of its own ([Q-REPO-217](#q-repo-217--a-repository-moves-to-another-pr
   (a key selector of the source project's policy, by its name within the project), `ci_mapping` (an inline grant of a mapping of
   the source project's tier names its key), and for a virtual repository that moves `member` and `deployment_target` (its own,
   which keep it from moving).
+- **What does not move with it.** The Bastions it was distributed through ([bastion.md](bastion.md) R-BAS-134): the move deletes its
+  choices in its transaction and records `repository.bastion.removed` with the cause `move` for each, journaled, since its address and
+  its project change and the target project's Owner chooses again; the database deletes them with any change of the repository's
+  project (migration `00159`).
 - **What moves with it.** The repository's service accounts move with it and are renamed `sa:<target>/<repoKey>/<name>` in the
   move's transaction; their actions, technical tokens, budgets and the rules and ceilings of the repository's place stay with the
   repository's ID ([identity-and-authentication.md](identity-and-authentication.md) R-AUTH-046,
@@ -2012,6 +2017,7 @@ on and off, sets its level, may set its address and an account (owner), and may 
 | `visibility` (both parts, one level) | an administrator | `setUpstreamRepositoryVisibility`, `setAllUpstreamRepositoriesVisibility` (R-REPO-073) |
 | `remote.url`, `remote.extraHosts`, and for an APT archive `deb.upstreamKeys` | the product; an administrator may override them | `setUpstreamRepositoryAddress`, `resetUpstreamRepositoryAddress` |
 | `remote.authMode`, `remote.username`, `remote.password` | an administrator, unless the installation's configuration declares the account (R-REPO-077): then `quader migrate`, which keeps them empty | `setUpstreamRepositoryAccount`, `removeUpstreamRepositoryAccount`; `repositories.upstream_accounts` ([Q-REPO-483](#q-repo-483--an-account-of-a-well-known-repository-comes-from-a-secret-through-a-declaration-that-quader-migrate-applies-and-the-replicas-read-at-use)) |
+| `bastions` ([bastion.md](bastion.md) R-BAS-134), on every kind: a Bastion's ClamAV installations update through it only while `upstream/clamav` is distributed there | an administrator | a merge patch of the document (R-REPO-011, `If-Match`) |
 | `adminNotes`, the delivery mode and rules (`remote.delivery`, the rules of [remote-curation.md](remote-curation.md) R-CUR-006; a repository of the kind `system` keeps the product's), `vulnerabilities`, `malware` ([malware-scanning.md](malware-scanning.md) R-MAL-020), `signatures` ([signatures.md](signatures.md) R-SIG-040, R-SIG-061, Q-SIG-128, Q-SIG-138: the whole member, the fetch switch and the gate), offline (`remote.availability.mode`), `remote.cacheFillAction` | an administrator | a merge patch of the document (R-REPO-011, `If-Match`); a system repository's `vulnerabilities`, `malware` and `signatures` are the product's (R-REPO-070, R-REPO-075) |
 | every other member: `hideExistence`, `priorityMember`, `remote.mode` (always `pullThrough`) and `remote.mirror`, the cache periods, `remote.downloadOnProbe`, `remote.headers`, `remote.clientCertificate`, `remote.outboundProxy`, `remote.sourceNetwork`, `remote.forwardAuthOnRedirect`, the size and integrity settings, `storage`, the format members but `deb.upstreamKeys` | the product | fixed at the format's defaults of R-REPO-063 |
 
@@ -10827,6 +10833,25 @@ what it costs. The development agent would revisit this if a system repository c
 ([upstream_store.go](../../internal/repository/upstream_store.go)), `deleteLocked` and `finishDelete` with `DeleteUpstreamRepositoryRow`
 ([delete.go](../../internal/repository/delete.go), [upstream.sql](../../internal/meta/postgres/queries/upstream.sql)). Tests: the cases "step 5 a system
 repository the catalog no longer declares" of `TestR_REPO_067_ThePlanOfTheReconcile` (unit, milliseconds) and of `TestR_REPO_067_Reconcile` (integration area `upstream`).
+
+### Q-REPO-491 · The project's Owner chooses per repository the Bastions that distribute it
+
+Status: **Decided by the development agent** on 2026-11-27 (W-41's plan, D13) — selected from the options below; the owner reviews it at
+the walkthrough.
+
+Context: [bastion.md](bastion.md) R-BAS-134. The owner's words: "Eine Verteilung eines öffentlichen Repos über die interne Verteilung
+hinaus, z.B. über einen Bastion, muss separat vom Project Owner konfiguriert werden."
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The project's Owner, or a holder of `repositories:write-config`: the people who set the repository's levels; the document's member `bastions`, written with the document; `422 bastion_not_allowed` for a Bastion that does not allow the project (chosen) | Distribution beyond the network is at least as wide as Public; one section, one save | A Maintainer who publishes asks the Owner |
+| (b) Owner and Maintainer | Faster for teams | The owner said "vom Project Owner"; a Maintainer cannot make a repository Public either |
+| (c) Instance administrators only | Central | The owner said the Owner decides per repository |
+
+**Choice:** (a). The member is the effective distribution: a row exists only while the Bastion allows the project, so every reader reads
+what is distributed, with the addresses a client would use (the base URLs that are entries of `server.additional_base_urls`). A write
+takes the name or the object a read returned, so a document read and sent back changes nothing; the set of names is compared. **Applied
+in the spec:** R-REPO-004, R-REPO-060, R-REPO-069's table; code: [bastions.go](../../internal/repository/bastions.go).
 
 ## What this does not cover
 

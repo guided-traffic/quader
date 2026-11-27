@@ -217,8 +217,9 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 		// requirements of W-40, P1).
 		// 1413 since a crawler finds the project view (R-BAS-132, one P1 requirement of W-40, P2).
 		// 1414 since a Bastion is disabled soft or hard over its connection (R-BAS-133, one MVP requirement of W-41, A1).
-		if len(m.Reqs) != 1414 || count[prioMVP] != 744 || count[prioP1] != 631 || count[prioP2] != 39 {
-			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1414 (744, 631, 39)",
+		// 1415 since what a Bastion may distribute is stored (R-BAS-134, one P1 requirement of W-41, B1).
+		if len(m.Reqs) != 1415 || count[prioMVP] != 744 || count[prioP1] != 632 || count[prioP2] != 39 {
+			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1415 (744, 632, 39)",
 				len(m.Reqs), count[prioMVP], count[prioP1], count[prioP2])
 		}
 	})

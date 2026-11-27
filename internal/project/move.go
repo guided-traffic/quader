@@ -11,6 +11,7 @@ import (
 	"github.com/guided-traffic/quader/internal/auth/principal"
 	"github.com/guided-traffic/quader/internal/authz"
 	"github.com/guided-traffic/quader/internal/ci/claims"
+	"github.com/guided-traffic/quader/internal/cluster"
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/meta/postgres"
@@ -118,6 +119,12 @@ func (s *service) MoveRepository(ctx context.Context, actor authz.Subject, from 
 		if taken {
 			return keyTaken(to)
 		}
+		// The Bastions the repository chose: the move deletes the choices (the trigger repository_bastion_moved, R-BAS-134), since its
+		// address and its project change and the target project's Owner chooses again.
+		chosen, err := qs.RepositoryBastionsOfMove(ctx, repo.ID)
+		if err != nil {
+			return err
+		}
 		versions, err := qs.ProjectRepositoryMove(ctx, q.ProjectRepositoryMoveParams{
 			ToProjectID: toID, Actor: actorID(actor), ID: repo.ID, FromProjectID: fromID,
 		})
@@ -159,12 +166,18 @@ func (s *service) MoveRepository(ctx context.Context, actor authz.Subject, from 
 		if err := s.o.Changes.Notify(tx, authz.AreaRepoConfig, payloadVersion, repoChange{ID: id, Key: to.String(), Op: opMoved, Version: version}); err != nil {
 			return err
 		}
+		if err := s.notifyChoicesRemoved(tx, chosen); err != nil {
+			return err
+		}
 		afterEpoch(tx, &epoch, func(ctx context.Context, tx meta.Tx, epoch int64) error {
 			out, in := movedEvents(actor, from, to, id, fromID, toID, versions[0], epoch)
 			if err := s.o.Recorder.RecordTx(ctx, tx, out); err != nil {
 				return err
 			}
 			if err := s.o.Recorder.RecordTx(ctx, tx, in); err != nil {
+				return err
+			}
+			if err := s.recordChoicesRemoved(ctx, tx, actor, from, id, chosen); err != nil {
 				return err
 			}
 			if !wasLowered {
@@ -316,4 +329,33 @@ func movedEvents(actor authz.Subject, from, to qname.Repo, id, fromID, toID stri
 		Details: details,
 	}
 	return out, in
+}
+
+// notifyChoicesRemoved announces the change area bastion_distribution for each Bastion a moved repository had chosen (R-BAS-134).
+func (s *service) notifyChoicesRemoved(tx meta.Tx, chosen []q.RepositoryBastionsOfMoveRow) error {
+	for _, c := range chosen {
+		if err := s.o.Changes.Notify(tx, cluster.AreaBastionDistribution, 1, map[string]string{"bastion": c.BastionID}); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// recordChoicesRemoved records repository.bastion.removed with the cause move for each Bastion the moved repository had chosen,
+// under its former address, with the journal entry {repositoryId, bastionId, name} the replay deletes the row by (Q-BAS-521).
+func (s *service) recordChoicesRemoved(ctx context.Context, tx meta.Tx, actor authz.Subject, from qname.Repo, id string,
+	chosen []q.RepositoryBastionsOfMoveRow,
+) error {
+	for _, c := range chosen {
+		if err := s.o.Recorder.RecordTx(ctx, tx, audit.Event{
+			Type: audit.EventRepositoryBastionRemoved, Actor: actorOf(actor), Outcome: audit.Success,
+			Subject:    audit.Subject{Kind: "repository", ID: id, Name: from.String()},
+			Repository: from.String(), Project: from.Project,
+			Details: mustJSON(map[string]string{"bastion": c.Name, "bastionId": c.BastionID, "cause": "move"}),
+			Journal: mustJSON(map[string]string{"repositoryId": id, "bastionId": c.BastionID, "name": c.Name}),
+		}); err != nil {
+			return err
+		}
+	}
+	return nil
 }

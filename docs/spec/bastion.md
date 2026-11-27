@@ -7751,6 +7751,78 @@ Acceptance criteria:
   `TestR_BAS_133_ADisabledReplicasWebInterfaceAnswers503` (the page in English and German, the data, robots.txt and the sitemap);
   [configuration_test.go](../../internal/bastion/server/configuration_test.go) `TestR_BAS_133_ARestartDuringAnOutageKeepsTheDisable`.
 - Integration (area `bastion`, about 6 s, one tarball): `TestR_BAS_133_ADisableReachesTheBastionWithinSeconds`.
+## What a Bastion may distribute
+
+The owner's words of 2026-11-27, looking at his Bastion's card: "Was mir hier auch noch fehlt, ist die Möglichkeit, die Nutzung des Bastion
+administrativ einzuschränken bzw. freizugeben. Ich wäre für Whitelisting: Ein Admin muss also freigeben, welche Projekte ihre Repos über den
+Bastion zur Verteilung freigeben dürfen. Die Visibility eines Repos „öffentlich" war von Anfang an auf die Hauptinstanz bezogen, meistens
+im Intranet der Firma. Eine Verteilung eines öffentlichen Repos über die interne Verteilung hinaus, z.B. über einen Bastion, muss separat
+vom Project Owner konfiguriert werden." They supersede [Q-BAS-6](#q-bas-6--a-caller-reads-what-its-token-may-read-there-is-no-release-step)'s
+"there is no release step of its own".
+
+### R-BAS-134 · What a Bastion may distribute: the administrator's projects and the owner's choice
+Priority: **P1** · Covers: quader-only
+
+What leaves the main installation's network through a Bastion is granted twice
+([Q-BAS-519](#q-bas-519--an-administrator-allows-projects-per-bastion-and-a-new-bastion-allows-none)): an administrator allows projects
+per Bastion, and a project's Owner chooses per repository the Bastions that distribute it, among those that allow the project. A level
+stays the main installation's: `public` means public on its network, and a repository of any level is distributed through a Bastion only
+while it is chosen there ([Q-BAS-520](#q-bas-520--every-level-needs-the-choice-not-only-public)).
+
+- **The administrator's list.** The rows of `bastion_project` (migration `00159`): a project per Bastion, since when and by whom. A new
+  Bastion allows none. `GET /api/v1/bastions/{name}/projects` (`endpoints:read`) lists them by project key, each with its display name,
+  `allowedAt`, `allowedBy` and the keys of its repositories that chose the Bastion, `q` filtering by key or display name, paged by
+  cursor, with `totals` of the whole list (the projects allowed and the repositories distributed). `PUT …/projects/{projectKey}`
+  (`endpoints:write`, idempotent, no `If-Match`: it binds one pair) allows a project and records `bastion.project.allowed`; a repeat records
+  nothing. `DELETE …/projects/{projectKey}` (`endpoints:write`) takes it off and, in the same transaction, deletes its repositories'
+  choices of that Bastion: allowing it again distributes nothing until the Owner chooses again. `404` for a registration or a project that
+  does not exist, and for a removal of a project the Bastion does not allow.
+- **The Owner's choice** ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-004, Q-REPO-491). The repository document's
+  member `bastions`, rows of `repository_bastion`: written with the document by the project's Owner or a holder of
+  `repositories:write-config` (the people who set its levels, [authorization.md](authorization.md) R-AUTHZ-033), never a Maintainer. A
+  name of a Bastion that does not allow the project answers `422 validation_failed` with `bastion_not_allowed` at `/bastions/<i>`.
+  `GET /api/v1/projects/{projectKey}/bastions` (the Owner, or `repositories:read-config`) lists what may be chosen: each Bastion that
+  allows the project with whether it is disabled, whether its web interface is on, and its `addresses`. Every reader of a repository reads
+  the member, in the full document, the consumer view and the list of repositories (R-REPO-012); the search and the package views do not
+  carry it yet (W-41's D1): `{name, addresses, disabled}`, `addresses` being the base URLs its
+  deployments reported within the last 24 hours that are entries of `server.additional_base_urls` (as R-BAS-007 holds a client setup's).
+  A write takes a name or that object, whose `addresses` and `disabled` are ignored; the repositories of the project `upstream` take it
+  from an administrator as their other open members (R-REPO-069).
+- **The database holds the rule.** A choice exists only while its Bastion allows the repository's project: a row written around the API
+  is refused (SQLSTATE `AI011`), a project taken off a list takes its choices with it, and a repository that moves to another project
+  loses its choices (R-REPO-060), each in the statement's transaction.
+- **Events, journal, feed** ([Q-BAS-521](#q-bas-521--a-narrowing-of-the-distribution-is-journaled-and-tells-every-bastion-at-once)).
+  `bastion.project.allowed`, `bastion.project.removed` (with the repositories whose choice went), `repository.bastion.added`,
+  `repository.bastion.removed` (cause `owner` or `move`). The two removals are journaled, `{bastionId, projectId}` and
+  `{repositoryId, bastionId}`, and the replay deletes the rows again after a restore to a point before them. The feed maps a widening to
+  `settings` and a narrowing to `grants` and `settings` (R-BAS-015). Every change announces the change area `bastion_distribution`, after
+  which the public catalogue's builder starts a run (R-BAS-105).
+
+*Built on 2026-11-27 (W-41's B1):* the tables and their guards ([00159_bastion_distribution.sql](../../internal/meta/postgres/migrations/00159_bastion_distribution.sql)),
+the statements of [bastion_distribution.sql](../../internal/meta/postgres/queries/bastion_distribution.sql), the list's service in
+[distribution.go](../../internal/bastionmain/distribution.go) and the replays of [distribution_replay.go](../../internal/bastionmain/distribution_replay.go),
+the feed's mapping of [feed.go](../../internal/bastionmain/feed.go), the member of [bastions.go](../../internal/repository/bastions.go),
+the move's part of [move.go](../../internal/project/move.go), [bastion_projects_api.go](../../internal/api/v1/bastion_projects_api.go)
+and the OpenAPI document, the events of [events_bastion_distribution.go](../../internal/audit/events_bastion_distribution.go).
+*Not built:* the ceiling (W-41's B2, [authorization.md](authorization.md)): nothing decides a request through a Bastion on the
+distribution yet, so a Bastion serves what it served before; the card's section **Projects** (W-41's C2) and the repository's group
+**Bastions** with its mark (W-41's D1).
+
+Acceptance criteria:
+
+- Unit ([distribution_test.go](../../internal/bastionmain/distribution_test.go), microseconds, no data):
+  `TestR_BAS_134_TheNarrowingsAreJournaledAndReplayed` (the two removals journaled with a replay of the domain bastion that skips an entry
+  without its IDs, the two widenings not); `TestR_BAS_134_TheFeedTellsTheBastionsOfADistributionChange` (settings for a widening, grants and
+  settings for a narrowing); `TestR_BAS_015_EveryJournaledEventIsClassified` covers the new events.
+- Unit ([bastions_test.go](../../internal/repository/bastions_test.go)): `TestR_BAS_134_TheMemberBastions` (a name or the read's object,
+  an unknown member refused, the set of names compared, `[]` for none, the name reserved).
+- Unit ([bastion_projects_test.go](../../internal/api/v1/bastion_projects_test.go)): `TestR_BAS_134_WhoChangesWhatABastionMayDistribute`
+  (the list's writes refused with `endpoints:read`; the declarations of the six operations); `TestR_BAS_134_TheAddressesAreTheListedOnes`.
+- Integration (area `bastionreg`, [distribution_test.go](../../test/integration/bastionreg/distribution_test.go), about 5 s, a handful of
+  rows): `TestR_BAS_134_TheDistributionIsStoredAndNarrowsInOneTransaction` (a new Bastion allows nothing and a choice of it is `422`; the
+  allow with its event once, an auditor refused; the Owner's choice and its event; `AI011` for a row around the API; the list with its
+  totals and the offered Bastions; the removal deletes the choices, journals its entry, and allowing again brings none back; a move deletes
+  the choices with `repository.bastion.removed` (cause `move`); both replays delete restored rows, the second time already in effect).
 
 ## A registration the configuration declares
 
@@ -7998,7 +8070,10 @@ agent records no revisit condition.
 
 ### Q-BAS-6 · A caller reads what its token may read; there is no release step
 
-Status: **Decided by the owner on 2026-11-02** — option (a).
+Status: **Decided by the owner on 2026-11-02** — option (a). **Superseded by the owner on 2026-11-27 ([Q-BAS-519](#q-bas-519--an-administrator-allows-projects-per-bastion-and-a-new-bastion-allows-none),
+R-BAS-134)**: "Ein Admin muss also freigeben, welche Projekte ihre Repos über den Bastion zur Verteilung freigeben dürfen. … Eine Verteilung
+eines öffentlichen Repos über die interne Verteilung hinaus, z.B. über einen Bastion, muss separat vom Project Owner konfiguriert werden."
+The token's right still decides who reads, but only what an administrator allowed and the Owner chose is distributed through a Bastion.
 
 Its entry in the decision log: [ADR-142](../decisions.md#adr-142--the-quader-bastion-an-internet-facing-read-only-cache-instance-in-the-beta).
 
@@ -16063,6 +16138,55 @@ and carries no migration paths, but a Bastion an administrator disabled would wo
 
 **Choice:** (a): not a compatibility path for a client, but the narrower reading of what an administrator decided. **Applied in the
 spec:** R-BAS-133; code: [00158_bastion_disable.sql](../../internal/meta/postgres/migrations/00158_bastion_disable.sql).
+### Q-BAS-519 · An administrator allows projects per Bastion, and a new Bastion allows none
+
+Status: **Decided by the owner on 2026-11-27** (the allow list: "Ich wäre für Whitelisting"); its form decided by the development agent
+on 2026-11-27 (W-41's plan, D12) — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-BAS-134. The owner wants an administrator to release which projects may distribute their repositories through a Bastion.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Rows of `bastion_project`; `PUT`/`DELETE /api/v1/bastions/{name}/projects/{project}`, a paged `GET`; `endpoints:write` to change, `endpoints:read` to read, as the registration's other members (Q-BAS-325); a removal deletes the project's choices of that Bastion (chosen) | One list per Bastion, read and written as the registration is; an administrator's widening never brings back a distribution by itself | An enterprise with hundreds of projects allows each one |
+| (b) A switch per Bastion "every project" beside the list | One act for a Bastion that serves everything | A second way in that an administrator turns on by accident |
+| (c) The list on the project, set by its Owner | Fewer administrator's acts | The owner said an administrator releases |
+
+**Choice:** (a). The list is the registration's, not the project's: an administrator decides per Bastion, and the card shows it (W-41's
+C2). **Applied in the spec:** R-BAS-134; code: [distribution.go](../../internal/bastionmain/distribution.go),
+[00159_bastion_distribution.sql](../../internal/meta/postgres/migrations/00159_bastion_distribution.sql).
+
+### Q-BAS-520 · Every level needs the choice, not only Public
+
+Status: **Decided by the development agent** on 2026-11-27 (W-41's plan, D15) — selected from the options below; the owner reviews it at
+the walkthrough.
+
+Context: R-BAS-134. The owner's words: "Eine Verteilung … über die interne Verteilung hinaus … muss separat vom Project Owner konfiguriert
+werden." A private or internal repository reaches a partner through a Bastion with his token, as a public one reaches an anonymous
+visitor.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A repository is served through a Bastion only while it is chosen there, whatever its level (chosen) | One rule: every distribution beyond the network is configured | Closes the door through which a leaked internal token reads every `internal` repository through a Bastion (H-1052 narrows to the chosen ones) | A partner's private repository needs the choice too |
+| (b) Only Public needs it | A token's read through a Bastion stays the token's right alone, as Q-BAS-6 said | The owner superseded Q-BAS-6, and an internal repository would reach the internet on any internal token |
+
+**Choice:** (a); no reason against it was found. B1 stores the choice for every level; the ceiling that enforces it is W-41's B2.
+**Applied in the spec:** R-BAS-134.
+
+### Q-BAS-521 · A narrowing of the distribution is journaled and tells every Bastion at once
+
+Status: **Decided by the development agent** on 2026-11-27 (W-41's plan, D17) — selected from the options below; the owner reviews it at
+the walkthrough.
+
+Context: R-BAS-134, R-BAS-015, R-HA-054. What a change of the distribution tells the Bastions, and what a restore keeps.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Four events; the two removals journaled (`{bastionId, projectId}`, `{repositoryId, bastionId}`) and replayed by deleting the rows; the feed maps a widening to `settings` and a narrowing to `grants` and `settings`; the change area `bastion_distribution` starts the catalogue's builder (chosen) | A restore never reopens a distribution that was taken back; a kept `full` answer for a repository that left the distribution does not serve on for the answers' period | A narrowing drops every Bastion's permission answers, as a lowered level does; it is a rare act |
+| (b) Narrowings unjournaled, the feed `settings` only | Fewer entries | A restore reopens what an administrator closed, and a kept answer serves on |
+
+**Choice:** (a). A move of a repository records `repository.bastion.removed` with the cause `move` for each choice it deletes, journaled
+the same way; a deletion of a repository or a project, or of a registration, cascades. **Applied in the spec:** R-BAS-134; code:
+[distribution_replay.go](../../internal/bastionmain/distribution_replay.go), [feed.go](../../internal/bastionmain/feed.go).
 
 ## What this does not cover
 
